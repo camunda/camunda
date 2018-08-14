@@ -14,29 +14,28 @@ export default class InstanceLog extends React.Component {
       state: PropTypes.string,
       type: PropTypes.string,
       name: PropTypes.string
-    })
+    }),
+    selectedLogEntry: PropTypes.string,
+    handleSelectedLogEntry: PropTypes.func.isRequired
   };
 
   state = {
     selected: HEADER
   };
 
-  setSelected = selected => {
-    this.setState({selected});
-  };
-
   renderLogEntry = ([id, {state, type, name}]) => (
-    <Styled.LogEntry
-      key={id}
-      isSelected={this.state.selected === id}
-      onClick={() => this.setSelected(id)}
-    >
-      <Styled.FlowNodeIcon
-        state={state}
-        type={type}
-        isSelected={this.state.selected === id}
-      />
-      {name}
+    <Styled.LogEntry key={id}>
+      <Styled.LogEntryToggle
+        isSelected={this.props.selectedLogEntry === id}
+        onClick={() => this.props.handleSelectedLogEntry(id)}
+      >
+        <Styled.FlowNodeIcon
+          state={state}
+          type={type}
+          isSelected={this.props.selectedLogEntry === id}
+        />
+        {name}
+      </Styled.LogEntryToggle>
     </Styled.LogEntry>
   );
 
@@ -45,18 +44,20 @@ export default class InstanceLog extends React.Component {
 
     return (
       <Styled.InstanceLog {...this.props}>
-        <React.Fragment>
-          <Styled.Header
-            isSelected={this.state.selected === HEADER}
-            onClick={() => this.setSelected(HEADER)}
+        <Styled.LogEntry>
+          <Styled.HeaderToggle
+            isSelected={this.props.selectedLogEntry === HEADER}
+            onClick={() => this.props.handleSelectedLogEntry(HEADER)}
           >
-            <Styled.DocumentIcon isSelected={this.state.selected === HEADER} />
+            <Styled.DocumentIcon
+              isSelected={this.props.selectedLogEntry === HEADER}
+            />
             {getWorkflowName(instance)}
-          </Styled.Header>
-          {activitiesDetails
-            ? Object.entries(activitiesDetails).map(this.renderLogEntry)
-            : null}
-        </React.Fragment>
+          </Styled.HeaderToggle>
+        </Styled.LogEntry>
+        {activitiesDetails
+          ? Object.entries(activitiesDetails).map(this.renderLogEntry)
+          : null}
       </Styled.InstanceLog>
     );
   }

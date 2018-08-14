@@ -1,7 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
-<Themed(styled.div)
+<Themed(styled.ul)
   activitiesDetails={
     Object {
       "1": Object {
@@ -16,13 +16,15 @@ exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
       },
     }
   }
+  handleSelectedLogEntry={[Function]}
   instance={
     Object {
       "workflowId": "foo",
     }
   }
+  selectedLogEntry="HEADER"
 >
-  <React.Fragment>
+  <styled.li>
     <Themed(Styled(Themed(styled.button)))
       isSelected={true}
       onClick={[Function]}
@@ -32,9 +34,12 @@ exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
       />
       foo
     </Themed(Styled(Themed(styled.button)))>
+  </styled.li>
+  <styled.li
+    key="1"
+  >
     <Themed(styled.button)
       isSelected={false}
-      key="1"
       onClick={[Function]}
     >
       <Themed(Styled(withStrippedProps(FlowNodeIcon)))
@@ -44,9 +49,12 @@ exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
       />
       someName1
     </Themed(styled.button)>
+  </styled.li>
+  <styled.li
+    key="2"
+  >
     <Themed(styled.button)
       isSelected={false}
-      key="2"
       onClick={[Function]}
     >
       <Themed(Styled(withStrippedProps(FlowNodeIcon)))
@@ -56,6 +64,6 @@ exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
       />
       someName2
     </Themed(styled.button)>
-  </React.Fragment>
-</Themed(styled.div)>
+  </styled.li>
+</Themed(styled.ul)>
 `;

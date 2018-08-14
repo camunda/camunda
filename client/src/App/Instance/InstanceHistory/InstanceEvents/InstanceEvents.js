@@ -13,7 +13,8 @@ export default class InstanceEvents extends React.Component {
     instance: PropTypes.shape({
       id: PropTypes.string.isRequired
     }).isRequired,
-    activitiesDetails: PropTypes.object
+    activitiesDetails: PropTypes.object,
+    selectedLogEntry: PropTypes.string
   };
 
   state = {
@@ -27,7 +28,7 @@ export default class InstanceEvents extends React.Component {
   }
 
   componentDidUpdate(prevProps, prevState) {
-    const {activitiesDetails} = this.props;
+    const {activitiesDetails, selectedLogEntry} = this.props;
     const {events} = this.state;
 
     if (!activitiesDetails || !events) {
@@ -36,12 +37,19 @@ export default class InstanceEvents extends React.Component {
 
     const haveActivitiesDetailsChanged =
       activitiesDetails !== prevProps.activitiesDetails;
+    const hasSelectedLogEntryChanged =
+      selectedLogEntry !== prevProps.selectedLogEntry;
     const haveEventsChanged = events !== prevState.events;
 
-    if (haveActivitiesDetailsChanged || haveEventsChanged) {
+    if (
+      haveActivitiesDetailsChanged ||
+      haveEventsChanged ||
+      hasSelectedLogEntryChanged
+    ) {
       const groupedEvents = getGroupedEvents({
         events: this.state.events,
-        activitiesDetails
+        activitiesDetails,
+        selectedLogEntry
       });
 
       this.setState({groupedEvents});

@@ -61,7 +61,7 @@ Foldable.Summary.propTypes = {
     PropTypes.arrayOf(PropTypes.node),
     PropTypes.node
   ]),
-  isBold: PropTypes.string
+  isBold: PropTypes.bool
 };
 
 Foldable.Summary.defaultProps = {

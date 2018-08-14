@@ -3,6 +3,7 @@ import {shallow} from 'enzyme';
 
 import * as api from 'modules/api/events/events';
 import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
+import {HEADER} from 'modules/constants';
 
 import InstanceEvents from './InstanceEvents';
 import * as Styled from './styled';
@@ -98,7 +99,7 @@ describe('InstanceEvents', () => {
     expect(EventsContainerNode.children().length).toBe(0);
   });
 
-  it('should render grouped events if events or activities changed', async () => {
+  it('should render grouped events if selectedLogEntry is HEADER', async () => {
     // given
     const expectedGroupedEvents = [
       {
@@ -111,7 +112,9 @@ describe('InstanceEvents', () => {
       },
       ...instanceEvents
     ];
-    const node = shallow(<InstanceEvents instance={mockInstance} />);
+    const node = shallow(
+      <InstanceEvents instance={mockInstance} selectedLogEntry={HEADER} />
+    );
     await flushPromises();
     node.setProps({activitiesDetails: mockActivitiesDetails});
     node.update();
@@ -150,6 +153,27 @@ describe('InstanceEvents', () => {
 
     // Instance Events Foldables
     expect(InstanceFoldableNode.find(Foldable)).toHaveLength(2);
+
+    expect(node).toMatchSnapshot();
+  });
+
+  it('should render events specific to an activity instance', async () => {
+    // given
+    const node = shallow(
+      <InstanceEvents instance={mockInstance} selectedLogEntry={HEADER} />
+    );
+    await flushPromises();
+    node.setProps({
+      activitiesDetails: mockActivitiesDetails,
+      selectedLogEntry: 'foo'
+    });
+    node.update();
+
+    // then
+    expect(node.state('groupedEvents')).toEqual(fooActivityEvents);
+    // Foldable for each event and each group
+    const FoldableNodes = node.find(Foldable);
+    expect(FoldableNodes).toHaveLength(2);
 
     expect(node).toMatchSnapshot();
   });

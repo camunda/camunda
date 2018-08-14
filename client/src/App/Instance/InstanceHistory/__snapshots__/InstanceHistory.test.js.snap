@@ -25,11 +25,13 @@ exports[`InstanceHistory should render a pane with InstanceLog section and Copyr
           "bar": "bar",
         }
       }
+      handleSelectedLogEntry={[Function]}
       instance={
         Object {
           "id": "foo",
         }
       }
+      selectedLogEntry="HEADER"
     />
     <InstanceEvents
       activitiesDetails={
@@ -42,6 +44,7 @@ exports[`InstanceHistory should render a pane with InstanceLog section and Copyr
           "id": "foo",
         }
       }
+      selectedLogEntry="HEADER"
     />
     <Themed(styled.div)>
       C

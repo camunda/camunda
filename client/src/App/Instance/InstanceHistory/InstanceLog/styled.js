@@ -3,13 +3,15 @@ import styled, {css} from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 import {Document} from 'modules/components/Icon';
 import BasicFlowNodeIcon from 'modules/components/FlowNodeIcon';
-import {ACTIVITY_STATE} from 'modules/constants';
 import withStrippedProps from 'modules/utils/withStrippedProps';
 
-export const InstanceLog = themed(styled.div`
+export const InstanceLog = themed(styled.ul`
   flex: 1;
   display: flex;
   flex-direction: column;
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
 
   overflow: auto;
   border: solid 1px
@@ -59,13 +61,23 @@ const iconPositionStyle = css`
   position: relative;
   top: 3px;
 `;
-export const LogEntry = themed(styled.button`
+
+export const LogEntry = styled.li`
+  position: relative;
+  height: 32px;
+`;
+
+export const LogEntryToggle = themed(styled.button`
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%:
   background: transparent;
   margin: 0;
   border: none;
   padding: 5px;
   padding-left: 43px;
-  height: 32px;
   text-align: left;
 
   ${backgroundColorStyle};
@@ -77,7 +89,7 @@ export const LogEntry = themed(styled.button`
   font-weight: ${({isSelected}) => (!!isSelected ? 'bold' : 'normal')};
 `);
 
-export const Header = themed(styled(LogEntry)`
+export const HeaderToggle = themed(styled(LogEntryToggle)`
   padding-left: 23px;
   color: ${({theme, isSelected}) => {
     return isSelected || theme === 'dark'

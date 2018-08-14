@@ -8,6 +8,8 @@ import InstanceLog from './InstanceLog';
 import * as Styled from './styled';
 
 const mockProps = {
+  selectedLogEntry: HEADER,
+  handleSelectedLogEntry: jest.fn(),
   instance: {
     workflowId: 'foo'
   },
@@ -26,23 +28,27 @@ const mockProps = {
 };
 
 describe('InstanceLog', () => {
+  beforeEach(() => {
+    mockProps.handleSelectedLogEntry.mockClear();
+  });
+
   it('should only render selected header if there is instance and no activitiesDetails', () => {
     // given
-    const {instance} = mockProps;
-    const node = shallow(<InstanceLog instance={instance} />);
+    const {activitiesDetails, ...props} = mockProps;
+    const node = shallow(<InstanceLog {...props} />);
 
     // then
-    const HeaderNode = node.find(Styled.Header);
+    const HeaderNode = node.find(Styled.HeaderToggle);
     expect(HeaderNode).toHaveLength(1);
     expect(HeaderNode.prop('isSelected')).toBe(true);
-    expect(HeaderNode.contains(getWorkflowName(instance))).toBe(true);
+    expect(HeaderNode.contains(getWorkflowName(mockProps.instance))).toBe(true);
     // DocumentIcon
     const DocumentIconNode = HeaderNode.find(Styled.DocumentIcon);
     expect(DocumentIconNode).toHaveLength(1);
     expect(DocumentIconNode.prop('isSelected')).toBe(true);
 
     // Log Entries
-    expect(node.find(Styled.LogEntry)).toHaveLength(0);
+    expect(node.find(Styled.LogEntryToggle)).toHaveLength(0);
   });
 
   it('should render entries if there are actvitiesDetails', () => {
@@ -54,15 +60,17 @@ describe('InstanceLog', () => {
 
     // then
     // Log Entries
-    const LogEntryNodes = node.find(Styled.LogEntry);
-    expect(LogEntryNodes).toHaveLength(
+    const LogEntryToggleNodes = node.find(Styled.LogEntryToggle);
+    expect(LogEntryToggleNodes).toHaveLength(
       Object.keys(activitiesDetailsEntries).length
     );
-    LogEntryNodes.forEach((LogEntryNode, idx) => {
-      expect(LogEntryNode.prop('isSelected')).toBe(false);
-      expect(LogEntryNode.contains(activitiesDetailsEntries[idx][1].name));
+    LogEntryToggleNodes.forEach((LogEntryToggleNode, idx) => {
+      expect(LogEntryToggleNode.prop('isSelected')).toBe(false);
+      expect(
+        LogEntryToggleNode.contains(activitiesDetailsEntries[idx][1].name)
+      );
       // FlowNodeIcon
-      const FlowNodeIconNode = LogEntryNode.find(Styled.FlowNodeIcon);
+      const FlowNodeIconNode = LogEntryToggleNode.find(Styled.FlowNodeIcon);
       expect(FlowNodeIconNode).toHaveLength(1);
       expect(FlowNodeIconNode.prop('isSelected')).toBe(false);
       expect(FlowNodeIconNode.prop('state')).toBe(
@@ -77,49 +85,64 @@ describe('InstanceLog', () => {
     expect(node).toMatchSnapshot();
   });
 
-  it('should change selection when clicking on a log entry', () => {
-    // given
-    const node = shallow(<InstanceLog {...mockProps} />);
-    const activitiesDetailsEntries = Object.entries(
-      mockProps.activitiesDetails
-    );
-
-    const LogEntryNodes = node.find(Styled.LogEntry);
-
-    LogEntryNodes.forEach((LogEntryNode, idx) => {
-      // when
-      LogEntryNode.simulate('click');
-      node.update();
-      LogEntryNode = node.find(Styled.LogEntry).at(idx);
+  describe('selection', () => {
+    it('should select header ROW on prop.selectedLogEntry', () => {
+      // given
+      const node = shallow(
+        <InstanceLog {...mockProps} selectedLogEntry={HEADER} />
+      );
+      let HeaderToggleNode = node.find(Styled.HeaderToggle);
 
       // then
-      expect(node.state('selected')).toEqual(activitiesDetailsEntries[idx][0]);
-      expect(LogEntryNode.prop('isSelected')).toBe(true);
-      // FlowNodeIcon
-      const FlowNodeIconNode = LogEntryNode.find(Styled.FlowNodeIcon);
+      expect(HeaderToggleNode.prop('isSelected')).toBe(true);
+      expect(
+        HeaderToggleNode.find(Styled.DocumentIcon).prop('isSelected')
+      ).toBe(true);
+    });
+
+    it('should select row based on prop.selectedLogEntry', () => {
+      // given
+      const node = shallow(<InstanceLog {...mockProps} selectedLogEntry="1" />);
+
+      // then
+      const LogEntryToggleNode = node.find(Styled.LogEntryToggle).at(0);
+      expect(LogEntryToggleNode.prop('isSelected')).toBe(true);
+      const FlowNodeIconNode = LogEntryToggleNode.find(Styled.FlowNodeIcon);
       expect(FlowNodeIconNode).toHaveLength(1);
       expect(FlowNodeIconNode.prop('isSelected')).toBe(true);
     });
-  });
 
-  it('should change selection to header when clicking on it', () => {
-    // given
-    const node = shallow(<InstanceLog {...mockProps} />);
-    const activitiesDetailsEntries = Object.entries(
-      mockProps.activitiesDetails
-    );
-    node.setState({selected: activitiesDetailsEntries[0][0]});
-    node.update();
-    let HeaderNode = node.find(Styled.Header);
+    it('should change selection when clicking on a log entry', () => {
+      // given
+      const node = shallow(<InstanceLog {...mockProps} />);
+      const activitiesDetailsEntries = Object.entries(
+        mockProps.activitiesDetails
+      );
+      const LogEntryToggleNodes = node.find(Styled.LogEntryToggle);
 
-    // when
-    HeaderNode.simulate('click');
-    node.update();
-    HeaderNode = node.find(Styled.Header);
+      LogEntryToggleNodes.forEach((LogEntryToggleNode, idx) => {
+        // when
+        LogEntryToggleNode.simulate('click');
 
-    // then
-    expect(node.state('selected')).toBe(HEADER);
-    expect(HeaderNode.prop('isSelected')).toBe(true);
-    expect(HeaderNode.find(Styled.DocumentIcon).prop('isSelected')).toBe(true);
+        // then
+        expect(mockProps.handleSelectedLogEntry).toBeCalledWith(
+          activitiesDetailsEntries[idx][0]
+        );
+      });
+    });
+
+    it('should change selection to header when clicking on it', () => {
+      // given
+      const node = shallow(
+        <InstanceLog {...mockProps} selectedLogEntry="foo" />
+      );
+      let HeaderToggleNode = node.find(Styled.HeaderToggle);
+
+      // when
+      HeaderToggleNode.simulate('click');
+
+      // then
+      expect(mockProps.handleSelectedLogEntry).toBeCalledWith(HEADER);
+    });
   });
 });
