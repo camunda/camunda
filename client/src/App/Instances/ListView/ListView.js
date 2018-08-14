@@ -15,12 +15,12 @@ export default class ListView extends React.Component {
   static propTypes = {
     selection: PropTypes.object.isRequired,
     instancesInFilter: PropTypes.number.isRequired,
-    onSelectionUpdate: PropTypes.func.isRequired,
+    updateSelection: PropTypes.func.isRequired,
     filter: PropTypes.object.isRequired,
-    handleAddNewSelection: PropTypes.func,
+    addNewSelection: PropTypes.func,
+    addToOpenSelection: PropTypes.func,
     expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
-    errorMessage: PropTypes.string,
-    addToCurrentSelection: PropTypes.func
+    errorMessage: PropTypes.string
   };
 
   state = {
@@ -85,6 +85,15 @@ export default class ListView extends React.Component {
   };
 
   render() {
+    const {
+      selection,
+      filter,
+      expandState,
+      updateSelection,
+      instancesInFilter,
+      addToOpenSelection,
+      addNewSelection
+    } = this.props;
     return (
       <SplitPane.Pane {...this.props}>
         <SplitPane.Pane.Header>Instances</SplitPane.Pane.Header>
@@ -92,30 +101,30 @@ export default class ListView extends React.Component {
           {!isEmpty(this.props.filter) && (
             <List
               data={this.state.instances}
-              selection={this.props.selection}
-              total={this.props.instancesInFilter}
+              selection={selection}
+              total={instancesInFilter}
+              filter={filter}
+              expandState={expandState}
+              sorting={this.state.sorting}
+              handleSorting={this.handleSorting}
+              updateSelection={updateSelection}
               onEntriesPerPageChange={entriesPerPage =>
                 this.setState({entriesPerPage})
               }
-              onSelectionUpdate={this.props.onSelectionUpdate}
-              filter={this.props.filter}
-              expandState={this.props.expandState}
-              sorting={this.state.sorting}
-              handleSorting={this.handleSorting}
             />
           )}
         </Styled.PaneBody>
         <SplitPane.Pane.Footer>
           {!isEmpty(this.props.filter) && (
             <ListFooter
-              total={this.props.instancesInFilter}
+              total={instancesInFilter}
               perPage={this.state.entriesPerPage}
               firstElement={this.state.firstElement}
+              addToOpenSelection={addToOpenSelection}
+              addNewSelection={addNewSelection}
               onFirstElementChange={firstElement =>
                 this.setState({firstElement})
               }
-              addToCurrentSelection={this.props.addToCurrentSelection}
-              handleAddNewSelection={this.props.handleAddNewSelection}
             />
           )}
         </SplitPane.Pane.Footer>

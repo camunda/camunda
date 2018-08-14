@@ -27,7 +27,7 @@ const instance = {
 
 const mockProps = {
   data: [instance],
-  onSelectionUpdate: jest.fn(),
+  updateSelection: jest.fn(),
   onEntriesPerPageChange: jest.fn(),
   handleSorting: jest.fn(),
   selection: {
@@ -41,10 +41,6 @@ const mockProps = {
 describe('List', () => {
   it('should have by default rowsToDisplay 9', () => {
     expect(new List().state.rowsToDisplay).toBe(9);
-  });
-
-  it.only('needs to be fixed', () => {
-    //
   });
 
   it('should render table container with innerRef', () => {

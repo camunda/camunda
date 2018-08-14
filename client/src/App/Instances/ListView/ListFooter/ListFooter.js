@@ -21,20 +21,20 @@ class ListFooter extends React.Component {
     perPage: PropTypes.number.isRequired,
     firstElement: PropTypes.number.isRequired,
     total: PropTypes.number.isRequired,
-    handleAddNewSelection: PropTypes.func.isRequired,
+    addNewSelection: PropTypes.func.isRequired,
+    addToOpenSelection: PropTypes.func,
     getStateLocally: PropTypes.func.isRequired,
-    storeStateLocally: PropTypes.func.isRequired,
-    onAddToOpenSelection: PropTypes.func
+    storeStateLocally: PropTypes.func.isRequired
   };
 
   renderSelectionDropDown = () => {
     return (
       <Styled.SelectionButton>
         <Dropdown placement={DROPDOWN_PLACEMENT.TOP} label={DROPDOWN_LABEL}>
-          <Dropdown.Option onClick={this.props.onAddToOpenSelection}>
+          <Dropdown.Option onClick={this.props.addToOpenSelection}>
             {DROPDOWN_ADD_CURRENT_OPTION}
           </Dropdown.Option>
-          <Dropdown.Option onClick={this.props.handleAddNewSelection}>
+          <Dropdown.Option onClick={this.props.addNewSelection}>
             {DROPDOWN_CREATE_OPTION}
           </Dropdown.Option>
         </Dropdown>
@@ -44,7 +44,7 @@ class ListFooter extends React.Component {
 
   renderSelectionButton = () => {
     return (
-      <Styled.SelectionButton onClick={this.props.handleAddNewSelection}>
+      <Styled.SelectionButton onClick={this.props.addNewSelection}>
         Create Selection
       </Styled.SelectionButton>
     );

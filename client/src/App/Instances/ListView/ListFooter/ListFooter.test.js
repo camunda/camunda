@@ -15,7 +15,7 @@ describe('ListFooter', () => {
         }}
         storeStateLocally={() => {}}
         onFirstElementChange={jest.fn()}
-        handleAddNewSelection={jest.fn()}
+        addNewSelection={jest.fn()}
         addToCurrentSelection={jest.fn()}
         perPage={10}
         firstElement={0}
@@ -35,8 +35,8 @@ describe('ListFooter', () => {
         }}
         storeStateLocally={() => {}}
         onFirstElementChange={jest.fn()}
-        handleAddNewSelection={spy}
-        onAddToOpenSelection={jest.fn()}
+        addNewSelection={spy}
+        addToOpenSelection={jest.fn()}
         perPage={10}
         firstElement={30}
         total={100}
