@@ -17,7 +17,7 @@ describe('Dropdown', () => {
         <Child />
       </Dropdown>
     );
-    node.instance().storeContainer(document.createElement('div'));
+    node.instance().setRef(document.createElement('div'));
   });
 
   it('should render Button with Icon or text label', () => {
@@ -32,19 +32,19 @@ describe('Dropdown', () => {
   });
 
   it('should be closed initially', () => {
-    expect(node.state().open).toBe(false);
+    expect(node.state().isOpen).toBe(false);
   });
 
-  it('should show/hide child contents when open/closed', () => {
+  it('should show/hide child contents when isOpen/closed', () => {
     expect(node.find(Child)).not.toExist();
 
-    node.setState({open: true});
+    node.setState({isOpen: true});
 
     expect(node.find(Child)).toExist();
   });
 
   it('should pass "placement" prop to children', () => {
-    node.setState({open: true});
+    node.setState({isOpen: true});
     expect(node.find('Child').props().placement).toBe(
       DROPDOWN_PLACEMENT.BOTTOM
     );
@@ -57,36 +57,36 @@ describe('Dropdown', () => {
       </Dropdown>
     );
 
-    node.setState({open: true});
+    node.setState({isOpen: true});
 
     expect(node.find('Child').props().placement).toBe(
       DROPDOWN_PLACEMENT.BOTTOM
     );
   });
 
-  it('should open/close on click of the button', () => {
+  it('should isOpen/close on click of the button', () => {
     //given
     node.find(Styled.Button).simulate('click');
-    expect(node.state().open).toBe(true);
+    expect(node.state().isOpen).toBe(true);
     //when
     node.find(Styled.Button).simulate('click');
     //then
-    expect(node.state().open).toBe(false);
+    expect(node.state().isOpen).toBe(false);
   });
 
-  it('should display its child contents if it is open', () => {
-    node.setState({open: true});
+  it('should display its child contents if it is isOpen', () => {
+    node.setState({isOpen: true});
     expect(node.find(Child)).toExist();
   });
 
   it('should close the dropdown when clicking anywhere', () => {
-    node.setState({open: true});
+    node.setState({isOpen: true});
     document.body.click();
-    expect(node.state().open).toBe(false);
+    expect(node.state().isOpen).toBe(false);
   });
 
   it('should match Snapshot', () => {
-    node.setState({open: true});
+    node.setState({isOpen: true});
     expect(node).toMatchSnapshot();
   });
 });

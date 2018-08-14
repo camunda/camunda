@@ -11,9 +11,9 @@ import * as Styled from './styled';
 
 export default class Dropdown extends React.Component {
   static propTypes = {
-    /** The content that is visible on the dropdown trigger. Must be non-interactive phrasing content. Supported labels types: string, component.*/
+    /** The content that is visible on the dropdown trigger. */
     label: PropTypes.node.isRequired,
-    /** This defines if the dropdown opens to the top or bottom.*/
+    /** Defines if the dropdown content opens to the top or bottom.*/
     placement: PropTypes.oneOf(['top', 'bottom']),
     /** The options of this dropdown. Each child should be a `Dropdown.Option` instance */
     children: PropTypes.oneOfType([
@@ -22,39 +22,39 @@ export default class Dropdown extends React.Component {
     ])
   };
 
-  state = {open: false};
+  state = {isOpen: false};
 
   componentDidMount() {
-    document.body.addEventListener('click', this.close, true);
+    document.body.addEventListener('click', this.onClose, true);
   }
 
   componentWillUnmount() {
-    document.body.removeEventListener('click', this.close, true);
+    document.body.removeEventListener('click', this.onClose, true);
   }
 
-  storeContainer = node => {
+  setRef = node => {
     this.container = node;
   };
 
-  toggleOpen = () => {
-    this.setState({open: !this.state.open});
+  toggleMenu = () => {
+    this.setState({isOpen: !this.state.isOpen});
   };
 
-  close = ({target}) => {
+  onClose = ({target}) => {
     if (!this.container.contains(target)) {
-      this.setState({open: false});
+      this.setState({isOpen: false});
     }
   };
 
-  // render Dropdown button with passed text or icon as label;
-  getLabelType = label =>
-    typeof label === 'object' ? (
-      label
-    ) : (
+  renderLabel = label => {
+    return typeof label === 'string' ? (
       <Styled.LabelWrapper>{label}</Styled.LabelWrapper>
+    ) : (
+      label
     );
+  };
 
-  childrenWithProps = () => {
+  renderChildrenWithProps = () => {
     return React.Children.map(this.props.children, child => {
       return React.cloneElement(child, {
         placement: this.props.placement || DROPDOWN_PLACEMENT.BOTTOM
@@ -64,19 +64,20 @@ export default class Dropdown extends React.Component {
 
   render() {
     return (
-      <Styled.Dropdown innerRef={this.storeContainer}>
-        <Styled.Button onClick={this.toggleOpen}>
-          {this.getLabelType(this.props.label)}
+      <Styled.Dropdown innerRef={this.setRef}>
+        <Styled.Button onClick={this.toggleMenu}>
+          {this.renderLabel(this.props.label)}
           <Down />
         </Styled.Button>
-        {this.state.open && (
+        {this.state.isOpen && (
           <Menu placement={this.props.placement || DROPDOWN_PLACEMENT.BOTTOM}>
-            {this.childrenWithProps()}
+            {this.renderChildrenWithProps()}
           </Menu>
         )}
       </Styled.Dropdown>
     );
   }
 }
+
 // export Dropdown-option component
 Dropdown.Option = Option;
