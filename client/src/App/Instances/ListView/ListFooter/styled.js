@@ -12,7 +12,7 @@ export const SelectionButton = themed(styled.div`
   border-radius: 13px;
   margin-bottom: 6px;
   border: none;
-  color: '#ffffff';
+  color: rgba(255, 255, 255, 1);
   float: left;
 
   & > svg {

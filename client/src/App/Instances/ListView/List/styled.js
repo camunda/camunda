@@ -10,6 +10,7 @@ export const List = styled.div`
 
 export const TableContainer = styled.div`
   position: absolute;
+  opacity: 0.9;
   height: 100%;
   width: 100%;
   left: 0;
