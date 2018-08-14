@@ -50,6 +50,13 @@ public class FsSnapshotController implements SnapshotController {
 
   @Override
   public void takeSnapshot(final StateSnapshotMetadata metadata) throws Exception {
+    // special case for the Fs package, cannot handle negative numbers.
+    // it seems counter intuitive to have a negative number, but we use -1 as the initial or
+    // unknown log position, and so it could happen.
+    if (metadata.getLastSuccessfulProcessedEventPosition() < 0) {
+      return;
+    }
+
     if (storage.snapshotExists(name, metadata.getLastSuccessfulProcessedEventPosition())) {
       return;
     }
