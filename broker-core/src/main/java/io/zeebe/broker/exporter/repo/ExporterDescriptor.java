@@ -33,8 +33,12 @@ public class ExporterDescriptor {
     this.configuration = new ExporterConfiguration(id, args);
   }
 
-  public Exporter newInstance() throws IllegalAccessException, InstantiationException {
-    return exporterClass.newInstance();
+  public Exporter newInstance() throws ExporterInstantiationException {
+    try {
+      return exporterClass.newInstance();
+    } catch (InstantiationException | IllegalAccessException e) {
+      throw new ExporterInstantiationException(getId(), e);
+    }
   }
 
   public ExporterConfiguration getConfiguration() {

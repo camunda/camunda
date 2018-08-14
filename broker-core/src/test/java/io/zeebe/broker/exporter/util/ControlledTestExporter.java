@@ -21,11 +21,14 @@ import io.zeebe.exporter.context.Context;
 import io.zeebe.exporter.context.Controller;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.spi.Exporter;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.Consumer;
-import java.util.function.Function;
 
 public class ControlledTestExporter implements Exporter {
-  private Function<Context, Boolean> onValidate;
+  private final List<Record> exportedRecords = new ArrayList<>();
+
+  private boolean shouldAutoUpdatePosition;
   private Consumer<Context> onConfigure;
   private Consumer<Controller> onOpen;
   private Runnable onClose;
@@ -34,8 +37,8 @@ public class ControlledTestExporter implements Exporter {
   private Context context;
   private Controller controller;
 
-  public ControlledTestExporter onValidate(final Function<Context, Boolean> callback) {
-    onValidate = callback;
+  public ControlledTestExporter shouldAutoUpdatePosition(boolean shouldAutoUpdate) {
+    this.shouldAutoUpdatePosition = shouldAutoUpdate;
     return this;
   }
 
@@ -75,6 +78,10 @@ public class ControlledTestExporter implements Exporter {
     this.controller = controller;
   }
 
+  public List<Record> getExportedRecords() {
+    return exportedRecords;
+  }
+
   @Override
   public void configure(final Context context) {
     this.context = context;
@@ -104,6 +111,12 @@ public class ControlledTestExporter implements Exporter {
   public void export(final Record record) {
     if (onExport != null) {
       onExport.accept(record);
+    }
+
+    exportedRecords.add(record);
+
+    if (shouldAutoUpdatePosition) {
+      getController().updateLastExportedRecordPosition(record.getPosition());
     }
   }
 }

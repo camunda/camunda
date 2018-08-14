@@ -24,7 +24,7 @@ public interface DeployedWorkflow {
   int getVersion();
 
   /** @return the key of this workflow */
-  String getWorkflowKey();
+  long getWorkflowKey();
 
   /** @return the name of the resource through which this workflow was deployed */
   String getResourceName();

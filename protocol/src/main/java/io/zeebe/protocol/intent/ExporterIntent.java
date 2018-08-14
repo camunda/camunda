@@ -13,10 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.exporter.record.value.raft;
+package io.zeebe.protocol.intent;
 
-/** Represents a single Raft member. */
-public interface RaftMember {
-  /** @return the node id of the member */
-  int getNodeId();
+public enum ExporterIntent implements Intent {
+  EXPORTED((short) 0);
+
+  private short value;
+
+  ExporterIntent(short value) {
+    this.value = value;
+  }
+
+  public short getIntent() {
+    return value;
+  }
+
+  public static Intent from(short value) {
+    switch (value) {
+      case 0:
+        return EXPORTED;
+      default:
+        return Intent.UNKNOWN;
+    }
+  }
+
+  @Override
+  public short value() {
+    return value;
+  }
 }

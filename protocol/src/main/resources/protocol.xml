@@ -42,6 +42,7 @@
         <validValue name="MESSAGE">10</validValue>
         <validValue name="MESSAGE_SUBSCRIPTION">11</validValue>
         <validValue name="WORKFLOW_INSTANCE_SUBSCRIPTION">12</validValue>
+        <validValue name="EXPORTER">13</validValue>
     </enum>
 
     <enum name="ControlMessageType" encodingType="uint8" description="The type of the control message.">

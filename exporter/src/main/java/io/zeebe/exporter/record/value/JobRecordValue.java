@@ -16,6 +16,7 @@
 package io.zeebe.exporter.record.value;
 
 import io.zeebe.exporter.record.RecordValueWithPayload;
+import io.zeebe.exporter.record.value.job.Headers;
 import java.time.Instant;
 import java.util.Map;
 
@@ -33,7 +34,7 @@ public interface JobRecordValue extends RecordValueWithPayload {
    *     the context of workflow instance, the header provide context information on which activity
    *     is executed, etc.
    */
-  Map<String, Object> getHeaders();
+  Headers getHeaders();
 
   /** @return user-defined headers associated with this job */
   Map<String, Object> getCustomHeaders();

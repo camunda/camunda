@@ -19,7 +19,9 @@ package io.zeebe.broker.util;
 
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 
+import io.zeebe.broker.clustering.orchestration.id.IdRecord;
 import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
+import io.zeebe.broker.exporter.stream.ExporterRecord;
 import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
@@ -57,6 +59,7 @@ import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.protocol.intent.Intent;
+import io.zeebe.raft.event.RaftConfigurationEvent;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.LangUtil;
@@ -87,6 +90,9 @@ public class TestStreams {
     VALUE_TYPES.put(MessageSubscriptionRecord.class, ValueType.MESSAGE_SUBSCRIPTION);
     VALUE_TYPES.put(
         WorkflowInstanceSubscriptionRecord.class, ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
+    VALUE_TYPES.put(IdRecord.class, ValueType.ID);
+    VALUE_TYPES.put(ExporterRecord.class, ValueType.EXPORTER);
+    VALUE_TYPES.put(RaftConfigurationEvent.class, ValueType.RAFT);
 
     VALUE_TYPES.put(UnpackedObject.class, ValueType.NOOP);
   }
@@ -481,6 +487,11 @@ public class TestStreams {
     public void onOpen(StreamProcessorContext context) {
       this.context = context;
       wrappedProcessor.onOpen(this.context);
+    }
+
+    @Override
+    public void onRecovered() {
+      wrappedProcessor.onRecovered();
     }
 
     @Override

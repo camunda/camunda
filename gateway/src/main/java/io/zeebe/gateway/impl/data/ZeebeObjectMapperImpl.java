@@ -90,11 +90,14 @@ public class ZeebeObjectMapperImpl implements ZeebeObjectMapper {
 
   @Override
   public String toJson(Record record) {
+    return toJson((Object) record);
+  }
+
+  public String toJson(Object value) {
     try {
-      return jsonObjectMapper.writeValueAsString(record);
+      return jsonObjectMapper.writeValueAsString(value);
     } catch (JsonProcessingException e) {
-      throw new ClientException(
-          String.format("Failed to serialize object '%s' to JSON", record), e);
+      throw new ClientException(String.format("Failed to serialize object '%s' to JSON", value), e);
     }
   }
 
@@ -127,6 +130,14 @@ public class ZeebeObjectMapperImpl implements ZeebeObjectMapper {
           String.format(
               "Failed deserialize JSON '%s' to object of type '%s'", json, recordClass.getName()),
           e);
+    }
+  }
+
+  public Map<String, Object> fromJsonAsMap(String json) {
+    try {
+      return msgpackObjectMapper.readValue(json, MAP_TYPE_REFERENCE);
+    } catch (IOException e) {
+      throw new RuntimeException("Failed deserialize JSON to map", e);
     }
   }
 
@@ -170,6 +181,14 @@ public class ZeebeObjectMapperImpl implements ZeebeObjectMapper {
   public Map<String, Object> fromMsgpackAsMap(byte[] msgpack) {
     try {
       return msgpackObjectMapper.readValue(msgpack, MAP_TYPE_REFERENCE);
+    } catch (IOException e) {
+      throw new RuntimeException("Failed deserialize Msgpack JSON to map", e);
+    }
+  }
+
+  public Map<String, Object> fromMsgpackAsMap(InputStream inputStream) {
+    try {
+      return msgpackObjectMapper.readValue(inputStream, MAP_TYPE_REFERENCE);
     } catch (IOException e) {
       throw new RuntimeException("Failed deserialize Msgpack JSON to map", e);
     }
