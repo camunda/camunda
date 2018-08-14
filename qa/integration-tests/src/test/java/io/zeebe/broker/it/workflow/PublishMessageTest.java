@@ -102,7 +102,9 @@ public class PublishMessageTest {
 
     // then
     waitUntil(
-        () -> eventRecorder.getWorkflowInstanceEvents(WorkflowInstanceState.COMPLETED).size() == 2);
+        () ->
+            eventRecorder.getElementsInState("wf", WorkflowInstanceState.ELEMENT_COMPLETED).size()
+                == 2);
   }
 
   @Test
@@ -117,7 +119,9 @@ public class PublishMessageTest {
         .join();
 
     waitUntil(
-        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.CATCH_EVENT_ENTERED));
+        () ->
+            eventRecorder.hasElementInState(
+                "catch-event", WorkflowInstanceState.ELEMENT_ACTIVATED));
 
     // when
     workflowClient
@@ -130,7 +134,9 @@ public class PublishMessageTest {
 
     // then
     waitUntil(
-        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.CATCH_EVENT_OCCURRED));
+        () ->
+            eventRecorder.hasElementInState(
+                "catch-event", WorkflowInstanceState.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -165,10 +171,12 @@ public class PublishMessageTest {
 
     // then
     waitUntil(
-        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.CATCH_EVENT_OCCURRED));
+        () ->
+            eventRecorder.hasElementInState(
+                "catch-event", WorkflowInstanceState.ELEMENT_COMPLETED));
 
     final WorkflowInstanceEvent catchEventOccurred =
-        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.CATCH_EVENT_OCCURRED);
+        eventRecorder.getElementInState("catch-event", WorkflowInstanceState.ELEMENT_COMPLETED);
     assertThat(catchEventOccurred.getPayloadAsMap()).contains(entry("msg", "expected"));
   }
 
@@ -213,7 +221,9 @@ public class PublishMessageTest {
 
     // then
     waitUntil(
-        () -> eventRecorder.getWorkflowInstanceEvents(WorkflowInstanceState.COMPLETED).size() == 2);
+        () ->
+            eventRecorder.getElementsInState("wf", WorkflowInstanceState.ELEMENT_COMPLETED).size()
+                == 2);
   }
 
   @Test

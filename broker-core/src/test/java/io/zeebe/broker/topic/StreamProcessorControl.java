@@ -22,6 +22,7 @@ import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.system.workflow.repository.data.DeploymentRecord;
+import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.logstreams.log.LoggedEvent;
 import java.util.function.Predicate;
 
@@ -34,6 +35,8 @@ public interface StreamProcessorControl {
   void blockAfterJobEvent(Predicate<TypedRecord<JobRecord>> test);
 
   void blockAfterDeploymentEvent(Predicate<TypedRecord<DeploymentRecord>> test);
+
+  void blockAfterWorkflowInstanceRecord(Predicate<TypedRecord<WorkflowInstanceRecord>> test);
 
   void blockAfterIncidentEvent(Predicate<TypedRecord<IncidentRecord>> test);
 

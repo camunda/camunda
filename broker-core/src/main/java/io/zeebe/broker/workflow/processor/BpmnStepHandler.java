@@ -17,9 +17,11 @@
  */
 package io.zeebe.broker.workflow.processor;
 
+import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
 import io.zeebe.broker.workflow.model.ExecutableFlowElement;
 
-public interface BpmnStepHandler<T extends ExecutableFlowElement> {
+public interface BpmnStepHandler<T extends ExecutableFlowElement>
+    extends StreamProcessorLifecycleAware {
 
   void handle(BpmnStepContext<T> context);
 }

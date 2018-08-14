@@ -184,7 +184,8 @@ public class BrokerReprocessingTest {
 
     // then
     waitUntil(() -> eventRecorder.hasJobEvent(JobState.COMPLETED));
-    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED));
+    waitUntil(
+        () -> eventRecorder.hasElementInState("process", WorkflowInstanceState.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -219,7 +220,8 @@ public class BrokerReprocessingTest {
 
     // then
     waitUntil(() -> eventRecorder.hasJobEvent(JobState.COMPLETED));
-    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED));
+    waitUntil(
+        () -> eventRecorder.hasElementInState("process", WorkflowInstanceState.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -261,7 +263,8 @@ public class BrokerReprocessingTest {
 
     // then
     waitUntil(() -> eventRecorder.getJobEvents(JobState.COMPLETED).size() > 1);
-    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED));
+    waitUntil(
+        () -> eventRecorder.hasElementInState("process", WorkflowInstanceState.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -433,7 +436,7 @@ public class BrokerReprocessingTest {
     waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.CREATED));
 
     final WorkflowInstanceEvent activityInstance =
-        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_READY);
+        eventRecorder.getElementInState("task", WorkflowInstanceState.ELEMENT_READY);
 
     // when
     reprocessingTrigger.accept(this);
@@ -471,7 +474,7 @@ public class BrokerReprocessingTest {
     waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.CREATED));
 
     final WorkflowInstanceEvent activityInstance =
-        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_READY);
+        eventRecorder.getElementInState("task", WorkflowInstanceState.ELEMENT_READY);
 
     clientRule
         .getWorkflowClient()

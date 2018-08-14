@@ -15,26 +15,27 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.processor.sequenceflow;
+package io.zeebe.broker.workflow.processor.activity;
 
-import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
+import io.zeebe.broker.workflow.index.ElementInstance;
 import io.zeebe.broker.workflow.model.ExecutableFlowNode;
-import io.zeebe.broker.workflow.model.ExecutableSequenceFlow;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
-public class StartActivityHandler implements BpmnStepHandler<ExecutableSequenceFlow> {
+public class PropagateTerminationHandler implements BpmnStepHandler<ExecutableFlowNode> {
 
   @Override
-  public void handle(BpmnStepContext<ExecutableSequenceFlow> context) {
+  public void handle(BpmnStepContext<ExecutableFlowNode> context) {
+    final ElementInstance flowScopeInstance = context.getFlowScopeInstance();
 
-    final ExecutableSequenceFlow sequenceFlow = context.getElement();
-    final ExecutableFlowNode targetNode = sequenceFlow.getTarget();
-
-    final WorkflowInstanceRecord value = context.getValue();
-    value.setActivityId(targetNode.getId());
-
-    context.getStreamWriter().writeNewEvent(WorkflowInstanceIntent.ACTIVITY_READY, value);
+    if (flowScopeInstance.getChildren().isEmpty()) {
+      context
+          .getStreamWriter()
+          .writeFollowUpEvent(
+              flowScopeInstance.getKey(),
+              WorkflowInstanceIntent.ELEMENT_TERMINATED,
+              flowScopeInstance.getValue());
+    }
   }
 }

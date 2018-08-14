@@ -97,7 +97,10 @@ public class YamlWorkflowTest {
 
     // then
     waitUntil(() -> eventRecorder.hasJobEvent(JobState.COMPLETED));
-    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED));
+    waitUntil(
+        () ->
+            eventRecorder.hasElementInState(
+                "yaml-workflow", WorkflowInstanceState.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -162,10 +165,10 @@ public class YamlWorkflowTest {
     assertThat(jobEvent.getPayload()).isEqualTo("{\"bar\":1}");
 
     waitUntil(
-        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_COMPLETED));
+        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED));
 
     final WorkflowInstanceEvent workflowEvent =
-        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_COMPLETED);
+        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED);
     assertThat(workflowEvent.getPayload()).isEqualTo("{\"foo\":1,\"result\":3}");
   }
 }

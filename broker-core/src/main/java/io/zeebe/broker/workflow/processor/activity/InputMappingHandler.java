@@ -20,9 +20,6 @@ package io.zeebe.broker.workflow.processor.activity;
 import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
-import io.zeebe.broker.workflow.map.ActivityInstanceMap;
-import io.zeebe.broker.workflow.map.PayloadCache;
-import io.zeebe.broker.workflow.map.WorkflowInstanceIndex;
 import io.zeebe.broker.workflow.model.ExecutableFlowNode;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
@@ -35,21 +32,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public class InputMappingHandler implements BpmnStepHandler<ExecutableFlowNode> {
 
-  private final PayloadCache payloadCache;
-  private final WorkflowInstanceIndex workflowInstanceIndex;
-  private final ActivityInstanceMap activityInstanceMap;
-
   private final MappingProcessor payloadMappingProcessor = new MappingProcessor(4096);
   private UnsafeBuffer wfInstancePayload = new UnsafeBuffer(0, 0);
-
-  public InputMappingHandler(
-      PayloadCache payloadCache,
-      WorkflowInstanceIndex workflowInstanceIndex,
-      ActivityInstanceMap activityInstanceMap) {
-    this.payloadCache = payloadCache;
-    this.workflowInstanceIndex = workflowInstanceIndex;
-    this.activityInstanceMap = activityInstanceMap;
-  }
 
   @Override
   public void handle(BpmnStepContext<ExecutableFlowNode> context) {
@@ -78,24 +62,10 @@ public class InputMappingHandler implements BpmnStepHandler<ExecutableFlowNode> 
       context
           .getStreamWriter()
           .writeFollowUpEvent(
-              record.getKey(), WorkflowInstanceIntent.ACTIVITY_ACTIVATED, activityEvent);
+              record.getKey(), WorkflowInstanceIntent.ELEMENT_ACTIVATED, activityEvent);
 
-      payloadCache.addPayload(
-          activityEvent.getScopeInstanceKey(), record.getPosition(), wfInstancePayload);
     } else {
       context.raiseIncident(ErrorType.IO_MAPPING_ERROR, mappingException.getMessage());
     }
-
-    workflowInstanceIndex
-        .get(activityEvent.getWorkflowInstanceKey())
-        .setActivityInstanceKey(record.getKey())
-        .write();
-
-    activityInstanceMap
-        .newActivityInstance(record.getKey())
-        .setActivityId(activityEvent.getActivityId())
-        .setScopeInstanceKey(activityEvent.getScopeInstanceKey())
-        .setJobKey(-1L)
-        .write();
   }
 }

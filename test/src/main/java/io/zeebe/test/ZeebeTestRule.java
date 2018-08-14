@@ -77,7 +77,8 @@ public class ZeebeTestRule extends ExternalResource {
         () -> {
           final WorkflowInstanceEvent event =
               topicEventRecorder.getLastWorkflowInstanceEvent(wfInstanceKey(key));
-          return event.getState().equals(WorkflowInstanceState.COMPLETED);
+          return event.getKey() == key
+              && event.getState().equals(WorkflowInstanceState.ELEMENT_COMPLETED);
         },
         "workflow instance is not completed");
   }

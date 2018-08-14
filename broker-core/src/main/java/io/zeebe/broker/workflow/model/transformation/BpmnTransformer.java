@@ -25,7 +25,7 @@ import io.zeebe.broker.workflow.model.transformation.handler.ExclusiveGatewayHan
 import io.zeebe.broker.workflow.model.transformation.handler.FlowElementHandler;
 import io.zeebe.broker.workflow.model.transformation.handler.FlowNodeHandler;
 import io.zeebe.broker.workflow.model.transformation.handler.IntermediateCatchEventHandler;
-import io.zeebe.broker.workflow.model.transformation.handler.SelectWorkflowHandler;
+import io.zeebe.broker.workflow.model.transformation.handler.ProcessHandler;
 import io.zeebe.broker.workflow.model.transformation.handler.SequenceFlowHandler;
 import io.zeebe.broker.workflow.model.transformation.handler.ServiceTaskHandler;
 import io.zeebe.broker.workflow.model.transformation.handler.StartEventHandler;
@@ -61,7 +61,7 @@ public class BpmnTransformer {
     step2Visitor.registerHandler(new ExclusiveGatewayHandler());
     step2Visitor.registerHandler(new FlowNodeHandler());
     step2Visitor.registerHandler(new IntermediateCatchEventHandler());
-    step2Visitor.registerHandler(new SelectWorkflowHandler());
+    step2Visitor.registerHandler(new ProcessHandler());
     step2Visitor.registerHandler(new SequenceFlowHandler());
     step2Visitor.registerHandler(new ServiceTaskHandler());
     step2Visitor.registerHandler(new StartEventHandler());

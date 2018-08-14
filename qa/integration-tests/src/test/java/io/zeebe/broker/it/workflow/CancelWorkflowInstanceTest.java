@@ -80,7 +80,8 @@ public class CancelWorkflowInstanceTest {
     clientRule.getWorkflowClient().newCancelInstanceCommand(workflowInstance).send().join();
 
     // then
-    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.CANCELED));
+    waitUntil(
+        () -> eventRecorder.hasElementInState("process", WorkflowInstanceState.ELEMENT_TERMINATED));
   }
 
   @Test
@@ -117,6 +118,7 @@ public class CancelWorkflowInstanceTest {
 
     // then
     waitUntil(() -> eventRecorder.hasJobEvent(JobState.CANCELED));
-    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.CANCELED));
+    waitUntil(
+        () -> eventRecorder.hasElementInState("process", WorkflowInstanceState.ELEMENT_TERMINATED));
   }
 }

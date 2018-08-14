@@ -17,12 +17,14 @@
  */
 package io.zeebe.broker.workflow.model.transformation.handler;
 
+import io.zeebe.broker.workflow.model.BpmnStep;
 import io.zeebe.broker.workflow.model.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.Process;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
-public class SelectWorkflowHandler implements ModelElementTransformer<Process> {
+public class ProcessHandler implements ModelElementTransformer<Process> {
 
   @Override
   public Class<Process> getType() {
@@ -33,5 +35,13 @@ public class SelectWorkflowHandler implements ModelElementTransformer<Process> {
   public void transform(Process element, TransformContext context) {
     final ExecutableWorkflow workflow = context.getWorkflow(element.getId());
     context.setCurrentWorkflow(workflow);
+
+    workflow.bindLifecycleState(WorkflowInstanceIntent.ELEMENT_READY, BpmnStep.APPLY_INPUT_MAPPING);
+    workflow.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.TRIGGER_START_EVENT);
+    workflow.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.COMPLETE_PROCESS);
+    workflow.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.TERMINATE_CONTAINED_INSTANCES);
   }
 }

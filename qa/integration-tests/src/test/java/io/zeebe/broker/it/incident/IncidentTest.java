@@ -78,7 +78,7 @@ public class IncidentTest {
     waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.CREATED));
 
     final WorkflowInstanceEvent activityInstanceEvent =
-        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_READY);
+        eventRecorder.getElementInState("failingTask", WorkflowInstanceState.ELEMENT_READY);
 
     // when
     workflowClient.newUpdatePayloadCommand(activityInstanceEvent).payload(PAYLOAD).send().join();

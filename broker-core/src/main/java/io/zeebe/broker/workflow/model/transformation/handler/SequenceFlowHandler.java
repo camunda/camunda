@@ -57,10 +57,8 @@ public class SequenceFlowHandler implements ModelElementTransformer<SequenceFlow
 
     final BpmnStep step;
 
-    if (target instanceof Activity) {
-      step = BpmnStep.START_ACTIVITY;
-    } else if (target instanceof IntermediateCatchEvent) {
-      step = BpmnStep.ENTER_INTERMEDIATE_EVENT;
+    if (target instanceof Activity || target instanceof IntermediateCatchEvent) {
+      step = BpmnStep.START_STATEFUL_ELEMENT;
     } else if (target instanceof ExclusiveGateway) {
       step = BpmnStep.ACTIVATE_GATEWAY;
     } else if (target instanceof EndEvent) {

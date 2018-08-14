@@ -17,8 +17,8 @@
  */
 package io.zeebe.broker.workflow.model.transformation.handler;
 
+import io.zeebe.broker.workflow.model.ExecutableFlowElementContainer;
 import io.zeebe.broker.workflow.model.ExecutableFlowNode;
-import io.zeebe.broker.workflow.model.ExecutableSubProcess;
 import io.zeebe.broker.workflow.model.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
@@ -42,8 +42,8 @@ public class StartEventHandler implements ModelElementTransformer<StartEvent> {
     if (element.getScope() instanceof FlowNode) {
       final FlowNode scope = (FlowNode) element.getScope();
 
-      final ExecutableSubProcess subprocess =
-          workflow.getElementById(scope.getId(), ExecutableSubProcess.class);
+      final ExecutableFlowElementContainer subprocess =
+          workflow.getElementById(scope.getId(), ExecutableFlowElementContainer.class);
       subprocess.setStartEvent(startEvent);
     } else {
       // top-level start event

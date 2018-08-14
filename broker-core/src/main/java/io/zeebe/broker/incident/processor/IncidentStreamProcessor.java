@@ -87,11 +87,11 @@ public class IncidentStreamProcessor {
                 new PayloadUpdatedProcessor())
             .onEvent(
                 ValueType.WORKFLOW_INSTANCE,
-                WorkflowInstanceIntent.ACTIVITY_TERMINATED,
+                WorkflowInstanceIntent.ELEMENT_TERMINATED,
                 new ActivityTerminatedProcessor())
             .onEvent(
                 ValueType.WORKFLOW_INSTANCE,
-                WorkflowInstanceIntent.ACTIVITY_READY,
+                WorkflowInstanceIntent.ELEMENT_READY,
                 activityRewrittenProcessor)
             .onEvent(
                 ValueType.WORKFLOW_INSTANCE,
@@ -99,11 +99,11 @@ public class IncidentStreamProcessor {
                 activityRewrittenProcessor)
             .onEvent(
                 ValueType.WORKFLOW_INSTANCE,
-                WorkflowInstanceIntent.ACTIVITY_COMPLETING,
+                WorkflowInstanceIntent.ELEMENT_COMPLETING,
                 activityRewrittenProcessor)
             .onEvent(
                 ValueType.WORKFLOW_INSTANCE,
-                WorkflowInstanceIntent.ACTIVITY_ACTIVATED,
+                WorkflowInstanceIntent.ELEMENT_ACTIVATED,
                 activityIncidentResolvedProcessor)
             .onEvent(
                 ValueType.WORKFLOW_INSTANCE,
@@ -111,7 +111,7 @@ public class IncidentStreamProcessor {
                 activityIncidentResolvedProcessor)
             .onEvent(
                 ValueType.WORKFLOW_INSTANCE,
-                WorkflowInstanceIntent.ACTIVITY_COMPLETED,
+                WorkflowInstanceIntent.ELEMENT_COMPLETED,
                 activityIncidentResolvedProcessor);
 
     // job events

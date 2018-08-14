@@ -198,7 +198,7 @@ public class UpdatePayloadTest {
         testClient.createWorkflowInstance("wf", asMsgPack("id", "123"));
 
     final SubscribedRecord catchEventEntered =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.CATCH_EVENT_ENTERED);
+        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
     updatePayload(
@@ -213,7 +213,7 @@ public class UpdatePayloadTest {
 
     // then
     final SubscribedRecord catchEventOccurred =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.CATCH_EVENT_OCCURRED);
+        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     final byte[] payload = (byte[]) catchEventOccurred.value().get("payload");
     assertThat(MSGPACK_MAPPER.readTree(payload))
@@ -278,7 +278,7 @@ public class UpdatePayloadTest {
     waitForActivityCompletedEvent();
     testClient.completeJobOfType("task-2");
 
-    waitForWorkflowInstanceCompletedEvent();
+    testClient.receiveElementInState("process", WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     // when
     final ExecuteCommandResponse response =
@@ -303,16 +303,12 @@ public class UpdatePayloadTest {
     assertThat(rejection).isNotNull();
   }
 
-  private void waitForWorkflowInstanceCompletedEvent() {
-    testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.COMPLETED);
-  }
-
   private SubscribedRecord waitForActivityCompletedEvent() {
-    return testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+    return testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
   }
 
   private SubscribedRecord waitForActivityActivatedEvent() {
-    return testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED);
+    return testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
   }
 
   private ExecuteCommandResponse updatePayload(

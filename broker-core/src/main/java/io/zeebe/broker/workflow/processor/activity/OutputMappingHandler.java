@@ -22,9 +22,7 @@ import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.EMPTY_PAYLOAD
 import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
-import io.zeebe.broker.workflow.map.ActivityInstanceMap;
-import io.zeebe.broker.workflow.map.PayloadCache;
-import io.zeebe.broker.workflow.map.WorkflowInstanceIndex;
+import io.zeebe.broker.workflow.index.ElementInstance;
 import io.zeebe.broker.workflow.model.ExecutableFlowNode;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
@@ -38,19 +36,7 @@ import org.agrona.MutableDirectBuffer;
 
 public class OutputMappingHandler implements BpmnStepHandler<ExecutableFlowNode> {
 
-  private final PayloadCache payloadCache;
-  private final WorkflowInstanceIndex workflowInstanceIndex;
-  private final ActivityInstanceMap activityInstanceMap;
   private final MappingProcessor payloadMappingProcessor = new MappingProcessor(4096);
-
-  public OutputMappingHandler(
-      PayloadCache payloadCache,
-      WorkflowInstanceIndex workflowInstanceIndex,
-      ActivityInstanceMap activityInstanceMap) {
-    this.payloadCache = payloadCache;
-    this.workflowInstanceIndex = workflowInstanceIndex;
-    this.activityInstanceMap = activityInstanceMap;
-  }
 
   @Override
   public void handle(BpmnStepContext<ExecutableFlowNode> context) {
@@ -58,9 +44,10 @@ public class OutputMappingHandler implements BpmnStepHandler<ExecutableFlowNode>
     final TypedRecord<WorkflowInstanceRecord> record = context.getRecord();
     final WorkflowInstanceRecord activityEvent = record.getValue();
     final ExecutableFlowNode element = context.getElement();
-    final long scopeInstanceKey = activityEvent.getScopeInstanceKey();
 
-    DirectBuffer scopeInstancePayload = payloadCache.getPayload(scopeInstanceKey);
+    final ElementInstance flowScopeInstance = context.getFlowScopeInstance();
+
+    DirectBuffer scopeInstancePayload = flowScopeInstance.getValue().getPayload();
 
     final ZeebeOutputBehavior outputBehavior = element.getOutputBehavior();
 
@@ -91,15 +78,7 @@ public class OutputMappingHandler implements BpmnStepHandler<ExecutableFlowNode>
       context
           .getStreamWriter()
           .writeFollowUpEvent(
-              record.getKey(), WorkflowInstanceIntent.ACTIVITY_COMPLETED, activityEvent);
-
-      workflowInstanceIndex
-          .get(record.getValue().getWorkflowInstanceKey())
-          .setActivityInstanceKey(-1L)
-          .write();
-
-      activityInstanceMap.remove(record.getKey());
-      payloadCache.remove(scopeInstanceKey);
+              record.getKey(), WorkflowInstanceIntent.ELEMENT_COMPLETED, activityEvent);
     } else {
       context.raiseIncident(ErrorType.IO_MAPPING_ERROR, mappingException.getMessage());
     }
