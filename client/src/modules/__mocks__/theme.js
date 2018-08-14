@@ -1,1 +1,1 @@
-export {Provider, Consumer, themed} from '../Theme';
+export {Provider, Consumer, themed} from '../theme';
