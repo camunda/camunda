@@ -68,6 +68,10 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
     createData(workflowId);
 
+    getStatisticsAndAssert(workflowId);
+  }
+
+  private void getStatisticsAndAssert(String workflowId) throws Exception {
     MockHttpServletRequestBuilder request = get(getQueryURL(workflowId));
 
     MvcResult mvcResult = mockMvc.perform(request)
@@ -93,6 +97,18 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     assertThat(activityStatisticsDtos).filteredOn(ai -> ai.getActivityId().equals("end")).allMatch(ai->
       ai.getActiveCount().equals(0L) && ai.getCanceledCount().equals(0L) && ai.getFinishedCount().equals(2L) && ai.getIncidentsCount().equals(0L)
     );
+  }
+
+  @Test
+  public void testTwoWorkflowsStatistics() throws Exception {
+    String workflowId1 = "demoProcess";
+    String workflowId2 = "sampleProcess";
+
+    createData(workflowId1);
+    createData(workflowId2);
+
+    getStatisticsAndAssert(workflowId1);
+    getStatisticsAndAssert(workflowId2);
   }
 
 
