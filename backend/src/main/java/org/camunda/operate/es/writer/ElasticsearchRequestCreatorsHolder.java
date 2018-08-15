@@ -4,9 +4,11 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import org.camunda.operate.entities.ActivityInstanceEntity;
+import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.entities.EventSourceType;
 import org.camunda.operate.entities.IncidentEntity;
+import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.WorkflowEntity;
@@ -109,16 +111,29 @@ public class ElasticsearchRequestCreatorsHolder {
         String script =
             "boolean f = false;" +
             "ctx._source.position = params.position; " +
+            //search for incident
             "for (int j = 0; j < ctx._source.incidents.size(); j++) {" +
               "if (ctx._source.incidents[j].id == params.incident.id) {" +
+              //update state of the incident
                 "ctx._source.incidents[j].state = params.incident.state;" +
                 "f = true;" +
                 "break;" +
               "}" +
             "}" +
             "if (!f) {" +
-              "ctx._source.incidents.add(params.incident);"
-                +
+              //add incident if not found
+              "ctx._source.incidents.add(params.incident);" +
+            "}" +
+
+            //search for activity instance
+            "for (int j = 0; j < ctx._source.activities.size(); j++) {" +
+              "if (ctx._source.activities[j].id == params.incident.activityInstanceId) {" +
+                "if (params.incident.state == '" + IncidentState.ACTIVE.toString() + "') {" +
+                  "ctx._source.activities[j].state = '" + ActivityState.INCIDENT.toString() + "'" +
+                "} else {" +
+                  "ctx._source.activities[j].state = '" + ActivityState.ACTIVE.toString() + "'" +
+                "}" +
+              "}" +
             "}";
 
         Script updateScript = new Script(

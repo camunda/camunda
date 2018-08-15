@@ -25,6 +25,8 @@ public class ActivityInstanceEntity extends OperateEntity {
 
   private ActivityState state;
 
+  private ActivityType type;
+
   private String workflowInstanceId;
 
   private long position;
@@ -59,6 +61,14 @@ public class ActivityInstanceEntity extends OperateEntity {
 
   public void setState(ActivityState state) {
     this.state = state;
+  }
+
+  public ActivityType getType() {
+    return type;
+  }
+
+  public void setType(ActivityType type) {
+    this.type = type;
   }
 
   @JsonIgnore
@@ -100,6 +110,8 @@ public class ActivityInstanceEntity extends OperateEntity {
       return false;
     if (state != that.state)
       return false;
+    if (type != that.type)
+      return false;
     return workflowInstanceId != null ? workflowInstanceId.equals(that.workflowInstanceId) : that.workflowInstanceId == null;
   }
 
@@ -110,6 +122,7 @@ public class ActivityInstanceEntity extends OperateEntity {
     result = 31 * result + (startDate != null ? startDate.hashCode() : 0);
     result = 31 * result + (endDate != null ? endDate.hashCode() : 0);
     result = 31 * result + (state != null ? state.hashCode() : 0);
+    result = 31 * result + (type != null ? type.hashCode() : 0);
     result = 31 * result + (workflowInstanceId != null ? workflowInstanceId.hashCode() : 0);
     result = 31 * result + (int) (position ^ (position >>> 32));
     return result;

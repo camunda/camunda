@@ -12,10 +12,13 @@
  */
 package org.camunda.operate.rest;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import org.camunda.operate.entities.WorkflowEntity;
+import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.reader.WorkflowReader;
+import org.camunda.operate.rest.dto.ActivityStatisticsDto;
 import org.camunda.operate.rest.dto.WorkflowDto;
 import org.camunda.operate.rest.dto.WorkflowGroupDto;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +43,9 @@ public class WorkflowRestService {
   @Autowired
   protected WorkflowReader workflowReader;
 
+  @Autowired
+  protected WorkflowInstanceReader workflowInstanceReader;
+
   public static final String WORKFLOW_URL = "/api/workflows";
 
   @ApiOperation("Get workflow BPMN XML")
@@ -60,6 +66,12 @@ public class WorkflowRestService {
   public List<WorkflowGroupDto> getWorkflowsGrouped() {
     final Map<String, List<WorkflowEntity>> workflowsGrouped = workflowReader.getWorkflowsGrouped();
     return WorkflowGroupDto.createFrom(workflowsGrouped);
+  }
+
+  @ApiOperation("Get activity instance statistics for given workflow")
+  @GetMapping(path = "/{id}/statistics")
+  public Collection<ActivityStatisticsDto> getStatistics(@PathVariable("id") String workflowId) {
+    return workflowInstanceReader.getStatistics(workflowId);
   }
 
 }

@@ -3,12 +3,17 @@ package org.camunda.operate.es.reader;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.camunda.operate.entities.ActivityState;
+import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.types.WorkflowInstanceType;
 import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.rest.dto.ActivityStatisticsDto;
 import org.camunda.operate.rest.dto.SortingDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
@@ -24,10 +29,14 @@ import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.ConstantScoreQueryBuilder;
 import org.elasticsearch.index.query.NestedQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
-import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.aggregations.bucket.filter.Filter;
+import org.elasticsearch.search.aggregations.bucket.nested.Nested;
+import org.elasticsearch.search.aggregations.bucket.nested.NestedAggregationBuilder;
+import org.elasticsearch.search.aggregations.bucket.nested.ReverseNested;
+import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -51,11 +60,16 @@ import static org.camunda.operate.util.ElasticsearchUtil.createMatchNoneQuery;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithOr;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.constantScoreQuery;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.reverseNested;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 
 @Component
 public class WorkflowInstanceReader {
@@ -67,6 +81,7 @@ public class WorkflowInstanceReader {
   private static final String INCIDENT_ERRORMSG_TERM = String.format("%s.%s", INCIDENTS, ERROR_MSG);
   private static final String ACTIVE_ACTIVITY = ActivityState.ACTIVE.toString();
   private static final String ACTIVITY_STATE_TERM = String.format("%s.%s", ACTIVITIES, STATE);
+  private static final String ACTIVITY_TYPE_TERM = String.format("%s.%s", ACTIVITIES, WorkflowInstanceType.TYPE);
   private static final String ACTIVITY_ACTIVITYID_TERM = String.format("%s.%s", ACTIVITIES, ACTIVITY_ID);
   private static final String OPERATION_STATE_TERM = String.format("%s.%s", OPERATIONS, STATE);
   private static final String SCHEDULED_OPERATION = SCHEDULED.toString();
@@ -113,7 +128,7 @@ public class WorkflowInstanceReader {
 
     final QueryBuilder query = createRequestQuery(request);
 
-    ConstantScoreQueryBuilder constantScoreQuery = QueryBuilders.constantScoreQuery(query);
+    ConstantScoreQueryBuilder constantScoreQuery = constantScoreQuery(query);
 
     logger.debug("Workflow instance search request: \n{}", constantScoreQuery.toString());
 
@@ -375,7 +390,7 @@ public class WorkflowInstanceReader {
     final QueryBuilder operationsQuery = joinWithOr(scheduledOperationsQuery, joinWithAnd(lockedOperationsQuery, lockExpirationTimeQuery));
     final NestedQueryBuilder nestedQuery = nestedQuery(OPERATIONS, operationsQuery, None);
 
-    ConstantScoreQueryBuilder constantScoreQuery = QueryBuilders.constantScoreQuery(nestedQuery);
+    ConstantScoreQueryBuilder constantScoreQuery = constantScoreQuery(nestedQuery);
 
     final SearchRequestBuilder searchRequestBuilder = esClient.prepareSearch(workflowInstanceType.getType());
     searchRequestBuilder.setQuery(constantScoreQuery);
@@ -386,6 +401,123 @@ public class WorkflowInstanceReader {
       .get();
 
     return ElasticsearchUtil.mapSearchHits(response.getHits().getHits(), objectMapper);
+  }
+
+  public Collection<ActivityStatisticsDto> getStatistics(String workflowId) {
+
+    Map<String, ActivityStatisticsDto> statisticsMap = new HashMap<>();
+
+    getStatisticsForActivities(workflowId, WorkflowInstanceState.ACTIVE, ActivityState.ACTIVE, (s, v) -> s.setActiveCount(v), statisticsMap);
+    getStatisticsForActivities(workflowId, WorkflowInstanceState.CANCELED, ActivityState.TERMINATED, (s, v) -> s.setCanceledCount(v), statisticsMap);
+    getStatisticsForActivities(workflowId, WorkflowInstanceState.ACTIVE, ActivityState.INCIDENT, (s, v) -> s.setIncidentsCount(v), statisticsMap);
+    getStatisticsForFinishedActivities(workflowId, (s, v) -> s.setFinishedCount(v), statisticsMap);
+
+    return statisticsMap.values();
+  }
+
+  /**
+   * Attention! This method updates the map, passed as a parameter.
+   */
+  private void getStatisticsForActivities(String workflowId, WorkflowInstanceState workflowInstanceState, ActivityState activityState,
+        StatisticsMapEntryUpdater entryUpdater,
+        Map<String, ActivityStatisticsDto> statisticsMap) {
+    final QueryBuilder workflowIdQ = termQuery(WorkflowInstanceType.WORKFLOW_ID, workflowId);
+    final QueryBuilder workflowInstanceActiveQ = termQuery(WorkflowInstanceType.STATE, workflowInstanceState.toString());
+    final QueryBuilder query = constantScoreQuery(joinWithAnd(workflowIdQ, workflowInstanceActiveQ));
+
+    final String activitiesAggName = "activities";
+    final String activeActivitiesAggName = "active_activities";
+    final String uniqueActivitiesAggName = "unique_activities";
+    final String activityToWorkflowAggName = "activity_to_workflow";
+    final NestedAggregationBuilder agg =
+      nested(activitiesAggName, WorkflowInstanceType.ACTIVITIES).subAggregation(
+        filter(activeActivitiesAggName, termQuery(ACTIVITY_STATE_TERM, activityState.toString()))
+          .subAggregation(terms(uniqueActivitiesAggName).field(ACTIVITY_ACTIVITYID_TERM)
+             .size(100) //TODO
+             .subAggregation(reverseNested(activityToWorkflowAggName))    //we need this to count workflow instances, not the activity instances
+            )
+            );
+
+    final SearchRequestBuilder searchRequestBuilder =
+      esClient.prepareSearch(workflowInstanceType.getType())
+        .setSize(0)
+        .setQuery(query)
+        .addAggregation(agg);
+
+    logger.debug("Active activities statistics request: \n{}\n and aggregation: \n{}", query.toString(), agg.toString());
+
+    final SearchResponse searchResponse = searchRequestBuilder.get();
+
+    ((Terms)
+      ((Filter)
+        ((Nested)searchResponse.getAggregations().get(activitiesAggName))
+        .getAggregations().get(activeActivitiesAggName))
+      .getAggregations().get(uniqueActivitiesAggName))
+    .getBuckets().stream().forEach(b -> {
+      String activityId = b.getKeyAsString();
+      final ReverseNested aggregation = b.getAggregations().get(activityToWorkflowAggName);
+      final long docCount = aggregation.getDocCount();  //number of workflow instances
+      addToMap(statisticsMap, activityId, docCount, entryUpdater);
+    });
+
+  }
+
+  /**
+   * Attention! This method updates the map, passed as a parameter.
+   */
+  private void getStatisticsForFinishedActivities(String workflowId, StatisticsMapEntryUpdater entryUpdater, Map<String, ActivityStatisticsDto> statisticsMap) {
+    final QueryBuilder workflowIdQ = termQuery(WorkflowInstanceType.WORKFLOW_ID, workflowId);
+    final QueryBuilder workflowInstanceActiveQ = termQuery(WorkflowInstanceType.STATE, WorkflowInstanceState.COMPLETED.toString());
+    final QueryBuilder query = constantScoreQuery(joinWithAnd(workflowIdQ, workflowInstanceActiveQ));
+
+    final String activitiesAggName = "activities";
+    final String activeActivitiesAggName = "active_activities";
+    final String uniqueActivitiesAggName = "unique_activities";
+    final String activityToWorkflowAggName = "activity_to_workflow";
+    final QueryBuilder completedEndEventsQ = joinWithAnd(termQuery(ACTIVITY_TYPE_TERM, ActivityType.END_EVENT.toString()), termQuery(ACTIVITY_STATE_TERM, ActivityState.COMPLETED.toString()));
+    final NestedAggregationBuilder agg =
+      nested(activitiesAggName, WorkflowInstanceType.ACTIVITIES).subAggregation(
+        filter(activeActivitiesAggName, completedEndEventsQ)
+          .subAggregation(terms(uniqueActivitiesAggName).field(ACTIVITY_ACTIVITYID_TERM)
+            .size(100) //TODO
+            .subAggregation(reverseNested(activityToWorkflowAggName))    //we need this to count workflow instances, not the activity instances
+          )
+      );
+
+    final SearchRequestBuilder searchRequestBuilder =
+      esClient.prepareSearch(workflowInstanceType.getType())
+        .setSize(0)
+        .setQuery(query)
+        .addAggregation(agg);
+
+    logger.debug("Active activities statistics request: \n{}\n and aggregation: \n{}", query.toString(), agg.toString());
+
+    final SearchResponse searchResponse = searchRequestBuilder.get();
+
+    ((Terms)
+      ((Filter)
+        ((Nested)searchResponse.getAggregations().get(activitiesAggName))
+          .getAggregations().get(activeActivitiesAggName))
+        .getAggregations().get(uniqueActivitiesAggName))
+      .getBuckets().stream().forEach(b -> {
+      String activityId = b.getKeyAsString();
+      final ReverseNested aggregation = b.getAggregations().get(activityToWorkflowAggName);
+      final long docCount = aggregation.getDocCount();  //number of workflow instances
+      addToMap(statisticsMap, activityId, docCount, entryUpdater);
+    });
+
+  }
+
+  private void addToMap(Map<String, ActivityStatisticsDto> statisticsMap, String activityId, Long docCount, StatisticsMapEntryUpdater entryUpdater) {
+    if (statisticsMap.get(activityId) == null) {
+      statisticsMap.put(activityId, new ActivityStatisticsDto(activityId));
+    }
+    entryUpdater.updateMapEntry(statisticsMap.get(activityId), docCount);
+  }
+
+  @FunctionalInterface
+  interface StatisticsMapEntryUpdater {
+    void updateMapEntry(ActivityStatisticsDto statistics, Long value);
   }
 
 }

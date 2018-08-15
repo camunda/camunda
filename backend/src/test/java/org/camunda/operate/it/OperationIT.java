@@ -301,7 +301,7 @@ public class OperationIT extends OperateIntegrationTest {
     operationExecutor.executeOneBatch();
 
     //then
-    //the state of operation is FAILED, as there are no appropriate incidents
+    //the state of operation is FAILED, as the instance is in wrong state
     WorkflowInstanceResponseDto workflowInstances = getWorkflowInstances(workflowInstanceQuery);
     assertThat(workflowInstances.getWorkflowInstances()).hasSize(1);
     assertThat(workflowInstances.getWorkflowInstances().get(0).getOperations()).hasSize(1);

@@ -9,6 +9,7 @@ import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
+import org.camunda.operate.es.types.WorkflowInstanceType;
 import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
 import org.camunda.operate.util.ZeebeTestRule;
@@ -92,6 +93,9 @@ public class WorkflowInstanceIT extends OperateIntegrationTest {
     assertThat(workflowInstanceEntity.getIncidents().size()).isEqualTo(1);
     IncidentEntity incidentEntity = workflowInstanceEntity.getIncidents().get(0);
     assertThat(incidentEntity.getState()).isEqualTo(IncidentState.DELETED);
+    assertThat(workflowInstanceEntity.getActivities()).filteredOn(ai -> ai.getId().equals(incidentEntity.getActivityInstanceId())).extracting(
+      WorkflowInstanceType.STATE).containsOnly(ActivityState.ACTIVE);
+
   }
 
   @Test
@@ -124,7 +128,7 @@ public class WorkflowInstanceIT extends OperateIntegrationTest {
     //assert activity fields
     assertThat(workflowInstanceEntity.getActivities().size()).isEqualTo(2);
     assertStartActivityCompleted(workflowInstanceEntity.getActivities().get(0));
-    assertActivityIsActive(workflowInstanceEntity.getActivities().get(1), "taskA");
+    assertActivityIsInIncidentState(workflowInstanceEntity.getActivities().get(1), "taskA");
 
     zeebeUtil.updatePayload(topicName, workflowInstanceId, "{\"foo\":\"b\"}", processId, workflowId);
     elasticsearchTestRule.processAllEvents(5);
@@ -176,6 +180,14 @@ public class WorkflowInstanceIT extends OperateIntegrationTest {
   private void assertActivityIsActive(ActivityInstanceEntity activity, String activityId) {
     assertThat(activity.getActivityId()).isEqualTo(activityId);
     assertThat(activity.getState()).isEqualTo(ActivityState.ACTIVE);
+    assertThat(activity.getStartDate()).isAfterOrEqualTo(testStartTime);
+    assertThat(activity.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
+    assertThat(activity.getEndDate()).isNull();
+  }
+
+  private void assertActivityIsInIncidentState(ActivityInstanceEntity activity, String activityId) {
+    assertThat(activity.getActivityId()).isEqualTo(activityId);
+    assertThat(activity.getState()).isEqualTo(ActivityState.INCIDENT);
     assertThat(activity.getStartDate()).isAfterOrEqualTo(testStartTime);
     assertThat(activity.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
     assertThat(activity.getEndDate()).isNull();

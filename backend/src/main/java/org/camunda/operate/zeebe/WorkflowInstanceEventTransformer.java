@@ -4,6 +4,7 @@ import java.util.HashSet;
 import java.util.Set;
 import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.ActivityState;
+import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
@@ -37,30 +38,36 @@ public class WorkflowInstanceEventTransformer extends AbstractEventTransformer i
 
   private static final Logger logger = LoggerFactory.getLogger(WorkflowInstanceEventTransformer.class);
 
+  //these event states end up in changes in workflow instance entity
   private static final Set<io.zeebe.client.api.events.WorkflowInstanceState> WORKFLOW_INSTANCE_STATES = new HashSet<>();
+  //these event states end up in changes in activity instance entity
   private static final Set<io.zeebe.client.api.events.WorkflowInstanceState> ACTIVITY_INSTANCE_STATES = new HashSet<>();
-  private static final Set<io.zeebe.client.api.events.WorkflowInstanceState> WORKFLOW_INSTANCE_END_STATES = new HashSet<>();
-  private static final Set<io.zeebe.client.api.events.WorkflowInstanceState> ACTIVITY_INSTANCE_END_STATES = new HashSet<>();
+  //these event states mean that workflow instance was finished
+  private static final Set<io.zeebe.client.api.events.WorkflowInstanceState> WORKFLOW_INSTANCE_FINISH_STATES = new HashSet<>();
+  //these event states mean that activity instance was finished
+  private static final Set<io.zeebe.client.api.events.WorkflowInstanceState> ACTIVITY_INSTANCE_FINISH_STATES = new HashSet<>();
+  //these event states mean that activities startDate and endDate should be recorded at once
   private static final Set<io.zeebe.client.api.events.WorkflowInstanceState> ACTIVITY_INSTANCE_START_END_STATES = new HashSet<>();
 
   static {
-    WORKFLOW_INSTANCE_END_STATES.add(COMPLETED);
-    WORKFLOW_INSTANCE_END_STATES.add(CANCELED);
+    WORKFLOW_INSTANCE_FINISH_STATES.add(COMPLETED);
+    WORKFLOW_INSTANCE_FINISH_STATES.add(CANCELED);
 
-    ACTIVITY_INSTANCE_END_STATES.add(ACTIVITY_COMPLETED);
-    ACTIVITY_INSTANCE_END_STATES.add(ACTIVITY_TERMINATED);
+    ACTIVITY_INSTANCE_FINISH_STATES.add(ACTIVITY_COMPLETED);
+    ACTIVITY_INSTANCE_FINISH_STATES.add(ACTIVITY_TERMINATED);
 
     ACTIVITY_INSTANCE_START_END_STATES.add(START_EVENT_OCCURRED);
     ACTIVITY_INSTANCE_START_END_STATES.add(END_EVENT_OCCURRED);
+    //TODO not clear what happens, when incident of type CONDITION_ERROR happens
     ACTIVITY_INSTANCE_START_END_STATES.add(GATEWAY_ACTIVATED);
 
     WORKFLOW_INSTANCE_STATES.add(CREATED);
-    WORKFLOW_INSTANCE_STATES.addAll(WORKFLOW_INSTANCE_END_STATES);
+    WORKFLOW_INSTANCE_STATES.addAll(WORKFLOW_INSTANCE_FINISH_STATES);
 
     ACTIVITY_INSTANCE_STATES.add(ACTIVITY_READY);
     ACTIVITY_INSTANCE_STATES.add(ACTIVITY_ACTIVATED);
     ACTIVITY_INSTANCE_STATES.add(ACTIVITY_COMPLETING);
-    ACTIVITY_INSTANCE_STATES.addAll(ACTIVITY_INSTANCE_END_STATES);
+    ACTIVITY_INSTANCE_STATES.addAll(ACTIVITY_INSTANCE_FINISH_STATES);
     ACTIVITY_INSTANCE_STATES.addAll(ACTIVITY_INSTANCE_START_END_STATES);
   }
 
@@ -120,7 +127,8 @@ public class WorkflowInstanceEventTransformer extends AbstractEventTransformer i
     activityInstanceEntity.setId(String.valueOf(event.getKey()));
     activityInstanceEntity.setActivityId(event.getActivityId());
     activityInstanceEntity.setWorkflowInstanceId(String.valueOf(event.getWorkflowInstanceKey()));
-    if (ACTIVITY_INSTANCE_END_STATES.contains(event.getState())) {
+
+    if (ACTIVITY_INSTANCE_FINISH_STATES.contains(event.getState())) {
       activityInstanceEntity.setEndDate(DateUtil.toOffsetDateTime(event.getMetadata().getTimestamp()));
       if (event.getState().equals(ACTIVITY_TERMINATED)) {
         activityInstanceEntity.setState(ActivityState.TERMINATED);
@@ -134,6 +142,18 @@ public class WorkflowInstanceEventTransformer extends AbstractEventTransformer i
     } else {
       activityInstanceEntity.setStartDate(DateUtil.toOffsetDateTime(event.getMetadata().getTimestamp()));
       activityInstanceEntity.setState(ActivityState.ACTIVE);
+    }
+
+    switch (event.getState()) {
+    case START_EVENT_OCCURRED:
+      activityInstanceEntity.setType(ActivityType.START_EVENT);
+      break;
+    case END_EVENT_OCCURRED:
+      activityInstanceEntity.setType(ActivityType.END_EVENT);
+      break;
+    case GATEWAY_ACTIVATED:
+      activityInstanceEntity.setType(ActivityType.GATEWAY);
+      break;
     }
 
     updateMetadataFields(activityInstanceEntity, event);
@@ -154,7 +174,7 @@ public class WorkflowInstanceEventTransformer extends AbstractEventTransformer i
     entity.setId(String.valueOf(event.getWorkflowInstanceKey()));
     entity.setWorkflowId(String.valueOf(event.getWorkflowKey()));
     entity.setBusinessKey(event.getBpmnProcessId());
-    if (WORKFLOW_INSTANCE_END_STATES.contains(event.getState())) {
+    if (WORKFLOW_INSTANCE_FINISH_STATES.contains(event.getState())) {
       entity.setEndDate(DateUtil.toOffsetDateTime(event.getMetadata().getTimestamp()));
       if (event.getState().equals(CANCELED)) {
         entity.setState(WorkflowInstanceState.CANCELED);
