@@ -68,10 +68,4 @@ public class WorkflowRestService {
     return WorkflowGroupDto.createFrom(workflowsGrouped);
   }
 
-  @ApiOperation("Get activity instance statistics for given workflow")
-  @GetMapping(path = "/{id}/statistics")
-  public Collection<ActivityStatisticsDto> getStatistics(@PathVariable("id") String workflowId) {
-    return workflowInstanceReader.getStatistics(workflowId);
-  }
-
 }

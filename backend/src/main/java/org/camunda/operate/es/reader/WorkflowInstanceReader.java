@@ -403,27 +403,32 @@ public class WorkflowInstanceReader {
     return ElasticsearchUtil.mapSearchHits(response.getHits().getHits(), objectMapper);
   }
 
-  public Collection<ActivityStatisticsDto> getStatistics(String workflowId) {
+  public Collection<ActivityStatisticsDto> getStatistics(WorkflowInstanceQueryDto query) {
 
     Map<String, ActivityStatisticsDto> statisticsMap = new HashMap<>();
 
-    getStatisticsForActivities(workflowId, WorkflowInstanceState.ACTIVE, ActivityState.ACTIVE, (s, v) -> s.setActiveCount(v), statisticsMap);
-    getStatisticsForActivities(workflowId, WorkflowInstanceState.CANCELED, ActivityState.TERMINATED, (s, v) -> s.setCanceledCount(v), statisticsMap);
-    getStatisticsForActivities(workflowId, WorkflowInstanceState.ACTIVE, ActivityState.INCIDENT, (s, v) -> s.setIncidentsCount(v), statisticsMap);
-    getStatisticsForFinishedActivities(workflowId, (s, v) -> s.setFinishedCount(v), statisticsMap);
+    if (query.isActive()) {
+      getStatisticsForActivities(query, WorkflowInstanceState.ACTIVE, ActivityState.ACTIVE, (s, v) -> s.setActiveCount(v), statisticsMap);
+    }
+    if (query.isCanceled()) {
+      getStatisticsForActivities(query, WorkflowInstanceState.CANCELED, ActivityState.TERMINATED, (s, v) -> s.setCanceledCount(v), statisticsMap);
+    }
+    if (query.isIncidents()) {
+      getStatisticsForActivities(query, WorkflowInstanceState.ACTIVE, ActivityState.INCIDENT, (s, v) -> s.setIncidentsCount(v), statisticsMap);
+    }
+    getStatisticsForFinishedActivities(query, (s, v) -> s.setFinishedCount(v), statisticsMap);
 
     return statisticsMap.values();
   }
 
-  /**
-   * Attention! This method updates the map, passed as a parameter.
-   */
-  private void getStatisticsForActivities(String workflowId, WorkflowInstanceState workflowInstanceState, ActivityState activityState,
+    /**
+     * Attention! This method updates the map, passed as a parameter.
+     */
+  private void getStatisticsForActivities(WorkflowInstanceQueryDto query, WorkflowInstanceState workflowInstanceState, ActivityState activityState,
         StatisticsMapEntryUpdater entryUpdater,
         Map<String, ActivityStatisticsDto> statisticsMap) {
-    final QueryBuilder workflowIdQ = termQuery(WorkflowInstanceType.WORKFLOW_ID, workflowId);
-    final QueryBuilder workflowInstanceActiveQ = termQuery(WorkflowInstanceType.STATE, workflowInstanceState.toString());
-    final QueryBuilder query = constantScoreQuery(joinWithAnd(workflowIdQ, workflowInstanceActiveQ));
+
+    final QueryBuilder q = constantScoreQuery(createQueryFragment(query));
 
     final String activitiesAggName = "activities";
     final String activeActivitiesAggName = "active_activities";
@@ -441,7 +446,7 @@ public class WorkflowInstanceReader {
     final SearchRequestBuilder searchRequestBuilder =
       esClient.prepareSearch(workflowInstanceType.getType())
         .setSize(0)
-        .setQuery(query)
+        .setQuery(q)
         .addAggregation(agg);
 
     logger.debug("Active activities statistics request: \n{}\n and aggregation: \n{}", query.toString(), agg.toString());
@@ -465,10 +470,9 @@ public class WorkflowInstanceReader {
   /**
    * Attention! This method updates the map, passed as a parameter.
    */
-  private void getStatisticsForFinishedActivities(String workflowId, StatisticsMapEntryUpdater entryUpdater, Map<String, ActivityStatisticsDto> statisticsMap) {
-    final QueryBuilder workflowIdQ = termQuery(WorkflowInstanceType.WORKFLOW_ID, workflowId);
-    final QueryBuilder workflowInstanceActiveQ = termQuery(WorkflowInstanceType.STATE, WorkflowInstanceState.COMPLETED.toString());
-    final QueryBuilder query = constantScoreQuery(joinWithAnd(workflowIdQ, workflowInstanceActiveQ));
+  private void getStatisticsForFinishedActivities(WorkflowInstanceQueryDto query, StatisticsMapEntryUpdater entryUpdater, Map<String, ActivityStatisticsDto> statisticsMap) {
+
+    final QueryBuilder q = constantScoreQuery(createQueryFragment(query));
 
     final String activitiesAggName = "activities";
     final String activeActivitiesAggName = "active_activities";
@@ -487,7 +491,7 @@ public class WorkflowInstanceReader {
     final SearchRequestBuilder searchRequestBuilder =
       esClient.prepareSearch(workflowInstanceType.getType())
         .setSize(0)
-        .setQuery(query)
+        .setQuery(q)
         .addAggregation(agg);
 
     logger.debug("Active activities statistics request: \n{}\n and aggregation: \n{}", query.toString(), agg.toString());

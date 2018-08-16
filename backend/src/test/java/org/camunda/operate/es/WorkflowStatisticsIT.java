@@ -14,6 +14,7 @@ package org.camunda.operate.es;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
 import java.util.UUID;
@@ -25,6 +26,8 @@ import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.rest.dto.ActivityStatisticsDto;
+import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
+import org.camunda.operate.rest.dto.WorkflowInstanceRequestDto;
 import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.MockMvcTestRule;
@@ -36,7 +39,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -45,7 +48,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
-  private static final String QUERY_WORKFLOW_STATISTICS_URL = "/api/workflows/%s/statistics";
+  private static final String QUERY_WORKFLOW_STATISTICS_URL = "/api/workflow-instances/statistics";
 
   private Random random = new Random();
 
@@ -68,18 +71,121 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
     createData(workflowId);
 
-    getStatisticsAndAssert(workflowId);
+    getStatisticsAndAssert(createGetAllWorkflowInstancesQuery(workflowId));
   }
 
-  private void getStatisticsAndAssert(String workflowId) throws Exception {
-    MockHttpServletRequestBuilder request = get(getQueryURL(workflowId));
+  @Test
+  public void testStatisticsWithQuery() throws Exception {
+    String workflowId = "demoProcess";
+
+    createData(workflowId);
+
+    final WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(workflowId);
+    query.getQueries().get(0).setActivityId("taskA");
+
+    final List<ActivityStatisticsDto> activityStatisticsDtos = getActivityStatistics(query);
+    assertThat(activityStatisticsDtos).hasSize(1);
+    assertThat(activityStatisticsDtos).filteredOn(ai -> ai.getActivityId().equals("taskA")).allMatch(ai->
+      ai.getActiveCount().equals(2L) && ai.getCanceledCount().equals(0L) && ai.getFinishedCount().equals(0L) && ai.getIncidentsCount().equals(0L)
+    );
+  }
+
+  @Test
+  public void testFailStatisticsWithNoWorkflowId() throws Exception {
+    String workflowId = "demoProcess";
+
+    createData(workflowId);
+
+    final WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(workflowId);
+    query.getQueries().get(0).setWorkflowIds(new ArrayList<>());
+
+    MockHttpServletRequestBuilder request = post(QUERY_WORKFLOW_STATISTICS_URL)
+      .content(mockMvcTestRule.json(query))
+      .contentType(mockMvcTestRule.getContentType());
 
     MvcResult mvcResult = mockMvc.perform(request)
-      .andExpect(status().isOk())
-      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
+      .andExpect(status().isBadRequest())
       .andReturn();
 
-    final List<ActivityStatisticsDto> activityStatisticsDtos = mockMvcTestRule.listFromResponse(mvcResult, ActivityStatisticsDto.class);
+    assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo("Exactly one workflowId must be specified in the request.");
+  }
+
+  @Test
+  public void testFailStatisticsWithMoreThanOneWorkflowId() throws Exception {
+    String workflowId = "demoProcess";
+
+    createData(workflowId);
+
+    final WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(workflowId);
+    query.getQueries().get(0).setWorkflowIds(Arrays.asList(workflowId, "otherWorkflowId"));
+
+    MockHttpServletRequestBuilder request = post(QUERY_WORKFLOW_STATISTICS_URL)
+      .content(mockMvcTestRule.json(query))
+      .contentType(mockMvcTestRule.getContentType());
+
+    MvcResult mvcResult = mockMvc.perform(request)
+      .andExpect(status().isBadRequest())
+      .andReturn();
+
+    assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo("Exactly one workflowId must be specified in the request.");
+  }
+
+  @Test
+  public void testFailStatisticsWithNoQuery() throws Exception {
+    String workflowId = "demoProcess";
+
+    createData(workflowId);
+
+    final WorkflowInstanceRequestDto query = new WorkflowInstanceRequestDto();
+
+    MockHttpServletRequestBuilder request = post(QUERY_WORKFLOW_STATISTICS_URL)
+      .content(mockMvcTestRule.json(query))
+      .contentType(mockMvcTestRule.getContentType());
+
+    MvcResult mvcResult = mockMvc.perform(request)
+      .andExpect(status().isBadRequest())
+      .andReturn();
+
+    assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo("Exactly one query must be specified in the request.");
+  }
+
+  @Test
+  public void testFailStatisticsWithMoreThanOneQuery() throws Exception {
+    String workflowId = "demoProcess";
+
+    createData(workflowId);
+
+    final WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(workflowId);
+    query.getQueries().add(new WorkflowInstanceQueryDto());
+
+
+    MockHttpServletRequestBuilder request = post(QUERY_WORKFLOW_STATISTICS_URL)
+      .content(mockMvcTestRule.json(query))
+      .contentType(mockMvcTestRule.getContentType());
+
+    MvcResult mvcResult = mockMvc.perform(request)
+      .andExpect(status().isBadRequest())
+      .andReturn();
+
+    assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo("Exactly one query must be specified in the request.");
+  }
+
+  private WorkflowInstanceRequestDto createGetAllWorkflowInstancesQuery(String workflowId) {
+    WorkflowInstanceQueryDto q = new WorkflowInstanceQueryDto();
+    q.setRunning(true);
+    q.setActive(true);
+    q.setIncidents(true);
+    q.setFinished(true);
+    q.setCompleted(true);
+    q.setCanceled(true);
+    q.setWorkflowIds(Arrays.asList(workflowId));
+    WorkflowInstanceRequestDto request = new WorkflowInstanceRequestDto();
+    request.getQueries().add(q);
+    return request;
+  }
+
+  private void getStatisticsAndAssert(WorkflowInstanceRequestDto query) throws Exception {
+    final List<ActivityStatisticsDto> activityStatisticsDtos = getActivityStatistics(query);
 
     assertThat(activityStatisticsDtos).hasSize(5);
     assertThat(activityStatisticsDtos).filteredOn(ai -> ai.getActivityId().equals("taskA")).allMatch(ai->
@@ -99,6 +205,19 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     );
   }
 
+  private List<ActivityStatisticsDto> getActivityStatistics(WorkflowInstanceRequestDto query) throws Exception {
+    MockHttpServletRequestBuilder request = post(QUERY_WORKFLOW_STATISTICS_URL)
+      .content(mockMvcTestRule.json(query))
+      .contentType(mockMvcTestRule.getContentType());
+
+    MvcResult mvcResult = mockMvc.perform(request)
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
+      .andReturn();
+
+    return mockMvcTestRule.listFromResponse(mvcResult, ActivityStatisticsDto.class);
+  }
+
   @Test
   public void testTwoWorkflowsStatistics() throws Exception {
     String workflowId1 = "demoProcess";
@@ -107,13 +226,8 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     createData(workflowId1);
     createData(workflowId2);
 
-    getStatisticsAndAssert(workflowId1);
-    getStatisticsAndAssert(workflowId2);
-  }
-
-
-  private String getQueryURL(String workflowId) {
-    return String.format(QUERY_WORKFLOW_STATISTICS_URL, workflowId);
+    getStatisticsAndAssert(createGetAllWorkflowInstancesQuery(workflowId1));
+    getStatisticsAndAssert(createGetAllWorkflowInstancesQuery(workflowId2));
   }
 
   /**

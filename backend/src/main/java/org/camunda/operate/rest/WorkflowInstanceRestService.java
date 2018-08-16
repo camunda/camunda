@@ -1,15 +1,20 @@
 package org.camunda.operate.rest;
 
+import java.util.Collection;
+import java.util.List;
 import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
 
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.writer.BatchOperationWriter;
 import org.camunda.operate.es.writer.PersistenceException;
+import org.camunda.operate.rest.dto.ActivityStatisticsDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceBatchOperationDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceDto;
+import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceRequestDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceResponseDto;
+import org.camunda.operate.rest.exception.InvalidRequestException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -42,10 +47,10 @@ public class WorkflowInstanceRestService {
   @ApiOperation("Query workflow instances by different parameters")
   @PostMapping
   public WorkflowInstanceResponseDto queryWorkflowInstances(
-      @RequestBody WorkflowInstanceRequestDto workflowInstanceQuery,
+      @RequestBody WorkflowInstanceRequestDto workflowInstanceRequest,
       @RequestParam("firstResult") Integer firstResult,
       @RequestParam("maxResults") Integer maxResults) {
-    return workflowInstanceReader.queryWorkflowInstances(workflowInstanceQuery, firstResult, maxResults);
+    return workflowInstanceReader.queryWorkflowInstances(workflowInstanceRequest, firstResult, maxResults);
   }
 
   @ApiOperation("Perform batch operation on selection (async)")
@@ -60,6 +65,20 @@ public class WorkflowInstanceRestService {
   public WorkflowInstanceDto queryWorkflowInstanceById(@PathVariable String id) {
     final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(id);
     return WorkflowInstanceDto.createFrom(workflowInstanceEntity);
+  }
+
+  @ApiOperation("Get activity instance statistics")
+  @PostMapping(path = "/statistics")
+  public Collection<ActivityStatisticsDto> getStatistics(@RequestBody WorkflowInstanceRequestDto workflowInstanceRequest) {
+    final List<WorkflowInstanceQueryDto> queries = workflowInstanceRequest.getQueries();
+    if (queries.size() != 1) {
+      throw new InvalidRequestException("Exactly one query must be specified in the request.");
+    }
+    final List<String> workflowIds = queries.get(0).getWorkflowIds();
+    if (workflowIds == null || workflowIds.size() != 1) {
+      throw new InvalidRequestException("Exactly one workflowId must be specified in the request.");
+    }
+    return workflowInstanceReader.getStatistics(queries.get(0));
   }
 
 }
