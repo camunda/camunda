@@ -130,7 +130,7 @@ public class BrokerReprocessingTest {
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
-  public ClientRule clientRule = new ClientRule();
+  public ClientRule clientRule = new ClientRule(brokerRule);
 
   public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
 
@@ -488,6 +488,7 @@ public class BrokerReprocessingTest {
             clientRule.getDefaultTopic() + "-" + clientRule.getDefaultPartition());
 
     final Raft raft = brokerRule.getService(serviceName);
+    final int raftPort = raft.getSocketAddress().port();
     waitUntil(() -> raft.getState() == RaftState.LEADER);
 
     raft.setTerm(testTerm);
@@ -502,7 +503,7 @@ public class BrokerReprocessingTest {
     assertThat(raftAfterRestart.getState()).isEqualTo(RaftState.LEADER);
     assertThat(raftAfterRestart.getTerm()).isGreaterThanOrEqualTo(9);
     assertThat(raftAfterRestart.getMemberSize()).isEqualTo(0);
-    assertThat(raftAfterRestart.getVotedFor()).isEqualTo(new SocketAddress("0.0.0.0", 26503));
+    assertThat(raftAfterRestart.getVotedFor()).isEqualTo(new SocketAddress("0.0.0.0", raftPort));
   }
 
   @Test

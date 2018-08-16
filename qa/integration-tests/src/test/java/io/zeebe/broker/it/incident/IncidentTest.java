@@ -48,7 +48,7 @@ public class IncidentTest {
   private static final String PAYLOAD = "{\"foo\": \"bar\"}";
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientRule clientRule = new ClientRule();
+  public ClientRule clientRule = new ClientRule(brokerRule);
   public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
 
   @Rule

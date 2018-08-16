@@ -17,7 +17,9 @@ package io.zeebe.broker.it.shutdown;
 
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
+import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
+import io.zeebe.broker.system.configuration.TomlConfigurationReader;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceContainer;
@@ -90,7 +92,9 @@ public class BrokerShutdownTest {
     final Broker broker;
     try (InputStream configStream =
         EmbeddedBrokerRule.class.getResourceAsStream("/zeebe.default.cfg.toml")) {
-      broker = new Broker(configStream, brokerBase.getAbsolutePath(), null);
+      final BrokerCfg brokerCfg = TomlConfigurationReader.read(configStream);
+      EmbeddedBrokerRule.assignSocketAddresses(brokerCfg);
+      broker = new Broker(brokerCfg, brokerBase.getAbsolutePath(), null);
     } catch (final IOException e) {
       throw new RuntimeException("Unable to open configuration", e);
     }
@@ -113,7 +117,7 @@ public class BrokerShutdownTest {
           .get(25, TimeUnit.SECONDS);
     } catch (InterruptedException | ExecutionException | TimeoutException e) {
       throw new RuntimeException(
-          "System patition not installed into the container withing 25 seconds.");
+          "System partition not installed into the container withing 25 seconds.");
     }
     return broker;
   }

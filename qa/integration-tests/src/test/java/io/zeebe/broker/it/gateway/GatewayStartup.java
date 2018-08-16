@@ -23,7 +23,6 @@ import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.clustering.ClusteringRule;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.commands.Topology;
-import io.zeebe.test.util.AutoCloseableRule;
 import java.time.Duration;
 import org.junit.Before;
 import org.junit.Rule;
@@ -33,14 +32,13 @@ import org.junit.rules.Timeout;
 
 public class GatewayStartup {
 
-  public AutoCloseableRule closeables = new AutoCloseableRule();
   public Timeout testTimeout = Timeout.seconds(60);
-  public ClientRule clientRule = new ClientRule();
-  public ClusteringRule clusteringRule = new ClusteringRule(closeables, clientRule);
+  public ClusteringRule clusteringRule = new ClusteringRule();
+  public ClientRule clientRule = new ClientRule(clusteringRule);
 
   @Rule
   public RuleChain ruleChain =
-      RuleChain.outerRule(closeables).around(testTimeout).around(clientRule).around(clusteringRule);
+      RuleChain.outerRule(testTimeout).around(clusteringRule).around(clientRule);
 
   private String broker1Address;
   private String broker2Address;
@@ -50,7 +48,9 @@ public class GatewayStartup {
   public void setUp() {
     this.broker1Address =
         clusteringRule
-            .getBrokerConfig(ClusteringRule.BROKER_1_CLIENT_ADDRESS)
+            .getBrokers()
+            .get(0)
+            .getConfig()
             .getNetwork()
             .getGateway()
             .toSocketAddress()
@@ -58,7 +58,9 @@ public class GatewayStartup {
 
     this.broker2Address =
         clusteringRule
-            .getBrokerConfig(ClusteringRule.BROKER_2_CLIENT_ADDRESS)
+            .getBrokers()
+            .get(1)
+            .getConfig()
             .getNetwork()
             .getGateway()
             .toSocketAddress()
@@ -66,7 +68,9 @@ public class GatewayStartup {
 
     this.broker3Address =
         clusteringRule
-            .getBrokerConfig(ClusteringRule.BROKER_3_CLIENT_ADDRESS)
+            .getBrokers()
+            .get(2)
+            .getConfig()
             .getNetwork()
             .getGateway()
             .toSocketAddress()

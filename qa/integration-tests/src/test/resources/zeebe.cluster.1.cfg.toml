@@ -6,6 +6,3 @@ bootstrap = 3
 name = "default-topic"
 partitions = 3
 replicationFactor = 3
-
-[cluster]
-initialContactPoints = []

@@ -39,10 +39,6 @@ public class ManagementApiRule extends ExternalResource {
   private ControlledActorClock controlledActorClock = new ControlledActorClock();
   private ActorScheduler scheduler;
 
-  public ManagementApiRule() {
-    this(() -> new SocketAddress("localhost", 26502));
-  }
-
   public ManagementApiRule(Supplier<SocketAddress> brokerAddressSupplier) {
     this.brokerAddressSupplier = brokerAddressSupplier;
   }

@@ -15,9 +15,6 @@
  */
 package io.zeebe.broker.it.clustering;
 
-import static io.zeebe.broker.it.clustering.ClusteringRule.BROKER_1_CLIENT_ADDRESS;
-import static io.zeebe.broker.it.clustering.ClusteringRule.BROKER_2_CLIENT_ADDRESS;
-import static io.zeebe.broker.it.clustering.ClusteringRule.BROKER_3_CLIENT_ADDRESS;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.snapshotStorageServiceName;
 import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logBlockIndexWriterService;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,7 +34,6 @@ import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
-import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.SocketAddress;
 import java.util.Arrays;
@@ -55,21 +51,15 @@ public class SnapshotReplicationTest {
   private static final String BROKER_2_TOML = "zeebe.cluster.snapshotReplication.2.cfg.toml";
   private static final String BROKER_3_TOML = "zeebe.cluster.snapshotReplication.3.cfg.toml";
 
-  private SocketAddress[] brokerAddresses =
-      new SocketAddress[] {
-        BROKER_1_CLIENT_ADDRESS, BROKER_2_CLIENT_ADDRESS, BROKER_3_CLIENT_ADDRESS
-      };
   private String[] brokerConfigs = new String[] {BROKER_1_TOML, BROKER_2_TOML, BROKER_3_TOML};
 
-  public AutoCloseableRule closeables = new AutoCloseableRule();
   public Timeout testTimeout = Timeout.seconds(90);
-  public ClientRule clientRule = new ClientRule();
-  public ClusteringRule clusteringRule =
-      new ClusteringRule(closeables, clientRule, brokerAddresses, brokerConfigs);
+  public ClusteringRule clusteringRule = new ClusteringRule(brokerConfigs);
+  public ClientRule clientRule = new ClientRule(clusteringRule);
 
   @Rule
   public RuleChain ruleChain =
-      RuleChain.outerRule(closeables).around(testTimeout).around(clientRule).around(clusteringRule);
+      RuleChain.outerRule(testTimeout).around(clusteringRule).around(clientRule);
 
   @Test
   public void shouldReplicateSnapshotsFromLeaderForSystemTopic() throws Exception {
@@ -216,7 +206,7 @@ public class SnapshotReplicationTest {
 
   private SnapshotStorage getSnapshotStorage(final Topic topic, final SocketAddress address)
       throws Exception {
-    final Broker broker = clusteringRule.brokers.get(address);
+    final Broker broker = clusteringRule.getBroker(address);
     final Partition partition = topic.getPartitions().get(0);
     final String logName = String.format("%s-%d", partition.getTopicName(), partition.getId());
     final ServiceName<Void> name =

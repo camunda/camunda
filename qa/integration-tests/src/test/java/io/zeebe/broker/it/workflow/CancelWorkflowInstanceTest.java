@@ -46,7 +46,7 @@ public class CancelWorkflowInstanceTest {
           .done();
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientRule clientRule = new ClientRule();
+  public ClientRule clientRule = new ClientRule(brokerRule);
   public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
 
   @Rule

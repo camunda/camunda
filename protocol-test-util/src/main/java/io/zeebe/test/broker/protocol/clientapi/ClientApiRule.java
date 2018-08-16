@@ -60,10 +60,6 @@ public class ClientApiRule extends ExternalResource {
 
   protected int defaultPartitionId = -1;
 
-  public ClientApiRule() {
-    this(() -> new SocketAddress("localhost", 26501));
-  }
-
   public ClientApiRule(Supplier<SocketAddress> brokerAddressSupplier) {
     this.brokerAddressSupplier = brokerAddressSupplier;
   }

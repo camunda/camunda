@@ -41,7 +41,7 @@ import org.junit.rules.Timeout;
 public class JobTopicSubscriptionTest {
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
-  public ClientRule clientRule = new ClientRule();
+  public ClientRule clientRule = new ClientRule(brokerRule);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 

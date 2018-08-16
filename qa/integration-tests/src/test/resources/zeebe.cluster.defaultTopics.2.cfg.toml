@@ -7,11 +7,6 @@ name = "default-topic-2"
 partitions = 1
 replicationFactor = 1
 
-[network]
-portOffset = 1
-
 [network.gateway]
 enabled = false
 
-[cluster]
-initialContactPoints = [ "localhost:26502" ]

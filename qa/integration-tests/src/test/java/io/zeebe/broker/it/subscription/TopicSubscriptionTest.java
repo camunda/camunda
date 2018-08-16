@@ -56,7 +56,7 @@ public class TopicSubscriptionTest {
   public EmbeddedBrokerRule brokerRule =
       new EmbeddedBrokerRule("zeebe.unit-test.increased.partitions.cfg.toml");
 
-  public ClientRule clientRule = new ClientRule();
+  public ClientRule clientRule = new ClientRule(brokerRule);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 

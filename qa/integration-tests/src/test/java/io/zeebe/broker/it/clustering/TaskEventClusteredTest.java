@@ -25,20 +25,16 @@ import io.zeebe.gateway.api.commands.Topic;
 import io.zeebe.gateway.api.commands.Topics;
 import io.zeebe.gateway.api.events.JobEvent;
 import io.zeebe.gateway.api.events.JobState;
-import io.zeebe.test.util.AutoCloseableRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class TaskEventClusteredTest {
-  public ClientRule clientRule = new ClientRule();
-  public AutoCloseableRule closeables = new AutoCloseableRule();
-  public ClusteringRule clusteringRule = new ClusteringRule(closeables, clientRule);
+  public ClusteringRule clusteringRule = new ClusteringRule();
+  public ClientRule clientRule = new ClientRule(clusteringRule);
 
-  @Rule
-  public RuleChain ruleChain =
-      RuleChain.outerRule(closeables).around(clientRule).around(clusteringRule);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(clusteringRule).around(clientRule);
 
   @Test
   @Ignore("https://github.com/zeebe-io/zeebe/issues/844")

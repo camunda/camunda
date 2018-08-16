@@ -18,12 +18,14 @@ package io.zeebe.broker.it;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.junit.Assert.fail;
 
-import io.zeebe.gateway.ClientProperties;
+import io.zeebe.broker.it.clustering.ClusteringRule;
 import io.zeebe.gateway.ZeebeClient;
+import io.zeebe.gateway.ZeebeClientBuilder;
 import io.zeebe.gateway.api.clients.JobClient;
 import io.zeebe.gateway.api.clients.TopicClient;
 import io.zeebe.gateway.api.clients.WorkflowClient;
 import io.zeebe.gateway.api.commands.Partition;
+import io.zeebe.gateway.api.commands.PartitionInfo;
 import io.zeebe.gateway.api.commands.Topic;
 import io.zeebe.gateway.api.commands.Topics;
 import io.zeebe.gateway.api.commands.Topology;
@@ -36,41 +38,43 @@ import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.junit.rules.ExternalResource;
 
 public class ClientRule extends ExternalResource {
-  protected final Properties properties;
+
+  private final Consumer<ZeebeClientBuilder> configurator;
 
   protected ZeebeClient client;
   private ControlledActorClock actorClock = new ControlledActorClock();
 
-  public ClientRule() {
-    this(Properties::new);
+  public ClientRule(EmbeddedBrokerRule brokerRule) {
+    this(brokerRule, config -> {});
   }
 
-  public ClientRule(final String contactPoint) {
+  public ClientRule(EmbeddedBrokerRule brokerRule, Consumer<ZeebeClientBuilder> configurator) {
     this(
-        () -> {
-          final Properties properties = new Properties();
-          properties.put(ClientProperties.BROKER_CONTACTPOINT, contactPoint);
-          return properties;
+        config -> {
+          config.brokerContactPoint(brokerRule.getClientAddress().toString());
+          configurator.accept(config);
         });
   }
 
-  public ClientRule(final Supplier<Properties> propertiesProvider) {
-    this.properties = propertiesProvider.get();
+  public ClientRule(ClusteringRule clusteringRule) {
+    this(config -> config.brokerContactPoint(clusteringRule.getClientAddress().toString()));
+  }
+
+  private ClientRule(final Consumer<ZeebeClientBuilder> configurator) {
+    this.configurator = configurator;
   }
 
   @Override
   protected void before() {
-    client =
-        ((ZeebeClientBuilderImpl) ZeebeClient.newClientBuilder().withProperties(properties))
-            .setActorClock(actorClock)
-            .build();
+    final ZeebeClientBuilderImpl builder = (ZeebeClientBuilderImpl) ZeebeClient.newClientBuilder();
+    configurator.accept(builder);
+    client = builder.setActorClock(actorClock).build();
   }
 
   @Override
@@ -106,7 +110,7 @@ public class ClientRule extends ExternalResource {
               System.out.println("search record");
               if (record.getMetadata().getPartitionId() == 1
                   && record.getMetadata().getValueType() == ValueType.DEPLOYMENT
-                  && record.getMetadata().getIntent() == DeploymentIntent.CREATED.name()
+                  && record.getMetadata().getIntent().equals(DeploymentIntent.CREATED.name())
                   && record.getKey() == key) {
                 deploymentFound.compareAndSet(false, true);
               }
@@ -149,9 +153,9 @@ public class ClientRule extends ExternalResource {
         .getBrokers()
         .stream()
         .flatMap(i -> i.getPartitions().stream())
-        .filter(p -> p.isLeader())
+        .filter(PartitionInfo::isLeader)
         .filter(p -> p.getTopicName().equals(topic))
-        .map(p -> p.getPartitionId())
+        .map(PartitionInfo::getPartitionId)
         .collect(Collectors.toList());
   }
 
