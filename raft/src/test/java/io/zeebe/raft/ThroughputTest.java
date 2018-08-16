@@ -21,7 +21,6 @@ import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
-import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.collection.LongRingBuffer;
 import io.zeebe.util.sched.ActorScheduler;
 import java.io.IOException;
@@ -71,11 +70,9 @@ public class ThroughputTest {
 
     final ServiceContainer serviceContainer = new ServiceContainerImpl(scheduler);
 
-    final ThroughPutTestRaft raft1 = new ThroughPutTestRaft(new SocketAddress("localhost", 8001));
-    final ThroughPutTestRaft raft2 =
-        new ThroughPutTestRaft(new SocketAddress("localhost", 8002), raft1);
-    final ThroughPutTestRaft raft3 =
-        new ThroughPutTestRaft(new SocketAddress("localhost", 8003), raft1);
+    final ThroughPutTestRaft raft1 = new ThroughPutTestRaft();
+    final ThroughPutTestRaft raft2 = new ThroughPutTestRaft(raft1);
+    final ThroughPutTestRaft raft3 = new ThroughPutTestRaft(raft1);
 
     final LogStreamRecordWriter writer = new LogStreamWriterImpl();
 

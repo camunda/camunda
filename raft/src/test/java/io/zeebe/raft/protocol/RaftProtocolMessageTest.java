@@ -37,8 +37,8 @@ public class RaftProtocolMessageTest {
   public static ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
   public static ServiceContainerRule serviceContainer = new ServiceContainerRule(actorScheduler);
 
-  public static RaftRule raft1 = new RaftRule(serviceContainer, 1, "test", 123);
-  public static RaftRule raft2 = new RaftRule(serviceContainer, 2, "test", 123, raft1);
+  public static RaftRule raft1 = new RaftRule(serviceContainer, "test", 123);
+  public static RaftRule raft2 = new RaftRule(serviceContainer, "test", 123, raft1);
 
   @ClassRule
   public static RaftClusterRule cluster =

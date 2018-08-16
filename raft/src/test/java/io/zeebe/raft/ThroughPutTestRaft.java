@@ -33,6 +33,7 @@ import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.Transports;
+import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.channel.OneToOneRingBufferChannel;
 import java.io.IOException;
@@ -65,14 +66,13 @@ public class ThroughPutTestRaft implements RaftStateListener {
   protected final List<RaftState> raftStateChanges = new ArrayList<>();
   private ServiceContainer serviceContainer;
 
-  public ThroughPutTestRaft(
-      final SocketAddress socketAddress, final ThroughPutTestRaft... members) {
+  public ThroughPutTestRaft(final ThroughPutTestRaft... members) {
+    this.socketAddress = SocketUtil.getNextAddress();
     this.name = socketAddress.toString();
     this.configuration = new RaftConfiguration();
     this.topicName = "someTopic";
     this.partition = 0;
     this.members = Arrays.asList(members);
-    this.socketAddress = socketAddress;
   }
 
   public void open(final ActorScheduler scheduler, final ServiceContainer serviceContainer)

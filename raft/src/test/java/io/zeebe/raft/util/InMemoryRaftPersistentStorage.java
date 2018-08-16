@@ -18,13 +18,14 @@ package io.zeebe.raft.util;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.raft.RaftPersistentStorage;
 import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.impl.util.SocketUtil;
 import java.util.ArrayList;
 import java.util.List;
 
 public class InMemoryRaftPersistentStorage implements RaftPersistentStorage {
 
   private final LogStream logStream;
-  private final SocketAddress votedFor = new SocketAddress();
+  private final SocketAddress votedFor = SocketUtil.getNextAddress();
   private final List<SocketAddress> members = new ArrayList<>();
 
   public InMemoryRaftPersistentStorage(final LogStream logStream) {

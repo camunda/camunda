@@ -32,7 +32,7 @@ public class RaftSingleNodeTest {
 
   public ServiceContainerRule serviceContainer = new ServiceContainerRule(actorScheduler);
 
-  public RaftRule raft1 = new RaftRule(serviceContainer, 1, "default", 0);
+  public RaftRule raft1 = new RaftRule(serviceContainer, "default", 0);
 
   @Rule
   public RaftClusterRule cluster = new RaftClusterRule(actorScheduler, serviceContainer, raft1);
