@@ -22,6 +22,7 @@ import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.impl.TransportHeaderDescriptor;
+import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.transport.util.RecordingMessageHandler;
 import io.zeebe.transport.util.TransportTestUtil;
 import io.zeebe.util.ByteValue;
@@ -36,7 +37,7 @@ import org.junit.rules.RuleChain;
 
 public class BufferingServerTransportTest {
   public static final ByteValue BUFFER_SIZE = ByteValue.ofKilobytes(16);
-  public static final SocketAddress SERVER_ADDRESS = new SocketAddress("localhost", 51115);
+  public static final SocketAddress SERVER_ADDRESS = SocketUtil.getNextAddress();
 
   public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
   public AutoCloseableRule closeables = new AutoCloseableRule();

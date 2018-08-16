@@ -34,6 +34,7 @@ import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.impl.memory.NonBlockingMemoryPool;
+import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.transport.util.ControllableServerTransport;
 import io.zeebe.transport.util.EchoRequestResponseHandler;
 import io.zeebe.transport.util.RecordingMessageHandler;
@@ -60,7 +61,7 @@ public class ClientTransportMemoryTest {
   @Rule public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
 
   public static final DirectBuffer BUF1 = BufferUtil.wrapBytes(1, 2, 3, 4);
-  public static final SocketAddress SERVER_ADDRESS1 = new SocketAddress("localhost", 51115);
+  public static final SocketAddress SERVER_ADDRESS1 = SocketUtil.getNextAddress();
 
   protected ClientTransport clientTransport;
 

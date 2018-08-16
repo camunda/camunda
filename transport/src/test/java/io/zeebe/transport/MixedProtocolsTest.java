@@ -18,6 +18,7 @@ package io.zeebe.transport;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.buffer.DirectBufferWriter;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
@@ -42,7 +43,7 @@ public class MixedProtocolsTest {
   @Test
   public void shouldEchoMessages() throws InterruptedException, ExecutionException {
 
-    final SocketAddress addr = new SocketAddress("localhost", 51115);
+    final SocketAddress addr = SocketUtil.getNextAddress();
     final int numRequests = 1000;
 
     final ClientTransport clientTransport =

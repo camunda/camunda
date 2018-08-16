@@ -35,6 +35,7 @@ import io.zeebe.test.util.io.FailingBufferWriter;
 import io.zeebe.test.util.io.FailingBufferWriter.FailingBufferWriterException;
 import io.zeebe.transport.impl.TransportChannel;
 import io.zeebe.transport.impl.TransportHeaderDescriptor;
+import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.transport.util.ControllableServerTransport;
 import io.zeebe.transport.util.EchoRequestResponseHandler;
 import io.zeebe.transport.util.RecordingChannelListener;
@@ -75,8 +76,8 @@ public class ClientTransportTest {
   @Rule public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
 
   public static final DirectBuffer BUF1 = BufferUtil.wrapBytes(1, 2, 3, 4);
-  public static final SocketAddress SERVER_ADDRESS1 = new SocketAddress("localhost", 51115);
-  public static final SocketAddress SERVER_ADDRESS2 = new SocketAddress("localhost", 51116);
+  public static final SocketAddress SERVER_ADDRESS1 = SocketUtil.getNextAddress();
+  public static final SocketAddress SERVER_ADDRESS2 = SocketUtil.getNextAddress();
 
   public static final int REQUEST_POOL_SIZE = 4;
   public static final ByteValue BUFFER_SIZE = ByteValue.ofKilobytes(16);
@@ -834,7 +835,7 @@ public class ClientTransportTest {
   @Test
   public void shouldCloseTransportWithUnreachableRemote() {
     // given
-    clientTransport.registerRemoteAddress(SocketAddress.from("foo:123"));
+    clientTransport.registerRemoteAddress(SocketUtil.getNextAddress());
 
     // when
     try {

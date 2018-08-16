@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.impl.ControlMessages;
+import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.clock.ControlledActorClock;
@@ -39,8 +40,8 @@ public class ClientChannelKeepAliveTest {
   protected static final DirectBuffer BUF = BufferUtil.wrapBytes(1, 2, 3, 4);
 
   protected static final Duration KEEP_ALIVE_PERIOD = Duration.ofSeconds(1);
-  protected static final SocketAddress ADDRESS = new SocketAddress("localhost", 51115);
-  protected static final SocketAddress ADDRESS2 = new SocketAddress("localhost", 51116);
+  protected static final SocketAddress ADDRESS = SocketUtil.getNextAddress();
+  protected static final SocketAddress ADDRESS2 = SocketUtil.getNextAddress();
 
   private ControlledActorClock clock = new ControlledActorClock();
   public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3, clock);

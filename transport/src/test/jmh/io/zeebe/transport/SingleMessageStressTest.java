@@ -15,6 +15,7 @@
  */
 package io.zeebe.transport;
 
+import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -111,7 +112,7 @@ public class SingleMessageStressTest {
     public void setUp() {
       scheduler.start();
 
-      final SocketAddress addr = new SocketAddress("localhost", 51115);
+      final SocketAddress addr = SocketUtil.getNextAddress();
 
       clientTransport =
           Transports.newClientTransport().scheduler(scheduler).inputListener(this).build();
