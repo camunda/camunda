@@ -20,6 +20,10 @@ package io.zeebe.broker.test;
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.TestLoggers;
 import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
+import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.broker.system.configuration.NetworkCfg;
+import io.zeebe.broker.system.configuration.SocketBindingCfg;
+import io.zeebe.broker.system.configuration.TomlConfigurationReader;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.servicecontainer.Service;
@@ -27,45 +31,66 @@ import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.allocation.DirectBufferAllocator;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.assertj.core.util.Files;
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 
 public class EmbeddedBrokerRule extends ExternalResource {
+
+  private static final Consumer<BrokerCfg> NOOP_CONFIGURATOR = cfg -> {};
+
   private static final String SNAPSHOTS_DIRECTORY = "snapshots";
 
   protected static final Logger LOG = TestLoggers.TEST_LOGGER;
 
+  protected BrokerCfg brokerCfg;
   protected Broker broker;
 
   protected ControlledActorClock controlledActorClock = new ControlledActorClock();
 
-  protected Supplier<InputStream> configSupplier;
+  protected final Supplier<InputStream> configSupplier;
+  protected final Consumer<BrokerCfg> configurator;
 
   public EmbeddedBrokerRule() {
-    this("zeebe.unit-test.cfg.toml");
-  }
-
-  public EmbeddedBrokerRule(Supplier<InputStream> configSupplier) {
-    this.configSupplier = configSupplier;
+    this(NOOP_CONFIGURATOR);
   }
 
   public EmbeddedBrokerRule(String configFileClasspathLocation) {
+    this(configFileClasspathLocation, NOOP_CONFIGURATOR);
+  }
+
+  public EmbeddedBrokerRule(Consumer<BrokerCfg> configurator) {
+    this("zeebe.unit-test.cfg.toml", configurator);
+  }
+
+  public EmbeddedBrokerRule(String configFileClasspathLocation, Consumer<BrokerCfg> configurator) {
     this(
         () ->
             EmbeddedBrokerRule.class
                 .getClassLoader()
-                .getResourceAsStream(configFileClasspathLocation));
+                .getResourceAsStream(configFileClasspathLocation),
+        configurator);
+  }
+
+  public EmbeddedBrokerRule(
+      Supplier<InputStream> configSupplier, Consumer<BrokerCfg> configurator) {
+    this.configSupplier = configSupplier;
+    this.configurator = configurator;
   }
 
   protected long startTime;
@@ -105,6 +130,18 @@ public class EmbeddedBrokerRule extends ExternalResource {
     }
   }
 
+  public BrokerCfg getBrokerCfg() {
+    return brokerCfg;
+  }
+
+  public SocketAddress getClientAddress() {
+    return brokerCfg.getNetwork().getClient().toSocketAddress();
+  }
+
+  public SocketAddress getManagementAddress() {
+    return brokerCfg.getNetwork().getManagement().toSocketAddress();
+  }
+
   public Broker getBroker() {
     return this.broker;
   }
@@ -125,11 +162,17 @@ public class EmbeddedBrokerRule extends ExternalResource {
   }
 
   public void startBroker() {
-    try (InputStream configStream = configSupplier.get()) {
-      broker = new Broker(configStream, newTemporaryFolder.getAbsolutePath(), controlledActorClock);
-    } catch (final IOException e) {
-      throw new RuntimeException("Unable to open configuration", e);
+    if (brokerCfg == null) {
+      try (InputStream configStream = configSupplier.get()) {
+        brokerCfg = TomlConfigurationReader.read(configStream);
+        configurator.accept(brokerCfg);
+        assignSocketAddresses(brokerCfg);
+      } catch (final IOException e) {
+        throw new RuntimeException("Unable to open configuration", e);
+      }
     }
+
+    broker = new Broker(brokerCfg, newTemporaryFolder.getAbsolutePath(), controlledActorClock);
 
     final ServiceContainer serviceContainer = broker.getBrokerContext().getServiceContainer();
 
@@ -184,6 +227,27 @@ public class EmbeddedBrokerRule extends ExternalResource {
       broker.getBrokerContext().getServiceContainer().removeService(name).get(10, TimeUnit.SECONDS);
     } catch (InterruptedException | ExecutionException | TimeoutException e) {
       throw new RuntimeException("Could not remove service " + name.getName() + " in 10 seconds.");
+    }
+  }
+
+  public void assignSocketAddresses(BrokerCfg brokerCfg) {
+    final NetworkCfg network = brokerCfg.getNetwork();
+    final List<SocketBindingCfg> socketBindingCfgs =
+        Arrays.asList(
+            network.getClient(),
+            network.getGateway(),
+            network.getManagement(),
+            network.getSubscription(),
+            network.getReplication());
+
+    if (network.getPortOffset() > 0) {
+      throw new UnsupportedOperationException(
+          "Please don't set the port offset in a test configuration");
+    }
+
+    for (SocketBindingCfg socketBindingCfg : socketBindingCfgs) {
+      final SocketAddress address = SocketUtil.getNextAddress();
+      socketBindingCfg.setPort(address.port());
     }
   }
 

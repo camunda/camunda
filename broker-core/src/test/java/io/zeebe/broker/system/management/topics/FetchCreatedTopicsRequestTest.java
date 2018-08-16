@@ -31,8 +31,9 @@ import org.junit.rules.RuleChain;
 public class FetchCreatedTopicsRequestTest {
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientApiRule clientApiRule = new ClientApiRule();
-  public ManagementApiRule managementApiRule = new ManagementApiRule();
+  public ClientApiRule clientApiRule = new ClientApiRule(brokerRule::getClientAddress);
+  public ManagementApiRule managementApiRule =
+      new ManagementApiRule(brokerRule::getManagementAddress);
 
   @Rule
   public RuleChain ruleChain =

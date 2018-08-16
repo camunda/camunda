@@ -59,7 +59,7 @@ public class TopicSubscriptionTest {
   public static final int MAXIMUM_SUBSCRIPTION_NAME_LENGTH = 32;
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientApiRule apiRule = new ClientApiRule();
+  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 

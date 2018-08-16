@@ -36,6 +36,7 @@ import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
@@ -48,7 +49,7 @@ public class ClientApiRule extends ExternalResource {
 
   protected ClientTransport transport;
 
-  protected final SocketAddress brokerAddress;
+  protected final Supplier<SocketAddress> brokerAddressSupplier;
   protected RemoteAddress streamAddress;
 
   protected MsgPackHelper msgPackHelper;
@@ -60,11 +61,11 @@ public class ClientApiRule extends ExternalResource {
   protected int defaultPartitionId = -1;
 
   public ClientApiRule() {
-    this("localhost", 26501);
+    this(() -> new SocketAddress("localhost", 26501));
   }
 
-  public ClientApiRule(String host, int port) {
-    this.brokerAddress = new SocketAddress(host, port);
+  public ClientApiRule(Supplier<SocketAddress> brokerAddressSupplier) {
+    this.brokerAddressSupplier = brokerAddressSupplier;
   }
 
   @Override
@@ -85,7 +86,7 @@ public class ClientApiRule extends ExternalResource {
             .build();
 
     msgPackHelper = new MsgPackHelper();
-    streamAddress = transport.registerRemoteAddress(brokerAddress);
+    streamAddress = transport.registerRemoteAddress(brokerAddressSupplier.get());
 
     final List<Integer> partitionIds = doRepeatedly(this::getPartitionIds).until(p -> !p.isEmpty());
     defaultPartitionId = partitionIds.get(0);
@@ -220,7 +221,7 @@ public class ClientApiRule extends ExternalResource {
   }
 
   public SocketAddress getBrokerAddress() {
-    return brokerAddress;
+    return brokerAddressSupplier.get();
   }
 
   protected SubscribedRecord asSubscribedEvent(RawMessage message) {
