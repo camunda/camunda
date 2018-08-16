@@ -24,6 +24,7 @@ import io.zeebe.gossip.membership.MembershipList;
 import io.zeebe.gossip.membership.MembershipStatus;
 import io.zeebe.gossip.protocol.MembershipEvent;
 import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.Before;
@@ -37,7 +38,7 @@ public class MembershipEventUpdaterTest {
   private MembershipList membershipList;
   private DisseminationComponent disseminationComponent;
   private MembershipEventUpdater membershipEventUpdater;
-  private final SocketAddress memberAddress = new SocketAddress("localhost", 8181);
+  private final SocketAddress memberAddress = SocketUtil.getNextAddress();
 
   @Rule public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
 

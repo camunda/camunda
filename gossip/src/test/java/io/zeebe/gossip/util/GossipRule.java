@@ -49,6 +49,7 @@ import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.Transports;
 import io.zeebe.transport.impl.RequestResponseHeaderDescriptor;
 import io.zeebe.transport.impl.TransportHeaderDescriptor;
+import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.BufferWriter;
@@ -72,9 +73,6 @@ import org.mockito.ArgumentMatcher;
 
 public class GossipRule extends ExternalResource {
 
-  public static final String DEFAULT_HOST = "localhost";
-  public static final int DEFAULT_PORT = 8000;
-
   private final SocketAddress socketAddress;
   private final String memberId;
 
@@ -93,16 +91,8 @@ public class GossipRule extends ExternalResource {
   private LocalMembershipListener localMembershipListener;
   private ReceivedEventsCollector receivedEventsCollector = new ReceivedEventsCollector();
 
-  public GossipRule(final int portOffset) {
-    this(DEFAULT_HOST, DEFAULT_PORT + portOffset);
-  }
-
-  public GossipRule(final String host, final int port) {
-    this(new SocketAddress(host, port));
-  }
-
-  public GossipRule(final SocketAddress socketAddress) {
-    this.socketAddress = socketAddress;
+  public GossipRule() {
+    this.socketAddress = SocketUtil.getNextAddress();
     this.memberId = socketAddress.toString();
   }
 
