@@ -50,8 +50,8 @@ public class CreateDeploymentTest {
   private static final byte[] WORKFLOW_AS_BYTES =
       Bpmn.convertToString(WORKFLOW_MODEL).getBytes(UTF_8);
 
-  public ClientRule clientRule = new ClientRule();
   public StubBrokerRule brokerRule = new StubBrokerRule();
+  public ClientRule clientRule = new ClientRule(brokerRule);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 

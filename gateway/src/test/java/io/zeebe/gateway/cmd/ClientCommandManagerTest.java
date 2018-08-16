@@ -49,8 +49,9 @@ import org.junit.rules.RuleChain;
 
 public class ClientCommandManagerTest {
 
-  public ClientRule clientRule = new ClientRule(b -> b.requestTimeout(Duration.ofSeconds(3)));
   public StubBrokerRule broker = new StubBrokerRule();
+  public ClientRule clientRule =
+      new ClientRule(broker, b -> b.requestTimeout(Duration.ofSeconds(3)));
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(broker).around(clientRule);
 

@@ -44,8 +44,8 @@ public class PublishMessageTest {
   private static final int FIRST_PARTITION = 1;
   private static final int PARTITION_COUNT = 10;
 
-  public ClientRule clientRule = new ClientRule();
   public StubBrokerRule brokerRule = new StubBrokerRule(PARTITION_COUNT);
+  public ClientRule clientRule = new ClientRule(brokerRule);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
   @Rule public ExpectedException expectedException = ExpectedException.none();

@@ -34,6 +34,7 @@ public class Gateway {
 
   private Server server;
   private ZeebeClient zbClient;
+  private String brokerContactPoint = "0.0.0.0:26501";
 
   public Gateway() {
     this(GATEWAY_DEFAULT_PORT);
@@ -46,6 +47,10 @@ public class Gateway {
   public Gateway(final String host, final int port) {
     this.host = host;
     this.port = port;
+  }
+
+  public void setBrokerContactPoint(String brokerContactPoint) {
+    this.brokerContactPoint = brokerContactPoint;
   }
 
   public static void main(final String[] args) {
@@ -72,7 +77,11 @@ public class Gateway {
   }
 
   public void start() throws IOException {
-    zbClient = ZeebeClient.newClientBuilder().requestTimeout(Duration.ofMillis(250)).build();
+    zbClient =
+        ZeebeClient.newClientBuilder()
+            .requestTimeout(Duration.ofMillis(250))
+            .brokerContactPoint(brokerContactPoint)
+            .build();
 
     server =
         NettyServerBuilder.forAddress(new InetSocketAddress(host, port))

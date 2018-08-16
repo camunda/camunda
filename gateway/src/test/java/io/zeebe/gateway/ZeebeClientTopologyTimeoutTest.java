@@ -21,44 +21,28 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.gateway.api.events.JobEvent;
 import io.zeebe.gateway.api.events.JobState;
 import io.zeebe.gateway.cmd.ClientException;
-import io.zeebe.gateway.impl.ZeebeClientBuilderImpl;
-import io.zeebe.gateway.impl.ZeebeClientImpl;
+import io.zeebe.gateway.util.ClientRule;
 import io.zeebe.gateway.util.Events;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
-import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
-import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.time.Duration;
-import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 
 public class ZeebeClientTopologyTimeoutTest {
-  @Rule public StubBrokerRule broker = new StubBrokerRule();
 
   @Rule public ExpectedException exception = ExpectedException.none();
 
-  @Rule public AutoCloseableRule closeables = new AutoCloseableRule();
+  public StubBrokerRule broker = new StubBrokerRule();
+  public ClientRule clientRule =
+      new ClientRule(broker, c -> c.requestTimeout(Duration.ofSeconds(1)));
 
-  protected ControlledActorClock clientClock = new ControlledActorClock();
-
-  protected ZeebeClient buildClient() {
-    final ZeebeClientBuilderImpl config = new ZeebeClientBuilderImpl();
-    config.requestTimeout(Duration.ofSeconds(1));
-
-    final ZeebeClient client = new ZeebeClientImpl(config, clientClock);
-    closeables.manage(client);
-    return client;
-  }
-
-  @After
-  public void tearDown() {
-    clientClock.reset();
-  }
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(broker).around(clientRule);
 
   @Test
   public void shouldFailRequestIfTopologyCannotBeRefreshed() {
@@ -68,7 +52,7 @@ public class ZeebeClientTopologyTimeoutTest {
 
     final JobEvent baseEvent = Events.exampleJob();
 
-    final ZeebeClient client = buildClient();
+    final ZeebeClient client = clientRule.getClient();
 
     // then
     exception.expect(ClientException.class);
@@ -92,7 +76,7 @@ public class ZeebeClientTopologyTimeoutTest {
 
     final JobEvent baseEvent = Events.exampleJob();
 
-    final ZeebeClient client = buildClient();
+    final ZeebeClient client = clientRule.getClient();
 
     // wait for a hanging topology request
     TestUtil.waitUntil(
@@ -105,7 +89,9 @@ public class ZeebeClientTopologyTimeoutTest {
                 == 1);
 
     broker.stubTopologyRequest(); // make topology available
-    clientClock.addTime(Duration.ofSeconds(topologyTimeoutSeconds + 1)); // let request time out
+    clientRule
+        .getClock()
+        .addTime(Duration.ofSeconds(topologyTimeoutSeconds + 1)); // let request time out
 
     // when making a new request
     final JobEvent jobEvent =

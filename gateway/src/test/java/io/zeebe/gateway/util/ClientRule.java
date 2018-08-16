@@ -36,12 +36,16 @@ public class ClientRule extends ExternalResource {
   protected ZeebeClient client;
   protected ControlledActorClock clock;
 
-  public ClientRule() {
-    this(b -> {});
+  public ClientRule(StubBrokerRule brokerRule) {
+    this(brokerRule, c -> {});
   }
 
-  public ClientRule(Consumer<ZeebeClientBuilder> configurator) {
-    this.configurator = configurator;
+  public ClientRule(StubBrokerRule brokerRule, Consumer<ZeebeClientBuilder> configurator) {
+    this.configurator =
+        config -> {
+          config.brokerContactPoint(brokerRule.getSocketAddress().toString());
+          configurator.accept(config);
+        };
   }
 
   @Override

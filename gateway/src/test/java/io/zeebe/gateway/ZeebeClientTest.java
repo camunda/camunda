@@ -29,6 +29,7 @@ import io.zeebe.gateway.cmd.ClientException;
 import io.zeebe.gateway.impl.ZeebeClientImpl;
 import io.zeebe.gateway.impl.clustering.ClientTopologyManager;
 import io.zeebe.gateway.impl.event.JobEventImpl;
+import io.zeebe.gateway.util.ClientRule;
 import io.zeebe.gateway.util.Events;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.RejectionType;
@@ -45,18 +46,16 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Properties;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
 import org.junit.rules.TestName;
 
 public class ZeebeClientTest {
-  @Rule public StubBrokerRule broker = new StubBrokerRule();
 
   @Rule public ExpectedException exception = ExpectedException.none();
 
@@ -64,7 +63,18 @@ public class ZeebeClientTest {
 
   @Rule public TestName testContext = new TestName();
 
-  protected ZeebeClientImpl client;
+  protected ZeebeClient client;
+
+  public StubBrokerRule broker = new StubBrokerRule();
+  public ClientRule clientRule =
+      new ClientRule(
+          broker,
+          config ->
+              config
+                  .requestTimeout(Duration.ofSeconds(3))
+                  .requestBlocktime(Duration.ofMillis(250)));
+
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(broker).around(clientRule);
 
   private int clientMaxRequests;
   private String topic = DEFAULT_TOPIC;
@@ -72,17 +82,8 @@ public class ZeebeClientTest {
   @Before
   public void setUp() {
     this.clientMaxRequests = 128;
-    final Properties properties = new Properties();
-    properties.setProperty(ClientProperties.REQUEST_TIMEOUT_SEC, "3");
-    properties.setProperty(ClientProperties.REQUEST_BLOCKTIME_MILLIS, "250");
-
-    client = (ZeebeClientImpl) ZeebeClient.newClientBuilder().withProperties(properties).build();
     broker.stubTopicSubscriptionApi(0);
-  }
-
-  @After
-  public void tearDown() {
-    client.close();
+    client = clientRule.getClient();
   }
 
   @Test
@@ -110,7 +111,7 @@ public class ZeebeClientTest {
   @Test
   public void shouldEstablishNewConnectionsAfterDisconnect() {
     // given
-    final ClientTransport clientTransport = client.getTransport();
+    final ClientTransport clientTransport = ((ZeebeClientImpl) client).getTransport();
 
     // ensuring an open connection
     client.newTopicsRequest().send().join();
