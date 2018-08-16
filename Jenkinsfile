@@ -53,7 +53,7 @@ pipeline {
                 stage('1 - Java Tests') {
                     steps {
                         withMaven(jdk: jdkVersion, maven: mavenVersion, mavenSettingsConfig: mavenSettingsConfig) {
-                            sh 'mvn -B -T 2 verify -P skip-unstable-ci,retry-tests'
+                            sh 'mvn -B -T 1C verify -P skip-unstable-ci,retry-tests,parallel-tests'
                         }
                     }
                     post {
@@ -66,7 +66,7 @@ pipeline {
                 stage('2 - JMH') {
                     // delete this line to also run JMH on feature branch
                     when { anyOf { branch 'master'; branch 'develop' } }
-                    agent { node { label 'ubuntu-large' } }
+                    agent { node { label 'ubuntu' } }
 
                     steps {
                         withMaven(jdk: jdkVersion, maven: mavenVersion, mavenSettingsConfig: mavenSettingsConfig) {
