@@ -15,7 +15,6 @@
  */
 package io.zeebe.gateway.impl;
 
-import io.zeebe.gateway.api.ZeebeFuture;
 import io.zeebe.gateway.api.record.Record;
 import io.zeebe.gateway.cmd.BrokerErrorException;
 import io.zeebe.gateway.cmd.ClientCommandRejectedException;
@@ -243,7 +242,7 @@ public class RequestManager extends Actor {
     return new BrokerProvider(topology -> topology.getLeaderForPartition(partitionId));
   }
 
-  public static class ResponseFuture<E> implements ActorFuture<E>, ZeebeFuture<E> {
+  public static class ResponseFuture<E> implements ActorFuture<E> {
     protected final ActorFuture<ClientResponse> transportFuture;
     protected final RequestResponseHandler responseHandler;
     protected final ErrorResponseHandler errorHandler = new ErrorResponseHandler();
@@ -431,7 +430,6 @@ public class RequestManager extends Actor {
       }
     }
 
-    @Override
     public E join(final long timeout, final TimeUnit unit) {
       try {
         return get(timeout, unit);

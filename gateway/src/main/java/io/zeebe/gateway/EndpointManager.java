@@ -17,7 +17,10 @@ package io.zeebe.gateway;
 
 import io.grpc.stub.StreamObserver;
 import io.zeebe.gateway.api.commands.Topology;
+import io.zeebe.gateway.api.events.DeploymentEvent;
 import io.zeebe.gateway.protocol.GatewayGrpc;
+import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthResponse;
 import io.zeebe.util.sched.ActorScheduler;
@@ -42,7 +45,17 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
   @Override
   public void health(
       final HealthRequest request, final StreamObserver<HealthResponse> responseObserver) {
-    final ActorFuture<Topology> responseFuture = clusterClient.sendRequest(request);
-    requestActor.handleResponse(responseFuture, responseMapper::toResponse, responseObserver);
+    final ActorFuture<Topology> responseFuture = clusterClient.sendHealthRequest(request);
+    requestActor.handleResponse(responseFuture, responseMapper::toHealthResponse, responseObserver);
+  }
+
+  @Override
+  public void deployWorkflow(
+      final DeployWorkflowRequest request,
+      final io.grpc.stub.StreamObserver<DeployWorkflowResponse> responseObserver) {
+    final ActorFuture<DeploymentEvent> responseFuture =
+        clusterClient.sendDeployWorkflowRequest(request);
+    requestActor.handleResponse(
+        responseFuture, responseMapper::toDeployWorkflowResponse, responseObserver);
   }
 }

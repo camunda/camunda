@@ -22,15 +22,27 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 
-public class ZeebeClientFutureImpl<T, R> extends CompletableFuture<T>
+public class ZeebeClientFutureImpl<T, R, P> extends CompletableFuture<T>
     implements ZeebeFuture<T>, StreamObserver<R> {
 
   private final Function<R, T> responseMapper;
 
-  ZeebeClientFutureImpl(final Function<R, T> responseMapper) {
+  private BiFunction<R, P, T> responsePayloadMapper;
+  private P payload;
+
+  public ZeebeClientFutureImpl(final Function<R, T> responseMapper) {
     this.responseMapper = responseMapper;
+    this.responsePayloadMapper = null;
+    this.payload = null;
+  }
+
+  public ZeebeClientFutureImpl(final BiFunction<R, P, T> responsePayloadMapper, P payload) {
+    this.responseMapper = null;
+    this.responsePayloadMapper = responsePayloadMapper;
+    this.payload = payload;
   }
 
   @Override
@@ -54,7 +66,12 @@ public class ZeebeClientFutureImpl<T, R> extends CompletableFuture<T>
   @Override
   public void onNext(final R r) {
     try {
-      complete(responseMapper.apply(r));
+      if (this.responseMapper != null) {
+        complete(responseMapper.apply(r));
+      } else {
+        complete(responsePayloadMapper.apply(r, payload));
+      }
+
     } catch (final Exception e) {
       completeExceptionally(e);
     }

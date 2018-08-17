@@ -62,7 +62,7 @@ public class ZeebeClientImpl implements ZeebeClient {
 
   @Override
   public WorkflowClient workflowClient() {
-    return null;
+    return new WorkflowsClientImpl(asyncStub);
   }
 
   @Override

@@ -15,9 +15,14 @@
  */
 package io.zeebe.gateway;
 
+import io.zeebe.gateway.api.commands.DeployWorkflowCommandStep1.DeployWorkflowCommandBuilderStep2;
 import io.zeebe.gateway.api.commands.Topology;
+import io.zeebe.gateway.api.events.DeploymentEvent;
+import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowRequestObject;
 import io.zeebe.util.sched.future.ActorFuture;
+import java.util.List;
 
 public class ClusterClient {
 
@@ -27,8 +32,32 @@ public class ClusterClient {
     this.client = client;
   }
 
-  public ActorFuture<Topology> sendRequest(final HealthRequest healthRequest) {
-    final ActorFuture<Topology> future = client.newTopologyRequest().send();
-    return future;
+  public ActorFuture<Topology> sendHealthRequest(final HealthRequest healthRequest) {
+    return client.newTopologyRequest().send();
+  }
+
+  public ActorFuture<DeploymentEvent> sendDeployWorkflowRequest(
+      final DeployWorkflowRequest deployRequest) {
+
+    if (deployRequest.getWorkflowsList().size() == 0) {
+      throw new RuntimeException("no workflow to deploy");
+    }
+
+    final List<WorkflowRequestObject> workflowsList = deployRequest.getWorkflowsList();
+    WorkflowRequestObject cursor = workflowsList.get(0);
+    DeployWorkflowCommandBuilderStep2 clusterRequestStep2 =
+        client
+            .workflowClient()
+            .newDeployCommand()
+            .addResourceBytes(cursor.getDefinition().toByteArray(), cursor.getName());
+
+    for (int i = 1; i < workflowsList.size(); i++) {
+      cursor = workflowsList.get(i);
+      clusterRequestStep2 =
+          clusterRequestStep2.addResourceBytes(
+              cursor.getDefinition().toByteArray(), cursor.getName());
+    }
+
+    return clusterRequestStep2.send();
   }
 }

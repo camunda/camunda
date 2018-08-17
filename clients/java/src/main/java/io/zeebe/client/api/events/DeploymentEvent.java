@@ -16,13 +16,9 @@
 package io.zeebe.client.api.events;
 
 import io.zeebe.client.api.commands.Workflow;
-import io.zeebe.client.api.record.DeploymentRecord;
 import java.util.List;
 
-public interface DeploymentEvent extends DeploymentRecord {
-  /** @return the current state */
-  DeploymentState getState();
-
+public interface DeploymentEvent {
   /** @return the workflows which are deployed */
   List<Workflow> getDeployedWorkflows();
 }

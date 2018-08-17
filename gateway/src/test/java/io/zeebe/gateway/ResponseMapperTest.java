@@ -16,13 +16,12 @@
 package io.zeebe.gateway;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.assertTrue;
 
-import io.zeebe.gateway.api.commands.Topology;
+import io.zeebe.gateway.factories.DeploymentEventFactory;
 import io.zeebe.gateway.factories.TopologyFactory;
-import io.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo;
+import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
-import java.util.LinkedList;
 import org.junit.Test;
 
 public class ResponseMapperTest {
@@ -30,35 +29,33 @@ public class ResponseMapperTest {
   @Test
   public void shouldTestHealthCheckMapping() {
     final ResponseMapper responseMapper = new ResponseMapper();
-    final Topology topology = new TopologyFactory().getFixture();
+    final TopologyFactory factory = new TopologyFactory();
 
-    final HealthResponse response = responseMapper.toResponse(topology);
-    final LinkedList<BrokerInfo> expectedBrokers = new LinkedList<>(response.getBrokersList());
-    assertThat(response.getBrokersCount()).isEqualTo(expectedBrokers.size());
+    final HealthResponse response = responseMapper.toHealthResponse(factory.getFixture());
+    assertThat(response.getBrokersCount()).isEqualTo(factory.getBrokersList().size());
 
-    topology
-        .getBrokers()
+    response
+        .getBrokersList()
         .forEach(
-            received -> {
-              final BrokerInfo expected = expectedBrokers.pop();
+            broker -> {
+              assertTrue(factory.containsBroker(broker));
+            });
+  }
 
-              assertThat(expected.getHost()).isEqualTo(received.getHost());
-              assertThat(expected.getPort()).isEqualTo(received.getPort());
+  @Test
+  public void shouldTestDeployWorkflowMapping() {
+    final ResponseMapper responseMapper = new ResponseMapper();
+    final DeploymentEventFactory factory = new DeploymentEventFactory();
 
-              final LinkedList<Partition> expectedPartitions =
-                  new LinkedList<>(expected.getPartitionsList());
+    final DeployWorkflowResponse response =
+        responseMapper.toDeployWorkflowResponse(factory.getFixture());
+    assertThat(response.getWorkflowsList().size()).isEqualTo(factory.size());
 
-              received
-                  .getPartitions()
-                  .forEach(
-                      receivedPartition -> {
-                        final Partition expectedPartition = expectedPartitions.pop();
-                        assertThat(expectedPartition.getPartitionId())
-                            .isEqualTo(receivedPartition.getPartitionId());
-
-                        assertThat(expectedPartition.getRole().toString())
-                            .isEqualTo(receivedPartition.getRole().toString());
-                      });
+    response
+        .getWorkflowsList()
+        .forEach(
+            workflow -> {
+              assertTrue(factory.contains(workflow));
             });
   }
 }

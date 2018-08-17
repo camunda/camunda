@@ -21,14 +21,17 @@ import io.zeebe.gateway.api.commands.Topology;
 import io.zeebe.gateway.impl.clustering.BrokerInfoImpl;
 import io.zeebe.gateway.impl.clustering.PartitionInfoImpl;
 import io.zeebe.gateway.impl.clustering.TopologyImpl;
+import io.zeebe.gateway.protocol.GatewayOuterClass;
 import java.util.ArrayList;
+import java.util.List;
 
 public class TopologyFactory implements TestFactory<Topology> {
+
+  private final ArrayList<BrokerInfo> brokers = new ArrayList<>();
 
   @Override
   public Topology getFixture() {
     final TopologyImpl topologyRequest = new TopologyImpl();
-    final ArrayList<BrokerInfo> brokers = new ArrayList<BrokerInfo>();
     for (int i = 0; i < 10; i++) {
 
       final ArrayList<PartitionInfo> partitions = new ArrayList<PartitionInfo>();
@@ -49,5 +52,32 @@ public class TopologyFactory implements TestFactory<Topology> {
 
     topologyRequest.setBrokers(brokers);
     return topologyRequest;
+  }
+
+  private boolean comparePartitions(
+      final GatewayOuterClass.Partition grpcPartition, final PartitionInfo partition) {
+    return grpcPartition.getPartitionId() == partition.getPartitionId();
+  }
+
+  private boolean compareBrokers(
+      final GatewayOuterClass.BrokerInfo grpcBroker, final BrokerInfo broker) {
+    for (final GatewayOuterClass.Partition grpcPartition : grpcBroker.getPartitionsList()) {
+      if (broker
+          .getPartitions()
+          .stream()
+          .noneMatch(partition -> comparePartitions(grpcPartition, partition))) {
+        return false;
+      }
+    }
+    return grpcBroker.getHost().equals(broker.getHost())
+        && grpcBroker.getPort() == broker.getPort();
+  }
+
+  public boolean containsBroker(final GatewayOuterClass.BrokerInfo grpcBroker) {
+    return brokers.stream().anyMatch(broker -> compareBrokers(grpcBroker, broker));
+  }
+
+  public List<BrokerInfo> getBrokersList() {
+    return brokers;
   }
 }
