@@ -18,6 +18,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.instance.WorkflowDefinition;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class WorkflowInstanceIT extends OperateIntegrationTest {
@@ -89,7 +91,6 @@ public class WorkflowInstanceIT extends OperateIntegrationTest {
 
     //then
     final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
-    assertThat(workflowInstanceEntity.getId()).isEqualTo(workflowInstanceId);
     assertThat(workflowInstanceEntity.getIncidents().size()).isEqualTo(1);
     IncidentEntity incidentEntity = workflowInstanceEntity.getIncidents().get(0);
     assertThat(incidentEntity.getState()).isEqualTo(IncidentState.DELETED);
@@ -110,12 +111,11 @@ public class WorkflowInstanceIT extends OperateIntegrationTest {
     final String workflowInstanceId = zeebeUtil.startWorkflowInstance(topicName, processId, "{\"a\": \"b\"}");
 
     //when
-    zeebeTestRule.setJobWorker(zeebeUtil.completeTask(topicName, activityId, zeebeTestRule.getWorkerName(), null));      //empty payload provokes incident
-    elasticsearchTestRule.processAllEvents(16);
+    //create an incident
+    failTaskWithNoRetriesLeft(activityId);
 
     //then
     final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
-    assertThat(workflowInstanceEntity.getId()).isEqualTo(workflowInstanceId);
     assertThat(workflowInstanceEntity.getIncidents().size()).isEqualTo(1);
     IncidentEntity incidentEntity = workflowInstanceEntity.getIncidents().get(0);
     assertThat(incidentEntity.getActivityId()).isEqualTo(activityId);
@@ -124,16 +124,69 @@ public class WorkflowInstanceIT extends OperateIntegrationTest {
     assertThat(incidentEntity.getErrorType()).isNotEmpty();
     assertThat(incidentEntity.getState()).isEqualTo(IncidentState.ACTIVE);
 
-
     //assert activity fields
     assertThat(workflowInstanceEntity.getActivities().size()).isEqualTo(2);
     assertStartActivityCompleted(workflowInstanceEntity.getActivities().get(0));
     assertActivityIsInIncidentState(workflowInstanceEntity.getActivities().get(1), "taskA");
 
-    zeebeUtil.updatePayload(topicName, workflowInstanceId, "{\"foo\":\"b\"}", processId, workflowId);
+  }
+
+  @Test
+  public void testWorkflowInstanceWithIncidentOnGateway() {
+    // having
+    String topicName = zeebeTestRule.getTopicName();
+    String activityId = "xor";
+
+    String processId = "demoProcess";
+    WorkflowDefinition workflow = Bpmn.createExecutableWorkflow(processId)
+      .startEvent("start")
+        .exclusiveGateway(activityId)
+        .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
+          .serviceTask("task1").taskType("task1").done()
+          .endEvent()
+        .sequenceFlow("s2", s -> s.condition("$.foo >= 5"))
+          .serviceTask("task2").taskType("task2").done()
+          .endEvent()
+      .done();
+    final String workflowId = zeebeUtil.deployWorkflowToTheTopic(topicName, workflow, processId + ".bpmn");
+
+    //when
+    final String workflowInstanceId = zeebeUtil.startWorkflowInstance(topicName, processId, "{\"a\": \"b\"}");      //wrong payload provokes incident
+    elasticsearchTestRule.processAllEvents(16);
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
+
+    //then incident created, activity in INCIDENT state
+    WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
+    assertThat(workflowInstanceEntity.getIncidents().size()).isEqualTo(1);
+    IncidentEntity incidentEntity = workflowInstanceEntity.getIncidents().get(0);
+    assertThat(incidentEntity.getActivityId()).isEqualTo(activityId);
+    assertThat(incidentEntity.getActivityInstanceId()).isNotEmpty();
+    assertThat(incidentEntity.getErrorMessage()).isNotEmpty();
+    assertThat(incidentEntity.getErrorType()).isNotEmpty();
+    assertThat(incidentEntity.getState()).isEqualTo(IncidentState.ACTIVE);
+
+    //assert activity fields
+    assertThat(workflowInstanceEntity.getActivities().size()).isEqualTo(2);
+    assertStartActivityCompleted(workflowInstanceEntity.getActivities().get(0));
+    final ActivityInstanceEntity gatewayActivity = workflowInstanceEntity.getActivities().get(1);
+    assertActivityIsInIncidentState(gatewayActivity, "xor");
+
+    //when payload updated
+    zeebeUtil.updatePayload(topicName, gatewayActivity.getId(), workflowInstanceId, "{\"foo\": 7}", processId, workflowId);
     elasticsearchTestRule.processAllEvents(5);
 
-    //TODO how to resolve the incident?
+    //then incident is resolved
+    workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
+    assertThat(workflowInstanceEntity.getIncidents().size()).isEqualTo(1);
+    incidentEntity = workflowInstanceEntity.getIncidents().get(0);
+    assertThat(incidentEntity.getActivityId()).isEqualTo(activityId);
+    assertThat(incidentEntity.getState()).isEqualTo(IncidentState.RESOLVED);
+
+    //assert activity fields
+    final ActivityInstanceEntity xorActivity = workflowInstanceEntity.getActivities().stream().filter(a -> a.getActivityId().equals("xor"))
+      .findFirst().get();
+    assertThat(xorActivity.getState()).isEqualTo(ActivityState.COMPLETED);
+    assertThat(xorActivity.getEndDate()).isNotNull();
   }
 
   @Test

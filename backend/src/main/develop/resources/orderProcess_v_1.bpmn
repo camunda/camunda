@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.1.0">
-  <bpmn:process id="orderProcess" isExecutable="true" name="Order process">
+  <bpmn:process id="orderProcess" name="Order process" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1" name="Order received">
       <bpmn:outgoing>SequenceFlow_0j6tsnn</bpmn:outgoing>
     </bpmn:startEvent>
@@ -24,7 +24,7 @@
       <bpmn:incoming>SequenceFlow_19klrd3</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="SequenceFlow_19klrd3" sourceRef="Task_162x79i" targetRef="EndEvent_042s0oc" />
-    <bpmn:exclusiveGateway id="ExclusiveGateway_1qqmrb8" name="Payment OK?" default="SequenceFlow_1dq2rqw">
+    <bpmn:exclusiveGateway id="ExclusiveGateway_1qqmrb8" name="Payment OK?">
       <bpmn:incoming>SequenceFlow_1s6g17c</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0jzbqu1</bpmn:outgoing>
       <bpmn:outgoing>SequenceFlow_1dq2rqw</bpmn:outgoing>
@@ -38,10 +38,12 @@
       <bpmn:outgoing>SequenceFlow_1q6ade7</bpmn:outgoing>
     </bpmn:serviceTask>
     <bpmn:sequenceFlow id="SequenceFlow_0jzbqu1" name="Not paid" sourceRef="ExclusiveGateway_1qqmrb8" targetRef="ServiceTask_00g0gy6">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression"> $.paid == false</bpmn:conditionExpression>
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">$.paid == false</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
     <bpmn:sequenceFlow id="SequenceFlow_1q6ade7" sourceRef="ServiceTask_00g0gy6" targetRef="Task_1b1r7ow" />
-    <bpmn:sequenceFlow id="SequenceFlow_1dq2rqw" sourceRef="ExclusiveGateway_1qqmrb8" targetRef="Task_162x79i" />
+    <bpmn:sequenceFlow id="SequenceFlow_1dq2rqw" name="paid" sourceRef="ExclusiveGateway_1qqmrb8" targetRef="Task_162x79i">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">$.paid == true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="orderProcess">
@@ -112,7 +114,7 @@
         <di:waypoint xsi:type="dc:Point" x="139" y="248" />
         <di:waypoint xsi:type="dc:Point" x="253" y="248" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="196" y="227" width="0" height="12" />
+          <dc:Bounds x="186" y="227" width="20" height="12" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
     </bpmndi:BPMNPlane>

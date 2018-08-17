@@ -73,7 +73,7 @@ public class EventIT extends OperateIntegrationTest {
 
     //update process payload //TODO update payload command is giving timeout for some reason
     final String updatedPayload = "{\"a\": \"c\"}";
-    zeebeUtil.updatePayload(topicName, workflowInstanceId, updatedPayload, processId, workflowId);
+    zeebeUtil.updatePayload(topicName, workflowInstanceId, workflowInstanceId, updatedPayload, processId, workflowId);
     elasticsearchTestRule.processAllEvents(5);
 
     //complete task C

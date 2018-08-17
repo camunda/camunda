@@ -118,20 +118,21 @@ public class ZeebeDemoDataGenerator {
       .jobType("checkPayment")
       .handler((jobClient, job) -> {
         final int scenario = random.nextInt(10);
-        if (scenario<5) {
+        if (scenario<3) {
           //fail
           throw new RuntimeException("Payment system not available.");
         } else if (scenario<9) {
-          if (scenario<7) {
+          if (scenario<5) {
             jobClient.newCompleteCommand(job).payload("{\"paid\":false}").send().join();
           } else {
-            jobClient.newCompleteCommand(job).payload("{\"paid\":true}").send().join();
+//            jobClient.newCompleteCommand(job).payload("{\"paid\":true}").send().join();
+            jobClient.newCompleteCommand(job).send().join();
           }
         } else {
           //leave the task active
         }
       })
-      .name("operate")
+      .name("operate333")
       .timeout(Duration.ofSeconds(3))
       .open();
   }

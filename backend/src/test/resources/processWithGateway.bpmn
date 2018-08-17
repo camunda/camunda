@@ -34,7 +34,7 @@
       <bpmn:incoming>SequenceFlow_1hc64k1</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="SequenceFlow_1hc64k1" sourceRef="taskB" targetRef="end2" />
-    <bpmn:exclusiveGateway id="gateway" name="gateway" default="SequenceFlow_1lf9ptg">
+    <bpmn:exclusiveGateway id="gateway" name="gateway">
       <bpmn:incoming>SequenceFlow_000ynmn</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_054v4fs</bpmn:outgoing>
       <bpmn:outgoing>SequenceFlow_1lf9ptg</bpmn:outgoing>
@@ -43,7 +43,9 @@
     <bpmn:sequenceFlow id="SequenceFlow_054v4fs" sourceRef="gateway" targetRef="taskC">
       <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">$.goToTaskC == true</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="SequenceFlow_1lf9ptg" sourceRef="gateway" targetRef="taskB" />
+    <bpmn:sequenceFlow id="SequenceFlow_1lf9ptg" sourceRef="gateway" targetRef="taskB" >
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">$.goToTaskC == false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
   </bpmn:process>
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="processWithGateway">

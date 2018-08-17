@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.ActivityState;
+import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.entities.EventSourceType;
 import org.camunda.operate.entities.IncidentEntity;
@@ -129,7 +130,10 @@ public class ElasticsearchRequestCreatorsHolder {
             "for (int j = 0; j < ctx._source.activities.size(); j++) {" +
               "if (ctx._source.activities[j].id == params.incident.activityInstanceId) {" +
                 "if (params.incident.state == '" + IncidentState.ACTIVE.toString() + "') {" +
-                  "ctx._source.activities[j].state = '" + ActivityState.INCIDENT.toString() + "'" +
+                  "ctx._source.activities[j].state = '" + ActivityState.INCIDENT.toString() + "';" +
+                  "ctx._source.activities[j].endDate = null;" +
+                "} else if (ctx._source.activities[j].type == '" + ActivityType.GATEWAY.toString() + "') {" +
+                  "ctx._source.activities[j].state = '" + ActivityState.COMPLETED.toString() + "'" +
                 "} else {" +
                   "ctx._source.activities[j].state = '" + ActivityState.ACTIVE.toString() + "'" +
                 "}" +

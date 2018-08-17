@@ -29,8 +29,7 @@ public abstract class CollectionUtil {
   }
 
   public static <T, S> Map<T,List<S>> addToMap(Map<T, List<S>> map, T key, S value) {
-    map.computeIfAbsent(key, k -> new ArrayList<S>());
-    map.get(key).add(value);
+    map.computeIfAbsent(key, k -> new ArrayList<S>()).add(value);
     return map;
   }
 

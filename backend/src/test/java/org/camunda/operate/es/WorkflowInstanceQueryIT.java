@@ -6,6 +6,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.Random;
 import java.util.UUID;
+import java.util.function.Consumer;
 import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.IncidentEntity;
@@ -41,11 +42,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Tests Elasticsearch queries for workflow instances.
  */
 public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
-
-  @FunctionalInterface
-  interface FiltersSupplier {
-    void applyFilters(WorkflowInstanceQueryDto query);
-  }
 
   private static final String QUERY_INSTANCES_URL = WORKFLOW_INSTANCE_URL;
   private static final String GET_INSTANCE_URL = WORKFLOW_INSTANCE_URL + "/%s";
@@ -606,9 +602,9 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     });
   }
 
-  private WorkflowInstanceRequestDto createGetAllWorkflowInstancesQuery(FiltersSupplier filtersSupplier) {
+  private WorkflowInstanceRequestDto createGetAllWorkflowInstancesQuery(Consumer<WorkflowInstanceQueryDto> filtersSupplier) {
     final WorkflowInstanceRequestDto workflowInstanceQuery = createGetAllWorkflowInstancesQuery();
-    filtersSupplier.applyFilters(workflowInstanceQuery.getQueries().get(0));
+    filtersSupplier.accept(workflowInstanceQuery.getQueries().get(0));
 
     return workflowInstanceQuery;
   }
@@ -938,10 +934,10 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     return String.format("%s?firstResult=%d&maxResults=%d", QUERY_INSTANCES_URL, firstResult, maxResults);
   }
 
-  private WorkflowInstanceRequestDto createWorkflowInstanceQuery(FiltersSupplier filtersSupplier) {
+  private WorkflowInstanceRequestDto createWorkflowInstanceQuery(Consumer<WorkflowInstanceQueryDto> filtersSupplier) {
     WorkflowInstanceRequestDto request = new WorkflowInstanceRequestDto();
     WorkflowInstanceQueryDto query = new WorkflowInstanceQueryDto();
-    filtersSupplier.applyFilters(query);
+    filtersSupplier.accept(query);
     request.getQueries().add(query);
     return request;
   }
