@@ -40,10 +40,10 @@ const disabledStyle = css`
       dark: Colors.uiDark05
     })};
     color: ${themeStyle({
-      dark: Colors.uiLight02,
-      light: Colors.uiDark04
+      dark: 'rgba(247, 248, 250, 0.5)',
+      light: 'rgba(69, 70, 78, 0.5)'
     })};
-    opacity: 0.5;
+    box-shadow: none;
   }
 `;
 
@@ -83,7 +83,7 @@ export const Button = themed(styled.button`
 
   color: ${themeStyle({
     dark: Colors.uiLight02,
-    light: Colors.uiDark04
+    light: 'rgba(69, 70, 78, 0.9)'
   })};
   background-color: ${themeStyle({
     dark: Colors.uiDark05,
