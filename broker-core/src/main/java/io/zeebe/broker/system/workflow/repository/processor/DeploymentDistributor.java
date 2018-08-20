@@ -36,6 +36,7 @@ import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
+import java.util.Iterator;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.IntArrayList;
@@ -66,7 +67,7 @@ public class DeploymentDistributor {
   private final ActorControl actor;
   private final ActorCondition updatePartition;
 
-  private IntArrayList remainingPartitions;
+  private IntArrayList partitionsToDistributeTo;
 
   public DeploymentDistributor(
       ClientTransport managementApi,
@@ -108,7 +109,7 @@ public class DeploymentDistributor {
   }
 
   private void pushDeploymentToPartitions(long key) {
-    if (!remainingPartitions.isEmpty()) {
+    if (!partitionsToDistributeTo.isEmpty()) {
       deployOnMultiplePartitions(key);
     } else {
       LOG.trace("No other partitions to distribute deployment.");
@@ -120,40 +121,54 @@ public class DeploymentDistributor {
   private void deployOnMultiplePartitions(long key) {
     LOG.trace("Distribute deployment to other partitions.");
 
-    final Int2ObjectHashMap<NodeInfo> partitionLeaders = partitionListener.getPartitionLeaders();
-    if (partitionLeaders.size() - 1 == remainingPartitions.size()) {
-      distributeDeployment(key);
-    } else {
-      LOG.trace("Not enough leaders");
-      delayedRetry(key);
-    }
-  }
-
-  private void delayedRetry(long key) {
-    actor.runDelayed(
-        PARTITION_LEADER_RESOLVE_RETRY,
-        () -> {
-          LOG.trace("Retry partition leader resolving");
-          deployOnMultiplePartitions(key);
-        });
-  }
-
-  private void distributeDeployment(long key) {
-    final Int2ObjectHashMap<NodeInfo> partitionLeaders = partitionListener.getPartitionLeaders();
-
     final PendingDeploymentDistribution pendingDeploymentDistribution =
         pendingDistributions.get(key);
     final DirectBuffer directBuffer = pendingDeploymentDistribution.getDeployment();
-    pendingDeploymentDistribution.setDistributionCount(remainingPartitions.size());
+    pendingDeploymentDistribution.setDistributionCount(partitionsToDistributeTo.size());
 
     pushDeploymentRequest.reset();
     pushDeploymentRequest.deployment(directBuffer).deploymentKey(key);
 
-    for (int partition : remainingPartitions) {
-      final NodeInfo leader = partitionLeaders.get(partition);
-      final SocketAddress managementApiAddress = leader.getManagementApiAddress();
-      pushDeploymentToPartition(managementApiAddress, partition);
+    final IntArrayList modifyablePartitionsList = new IntArrayList();
+    partitionsToDistributeTo.forEachOrderedInt(value -> modifyablePartitionsList.add(value));
+
+    distributeDeployment(modifyablePartitionsList);
+  }
+
+  private void distributeDeployment(IntArrayList partitionsToDistribute) {
+    final IntArrayList remainingPartitions =
+        distributeDeploymentToPartitions(partitionsToDistribute);
+
+    distributeDelayedToRemainingPartitions(remainingPartitions);
+  }
+
+  private void distributeDelayedToRemainingPartitions(IntArrayList partitions) {
+    if (partitions.isEmpty()) {
+      LOG.trace("Pushed deployment to all partitions");
+      return;
     }
+
+    actor.runDelayed(
+        PARTITION_LEADER_RESOLVE_RETRY,
+        () -> {
+          distributeDeployment(partitions);
+        });
+  }
+
+  private IntArrayList distributeDeploymentToPartitions(IntArrayList remainingPartitions) {
+    final Int2ObjectHashMap<NodeInfo> currentPartitionLeaders =
+        partitionListener.getPartitionLeaders();
+
+    final Iterator<Integer> iterator = remainingPartitions.iterator();
+    while (iterator.hasNext()) {
+      final Integer partitionId = iterator.next();
+      final NodeInfo leader = currentPartitionLeaders.get(partitionId);
+      if (leader != null) {
+        iterator.remove();
+        pushDeploymentToPartition(leader.getManagementApiAddress(), partitionId);
+      }
+    }
+    return remainingPartitions;
   }
 
   private void pushDeploymentToPartition(SocketAddress partitionLeader, int partition) {
@@ -169,7 +184,7 @@ public class DeploymentDistributor {
                 pushDeploymentRequest,
                 PUSH_REQUEST_TIMEOUT);
 
-    LOG.debug("Deployment pushed to partition {}.", partition);
+    LOG.debug("Deployment pushed to partition {} ({}).", partition, partitionLeader);
     actor.runOnCompletion(
         pushResponseFuture,
         (response, throwable) -> {
@@ -180,8 +195,15 @@ public class DeploymentDistributor {
                 "Error on pushing deployment to partition {}. Retry request. ",
                 partition,
                 throwable);
-            // TODO maybe need to request new partition leader ?
-            pushDeploymentToPartition(partitionLeader, partition);
+
+            final Int2ObjectHashMap<NodeInfo> partitionLeaders =
+                partitionListener.getPartitionLeaders();
+            final NodeInfo currentLeader = partitionLeaders.get(partition);
+            if (currentLeader != null) {
+              pushDeploymentToPartition(currentLeader.getManagementApiAddress(), partition);
+            } else {
+              pushDeploymentToPartition(partitionLeader, partition);
+            }
           }
         });
   }
@@ -243,8 +265,8 @@ public class DeploymentDistributor {
         .forEach(
             topic -> {
               if (topic.getTopicName().equals(DEFAULT_TOPIC)) {
-                remainingPartitions = topic.getPartitionIds();
-                remainingPartitions.removeInt(
+                partitionsToDistributeTo = topic.getPartitionIds();
+                partitionsToDistributeTo.removeInt(
                     Protocol.DEPLOYMENT_PARTITION); // no need to send push to him self
               }
             });
