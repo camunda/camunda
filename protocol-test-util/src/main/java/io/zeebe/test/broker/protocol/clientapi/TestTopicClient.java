@@ -331,6 +331,10 @@ public class TestTopicClient {
     }
   }
 
+  public void closeTopicSubscription() {
+    partitionIdsOfOpenSubscription.clear();
+  }
+
   public static Predicate<SubscribedRecord> intent(Intent intent) {
     return e -> e.intent() == intent;
   }
