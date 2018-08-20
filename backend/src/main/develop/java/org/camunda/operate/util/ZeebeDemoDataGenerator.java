@@ -65,7 +65,10 @@ public class ZeebeDemoDataGenerator {
     topicSubscriptions.add(cancelSomeInstances());
 
     List<JobWorker> jobWorkers = new ArrayList<>();
+
     jobWorkers.add(progressDemoProcessTaskA());
+    jobWorkers.add(progressOrderProcessCheckPayment());
+
     jobWorkers.add(progressSimpleTask("taskB"));
     jobWorkers.add(progressSimpleTask("taskC"));
     jobWorkers.add(progressSimpleTask("taskD"));
@@ -74,7 +77,6 @@ public class ZeebeDemoDataGenerator {
     jobWorkers.add(progressSimpleTask("taskG"));
     jobWorkers.add(progressSimpleTask("taskH"));
 
-    jobWorkers.add(progressOrderProcessCheckPayment());
 
     jobWorkers.add(progressSimpleTask("requestPayment"));
     jobWorkers.add(progressSimpleTask("shipArticles"));
@@ -118,11 +120,11 @@ public class ZeebeDemoDataGenerator {
       .jobType("checkPayment")
       .handler((jobClient, job) -> {
         final int scenario = random.nextInt(10);
-        if (scenario<3) {
+        if (scenario<5) {
           //fail
           throw new RuntimeException("Payment system not available.");
         } else if (scenario<9) {
-          if (scenario<5) {
+          if (scenario<7) {
             jobClient.newCompleteCommand(job).payload("{\"paid\":false}").send().join();
           } else {
 //            jobClient.newCompleteCommand(job).payload("{\"paid\":true}").send().join();
@@ -132,7 +134,7 @@ public class ZeebeDemoDataGenerator {
           //leave the task active
         }
       })
-      .name("operate333")
+      .name("operate")
       .timeout(Duration.ofSeconds(3))
       .open();
   }
@@ -188,17 +190,13 @@ public class ZeebeDemoDataGenerator {
     return client.topicClient(topic).jobClient().newWorker()
       .jobType("taskA")
       .handler((jobClient, job) -> {
-        final int scenarioCount = random.nextInt(3);
+        final int scenarioCount = random.nextInt(2);
         switch (scenarioCount) {
         case 0:
-          //incidents for outputMapping for taskA
-          jobClient.newCompleteCommand(job).payload((String)null).send().join();
-          break;
-        case 1:
           //successfully complete task
           jobClient.newCompleteCommand(job).send().join();
           break;
-        case 2:
+        case 1:
           //leave the task A active
           break;
         }
