@@ -1,10 +1,6 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import * as api from 'modules/api/events/events';
-import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
-import {HEADER} from 'modules/constants';
-
 import InstanceEvents from './InstanceEvents';
 import * as Styled from './styled';
 import Foldable from './Foldable';
@@ -47,81 +43,39 @@ const instanceEvents = [
   }
 ];
 
-const mockEvents = [
-  ...fooActivityEvents,
-  ...barActivityEvents,
+const fooGroupedEvents = {
+  id: 'foo',
+  name: 'foo name',
+  events: fooActivityEvents
+};
+const barGroupedEvents = {
+  id: 'foo',
+  name: 'bar name',
+  events: barActivityEvents
+};
+
+const mockGroupedEvents = [
+  {...fooGroupedEvents},
+  {...barGroupedEvents},
   ...instanceEvents
 ];
 
-api.fetchEvents = mockResolvedAsyncFn(mockEvents);
-
-const mockInstance = {id: 'foo'};
-
-const fooActivityDetails = {name: 'foo name'};
-const barActivityDetails = {name: 'bar name'};
-const mockActivitiesDetails = {
-  foo: fooActivityDetails,
-  bar: barActivityDetails
-};
-
 describe('InstanceEvents', () => {
-  beforeEach(() => {
-    api.fetchEvents.mockClear();
-  });
-
   it('should render empty events container by default', () => {
     // given
-    const node = shallow(<InstanceEvents instance={mockInstance} />);
+    const node = shallow(<InstanceEvents />);
 
     // then
-    expect(node.state()).toEqual({
-      events: null,
-      groupedEvents: null
-    });
     const EventsContainerNode = node.find(Styled.EventsContainer);
     expect(EventsContainerNode).toHaveLength(1);
     expect(EventsContainerNode.children().length).toBe(0);
   });
 
-  it("should not render grouped events if events or activities didn't change", async () => {
+  it('should render grouped events', async () => {
     // given
-    const node = shallow(<InstanceEvents instance={mockInstance} />);
-    await flushPromises();
-    node.update();
+    const node = shallow(<InstanceEvents groupedEvents={mockGroupedEvents} />);
 
     // then
-    expect(node.state()).toEqual({
-      events: mockEvents,
-      groupedEvents: null
-    });
-    const EventsContainerNode = node.find(Styled.EventsContainer);
-    expect(EventsContainerNode).toHaveLength(1);
-    expect(EventsContainerNode.children().length).toBe(0);
-  });
-
-  it('should render grouped events if selectedLogEntry is HEADER', async () => {
-    // given
-    const expectedGroupedEvents = [
-      {
-        events: fooActivityEvents,
-        name: fooActivityDetails.name
-      },
-      {
-        events: barActivityEvents,
-        name: barActivityDetails.name
-      },
-      ...instanceEvents
-    ];
-    const node = shallow(
-      <InstanceEvents instance={mockInstance} selectedLogEntry={HEADER} />
-    );
-    await flushPromises();
-    node.setProps({activitiesDetails: mockActivitiesDetails});
-    node.update();
-
-    // then
-    expect(node.state().events).toEqual(mockEvents);
-    expect(node.state('groupedEvents')).toEqual(expectedGroupedEvents);
     // Foldable for each event and each group
     const FoldableNodes = node.find(Foldable);
     expect(FoldableNodes).toHaveLength(8);
@@ -131,7 +85,7 @@ describe('InstanceEvents', () => {
     // Foo Summary
     const SummaryNode = FooFoldableNode.find(Foldable.Summary).at(0);
     expect(SummaryNode.prop('isBold')).toBe(true);
-    expect(SummaryNode.contains(fooActivityDetails.name));
+    expect(SummaryNode.contains(fooGroupedEvents.name));
 
     // Foo Details
     const FoldableDetailsNode = FooFoldableNode.find(Foldable.Details).at(0);
@@ -153,27 +107,6 @@ describe('InstanceEvents', () => {
 
     // Instance Events Foldables
     expect(InstanceFoldableNode.find(Foldable)).toHaveLength(2);
-
-    expect(node).toMatchSnapshot();
-  });
-
-  it('should render events specific to an activity instance', async () => {
-    // given
-    const node = shallow(
-      <InstanceEvents instance={mockInstance} selectedLogEntry={HEADER} />
-    );
-    await flushPromises();
-    node.setProps({
-      activitiesDetails: mockActivitiesDetails,
-      selectedLogEntry: 'foo'
-    });
-    node.update();
-
-    // then
-    expect(node.state('groupedEvents')).toEqual(fooActivityEvents);
-    // Foldable for each event and each group
-    const FoldableNodes = node.find(Foldable);
-    expect(FoldableNodes).toHaveLength(2);
 
     expect(node).toMatchSnapshot();
   });

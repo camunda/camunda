@@ -1,60 +1,15 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import {fetchEvents} from 'modules/api/events';
 import {isEmpty} from 'modules/utils';
 
 import Foldable from './Foldable';
-import {getGroupedEvents} from './service';
 import * as Styled from './styled';
 
 export default class InstanceEvents extends React.Component {
   static propTypes = {
-    instance: PropTypes.shape({
-      id: PropTypes.string.isRequired
-    }).isRequired,
-    activitiesDetails: PropTypes.object,
-    selectedLogEntry: PropTypes.string
+    groupedEvents: PropTypes.array
   };
-
-  state = {
-    events: null,
-    groupedEvents: null
-  };
-
-  async componentDidMount() {
-    const events = await fetchEvents(this.props.instance.id);
-    this.setState({events});
-  }
-
-  componentDidUpdate(prevProps, prevState) {
-    const {activitiesDetails, selectedLogEntry} = this.props;
-    const {events} = this.state;
-
-    if (!activitiesDetails || !events) {
-      return;
-    }
-
-    const haveActivitiesDetailsChanged =
-      activitiesDetails !== prevProps.activitiesDetails;
-    const hasSelectedLogEntryChanged =
-      selectedLogEntry !== prevProps.selectedLogEntry;
-    const haveEventsChanged = events !== prevState.events;
-
-    if (
-      haveActivitiesDetailsChanged ||
-      haveEventsChanged ||
-      hasSelectedLogEntryChanged
-    ) {
-      const groupedEvents = getGroupedEvents({
-        events: this.state.events,
-        activitiesDetails,
-        selectedLogEntry
-      });
-
-      this.setState({groupedEvents});
-    }
-  }
 
   renderData = data => {
     return Object.entries(data)
@@ -121,8 +76,8 @@ export default class InstanceEvents extends React.Component {
     return (
       <Styled.InstanceEvents {...this.props}>
         <Styled.EventsContainer>
-          {this.state.groupedEvents
-            ? this.state.groupedEvents.map(this.renderGroup)
+          {this.props.groupedEvents
+            ? this.props.groupedEvents.map(this.renderGroup)
             : null}
         </Styled.EventsContainer>
       </Styled.InstanceEvents>

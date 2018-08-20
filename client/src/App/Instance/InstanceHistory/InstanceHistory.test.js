@@ -3,20 +3,105 @@ import {shallow} from 'enzyme';
 
 import SplitPane from 'modules/components/SplitPane';
 import Copyright from 'modules/components/Copyright';
+import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
+import * as api from 'modules/api/events/events';
+import {HEADER} from 'modules/constants';
 
 import InstanceHistory from './InstanceHistory';
 import InstanceLog from './InstanceLog';
 import InstanceEvents from './InstanceEvents';
 import * as Styled from './styled';
 
+const fooActivityEvents = [
+  {
+    eventType: 'fooCreated',
+    activityInstanceId: 'foo',
+    metadata: {
+      a: 'b'
+    }
+  },
+  {
+    eventType: 'fooActiviated',
+    activityInstanceId: 'foo'
+  }
+];
+
+const barActivityEvents = [
+  {
+    eventType: 'barCreated',
+    activityInstanceId: 'bar'
+  },
+  {
+    eventType: 'barActivated',
+    activityInstanceId: 'bar'
+  }
+];
+
+const instanceEvents = [
+  {
+    eventType: 'baz',
+    metadata: {
+      c: {
+        d: 'e',
+        e: null
+      },
+      f: null
+    }
+  }
+];
+
+const mockEvents = [
+  ...fooActivityEvents,
+  ...barActivityEvents,
+  ...instanceEvents
+];
+
+const mockActivitiesDetails = {
+  foo: {name: 'foo name'},
+  bar: {name: 'bar name'}
+};
+
+const fooGroupedEvents = {
+  ...mockActivitiesDetails.foo,
+  events: fooActivityEvents
+};
+
+const barGroupedEvents = {
+  ...mockActivitiesDetails.bar,
+  events: barActivityEvents
+};
+
+const expectedGroupedEvents = [
+  {...fooGroupedEvents},
+  {...barGroupedEvents},
+  ...instanceEvents
+];
+
+api.fetchEvents = mockResolvedAsyncFn(mockEvents);
+
 describe('InstanceHistory', () => {
-  it('should render a pane with InstanceLog section and Copyright', () => {
+  it('should have the right initial state', () => {
     // given
-    const mockProps = {
-      instance: {id: 'foo'},
-      activitiesDetails: {bar: 'bar'}
+    const instance = new InstanceHistory();
+
+    // then
+    expect(instance.state).toEqual({
+      selectedLogEntry: HEADER,
+      events: null,
+      groupedEvents: null
+    });
+  });
+
+  it('should render a pane with InstanceLog section and Copyright', async () => {
+    // given
+    const mockInstance = {
+      instance: {id: 'someInstanceId'}
     };
-    const node = shallow(<InstanceHistory {...mockProps} />);
+    const node = shallow(<InstanceHistory instance={mockInstance} />);
+    await flushPromises();
+    node.update();
+    node.setProps({activitiesDetails: mockActivitiesDetails});
+    node.update();
 
     // then
     // Pane
@@ -32,9 +117,9 @@ describe('InstanceHistory', () => {
     // Instance Log
     const InstanceLogNode = PaneBodyNode.find(InstanceLog);
     expect(InstanceLogNode).toHaveLength(1);
-    expect(InstanceLogNode.prop('instance')).toEqual(mockProps.instance);
+    expect(InstanceLogNode.prop('instance')).toEqual(mockInstance);
     expect(InstanceLogNode.prop('activitiesDetails')).toEqual(
-      mockProps.activitiesDetails
+      mockActivitiesDetails
     );
     expect(InstanceLogNode.prop('selectedLogEntry')).toEqual(
       node.state('selectedLogEntry')
@@ -46,12 +131,8 @@ describe('InstanceHistory', () => {
     // Instance Events
     const InstanceEventsNode = PaneBodyNode.find(InstanceEvents);
     expect(InstanceEventsNode).toHaveLength(1);
-    expect(InstanceEventsNode.prop('instance')).toEqual(mockProps.instance);
-    expect(InstanceEventsNode.prop('activitiesDetails')).toEqual(
-      mockProps.activitiesDetails
-    );
-    expect(InstanceEventsNode.prop('selectedLogEntry')).toEqual(
-      node.state('selectedLogEntry')
+    expect(InstanceEventsNode.prop('groupedEvents')).toEqual(
+      expectedGroupedEvents
     );
 
     // Pane Footer

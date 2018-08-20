@@ -4,12 +4,19 @@ exports[`InstanceHistory should render a pane with InstanceLog section and Copyr
 <Pane
   activitiesDetails={
     Object {
-      "bar": "bar",
+      "bar": Object {
+        "name": "bar name",
+      },
+      "foo": Object {
+        "name": "foo name",
+      },
     }
   }
   instance={
     Object {
-      "id": "foo",
+      "instance": Object {
+        "id": "someInstanceId",
+      },
     }
   }
 >
@@ -22,29 +29,68 @@ exports[`InstanceHistory should render a pane with InstanceLog section and Copyr
     <InstanceLog
       activitiesDetails={
         Object {
-          "bar": "bar",
+          "bar": Object {
+            "name": "bar name",
+          },
+          "foo": Object {
+            "name": "foo name",
+          },
         }
       }
       handleSelectedLogEntry={[Function]}
       instance={
         Object {
-          "id": "foo",
+          "instance": Object {
+            "id": "someInstanceId",
+          },
         }
       }
       selectedLogEntry="HEADER"
     />
     <InstanceEvents
-      activitiesDetails={
-        Object {
-          "bar": "bar",
-        }
+      groupedEvents={
+        Array [
+          Object {
+            "events": Array [
+              Object {
+                "activityInstanceId": "foo",
+                "eventType": "fooCreated",
+                "metadata": Object {
+                  "a": "b",
+                },
+              },
+              Object {
+                "activityInstanceId": "foo",
+                "eventType": "fooActiviated",
+              },
+            ],
+            "name": "foo name",
+          },
+          Object {
+            "events": Array [
+              Object {
+                "activityInstanceId": "bar",
+                "eventType": "barCreated",
+              },
+              Object {
+                "activityInstanceId": "bar",
+                "eventType": "barActivated",
+              },
+            ],
+            "name": "bar name",
+          },
+          Object {
+            "eventType": "baz",
+            "metadata": Object {
+              "c": Object {
+                "d": "e",
+                "e": null,
+              },
+              "f": null,
+            },
+          },
+        ]
       }
-      instance={
-        Object {
-          "id": "foo",
-        }
-      }
-      selectedLogEntry="HEADER"
     />
     <Themed(styled.div)>
       C

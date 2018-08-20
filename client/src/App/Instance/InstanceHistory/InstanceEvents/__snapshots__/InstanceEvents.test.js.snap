@@ -1,81 +1,52 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`InstanceEvents should render events specific to an activity instance 1`] = `
+exports[`InstanceEvents should render grouped events 1`] = `
 <Themed(styled.div)
-  activitiesDetails={
-    Object {
-      "bar": Object {
-        "name": "bar name",
-      },
-      "foo": Object {
+  groupedEvents={
+    Array [
+      Object {
+        "events": Array [
+          Object {
+            "activityInstanceId": "foo",
+            "eventType": "fooCreated",
+            "metadata": Object {
+              "a": "b",
+            },
+          },
+          Object {
+            "activityInstanceId": "foo",
+            "eventType": "fooActiviated",
+          },
+        ],
+        "id": "foo",
         "name": "foo name",
       },
-    }
-  }
-  instance={
-    Object {
-      "id": "foo",
-    }
-  }
-  selectedLogEntry="foo"
->
-  <styled.div>
-    <Themed(styled.div)
-      key="0"
-    >
-      <Foldable
-        key="fooCreated0"
-      >
-        <Summary
-          isFoldable={true}
-        >
-          fooCreated
-        </Summary>
-        <Details>
-          <Themed(styled.div)
-            key="0"
-          >
-            a: b
-          </Themed(styled.div)>
-        </Details>
-      </Foldable>
-    </Themed(styled.div)>
-    <Themed(styled.div)
-      key="1"
-    >
-      <Foldable
-        key="fooActiviated1"
-      >
-        <Summary
-          isFoldable={false}
-        >
-          fooActiviated
-        </Summary>
-        <Details />
-      </Foldable>
-    </Themed(styled.div)>
-  </styled.div>
-</Themed(styled.div)>
-`;
-
-exports[`InstanceEvents should render grouped events if selectedLogEntry is HEADER 1`] = `
-<Themed(styled.div)
-  activitiesDetails={
-    Object {
-      "bar": Object {
+      Object {
+        "events": Array [
+          Object {
+            "activityInstanceId": "bar",
+            "eventType": "barCreated",
+          },
+          Object {
+            "activityInstanceId": "bar",
+            "eventType": "barActivated",
+          },
+        ],
+        "id": "foo",
         "name": "bar name",
       },
-      "foo": Object {
-        "name": "foo name",
+      Object {
+        "eventType": "baz",
+        "metadata": Object {
+          "c": Object {
+            "d": "e",
+            "e": null,
+          },
+          "f": null,
+        },
       },
-    }
+    ]
   }
-  instance={
-    Object {
-      "id": "foo",
-    }
-  }
-  selectedLogEntry="HEADER"
 >
   <styled.div>
     <Themed(styled.div)
