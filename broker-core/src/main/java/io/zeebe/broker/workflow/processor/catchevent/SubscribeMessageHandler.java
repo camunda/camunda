@@ -70,7 +70,7 @@ public class SubscribeMessageHandler
             subscriptionClient,
             BufferUtil.bufferAsString(logStream.getTopicName()),
             logStream.getPartitionId());
-    topologyManager.addTopologyPartitionListener(subscriptionCommandSender);
+    topologyManager.addTopologyPartitionListener(subscriptionCommandSender.getPartitionListener());
   }
 
   @Override

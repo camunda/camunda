@@ -19,6 +19,7 @@ package io.zeebe.broker.workflow.map;
 
 import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
@@ -181,6 +182,7 @@ public class WorkflowCache implements TopologyPartitionListener {
 
       if (now - latest.getFetched() > LATEST_VERSION_REFRESH_INTERVAL) {
         // refresh latest version
+        Loggers.WORKFLOW_REPOSITORY_LOGGER.debug("fetch latest version");
         return null;
       }
     }

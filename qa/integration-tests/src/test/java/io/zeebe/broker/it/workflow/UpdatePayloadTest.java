@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.entry;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.gateway.api.events.DeploymentEvent;
 import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
 import io.zeebe.gateway.api.events.WorkflowInstanceState;
 import io.zeebe.gateway.cmd.BrokerErrorException;
@@ -58,12 +59,15 @@ public class UpdatePayloadTest {
 
   @Before
   public void init() {
-    clientRule
-        .getWorkflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-        .send()
-        .join();
+    final DeploymentEvent deploymentEvent =
+        clientRule
+            .getWorkflowClient()
+            .newDeployCommand()
+            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
+            .send()
+            .join();
+
+    clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
 
     clientRule
         .getWorkflowClient()

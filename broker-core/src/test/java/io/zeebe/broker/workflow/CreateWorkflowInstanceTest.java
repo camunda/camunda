@@ -561,7 +561,7 @@ public class CreateWorkflowInstanceTest {
   }
 
   @Test
-  public void shouldCreateWorkflowInstanceOnAllPartitions() {
+  public void shouldCreateWorkflowInstanceOnAllPartitions() throws Exception {
     // given
     final int partitions = 3;
 

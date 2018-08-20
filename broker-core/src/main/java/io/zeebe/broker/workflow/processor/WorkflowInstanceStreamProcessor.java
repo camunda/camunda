@@ -202,7 +202,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
             subscriptionApiClient,
             topicName,
             logStream.getPartitionId());
-    topologyManager.addTopologyPartitionListener(subscriptionCommandSender);
+    topologyManager.addTopologyPartitionListener(subscriptionCommandSender.getPartitionListener());
 
     workflowInstanceEventCreate =
         metricsManager

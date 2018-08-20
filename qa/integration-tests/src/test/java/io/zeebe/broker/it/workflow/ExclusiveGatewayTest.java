@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.gateway.api.events.DeploymentEvent;
 import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
 import io.zeebe.gateway.api.events.WorkflowInstanceState;
 import io.zeebe.model.bpmn.Bpmn;
@@ -52,12 +53,7 @@ public class ExclusiveGatewayTest {
             .endEvent("b")
             .done();
 
-    clientRule
-        .getWorkflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(workflowDefinition, "workflow.bpmn")
-        .send()
-        .join();
+    deploy(workflowDefinition);
 
     // when
     clientRule
@@ -90,12 +86,7 @@ public class ExclusiveGatewayTest {
             .endEvent("b")
             .done();
 
-    clientRule
-        .getWorkflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(workflowDefinition, "workflow.bpmn")
-        .send()
-        .join();
+    deploy(workflowDefinition);
 
     // when
     clientRule
@@ -130,12 +121,7 @@ public class ExclusiveGatewayTest {
             .connectTo("inc")
             .done();
 
-    clientRule
-        .getWorkflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(workflowDefinition, "workflow.bpmn")
-        .send()
-        .join();
+    deploy(workflowDefinition);
 
     // when
     clientRule
@@ -168,5 +154,17 @@ public class ExclusiveGatewayTest {
     final WorkflowInstanceEvent event =
         eventRecorder.getElementInState("workflow", WorkflowInstanceState.ELEMENT_COMPLETED);
     assertThat(event.getPayload()).isEqualTo("{\"count\":6}");
+  }
+
+  private void deploy(BpmnModelInstance workflowDefinition) {
+    final DeploymentEvent deploymentEvent =
+        clientRule
+            .getWorkflowClient()
+            .newDeployCommand()
+            .addWorkflowModel(workflowDefinition, "workflow.bpmn")
+            .send()
+            .join();
+
+    clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
   }
 }

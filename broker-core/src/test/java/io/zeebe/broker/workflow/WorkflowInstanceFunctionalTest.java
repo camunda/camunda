@@ -619,6 +619,7 @@ public class WorkflowInstanceFunctionalTest {
             .done()
             .sendAndAwait();
 
+    testClient.receiveFirstDeploymentEvent(DeploymentIntent.CREATED, deploymentResp.key());
     assertThat(deploymentResp.intent()).isEqualTo(DeploymentIntent.CREATED);
 
     final long workflowInstanceKey = testClient.createWorkflowInstance("yaml-workflow");
@@ -648,7 +649,7 @@ public class WorkflowInstanceFunctionalTest {
     // given
     // make a couple of deployments to ensure that the deployment stream processor will need some
     // time for reprocessing
-    final int numDeployments = 100;
+    final int numDeployments = 25;
     for (int i = 0; i < numDeployments; i++) {
       testClient.deploy(
           Bpmn.createExecutableProcess("process")

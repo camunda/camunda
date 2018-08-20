@@ -26,6 +26,7 @@ import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.gateway.api.ZeebeFuture;
 import io.zeebe.gateway.api.clients.WorkflowClient;
+import io.zeebe.gateway.api.events.DeploymentEvent;
 import io.zeebe.gateway.api.events.MessageEvent;
 import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
 import io.zeebe.gateway.api.events.WorkflowInstanceState;
@@ -68,7 +69,10 @@ public class PublishMessageTest {
 
     workflowClient = clientRule.getClient().topicClient().workflowClient();
 
-    workflowClient.newDeployCommand().addWorkflowModel(WORKFLOW, "wf.bpmn").send().join();
+    final DeploymentEvent deploymentEvent =
+        workflowClient.newDeployCommand().addWorkflowModel(WORKFLOW, "wf.bpmn").send().join();
+
+    clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
 
     eventRecorder.startRecordingEvents();
   }

@@ -43,6 +43,7 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -56,6 +57,11 @@ public class CreateDeploymentTest {
 
   private static final BpmnModelInstance WORKFLOW =
       Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
+
+  private static final BpmnModelInstance WORKFLOW_2 =
+      Bpmn.createExecutableProcess("process2").startEvent().endEvent().done();
+
+  public static final int PARTITION_ID = 1;
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
@@ -123,7 +129,7 @@ public class CreateDeploymentTest {
   }
 
   @Test
-  public void shouldCreateDeploymentResourceWithMultipleWorkflows() throws IOException {
+  public void shouldCreateDeploymentResourceWithCollaboration() throws IOException {
     // given
     final InputStream resourceAsStream =
         getClass().getResourceAsStream("/workflows/collaboration.bpmn");
@@ -150,13 +156,44 @@ public class CreateDeploymentTest {
   }
 
   @Test
+  public void shouldCreateDeploymentResourceWithMultipleWorkflows() {
+    // given
+    final List<Map<String, Object>> resources = new ArrayList<>();
+    resources.add(deploymentResource(bpmnXml(WORKFLOW), "process.bpmn"));
+    resources.add(deploymentResource(bpmnXml(WORKFLOW_2), "process2.bpmn"));
+
+    // when
+    final ExecuteCommandResponse resp =
+        apiRule
+            .createCmdRequest()
+            .partitionId(1)
+            .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
+            .command()
+            .put("topicName", DEFAULT_TOPIC)
+            .put("resources", resources)
+            .done()
+            .sendAndAwait();
+
+    // then
+    assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
+    assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATED);
+
+    final List<Map<String, Object>> deployedWorkflows =
+        Arrays.asList(getDeployedWorkflow(resp, 0), getDeployedWorkflow(resp, 1));
+
+    assertThat(deployedWorkflows)
+        .extracting(s -> s.get(WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID))
+        .contains("process", "process2");
+  }
+
+  @Test
   public void shouldRejectDeploymentIfNotValidDesignTimeAspect() throws Exception {
     // given
     final Path path = Paths.get(getClass().getResource("/workflows/invalid_process.bpmn").toURI());
     final byte[] resource = Files.readAllBytes(path);
 
     // when
-    final ExecuteCommandResponse resp = apiRule.topic().deployWithResponse(resource);
+    final ExecuteCommandResponse resp = apiRule.topic().deployWithResponse(resource, false);
 
     // then
     final SubscribedRecord createDeploymentCommand = getFirstDeploymentCreateCommand();
@@ -177,7 +214,7 @@ public class CreateDeploymentTest {
     final byte[] resource = Files.readAllBytes(path);
 
     // when
-    final ExecuteCommandResponse resp = apiRule.topic().deployWithResponse(resource);
+    final ExecuteCommandResponse resp = apiRule.topic().deployWithResponse(resource, false);
 
     // then
     final SubscribedRecord createDeploymentCommand = getFirstDeploymentCreateCommand();
@@ -256,7 +293,10 @@ public class CreateDeploymentTest {
         apiRule
             .topic()
             .deployWithResponse(
-                "not a workflow".getBytes(UTF_8), ResourceType.BPMN_XML.name(), "invalid.bpmn");
+                "not a workflow".getBytes(UTF_8),
+                ResourceType.BPMN_XML.name(),
+                "invalid.bpmn",
+                false);
 
     // then
     assertThat(resp.key()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());

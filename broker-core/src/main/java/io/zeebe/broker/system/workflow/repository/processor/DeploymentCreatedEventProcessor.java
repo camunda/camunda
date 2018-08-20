@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.system.workflow.repository.processor;
 
+import io.zeebe.broker.Loggers;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
@@ -40,9 +41,6 @@ public class DeploymentCreatedEventProcessor implements TypedRecordProcessor<Dep
       TypedRecord<DeploymentRecord> event,
       TypedResponseWriter responseWriter,
       TypedStreamWriter streamWriter) {
-
-    responseWriter.writeEvent(event);
-
     addWorkflowsToIndex(event);
   }
 
@@ -58,7 +56,10 @@ public class DeploymentCreatedEventProcessor implements TypedRecordProcessor<Dep
               .setEventPosition(event.getPosition())
               .setVersion(deployedWorkflow.getVersion())
               .setResourceName(BufferUtil.bufferAsString(deployedWorkflow.getResourceName()));
-
+      Loggers.WORKFLOW_REPOSITORY_LOGGER.trace(
+          "Workflow {} with version {} added",
+          workflowMetadata.getBpmnProcessId(),
+          workflowMetadata.getVersion());
       repositoryIndex.add(workflowMetadata);
     }
   }

@@ -101,6 +101,11 @@
     <data name="data" id="0" type="blob"/>
   </sbe:message>
 
+  <sbe:message name="ErrorResponse" id="10">
+    <field name="code" id="1" type="errorResponseCode"/>
+    <data name="data" id="2" type="varDataEncoding"/>
+  </sbe:message>
+
   <sbe:message name="FetchCreatedTopicsRequest" id="11">
   </sbe:message>
 
@@ -113,9 +118,15 @@
     </group>
   </sbe:message>
 
-  <sbe:message name="ErrorResponse" id="10">
-    <field name="code" id="1" type="errorResponseCode"/>
-    <data name="data" id="2" type="varDataEncoding"/>
+  <sbe:message name="PushDeploymentRequest" id="13">
+    <field name="partitionId" id="0" type="uint16"/>
+    <field name="deploymentKey" id="1" type="uint64"/>
+    <data name="deployment" id="2" type="varDataEncoding"/>
+  </sbe:message>
+
+  <sbe:message name="PushDeploymentResponse" id="14">
+    <field name="partitionId" id="0" type="uint16"/>
+    <field name="deploymentKey" id="1" type="uint64"/>
   </sbe:message>
 
 </sbe:messageSchema>

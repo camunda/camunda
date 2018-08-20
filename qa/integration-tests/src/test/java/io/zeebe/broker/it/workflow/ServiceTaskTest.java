@@ -23,11 +23,13 @@ import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.gateway.api.events.DeploymentEvent;
 import io.zeebe.gateway.api.events.JobEvent;
 import io.zeebe.gateway.api.events.JobState;
 import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
 import io.zeebe.gateway.api.events.WorkflowInstanceState;
 import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Rule;
@@ -50,18 +52,13 @@ public class ServiceTaskTest {
   @Test
   public void shouldCreateWorkflowInstanceWithServiceTask() {
     // given
-    clientRule
-        .getWorkflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(
-            Bpmn.createExecutableProcess("process")
-                .startEvent("start")
-                .serviceTask("task", t -> t.zeebeTaskType("foo"))
-                .endEvent("end")
-                .done(),
-            "workflow.bpmn")
-        .send()
-        .join();
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start")
+            .serviceTask("task", t -> t.zeebeTaskType("foo"))
+            .endEvent("end")
+            .done();
+    deploy(modelInstance);
 
     // when
     final WorkflowInstanceEvent workflowInstance =
@@ -84,24 +81,18 @@ public class ServiceTaskTest {
     final Map<String, String> customHeaders = new HashMap<>();
     customHeaders.put("cust1", "a");
     customHeaders.put("cust2", "b");
-
-    clientRule
-        .getWorkflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(
-            Bpmn.createExecutableProcess("process")
-                .startEvent("start")
-                .serviceTask(
-                    "task",
-                    t ->
-                        t.zeebeTaskType("foo")
-                            .zeebeTaskHeader("cust1", "a")
-                            .zeebeTaskHeader("cust2", "b"))
-                .endEvent("end")
-                .done(),
-            "workflow.bpmn")
-        .send()
-        .join();
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start")
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeTaskType("foo")
+                        .zeebeTaskHeader("cust1", "a")
+                        .zeebeTaskHeader("cust2", "b"))
+            .endEvent("end")
+            .done();
+    deploy(modelInstance);
 
     final WorkflowInstanceEvent workflowInstance =
         clientRule
@@ -141,18 +132,14 @@ public class ServiceTaskTest {
   @Test
   public void shouldCompleteServiceTask() {
     // given
-    clientRule
-        .getWorkflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(
-            Bpmn.createExecutableProcess("process")
-                .startEvent("start")
-                .serviceTask("task", t -> t.zeebeTaskType("foo"))
-                .endEvent("end")
-                .done(),
-            "workflow.bpmn")
-        .send()
-        .join();
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start")
+            .serviceTask("task", t -> t.zeebeTaskType("foo"))
+            .endEvent("end")
+            .done();
+
+    deploy(modelInstance);
 
     clientRule
         .getWorkflowClient()
@@ -179,18 +166,13 @@ public class ServiceTaskTest {
   @Test
   public void shouldMapPayloadIntoTask() {
     // given
-    clientRule
-        .getWorkflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(
-            Bpmn.createExecutableProcess("process")
-                .startEvent("start")
-                .serviceTask("task", t -> t.zeebeTaskType("foo").zeebeInput("$.foo", "$.bar"))
-                .endEvent("end")
-                .done(),
-            "workflow.bpmn")
-        .send()
-        .join();
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start")
+            .serviceTask("task", t -> t.zeebeTaskType("foo").zeebeInput("$.foo", "$.bar"))
+            .endEvent("end")
+            .done();
+    deploy(modelInstance);
 
     clientRule
         .getWorkflowClient()
@@ -216,18 +198,13 @@ public class ServiceTaskTest {
   @Test
   public void shouldMapPayloadFromTask() {
     // given
-    clientRule
-        .getWorkflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(
-            Bpmn.createExecutableProcess("process")
-                .startEvent("start")
-                .serviceTask("task", t -> t.zeebeTaskType("foo").zeebeOutput("$.foo", "$.bar"))
-                .endEvent("end")
-                .done(),
-            "workflow.bpmn")
-        .send()
-        .join();
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start")
+            .serviceTask("task", t -> t.zeebeTaskType("foo").zeebeOutput("$.foo", "$.bar"))
+            .endEvent("end")
+            .done();
+    deploy(modelInstance);
 
     clientRule
         .getWorkflowClient()
@@ -257,23 +234,18 @@ public class ServiceTaskTest {
   @Test
   public void shouldModifyPayloadInTask() {
     // given
-    clientRule
-        .getWorkflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(
-            Bpmn.createExecutableProcess("process")
-                .startEvent("start")
-                .serviceTask(
-                    "task",
-                    t ->
-                        t.zeebeTaskType("foo")
-                            .zeebeInput("$.foo", "$.foo")
-                            .zeebeOutput("$.foo", "$.foo"))
-                .endEvent("end")
-                .done(),
-            "workflow.bpmn")
-        .send()
-        .join();
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start")
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeTaskType("foo")
+                        .zeebeInput("$.foo", "$.foo")
+                        .zeebeOutput("$.foo", "$.foo"))
+            .endEvent("end")
+            .done();
+    deploy(modelInstance);
 
     clientRule
         .getWorkflowClient()
@@ -308,23 +280,18 @@ public class ServiceTaskTest {
   @Test
   public void shouldCompleteTasksFromMultipleProcesses() throws InterruptedException {
     // given
-    clientRule
-        .getWorkflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(
-            Bpmn.createExecutableProcess("process")
-                .startEvent("start")
-                .serviceTask(
-                    "task",
-                    t ->
-                        t.zeebeTaskType("foo")
-                            .zeebeInput("$.foo", "$.foo")
-                            .zeebeOutput("$.foo", "$.foo"))
-                .endEvent("end")
-                .done(),
-            "workflow.bpmn")
-        .send()
-        .join();
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start")
+            .serviceTask(
+                "task",
+                t ->
+                    t.zeebeTaskType("foo")
+                        .zeebeInput("$.foo", "$.foo")
+                        .zeebeOutput("$.foo", "$.foo"))
+            .endEvent("end")
+            .done();
+    deploy(modelInstance);
 
     // when
     final int instances = 10;
@@ -354,5 +321,17 @@ public class ServiceTaskTest {
                     .getElementsInState("process", WorkflowInstanceState.ELEMENT_COMPLETED)
                     .size()
                 == instances);
+  }
+
+  private DeploymentEvent deploy(BpmnModelInstance modelInstance) {
+    final DeploymentEvent deploymentEvent =
+        clientRule
+            .getWorkflowClient()
+            .newDeployCommand()
+            .addWorkflowModel(modelInstance, "workflow.bpmn")
+            .send()
+            .join();
+    clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
+    return deploymentEvent;
   }
 }

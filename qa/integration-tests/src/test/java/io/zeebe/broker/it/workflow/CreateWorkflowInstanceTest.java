@@ -61,13 +61,17 @@ public class CreateWorkflowInstanceTest {
             .send()
             .join();
 
-    clientRule
-        .getWorkflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(
-            Bpmn.createExecutableProcess("anId").startEvent().endEvent().done(), "workflow.bpmn")
-        .send()
-        .join();
+    final DeploymentEvent secondDeployment =
+        clientRule
+            .getWorkflowClient()
+            .newDeployCommand()
+            .addWorkflowModel(
+                Bpmn.createExecutableProcess("anId").startEvent().endEvent().done(),
+                "workflow.bpmn")
+            .send()
+            .join();
+
+    clientRule.waitUntilDeploymentIsDone(secondDeployment.getKey());
   }
 
   @Test

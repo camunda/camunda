@@ -17,14 +17,18 @@
  */
 package io.zeebe.broker.system.management;
 
+import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.system.management.topics.FetchCreatedTopicsRequestHandler;
 import io.zeebe.broker.system.workflow.repository.api.management.FetchWorkflowRequestHandler;
 import io.zeebe.broker.system.workflow.repository.api.management.NotLeaderResponse;
+import io.zeebe.broker.system.workflow.repository.api.management.PushDeploymentRequestHandler;
 import io.zeebe.clustering.management.FetchCreatedTopicsRequestDecoder;
 import io.zeebe.clustering.management.FetchWorkflowRequestDecoder;
 import io.zeebe.clustering.management.MessageHeaderDecoder;
+import io.zeebe.clustering.management.PushDeploymentRequestDecoder;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceGroupReference;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.BufferingServerTransport;
@@ -38,6 +42,7 @@ import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.Int2ObjectHashMap;
 
 public class LeaderManagementRequestHandler extends Actor
     implements Service<LeaderManagementRequestHandler>, ServerRequestHandler, ServerMessageHandler {
@@ -45,12 +50,19 @@ public class LeaderManagementRequestHandler extends Actor
 
   private final Injector<BufferingServerTransport> managementApiServerTransportInjector =
       new Injector<>();
-
   private final AtomicReference<FetchWorkflowRequestHandler> fetchWorkflowHandlerRef =
       new AtomicReference<>();
-
   private final AtomicReference<FetchCreatedTopicsRequestHandler> fetchCreatedTopicsHandlerRef =
       new AtomicReference<>();
+  private PushDeploymentRequestHandler pushDeploymentRequestHandler;
+
+  private final ServiceGroupReference<Partition> leaderPartitionsGroupReference =
+      ServiceGroupReference.<Partition>create()
+          .onAdd((s, p) -> addPartition(p))
+          .onRemove((s, p) -> removePartition(p))
+          .build();
+
+  private final Int2ObjectHashMap<Partition> leaderForPartitions = new Int2ObjectHashMap<>();
 
   private final ServerResponse response = new ServerResponse();
   private final NotLeaderResponse notLeaderResponse = new NotLeaderResponse();
@@ -70,6 +82,8 @@ public class LeaderManagementRequestHandler extends Actor
 
   @Override
   protected void onActorStarting() {
+    pushDeploymentRequestHandler = new PushDeploymentRequestHandler(leaderForPartitions, actor);
+
     final ActorFuture<ServerInputSubscription> subscriptionFuture =
         serverTransport.openSubscription("leader-management-request-handler", this, this);
 
@@ -125,6 +139,10 @@ public class LeaderManagementRequestHandler extends Actor
           {
             return onFetchCreatedTopics(buffer, offset, length, output, remoteAddress, requestId);
           }
+        case PushDeploymentRequestDecoder.TEMPLATE_ID:
+          {
+            return onPushDeployment(buffer, offset, length, output, remoteAddress, requestId);
+          }
         default:
           {
             // ignore
@@ -135,6 +153,24 @@ public class LeaderManagementRequestHandler extends Actor
       // ignore
       return true;
     }
+  }
+
+  private boolean onPushDeployment(
+      DirectBuffer buffer,
+      int offset,
+      int length,
+      ServerOutput output,
+      RemoteAddress remoteAddress,
+      long requestId) {
+
+    final boolean leader =
+        pushDeploymentRequestHandler.onPushDeploymentRequest(
+            output, remoteAddress, buffer, offset, length, requestId);
+
+    if (!leader) {
+      return sendNotLeaderResponse(output, remoteAddress, requestId);
+    }
+    return true;
   }
 
   private boolean onFetchWorkflow(
@@ -151,13 +187,7 @@ public class LeaderManagementRequestHandler extends Actor
 
       return true;
     } else {
-      response
-          .reset()
-          .requestId(requestId)
-          .remoteStreamId(remoteAddress.getStreamId())
-          .writer(notLeaderResponse);
-
-      return output.sendResponse(response);
+      return sendNotLeaderResponse(output, remoteAddress, requestId);
     }
   }
 
@@ -175,14 +205,19 @@ public class LeaderManagementRequestHandler extends Actor
 
       return true;
     } else {
-      response
-          .reset()
-          .requestId(requestId)
-          .remoteStreamId(remoteAddress.getStreamId())
-          .writer(notLeaderResponse);
-
-      return output.sendResponse(response);
+      return sendNotLeaderResponse(output, remoteAddress, requestId);
     }
+  }
+
+  private boolean sendNotLeaderResponse(
+      ServerOutput output, RemoteAddress remoteAddress, long requestId) {
+    response
+        .reset()
+        .requestId(requestId)
+        .remoteStreamId(remoteAddress.getStreamId())
+        .writer(notLeaderResponse);
+
+    return output.sendResponse(response);
   }
 
   @Override
@@ -202,5 +237,17 @@ public class LeaderManagementRequestHandler extends Actor
   public void setFetchCreatedTopicsRequestHandler(
       FetchCreatedTopicsRequestHandler fetchCreatedTopicsRequestHandler) {
     fetchCreatedTopicsHandlerRef.set(fetchCreatedTopicsRequestHandler);
+  }
+
+  private void addPartition(final Partition partition) {
+    actor.submit(() -> leaderForPartitions.put(partition.getInfo().getPartitionId(), partition));
+  }
+
+  private void removePartition(final Partition partition) {
+    actor.submit(() -> leaderForPartitions.remove(partition.getInfo().getPartitionId()));
+  }
+
+  public ServiceGroupReference<Partition> getLeaderPartitionsGroupReference() {
+    return leaderPartitionsGroupReference;
   }
 }

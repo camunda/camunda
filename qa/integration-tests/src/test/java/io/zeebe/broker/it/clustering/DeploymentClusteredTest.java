@@ -89,13 +89,16 @@ public class DeploymentClusteredTest {
     // given
 
     // when
-    client
-        .topicClient()
-        .workflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-        .send()
-        .join();
+    final DeploymentEvent deploymentEvent =
+        client
+            .topicClient()
+            .workflowClient()
+            .newDeployCommand()
+            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
+            .send()
+            .join();
+
+    clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
 
     // then
     for (int p = 0; p < PARTITION_COUNT; p++) {
@@ -132,6 +135,7 @@ public class DeploymentClusteredTest {
             .join();
 
     assertThat(deploymentEvent.getDeployedWorkflows().size()).isEqualTo(1);
+    clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
   }
 
   @Test
@@ -140,13 +144,16 @@ public class DeploymentClusteredTest {
     // given
 
     clusteringRule.stopBroker(ClusteringRule.BROKER_3_CLIENT_ADDRESS);
-    client
-        .topicClient()
-        .workflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-        .send()
-        .join();
+    final DeploymentEvent deploymentEvent =
+        client
+            .topicClient()
+            .workflowClient()
+            .newDeployCommand()
+            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
+            .send()
+            .join();
+
+    clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
 
     // when
     clusteringRule.restartBroker(ClusteringRule.BROKER_3_CLIENT_ADDRESS);
@@ -201,6 +208,7 @@ public class DeploymentClusteredTest {
             .join();
 
     assertThat(deploymentEvent.getDeployedWorkflows().size()).isEqualTo(1);
+    clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
   }
 
   @Test
