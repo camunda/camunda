@@ -560,7 +560,7 @@ describe('edit mode', async () => {
     expect(node.state().data.processDefinitionVersion).toBe(2);
   });
 
-  describe('isOnlyVizChanged', () => {
+  describe('onlyVisualizationChanged', () => {
     it('should return false if visualization data is not loaded before', async () => {
       const node = mount(shallow(<Report {...props} />).get(0));
       await node.instance().componentDidMount();
@@ -575,7 +575,7 @@ describe('edit mode', async () => {
         view: 'test view',
         groupBy: {type: 'name'}
       };
-      expect(!!node.instance().isOnlyVizChanged(updates)).toBe(false);
+      expect(!!node.instance().onlyVisualizationChanged(updates)).toBe(false);
     });
 
     it('should return false if groupBy or view also changed', async () => {
@@ -593,7 +593,7 @@ describe('edit mode', async () => {
         view: 'another view',
         groupBy: {type: 'another name'}
       };
-      expect(node.instance().isOnlyVizChanged(updates)).toBe(false);
+      expect(node.instance().onlyVisualizationChanged(updates)).toBe(false);
     });
 
     it('should return true if only visualization has changed', async () => {
@@ -611,7 +611,7 @@ describe('edit mode', async () => {
         view: 'test view',
         groupBy: {type: 'name'}
       };
-      expect(node.instance().isOnlyVizChanged(updates)).toBe(true);
+      expect(node.instance().onlyVisualizationChanged(updates)).toBe(true);
     });
   });
 });

@@ -179,7 +179,7 @@ export default withErrorHandling(
       const updatedSomethingOtherThanConfiguration = Object.keys(updates).find(
         entry => entry !== 'configuration'
       );
-      if (updatedSomethingOtherThanConfiguration && !this.isOnlyVizChanged(updates)) {
+      if (updatedSomethingOtherThanConfiguration && !this.onlyVisualizationChanged(updates)) {
         let reportResult;
         if (this.allFieldsAreSelected(data)) {
           this.setState({loadingReportData: true});
@@ -205,7 +205,7 @@ export default withErrorHandling(
       }
     };
 
-    isOnlyVizChanged(updates) {
+    onlyVisualizationChanged(updates) {
       const {visualization, groupBy, view} = this.state.data;
       return (
         // there should be a visualization change
