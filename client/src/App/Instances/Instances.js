@@ -77,7 +77,7 @@ class Instances extends Component {
     this.setState(change);
   };
 
-  addSelectionToList = async selection => {
+  addSelectionToList = selection => {
     const {
       rollingSelectionIndex,
       instancesInSelectionsCount,
@@ -88,25 +88,29 @@ class Instances extends Component {
     const currentSelectionIndex = rollingSelectionIndex;
 
     // Add Id for each selection
-    await this.setState(prevState => ({
-      selections: [
-        {
-          selectionId: currentSelectionIndex,
-          ...selection
-        },
-        ...prevState.selections
-      ],
-      rollingSelectionIndex: currentSelectionIndex + 1,
-      instancesInSelectionsCount:
-        instancesInSelectionsCount + selection.totalCount,
-      selectionCount: selectionCount + 1
-    }));
-    this.props.storeStateLocally({
-      selectionCount,
-      instancesInSelectionsCount,
-      selections,
-      rollingSelectionIndex
-    });
+    this.setState(
+      prevState => ({
+        selections: [
+          {
+            selectionId: currentSelectionIndex,
+            ...selection
+          },
+          ...prevState.selections
+        ],
+        rollingSelectionIndex: currentSelectionIndex + 1,
+        instancesInSelectionsCount:
+          instancesInSelectionsCount + selection.totalCount,
+        selectionCount: selectionCount + 1
+      }),
+      () => {
+        this.props.storeStateLocally({
+          selectionCount,
+          instancesInSelectionsCount,
+          selections,
+          rollingSelectionIndex
+        });
+      }
+    );
   };
 
   addNewSelection = async () => {

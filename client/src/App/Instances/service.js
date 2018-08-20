@@ -25,7 +25,7 @@ export function createNewSelectionFragment() {
 }
 
 export function getParentFilter(appliedFilters) {
-  return Object.keys(appliedFilters).includes('incidents' || 'active')
+  return 'incidents' in appliedFilters || 'active' in appliedFilters
     ? {running: true}
     : {finished: true};
 }
