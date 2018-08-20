@@ -1,34 +1,16 @@
 import React from 'react';
-import {mount} from 'enzyme';
+import {mount, shallow} from 'enzyme';
 
 import Alerts from './Alerts';
-import {loadAlerts, loadReports} from './service';
-
-jest.mock('components', () => {
-  const Modal = props => <div id="modal">{props.children}</div>;
-  Modal.Header = props => <div id="modal_header">{props.children}</div>;
-  Modal.Content = props => <div id="modal_content">{props.children}</div>;
-  Modal.Actions = props => <div id="modal_actions">{props.children}</div>;
-
+import {loadReports} from './service';
+jest.mock('./service', () => {
   return {
-    Modal,
-    Button: props => <button {...props}>{props.children}</button>,
-    LoadingIndicator: props => (
-      <div className="sk-circle" {...props}>
-        Loading...
-      </div>
-    )
+    loadReports: jest.fn()
   };
 });
 
-jest.mock('./service', () => {
-  return {
-    loadAlerts: jest.fn(),
-    loadReports: jest.fn(),
-    saveNewAlert: jest.fn(),
-    deleteAlert: jest.fn(),
-    updateAlert: jest.fn()
-  };
+jest.mock('components', () => {
+  return {EntityList: props => <span id="EntityList">{JSON.stringify(props)}</span>};
 });
 
 jest.mock('./AlertModal', () => props => (
@@ -52,8 +34,6 @@ const reports = [
 ];
 loadReports.mockReturnValue(reports);
 
-loadAlerts.mockReturnValue([]);
-
 it('should load existing reports', async () => {
   await mount(<Alerts />);
 
@@ -68,57 +48,25 @@ it('should only save single number reports', async () => {
   expect(node.state('reports').map(report => report.id)).toEqual(['2']);
 });
 
-it('should load existing alerts initially', async () => {
-  const node = await mount(<Alerts />);
-
-  await node.instance().componentDidMount();
-
-  expect(loadAlerts).toHaveBeenCalled();
-});
-
-it('should include an edit/add alert modal after reports are loaded', async () => {
-  const node = mount(<Alerts />);
-
-  await node.instance().componentDidMount();
-
-  expect(node).toIncludeText('EditModal');
-});
-
-it('should display a loading message while content is loading', () => {
-  const node = mount(<Alerts />);
-
-  expect(node.find('.sk-circle').exists()).toBe(true);
-});
-
-it('should show a message when no alerts are defined', async () => {
-  const node = mount(<Alerts />);
-
-  await node.instance().componentDidMount();
-
-  expect(node).toIncludeText('You have no Alerts configured yet.');
-});
-
-it('should pass an alert configuration to the alert edit modal', async () => {
-  const alert = {id: '1', name: 'preconfigured alert', reportId: '2'};
-  loadAlerts.mockReturnValue([alert]);
-
-  const node = mount(<Alerts />);
-
-  await node.instance().componentDidMount();
-
-  // some enzyme bug causes update not to fire sometime :/
-  // https://github.com/airbnb/enzyme/issues/1233#issuecomment-343449560
-  node.update();
-
-  node.find('button.Alert__editButton').simulate('click');
-
-  expect(node.find('#ModalProps')).toIncludeText('preconfigured alert');
-});
-
 it('should format durations with value and unit', async () => {
-  const node = mount(<Alerts />);
+  const wrapper = shallow(<Alerts />);
 
-  await node.instance().componentDidMount();
+  const newAlert = {
+    name: 'New Alert',
+    email: '',
+    reportId: '2',
+    thresholdOperator: '>',
+    threshold: '100',
+    checkInterval: {
+      value: '10',
+      unit: 'minutes'
+    },
+    reminder: null,
+    fixNotification: false
+  };
+  await wrapper.instance().componentDidMount();
+
+  const node = shallow(wrapper.find('EntityList').prop('renderCustom')(newAlert));
 
   expect(node).toIncludeText('14 seconds');
 });

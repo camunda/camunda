@@ -7,7 +7,7 @@ import {Redirect, Link} from 'react-router-dom';
 
 import {Button, Modal, Message, Icon, Input, LoadingIndicator} from 'components';
 
-import {load, create, remove, duplicate} from './service';
+import {load, create, remove, duplicate, update} from './service';
 
 import {formatters} from 'services';
 
@@ -23,7 +23,8 @@ class EntityList extends React.Component {
       loaded: false,
       deleteModalVisible: false,
       deleteModalEntity: {},
-      query: ''
+      query: '',
+      editEntity: null
     };
   }
 
@@ -44,6 +45,7 @@ class EntityList extends React.Component {
   };
 
   createEntity = async evt => {
+    if (this.props.EditModal) return this.openNewEditModal();
     this.setState({
       redirectToEntity: await create(this.props.api)
     });
@@ -102,14 +104,15 @@ class EntityList extends React.Component {
   };
 
   formatData = data =>
-    data.map(({name, id, lastModified, lastModifier, shared}) => {
+    data.map(entity => {
+      const {name, id, lastModified, lastModifier, shared} = entity;
       const entry = {
         name,
         link: `/${this.props.api}/${id}`,
         infos: [
           {
-            content: name,
-            parentClassName: 'dataTitle'
+            parentClassName: 'custom',
+            content: this.props.renderCustom ? this.props.renderCustom(entity) : ''
           },
           {
             content: `Last modified ${moment(lastModified).format('lll')} by ${lastModifier}`,
@@ -120,7 +123,8 @@ class EntityList extends React.Component {
             content: shared && <Icon type="share" title={`This ${this.props.label} is shared`} />
           }
         ],
-        operations: []
+        operations: [],
+        editData: entity
       };
 
       if (this.props.operations.includes('delete')) {
@@ -155,12 +159,36 @@ class EntityList extends React.Component {
         entry.operations.push({
           content: <Icon type="edit" title="Edit a report" className="editLink" />,
           link: `/${this.props.api}/${id}/edit`,
+          editData: entity,
           parentClassName: 'dataTool'
         });
       }
 
       return entry;
     });
+
+  openNewEditModal = () => {
+    this.setState({
+      editEntity: {}
+    });
+  };
+
+  closeEditModal = () => {
+    this.setState({
+      editEntity: null
+    });
+  };
+
+  confirmEditModal = async entity => {
+    const editEntity = this.state.editEntity;
+    if (editEntity.id) {
+      await update(this.props.api, editEntity.id, entity);
+    } else {
+      await create(this.props.api, entity);
+    }
+    this.closeEditModal();
+    await this.loadData();
+  };
 
   renderModal = () => {
     const {deleteModalVisible, deleteModalEntity} = this.state;
@@ -191,26 +219,47 @@ class EntityList extends React.Component {
       </Modal>
     );
   };
+  renderCells = data => {
+    return data.map(
+      (cell, idx) =>
+        cell.content && (
+          <span key={idx} className={classnames('data', cell.parentClassName)}>
+            {this.renderCell(cell)}
+          </span>
+        )
+    );
+  };
 
   renderCell = cell => {
     if (cell.link) {
-      return (
-        <Link to={cell.link} className={cell.className}>
-          {cell.content}
-        </Link>
-      );
+      return this.renderLink(cell);
     }
-    if (cell.parentClassName === 'dataTitle')
-      return formatters.getHighlightedText(cell.content, this.state.query);
     return cell.content;
   };
 
-  renderCells = data => {
-    return data.map((cell, idx) => (
-      <span key={idx} className={classnames('data', cell.parentClassName)}>
-        {this.renderCell(cell)}
-      </span>
-    ));
+  // if a modal is provided add onClick event otherwise use a router Link
+  renderLink = data => {
+    const {EditModal} = this.props;
+    const EntityLink = EditModal ? 'a' : Link;
+    const linkProps = {
+      to: EditModal ? undefined : data.link,
+      onClick: EditModal ? () => this.setState({editEntity: data.editData}) : undefined,
+      className: data.className
+    };
+    return (
+      <EntityLink {...linkProps}>
+        {data.title ? (
+          <React.Fragment>
+            <span className="data dataTitle">
+              {formatters.getHighlightedText(data.title, this.state.query)}
+            </span>
+            <div className="extra-info">{data.content}</div>
+          </React.Fragment>
+        ) : (
+          data.content
+        )}
+      </EntityLink>
+    );
   };
 
   render() {
@@ -255,6 +304,7 @@ class EntityList extends React.Component {
 
     const {redirectToEntity, loaded} = this.state;
     const {includeViewAllLink} = this.props;
+    const {EditModal} = this.props;
     const modal = this.renderModal();
     const isListEmpty = this.state.data.length === 0;
 
@@ -281,9 +331,13 @@ class EntityList extends React.Component {
               .map((row, idx) => {
                 return (
                   <li key={idx} className="item">
-                    <Link to={row.link} className="info">
-                      {this.renderCells(row.infos)}
-                    </Link>
+                    {this.renderLink({
+                      title: row.name,
+                      content: this.renderCells(row.infos),
+                      link: row.link,
+                      className: 'info',
+                      editData: row.editData
+                    })}
                     <div className="operations">{this.renderCells(row.operations)}</div>
                   </li>
                 );
@@ -303,6 +357,13 @@ class EntityList extends React.Component {
           {header}
           {list}
           {modal}
+          {EditModal && (
+            <EditModal
+              onConfirm={this.confirmEditModal}
+              onClose={this.closeEditModal}
+              alert={this.state.editEntity}
+            />
+          )}
           {this.props.children}
           {includeViewAllLink && !isListEmpty ? (
             <Link to={`/${this.props.api}s`} className="small">

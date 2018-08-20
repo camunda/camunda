@@ -2,7 +2,7 @@ import React from 'react';
 import update from 'immutability-helper';
 
 import {Modal, Button, Input, Select, ErrorMessage, Typeahead} from 'components';
-import {emailNotificationIsEnabled} from './service';
+import {emailNotificationIsEnabled, loadReports} from './service';
 
 import ThresholdInput from './ThresholdInput';
 
@@ -31,13 +31,15 @@ export default class AlertModal extends React.Component {
 
     this.state = {
       ...newAlert,
-      errorInput: 'email'
+      errorInput: 'email',
+      reports: []
     };
   }
 
   componentDidMount = async () => {
     this.setState({
-      emailNotificationIsEnabled: await emailNotificationIsEnabled()
+      emailNotificationIsEnabled: await emailNotificationIsEnabled(),
+      reports: (await loadReports()).filter(({data: {visualization}}) => visualization === 'number')
     });
   };
 
@@ -152,7 +154,7 @@ export default class AlertModal extends React.Component {
   }
 
   getReportType = reportId => {
-    const report = this.props.reports.find(({id}) => id === reportId);
+    const report = this.state.reports.find(({id}) => id === reportId);
 
     return report && report.data.view.property;
   };
@@ -239,7 +241,7 @@ export default class AlertModal extends React.Component {
               <Typeahead
                 isInvalid={errorInput === 'report'}
                 placeholder="Please select Report"
-                values={this.props.reports}
+                values={this.state.reports}
                 onSelect={this.updateReport}
                 formatter={({name}) => name}
               />

@@ -2,13 +2,14 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import AlertModal from './AlertModal';
-import {emailNotificationIsEnabled} from './service';
+import {emailNotificationIsEnabled, loadReports} from './service';
 
 import {formatters} from 'services';
 
 jest.mock('./service', () => {
   return {
-    emailNotificationIsEnabled: jest.fn()
+    emailNotificationIsEnabled: jest.fn(),
+    loadReports: jest.fn()
   };
 });
 
@@ -68,9 +69,16 @@ const alert = {
 };
 
 const reports = [
-  {id: '5', name: 'Some Report', data: {view: {property: 'frequency'}}},
-  {id: '8', name: 'Nice report', data: {view: {property: 'frequency'}}}
+  {id: '5', name: 'Some Report', data: {view: {property: 'frequency'}, visualization: 'number'}},
+  {id: '8', name: 'Nice report', data: {view: {property: 'frequency'}, visualization: 'number'}},
+  {
+    id: '9',
+    name: 'Nice report',
+    data: {view: {property: 'duration'}, visualization: 'number'}
+  }
 ];
+
+loadReports.mockReturnValue(reports);
 
 it('should apply the alert property to the state when changing props', () => {
   const node = mount(<AlertModal reports={reports} />);
@@ -88,17 +96,11 @@ it('should apply the alert property to the state when changing props', () => {
       value: '1',
       unit: 'hours'
     },
+    reports: [],
     reminder: null,
     fixNotification: true,
     errorInput: null
   });
-});
-
-it('should show available reports passed in as property', () => {
-  const node = mount(<AlertModal reports={reports} />);
-
-  expect(node).toIncludeText('Some Report');
-  expect(node).toIncludeText('Nice report');
 });
 
 it('should call the onConfirm method', () => {
@@ -171,6 +173,7 @@ it('should show warning that email is not configured', async () => {
 it('should not display warning if email is configured', async () => {
   emailNotificationIsEnabled.mockReturnValue(true);
   const node = await mount(<AlertModal reports={reports} />);
+  await node.instance().componentDidMount();
   await node.update();
 
   expect(node.find('.AlertModal__configuration-warning').exists()).toBe(false);
@@ -190,24 +193,16 @@ it('should set isInvalid property for input if value is invalid', async () => {
 });
 
 it('should convert a duration threshold when opening', async () => {
-  const node = await mount(
-    <AlertModal
-      reports={[
-        {
-          id: '8',
-          name: 'Nice report',
-          data: {view: {property: 'duration'}}
-        }
-      ]}
-    />
-  );
+  const node = await mount(<AlertModal reports={reports} />);
+
+  await node.instance().componentDidMount();
 
   node.setProps({
     alert: {
       name: 'New Alert',
       id: '1234',
       email: '',
-      reportId: '8',
+      reportId: '9',
       thresholdOperator: '>',
       threshold: '14000',
       checkInterval: {

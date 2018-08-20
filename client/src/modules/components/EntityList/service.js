@@ -21,14 +21,16 @@ export async function load(api, numResults, sortBy) {
   const shareStatusResponse = await post(`/api/share/status`, {[apis]: idList});
   const shareStatus = await shareStatusResponse.json();
 
+  if (!shareStatus[apis]) return json;
+
   return json.map(entry => ({
     ...entry,
     shared: shareStatus[apis][entry.id]
   }));
 }
 
-export async function create(api) {
-  const response = await post(`/api/${api}`);
+export async function create(api, data) {
+  const response = await post(`/api/${api}`, data);
 
   const json = await response.json();
 
@@ -40,9 +42,13 @@ export async function duplicate(api, copyData) {
 
   const json = await createResponse.json();
 
-  return await put(`/api/${api}/${json.id}`, copyData);
+  return await update(api, json.id, copyData);
 }
 
 export async function remove(id, api) {
   return await del(`/api/${api}/${id}`);
+}
+
+export async function update(api, id, data) {
+  return await put(`/api/${api}/${id}`, data);
 }

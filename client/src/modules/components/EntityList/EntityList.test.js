@@ -3,7 +3,7 @@ import {mount, shallow} from 'enzyme';
 
 import EntityList from './EntityList';
 
-import {create, load, duplicate} from './service';
+import {create, load, duplicate, update} from './service';
 
 const sampleEntity = {
   id: '1',
@@ -19,14 +19,18 @@ const duplicateEntity = {
   lastModified: '2017-11-11T11:12:11.1111+0200'
 };
 
+const alertEntity = {id: '1', name: 'preconfigured alert', reportId: '2'};
+
 jest.mock('./service', () => {
   return {
     load: jest.fn(),
     remove: jest.fn(),
     create: jest.fn(),
-    duplicate: jest.fn()
+    duplicate: jest.fn(),
+    update: jest.fn()
   };
 });
+
 jest.mock('react-router-dom', () => {
   return {
     Link: ({children, to}) => {
@@ -80,6 +84,12 @@ jest.mock('components', () => {
 });
 
 load.mockReturnValue([sampleEntity]);
+
+const EditModal = props => (
+  <span>
+    EditModal: <span id="ModalProps">{JSON.stringify(props)}</span>
+  </span>
+);
 
 it('should display a loading indicator', () => {
   const node = mount(<EntityList api="endpoint" label="Dashboard" />);
@@ -448,4 +458,103 @@ describe('getDuplicatesNumbers', () => {
     expect(node.instance().getDuplicatesNumbers({name: 'New Report - Copy'})).toBe(1);
     expect(node.instance().getDuplicatesNumbers({name: 'New Report - Copy 2'})).toBe(2);
   });
+});
+
+it('should include an edit/add modal after reports are loaded', async () => {
+  load.mockReturnValue([alertEntity]);
+
+  const node = mount(
+    shallow(
+      <EntityList api="endpoint" label="Alert" operations={['Edit']} EditModal={EditModal} />
+    ).get(0)
+  );
+
+  await node.instance().componentDidMount();
+
+  node.setState({
+    loaded: true
+  });
+
+  expect(node).toIncludeText('EditModal');
+});
+
+it('should pass an alert entity configuration to the edit/add modal', async () => {
+  load.mockReturnValue([alertEntity]);
+
+  const node = mount(
+    shallow(
+      <EntityList api="endpoint" label="Alert" operations={['Edit']} EditModal={EditModal} />
+    ).get(0)
+  );
+
+  await node.instance().componentDidMount();
+  node.setState({
+    loaded: true
+  });
+
+  node.find('.info').simulate('click');
+
+  expect(node.find('#ModalProps')).toIncludeText('preconfigured alert');
+});
+
+it('should invoke openNewEditModal when click on create new button', async () => {
+  load.mockReturnValue([]);
+
+  const node = mount(
+    shallow(
+      <EntityList api="endpoint" label="Alert" operations={['Edit']} EditModal={EditModal} />
+    ).get(0)
+  );
+  const spy = jest.spyOn(node.instance(), 'openNewEditModal');
+
+  await node.instance().componentDidMount();
+  node.setState({
+    loaded: true
+  });
+
+  node.find('a').simulate('click');
+  expect(spy).toHaveBeenCalled();
+});
+
+it('should invok update when entityId is already available', async () => {
+  load.mockReturnValue([alertEntity]);
+
+  const node = mount(
+    shallow(
+      <EntityList api="endpoint" label="Alert" operations={['Edit']} EditModal={EditModal} />
+    ).get(0)
+  );
+
+  await node.instance().componentDidMount();
+  node.setState({
+    loaded: true
+  });
+
+  node.find('.info').simulate('click');
+
+  node.instance().confirmEditModal();
+
+  expect(update).toHaveBeenCalled();
+});
+
+it('should return a react Link when editModal is not defined', async () => {
+  load.mockReturnValue([alertEntity]);
+
+  const node = mount(
+    shallow(<EntityList api="endpoint" label="Alert" operations={['Edit']} />).get(0)
+  );
+
+  await node.instance().componentDidMount();
+  node.setState({
+    loaded: true
+  });
+
+  const Link = node.instance().renderLink({
+    link: 'testLink',
+    content: 'testContent'
+  });
+  const linkNode = shallow(Link);
+
+  expect(linkNode.props().href).toBe('testLink');
+  expect(linkNode).toIncludeText('testContent');
 });

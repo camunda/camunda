@@ -51,9 +51,10 @@
         padding: 12px 0;
       }
 
-      a.info {
+      .info {
         padding: 12px 0;
         display: flex;
+        flex-direction: column;
         flex-grow: 1;
         text-decoration: none;
 
@@ -61,21 +62,32 @@
           font-weight: bold;
           text-decoration: none;
           color: #333333;
+          margin-bottom: 7px;
         }
 
-        .dataMeta {
-          font-size: 14px;
-          color: #666666;
-          padding-left: 8px;
-        }
+        .extra-info {
+          display: flex;
+          min-height: 30px;
 
-        .dataIcons {
-          max-width: 50px;
+          .dataMeta {
+            font-size: 14px;
+            color: #666666;
+          }
+
+          .dataIcons {
+            max-width: 50px;
+          }
+
+          .custom {
+            overflow: visible;
+          }
         }
       }
 
       .operations {
         padding: 12px 0;
+        flex-shrink: 0;
+        align-self: center;
 
         .editLink {
           font-size: 0.875em;
