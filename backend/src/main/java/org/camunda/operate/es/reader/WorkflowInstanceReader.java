@@ -449,7 +449,7 @@ public class WorkflowInstanceReader {
         .setQuery(q)
         .addAggregation(agg);
 
-    logger.debug("Active activities statistics request: \n{}\n and aggregation: \n{}", query.toString(), agg.toString());
+    logger.debug("Active activities statistics request: \n{}\n and aggregation: \n{}", q.toString(), agg.toString());
 
     final SearchResponse searchResponse = searchRequestBuilder.get();
 

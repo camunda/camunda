@@ -50,7 +50,7 @@ public class ZeebeUtil {
       .partitions(1)
       .replicationFactor(1)
       .send().join();
-    logger.debug("Topic created: " + event.getState());
+    logger.debug("Topic {} created: {}", topicName, event.getState());
   }
 
   /**
