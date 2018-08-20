@@ -23,11 +23,13 @@ import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.gateway.api.clients.JobClient;
 import io.zeebe.gateway.api.events.DeploymentEvent;
 import io.zeebe.gateway.api.events.JobEvent;
 import io.zeebe.gateway.api.events.JobState;
 import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
 import io.zeebe.gateway.api.events.WorkflowInstanceState;
+import io.zeebe.gateway.api.subscription.JobHandler;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.HashMap;
@@ -275,6 +277,59 @@ public class ServiceTaskTest {
     final WorkflowInstanceEvent workflowEvent =
         eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED);
     assertThat(workflowEvent.getPayload()).isEqualTo("{\"foo\":2}");
+  }
+
+  @Test
+  public void shouldCompleteTasksAndMergePayload() throws Exception {
+
+    // given
+    clientRule
+        .getWorkflowClient()
+        .newDeployCommand()
+        .addResourceFile(getClass().getResource("/workflows/orderProcess.bpmn").getFile())
+        .send()
+        .join();
+
+    final WorkflowInstanceEvent wfEvent =
+        clientRule
+            .getWorkflowClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId("order-process")
+            .latestVersion()
+            .payload("{\"foo\":1}")
+            .send()
+            .join();
+
+    // when
+    final JobHandler defaultHandler =
+        new JobHandler() {
+          @Override
+          public void handle(JobClient client, JobEvent job) {
+            client.newCompleteCommand(job).payload("{}").send().join();
+          }
+        };
+    clientRule.getJobClient().newWorker().jobType("collect-money").handler(defaultHandler).open();
+    clientRule
+        .getJobClient()
+        .newWorker()
+        .jobType("fetch-items")
+        .handler(
+            (client, job) -> {
+              client.newCompleteCommand(job).payload("{\"foo\":\"bar\"}").send().join();
+            })
+        .open();
+    clientRule.getJobClient().newWorker().jobType("ship-parcel").handler(defaultHandler).open();
+
+    // then
+    waitUntil(
+        () ->
+            eventRecorder.hasElementInState(
+                wfEvent.getActivityId(), WorkflowInstanceState.ELEMENT_COMPLETED));
+
+    final WorkflowInstanceEvent workflowEvent =
+        eventRecorder.getElementInState(
+            wfEvent.getActivityId(), WorkflowInstanceState.ELEMENT_COMPLETED);
+    assertThat(workflowEvent.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
   }
 
   @Test

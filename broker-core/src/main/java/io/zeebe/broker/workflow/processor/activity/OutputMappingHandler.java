@@ -69,6 +69,8 @@ public class OutputMappingHandler implements BpmnStepHandler<ExecutableFlowNode>
         final MutableDirectBuffer mergedPayload = payloadMappingProcessor.getResultBuffer();
         activityEvent.setPayload(mergedPayload, 0, resultLen);
 
+        flowScopeInstance.getValue().setPayload(mergedPayload, 0, resultLen);
+
       } catch (MappingException e) {
         mappingException = e;
       }
