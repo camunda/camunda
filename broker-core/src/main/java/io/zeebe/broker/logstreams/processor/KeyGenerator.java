@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
+import io.zeebe.broker.util.KeyStateController;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.LongProperty;
 
@@ -34,37 +35,65 @@ public class KeyGenerator extends UnpackedObject {
 
   private final LongProperty nextKey;
   private final int stepSize;
+  private final KeyStateController keyStateController;
 
   public KeyGenerator(long initialValue, int stepSize) {
+    this(initialValue, stepSize, null);
+  }
+
+  public KeyGenerator(long initialValue, int stepSize, KeyStateController keyStateController) {
     nextKey = new LongProperty("nextKey", initialValue);
     this.stepSize = stepSize;
     declareProperty(nextKey);
+    this.keyStateController = keyStateController;
+    init();
+  }
+
+  private void init() {
+    if (keyStateController != null) {
+      keyStateController.addOnOpenCallback(
+          () -> {
+            final long latestKey = keyStateController.getLatestKey();
+            if (latestKey > 0) {
+              setKey(latestKey);
+            }
+          });
+    }
   }
 
   public long nextKey() {
     final long key = nextKey.getValue();
     nextKey.setValue(key + stepSize);
+    putLatestKeyIntoController(key);
     return key;
   }
 
   public void setKey(long key) {
-    nextKey.setValue(key + stepSize);
+    final long nextKey = key + stepSize;
+    this.nextKey.setValue(nextKey);
+    putLatestKeyIntoController(key);
+  }
+
+  private void putLatestKeyIntoController(long key) {
+    if (keyStateController != null) {
+      keyStateController.putLatestKey(key);
+    }
   }
 
   public static KeyGenerator createWorkflowInstanceKeyGenerator() {
     return new KeyGenerator(WF_OFFSET, STEP_SIZE);
   }
 
-  public static KeyGenerator createJobKeyGenerator() {
-    return new KeyGenerator(JOB_OFFSET, STEP_SIZE);
+  public static KeyGenerator createJobKeyGenerator(KeyStateController keyStateController) {
+    return new KeyGenerator(JOB_OFFSET, STEP_SIZE, keyStateController);
   }
 
   public static KeyGenerator createIncidentKeyGenerator() {
     return new KeyGenerator(INCIDENT_OFFSET, STEP_SIZE);
   }
 
-  public static KeyGenerator createDeploymentKeyGenerator() {
-    return new KeyGenerator(DEPLOYMENT_OFFSET, STEP_SIZE);
+  public static KeyGenerator createDeploymentKeyGenerator(KeyStateController keyStateController) {
+    return new KeyGenerator(DEPLOYMENT_OFFSET, STEP_SIZE, keyStateController);
   }
 
   public static KeyGenerator createTopicKeyGenerator() {

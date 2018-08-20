@@ -43,17 +43,12 @@ import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.SocketAddress;
-import io.zeebe.util.FileUtil;
-import java.io.IOException;
-import java.nio.file.FileVisitResult;
-import java.nio.file.Path;
-import java.nio.file.SimpleFileVisitor;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -64,6 +59,7 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
+@Ignore("https://github.com/zeebe-io/zeebe/issues/1207")
 public class BrokerReprocessingTest {
   private static final String NULL_PAYLOAD = null;
 
@@ -578,6 +574,7 @@ public class BrokerReprocessingTest {
             .join()
             .getKey();
 
+    clientRule.waitUntilDeploymentIsDone(deployment1Key);
     // when
     reprocessingTrigger.accept(this);
 
@@ -700,25 +697,20 @@ public class BrokerReprocessingTest {
 
   protected void deleteSnapshotsAndRestart(Runnable onStop) {
     eventRecorder.stopRecordingEvents();
+
+    final String[] dataDirectories =
+        brokerRule
+            .getBroker()
+            .getBrokerContext()
+            .getBrokerConfiguration()
+            .getData()
+            .getDirectories();
+
     brokerRule.stopBroker();
 
     // delete snapshot files to trigger recovery
-
     try {
-      java.nio.file.Files.walkFileTree(
-          brokerRule.getBrokerBase().toPath(),
-          new SimpleFileVisitor<Path>() {
-            @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs)
-                throws IOException {
-              if (dir.endsWith("snapshots")) {
-                FileUtil.deleteFolder(dir.normalize().toAbsolutePath().toString());
-                return FileVisitResult.SKIP_SUBTREE;
-              } else {
-                return FileVisitResult.CONTINUE;
-              }
-            }
-          });
+      brokerRule.purgeSnapshots(dataDirectories);
     } catch (Exception e) {
       e.printStackTrace();
       fail(e.getMessage());

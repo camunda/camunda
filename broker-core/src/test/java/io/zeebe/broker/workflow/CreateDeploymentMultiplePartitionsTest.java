@@ -18,6 +18,7 @@
 package io.zeebe.broker.workflow;
 
 import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
+import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.data.MapEntry.entry;
 
@@ -215,6 +216,31 @@ public class CreateDeploymentMultiplePartitionsTest {
     }
   }
 
+  @Test
+  public void shouldCreateDeploymentOnAllPartitionsWithRestartBroker() throws Exception {
+    // given
+    apiRule
+        .createCmdRequest()
+        .partitionId(1)
+        .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
+        .command()
+        .put("topicName", DEFAULT_TOPIC)
+        .put(
+            "resources",
+            Collections.singletonList(deploymentResource(bpmnXml(WORKFLOW), "process.bpmn")))
+        .done()
+        .send();
+
+    // when
+    brokerRule.restartBroker();
+    doRepeatedly(apiRule::getPartitionIds).until(p -> !p.isEmpty());
+
+    // then
+    assertAnyCreatedDeploymentEventOnPartition(1);
+    assertAnyCreatedDeploymentEventOnPartition(2);
+    assertAnyCreatedDeploymentEventOnPartition(3);
+  }
+
   private Map<String, Object> deploymentResource(final byte[] resource, String name) {
     final Map<String, Object> deploymentResource = new HashMap<>();
     deploymentResource.put("resource", resource);
@@ -252,25 +278,38 @@ public class CreateDeploymentMultiplePartitionsTest {
           assertThat(deploymentCreatedEvent.key()).isEqualTo(expectedKey);
           assertThat(deploymentCreatedEvent.partitionId()).isEqualTo(expectedPartition);
 
-          final Map<String, Object> resources =
-              deploymentResource(bpmnXml(WORKFLOW), "process.bpmn");
-          resources.put("resourceType", "BPMN_XML");
-
-          final Map<String, Object> map =
-              (Map<String, Object>) ((List) deploymentCreatedEvent.value().get("resources")).get(0);
-          assertThat(map).contains(entry("resource", resources.get("resource")));
-          assertThat(map).contains(entry("resourceType", resources.get("resourceType")));
-
-          final List<Map<String, Object>> deployedWorkflows =
-              (List<Map<String, Object>>) deploymentCreatedEvent.value().get("deployedWorkflows");
-          assertThat(deployedWorkflows).hasSize(1);
-          assertThat(deployedWorkflows.get(0))
-              .containsExactly(
-                  entry("bpmnProcessId", "process"),
-                  entry("version", 1L),
-                  entry("workflowKey", 1L),
-                  entry("resourceName", "process.bpmn"));
+          assertDeploymentRecord(deploymentCreatedEvent);
         });
+  }
+
+  private void assertAnyCreatedDeploymentEventOnPartition(int expectedPartition) {
+    assertAnyCreatedDeploymentEventResources(
+        expectedPartition,
+        (deploymentCreatedEvent) -> {
+          assertThat(deploymentCreatedEvent.partitionId()).isEqualTo(expectedPartition);
+
+          assertDeploymentRecord(deploymentCreatedEvent);
+        });
+  }
+
+  private void assertDeploymentRecord(SubscribedRecord deploymentCreatedEvent) {
+    final Map<String, Object> resources = deploymentResource(bpmnXml(WORKFLOW), "process.bpmn");
+    resources.put("resourceType", "BPMN_XML");
+
+    final Map<String, Object> map =
+        (Map<String, Object>) ((List) deploymentCreatedEvent.value().get("resources")).get(0);
+    assertThat(map).contains(entry("resource", resources.get("resource")));
+    assertThat(map).contains(entry("resourceType", resources.get("resourceType")));
+
+    final List<Map<String, Object>> deployedWorkflows =
+        (List<Map<String, Object>>) deploymentCreatedEvent.value().get("deployedWorkflows");
+    assertThat(deployedWorkflows).hasSize(1);
+    assertThat(deployedWorkflows.get(0))
+        .containsExactly(
+            entry("bpmnProcessId", "process"),
+            entry("version", 1L),
+            entry("workflowKey", 1L),
+            entry("resourceName", "process.bpmn"));
   }
 
   private void assertCreatedDeploymentEventResources(
@@ -289,6 +328,24 @@ public class CreateDeploymentMultiplePartitionsTest {
             .get();
 
     assertThat(deploymentCreatedEvent.key()).isEqualTo(expectedKey);
+    assertThat(deploymentCreatedEvent.partitionId()).isEqualTo(expectedPartition);
+
+    deploymentAssert.accept(deploymentCreatedEvent);
+  }
+
+  private void assertAnyCreatedDeploymentEventResources(
+      int expectedPartition, Consumer<SubscribedRecord> deploymentAssert) {
+    final SubscribedRecord deploymentCreatedEvent =
+        apiRule
+            .topic(expectedPartition)
+            .receiveRecords()
+            .skipUntil(r -> r.valueType() == ValueType.DEPLOYMENT)
+            .filter(
+                r ->
+                    r.valueType() == ValueType.DEPLOYMENT && r.intent() == DeploymentIntent.CREATED)
+            .findFirst()
+            .get();
+
     assertThat(deploymentCreatedEvent.partitionId()).isEqualTo(expectedPartition);
 
     deploymentAssert.accept(deploymentCreatedEvent);

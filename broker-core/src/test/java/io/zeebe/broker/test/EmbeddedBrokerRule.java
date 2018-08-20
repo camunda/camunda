@@ -53,8 +53,8 @@ import org.slf4j.Logger;
 public class EmbeddedBrokerRule extends ExternalResource {
 
   private static final Consumer<BrokerCfg> NOOP_CONFIGURATOR = cfg -> {};
-
   private static final String SNAPSHOTS_DIRECTORY = "snapshots";
+  private static final String STATE_DIRECTORY = "state";
 
   protected static final Logger LOG = TestLoggers.TEST_LOGGER;
 
@@ -208,16 +208,30 @@ public class EmbeddedBrokerRule extends ExternalResource {
           dataDirectory.listFiles((d, f) -> new File(d, f).isDirectory());
 
       for (File partitionDirectory : partitionDirectories) {
-        final File snapshotDirectory = new File(partitionDirectory, SNAPSHOTS_DIRECTORY);
+        deleteSnapshots(partitionDirectory);
 
-        if (snapshotDirectory.exists()) {
-          try {
-            FileUtil.deleteFolder(snapshotDirectory.getAbsolutePath());
-          } catch (IOException e) {
-            throw new RuntimeException(
-                "Could not delete snapshot directory " + snapshotDirectory.getAbsolutePath(), e);
+        final File stateDirectory = new File(partitionDirectory, STATE_DIRECTORY);
+        if (stateDirectory.exists()) {
+          final File[] stateDirs = stateDirectory.listFiles();
+          for (File processorStateDir : stateDirs) {
+            if (processorStateDir.exists()) {
+              deleteSnapshots(processorStateDir);
+            }
           }
         }
+      }
+    }
+  }
+
+  private void deleteSnapshots(File parentDir) {
+    final File snapshotDirectory = new File(parentDir, SNAPSHOTS_DIRECTORY);
+
+    if (snapshotDirectory.exists()) {
+      try {
+        FileUtil.deleteFolder(snapshotDirectory.getAbsolutePath());
+      } catch (IOException e) {
+        throw new RuntimeException(
+            "Could not delete snapshot directory " + snapshotDirectory.getAbsolutePath(), e);
       }
     }
   }

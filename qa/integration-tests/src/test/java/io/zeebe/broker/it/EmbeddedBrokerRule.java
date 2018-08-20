@@ -48,6 +48,10 @@ import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 
 public class EmbeddedBrokerRule extends ExternalResource {
+
+  private static final String SNAPSHOTS_DIRECTORY = "snapshots";
+  private static final String STATE_DIRECTORY = "state";
+
   static final ServiceName<Object> AWAIT_BROKER_SERVICE_NAME =
       ServiceName.newServiceName("testService", Object.class);
 
@@ -213,6 +217,42 @@ public class EmbeddedBrokerRule extends ExternalResource {
     serviceContainer.removeService(accessorServiceName);
 
     return injector.getValue();
+  }
+
+  public void purgeSnapshots(String[] dataDirectories) {
+    for (String dataDirectoryName : dataDirectories) {
+      final File dataDirectory = new File(dataDirectoryName);
+
+      final File[] partitionDirectories =
+          dataDirectory.listFiles((d, f) -> new File(d, f).isDirectory());
+
+      for (File partitionDirectory : partitionDirectories) {
+        deleteSnapshots(partitionDirectory);
+
+        final File stateDirectory = new File(partitionDirectory, STATE_DIRECTORY);
+        if (stateDirectory.exists()) {
+          final File[] stateDirs = stateDirectory.listFiles();
+          for (File processorStateDir : stateDirs) {
+            if (processorStateDir.exists()) {
+              deleteSnapshots(processorStateDir);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  private void deleteSnapshots(File parentDir) {
+    final File snapshotDirectory = new File(parentDir, SNAPSHOTS_DIRECTORY);
+
+    if (snapshotDirectory.exists()) {
+      try {
+        FileUtil.deleteFolder(snapshotDirectory.getAbsolutePath());
+      } catch (IOException e) {
+        throw new RuntimeException(
+            "Could not delete snapshot directory " + snapshotDirectory.getAbsolutePath(), e);
+      }
+    }
   }
 
   protected class NoneService implements Service<Object> {

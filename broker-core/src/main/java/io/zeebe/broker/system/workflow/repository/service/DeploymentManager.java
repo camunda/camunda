@@ -23,6 +23,7 @@ import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
 import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
+import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory.Builder;
 import io.zeebe.broker.logstreams.processor.TypedEventStreamProcessorBuilder;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
@@ -34,11 +35,14 @@ import io.zeebe.broker.system.workflow.repository.api.management.FetchWorkflowRe
 import io.zeebe.broker.system.workflow.repository.processor.DeploymentCreateEventProcessor;
 import io.zeebe.broker.system.workflow.repository.processor.DeploymentCreatedEventProcessor;
 import io.zeebe.broker.system.workflow.repository.processor.DeploymentRejectedEventProcessor;
+import io.zeebe.broker.system.workflow.repository.processor.state.DeploymentsStateController;
 import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex;
 import io.zeebe.broker.transport.controlmessage.ControlMessageHandlerManager;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.logstreams.state.StateSnapshotController;
+import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.DeploymentIntent;
@@ -107,19 +111,15 @@ public class DeploymentManager implements Service<DeploymentManager> {
       return;
     }
 
-    final TypedStreamProcessor streamProcessor =
-        buildStreamProcessor(partition, partitionServiceName);
+    final String processorName = "deployment-" + partition.getInfo().getPartitionId();
+    final int deploymentProcessorId = StreamProcessorIds.DEPLOYMENT_PROCESSOR_ID;
 
-    streamProcessorServiceFactory
-        .createService(partition, partitionServiceName)
-        .processor(streamProcessor)
-        .processorId(StreamProcessorIds.DEPLOYMENT_PROCESSOR_ID)
-        .processorName("deployment-" + partition.getInfo().getPartitionId())
-        .build();
-  }
+    final Builder streamProcessorServiceBuilder =
+        streamProcessorServiceFactory
+            .createService(partition, partitionServiceName)
+            .processorId(deploymentProcessorId)
+            .processorName(processorName);
 
-  private TypedStreamProcessor buildStreamProcessor(
-      Partition partition, ServiceName<Partition> partitionServiceName) {
     final TypedStreamEnvironment streamEnvironment =
         new TypedStreamEnvironment(partition.getLogStream(), clientApiTransport.getOutput());
 
@@ -128,7 +128,6 @@ public class DeploymentManager implements Service<DeploymentManager> {
     final TypedEventStreamProcessorBuilder streamProcessorBuilder =
         streamEnvironment
             .newStreamProcessor()
-            .keyGenerator(KeyGenerator.createDeploymentKeyGenerator())
             .onEvent(
                 ValueType.DEPLOYMENT,
                 DeploymentIntent.CREATED,
@@ -136,61 +135,88 @@ public class DeploymentManager implements Service<DeploymentManager> {
             .withStateResource(repositoryIndex);
 
     if (partition.getInfo().getPartitionId() == Protocol.DEPLOYMENT_PARTITION) {
+
+      final DeploymentsStateController deploymentsStateController =
+          new DeploymentsStateController();
       final LogStreamWriterImpl logStreamWriter = new LogStreamWriterImpl(partition.getLogStream());
+
       final DeploymentCreateEventProcessor createEventProcessor =
           new DeploymentCreateEventProcessor(
-              topologyManager, repositoryIndex, managementApi, logStreamWriter);
+              topologyManager,
+              repositoryIndex,
+              deploymentsStateController,
+              managementApi,
+              logStreamWriter);
 
       streamProcessorBuilder
+          .keyGenerator(KeyGenerator.createDeploymentKeyGenerator(deploymentsStateController))
           .onCommand(ValueType.DEPLOYMENT, DeploymentIntent.CREATE, createEventProcessor)
           .onRejection(
               ValueType.DEPLOYMENT, DeploymentIntent.CREATE, new DeploymentRejectedEventProcessor())
-          .withListener(
-              new StreamProcessorLifecycleAware() {
-                private BufferedLogStreamReader reader;
+          .withStateController(deploymentsStateController);
 
-                // Only expose the fetch workflow and workflow repository APIs after reprocessing
-                // to avoid that we
-                // cannot (yet) return a workflow that we were previously able to return
-                @Override
-                public void onRecovered(TypedStreamProcessor streamProcessor) {
-                  final StreamProcessorContext ctx = streamProcessor.getStreamProcessorContext();
+      addListenerToInstallFetchWorkflowService(
+          partitionServiceName, repositoryIndex, streamProcessorBuilder);
 
-                  reader = new BufferedLogStreamReader();
-                  reader.wrap(ctx.getLogStream());
+      final StateStorage stateStorage =
+          partition.getStateStorageFactory().create(deploymentProcessorId, processorName);
 
-                  final DeploymentResourceCache cache = new DeploymentResourceCache(reader);
+      final StateSnapshotController stateSnapshotController =
+          new StateSnapshotController(deploymentsStateController, stateStorage);
 
-                  final WorkflowRepositoryService workflowRepositoryService =
-                      new WorkflowRepositoryService(ctx.getActorControl(), repositoryIndex, cache);
-
-                  startContext
-                      .createService(
-                          SystemServiceNames.REPOSITORY_SERVICE, workflowRepositoryService)
-                      .dependency(partitionServiceName)
-                      .install();
-
-                  final FetchWorkflowRequestHandler requestHandler =
-                      new FetchWorkflowRequestHandler(workflowRepositoryService);
-                  requestHandlerService.setFetchWorkflowRequestHandler(requestHandler);
-
-                  getWorkflowMessageHandler.setWorkflowRepositoryService(workflowRepositoryService);
-                  listWorkflowsControlMessageHandler.setWorkflowRepositoryService(
-                      workflowRepositoryService);
-                }
-
-                @Override
-                public void onClose() {
-                  requestHandlerService.setFetchWorkflowRequestHandler(null);
-                  getWorkflowMessageHandler.setWorkflowRepositoryService(null);
-                  listWorkflowsControlMessageHandler.setWorkflowRepositoryService(null);
-
-                  reader.close();
-                }
-              });
+      streamProcessorServiceBuilder.snapshotController(stateSnapshotController);
     }
 
-    return streamProcessorBuilder.build();
+    streamProcessorServiceBuilder.processor(streamProcessorBuilder.build()).build();
+  }
+
+  private void addListenerToInstallFetchWorkflowService(
+      ServiceName<Partition> partitionServiceName,
+      WorkflowRepositoryIndex repositoryIndex,
+      TypedEventStreamProcessorBuilder streamProcessorBuilder) {
+
+    streamProcessorBuilder.withListener(
+        new StreamProcessorLifecycleAware() {
+          private BufferedLogStreamReader reader;
+
+          // Only expose the fetch workflow and workflow repository APIs after reprocessing
+          // to avoid that we
+          // cannot (yet) return a workflow that we were previously able to return
+          @Override
+          public void onRecovered(TypedStreamProcessor streamProcessor) {
+            final StreamProcessorContext ctx = streamProcessor.getStreamProcessorContext();
+
+            reader = new BufferedLogStreamReader();
+            reader.wrap(ctx.getLogStream());
+
+            final DeploymentResourceCache cache = new DeploymentResourceCache(reader);
+
+            final WorkflowRepositoryService workflowRepositoryService =
+                new WorkflowRepositoryService(ctx.getActorControl(), repositoryIndex, cache);
+
+            startContext
+                .createService(SystemServiceNames.REPOSITORY_SERVICE, workflowRepositoryService)
+                .dependency(partitionServiceName)
+                .install();
+
+            final FetchWorkflowRequestHandler requestHandler =
+                new FetchWorkflowRequestHandler(workflowRepositoryService);
+            requestHandlerService.setFetchWorkflowRequestHandler(requestHandler);
+
+            getWorkflowMessageHandler.setWorkflowRepositoryService(workflowRepositoryService);
+            listWorkflowsControlMessageHandler.setWorkflowRepositoryService(
+                workflowRepositoryService);
+          }
+
+          @Override
+          public void onClose() {
+            requestHandlerService.setFetchWorkflowRequestHandler(null);
+            getWorkflowMessageHandler.setWorkflowRepositoryService(null);
+            listWorkflowsControlMessageHandler.setWorkflowRepositoryService(null);
+
+            reader.close();
+          }
+        });
   }
 
   @Override

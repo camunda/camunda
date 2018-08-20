@@ -17,10 +17,15 @@ package io.zeebe.logstreams.state;
 
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.util.ByteValue;
+import io.zeebe.util.LangUtil;
+import io.zeebe.util.buffer.BufferWriter;
 import java.io.File;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 import org.agrona.CloseHelper;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.rocksdb.BlockBasedTableConfig;
 import org.rocksdb.BloomFilter;
 import org.rocksdb.Cache;
@@ -50,6 +55,7 @@ import org.slf4j.Logger;
 public class StateController implements AutoCloseable {
   private static final Logger LOG = Loggers.ROCKSDB_LOGGER;
 
+  private final MutableDirectBuffer dbLongBuffer = new UnsafeBuffer(new byte[Long.BYTES]);
   private boolean isOpened = false;
   private RocksDB db;
   protected File dbDirectory;
@@ -57,22 +63,6 @@ public class StateController implements AutoCloseable {
 
   static {
     RocksDB.loadLibrary();
-  }
-
-  public void delete() throws Exception {
-    delete(dbDirectory);
-  }
-
-  public void delete(final File dbDirectory) throws Exception {
-    if (isOpened && this.dbDirectory == dbDirectory) {
-      close();
-    }
-
-    try (Options options = createOptions()) {
-      RocksDB.destroyDB(dbDirectory.toString(), options);
-    } finally {
-      closeables.forEach(CloseHelper::quietClose);
-    }
   }
 
   public RocksDB open(final File dbDirectory, boolean reopen) throws Exception {
@@ -93,29 +83,6 @@ public class StateController implements AutoCloseable {
       LOG.trace("Opened RocksDB {}", this.dbDirectory);
     }
 
-    return db;
-  }
-
-  @Override
-  public void close() {
-    if (db != null) {
-      db.close();
-      db = null;
-    }
-
-    closeables.forEach(CloseHelper::quietClose);
-    closeables.clear();
-
-    LOG.trace("Closed RocksDB {}", dbDirectory);
-    dbDirectory = null;
-    isOpened = false;
-  }
-
-  public boolean isOpened() {
-    return isOpened;
-  }
-
-  public RocksDB getDb() {
     return db;
   }
 
@@ -155,5 +122,141 @@ public class StateController implements AutoCloseable {
           String.format("%s cannot be executed unless database is opened", operation);
       throw new IllegalStateException(message);
     }
+  }
+
+  public boolean isOpened() {
+    return isOpened;
+  }
+
+  public void delete() throws Exception {
+    delete(dbDirectory);
+  }
+
+  public void delete(final File dbDirectory) throws Exception {
+    if (isOpened && this.dbDirectory == dbDirectory) {
+      close();
+    }
+
+    try (Options options = createOptions()) {
+      RocksDB.destroyDB(dbDirectory.toString(), options);
+    } finally {
+      closeables.forEach(CloseHelper::quietClose);
+    }
+  }
+
+  @Override
+  public void close() {
+    if (db != null) {
+      db.close();
+      db = null;
+    }
+
+    closeables.forEach(CloseHelper::quietClose);
+    closeables.clear();
+
+    LOG.trace("Closed RocksDB {}", dbDirectory);
+    dbDirectory = null;
+    isOpened = false;
+  }
+
+  public RocksDB getDb() {
+    return db;
+  }
+
+  private void setKey(long key) {
+    dbLongBuffer.putLong(0, key, ByteOrder.LITTLE_ENDIAN);
+  }
+
+  public void put(long key, byte[] valueBuffer) {
+    setKey(key);
+    try {
+      db.put(dbLongBuffer.byteArray(), valueBuffer);
+    } catch (RocksDBException e) {
+      LangUtil.rethrowUnchecked(e);
+    }
+  }
+
+  /**
+   * *creates garbage*
+   *
+   * @param key
+   * @param valueWriter
+   */
+  public void put(long key, BufferWriter valueWriter) {
+    setKey(key);
+    final int length = valueWriter.getLength();
+    final byte[] bytes = new byte[length];
+    final UnsafeBuffer buffer = new UnsafeBuffer(bytes);
+
+    valueWriter.write(buffer, 0);
+
+    try {
+      db.put(dbLongBuffer.byteArray(), bytes);
+    } catch (RocksDBException e) {
+      LangUtil.rethrowUnchecked(e);
+    }
+  }
+
+  public void put(byte[] key, byte[] valueBuffer) {
+    try {
+      db.put(key, valueBuffer);
+    } catch (RocksDBException e) {
+      LangUtil.rethrowUnchecked(e);
+    }
+  }
+
+  public void delete(long key) {
+    setKey(key);
+    try {
+      db.delete(dbLongBuffer.byteArray());
+    } catch (RocksDBException e) {
+      LangUtil.rethrowUnchecked(e);
+    }
+  }
+
+  public void delete(byte[] key) {
+    try {
+      db.delete(key);
+    } catch (RocksDBException e) {
+      LangUtil.rethrowUnchecked(e);
+    }
+  }
+
+  /**
+   * !creates garbage!
+   *
+   * @param key
+   * @return
+   */
+  public byte[] get(long key) {
+    setKey(key);
+
+    byte[] bytes = null;
+    try {
+      bytes = getDb().get(dbLongBuffer.byteArray());
+    } catch (RocksDBException e) {
+      LangUtil.rethrowUnchecked(e);
+    }
+
+    return bytes;
+  }
+
+  public boolean tryGet(long key, byte[] valueBuffer) {
+    setKey(key);
+
+    return tryGet(dbLongBuffer.byteArray(), valueBuffer);
+  }
+
+  public boolean tryGet(final byte[] keyBuffer, final byte[] valueBuffer) {
+    boolean found = false;
+
+    try {
+      final int bytesRead = getDb().get(keyBuffer, valueBuffer);
+      found = bytesRead == valueBuffer.length;
+    } catch (RocksDBException e) {
+      LangUtil.rethrowUnchecked(e);
+    }
+
+    return found;
   }
 }
