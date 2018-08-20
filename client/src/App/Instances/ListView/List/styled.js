@@ -56,5 +56,5 @@ export const InstanceAnchor = themed(styled(Link)`
 `);
 
 export const WorkflowName = styled.span`
-  margin-left: 7px;
+  margin-left: 6px;
 `;
