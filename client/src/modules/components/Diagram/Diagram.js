@@ -25,25 +25,32 @@ class Diagram extends React.Component {
   }
 
   async componentDidMount() {
-    this.workflowXML = await api.fetchWorkflowXML(this.props.workflowId);
+    await this.fetchAndSetWorkflowXML();
     this.initViewer();
   }
 
-  componentDidUpdate({theme: prevTheme, workflowId: prevWorkflowId}) {
-    const {theme, workflowId} = this.props;
-    if (theme !== prevTheme || workflowId !== prevWorkflowId) {
+  async componentDidUpdate({theme: prevTheme, workflowId: prevWorkflowId}) {
+    const hasNewTheme = this.props.theme !== prevTheme;
+    const hasNewWorkflowId = this.props.workflowId !== prevWorkflowId;
+
+    if (hasNewTheme || hasNewWorkflowId) {
+      hasNewWorkflowId && (await this.fetchAndSetWorkflowXML());
       this.initViewer();
     }
+  }
+
+  async fetchAndSetWorkflowXML() {
+    this.workflowXML = await api.fetchWorkflowXML(this.props.workflowId);
   }
 
   onDiagramLoaded = e => {
     if (e) {
       return console.log('Error rendering diagram:', e);
     }
-
     this.handleZoomReset();
 
-    // in case onFlowNodesDetailsReady callback function is provided, call it with flowNodesDetails
+    // in case onFlowNodesDetailsReady callback function is provided
+    // call it with flowNodesDetails
     const {onFlowNodesDetailsReady} = this.props;
     if (typeof onFlowNodesDetailsReady === 'function') {
       const elementRegistry = this.Viewer.get('elementRegistry');
