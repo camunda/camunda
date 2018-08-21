@@ -161,6 +161,29 @@ describe('Diagram', () => {
       expect(onFlowNodesDetailsReady).toBeCalledWith(flowNodesDetails);
       expect(handleZoomResetSpy).toHaveBeenCalledTimes(1);
     });
+
+    it('should fetch a new xml when a new workflowId is provided', async () => {
+      // given
+      const onFlowNodesDetailsReady = jest.fn();
+      const node = shallow(
+        <Diagram
+          workflowId={workflowId}
+          theme={'light'}
+          onFlowNodesDetailsReady={onFlowNodesDetailsReady}
+        />
+      );
+      const nodeInstance = node.instance();
+      const workflowSpy = jest.spyOn(nodeInstance, 'fetchAndSetWorkflowXML');
+      await flushPromises();
+      expect(api.fetchWorkflowXML).toBeCalledWith(workflowId);
+
+      // when
+      node.setProps({workflowId: 'new-id'});
+      node.update();
+
+      // then
+      expect(api.fetchWorkflowXML).toBeCalledWith('new-id');
+    });
   });
 
   describe('containerRef', () => {
