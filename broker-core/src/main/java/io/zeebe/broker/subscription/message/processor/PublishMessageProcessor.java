@@ -42,17 +42,19 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
 
   private final MessageDataStore messageStore;
   private final MessageSubscriptionDataStore subscriptionStore;
-
-  private SubscriptionCommandSender commandSender;
+  private final SubscriptionCommandSender commandSender;
 
   private TypedResponseWriter responseWriter;
   private MessageRecord messageRecord;
   private List<MessageSubscription> matchingSubscriptions;
 
   public PublishMessageProcessor(
-      MessageDataStore messageStore, MessageSubscriptionDataStore subscriptionStore) {
+      MessageDataStore messageStore,
+      MessageSubscriptionDataStore subscriptionStore,
+      SubscriptionCommandSender commandSender) {
     this.messageStore = messageStore;
     this.subscriptionStore = subscriptionStore;
+    this.commandSender = commandSender;
   }
 
   @Override
@@ -121,9 +123,5 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
     }
 
     return responseWriter.flush();
-  }
-
-  public void setSubscriptionCommandSender(SubscriptionCommandSender sender) {
-    this.commandSender = sender;
   }
 }

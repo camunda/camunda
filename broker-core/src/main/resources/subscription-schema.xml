@@ -34,6 +34,13 @@
       <data name="correlationKey" id="5" type="varDataEncoding" />
     </sbe:message>
     
+    <sbe:message name="OpenedMessageSubscription" id="1">
+      <field name="workflowInstancePartitionId" id="0" type="uint16"/>
+      <field name="workflowInstanceKey" id="1" type="uint64" />
+      <field name="activityInstanceKey" id="2" type="uint64" />  
+      <data name="messageName" id="3" type="varDataEncoding" />
+    </sbe:message>
+    
     <sbe:message name="CorrelateWorkflowInstanceSubscription" id="2">
       <field name="workflowInstancePartitionId" id="0" type="uint16"/>
       <field name="workflowInstanceKey" id="1" type="uint64" />

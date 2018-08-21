@@ -17,16 +17,23 @@
  */
 package io.zeebe.broker.workflow.processor;
 
+import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
-import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
-import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
+import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
+import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.system.workflow.repository.api.management.FetchWorkflowResponse;
 import io.zeebe.broker.topic.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
@@ -37,6 +44,7 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import java.io.ByteArrayOutputStream;
 import java.util.List;
@@ -47,6 +55,8 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.Mock;
+import org.mockito.MockitoAnnotations;
 
 public class WorkflowInstanceStreamProcessorTest {
 
@@ -74,13 +84,41 @@ public class WorkflowInstanceStreamProcessorTest {
           .endEvent()
           .done();
 
+  private static final BpmnModelInstance MESSAGE_CATCH_EVENT_WORKFLOW =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent()
+          .intermediateCatchEvent(
+              "catch-event",
+              c -> c.message(m -> m.name("order canceled").zeebeCorrelationKey("$.orderId")))
+          .done();
+
   @Rule public StreamProcessorRule rule = new StreamProcessorRule();
 
+  @Mock private SubscriptionCommandSender mockSubscriptionCommandSender;
+  @Mock private TopologyManager mockTopologyManager;
+
+  private StreamProcessorControl streamProcessor;
   private WorkflowCache workflowCache;
 
   @Before
   public void setUp() {
+    MockitoAnnotations.initMocks(this);
+
     workflowCache = new WorkflowCache(null, mock(TopologyManager.class));
+
+    when(mockSubscriptionCommandSender.hasPartitionIds()).thenReturn(true);
+    when(mockSubscriptionCommandSender.openMessageSubscription(anyLong(), anyLong(), any(), any()))
+        .thenReturn(true);
+
+    streamProcessor =
+        rule.runStreamProcessor(
+            env -> {
+              final WorkflowInstanceStreamProcessor streamProcessor =
+                  new WorkflowInstanceStreamProcessor(
+                      workflowCache, mockSubscriptionCommandSender, mockTopologyManager);
+
+              return streamProcessor.createStreamProcessor(env);
+            });
   }
 
   @Test
@@ -88,8 +126,6 @@ public class WorkflowInstanceStreamProcessorTest {
     // given
     deploy(SERVICE_TASK_WORKFLOW);
 
-    final StreamProcessorControl streamProcessor =
-        rule.runStreamProcessor(this::buildStreamProcessor);
     streamProcessor.blockAfterJobEvent(r -> r.getMetadata().getIntent() == JobIntent.CREATE);
 
     final TypedRecord<WorkflowInstanceRecord> createdEvent = createWorkflowInstance();
@@ -126,8 +162,6 @@ public class WorkflowInstanceStreamProcessorTest {
     // given
     deploy(SERVICE_TASK_WORKFLOW);
 
-    final StreamProcessorControl streamProcessor =
-        rule.runStreamProcessor(this::buildStreamProcessor);
     streamProcessor.blockAfterWorkflowInstanceRecord(
         isForElement("start")); // blocks before handling sequence flow taken
 
@@ -165,8 +199,6 @@ public class WorkflowInstanceStreamProcessorTest {
     // given
     deploy(SERVICE_TASK_WORKFLOW);
 
-    final StreamProcessorControl streamProcessor =
-        rule.runStreamProcessor(this::buildStreamProcessor);
     // stop when ELEMENT_COMPLETED is written
     streamProcessor.blockAfterWorkflowInstanceRecord(
         r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_COMPLETING);
@@ -215,8 +247,6 @@ public class WorkflowInstanceStreamProcessorTest {
     // given
     deploy(SERVICE_TASK_WORKFLOW);
 
-    final StreamProcessorControl streamProcessor =
-        rule.runStreamProcessor(this::buildStreamProcessor);
     // stop when ELEMENT_COMPLETING is written
     streamProcessor.blockAfterJobEvent(r -> r.getMetadata().getIntent() == JobIntent.COMPLETED);
 
@@ -257,8 +287,6 @@ public class WorkflowInstanceStreamProcessorTest {
     // given
     deploy(SUB_PROCESS_WORKFLOW);
 
-    final StreamProcessorControl streamProcessor =
-        rule.runStreamProcessor(this::buildStreamProcessor);
     streamProcessor.blockAfterJobEvent(r -> r.getMetadata().getIntent() == JobIntent.CREATE);
 
     final TypedRecord<WorkflowInstanceRecord> createdEvent = createWorkflowInstance();
@@ -290,8 +318,92 @@ public class WorkflowInstanceStreamProcessorTest {
     LifecycleAssert.assertThat(taskLifecycle).compliesWithCompleteLifecycle();
   }
 
+  @Test
+  public void shouldRetryToOpenMessageSubscription() {
+    // given
+    deploy(MESSAGE_CATCH_EVENT_WORKFLOW);
+
+    streamProcessor.blockAfterWorkflowInstanceRecord(
+        isForElement("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED));
+
+    createWorkflowInstance(asMsgPack("orderId", "order-123"));
+
+    waitUntil(() -> streamProcessor.isBlocked());
+
+    final TypedRecord<WorkflowInstanceRecord> catchEvent =
+        awaitElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+
+    // when
+    rule.getClock()
+        .addTime(
+            WorkflowInstanceStreamProcessor.SUBSCRIPTION_CHECK_INTERVAL.plus(
+                WorkflowInstanceStreamProcessor.SUBSCRIPTION_TIMEOUT));
+
+    streamProcessor.unblock();
+
+    // then
+    verify(mockSubscriptionCommandSender, timeout(5_000).times(2))
+        .openMessageSubscription(
+            catchEvent.getValue().getWorkflowInstanceKey(),
+            catchEvent.getKey(),
+            wrapString("order canceled"),
+            wrapString("order-123"));
+  }
+
+  @Test
+  public void shouldRejectDuplicatedWorkflowInstanceSubscription() {
+    // given
+    deploy(MESSAGE_CATCH_EVENT_WORKFLOW);
+
+    streamProcessor.blockAfterWorkflowInstanceRecord(
+        isForElement("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED));
+
+    createWorkflowInstance(asMsgPack("orderId", "order-123"));
+
+    waitUntil(() -> streamProcessor.isBlocked());
+
+    final TypedRecord<WorkflowInstanceRecord> catchEvent =
+        awaitElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+
+    // when
+    final WorkflowInstanceSubscriptionRecord subscription =
+        new WorkflowInstanceSubscriptionRecord()
+            .setWorkflowInstanceKey(catchEvent.getValue().getWorkflowInstanceKey())
+            .setActivityInstanceKey(catchEvent.getKey())
+            .setMessageName(wrapString("order canceled"));
+
+    rule.writeCommand(WorkflowInstanceSubscriptionIntent.OPEN, subscription);
+
+    final long secondCommandPosition =
+        rule.writeCommand(WorkflowInstanceSubscriptionIntent.OPEN, subscription);
+
+    streamProcessor.unblock();
+
+    // then
+    waitUntil(
+        () ->
+            rule.events()
+                .onlyWorkflowInstanceSubscriptionRecords()
+                .onlyRejections()
+                .findFirst()
+                .isPresent());
+
+    final TypedRecord<WorkflowInstanceSubscriptionRecord> rejection =
+        rule.events().onlyWorkflowInstanceSubscriptionRecords().onlyRejections().findFirst().get();
+
+    assertThat(rejection.getMetadata().getIntent())
+        .isEqualTo(WorkflowInstanceSubscriptionIntent.OPEN);
+    assertThat(rejection.getSourcePosition()).isEqualTo(secondCommandPosition);
+    assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
+        .isEqualTo("subscription is already open");
+  }
+
   private TypedRecord<WorkflowInstanceRecord> createWorkflowInstance() {
-    rule.writeCommand(WorkflowInstanceIntent.CREATE, workflowInstanceRecord());
+    return createWorkflowInstance(wrapString(""));
+  }
+
+  private TypedRecord<WorkflowInstanceRecord> createWorkflowInstance(DirectBuffer payload) {
+    rule.writeCommand(WorkflowInstanceIntent.CREATE, workflowInstanceRecord(payload));
     final TypedRecord<WorkflowInstanceRecord> createdEvent =
         awaitAndGetFirstRecordInState(WorkflowInstanceIntent.CREATED);
     return createdEvent;
@@ -301,18 +413,16 @@ public class WorkflowInstanceStreamProcessorTest {
     return r -> BufferUtil.wrapString(elementId).equals(r.getValue().getActivityId());
   }
 
-  private TypedStreamProcessor buildStreamProcessor(TypedStreamEnvironment env) {
-
-    final WorkflowInstanceStreamProcessor streamProcessor =
-        new WorkflowInstanceStreamProcessor(workflowCache, null, null, mock(TopologyManager.class));
-    return streamProcessor.createStreamProcessor(env);
+  private Predicate<TypedRecord<WorkflowInstanceRecord>> isForElement(
+      String elementId, WorkflowInstanceIntent intent) {
+    return isForElement(elementId).and(t -> t.getMetadata().getIntent() == intent);
   }
 
-  private static WorkflowInstanceRecord workflowInstanceRecord() {
+  private static WorkflowInstanceRecord workflowInstanceRecord(DirectBuffer payload) {
     final WorkflowInstanceRecord record = new WorkflowInstanceRecord();
 
     record.setBpmnProcessId(PROCESS_ID_BUFFER);
-    record.setPayload(BufferUtil.wrapString(""));
+    record.setPayload(payload);
 
     return record;
   }

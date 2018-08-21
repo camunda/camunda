@@ -18,7 +18,7 @@
 package io.zeebe.broker.subscription.message.data;
 
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.property.BinaryProperty;
+import io.zeebe.msgpack.property.DocumentProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import org.agrona.DirectBuffer;
@@ -28,7 +28,7 @@ public class WorkflowInstanceSubscriptionRecord extends UnpackedObject {
   private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey");
   private final LongProperty activityInstanceKeyProp = new LongProperty("activityInstanceKey");
   private final StringProperty messageNameProp = new StringProperty("messageName");
-  private final BinaryProperty payloadProp = new BinaryProperty("payload");
+  private final DocumentProperty payloadProp = new DocumentProperty("payload");
 
   public WorkflowInstanceSubscriptionRecord() {
     this.declareProperty(workflowInstanceKeyProp)

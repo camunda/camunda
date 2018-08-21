@@ -20,6 +20,8 @@ package io.zeebe.broker.util;
 import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
 import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.job.data.JobRecord;
+import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
+import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.system.workflow.repository.data.DeploymentRecord;
 import io.zeebe.broker.topic.Records;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
@@ -62,6 +64,19 @@ public class RecordStream extends StreamWrapper<LoggedEvent> {
     return new TypedRecordStream<>(
         filter(Records::isWorkflowInstanceRecord)
             .map(e -> CopiedTypedEvent.toTypedEvent(e, WorkflowInstanceRecord.class)));
+  }
+
+  public TypedRecordStream<MessageSubscriptionRecord> onlyMessageSubscriptionRecords() {
+    return new TypedRecordStream<>(
+        filter(Records::isMessageSubscriptionRecord)
+            .map(e -> CopiedTypedEvent.toTypedEvent(e, MessageSubscriptionRecord.class)));
+  }
+
+  public TypedRecordStream<WorkflowInstanceSubscriptionRecord>
+      onlyWorkflowInstanceSubscriptionRecords() {
+    return new TypedRecordStream<>(
+        filter(Records::isWorkflowInstanceSubscriptionRecord)
+            .map(e -> CopiedTypedEvent.toTypedEvent(e, WorkflowInstanceSubscriptionRecord.class)));
   }
 
   public TypedRecordStream<TopicRecord> onlyTopicRecords() {

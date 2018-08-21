@@ -25,6 +25,7 @@ import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.incident.processor.IncidentStreamProcessor;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
+import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.workflow.map.WorkflowCache;
 import io.zeebe.broker.workflow.processor.WorkflowInstanceStreamProcessor;
 import io.zeebe.servicecontainer.Injector;
@@ -72,12 +73,13 @@ public class WorkflowStreamProcessingManagerService
 
     final WorkflowCache workflowCache = new WorkflowCache(managementApiClient, topologyManager);
 
+    final SubscriptionCommandSender subscriptionCommandSender =
+        new SubscriptionCommandSender(
+            managementApiClientInjector.getValue(), subscriptionApiClientInjector.getValue());
+
     final WorkflowInstanceStreamProcessor streamProcessor =
         new WorkflowInstanceStreamProcessor(
-            workflowCache,
-            managementApiClient,
-            getSubscriptionApiClientInjector().getValue(),
-            topologyManager);
+            workflowCache, subscriptionCommandSender, topologyManager);
     final TypedStreamEnvironment env =
         new TypedStreamEnvironment(partition.getLogStream(), transport.getOutput());
 

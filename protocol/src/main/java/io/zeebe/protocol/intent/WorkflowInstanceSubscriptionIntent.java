@@ -16,8 +16,11 @@
 package io.zeebe.protocol.intent;
 
 public enum WorkflowInstanceSubscriptionIntent implements Intent {
-  CORRELATE((short) 0),
-  CORRELATED((short) 1);
+  OPEN((short) 0),
+  OPENED((short) 1),
+
+  CORRELATE((short) 2),
+  CORRELATED((short) 3);
 
   private short value;
 
@@ -33,8 +36,12 @@ public enum WorkflowInstanceSubscriptionIntent implements Intent {
   public static Intent from(short value) {
     switch (value) {
       case 0:
-        return CORRELATE;
+        return OPEN;
       case 1:
+        return OPENED;
+      case 2:
+        return CORRELATE;
+      case 3:
         return CORRELATED;
       default:
         return Intent.UNKNOWN;

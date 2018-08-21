@@ -36,6 +36,9 @@ import io.zeebe.broker.logstreams.processor.TypedStreamReader;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
+import io.zeebe.broker.subscription.message.processor.OpenSubscriptionChecker;
+import io.zeebe.broker.subscription.message.processor.OpenWorkflowInstanceSubscriptionProcessor;
+import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionDataStore;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.broker.workflow.index.ElementInstance;
 import io.zeebe.broker.workflow.index.ElementInstanceIndex;
@@ -51,39 +54,40 @@ import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.transport.ClientResponse;
-import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.metrics.Metric;
 import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import java.time.Duration;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
 public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycleAware {
 
+  public static final Duration SUBSCRIPTION_TIMEOUT = Duration.ofSeconds(10);
+  public static final Duration SUBSCRIPTION_CHECK_INTERVAL = Duration.ofSeconds(30);
+
   private Metric workflowInstanceEventCreate;
 
-  private ElementInstanceIndex scopeInstances = new ElementInstanceIndex();
+  private final ElementInstanceIndex scopeInstances = new ElementInstanceIndex();
 
   private TypedStreamReader streamReader;
-  private SubscriptionCommandSender subscriptionCommandSender;
+  private WorkflowInstanceSubscriptionDataStore subscriptionStore =
+      new WorkflowInstanceSubscriptionDataStore();
 
-  private final ClientTransport managementApiClient;
-  private final ClientTransport subscriptionApiClient;
   private final TopologyManager topologyManager;
-  private WorkflowCache workflowCache;
+  private final WorkflowCache workflowCache;
+  private final SubscriptionCommandSender subscriptionCommandSender;
 
   private ActorControl actor;
 
   public WorkflowInstanceStreamProcessor(
       WorkflowCache workflowCache,
-      ClientTransport managementApiClient,
-      ClientTransport subscriptionApiClient,
+      SubscriptionCommandSender subscriptionCommandSender,
       TopologyManager topologyManager) {
     this.workflowCache = workflowCache;
-    this.managementApiClient = managementApiClient;
-    this.subscriptionApiClient = subscriptionApiClient;
+    this.subscriptionCommandSender = subscriptionCommandSender;
     this.topologyManager = topologyManager;
   }
 
@@ -91,11 +95,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
     final BpmnStepProcessor bpmnStepProcessor =
         new BpmnStepProcessor(
-            scopeInstances,
-            workflowCache,
-            managementApiClient,
-            subscriptionApiClient,
-            topologyManager);
+            scopeInstances, workflowCache, subscriptionCommandSender, subscriptionStore);
 
     final ComposeableSerializableSnapshot<ElementInstanceIndex> snapshotSupport =
         new ComposeableSerializableSnapshot<>(scopeInstances);
@@ -165,12 +165,17 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         .onEvent(ValueType.JOB, JobIntent.COMPLETED, new JobCompletedEventProcessor())
         .onCommand(
             ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION,
+            WorkflowInstanceSubscriptionIntent.OPEN,
+            new OpenWorkflowInstanceSubscriptionProcessor(subscriptionStore))
+        .onCommand(
+            ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION,
             WorkflowInstanceSubscriptionIntent.CORRELATE,
             new CorrelateWorkflowInstanceSubscription())
         .withListener(this)
 
         // this is pretty ugly, but goes away when we switch to rocksdb
         .withStateResource(snapshotSupport)
+        .withStateResource(subscriptionStore)
         .withListener(
             new StreamProcessorLifecycleAware() {
               @Override
@@ -195,14 +200,12 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
     this.streamReader = streamProcessor.getEnvironment().buildStreamReader();
 
-    this.subscriptionCommandSender =
-        new SubscriptionCommandSender(
-            actor,
-            managementApiClient,
-            subscriptionApiClient,
-            topicName,
-            logStream.getPartitionId());
-    topologyManager.addTopologyPartitionListener(subscriptionCommandSender.getPartitionListener());
+    subscriptionCommandSender.init(topologyManager, actor, logStream);
+
+    final OpenSubscriptionChecker openSubscriptionChecker =
+        new OpenSubscriptionChecker(
+            subscriptionCommandSender, subscriptionStore, SUBSCRIPTION_TIMEOUT.toMillis());
+    actor.runAtFixedRate(SUBSCRIPTION_CHECK_INTERVAL, openSubscriptionChecker);
 
     workflowInstanceEventCreate =
         metricsManager
@@ -482,14 +485,16 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         final long workflowKey = eventInstance.getValue().getWorkflowKey();
         final DeployedWorkflow workflow = workflowCache.getWorkflowByKey(workflowKey);
         if (workflow != null) {
-          writeEvents(workflow);
+          onWorkflowAvailable(workflow);
         } else {
-          fetchWorkflow(workflowKey, this::writeEvents, ctx);
+          fetchWorkflow(workflowKey, this::onWorkflowAvailable, ctx);
         }
       }
     }
 
-    private void writeEvents(final DeployedWorkflow workflow) {
+    private void onWorkflowAvailable(final DeployedWorkflow workflow) {
+      // remove subscription if pending
+      subscriptionStore.removeSubscription(subscription);
 
       final ElementInstance eventInstance =
           scopeInstances.getInstance(subscription.getActivityInstanceKey());

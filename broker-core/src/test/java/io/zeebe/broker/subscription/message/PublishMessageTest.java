@@ -23,6 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
+import io.zeebe.broker.subscription.message.processor.MessageStreamProcessor;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.test.MsgPackUtil;
 import io.zeebe.protocol.clientapi.RecordType;
@@ -274,7 +275,7 @@ public class PublishMessageTest {
 
     brokerRule
         .getClock()
-        .addTime(MessageService.MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL.plusMillis(timeToLive));
+        .addTime(MessageStreamProcessor.MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL.plusMillis(timeToLive));
 
     // then
     final SubscribedRecord deletedEvent =
@@ -312,7 +313,7 @@ public class PublishMessageTest {
     final TestTopicClient testClient = apiRule.topic();
     testClient.receiveEvents().filter(intent(MessageIntent.PUBLISHED)).findFirst();
 
-    brokerRule.getClock().addTime(MessageService.MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL);
+    brokerRule.getClock().addTime(MessageStreamProcessor.MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL);
 
     // then
     final SubscribedRecord deletedEvent =
