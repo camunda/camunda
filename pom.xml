@@ -44,6 +44,7 @@
     <module>gateway-protocol</module>
     <module>gateway</module>
     <module>clients/java</module>
+    <module>exporter</module>
   </modules>
 
   <build>
