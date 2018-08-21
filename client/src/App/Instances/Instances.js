@@ -31,6 +31,12 @@ import {
 } from './service';
 import * as Styled from './styled.js';
 
+function sortArrayByKey(array, key) {
+  return [...array].sort(function(a, b) {
+    return a[key].toLowerCase().localeCompare(b[key].toLowerCase());
+  });
+}
+
 class Instances extends Component {
   static propTypes = {
     getStateLocally: PropTypes.func.isRequired,
@@ -195,9 +201,8 @@ class Instances extends Component {
   };
 
   handleFlowNodesDetailsReady = nodes => {
-    const activityIds = [];
+    let activityIds = [];
     let node;
-
     for (node in nodes) {
       if (nodes[node].type === 'TASK') {
         activityIds.push({
@@ -208,7 +213,7 @@ class Instances extends Component {
     }
 
     this.setState({
-      activityIds
+      activityIds: sortArrayByKey(activityIds, 'label')
     });
   };
 
