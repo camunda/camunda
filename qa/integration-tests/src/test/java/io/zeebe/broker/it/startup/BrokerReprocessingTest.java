@@ -17,7 +17,9 @@ package io.zeebe.broker.it.startup;
 
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
+import static java.util.Collections.singletonMap;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.junit.Assert.fail;
 
 import io.zeebe.broker.it.ClientRule;
@@ -29,6 +31,7 @@ import io.zeebe.gateway.api.events.IncidentEvent;
 import io.zeebe.gateway.api.events.IncidentState;
 import io.zeebe.gateway.api.events.JobEvent;
 import io.zeebe.gateway.api.events.JobState;
+import io.zeebe.gateway.api.events.MessageEvent;
 import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
 import io.zeebe.gateway.api.events.WorkflowInstanceState;
 import io.zeebe.gateway.api.subscription.JobWorker;
@@ -48,6 +51,7 @@ import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.junit.Rule;
@@ -113,6 +117,15 @@ public class BrokerReprocessingTest {
           .startEvent("start")
           .serviceTask("task", t -> t.zeebeTaskType("test").zeebeInput("$.foo", "$.foo"))
           .endEvent("end")
+          .done();
+
+  private static final BpmnModelInstance WORKFLOW_MESSAGE =
+      Bpmn.createExecutableProcess("process")
+          .startEvent()
+          .intermediateCatchEvent("catch-event")
+          .message(m -> m.name("order canceled").zeebeCorrelationKey("$.orderId"))
+          .sequenceFlowId("to-end")
+          .endEvent()
           .done();
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
@@ -580,12 +593,102 @@ public class BrokerReprocessingTest {
     assertThat(deployment2Key).isGreaterThan(deployment1Key);
   }
 
+  @Test
+  public void shouldCorrelateMessageAfterRestartIfEnteredBeforeA() throws Exception {
+    // given
+    clientRule
+        .getWorkflowClient()
+        .newDeployCommand()
+        .addWorkflowModel(WORKFLOW_MESSAGE, "message.bpmn")
+        .send()
+        .join();
+
+    final long workflowInstanceKey =
+        startWorkflowInstance("process", singletonMap("orderId", "order-123"))
+            .getWorkflowInstanceKey();
+
+    waitUntil(
+        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_ACTIVATED));
+
+    brokerRule.restartBroker();
+
+    // when
+    publishMessage("order canceled", "order-123", singletonMap("foo", "bar"));
+
+    // then
+    waitUntil(
+        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED));
+
+    final WorkflowInstanceEvent event =
+        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED);
+
+    assertThat(event.getWorkflowInstanceKey()).isEqualTo(workflowInstanceKey);
+    assertThat(event.getActivityId()).isEqualTo("catch-event");
+    assertThat(event.getPayloadAsMap())
+        .containsOnly(entry("orderId", "order-123"), entry("foo", "bar"));
+  }
+
+  @Test
+  public void shouldCorrelateMessageAfterRestartIfPublishedBefore() throws Exception {
+    // given
+    clientRule
+        .getWorkflowClient()
+        .newDeployCommand()
+        .addWorkflowModel(WORKFLOW_MESSAGE, "message.bpmn")
+        .send()
+        .join();
+
+    publishMessage("order canceled", "order-123", singletonMap("foo", "bar"));
+    brokerRule.restartBroker();
+
+    // when
+    final long workflowInstanceKey =
+        startWorkflowInstance("process", singletonMap("orderId", "order-123"))
+            .getWorkflowInstanceKey();
+
+    waitUntil(
+        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED));
+
+    // then
+    final WorkflowInstanceEvent event =
+        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED);
+
+    assertThat(event.getWorkflowInstanceKey()).isEqualTo(workflowInstanceKey);
+    assertThat(event.getActivityId()).isEqualTo("catch-event");
+    assertThat(event.getPayloadAsMap())
+        .containsOnly(entry("orderId", "order-123"), entry("foo", "bar"));
+  }
+
   private WorkflowInstanceEvent startWorkflowInstance(String bpmnProcessId) {
     return clientRule
         .getWorkflowClient()
         .newCreateInstanceCommand()
         .bpmnProcessId(bpmnProcessId)
         .latestVersion()
+        .send()
+        .join();
+  }
+
+  protected WorkflowInstanceEvent startWorkflowInstance(
+      String bpmnProcessId, Map<String, Object> payload) {
+    return clientRule
+        .getWorkflowClient()
+        .newCreateInstanceCommand()
+        .bpmnProcessId(bpmnProcessId)
+        .latestVersion()
+        .payload(payload)
+        .send()
+        .join();
+  }
+
+  protected MessageEvent publishMessage(
+      String messageName, String correlationKey, Map<String, Object> payload) {
+    return clientRule
+        .getWorkflowClient()
+        .newPublishMessageCommand()
+        .messageName(messageName)
+        .correlationKey(correlationKey)
+        .payload(payload)
         .send()
         .join();
   }

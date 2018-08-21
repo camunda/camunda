@@ -105,6 +105,11 @@ public class LeaderManagementRequestHandler extends Actor
   }
 
   @Override
+  public String getName() {
+    return "management-request-handler";
+  }
+
+  @Override
   public boolean onMessage(
       ServerOutput output,
       RemoteAddress remoteAddress,

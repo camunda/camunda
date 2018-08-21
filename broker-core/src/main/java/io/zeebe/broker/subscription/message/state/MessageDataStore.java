@@ -77,14 +77,17 @@ public class MessageDataStore extends JsonSnapshotSupport<MessageData> {
   }
 
   public static class Message {
-    private final String name;
-    private final String correlationKey;
-    private final byte[] payload;
-    private final String id;
-    private final long timeToLive;
-    private final long deadline;
+    private String name;
+    private String correlationKey;
+    private byte[] payload;
+    private String id;
+    private long timeToLive;
+    private long deadline;
 
     private long key;
+
+    /* required for json deserialization */
+    public Message() {}
 
     public Message(String name, String correlationKey, long timeToLive, byte[] payload, String id) {
       this.name = name;

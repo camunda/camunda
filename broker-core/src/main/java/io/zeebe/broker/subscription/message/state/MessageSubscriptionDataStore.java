@@ -66,11 +66,14 @@ public class MessageSubscriptionDataStore extends JsonSnapshotSupport<MessageSub
 
   public static class MessageSubscription {
 
-    private final int workflowInstancePartitionId;
-    private final long workflowInstanceKey;
-    private final long activityInstanceKey;
-    private final String messageName;
-    private final String correlationKey;
+    private int workflowInstancePartitionId;
+    private long workflowInstanceKey;
+    private long activityInstanceKey;
+    private String messageName;
+    private String correlationKey;
+
+    /* required for json deserialization */
+    public MessageSubscription() {}
 
     public MessageSubscription(
         int workflowInstancePartitionId,
