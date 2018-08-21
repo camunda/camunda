@@ -79,14 +79,28 @@ export default class Filters extends React.Component {
         currentWorkflowVersion: version,
         currentActivityId: EMPTY_OPTION
       },
-      this.updateInstancesWorkflow
+      this.updateByWorkflowVersion
     );
   };
 
-  updateInstancesWorkflow = async () => {
-    const version = this.state.currentWorkflowVersion;
+  updateFilterWithWorkflowVersion = version => {
+    let versions = [];
+
+    if (version === ALL_VERSIONS_OPTION) {
+      this.state.currentWorkflow.workflows.forEach(item => {
+        versions.push(item.id);
+      });
+    } else {
+      versions = version ? [version] : null;
+    }
+
+    this.props.onFilterChange({[FIELDS.workflowVersion.name]: versions});
+  };
+
+  updateWorkflowOnInstancesPage = version => {
     let workflow = null;
-    // we don't show a diagram when no version is available,
+
+    // we don't show a diagram when no version is available
     // or all versions are selected
     const isValidVersion =
       !isEmpty(this.state.currentWorkflow) && version !== ALL_VERSIONS_OPTION;
@@ -97,8 +111,15 @@ export default class Filters extends React.Component {
       });
     }
 
-    // needed in the Instances view for diagram display
+    // update workflowId in the Instances view for diagram display
     this.props.onWorkflowVersionChange(workflow);
+  };
+
+  updateByWorkflowVersion = () => {
+    const version = this.state.currentWorkflowVersion;
+
+    this.updateWorkflowOnInstancesPage(version);
+    this.updateFilterWithWorkflowVersion(version);
   };
 
   handleWorkflowVersionChange = event => {
@@ -107,7 +128,7 @@ export default class Filters extends React.Component {
     value !== EMPTY_OPTION &&
       this.setState(
         {currentWorkflowVersion: value, currentActivityId: EMPTY_OPTION},
-        this.updateInstancesWorkflow
+        this.updateByWorkflowVersion
       );
   };
 

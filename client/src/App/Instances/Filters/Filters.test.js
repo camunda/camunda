@@ -270,12 +270,12 @@ describe('Filters', () => {
     it('should exist and be disabled by default', () => {
       // given
       const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
-      const field = node.find({name: 'workflowVersion'});
+      const field = node.find({name: 'workflowIds'});
 
       // then
       expect(field.length).toEqual(1);
       expect(field.type()).toEqual(Select);
-      expect(field.props().name).toEqual('workflowVersion');
+      expect(field.props().name).toEqual('workflowIds');
       expect(field.props().value).toEqual('');
       expect(field.props().placeholder).toEqual('Workflow Version');
       expect(field.props().onChange).toEqual(
@@ -283,7 +283,7 @@ describe('Filters', () => {
       );
     });
 
-    it('should be display the latest version of a selected workflowName', async () => {
+    it('should display the latest version of a selected workflowName', async () => {
       // given
       const value = groupedWorkflowsMock[0].bpmnProcessId;
       const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
@@ -294,7 +294,7 @@ describe('Filters', () => {
       node.update();
 
       // then
-      expect(node.find({name: 'workflowVersion'}).props().value).toEqual(
+      expect(node.find({name: 'workflowIds'}).props().value).toEqual(
         groupedWorkflowsMock[0].workflows[0].id
       );
       expect(instancesSpy.mock.calls[0][0]).toEqual(
@@ -311,7 +311,7 @@ describe('Filters', () => {
       node.instance().handleWorkflowNameChange({target: {value: value}});
       node.update();
 
-      const options = node.find({name: 'workflowVersion'}).props().options;
+      const options = node.find({name: 'workflowIds'}).props().options;
 
       // then
       expect(options[0].label).toEqual('Version 3');
@@ -337,10 +337,10 @@ describe('Filters', () => {
 
       // then
       // should keep the last version option selected
-      expect(node.find({name: 'workflowVersion'}).props().value).toEqual(
+      expect(node.find({name: 'workflowIds'}).props().value).toEqual(
         groupedWorkflowsMock[0].workflows[0].id
       );
-      // should not update the workflow in Instances
+      // should update the workflow in Instances
       expect(instancesSpy.mock.calls.length).toEqual(1);
     });
 
@@ -360,10 +360,41 @@ describe('Filters', () => {
 
       // then
       // should keep the last version option selected
-      expect(node.find({name: 'workflowVersion'}).props().value).toEqual('');
+      expect(node.find({name: 'workflowIds'}).props().value).toEqual('');
       expect(node.find({name: 'workflowName'}).props().value).toEqual('');
       // should update the instances diagrams
       expect(instancesSpy.mock.calls[1][0]).toEqual(null);
+    });
+
+    it('should call onFilterChange when a workflow version is selected', async () => {
+      const value = groupedWorkflowsMock[0].bpmnProcessId;
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+
+      //when
+      await flushPromises();
+      // select workflowName, the version is set to the latest
+      node.instance().handleWorkflowNameChange({target: {value: value}});
+      node.update();
+
+      // then
+      expect(spy).toHaveBeenCalledWith({workflowIds: ['6']});
+    });
+
+    it.only('should call onFilterChange when all workflow versions are selected', async () => {
+      const value = groupedWorkflowsMock[0].bpmnProcessId;
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+
+      //when
+      await flushPromises();
+      // select workflowName, the version is set to the latest
+      node.instance().handleWorkflowNameChange({target: {value: value}});
+      node.update();
+      node
+        .instance()
+        .handleWorkflowVersionChange({target: {value: ALL_VERSIONS_OPTION}});
+
+      // then
+      expect(spy).toHaveBeenCalledWith({workflowIds: ['6', '4', '1']});
     });
   });
 
