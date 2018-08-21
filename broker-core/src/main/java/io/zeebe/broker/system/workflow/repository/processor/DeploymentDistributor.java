@@ -129,21 +129,17 @@ public class DeploymentDistributor {
     pushDeploymentRequest.reset();
     pushDeploymentRequest.deployment(directBuffer).deploymentKey(key);
 
-    final IntArrayList modifyablePartitionsList = new IntArrayList();
-    partitionsToDistributeTo.forEachOrderedInt(value -> modifyablePartitionsList.add(value));
+    final IntArrayList modifiablePartitionsList = new IntArrayList();
+    modifiablePartitionsList.addAll(partitionsToDistributeTo);
 
-    distributeDeployment(modifyablePartitionsList);
+    distributeDeployment(modifiablePartitionsList);
   }
 
   private void distributeDeployment(IntArrayList partitionsToDistribute) {
     final IntArrayList remainingPartitions =
         distributeDeploymentToPartitions(partitionsToDistribute);
 
-    distributeDelayedToRemainingPartitions(remainingPartitions);
-  }
-
-  private void distributeDelayedToRemainingPartitions(IntArrayList partitions) {
-    if (partitions.isEmpty()) {
+    if (remainingPartitions.isEmpty()) {
       LOG.trace("Pushed deployment to all partitions");
       return;
     }
@@ -151,7 +147,7 @@ public class DeploymentDistributor {
     actor.runDelayed(
         PARTITION_LEADER_RESOLVE_RETRY,
         () -> {
-          distributeDeployment(partitions);
+          distributeDeployment(remainingPartitions);
         });
   }
 
