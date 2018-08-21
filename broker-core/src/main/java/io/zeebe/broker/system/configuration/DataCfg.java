@@ -17,6 +17,8 @@
  */
 package io.zeebe.broker.system.configuration;
 
+import java.util.Arrays;
+
 public class DataCfg implements ConfigurationEntry {
   private String[] directories = new String[] {"data"};
 
@@ -63,5 +65,22 @@ public class DataCfg implements ConfigurationEntry {
 
   public void setSnapshotReplicationPeriod(String snapshotReplicationPeriod) {
     this.snapshotReplicationPeriod = snapshotReplicationPeriod;
+  }
+
+  @Override
+  public String toString() {
+    return "DataCfg{"
+        + "directories="
+        + Arrays.toString(directories)
+        + ", defaultLogSegmentSize='"
+        + defaultLogSegmentSize
+        + '\''
+        + ", snapshotPeriod='"
+        + snapshotPeriod
+        + '\''
+        + ", snapshotReplicationPeriod='"
+        + snapshotReplicationPeriod
+        + '\''
+        + '}';
   }
 }

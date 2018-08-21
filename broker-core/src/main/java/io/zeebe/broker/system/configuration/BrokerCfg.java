@@ -127,4 +127,30 @@ public class BrokerCfg {
   public void setExporters(List<ExporterCfg> exporters) {
     this.exporters = exporters;
   }
+
+  @Override
+  public String toString() {
+    return "BrokerCfg{"
+        + "bootstrap="
+        + bootstrap
+        + ", network="
+        + network
+        + ", cluster="
+        + cluster
+        + ", threads="
+        + threads
+        + ", metrics="
+        + metrics
+        + ", data="
+        + data
+        + ", gossip="
+        + gossip
+        + ", raft="
+        + raft
+        + ", topics="
+        + topics
+        + ", exporters="
+        + exporters
+        + '}';
+  }
 }

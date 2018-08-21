@@ -86,4 +86,21 @@ public class ExporterCfg implements ConfigurationEntry {
   private boolean isEmpty(final String value) {
     return value == null || value.isEmpty();
   }
+
+  @Override
+  public String toString() {
+    return "ExporterCfg{"
+        + "id='"
+        + id
+        + '\''
+        + ", jarPath='"
+        + jarPath
+        + '\''
+        + ", className='"
+        + className
+        + '\''
+        + ", args="
+        + args
+        + '}';
+  }
 }

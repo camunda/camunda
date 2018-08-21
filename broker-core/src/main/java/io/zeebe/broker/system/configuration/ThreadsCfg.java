@@ -36,4 +36,14 @@ public class ThreadsCfg implements ConfigurationEntry {
   public void setIoThreadCount(int ioThreads) {
     this.ioThreadCount = ioThreads;
   }
+
+  @Override
+  public String toString() {
+    return "ThreadsCfg{"
+        + "cpuThreadCount="
+        + cpuThreadCount
+        + ", ioThreadCount="
+        + ioThreadCount
+        + '}';
+  }
 }

@@ -85,7 +85,7 @@ public class Broker implements AutoCloseable {
           if (!isClosed) {
             brokerContext.close();
             isClosed = true;
-            LOG.info("Broker closed");
+            LOG.info("Broker closed. Configuration: {}", getConfig());
           }
         });
   }

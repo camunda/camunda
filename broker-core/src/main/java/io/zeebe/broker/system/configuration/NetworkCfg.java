@@ -109,4 +109,28 @@ public class NetworkCfg implements ConfigurationEntry {
   public void setGateway(final SocketBindingGatewayCfg gateway) {
     this.gateway = gateway;
   }
+
+  @Override
+  public String toString() {
+    return "NetworkCfg{"
+        + "host='"
+        + host
+        + '\''
+        + ", defaultSendBufferSize='"
+        + defaultSendBufferSize
+        + '\''
+        + ", portOffset="
+        + portOffset
+        + ", client="
+        + client
+        + ", management="
+        + management
+        + ", replication="
+        + replication
+        + ", subscription="
+        + subscription
+        + ", gateway="
+        + gateway
+        + '}';
+  }
 }
