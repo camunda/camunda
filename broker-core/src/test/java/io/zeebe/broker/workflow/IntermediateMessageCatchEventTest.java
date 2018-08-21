@@ -31,6 +31,7 @@ import static org.assertj.core.api.Assertions.entry;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.SubscriptionUtil;
@@ -169,6 +170,32 @@ public class IntermediateMessageCatchEventTest {
     assertThat(subscriptions)
         .extracting(s -> s.value().get("workflowInstanceKey"))
         .contains(workflowInstanceKey1, workflowInstanceKey2);
+  }
+
+  @Test
+  public void shouldOpenWorkflowInstanceSubscription() {
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
+
+    final SubscribedRecord catchEventEntered =
+        testClient.receiveElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+
+    final SubscribedRecord workflowInstanceSubscription =
+        testClient
+            .receiveEvents()
+            .filter(intent(WorkflowInstanceSubscriptionIntent.OPENED))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("no workflow instance subscription event found"));
+
+    assertThat(workflowInstanceSubscription.valueType())
+        .isEqualTo(ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
+    assertThat(workflowInstanceSubscription.recordType()).isEqualTo(RecordType.EVENT);
+    assertThat(workflowInstanceSubscription.value())
+        .containsExactly(
+            entry("workflowInstanceKey", workflowInstanceKey),
+            entry("activityInstanceKey", catchEventEntered.key()),
+            entry("messageName", "order canceled"),
+            entry("payload", MsgPackHelper.EMTPY_OBJECT));
   }
 
   @Test

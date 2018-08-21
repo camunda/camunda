@@ -19,30 +19,17 @@ package io.zeebe.broker.subscription.message;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
-import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
-import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
-import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
-import io.zeebe.broker.subscription.message.processor.DeleteMessageProcessor;
-import io.zeebe.broker.subscription.message.processor.MessageTimeToLiveChecker;
-import io.zeebe.broker.subscription.message.processor.OpenMessageSubscriptionProcessor;
-import io.zeebe.broker.subscription.message.processor.PublishMessageProcessor;
-import io.zeebe.broker.subscription.message.state.MessageDataStore;
-import io.zeebe.broker.subscription.message.state.MessageSubscriptionDataStore;
-import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.intent.MessageIntent;
-import io.zeebe.protocol.intent.MessageSubscriptionIntent;
+import io.zeebe.broker.subscription.message.processor.MessageStreamProcessor;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceGroupReference;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.ServerTransport;
-import java.time.Duration;
 
 public class MessageService implements Service<MessageService> {
 
@@ -59,73 +46,28 @@ public class MessageService implements Service<MessageService> {
           .onAdd((partitionName, partition) -> startStreamProcessors(partitionName, partition))
           .build();
 
-  public static final Duration MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL = Duration.ofSeconds(60);
-
   private void startStreamProcessors(
       ServiceName<Partition> partitionServiceName, Partition partition) {
     final ServerTransport transport = clientApiTransportInjector.getValue();
     final StreamProcessorServiceFactory factory = streamProcessorServiceFactoryInjector.getValue();
+    final TopologyManager topologyManager = topologyManagerInjector.getValue();
+
+    final SubscriptionCommandSender subscriptionCommandSender =
+        new SubscriptionCommandSender(
+            getManagementApiClientInjector().getValue(),
+            getSubscriptionApiClientInjector().getValue());
 
     final TypedStreamEnvironment env =
         new TypedStreamEnvironment(partition.getLogStream(), transport.getOutput());
 
+    final MessageStreamProcessor streamProcessor =
+        new MessageStreamProcessor(subscriptionCommandSender, topologyManager);
+
     factory
         .createService(partition, partitionServiceName)
-        .processor(createStreamProcessors(env))
+        .processor(streamProcessor.createStreamProcessors(env))
         .processorId(StreamProcessorIds.MESSAGE_PROCESSOR_ID)
         .processorName("message")
-        .build();
-  }
-
-  private TypedStreamProcessor createStreamProcessors(TypedStreamEnvironment env) {
-
-    final MessageDataStore messageStore = new MessageDataStore();
-    final MessageSubscriptionDataStore subscriptionStore = new MessageSubscriptionDataStore();
-
-    final PublishMessageProcessor publishMessageProcessor =
-        new PublishMessageProcessor(messageStore, subscriptionStore);
-    final OpenMessageSubscriptionProcessor openMessageSubscriptionProcessor =
-        new OpenMessageSubscriptionProcessor(messageStore, subscriptionStore);
-
-    return env.newStreamProcessor()
-        .keyGenerator(new KeyGenerator(0, 1))
-        .onCommand(ValueType.MESSAGE, MessageIntent.PUBLISH, publishMessageProcessor)
-        .onCommand(
-            ValueType.MESSAGE, MessageIntent.DELETE, new DeleteMessageProcessor(messageStore))
-        .onCommand(
-            ValueType.MESSAGE_SUBSCRIPTION,
-            MessageSubscriptionIntent.OPEN,
-            openMessageSubscriptionProcessor)
-        .withStateResource(messageStore)
-        .withStateResource(subscriptionStore)
-        .withListener(
-            new StreamProcessorLifecycleAware() {
-              @Override
-              public void onOpen(TypedStreamProcessor streamProcessor) {
-                final LogStream stream = streamProcessor.getEnvironment().getStream();
-
-                final SubscriptionCommandSender subscriptionCommandSender =
-                    new SubscriptionCommandSender(
-                        streamProcessor.getActor(),
-                        getManagementApiClientInjector().getValue(),
-                        getSubscriptionApiClientInjector().getValue(),
-                        stream.getLogName(),
-                        stream.getPartitionId());
-                getTopologyManagerInjector()
-                    .getValue()
-                    .addTopologyPartitionListener(subscriptionCommandSender.getPartitionListener());
-
-                publishMessageProcessor.setSubscriptionCommandSender(subscriptionCommandSender);
-                openMessageSubscriptionProcessor.setSubscriptionCommandSender(
-                    subscriptionCommandSender);
-
-                final MessageTimeToLiveChecker timeToLiveChecker =
-                    new MessageTimeToLiveChecker(env.buildCommandWriter(), messageStore);
-                streamProcessor
-                    .getActor()
-                    .runAtFixedRate(MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL, timeToLiveChecker);
-              }
-            })
         .build();
   }
 

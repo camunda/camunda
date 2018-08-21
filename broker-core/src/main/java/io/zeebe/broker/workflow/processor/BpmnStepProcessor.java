@@ -17,13 +17,14 @@
  */
 package io.zeebe.broker.workflow.processor;
 
-import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.logstreams.processor.SideEffectProducer;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
+import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionDataStore;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.broker.workflow.index.ElementInstance;
 import io.zeebe.broker.workflow.index.ElementInstanceIndex;
@@ -53,7 +54,6 @@ import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.transport.ClientResponse;
-import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -82,9 +82,8 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
   public BpmnStepProcessor(
       ElementInstanceIndex scopeInstances,
       WorkflowCache workflowCache,
-      ClientTransport managementClient,
-      ClientTransport subscriptionClient,
-      TopologyManager topologyManager) {
+      SubscriptionCommandSender subscriptionCommandSender,
+      WorkflowInstanceSubscriptionDataStore subscriptionStore) {
 
     this.elementInstances = scopeInstances;
     this.workflowCache = workflowCache;
@@ -119,7 +118,7 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
     // intermediate catch event
     stepHandlers.put(
         BpmnStep.SUBSCRIBE_TO_INTERMEDIATE_MESSAGE,
-        new SubscribeMessageHandler(managementClient, subscriptionClient, topologyManager));
+        new SubscribeMessageHandler(subscriptionCommandSender, subscriptionStore));
 
     // process
     stepHandlers.put(BpmnStep.COMPLETE_PROCESS, new CompleteProcessHandler());

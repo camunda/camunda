@@ -74,6 +74,14 @@ public class Records {
     return isRecordOfType(event, ValueType.WORKFLOW_INSTANCE);
   }
 
+  public static boolean isMessageSubscriptionRecord(LoggedEvent event) {
+    return isRecordOfType(event, ValueType.MESSAGE_SUBSCRIPTION);
+  }
+
+  public static boolean isWorkflowInstanceSubscriptionRecord(LoggedEvent event) {
+    return isRecordOfType(event, ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
+  }
+
   public static boolean hasIntent(LoggedEvent event, Intent intent) {
     if (event == null) {
       return false;

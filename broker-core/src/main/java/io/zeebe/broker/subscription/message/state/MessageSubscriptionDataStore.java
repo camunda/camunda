@@ -32,7 +32,7 @@ public class MessageSubscriptionDataStore extends JsonSnapshotSupport<MessageSub
     super(MessageSubscriptiopnData.class);
   }
 
-  public void addSubscription(MessageSubscriptionRecord record) {
+  public boolean addSubscription(MessageSubscriptionRecord record) {
     final MessageSubscription subscription =
         new MessageSubscription(
             record.getWorkflowInstancePartitionId(),
@@ -41,7 +41,12 @@ public class MessageSubscriptionDataStore extends JsonSnapshotSupport<MessageSub
             bufferAsString(record.getMessageName()),
             bufferAsString(record.getCorrelationKey()));
 
+    if (getData().getSubscriptions().contains(subscription)) {
+      return false;
+    }
+
     getData().getSubscriptions().add(subscription);
+    return true;
   }
 
   public List<MessageSubscription> findSubscriptions(String messageName, String correlationKey) {
@@ -106,6 +111,56 @@ public class MessageSubscriptionDataStore extends JsonSnapshotSupport<MessageSub
 
     public String getCorrelationKey() {
       return correlationKey;
+    }
+
+    @Override
+    public int hashCode() {
+      final int prime = 31;
+      int result = 1;
+      result = prime * result + (int) (activityInstanceKey ^ (activityInstanceKey >>> 32));
+      result = prime * result + ((correlationKey == null) ? 0 : correlationKey.hashCode());
+      result = prime * result + ((messageName == null) ? 0 : messageName.hashCode());
+      result = prime * result + (int) (workflowInstanceKey ^ (workflowInstanceKey >>> 32));
+      result = prime * result + workflowInstancePartitionId;
+      return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+      if (this == obj) {
+        return true;
+      }
+      if (obj == null) {
+        return false;
+      }
+      if (getClass() != obj.getClass()) {
+        return false;
+      }
+      final MessageSubscription other = (MessageSubscription) obj;
+      if (activityInstanceKey != other.activityInstanceKey) {
+        return false;
+      }
+      if (correlationKey == null) {
+        if (other.correlationKey != null) {
+          return false;
+        }
+      } else if (!correlationKey.equals(other.correlationKey)) {
+        return false;
+      }
+      if (messageName == null) {
+        if (other.messageName != null) {
+          return false;
+        }
+      } else if (!messageName.equals(other.messageName)) {
+        return false;
+      }
+      if (workflowInstanceKey != other.workflowInstanceKey) {
+        return false;
+      }
+      if (workflowInstancePartitionId != other.workflowInstancePartitionId) {
+        return false;
+      }
+      return true;
     }
   }
 }

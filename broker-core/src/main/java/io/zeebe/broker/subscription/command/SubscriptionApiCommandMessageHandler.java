@@ -21,6 +21,7 @@ import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder;
 import io.zeebe.broker.subscription.MessageHeaderDecoder;
 import io.zeebe.broker.subscription.OpenMessageSubscriptionDecoder;
+import io.zeebe.broker.subscription.OpenedMessageSubscriptionDecoder;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
@@ -44,6 +45,9 @@ public class SubscriptionApiCommandMessageHandler implements ServerMessageHandle
 
   private final OpenMessageSubscriptionCommand openMessageSubscriptionCommand =
       new OpenMessageSubscriptionCommand();
+
+  private final OpenedMessageSubscriptionCommand openedMessageSubscriptionCommand =
+      new OpenedMessageSubscriptionCommand();
 
   private final CorrelateWorkflowInstanceSubscriptionCommand
       correlateWorkflowInstanceSubscriptionCommand =
@@ -80,6 +84,9 @@ public class SubscriptionApiCommandMessageHandler implements ServerMessageHandle
         case OpenMessageSubscriptionDecoder.TEMPLATE_ID:
           return onOpenMessageSubscription(buffer, offset, length);
 
+        case OpenedMessageSubscriptionDecoder.TEMPLATE_ID:
+          return onOpenedMessageSubscription(buffer, offset, length);
+
         case CorrelateWorkflowInstanceSubscriptionDecoder.TEMPLATE_ID:
           return onCorrelateWorkflowInstanceSubscription(buffer, offset, length);
 
@@ -107,6 +114,22 @@ public class SubscriptionApiCommandMessageHandler implements ServerMessageHandle
         ValueType.MESSAGE_SUBSCRIPTION,
         MessageSubscriptionIntent.OPEN,
         messageSubscriptionRecord);
+  }
+
+  private boolean onOpenedMessageSubscription(DirectBuffer buffer, int offset, int length) {
+    openedMessageSubscriptionCommand.wrap(buffer, offset, length);
+
+    workflowInstanceSubscriptionRecord.reset();
+    workflowInstanceSubscriptionRecord
+        .setWorkflowInstanceKey(openedMessageSubscriptionCommand.getWorkflowInstanceKey())
+        .setActivityInstanceKey(openedMessageSubscriptionCommand.getActivityInstanceKey())
+        .setMessageName(openedMessageSubscriptionCommand.getMessageName());
+
+    return writeCommand(
+        openedMessageSubscriptionCommand.getWorkflowInstancePartitionId(),
+        ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION,
+        WorkflowInstanceSubscriptionIntent.OPEN,
+        workflowInstanceSubscriptionRecord);
   }
 
   private boolean onCorrelateWorkflowInstanceSubscription(

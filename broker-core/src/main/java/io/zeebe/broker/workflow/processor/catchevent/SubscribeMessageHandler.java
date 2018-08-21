@@ -17,19 +17,19 @@
  */
 package io.zeebe.broker.workflow.processor.catchevent;
 
-import io.zeebe.broker.clustering.base.topology.TopologyManager;
-import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
+import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionDataStore;
+import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionDataStore.WorkflowInstanceSubscription;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.broker.workflow.model.ExecutableIntermediateMessageCatchEvent;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
-import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResult;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResults;
-import io.zeebe.transport.ClientTransport;
-import io.zeebe.util.buffer.BufferUtil;
+import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
@@ -44,33 +44,14 @@ public class SubscribeMessageHandler
   private ExecutableIntermediateMessageCatchEvent catchEvent;
   private DirectBuffer extractedCorrelationKey;
 
-  private SubscriptionCommandSender subscriptionCommandSender;
-
-  private final ClientTransport managementClient;
-  private final ClientTransport subscriptionClient;
-  private final TopologyManager topologyManager;
+  private final SubscriptionCommandSender subscriptionCommandSender;
+  private final WorkflowInstanceSubscriptionDataStore subscriptionStore;
 
   public SubscribeMessageHandler(
-      ClientTransport managementClient,
-      ClientTransport subscriptionClient,
-      TopologyManager topologyManager) {
-    this.managementClient = managementClient;
-    this.subscriptionClient = subscriptionClient;
-    this.topologyManager = topologyManager;
-  }
-
-  @Override
-  public void onOpen(TypedStreamProcessor streamProcessor) {
-    final LogStream logStream = streamProcessor.getEnvironment().getStream();
-
-    this.subscriptionCommandSender =
-        new SubscriptionCommandSender(
-            streamProcessor.getActor(),
-            managementClient,
-            subscriptionClient,
-            BufferUtil.bufferAsString(logStream.getTopicName()),
-            logStream.getPartitionId());
-    topologyManager.addTopologyPartitionListener(subscriptionCommandSender.getPartitionListener());
+      SubscriptionCommandSender subscriptionCommandSender,
+      WorkflowInstanceSubscriptionDataStore subscriptionStore) {
+    this.subscriptionCommandSender = subscriptionCommandSender;
+    this.subscriptionStore = subscriptionStore;
   }
 
   @Override
@@ -108,6 +89,15 @@ public class SubscribeMessageHandler
       BpmnStepContext<ExecutableIntermediateMessageCatchEvent> context) {
     extractedCorrelationKey = extractCorrelationKey();
     context.getSideEffect().accept(this::openMessageSubscription);
+
+    final WorkflowInstanceSubscription subscription =
+        new WorkflowInstanceSubscription(
+            workflowInstance.getWorkflowInstanceKey(),
+            activityInstanceKey,
+            bufferAsString(catchEvent.getMessageName()),
+            bufferAsString(extractedCorrelationKey));
+    subscription.setSentTime(ActorClock.currentTimeMillis());
+    subscriptionStore.addSubscription(subscription);
   }
 
   private boolean openMessageSubscription() {

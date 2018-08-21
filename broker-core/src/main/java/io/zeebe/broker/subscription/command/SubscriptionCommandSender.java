@@ -17,10 +17,14 @@
  */
 package io.zeebe.broker.subscription.command;
 
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import io.zeebe.broker.clustering.base.topology.NodeInfo;
+import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.clustering.base.topology.TopologyPartitionListenerImpl;
 import io.zeebe.broker.system.management.topics.FetchCreatedTopicsRequest;
 import io.zeebe.broker.system.management.topics.FetchCreatedTopicsResponse;
+import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.impl.SubscriptionUtil;
 import io.zeebe.transport.ClientResponse;
 import io.zeebe.transport.ClientTransport;
@@ -47,36 +51,38 @@ public class SubscriptionCommandSender {
   private final OpenMessageSubscriptionCommand openMessageSubscriptionCommand =
       new OpenMessageSubscriptionCommand();
 
+  private final OpenedMessageSubscriptionCommand openedMessageSubscriptionCommand =
+      new OpenedMessageSubscriptionCommand();
+
   private final CorrelateWorkflowInstanceSubscriptionCommand
       correlateWorkflowInstanceSubscriptionCommand =
           new CorrelateWorkflowInstanceSubscriptionCommand();
 
   private final TransportMessage subscriptionMessage = new TransportMessage();
 
-  private final TopologyPartitionListenerImpl partitionListener;
-
-  private final ActorControl actor;
   private final ClientTransport managementClient;
   private final ClientTransport subscriptionClient;
-  private final String topicName;
-  private final int partitionId;
+
+  private ActorControl actor;
+  private String topicName;
+  private int partitionId;
 
   private IntArrayList partitionIds;
+  private TopologyPartitionListenerImpl partitionListener;
 
   public SubscriptionCommandSender(
-      ActorControl actor,
-      ClientTransport managementClient,
-      ClientTransport subscriptionClient,
-      String topicName,
-      int partitionId) {
-
-    this.actor = actor;
+      ClientTransport managementClient, ClientTransport subscriptionClient) {
     this.managementClient = managementClient;
     this.subscriptionClient = subscriptionClient;
-    this.topicName = topicName;
-    this.partitionId = partitionId;
+  }
+
+  public void init(TopologyManager topologyManager, ActorControl actor, LogStream logStream) {
+    this.actor = actor;
+    this.topicName = bufferAsString(logStream.getTopicName());
+    this.partitionId = logStream.getPartitionId();
 
     this.partitionListener = new TopologyPartitionListenerImpl(actor);
+    topologyManager.addTopologyPartitionListener(partitionListener);
   }
 
   public boolean openMessageSubscription(
@@ -107,6 +113,20 @@ public class SubscriptionCommandSender {
     return partitionIds.getInt(index);
   }
 
+  public boolean openedMessageSubscription(
+      int workflowInstancePartitionId,
+      long workflowInstanceKey,
+      long activityInstanceKey,
+      DirectBuffer messageName) {
+
+    openedMessageSubscriptionCommand.setWorkflowInstancePartitionId(workflowInstancePartitionId);
+    openedMessageSubscriptionCommand.setWorkflowInstanceKey(workflowInstanceKey);
+    openedMessageSubscriptionCommand.setActivityInstanceKey(activityInstanceKey);
+    openedMessageSubscriptionCommand.getMessageName().wrap(messageName);
+
+    return sendSubscriptionCommand(workflowInstancePartitionId, openedMessageSubscriptionCommand);
+  }
+
   public boolean correlateWorkflowInstanceSubscription(
       int workflowInstancePartitionId,
       long workflowInstanceKey,
@@ -120,7 +140,6 @@ public class SubscriptionCommandSender {
     correlateWorkflowInstanceSubscriptionCommand.setActivityInstanceKey(activityInstanceKey);
     correlateWorkflowInstanceSubscriptionCommand.getMessageName().wrap(messageName);
     correlateWorkflowInstanceSubscriptionCommand.getPayload().wrap(payload);
-    subscriptionMessage.writer(correlateWorkflowInstanceSubscriptionCommand);
 
     return sendSubscriptionCommand(
         workflowInstancePartitionId, correlateWorkflowInstanceSubscriptionCommand);
@@ -133,7 +152,7 @@ public class SubscriptionCommandSender {
     final NodeInfo partitionLeader = partitionLeaders.get(receiverPartitionId);
     if (partitionLeader == null) {
       // retry when no leader is known
-      return false;
+      return true;
     }
 
     final SocketAddress subscriptionApiAddress = partitionLeader.getSubscriptionApiAddress();
@@ -168,17 +187,23 @@ public class SubscriptionCommandSender {
   }
 
   private ActorFuture<ClientResponse> sendFetchCreatedTopicsRequest() {
-    final SocketAddress systemPartitionLeader = partitionListener.getSystemPartitionLeader();
-    final RemoteAddress remoteAddress =
-        managementClient.registerRemoteAddress(systemPartitionLeader);
-
     return managementClient
         .getOutput()
         .sendRequestWithRetry(
-            () -> remoteAddress,
+            this::getSystemPartitionLeaderAddress,
             b -> !fetchCreatedTopicsResponse.tryWrap(b),
             fetchCreatedTopicsRequest,
             Duration.ofSeconds(15));
+  }
+
+  private RemoteAddress getSystemPartitionLeaderAddress() {
+    RemoteAddress remoteAddress = null;
+
+    final SocketAddress systemPartitionLeader = partitionListener.getSystemPartitionLeader();
+    if (systemPartitionLeader != null) {
+      remoteAddress = managementClient.registerRemoteAddress(systemPartitionLeader);
+    }
+    return remoteAddress;
   }
 
   private void handleFetchCreatedTopicsResponse(DirectBuffer response) {
@@ -191,9 +216,5 @@ public class SubscriptionCommandSender {
                 partitionIds = topic.getPartitionIds();
               }
             });
-  }
-
-  public TopologyPartitionListenerImpl getPartitionListener() {
-    return partitionListener;
   }
 }
