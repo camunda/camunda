@@ -425,6 +425,20 @@ it('should render cells content correctly', () => {
   expect(data[0].props.children.props.to).toBe('test link');
 });
 
+it('should include an edit/add modal after reports are loaded', async () => {
+  load.mockReturnValue([alertEntity]);
+  const node = mount(
+    shallow(
+      <EntityList api="endpoint" label="Alert" operations={['Edit']} EditModal={EditModal} />
+    ).get(0)
+  );
+  await node.instance().componentDidMount();
+  node.setState({
+    loaded: true
+  });
+  expect(node).toIncludeText('EditModal');
+});
+
 it('should pass an alert entity configuration to the edit/add modal', async () => {
   load.mockReturnValue([alertEntity]);
 
