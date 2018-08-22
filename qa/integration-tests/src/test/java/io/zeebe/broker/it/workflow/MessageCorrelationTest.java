@@ -32,8 +32,13 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
-public class IntermediateCatchEventTest {
+@RunWith(Parameterized.class)
+public class MessageCorrelationTest {
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
   public ClientRule clientRule = new ClientRule();
@@ -43,13 +48,37 @@ public class IntermediateCatchEventTest {
   public RuleChain ruleChain =
       RuleChain.outerRule(brokerRule).around(clientRule).around(eventRecorder);
 
-  private static final BpmnModelInstance WORKFLOW =
+  private static final BpmnModelInstance CATCH_EVENT_WORKFLOW =
       Bpmn.createExecutableProcess("wf")
           .startEvent()
-          .intermediateCatchEvent("catch-event")
-          .message(c -> c.name("order canceled").zeebeCorrelationKey("$.orderId"))
+          .intermediateCatchEvent("receive-message")
+          .message(m -> m.name("order canceled").zeebeCorrelationKey("$.orderId"))
+          .sequenceFlowId("to-end")
           .endEvent()
           .done();
+
+  private static final BpmnModelInstance RECEIVE_TASK_WORKFLOW =
+      Bpmn.createExecutableProcess("wf")
+          .startEvent()
+          .receiveTask("receive-message")
+          .message(m -> m.name("order canceled").zeebeCorrelationKey("$.orderId"))
+          .sequenceFlowId("to-end")
+          .endEvent()
+          .done();
+
+  @Parameter(0)
+  public String elementType;
+
+  @Parameter(1)
+  public BpmnModelInstance workflow;
+
+  @Parameters(name = "{0}")
+  public static final Object[][] parameters() {
+    return new Object[][] {
+      {"intermediate message catch event", CATCH_EVENT_WORKFLOW},
+      {"receive task", RECEIVE_TASK_WORKFLOW}
+    };
+  }
 
   @Before
   public void init() {
@@ -57,7 +86,7 @@ public class IntermediateCatchEventTest {
         clientRule
             .getWorkflowClient()
             .newDeployCommand()
-            .addWorkflowModel(WORKFLOW, "wf.bpmn")
+            .addWorkflowModel(workflow, "wf.bpmn")
             .send()
             .join();
 
@@ -79,7 +108,7 @@ public class IntermediateCatchEventTest {
     waitUntil(
         () ->
             eventRecorder.hasElementInState(
-                "catch-event", WorkflowInstanceState.ELEMENT_ACTIVATED));
+                "receive-message", WorkflowInstanceState.ELEMENT_ACTIVATED));
 
     // when
     clientRule
@@ -145,7 +174,7 @@ public class IntermediateCatchEventTest {
     waitUntil(() -> eventRecorder.hasElementInState("wf", WorkflowInstanceState.ELEMENT_COMPLETED));
 
     final WorkflowInstanceEvent catchEventOccurredEvent =
-        eventRecorder.getElementInState("catch-event", WorkflowInstanceState.ELEMENT_COMPLETED);
+        eventRecorder.getElementInState("receive-message", WorkflowInstanceState.ELEMENT_COMPLETED);
     assertThat(catchEventOccurredEvent.getPayloadAsMap())
         .containsExactly(entry("orderId", "order-123"), entry("foo", "bar"));
   }

@@ -20,12 +20,12 @@ package io.zeebe.broker.workflow.model;
 import io.zeebe.msgpack.jsonpath.JsonPathQuery;
 import org.agrona.DirectBuffer;
 
-public class ExecutableIntermediateMessageCatchEvent extends ExecutableFlowNode {
+public class ExecutableMessageCatchElement extends ExecutableFlowNode {
 
   private JsonPathQuery correlationKey;
   private DirectBuffer messageName;
 
-  public ExecutableIntermediateMessageCatchEvent(String id) {
+  public ExecutableMessageCatchElement(String id) {
     super(id);
   }
 

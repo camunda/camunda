@@ -15,7 +15,15 @@
  */
 package io.zeebe.model.bpmn.validation.zeebe;
 
+import io.zeebe.model.bpmn.instance.ExtensionElements;
+import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.zeebe.model.bpmn.instance.Message;
+import io.zeebe.model.bpmn.instance.MessageEventDefinition;
+import io.zeebe.model.bpmn.instance.Process;
+import io.zeebe.model.bpmn.instance.ReceiveTask;
+import io.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
+import java.util.Collection;
+import java.util.stream.Collectors;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
@@ -31,5 +39,45 @@ public class MessageValidator implements ModelElementValidator<Message> {
     if (element.getName() == null || element.getName().isEmpty()) {
       validationResultCollector.addError(0, "Name must be present and not empty");
     }
+
+    if (isReferedByCatchEvent(element) || isReferedByReceiveTask(element)) {
+      final ExtensionElements extensionElements = element.getExtensionElements();
+
+      if (extensionElements == null
+          || extensionElements.getChildElementsByType(ZeebeSubscription.class).size() != 1) {
+        validationResultCollector.addError(
+            0, "Must have exactly one zeebe:subscription extension element");
+      }
+    }
+  }
+
+  private boolean isReferedByCatchEvent(Message element) {
+    final Collection<IntermediateCatchEvent> intermediateCatchEvents =
+        element
+            .getParentElement()
+            .getChildElementsByType(Process.class)
+            .stream()
+            .flatMap(p -> p.getChildElementsByType(IntermediateCatchEvent.class).stream())
+            .collect(Collectors.toList());
+
+    return intermediateCatchEvents
+        .stream()
+        .flatMap(i -> i.getEventDefinitions().stream())
+        .anyMatch(
+            e ->
+                e instanceof MessageEventDefinition
+                    && ((MessageEventDefinition) e).getMessage() == element);
+  }
+
+  private boolean isReferedByReceiveTask(Message element) {
+    final Collection<ReceiveTask> receiveTasks =
+        element
+            .getParentElement()
+            .getChildElementsByType(Process.class)
+            .stream()
+            .flatMap(p -> p.getChildElementsByType(ReceiveTask.class).stream())
+            .collect(Collectors.toList());
+
+    return receiveTasks.stream().anyMatch(r -> r.getMessage() == element);
   }
 }
