@@ -26,7 +26,7 @@ export default function Icon(props) {
       : {};
 
     return (
-      <span {...filteredProps} className={classnames('Icon', 'Icon--svg', filteredProps.className)}>
+      <span {...filteredProps} className={classnames('Icon', 'IconSvg', filteredProps.className)}>
         {SVG ? <SVG style={style} /> : props.children}
       </span>
     );

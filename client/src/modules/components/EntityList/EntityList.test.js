@@ -31,6 +31,12 @@ jest.mock('./service', () => {
   };
 });
 
+jest.mock('./entityIcons', () => {
+  return {
+    endpoint: props => <svg {...props} />
+  };
+});
+
 jest.mock('react-router-dom', () => {
   return {
     Link: ({children, to}) => {
@@ -557,4 +563,29 @@ it('should return a react Link when editModal is not defined', async () => {
 
   expect(linkNode.props().href).toBe('testLink');
   expect(linkNode).toIncludeText('testContent');
+});
+
+describe('getEntityIconName', () => {
+  let node = {};
+  beforeEach(
+    async () =>
+      (node = await mount(
+        shallow(<EntityList api="endpoint" label="report" operations={['Edit']} />).get(0)
+      ))
+  );
+
+  it('should return the endoint name if data is null', () => {
+    const name = node.instance().getEntityIconName({data: null});
+    expect(name).toBe('endpoint');
+  });
+
+  it('should return the endoint name if visualization is empty', () => {
+    const name = node.instance().getEntityIconName({data: {visualization: ''}});
+    expect(name).toBe('endpoint');
+  });
+
+  it('should return the endpoint name along with the visualization name if visualization is defined', () => {
+    const name = node.instance().getEntityIconName({data: {visualization: 'heat'}});
+    expect(name).toBe('endpointHeat');
+  });
 });

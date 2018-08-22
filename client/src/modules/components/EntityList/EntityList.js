@@ -11,6 +11,8 @@ import {load, create, remove, duplicate, update} from './service';
 
 import {formatters} from 'services';
 
+import entityIcons from './entityIcons';
+
 import './EntityList.css';
 
 class EntityList extends React.Component {
@@ -103,20 +105,33 @@ class EntityList extends React.Component {
     });
   };
 
+  getEntityIconName = entity => {
+    const entityType = this.props.api;
+    if (!entity.data || !entity.data.visualization) return entityType;
+    const visualization = entity.data.visualization;
+    return entityType + visualization.charAt(0).toUpperCase() + visualization.slice(1);
+  };
+
   formatData = data =>
     data.map(entity => {
       const {name, id, lastModified, lastModifier, shared} = entity;
       const entry = {
         name,
         link: `/${this.props.api}/${id}`,
+        iconName: this.getEntityIconName(entity),
         infos: [
           {
             parentClassName: 'custom',
-            content: this.props.renderCustom ? this.props.renderCustom(entity) : ''
+            content: this.props.renderCustom && this.props.renderCustom(entity)
           },
           {
-            content: `Last modified ${moment(lastModified).format('lll')} by ${lastModifier}`,
-            parentClassName: 'dataMeta'
+            parentClassName: 'dataMeta',
+            content: (
+              <React.Fragment>
+                {`Last modified ${moment(lastModified).format('lll')} by `}
+                <strong>{lastModifier}</strong>
+              </React.Fragment>
+            )
           },
           {
             parentClassName: 'dataIcons',
@@ -127,16 +142,11 @@ class EntityList extends React.Component {
         editData: entity
       };
 
-      if (this.props.operations.includes('delete')) {
+      if (this.props.operations.includes('edit')) {
         entry.operations.push({
-          content: (
-            <Icon
-              type="delete"
-              title="Delete a report"
-              onClick={this.showDeleteModal({id, name})}
-              className="deleteIcon"
-            />
-          ),
+          content: <Icon type="edit" title={`Edit ${this.props.api}`} className="editLink" />,
+          link: `/${this.props.api}/${id}/edit`,
+          editData: entity,
           parentClassName: 'dataTool'
         });
       }
@@ -146,7 +156,7 @@ class EntityList extends React.Component {
           content: (
             <Icon
               type="copy-document"
-              title="Duplicate a report"
+              title={`Duplicate ${this.props.api}`}
               onClick={this.duplicateEntity(id)}
               className="duplicateIcon"
             />
@@ -155,11 +165,16 @@ class EntityList extends React.Component {
         });
       }
 
-      if (this.props.operations.includes('edit')) {
+      if (this.props.operations.includes('delete')) {
         entry.operations.push({
-          content: <Icon type="edit" title="Edit a report" className="editLink" />,
-          link: `/${this.props.api}/${id}/edit`,
-          editData: entity,
+          content: (
+            <Icon
+              type="delete"
+              title={`Delete ${this.props.api}`}
+              onClick={this.showDeleteModal({id, name})}
+              className="deleteIcon"
+            />
+          ),
           parentClassName: 'dataTool'
         });
       }
@@ -219,6 +234,7 @@ class EntityList extends React.Component {
       </Modal>
     );
   };
+
   renderCells = data => {
     return data.map(
       (cell, idx) =>
@@ -250,10 +266,15 @@ class EntityList extends React.Component {
       <EntityLink {...linkProps}>
         {data.title ? (
           <React.Fragment>
-            <span className="data dataTitle">
-              {formatters.getHighlightedText(data.title, this.state.query)}
+            <span className="data visualizationIcon">
+              <data.Icon />
             </span>
-            <div className="extra-info">{data.content}</div>
+            <div className="textInfo">
+              <span className="data dataTitle">
+                {formatters.getHighlightedText(data.title, this.state.query)}
+              </span>
+              <div className="extraInfo">{data.content}</div>
+            </div>
           </React.Fragment>
         ) : (
           data.content
@@ -281,9 +302,10 @@ class EntityList extends React.Component {
         />
       );
     }
-
+    const HeaderIcon = entityIcons[this.props.api + 's'];
     const header = (
       <div className="header">
+        {HeaderIcon && <HeaderIcon />}
         <h1 className="heading">{this.props.label}s</h1>
         <div className="tools">{createButton}</div>
       </div>
@@ -319,7 +341,8 @@ class EntityList extends React.Component {
       list = isListEmpty ? (
         <ul className="list">
           <li className="item noEntities">
-            {`You have no ${this.props.label}s configured yet.`}&nbsp;{createLink}
+            {`There are no ${this.props.label}s configured.`}
+            {createLink}
           </li>
         </ul>
       ) : (
@@ -333,6 +356,7 @@ class EntityList extends React.Component {
                   <li key={idx} className="item">
                     {this.renderLink({
                       title: row.name,
+                      Icon: entityIcons[row.iconName],
                       content: this.renderCells(row.infos),
                       link: row.link,
                       className: 'info',

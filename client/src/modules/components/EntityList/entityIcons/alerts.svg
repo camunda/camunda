@@ -1,6 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="36" height="28" viewBox="0 0 36 28">
   <g fill="none" fill-rule="evenodd" transform="translate(-26 -737)">
-    <rect width="865" height="780" fill="#FFF"/>
     <g transform="translate(26 737)">
       <polyline stroke="#9CA4B0" points="1 9 13 19 15 19 27 9"/>
       <path stroke="#9CA4B0" d="M1 27L11.5 17.5M16.5 17.5L27 27"/>

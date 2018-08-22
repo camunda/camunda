@@ -8,6 +8,7 @@ export default function Reports() {
       label="Report"
       sortBy={'lastModified'}
       operations={['create', 'edit', 'delete', 'duplicate', 'search']}
+      renderCustom={report => (report.data ? report.data.processDefinitionKey : 'Empty') || 'Empty'}
     />
   );
 }
