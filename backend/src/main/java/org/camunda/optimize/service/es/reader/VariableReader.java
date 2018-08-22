@@ -1,7 +1,6 @@
 package org.camunda.optimize.service.es.reader;
 
 import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
-import org.camunda.optimize.rest.VariableRestService;
 import org.camunda.optimize.service.es.report.command.util.ReportConstants;
 import org.camunda.optimize.service.util.VariableHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -11,7 +10,6 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.index.query.WildcardQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.Aggregations;
 import org.elasticsearch.search.aggregations.BucketOrder;
@@ -209,14 +207,14 @@ public class VariableReader {
                                                                      String valueFilter) {
     BoolQueryBuilder filterQuery = boolQuery()
         .must(termQuery(getNestedVariableNameFieldLabel(variableFieldLabel), name));
-    addPrefixFilter(variableFieldLabel, valueFilter, filterQuery);
+    addValueFilter(variableFieldLabel, valueFilter, filterQuery);
     return filter(
       FILTER_FOR_NAME_AGGREGATION,
       filterQuery
     );
   }
 
-  private void addPrefixFilter(String variableFieldLabel, String valueFilter, BoolQueryBuilder filterQuery) {
+  private void addValueFilter(String variableFieldLabel, String valueFilter, BoolQueryBuilder filterQuery) {
     if (!(valueFilter == null) && !valueFilter.isEmpty() && STRING_VARIABLES.equals(variableFieldLabel)) {
       valueFilter = valueFilter.toLowerCase();
       QueryBuilder filter = (valueFilter.length() > 10)
@@ -225,7 +223,7 @@ public class VariableReader {
               buildWildcardQuery(valueFilter)
           )
           : termQuery(
-                  getMultiFieldName(getNestedVariableValueFieldLabel(variableFieldLabel), STRING_VARIABLE_VALUE_NGRAM),
+                  getMultiFieldName(variableFieldLabel, STRING_VARIABLE_VALUE_NGRAM),
                   valueFilter
           );
 
