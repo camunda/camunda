@@ -21,7 +21,7 @@ import io.zeebe.broker.workflow.model.ExecutableExclusiveGateway;
 import io.zeebe.broker.workflow.model.ExecutableFlowElement;
 import io.zeebe.broker.workflow.model.ExecutableFlowElementContainer;
 import io.zeebe.broker.workflow.model.ExecutableFlowNode;
-import io.zeebe.broker.workflow.model.ExecutableIntermediateMessageCatchEvent;
+import io.zeebe.broker.workflow.model.ExecutableMessageCatchElement;
 import io.zeebe.broker.workflow.model.ExecutableSequenceFlow;
 import io.zeebe.broker.workflow.model.ExecutableServiceTask;
 import io.zeebe.broker.workflow.model.ExecutableWorkflow;
@@ -31,6 +31,7 @@ import io.zeebe.model.bpmn.instance.EndEvent;
 import io.zeebe.model.bpmn.instance.ExclusiveGateway;
 import io.zeebe.model.bpmn.instance.FlowElement;
 import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
+import io.zeebe.model.bpmn.instance.ReceiveTask;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
 import io.zeebe.model.bpmn.instance.ServiceTask;
 import io.zeebe.model.bpmn.instance.StartEvent;
@@ -48,10 +49,10 @@ public class FlowElementHandler implements ModelElementTransformer<FlowElement> 
 
     ELEMENT_FACTORIES.put(EndEvent.class, ExecutableFlowNode::new);
     ELEMENT_FACTORIES.put(ExclusiveGateway.class, ExecutableExclusiveGateway::new);
-    ELEMENT_FACTORIES.put(
-        IntermediateCatchEvent.class, ExecutableIntermediateMessageCatchEvent::new);
+    ELEMENT_FACTORIES.put(IntermediateCatchEvent.class, ExecutableMessageCatchElement::new);
     ELEMENT_FACTORIES.put(SequenceFlow.class, ExecutableSequenceFlow::new);
     ELEMENT_FACTORIES.put(ServiceTask.class, ExecutableServiceTask::new);
+    ELEMENT_FACTORIES.put(ReceiveTask.class, ExecutableMessageCatchElement::new);
     ELEMENT_FACTORIES.put(StartEvent.class, ExecutableFlowNode::new);
     ELEMENT_FACTORIES.put(SubProcess.class, ExecutableFlowElementContainer::new);
   }

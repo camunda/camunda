@@ -48,23 +48,52 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
-public class IntermediateMessageCatchEventTest {
+@RunWith(Parameterized.class)
+public class MessageCorrelationTest {
 
   public EmbeddedBrokerRule brokerRule =
       new EmbeddedBrokerRule("zeebe.unit-test.increased.partitions.cfg.toml");
+
   public ClientApiRule apiRule = new ClientApiRule();
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
-  private static final BpmnModelInstance WORKFLOW =
+  private static final BpmnModelInstance CATCH_EVENT_WORKFLOW =
       Bpmn.createExecutableProcess("wf")
           .startEvent()
-          .intermediateCatchEvent("catch-event")
+          .intermediateCatchEvent("receive-message")
           .message(m -> m.name("order canceled").zeebeCorrelationKey("$.orderId"))
           .sequenceFlowId("to-end")
           .endEvent()
           .done();
+
+  private static final BpmnModelInstance RECEIVE_TASK_WORKFLOW =
+      Bpmn.createExecutableProcess("wf")
+          .startEvent()
+          .receiveTask("receive-message")
+          .message(m -> m.name("order canceled").zeebeCorrelationKey("$.orderId"))
+          .sequenceFlowId("to-end")
+          .endEvent()
+          .done();
+
+  @Parameter(0)
+  public String elementType;
+
+  @Parameter(1)
+  public BpmnModelInstance workflow;
+
+  @Parameters(name = "{0}")
+  public static final Object[][] parameters() {
+    return new Object[][] {
+      {"intermediate message catch event", CATCH_EVENT_WORKFLOW},
+      {"receive task", RECEIVE_TASK_WORKFLOW}
+    };
+  }
 
   private TestTopicClient testClient;
 
@@ -72,23 +101,7 @@ public class IntermediateMessageCatchEventTest {
   public void init() {
     apiRule.waitForTopic(3);
     testClient = apiRule.topic();
-    testClient.deploy(WORKFLOW);
-  }
-
-  @Test
-  public void shouldEnterIntermediateCatchEvent() {
-
-    final long workflowInstanceKey =
-        testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
-
-    final SubscribedRecord event =
-        testClient.receiveElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-
-    assertThat(event.value())
-        .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "wf")
-        .containsEntry(PROP_WORKFLOW_VERSION, 1L)
-        .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
-        .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "catch-event");
+    testClient.deploy(workflow);
   }
 
   @Test
@@ -118,13 +131,31 @@ public class IntermediateMessageCatchEventTest {
   }
 
   @Test
+  public void shouldActivateElement() {
+
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
+
+    final SubscribedRecord event =
+        testClient.receiveElementInState(
+            "receive-message", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+
+    assertThat(event.value())
+        .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "wf")
+        .containsEntry(PROP_WORKFLOW_VERSION, 1L)
+        .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
+        .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "receive-message");
+  }
+
+  @Test
   public void shouldOpenMessageSubscription() {
 
     final long workflowInstanceKey =
         testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
 
     final SubscribedRecord catchEventEntered =
-        testClient.receiveElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        testClient.receiveElementInState(
+            "receive-message", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     final SubscribedRecord messageSubscription =
         findMessageSubscription(testClient, MessageSubscriptionIntent.OPENED);
@@ -150,7 +181,7 @@ public class IntermediateMessageCatchEventTest {
     final TestTopicClient subscriptionPartition =
         apiRule.topic(getPartitionId(partitionIds, correlationKey));
 
-    testClient.deploy(WORKFLOW);
+    testClient.deploy(CATCH_EVENT_WORKFLOW);
 
     // when
     final long workflowInstanceKey1 =
@@ -178,7 +209,8 @@ public class IntermediateMessageCatchEventTest {
         testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
 
     final SubscribedRecord catchEventEntered =
-        testClient.receiveElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        testClient.receiveElementInState(
+            "receive-message", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     final SubscribedRecord workflowInstanceSubscription =
         testClient
@@ -217,7 +249,7 @@ public class IntermediateMessageCatchEventTest {
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "wf")
         .containsEntry(PROP_WORKFLOW_VERSION, 1L)
         .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
-        .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "catch-event");
+        .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "receive-message");
 
     final byte[] payload = (byte[]) event.value().get("payload");
     assertThat(MSGPACK_MAPPER.readTree(payload))
@@ -241,7 +273,7 @@ public class IntermediateMessageCatchEventTest {
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "wf")
         .containsEntry(PROP_WORKFLOW_VERSION, 1L)
         .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
-        .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "catch-event");
+        .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "receive-message");
 
     final byte[] payload = (byte[]) event.value().get("payload");
     assertThat(MSGPACK_MAPPER.readTree(payload))
@@ -275,14 +307,15 @@ public class IntermediateMessageCatchEventTest {
     final long workflowInstanceKey =
         testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
 
-    testClient.receiveElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+    testClient.receiveElementInState("receive-message", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
     testClient.publishMessage("order canceled", "order-123", asMsgPack("foo", "bar"), 0);
 
     // then
     final SubscribedRecord event =
-        testClient.receiveElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_COMPLETED);
+        testClient.receiveElementInState(
+            "receive-message", WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     assertThat(event.value()).containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey);
   }
@@ -298,7 +331,8 @@ public class IntermediateMessageCatchEventTest {
 
     // then
     final SubscribedRecord event =
-        testClient.receiveElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_COMPLETED);
+        testClient.receiveElementInState(
+            "receive-message", WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     final byte[] payload = (byte[]) event.value().get("payload");
     assertThat(MSGPACK_MAPPER.readTree(payload))
@@ -349,7 +383,7 @@ public class IntermediateMessageCatchEventTest {
         testClient
             .receiveEvents()
             .filter(intent(WorkflowInstanceIntent.ELEMENT_COMPLETED))
-            .filter(r -> "catch-event".equals(r.value().get("activityId")))
+            .filter(r -> "receive-message".equals(r.value().get("activityId")))
             .limit(2)
             .collect(Collectors.toList());
 
@@ -365,7 +399,8 @@ public class IntermediateMessageCatchEventTest {
         testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
 
     final SubscribedRecord catchEventEntered =
-        testClient.receiveElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        testClient.receiveElementInState(
+            "receive-message", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
     final DirectBuffer messagePayload = asMsgPack("foo", "bar");
@@ -396,7 +431,8 @@ public class IntermediateMessageCatchEventTest {
         testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
 
     final SubscribedRecord catchEventEntered =
-        testClient.receiveElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        testClient.receiveElementInState(
+            "receive-message", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
     apiRule

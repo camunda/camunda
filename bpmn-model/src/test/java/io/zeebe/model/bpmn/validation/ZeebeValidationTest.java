@@ -20,7 +20,9 @@ import static org.junit.Assert.fail;
 
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.zeebe.model.bpmn.instance.Message;
+import io.zeebe.model.bpmn.instance.ReceiveTask;
 import io.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
@@ -114,13 +116,19 @@ public class ZeebeValidationTest {
         Arrays.asList(expect("gateway", "Default flow must not have a condition"))
       },
       {
+        Bpmn.createExecutableProcess("process").startEvent().receiveTask("foo").endEvent().done(),
+        Arrays.asList(expect(ReceiveTask.class, "Must reference a message"))
+      },
+      {
         Bpmn.createExecutableProcess("process")
             .startEvent()
             .receiveTask("foo")
             .message("")
             .endEvent()
             .done(),
-        Arrays.asList(expect(Message.class, "Name must be present and not empty"))
+        Arrays.asList(
+            expect(Message.class, "Name must be present and not empty"),
+            expect(Message.class, "Must have exactly one zeebe:subscription extension element"))
       },
       {
         Bpmn.createExecutableProcess("process")
@@ -131,6 +139,16 @@ public class ZeebeValidationTest {
             .done(),
         Arrays.asList(
             expect(ZeebeSubscription.class, "zeebe:correlationKey must be present and not empty"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .receiveTask("foo")
+            .message(m -> m.name("foo"))
+            .endEvent()
+            .done(),
+        Arrays.asList(
+            expect(Message.class, "Must have exactly one zeebe:subscription extension element"))
       },
       {"default-flow.bpmn", Arrays.asList(expect("gateway", "Default flow must start at gateway"))},
       {
@@ -159,12 +177,24 @@ public class ZeebeValidationTest {
       {
         Bpmn.createExecutableProcess("process")
             .startEvent()
+            .intermediateCatchEvent("foo")
+            .message("")
+            .endEvent()
+            .done(),
+        Arrays.asList(
+            expect(Message.class, "Name must be present and not empty"),
+            expect(Message.class, "Must have exactly one zeebe:subscription extension element"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
             .intermediateCatchEvent("catch")
             .timerWithCycle("some config")
             .endEvent()
             .done(),
         Arrays.asList(
-            expect(TimerEventDefinition.class, "Event definition of this type is not supported"))
+            expect(TimerEventDefinition.class, "Event definition of this type is not supported"),
+            expect(IntermediateCatchEvent.class, "Must have a message event definition"))
       },
       {
         Bpmn.createExecutableProcess("process")

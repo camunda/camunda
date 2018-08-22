@@ -21,22 +21,20 @@ import io.zeebe.broker.workflow.model.ExecutableMessageCatchElement;
 import io.zeebe.broker.workflow.model.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
-import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.zeebe.model.bpmn.instance.Message;
-import io.zeebe.model.bpmn.instance.MessageEventDefinition;
+import io.zeebe.model.bpmn.instance.ReceiveTask;
 
-public class IntermediateCatchEventHandler
-    implements ModelElementTransformer<IntermediateCatchEvent> {
+public class ReceiveTaskHandler implements ModelElementTransformer<ReceiveTask> {
 
   private final MessageCatchElementHandler messageCatchHandler = new MessageCatchElementHandler();
 
   @Override
-  public Class<IntermediateCatchEvent> getType() {
-    return IntermediateCatchEvent.class;
+  public Class<ReceiveTask> getType() {
+    return ReceiveTask.class;
   }
 
   @Override
-  public void transform(IntermediateCatchEvent element, TransformContext context) {
+  public void transform(ReceiveTask element, TransformContext context) {
 
     // only message supported at this point
 
@@ -44,9 +42,7 @@ public class IntermediateCatchEventHandler
     final ExecutableMessageCatchElement executableElement =
         workflow.getElementById(element.getId(), ExecutableMessageCatchElement.class);
 
-    final MessageEventDefinition eventDefinition =
-        (MessageEventDefinition) element.getEventDefinitions().iterator().next();
-    final Message message = eventDefinition.getMessage();
+    final Message message = element.getMessage();
 
     messageCatchHandler.transform(executableElement, message, context);
   }
