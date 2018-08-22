@@ -9,7 +9,7 @@ import * as Styled from './styled';
 
 const mockProps = {
   selectedLogEntry: HEADER,
-  handleSelectedLogEntry: jest.fn(),
+  onSelect: jest.fn(),
   instance: {
     workflowId: 'foo'
   },
@@ -29,7 +29,7 @@ const mockProps = {
 
 describe('InstanceLog', () => {
   beforeEach(() => {
-    mockProps.handleSelectedLogEntry.mockClear();
+    mockProps.onSelect.mockClear();
   });
 
   it('should only render selected header if there is instance and no activitiesDetails', () => {
@@ -125,7 +125,7 @@ describe('InstanceLog', () => {
         LogEntryToggleNode.simulate('click');
 
         // then
-        expect(mockProps.handleSelectedLogEntry).toBeCalledWith(
+        expect(mockProps.onSelect).toBeCalledWith(
           activitiesDetailsEntries[idx][0]
         );
       });
@@ -142,7 +142,7 @@ describe('InstanceLog', () => {
       HeaderToggleNode.simulate('click');
 
       // then
-      expect(mockProps.handleSelectedLogEntry).toBeCalledWith(HEADER);
+      expect(mockProps.onSelect).toBeCalledWith(HEADER);
     });
   });
 });

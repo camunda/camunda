@@ -124,7 +124,7 @@ describe('InstanceHistory', () => {
     expect(InstanceLogNode.prop('selectedLogEntry')).toEqual(
       node.state('selectedLogEntry')
     );
-    expect(InstanceLogNode.prop('handleSelectedLogEntry')).toEqual(
+    expect(InstanceLogNode.prop('onSelect')).toEqual(
       node.instance().handleSelectedLogEntry
     );
 
@@ -145,7 +145,7 @@ describe('InstanceHistory', () => {
     expect(node).toMatchSnapshot();
   });
 
-  describe('handleSelectedLogEntry', () => {
+  describe('onSelect', () => {
     it('should set state.selectedLogEntry', () => {
       // given
       const mockProps = {

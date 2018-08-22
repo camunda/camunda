@@ -37,7 +37,6 @@ exports[`InstanceHistory should render a pane with InstanceLog section and Copyr
           },
         }
       }
-      handleSelectedLogEntry={[Function]}
       instance={
         Object {
           "instance": Object {
@@ -45,6 +44,7 @@ exports[`InstanceHistory should render a pane with InstanceLog section and Copyr
           },
         }
       }
+      onSelect={[Function]}
       selectedLogEntry="HEADER"
     />
     <InstanceEvents

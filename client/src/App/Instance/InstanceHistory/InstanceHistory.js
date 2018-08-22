@@ -62,6 +62,7 @@ export default class InstanceHistory extends React.Component {
   };
 
   render() {
+    console.log(this.state.groupedEvents);
     return (
       <SplitPane.Pane {...this.props}>
         <SplitPane.Pane.Header>Instance History</SplitPane.Pane.Header>
@@ -70,7 +71,7 @@ export default class InstanceHistory extends React.Component {
             instance={this.props.instance}
             activitiesDetails={this.props.activitiesDetails}
             selectedLogEntry={this.state.selectedLogEntry}
-            handleSelectedLogEntry={this.handleSelectedLogEntry}
+            onSelect={this.handleSelectedLogEntry}
           />
           <InstanceEvents groupedEvents={this.state.groupedEvents} />
           <Styled.Section>C</Styled.Section>

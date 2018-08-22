@@ -16,7 +16,7 @@ export default class InstanceLog extends React.Component {
       name: PropTypes.string
     }),
     selectedLogEntry: PropTypes.string,
-    handleSelectedLogEntry: PropTypes.func.isRequired
+    onSelect: PropTypes.func.isRequired
   };
 
   state = {
@@ -27,7 +27,7 @@ export default class InstanceLog extends React.Component {
     <Styled.LogEntry key={id}>
       <Styled.LogEntryToggle
         isSelected={this.props.selectedLogEntry === id}
-        onClick={() => this.props.handleSelectedLogEntry(id)}
+        onClick={() => this.props.onSelect(id)}
       >
         <Styled.FlowNodeIcon
           state={state}
@@ -47,7 +47,7 @@ export default class InstanceLog extends React.Component {
         <Styled.LogEntry>
           <Styled.HeaderToggle
             isSelected={this.props.selectedLogEntry === HEADER}
-            onClick={() => this.props.handleSelectedLogEntry(HEADER)}
+            onClick={() => this.props.onSelect(HEADER)}
           >
             <Styled.DocumentIcon
               isSelected={this.props.selectedLogEntry === HEADER}
