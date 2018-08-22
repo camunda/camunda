@@ -266,9 +266,7 @@ class EntityList extends React.Component {
       <EntityLink {...linkProps}>
         {data.title ? (
           <React.Fragment>
-            <span className="data visualizationIcon">
-              <data.Icon />
-            </span>
+            <span className="data visualizationIcon">{data.icon}</span>
             <div className="textInfo">
               <span className="data dataTitle">
                 {formatters.getHighlightedText(data.title, this.state.query)}
@@ -352,11 +350,20 @@ class EntityList extends React.Component {
             {this.formatData(this.state.data)
               .filter(row => row.name.toLowerCase().includes(this.state.query.toLowerCase()))
               .map((row, idx) => {
+                const EntityIcon = entityIcons[row.iconName];
+                const EntityIconComponent = EntityIcon.label ? (
+                  <span title={EntityIcon.label}>
+                    <EntityIcon.Component />
+                  </span>
+                ) : (
+                  <EntityIcon />
+                );
+
                 return (
                   <li key={idx} className="item">
                     {this.renderLink({
                       title: row.name,
-                      Icon: entityIcons[row.iconName],
+                      icon: EntityIconComponent,
                       content: this.renderCells(row.infos),
                       link: row.link,
                       className: 'info',

@@ -11,20 +11,21 @@ import reportNumber from '-!svg-react-loader!./report-number.svg';
 import reportPie from '-!svg-react-loader!./report-pie-chart.svg';
 import reportTable from '-!svg-react-loader!./report-table.svg';
 import reports from '-!svg-react-loader!./reports.svg';
+import reportEmpty from '-!svg-react-loader!./report-empty.svg';
 
 const icons = {
   alert,
   alerts,
   reports,
-  report: reports,
+  report: reportEmpty,
   dashboard,
   dashboards,
-  reportBar,
-  reportHeat,
-  reportLine,
-  reportNumber,
-  reportPie,
-  reportTable
+  reportBar: {label: 'Bar chart Report', Component: reportBar},
+  reportHeat: {label: 'Heatmap Report', Component: reportHeat},
+  reportLine: {label: 'Line chart Report', Component: reportLine},
+  reportNumber: {label: 'Number Report', Component: reportNumber},
+  reportPie: {label: 'Pie chart Report', Component: reportPie},
+  reportTable: {label: 'Table Report', Component: reportTable}
 };
 
 export default icons;
