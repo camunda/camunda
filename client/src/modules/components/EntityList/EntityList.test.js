@@ -425,65 +425,6 @@ it('should render cells content correctly', () => {
   expect(data[0].props.children.props.to).toBe('test link');
 });
 
-describe('getNewReportName', () => {
-  it('Should return append a copy when duplicating the original report', () => {
-    const node = mount(
-      shallow(<EntityList api="endpoint" label="Report" operations={['duplicate']} />).get(0)
-    );
-    node.setState({
-      loaded: true
-    });
-    const reports = [{name: 'New Report'}];
-    const newName = node.instance().getNewReportName(reports, 'New Report');
-    expect(newName).toBe('New Report - Copy');
-  });
-
-  it('Should append a duplication number when clicking on a report that has duplicates', () => {
-    const node = mount(
-      shallow(<EntityList api="endpoint" label="Report" operations={['duplicate']} />).get(0)
-    );
-    node.setState({
-      loaded: true
-    });
-    const reports = [{name: 'New Report'}, {name: 'New Report - Copy'}];
-    let newName = node.instance().getNewReportName(reports, 'New Report - Copy');
-    expect(newName).toBe('New Report - Copy 2');
-    newName = node.instance().getNewReportName(reports, 'New Report');
-    expect(newName).toBe('New Report - Copy 2');
-  });
-});
-
-describe('getDuplicatesNumbers', () => {
-  it('Should return the correct duplication number from the report name', () => {
-    const node = mount(
-      shallow(<EntityList api="endpoint" label="Report" operations={['duplicate']} />).get(0)
-    );
-    node.setState({
-      loaded: true
-    });
-    expect(node.instance().getDuplicatesNumbers({name: 'New Report - Copy'})).toBe(1);
-    expect(node.instance().getDuplicatesNumbers({name: 'New Report - Copy 2'})).toBe(2);
-  });
-});
-
-it('should include an edit/add modal after reports are loaded', async () => {
-  load.mockReturnValue([alertEntity]);
-
-  const node = mount(
-    shallow(
-      <EntityList api="endpoint" label="Alert" operations={['Edit']} EditModal={EditModal} />
-    ).get(0)
-  );
-
-  await node.instance().componentDidMount();
-
-  node.setState({
-    loaded: true
-  });
-
-  expect(node).toIncludeText('EditModal');
-});
-
 it('should pass an alert entity configuration to the edit/add modal', async () => {
   load.mockReturnValue([alertEntity]);
 
