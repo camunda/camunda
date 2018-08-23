@@ -37,12 +37,26 @@ public class WorkflowInstanceSubscriptionDataStore
     getData().getSubscriptions().add(subscription);
   }
 
-  public List<WorkflowInstanceSubscription> findSubscriptionWithSentTimeBefore(long sentTime) {
+  public List<WorkflowInstanceSubscription> findPendingSubscriptionsWithSentTimeBefore(
+      long sentTime) {
     return getData()
         .getSubscriptions()
         .stream()
-        .filter(s -> s.sentTime < sentTime)
+        .filter(s -> !s.isOpen && s.commandSentTime < sentTime)
         .collect(Collectors.toList());
+  }
+
+  public WorkflowInstanceSubscription findSubscription(WorkflowInstanceSubscriptionRecord record) {
+    return getData()
+        .getSubscriptions()
+        .stream()
+        .filter(
+            s ->
+                s.getWorkflowInstanceKey() == record.getWorkflowInstanceKey()
+                    && s.getActivityInstanceKey() == record.getActivityInstanceKey()
+                    && s.getMessageName().equals(bufferAsString(record.getMessageName())))
+        .findFirst()
+        .orElse(null);
   }
 
   public boolean removeSubscription(WorkflowInstanceSubscriptionRecord record) {
@@ -71,7 +85,8 @@ public class WorkflowInstanceSubscriptionDataStore
     private String messageName;
     private String correlationKey;
 
-    private long sentTime;
+    private boolean isOpen;
+    private long commandSentTime;
 
     public WorkflowInstanceSubscription() {
       // required for JSON deserialization
@@ -104,12 +119,20 @@ public class WorkflowInstanceSubscriptionDataStore
       return correlationKey;
     }
 
-    public long getSentTime() {
-      return sentTime;
+    public long getCommandSentTime() {
+      return commandSentTime;
     }
 
-    public void setSentTime(long sentTime) {
-      this.sentTime = sentTime;
+    public void setCommandSentTime(long sentTime) {
+      this.commandSentTime = sentTime;
+    }
+
+    public boolean isOpen() {
+      return isOpen;
+    }
+
+    public void setOpen(boolean isOpen) {
+      this.isOpen = isOpen;
     }
   }
 }

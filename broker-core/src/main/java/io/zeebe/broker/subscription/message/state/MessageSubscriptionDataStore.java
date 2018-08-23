@@ -32,14 +32,7 @@ public class MessageSubscriptionDataStore extends JsonSnapshotSupport<MessageSub
     super(MessageSubscriptiopnData.class);
   }
 
-  public boolean addSubscription(MessageSubscriptionRecord record) {
-    final MessageSubscription subscription =
-        new MessageSubscription(
-            record.getWorkflowInstancePartitionId(),
-            record.getWorkflowInstanceKey(),
-            record.getActivityInstanceKey(),
-            bufferAsString(record.getMessageName()),
-            bufferAsString(record.getCorrelationKey()));
+  public boolean addSubscription(MessageSubscription subscription) {
 
     if (getData().getSubscriptions().contains(subscription)) {
       return false;
@@ -60,6 +53,25 @@ public class MessageSubscriptionDataStore extends JsonSnapshotSupport<MessageSub
         .collect(Collectors.toList());
   }
 
+  public List<MessageSubscription> findPendingSubscriptionsWithSentTimeBefore(long sentTime) {
+    return getData()
+        .getSubscriptions()
+        .stream()
+        .filter(s -> s.commandSentTime > 0 && s.commandSentTime < sentTime)
+        .collect(Collectors.toList());
+  }
+
+  public boolean removeSubscription(MessageSubscriptionRecord record) {
+    return getData()
+        .getSubscriptions()
+        .removeIf(
+            s ->
+                s.getWorkflowInstancePartitionId() == record.getWorkflowInstancePartitionId()
+                    && s.getWorkflowInstanceKey() == record.getWorkflowInstanceKey()
+                    && s.getActivityInstanceKey() == record.getActivityInstanceKey()
+                    && s.getMessageName().equals(bufferAsString(record.getMessageName())));
+  }
+
   public static class MessageSubscriptiopnData {
 
     private final List<MessageSubscription> subscriptions = new ArrayList<>();
@@ -76,6 +88,9 @@ public class MessageSubscriptionDataStore extends JsonSnapshotSupport<MessageSub
     private long activityInstanceKey;
     private String messageName;
     private String correlationKey;
+
+    private byte[] messagePayload;
+    private long commandSentTime;
 
     /* required for json deserialization */
     public MessageSubscription() {}
@@ -111,6 +126,22 @@ public class MessageSubscriptionDataStore extends JsonSnapshotSupport<MessageSub
 
     public String getCorrelationKey() {
       return correlationKey;
+    }
+
+    public long getCommandSentTime() {
+      return commandSentTime;
+    }
+
+    public void setCommandSentTime(long correlationSentTime) {
+      this.commandSentTime = correlationSentTime;
+    }
+
+    public byte[] getMessagePayload() {
+      return messagePayload;
+    }
+
+    public void setMessagePayload(byte[] messagePayload) {
+      this.messagePayload = messagePayload;
     }
 
     @Override

@@ -40,6 +40,27 @@ import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.IntArrayList;
 
+/**
+ * Send commands via the subscription endpoint. The commands are send as single messages (instead of request-response).
+ * To ensure that a command is received, each command has an ACK command which is send by the receiver.
+ *
+ * <pre>
+ *+-------------------------------------------------------------------------------------------+
+ *|                                  Message Partition                                        |
+ *|                                                                                           |
+ *+-----------^----------------+---------------------------+----------------------^-----------+
+ *            |                |                           |                      |
+ *    +-------+------+  +------+--------+       +----------+---------+  +---------+---------+
+ *    | Open Message |  | Open Workflow |       | Correlate Workflow |  | Correlate Message |
+ *    | Subscription |  | Instance Sub  |       | Instance Sub       |  | Subscription      |
+ *    +-------+------+  +------+--------+       +----------+---------+  +---------+---------+
+ *            |                |                           |                      |
+ * +----------+----------------v---------------------------v----------------------+-----------+
+ * |                                                                                          |
+ * |                              Workflow Instance Partition                                 |
+ * +------------------------------------------------------------------------------------------+
+ * <pre>
+ */
 public class SubscriptionCommandSender {
 
   private final FetchCreatedTopicsRequest fetchCreatedTopicsRequest =
@@ -51,12 +72,15 @@ public class SubscriptionCommandSender {
   private final OpenMessageSubscriptionCommand openMessageSubscriptionCommand =
       new OpenMessageSubscriptionCommand();
 
-  private final OpenedMessageSubscriptionCommand openedMessageSubscriptionCommand =
-      new OpenedMessageSubscriptionCommand();
+  private final OpenWorkflowInstanceSubscriptionCommand openWorkflowInstanceSubscriptionCommand =
+      new OpenWorkflowInstanceSubscriptionCommand();
 
   private final CorrelateWorkflowInstanceSubscriptionCommand
       correlateWorkflowInstanceSubscriptionCommand =
           new CorrelateWorkflowInstanceSubscriptionCommand();
+
+  private final CorrelateMessageSubscriptionCommand correlateMessageSubscriptionCommand =
+      new CorrelateMessageSubscriptionCommand();
 
   private final TransportMessage subscriptionMessage = new TransportMessage();
 
@@ -91,10 +115,6 @@ public class SubscriptionCommandSender {
       DirectBuffer messageName,
       DirectBuffer correlationKey) {
 
-    if (partitionIds == null) {
-      throw new IllegalStateException("no partition ids available");
-    }
-
     final int subscriptionPartitionId = getSubscriptionPartitionId(correlationKey);
 
     openMessageSubscriptionCommand.setSubscriptionPartitionId(subscriptionPartitionId);
@@ -108,23 +128,30 @@ public class SubscriptionCommandSender {
   }
 
   private int getSubscriptionPartitionId(DirectBuffer correlationKey) {
+    if (partitionIds == null) {
+      throw new IllegalStateException("no partition ids available");
+    }
+
     final int hashCode = SubscriptionUtil.getSubscriptionHashCode(correlationKey);
     final int index = Math.abs(hashCode % partitionIds.size());
     return partitionIds.getInt(index);
   }
 
-  public boolean openedMessageSubscription(
+  public boolean openWorkflowInstanceSubscription(
       int workflowInstancePartitionId,
       long workflowInstanceKey,
       long activityInstanceKey,
       DirectBuffer messageName) {
 
-    openedMessageSubscriptionCommand.setWorkflowInstancePartitionId(workflowInstancePartitionId);
-    openedMessageSubscriptionCommand.setWorkflowInstanceKey(workflowInstanceKey);
-    openedMessageSubscriptionCommand.setActivityInstanceKey(activityInstanceKey);
-    openedMessageSubscriptionCommand.getMessageName().wrap(messageName);
+    openWorkflowInstanceSubscriptionCommand.setSubscriptionPartitionId(partitionId);
+    openWorkflowInstanceSubscriptionCommand.setWorkflowInstancePartitionId(
+        workflowInstancePartitionId);
+    openWorkflowInstanceSubscriptionCommand.setWorkflowInstanceKey(workflowInstanceKey);
+    openWorkflowInstanceSubscriptionCommand.setActivityInstanceKey(activityInstanceKey);
+    openWorkflowInstanceSubscriptionCommand.getMessageName().wrap(messageName);
 
-    return sendSubscriptionCommand(workflowInstancePartitionId, openedMessageSubscriptionCommand);
+    return sendSubscriptionCommand(
+        workflowInstancePartitionId, openWorkflowInstanceSubscriptionCommand);
   }
 
   public boolean correlateWorkflowInstanceSubscription(
@@ -134,6 +161,7 @@ public class SubscriptionCommandSender {
       DirectBuffer messageName,
       DirectBuffer payload) {
 
+    correlateWorkflowInstanceSubscriptionCommand.setSubscriptionPartitionId(partitionId);
     correlateWorkflowInstanceSubscriptionCommand.setWorkflowInstancePartitionId(
         workflowInstancePartitionId);
     correlateWorkflowInstanceSubscriptionCommand.setWorkflowInstanceKey(workflowInstanceKey);
@@ -143,6 +171,21 @@ public class SubscriptionCommandSender {
 
     return sendSubscriptionCommand(
         workflowInstancePartitionId, correlateWorkflowInstanceSubscriptionCommand);
+  }
+
+  public boolean correlateMessageSubscription(
+      int subscriptionPartitionId,
+      long workflowInstanceKey,
+      long activityInstanceKey,
+      DirectBuffer messageName) {
+
+    correlateMessageSubscriptionCommand.setSubscriptionPartitionId(subscriptionPartitionId);
+    correlateMessageSubscriptionCommand.setWorkflowInstancePartitionId(partitionId);
+    correlateMessageSubscriptionCommand.setWorkflowInstanceKey(workflowInstanceKey);
+    correlateMessageSubscriptionCommand.setActivityInstanceKey(activityInstanceKey);
+    correlateMessageSubscriptionCommand.getMessageName().wrap(messageName);
+
+    return sendSubscriptionCommand(subscriptionPartitionId, correlateMessageSubscriptionCommand);
   }
 
   private boolean sendSubscriptionCommand(

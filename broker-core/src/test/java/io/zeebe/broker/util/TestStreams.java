@@ -24,6 +24,7 @@ import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.state.StateStorageFactory;
+import io.zeebe.broker.subscription.message.data.MessageRecord;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.system.workflow.repository.data.DeploymentRecord;
@@ -82,6 +83,7 @@ public class TestStreams {
     VALUE_TYPES.put(JobRecord.class, ValueType.JOB);
     VALUE_TYPES.put(TopicRecord.class, ValueType.TOPIC);
     VALUE_TYPES.put(WorkflowInstanceRecord.class, ValueType.WORKFLOW_INSTANCE);
+    VALUE_TYPES.put(MessageRecord.class, ValueType.MESSAGE);
     VALUE_TYPES.put(MessageSubscriptionRecord.class, ValueType.MESSAGE_SUBSCRIPTION);
     VALUE_TYPES.put(
         WorkflowInstanceSubscriptionRecord.class, ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
@@ -312,6 +314,33 @@ public class TestStreams {
           e ->
               Records.isIncidentRecord(e)
                   && test.test(CopiedTypedEvent.toTypedEvent(e, IncidentRecord.class)));
+    }
+
+    @Override
+    public void blockAfterMessageEvent(Predicate<TypedRecord<MessageRecord>> test) {
+      blockAfterEvent(
+          e ->
+              Records.isMessageRecord(e)
+                  && test.test(CopiedTypedEvent.toTypedEvent(e, MessageRecord.class)));
+    }
+
+    @Override
+    public void blockAfterMessageSubscriptionEvent(
+        Predicate<TypedRecord<MessageSubscriptionRecord>> test) {
+      blockAfterEvent(
+          e ->
+              Records.isMessageSubscriptionRecord(e)
+                  && test.test(CopiedTypedEvent.toTypedEvent(e, MessageSubscriptionRecord.class)));
+    }
+
+    @Override
+    public void blockAfterWorkflowInstanceSubscriptionEvent(
+        Predicate<TypedRecord<WorkflowInstanceSubscriptionRecord>> test) {
+      blockAfterEvent(
+          e ->
+              Records.isWorkflowInstanceSubscriptionRecord(e)
+                  && test.test(
+                      CopiedTypedEvent.toTypedEvent(e, WorkflowInstanceSubscriptionRecord.class)));
     }
 
     @Override

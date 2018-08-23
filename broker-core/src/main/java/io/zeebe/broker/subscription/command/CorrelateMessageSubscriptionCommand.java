@@ -17,25 +17,29 @@
  */
 package io.zeebe.broker.subscription.command;
 
-import static io.zeebe.broker.subscription.OpenedMessageSubscriptionDecoder.activityInstanceKeyNullValue;
-import static io.zeebe.broker.subscription.OpenedMessageSubscriptionDecoder.messageNameHeaderLength;
-import static io.zeebe.broker.subscription.OpenedMessageSubscriptionDecoder.workflowInstanceKeyNullValue;
-import static io.zeebe.broker.subscription.OpenedMessageSubscriptionDecoder.workflowInstancePartitionIdNullValue;
+import static io.zeebe.broker.subscription.CorrelateMessageSubscriptionDecoder.activityInstanceKeyNullValue;
+import static io.zeebe.broker.subscription.CorrelateMessageSubscriptionDecoder.messageNameHeaderLength;
+import static io.zeebe.broker.subscription.CorrelateMessageSubscriptionDecoder.subscriptionPartitionIdNullValue;
+import static io.zeebe.broker.subscription.CorrelateMessageSubscriptionDecoder.workflowInstanceKeyNullValue;
+import static io.zeebe.broker.subscription.CorrelateMessageSubscriptionDecoder.workflowInstancePartitionIdNullValue;
 
-import io.zeebe.broker.subscription.OpenedMessageSubscriptionDecoder;
-import io.zeebe.broker.subscription.OpenedMessageSubscriptionEncoder;
+import io.zeebe.broker.subscription.CorrelateMessageSubscriptionDecoder;
+import io.zeebe.broker.subscription.CorrelateMessageSubscriptionEncoder;
 import io.zeebe.broker.util.SbeBufferWriterReader;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class OpenedMessageSubscriptionCommand
+public class CorrelateMessageSubscriptionCommand
     extends SbeBufferWriterReader<
-        OpenedMessageSubscriptionEncoder, OpenedMessageSubscriptionDecoder> {
+        CorrelateMessageSubscriptionEncoder, CorrelateMessageSubscriptionDecoder> {
 
-  private final OpenedMessageSubscriptionEncoder encoder = new OpenedMessageSubscriptionEncoder();
-  private final OpenedMessageSubscriptionDecoder decoder = new OpenedMessageSubscriptionDecoder();
+  private final CorrelateMessageSubscriptionEncoder encoder =
+      new CorrelateMessageSubscriptionEncoder();
+  private final CorrelateMessageSubscriptionDecoder decoder =
+      new CorrelateMessageSubscriptionDecoder();
 
+  private int subscriptionPartitionId;
   private int workflowInstancePartitionId;
   private long workflowInstanceKey;
   private long activityInstanceKey;
@@ -43,12 +47,12 @@ public class OpenedMessageSubscriptionCommand
   private final UnsafeBuffer messageName = new UnsafeBuffer(0, 0);
 
   @Override
-  protected OpenedMessageSubscriptionEncoder getBodyEncoder() {
+  protected CorrelateMessageSubscriptionEncoder getBodyEncoder() {
     return encoder;
   }
 
   @Override
-  protected OpenedMessageSubscriptionDecoder getBodyDecoder() {
+  protected CorrelateMessageSubscriptionDecoder getBodyDecoder() {
     return decoder;
   }
 
@@ -62,6 +66,7 @@ public class OpenedMessageSubscriptionCommand
     super.write(buffer, offset);
 
     encoder
+        .subscriptionPartitionId(subscriptionPartitionId)
         .workflowInstancePartitionId(workflowInstancePartitionId)
         .workflowInstanceKey(workflowInstanceKey)
         .activityInstanceKey(activityInstanceKey)
@@ -72,6 +77,7 @@ public class OpenedMessageSubscriptionCommand
   public void wrap(DirectBuffer buffer, int offset, int length) {
     super.wrap(buffer, offset, length);
 
+    subscriptionPartitionId = decoder.subscriptionPartitionId();
     workflowInstancePartitionId = decoder.workflowInstancePartitionId();
     workflowInstanceKey = decoder.workflowInstanceKey();
     activityInstanceKey = decoder.activityInstanceKey();
@@ -85,10 +91,19 @@ public class OpenedMessageSubscriptionCommand
 
   @Override
   public void reset() {
+    subscriptionPartitionId = subscriptionPartitionIdNullValue();
     workflowInstancePartitionId = workflowInstancePartitionIdNullValue();
     workflowInstanceKey = workflowInstanceKeyNullValue();
     activityInstanceKey = activityInstanceKeyNullValue();
     messageName.wrap(0, 0);
+  }
+
+  public int getSubscriptionPartitionId() {
+    return subscriptionPartitionId;
+  }
+
+  public void setSubscriptionPartitionId(int subscriptionPartitionId) {
+    this.subscriptionPartitionId = subscriptionPartitionId;
   }
 
   public int getWorkflowInstancePartitionId() {

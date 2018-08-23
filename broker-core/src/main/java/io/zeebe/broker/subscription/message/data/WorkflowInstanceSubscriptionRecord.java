@@ -19,22 +19,35 @@ package io.zeebe.broker.subscription.message.data;
 
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.DocumentProperty;
+import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import org.agrona.DirectBuffer;
 
 public class WorkflowInstanceSubscriptionRecord extends UnpackedObject {
 
+  private final IntegerProperty subscriptionPartitionIdProp =
+      new IntegerProperty("subscriptionPartitionId");
   private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey");
   private final LongProperty activityInstanceKeyProp = new LongProperty("activityInstanceKey");
   private final StringProperty messageNameProp = new StringProperty("messageName");
   private final DocumentProperty payloadProp = new DocumentProperty("payload");
 
   public WorkflowInstanceSubscriptionRecord() {
-    this.declareProperty(workflowInstanceKeyProp)
+    this.declareProperty(subscriptionPartitionIdProp)
+        .declareProperty(workflowInstanceKeyProp)
         .declareProperty(activityInstanceKeyProp)
         .declareProperty(messageNameProp)
         .declareProperty(payloadProp);
+  }
+
+  public int getSubscriptionPartitionId() {
+    return subscriptionPartitionIdProp.getValue();
+  }
+
+  public WorkflowInstanceSubscriptionRecord setSubscriptionPartitionId(int partitionId) {
+    subscriptionPartitionIdProp.setValue(partitionId);
+    return this;
   }
 
   public long getWorkflowInstanceKey() {

@@ -18,10 +18,11 @@
 package io.zeebe.broker.subscription.command;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
+import io.zeebe.broker.subscription.CorrelateMessageSubscriptionDecoder;
 import io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder;
 import io.zeebe.broker.subscription.MessageHeaderDecoder;
 import io.zeebe.broker.subscription.OpenMessageSubscriptionDecoder;
-import io.zeebe.broker.subscription.OpenedMessageSubscriptionDecoder;
+import io.zeebe.broker.subscription.OpenWorkflowInstanceSubscriptionDecoder;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
@@ -46,12 +47,15 @@ public class SubscriptionApiCommandMessageHandler implements ServerMessageHandle
   private final OpenMessageSubscriptionCommand openMessageSubscriptionCommand =
       new OpenMessageSubscriptionCommand();
 
-  private final OpenedMessageSubscriptionCommand openedMessageSubscriptionCommand =
-      new OpenedMessageSubscriptionCommand();
+  private final OpenWorkflowInstanceSubscriptionCommand openWorkflowInstanceSubscriptionCommand =
+      new OpenWorkflowInstanceSubscriptionCommand();
 
   private final CorrelateWorkflowInstanceSubscriptionCommand
       correlateWorkflowInstanceSubscriptionCommand =
           new CorrelateWorkflowInstanceSubscriptionCommand();
+
+  private final CorrelateMessageSubscriptionCommand correlateMessageSubscriptionCommand =
+      new CorrelateMessageSubscriptionCommand();
 
   private final LogStreamRecordWriter logStreamWriter = new LogStreamWriterImpl();
   private final RecordMetadata recordMetadata = new RecordMetadata();
@@ -84,11 +88,14 @@ public class SubscriptionApiCommandMessageHandler implements ServerMessageHandle
         case OpenMessageSubscriptionDecoder.TEMPLATE_ID:
           return onOpenMessageSubscription(buffer, offset, length);
 
-        case OpenedMessageSubscriptionDecoder.TEMPLATE_ID:
-          return onOpenedMessageSubscription(buffer, offset, length);
+        case OpenWorkflowInstanceSubscriptionDecoder.TEMPLATE_ID:
+          return onOpenWorkflowInstanceSubscription(buffer, offset, length);
 
         case CorrelateWorkflowInstanceSubscriptionDecoder.TEMPLATE_ID:
           return onCorrelateWorkflowInstanceSubscription(buffer, offset, length);
+
+        case CorrelateMessageSubscriptionDecoder.TEMPLATE_ID:
+          return onCorrelateMessageSubscription(buffer, offset, length);
 
         default:
           break;
@@ -116,17 +123,19 @@ public class SubscriptionApiCommandMessageHandler implements ServerMessageHandle
         messageSubscriptionRecord);
   }
 
-  private boolean onOpenedMessageSubscription(DirectBuffer buffer, int offset, int length) {
-    openedMessageSubscriptionCommand.wrap(buffer, offset, length);
+  private boolean onOpenWorkflowInstanceSubscription(DirectBuffer buffer, int offset, int length) {
+    openWorkflowInstanceSubscriptionCommand.wrap(buffer, offset, length);
 
     workflowInstanceSubscriptionRecord.reset();
     workflowInstanceSubscriptionRecord
-        .setWorkflowInstanceKey(openedMessageSubscriptionCommand.getWorkflowInstanceKey())
-        .setActivityInstanceKey(openedMessageSubscriptionCommand.getActivityInstanceKey())
-        .setMessageName(openedMessageSubscriptionCommand.getMessageName());
+        .setSubscriptionPartitionId(
+            openWorkflowInstanceSubscriptionCommand.getSubscriptionPartitionId())
+        .setWorkflowInstanceKey(openWorkflowInstanceSubscriptionCommand.getWorkflowInstanceKey())
+        .setActivityInstanceKey(openWorkflowInstanceSubscriptionCommand.getActivityInstanceKey())
+        .setMessageName(openWorkflowInstanceSubscriptionCommand.getMessageName());
 
     return writeCommand(
-        openedMessageSubscriptionCommand.getWorkflowInstancePartitionId(),
+        openWorkflowInstanceSubscriptionCommand.getWorkflowInstancePartitionId(),
         ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION,
         WorkflowInstanceSubscriptionIntent.OPEN,
         workflowInstanceSubscriptionRecord);
@@ -137,6 +146,8 @@ public class SubscriptionApiCommandMessageHandler implements ServerMessageHandle
     correlateWorkflowInstanceSubscriptionCommand.wrap(buffer, offset, length);
 
     workflowInstanceSubscriptionRecord
+        .setSubscriptionPartitionId(
+            correlateWorkflowInstanceSubscriptionCommand.getSubscriptionPartitionId())
         .setWorkflowInstanceKey(
             correlateWorkflowInstanceSubscriptionCommand.getWorkflowInstanceKey())
         .setActivityInstanceKey(
@@ -149,6 +160,23 @@ public class SubscriptionApiCommandMessageHandler implements ServerMessageHandle
         ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION,
         WorkflowInstanceSubscriptionIntent.CORRELATE,
         workflowInstanceSubscriptionRecord);
+  }
+
+  private boolean onCorrelateMessageSubscription(DirectBuffer buffer, int offset, int length) {
+    correlateMessageSubscriptionCommand.wrap(buffer, offset, length);
+
+    messageSubscriptionRecord
+        .setWorkflowInstancePartitionId(
+            openMessageSubscriptionCommand.getWorkflowInstancePartitionId())
+        .setWorkflowInstanceKey(correlateMessageSubscriptionCommand.getWorkflowInstanceKey())
+        .setActivityInstanceKey(correlateMessageSubscriptionCommand.getActivityInstanceKey())
+        .setMessageName(correlateMessageSubscriptionCommand.getMessageName());
+
+    return writeCommand(
+        correlateMessageSubscriptionCommand.getSubscriptionPartitionId(),
+        ValueType.MESSAGE_SUBSCRIPTION,
+        MessageSubscriptionIntent.CORRELATE,
+        messageSubscriptionRecord);
   }
 
   private boolean writeCommand(

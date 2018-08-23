@@ -17,29 +17,27 @@
  */
 package io.zeebe.broker.subscription.command;
 
-import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.activityInstanceKeyNullValue;
-import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.messageNameHeaderLength;
-import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.payloadHeaderLength;
-import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.subscriptionPartitionIdNullValue;
-import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.workflowInstanceKeyNullValue;
-import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.workflowInstancePartitionIdNullValue;
+import static io.zeebe.broker.subscription.OpenWorkflowInstanceSubscriptionDecoder.activityInstanceKeyNullValue;
+import static io.zeebe.broker.subscription.OpenWorkflowInstanceSubscriptionDecoder.messageNameHeaderLength;
+import static io.zeebe.broker.subscription.OpenWorkflowInstanceSubscriptionDecoder.subscriptionPartitionIdNullValue;
+import static io.zeebe.broker.subscription.OpenWorkflowInstanceSubscriptionDecoder.workflowInstanceKeyNullValue;
+import static io.zeebe.broker.subscription.OpenWorkflowInstanceSubscriptionDecoder.workflowInstancePartitionIdNullValue;
 
-import io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder;
-import io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionEncoder;
+import io.zeebe.broker.subscription.OpenWorkflowInstanceSubscriptionDecoder;
+import io.zeebe.broker.subscription.OpenWorkflowInstanceSubscriptionEncoder;
 import io.zeebe.broker.util.SbeBufferWriterReader;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class CorrelateWorkflowInstanceSubscriptionCommand
+public class OpenWorkflowInstanceSubscriptionCommand
     extends SbeBufferWriterReader<
-        CorrelateWorkflowInstanceSubscriptionEncoder,
-        CorrelateWorkflowInstanceSubscriptionDecoder> {
+        OpenWorkflowInstanceSubscriptionEncoder, OpenWorkflowInstanceSubscriptionDecoder> {
 
-  private final CorrelateWorkflowInstanceSubscriptionEncoder encoder =
-      new CorrelateWorkflowInstanceSubscriptionEncoder();
-  private final CorrelateWorkflowInstanceSubscriptionDecoder decoder =
-      new CorrelateWorkflowInstanceSubscriptionDecoder();
+  private final OpenWorkflowInstanceSubscriptionEncoder encoder =
+      new OpenWorkflowInstanceSubscriptionEncoder();
+  private final OpenWorkflowInstanceSubscriptionDecoder decoder =
+      new OpenWorkflowInstanceSubscriptionDecoder();
 
   private int subscriptionPartitionId;
   private int workflowInstancePartitionId;
@@ -47,25 +45,20 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
   private long activityInstanceKey;
 
   private final UnsafeBuffer messageName = new UnsafeBuffer(0, 0);
-  private final UnsafeBuffer payload = new UnsafeBuffer(0, 0);
 
   @Override
-  protected CorrelateWorkflowInstanceSubscriptionEncoder getBodyEncoder() {
+  protected OpenWorkflowInstanceSubscriptionEncoder getBodyEncoder() {
     return encoder;
   }
 
   @Override
-  protected CorrelateWorkflowInstanceSubscriptionDecoder getBodyDecoder() {
+  protected OpenWorkflowInstanceSubscriptionDecoder getBodyDecoder() {
     return decoder;
   }
 
   @Override
   public int getLength() {
-    return super.getLength()
-        + messageNameHeaderLength()
-        + messageName.capacity()
-        + payloadHeaderLength()
-        + payload.capacity();
+    return super.getLength() + messageNameHeaderLength() + messageName.capacity();
   }
 
   @Override
@@ -77,8 +70,7 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
         .workflowInstancePartitionId(workflowInstancePartitionId)
         .workflowInstanceKey(workflowInstanceKey)
         .activityInstanceKey(activityInstanceKey)
-        .putMessageName(messageName, 0, messageName.capacity())
-        .putPayload(payload, 0, payload.capacity());
+        .putMessageName(messageName, 0, messageName.capacity());
   }
 
   @Override
@@ -95,14 +87,6 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
     offset += messageNameHeaderLength();
     final int messageNameLength = decoder.messageNameLength();
     messageName.wrap(buffer, offset, messageNameLength);
-    offset += messageNameLength;
-    decoder.limit(offset);
-
-    offset += payloadHeaderLength();
-    final int paylaodLength = decoder.payloadLength();
-    payload.wrap(buffer, offset, paylaodLength);
-    offset += paylaodLength;
-    decoder.limit(offset);
   }
 
   @Override
@@ -112,7 +96,6 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
     workflowInstanceKey = workflowInstanceKeyNullValue();
     activityInstanceKey = activityInstanceKeyNullValue();
     messageName.wrap(0, 0);
-    payload.wrap(0, 0);
   }
 
   public int getSubscriptionPartitionId() {
@@ -149,9 +132,5 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
 
   public DirectBuffer getMessageName() {
     return messageName;
-  }
-
-  public DirectBuffer getPayload() {
-    return payload;
   }
 }
