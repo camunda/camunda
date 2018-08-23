@@ -17,12 +17,6 @@ package io.zeebe.gossip.util;
 
 import static java.util.stream.Collectors.toList;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doCallRealMethod;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
 
 import io.zeebe.clustering.gossip.GossipEventType;
 import io.zeebe.clustering.gossip.MembershipEventType;
@@ -42,9 +36,7 @@ import io.zeebe.gossip.protocol.GossipEvent;
 import io.zeebe.gossip.protocol.MembershipEvent;
 import io.zeebe.transport.BufferingServerTransport;
 import io.zeebe.transport.ClientInputListener;
-import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.Transports;
 import io.zeebe.transport.impl.RequestResponseHeaderDescriptor;
@@ -52,48 +44,39 @@ import io.zeebe.transport.impl.TransportHeaderDescriptor;
 import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.buffer.BufferUtil;
-import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.Actor;
-import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
 import org.junit.rules.ExternalResource;
-import org.mockito.ArgumentMatcher;
 
 public class GossipRule extends ExternalResource {
 
+  private final int nodeId;
   private final SocketAddress socketAddress;
-  private final String memberId;
 
   private ActorScheduler actorScheduler;
   private GossipConfiguration configuration;
   private Gossip gossip;
-  private ActorControl gossipActor;
 
   private ClientTransport clientTransport;
 
   private BufferingServerTransport serverTransport;
   private Dispatcher serverReceiveBuffer;
 
-  private ClientOutput spyClientOutput;
-
   private LocalMembershipListener localMembershipListener;
   private ReceivedEventsCollector receivedEventsCollector = new ReceivedEventsCollector();
 
-  public GossipRule() {
+  public GossipRule(final int nodeId) {
+    this.nodeId = nodeId;
     this.socketAddress = SocketUtil.getNextAddress();
-    this.memberId = socketAddress.toString();
   }
 
   public void init(ActorScheduler actorScheduler, GossipConfiguration configuration) {
@@ -126,11 +109,6 @@ public class GossipRule extends ExternalResource {
             .inputListener(receivedEventsCollector)
             .build();
 
-    spyClientOutput = spy(clientTransport.getOutput());
-
-    final ClientTransport spyClientTransport = spy(clientTransport);
-    when(spyClientTransport.getOutput()).thenReturn(spyClientOutput);
-
     // We need to create and submit gossip in an actor because ActorClock is only
     // accessible inside an actor.
     actorScheduler
@@ -138,20 +116,7 @@ public class GossipRule extends ExternalResource {
             new Actor() {
               @Override
               protected void onActorStarting() {
-                gossip =
-                    new Gossip(socketAddress, serverTransport, spyClientTransport, configuration) {
-                      @Override
-                      protected void onActorStarting() {
-                        gossipActor = actor;
-                        super.onActorStarting();
-                      }
-
-                      @Override
-                      public String getName() {
-                        // make it easier to distinguish different gossip runners
-                        return socketAddress.toString();
-                      }
-                    };
+                gossip = new Gossip(nodeId, serverTransport, clientTransport, configuration);
 
                 // we need to use runOnCompletion because #join is not allowed inside an actor -
                 // will block which is forbiddem
@@ -174,10 +139,9 @@ public class GossipRule extends ExternalResource {
                     serverReceiveBuffer.openSubscriptionAsync("received-events-collector");
                 actor.runOnCompletion(
                     future,
-                    (sub, t) -> {
-                      actor.consume(
-                          sub, () -> sub.poll(receivedEventsCollector, Integer.MAX_VALUE));
-                    });
+                    (sub, t) ->
+                        actor.consume(
+                            sub, () -> sub.poll(receivedEventsCollector, Integer.MAX_VALUE)));
               }
             })
         .join();
@@ -204,69 +168,25 @@ public class GossipRule extends ExternalResource {
   }
 
   public void interruptConnectionTo(GossipRule other) {
-    // HINT we need to do this as actor.call since we need to sync with the gossip actor thread
-    gossipActor
-        .call(
-            () -> {
-              final ArgumentMatcher<RemoteAddress> remoteAddressMatcher =
-                  r -> other.socketAddress.equals(r.getAddress());
-
-              doAnswer(
-                      (invocationOnMock -> {
-                        // we need to consume the events
-                        final BufferWriter writer = (BufferWriter) invocationOnMock.getArgument(1);
-                        final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
-                        writer.write(buffer, 0);
-
-                        return CompletableActorFuture.completedExceptionally(
-                            new RuntimeException("connection is interrupted"));
-                      }))
-                  .when(spyClientOutput)
-                  .sendRequest(argThat(remoteAddressMatcher), any());
-
-              doAnswer(
-                      (invocationOnMock -> {
-                        // we need to consume the events
-                        final BufferWriter writer = (BufferWriter) invocationOnMock.getArgument(1);
-                        final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
-                        writer.write(buffer, 0);
-
-                        return CompletableActorFuture.completedExceptionally(
-                            new TimeoutException("timeout"));
-                      }))
-                  .when(spyClientOutput)
-                  .sendRequest(argThat(remoteAddressMatcher), any(), any());
-            })
-        .join();
+    clientTransport.deactivateEndpoint(other.getNodeId());
+    other.clientTransport.deactivateEndpoint(this.getNodeId());
   }
 
   public void reconnectTo(GossipRule other) {
-    // HINT we need to do this as actor.call since we need to sync with the gossip actor thread
-    gossipActor
-        .call(
-            () -> {
-              final ArgumentMatcher<RemoteAddress> remoteAddressMatcher =
-                  r -> r.getAddress().equals(other.socketAddress);
-              doCallRealMethod()
-                  .when(spyClientOutput)
-                  .sendRequest(argThat(remoteAddressMatcher), any());
-              doCallRealMethod()
-                  .when(spyClientOutput)
-                  .sendRequest(argThat(remoteAddressMatcher), any(), any());
-            })
-        .join();
+    clientTransport.registerEndpoint(other.getNodeId(), other.socketAddress);
+    other.clientTransport.registerEndpoint(this.getNodeId(), this.socketAddress);
   }
 
   public GossipController getController() {
     return gossip;
   }
 
-  public GossipEventPublisher getPushlisher() {
+  public GossipEventPublisher getPublisher() {
     return gossip;
   }
 
-  public SocketAddress getAddress() {
-    return socketAddress;
+  public int getNodeId() {
+    return nodeId;
   }
 
   public boolean receivedEvent(GossipEventType eventType, GossipRule sender) {
@@ -285,7 +205,7 @@ public class GossipRule extends ExternalResource {
     return receivedEventsCollector
         .gossipEvents()
         .filter(e -> e.getEventType() == eventType)
-        .filter(e -> e.getSender().equals(sender.socketAddress));
+        .filter(e -> e.getSenderId() == sender.nodeId);
   }
 
   public Stream<MembershipEvent> getReceivedMembershipEvents(
@@ -293,14 +213,14 @@ public class GossipRule extends ExternalResource {
     return receivedEventsCollector
         .membershipEvents()
         .filter(e -> e.getType() == eventType)
-        .filter(e -> e.getAddress().equals(member.socketAddress));
+        .filter(e -> e.getMemberId() == member.nodeId);
   }
 
   public Stream<CustomEvent> getReceivedCustomEvents(DirectBuffer eventType, GossipRule sender) {
     return receivedEventsCollector
         .customEvents()
         .filter(e -> BufferUtil.equals(eventType, e.getType()))
-        .filter(e -> e.getSenderAddress().equals(sender.socketAddress));
+        .filter(e -> e.getSenderId() == sender.nodeId);
   }
 
   public void clearReceivedEvents() {
@@ -308,11 +228,11 @@ public class GossipRule extends ExternalResource {
   }
 
   public boolean hasMember(GossipRule member) {
-    return localMembershipListener.hasMember(member.memberId);
+    return localMembershipListener.hasMember(member.nodeId);
   }
 
   public Member getMember(GossipRule member) {
-    return localMembershipListener.getMember(member.memberId);
+    return localMembershipListener.getMember(member.nodeId);
   }
 
   private static class ReceivedEventsCollector implements ClientInputListener, FragmentHandler {
@@ -328,7 +248,7 @@ public class GossipRule extends ExternalResource {
                     new MembershipEvent()
                         .type(event.getType())
                         .gossipTerm(event.getGossipTerm())
-                        .address(event.getAddress());
+                        .memberId(event.getMemberId());
 
                 membershipEvents.add(membershipEvent);
 
@@ -339,7 +259,7 @@ public class GossipRule extends ExternalResource {
                 final CustomEvent customEvent =
                     new CustomEvent()
                         .senderGossipTerm(event.getSenderGossipTerm())
-                        .senderAddress(event.getSenderAddress())
+                        .senderId(event.getSenderId())
                         .type(event.getType())
                         .payload(event.getPayload());
 
@@ -400,7 +320,7 @@ public class GossipRule extends ExternalResource {
   }
 
   private static class LocalMembershipListener implements GossipMembershipListener {
-    private final Map<String, Member> members = new ConcurrentHashMap<>();
+    private final Map<Integer, Member> members = new ConcurrentHashMap<>();
 
     @Override
     public void onAdd(Member member) {
@@ -412,26 +332,26 @@ public class GossipRule extends ExternalResource {
       members.remove(member.getId());
     }
 
-    public boolean hasMember(String id) {
-      return members.containsKey(id);
+    public boolean hasMember(int nodeId) {
+      return members.containsKey(nodeId);
     }
 
-    public Member getMember(String id) {
-      return members.get(id);
+    public Member getMember(int nodeId) {
+      return members.get(nodeId);
     }
   }
 
   public static final class ReceivedCustomEvent {
-    private final SocketAddress sender;
+    private final int senderId;
     private final DirectBuffer payload;
 
-    public ReceivedCustomEvent(SocketAddress sender, DirectBuffer payload) {
-      this.sender = new SocketAddress(sender);
+    public ReceivedCustomEvent(int senderId, DirectBuffer payload) {
+      this.senderId = senderId;
       this.payload = BufferUtil.cloneBuffer(payload);
     }
 
-    public SocketAddress getSender() {
-      return sender;
+    public int getSenderId() {
+      return senderId;
     }
 
     public DirectBuffer getPayload() {
@@ -443,8 +363,8 @@ public class GossipRule extends ExternalResource {
     private final List<ReceivedCustomEvent> receivedEvents = new CopyOnWriteArrayList<>();
 
     @Override
-    public void onEvent(SocketAddress sender, DirectBuffer payload) {
-      final ReceivedCustomEvent event = new ReceivedCustomEvent(sender, payload);
+    public void onEvent(int nodeId, DirectBuffer payload) {
+      final ReceivedCustomEvent event = new ReceivedCustomEvent(nodeId, payload);
 
       receivedEvents.add(event);
     }

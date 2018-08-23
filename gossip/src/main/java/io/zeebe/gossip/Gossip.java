@@ -70,15 +70,15 @@ public class Gossip extends Actor implements GossipController, GossipEventPublis
   private final String gossipName;
 
   public Gossip(
-      final SocketAddress socketAddress,
+      final int nodeId,
       final BufferingServerTransport serverTransport,
       final ClientTransport clientTransport,
       final GossipConfiguration configuration) {
-    gossipName = socketAddress.toString();
+    gossipName = "gossip-" + nodeId;
     this.serverTransport = serverTransport;
     this.configuration = configuration;
 
-    membershipList = new MembershipList(socketAddress, this::onSuspectMember);
+    membershipList = new MembershipList(nodeId, this::onSuspectMember);
     disseminationComponent = new DisseminationComponent(configuration, membershipList);
 
     customEventListenerConsumer = new CustomEventListenerConsumer();
@@ -175,13 +175,13 @@ public class Gossip extends Actor implements GossipController, GossipEventPublis
           if (member.getTerm().isEqual(suspicionTerm)) {
             LOG.info("Remove suspicious member '{}'", member.getId());
 
-            membershipList.removeMember(member.getAddress());
+            membershipList.removeMember(member.getId());
 
             LOG.trace("Spread CONFIRM event about '{}'", member.getId());
 
             disseminationComponent
                 .addMembershipEvent()
-                .address(member.getAddress())
+                .memberId(member.getId())
                 .gossipTerm(member.getTerm())
                 .type(MembershipEventType.CONFIRM);
           }
@@ -196,7 +196,6 @@ public class Gossip extends Actor implements GossipController, GossipEventPublis
   @Override
   public ActorFuture<Void> join(List<SocketAddress> contactPoints) {
     final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-
     actor.call(() -> joinController.join(contactPoints, future));
 
     return future;
@@ -236,7 +235,7 @@ public class Gossip extends Actor implements GossipController, GossipEventPublis
 
           disseminationComponent
               .addCustomEvent()
-              .senderAddress(self.getAddress())
+              .senderId(self.getId())
               .senderGossipTerm(currentTerm)
               .type(type)
               .payload(payload, offset, length);

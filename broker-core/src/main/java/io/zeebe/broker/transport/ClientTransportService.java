@@ -27,19 +27,22 @@ import io.zeebe.transport.Transports;
 import io.zeebe.transport.impl.memory.NonBlockingMemoryPool;
 import io.zeebe.transport.impl.memory.UnboundedMemoryPool;
 import io.zeebe.util.ByteValue;
+import io.zeebe.util.collection.IntTuple;
 import io.zeebe.util.sched.ActorScheduler;
 import java.util.Collection;
 
 public class ClientTransportService implements Service<ClientTransport> {
 
   private final String name;
-  protected final Collection<SocketAddress> defaultEndpoints;
+  protected final Collection<IntTuple<SocketAddress>> defaultEndpoints;
   private final ByteValue messageBufferSize;
 
   protected ClientTransport transport;
 
   public ClientTransportService(
-      String name, Collection<SocketAddress> defaultEndpoints, ByteValue messageBufferSize) {
+      String name,
+      Collection<IntTuple<SocketAddress>> defaultEndpoints,
+      ByteValue messageBufferSize) {
     this.name = name;
     this.defaultEndpoints = defaultEndpoints;
     this.messageBufferSize = messageBufferSize;
@@ -62,7 +65,7 @@ public class ClientTransportService implements Service<ClientTransport> {
 
     if (defaultEndpoints != null) {
       // make transport open and manage channels to the default endpoints
-      defaultEndpoints.forEach(s -> transport.registerRemoteAddress(s));
+      defaultEndpoints.forEach(s -> transport.registerEndpoint(s.getInt(), s.getRight()));
     }
   }
 

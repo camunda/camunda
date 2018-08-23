@@ -22,7 +22,6 @@ import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.ClientResponse;
-import io.zeebe.transport.RemoteAddress;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
@@ -36,7 +35,7 @@ public class ControlMessageRequest implements BufferWriter {
   protected final ControlMessageRequestEncoder requestEncoder = new ControlMessageRequestEncoder();
   protected final MsgPackHelper msgPackHelper;
   protected final ClientOutput output;
-  protected final RemoteAddress target;
+  protected final int target;
 
   protected ControlMessageType messageType = ControlMessageType.NULL_VAL;
   protected int partitionId = ControlMessageRequestEncoder.partitionIdNullValue();
@@ -44,8 +43,7 @@ public class ControlMessageRequest implements BufferWriter {
 
   protected ActorFuture<ClientResponse> responseFuture;
 
-  public ControlMessageRequest(
-      ClientOutput output, RemoteAddress target, MsgPackHelper msgPackHelper) {
+  public ControlMessageRequest(ClientOutput output, int target, MsgPackHelper msgPackHelper) {
     this.output = output;
     this.target = target;
     this.msgPackHelper = msgPackHelper;

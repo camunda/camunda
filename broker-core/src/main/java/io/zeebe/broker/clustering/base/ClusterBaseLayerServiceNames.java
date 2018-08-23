@@ -21,7 +21,6 @@ import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
 import io.zeebe.broker.clustering.base.snapshots.SnapshotReplicationInstallService;
 import io.zeebe.broker.clustering.base.snapshots.SnapshotReplicationService;
-import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.gossip.Gossip;
@@ -31,9 +30,6 @@ import io.zeebe.servicecontainer.ServiceName;
 public class ClusterBaseLayerServiceNames {
   public static final ServiceName<Void> CLUSTERING_BASE_LAYER =
       ServiceName.newServiceName("cluster.base.bootstrapped", Void.class);
-
-  public static final ServiceName<NodeInfo> LOCAL_NODE =
-      ServiceName.newServiceName("cluster.base.localNode", NodeInfo.class);
 
   public static final ServiceName<Void> MANAGEMENT_API_REQUEST_HANDLER_SERVICE_NAME =
       ServiceName.newServiceName("cluster.base.managementApiRequestHandlerService", Void.class);

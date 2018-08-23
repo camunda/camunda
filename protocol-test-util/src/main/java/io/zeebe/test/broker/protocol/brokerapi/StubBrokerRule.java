@@ -57,7 +57,9 @@ public class StubBrokerRule extends ExternalResource {
   private ControlledActorClock clock = new ControlledActorClock();
   protected ActorScheduler scheduler;
 
+  protected final int nodeId;
   protected final SocketAddress socketAddress;
+  private final int partitionCount;
 
   protected ServerTransport transport;
 
@@ -66,13 +68,16 @@ public class StubBrokerRule extends ExternalResource {
 
   protected AtomicReference<Topology> currentTopology = new AtomicReference<>();
 
-  private final int partitionCount;
-
   public StubBrokerRule() {
-    this(1);
+    this(0);
   }
 
-  public StubBrokerRule(int partitionCount) {
+  public StubBrokerRule(int nodeId) {
+    this(nodeId, 1);
+  }
+
+  public StubBrokerRule(int nodeId, int partitionCount) {
+    this.nodeId = nodeId;
     this.socketAddress = SocketUtil.getNextAddress();
     this.partitionCount = partitionCount;
   }
@@ -93,10 +98,10 @@ public class StubBrokerRule extends ExternalResource {
     channelHandler = new StubResponseChannelHandler(msgPackHelper);
 
     final Topology topology = new Topology();
-    topology.addLeader(socketAddress, Protocol.SYSTEM_TOPIC, Protocol.SYSTEM_PARTITION);
+    topology.addLeader(nodeId, socketAddress, Protocol.SYSTEM_TOPIC, Protocol.SYSTEM_PARTITION);
 
     for (int i = TEST_PARTITION_ID; i < TEST_PARTITION_ID + partitionCount; i++) {
-      topology.addLeader(socketAddress, DEFAULT_TOPIC, i);
+      topology.addLeader(nodeId, socketAddress, DEFAULT_TOPIC, i);
     }
 
     currentTopology.set(topology);
@@ -243,7 +248,7 @@ public class StubBrokerRule extends ExternalResource {
   public void addTopic(String topic, int partition) {
     final Topology newTopology = new Topology(currentTopology.get());
 
-    newTopology.addLeader(socketAddress, topic, partition);
+    newTopology.addLeader(nodeId, socketAddress, topic, partition);
     currentTopology.set(newTopology);
   }
 
@@ -431,6 +436,10 @@ public class StubBrokerRule extends ExternalResource {
 
   public SocketAddress getSocketAddress() {
     return socketAddress;
+  }
+
+  public int getNodeId() {
+    return nodeId;
   }
 
   public ControlledActorClock getClock() {

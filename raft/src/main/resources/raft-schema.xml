@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
-                   package="io.zeebe.raft" id="4" version="1"
-                   semanticVersion="0.1.0" description="Zeebe Management Raft Protocol" byteOrder="littleEndian">
+  package="io.zeebe.raft" id="4" version="1"
+  semanticVersion="0.1.0" description="Zeebe Management Raft Protocol" byteOrder="littleEndian">
 
   <types>
 
     <composite name="messageHeader"
-               description="Message identifiers and length of message root">
+      description="Message identifiers and length of message root">
       <type name="blockLength" primitiveType="uint16"/>
       <type name="templateId" primitiveType="uint16"/>
       <type name="schemaId" primitiveType="uint16"/>
@@ -44,17 +44,15 @@
   <sbe:message name="ConfigurationRequest" id="0">
     <field name="partitionId" id="0" type="uint16"/>
     <field name="term" id="1" type="uint16"/>
-    <field name="port" id="2" type="uint16"/>
-    <field name="join" id="3" type="BooleanType" />
-    <data name="host" id="4" type="varDataEncoding"/>
+    <field name="nodeId" id="2" type="uint16"/>
+    <field name="join" id="3" type="BooleanType"/>
   </sbe:message>
 
   <sbe:message name="ConfigurationResponse" id="1">
     <field name="term" id="1" type="uint16"/>
-    <field name="succeeded" id="3" type="BooleanType" />
-    <group name="members" id="6" dimensionType="groupSizeEncoding">
-      <field name="port" id="7" type="uint16"/>
-      <data name="host" id="8" type="varDataEncoding"/>
+    <field name="succeeded" id="3" type="BooleanType"/>
+    <group name="members" id="4" dimensionType="groupSizeEncoding">
+      <field name="nodeId" id="5" type="uint16"/>
     </group>
   </sbe:message>
 
@@ -63,8 +61,7 @@
     <field name="term" id="1" type="uint16"/>
     <field name="lastEventPosition" id="2" type="uint64"/>
     <field name="lastEventTerm" id="3" type="int32"/>
-    <field name="port" id="4" type="uint16"/>
-    <data name="host" id="6" type="varDataEncoding"/>
+    <field name="nodeId" id="4" type="uint16"/>
   </sbe:message>
 
   <sbe:message name="PollResponse" id="7">
@@ -77,8 +74,7 @@
     <field name="term" id="1" type="uint16"/>
     <field name="lastEventPosition" id="2" type="uint64"/>
     <field name="lastEventTerm" id="3" type="int32"/>
-    <field name="port" id="4" type="uint16"/>
-    <data name="host" id="6" type="varDataEncoding"/>
+    <field name="nodeId" id="4" type="uint16"/>
   </sbe:message>
 
   <sbe:message name="VoteResponse" id="9">
@@ -92,9 +88,8 @@
     <field name="previousEventPosition" id="2" type="uint64"/>
     <field name="previousEventTerm" id="3" type="int32"/>
     <field name="commitPosition" id="4" type="uint64"/>
-    <field name="port" id="5" type="uint16"/>
-    <data name="host" id="7" type="varDataEncoding"/>
-    <data name="data" id="8" type="varDataEncoding"/>
+    <field name="nodeId" id="5" type="uint16"/>
+    <data name="data" id="6" type="varDataEncoding"/>
   </sbe:message>
 
   <sbe:message name="AppendResponse" id="11">
@@ -102,8 +97,7 @@
     <field name="term" id="1" type="uint16"/>
     <field name="succeeded" id="2" type="BooleanType"/>
     <field name="previousEventPosition" id="3" type="uint64"/>
-    <field name="port" id="4" type="uint16"/>
-    <data name="host" id="6" type="varDataEncoding"/>
+    <field name="nodeId" id="4" type="uint16"/>
   </sbe:message>
 
 </sbe:messageSchema>

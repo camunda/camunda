@@ -15,7 +15,7 @@
  */
 package io.zeebe.raft.protocol;
 
-import static io.zeebe.raft.ConfigurationRequestEncoder.hostHeaderLength;
+import static io.zeebe.raft.ConfigurationRequestEncoder.nodeIdNullValue;
 import static io.zeebe.raft.ConfigurationRequestEncoder.partitionIdNullValue;
 import static io.zeebe.raft.ConfigurationRequestEncoder.termNullValue;
 
@@ -24,28 +24,19 @@ import io.zeebe.raft.BooleanType;
 import io.zeebe.raft.ConfigurationRequestDecoder;
 import io.zeebe.raft.ConfigurationRequestEncoder;
 import io.zeebe.raft.Raft;
-import io.zeebe.transport.SocketAddress;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class ConfigurationRequest extends AbstractRaftMessage
-    implements HasSocketAddress, HasTerm, HasPartition {
+    implements HasNodeId, HasTerm, HasPartition {
 
   protected final ConfigurationRequestDecoder bodyDecoder = new ConfigurationRequestDecoder();
   protected final ConfigurationRequestEncoder bodyEncoder = new ConfigurationRequestEncoder();
 
-  // read + write
   protected int partitionId;
   protected int term;
+  protected int nodeId;
   protected boolean joinRequest;
-
-  // read
-  private final DirectBuffer readHost = new UnsafeBuffer(0, 0);
-  private final SocketAddress readSocketAddress = new SocketAddress();
-
-  // write
-  private SocketAddress writeSocketAddress;
 
   public ConfigurationRequest() {
     reset();
@@ -54,12 +45,8 @@ public class ConfigurationRequest extends AbstractRaftMessage
   public ConfigurationRequest reset() {
     partitionId = partitionIdNullValue();
     term = termNullValue();
+    nodeId = nodeIdNullValue();
     joinRequest = true;
-
-    readHost.wrap(0, 0);
-    readSocketAddress.reset();
-
-    writeSocketAddress = null;
 
     return this;
   }
@@ -94,8 +81,8 @@ public class ConfigurationRequest extends AbstractRaftMessage
   }
 
   @Override
-  public SocketAddress getSocketAddress() {
-    return readSocketAddress;
+  public int getNodeId() {
+    return nodeId;
   }
 
   public ConfigurationRequest setRaft(final Raft raft) {
@@ -103,8 +90,7 @@ public class ConfigurationRequest extends AbstractRaftMessage
 
     partitionId = logStream.getPartitionId();
     term = raft.getTerm();
-
-    writeSocketAddress = raft.getSocketAddress();
+    nodeId = raft.getNodeId();
 
     return this;
   }
@@ -116,13 +102,7 @@ public class ConfigurationRequest extends AbstractRaftMessage
 
   @Override
   public int getLength() {
-    int length = headerEncoder.encodedLength() + bodyEncoder.sbeBlockLength() + hostHeaderLength();
-
-    if (writeSocketAddress != null) {
-      length += writeSocketAddress.hostLength();
-    }
-
-    return length;
+    return headerEncoder.encodedLength() + bodyEncoder.sbeBlockLength();
   }
 
   @Override
@@ -138,15 +118,8 @@ public class ConfigurationRequest extends AbstractRaftMessage
 
     partitionId = bodyDecoder.partitionId();
     term = bodyDecoder.term();
+    nodeId = bodyDecoder.nodeId();
     joinRequest = bodyDecoder.join() == BooleanType.TRUE;
-    readSocketAddress.port(bodyDecoder.port());
-
-    offset += bodyDecoder.sbeBlockLength();
-
-    offset += wrapVarData(buffer, offset, readHost, hostHeaderLength(), bodyDecoder.hostLength());
-    bodyDecoder.limit(offset);
-
-    readSocketAddress.host(readHost, 0, readHost.capacity());
 
     assert bodyDecoder.limit() == frameEnd
         : "Decoder read only to position "
@@ -171,12 +144,7 @@ public class ConfigurationRequest extends AbstractRaftMessage
         .wrap(buffer, offset)
         .partitionId(partitionId)
         .term(term)
+        .nodeId(nodeId)
         .join(joinRequest ? BooleanType.TRUE : BooleanType.FALSE);
-
-    if (writeSocketAddress != null) {
-      bodyEncoder
-          .port(writeSocketAddress.port())
-          .putHost(writeSocketAddress.getHostBuffer(), 0, writeSocketAddress.hostLength());
-    }
   }
 }

@@ -17,50 +17,20 @@ package io.zeebe.raft.event;
 
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.IntegerProperty;
-import io.zeebe.msgpack.property.StringProperty;
-import io.zeebe.transport.SocketAddress;
-import org.agrona.DirectBuffer;
 
 public class RaftConfigurationEventMember extends UnpackedObject {
-  protected StringProperty hostProp = new StringProperty("host");
-  protected IntegerProperty portProp = new IntegerProperty("port");
+  protected IntegerProperty nodeIdProp = new IntegerProperty("nodeId");
 
   public RaftConfigurationEventMember() {
-    declareProperty(hostProp);
-    declareProperty(portProp);
+    declareProperty(nodeIdProp);
   }
 
-  public DirectBuffer getHost() {
-    return hostProp.getValue();
+  public int getNodeId() {
+    return nodeIdProp.getValue();
   }
 
-  public RaftConfigurationEventMember setHost(
-      final DirectBuffer buffer, final int offset, final int length) {
-    hostProp.setValue(buffer, offset, length);
+  public RaftConfigurationEventMember setNodeId(final int nodeId) {
+    nodeIdProp.setValue(nodeId);
     return this;
-  }
-
-  public int getPort() {
-    return portProp.getValue();
-  }
-
-  public RaftConfigurationEventMember setPort(final int port) {
-    portProp.setValue(port);
-    return this;
-  }
-
-  public RaftConfigurationEventMember setSocketAddress(final SocketAddress address) {
-    setHost(address.getHostBuffer(), 0, address.hostLength());
-    setPort(address.port());
-
-    return this;
-  }
-
-  public SocketAddress getSocketAddress() {
-    final SocketAddress socketAddress = new SocketAddress();
-    final DirectBuffer host = getHost();
-    socketAddress.host(host, 0, host.capacity());
-    socketAddress.port(getPort());
-    return socketAddress;
   }
 }

@@ -15,6 +15,9 @@
  */
 package io.zeebe.gossip.protocol;
 
+import static io.zeebe.clustering.gossip.GossipEventEncoder.probeMemberIdNullValue;
+import static io.zeebe.clustering.gossip.GossipEventEncoder.senderIdNullValue;
+
 import io.zeebe.clustering.gossip.GossipEventDecoder;
 import io.zeebe.clustering.gossip.GossipEventDecoder.CustomEventsDecoder;
 import io.zeebe.clustering.gossip.GossipEventDecoder.MembershipEventsDecoder;
@@ -25,7 +28,6 @@ import io.zeebe.clustering.gossip.GossipEventType;
 import io.zeebe.clustering.gossip.MessageHeaderDecoder;
 import io.zeebe.clustering.gossip.MessageHeaderEncoder;
 import io.zeebe.gossip.membership.GossipTerm;
-import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferWriter;
 import java.util.Iterator;
@@ -50,8 +52,8 @@ public class GossipEvent implements BufferReader, BufferWriter {
   private final MembershipEvent membershipEvent = new MembershipEvent();
   private final CustomEvent customEvent = new CustomEvent();
 
-  private final SocketAddress senderAddress = new SocketAddress();
-  private final SocketAddress probeMemberAddress = new SocketAddress();
+  private int senderId;
+  private int probeMemberId;
 
   private GossipEventType eventType = GossipEventType.NULL_VAL;
 
@@ -75,12 +77,12 @@ public class GossipEvent implements BufferReader, BufferWriter {
     return eventType;
   }
 
-  public SocketAddress getSender() {
-    return senderAddress;
+  public int getSenderId() {
+    return senderId;
   }
 
-  public SocketAddress getProbeMember() {
-    return probeMemberAddress;
+  public int getProbeMemberId() {
+    return probeMemberId;
   }
 
   public GossipEvent eventType(GossipEventType eventType) {
@@ -88,20 +90,20 @@ public class GossipEvent implements BufferReader, BufferWriter {
     return this;
   }
 
-  public GossipEvent sender(SocketAddress sender) {
-    this.senderAddress.wrap(sender);
+  public GossipEvent senderId(int senderId) {
+    this.senderId = senderId;
     return this;
   }
 
-  public GossipEvent probeMember(SocketAddress probeMember) {
-    this.probeMemberAddress.wrap(probeMember);
+  public GossipEvent probeMemberId(int probeMemberId) {
+    this.probeMemberId = probeMemberId;
     return this;
   }
 
   public GossipEvent reset() {
     this.eventType = GossipEventType.NULL_VAL;
-    this.senderAddress.reset();
-    this.probeMemberAddress.reset();
+    this.senderId = senderIdNullValue();
+    this.probeMemberId = probeMemberIdNullValue();
 
     return this;
   }
@@ -111,23 +113,15 @@ public class GossipEvent implements BufferReader, BufferWriter {
     int length =
         headerEncoder.encodedLength()
             + bodyEncoder.sbeBlockLength()
-            + GossipEventEncoder.senderHostHeaderLength()
-            + GossipEventEncoder.probeMemberHostHeaderLength()
             + MembershipEventsEncoder.sbeHeaderSize()
             + CustomEventsEncoder.sbeHeaderSize();
-
-    length += senderAddress.hostLength();
-    length += probeMemberAddress.hostLength();
 
     final Iterator<MembershipEvent> membershipEvents =
         membershipEventSupplier.membershipEventViewIterator(maxMembershipEventsPerMessage);
     while (membershipEvents.hasNext()) {
-      final MembershipEvent event = membershipEvents.next();
+      membershipEvents.next();
 
-      length +=
-          event.getAddress().hostLength()
-              + MembershipEventsEncoder.sbeBlockLength()
-              + MembershipEventsEncoder.hostHeaderLength();
+      length += MembershipEventsEncoder.sbeBlockLength();
     }
 
     final Iterator<CustomEvent> customEvents =
@@ -136,11 +130,9 @@ public class GossipEvent implements BufferReader, BufferWriter {
       final CustomEvent event = customEvents.next();
 
       length +=
-          event.getSenderAddress().hostLength()
-              + event.getType().capacity()
+          event.getType().capacity()
               + event.getPayload().capacity()
               + CustomEventsEncoder.sbeBlockLength()
-              + CustomEventsEncoder.senderHostHeaderLength()
               + CustomEventsEncoder.eventTypeHeaderLength()
               + CustomEventsEncoder.payloadHeaderLength();
     }
@@ -159,10 +151,7 @@ public class GossipEvent implements BufferReader, BufferWriter {
 
     bodyEncoder.wrap(buffer, offset + headerEncoder.encodedLength());
 
-    bodyEncoder
-        .eventType(eventType)
-        .senderPort(senderAddress.port())
-        .probeMemberPort(probeMemberAddress.port());
+    bodyEncoder.eventType(eventType).senderId(senderId).probeMemberId(probeMemberId);
 
     // TODO sort membership events by spread count if event count is greater that the given limit
     final int membershipEventSize =
@@ -175,16 +164,13 @@ public class GossipEvent implements BufferReader, BufferWriter {
     while (membershipEvents.hasNext()) {
       final MembershipEvent membershipEvent = membershipEvents.next();
       final GossipTerm gossipTerm = membershipEvent.getGossipTerm();
-      final SocketAddress address = membershipEvent.getAddress();
 
       membershipEventsEncoder
           .next()
           .eventType(membershipEvent.getType())
           .gossipEpoch(gossipTerm.getEpoch())
           .gossipHeartbeat(gossipTerm.getHeartbeat())
-          .port(address.port());
-
-      membershipEventsEncoder.putHost(address.getHostBuffer(), 0, address.hostLength());
+          .memberId(membershipEvent.getMemberId());
     }
 
     // TODO sort custom events by spread count if event count is greater that the given limit
@@ -197,7 +183,7 @@ public class GossipEvent implements BufferReader, BufferWriter {
     while (customEvents.hasNext()) {
       final CustomEvent customEvent = customEvents.next();
       final GossipTerm senderGossipTerm = customEvent.getSenderGossipTerm();
-      final SocketAddress senderAddress = customEvent.getSenderAddress();
+      final int senderId = customEvent.getSenderId();
       final DirectBuffer eventType = customEvent.getType();
       final DirectBuffer payload = customEvent.getPayload();
 
@@ -205,17 +191,12 @@ public class GossipEvent implements BufferReader, BufferWriter {
           .next()
           .senderGossipEpoch(senderGossipTerm.getEpoch())
           .senderGossipHeartbeat(senderGossipTerm.getHeartbeat())
-          .senderPort(senderAddress.port());
+          .senderId(senderId);
 
       customEventsEncoder
-          .putSenderHost(senderAddress.getHostBuffer(), 0, senderAddress.hostLength())
           .putEventType(eventType, 0, eventType.capacity())
           .putPayload(payload, 0, payload.capacity());
     }
-
-    bodyEncoder
-        .putSenderHost(senderAddress.getHostBuffer(), 0, senderAddress.hostLength())
-        .putProbeMemberHost(probeMemberAddress.getHostBuffer(), 0, probeMemberAddress.hostLength());
   }
 
   @Override
@@ -229,9 +210,8 @@ public class GossipEvent implements BufferReader, BufferWriter {
     bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
     eventType = bodyDecoder.eventType();
-
-    senderAddress.port(bodyDecoder.senderPort());
-    probeMemberAddress.port(bodyDecoder.probeMemberPort());
+    senderId = bodyDecoder.senderId();
+    probeMemberId = bodyDecoder.probeMemberId();
 
     final MembershipEventsDecoder membershipEventsDecoder = bodyDecoder.membershipEvents();
     if (membershipEventsDecoder.count() > 0) {
@@ -243,13 +223,7 @@ public class GossipEvent implements BufferReader, BufferWriter {
             .epoch(membershipEventDecoder.gossipEpoch())
             .heartbeat(membershipEventDecoder.gossipHeartbeat());
 
-        final SocketAddress address =
-            membershipEvent
-                .getAddress()
-                .port(membershipEventDecoder.port())
-                .hostLength(membershipEventDecoder.hostLength());
-
-        membershipEventDecoder.getHost(address.getHostBuffer(), 0, address.hostLength());
+        membershipEvent.memberId(membershipEventDecoder.memberId());
 
         membershipEventConsumer.consumeMembershipEvent(membershipEvent);
       }
@@ -263,14 +237,7 @@ public class GossipEvent implements BufferReader, BufferWriter {
             .epoch(customEventDecoder.senderGossipEpoch())
             .heartbeat(customEventDecoder.senderGossipHeartbeat());
 
-        final SocketAddress senderAddress =
-            customEvent
-                .getSenderAddress()
-                .port(customEventDecoder.senderPort())
-                .hostLength(customEventDecoder.senderHostLength());
-
-        customEventDecoder.getSenderHost(
-            senderAddress.getHostBuffer(), 0, senderAddress.hostLength());
+        customEvent.senderId(customEventDecoder.senderId());
 
         final int typeLength = customEventDecoder.eventTypeLength();
         customEvent.typeLength(typeLength);
@@ -283,13 +250,5 @@ public class GossipEvent implements BufferReader, BufferWriter {
         customEventConsumer.consumeCustomEvent(customEvent);
       }
     }
-
-    final int senderHostLength = bodyDecoder.senderHostLength();
-    senderAddress.hostLength(senderHostLength);
-    bodyDecoder.getSenderHost(senderAddress.getHostBuffer(), 0, senderHostLength);
-
-    final int probeMemberHostLength = bodyDecoder.probeMemberHostLength();
-    probeMemberAddress.hostLength(probeMemberHostLength);
-    bodyDecoder.getProbeMemberHost(probeMemberAddress.getHostBuffer(), 0, probeMemberHostLength);
   }
 }

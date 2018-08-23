@@ -39,6 +39,7 @@ public class ControlledTopologyManager implements TopologyManager {
   public ControlledTopologyManager() {
     this(
         new NodeInfo(
+            0,
             new SocketAddress("0.0.0.0", 0),
             new SocketAddress("0.0.0.0", 1),
             new SocketAddress("0.0.0.0", 2),

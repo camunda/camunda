@@ -22,6 +22,9 @@ import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 
 public class ClientTransport implements AutoCloseable {
+
+  public static final int UNKNOWN_NODE_ID = -1;
+
   private final ClientOutput output;
   private final RemoteAddressList remoteAddressList;
   private final EndpointRegistry endpointRegistry;
@@ -61,32 +64,12 @@ public class ClientTransport implements AutoCloseable {
   }
 
   /**
-   * Resolve a socket address as a remote to which data can be sent. The return value identifies the
-   * remote and remains stable throughout the lifetime of this {@link ClientTransport} object, i.e.
-   * can be cached. Transport will make sure to keep an open channel to this remote until the
-   * address is deactivated or retired.
-   */
-  public RemoteAddress registerRemoteAddress(SocketAddress addr) {
-    return remoteAddressList.register(addr);
-  }
-
-  /**
-   * Signals that the remote is no longer in use for the time being. A transport channel will no
-   * longer be managed. A remote address is reactivated when the endpoint is registered again.
-   */
-  public void deactivateRemoteAddress(RemoteAddress remote) {
-    remoteAddressList.deactivate(remote);
-  }
-
-  /**
-   * Signals that the remote is no longer used and that the stream should not be reused on
+   * Signals that the endpoint is no longer used and that the stream should not be reused on
    * reactivation. That means, when the endpoint is registered again, it is assigned a different
-   * stream id (=> a new remote address is returned).
-   *
-   * @param remote
+   * stream id.
    */
-  public void retireRemoteAddress(RemoteAddress remote) {
-    remoteAddressList.retire(remote);
+  public void retireEndpoint(int nodeId) {
+    endpointRegistry.retire(nodeId);
   }
 
   /**
@@ -94,17 +77,14 @@ public class ClientTransport implements AutoCloseable {
    *
    * <p>Not thread-safe
    *
-   * <p>Like {@link #registerRemoteAddress(SocketAddress)} but blockingly waits for the
+   * <p>Like {@link #registerEndpoint(int, SocketAddress)} but blockingly waits for the
    * corresponding channel to be opened such that it is probable that subsequent requests/messages
    * can be sent. This saves test code the need to retry sending.
    */
-  public RemoteAddress registerRemoteAndAwaitChannel(SocketAddress addr) {
+  public void registerEndpointAndAwaitChannel(final int nodeId, SocketAddress addr) {
     final RemoteAddress remoteAddress = getRemoteAddress(addr);
 
-    if (remoteAddress != null) {
-      // already registered; assuming a channel is open then
-      return remoteAddress;
-    } else {
+    if (remoteAddress == null) {
       final Object monitor = new Object();
 
       synchronized (monitor) {
@@ -126,24 +106,18 @@ public class ClientTransport implements AutoCloseable {
 
         transportActorContext.registerListener(listener).join();
 
-        final RemoteAddress registeredAddress = registerRemoteAddress(addr);
+        registerEndpoint(nodeId, addr);
         try {
           monitor.wait(Duration.ofSeconds(10).toMillis());
         } catch (InterruptedException e) {
           throw new RuntimeException(e);
         }
-
-        return registeredAddress;
       }
     }
   }
 
-  public RemoteAddress getRemoteAddress(SocketAddress addr) {
+  private RemoteAddress getRemoteAddress(SocketAddress addr) {
     return remoteAddressList.getByAddress(addr);
-  }
-
-  public RemoteAddress getRemoteAddress(int streamId) {
-    return remoteAddressList.getByStreamId(streamId);
   }
 
   /**

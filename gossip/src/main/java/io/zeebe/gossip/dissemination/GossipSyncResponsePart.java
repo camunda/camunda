@@ -15,7 +15,8 @@
  */
 package io.zeebe.gossip.dissemination;
 
-import io.zeebe.transport.SocketAddress;
+import static io.zeebe.transport.ClientTransport.UNKNOWN_NODE_ID;
+
 import io.zeebe.util.collection.Reusable;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
@@ -23,28 +24,28 @@ import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class GossipSyncResponsePart implements Reusable {
-  private final SocketAddress address = new SocketAddress();
+  private int nodeId;
 
   private final MutableDirectBuffer payloadBuffer = new ExpandableArrayBuffer();
   private final DirectBuffer payloadView = new UnsafeBuffer(payloadBuffer);
   private int payloadLength = 0;
 
-  public void wrap(SocketAddress address, DirectBuffer payload, int offset, int length) {
-    this.address.wrap(address);
+  public void wrap(int nodeId, DirectBuffer payload, int offset, int length) {
+    this.nodeId = nodeId;
 
     this.payloadLength = length;
     this.payloadBuffer.putBytes(0, payload, offset, length);
   }
 
-  public void wrap(SocketAddress address, DirectBuffer payload) {
-    this.address.wrap(address);
+  public void wrap(int nodeId, DirectBuffer payload) {
+    this.nodeId = nodeId;
 
     this.payloadLength = payload.capacity();
     this.payloadBuffer.putBytes(0, payload, 0, payloadLength);
   }
 
-  public SocketAddress getAddress() {
-    return address;
+  public int getNodeId() {
+    return nodeId;
   }
 
   public DirectBuffer getPayload() {
@@ -54,7 +55,7 @@ public class GossipSyncResponsePart implements Reusable {
 
   @Override
   public void reset() {
-    address.reset();
+    nodeId = UNKNOWN_NODE_ID;
     payloadLength = 0;
   }
 }

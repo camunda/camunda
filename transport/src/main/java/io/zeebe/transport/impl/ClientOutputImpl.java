@@ -19,7 +19,6 @@ import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.ClientResponse;
 import io.zeebe.transport.EndpointRegistry;
 import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.TransportMessage;
 import io.zeebe.transport.impl.sender.OutgoingMessage;
 import io.zeebe.transport.impl.sender.OutgoingRequest;
 import io.zeebe.transport.impl.sender.Sender;
@@ -52,15 +51,7 @@ public class ClientOutputImpl implements ClientOutput {
   }
 
   @Override
-  public boolean sendMessage(TransportMessage transportMessage) {
-    final int remoteStreamId = transportMessage.getRemoteStreamId();
-    final BufferWriter writer = transportMessage.getWriter();
-
-    return sendTransportMessage(remoteStreamId, writer);
-  }
-
-  @Override
-  public boolean sendMessage(int nodeId, BufferWriter writer) {
+  public boolean sendMessage(Integer nodeId, BufferWriter writer) {
     final RemoteAddress remoteAddress = endpointRegistry.getEndpoint(nodeId);
     if (remoteAddress != null) {
       return sendTransportMessage(remoteAddress.getStreamId(), writer);
@@ -97,30 +88,19 @@ public class ClientOutputImpl implements ClientOutput {
   }
 
   @Override
-  public ActorFuture<ClientResponse> sendRequest(RemoteAddress addr, BufferWriter writer) {
-    return sendRequest(addr, writer, defaultRequestRetryTimeout);
-  }
-
-  @Override
-  public ActorFuture<ClientResponse> sendRequest(int nodeId, BufferWriter writer) {
+  public ActorFuture<ClientResponse> sendRequest(Integer nodeId, BufferWriter writer) {
     return sendRequest(nodeId, writer, defaultRequestRetryTimeout);
   }
 
   @Override
   public ActorFuture<ClientResponse> sendRequest(
-      RemoteAddress addr, BufferWriter writer, Duration timeout) {
-    return sendRequestWithRetry(() -> addr, (b) -> false, writer, timeout);
-  }
-
-  @Override
-  public ActorFuture<ClientResponse> sendRequest(
-      int nodeId, BufferWriter writer, Duration timeout) {
-    return sendRequestToNodeWithRetry(() -> nodeId, (b) -> false, writer, timeout);
+      Integer nodeId, BufferWriter writer, Duration timeout) {
+    return sendRequestWithRetry(() -> nodeId, (b) -> false, writer, timeout);
   }
 
   @Override
   public ActorFuture<ClientResponse> sendRequestWithRetry(
-      Supplier<RemoteAddress> remoteAddressSupplier,
+      Supplier<Integer> nodeIdSupplier,
       Predicate<DirectBuffer> responseInspector,
       BufferWriter writer,
       Duration timeout) {
@@ -133,7 +113,11 @@ public class ClientOutputImpl implements ClientOutput {
       try {
         final UnsafeBuffer bufferView = new UnsafeBuffer(allocatedBuffer);
         final OutgoingRequest request =
-            new OutgoingRequest(remoteAddressSupplier, responseInspector, bufferView, timeout);
+            new OutgoingRequest(
+                () -> endpointRegistry.getEndpoint(nodeIdSupplier.get()),
+                responseInspector,
+                bufferView,
+                timeout);
 
         request.getHeaderWriter().wrapRequest(bufferView, writer);
 
@@ -145,21 +129,5 @@ public class ClientOutputImpl implements ClientOutput {
     } else {
       return null;
     }
-  }
-
-  @Override
-  public ActorFuture<ClientResponse> sendRequestToNodeWithRetry(
-      Supplier<Integer> nodeIdSupplier,
-      Predicate<DirectBuffer> responseInspector,
-      BufferWriter writer,
-      Duration timeout) {
-    return sendRequestWithRetry(
-        () -> {
-          final Integer nodeId = nodeIdSupplier.get();
-          return nodeId == null ? null : endpointRegistry.getEndpoint(nodeId);
-        },
-        responseInspector,
-        writer,
-        timeout);
   }
 }

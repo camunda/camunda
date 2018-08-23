@@ -15,9 +15,7 @@
  */
 package io.zeebe.raft.protocol;
 
-import io.zeebe.transport.SocketAddress;
+public interface HasNodeId {
 
-public interface HasSocketAddress {
-
-  SocketAddress getSocketAddress();
+  int getNodeId();
 }

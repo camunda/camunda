@@ -15,9 +15,9 @@
  */
 package io.zeebe.raft.protocol;
 
-import static io.zeebe.raft.VoteRequestEncoder.hostHeaderLength;
 import static io.zeebe.raft.VoteRequestEncoder.lastEventPositionNullValue;
 import static io.zeebe.raft.VoteRequestEncoder.lastEventTermNullValue;
+import static io.zeebe.raft.VoteRequestEncoder.nodeIdNullValue;
 import static io.zeebe.raft.VoteRequestEncoder.partitionIdNullValue;
 import static io.zeebe.raft.VoteRequestEncoder.termNullValue;
 
@@ -25,29 +25,19 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.VoteRequestDecoder;
 import io.zeebe.raft.VoteRequestEncoder;
-import io.zeebe.transport.SocketAddress;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
-public class VoteRequest extends AbstractRaftMessage
-    implements HasSocketAddress, HasTerm, HasPartition {
+public class VoteRequest extends AbstractRaftMessage implements HasNodeId, HasTerm, HasPartition {
 
   private final VoteRequestDecoder bodyDecoder = new VoteRequestDecoder();
   private final VoteRequestEncoder bodyEncoder = new VoteRequestEncoder();
 
-  // read + write
   private int partitionId;
   private int term;
   private long lastEventPosition;
   private int lastEventTerm;
-
-  // read
-  private final DirectBuffer readHost = new UnsafeBuffer(0, 0);
-  private final SocketAddress readSocketAddress = new SocketAddress();
-
-  // write
-  private SocketAddress writeSocketAddress;
+  private int nodeId;
 
   public VoteRequest() {
     reset();
@@ -58,11 +48,7 @@ public class VoteRequest extends AbstractRaftMessage
     term = termNullValue();
     lastEventPosition = lastEventPositionNullValue();
     lastEventTerm = lastEventTermNullValue();
-
-    readHost.wrap(0, 0);
-    readSocketAddress.reset();
-
-    writeSocketAddress = null;
+    nodeId = nodeIdNullValue();
 
     return this;
   }
@@ -78,8 +64,8 @@ public class VoteRequest extends AbstractRaftMessage
   }
 
   @Override
-  public SocketAddress getSocketAddress() {
-    return readSocketAddress;
+  public int getNodeId() {
+    return nodeId;
   }
 
   public long getLastEventPosition() {
@@ -120,18 +106,14 @@ public class VoteRequest extends AbstractRaftMessage
 
     partitionId = logStream.getPartitionId();
     term = raft.getTerm();
-
-    writeSocketAddress = raft.getSocketAddress();
+    nodeId = raft.getNodeId();
 
     return this;
   }
 
   @Override
   public int getLength() {
-    return headerEncoder.encodedLength()
-        + bodyEncoder.sbeBlockLength()
-        + hostHeaderLength()
-        + writeSocketAddress.hostLength();
+    return headerEncoder.encodedLength() + bodyEncoder.sbeBlockLength();
   }
 
   @Override
@@ -149,15 +131,7 @@ public class VoteRequest extends AbstractRaftMessage
     term = bodyDecoder.term();
     lastEventPosition = bodyDecoder.lastEventPosition();
     lastEventTerm = bodyDecoder.lastEventTerm();
-
-    readSocketAddress.port(bodyDecoder.port());
-
-    offset += bodyDecoder.sbeBlockLength();
-
-    offset += wrapVarData(buffer, offset, readHost, hostHeaderLength(), bodyDecoder.hostLength());
-    bodyDecoder.limit(offset);
-
-    readSocketAddress.host(readHost, 0, readHost.capacity());
+    nodeId = bodyDecoder.nodeId();
 
     assert bodyDecoder.limit() == frameEnd
         : "Decoder read only to position "
@@ -184,7 +158,6 @@ public class VoteRequest extends AbstractRaftMessage
         .term(term)
         .lastEventPosition(lastEventPosition)
         .lastEventTerm(lastEventTerm)
-        .port(writeSocketAddress.port())
-        .putHost(writeSocketAddress.getHostBuffer(), 0, writeSocketAddress.hostLength());
+        .nodeId(nodeId);
   }
 }

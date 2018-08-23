@@ -19,8 +19,6 @@ package io.zeebe.broker.util;
 
 import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.ClientResponse;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.TransportMessage;
 import io.zeebe.transport.impl.ClientResponseImpl;
 import io.zeebe.transport.impl.IncomingResponse;
 import io.zeebe.util.buffer.BufferWriter;
@@ -47,54 +45,29 @@ public class BufferingClientOutput implements ClientOutput {
   }
 
   @Override
-  public ActorFuture<ClientResponse> sendRequest(RemoteAddress addr, BufferWriter writer) {
-    return sendRequest(addr, writer, defaultTimeout);
-  }
-
-  @Override
-  public ActorFuture<ClientResponse> sendRequest(int nodeId, BufferWriter writer) {
-    throw new UnsupportedOperationException("not yet implemented");
+  public ActorFuture<ClientResponse> sendRequest(Integer nodeId, BufferWriter writer) {
+    return sendRequest(nodeId, writer, defaultTimeout);
   }
 
   @Override
   public ActorFuture<ClientResponse> sendRequest(
-      RemoteAddress addr, BufferWriter writer, Duration timeout) {
-    final Request request = new Request(addr, writer, timeout);
+      Integer nodeId, BufferWriter writer, Duration timeout) {
+    return sendRequestWithRetry(() -> nodeId, b -> false, writer, timeout);
+  }
+
+  @Override
+  public ActorFuture<ClientResponse> sendRequestWithRetry(
+      Supplier<Integer> nodeIdSupplier,
+      Predicate<DirectBuffer> responseInspector,
+      BufferWriter writer,
+      Duration timeout) {
+    final Request request = new Request(nodeIdSupplier.get(), writer, timeout);
     sentRequests.add(request);
     return request.response;
   }
 
   @Override
-  public ActorFuture<ClientResponse> sendRequest(
-      int nodeId, BufferWriter writer, Duration timeout) {
-    throw new UnsupportedOperationException("not yet implemented");
-  }
-
-  @Override
-  public ActorFuture<ClientResponse> sendRequestWithRetry(
-      Supplier<RemoteAddress> remoteAddressSupplier,
-      Predicate<DirectBuffer> responseInspector,
-      BufferWriter writer,
-      Duration timeout) {
-    throw new UnsupportedOperationException("not yet implemented");
-  }
-
-  @Override
-  public ActorFuture<ClientResponse> sendRequestToNodeWithRetry(
-      Supplier<Integer> nodeIdSupplier,
-      Predicate<DirectBuffer> responseInspector,
-      BufferWriter writer,
-      Duration timeout) {
-    throw new UnsupportedOperationException("not yet implemented");
-  }
-
-  @Override
-  public boolean sendMessage(TransportMessage transportMessage) {
-    throw new UnsupportedOperationException("not yet implemented");
-  }
-
-  @Override
-  public boolean sendMessage(int nodeId, BufferWriter writer) {
+  public boolean sendMessage(Integer nodeId, BufferWriter writer) {
     throw new UnsupportedOperationException("not yet implemented");
   }
 
@@ -108,14 +81,14 @@ public class BufferingClientOutput implements ClientOutput {
 
   public class Request {
     private final int requestId = ID_GEN.incrementAndGet();
-    private final RemoteAddress destination;
+    private final Integer destination;
     private final BufferWriter request;
     private final ExpandableArrayBuffer requestBuffer;
     private final CompletableActorFuture<ClientResponse> response;
     private final Duration timeout;
     private final int templateId;
 
-    Request(final RemoteAddress destination, final BufferWriter writer, final Duration timeout) {
+    Request(final Integer destination, final BufferWriter writer, final Duration timeout) {
       this.request = writer;
       this.requestBuffer = new ExpandableArrayBuffer(writer.getLength());
       this.response = new CompletableActorFuture<>();
@@ -128,7 +101,7 @@ public class BufferingClientOutput implements ClientOutput {
       this.templateId = headerDecoder.wrap(this.requestBuffer, 0).templateId();
     }
 
-    public RemoteAddress getDestination() {
+    public Integer getDestination() {
       return destination;
     }
 
@@ -153,7 +126,7 @@ public class BufferingClientOutput implements ClientOutput {
       writer.write(buffer, 0);
 
       final IncomingResponse response = new IncomingResponse(requestId, buffer);
-      return new ClientResponseImpl(response, destination);
+      return new ClientResponseImpl(response, null);
     }
   }
 }

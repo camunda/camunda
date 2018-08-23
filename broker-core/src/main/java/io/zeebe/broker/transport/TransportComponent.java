@@ -36,6 +36,7 @@ import io.zeebe.broker.job.JobQueueServiceNames;
 import io.zeebe.broker.services.DispatcherService;
 import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
+import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.zeebe.broker.transport.clientapi.ClientApiMessageHandlerService;
@@ -52,6 +53,7 @@ import io.zeebe.transport.ServerRequestHandler;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.ByteValue;
+import io.zeebe.util.collection.IntTuple;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.net.InetSocketAddress;
 import java.util.Collection;
@@ -66,7 +68,8 @@ public class TransportComponent implements Component {
 
   private void createClientTransports(SystemContext context) {
     final ServiceContainer serviceContainer = context.getServiceContainer();
-    final NetworkCfg networkCfg = context.getBrokerConfiguration().getNetwork();
+    final BrokerCfg brokerCfg = context.getBrokerConfiguration();
+    final NetworkCfg networkCfg = brokerCfg.getNetwork();
     final SocketAddress managementEndpoint = networkCfg.getManagement().toSocketAddress();
     final SocketAddress subscriptionEndpoint = networkCfg.getSubscription().toSocketAddress();
 
@@ -75,7 +78,7 @@ public class TransportComponent implements Component {
             serviceContainer,
             MANAGEMENT_API_CLIENT_NAME,
             new ByteValue(networkCfg.getDefaultSendBufferSize()),
-            Collections.singletonList(managementEndpoint));
+            Collections.singletonList(new IntTuple<>(brokerCfg.getNodeId(), managementEndpoint)));
 
     context.addRequiredStartAction(managementClientFuture);
 
@@ -93,7 +96,7 @@ public class TransportComponent implements Component {
             serviceContainer,
             SUBSCRIPTION_API_CLIENT_NAME,
             new ByteValue(networkCfg.getDefaultSendBufferSize()),
-            Collections.singletonList(subscriptionEndpoint));
+            Collections.singletonList(new IntTuple<>(brokerCfg.getNodeId(), subscriptionEndpoint)));
 
     context.addRequiredStartAction(subscriptionClientFuture);
   }
@@ -298,7 +301,7 @@ public class TransportComponent implements Component {
       ServiceContainer serviceContainer,
       String name,
       ByteValue sendBufferSize,
-      Collection<SocketAddress> defaultEndpoints) {
+      Collection<IntTuple<SocketAddress>> defaultEndpoints) {
     final ClientTransportService service =
         new ClientTransportService(name, defaultEndpoints, sendBufferSize);
 

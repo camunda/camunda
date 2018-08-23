@@ -131,7 +131,7 @@ public class ConsensusRequestController {
       final RaftMember member = memberList.get(i);
 
       final ActorFuture<ClientResponse> clientRequestActorFuture =
-          raft.sendRequest(member.getRemoteAddress(), pollRequest, REQUEST_TIMEOUT);
+          raft.sendRequest(member.getNodeId(), pollRequest, REQUEST_TIMEOUT);
 
       actor.runOnCompletion(
           clientRequestActorFuture,
@@ -147,8 +147,7 @@ public class ConsensusRequestController {
                 }
               }
             } else {
-              LOG.debug(
-                  "Failed to receive {} response from {}", requestName, member.getRemoteAddress());
+              LOG.debug("Failed to receive {} response from {}", requestName, member.getNodeId());
             }
 
             if (pendingRequests == 0 && !isGranted()) {

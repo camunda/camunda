@@ -16,7 +16,6 @@
 package io.zeebe.raft;
 
 import io.zeebe.raft.state.RaftState;
-import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.Collection;
@@ -41,10 +40,10 @@ public interface RaftStateListener {
    * partition.
    *
    * @param raft the curent leader node
-   * @param addresses the new member list (without the leaving raft)
+   * @param nodeIds the new member list (without the leaving raft)
    * @return an future on which the leader should waits, before processing the member leave
    */
-  default ActorFuture<Void> onMemberLeaving(Raft raft, Collection<SocketAddress> addresses) {
+  default ActorFuture<Void> onMemberLeaving(Raft raft, Collection<Integer> nodeIds) {
     return CompletableActorFuture.completed(null);
   }
 
@@ -54,7 +53,7 @@ public interface RaftStateListener {
    * <p>Note: this callback is called on leader and followers
    *
    * @param raft the current raft node
-   * @param currentMembers the new member list (including the new member)
+   * @param currentNodeIds the new member node id list (including the new member)
    */
-  default void onMemberJoined(Raft raft, Collection<SocketAddress> currentMembers) {}
+  default void onMemberJoined(Raft raft, Collection<Integer> currentNodeIds) {}
 }

@@ -40,6 +40,7 @@ public class TopologyDto extends UnpackedObject {
   }
 
   public static class BrokerDto extends UnpackedObject {
+    private final IntegerProperty nodeIdProp = new IntegerProperty("nodeId");
     private final StringProperty hostProp = new StringProperty("host");
     private final IntegerProperty portProp = new IntegerProperty("port");
 
@@ -47,7 +48,19 @@ public class TopologyDto extends UnpackedObject {
         new ArrayProperty<>("partitions", new PartitionDto());
 
     public BrokerDto() {
-      this.declareProperty(hostProp).declareProperty(portProp).declareProperty(partitionStatesProp);
+      this.declareProperty(nodeIdProp)
+          .declareProperty(hostProp)
+          .declareProperty(portProp)
+          .declareProperty(partitionStatesProp);
+    }
+
+    public int getNodeId() {
+      return nodeIdProp.getValue();
+    }
+
+    public BrokerDto setNodeId(int nodeId) {
+      nodeIdProp.setValue(nodeId);
+      return this;
     }
 
     public DirectBuffer getHost() {

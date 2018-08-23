@@ -56,11 +56,11 @@ public class RaftEvent {
     final ValueArray<RaftConfigurationEventMember> configurationMembers = configuration.members();
 
     // add self also to configuration
-    configurationMembers.add().setSocketAddress(raft.getSocketAddress());
+    configurationMembers.add().setNodeId(raft.getNodeId());
 
     final List<RaftMember> memberList = raft.getRaftMembers().getMemberList();
     for (final RaftMember member : memberList) {
-      configurationMembers.add().setSocketAddress(member.getRemoteAddress().getAddress());
+      configurationMembers.add().setNodeId(member.getNodeId());
     }
 
     return logStreamWriter

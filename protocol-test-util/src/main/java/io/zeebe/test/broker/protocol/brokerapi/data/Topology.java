@@ -26,7 +26,7 @@ import java.util.Set;
 
 public class Topology {
 
-  protected Map<SocketAddress, TopologyBroker> brokers = new HashMap<>();
+  protected Map<Integer, TopologyBroker> brokers = new HashMap<>();
 
   public Topology() {}
 
@@ -34,22 +34,22 @@ public class Topology {
     this.brokers = new HashMap<>(other.brokers);
   }
 
-  private TopologyBroker getBroker(SocketAddress brokerAddress) {
-    TopologyBroker topologyBroker = brokers.get(brokerAddress);
+  private TopologyBroker getBroker(int nodeId, SocketAddress brokerAddress) {
+    TopologyBroker topologyBroker = brokers.get(nodeId);
     if (topologyBroker == null) {
-      topologyBroker = new TopologyBroker(brokerAddress.host(), brokerAddress.port());
-      brokers.put(brokerAddress, topologyBroker);
+      topologyBroker = new TopologyBroker(nodeId, brokerAddress.host(), brokerAddress.port());
+      brokers.put(nodeId, topologyBroker);
     }
     return topologyBroker;
   }
 
   public Topology addLeader(StubBrokerRule brokerRule, String topic, int partition) {
-    return addLeader(brokerRule.getSocketAddress(), topic, partition);
+    return addLeader(brokerRule.getNodeId(), brokerRule.getSocketAddress(), topic, partition);
   }
 
-  public Topology addLeader(SocketAddress address, String topic, int partition) {
-    getBroker(address).addPartition(new BrokerPartitionState(LEADER_STATE, topic, partition));
-
+  public Topology addLeader(int nodeId, SocketAddress address, String topic, int partition) {
+    getBroker(nodeId, address)
+        .addPartition(new BrokerPartitionState(LEADER_STATE, topic, partition));
     return this;
   }
 

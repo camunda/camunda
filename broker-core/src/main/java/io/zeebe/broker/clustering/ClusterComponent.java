@@ -52,11 +52,13 @@ import io.zeebe.broker.clustering.base.gossip.GossipJoinService;
 import io.zeebe.broker.clustering.base.gossip.GossipService;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManagerService;
 import io.zeebe.broker.clustering.base.snapshots.SnapshotReplicationInstallService;
+import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.TopologyManagerService;
 import io.zeebe.broker.clustering.orchestration.ClusterOrchestrationInstallService;
 import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.servicecontainer.CompositeServiceBuilder;
 import io.zeebe.servicecontainer.ServiceContainer;
@@ -78,11 +80,20 @@ public class ClusterComponent implements Component {
   private void initClusterBaseLayer(
       final SystemContext context, final ServiceContainer serviceContainer) {
     final BrokerCfg brokerConfig = context.getBrokerConfiguration();
+    final NetworkCfg networkCfg = brokerConfig.getNetwork();
     final CompositeServiceBuilder baseLayerInstall =
         serviceContainer.createComposite(CLUSTERING_BASE_LAYER);
 
-    final TopologyManagerService topologyManagerService =
-        new TopologyManagerService(brokerConfig.getNetwork());
+    final NodeInfo localMember =
+        new NodeInfo(
+            brokerConfig.getNodeId(),
+            networkCfg.getClient().toSocketAddress(),
+            networkCfg.getManagement().toSocketAddress(),
+            networkCfg.getReplication().toSocketAddress(),
+            networkCfg.getSubscription().toSocketAddress());
+
+    final TopologyManagerService topologyManagerService = new TopologyManagerService(localMember);
+
     baseLayerInstall
         .createService(TOPOLOGY_MANAGER_SERVICE, topologyManagerService)
         .dependency(GOSSIP_SERVICE, topologyManagerService.getGossipInjector())
@@ -129,14 +140,16 @@ public class ClusterComponent implements Component {
             snapshotReplicationInstallService.getFollowerPartitionsGroupReference())
         .install();
 
-    initGossip(baseLayerInstall, context);
+    initGossip(baseLayerInstall, context, localMember);
     initRaft(baseLayerInstall, context);
 
     context.addRequiredStartAction(baseLayerInstall.install());
   }
 
   private void initGossip(
-      final CompositeServiceBuilder baseLayerInstall, final SystemContext context) {
+      final CompositeServiceBuilder baseLayerInstall,
+      final SystemContext context,
+      final NodeInfo localMember) {
     final GossipService gossipService = new GossipService(context.getBrokerConfiguration());
     baseLayerInstall
         .createService(GOSSIP_SERVICE, gossipService)
@@ -151,7 +164,7 @@ public class ClusterComponent implements Component {
 
     // TODO: decide whether failure to join gossip cluster should result in broker startup fail
     final GossipJoinService gossipJoinService =
-        new GossipJoinService(context.getBrokerConfiguration().getCluster());
+        new GossipJoinService(context.getBrokerConfiguration().getCluster(), localMember);
     baseLayerInstall
         .createService(GOSSIP_JOIN_SERVICE, gossipJoinService)
         .dependency(GOSSIP_SERVICE, gossipJoinService.getGossipInjector())

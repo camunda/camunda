@@ -27,7 +27,6 @@ import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.raft.event.RaftConfigurationEvent;
 import io.zeebe.raft.protocol.AppendRequest;
 import io.zeebe.raft.protocol.AppendResponse;
-import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.allocation.AllocatedBuffer;
 import io.zeebe.util.allocation.BufferAllocators;
 import java.nio.ByteBuffer;
@@ -116,10 +115,9 @@ public class BufferedLogStorageAppender {
       if (deferredAck.hasDeferredAck()) {
         if (!flushBufferedEvents()) {
           // unable to flush events, abort and try again with last buffered position
-          rejectAppendRequest(lastBufferedPosition, deferredAck.socketAddress);
+          rejectAppendRequest(lastBufferedPosition, deferredAck.nodeId);
         } else {
-          acceptAppendRequest(
-              lastWrittenPosition, deferredAck.commitPosistion, deferredAck.socketAddress);
+          acceptAppendRequest(lastWrittenPosition, deferredAck.commitPosition, deferredAck.nodeId);
         }
       }
     } finally {
@@ -143,13 +141,11 @@ public class BufferedLogStorageAppender {
         if (remainingCapacity() < eventLength) {
           if (!flushBufferedEvents()) {
             // unable to flush events, abort and try again with last buffered position
-            rejectAppendRequest(lastBufferedPosition, appendRequest.getSocketAddress());
+            rejectAppendRequest(lastBufferedPosition, appendRequest.getNodeId());
             return;
           } else {
             acceptAppendRequest(
-                lastWrittenPosition,
-                appendRequest.getCommitPosition(),
-                appendRequest.getSocketAddress());
+                lastWrittenPosition, appendRequest.getCommitPosition(), appendRequest.getNodeId());
           }
         }
 
@@ -184,7 +180,7 @@ public class BufferedLogStorageAppender {
       }
     } else {
       acceptAppendRequest(
-          lastWrittenPosition, appendRequest.getCommitPosition(), appendRequest.getSocketAddress());
+          lastWrittenPosition, appendRequest.getCommitPosition(), appendRequest.getNodeId());
     }
   }
 
@@ -199,9 +195,9 @@ public class BufferedLogStorageAppender {
     if (previousEventPosition >= lastBufferedPosition) {
       // event is either after our last position or the log stream controller
       // is still appendEvent, which does not allow to truncate the log
-      rejectAppendRequest(lastBufferedPosition, appendRequest.getSocketAddress());
+      rejectAppendRequest(lastBufferedPosition, appendRequest.getNodeId());
     } else if (previousEventPosition < currentCommit) {
-      rejectAppendRequest(currentCommit, appendRequest.getSocketAddress());
+      rejectAppendRequest(currentCommit, appendRequest.getNodeId());
     } else if (reader.seek(previousEventPosition) && reader.hasNext()) {
       final LoggedEvent writtenEvent = reader.next();
 
@@ -220,9 +216,7 @@ public class BufferedLogStorageAppender {
             if (nextEventPosition == eventPosition && nextEventTerm == eventTerm) {
               // not truncating the log as the event is already appended
               acceptAppendRequest(
-                  nextEventPosition,
-                  appendRequest.getCommitPosition(),
-                  appendRequest.getSocketAddress());
+                  nextEventPosition, appendRequest.getCommitPosition(), appendRequest.getNodeId());
             } else {
               // truncate log and append event
               logStream.truncate(nextEventPosition);
@@ -241,13 +235,13 @@ public class BufferedLogStorageAppender {
           acceptAppendRequest(
               writtenEvent.getPosition(),
               appendRequest.getCommitPosition(),
-              appendRequest.getSocketAddress());
+              appendRequest.getNodeId());
         }
       } else {
-        rejectAppendRequest(writtenEvent.getPosition() - 1, appendRequest.getSocketAddress());
+        rejectAppendRequest(writtenEvent.getPosition() - 1, appendRequest.getNodeId());
       }
     } else {
-      rejectAppendRequest(lastWrittenPosition, appendRequest.getSocketAddress());
+      rejectAppendRequest(lastWrittenPosition, appendRequest.getNodeId());
     }
   }
 
@@ -300,7 +294,7 @@ public class BufferedLogStorageAppender {
     return true;
   }
 
-  protected void acceptAppendRequest(long position, long commitPosition, SocketAddress remote) {
+  protected void acceptAppendRequest(long position, long commitPosition, int nodeId) {
     final long currentCommitPosition = logStream.getCommitPosition();
     final long nextCommitPosition = Math.min(position, commitPosition);
 
@@ -310,13 +304,13 @@ public class BufferedLogStorageAppender {
 
     appendResponse.reset().setRaft(raft).setPreviousEventPosition(position).setSucceeded(true);
 
-    raft.sendMessage(remote, appendResponse);
+    raft.sendMessage(nodeId, appendResponse);
   }
 
-  protected void rejectAppendRequest(final long position, SocketAddress remote) {
+  protected void rejectAppendRequest(final long position, final int nodeId) {
     appendResponse.reset().setRaft(raft).setPreviousEventPosition(position).setSucceeded(false);
 
-    raft.sendMessage(remote, appendResponse);
+    raft.sendMessage(nodeId, appendResponse);
   }
 
   public long getLastPosition() {
@@ -324,25 +318,21 @@ public class BufferedLogStorageAppender {
   }
 
   class DeferredAck {
-    long commitPosistion = -1;
-    SocketAddress socketAddress;
+    long commitPosition = -1;
+    Integer nodeId;
 
     void deferAck(AppendRequest request) {
-      socketAddress = request.getSocketAddress();
-      commitPosistion = request.getCommitPosition();
-    }
-
-    void onSend() {
-      reset();
+      nodeId = request.getNodeId();
+      commitPosition = request.getCommitPosition();
     }
 
     boolean hasDeferredAck() {
-      return socketAddress != null;
+      return nodeId != null;
     }
 
     void reset() {
-      commitPosistion = -1;
-      socketAddress = null;
+      commitPosition = -1;
+      nodeId = null;
     }
   }
 }

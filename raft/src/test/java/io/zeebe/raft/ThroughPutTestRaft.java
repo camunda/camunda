@@ -48,6 +48,7 @@ import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 public class ThroughPutTestRaft implements RaftStateListener {
   protected final RaftConfiguration configuration;
   protected final SocketAddress socketAddress;
+  protected final int nodeId;
   protected final String topicName;
   protected final int partition;
   protected final RaftConfigurationEvent configurationEvent = new RaftConfigurationEvent();
@@ -73,6 +74,7 @@ public class ThroughPutTestRaft implements RaftStateListener {
     this.topicName = "someTopic";
     this.partition = 0;
     this.members = Arrays.asList(members);
+    this.nodeId = socketAddress.port();
   }
 
   public void open(final ActorScheduler scheduler, final ServiceContainer serviceContainer)
@@ -113,16 +115,13 @@ public class ThroughPutTestRaft implements RaftStateListener {
         new Raft(
             logStream.getLogName(),
             configuration,
-            socketAddress,
+            nodeId,
             clientTransport,
             persistentStorage,
             messageBuffer,
             this);
     raft.addMembersWhenJoined(
-        this.members
-            .stream()
-            .map(ThroughPutTestRaft::getSocketAddress)
-            .collect(Collectors.toList()));
+        this.members.stream().map(ThroughPutTestRaft::getNodeId).collect(Collectors.toList()));
     raftApiMessageHandler.registerRaft(raft);
 
     serviceContainer
@@ -147,6 +146,10 @@ public class ThroughPutTestRaft implements RaftStateListener {
 
   public SocketAddress getSocketAddress() {
     return socketAddress;
+  }
+
+  public int getNodeId() {
+    return nodeId;
   }
 
   public String getTopicName() {

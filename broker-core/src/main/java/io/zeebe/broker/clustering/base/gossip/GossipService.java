@@ -26,7 +26,6 @@ import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.BufferingServerTransport;
 import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.SocketAddress;
 
 /** Start / stop gossip on broker start / stop */
 public class GossipService implements Service<Gossip> {
@@ -46,11 +45,11 @@ public class GossipService implements Service<Gossip> {
     final BufferingServerTransport serverTransport = bufferingServerTransportInjector.getValue();
     final ClientTransport clientTransport = clientTransportInjector.getValue();
 
-    final SocketAddress bindHost = configuration.getNetwork().getManagement().toSocketAddress();
-
     final GossipConfiguration gossipConfiguration = configuration.getGossip();
 
-    gossip = new Gossip(bindHost, serverTransport, clientTransport, gossipConfiguration);
+    gossip =
+        new Gossip(
+            configuration.getNodeId(), serverTransport, clientTransport, gossipConfiguration);
 
     startContext.async(startContext.getScheduler().submitActor(gossip));
   }

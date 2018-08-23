@@ -26,7 +26,6 @@ import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.util.collection.MapBuilder;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerTransport;
-import io.zeebe.transport.TransportMessage;
 import io.zeebe.util.buffer.BufferWriter;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
@@ -36,7 +35,6 @@ import org.agrona.MutableDirectBuffer;
 public class SubscribedRecordBuilder implements BufferWriter {
   protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   protected final SubscribedRecordEncoder bodyEncoder = new SubscribedRecordEncoder();
-  protected final TransportMessage message = new TransportMessage();
 
   protected final MsgPackHelper msgPackHelper;
   protected final ServerTransport transport;
@@ -130,9 +128,7 @@ public class SubscribedRecordBuilder implements BufferWriter {
   }
 
   public void push(RemoteAddress target) {
-    message.reset().remoteAddress(target).writer(this);
-
-    final boolean success = transport.getOutput().sendMessage(message);
+    final boolean success = transport.getOutput().sendMessage(target.getStreamId(), this);
 
     if (!success) {
       throw new RuntimeException("Could not schedule message on send buffer");

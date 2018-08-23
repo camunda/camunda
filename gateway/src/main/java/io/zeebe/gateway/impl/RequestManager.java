@@ -29,7 +29,6 @@ import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.ClientResponse;
-import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.RequestTimeoutException;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.Actor;
@@ -81,7 +80,7 @@ public class RequestManager extends Actor {
   }
 
   private <R> ResponseFuture<R> executeAsync(final RequestResponseHandler requestHandler) {
-    final Supplier<RemoteAddress> remoteProvider = determineRemoteProvider(requestHandler);
+    final Supplier<Integer> remoteProvider = determineRemoteProvider(requestHandler);
 
     final ActorFuture<ClientResponse> responseFuture =
         output.sendRequestWithRetry(
@@ -145,9 +144,9 @@ public class RequestManager extends Actor {
         });
   }
 
-  private Supplier<RemoteAddress> determineRemoteProvider(RequestResponseHandler requestHandler) {
+  private Supplier<Integer> determineRemoteProvider(RequestResponseHandler requestHandler) {
     if (!requestHandler.addressesSpecificTopic() && !requestHandler.addressesSpecificPartition()) {
-      return new BrokerProvider((topology) -> topology.getRandomBroker());
+      return new BrokerProvider(ClusterStateImpl::getRandomBroker);
     } else {
       final int targetPartition;
       if (!requestHandler.addressesSpecificPartition()) {
@@ -210,17 +209,17 @@ public class RequestManager extends Actor {
     }
   }
 
-  private class BrokerProvider implements Supplier<RemoteAddress> {
+  private class BrokerProvider implements Supplier<Integer> {
     private int attempt = 0;
 
-    private final Function<ClusterStateImpl, RemoteAddress> addressStrategy;
+    private final Function<ClusterStateImpl, Integer> addressStrategy;
 
-    BrokerProvider(Function<ClusterStateImpl, RemoteAddress> addressStrategy) {
+    BrokerProvider(Function<ClusterStateImpl, Integer> addressStrategy) {
       this.addressStrategy = addressStrategy;
     }
 
     @Override
-    public RemoteAddress get() {
+    public Integer get() {
       if (attempt > 0) {
         topologyManager.requestTopology();
       }

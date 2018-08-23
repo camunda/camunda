@@ -22,7 +22,6 @@ import io.zeebe.gossip.protocol.CustomEventConsumer;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.collection.Tuple;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import org.agrona.DirectBuffer;
 import org.slf4j.Logger;
@@ -40,7 +39,7 @@ public class CustomEventListenerConsumer implements CustomEventConsumer {
         final GossipCustomEventListener listener = tuple.getRight();
 
         try {
-          listener.onEvent(event.getSenderAddress(), event.getPayload());
+          listener.onEvent(event.getSenderId(), event.getPayload());
         } catch (Throwable t) {
           LOG.warn("Custom event listener '{}' failed", listener.getClass(), t);
         }
@@ -51,17 +50,10 @@ public class CustomEventListenerConsumer implements CustomEventConsumer {
   }
 
   public void addCustomEventListener(DirectBuffer eventType, GossipCustomEventListener listener) {
-    listenersByType.add(new Tuple<DirectBuffer, GossipCustomEventListener>(eventType, listener));
+    listenersByType.add(new Tuple<>(eventType, listener));
   }
 
   public void removeCustomEventListener(GossipCustomEventListener listener) {
-    final Iterator<Tuple<DirectBuffer, GossipCustomEventListener>> iterator =
-        listenersByType.iterator();
-    while (iterator.hasNext()) {
-      final Tuple<DirectBuffer, GossipCustomEventListener> tuple = iterator.next();
-      if (tuple.getRight() == listener) {
-        iterator.remove();
-      }
-    }
+    listenersByType.removeIf(tuple -> tuple.getRight() == listener);
   }
 }

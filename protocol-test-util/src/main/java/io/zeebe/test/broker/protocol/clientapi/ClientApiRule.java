@@ -28,7 +28,6 @@ import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.SubscriberIntent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.Transports;
 import io.zeebe.util.sched.ActorScheduler;
@@ -49,8 +48,8 @@ public class ClientApiRule extends ExternalResource {
 
   protected ClientTransport transport;
 
+  protected final int nodeId;
   protected final Supplier<SocketAddress> brokerAddressSupplier;
-  protected RemoteAddress streamAddress;
 
   protected MsgPackHelper msgPackHelper;
   protected RawMessageCollector incomingMessageCollector;
@@ -61,6 +60,12 @@ public class ClientApiRule extends ExternalResource {
   protected int defaultPartitionId = -1;
 
   public ClientApiRule(Supplier<SocketAddress> brokerAddressSupplier) {
+    this.nodeId = 0;
+    this.brokerAddressSupplier = brokerAddressSupplier;
+  }
+
+  public ClientApiRule(int nodeId, Supplier<SocketAddress> brokerAddressSupplier) {
+    this.nodeId = nodeId;
     this.brokerAddressSupplier = brokerAddressSupplier;
   }
 
@@ -82,7 +87,7 @@ public class ClientApiRule extends ExternalResource {
             .build();
 
     msgPackHelper = new MsgPackHelper();
-    streamAddress = transport.registerRemoteAddress(brokerAddressSupplier.get());
+    transport.registerEndpoint(nodeId, brokerAddressSupplier.get());
 
     final List<Integer> partitionIds = doRepeatedly(this::getPartitionIds).until(p -> !p.isEmpty());
     defaultPartitionId = partitionIds.get(0);
@@ -101,12 +106,12 @@ public class ClientApiRule extends ExternalResource {
 
   /** targets the default partition by default */
   public ExecuteCommandRequestBuilder createCmdRequest() {
-    return new ExecuteCommandRequestBuilder(transport.getOutput(), streamAddress, msgPackHelper)
+    return new ExecuteCommandRequestBuilder(transport.getOutput(), nodeId, msgPackHelper)
         .partitionId(defaultPartitionId);
   }
 
   public ControlMessageRequestBuilder createControlMessageRequest() {
-    return new ControlMessageRequestBuilder(transport.getOutput(), streamAddress, msgPackHelper);
+    return new ControlMessageRequestBuilder(transport.getOutput(), nodeId, msgPackHelper);
   }
 
   public ClientApiRule moveMessageStreamToTail() {

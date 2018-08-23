@@ -32,8 +32,6 @@ import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.ClientResponse;
 import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
@@ -196,13 +194,8 @@ public class ReplicationFactorService extends Actor
 
   private void sendInvitationRequest(final PartitionNodes partitionNodes, final NodeInfo nodeInfo) {
     final PartitionInfo partitionInfo = partitionNodes.getPartitionInfo();
-    final List<SocketAddress> members =
-        partitionNodes
-            .getNodes()
-            .stream()
-            .filter(n -> n.getReplicationApiAddress() != null)
-            .map(NodeInfo::getReplicationApiAddress)
-            .collect(Collectors.toList());
+    final List<Integer> members =
+        partitionNodes.getNodes().stream().map(NodeInfo::getNodeId).collect(Collectors.toList());
 
     final InvitationRequest request =
         new InvitationRequest()
@@ -211,10 +204,8 @@ public class ReplicationFactorService extends Actor
             .replicationFactor(partitionInfo.getReplicationFactor())
             .members(members);
 
-    final RemoteAddress remoteAddress =
-        clientTransport.registerRemoteAddress(nodeInfo.getManagementApiAddress());
     final ActorFuture<ClientResponse> responseFuture =
-        clientTransport.getOutput().sendRequest(remoteAddress, request);
+        clientTransport.getOutput().sendRequest(nodeInfo.getNodeId(), request);
 
     actor.runOnCompletion(
         responseFuture,

@@ -17,11 +17,11 @@ package io.zeebe.gossip.protocol;
 
 import io.zeebe.clustering.gossip.MembershipEventType;
 import io.zeebe.gossip.membership.GossipTerm;
-import io.zeebe.transport.SocketAddress;
+import java.util.Objects;
 
 public class MembershipEvent {
   private final GossipTerm gossipTerm = new GossipTerm();
-  private final SocketAddress address = new SocketAddress();
+  private long memberId;
 
   private MembershipEventType type = MembershipEventType.NULL_VAL;
 
@@ -30,8 +30,8 @@ public class MembershipEvent {
     return this;
   }
 
-  public MembershipEvent address(SocketAddress address) {
-    this.address.wrap(address);
+  public MembershipEvent memberId(int memberId) {
+    this.memberId = memberId;
     return this;
   }
 
@@ -48,15 +48,15 @@ public class MembershipEvent {
     return gossipTerm;
   }
 
-  public SocketAddress getAddress() {
-    return address;
+  public int getMemberId() {
+    return (int) memberId;
   }
 
   @Override
   public String toString() {
     final StringBuilder builder = new StringBuilder();
-    builder.append("MembershipEvent [address=");
-    builder.append(address);
+    builder.append("MembershipEvent [memberId=");
+    builder.append(memberId);
     builder.append(", type=");
     builder.append(type);
     builder.append(", gossipTerm=");
@@ -66,44 +66,21 @@ public class MembershipEvent {
   }
 
   @Override
-  public int hashCode() {
-    final int prime = 31;
-    int result = 1;
-    result = prime * result + ((address == null) ? 0 : address.hashCode());
-    result = prime * result + ((gossipTerm == null) ? 0 : gossipTerm.hashCode());
-    result = prime * result + ((type == null) ? 0 : type.hashCode());
-    return result;
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final MembershipEvent that = (MembershipEvent) o;
+    return memberId == that.memberId
+        && Objects.equals(gossipTerm, that.gossipTerm)
+        && type == that.type;
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null) {
-      return false;
-    }
-    if (getClass() != obj.getClass()) {
-      return false;
-    }
-    final MembershipEvent other = (MembershipEvent) obj;
-    if (address == null) {
-      if (other.address != null) {
-        return false;
-      }
-    } else if (!address.equals(other.address)) {
-      return false;
-    }
-    if (gossipTerm == null) {
-      if (other.gossipTerm != null) {
-        return false;
-      }
-    } else if (!gossipTerm.equals(other.gossipTerm)) {
-      return false;
-    }
-    if (type != other.type) {
-      return false;
-    }
-    return true;
+  public int hashCode() {
+    return Objects.hash(gossipTerm, memberId, type);
   }
 }
