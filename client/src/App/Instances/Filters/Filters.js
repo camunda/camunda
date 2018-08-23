@@ -51,6 +51,7 @@ export default class Filters extends React.Component {
     currentWorkflowVersion: EMPTY_OPTION,
     currentActivityId: EMPTY_OPTION,
     ids: '',
+    errorMessage: '',
     workflowNameOptions: []
   };
 
@@ -61,6 +62,7 @@ export default class Filters extends React.Component {
     this.setState({
       groupedWorkflows,
       ids: this.props.filter.ids || '',
+      errorMessage: this.props.filter.errorMessage || '',
       workflowNameOptions
     });
   };

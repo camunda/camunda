@@ -17,7 +17,8 @@ import {ALL_VERSIONS_OPTION, EMPTY_OPTION} from './constants';
 
 const COMPLETE_FILTER = {
   ...DEFAULT_FILTER,
-  ids: ['a', 'b', 'c']
+  ids: ['a', 'b', 'c'],
+  errorMessage: 'This is an error message'
 };
 
 const groupedWorkflowsMock = [
@@ -89,6 +90,7 @@ describe('Filters', () => {
     expect(node.state().currentWorkflowVersion).toEqual(EMPTY_OPTION);
     expect(node.state().currentActivityId).toEqual(EMPTY_OPTION);
     expect(node.state().ids).toEqual('');
+    expect(node.state().errorMessage).toEqual('');
     expect(node.state().workflowNameOptions).toEqual([]);
   });
 
@@ -152,6 +154,35 @@ describe('Filters', () => {
       expect(field.type()).toEqual(TextInput);
       expect(field.props().name).toEqual('errorMessage');
       expect(field.props().onBlur).toEqual(node.instance().handleFieldChange);
+      expect(field.props().onChange).toEqual(node.instance().onFieldChange);
+    });
+
+    it('should initialize the field with empty value', () => {
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+
+      expect(node.state().errorMessage).toEqual('');
+    });
+
+    it('should be prefilled with the value from props.filter.errorMessage ', async () => {
+      const node = shallow(<Filters {...mockProps} filter={COMPLETE_FILTER} />);
+
+      //when
+      await flushPromises();
+      node.update();
+      const field = node.find({name: 'errorMessage'});
+      // then
+      expect(node.state().errorMessage).toEqual('This is an error message');
+      expect(field.props().value).toEqual('This is an error message');
+    });
+
+    it('should update state when input receives text', () => {
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+
+      node.instance().onFieldChange({
+        target: {value: 'error message', name: 'errorMessage'}
+      });
+
+      expect(node.state().errorMessage).toEqual('error message');
     });
 
     it('should call onFilterChange with the right error message', () => {
@@ -202,6 +233,16 @@ describe('Filters', () => {
       const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
 
       expect(node.state().ids).toEqual('');
+    });
+
+    it('should update state when input receives text', () => {
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+
+      node.instance().onFieldChange({
+        target: {value: "['a', 'b', 'c']", name: 'ids'}
+      });
+
+      expect(node.state().ids).toEqual("['a', 'b', 'c']");
     });
 
     it('should be prefilled with the value from props.filter.ids ', async () => {
