@@ -89,7 +89,6 @@ describe('Filters', () => {
     expect(node.state().currentWorkflowVersion).toEqual(EMPTY_OPTION);
     expect(node.state().currentActivityId).toEqual(EMPTY_OPTION);
     expect(node.state().ids).toEqual('');
-    expect(node.state().errorMessage).toEqual('');
     expect(node.state().workflowNameOptions).toEqual([]);
   });
 

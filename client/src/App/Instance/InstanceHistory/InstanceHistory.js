@@ -62,7 +62,6 @@ export default class InstanceHistory extends React.Component {
   };
 
   render() {
-    console.log(this.state.groupedEvents);
     return (
       <SplitPane.Pane {...this.props}>
         <SplitPane.Pane.Header>Instance History</SplitPane.Pane.Header>
