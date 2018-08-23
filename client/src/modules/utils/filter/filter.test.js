@@ -76,9 +76,9 @@ describe('getFilterQueryString', () => {
   });
 
   it('should remove keys with false values', () => {
-    const input = {a: true, b: true, c: false};
-    const output = '?filter={"a":true,"b":true}';
+    const inputWithArray = {a: true, b: true, c: false, ids: ['a', 'b', 'c']};
+    const output = '?filter={"a":true,"b":true,"ids":["a","b","c"]}';
 
-    expect(getFilterQueryString(input)).toBe(output);
+    expect(getFilterQueryString(inputWithArray)).toBe(output);
   });
 });

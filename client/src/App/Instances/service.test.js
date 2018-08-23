@@ -13,8 +13,11 @@ describe('Instances service', () => {
     });
 
     it('should return an object for valid query strings', () => {
-      const input = '?filter={"a":true,"b":true,"c":"X"}';
-      const output = {filter: {a: true, b: true, c: 'X'}};
+      const input =
+        '?filter={"a":true,"b":true,"c":"X", "array": ["lorem", "ipsum"]}';
+      const output = {
+        filter: {a: true, b: true, c: 'X', array: ['lorem', 'ipsum']}
+      };
 
       expect(parseQueryString(input)).toEqual(output);
     });

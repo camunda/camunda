@@ -31,7 +31,8 @@ export default class Filters extends React.Component {
       errorMessage: PropTypes.string,
       ids: PropTypes.array,
       startDateAfter: PropTypes.string,
-      startDateBefore: PropTypes.string
+      startDateBefore: PropTypes.string,
+      workflowIds: PropTypes.array
     }).isRequired,
     onFilterChange: PropTypes.func,
     resetFilter: PropTypes.func,
@@ -59,7 +60,7 @@ export default class Filters extends React.Component {
 
     this.setState({
       groupedWorkflows,
-      ids: this.props.filter.ids,
+      ids: this.props.filter.ids || '',
       workflowNameOptions
     });
   };
@@ -197,9 +198,11 @@ export default class Filters extends React.Component {
             </Styled.Field>
             <Styled.Field>
               <TextInput
+                value={this.state.errorMessage}
                 name={FIELDS.errorMessage.name}
                 placeholder={FIELDS.errorMessage.placeholder}
                 onBlur={this.handleFieldChange}
+                onChange={this.onFieldChange}
               />
             </Styled.Field>
             <Styled.Field>

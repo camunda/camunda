@@ -13,7 +13,12 @@ import Filters from './Filters';
 import CheckboxGroup from './CheckboxGroup/';
 import * as Styled from './styled';
 import {parseWorkflowNames} from './service';
-import {ALL_VERSIONS_OPTION} from './constants';
+import {ALL_VERSIONS_OPTION, EMPTY_OPTION} from './constants';
+
+const COMPLETE_FILTER = {
+  ...DEFAULT_FILTER,
+  ids: ['a', 'b', 'c']
+};
 
 const groupedWorkflowsMock = [
   {
@@ -53,7 +58,6 @@ describe('Filters', () => {
   const spy = jest.fn();
   const instancesSpy = jest.fn();
   const mockProps = {
-    filter: {active: true, incidents: false, canceled: true, completed: false},
     onFilterChange: spy,
     resetFilter: jest.fn(),
     onWorkflowVersionChange: instancesSpy,
@@ -61,7 +65,6 @@ describe('Filters', () => {
   };
 
   const mockPropsWithActivityIds = {
-    filter: {active: true, incidents: false, canceled: true, completed: false},
     onFilterChange: spy,
     resetFilter: jest.fn(),
     onWorkflowVersionChange: instancesSpy,
@@ -76,12 +79,25 @@ describe('Filters', () => {
     instancesSpy.mockClear();
   });
 
-  it('should render the filters', () => {
+  it('should render with the right initial state', () => {
     // given
-    const {
-      filter: {active, incidents, completed, canceled}
-    } = mockProps;
-    const node = shallow(<Filters {...mockProps} />);
+    const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+
+    // then
+    expect(node.state().groupedWorkflows).toEqual([]);
+    expect(node.state().currentWorkflow).toEqual({});
+    expect(node.state().currentWorkflowVersion).toEqual(EMPTY_OPTION);
+    expect(node.state().currentActivityId).toEqual(EMPTY_OPTION);
+    expect(node.state().ids).toEqual('');
+    expect(node.state().errorMessage).toEqual('');
+    expect(node.state().workflowNameOptions).toEqual([]);
+  });
+
+  it('should render the running and finished filters', () => {
+    // given
+    const {active, incidents, completed, canceled} = DEFAULT_FILTER;
+
+    const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
     const FilterNodes = node.find(CheckboxGroup);
 
     // then
@@ -96,7 +112,7 @@ describe('Filters', () => {
 
   it('should render the expand button with left direction', () => {
     // given
-    const node = shallow(<Filters {...mockProps} />);
+    const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
     const ExpandButtonNode = node.find(Styled.ExpandButton);
 
     // then
@@ -105,9 +121,9 @@ describe('Filters', () => {
     expect(ExpandButtonNode.prop('isExpanded')).toBe(true);
   });
 
-  it('should render the non disabled reset filters button', () => {
-    // given
-    const node = shallow(<Filters {...mockProps} />);
+  it('should render the disabled reset filters button', () => {
+    // given filter is different from DEFAULT_FILTER
+    const node = shallow(<Filters {...mockProps} filter={COMPLETE_FILTER} />);
     const ResetButtonNode = node.find(Button);
 
     // then
@@ -116,7 +132,7 @@ describe('Filters', () => {
     expect(ResetButtonNode.prop('onClick')).toBe(mockProps.resetFilter);
   });
 
-  it('should render the non disabled reset filters button', () => {
+  it('should render the disabled reset filters button', () => {
     // given
     const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
     const ResetButtonNode = node.find(Button);
@@ -180,6 +196,25 @@ describe('Filters', () => {
       expect(field.type()).toEqual(Textarea);
       expect(field.props().name).toEqual('ids');
       expect(field.props().onBlur).toEqual(node.instance().handleFieldChange);
+      expect(field.props().onChange).toEqual(node.instance().onFieldChange);
+    });
+
+    it('should initialize the field with empty value', () => {
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+
+      expect(node.state().ids).toEqual('');
+    });
+
+    it('should be prefilled with the value from props.filter.ids ', async () => {
+      const node = shallow(<Filters {...mockProps} filter={COMPLETE_FILTER} />);
+
+      //when
+      await flushPromises();
+      node.update();
+      const field = node.find({name: 'ids'});
+      // then
+      expect(node.state().ids).toEqual(['a', 'b', 'c']);
+      expect(field.props().value).toEqual(['a', 'b', 'c']);
     });
 
     it('should call onFilterChange with the right instance ids', () => {
@@ -240,6 +275,7 @@ describe('Filters', () => {
       //when
       await flushPromises();
       node.update();
+
       // then
       expect(api.fetchGroupedWorkflowInstances).toHaveBeenCalled();
       expect(node.state().groupedWorkflows).toEqual(groupedWorkflowsMock);
@@ -380,7 +416,7 @@ describe('Filters', () => {
       expect(spy).toHaveBeenCalledWith({workflowIds: ['6']});
     });
 
-    it.only('should call onFilterChange when all workflow versions are selected', async () => {
+    it('should call onFilterChange when all workflow versions are selected', async () => {
       const value = groupedWorkflowsMock[0].bpmnProcessId;
       const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
 

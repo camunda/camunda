@@ -30,6 +30,19 @@ const InstancesWithRunningFilter = (
     history={{push: () => {}}}
   />
 );
+const InstancesWithAllFilters = (
+  <Instances
+    location={{
+      search:
+        '?filter={"active":false,"incidents":true,"ids":["424242", "434343"]}'
+    }}
+    getStateLocally={() => {
+      return {filterCount: 0};
+    }}
+    storeStateLocally={() => {}}
+    history={{push: () => {}}}
+  />
+);
 
 const InstancesWithInvalidRunningFilter = (
   <Instances
@@ -101,11 +114,11 @@ describe('Instances', () => {
     describe('reading filters from url', () => {
       it('should read and store filters values from url', async () => {
         // given
-        const node = shallow(InstancesWithRunningFilter);
-
+        const node = shallow(InstancesWithAllFilters);
         // then
         expect(node.state('filter').active).toBe(false);
         expect(node.state('filter').incidents).toBe(true);
+        expect(node.state('filter').ids).toEqual(['424242', '434343']);
       });
 
       it('should read and store default filter selection if no filter query in url', () => {
