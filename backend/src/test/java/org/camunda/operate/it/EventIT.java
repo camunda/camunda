@@ -71,7 +71,7 @@ public class EventIT extends OperateIntegrationTest {
     zeebeTestRule.getJobWorker().close();
     zeebeTestRule.setJobWorker(null);
 
-    //update process payload //TODO update payload command is giving timeout for some reason
+    //update process payload
     final String updatedPayload = "{\"a\": \"c\"}";
     zeebeUtil.updatePayload(topicName, workflowInstanceId, workflowInstanceId, updatedPayload, processId, workflowId);
     elasticsearchTestRule.processAllEvents(5);

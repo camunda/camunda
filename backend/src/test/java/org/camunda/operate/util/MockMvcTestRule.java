@@ -39,7 +39,6 @@ public class MockMvcTestRule extends ExternalResource {
   private static final Logger logger = LoggerFactory.getLogger(MockMvcTestRule.class);
 
   @Autowired
-  @Qualifier("esObjectMapper")
   protected ObjectMapper objectMapper ;
 
   private MockMvc mockMvc;

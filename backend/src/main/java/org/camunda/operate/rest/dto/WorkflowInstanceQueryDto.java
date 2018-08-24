@@ -40,6 +40,8 @@ public class WorkflowInstanceQueryDto {
 
   private List<String> excludeIds;
 
+  private VariablesQueryDto variablesQuery;
+
   public WorkflowInstanceQueryDto() {
   }
 
@@ -163,6 +165,14 @@ public class WorkflowInstanceQueryDto {
     this.excludeIds = excludeIds;
   }
 
+  public VariablesQueryDto getVariablesQuery() {
+    return variablesQuery;
+  }
+
+  public void setVariablesQuery(VariablesQueryDto variablesQuery) {
+    this.variablesQuery = variablesQuery;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o)
@@ -200,7 +210,9 @@ public class WorkflowInstanceQueryDto {
       return false;
     if (workflowIds != null ? !workflowIds.equals(that.workflowIds) : that.workflowIds != null)
       return false;
-    return excludeIds != null ? excludeIds.equals(that.excludeIds) : that.excludeIds == null;
+    if (excludeIds != null ? !excludeIds.equals(that.excludeIds) : that.excludeIds != null)
+      return false;
+    return variablesQuery != null ? variablesQuery.equals(that.variablesQuery) : that.variablesQuery == null;
   }
 
   @Override
@@ -220,6 +232,7 @@ public class WorkflowInstanceQueryDto {
     result = 31 * result + (endDateBefore != null ? endDateBefore.hashCode() : 0);
     result = 31 * result + (workflowIds != null ? workflowIds.hashCode() : 0);
     result = 31 * result + (excludeIds != null ? excludeIds.hashCode() : 0);
+    result = 31 * result + (variablesQuery != null ? variablesQuery.hashCode() : 0);
     return result;
   }
 }

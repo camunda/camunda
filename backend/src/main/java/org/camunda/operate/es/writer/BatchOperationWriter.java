@@ -63,7 +63,6 @@ public class BatchOperationWriter {
   private TransportClient esClient;
 
   @Autowired
-  @Qualifier("esObjectMapper")
   private ObjectMapper objectMapper;
 
   @Autowired

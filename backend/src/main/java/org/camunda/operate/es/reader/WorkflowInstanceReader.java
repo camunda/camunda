@@ -15,10 +15,12 @@ import org.camunda.operate.es.types.WorkflowInstanceType;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.dto.ActivityStatisticsDto;
 import org.camunda.operate.rest.dto.SortingDto;
+import org.camunda.operate.rest.dto.VariablesQueryDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceRequestDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceResponseDto;
+import org.camunda.operate.rest.exception.InvalidRequestException;
 import org.camunda.operate.rest.exception.NotFoundException;
 import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.action.get.GetResponse;
@@ -50,12 +52,18 @@ import static org.camunda.operate.entities.OperationState.LOCKED;
 import static org.camunda.operate.entities.OperationState.SCHEDULED;
 import static org.camunda.operate.es.types.WorkflowInstanceType.ACTIVITIES;
 import static org.camunda.operate.es.types.WorkflowInstanceType.ACTIVITY_ID;
+import static org.camunda.operate.es.types.WorkflowInstanceType.BOOLEAN_VARIABLES;
+import static org.camunda.operate.es.types.WorkflowInstanceType.DOUBLE_VARIABLES;
 import static org.camunda.operate.es.types.WorkflowInstanceType.END_DATE;
 import static org.camunda.operate.es.types.WorkflowInstanceType.ERROR_MSG;
 import static org.camunda.operate.es.types.WorkflowInstanceType.INCIDENTS;
 import static org.camunda.operate.es.types.WorkflowInstanceType.LOCK_EXPIRATION_TIME;
+import static org.camunda.operate.es.types.WorkflowInstanceType.LONG_VARIABLES;
 import static org.camunda.operate.es.types.WorkflowInstanceType.OPERATIONS;
 import static org.camunda.operate.es.types.WorkflowInstanceType.STATE;
+import static org.camunda.operate.es.types.WorkflowInstanceType.STRING_VARIABLES;
+import static org.camunda.operate.es.types.WorkflowInstanceType.VARIABLE_NAME;
+import static org.camunda.operate.es.types.WorkflowInstanceType.VARIABLE_VALUE;
 import static org.camunda.operate.util.ElasticsearchUtil.createMatchNoneQuery;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithOr;
@@ -88,12 +96,10 @@ public class WorkflowInstanceReader {
   private static final String LOCKED_OPERATION = LOCKED.toString();
   private static final String LOCK_EXPIRATION_TIME_TERM = String.format("%s.%s", OPERATIONS, LOCK_EXPIRATION_TIME);
 
-
   @Autowired
   private TransportClient esClient;
 
   @Autowired
-  @Qualifier("esObjectMapper")
   private ObjectMapper objectMapper;
 
   @Autowired
@@ -200,7 +206,38 @@ public class WorkflowInstanceReader {
       excludeIdsQuery = createExcludeIdsQuery(query.getExcludeIds());
     }
 
-    return joinWithAnd(runningFinishedQuery, idsQuery, errorMessageQuery, activityIdQuery, createDateQuery, endDateQuery, workflowIdQuery, excludeIdsQuery);
+    QueryBuilder variablesQuery = null;
+    if (query.getVariablesQuery() != null) {
+      variablesQuery = createVariablesQuery(query.getVariablesQuery());
+    }
+
+    return joinWithAnd(runningFinishedQuery, idsQuery, errorMessageQuery, activityIdQuery, createDateQuery, endDateQuery, workflowIdQuery, excludeIdsQuery, variablesQuery);
+  }
+
+  private QueryBuilder createVariablesQuery(VariablesQueryDto variablesQuery) {
+    if (variablesQuery.getName() == null) {
+      throw new InvalidRequestException("Variables query must provide not-null variable name.");
+    }
+    if (variablesQuery.getValue() instanceof Long || variablesQuery.getValue() instanceof Integer) {
+      return createVariableQuery(LONG_VARIABLES, variablesQuery);
+    } else if (variablesQuery.getValue() instanceof String || variablesQuery.getValue() == null) {
+      return createVariableQuery(STRING_VARIABLES, variablesQuery);
+    } else if (variablesQuery.getValue() instanceof Double) {
+      return createVariableQuery(DOUBLE_VARIABLES, variablesQuery);
+    } else if (variablesQuery.getValue() instanceof Boolean) {
+      return createVariableQuery(BOOLEAN_VARIABLES, variablesQuery);
+    } else {
+      logger.warn("Unable to search for variable {} with given value type: {}", variablesQuery.getName(), variablesQuery.getValue().getClass().getName());
+      return null;
+    }
+  }
+
+  private QueryBuilder createVariableQuery(String nestedCollectionName, VariablesQueryDto variablesQuery) {
+    return nestedQuery(nestedCollectionName,
+      joinWithAnd(
+        termQuery(String.format("%s.%s", nestedCollectionName, VARIABLE_NAME), variablesQuery.getName()),
+        termQuery(String.format("%s.%s", nestedCollectionName, VARIABLE_VALUE), variablesQuery.getValue() == null ? WorkflowInstanceType.NULL_VALUE : variablesQuery.getValue())
+      ), None);
   }
 
   private QueryBuilder createExcludeIdsQuery(List<String> excludeIds) {

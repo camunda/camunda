@@ -13,9 +13,14 @@ import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
+import org.camunda.operate.entities.variables.BooleanVariableEntity;
+import org.camunda.operate.entities.variables.DoubleVariableEntity;
+import org.camunda.operate.entities.variables.LongVariableEntity;
+import org.camunda.operate.entities.variables.StringVariableEntity;
 import org.camunda.operate.es.types.WorkflowInstanceType;
 import org.camunda.operate.rest.dto.IncidentDto;
 import org.camunda.operate.rest.dto.SortingDto;
+import org.camunda.operate.rest.dto.VariablesQueryDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceRequestDto;
@@ -302,6 +307,119 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     assertThat(response.getWorkflowInstances()).hasSize(2);
 
     assertThat(response.getWorkflowInstances()).extracting(WorkflowInstanceType.ID).containsExactlyInAnyOrder(workflowInstance1.getId(), workflowInstance2.getId());
+  }
+
+  @Test
+  public void testQueryByVariableValues() throws Exception {
+    //given
+    final String strName = "str1";
+    final String stringValue = "strValue1";
+    final String nullName = "null1";
+    final String intName = "int1";
+    final long intValue = 111L;
+    final String longName = "long1";
+    final long longValue = Long.valueOf(Integer.MAX_VALUE) + 1L;
+    final String boolName = "bool1";
+    final boolean boolValue = true;
+    final String floatName = "float1";
+    final float floatValue = .5f;
+    final String doubleName = "double1";
+    final double doubleValue = Double.valueOf(Float.MAX_VALUE) + 1;
+
+    final WorkflowInstanceEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
+    addVariableEntity(workflowInstance1, strName, stringValue);
+    addVariableEntity(workflowInstance1, nullName, (String)null);
+    addVariableEntity(workflowInstance1, intName, intValue);
+    addVariableEntity(workflowInstance1, longName, longValue);
+    addVariableEntity(workflowInstance1, boolName, boolValue);
+    addVariableEntity(workflowInstance1, floatName, (double).1f);
+    addVariableEntity(workflowInstance1, doubleName, doubleValue);
+
+    final WorkflowInstanceEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.CANCELED);
+    addVariableEntity(workflowInstance2, strName, "strValue2");
+    addVariableEntity(workflowInstance2, intName, 222L);
+    addVariableEntity(workflowInstance2, longName, longValue);
+    addVariableEntity(workflowInstance2, boolName, false);
+    addVariableEntity(workflowInstance2, floatName, (double)floatValue);
+    addVariableEntity(workflowInstance2, doubleName, .555);
+
+    final WorkflowInstanceEntity workflowInstance3 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
+    addVariableEntity(workflowInstance3, strName, stringValue);
+    addVariableEntity(workflowInstance3, intName, intValue);
+    addVariableEntity(workflowInstance3, longName, Long.valueOf(Integer.MAX_VALUE) + 2L);
+    addVariableEntity(workflowInstance3, boolName, boolValue);
+    addVariableEntity(workflowInstance3, floatName, (double)floatValue);
+    addVariableEntity(workflowInstance3, doubleName, doubleValue);
+
+    elasticsearchTestRule.persist(workflowInstance1, workflowInstance2, workflowInstance3);
+
+    //when
+    WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(q ->
+      q.setVariablesQuery(new VariablesQueryDto(strName, stringValue))
+    );
+    //then
+    requestAndAssertIds(query, "TEST CASE #1", workflowInstance1.getId(), workflowInstance3.getId());
+
+    //when
+    query = createGetAllWorkflowInstancesQuery(q ->
+      q.setVariablesQuery(new VariablesQueryDto(intName, intValue))
+    );
+    //then
+    requestAndAssertIds(query, "TEST CASE #2", workflowInstance1.getId(), workflowInstance3.getId());
+
+    //when
+    query = createGetAllWorkflowInstancesQuery(q ->
+      q.setVariablesQuery(new VariablesQueryDto(longName, longValue))
+    );
+    //then
+    requestAndAssertIds(query, "TEST CASE #3", workflowInstance1.getId(), workflowInstance2.getId());
+
+    //when
+    query = createGetAllWorkflowInstancesQuery(q ->
+      q.setVariablesQuery(new VariablesQueryDto(boolName, boolValue))
+    );
+    //then
+    requestAndAssertIds(query, "TEST CASE #4", workflowInstance1.getId(), workflowInstance3.getId());
+
+    //when
+    query = createGetAllWorkflowInstancesQuery(q ->
+      q.setVariablesQuery(new VariablesQueryDto(floatName, floatValue))
+    );
+    //then
+    requestAndAssertIds(query, "TEST CASE #5", workflowInstance2.getId(), workflowInstance3.getId());
+
+    //when
+    query = createGetAllWorkflowInstancesQuery(q ->
+      q.setVariablesQuery(new VariablesQueryDto(doubleName, doubleValue))
+    );
+    //then
+    requestAndAssertIds(query, "TEST CASE #6", workflowInstance1.getId(), workflowInstance3.getId());
+
+    //when
+    query = createGetAllWorkflowInstancesQuery(q ->
+      q.setVariablesQuery(new VariablesQueryDto(nullName, null))
+    );
+    //then
+    requestAndAssertIds(query, "TEST CASE #7", workflowInstance1.getId());
+  }
+
+  @Test
+  public void testQueryByVariableValuesFailOnNullVariableName() throws Exception {
+    //when
+    WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(q ->
+      q.setVariablesQuery(new VariablesQueryDto(null, "someValue"))
+    );
+    MockHttpServletRequestBuilder request = post(query(0, 100))
+      .content(mockMvcTestRule.json(query))
+      .contentType(mockMvcTestRule.getContentType());
+
+    //then
+    MvcResult mvcResult = mockMvc.perform(request)
+      .andExpect(status().isBadRequest())
+      .andReturn();
+
+    assertThat(mvcResult.getResolvedException().getMessage()).contains("Variables query must provide not-null variable name.");
+
   }
 
   @Test
@@ -928,6 +1046,19 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
       activityInstanceEntity.setEndDate(DateUtil.getRandomEndDate());
     }
     return activityInstanceEntity;
+  }
+
+  private void addVariableEntity(WorkflowInstanceEntity workflowInstance, String name, String value) {
+    workflowInstance.getStringVariables().add(new StringVariableEntity(name, value));
+  }
+  private void addVariableEntity(WorkflowInstanceEntity workflowInstance, String name, Long value) {
+    workflowInstance.getLongVariables().add(new LongVariableEntity(name, value));
+  }
+  private void addVariableEntity(WorkflowInstanceEntity workflowInstance, String name, Double value) {
+    workflowInstance.getDoubleVariables().add(new DoubleVariableEntity(name, value));
+  }
+  private void addVariableEntity(WorkflowInstanceEntity workflowInstance, String name, Boolean value) {
+    workflowInstance.getBooleanVariables().add(new BooleanVariableEntity(name, value));
   }
 
   private String query(int firstResult, int maxResults) {

@@ -58,6 +58,16 @@ public class ZeebeTestRule extends TestWatcher {
       //
     }
     zeebeSubscriptionManager.createSubscriptions();
+    if (zeebeSubscriptionManager.getTopicSubscriptions().isEmpty()) {
+      //retry
+      try {
+        Thread.sleep(2500L);
+      } catch (InterruptedException e) {
+        //
+      }
+      zeebeSubscriptionManager.createSubscriptions();
+
+    }
   }
 
   @Override

@@ -128,7 +128,11 @@ public class ZeebeUtil {
       .jobType(jobType)
       .handler((jobClient, job) -> {
         //incidents for outputMapping for taskA
-        jobClient.newCompleteCommand(job).payload(payload).send().join();
+        if (payload == null) {
+          jobClient.newCompleteCommand(job).send().join();
+        } else {
+          jobClient.newCompleteCommand(job).payload(payload).send().join();
+        }
       })
       .name(workerName)
       .timeout(Duration.ofSeconds(2))
@@ -195,7 +199,6 @@ public class ZeebeUtil {
     workflowInstanceEvent.setWorkflowKey(Long.valueOf(workflowId));
     workflowInstanceEvent.setWorkflowInstanceKey(Long.valueOf(workflowInstanceId));
     workflowInstanceEvent.setPayload(newPayload);
-//    workflowInstanceEvent.setKey(Long.valueOf(workflowInstanceId));
     workflowInstanceEvent.setTopicName(topicName);
     client.topicClient(topicName).workflowClient().newUpdatePayloadCommand(workflowInstanceEvent).payload(newPayload).send().join();
   }

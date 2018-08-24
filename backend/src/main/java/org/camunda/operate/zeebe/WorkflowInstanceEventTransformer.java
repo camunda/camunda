@@ -1,6 +1,8 @@
 package org.camunda.operate.zeebe;
 
+import java.io.IOException;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.ActivityState;
@@ -11,6 +13,7 @@ import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.writer.EntityStorage;
 import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.ZeebeUtil;
+import org.camunda.operate.zeebe.payload.PayloadUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +32,7 @@ import static io.zeebe.client.api.events.WorkflowInstanceState.COMPLETED;
 import static io.zeebe.client.api.events.WorkflowInstanceState.CREATED;
 import static io.zeebe.client.api.events.WorkflowInstanceState.END_EVENT_OCCURRED;
 import static io.zeebe.client.api.events.WorkflowInstanceState.GATEWAY_ACTIVATED;
+import static io.zeebe.client.api.events.WorkflowInstanceState.PAYLOAD_UPDATED;
 import static io.zeebe.client.api.events.WorkflowInstanceState.SEQUENCE_FLOW_TAKEN;
 import static io.zeebe.client.api.events.WorkflowInstanceState.START_EVENT_OCCURRED;
 
@@ -58,10 +62,12 @@ public class WorkflowInstanceEventTransformer extends AbstractEventTransformer i
 
     ACTIVITY_INSTANCE_START_END_STATES.add(START_EVENT_OCCURRED);
     ACTIVITY_INSTANCE_START_END_STATES.add(END_EVENT_OCCURRED);
-    //TODO not clear what happens, when incident of type CONDITION_ERROR happens
     ACTIVITY_INSTANCE_START_END_STATES.add(GATEWAY_ACTIVATED);
 
     WORKFLOW_INSTANCE_STATES.add(CREATED);
+    WORKFLOW_INSTANCE_STATES.add(ACTIVITY_COMPLETED);     //to record changed payload
+    WORKFLOW_INSTANCE_STATES.add(ACTIVITY_ACTIVATED);     //to record changed payload
+//    WORKFLOW_INSTANCE_STATES.add(PAYLOAD_UPDATED);        //to record changed payload
     WORKFLOW_INSTANCE_STATES.addAll(WORKFLOW_INSTANCE_FINISH_STATES);
 
     ACTIVITY_INSTANCE_STATES.add(ACTIVITY_READY);
@@ -73,6 +79,9 @@ public class WorkflowInstanceEventTransformer extends AbstractEventTransformer i
 
   @Autowired
   private EntityStorage entityStorage;
+
+  @Autowired
+  private PayloadUtil payloadUtil;
 
   @Override
   public void onWorkflowInstanceEvent(WorkflowInstanceEvent event) throws Exception {
@@ -186,10 +195,29 @@ public class WorkflowInstanceEventTransformer extends AbstractEventTransformer i
       entity.setStartDate(DateUtil.toOffsetDateTime(event.getMetadata().getTimestamp()));
     }
 
+    processPayload(event, entity);
+
     updateMetadataFields(entity, event);
 
     // TODO will wait till capacity available, can throw InterruptedException
     entityStorage.getOperateEntitiesQueue(event.getMetadata().getTopicName()).put(entity);
+  }
+
+  private void processPayload(WorkflowInstanceEvent event, WorkflowInstanceEntity entity) {
+    final String payload = event.getPayload();
+    try {
+      final Map<String, Object> variablesMap = payloadUtil.parsePayload(payload);
+      entity.setStringVariables(payloadUtil.extractStringVariables(variablesMap));
+      entity.setLongVariables(payloadUtil.extractLongVariables(variablesMap));
+      entity.setDoubleVariables(payloadUtil.extractDoubleVariables(variablesMap));
+      entity.setBooleanVariables(payloadUtil.extractBooleanVariables(variablesMap));
+      //validate number of parsed variables
+      if (entity.countVariables() < variablesMap.size()) {
+        logger.warn("Not all variables were parsed from payload for workflow instance {}.", entity.getId());
+      }
+    } catch (IOException e) {
+      logger.warn(String.format("Unable to parse payload for workflow instance %s.", entity.getId()), e);
+    }
   }
 
   private void updateMetadataFields(WorkflowInstanceEntity operateEntity, Record zeebeRecord) {

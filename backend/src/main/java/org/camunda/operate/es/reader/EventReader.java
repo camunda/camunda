@@ -55,7 +55,6 @@ public class EventReader {
   private EventType eventType;
 
   @Autowired
-  @Qualifier("esObjectMapper")
   private ObjectMapper objectMapper;
 
   public List<EventEntity> queryEvents(EventQueryDto eventQuery, Integer firstResult, Integer maxResults) {

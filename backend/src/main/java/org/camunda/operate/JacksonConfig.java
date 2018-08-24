@@ -32,7 +32,7 @@ public class JacksonConfig {
   @Autowired
   private OperateProperties operateProperties;
 
-  @Bean("esObjectMapper")
+  @Bean
   public ObjectMapper objectMapper() {
 
     JavaTimeModule javaTimeModule = new JavaTimeModule();

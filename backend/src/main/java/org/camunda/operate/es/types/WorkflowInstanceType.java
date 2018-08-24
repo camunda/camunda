@@ -27,6 +27,13 @@ public class WorkflowInstanceType extends StrictTypeMappingCreator {
   public static final String ACTIVITIES = "activities";
   public static final String LOCK_EXPIRATION_TIME = "lockExpirationTime";
   public static final String LOCK_OWNER = "lockOwner";
+  public static final String STRING_VARIABLES = "stringVariables";
+  public static final String LONG_VARIABLES = "longVariables";
+  public static final String DOUBLE_VARIABLES = "doubleVariables";
+  public static final String BOOLEAN_VARIABLES = "booleanVariables";
+  public static final String VARIABLE_NAME = "name";
+  public static final String VARIABLE_VALUE = "value";
+  public static final String NULL_VALUE = "NULL";
 
   @Autowired
   private OperateProperties operateProperties;
@@ -75,6 +82,30 @@ public class WorkflowInstanceType extends StrictTypeMappingCreator {
         .field("type", "nested")
         .startObject("properties");
           addNestedOperationsField(newBuilder)
+        .endObject()
+      .endObject()
+      .startObject(STRING_VARIABLES)
+        .field("type", "nested")
+        .startObject("properties");
+          addNestedVariablesField(newBuilder, "keyword")
+        .endObject()
+      .endObject()
+      .startObject(LONG_VARIABLES)
+        .field("type", "nested")
+        .startObject("properties");
+          addNestedVariablesField(newBuilder, "long")
+        .endObject()
+      .endObject()
+      .startObject(DOUBLE_VARIABLES)
+        .field("type", "nested")
+        .startObject("properties");
+          addNestedVariablesField(newBuilder, "double")
+        .endObject()
+      .endObject()
+      .startObject(BOOLEAN_VARIABLES)
+        .field("type", "nested")
+        .startObject("properties");
+          addNestedVariablesField(newBuilder, "boolean")
         .endObject()
       .endObject()
       .startObject(PARTITION_ID)
@@ -172,6 +203,21 @@ public class WorkflowInstanceType extends StrictTypeMappingCreator {
       .startObject(ERROR_MSG)
         .field("type", "keyword")
       .endObject();
+    return builder;
+  }
+
+  private XContentBuilder addNestedVariablesField(XContentBuilder builder, String fieldType) throws IOException {
+    final XContentBuilder xContentBuilder =
+      builder
+        .startObject(VARIABLE_NAME)
+          .field("type", "keyword")
+        .endObject()
+        .startObject(VARIABLE_VALUE)
+          .field("type", fieldType);
+    if (fieldType.equals("keyword")) {
+      xContentBuilder.field("null_value", NULL_VALUE);
+    }
+    xContentBuilder.endObject();
     return builder;
   }
 

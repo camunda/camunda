@@ -42,7 +42,6 @@ public class ElasticsearchRequestCreatorsHolder {
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchRequestCreatorsHolder.class);
 
   @Autowired
-  @Qualifier("esObjectMapper")
   private ObjectMapper objectMapper;
 
   @Autowired
@@ -75,6 +74,10 @@ public class ElasticsearchRequestCreatorsHolder {
         updateFields.put(WorkflowInstanceType.STATE, entity.getState());
         updateFields.put(StrictTypeMappingCreator.PARTITION_ID, entity.getPartitionId());
         updateFields.put(StrictTypeMappingCreator.POSITION, entity.getPosition());
+        updateFields.put(WorkflowInstanceType.STRING_VARIABLES, entity.getStringVariables());
+        updateFields.put(WorkflowInstanceType.DOUBLE_VARIABLES, entity.getDoubleVariables());
+        updateFields.put(WorkflowInstanceType.LONG_VARIABLES, entity.getLongVariables());
+        updateFields.put(WorkflowInstanceType.BOOLEAN_VARIABLES, entity.getBooleanVariables());
 
         //TODO some weird not efficient magic is needed here, in order to format date fields properly, may be this can be improved
         Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(updateFields), HashMap.class);

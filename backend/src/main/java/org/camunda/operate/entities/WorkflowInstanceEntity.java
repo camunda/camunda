@@ -3,7 +3,11 @@ package org.camunda.operate.entities;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
-
+import org.camunda.operate.entities.variables.BooleanVariableEntity;
+import org.camunda.operate.entities.variables.DoubleVariableEntity;
+import org.camunda.operate.entities.variables.LongVariableEntity;
+import org.camunda.operate.entities.variables.StringVariableEntity;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class WorkflowInstanceEntity extends OperateEntity {
 
@@ -21,6 +25,14 @@ public class WorkflowInstanceEntity extends OperateEntity {
   private List<ActivityInstanceEntity> activities = new ArrayList<>();
 
   private List<OperationEntity> operations = new ArrayList<>();
+
+  private List<StringVariableEntity> stringVariables = new ArrayList<>();
+
+  private List<LongVariableEntity> longVariables = new ArrayList<>();
+
+  private List<DoubleVariableEntity> doubleVariables = new ArrayList<>();
+
+  private List<BooleanVariableEntity> booleanVariables = new ArrayList<>();
 
   private Integer partitionId;
 
@@ -92,6 +104,43 @@ public class WorkflowInstanceEntity extends OperateEntity {
     this.operations = operations;
   }
 
+  public List<StringVariableEntity> getStringVariables() {
+    return stringVariables;
+  }
+
+  public void setStringVariables(List<StringVariableEntity> stringVariables) {
+    this.stringVariables = stringVariables;
+  }
+
+  public List<LongVariableEntity> getLongVariables() {
+    return longVariables;
+  }
+
+  public void setLongVariables(List<LongVariableEntity> longVariables) {
+    this.longVariables = longVariables;
+  }
+
+  public List<DoubleVariableEntity> getDoubleVariables() {
+    return doubleVariables;
+  }
+
+  public void setDoubleVariables(List<DoubleVariableEntity> doubleVariables) {
+    this.doubleVariables = doubleVariables;
+  }
+
+  public List<BooleanVariableEntity> getBooleanVariables() {
+    return booleanVariables;
+  }
+
+  public void setBooleanVariables(List<BooleanVariableEntity> booleanVariables) {
+    this.booleanVariables = booleanVariables;
+  }
+
+  @JsonIgnore
+  public int countVariables() {
+    return this.getStringVariables().size() + this.getLongVariables().size() + this.getDoubleVariables().size() + this.getBooleanVariables().size();
+  }
+
   public Integer getPartitionId() {
     return partitionId;
   }
@@ -145,6 +194,14 @@ public class WorkflowInstanceEntity extends OperateEntity {
       return false;
     if (operations != null ? !operations.equals(that.operations) : that.operations != null)
       return false;
+    if (stringVariables != null ? !stringVariables.equals(that.stringVariables) : that.stringVariables != null)
+      return false;
+    if (longVariables != null ? !longVariables.equals(that.longVariables) : that.longVariables != null)
+      return false;
+    if (doubleVariables != null ? !doubleVariables.equals(that.doubleVariables) : that.doubleVariables != null)
+      return false;
+    if (booleanVariables != null ? !booleanVariables.equals(that.booleanVariables) : that.booleanVariables != null)
+      return false;
     if (partitionId != null ? !partitionId.equals(that.partitionId) : that.partitionId != null)
       return false;
     return topicName != null ? topicName.equals(that.topicName) : that.topicName == null;
@@ -161,6 +218,10 @@ public class WorkflowInstanceEntity extends OperateEntity {
     result = 31 * result + (incidents != null ? incidents.hashCode() : 0);
     result = 31 * result + (activities != null ? activities.hashCode() : 0);
     result = 31 * result + (operations != null ? operations.hashCode() : 0);
+    result = 31 * result + (stringVariables != null ? stringVariables.hashCode() : 0);
+    result = 31 * result + (longVariables != null ? longVariables.hashCode() : 0);
+    result = 31 * result + (doubleVariables != null ? doubleVariables.hashCode() : 0);
+    result = 31 * result + (booleanVariables != null ? booleanVariables.hashCode() : 0);
     result = 31 * result + (partitionId != null ? partitionId.hashCode() : 0);
     result = 31 * result + (int) (position ^ (position >>> 32));
     result = 31 * result + (topicName != null ? topicName.hashCode() : 0);
