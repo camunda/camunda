@@ -23,7 +23,9 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
@@ -108,6 +110,9 @@ public class WorkflowInstanceStreamProcessorTest {
 
     when(mockSubscriptionCommandSender.hasPartitionIds()).thenReturn(true);
     when(mockSubscriptionCommandSender.openMessageSubscription(anyLong(), anyLong(), any(), any()))
+        .thenReturn(true);
+    when(mockSubscriptionCommandSender.correlateMessageSubscription(
+            anyInt(), anyLong(), anyLong(), any()))
         .thenReturn(true);
 
     streamProcessor =
@@ -351,7 +356,7 @@ public class WorkflowInstanceStreamProcessorTest {
   }
 
   @Test
-  public void shouldRejectDuplicatedWorkflowInstanceSubscription() {
+  public void shouldRejectDuplicatedOpenWorkflowInstanceSubscription() {
     // given
     deploy(MESSAGE_CATCH_EVENT_WORKFLOW);
 
@@ -366,11 +371,7 @@ public class WorkflowInstanceStreamProcessorTest {
         awaitElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
-    final WorkflowInstanceSubscriptionRecord subscription =
-        new WorkflowInstanceSubscriptionRecord()
-            .setWorkflowInstanceKey(catchEvent.getValue().getWorkflowInstanceKey())
-            .setActivityInstanceKey(catchEvent.getKey())
-            .setMessageName(wrapString("order canceled"));
+    final WorkflowInstanceSubscriptionRecord subscription = subscriptionRecordForEvent(catchEvent);
 
     rule.writeCommand(WorkflowInstanceSubscriptionIntent.OPEN, subscription);
 
@@ -396,6 +397,58 @@ public class WorkflowInstanceStreamProcessorTest {
     assertThat(rejection.getSourcePosition()).isEqualTo(secondCommandPosition);
     assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
         .isEqualTo("subscription is already open");
+  }
+
+  @Test
+  public void shouldRejectDuplicatedCorrelateWorkflowInstanceSubscription() {
+    // given
+    deploy(MESSAGE_CATCH_EVENT_WORKFLOW);
+
+    createWorkflowInstance(asMsgPack("orderId", "order-123"));
+
+    final TypedRecord<WorkflowInstanceRecord> catchEvent =
+        awaitElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+
+    final WorkflowInstanceSubscriptionRecord subscription = subscriptionRecordForEvent(catchEvent);
+
+    streamProcessor.blockAfterWorkflowInstanceSubscriptionEvent(
+        e -> e.getMetadata().getIntent() == WorkflowInstanceSubscriptionIntent.OPENED);
+
+    rule.writeCommand(WorkflowInstanceSubscriptionIntent.OPEN, subscription);
+
+    waitUntil(() -> streamProcessor.isBlocked());
+
+    // when
+    rule.writeCommand(WorkflowInstanceSubscriptionIntent.CORRELATE, subscription);
+    final long secondCommandPosition =
+        rule.writeCommand(WorkflowInstanceSubscriptionIntent.CORRELATE, subscription);
+
+    streamProcessor.unblock();
+
+    // then
+    waitUntil(
+        () ->
+            rule.events()
+                .onlyWorkflowInstanceSubscriptionRecords()
+                .onlyRejections()
+                .findFirst()
+                .isPresent());
+
+    final TypedRecord<WorkflowInstanceSubscriptionRecord> rejection =
+        rule.events().onlyWorkflowInstanceSubscriptionRecords().onlyRejections().findFirst().get();
+
+    assertThat(rejection.getMetadata().getIntent())
+        .isEqualTo(WorkflowInstanceSubscriptionIntent.CORRELATE);
+    assertThat(rejection.getSourcePosition()).isEqualTo(secondCommandPosition);
+    assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
+        .isEqualTo("subscription is already correlated");
+
+    verify(mockSubscriptionCommandSender, timeout(5_000).times(2))
+        .correlateMessageSubscription(
+            eq(subscription.getSubscriptionPartitionId()),
+            eq(subscription.getWorkflowInstanceKey()),
+            eq(subscription.getActivityInstanceKey()),
+            any());
   }
 
   private TypedRecord<WorkflowInstanceRecord> createWorkflowInstance() {
@@ -425,6 +478,15 @@ public class WorkflowInstanceStreamProcessorTest {
     record.setPayload(payload);
 
     return record;
+  }
+
+  private WorkflowInstanceSubscriptionRecord subscriptionRecordForEvent(
+      final TypedRecord<WorkflowInstanceRecord> catchEvent) {
+    return new WorkflowInstanceSubscriptionRecord()
+        .setSubscriptionPartitionId(1)
+        .setWorkflowInstanceKey(catchEvent.getValue().getWorkflowInstanceKey())
+        .setActivityInstanceKey(catchEvent.getKey())
+        .setMessageName(wrapString("order canceled"));
   }
 
   // TODO: this is not nice, but should go away once we get rid of workflow fetching

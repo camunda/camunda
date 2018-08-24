@@ -36,6 +36,9 @@ public class MessageStreamProcessor implements StreamProcessorLifecycleAware {
 
   public static final Duration MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL = Duration.ofSeconds(60);
 
+  public static final Duration SUBSCRIPTION_TIMEOUT = Duration.ofSeconds(10);
+  public static final Duration SUBSCRIPTION_CHECK_INTERVAL = Duration.ofSeconds(30);
+
   private final MessageDataStore messageStore = new MessageDataStore();
   private final MessageSubscriptionDataStore subscriptionStore = new MessageSubscriptionDataStore();
 
@@ -63,6 +66,10 @@ public class MessageStreamProcessor implements StreamProcessorLifecycleAware {
             MessageSubscriptionIntent.OPEN,
             new OpenMessageSubscriptionProcessor(
                 messageStore, subscriptionStore, subscriptionCommandSender))
+        .onCommand(
+            ValueType.MESSAGE_SUBSCRIPTION,
+            MessageSubscriptionIntent.CORRELATE,
+            new CorrelateMessageSubscriptionProcessor(subscriptionStore))
         .withStateResource(messageStore)
         .withStateResource(subscriptionStore)
         .withListener(this)
@@ -83,5 +90,10 @@ public class MessageStreamProcessor implements StreamProcessorLifecycleAware {
     streamProcessor
         .getActor()
         .runAtFixedRate(MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL, timeToLiveChecker);
+
+    final PendingMessageSubscriptionChecker pendingSubscriptionChecker =
+        new PendingMessageSubscriptionChecker(
+            subscriptionCommandSender, subscriptionStore, SUBSCRIPTION_TIMEOUT.toMillis());
+    actor.runAtFixedRate(SUBSCRIPTION_CHECK_INTERVAL, pendingSubscriptionChecker);
   }
 }

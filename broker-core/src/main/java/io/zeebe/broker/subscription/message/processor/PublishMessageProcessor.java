@@ -35,6 +35,7 @@ import io.zeebe.broker.subscription.message.state.MessageSubscriptionDataStore.M
 import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.MessageIntent;
+import io.zeebe.util.sched.clock.ActorClock;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -67,13 +68,14 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
     this.responseWriter = responseWriter;
 
     messageRecord = record.getValue();
+    final byte[] messagePayload = bufferAsArray(messageRecord.getPayload());
 
     final Message message =
         new Message(
             bufferAsString(messageRecord.getName()),
             bufferAsString(messageRecord.getCorrelationKey()),
             messageRecord.getTimeToLive(),
-            bufferAsArray(messageRecord.getPayload()),
+            messagePayload,
             messageRecord.hasMessageId() ? bufferAsString(messageRecord.getMessageId()) : null);
 
     if (messageRecord.hasMessageId() && messageStore.hasMessage(message)) {
@@ -92,6 +94,10 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
 
       matchingSubscriptions =
           subscriptionStore.findSubscriptions(message.getName(), message.getCorrelationKey());
+
+      for (MessageSubscription sub : matchingSubscriptions) {
+        sub.setMessagePayload(messagePayload);
+      }
 
       sideEffect.accept(this::correlateMessage);
 
@@ -117,9 +123,11 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
               messageRecord.getPayload());
 
       if (!success) {
-        // try again
+        // try again later
         return false;
       }
+
+      sub.setCommandSentTime(ActorClock.currentTimeMillis());
     }
 
     return responseWriter.flush();

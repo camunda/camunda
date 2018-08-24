@@ -17,7 +17,10 @@ package io.zeebe.protocol.intent;
 
 public enum MessageSubscriptionIntent implements Intent {
   OPEN((short) 0),
-  OPENED((short) 1);
+  OPENED((short) 1),
+
+  CORRELATE((short) 2),
+  CORRELATED((short) 3);
 
   private short value;
 
@@ -36,6 +39,10 @@ public enum MessageSubscriptionIntent implements Intent {
         return OPEN;
       case 1:
         return OPENED;
+      case 2:
+        return CORRELATE;
+      case 3:
+        return CORRELATED;
       default:
         return Intent.UNKNOWN;
     }

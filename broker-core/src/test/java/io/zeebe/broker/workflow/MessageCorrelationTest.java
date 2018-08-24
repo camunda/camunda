@@ -39,6 +39,7 @@ import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
+import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
 import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
 import java.util.List;
@@ -178,8 +179,7 @@ public class MessageCorrelationTest {
     final String correlationKey = "order-123";
 
     final TestTopicClient workflowPartition = apiRule.topic(partitionIds.get(0));
-    final TestTopicClient subscriptionPartition =
-        apiRule.topic(getPartitionId(partitionIds, correlationKey));
+    final TestTopicClient subscriptionPartition = apiRule.topic(getPartitionId(correlationKey));
 
     testClient.deploy(CATCH_EVENT_WORKFLOW);
 
@@ -224,6 +224,7 @@ public class MessageCorrelationTest {
     assertThat(workflowInstanceSubscription.recordType()).isEqualTo(RecordType.EVENT);
     assertThat(workflowInstanceSubscription.value())
         .containsExactly(
+            entry("subscriptionPartitionId", (long) getPartitionId("order-123")),
             entry("workflowInstanceKey", workflowInstanceKey),
             entry("activityInstanceKey", catchEventEntered.key()),
             entry("messageName", "order canceled"),
@@ -404,7 +405,9 @@ public class MessageCorrelationTest {
 
     // when
     final DirectBuffer messagePayload = asMsgPack("foo", "bar");
-    testClient.publishMessage("order canceled", "order-123", messagePayload);
+    final ExecuteCommandResponse resp =
+        testClient.publishMessage("order canceled", "order-123", messagePayload);
+    final int messagePartitionId = resp.partitionId();
 
     // then
     final SubscribedRecord subscription =
@@ -418,10 +421,43 @@ public class MessageCorrelationTest {
     assertThat(subscription.recordType()).isEqualTo(RecordType.EVENT);
     assertThat(subscription.value())
         .containsExactly(
+            entry("subscriptionPartitionId", (long) messagePartitionId),
             entry("workflowInstanceKey", workflowInstanceKey),
             entry("activityInstanceKey", catchEventEntered.key()),
             entry("messageName", "order canceled"),
             entry("payload", messagePayload.byteArray()));
+  }
+
+  @Test
+  public void shouldCorrelateMessageSubscription() {
+    // given
+    final long workflowInstanceKey =
+        testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
+
+    final SubscribedRecord catchEventEntered =
+        testClient.receiveElementInState(
+            "receive-message", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+
+    // when
+    testClient.publishMessage("order canceled", "order-123", asMsgPack("foo", "bar"));
+
+    // then
+    final SubscribedRecord subscription =
+        testClient
+            .receiveEvents()
+            .filter(intent(MessageSubscriptionIntent.CORRELATED))
+            .findFirst()
+            .orElseThrow(() -> new AssertionError("no subscription event found"));
+
+    assertThat(subscription.valueType()).isEqualTo(ValueType.MESSAGE_SUBSCRIPTION);
+    assertThat(subscription.recordType()).isEqualTo(RecordType.EVENT);
+    assertThat(subscription.value())
+        .containsExactly(
+            entry("workflowInstancePartitionId", (long) catchEventEntered.partitionId()),
+            entry("workflowInstanceKey", workflowInstanceKey),
+            entry("activityInstanceKey", catchEventEntered.key()),
+            entry("messageName", "order canceled"),
+            entry("correlationKey", "order-123"));
   }
 
   @Test
@@ -469,7 +505,8 @@ public class MessageCorrelationTest {
         .orElseThrow(() -> new AssertionError("no message subscription event found"));
   }
 
-  private int getPartitionId(List<Integer> partitionIds, String correlationKey) {
+  private int getPartitionId(String correlationKey) {
+    final List<Integer> partitionIds = apiRule.getPartitionIds();
     final int index =
         Math.abs(SubscriptionUtil.getSubscriptionHashCode(correlationKey) % partitionIds.size());
     return partitionIds.get(index);

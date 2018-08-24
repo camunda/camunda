@@ -17,43 +17,45 @@
  */
 package io.zeebe.broker.subscription.message.processor;
 
+import io.zeebe.broker.logstreams.processor.SideEffectProducer;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
-import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
-import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionDataStore;
-import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionDataStore.WorkflowInstanceSubscription;
+import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
+import io.zeebe.broker.subscription.message.state.MessageSubscriptionDataStore;
+import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.protocol.clientapi.RejectionType;
-import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
+import io.zeebe.protocol.intent.MessageSubscriptionIntent;
+import java.util.function.Consumer;
 
-public class OpenWorkflowInstanceSubscriptionProcessor
-    implements TypedRecordProcessor<WorkflowInstanceSubscriptionRecord> {
+public class CorrelateMessageSubscriptionProcessor
+    implements TypedRecordProcessor<MessageSubscriptionRecord> {
 
-  private final WorkflowInstanceSubscriptionDataStore subscriptionStore;
+  private final MessageSubscriptionDataStore subscriptionStore;
 
-  public OpenWorkflowInstanceSubscriptionProcessor(
-      WorkflowInstanceSubscriptionDataStore subscriptionStore) {
+  public CorrelateMessageSubscriptionProcessor(MessageSubscriptionDataStore subscriptionStore) {
     this.subscriptionStore = subscriptionStore;
   }
 
   @Override
   public void processRecord(
-      TypedRecord<WorkflowInstanceSubscriptionRecord> record,
+      TypedRecord<MessageSubscriptionRecord> record,
       TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter) {
+      TypedStreamWriter streamWriter,
+      Consumer<SideEffectProducer> sideEffect,
+      EventLifecycleContext ctx) {
 
-    final WorkflowInstanceSubscription subscription =
-        subscriptionStore.findSubscription(record.getValue());
-    if (subscription != null && !subscription.isOpen()) {
-      subscription.setOpen(true);
+    final MessageSubscriptionRecord subscriptionRecord = record.getValue();
 
+    final boolean removed = subscriptionStore.removeSubscription(subscriptionRecord);
+    if (removed) {
       streamWriter.writeFollowUpEvent(
-          record.getKey(), WorkflowInstanceSubscriptionIntent.OPENED, record.getValue());
+          record.getKey(), MessageSubscriptionIntent.CORRELATED, subscriptionRecord);
 
     } else {
       streamWriter.writeRejection(
-          record, RejectionType.NOT_APPLICABLE, "subscription is already open");
+          record, RejectionType.NOT_APPLICABLE, "subscription is already correlated");
     }
   }
 }

@@ -25,14 +25,14 @@ import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionDa
 import io.zeebe.util.sched.clock.ActorClock;
 import java.util.List;
 
-public class OpenSubscriptionChecker implements Runnable {
+public class PendingWorkflowInstanceSubscriptionChecker implements Runnable {
 
   private final SubscriptionCommandSender commandSender;
   private final WorkflowInstanceSubscriptionDataStore subscriptionStore;
 
   private final long subscriptionTimeout;
 
-  public OpenSubscriptionChecker(
+  public PendingWorkflowInstanceSubscriptionChecker(
       SubscriptionCommandSender commandSender,
       WorkflowInstanceSubscriptionDataStore subscriptionStore,
       long subscriptionTimeout) {
@@ -45,7 +45,7 @@ public class OpenSubscriptionChecker implements Runnable {
   public void run() {
 
     final List<WorkflowInstanceSubscription> pendingSubscriptions =
-        subscriptionStore.findSubscriptionWithSentTimeBefore(
+        subscriptionStore.findPendingSubscriptionsWithSentTimeBefore(
             ActorClock.currentTimeMillis() - subscriptionTimeout);
 
     for (WorkflowInstanceSubscription subscription : pendingSubscriptions) {
@@ -57,7 +57,7 @@ public class OpenSubscriptionChecker implements Runnable {
   }
 
   private boolean sendCommand(WorkflowInstanceSubscription subscription) {
-    subscription.setSentTime(ActorClock.currentTimeMillis());
+    subscription.setCommandSentTime(ActorClock.currentTimeMillis());
 
     return commandSender.openMessageSubscription(
         subscription.getWorkflowInstanceKey(),

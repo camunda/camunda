@@ -36,8 +36,8 @@ import io.zeebe.broker.logstreams.processor.TypedStreamReader;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
-import io.zeebe.broker.subscription.message.processor.OpenSubscriptionChecker;
 import io.zeebe.broker.subscription.message.processor.OpenWorkflowInstanceSubscriptionProcessor;
+import io.zeebe.broker.subscription.message.processor.PendingWorkflowInstanceSubscriptionChecker;
 import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionDataStore;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.broker.workflow.index.ElementInstance;
@@ -202,10 +202,10 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
     subscriptionCommandSender.init(topologyManager, actor, logStream);
 
-    final OpenSubscriptionChecker openSubscriptionChecker =
-        new OpenSubscriptionChecker(
+    final PendingWorkflowInstanceSubscriptionChecker pendingSubscriptionChecker =
+        new PendingWorkflowInstanceSubscriptionChecker(
             subscriptionCommandSender, subscriptionStore, SUBSCRIPTION_TIMEOUT.toMillis());
-    actor.runAtFixedRate(SUBSCRIPTION_CHECK_INTERVAL, openSubscriptionChecker);
+    actor.runAtFixedRate(SUBSCRIPTION_CHECK_INTERVAL, pendingSubscriptionChecker);
 
     workflowInstanceEventCreate =
         metricsManager
@@ -461,6 +461,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
     private TypedRecord<WorkflowInstanceSubscriptionRecord> record;
     private WorkflowInstanceSubscriptionRecord subscription;
     private TypedStreamWriter streamWriter;
+    private Consumer<SideEffectProducer> sideEffect;
 
     @Override
     public void processRecord(
@@ -473,6 +474,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
       this.record = record;
       this.subscription = record.getValue();
       this.streamWriter = streamWriter;
+      this.sideEffect = sideEffect;
 
       final ElementInstance eventInstance =
           scopeInstances.getInstance(subscription.getActivityInstanceKey());
@@ -494,7 +496,14 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
     private void onWorkflowAvailable(final DeployedWorkflow workflow) {
       // remove subscription if pending
-      subscriptionStore.removeSubscription(subscription);
+      final boolean removed = subscriptionStore.removeSubscription(subscription);
+      if (!removed) {
+        streamWriter.writeRejection(
+            record, RejectionType.NOT_APPLICABLE, "subscription is already correlated");
+
+        sideEffect.accept(this::sendAcknowledgeCommand);
+        return;
+      }
 
       final ElementInstance eventInstance =
           scopeInstances.getInstance(subscription.getActivityInstanceKey());
@@ -508,8 +517,18 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
       batchWriter.addFollowUpEvent(
           subscription.getActivityInstanceKey(), WorkflowInstanceIntent.ELEMENT_COMPLETING, value);
 
+      sideEffect.accept(this::sendAcknowledgeCommand);
+
       eventInstance.setState(WorkflowInstanceIntent.ELEMENT_COMPLETING);
       eventInstance.setValue(value);
+    }
+
+    private boolean sendAcknowledgeCommand() {
+      return subscriptionCommandSender.correlateMessageSubscription(
+          subscription.getSubscriptionPartitionId(),
+          subscription.getWorkflowInstanceKey(),
+          subscription.getActivityInstanceKey(),
+          subscription.getMessageName());
     }
   }
 

@@ -29,9 +29,11 @@ import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.state.MessageDataStore;
 import io.zeebe.broker.subscription.message.state.MessageDataStore.Message;
 import io.zeebe.broker.subscription.message.state.MessageSubscriptionDataStore;
+import io.zeebe.broker.subscription.message.state.MessageSubscriptionDataStore.MessageSubscription;
 import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
+import io.zeebe.util.sched.clock.ActorClock;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -66,9 +68,17 @@ public class OpenMessageSubscriptionProcessor
 
     subscriptionRecord = record.getValue();
 
-    final boolean added = subscriptionStore.addSubscription(subscriptionRecord);
+    final MessageSubscription subscription =
+        new MessageSubscription(
+            subscriptionRecord.getWorkflowInstancePartitionId(),
+            subscriptionRecord.getWorkflowInstanceKey(),
+            subscriptionRecord.getActivityInstanceKey(),
+            bufferAsString(subscriptionRecord.getMessageName()),
+            bufferAsString(subscriptionRecord.getCorrelationKey()));
+
+    final boolean added = subscriptionStore.addSubscription(subscription);
     if (!added) {
-      sideEffect.accept(this::sendOpenedCommand);
+      sideEffect.accept(this::sendAcknowledgeCommand);
 
       streamWriter.writeRejection(
           record, RejectionType.NOT_APPLICABLE, "subscription is already open");
@@ -85,8 +95,11 @@ public class OpenMessageSubscriptionProcessor
       messagePayload.wrap(message.getPayload());
 
       sideEffect.accept(this::sendCorrelateCommand);
+
+      subscription.setMessagePayload(message.getPayload());
+      subscription.setCommandSentTime(ActorClock.currentTimeMillis());
     } else {
-      sideEffect.accept(this::sendOpenedCommand);
+      sideEffect.accept(this::sendAcknowledgeCommand);
     }
 
     streamWriter.writeFollowUpEvent(
@@ -102,8 +115,8 @@ public class OpenMessageSubscriptionProcessor
         messagePayload);
   }
 
-  private boolean sendOpenedCommand() {
-    return commandSender.openedMessageSubscription(
+  private boolean sendAcknowledgeCommand() {
+    return commandSender.openWorkflowInstanceSubscription(
         subscriptionRecord.getWorkflowInstancePartitionId(),
         subscriptionRecord.getWorkflowInstanceKey(),
         subscriptionRecord.getActivityInstanceKey(),

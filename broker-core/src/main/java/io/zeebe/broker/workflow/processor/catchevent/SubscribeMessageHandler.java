@@ -94,7 +94,7 @@ public class SubscribeMessageHandler implements BpmnStepHandler<ExecutableMessag
             activityInstanceKey,
             bufferAsString(catchEvent.getMessageName()),
             bufferAsString(extractedCorrelationKey));
-    subscription.setSentTime(ActorClock.currentTimeMillis());
+    subscription.setCommandSentTime(ActorClock.currentTimeMillis());
     subscriptionStore.addSubscription(subscription);
   }
 
