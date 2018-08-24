@@ -252,3 +252,33 @@ replicationFactor = 1
 # heartbeatInterval = "250ms"
 # electionInterval = "1s"
 # leaveTimeout = "1s"
+
+# Configure exporters below; note that configuration parsing conventions do not apply to exporter
+# arguments, which will be parsed as normal TOML.
+#
+# Each exporter should be configured following this template:
+#
+# id:
+#   property should be unique in this configuration file, as it will server as the exporter
+#   ID for loading/unloading.
+# jarPath:
+#   path to the JAR file containing the exporter class. JARs are only loaded once, so you can define
+#   two exporters that point to the same JAR, with the same class or a different one, and use args
+#   to parametrize its instantiation.
+# className:
+#   entry point of the exporter, a class which *must* extend the io.zeebe.exporter.Exporter
+#   interface.
+#
+# A nested table as [exporters.args] will allow you to inject arbitrary arguments into your
+# class through the use of annotations.
+#
+# An example configuration for a MongoDB exporter:
+#
+# [[exporters]]
+# id = "MongoDB"
+# jarPath = "exporters/myExporter.jar"
+# className = "me.mustermann.mongodb.MongoDbExporter"
+#   [exporters.args]
+#   host = "localhost"
+#   port = 21707
+#

@@ -22,15 +22,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.Environment;
+import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.broker.system.configuration.SocketBindingClientApiCfg;
 import io.zeebe.broker.system.configuration.SocketBindingManagementCfg;
 import io.zeebe.broker.system.configuration.SocketBindingReplicationCfg;
 import io.zeebe.broker.system.configuration.SocketBindingSubscriptionCfg;
 import io.zeebe.broker.system.configuration.TomlConfigurationReader;
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+import org.assertj.core.api.Condition;
 import org.junit.Test;
 
 public class ConfigurationTest {
@@ -104,6 +107,35 @@ public class ConfigurationTest {
         MANAGEMENT_PORT + offset,
         REPLICATION_PORT + offset,
         SUBSCRIPTION_PORT + offset);
+  }
+
+  @Test
+  public void shouldExpandExporterJarPathRelativeToBrokerBaseIffPresent() {
+    // given
+    final InputStream input =
+        new ByteArrayInputStream(
+            ("[[exporters]]\n"
+                    + "id=\"external\"\n"
+                    + "jarPath=\"exporters/exporter.jar\"\n"
+                    + "[[exporters]]\n"
+                    + "id=\"internal-1\"\n"
+                    + "jarPath=\"\"\n"
+                    + "[[exporters]]\n"
+                    + "id=\"internal-2\"")
+                .getBytes());
+    final BrokerCfg config = TomlConfigurationReader.read(input);
+    final String base = "/opt/zeebe";
+
+    // when
+    config.init(base);
+
+    // then
+    assertThat(config.getExporters()).hasSize(3);
+    assertThat(config.getExporters().get(0))
+        .hasFieldOrPropertyWithValue("jarPath", base + "/exporters/exporter.jar")
+        .is(new Condition<>(ExporterCfg::isExternal, "is external"));
+    assertThat(config.getExporters().get(1).isExternal()).isFalse();
+    assertThat(config.getExporters().get(2).isExternal()).isFalse();
   }
 
   private BrokerCfg readConfig(String name) {

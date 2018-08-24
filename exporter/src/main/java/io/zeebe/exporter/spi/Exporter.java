@@ -68,5 +68,5 @@ public interface Exporter {
    *
    * @param record the record to export
    */
-  void export(Record record);
+  void export(final Record record);
 }

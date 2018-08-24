@@ -19,7 +19,7 @@
   </properties>
 
   <dependencies>
-     <dependency>
+    <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
     </dependency>
@@ -73,10 +73,15 @@
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-gateway</artifactId>
     </dependency>
-    
+
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zb-msgpack-json-el</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-exporter</artifactId>
     </dependency>
 
     <dependency>
