@@ -5,7 +5,6 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
@@ -32,6 +31,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -56,14 +56,7 @@ public class SimpleEngineClient {
 
   public List<String> deployProcesses(BpmnModelInstance modelInstance, int nVersions) {
     return IntStream.rangeClosed(1, nVersions)
-      .mapToObj(n -> {
-        try {
-          return deployProcessAndGetId(modelInstance);
-        } catch (IOException e) {
-          e.printStackTrace();
-        }
-        return null;
-      })
+      .mapToObj(n -> deployProcessAndGetId(modelInstance))
       .collect(Collectors.toList());
   }
 
@@ -75,12 +68,12 @@ public class SimpleEngineClient {
     }
   }
 
-  private String deployProcessAndGetId(BpmnModelInstance modelInstance) throws IOException {
+  private String deployProcessAndGetId(BpmnModelInstance modelInstance) {
     DeploymentDto deploymentDto = deployProcess(modelInstance);
     return getProcessDefinitionId(deploymentDto);
   }
 
-  private String getProcessDefinitionId(DeploymentDto deployment) throws IOException {
+  private String getProcessDefinitionId(DeploymentDto deployment) {
     List<ProcessDefinitionEngineDto> processDefinitions = getAllProcessDefinitions(deployment);
     if (processDefinitions.size() != 1) {
       logger.warn("Deployment should contain only one process definition!");
@@ -88,7 +81,7 @@ public class SimpleEngineClient {
     return processDefinitions.get(0).getId();
   }
 
-  private List<ProcessDefinitionEngineDto> getAllProcessDefinitions(DeploymentDto deployment) throws IOException {
+  private List<ProcessDefinitionEngineDto> getAllProcessDefinitions(DeploymentDto deployment) {
     HttpRequestBase get = new HttpGet(getProcessDefinitionUri());
     URI uri = null;
     try {
@@ -99,13 +92,21 @@ public class SimpleEngineClient {
       logger.error("Could not build uri!", e);
     }
     get.setURI(uri);
-    CloseableHttpResponse response = client.execute(get);
-    String responseString = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
-    List<ProcessDefinitionEngineDto> result = objectMapper.readValue(
+    CloseableHttpResponse response = null;
+    List<ProcessDefinitionEngineDto> result = new ArrayList<>();
+    try {
+      response = client.execute(get);
+      String responseString = EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+      result = objectMapper.readValue(
         responseString,
         new TypeReference<List<ProcessDefinitionEngineDto>>() {}
         );
-    response.close();
+    } catch (IOException e) {
+      e.printStackTrace();
+    } finally {
+      closeResponse(response);
+    }
+
     return result;
   }
 
@@ -121,8 +122,9 @@ public class SimpleEngineClient {
     String process = Bpmn.convertToString(bpmnModelInstance);
     HttpPost deploymentRequest = createDeploymentRequest(process);
     DeploymentDto deployment = new DeploymentDto();
+    CloseableHttpResponse response = null;
     try {
-      CloseableHttpResponse response = client.execute(deploymentRequest);
+      response = client.execute(deploymentRequest);
       if (response.getStatusLine().getStatusCode() != 200) {
         throw new RuntimeException("Something really bad happened during deployment, " +
           "could not create a deployment!");
@@ -132,6 +134,8 @@ public class SimpleEngineClient {
       response.close();
     } catch (IOException e) {
       logger.error("Error during deployment request! Could not deploy the given process model!", e);
+    } finally {
+      closeResponse(response);
     }
     return deployment;
   }
@@ -189,17 +193,29 @@ public class SimpleEngineClient {
     MessageCorrelationDto message = new MessageCorrelationDto();
     message.setAll(true);
     message.setMessageName(messageName);
-    StringEntity content =
-      null;
+    StringEntity content;
+    CloseableHttpResponse response = null;
     try {
       content = new StringEntity(objectMapper.writeValueAsString(message), Charset.defaultCharset());
       post.setEntity(content);
-      HttpResponse response = client.execute(post);
+      response = client.execute(post);
       if (response.getStatusLine().getStatusCode() != 204) {
         System.out.println("Warning: Code for send candidate replied should be 204!");
       }
     } catch (IOException e) {
       logger.error("Error while trying to correlate message!", e);
+    } finally {
+      closeResponse(response);
+    }
+  }
+
+  private void closeResponse(CloseableHttpResponse response) {
+    if (response != null) {
+      try {
+        response.close();
+      } catch (IOException e) {
+        logger.error("Can't close response", e);
+      }
     }
   }
 
@@ -209,17 +225,19 @@ public class SimpleEngineClient {
   }
 
   private void executeFinishAllUserTasks(CloseableHttpClient client, HttpGet get) {
+    CloseableHttpResponse response = null;
     try {
-      CloseableHttpResponse response = client.execute(get);
+      response = client.execute(get);
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
       List<TaskDto> tasks = objectMapper.readValue(responseString, new TypeReference<List<TaskDto>>() {
       });
-      response.close();
       for (TaskDto task : tasks) {
         claimAndCompleteUserTask(client, task);
       }
     } catch (IOException e) {
       logger.error("Error while trying to finish the user task!!", e);
+    } finally {
+      closeResponse(response);
     }
   }
 
@@ -235,7 +253,7 @@ public class SimpleEngineClient {
     claimPost.addHeader("Content-Type", "application/json");
     CloseableHttpResponse response = client.execute(claimPost);
     if (response.getStatusLine().getStatusCode() != 204) {
-      throw new RuntimeException("Could not claim user task!");
+      logger.error("Could not claim user task!");
     }
 
     HttpPost completePost = new HttpPost(getCompleteTaskUri(task.getId()));
@@ -244,7 +262,7 @@ public class SimpleEngineClient {
     response.close();
     response = client.execute(completePost);
     if (response.getStatusLine().getStatusCode() != 204) {
-      throw new RuntimeException("Could not complete user task!");
+      logger.error("Could not complete user task!");
     }
     response.close();
   }
