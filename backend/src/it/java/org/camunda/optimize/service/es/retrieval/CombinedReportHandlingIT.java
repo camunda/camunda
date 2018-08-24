@@ -199,6 +199,24 @@ public class CombinedReportHandlingIT {
   }
 
   @Test
+  public void reportsThatCantBeEvaluatedAreIgnored() {
+    // given
+    ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
+    String singleReportId = createNewSingleMapReport();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    String reportId = createNewCombinedReport(singleReportId);
+    CombinedMapReportResultDto result = evaluateCombinedReportById(reportId);
+
+    // then
+    assertThat(result.getId(), is(reportId));
+    Map<String, Map<String, Long>> resultMap = result.getResult();
+    assertThat(resultMap.size(), is(0));
+  }
+
+  @Test
   public void canEvaluateUnsavedCombinedReport() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();

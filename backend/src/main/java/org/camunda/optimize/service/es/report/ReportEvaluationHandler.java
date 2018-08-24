@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.COMBINED_REPORT_TYPE;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.SINGLE_REPORT_TYPE;
@@ -95,9 +96,9 @@ public abstract class ReportEvaluationHandler {
 
         SingleReportDefinitionDto singleReportDefinition =
           (SingleReportDefinitionDto) subReportDefinition;
-        SingleReportResultDto singleReportResult =
-          evaluateSingleReport(userId, singleReportDefinition);
-        resultList.add(singleReportResult);
+        Optional<SingleReportResultDto> singleReportResult =
+          evaluateReportForCombinedReport(userId, singleReportDefinition);
+        singleReportResult.ifPresent(resultList::add);
       } else {
         String message = "Can't evaluate report. You can only have single reports inside combined reports " +
           "or you are not authorized to evaluate the report!";
@@ -105,6 +106,22 @@ public abstract class ReportEvaluationHandler {
       }
     }
     return resultList;
+  }
+
+  private Optional<SingleReportResultDto> evaluateReportForCombinedReport(String userId,
+                                                                          SingleReportDefinitionDto reportDefinition) {
+    Optional<SingleReportResultDto> result = Optional.empty();
+    if (isAuthorizedToSeeReport(userId, reportDefinition)) {
+      try {
+        SingleReportResultDto singleResult = reportEvaluator.evaluate(reportDefinition.getData());
+        ReportUtil.copyMetaData(reportDefinition, singleResult);
+        result = Optional.of(singleResult);
+      } catch (OptimizeException | OptimizeValidationException ignored) {
+        // we just ignore reports that cannot be evaluated in
+        // a combined report
+      }
+    }
+    return result;
   }
 
   /**

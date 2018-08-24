@@ -10,7 +10,6 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDat
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
-import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -22,7 +21,6 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.GenericType;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -51,7 +49,7 @@ public class ReportAuthorizationIT {
   public void evaluateUnauthorizedStoredReport() throws Exception {
     // given
     addKermitUserAndGrantAccessToOptimize();
-    deploySimpleProcessDefinition("aprocess");
+    deployAndStartSimpleProcessDefinition("aprocess");
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     String reportId = createReportForDefinition("aprocess");
@@ -70,7 +68,7 @@ public class ReportAuthorizationIT {
   public void deleteUnauthorizedStoredReport() throws Exception {
     // given
     addKermitUserAndGrantAccessToOptimize();
-    deploySimpleProcessDefinition("aprocess");
+    deployAndStartSimpleProcessDefinition("aprocess");
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     String reportId = createReportForDefinition("aprocess");
@@ -89,7 +87,7 @@ public class ReportAuthorizationIT {
   public void evaluateUnauthorizedOnTheFlyReport() throws Exception {
     // given
     addKermitUserAndGrantAccessToOptimize();
-    deploySimpleProcessDefinition("aprocess");
+    deployAndStartSimpleProcessDefinition("aprocess");
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -108,7 +106,7 @@ public class ReportAuthorizationIT {
   public void updateUnauthorizedReport() throws Exception {
     // given
     addKermitUserAndGrantAccessToOptimize();
-    deploySimpleProcessDefinition("aprocess");
+    deployAndStartSimpleProcessDefinition("aprocess");
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     String reportId = createReportForDefinition("aprocess");
@@ -128,7 +126,7 @@ public class ReportAuthorizationIT {
   public void getUnauthorizedReport() throws Exception {
     // given
     addKermitUserAndGrantAccessToOptimize();
-    deploySimpleProcessDefinition("aprocess");
+    deployAndStartSimpleProcessDefinition("aprocess");
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     String reportId = createReportForDefinition("aprocess");
@@ -147,7 +145,7 @@ public class ReportAuthorizationIT {
   public void shareUnauthorizedReport() throws Exception {
     // given
     addKermitUserAndGrantAccessToOptimize();
-    deploySimpleProcessDefinition("aprocess");
+    deployAndStartSimpleProcessDefinition("aprocess");
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     String reportId = createReportForDefinition("aprocess");
@@ -168,7 +166,7 @@ public class ReportAuthorizationIT {
   public void newReportCanBeAccessedByEveryone() throws Exception {
     // given
     addKermitUserAndGrantAccessToOptimize();
-    deploySimpleProcessDefinition("aprocess");
+    deployAndStartSimpleProcessDefinition("aprocess");
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     String reportId = createNewReport();
@@ -194,12 +192,73 @@ public class ReportAuthorizationIT {
     assertThat(reports.size(), is(1));
   }
 
-  private void deploySimpleProcessDefinition(String processId) throws IOException {
+  @Test
+  public void unauthorizedReportInCombinedIsNotEvaluated() {
+    // given
+    addKermitUserAndGrantAccessToOptimize();
+    deployAndStartSimpleProcessDefinition("aprocess");
+    grantSingleDefinitionAuthorizationsForUser("kermit", "aprocess");
+    deployAndStartSimpleProcessDefinition("notAuthorizedProcess");
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    String authorizedReportId = createNewSingleMapReport("aprocess");
+    String notAuthorizedReportId = createNewSingleMapReport("notAuthorizedProcess");
+
+    // when
+    CombinedReportDataDto combinedReport = createCombinedReport(authorizedReportId, notAuthorizedReportId);
+    Response response = embeddedOptimizeRule.target("report/evaluate/combined")
+      .request()
+      .header(HttpHeaders.AUTHORIZATION, createAuthenticationHeaderForKermit())
+      .post(Entity.json(combinedReport));
+
+    // then
+    assertThat(response.getStatus(), is(200));
+    CombinedMapReportResultDto result = response.readEntity(CombinedMapReportResultDto.class);
+    Map<String, Map<String, Long>> resultMap = result.getResult();
+    assertThat(resultMap.size(), is(1));
+    assertThat(resultMap.containsKey(notAuthorizedReportId), is(false));
+    Map<String, Long> flowNodeToCount = resultMap.get(authorizedReportId);
+    assertThat(flowNodeToCount.size(), is(2));
+  }
+
+  private void grantSingleDefinitionAuthorizationsForUser(String userId, String definitionKey) {
+    AuthorizationDto authorizationDto = new AuthorizationDto();
+    authorizationDto.setResourceType(RESOURCE_TYPE_PROCESS_DEFINITION);
+    authorizationDto.setPermissions(Collections.singletonList(ALL_PERMISSION));
+    authorizationDto.setResourceId(definitionKey);
+    authorizationDto.setType(AUTHORIZATION_TYPE_GRANT);
+    authorizationDto.setUserId(userId);
+    engineRule.createAuthorization(authorizationDto);
+  }
+
+  private String createNewCombinedReport() {
+    Response response =
+      embeddedOptimizeRule.target("report/combined")
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
+        .post(Entity.json(""));
+    assertThat(response.getStatus(), is(200));
+
+    return response.readEntity(IdDto.class).getId();
+  }
+
+  private String createNewSingleMapReport(String processDefinitionKey) {
+    String singleReportId = createNewReport();
+    SingleReportDataDto countFlowNodeFrequencyGroupByFlowNode =
+      createCountFlowNodeFrequencyGroupByFlowNode(processDefinitionKey, "1");
+    SingleReportDefinitionDto definitionDto = new SingleReportDefinitionDto();
+    definitionDto.setData(countFlowNodeFrequencyGroupByFlowNode);
+    updateReport(singleReportId, definitionDto);
+    return singleReportId;
+  }
+
+  private void deployAndStartSimpleProcessDefinition(String processId) {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess(processId)
       .startEvent()
       .endEvent()
       .done();
-    engineRule.deployProcessAndGetId(modelInstance);
+    engineRule.deployAndStartProcess(modelInstance);
   }
 
   public ReportDefinitionDto createReportUpdate() {
