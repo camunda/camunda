@@ -3,6 +3,7 @@ package org.camunda.optimize.service.util;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ViewDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.ExecutedFlowNodeFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.FilterDto;
@@ -12,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.Execute
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.startDate.StartDateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
+import org.camunda.optimize.service.exceptions.ReportEvaluationException;
 
 import java.util.Arrays;
 import java.util.List;
@@ -38,6 +40,18 @@ public class ValidationHelper {
   public static void ensureGreaterThanZero(int value) {
     if (value <= 0) {
       throw new OptimizeValidationException("Value should be greater than zero, but was " + value + "!");
+    }
+  }
+
+  public static void validateCombinedReportDefinition(CombinedReportDefinitionDto reportDefinition) {
+    if (reportDefinition.getData() == null) {
+      OptimizeValidationException ex =
+        new OptimizeValidationException("Report data for a combined report is not allowed to be null!");
+      throw new ReportEvaluationException(reportDefinition, ex);
+    } else if (reportDefinition.getData().getReportIds() == null) {
+      OptimizeValidationException ex =
+        new OptimizeValidationException("Reports list for a combined report is not allowed to be null!");
+      throw new ReportEvaluationException(reportDefinition, ex);
     }
   }
 

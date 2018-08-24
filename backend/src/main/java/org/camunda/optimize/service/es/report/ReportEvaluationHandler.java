@@ -13,6 +13,7 @@ import org.camunda.optimize.service.es.report.command.util.ReportUtil;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.ReportEvaluationException;
+import org.camunda.optimize.service.util.ValidationHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,6 +64,8 @@ public abstract class ReportEvaluationHandler {
 
   public CombinedMapReportResultDto evaluateCombinedReport(String userId,
                                                            CombinedReportDefinitionDto combinedReportDefinition) {
+
+    ValidationHelper.validateCombinedReportDefinition(combinedReportDefinition);
     List<SingleReportResultDto> resultList =
       evaluateListOfReportIds(userId, combinedReportDefinition.getData().getReportIds());
     return transformToCombinedReportResult(combinedReportDefinition, resultList);

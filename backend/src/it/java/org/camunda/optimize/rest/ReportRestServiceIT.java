@@ -1,8 +1,10 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
 import org.camunda.optimize.service.exceptions.ReportEvaluationException;
 import org.camunda.optimize.service.sharing.AbstractSharingIT;
@@ -53,6 +55,34 @@ public class ReportRestServiceIT {
     // when
     Response response =
       embeddedOptimizeRule.target("report/single")
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
+        .post(Entity.json(""));
+
+    // then the status code is okay
+    assertThat(response.getStatus(), is(200));
+    IdDto idDto =
+      response.readEntity(IdDto.class);
+    assertThat(idDto, is(notNullValue()));
+  }
+
+  @Test
+  public void createNewCombinedReportWithoutAuthentication() {
+    // when
+    Response response =
+      embeddedOptimizeRule.target("report/combined")
+        .request()
+        .post(Entity.json(""));
+
+    // then the status code is not authorized
+    assertThat(response.getStatus(), is(401));
+  }
+
+  @Test
+  public void createCombinedReport() {
+    // when
+    Response response =
+      embeddedOptimizeRule.target("report/combined")
         .request()
         .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .post(Entity.json(""));
@@ -295,6 +325,89 @@ public class ReportRestServiceIT {
 
     // then the status code is okay
     assertThat(response.getStatus(), is(200));
+  }
+
+  @Test
+  public void evaluateUnsavedCombinedReportWithoutAuthorization() {
+    // when
+    Response response =
+        embeddedOptimizeRule.target("report/evaluate/combined")
+            .request()
+            .post(Entity.json(""));
+
+    // then the status code is not authorized
+    assertThat(response.getStatus(), is(401));
+  }
+
+  @Test
+  public void evaluateCombinedUnsavedReport() {
+    // then
+    CombinedReportDataDto combinedReport = ReportDataHelper.createCombinedReport();
+    Response response = embeddedOptimizeRule.target("report/evaluate/combined")
+      .request()
+      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
+      .post(Entity.json(combinedReport));
+
+    // then the status code is okay
+    assertThat(response.getStatus(), is(200));
+  }
+
+  @Test
+  public void nullDataInCombinedReportThrowsReportEvaluationException() {
+    // given
+    Response response =
+      embeddedOptimizeRule.target("report/combined")
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
+        .post(Entity.json(""));
+    assertThat(response.getStatus(), is(200));
+    String reportId = response.readEntity(IdDto.class).getId();
+
+    // then
+    response = embeddedOptimizeRule.target("report/" + reportId + "/evaluate")
+      .request()
+      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
+      .get();
+
+    // then the status code is okay
+    assertThat(response.getStatus(), is(500));
+    ReportEvaluationException errorMessage = response.readEntity(ReportEvaluationException.class);
+    assertThat(errorMessage.getReportDefinition(), is(notNullValue()));
+    assertThat(errorMessage.getReportDefinition().getName(), is(notNullValue()));
+    assertThat(errorMessage.getReportDefinition().getId(), is(notNullValue()));
+  }
+
+  @Test
+  public void nullReportIdsThrowsReportEvaluationException() {
+    // then
+    CombinedReportDataDto combinedReport = ReportDataHelper.createCombinedReport();
+    combinedReport.setReportIds(null);
+    Response response = embeddedOptimizeRule.target("report/evaluate/combined")
+      .request()
+      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
+      .post(Entity.json(combinedReport));
+
+    // then the status code is okay
+    assertThat(response.getStatus(), is(500));
+    ReportEvaluationException errorMessage = response.readEntity(ReportEvaluationException.class);
+    assertThat(errorMessage.getReportDefinition(), is(notNullValue()));
+    assertThat(errorMessage.getReportDefinition().getData(), is(notNullValue()));
+  }
+
+  private String createNewCombinedReport() {
+    Response response =
+      embeddedOptimizeRule.target("report/combined")
+        .request()
+        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
+        .post(Entity.json(""));
+    assertThat(response.getStatus(), is(200));
+
+    String reportId = response.readEntity(IdDto.class).getId();
+    CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
+    CombinedReportDataDto dataDto = new CombinedReportDataDto();
+    report.setData(ReportDataHelper.createCombinedReport());
+    updateReport(reportId, report);
+    return reportId;
   }
 
   private String createAndStoreDefaultReportDefinition(SingleReportDataDto reportDataViewRawAsTable) {
