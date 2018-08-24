@@ -42,7 +42,6 @@ import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
@@ -546,8 +545,6 @@ public class CreateWorkflowInstanceTest {
                 ResourceType.YAML_WORKFLOW.name(),
                 "simple-workflow.yaml");
 
-    assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATED);
-
     // when
     final long workflowInstanceKey = testClient.createWorkflowInstance("yaml-workflow");
 
@@ -598,9 +595,6 @@ public class CreateWorkflowInstanceTest {
                 StreamUtil.read(resourceAsStream),
                 ResourceType.BPMN_XML.name(),
                 "collaboration.bpmn");
-
-    assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-    assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATED);
 
     // when
     final long wfInstance1 = testClient.createWorkflowInstance("process1");

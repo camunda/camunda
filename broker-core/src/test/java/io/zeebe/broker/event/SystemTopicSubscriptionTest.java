@@ -105,10 +105,10 @@ public class SystemTopicSubscriptionTest {
         apiRule
             .subscribedEvents()
             .filter((e) -> e.valueType() == ValueType.DEPLOYMENT)
-            .limit(2)
+            .limit(4)
             .collect(Collectors.toList());
 
-    assertThat(deploymentEvents).hasSize(2);
+    assertThat(deploymentEvents).hasSize(4);
 
     assertThat(deploymentEvents)
         .extracting(SubscribedRecord::subscriberKey)
@@ -131,13 +131,22 @@ public class SystemTopicSubscriptionTest {
         .containsOnly(ValueType.DEPLOYMENT);
     assertThat(deploymentEvents)
         .extracting(SubscribedRecord::sourceRecordPosition)
-        .containsExactly(-1L, deploymentEvents.get(0).position());
+        .containsExactly(
+            -1L,
+            deploymentEvents.get(0).position(),
+            deploymentEvents.get(1).position(),
+            deploymentEvents.get(2).position());
     assertThat(deploymentEvents)
         .extracting(SubscribedRecord::recordType)
-        .containsExactly(RecordType.COMMAND, RecordType.EVENT);
+        .containsExactly(
+            RecordType.COMMAND, RecordType.EVENT, RecordType.COMMAND, RecordType.EVENT);
     assertThat(deploymentEvents)
         .extracting(SubscribedRecord::intent)
-        .containsExactly(DeploymentIntent.CREATE, DeploymentIntent.CREATED);
+        .containsExactly(
+            DeploymentIntent.CREATE,
+            DeploymentIntent.DISTRIBUTE,
+            DeploymentIntent.CREATING,
+            DeploymentIntent.CREATED);
   }
 
   @Test

@@ -39,6 +39,8 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 public class StreamProcessorRule implements TestRule {
+
+  public static final int PARTITION_ID = 0;
   // environment
   private TemporaryFolder tempFolder = new TemporaryFolder();
   private AutoCloseableRule closeables = new AutoCloseableRule();
@@ -53,14 +55,23 @@ public class StreamProcessorRule implements TestRule {
   private TestStreams streams;
   private TypedStreamEnvironment streamEnvironment;
 
-  private SetupRule rule = new SetupRule();
+  private final SetupRule rule;
 
-  private RuleChain chain =
-      RuleChain.outerRule(tempFolder)
-          .around(actorSchedulerRule)
-          .around(serviceContainerRule)
-          .around(closeables)
-          .around(rule);
+  public StreamProcessorRule() {
+    this(PARTITION_ID);
+  }
+
+  public StreamProcessorRule(int partitionId) {
+    rule = new SetupRule(partitionId);
+    chain =
+        RuleChain.outerRule(tempFolder)
+            .around(actorSchedulerRule)
+            .around(serviceContainerRule)
+            .around(closeables)
+            .around(rule);
+  }
+
+  private final RuleChain chain;
 
   @Override
   public Statement apply(Statement base, Description description) {
@@ -144,6 +155,12 @@ public class StreamProcessorRule implements TestRule {
 
   private class SetupRule extends ExternalResource {
 
+    private final int partitionId;
+
+    SetupRule(int partitionId) {
+      this.partitionId = partitionId;
+    }
+
     @Override
     protected void before() throws Throwable {
       output = new BufferingServerOutput();
@@ -154,7 +171,7 @@ public class StreamProcessorRule implements TestRule {
               closeables,
               serviceContainerRule.get(),
               actorSchedulerRule.get());
-      streams.createLogStream(STREAM_NAME);
+      streams.createLogStream(STREAM_NAME, partitionId);
 
       streams
           .newRecord(

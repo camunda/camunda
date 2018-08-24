@@ -117,9 +117,13 @@ public class TestStreams {
   }
 
   public LogStream createLogStream(String name) {
+    return createLogStream(name, 0);
+  }
+
+  public LogStream createLogStream(String name, int partitionId) {
     final String rootPath = storageDirectory.getAbsolutePath();
     final LogStream logStream =
-        LogStreams.createFsLogStream(BufferUtil.wrapString(name), 0)
+        LogStreams.createFsLogStream(BufferUtil.wrapString(name), partitionId)
             .logRootPath(rootPath)
             .serviceContainer(serviceContainer)
             .logName(name)

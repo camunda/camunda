@@ -34,7 +34,6 @@ import io.zeebe.gateway.api.record.ValueType;
 import io.zeebe.gateway.api.subscription.TopicSubscription;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -101,41 +100,45 @@ public class ManagementSubscriptionTest {
         .deploymentEventHandler(events::add)
         .open();
 
-    waitUntil(() -> events.size() >= 1);
+    waitUntil(() -> events.size() >= 2);
 
     // then
-    assertThat(events).hasSize(1);
+    assertThat(events).hasSize(2);
 
-    final DeploymentEvent event = events.get(0);
-    assertThat(event.getKey()).isEqualTo(deploymentEvent.getKey());
-    assertThat(event.getState()).isEqualTo(DeploymentState.CREATED);
-    assertThat(event.getDeploymentTopic()).isEqualTo(clientRule.getDefaultTopic());
+    assertThat(events)
+        .extracting(DeploymentEvent::getState)
+        .contains(DeploymentState.CREATED, DeploymentState.DISTRIBUTE);
+    for (DeploymentEvent event : events) {
+      assertThat(event.getKey()).isEqualTo(deploymentEvent.getKey());
+      assertThat(event.getDeploymentTopic()).isEqualTo(clientRule.getDefaultTopic());
 
-    assertThat(event.getDeployedWorkflows()).hasSize(1);
-    final Workflow deployedWorkflow = event.getDeployedWorkflows().get(0);
-    assertThat(deployedWorkflow.getBpmnProcessId()).isEqualTo("wf");
-    assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
-    assertThat(deployedWorkflow.getWorkflowKey()).isEqualTo(1L);
-    assertThat(deployedWorkflow.getResourceName()).isEqualTo("wf.bpmn");
+      assertThat(event.getDeployedWorkflows()).hasSize(1);
+      final Workflow deployedWorkflow = event.getDeployedWorkflows().get(0);
+      assertThat(deployedWorkflow.getBpmnProcessId()).isEqualTo("wf");
+      assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
+      assertThat(deployedWorkflow.getWorkflowKey()).isEqualTo(1L);
+      assertThat(deployedWorkflow.getResourceName()).isEqualTo("wf.bpmn");
 
-    assertThat(event.getResources()).hasSize(1);
-    final DeploymentResource deploymentResource = event.getResources().get(0);
-    assertThat(deploymentResource.getResourceName()).isEqualTo("wf.bpmn");
-    assertThat(deploymentResource.getResourceType()).isEqualTo(ResourceType.BPMN_XML);
-    assertThat(deploymentResource.getResource())
-        .isEqualTo(Bpmn.convertToString(WORKFLOW).getBytes(StandardCharsets.UTF_8));
+      assertThat(event.getResources()).hasSize(1);
+      final DeploymentResource deploymentResource = event.getResources().get(0);
+      assertThat(deploymentResource.getResourceName()).isEqualTo("wf.bpmn");
+      assertThat(deploymentResource.getResourceType()).isEqualTo(ResourceType.BPMN_XML);
+      assertThat(deploymentResource.getResource())
+          .isEqualTo(Bpmn.convertToString(WORKFLOW).getBytes(StandardCharsets.UTF_8));
+    }
   }
 
   @Test
   public void shouldReceiveDeploymentCommand() {
     // given
-    client
-        .topicClient()
-        .workflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(WORKFLOW, "wf.bpmn")
-        .send()
-        .join();
+    final DeploymentEvent deploymentEvent =
+        client
+            .topicClient()
+            .workflowClient()
+            .newDeployCommand()
+            .addWorkflowModel(WORKFLOW, "wf.bpmn")
+            .send()
+            .join();
 
     // when
     final List<DeploymentCommand> commands = new ArrayList<>();
@@ -145,22 +148,26 @@ public class ManagementSubscriptionTest {
         .deploymentCommandHandler(commands::add)
         .open();
 
-    waitUntil(() -> commands.size() >= 1);
+    waitUntil(() -> commands.size() >= 2);
 
     // then
-    assertThat(commands).hasSize(1);
+    assertThat(commands).hasSize(2);
 
-    final DeploymentCommand command = commands.get(0);
-    assertThat(command.getKey()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
-    assertThat(command.getName()).isEqualTo(DeploymentCommandName.CREATE);
-    assertThat(command.getDeploymentTopic()).isEqualTo(clientRule.getDefaultTopic());
+    assertThat(commands)
+        .extracting(DeploymentCommand::getName)
+        .contains(DeploymentCommandName.CREATE, DeploymentCommandName.CREATING);
+    assertThat(commands).extracting(Record::getKey).contains(-1L, deploymentEvent.getKey());
 
-    assertThat(command.getResources()).hasSize(1);
-    final DeploymentResource deploymentResource = command.getResources().get(0);
-    assertThat(deploymentResource.getResourceName()).isEqualTo("wf.bpmn");
-    assertThat(deploymentResource.getResourceType()).isEqualTo(ResourceType.BPMN_XML);
-    assertThat(deploymentResource.getResource())
-        .isEqualTo(Bpmn.convertToString(WORKFLOW).getBytes(StandardCharsets.UTF_8));
+    for (DeploymentCommand command : commands) {
+      assertThat(command.getDeploymentTopic()).isEqualTo(clientRule.getDefaultTopic());
+
+      assertThat(command.getResources()).hasSize(1);
+      final DeploymentResource deploymentResource = command.getResources().get(0);
+      assertThat(deploymentResource.getResourceName()).isEqualTo("wf.bpmn");
+      assertThat(deploymentResource.getResourceType()).isEqualTo(ResourceType.BPMN_XML);
+      assertThat(deploymentResource.getResource())
+          .isEqualTo(Bpmn.convertToString(WORKFLOW).getBytes(StandardCharsets.UTF_8));
+    }
   }
 
   @Test
@@ -183,10 +190,10 @@ public class ManagementSubscriptionTest {
         .send()
         .join();
 
-    waitUntil(() -> records.size() >= 2);
+    waitUntil(() -> records.size() >= 4);
 
     // then
-    assertThat(records).hasSize(2);
+    assertThat(records).hasSize(4);
     assertThat(records)
         .extracting(r -> r.getMetadata().getValueType())
         .containsOnly(ValueType.DEPLOYMENT);
