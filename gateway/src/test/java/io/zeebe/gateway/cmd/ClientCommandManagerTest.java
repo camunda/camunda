@@ -24,7 +24,6 @@ import static org.hamcrest.CoreMatchers.containsString;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import io.zeebe.gateway.ZeebeClient;
-import io.zeebe.gateway.api.ZeebeFuture;
 import io.zeebe.gateway.api.events.JobEvent;
 import io.zeebe.gateway.impl.CommandImpl;
 import io.zeebe.gateway.impl.ZeebeClientImpl;
@@ -39,6 +38,7 @@ import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.brokerapi.ControlMessageRequest;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
+import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 import java.util.List;
 import org.junit.Before;
@@ -107,10 +107,10 @@ public class ClientCommandManagerTest {
         .errorData("test")
         .register();
 
-    final ZeebeFuture<JobEvent> future =
+    final ActorFuture<JobEvent> future =
         client.topicClient().jobClient().newCreateCommand().jobType("foo").send();
 
-    assertThatThrownBy(() -> future.join())
+    assertThatThrownBy(future::join)
         .isInstanceOf(RuntimeException.class)
         .hasMessageContaining("Request exception (REQUEST_PROCESSING_FAILURE): test");
 

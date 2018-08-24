@@ -17,31 +17,43 @@ package io.zeebe.gateway;
 
 import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.MockitoAnnotations.initMocks;
 
-import io.grpc.stub.StreamObserver;
-import io.zeebe.gateway.mocks.ZeebeClientMock;
+import io.zeebe.gateway.api.commands.Topology;
 import io.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
+import io.zeebe.gateway.util.RecordingStreamObserver;
+import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
+import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.Mock;
 
 public class HealthCheckEndpointTest {
 
-  private ResponseMapper responseMapper;
+  @Rule public ControlledActorSchedulerRule actorSchedulerRule = new ControlledActorSchedulerRule();
 
-  private HealthRequest request;
+  @Mock private ResponseMapper responseMapper;
+
+  @Mock private ClusterClient clusterClient;
+
+  private EndpointManager endpointManager;
+
+  private HealthRequest request = HealthRequest.getDefaultInstance();
   private HealthResponse response;
+  private RecordingStreamObserver<HealthResponse> streamObserver = new RecordingStreamObserver<>();
 
   @Before
   public void setUp() {
-    this.request = HealthRequest.getDefaultInstance();
-    this.responseMapper = mock(ResponseMapper.class);
+    initMocks(this);
+
+    endpointManager = new EndpointManager(responseMapper, clusterClient, actorSchedulerRule.get());
 
     final Partition partition =
         Partition.newBuilder()
@@ -59,35 +71,38 @@ public class HealthCheckEndpointTest {
                     .addPartitions(partition)
                     .build())
             .build();
-    when(responseMapper.toResponse(any())).thenReturn(this.response);
+    when(responseMapper.toResponse(any())).thenReturn(response);
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   public void healthCheckShouldCheckCorrectInvocation() {
-    final EndpointManager endpoints =
-        new EndpointManager(this.responseMapper, new ZeebeClientMock());
+    // given
+    final ActorFuture<Topology> responseFuture = CompletableActorFuture.completed(null);
+    when(clusterClient.sendRequest(any())).thenReturn(responseFuture);
 
-    final StreamObserver<HealthResponse> observer =
-        (StreamObserver<HealthResponse>) mock(StreamObserver.class);
+    // when
+    sendRequest();
 
-    endpoints.health(this.request, observer);
-
-    verify(observer).onNext(this.response);
-    verify(observer).onCompleted();
+    // then
+    streamObserver.assertValues(response);
   }
 
   @Test
-  @SuppressWarnings("unchecked")
   public void healthCheckShouldProduceException() {
-    final EndpointManager endpointsWithError =
-        new EndpointManager(responseMapper, new ZeebeClientMock(true));
+    // given
+    final RuntimeException exception = new RuntimeException("test");
+    when(clusterClient.sendRequest(any()))
+        .thenReturn(CompletableActorFuture.completedExceptionally(exception));
 
-    final StreamObserver<HealthResponse> observer =
-        (StreamObserver<HealthResponse>) mock(StreamObserver.class);
+    // when
+    sendRequest();
 
-    endpointsWithError.health(this.request, observer);
+    // then
+    streamObserver.assertErrors(exception);
+  }
 
-    verify(observer).onError(any(RuntimeException.class));
+  private void sendRequest() {
+    endpointManager.health(this.request, streamObserver);
+    actorSchedulerRule.workUntilDone();
   }
 }

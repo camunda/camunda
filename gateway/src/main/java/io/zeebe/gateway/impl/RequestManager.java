@@ -15,7 +15,6 @@
  */
 package io.zeebe.gateway.impl;
 
-import io.zeebe.gateway.api.ZeebeFuture;
 import io.zeebe.gateway.api.record.Record;
 import io.zeebe.gateway.cmd.BrokerErrorException;
 import io.zeebe.gateway.cmd.ClientCommandRejectedException;
@@ -81,19 +80,43 @@ public class RequestManager extends Actor {
   }
 
   private <R> ResponseFuture<R> executeAsync(final RequestResponseHandler requestHandler) {
-    final Supplier<RemoteAddress> remoteProvider = determineRemoteProvider(requestHandler);
+    final ActorFuture<Supplier<RemoteAddress>> remoteProvider =
+        determineRemoteProvider(requestHandler);
 
-    final ActorFuture<ClientResponse> responseFuture =
-        output.sendRequestWithRetry(
-            remoteProvider, RequestManager::shouldRetryRequest, requestHandler, requestTimeout);
+    final CompletableActorFuture<ClientResponse> deferredFuture = new CompletableActorFuture<>();
 
-    if (responseFuture != null) {
-      return new ResponseFuture<>(responseFuture, requestHandler, requestTimeout);
-    } else {
-      throw new ClientOutOfMemoryException(
-          "Zeebe client is out of buffer memory and cannot make "
-              + "new requests until memory is reclaimed.");
-    }
+    actor.call(
+        () ->
+            actor.runOnCompletion(
+                remoteProvider,
+                (v, t) -> {
+                  if (t == null) {
+                    final ActorFuture<ClientResponse> responseFuture =
+                        output.sendRequestWithRetry(
+                            v, RequestManager::shouldRetryRequest, requestHandler, requestTimeout);
+
+                    if (responseFuture != null) {
+                      actor.runOnCompletion(
+                          responseFuture,
+                          (response, error) -> {
+                            if (error == null) {
+                              deferredFuture.complete(response);
+                            } else {
+                              deferredFuture.completeExceptionally(error);
+                            }
+                          });
+                    } else {
+                      deferredFuture.completeExceptionally(t);
+                    }
+                  } else {
+                    deferredFuture.completeExceptionally(
+                        new ClientOutOfMemoryException(
+                            "Zeebe client is out of buffer memory and cannot make "
+                                + "new requests until memory is reclaimed."));
+                  }
+                }));
+
+    return new ResponseFuture<>(deferredFuture, requestHandler, requestTimeout);
   }
 
   private static boolean shouldRetryRequest(DirectBuffer responseContent) {
@@ -145,13 +168,15 @@ public class RequestManager extends Actor {
         });
   }
 
-  private Supplier<RemoteAddress> determineRemoteProvider(RequestResponseHandler requestHandler) {
+  private ActorFuture<Supplier<RemoteAddress>> determineRemoteProvider(
+      RequestResponseHandler requestHandler) {
     if (!requestHandler.addressesSpecificTopic() && !requestHandler.addressesSpecificPartition()) {
-      return new BrokerProvider((topology) -> topology.getRandomBroker());
+      return CompletableActorFuture.completed(
+          new BrokerProvider(ClusterStateImpl::getRandomBroker));
     } else {
       final int targetPartition;
       if (!requestHandler.addressesSpecificPartition()) {
-        int proposedPartition =
+        final int proposedPartition =
             dispatchStrategy.determinePartition(requestHandler.getTargetTopic());
 
         if (proposedPartition >= 0) {
@@ -160,27 +185,32 @@ public class RequestManager extends Actor {
           final ActorFuture<Integer> partitionFuture =
               updateTopologyAndDeterminePartition(requestHandler.getTargetTopic());
 
-          try {
-            proposedPartition =
-                partitionFuture.get(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-          } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            proposedPartition = -1;
-          }
+          final CompletableActorFuture<Supplier<RemoteAddress>> returnedFuture =
+              new CompletableActorFuture<>();
 
-          targetPartition = proposedPartition;
+          actor.call(
+              () ->
+                  actor.runOnCompletion(
+                      partitionFuture,
+                      (p, t) -> {
+                        if (t == null) {
+                          returnedFuture.complete(
+                              new BrokerProvider(topology -> topology.getLeaderForPartition(p)));
+                        } else {
+                          returnedFuture.completeExceptionally(t);
+                        }
+                      }));
+
+          return returnedFuture;
         }
-        if (targetPartition < 0) {
-          throw new ClientException(
-              "Cannot determine target partition for request. Request was: "
-                  + requestHandler.describeRequest());
-        } else {
-          requestHandler.onSelectedPartition(targetPartition);
-        }
+
+        requestHandler.onSelectedPartition(targetPartition);
       } else {
         targetPartition = requestHandler.getTargetPartition();
       }
 
-      return new BrokerProvider((topology) -> topology.getLeaderForPartition(targetPartition));
+      return CompletableActorFuture.completed(
+          new BrokerProvider((topology) -> topology.getLeaderForPartition(targetPartition)));
     }
   }
 
@@ -232,7 +262,7 @@ public class RequestManager extends Actor {
     }
   }
 
-  public static class ResponseFuture<E> implements ActorFuture<E>, ZeebeFuture<E> {
+  public static class ResponseFuture<E> implements ActorFuture<E> {
     protected final ActorFuture<ClientResponse> transportFuture;
     protected final RequestResponseHandler responseHandler;
     protected final ErrorResponseHandler errorHandler = new ErrorResponseHandler();
@@ -417,24 +447,6 @@ public class RequestManager extends Actor {
           throw new ClientException(cause.getMessage(), cause);
         }
       } catch (InterruptedException e) {
-        throw new ClientException(e.getMessage(), e);
-      }
-    }
-
-    @Override
-    public E join(long timeout, TimeUnit unit) {
-      try {
-        return get(timeout, unit);
-      } catch (ExecutionException e) {
-        final Throwable cause = e.getCause();
-
-        if (cause instanceof ClientException) {
-          final ClientException clientException = (ClientException) cause;
-          throw clientException.newInCurrentContext();
-        } else {
-          throw new ClientException(cause.getMessage(), cause);
-        }
-      } catch (InterruptedException | TimeoutException e) {
         throw new ClientException(e.getMessage(), e);
       }
     }

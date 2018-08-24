@@ -24,7 +24,6 @@ import static org.assertj.core.api.Assertions.entry;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
-import io.zeebe.gateway.api.ZeebeFuture;
 import io.zeebe.gateway.api.clients.WorkflowClient;
 import io.zeebe.gateway.api.events.DeploymentEvent;
 import io.zeebe.gateway.api.events.MessageEvent;
@@ -33,6 +32,7 @@ import io.zeebe.gateway.api.events.WorkflowInstanceState;
 import io.zeebe.gateway.cmd.ClientCommandRejectedException;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 import java.util.Collections;
 import org.junit.Before;
@@ -42,6 +42,13 @@ import org.junit.rules.RuleChain;
 
 public class PublishMessageTest {
 
+  private static final BpmnModelInstance WORKFLOW =
+      Bpmn.createExecutableProcess("wf")
+          .startEvent()
+          .intermediateCatchEvent("catch-event")
+          .message(c -> c.name("order canceled").zeebeCorrelationKey("$.orderId"))
+          .endEvent()
+          .done();
   public EmbeddedBrokerRule brokerRule =
       new EmbeddedBrokerRule("zeebe.unit-test.increased.partitions.cfg.toml");
   public ClientRule clientRule = new ClientRule();
@@ -51,14 +58,6 @@ public class PublishMessageTest {
   @Rule
   public RuleChain ruleChain =
       RuleChain.outerRule(brokerRule).around(clientRule).around(eventRecorder);
-
-  private static final BpmnModelInstance WORKFLOW =
-      Bpmn.createExecutableProcess("wf")
-          .startEvent()
-          .intermediateCatchEvent("catch-event")
-          .message(c -> c.name("order canceled").zeebeCorrelationKey("$.orderId"))
-          .endEvent()
-          .done();
 
   private WorkflowClient workflowClient;
 
@@ -242,7 +241,7 @@ public class PublishMessageTest {
         .join();
 
     // when
-    final ZeebeFuture<MessageEvent> future =
+    final ActorFuture<MessageEvent> future =
         workflowClient
             .newPublishMessageCommand()
             .messageName("order canceled")

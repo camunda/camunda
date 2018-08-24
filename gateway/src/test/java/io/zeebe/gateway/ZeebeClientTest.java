@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
-import io.zeebe.gateway.api.ZeebeFuture;
 import io.zeebe.gateway.api.clients.JobClient;
 import io.zeebe.gateway.api.events.JobEvent;
 import io.zeebe.gateway.api.subscription.TopicSubscription;
@@ -34,6 +33,7 @@ import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandResponseBuilder;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
@@ -41,6 +41,7 @@ import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.TransportListener;
+import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -175,22 +176,22 @@ public class ZeebeClientTest {
 
     stubJobResponse();
 
-    final List<ZeebeFuture<JobEvent>> futures = new ArrayList<>();
+    final List<ActorFuture<JobEvent>> futures = new ArrayList<>();
     for (int i = 0; i < clientMaxRequests; i++) {
-      final ZeebeFuture<JobEvent> future =
+      final ActorFuture<JobEvent> future =
           client.topicClient().jobClient().newCreateCommand().jobType("bar").send();
 
       futures.add(future);
     }
 
     // when
-    for (ZeebeFuture<JobEvent> future : futures) {
+    for (ActorFuture<JobEvent> future : futures) {
       future.join();
     }
 
     // then
     for (int i = 0; i < clientMaxRequests; i++) {
-      final ZeebeFuture<JobEvent> future =
+      final ActorFuture<JobEvent> future =
           client.topicClient().jobClient().newCreateCommand().jobType("bar").send();
 
       futures.add(future);
@@ -205,16 +206,16 @@ public class ZeebeClientTest {
     broker.onExecuteCommandRequest(ValueType.JOB, JobIntent.COMPLETE).doNotRespond();
 
     // given
-    final List<ZeebeFuture<JobEvent>> futures = new ArrayList<>();
+    final List<ActorFuture<JobEvent>> futures = new ArrayList<>();
     for (int i = 0; i < clientMaxRequests; i++) {
-      final ZeebeFuture<JobEvent> future =
+      final ActorFuture<JobEvent> future =
           client.topicClient().jobClient().newCompleteCommand(baseEvent).send();
 
       futures.add(future);
     }
 
     // when
-    for (ZeebeFuture<JobEvent> future : futures) {
+    for (ActorFuture<JobEvent> future : futures) {
       try {
         future.join();
         fail("exception expected");
@@ -225,7 +226,7 @@ public class ZeebeClientTest {
 
     // then
     for (int i = 0; i < clientMaxRequests; i++) {
-      final ZeebeFuture<JobEvent> future =
+      final ActorFuture<JobEvent> future =
           client.topicClient().jobClient().newCompleteCommand(baseEvent).send();
 
       futures.add(future);
@@ -280,7 +281,7 @@ public class ZeebeClientTest {
     // given
     final JobEventImpl baseEvent = Events.exampleJob();
 
-    broker.jobs().registerCompleteCommand(r -> r.rejection());
+    broker.jobs().registerCompleteCommand(ExecuteCommandResponseBuilder::rejection);
 
     // when
     try {
