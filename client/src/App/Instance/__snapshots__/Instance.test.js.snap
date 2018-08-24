@@ -20,7 +20,7 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
                 "endDate": null,
                 "id": "4294983744",
                 "startDate": "2018-07-16T09:30:56.276Z",
-                "state": "ACTIVE",
+                "state": "INCIDENT",
               },
             ],
             "businessKey": "demoProcess",
@@ -68,7 +68,7 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
                   "endDate": null,
                   "id": "4294983744",
                   "startDate": "2018-07-16T09:30:56.276Z",
-                  "state": "ACTIVE",
+                  "state": "INCIDENT",
                 },
               ],
               "businessKey": "demoProcess",
@@ -90,12 +90,21 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
               "workflowId": "1",
             }
           }
+          onFlowNodeSelected={[Function]}
           onFlowNodesDetailsReady={[Function]}
+          selectableFlowNodes={
+            Array [
+              "foo",
+              "taskA",
+            ]
+          }
+          selectedFlowNode="foo"
         />
         <InstanceHistory
           activitiesDetails={
             Object {
-              "foo": "bar",
+              "foo": "foo",
+              "taskA": "taskA",
             }
           }
           instance={
@@ -113,7 +122,7 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
                   "endDate": null,
                   "id": "4294983744",
                   "startDate": "2018-07-16T09:30:56.276Z",
-                  "state": "ACTIVE",
+                  "state": "INCIDENT",
                 },
               ],
               "businessKey": "demoProcess",
@@ -135,6 +144,8 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
               "workflowId": "1",
             }
           }
+          onActivitySelected={[Function]}
+          selectedActivity="foo"
         />
       </SplitPane>
     </styled.div>

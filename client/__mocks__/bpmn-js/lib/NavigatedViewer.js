@@ -1,10 +1,19 @@
 class Viewer {
   constructor({container, bpmnRenderer} = {}) {
-    this.canvas = {zoom: jest.fn()};
+    this.canvas = {
+      zoom: jest.fn(),
+      addMarker: jest.fn(),
+      removeMarker: jest.fn()
+    };
     this.zoomScroll = {stepZoom: jest.fn()};
     this.container = container;
     this.bpmnRenderer = bpmnRenderer;
-    this.elementRegistry = 'foo';
+    this.elementRegistry = {
+      getGraphics: jest.fn(() => ({
+        querySelector: jest.fn(() => ({setAttribute: jest.fn()}))
+      }))
+    };
+    this.eventBus = {on: jest.fn()};
   }
 
   importXML = jest.fn((_, callback) => {

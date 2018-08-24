@@ -2,7 +2,7 @@
 
 exports[`Diagram should render Diagram with controls 1`] = `
 <styled.div>
-  <styled.div
+  <Themed(styled.div)
     innerRef={[Function]}
   />
   <DiagramControls

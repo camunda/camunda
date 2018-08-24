@@ -47,7 +47,7 @@ const INSTANCE = {
       endDate: null,
       id: '4294983744',
       startDate: '2018-07-16T09:30:56.276Z',
-      state: ACTIVITY_STATE.ACTIVE
+      state: ACTIVITY_STATE.INCIDENT
     }
   ]
 };
@@ -58,6 +58,7 @@ api.fetchWorkflowInstance = mockResolvedAsyncFn(INSTANCE);
 const initialState = {
   instance: null,
   activitiesDetails: null,
+  selectedActivity: null,
   loaded: false
 };
 
@@ -76,6 +77,20 @@ describe('Instance', () => {
       const node = shallow(component);
       expect(node.state()).toEqual(initialState);
       expect(node.text()).toContain('Loading');
+    });
+  });
+
+  describe('handleActivitySelection', () => {
+    it('should set state.selectedActivity to provided value', () => {
+      // given
+      const node = shallow(component);
+
+      // when
+      node.instance().handleActivitySelection('foo');
+      node.update();
+
+      // then
+      expect(node.state('selectedActivity')).toBe('foo');
     });
   });
 
@@ -103,7 +118,7 @@ describe('Instance', () => {
     });
   });
 
-  describe('onFlowNodesDetailsReady', () => {
+  describe('handleFlowNodesDetailsReady', () => {
     it('should set state.activitiesDetails from given flowNodesDetails', async () => {
       // given
       const node = shallow(component);
@@ -117,7 +132,7 @@ describe('Instance', () => {
 
       // when
       await flushPromises();
-      node.instance().onFlowNodesDetailsReady(mockFlowNodesDetails);
+      node.instance().handleFlowNodesDetailsReady(mockFlowNodesDetails);
       node.update();
 
       // then
@@ -138,10 +153,11 @@ describe('Instance', () => {
     it('should display a Header, DiagramPanel and Copyright', async () => {
       // given
       const node = shallow(component);
-      const ACTIVITIES_DETAILS = {foo: 'bar'};
+      const ACTIVITIES_DETAILS = {foo: 'foo', taskA: 'taskA'};
       node.setState({
         instance: INSTANCE,
-        activitiesDetails: ACTIVITIES_DETAILS
+        activitiesDetails: ACTIVITIES_DETAILS,
+        selectedActivity: 'foo'
       });
       await flushPromises();
       node.update();
@@ -158,8 +174,13 @@ describe('Instance', () => {
       const DiagramPanelNode = node.find(DiagramPanel);
       expect(DiagramPanelNode).toHaveLength(1);
       expect(DiagramPanelNode.prop('instance')).toEqual(INSTANCE);
-      expect(DiagramPanelNode.prop('onFlowNodesDetailsReady')).toBe(
-        node.instance().onFlowNodesDetailsReady
+      expect(DiagramPanelNode.prop('selectableFlowNodes')).toEqual([
+        'foo',
+        'taskA'
+      ]);
+      expect(DiagramPanelNode.prop('selectedFlowNode')).toBe('foo');
+      expect(DiagramPanelNode.prop('onFlowNodeSelected')).toBe(
+        node.instance().handleActivitySelection
       );
       // InstanceHistory
       const InstanceHistoryNode = node.find(InstanceHistory);
@@ -167,6 +188,10 @@ describe('Instance', () => {
       expect(InstanceHistoryNode.prop('instance')).toEqual(INSTANCE);
       expect(InstanceHistoryNode.prop('activitiesDetails')).toEqual(
         ACTIVITIES_DETAILS
+      );
+      expect(InstanceHistoryNode.prop('selectedActivity')).toBe('foo');
+      expect(InstanceHistoryNode.prop('onActivitySelected')).toBe(
+        node.instance().handleActivitySelection
       );
       // snapshot
       expect(node).toMatchSnapshot();

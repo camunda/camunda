@@ -2,14 +2,11 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import {getWorkflowName} from 'modules/utils/instance';
-import {HEADER} from 'modules/constants';
 
 import InstanceLog from './InstanceLog';
 import * as Styled from './styled';
 
 const mockProps = {
-  selectedLogEntry: HEADER,
-  onSelect: jest.fn(),
   instance: {
     workflowId: 'foo'
   },
@@ -17,19 +14,23 @@ const mockProps = {
     1: {
       state: 'someState1',
       type: 'someType1',
-      name: 'someName1'
+      name: 'someName1',
+      activityId: 'activity1'
     },
     2: {
       state: 'someState2',
       type: 'someType2',
-      name: 'someName2'
+      name: 'someName2',
+      activityId: 'activity2'
     }
-  }
+  },
+  selectedActivity: null,
+  onActivitySelected: jest.fn()
 };
 
 describe('InstanceLog', () => {
   beforeEach(() => {
-    mockProps.onSelect.mockClear();
+    mockProps.onActivitySelected.mockClear();
   });
 
   it('should only render selected header if there is instance and no activitiesDetails', () => {
@@ -86,10 +87,10 @@ describe('InstanceLog', () => {
   });
 
   describe('selection', () => {
-    it('should select header ROW on prop.selectedLogEntry', () => {
+    it('should select header ROW on prop.selectedActivity', () => {
       // given
       const node = shallow(
-        <InstanceLog {...mockProps} selectedLogEntry={HEADER} />
+        <InstanceLog {...mockProps} selectedActivity={null} />
       );
       let HeaderToggleNode = node.find(Styled.HeaderToggle);
 
@@ -100,9 +101,11 @@ describe('InstanceLog', () => {
       ).toBe(true);
     });
 
-    it('should select row based on prop.selectedLogEntry', () => {
+    it('should select row based on prop.selectedActivity', () => {
       // given
-      const node = shallow(<InstanceLog {...mockProps} selectedLogEntry="1" />);
+      const node = shallow(
+        <InstanceLog {...mockProps} selectedActivity="activity1" />
+      );
 
       // then
       const LogEntryToggleNode = node.find(Styled.LogEntryToggle).at(0);
@@ -115,26 +118,24 @@ describe('InstanceLog', () => {
     it('should change selection when clicking on a log entry', () => {
       // given
       const node = shallow(<InstanceLog {...mockProps} />);
-      const activitiesDetailsEntries = Object.entries(
-        mockProps.activitiesDetails
-      );
       const LogEntryToggleNodes = node.find(Styled.LogEntryToggle);
 
-      LogEntryToggleNodes.forEach((LogEntryToggleNode, idx) => {
+      LogEntryToggleNodes.forEach(LogEntryToggleNode => {
         // when
         LogEntryToggleNode.simulate('click');
 
         // then
-        expect(mockProps.onSelect).toBeCalledWith(
-          activitiesDetailsEntries[idx][0]
+        const id = LogEntryToggleNode.prop('data-test-key');
+        expect(mockProps.onActivitySelected).toBeCalledWith(
+          mockProps.activitiesDetails[id].activityId
         );
       });
     });
 
-    it('should change selection to header when clicking on it', () => {
+    it('should change selection to null when clicking on the header', () => {
       // given
       const node = shallow(
-        <InstanceLog {...mockProps} selectedLogEntry="foo" />
+        <InstanceLog {...mockProps} selectedActivity="foo" />
       );
       let HeaderToggleNode = node.find(Styled.HeaderToggle);
 
@@ -142,7 +143,7 @@ describe('InstanceLog', () => {
       HeaderToggleNode.simulate('click');
 
       // then
-      expect(mockProps.onSelect).toBeCalledWith(HEADER);
+      expect(mockProps.onActivitySelected).toBeCalledWith(null);
     });
   });
 });

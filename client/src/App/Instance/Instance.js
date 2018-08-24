@@ -4,16 +4,12 @@ import PropTypes from 'prop-types';
 import Content from 'modules/components/Content';
 import SplitPane from 'modules/components/SplitPane';
 import * as api from 'modules/api/instances';
-import {getActiveIncident} from 'modules/utils/instance';
-import {ACTIVITY_STATE} from 'modules/constants';
 
 import InstanceDetail from './InstanceDetail';
 import Header from '../Header';
 import DiagramPanel from './DiagramPanel';
 import InstanceHistory from './InstanceHistory';
 import * as Styled from './styled';
-
-const {ACTIVE, INCIDENT} = ACTIVITY_STATE;
 
 export default class Instance extends Component {
   static propTypes = {
@@ -27,6 +23,7 @@ export default class Instance extends Component {
   state = {
     instance: null,
     activitiesDetails: null,
+    selectedActivity: null,
     loaded: false
   };
 
@@ -40,18 +37,11 @@ export default class Instance extends Component {
     });
   }
 
-  onFlowNodesDetailsReady = flowNodesDetails => {
+  handleFlowNodesDetailsReady = flowNodesDetails => {
     const {instance} = this.state;
-    const {activityInstanceId} = getActiveIncident(instance.incidents) || {};
 
     const activitiesDetails = instance.activities.reduce(
       (map, {id, ...activity}) => {
-        // change activity state to incident in case the activity is active
-        // and it has an active incident
-        if (activity.state === ACTIVE && activityInstanceId === id) {
-          activity.state = INCIDENT;
-        }
-
         return {
           ...map,
           [id]: {
@@ -66,10 +56,18 @@ export default class Instance extends Component {
     this.setState({activitiesDetails});
   };
 
+  handleActivitySelection = selectedActivity => {
+    this.setState({selectedActivity});
+  };
+
   render() {
     if (!this.state.loaded) {
       return 'Loading';
     }
+
+    const instanceActivitiesIds = (
+      (this.state.instance || {}).activities || []
+    ).map(({activityId}) => activityId);
 
     return (
       <Fragment>
@@ -85,11 +83,16 @@ export default class Instance extends Component {
             <SplitPane>
               <DiagramPanel
                 instance={this.state.instance}
-                onFlowNodesDetailsReady={this.onFlowNodesDetailsReady}
+                onFlowNodesDetailsReady={this.handleFlowNodesDetailsReady}
+                selectableFlowNodes={instanceActivitiesIds}
+                selectedFlowNode={this.state.selectedActivity}
+                onFlowNodeSelected={this.handleActivitySelection}
               />
               <InstanceHistory
                 instance={this.state.instance}
                 activitiesDetails={this.state.activitiesDetails}
+                selectedActivity={this.state.selectedActivity}
+                onActivitySelected={this.handleActivitySelection}
               />
             </SplitPane>
           </Styled.Instance>

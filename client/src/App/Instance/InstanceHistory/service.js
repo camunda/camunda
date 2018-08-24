@@ -1,5 +1,3 @@
-import {HEADER} from 'modules/constants';
-
 /**
  * @returns {Array} of both:
  *  (1) events that don't have any activityInstanceId
@@ -18,16 +16,21 @@ import {HEADER} from 'modules/constants';
 export function getGroupedEvents({
   events,
   activitiesDetails,
-  selectedLogEntry
+  selectedActivity
 }) {
   let groupedEvents = [];
   // make a deep clone of the activitiesDetails object
   let activitiesEvents = JSON.parse(JSON.stringify(activitiesDetails));
+  const selectedActivityInstance = (Object.entries(activitiesDetails).filter(
+    ([_, {activityId}]) => {
+      return activityId === selectedActivity;
+    }
+  )[0] || [])[0];
 
   events.forEach(event => {
     if (
-      selectedLogEntry !== HEADER &&
-      selectedLogEntry !== event.activityInstanceId
+      selectedActivityInstance &&
+      selectedActivityInstance !== event.activityInstanceId
     ) {
       return;
     }
@@ -35,7 +38,7 @@ export function getGroupedEvents({
     // if it doesn't have an activityInstanceId it doesn't belong to an activity events group
     if (
       !event.activityInstanceId ||
-      selectedLogEntry === event.activityInstanceId
+      selectedActivityInstance === event.activityInstanceId
     ) {
       return groupedEvents.push(event);
     }

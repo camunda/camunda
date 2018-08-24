@@ -21,7 +21,10 @@ export default class DiagramPanel extends React.Component {
       errorMessage: PropTypes.string
     }).isRequired,
     paneId: PropTypes.string,
-    onFlowNodesDetailsReady: PropTypes.func
+    onFlowNodesDetailsReady: PropTypes.func,
+    selectableFlowNodes: PropTypes.arrayOf(PropTypes.string),
+    selectedFlowNode: PropTypes.string,
+    onFlowNodeSelected: PropTypes.func
   };
 
   render() {
@@ -48,6 +51,9 @@ export default class DiagramPanel extends React.Component {
           <Diagram
             workflowId={instance.workflowId}
             onFlowNodesDetailsReady={this.props.onFlowNodesDetailsReady}
+            selectableFlowNodes={this.props.selectableFlowNodes}
+            selectedFlowNode={this.props.selectedFlowNode}
+            onFlowNodeSelected={this.props.onFlowNodeSelected}
           />
         </SplitPane.Pane.Body>
       </SplitPane.Pane>

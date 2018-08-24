@@ -14,11 +14,11 @@ exports[`InstanceHistory should render a pane with InstanceLog section and Copyr
   }
   instance={
     Object {
-      "instance": Object {
-        "id": "someInstanceId",
-      },
+      "id": "someInstanceId",
     }
   }
+  onActivitySelected={[Function]}
+  selectedActivity="foo"
 >
   <PanelHeader
     isRounded={false}
@@ -39,13 +39,11 @@ exports[`InstanceHistory should render a pane with InstanceLog section and Copyr
       }
       instance={
         Object {
-          "instance": Object {
-            "id": "someInstanceId",
-          },
+          "id": "someInstanceId",
         }
       }
-      onSelect={[Function]}
-      selectedLogEntry="HEADER"
+      onActivitySelected={[Function]}
+      selectedActivity="foo"
     />
     <InstanceEvents
       groupedEvents={

@@ -15,29 +15,45 @@ export default class InstanceLog extends React.Component {
       type: PropTypes.string,
       name: PropTypes.string
     }),
-    selectedLogEntry: PropTypes.string,
-    onSelect: PropTypes.func.isRequired
+    selectedActivity: PropTypes.string,
+    onActivitySelected: PropTypes.func
+  };
+
+  static defaultProps = {
+    onActivitySelected: () => {}
   };
 
   state = {
     selected: HEADER
   };
 
-  renderLogEntry = ([id, {state, type, name}]) => (
-    <Styled.LogEntry key={id}>
-      <Styled.LogEntryToggle
-        isSelected={this.props.selectedLogEntry === id}
-        onClick={() => this.props.onSelect(id)}
-      >
-        <Styled.FlowNodeIcon
-          state={state}
-          type={type}
-          isSelected={this.props.selectedLogEntry === id}
-        />
-        {name}
-      </Styled.LogEntryToggle>
-    </Styled.LogEntry>
-  );
+  renderLogEntry = ([id, {state, type, name}]) => {
+    const {activitiesDetails, selectedActivity} = this.props;
+    const selectedActivityInstance = (Object.entries(activitiesDetails).filter(
+      ([_, {activityId}]) => {
+        return activityId === selectedActivity;
+      }
+    )[0] || [])[0];
+
+    return (
+      <Styled.LogEntry key={id}>
+        <Styled.LogEntryToggle
+          data-test-key={id}
+          isSelected={id === selectedActivityInstance}
+          onClick={() =>
+            this.props.onActivitySelected(activitiesDetails[id].activityId)
+          }
+        >
+          <Styled.FlowNodeIcon
+            state={state}
+            type={type}
+            isSelected={id === selectedActivityInstance}
+          />
+          {name}
+        </Styled.LogEntryToggle>
+      </Styled.LogEntry>
+    );
+  };
 
   render() {
     const {instance, activitiesDetails} = this.props;
@@ -46,11 +62,11 @@ export default class InstanceLog extends React.Component {
       <Styled.InstanceLog {...this.props}>
         <Styled.LogEntry>
           <Styled.HeaderToggle
-            isSelected={this.props.selectedLogEntry === HEADER}
-            onClick={() => this.props.onSelect(HEADER)}
+            isSelected={this.props.selectedActivity === null}
+            onClick={() => this.props.onActivitySelected(null)}
           >
             <Styled.DocumentIcon
-              isSelected={this.props.selectedLogEntry === HEADER}
+              isSelected={this.props.selectedActivity === null}
             />
             {getWorkflowName(instance)}
           </Styled.HeaderToggle>

@@ -3,7 +3,6 @@ import PropTypes from 'prop-types';
 
 import SplitPane from 'modules/components/SplitPane';
 import Copyright from 'modules/components/Copyright';
-import {HEADER} from 'modules/constants';
 import {fetchEvents} from 'modules/api/events';
 
 import InstanceLog from './InstanceLog';
@@ -14,11 +13,12 @@ import * as Styled from './styled';
 export default class InstanceHistory extends React.Component {
   static propTypes = {
     instance: PropTypes.object.isRequired,
-    activitiesDetails: PropTypes.object
+    activitiesDetails: PropTypes.object,
+    selectedActivity: PropTypes.string,
+    onActivitySelected: PropTypes.func
   };
 
   state = {
-    selectedLogEntry: HEADER,
     events: null,
     groupedEvents: null
   };
@@ -29,8 +29,8 @@ export default class InstanceHistory extends React.Component {
   }
 
   componentDidUpdate(prevProps, prevState) {
-    const {activitiesDetails} = this.props;
-    const {events, selectedLogEntry} = this.state;
+    const {activitiesDetails, selectedActivity} = this.props;
+    const {events} = this.state;
 
     if (!activitiesDetails || !events) {
       return;
@@ -38,28 +38,24 @@ export default class InstanceHistory extends React.Component {
 
     const haveActivitiesDetailsChanged =
       activitiesDetails !== prevProps.activitiesDetails;
-    const hasSelectedLogEntryChanged =
-      selectedLogEntry !== prevState.selectedLogEntry;
+    const hasSelectedActivityChanged =
+      selectedActivity !== prevProps.selectedActivity;
     const haveEventsChanged = events !== prevState.events;
 
     if (
       haveActivitiesDetailsChanged ||
       haveEventsChanged ||
-      hasSelectedLogEntryChanged
+      hasSelectedActivityChanged
     ) {
       const groupedEvents = getGroupedEvents({
         events: this.state.events,
         activitiesDetails,
-        selectedLogEntry
+        selectedActivity
       });
 
       this.setState({groupedEvents});
     }
   }
-
-  handleSelectedLogEntry = selectedLogEntry => {
-    this.setState({selectedLogEntry});
-  };
 
   render() {
     return (
@@ -69,8 +65,8 @@ export default class InstanceHistory extends React.Component {
           <InstanceLog
             instance={this.props.instance}
             activitiesDetails={this.props.activitiesDetails}
-            selectedLogEntry={this.state.selectedLogEntry}
-            onSelect={this.handleSelectedLogEntry}
+            selectedActivity={this.props.selectedActivity}
+            onActivitySelected={this.props.onActivitySelected}
           />
           <InstanceEvents groupedEvents={this.state.groupedEvents} />
           <Styled.Section>C</Styled.Section>

@@ -77,6 +77,43 @@ describe('Diagram', () => {
     expect(initViewerSpy).toHaveBeenCalledTimes(1);
   });
 
+  it('should fetch new workflow and reinitiate the Viewer when workflowid changes', async () => {
+    // given
+    const node = shallow(<Diagram workflowId={'foo'} theme={'dark'} />);
+    const nodeInstance = node.instance();
+    const initViewerSpy = jest.spyOn(nodeInstance, 'initViewer');
+    await flushPromises();
+    initViewerSpy.mockClear();
+    api.fetchWorkflowXML.mockClear();
+
+    // when
+    node.setProps({workflowId: 'bar'});
+    await flushPromises();
+
+    // then
+    expect(api.fetchWorkflowXML).toHaveBeenCalledTimes(1);
+    expect(initViewerSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it('should call handleSelectedFlowNode if only selectedFlowNode changed', async () => {
+    // given
+    const node = shallow(
+      <Diagram workflowId={workflowId} theme={'dark'} selectedFlowNode="foo" />
+    );
+    await flushPromises();
+    const handleSelectedFlowNodeSpy = jest.spyOn(
+      node.instance(),
+      'handleSelectedFlowNode'
+    );
+
+    // when
+    node.setProps({selectedFlowNode: 'bar'});
+    await flushPromises();
+
+    // then
+    expect(handleSelectedFlowNodeSpy).toBeCalledWith('bar', 'foo');
+  });
+
   describe('componentDidMount', async () => {
     it('should get xml from api and initiate Viewer', async () => {
       // given
@@ -162,29 +199,65 @@ describe('Diagram', () => {
       expect(handleZoomResetSpy).toHaveBeenCalledTimes(1);
     });
 
-    it('should fetch a new xml when a new workflowId is provided', async () => {
+    it('should add a selectable overlay to each selectable flowNode', async () => {
       // given
-      const onFlowNodesDetailsReady = jest.fn();
+      const selectableFlowNodes = ['foo', 'bar'];
       const node = shallow(
         <Diagram
           workflowId={workflowId}
           theme={'light'}
-          onFlowNodesDetailsReady={onFlowNodesDetailsReady}
+          selectableFlowNodes={selectableFlowNodes}
         />
       );
-      const nodeInstance = node.instance();
-      const workflowSpy = jest.spyOn(nodeInstance, 'fetchAndSetWorkflowXML');
+      const addOverlaySpy = jest.spyOn(node.instance(), 'addOverlay');
       await flushPromises();
-      expect(api.fetchWorkflowXML).toBeCalledWith(workflowId);
-
-      // when
-      node.setProps({workflowId: 'new-id'});
-      node.update();
 
       // then
-      expect(api.fetchWorkflowXML).toBeCalledWith('new-id');
+      expect(addOverlaySpy).toBeCalledWith('foo', 'op-selectable');
+      expect(addOverlaySpy).toBeCalledWith('bar', 'op-selectable');
+    });
+
+    it('should call handleSelectedFlowNode if selectedFlowNode is provided', async () => {
+      // given
+      const node = shallow(
+        <Diagram
+          workflowId={workflowId}
+          theme={'light'}
+          selectedFlowNode={'foo'}
+        />
+      );
+      const handleSelectedFlowNodeSpy = jest.spyOn(
+        node.instance(),
+        'handleSelectedFlowNode'
+      );
+      await flushPromises();
+
+      // then
+      expect(handleSelectedFlowNodeSpy).toBeCalledWith('foo');
+    });
+
+    it('should add event listeners if both selectableFlowNodes and onFlowNodeSelected are provided', async () => {
+      // given
+      const selectableFlowNodes = ['foo', 'bar'];
+      const node = shallow(
+        <Diagram
+          workflowId={workflowId}
+          theme={'light'}
+          selectableFlowNodes={selectableFlowNodes}
+          onFlowNodeSelected={jest.fn()}
+        />
+      );
+      await flushPromises();
+
+      // then
+      expect(node.instance().Viewer.eventBus.on).toBeCalledWith(
+        'element.click',
+        node.instance().handleElementClick
+      );
     });
   });
+
+  describe('handleDiagramLoad', () => {});
 
   describe('containerRef', () => {
     it('should set containerNode to provided node', async () => {
@@ -264,6 +337,153 @@ describe('Diagram', () => {
 
       // then
       expect(zoom).toBeCalledWith('fit-viewport', 'auto');
+    });
+  });
+
+  describe('addOverlay', () => {
+    it('should add marker to the canvas', async () => {
+      // given
+      const node = shallow(<Diagram workflowId={workflowId} theme={'dark'} />);
+      await flushPromises();
+
+      // when
+      node.instance().addOverlay('foo', 'fooClassName');
+
+      // then
+      expect(node.instance().Viewer.canvas.addMarker).toBeCalledWith(
+        'foo',
+        'fooClassName'
+      );
+    });
+  });
+
+  describe('removeOverlay', () => {
+    it('should remove marker from the canvas', async () => {
+      // given
+      const node = shallow(<Diagram workflowId={workflowId} theme={'dark'} />);
+      await flushPromises();
+
+      // when
+      node.instance().removeOverlay('foo', 'fooClassName');
+
+      // then
+      expect(node.instance().Viewer.canvas.removeMarker).toBeCalledWith(
+        'foo',
+        'fooClassName'
+      );
+    });
+  });
+
+  describe('handleSelectedFlowNode', () => {
+    it('should remove previous node and add the new one', async () => {
+      // given
+      const node = shallow(<Diagram workflowId={workflowId} theme={'dark'} />);
+      await flushPromises();
+      const removeOverlaySpy = jest.spyOn(node.instance(), 'removeOverlay');
+      const addOverlaySpy = jest.spyOn(node.instance(), 'addOverlay');
+
+      // when
+      node.instance().handleSelectedFlowNode('foo', 'bar');
+
+      // then
+      expect(removeOverlaySpy).toBeCalledWith('bar', 'op-selected');
+      expect(addOverlaySpy).toBeCalledWith('foo', 'op-selected');
+    });
+
+    it("should not remove previous node if it's not provided", async () => {
+      // given
+      const node = shallow(<Diagram workflowId={workflowId} theme={'dark'} />);
+      await flushPromises();
+      const removeOverlaySpy = jest.spyOn(node.instance(), 'removeOverlay');
+      const addOverlaySpy = jest.spyOn(node.instance(), 'addOverlay');
+
+      // when
+      node.instance().handleSelectedFlowNode('foo');
+
+      // then
+      expect(removeOverlaySpy).not.toBeCalled();
+      expect(addOverlaySpy).toBeCalledWith('foo', 'op-selected');
+    });
+
+    it("should not add new node if it's not provided", async () => {
+      // given
+      const node = shallow(<Diagram workflowId={workflowId} theme={'dark'} />);
+      await flushPromises();
+      const removeOverlaySpy = jest.spyOn(node.instance(), 'removeOverlay');
+      const addOverlaySpy = jest.spyOn(node.instance(), 'addOverlay');
+
+      // when
+      node.instance().handleSelectedFlowNode(null, 'bar');
+
+      // then
+      expect(removeOverlaySpy).toBeCalledWith('bar', 'op-selected');
+      expect(addOverlaySpy).not.toBeCalled();
+    });
+  });
+
+  describe('handleElementClick', () => {
+    it('should select flownode', async () => {
+      // given
+      const selectableFlowNodes = ['foo', 'bar'];
+      const onFlowNodeSelected = jest.fn();
+      const node = shallow(
+        <Diagram
+          workflowId={workflowId}
+          theme={'dark'}
+          selectableFlowNodes={selectableFlowNodes}
+          onFlowNodeSelected={onFlowNodeSelected}
+        />
+      );
+      await flushPromises();
+
+      // when
+      node.instance().handleElementClick({element: {id: 'foo'}});
+
+      // then
+      expect(onFlowNodeSelected).toBeCalledWith('foo');
+    });
+
+    it("should not select element if it's not selectable", async () => {
+      // given
+      const selectableFlowNodes = ['bar'];
+      const onFlowNodeSelected = jest.fn();
+      const node = shallow(
+        <Diagram
+          workflowId={workflowId}
+          theme={'dark'}
+          selectableFlowNodes={selectableFlowNodes}
+          onFlowNodeSelected={onFlowNodeSelected}
+        />
+      );
+      await flushPromises();
+
+      // when
+      node.instance().handleElementClick({element: {id: 'foo'}});
+
+      // then
+      expect(onFlowNodeSelected).not.toBeCalled();
+    });
+
+    it("should deselect element if it's already selected", async () => {
+      // given
+      const selectableFlowNodes = ['foo', 'bar'];
+      const onFlowNodeSelected = jest.fn();
+      const node = shallow(
+        <Diagram
+          workflowId={workflowId}
+          theme={'dark'}
+          selectedFlowNode="foo"
+          selectableFlowNodes={selectableFlowNodes}
+          onFlowNodeSelected={onFlowNodeSelected}
+        />
+      );
+      await flushPromises();
+
+      // when
+      node.instance().handleElementClick({element: {id: 'foo'}});
+
+      // then
+      expect(onFlowNodeSelected).toBeCalledWith(null);
     });
   });
 });

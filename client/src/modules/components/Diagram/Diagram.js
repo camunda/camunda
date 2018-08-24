@@ -14,7 +14,11 @@ class Diagram extends React.Component {
     theme: PropTypes.string.isRequired,
     workflowId: PropTypes.string.isRequired,
     // callback function called when flowNodesDetails is ready
-    onFlowNodesDetailsReady: PropTypes.func
+    onFlowNodesDetailsReady: PropTypes.func,
+    clickableFlowNodes: PropTypes.arrayOf(PropTypes.string),
+    selectableFlowNodes: PropTypes.arrayOf(PropTypes.string),
+    selectedFlowNode: PropTypes.string,
+    onFlowNodeSelected: PropTypes.func
   };
 
   constructor(props) {
@@ -29,13 +33,29 @@ class Diagram extends React.Component {
     this.initViewer();
   }
 
-  async componentDidUpdate({theme: prevTheme, workflowId: prevWorkflowId}) {
+  async componentDidUpdate({
+    theme: prevTheme,
+    workflowId: prevWorkflowId,
+    selectedFlowNode
+  }) {
     const hasNewTheme = this.props.theme !== prevTheme;
     const hasNewWorkflowId = this.props.workflowId !== prevWorkflowId;
+    const hasSelectedFlowNodeChanged =
+      this.props.selectedFlowNode !== selectedFlowNode;
 
     if (hasNewTheme || hasNewWorkflowId) {
       hasNewWorkflowId && (await this.fetchAndSetWorkflowXML());
-      this.initViewer();
+      return this.initViewer();
+    }
+
+    // In case only the selectedFlowNode changed.
+    // This also means that the Viewer is already initiated so we can safely
+    // call this.handleSelectedFlowNode.
+    if (hasSelectedFlowNodeChanged) {
+      this.handleSelectedFlowNode(
+        this.props.selectedFlowNode,
+        selectedFlowNode
+      );
     }
   }
 
@@ -43,7 +63,7 @@ class Diagram extends React.Component {
     this.workflowXML = await api.fetchWorkflowXML(this.props.workflowId);
   }
 
-  onDiagramLoaded = e => {
+  handleDiagramLoad = e => {
     if (e) {
       return console.log('Error rendering diagram:', e);
     }
@@ -51,10 +71,21 @@ class Diagram extends React.Component {
 
     // in case onFlowNodesDetailsReady callback function is provided
     // call it with flowNodesDetails
-    const {onFlowNodesDetailsReady} = this.props;
-    if (typeof onFlowNodesDetailsReady === 'function') {
+    if (typeof this.props.onFlowNodesDetailsReady === 'function') {
       const elementRegistry = this.Viewer.get('elementRegistry');
-      onFlowNodesDetailsReady(getFlowNodesDetails(elementRegistry));
+      this.props.onFlowNodesDetailsReady(getFlowNodesDetails(elementRegistry));
+    }
+
+    if (this.props.selectableFlowNodes) {
+      this.handleSelectableFlowNodes(this.props.selectableFlowNodes);
+    }
+
+    if (this.props.selectedFlowNode) {
+      this.handleSelectedFlowNode(this.props.selectedFlowNode);
+    }
+
+    if (this.props.selectableFlowNodes && this.props.onFlowNodeSelected) {
+      this.addEventListeners();
     }
   };
 
@@ -65,13 +96,12 @@ class Diagram extends React.Component {
     }
 
     // colors config for bpmnRenderer
-    const {theme} = this.props;
     this.Viewer = new BPMNViewer({
       container: this.containerNode,
-      bpmnRenderer: getDiagramColors(theme)
+      bpmnRenderer: getDiagramColors(this.props.theme)
     });
 
-    this.Viewer.importXML(this.workflowXML, this.onDiagramLoaded);
+    this.Viewer.importXML(this.workflowXML, this.handleDiagramLoad);
   };
 
   containerRef = node => {
@@ -93,6 +123,57 @@ class Diagram extends React.Component {
   handleZoomReset = () => {
     const canvas = this.Viewer.get('canvas');
     canvas.zoom('fit-viewport', 'auto');
+  };
+
+  addOverlay = (id, className) => {
+    const canvas = this.Viewer.get('canvas');
+    const elementRegistry = this.Viewer.get('elementRegistry');
+    canvas.addMarker(id, className);
+    const gfx = elementRegistry.getGraphics(id).querySelector('.djs-outline');
+    gfx.setAttribute('rx', '14px');
+    gfx.setAttribute('ry', '14px');
+  };
+
+  removeOverlay = (id, className) => {
+    const canvas = this.Viewer.get('canvas');
+    canvas.removeMarker(id, className);
+  };
+
+  handleSelectableFlowNodes = selectableFlowNodes => {
+    selectableFlowNodes.forEach(id => {
+      this.addOverlay(id, 'op-selectable');
+    });
+  };
+
+  handleSelectedFlowNode = (selectedFlowNode, prevSelectedFlowNode) => {
+    // clear previously selected flow node marker is there is one
+    if (prevSelectedFlowNode) {
+      this.removeOverlay(prevSelectedFlowNode, 'op-selected');
+    }
+
+    // add marker for newly selected flow node if there is one
+    if (selectedFlowNode) {
+      this.addOverlay(selectedFlowNode, 'op-selected');
+    }
+  };
+
+  handleElementClick = ({element = {}}) => {
+    const {selectedFlowNode} = this.props;
+    const isSelectableElement =
+      this.props.selectableFlowNodes.filter(id => id === element.id).length > 0;
+
+    // Only select the flownode if it's selectable and if it's not already selected.
+    if (isSelectableElement && element.id !== selectedFlowNode) {
+      this.props.onFlowNodeSelected(element.id);
+      // if it's already selected, deselect it
+    } else if (selectedFlowNode) {
+      this.props.onFlowNodeSelected(null);
+    }
+  };
+
+  addEventListeners = () => {
+    const eventBus = this.Viewer.get('eventBus');
+    eventBus.on('element.click', this.handleElementClick);
   };
 
   render() {

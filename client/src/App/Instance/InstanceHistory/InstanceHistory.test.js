@@ -5,7 +5,6 @@ import SplitPane from 'modules/components/SplitPane';
 import Copyright from 'modules/components/Copyright';
 import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
 import * as api from 'modules/api/events/events';
-import {HEADER} from 'modules/constants';
 
 import InstanceHistory from './InstanceHistory';
 import InstanceLog from './InstanceLog';
@@ -86,7 +85,6 @@ describe('InstanceHistory', () => {
 
     // then
     expect(instance.state).toEqual({
-      selectedLogEntry: HEADER,
       events: null,
       groupedEvents: null
     });
@@ -94,10 +92,14 @@ describe('InstanceHistory', () => {
 
   it('should render a pane with InstanceLog section and Copyright', async () => {
     // given
-    const mockInstance = {
-      instance: {id: 'someInstanceId'}
+    const mockProps = {
+      instance: {id: 'someInstanceId'},
+      selectedActivity: 'foo',
+      onActivitySelected: jest.fn()
     };
-    const node = shallow(<InstanceHistory instance={mockInstance} />);
+
+    const node = shallow(<InstanceHistory {...mockProps} />);
+
     await flushPromises();
     node.update();
     node.setProps({activitiesDetails: mockActivitiesDetails});
@@ -117,15 +119,15 @@ describe('InstanceHistory', () => {
     // Instance Log
     const InstanceLogNode = PaneBodyNode.find(InstanceLog);
     expect(InstanceLogNode).toHaveLength(1);
-    expect(InstanceLogNode.prop('instance')).toEqual(mockInstance);
+    expect(InstanceLogNode.prop('instance')).toEqual(mockProps.instance);
     expect(InstanceLogNode.prop('activitiesDetails')).toEqual(
       mockActivitiesDetails
     );
-    expect(InstanceLogNode.prop('selectedLogEntry')).toEqual(
-      node.state('selectedLogEntry')
+    expect(InstanceLogNode.prop('selectedActivity')).toEqual(
+      mockProps.selectedActivity
     );
-    expect(InstanceLogNode.prop('onSelect')).toEqual(
-      node.instance().handleSelectedLogEntry
+    expect(InstanceLogNode.prop('onActivitySelected')).toEqual(
+      mockProps.onActivitySelected
     );
 
     // Instance Events
@@ -143,23 +145,5 @@ describe('InstanceHistory', () => {
     expect(CopyrightNode).toHaveLength(1);
     // snapshot
     expect(node).toMatchSnapshot();
-  });
-
-  describe('onSelect', () => {
-    it('should set state.selectedLogEntry', () => {
-      // given
-      const mockProps = {
-        instance: {id: 'foo'},
-        activitiesDetails: {bar: 'bar'}
-      };
-      const node = shallow(<InstanceHistory {...mockProps} />);
-
-      // when
-      node.instance().handleSelectedLogEntry('foo');
-      node.update();
-
-      // then
-      expect(node.state('selectedLogEntry')).toBe('foo');
-    });
   });
 });
