@@ -3,8 +3,8 @@ package org.camunda.optimize.service.es.report.flownode.duration;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapSingleReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.command.util.ReportConstants;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -57,11 +57,11 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = getMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    MapReportResultDto result = evaluateReport(reportData);
+    SingleReportDataDto reportData = getMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     // then
-    ReportDataDto resultReportDataDto = result.getData();
+    SingleReportDataDto resultReportDataDto = result.getData();
     assertThat(result.getProcessInstanceCount(), is(1L));
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processDefinition.getKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(String.valueOf(processDefinition.getVersion())));
@@ -89,8 +89,8 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = getMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    MapReportResultDto result = evaluateReport(reportData);
+    SingleReportDataDto reportData = getMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     // then
     Map<String, Long> flowNodeIdToMaximumExecutionDuration = result.getResult();
@@ -113,9 +113,9 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData =
+    SingleReportDataDto reportData =
       getMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    MapReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     // then
     Map<String, Long> flowNodeIdToMaximumExecutionDuration = result.getResult();
@@ -152,10 +152,10 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
-    ReportDataDto reportData = createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(
+    SingleReportDataDto reportData = createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(
         latestDefinition.getKey(), ReportConstants.ALL_VERSIONS
     );
-    MapReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     //then
     Map<String, Long> flowNodeIdToMaximumExecutionDuration = result.getResult();
@@ -180,10 +180,10 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
-    ReportDataDto reportData = createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(
+    SingleReportDataDto reportData = createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(
         latestDefinition.getKey(), ReportConstants.ALL_VERSIONS
     );
-    MapReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     //then
     Map<String, Long> flowNodeIdToMaximumExecutionDuration = result.getResult();
@@ -205,10 +205,10 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
-    ReportDataDto reportData = createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(
+    SingleReportDataDto reportData = createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(
         processDefinition.getKey(), ReportConstants.ALL_VERSIONS
     );
-    MapReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     //then
     Map<String, Long> flowNodeIdToMaximumExecutionDuration = result.getResult();
@@ -233,10 +233,10 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData1 = getMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    MapReportResultDto result1 = evaluateReport(reportData1);
-    ReportDataDto reportData2 = getMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition2);
-    MapReportResultDto result2 = evaluateReport(reportData2);
+    SingleReportDataDto reportData1 = getMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+    MapSingleReportResultDto result1 = evaluateReport(reportData1);
+    SingleReportDataDto reportData2 = getMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition2);
+    MapSingleReportResultDto result2 = evaluateReport(reportData2);
 
     // then
     Map<String, Long> flowNodeIdToMaximumExecutionDuration = result1.getResult();
@@ -251,9 +251,9 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
   public void noEventMatchesReturnsEmptyResult() {
 
     // when
-    ReportDataDto reportData =
+    SingleReportDataDto reportData =
       createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport("nonExistingProcessDefinitionId", "1");
-    MapReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     // then
     Map<String, Long> flowNodeIdToMaximumExecutionDuration = result.getResult();
@@ -289,9 +289,9 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData =
+    SingleReportDataDto reportData =
       createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(subProcessDefinition.getKey(), String.valueOf(subProcessDefinition.getVersion()));
-    MapReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     // then
     Map<String, Long> flowNodeIdToMaximumExecutionDuration = result.getResult();
@@ -313,8 +313,8 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = getMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    MapReportResultDto result = evaluateReport(reportData);
+    SingleReportDataDto reportData = getMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     // then
     Map<String, Long> flowNodeIdToMaximumExecutionDuration = result.getResult();
@@ -333,9 +333,9 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = getMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+    SingleReportDataDto reportData = getMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
     reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(null, past.minusSeconds(1L)));
-    MapReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
@@ -357,7 +357,7 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
   @Test
   public void optimizeExceptionOnViewEntityIsNull() {
     // given
-    ReportDataDto dataDto =
+    SingleReportDataDto dataDto =
       createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getView().setEntity(null);
 
@@ -371,7 +371,7 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
   @Test
   public void optimizeExceptionOnViewPropertyIsNull() {
     // given
-    ReportDataDto dataDto =
+    SingleReportDataDto dataDto =
       createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getView().setProperty(null);
 
@@ -385,7 +385,7 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
   @Test
   public void optimizeExceptionOnGroupByTypeIsNull() {
     // given
-    ReportDataDto dataDto =
+    SingleReportDataDto dataDto =
       createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getGroupBy().setType(null);
 
@@ -406,21 +406,21 @@ public class MaxFlowNodeDurationByFlowNodeReportEvaluationIT {
     return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
-  private MapReportResultDto evaluateReport(ReportDataDto reportData) {
+  private MapSingleReportResultDto evaluateReport(SingleReportDataDto reportData) {
     Response response = evaluateReportAndReturnResponse(reportData);
     assertThat(response.getStatus(), is(200));
 
-    return response.readEntity(MapReportResultDto.class);
+    return response.readEntity(MapSingleReportResultDto.class);
   }
 
-  private Response evaluateReportAndReturnResponse(ReportDataDto reportData) {
-    return embeddedOptimizeRule.target("report/evaluate")
+  private Response evaluateReportAndReturnResponse(SingleReportDataDto reportData) {
+    return embeddedOptimizeRule.target("report/evaluate/single")
       .request()
       .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
       .post(Entity.json(reportData));
   }
 
-  private ReportDataDto getMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(ProcessDefinitionEngineDto processDefinition) {
+  private SingleReportDataDto getMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(ProcessDefinitionEngineDto processDefinition) {
     return createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
   }
 

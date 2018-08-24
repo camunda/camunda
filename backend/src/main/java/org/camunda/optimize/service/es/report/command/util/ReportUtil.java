@@ -1,8 +1,8 @@
 package org.camunda.optimize.service.es.report.command.util;
 
-import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.SingleReportResultDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
 import org.slf4j.Logger;
@@ -18,8 +18,8 @@ public class ReportUtil {
 
   private static Logger logger = LoggerFactory.getLogger(ReportUtil.class);
 
-  public static void copyReportData(ReportDataDto from, ReportResultDto to) {
-    ReportDataDto reportDataDto = new ReportDataDto();
+  public static void copyReportData(SingleReportDataDto from, SingleReportResultDto to) {
+    SingleReportDataDto reportDataDto = new SingleReportDataDto();
     reportDataDto.setProcessDefinitionKey(from.getProcessDefinitionKey());
     reportDataDto.setProcessDefinitionVersion(from.getProcessDefinitionVersion());
     reportDataDto.setView(from.getView());
@@ -49,7 +49,7 @@ public class ReportUtil {
   }
 
 
-  public static void copyMetaData(ReportDefinitionDto from, ReportResultDto to) {
+  public static void copyMetaData(ReportDefinitionDto from, ReportDefinitionDto to) {
     to.setId(from.getId());
     to.setName(from.getName());
     to.setOwner(from.getOwner());

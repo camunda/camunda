@@ -1,8 +1,11 @@
 package org.camunda.optimize.test.util;
 
-import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ViewDto;
-import org.camunda.optimize.dto.optimize.query.report.group.GroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDto;
+
+import java.util.Arrays;
 
 import static org.camunda.optimize.service.es.report.command.util.GroupByDtoCreator.createGroupByFlowNode;
 import static org.camunda.optimize.service.es.report.command.util.GroupByDtoCreator.createGroupByNone;
@@ -28,7 +31,7 @@ import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator
 
 public class ReportDataHelper {
 
-  public static ReportDataDto createReportDataViewRawAsTable(
+  public static SingleReportDataDto createReportDataViewRawAsTable(
       String processDefinitionKey,
       String processDefinitionVersion
   ) {
@@ -41,7 +44,7 @@ public class ReportDataHelper {
     );
   }
 
-  public static ReportDataDto createAverageProcessInstanceDurationGroupByStartDateReport(
+  public static SingleReportDataDto createAverageProcessInstanceDurationGroupByStartDateReport(
       String processDefinitionKey,
       String processDefinitionVersion,
       String dateInterval
@@ -59,7 +62,7 @@ public class ReportDataHelper {
     );
   }
 
-  public static ReportDataDto createMinProcessInstanceDurationGroupByStartDateReport(
+  public static SingleReportDataDto createMinProcessInstanceDurationGroupByStartDateReport(
       String processDefinitionKey,
       String processDefinitionVersion,
       String dateInterval
@@ -77,7 +80,7 @@ public class ReportDataHelper {
     );
   }
 
-  public static ReportDataDto createMaxProcessInstanceDurationGroupByStartDateReport(
+  public static SingleReportDataDto createMaxProcessInstanceDurationGroupByStartDateReport(
       String processDefinitionKey,
       String processDefinitionVersion,
       String dateInterval
@@ -95,7 +98,7 @@ public class ReportDataHelper {
     );
   }
 
-  public static ReportDataDto createMedianProcessInstanceDurationGroupByStartDateReport(
+  public static SingleReportDataDto createMedianProcessInstanceDurationGroupByStartDateReport(
       String processDefinitionKey,
       String processDefinitionVersion,
       String dateInterval
@@ -113,7 +116,7 @@ public class ReportDataHelper {
     );
   }
 
-  public static ReportDataDto createCountProcessInstanceFrequencyGroupByStartDate(
+  public static SingleReportDataDto createCountProcessInstanceFrequencyGroupByStartDate(
       String processDefinitionKey,
       String processDefinitionVersion,
       String dateInterval
@@ -122,7 +125,7 @@ public class ReportDataHelper {
     ViewDto view = createCountProcessInstanceFrequencyView();
     GroupByDto groupByDto = createGroupByStartDateDto(dateInterval);
 
-    ReportDataDto reportData = createReportDataViewRaw(
+    SingleReportDataDto reportData = createReportDataViewRaw(
         processDefinitionKey,
         processDefinitionVersion,
         TABLE_VISUALIZATION,
@@ -134,14 +137,14 @@ public class ReportDataHelper {
     return reportData;
   }
 
-  public static ReportDataDto createReportDataViewRaw(
+  public static SingleReportDataDto createReportDataViewRaw(
       String processDefinitionKey,
       String processDefinitionVersion,
       String visualization,
       ViewDto viewDto,
       GroupByDto groupByDto
   ) {
-    ReportDataDto reportData = new ReportDataDto();
+    SingleReportDataDto reportData = new SingleReportDataDto();
     reportData.setProcessDefinitionKey(processDefinitionKey);
     reportData.setProcessDefinitionVersion(processDefinitionVersion);
     reportData.setVisualization(visualization);
@@ -150,7 +153,7 @@ public class ReportDataHelper {
     return reportData;
   }
 
-  public static ReportDataDto createCountFlowNodeFrequencyGroupByFlowNode(
+  public static SingleReportDataDto createCountFlowNodeFrequencyGroupByFlowNode(
       String processDefinitionKey,
       String processDefinitionVersion
   ) {
@@ -172,7 +175,7 @@ public class ReportDataHelper {
     );
   }
 
-  public static ReportDataDto createCountProcessInstanceFrequencyGroupByVariable(
+  public static SingleReportDataDto createCountProcessInstanceFrequencyGroupByVariable(
       String processDefinitionKey,
       String processDefinitionVersion,
       String variableName,
@@ -191,7 +194,7 @@ public class ReportDataHelper {
     );
   }
 
-  public static ReportDataDto createAverageProcessInstanceDurationGroupByVariable(
+  public static SingleReportDataDto createAverageProcessInstanceDurationGroupByVariable(
       String processDefinitionKey,
       String processDefinitionVersion,
       String variableName,
@@ -210,7 +213,7 @@ public class ReportDataHelper {
     );
   }
 
-  public static ReportDataDto createMinProcessInstanceDurationGroupByVariable(
+  public static SingleReportDataDto createMinProcessInstanceDurationGroupByVariable(
       String processDefinitionKey,
       String processDefinitionVersion,
       String variableName,
@@ -229,7 +232,7 @@ public class ReportDataHelper {
     );
   }
 
-  public static ReportDataDto createMaxProcessInstanceDurationGroupByVariable(
+  public static SingleReportDataDto createMaxProcessInstanceDurationGroupByVariable(
       String processDefinitionKey,
       String processDefinitionVersion,
       String variableName,
@@ -248,7 +251,7 @@ public class ReportDataHelper {
     );
   }
 
-  public static ReportDataDto createMedianProcessInstanceDurationGroupByVariable(
+  public static SingleReportDataDto createMedianProcessInstanceDurationGroupByVariable(
       String processDefinitionKey,
       String processDefinitionVersion,
       String variableName,
@@ -267,7 +270,7 @@ public class ReportDataHelper {
     );
   }
 
-  public static ReportDataDto createCountFlowNodeFrequencyGroupByFlowNoneNumber(
+  public static SingleReportDataDto createCountFlowNodeFrequencyGroupByFlowNoneNumber(
     String processDefinitionKey,
     String processDefinitionVersion
   ) {
@@ -289,7 +292,7 @@ public class ReportDataHelper {
     );
   }
 
-  public static ReportDataDto createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
+  public static SingleReportDataDto createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
       String processDefinitionKey,
       String processDefinitionVersion
   ) {
@@ -306,7 +309,7 @@ public class ReportDataHelper {
     );
   }
 
-  public static ReportDataDto createMinFlowNodeDurationGroupByFlowNodeHeatmapReport(
+  public static SingleReportDataDto createMinFlowNodeDurationGroupByFlowNodeHeatmapReport(
       String processDefinitionKey,
       String processDefinitionVersion
   ) {
@@ -322,7 +325,7 @@ public class ReportDataHelper {
     );
   }
 
-  public static ReportDataDto createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(
+  public static SingleReportDataDto createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(
       String processDefinitionKey,
       String processDefinitionVersion
   ) {
@@ -338,7 +341,7 @@ public class ReportDataHelper {
     );
   }
 
-  public static ReportDataDto createMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(
+  public static SingleReportDataDto createMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(
       String processDefinitionKey,
       String processDefinitionVersion
   ) {
@@ -354,7 +357,7 @@ public class ReportDataHelper {
     );
   }
 
-  public static ReportDataDto createAvgPiDurationHeatMapGroupByNone(
+  public static SingleReportDataDto createAvgPiDurationHeatMapGroupByNone(
       String processDefinitionKey,
       String processDefinitionVersion
   ) {
@@ -371,7 +374,7 @@ public class ReportDataHelper {
     );
   }
 
-  public static ReportDataDto createMinProcessInstanceDurationHeatMapGroupByNone(
+  public static SingleReportDataDto createMinProcessInstanceDurationHeatMapGroupByNone(
       String processDefinitionKey,
       String processDefinitionVersion
   ) {
@@ -388,7 +391,7 @@ public class ReportDataHelper {
     );
   }
 
-  public static ReportDataDto createMaxProcessInstanceDurationHeatMapGroupByNone(
+  public static SingleReportDataDto createMaxProcessInstanceDurationHeatMapGroupByNone(
       String processDefinitionKey,
       String processDefinitionVersion
   ) {
@@ -405,7 +408,7 @@ public class ReportDataHelper {
     );
   }
 
-  public static ReportDataDto createMedianProcessInstanceDurationHeatMapGroupByNone(
+  public static SingleReportDataDto createMedianProcessInstanceDurationHeatMapGroupByNone(
       String processDefinitionKey,
       String processDefinitionVersion
   ) {
@@ -422,7 +425,7 @@ public class ReportDataHelper {
     );
   }
 
-  public static ReportDataDto createPiFrequencyCountGroupedByNone(
+  public static SingleReportDataDto createPiFrequencyCountGroupedByNone(
       String processDefinitionKey,
       String processDefinitionVersion
   ) {
@@ -438,7 +441,7 @@ public class ReportDataHelper {
     );
   }
 
-  public static ReportDataDto createPiFrequencyCountGroupedByNoneAsNumber(String processDefinitionKey, String processDefinitionVersion) {
+  public static SingleReportDataDto createPiFrequencyCountGroupedByNoneAsNumber(String processDefinitionKey, String processDefinitionVersion) {
     ViewDto view = createCountProcessInstanceFrequencyView();
 
     GroupByDto groupByDto = createGroupByNone();
@@ -454,7 +457,7 @@ public class ReportDataHelper {
     );
   }
 
-  public static ReportDataDto createAvgPiDurationAsNumberGroupByNone(
+  public static SingleReportDataDto createAvgPiDurationAsNumberGroupByNone(
       String processDefinitionKey,
       String processDefinitionVersion
   ) {
@@ -469,6 +472,13 @@ public class ReportDataHelper {
         view,
         groupByDto
     );
+  }
+
+  public static CombinedReportDataDto createCombinedReport(String... reportIds) {
+    CombinedReportDataDto combinedReportDataDto = new CombinedReportDataDto();
+    combinedReportDataDto.setReportIds(Arrays.asList(reportIds));
+    combinedReportDataDto.setConfiguration("aRandomConfiguration");
+    return combinedReportDataDto;
   }
 
 }

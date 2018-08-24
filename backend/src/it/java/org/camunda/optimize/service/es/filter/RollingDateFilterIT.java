@@ -1,6 +1,6 @@
 package org.camunda.optimize.service.es.filter;
 
-import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.raw.RawDataSingleReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.junit.Test;
@@ -12,7 +12,7 @@ import java.time.OffsetDateTime;
 public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
 
   @Test
-  public void testRollingLogic() throws Exception {
+  public void testRollingLogic() {
     // given
     embeddedOptimizeRule.reloadConfiguration();
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
@@ -23,7 +23,7 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
 
     LocalDateUtil.setCurrentTime(processInstanceStartTime);
 
-    RawDataReportResultDto result = createAndEvaluateReport(
+    RawDataSingleReportResultDto result = createAndEvaluateReport(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion(),
         "days",

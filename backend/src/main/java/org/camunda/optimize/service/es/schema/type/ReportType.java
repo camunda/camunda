@@ -16,8 +16,7 @@ public class ReportType extends StrictTypeMappingCreator {
   public static final String OWNER = "owner";
   public static final String LAST_MODIFIER = "lastModifier";
 
-  public static final String PROCESS_DEFINITION_ID = "processDefinitionId";
-
+  public static final String REPORT_TYPE = "reportType";
   public static final String DATA = "data";
 
   @Override
@@ -46,6 +45,9 @@ public class ReportType extends StrictTypeMappingCreator {
         .field("type", "keyword")
       .endObject()
       .startObject(LAST_MODIFIER)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(REPORT_TYPE)
         .field("type", "keyword")
       .endObject()
       .startObject(DATA)

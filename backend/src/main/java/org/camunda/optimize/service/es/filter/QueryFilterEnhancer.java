@@ -1,9 +1,9 @@
 package org.camunda.optimize.service.es.filter;
 
-import org.camunda.optimize.dto.optimize.query.report.filter.*;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.*;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.variable.VariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.startDate.StartDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.*;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.*;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.startDate.StartDateFilterDataDto;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;

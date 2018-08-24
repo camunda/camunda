@@ -4,15 +4,16 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.variable.BooleanVariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.util.ExecutedFlowNodeFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.ExecutedFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.FilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.util.ExecutedFlowNodeFilterBuilder;
+import org.camunda.optimize.dto.optimize.query.report.single.result.raw.RawDataProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.raw.RawDataSingleReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.command.util.ReportConstants;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -75,12 +76,12 @@ public class RawDataReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(
+    SingleReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(
         processInstance.getProcessDefinitionKey(), ReportConstants.ALL_VERSIONS);
-    RawDataReportResultDto result = evaluateReport(reportData);
+    RawDataSingleReportResultDto result = evaluateReport(reportData);
 
     // then
-    ReportDataDto resultDataDto = result.getData();
+    SingleReportDataDto resultDataDto = result.getData();
     assertThat(result.getProcessInstanceCount(), is(2L));
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getProcessDefinitionVersion(), is(ReportConstants.ALL_VERSIONS));
@@ -100,12 +101,12 @@ public class RawDataReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(
+    SingleReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(
         processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
-    RawDataReportResultDto result = evaluateReport(reportData);
+    RawDataSingleReportResultDto result = evaluateReport(reportData);
 
     // then
-    ReportDataDto resultDataDto = result.getData();
+    SingleReportDataDto resultDataDto = result.getData();
     assertThat(result.getProcessInstanceCount(), is(1L));
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
@@ -134,12 +135,12 @@ public class RawDataReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(
+    SingleReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(
         processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
-    RawDataReportResultDto result = evaluateReport(reportData);
+    RawDataSingleReportResultDto result = evaluateReport(reportData);
 
     // then
-    ReportDataDto resultDataDto = result.getData();
+    SingleReportDataDto resultDataDto = result.getData();
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
@@ -167,10 +168,10 @@ public class RawDataReportEvaluationIT {
     String reportId = createAndStoreDefaultReportDefinition(processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
 
     // when
-    RawDataReportResultDto result = evaluateReportById(reportId);
+    RawDataSingleReportResultDto result = evaluateReportById(reportId);
 
     // then
-    ReportDataDto resultDataDto = result.getData();
+    SingleReportDataDto resultDataDto = result.getData();
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
@@ -190,8 +191,8 @@ public class RawDataReportEvaluationIT {
 
   private String createAndStoreDefaultReportDefinition(String processDefinitionKey, String processDefinitionVersion) {
     String id = createNewReport();
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
-    ReportDefinitionDto report = new ReportDefinitionDto();
+    SingleReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
+    SingleReportDefinitionDto report = new SingleReportDefinitionDto();
     report.setData(reportData);
     report.setId("something");
     report.setLastModifier("something");
@@ -214,12 +215,12 @@ public class RawDataReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(
+    SingleReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(
         processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
-    RawDataReportResultDto result = evaluateReport(reportData);
+    RawDataSingleReportResultDto result = evaluateReport(reportData);
 
     // then
-    ReportDataDto resultDataDto = result.getData();
+    SingleReportDataDto resultDataDto = result.getData();
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
@@ -255,12 +256,12 @@ public class RawDataReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(
+    SingleReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(
         processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
-    RawDataReportResultDto result = evaluateReport(reportData);
+    RawDataSingleReportResultDto result = evaluateReport(reportData);
 
     // then
-    ReportDataDto resultDataDto = result.getData();
+    SingleReportDataDto resultDataDto = result.getData();
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
@@ -290,9 +291,9 @@ public class RawDataReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(
+    SingleReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(
         processInstance.getProcessDefinitionKey(),processInstance.getProcessDefinitionVersion());
-    RawDataReportResultDto result = evaluateReport(reportData);
+    RawDataSingleReportResultDto result = evaluateReport(reportData);
 
     // then
     List<RawDataProcessInstanceDto> rawDataList = result.getResult();
@@ -335,12 +336,12 @@ public class RawDataReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(
+    SingleReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(
         processInstance.getProcessDefinitionKey(),processInstance.getProcessDefinitionVersion());
-    RawDataReportResultDto result = evaluateReport(reportData);
+    RawDataSingleReportResultDto result = evaluateReport(reportData);
 
     // then
-    ReportDataDto resultDataDto = result.getData();
+    SingleReportDataDto resultDataDto = result.getData();
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(result.getResult(), is(notNullValue()));
@@ -368,13 +369,13 @@ public class RawDataReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(
+    SingleReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(
         processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion()
     );
-    RawDataReportResultDto result = evaluateReport(reportData);
+    RawDataSingleReportResultDto result = evaluateReport(reportData);
 
     // then
-    ReportDataDto resultDataDto = result.getData();
+    SingleReportDataDto resultDataDto = result.getData();
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(result.getResult().size(), is(1));
@@ -392,13 +393,13 @@ public class RawDataReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(
+    SingleReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(
         processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
     reportData.setFilter(DateUtilHelper.createDurationFilter(">", 1, "Days"));
-    RawDataReportResultDto result = evaluateReport(reportData);
+    RawDataSingleReportResultDto result = evaluateReport(reportData);
 
     // then
-    ReportDataDto resultDataDto = result.getData();
+    SingleReportDataDto resultDataDto = result.getData();
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
@@ -434,13 +435,13 @@ public class RawDataReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(
+    SingleReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(
         processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
     reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(null, past.minusSeconds(1L)));
-    RawDataReportResultDto result = evaluateReport(reportData);
+    RawDataSingleReportResultDto result = evaluateReport(reportData);
 
     // then
-    ReportDataDto resultDataDto = result.getData();
+    SingleReportDataDto resultDataDto = result.getData();
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
@@ -478,13 +479,13 @@ public class RawDataReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(
+    SingleReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(
         processInstance.getProcessDefinitionKey(), processInstance.getProcessDefinitionVersion());
     reportData.setFilter(createVariableFilter());
-    RawDataReportResultDto result = evaluateReport(reportData);
+    RawDataSingleReportResultDto result = evaluateReport(reportData);
 
     // then
-    ReportDataDto resultDataDto = result.getData();
+    SingleReportDataDto resultDataDto = result.getData();
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(result.getResult().size(), is(1));
@@ -514,16 +515,16 @@ public class RawDataReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(
+    SingleReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(
         processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
     List<ExecutedFlowNodeFilterDto> flowNodeFilter = ExecutedFlowNodeFilterBuilder.construct()
           .id("task1")
           .build();
     reportData.getFilter().addAll(flowNodeFilter);
-    RawDataReportResultDto result = evaluateReport(reportData);
+    RawDataSingleReportResultDto result = evaluateReport(reportData);
 
     // then
-    ReportDataDto resultDataDto = result.getData();
+    SingleReportDataDto resultDataDto = result.getData();
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processDefinition.getKey()));
     assertThat(resultDataDto.getProcessDefinitionVersion(), is(String.valueOf(processDefinition.getVersion())));
     assertThat(result.getResult().size(), is(1));
@@ -544,7 +545,7 @@ public class RawDataReportEvaluationIT {
   public void missingProcessDefinition() {
 
     //when
-    ReportDataDto dataDto = ReportDataHelper.createReportDataViewRawAsTable(null, null);
+    SingleReportDataDto dataDto = ReportDataHelper.createReportDataViewRawAsTable(null, null);
     Response response = evaluateReportAndReturnResponse(dataDto);
 
     // then
@@ -554,7 +555,7 @@ public class RawDataReportEvaluationIT {
   @Test
   public void missingViewField() {
     //when
-    ReportDataDto dataDto = ReportDataHelper.createReportDataViewRawAsTable(null, null);
+    SingleReportDataDto dataDto = ReportDataHelper.createReportDataViewRawAsTable(null, null);
     dataDto.setView(null);
     Response response = evaluateReportAndReturnResponse(dataDto);
 
@@ -565,7 +566,7 @@ public class RawDataReportEvaluationIT {
   @Test
   public void missingOperationField() {
     //when
-    ReportDataDto dataDto = ReportDataHelper.createReportDataViewRawAsTable(null, null);
+    SingleReportDataDto dataDto = ReportDataHelper.createReportDataViewRawAsTable(null, null);
     dataDto.getView().setOperation(null);
     Response response = evaluateReportAndReturnResponse(dataDto);
 
@@ -576,7 +577,7 @@ public class RawDataReportEvaluationIT {
   @Test
   public void missingVisualizationField() {
     //when
-    ReportDataDto dataDto = ReportDataHelper.createReportDataViewRawAsTable(null, null);
+    SingleReportDataDto dataDto = ReportDataHelper.createReportDataViewRawAsTable(null, null);
     dataDto.setVisualization(null);
     Response response = evaluateReportAndReturnResponse(dataDto);
 
@@ -616,25 +617,25 @@ public class RawDataReportEvaluationIT {
     return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
-  private RawDataReportResultDto evaluateReport(ReportDataDto reportData) {
+  private RawDataSingleReportResultDto evaluateReport(SingleReportDataDto reportData) {
     Response response = evaluateReportAndReturnResponse(reportData);
     assertThat(response.getStatus(), is(200));
 
-    return response.readEntity(RawDataReportResultDto.class);
+    return response.readEntity(RawDataSingleReportResultDto.class);
   }
 
-  private RawDataReportResultDto evaluateReportById(String reportId) {
+  private RawDataSingleReportResultDto evaluateReportById(String reportId) {
     Response response = embeddedOptimizeRule.target("report/" + reportId + "/evaluate")
       .request()
       .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
       .get();
     assertThat(response.getStatus(), is(200));
 
-    return response.readEntity(RawDataReportResultDto.class);
+    return response.readEntity(RawDataSingleReportResultDto.class);
   }
 
-  private Response evaluateReportAndReturnResponse(ReportDataDto reportData) {
-    return embeddedOptimizeRule.target("report/evaluate")
+  private Response evaluateReportAndReturnResponse(SingleReportDataDto reportData) {
+    return embeddedOptimizeRule.target("report/evaluate/single")
       .request()
       .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
       .post(Entity.json(reportData));
@@ -643,7 +644,7 @@ public class RawDataReportEvaluationIT {
 
   private String createNewReport() {
     Response response =
-      embeddedOptimizeRule.target("report")
+      embeddedOptimizeRule.target("report/single")
         .request()
         .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .post(Entity.json(""));

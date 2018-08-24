@@ -1,12 +1,12 @@
 package org.camunda.optimize.service.es.report.command.util;
 
-import org.camunda.optimize.dto.optimize.query.report.group.FlowNodesGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.group.GroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.group.NoneGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.group.StartDateGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.group.VariableGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.group.value.StartDateGroupByValueDto;
-import org.camunda.optimize.dto.optimize.query.report.group.value.VariableGroupByValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.FlowNodesGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.NoneGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.StartDateGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.VariableGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.value.StartDateGroupByValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.value.VariableGroupByValueDto;
 
 
 public class GroupByDtoCreator {

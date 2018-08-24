@@ -3,12 +3,12 @@ package org.camunda.optimize.service.es.filter;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.ExecutedFlowNodeFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.ExecutedFlowNodeFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.util.ExecutedFlowNodeFilterBuilder;
-import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.ExecutedFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.FilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.ExecutedFlowNodeFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.util.ExecutedFlowNodeFilterBuilder;
+import org.camunda.optimize.dto.optimize.query.report.single.result.raw.RawDataSingleReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -21,7 +21,6 @@ import org.junit.rules.RuleChain;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -46,36 +45,36 @@ public class ExecutedFlowNodeQueryFilterIT {
   private final static String USER_TASK_ACTIVITY_ID = "User-Task";
   private final static String USER_TASK_ACTIVITY_ID_2 = "User-Task2";
 
-  private RawDataReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition, List<FilterDto> filter) {
-    ReportDataDto reportData =
+  private RawDataSingleReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition, List<FilterDto> filter) {
+    SingleReportDataDto reportData =
       createReportDataViewRawAsTable(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
     reportData.setFilter(filter);
     return evaluateReport(reportData);
   }
 
-  private RawDataReportResultDto evaluateReport(ReportDataDto reportData) {
+  private RawDataSingleReportResultDto evaluateReport(SingleReportDataDto reportData) {
     Response response = evaluateReportAndReturnResponse(reportData);
     MatcherAssert.assertThat(response.getStatus(), is(200));
-    return response.readEntity(RawDataReportResultDto.class);
+    return response.readEntity(RawDataSingleReportResultDto.class);
   }
 
   private Response evaluateReportAndReturnResponse(String processDefinitionKey, ExecutedFlowNodeFilterDto filterDto) {
-    ReportDataDto reportData = createReportDataViewRawAsTable(processDefinitionKey, "1");
+    SingleReportDataDto reportData = createReportDataViewRawAsTable(processDefinitionKey, "1");
     List<FilterDto> filter = new ArrayList<>();
     filter.add(filterDto);
     reportData.setFilter(filter);
     return evaluateReportAndReturnResponse(reportData);
   }
 
-  private Response evaluateReportAndReturnResponse(ReportDataDto reportData) {
-    return embeddedOptimizeRule.target("report/evaluate")
+  private Response evaluateReportAndReturnResponse(SingleReportDataDto reportData) {
+    return embeddedOptimizeRule.target("report/evaluate/single")
         .request()
         .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .post(Entity.json(reportData));
   }
 
   @Test
-  public void filterByOneFlowNode() throws Exception {
+  public void filterByOneFlowNode() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskProcessDefinition();
     ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId());
@@ -90,13 +89,13 @@ public class ExecutedFlowNodeQueryFilterIT {
           .inOperator()
           .build();
 
-    RawDataReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
+    RawDataSingleReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
     // then
     assertResults(result, 1);
   }
 
   @Test
-  public void filterByOneFlowNodeWithUnequalOperator() throws Exception {
+  public void filterByOneFlowNodeWithUnequalOperator() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskProcessDefinition();
     ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId());
@@ -111,14 +110,14 @@ public class ExecutedFlowNodeQueryFilterIT {
           .notInOperator()
           .build();
 
-    RawDataReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
+    RawDataSingleReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
     // then
     assertResults(result, 1);
   }
 
   @Test
-  public void filterMultipleProcessInstancesByOneFlowNode() throws Exception {
+  public void filterMultipleProcessInstancesByOneFlowNode() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskProcessDefinition();
     ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId());
@@ -136,14 +135,14 @@ public class ExecutedFlowNodeQueryFilterIT {
           .id(USER_TASK_ACTIVITY_ID)
           .inOperator()
           .build();
-    RawDataReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
+    RawDataSingleReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
     // then
     assertResults(result, 3);
   }
   
   @Test
-  public void filterMultipleProcessInstancesByOneFlowNodeWithUnequalOperator() throws Exception {
+  public void filterMultipleProcessInstancesByOneFlowNodeWithUnequalOperator() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskProcessDefinition();
     ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId());
@@ -162,14 +161,14 @@ public class ExecutedFlowNodeQueryFilterIT {
           .id(USER_TASK_ACTIVITY_ID)
           .notInOperator()
           .build();
-    RawDataReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
+    RawDataSingleReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
     // then
     assertResults(result, 2);
   }
 
   @Test
-  public void filterByMultipleAndCombinedFlowNodes() throws Exception {
+  public void filterByMultipleAndCombinedFlowNodes() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployProcessDefinitionWithTwoUserTasks();
     ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId());
@@ -190,14 +189,14 @@ public class ExecutedFlowNodeQueryFilterIT {
           .and()
           .id(USER_TASK_ACTIVITY_ID_2)
           .build();
-    RawDataReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
+    RawDataSingleReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
     // then
     assertResults(result, 2);
   }
 
   @Test
-  public void filterByMultipleAndCombinedFlowNodesWithUnequalOperator() throws Exception {
+  public void filterByMultipleAndCombinedFlowNodesWithUnequalOperator() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployProcessDefinitionWithTwoUserTasks();
     ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId());
@@ -221,7 +220,7 @@ public class ExecutedFlowNodeQueryFilterIT {
           .id(USER_TASK_ACTIVITY_ID_2)
           .notInOperator()
           .build();
-    RawDataReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
+    RawDataSingleReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
     // then
     assertResults(result, 1);
@@ -240,13 +239,13 @@ public class ExecutedFlowNodeQueryFilterIT {
     assertResults(result, 2);
   }
 
-  private RawDataReportResultDto getRawDataReportResultDto(ProcessDefinitionEngineDto processDefinition, List<ExecutedFlowNodeFilterDto> executedFlowNodes) {
+  private RawDataSingleReportResultDto getRawDataReportResultDto(ProcessDefinitionEngineDto processDefinition, List<ExecutedFlowNodeFilterDto> executedFlowNodes) {
     ArrayList<FilterDto> filter = new ArrayList<>(executedFlowNodes);
     return evaluateReportWithFilter(processDefinition, filter);
   }
 
   @Test
-  public void filterByMultipleOrCombinedFlowNodes() throws Exception {
+  public void filterByMultipleOrCombinedFlowNodes() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployProcessDefinitionWithTwoUserTasks();
     ProcessInstanceEngineDto instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId());
@@ -267,14 +266,14 @@ public class ExecutedFlowNodeQueryFilterIT {
           .ids(USER_TASK_ACTIVITY_ID, USER_TASK_ACTIVITY_ID_2)
           .inOperator()
           .build();
-    RawDataReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
+    RawDataSingleReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
     // then
     assertResults(result, 3);
   }
 
   @Test
-  public void filterByMultipleOrCombinedFlowNodesWithUnequalOperator() throws Exception {
+  public void filterByMultipleOrCombinedFlowNodesWithUnequalOperator() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployProcessWIthGatewayAndOneUserTaskEachBranch();
 
@@ -302,14 +301,14 @@ public class ExecutedFlowNodeQueryFilterIT {
           .ids("UserTask-PathA", "FinalUserTask")
           .notInOperator()
           .build();
-    RawDataReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
+    RawDataSingleReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
     // then
     assertResults(result, 3);
   }
 
   @Test
-  public void filterByMultipleAndOrCombinedFlowNodes() throws Exception {
+  public void filterByMultipleAndOrCombinedFlowNodes() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployProcessWIthGatewayAndOneUserTaskEachBranch();
 
@@ -346,14 +345,14 @@ public class ExecutedFlowNodeQueryFilterIT {
           .and()
             .id("FinalUserTask")
           .build();
-    RawDataReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
+    RawDataSingleReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
     // then
     assertResults(result,3);
   }
 
   @Test
-  public void equalAndUnequalOperatorCombined() throws Exception {
+  public void equalAndUnequalOperatorCombined() {
     // given
     ProcessDefinitionEngineDto processDefinition = deployProcessWIthGatewayAndOneUserTaskEachBranch();
 
@@ -386,13 +385,13 @@ public class ExecutedFlowNodeQueryFilterIT {
             .id("UserTask-PathB")
             .inOperator()
           .build();
-    RawDataReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
+    RawDataSingleReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
     // then
     assertResults(result, 1);
   }
 
-  private ProcessDefinitionEngineDto deployProcessWIthGatewayAndOneUserTaskEachBranch() throws IOException {
+  private ProcessDefinitionEngineDto deployProcessWIthGatewayAndOneUserTaskEachBranch() {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
         .startEvent()
         .exclusiveGateway("splittingGateway")
@@ -411,7 +410,7 @@ public class ExecutedFlowNodeQueryFilterIT {
   }
 
   @Test
-  public void sameFlowNodeInDifferentProcessDefinitionDoesNotDistortResult() throws Exception {
+  public void sameFlowNodeInDifferentProcessDefinitionDoesNotDistortResult() {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleUserTaskProcessDefinition();
     ProcessDefinitionEngineDto processDefinition2 = deploySimpleUserTaskProcessDefinition();
@@ -428,7 +427,7 @@ public class ExecutedFlowNodeQueryFilterIT {
     List<ExecutedFlowNodeFilterDto> executedFlowNodes = ExecutedFlowNodeFilterBuilder.construct()
           .id(USER_TASK_ACTIVITY_ID)
           .build();
-    RawDataReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
+    RawDataSingleReportResultDto result = getRawDataReportResultDto(processDefinition, executedFlowNodes);
 
     // then
     assertResults(result, 2);
@@ -465,12 +464,12 @@ public class ExecutedFlowNodeQueryFilterIT {
     assertThat(response.getStatus(),is(500));
   }
 
-  private void assertResults(RawDataReportResultDto resultDto, int piCount) {
+  private void assertResults(RawDataSingleReportResultDto resultDto, int piCount) {
     assertThat(resultDto.getResult().size(), is(piCount));
   }
 
 
-  private ProcessDefinitionEngineDto deployProcessDefinitionWithTwoUserTasks() throws IOException {
+  private ProcessDefinitionEngineDto deployProcessDefinitionWithTwoUserTasks() {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
         .startEvent()
           .userTask(USER_TASK_ACTIVITY_ID)
@@ -480,11 +479,11 @@ public class ExecutedFlowNodeQueryFilterIT {
     return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
-  private ProcessDefinitionEngineDto deploySimpleUserTaskProcessDefinition() throws IOException {
+  private ProcessDefinitionEngineDto deploySimpleUserTaskProcessDefinition() {
     return deploySimpleUserTaskProcessDefinition(USER_TASK_ACTIVITY_ID);
   }
 
-  private ProcessDefinitionEngineDto deploySimpleUserTaskProcessDefinition(String userTaskActivityId) throws IOException {
+  private ProcessDefinitionEngineDto deploySimpleUserTaskProcessDefinition(String userTaskActivityId) {
     BpmnModelInstance modelInstance = Bpmn.createExecutableProcess("ASimpleUserTaskProcess" + System.currentTimeMillis())
         .startEvent()
           .userTask(userTaskActivityId)

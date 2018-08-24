@@ -1,6 +1,6 @@
 package org.camunda.optimize.service.export;
 
-import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.raw.RawDataProcessInstanceDto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -1,8 +1,8 @@
 package org.camunda.optimize.service.es.filter;
 
 import org.apache.lucene.search.join.ScoreMode;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.variable.*;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.variable.data.OperatorMultipleValuesVariableFilterSubDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.*;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.data.OperatorMultipleValuesVariableFilterSubDataDto;
 import org.camunda.optimize.service.util.ValidationHelper;
 import org.elasticsearch.index.query.*;
 import org.slf4j.Logger;

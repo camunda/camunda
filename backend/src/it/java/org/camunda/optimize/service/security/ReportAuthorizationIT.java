@@ -2,10 +2,15 @@ package org.camunda.optimize.service.security;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedMapReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
+import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -20,7 +25,13 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.test.util.ReportDataHelper.createCombinedReport;
+import static org.camunda.optimize.test.util.ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode;
 import static org.camunda.optimize.test.util.ReportDataHelper.createReportDataViewRawAsTable;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
@@ -84,7 +95,7 @@ public class ReportAuthorizationIT {
 
     // when
     ReportDefinitionDto definition = constructReportWithDefinition("aprocess");
-    Response response = embeddedOptimizeRule.target("report/evaluate")
+    Response response = embeddedOptimizeRule.target("report/evaluate/single")
       .request()
       .header(HttpHeaders.AUTHORIZATION, createAuthenticationHeaderForKermit())
       .post(Entity.json(definition.getData()));
@@ -192,12 +203,12 @@ public class ReportAuthorizationIT {
   }
 
   public ReportDefinitionDto createReportUpdate() {
-    ReportDataDto reportData = new ReportDataDto();
+    SingleReportDataDto reportData = new SingleReportDataDto();
     reportData.setProcessDefinitionKey("procdef");
     reportData.setProcessDefinitionVersion("123");
     reportData.setFilter(Collections.emptyList());
     reportData.setConfiguration("aRandomConfiguration");
-    ReportDefinitionDto report = new ReportDefinitionDto();
+    SingleReportDefinitionDto report = new SingleReportDefinitionDto();
     report.setData(reportData);
     report.setName("MyReport");
     return report;
@@ -212,7 +223,7 @@ public class ReportAuthorizationIT {
 
   public String createNewReport() {
     Response response =
-      embeddedOptimizeRule.target("report")
+      embeddedOptimizeRule.target("report/single")
         .request()
         .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .post(Entity.json(""));
@@ -226,8 +237,8 @@ public class ReportAuthorizationIT {
   }
 
   private ReportDefinitionDto constructReportWithDefinition(String processDefinitionKey) {
-    ReportDefinitionDto reportDefinitionDto = new ReportDefinitionDto();
-    ReportDataDto data = createReportDataViewRawAsTable(processDefinitionKey, "1");
+    SingleReportDefinitionDto reportDefinitionDto = new SingleReportDefinitionDto();
+    SingleReportDataDto data = createReportDataViewRawAsTable(processDefinitionKey, "1");
     reportDefinitionDto.setData(data);
     return reportDefinitionDto;
   }

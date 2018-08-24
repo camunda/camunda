@@ -1,8 +1,8 @@
 package org.camunda.optimize.service.es.report.command.pi.frequency;
 
-import org.camunda.optimize.dto.optimize.query.report.group.StartDateGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.group.value.StartDateGroupByValueDto;
-import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.StartDateGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.value.StartDateGroupByValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapSingleReportResultDto;
 import org.camunda.optimize.service.es.report.command.ReportCommand;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.exceptions.OptimizeException;
@@ -21,12 +21,12 @@ import java.util.Map;
 
 import static org.camunda.optimize.service.es.report.command.util.ReportUtil.getDateHistogramInterval;
 
-public class CountProcessInstanceFrequencyByStartDateCommand extends ReportCommand<MapReportResultDto> {
+public class CountProcessInstanceFrequencyByStartDateCommand extends ReportCommand<MapSingleReportResultDto> {
 
   private static final String DATE_HISTOGRAM_AGGREGATION = "dateIntervalGrouping";
 
   @Override
-  protected MapReportResultDto evaluate() throws OptimizeException {
+  protected MapSingleReportResultDto evaluate() throws OptimizeException {
 
     logger.debug("Evaluating count process instance frequency grouped by start date report " +
       "for process definition key [{}] and version [{}]",
@@ -50,7 +50,7 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ReportComma
       .addAggregation(createAggregation(groupByStartDate.getUnit()))
       .get();
 
-    MapReportResultDto mapResult = new MapReportResultDto();
+    MapSingleReportResultDto mapResult = new MapSingleReportResultDto();
     mapResult.setResult(processAggregations(response.getAggregations()));
     mapResult.setProcessInstanceCount(response.getHits().getTotalHits());
     return mapResult;

@@ -2,10 +2,10 @@ package org.camunda.optimize.service.es.filter;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
-import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.FilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.raw.RawDataProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.raw.RawDataSingleReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -56,10 +56,10 @@ public abstract class AbstractRollingDateFilterIT {
 
   protected void assertResults(
       ProcessInstanceEngineDto processInstance,
-      RawDataReportResultDto result,
+      RawDataSingleReportResultDto result,
       int expectedPiCount
   ) {
-    ReportDataDto resultDataDto = result.getData();
+    SingleReportDataDto resultDataDto = result.getData();
     assertThat(resultDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
     assertThat(resultDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultDataDto.getView(), is(notNullValue()));
@@ -73,19 +73,19 @@ public abstract class AbstractRollingDateFilterIT {
     }
   }
 
-  protected RawDataReportResultDto createAndEvaluateReport(
+  protected RawDataSingleReportResultDto createAndEvaluateReport(
       String processDefinitionKey,
       String processDefinitionVersion,
       String unit,
       boolean newToken
   ) {
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
+    SingleReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
     List<FilterDto> rollingDateFilter = DateUtilHelper.createRollingDateFilter(1L, unit);
     reportData.setFilter(rollingDateFilter);
     return evaluateReport(reportData, newToken);
   }
 
-  protected RawDataReportResultDto evaluateReport(ReportDataDto reportData, boolean newToken) {
+  protected RawDataSingleReportResultDto evaluateReport(SingleReportDataDto reportData, boolean newToken) {
     Response response;
     if (newToken) {
       response = evaluateReportAndReturnResponseWithNewToken(reportData);
@@ -94,19 +94,19 @@ public abstract class AbstractRollingDateFilterIT {
     }
     assertThat(response.getStatus(), is(200));
 
-    return response.readEntity(RawDataReportResultDto.class);
+    return response.readEntity(RawDataSingleReportResultDto.class);
   }
 
-  protected Response evaluateReportAndReturnResponse(ReportDataDto reportData) {
-    return embeddedOptimizeRule.target("report/evaluate")
+  protected Response evaluateReportAndReturnResponse(SingleReportDataDto reportData) {
+    return embeddedOptimizeRule.target("report/evaluate/single")
         .request()
         .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .post(Entity.json(reportData));
   }
 
-  protected Response evaluateReportAndReturnResponseWithNewToken(ReportDataDto reportData) {
+  protected Response evaluateReportAndReturnResponseWithNewToken(SingleReportDataDto reportData) {
     String token = embeddedOptimizeRule.getNewAuthenticationToken();
-    return embeddedOptimizeRule.target("report/evaluate")
+    return embeddedOptimizeRule.target("report/evaluate/single")
         .request()
         .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
         .post(Entity.json(reportData));

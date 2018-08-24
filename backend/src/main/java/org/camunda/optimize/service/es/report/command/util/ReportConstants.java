@@ -34,4 +34,7 @@ public class ReportConstants {
 
   public static final String FIXED_DATE_FILTER = "fixed";
   public static final String RELATIVE_DATE_FILTER = "relative";
+
+  public static final String SINGLE_REPORT_TYPE = "single";
+  public static final String COMBINED_REPORT_TYPE = "combined";
 }

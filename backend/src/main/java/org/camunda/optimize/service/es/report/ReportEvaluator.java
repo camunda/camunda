@@ -1,10 +1,10 @@
 package org.camunda.optimize.service.es.report;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ViewDto;
-import org.camunda.optimize.dto.optimize.query.report.group.GroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.SingleReportResultDto;
 import org.camunda.optimize.service.es.filter.QueryFilterEnhancer;
 import org.camunda.optimize.service.es.report.command.Command;
 import org.camunda.optimize.service.es.report.command.CommandContext;
@@ -88,15 +88,15 @@ public class ReportEvaluator {
     addMedianFlowNodeDurationView();
   }
 
-  public ReportResultDto evaluate(ReportDataDto reportData) throws OptimizeException {
+  public SingleReportResultDto evaluate(SingleReportDataDto reportData) throws OptimizeException {
     CommandContext commandContext = createCommandContext(reportData);
     Command evaluationCommand = extractCommand(reportData);
-    ReportResultDto result = evaluationCommand.evaluate(commandContext);
+    SingleReportResultDto result = evaluationCommand.evaluate(commandContext);
     ReportUtil.copyReportData(reportData, result);
     return result;
   }
 
-  private Command extractCommand(ReportDataDto reportData) {
+  private Command extractCommand(SingleReportDataDto reportData) {
     ValidationHelper.validate(reportData);
     ViewDto view = reportData.getView();
     GroupByDto groupBy = reportData.getGroupBy();
@@ -111,7 +111,7 @@ public class ReportEvaluator {
     return command;
   }
 
-  private CommandContext createCommandContext(ReportDataDto reportData) {
+  private CommandContext createCommandContext(SingleReportDataDto reportData) {
     CommandContext commandContext = new CommandContext();
     commandContext.setConfigurationService(configurationService);
     commandContext.setEsclient(esclient);

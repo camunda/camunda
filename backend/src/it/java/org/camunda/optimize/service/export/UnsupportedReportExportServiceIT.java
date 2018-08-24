@@ -4,8 +4,9 @@ import org.apache.commons.io.IOUtils;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -50,7 +51,7 @@ public class UnsupportedReportExportServiceIT {
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    ReportDataDto currentReport = ReportDataHelper.createAvgPiDurationAsNumberGroupByNone(
+    SingleReportDataDto currentReport = ReportDataHelper.createAvgPiDurationAsNumberGroupByNone(
         processInstance.getProcessDefinitionKey(),processInstance.getProcessDefinitionVersion());
     String reportId = createAndStoreDefaultReportDefinition(currentReport);
 
@@ -69,9 +70,9 @@ public class UnsupportedReportExportServiceIT {
     assertThat(result.length, is(0));
   }
 
-  private String createAndStoreDefaultReportDefinition(ReportDataDto reportData) {
+  private String createAndStoreDefaultReportDefinition(SingleReportDataDto reportData) {
     String id = createNewReportHelper();
-    ReportDefinitionDto report = new ReportDefinitionDto();
+    SingleReportDefinitionDto report = new SingleReportDefinitionDto();
     report.setData(reportData);
     report.setId("something");
     report.setLastModifier("something");
@@ -96,7 +97,7 @@ public class UnsupportedReportExportServiceIT {
 
   protected String createNewReportHelper() {
     Response response =
-        embeddedOptimizeRule.target("report")
+        embeddedOptimizeRule.target("report/single")
             .request()
             .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .post(Entity.json(""));

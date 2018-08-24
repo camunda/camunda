@@ -1,19 +1,17 @@
 package org.camunda.optimize.service.es.report.command;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.SingleReportResultDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-
-public class NotSupportedCommand extends ReportCommand <ReportResultDto> {
+public class NotSupportedCommand extends ReportCommand <SingleReportResultDto> {
 
   private Logger logger = LoggerFactory.getLogger(getClass());
 
   @Override
-  protected ReportResultDto evaluate() throws OptimizeException {
+  protected SingleReportResultDto evaluate() throws OptimizeException {
     // Error should contain the report Name
     try {
       logger.warn("The following settings combination of the report data is not supported in Optimize: \n" +

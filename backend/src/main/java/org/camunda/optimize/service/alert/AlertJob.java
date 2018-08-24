@@ -2,12 +2,11 @@ package org.camunda.optimize.service.alert;
 
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.result.NumberReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.NumberSingleReportResultDto;
 import org.camunda.optimize.service.es.reader.AlertReader;
 import org.camunda.optimize.service.es.reader.ReportReader;
-import org.camunda.optimize.service.es.report.ReportEvaluator;
+import org.camunda.optimize.service.es.report.PlainReportEvaluationHandler;
 import org.camunda.optimize.service.es.writer.AlertWriter;
-import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.quartz.Job;
 import org.quartz.JobDataMap;
@@ -39,7 +38,7 @@ public class AlertJob implements Job {
   private AlertWriter alertWriter;
 
   @Autowired
-  private ReportEvaluator reportEvaluator;
+  private PlainReportEvaluationHandler reportEvaluator;
 
   @Override
   public void execute(JobExecutionContext jobExecutionContext) {
@@ -49,10 +48,10 @@ public class AlertJob implements Job {
 
     AlertDefinitionDto alert = alertReader.findAlert(alertId);
 
-    ReportDefinitionDto reportDefinition;
     try {
-      reportDefinition = reportReader.getReport(alert.getReportId());
-      NumberReportResultDto result = (NumberReportResultDto) reportEvaluator.evaluate(reportDefinition.getData());
+      ReportDefinitionDto reportDefinition = reportReader.getReport(alert.getReportId());
+      NumberSingleReportResultDto result =
+        (NumberSingleReportResultDto) reportEvaluator.evaluateReport(reportDefinition);
 
       AlertJobResult alertJobResult = null;
       if (thresholdExceeded(alert, result)) {
@@ -80,13 +79,13 @@ public class AlertJob implements Job {
       }
 
       jobExecutionContext.setResult(alertJobResult);
-    } catch (OptimizeException e) {
-      logger.error("error while processing alert ofr report [{}]", alertId, e);
+    } catch (Exception e) {
+      logger.error("error while processing alert [{}] for report [{}]", alertId, alert.getReportId(), e);
     }
 
   }
 
-  private String composeFixText(AlertDefinitionDto alert, ReportDefinitionDto reportDefinition, NumberReportResultDto result) {
+  private String composeFixText(AlertDefinitionDto alert, ReportDefinitionDto reportDefinition, NumberSingleReportResultDto result) {
     String statusText = alert.getThresholdOperator().equals(AlertDefinitionDto.LESS)
             ? "has been reached" : "is not exceeded anymore";
     String emailBody = "Camunda Optimize - Report Status\n" +
@@ -111,7 +110,7 @@ public class AlertJob implements Job {
       JobKey key, String alertId,
       AlertDefinitionDto alert,
       ReportDefinitionDto reportDefinition,
-      NumberReportResultDto result
+      NumberSingleReportResultDto result
   ) {
     boolean triggeredReminder = isReminder(key) && alert.isTriggered();
     boolean haveToNotify = triggeredReminder || !alert.isTriggered();
@@ -143,7 +142,7 @@ public class AlertJob implements Job {
   private String composeAlertText(
       AlertDefinitionDto alert,
       ReportDefinitionDto reportDefinition,
-      NumberReportResultDto result
+      NumberSingleReportResultDto result
   ) {
     String statusText = alert.getThresholdOperator().equals(AlertDefinitionDto.LESS)
             ? "is not reached" : "was exceeded";
@@ -160,7 +159,7 @@ public class AlertJob implements Job {
     return emailBody;
   }
 
-  private boolean thresholdExceeded(AlertDefinitionDto alert, NumberReportResultDto result) {
+  private boolean thresholdExceeded(AlertDefinitionDto alert, NumberSingleReportResultDto result) {
     boolean exceeded = false;
     if (AlertDefinitionDto.GREATER.equals(alert.getThresholdOperator())) {
       exceeded = result.getResult() > alert.getThreshold();

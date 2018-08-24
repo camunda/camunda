@@ -2,19 +2,20 @@ package org.camunda.optimize.service.report;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
-import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedMapReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.SingleReportResultDto;
 import org.camunda.optimize.rest.queryparam.adjustment.QueryParamAdjustmentUtil;
 import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.es.reader.ReportReader;
-import org.camunda.optimize.service.es.report.ReportEvaluator;
-import org.camunda.optimize.service.es.report.command.util.ReportUtil;
+import org.camunda.optimize.service.es.report.AuthorizationCheckReportEvaluationHandler;
 import org.camunda.optimize.service.es.writer.ReportWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
-import org.camunda.optimize.service.exceptions.OptimizeValidationException;
-import org.camunda.optimize.service.exceptions.ReportEvaluationException;
 import org.camunda.optimize.service.security.SessionService;
 import org.camunda.optimize.service.security.SharingService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -24,9 +25,10 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
 import javax.ws.rs.core.MultivaluedMap;
-import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.SINGLE_REPORT_TYPE;
 
 @Component
 public class ReportService {
@@ -38,7 +40,7 @@ public class ReportService {
   private ReportReader reportReader;
 
   @Autowired
-  private ReportEvaluator reportEvaluator;
+  private AuthorizationCheckReportEvaluationHandler reportEvaluator;
 
   @Autowired
   private AlertService alertService;
@@ -51,28 +53,31 @@ public class ReportService {
 
   public void deleteReportWithAuthorizationCheck(String userId, String reportId) {
     ReportDefinitionDto reportDefinition = reportReader.getReport(reportId);
-    performAuthorizationCheck(userId, reportDefinition);
+    if (!isAuthorizedToSeeReport(userId, reportDefinition)) {
+      throw new ForbiddenException("User [" + userId + "] is not authorized to delete report [" +
+        reportDefinition.getName() + "].");
+    }
 
     alertService.deleteAlertsForReport(reportId);
     sharingService.deleteShareForReport(reportId);
     reportWriter.deleteReport(reportId);
   }
 
-  public IdDto createNewReportAndReturnId(String userId) {
-    return reportWriter.createNewReportAndReturnId(userId);
+  public IdDto createNewReportAndReturnId(String userId, String reportType) {
+    return reportWriter.createNewReportAndReturnId(userId, reportType);
   }
 
   public void updateReportWithAuthorizationCheck(String reportId,
                                                  ReportDefinitionDto updatedReport,
                                                  String userId) throws OptimizeException, JsonProcessingException {
-    ValidationHelper.validateDefinition(updatedReport.getData());
+    ValidationHelper.validateDefinitionData(updatedReport.getData());
     getReportWithAuthorizationCheck(reportId, userId);
     ReportDefinitionUpdateDto reportUpdate = convertToReportUpdate(reportId, updatedReport, userId);
     reportWriter.updateReport(reportUpdate);
-    alertService.deleteAlertsIfNeeded(reportId, updatedReport.getData());
+    alertService.deleteAlertsIfNeeded(reportId, updatedReport);
   }
 
- private ReportDefinitionUpdateDto convertToReportUpdate(String reportId, ReportDefinitionDto updatedReport, String userId) {
+  private ReportDefinitionUpdateDto convertToReportUpdate(String reportId, ReportDefinitionDto updatedReport, String userId) {
     ReportDefinitionUpdateDto reportUpdate = new ReportDefinitionUpdateDto();
     reportUpdate.setData(updatedReport.getData());
     reportUpdate.setId(updatedReport.getId());
@@ -103,61 +108,51 @@ public class ReportService {
     reports = reports
       .stream()
       .filter(
-        r -> r.getData() == null ||
-          sessionService
-          .isAuthorizedToSeeDefinition(userId, r.getData().getProcessDefinitionKey()))
+        r -> {
+          if (SINGLE_REPORT_TYPE.equals(r.getReportType())) {
+            SingleReportDefinitionDto report = (SingleReportDefinitionDto) r;
+            return r.getData() == null ||
+              sessionService
+                .isAuthorizedToSeeDefinition(userId, report.getData().getProcessDefinitionKey());
+          } else {
+            return true;
+          }
+        })
       .collect(Collectors.toList());
     return reports;
   }
 
   public ReportDefinitionDto getReportWithAuthorizationCheck(String reportId, String userId) {
     ReportDefinitionDto report = reportReader.getReport(reportId);
-    performAuthorizationCheck(userId, report);
+    if (!isAuthorizedToSeeReport(userId, report)) {
+      throw new ForbiddenException("User [" + userId + "] is not authorized to access or edit report [" +
+        report.getName() + "].");
+    }
     return report;
   }
 
-  public void performAuthorizationCheck(String userId, ReportDefinitionDto report) {
-    ReportDataDto reportData = report.getData();
-    if (reportData != null && !isAuthorizedToPerformActionOnReport(userId, reportData)) {
-      throw new ForbiddenException("User [" + userId + "] is not authorized to access or edit report [" +
-        report.getName() + "] with process definition [" + reportData.getProcessDefinitionKey() + "].");
+  private boolean isAuthorizedToSeeReport(String userId, ReportDefinitionDto reportDefinition) {
+    if (SINGLE_REPORT_TYPE.equals(reportDefinition.getReportType())) {
+      SingleReportDefinitionDto singleReport = (SingleReportDefinitionDto) reportDefinition;
+      SingleReportDataDto reportData = singleReport.getData();
+      return
+        reportData == null || sessionService.isAuthorizedToSeeDefinition(userId, reportData.getProcessDefinitionKey());
     }
+    return true;
   }
 
-  public ReportResultDto evaluateSavedReportWithAuthorizationCheck(String userId, String reportId) {
-    ReportDefinitionDto reportDefinition = reportReader.getReport(reportId);
-    ReportResultDto result = evaluateReportWithAuthorizationCheck(userId, reportDefinition);
-    ReportUtil.copyMetaData(reportDefinition, result);
-    return result;
+  public ReportResultDto evaluateSavedReport(String userId, String reportId) {
+    return reportEvaluator.evaluateSavedReport(userId, reportId);
   }
 
-  public ReportResultDto evaluateReportWithAuthorizationCheck(String userId,
-                                                              ReportDefinitionDto reportDefinition) {
-    performAuthorizationCheck(userId, reportDefinition);
-    return evaluateWithErrorCheck(reportDefinition);
+  public SingleReportResultDto evaluateSingleReport(String userId,
+                                                    SingleReportDefinitionDto reportDefinition) {
+    return reportEvaluator.evaluateSingleReport(userId, reportDefinition);
   }
 
-  private ReportResultDto evaluateWithErrorCheck(ReportDefinitionDto reportDefinition) throws ReportEvaluationException {
-    ReportDataDto reportData = reportDefinition.getData();
-    try {
-      return reportEvaluator.evaluate(reportData);
-    } catch (OptimizeException | OptimizeValidationException e) {
-      ReportDefinitionDto definitionWrapper = new ReportDefinitionDto();
-      definitionWrapper.setData(reportData);
-      definitionWrapper.setName(reportDefinition.getName());
-      definitionWrapper.setId(reportDefinition.getId());
-      throw new ReportEvaluationException(definitionWrapper, e);
-    }
+  public CombinedMapReportResultDto evaluateCombinedReport(String userId,
+                                                    CombinedReportDefinitionDto reportDefinition) {
+    return reportEvaluator.evaluateCombinedReport(userId, reportDefinition);
   }
 
-  public ReportResultDto evaluateSavedReport(String reportId) {
-    ReportDefinitionDto reportDefinition = reportReader.getReport(reportId);
-    ReportResultDto result = evaluateWithErrorCheck(reportDefinition);
-    ReportUtil.copyMetaData(reportDefinition, result);
-    return result;
-  }
-
-  private boolean isAuthorizedToPerformActionOnReport(String userId, ReportDataDto reportDataDto) {
-    return sessionService.isAuthorizedToSeeDefinition(userId, reportDataDto.getProcessDefinitionKey());
-  }
 }

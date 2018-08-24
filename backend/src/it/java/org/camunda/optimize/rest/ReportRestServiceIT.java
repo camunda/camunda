@@ -1,8 +1,9 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
 import org.camunda.optimize.service.exceptions.ReportEvaluationException;
 import org.camunda.optimize.service.sharing.AbstractSharingIT;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -39,7 +40,7 @@ public class ReportRestServiceIT {
   public void createNewReportWithoutAuthentication() {
     // when
     Response response =
-      embeddedOptimizeRule.target("report")
+      embeddedOptimizeRule.target("report/single")
         .request()
         .post(Entity.json(""));
 
@@ -51,7 +52,7 @@ public class ReportRestServiceIT {
   public void createNewReport() {
     // when
     Response response =
-      embeddedOptimizeRule.target("report")
+      embeddedOptimizeRule.target("report/single")
         .request()
         .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .post(Entity.json(""));
@@ -94,8 +95,8 @@ public class ReportRestServiceIT {
   }
 
   private ReportDefinitionDto constructReportWithFakePD() {
-    ReportDefinitionDto reportDefinitionDto = new ReportDefinitionDto();
-    ReportDataDto data = new ReportDataDto();
+    SingleReportDefinitionDto reportDefinitionDto = new SingleReportDefinitionDto();
+    SingleReportDataDto data = new SingleReportDataDto();
     data.setProcessDefinitionVersion("FAKE");
     data.setProcessDefinitionKey("FAKE");
     reportDefinitionDto.setData(data);
@@ -252,7 +253,7 @@ public class ReportRestServiceIT {
   @Test
   public void evaluateReportWithoutViewById() {
     //given
-    ReportDataDto countFlowNodeFrequencyGroupByFlowNoneNumber = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNoneNumber(RANDOM_KEY, RANDOM_VERSION);
+    SingleReportDataDto countFlowNodeFrequencyGroupByFlowNoneNumber = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNoneNumber(RANDOM_KEY, RANDOM_VERSION);
     countFlowNodeFrequencyGroupByFlowNoneNumber.setView(null);
     String id = createAndStoreDefaultReportDefinition(
       countFlowNodeFrequencyGroupByFlowNoneNumber
@@ -273,7 +274,7 @@ public class ReportRestServiceIT {
   public void evaluateUnsavedReportWithoutAuthorization() {
     // when
     Response response =
-        embeddedOptimizeRule.target("report/evaluate")
+        embeddedOptimizeRule.target("report/evaluate/single")
             .request()
             .post(Entity.json(""));
 
@@ -284,10 +285,10 @@ public class ReportRestServiceIT {
   @Test
   public void evaluateUnsavedReport() {
     //given
-    ReportDataDto reportDataDto = ReportDataHelper.createReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION);
+    SingleReportDataDto reportDataDto = ReportDataHelper.createReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION);
 
     // then
-    Response response = embeddedOptimizeRule.target("report/evaluate")
+    Response response = embeddedOptimizeRule.target("report/evaluate/single")
       .request()
       .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
       .post(Entity.json(reportDataDto));
@@ -296,9 +297,9 @@ public class ReportRestServiceIT {
     assertThat(response.getStatus(), is(200));
   }
 
-  private String createAndStoreDefaultReportDefinition(ReportDataDto reportDataViewRawAsTable) {
+  private String createAndStoreDefaultReportDefinition(SingleReportDataDto reportDataViewRawAsTable) {
     String id = createNewReportHelper();
-    ReportDefinitionDto report = new ReportDefinitionDto();
+    SingleReportDefinitionDto report = new SingleReportDefinitionDto();
     report.setData(reportDataViewRawAsTable);
     report.setId(RANDOM_STRING);
     report.setLastModifier(RANDOM_STRING);
@@ -313,7 +314,7 @@ public class ReportRestServiceIT {
 
   private String createNewReportHelper() {
     Response response =
-      embeddedOptimizeRule.target("report")
+      embeddedOptimizeRule.target("report/single")
         .request()
         .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .post(Entity.json(""));
@@ -333,7 +334,7 @@ public class ReportRestServiceIT {
 
   private String addEmptyReportToOptimize() {
     Response response =
-      embeddedOptimizeRule.target("report")
+      embeddedOptimizeRule.target("report/single")
         .request()
         .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .post(Entity.json(""));

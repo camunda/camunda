@@ -1,8 +1,8 @@
 package org.camunda.optimize.qa.performance.steps;
 
-import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
-import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.FilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapSingleReportResultDto;
 import org.camunda.optimize.qa.performance.framework.PerfTestContext;
 import org.camunda.optimize.qa.performance.framework.PerfTestStepResult;
 import ru.yandex.qatools.allure.annotations.Step;
@@ -25,12 +25,12 @@ public class GetDurationGetHeatMapStep extends GetHeatMapStep {
 
   @Override
   @Step("Query Duration heatmap data over REST API")
-  public PerfTestStepResult<MapReportResultDto> execute(PerfTestContext context) {
+  public PerfTestStepResult<MapSingleReportResultDto> execute(PerfTestContext context) {
     return super.execute(context);
   }
 
   @Override
-  protected ReportDataDto createRequest(String processDefinitionKey, String processDefinitionVersion) {
+  protected SingleReportDataDto createRequest(String processDefinitionKey, String processDefinitionVersion) {
     return createAverageProcessInstanceDurationGroupByStartDateReport(processDefinitionKey,  processDefinitionVersion, DATE_UNIT_YEAR);
   }
 }

@@ -6,8 +6,8 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.group.FlowNodesGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.FlowNodesGroupByDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.junit.Before;
 import org.junit.Rule;
@@ -138,7 +138,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     );
 
     //when
-    ReportDefinitionDto report =
+    SingleReportDefinitionDto report =
       getReportDefinitionDto(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
     report.getData().setGroupBy(new FlowNodesGroupByDto());
     report.getData().setVisualization(HEAT_VISUALIZATION);

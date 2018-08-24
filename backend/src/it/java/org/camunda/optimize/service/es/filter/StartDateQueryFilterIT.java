@@ -2,9 +2,9 @@ package org.camunda.optimize.service.es.filter;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
-import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
-import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.FilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.raw.RawDataSingleReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -46,16 +46,16 @@ public class StartDateQueryFilterIT {
   private String processDefinitionVersion;
 
   @Test
-  public void testGetHeatMapWithGteStartDateCriteria() throws Exception {
+  public void testGetHeatMapWithGteStartDateCriteria() {
     //given
     startAndImportSimpleProcess();
 
     //when
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
+    SingleReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
     List<FilterDto> fixedStartDateFilter =
         DateUtilHelper.createFixedStartDateFilter(past.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS), OffsetDateTime.now());
     reportData.setFilter(fixedStartDateFilter);
-    RawDataReportResultDto result = evaluateReport(reportData);
+    RawDataSingleReportResultDto result = evaluateReport(reportData);
 
     //then
     assertResults(result, 0);
@@ -74,14 +74,14 @@ public class StartDateQueryFilterIT {
   }
 
   @Test
-  public void testGetHeatMapWithLteStartDateCriteria() throws Exception {
+  public void testGetHeatMapWithLteStartDateCriteria() {
     //given
     startAndImportSimpleProcess();
 
     //when
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
+    SingleReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
     reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(null, past.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS)));
-    RawDataReportResultDto result = evaluateReport(reportData);
+    RawDataSingleReportResultDto result = evaluateReport(reportData);
 
     //then
     assertResults(result, 1);
@@ -100,15 +100,15 @@ public class StartDateQueryFilterIT {
   }
 
   @Test
-  public void testGetHeatMapWithMixedDateCriteria() throws Exception {
+  public void testGetHeatMapWithMixedDateCriteria() {
     //given
     startAndImportSimpleProcess();
 
-    ReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
+    SingleReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
     reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(past.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS), null));
 
     //when
-    RawDataReportResultDto result = evaluateReport(reportData);
+    RawDataSingleReportResultDto result = evaluateReport(reportData);
 
     //then
     assertResults(result, 1);
@@ -124,7 +124,7 @@ public class StartDateQueryFilterIT {
   }
 
 
-  private void startAndImportSimpleProcess() throws InterruptedException {
+  private void startAndImportSimpleProcess() {
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
     past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
     processDefinitionKey = processInstanceDto.getProcessDefinitionKey();
@@ -134,18 +134,18 @@ public class StartDateQueryFilterIT {
   }
 
 
-  private void assertResults(RawDataReportResultDto resultMap, int size) {
+  private void assertResults(RawDataSingleReportResultDto resultMap, int size) {
     assertThat(resultMap.getResult().size(), is(size));
   }
 
-  private RawDataReportResultDto evaluateReport(ReportDataDto reportData) {
+  private RawDataSingleReportResultDto evaluateReport(SingleReportDataDto reportData) {
     Response response = evaluateReportAndReturnResponse(reportData);
     MatcherAssert.assertThat(response.getStatus(), is(200));
-    return response.readEntity(RawDataReportResultDto.class);
+    return response.readEntity(RawDataSingleReportResultDto.class);
   }
 
-  private Response evaluateReportAndReturnResponse(ReportDataDto reportData) {
-    return embeddedOptimizeRule.target("report/evaluate")
+  private Response evaluateReportAndReturnResponse(SingleReportDataDto reportData) {
+    return embeddedOptimizeRule.target("report/evaluate/single")
         .request()
         .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .post(Entity.json(reportData));

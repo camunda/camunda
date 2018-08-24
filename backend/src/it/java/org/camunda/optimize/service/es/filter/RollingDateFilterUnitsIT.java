@@ -1,14 +1,11 @@
 package org.camunda.optimize.service.es.filter;
 
-import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.raw.RawDataSingleReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.TestContextManager;
 
 import java.time.OffsetDateTime;
 import java.util.Arrays;
@@ -49,7 +46,7 @@ public class RollingDateFilterUnitsIT extends AbstractRollingDateFilterIT {
     LocalDateUtil.setCurrentTime(processInstanceStartTime);
 
     // when
-    RawDataReportResultDto result = createAndEvaluateReport(
+    RawDataSingleReportResultDto result = createAndEvaluateReport(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion(),
         unit,

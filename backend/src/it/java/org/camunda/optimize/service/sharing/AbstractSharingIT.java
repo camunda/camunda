@@ -7,8 +7,9 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.PositionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -56,11 +57,11 @@ public abstract class AbstractSharingIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     String reportId = this.createNewReport();
-    ReportDataDto reportData =
+    SingleReportDataDto reportData =
       ReportDataHelper.createReportDataViewRawAsTable(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion());
-    ReportDefinitionDto report = new ReportDefinitionDto();
+    SingleReportDefinitionDto report = new SingleReportDefinitionDto();
     report.setData(reportData);
     updateReport(reportId, report);
     return reportId;
@@ -98,7 +99,7 @@ public abstract class AbstractSharingIT {
 
   protected String createNewReport() {
     Response response =
-        embeddedOptimizeRule.target("report")
+        embeddedOptimizeRule.target("report/single")
             .request()
             .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
             .post(Entity.json(""));

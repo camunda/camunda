@@ -6,10 +6,11 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.group.VariableGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.VariableGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapSingleReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.util.AvgProcessInstanceDurationGroupByVariableReportDataCreator;
 import org.camunda.optimize.service.es.report.util.MaxProcessInstanceDurationGroupByVariableReportDataCreator;
@@ -80,16 +81,16 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = reportDataCreator.create(
+    SingleReportDataDto reportData = reportDataCreator.create(
         processInstanceDto.getProcessDefinitionKey(),
       processInstanceDto.getProcessDefinitionVersion(),
       "foo",
       "String"
     );
-    MapReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     // then
-    ReportDataDto resultReportDataDto = result.getData();
+    SingleReportDataDto resultReportDataDto = result.getData();
     assertThat(result.getProcessInstanceCount(), is(1L));
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
@@ -129,7 +130,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     engineDatabaseRule.changeProcessInstanceEndDate(processInstance.getId(), endDate);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-    ReportDataDto reportData = reportDataCreator.create(
+    SingleReportDataDto reportData = reportDataCreator.create(
       processInstance.getProcessDefinitionKey(),
       processInstance.getProcessDefinitionVersion(),
       "foo",
@@ -138,10 +139,10 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     String reportId = createAndStoreDefaultReportDefinition(reportData);
 
     // when
-    MapReportResultDto result = evaluateReportById(reportId);
+    MapSingleReportResultDto result = evaluateReportById(reportId);
 
     // then
-    ReportDataDto resultReportDataDto = result.getData();
+    SingleReportDataDto resultReportDataDto = result.getData();
     assertThat(result.getProcessInstanceCount(), is(1L));
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstance.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstance.getProcessDefinitionVersion()));
@@ -187,16 +188,16 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = reportDataCreator.create(
+    SingleReportDataDto reportData = reportDataCreator.create(
         processInstanceDto.getProcessDefinitionKey(),
         ALL_VERSIONS,
       "foo",
       "String"
     );
-    MapReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     // then
-    ReportDataDto resultReportDataDto = result.getData();
+    SingleReportDataDto resultReportDataDto = result.getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(ALL_VERSIONS));
     assertThat(result.getResult(), is(notNullValue()));
@@ -225,16 +226,16 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = reportDataCreator.create(
+    SingleReportDataDto reportData = reportDataCreator.create(
         processInstanceDto.getProcessDefinitionKey(),
         processInstanceDto.getProcessDefinitionVersion(),
       "foo",
       "String"
     );
-    MapReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     // then
-    ReportDataDto resultReportDataDto = result.getData();
+    SingleReportDataDto resultReportDataDto = result.getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
     assertThat(result.getResult(), is(notNullValue()));
@@ -263,16 +264,16 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = reportDataCreator.create(
+    SingleReportDataDto reportData = reportDataCreator.create(
         processDefinitionDto.getKey(),
         String.valueOf(processDefinitionDto.getVersion()),
       "foo",
       "String"
     );
-    MapReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     // then
-    ReportDataDto resultReportDataDto = result.getData();
+    SingleReportDataDto resultReportDataDto = result.getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processDefinitionDto.getKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(String.valueOf(processDefinitionDto.getVersion())));
     assertThat(result.getResult(), is(notNullValue()));
@@ -308,13 +309,13 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = reportDataCreator.create(
+    SingleReportDataDto reportData = reportDataCreator.create(
         processInstanceDto.getProcessDefinitionKey(),
         processInstanceDto.getProcessDefinitionVersion(),
       "foo",
       "String"
     );
-    MapReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
@@ -341,16 +342,16 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = reportDataCreator.create(
+    SingleReportDataDto reportData = reportDataCreator.create(
         processInstanceDto.getProcessDefinitionKey(),
         processInstanceDto.getProcessDefinitionVersion(),
       "foo",
       "String"
     );
-    MapReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     // then
-    ReportDataDto resultReportDataDto = result.getData();
+    SingleReportDataDto resultReportDataDto = result.getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
     assertThat(result.getResult(), is(notNullValue()));
@@ -379,16 +380,16 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = reportDataCreator.create(
+    SingleReportDataDto reportData = reportDataCreator.create(
         processInstanceDto.getProcessDefinitionKey(),
         processInstanceDto.getProcessDefinitionVersion(),
       "foo1",
       "String"
     );
-    MapReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     // then
-    ReportDataDto resultReportDataDto = result.getData();
+    SingleReportDataDto resultReportDataDto = result.getData();
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processInstanceDto.getProcessDefinitionKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(processInstanceDto.getProcessDefinitionVersion()));
     assertThat(result.getResult(), is(notNullValue()));
@@ -421,13 +422,13 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     for (Map.Entry<String, Object> entry : variables.entrySet()) {
       // when
       String variableType = varNameToTypeMap.get(entry.getKey());
-      ReportDataDto reportData = reportDataCreator.create(
+      SingleReportDataDto reportData = reportDataCreator.create(
         processInstanceDto.getProcessDefinitionKey(),
         processInstanceDto.getProcessDefinitionVersion(),
         entry.getKey(),
         variableType
       );
-      MapReportResultDto result = evaluateReport(reportData);
+      MapSingleReportResultDto result = evaluateReport(reportData);
 
       // then
       assertThat(result.getResult(), is(notNullValue()));
@@ -471,14 +472,14 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDataDto reportData = reportDataCreator.create(
+    SingleReportDataDto reportData = reportDataCreator.create(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion(),
       "foo",
       "String"
     );
     reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(null, startDate.minusSeconds(1L)));
-    MapReportResultDto result = evaluateReport(reportData);
+    MapSingleReportResultDto result = evaluateReport(reportData);
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
@@ -500,7 +501,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
   @Parameters(source = ReportDataCreatorProvider.class)
   public void optimizeExceptionOnViewEntityIsNull(ReportDataCreator reportDataCreator) {
     // given
-    ReportDataDto dataDto = reportDataCreator.create(
+    SingleReportDataDto dataDto = reportDataCreator.create(
         "123",
         "1",
       "foo",
@@ -519,7 +520,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
   @Parameters(source = ReportDataCreatorProvider.class)
   public void optimizeExceptionOnViewPropertyIsNull(ReportDataCreator reportDataCreator) {
     // given
-    ReportDataDto dataDto = reportDataCreator.create(
+    SingleReportDataDto dataDto = reportDataCreator.create(
         "123",
         "1",
       "foo",
@@ -538,7 +539,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
   @Parameters(source = ReportDataCreatorProvider.class)
   public void optimizeExceptionOnGroupByTypeIsNull(ReportDataCreator reportDataCreator) {
     // given
-    ReportDataDto dataDto = reportDataCreator.create(
+    SingleReportDataDto dataDto = reportDataCreator.create(
         "123",
         "1",
       "foo",
@@ -557,7 +558,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
   @Parameters(source = ReportDataCreatorProvider.class)
   public void optimizeExceptionOnGroupByValueNameIsNull(ReportDataCreator reportDataCreator) {
     // given
-    ReportDataDto dataDto = reportDataCreator.create(
+    SingleReportDataDto dataDto = reportDataCreator.create(
         "123",
         "1",
       "foo",
@@ -577,7 +578,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
   @Parameters(source = ReportDataCreatorProvider.class)
   public void optimizeExceptionOnGroupByValueTypeIsNull(ReportDataCreator reportDataCreator) {
     // given
-    ReportDataDto dataDto = reportDataCreator.create(
+    SingleReportDataDto dataDto = reportDataCreator.create(
         "123",
         "1",
       "foo",
@@ -634,15 +635,15 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     return engineRule.deployProcessAndGetProcessDefinition(processModel);
   }
 
-  private MapReportResultDto evaluateReport(ReportDataDto reportData) {
+  private MapSingleReportResultDto evaluateReport(SingleReportDataDto reportData) {
     Response response = evaluateReportAndReturnResponse(reportData);
     assertThat(response.getStatus(), is(200));
 
-    return response.readEntity(MapReportResultDto.class);
+    return response.readEntity(MapSingleReportResultDto.class);
   }
 
-  private Response evaluateReportAndReturnResponse(ReportDataDto reportData) {
-    return embeddedOptimizeRule.target("report/evaluate")
+  private Response evaluateReportAndReturnResponse(SingleReportDataDto reportData) {
+    return embeddedOptimizeRule.target("report/evaluate/single")
       .request()
       .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
       .post(Entity.json(reportData));
@@ -650,7 +651,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
 
   private String createNewReport() {
     Response response =
-      embeddedOptimizeRule.target("report")
+      embeddedOptimizeRule.target("report/single")
         .request()
         .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .post(Entity.json(""));
@@ -668,20 +669,20 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
     assertThat(response.getStatus(), is(204));
   }
 
-  private MapReportResultDto evaluateReportById(String reportId) {
+  private MapSingleReportResultDto evaluateReportById(String reportId) {
     Response response = embeddedOptimizeRule.target("report/" + reportId + "/evaluate")
       .request()
       .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
       .get();
     assertThat(response.getStatus(), is(200));
 
-    return response.readEntity(MapReportResultDto.class);
+    return response.readEntity(MapSingleReportResultDto.class);
   }
 
-  private String createAndStoreDefaultReportDefinition(ReportDataDto reportData) {
+  private String createAndStoreDefaultReportDefinition(SingleReportDataDto reportData) {
     String id = createNewReport();
 
-    ReportDefinitionDto report = new ReportDefinitionDto();
+    SingleReportDefinitionDto report = new SingleReportDefinitionDto();
     report.setData(reportData);
     report.setId(id);
     report.setLastModifier("something");

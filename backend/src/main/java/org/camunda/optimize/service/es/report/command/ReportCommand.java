@@ -3,8 +3,8 @@ package org.camunda.optimize.service.es.report.command;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.SingleReportResultDto;
 import org.camunda.optimize.service.es.filter.QueryFilterEnhancer;
 import org.camunda.optimize.service.es.report.command.util.ReportConstants;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
@@ -29,11 +29,11 @@ import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
-public abstract class ReportCommand <T extends ReportResultDto>  implements Command {
+public abstract class ReportCommand <T extends SingleReportResultDto>  implements Command {
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
-  protected ReportDataDto reportData;
+  protected SingleReportDataDto reportData;
   protected Client esclient;
   protected ConfigurationService configurationService;
   protected ObjectMapper objectMapper;

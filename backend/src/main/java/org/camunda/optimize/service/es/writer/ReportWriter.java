@@ -27,6 +27,7 @@ import static org.camunda.optimize.service.es.schema.type.ReportType.LAST_MODIFI
 import static org.camunda.optimize.service.es.schema.type.ReportType.LAST_MODIFIER;
 import static org.camunda.optimize.service.es.schema.type.ReportType.NAME;
 import static org.camunda.optimize.service.es.schema.type.ReportType.OWNER;
+import static org.camunda.optimize.service.es.schema.type.ReportType.REPORT_TYPE;
 
 @Component
 public class ReportWriter {
@@ -45,7 +46,7 @@ public class ReportWriter {
 
   private static final String DEFAULT_REPORT_NAME = "New Report";
 
-  public IdDto createNewReportAndReturnId(String userId) {
+  public IdDto createNewReportAndReturnId(String userId, String reportType) {
     logger.debug("Writing new report to Elasticsearch");
 
     String id = IdGenerator.getNextId();
@@ -55,6 +56,7 @@ public class ReportWriter {
     map.put(OWNER, userId);
     map.put(LAST_MODIFIER, userId);
     map.put(NAME, DEFAULT_REPORT_NAME);
+    map.put(REPORT_TYPE, reportType);
     map.put(ID, id);
 
     esclient

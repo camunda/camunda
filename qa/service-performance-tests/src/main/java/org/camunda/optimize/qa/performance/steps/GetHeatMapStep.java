@@ -7,9 +7,9 @@ import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
-import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
-import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.FilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapSingleReportResultDto;
 import org.camunda.optimize.qa.performance.framework.PerfTestContext;
 import org.camunda.optimize.qa.performance.framework.PerfTestStep;
 import org.camunda.optimize.qa.performance.framework.PerfTestStepResult;
@@ -32,7 +32,7 @@ abstract class GetHeatMapStep extends PerfTestStep {
   }
 
   @Override
-  public PerfTestStepResult<MapReportResultDto> execute(PerfTestContext context) {
+  public PerfTestStepResult<MapSingleReportResultDto> execute(PerfTestContext context) {
     objectMapper = initMapper(context);
     CloseableHttpClient client = HttpClientBuilder.create().build();
     try {
@@ -48,7 +48,7 @@ abstract class GetHeatMapStep extends PerfTestStep {
     }
   }
 
-  private PerfTestStepResult<MapReportResultDto> getHeatmap(PerfTestContext context, CloseableHttpClient client) throws IOException {
+  private PerfTestStepResult<MapSingleReportResultDto> getHeatmap(PerfTestContext context, CloseableHttpClient client) throws IOException {
 
     HttpPost post = setupPostRequest(context);
 
@@ -59,8 +59,8 @@ abstract class GetHeatMapStep extends PerfTestStep {
     }
     String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
 
-    PerfTestStepResult<MapReportResultDto> result = new PerfTestStepResult<>();
-    MapReportResultDto responseDto = objectMapper.readValue(responseString, MapReportResultDto.class);
+    PerfTestStepResult<MapSingleReportResultDto> result = new PerfTestStepResult<>();
+    MapSingleReportResultDto responseDto = objectMapper.readValue(responseString, MapSingleReportResultDto.class);
     result.setResult(responseDto);
     this.getClass().getSimpleName();
 
@@ -74,14 +74,14 @@ abstract class GetHeatMapStep extends PerfTestStep {
 
     String processDefinitionKey = (String) context.getParameter("processDefinitionKey");
     String processDefinitionVersion = (String) context.getParameter("processDefinitionVersion");
-    ReportDataDto reportData = createRequest(processDefinitionKey, processDefinitionVersion);
+    SingleReportDataDto reportData = createRequest(processDefinitionKey, processDefinitionVersion);
     reportData.setFilter(filter);
 
     post.setEntity(new StringEntity(objectMapper.writeValueAsString(reportData)));
     return post;
   }
 
-  protected abstract ReportDataDto createRequest(String processDefinitionKey, String processDefinitionVersion);
+  protected abstract SingleReportDataDto createRequest(String processDefinitionKey, String processDefinitionVersion);
 
   abstract String getRestEndpoint(PerfTestContext context);
 }

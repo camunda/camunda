@@ -3,11 +3,11 @@ package org.camunda.optimize.service.es.filter;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.variable.*;
-import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.FilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.*;
+import org.camunda.optimize.dto.optimize.query.report.single.result.raw.RawDataSingleReportResultDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -50,39 +50,39 @@ public class VariableQueryFilterIT {
   private final String[] NUMERIC_TYPES =
     {INTEGER_TYPE, SHORT_TYPE, LONG_TYPE, DOUBLE_TYPE};
 
-  private RawDataReportResultDto evaluateReport(ReportDataDto reportData) {
+  private RawDataSingleReportResultDto evaluateReport(SingleReportDataDto reportData) {
     Response response = evaluateReportAndReturnResponse(reportData);
     MatcherAssert.assertThat(response.getStatus(), is(200));
-    return response.readEntity(RawDataReportResultDto.class);
+    return response.readEntity(RawDataSingleReportResultDto.class);
   }
 
   private Response evaluateReportWithFilterAndGetResponse(String processDefinitionKey, VariableFilterDto dto) {
     List<FilterDto> filterList = new ArrayList<>();
     filterList.add(dto);
 
-    ReportDataDto reportData = createReportDataViewRawAsTable(processDefinitionKey, "1");
+    SingleReportDataDto reportData = createReportDataViewRawAsTable(processDefinitionKey, "1");
     reportData.setFilter(filterList);
     return evaluateReportAndReturnResponse(reportData);
   }
 
-  private Response evaluateReportAndReturnResponse(ReportDataDto reportData) {
-    return embeddedOptimizeRule.target("report/evaluate")
+  private Response evaluateReportAndReturnResponse(SingleReportDataDto reportData) {
+    return embeddedOptimizeRule.target("report/evaluate/single")
         .request()
         .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
         .post(Entity.json(reportData));
   }
 
-  private RawDataReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition,
-                                                          VariableFilterDto filter) {
+  private RawDataSingleReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition,
+                                                                VariableFilterDto filter) {
     List<FilterDto> filterList = new ArrayList<>();
     filterList.add(filter);
     return this.evaluateReportWithFilter(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), filterList);
   }
 
-  private RawDataReportResultDto evaluateReportWithFilter(String processDefinitionKey,
-                                                          String processDefinitionVersion,
-                                                          List<FilterDto> filter) {
-    ReportDataDto reportData =
+  private RawDataSingleReportResultDto evaluateReportWithFilter(String processDefinitionKey,
+                                                                String processDefinitionVersion,
+                                                                List<FilterDto> filter) {
+    SingleReportDataDto reportData =
       createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
     reportData.setFilter(filter);
     return evaluateReport(reportData);
@@ -102,7 +102,7 @@ public class VariableQueryFilterIT {
 
     // when
     VariableFilterDto filter = VariableFilterUtilHelper.createStringVariableFilter("var", IN, "value");
-    RawDataReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    RawDataSingleReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertResults(result, 1);
@@ -124,7 +124,7 @@ public class VariableQueryFilterIT {
 
     // when
     VariableFilterDto filter = VariableFilterUtilHelper.createStringVariableFilter("stringVar", NOT_IN, "aStringValue");
-    RawDataReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    RawDataSingleReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertResults(result, 0);
@@ -144,7 +144,7 @@ public class VariableQueryFilterIT {
 
     // when
     VariableFilterDto filter = VariableFilterUtilHelper.createStringVariableFilter("stringVar", IN, "aStringValue");
-    RawDataReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    RawDataSingleReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertResults(result,  1);
@@ -166,7 +166,7 @@ public class VariableQueryFilterIT {
 
     // when
     VariableFilterDto filter = VariableFilterUtilHelper.createStringVariableFilter("anotherStringVar", NOT_IN, "aStringValue");
-    RawDataReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    RawDataSingleReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertResults(result,  2);
@@ -189,7 +189,7 @@ public class VariableQueryFilterIT {
     VariableFilterDto filter = VariableFilterUtilHelper.createStringVariableFilter("stringVar", IN, "aStringValue");
     StringVariableFilterDataDto filterData = (StringVariableFilterDataDto) filter.getData();
     filterData.getData().getValues().add("anotherValue");
-    RawDataReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    RawDataSingleReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertResults(result, 2);
@@ -208,7 +208,7 @@ public class VariableQueryFilterIT {
 
     // when
     VariableFilterDto filter = VariableFilterUtilHelper.createStringVariableFilter("stringVar", IN, "value");
-    RawDataReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    RawDataSingleReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertResults(result, 1);
@@ -228,7 +228,7 @@ public class VariableQueryFilterIT {
 
     // when
     VariableFilterDto filter = VariableFilterUtilHelper.createStringVariableFilter("var", IN, "1");
-    RawDataReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    RawDataSingleReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertResults(result, 1);
@@ -250,7 +250,7 @@ public class VariableQueryFilterIT {
 
     // when
     VariableFilterDto filter = VariableFilterUtilHelper.createStringVariableFilter("var", NOT_IN, "value");
-    RawDataReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    RawDataSingleReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertResults(result, 2);
@@ -274,7 +274,7 @@ public class VariableQueryFilterIT {
     VariableFilterDto filter = VariableFilterUtilHelper.createStringVariableFilter("var", NOT_IN, "1");
     StringVariableFilterDataDto filterData = (StringVariableFilterDataDto) filter.getData();
     filterData.getData().getValues().add("2");
-    RawDataReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    RawDataSingleReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertResults(result, 1);
@@ -296,7 +296,7 @@ public class VariableQueryFilterIT {
 
     // when
     VariableFilterDto filter = VariableFilterUtilHelper.createBooleanVariableFilter("var", "false");
-    RawDataReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    RawDataSingleReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertResults(result, 2);
@@ -318,7 +318,7 @@ public class VariableQueryFilterIT {
 
     // when
     VariableFilterDto filter = VariableFilterUtilHelper.createBooleanVariableFilter("var", "true");
-    RawDataReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    RawDataSingleReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertResults(result, 2);
@@ -342,7 +342,7 @@ public class VariableQueryFilterIT {
 
       // when
       VariableFilterDto filter = createNumericVariableFilter(LESS_THAN, "var", variableType, "5");
-      RawDataReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+      RawDataSingleReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
       // then
       assertResults(result, 2);
@@ -376,7 +376,7 @@ public class VariableQueryFilterIT {
       OperatorMultipleValuesVariableFilterDataDto filterData =
               (OperatorMultipleValuesVariableFilterDataDto) filter.getData();
       filterData.getData().getValues().add("2");
-      RawDataReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+      RawDataSingleReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
       // then
       assertResults(result, 2);
@@ -406,7 +406,7 @@ public class VariableQueryFilterIT {
       OperatorMultipleValuesVariableFilterDataDto filterData =
               (OperatorMultipleValuesVariableFilterDataDto) filter.getData();
       filterData.getData().getValues().add("2");
-      RawDataReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+      RawDataSingleReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
       // then
       assertResults(result,  1);
@@ -435,7 +435,7 @@ public class VariableQueryFilterIT {
 
       // when
       VariableFilterDto filter = createNumericVariableFilter(LESS_THAN_EQUALS, "var", variableType, "2");
-      RawDataReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+      RawDataSingleReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
       // then
       assertResults(result, 2);
@@ -462,7 +462,7 @@ public class VariableQueryFilterIT {
 
       // when
       VariableFilterDto filter = createNumericVariableFilter(GREATER_THAN, "var", variableType, "1");
-      RawDataReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+      RawDataSingleReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
       // then
       assertResults(result, 2);
@@ -489,7 +489,7 @@ public class VariableQueryFilterIT {
 
       // when
       VariableFilterDto filter = createNumericVariableFilter(GREATER_THAN_EQUALS, "var", variableType, "2");
-      RawDataReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+      RawDataSingleReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
       // then
       assertResults(result, 2);
@@ -516,7 +516,7 @@ public class VariableQueryFilterIT {
 
       // when
       VariableFilterDto filter = createNumericVariableFilter(IN, "var", variableType, "2");
-      RawDataReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+      RawDataSingleReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
       // then
       assertResults(result, 1);
@@ -543,7 +543,7 @@ public class VariableQueryFilterIT {
 
       // when
       VariableFilterDto filter = createNumericVariableFilter(NOT_IN, "var", variableType, "2");
-      RawDataReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+      RawDataSingleReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
       // then
       assertResults(result, 2);
@@ -572,7 +572,7 @@ public class VariableQueryFilterIT {
       VariableFilterDto filter = createNumericVariableFilter(GREATER_THAN, "var", variableType, "1");
       VariableFilterDto filter2 = createNumericVariableFilter(LESS_THAN, "var", variableType, "10");
       List<FilterDto> filters = Stream.of(filter, filter2).collect(Collectors.toList());
-      RawDataReportResultDto result =
+      RawDataSingleReportResultDto result =
         evaluateReportWithFilter(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), filters);
 
       // then
@@ -602,7 +602,7 @@ public class VariableQueryFilterIT {
       VariableFilterDto filter = createNumericVariableFilter(LESS_THAN, "var", variableType, "2");
       VariableFilterDto filter2 = createNumericVariableFilter(GREATER_THAN, "var", variableType, "2");
       List<FilterDto> filters = Stream.of(filter, filter2).collect(Collectors.toList());
-      RawDataReportResultDto result =
+      RawDataSingleReportResultDto result =
         evaluateReportWithFilter(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), filters);
       // then
       assertResults(result, 0);
@@ -626,7 +626,7 @@ public class VariableQueryFilterIT {
 
     // when
     VariableFilterDto filter = VariableFilterUtilHelper.createDateVariableFilter("var", null, OffsetDateTime.now());
-    RawDataReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    RawDataSingleReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertResults(result, 2);
@@ -650,7 +650,7 @@ public class VariableQueryFilterIT {
     // when
     VariableFilterDto filter =
         VariableFilterUtilHelper.createDateVariableFilter("var", OffsetDateTime.now().minusSeconds(2L), null);
-    RawDataReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    RawDataSingleReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertResults(result, 2);
@@ -673,7 +673,7 @@ public class VariableQueryFilterIT {
 
     // when
     VariableFilterDto filter = VariableFilterUtilHelper.createDateVariableFilter("var", now, now);
-    RawDataReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    RawDataSingleReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertResults(result, 1);
@@ -696,7 +696,7 @@ public class VariableQueryFilterIT {
 
     // when
     VariableFilterDto filter = VariableFilterUtilHelper.createDateVariableFilter("var", now.minusSeconds(1L), now.plusSeconds(10L));
-    RawDataReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
+    RawDataSingleReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
     assertResults(result, 1);
@@ -721,7 +721,7 @@ public class VariableQueryFilterIT {
     VariableFilterDto filter = VariableFilterUtilHelper.createDateVariableFilter("var", now.minusSeconds(2L), now.minusSeconds(1L));
     VariableFilterDto filter2 = VariableFilterUtilHelper.createDateVariableFilter("var", now.plusSeconds(1L), now.plusSeconds(2L));
     List<FilterDto> filters = Stream.of(filter, filter2).collect(Collectors.toList());
-    RawDataReportResultDto result =
+    RawDataSingleReportResultDto result =
       evaluateReportWithFilter(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()), filters);
 
     // then
@@ -835,7 +835,7 @@ public class VariableQueryFilterIT {
     return value;
   }
 
-  private void assertResults(RawDataReportResultDto report, int piCount) {
+  private void assertResults(RawDataSingleReportResultDto report, int piCount) {
     assertThat("PI count", report.getResult().size(), is(piCount));
   }
 

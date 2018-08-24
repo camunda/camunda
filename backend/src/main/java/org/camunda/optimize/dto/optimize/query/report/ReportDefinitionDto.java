@@ -1,8 +1,23 @@
 package org.camunda.optimize.dto.optimize.query.report;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
+
 import java.time.OffsetDateTime;
 
-public class ReportDefinitionDto {
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.COMBINED_REPORT_TYPE;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.SINGLE_REPORT_TYPE;
+
+
+@JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "reportType")
+@JsonSubTypes({
+    @JsonSubTypes.Type(value = SingleReportDefinitionDto.class, name = SINGLE_REPORT_TYPE),
+    @JsonSubTypes.Type(value = CombinedReportDefinitionDto.class, name = COMBINED_REPORT_TYPE),
+})
+public abstract class ReportDefinitionDto<DATA extends ReportDataDto> {
 
   protected String id;
   protected String name;
@@ -10,7 +25,10 @@ public class ReportDefinitionDto {
   protected OffsetDateTime created;
   protected String owner;
   protected String lastModifier;
-  protected ReportDataDto data;
+
+  @JsonProperty
+  protected String reportType;
+  protected DATA data;
 
   public String getId() {
     return id;
@@ -60,11 +78,19 @@ public class ReportDefinitionDto {
     this.lastModifier = lastModifier;
   }
 
-  public ReportDataDto getData() {
+  public DATA getData() {
     return data;
   }
 
-  public void setData(ReportDataDto data) {
+  public void setData(DATA data) {
     this.data = data;
+  }
+
+  public String getReportType() {
+    return reportType;
+  }
+
+  public void setReportType(String reportType) {
+    this.reportType = reportType;
   }
 }

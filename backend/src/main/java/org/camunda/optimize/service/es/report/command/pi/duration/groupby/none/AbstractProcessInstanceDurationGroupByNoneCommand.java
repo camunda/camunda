@@ -1,6 +1,6 @@
 package org.camunda.optimize.service.es.report.command.pi.duration.groupby.none;
 
-import org.camunda.optimize.dto.optimize.query.report.result.NumberReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.NumberSingleReportResultDto;
 import org.camunda.optimize.service.es.report.command.ReportCommand;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.elasticsearch.action.search.SearchResponse;
@@ -9,13 +9,13 @@ import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 
 public abstract class AbstractProcessInstanceDurationGroupByNoneCommand<AGG extends Aggregation>
-    extends ReportCommand<NumberReportResultDto> {
+    extends ReportCommand<NumberSingleReportResultDto> {
 
 
   public static final String DURATION_AGGREGATION = "durationAggregation";
 
   @Override
-  protected NumberReportResultDto evaluate() {
+  protected NumberSingleReportResultDto evaluate() {
 
     logger.debug("Evaluating process instance duration grouped by none report " +
       "for process definition key [{}] and version [{}]",
@@ -39,7 +39,7 @@ public abstract class AbstractProcessInstanceDurationGroupByNoneCommand<AGG exte
 
     AGG aggregation = response.getAggregations().get(DURATION_AGGREGATION);
 
-    NumberReportResultDto numberResult = new NumberReportResultDto();
+    NumberSingleReportResultDto numberResult = new NumberSingleReportResultDto();
     numberResult.setResult(processAggregation(aggregation));
     numberResult.setProcessInstanceCount(response.getHits().getTotalHits());
     return numberResult;

@@ -3,14 +3,19 @@ package org.camunda.optimize.service.util;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ViewDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.*;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.ExecutedFlowNodeFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.variable.VariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.startDate.StartDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.ExecutedFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.FilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.StartDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.ExecutedFlowNodeFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.startDate.StartDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 
 public class ValidationHelper {
@@ -36,23 +41,29 @@ public class ValidationHelper {
     }
   }
 
-  public static void validateDefinition(ReportDataDto data) {
-    boolean versionAndKeySet = data != null && data.getProcessDefinitionVersion() != null &&
-        data.getProcessDefinitionKey() != null;
+  public static void validateDefinitionData(ReportDataDto data) {
 
-    if (!versionAndKeySet) {
-      throw new OptimizeValidationException("process definition key and version have to be provided");
+    if (data instanceof SingleReportDataDto) {
+      SingleReportDataDto singleReportData = (SingleReportDataDto) data;
+      boolean versionAndKeySet = singleReportData.getProcessDefinitionVersion() != null &&
+        singleReportData.getProcessDefinitionKey() != null;
+
+      if (!versionAndKeySet) {
+        throw new OptimizeValidationException("process definition key and version have to be provided");
+      }
+    } else if (data == null) {
+      throw new OptimizeValidationException("Report data is not allowed to be null!");
     }
   }
 
-  public static void validate(ReportDataDto dataDto) {
+  public static void validate(SingleReportDataDto dataDto) {
     ensureNotNull("report data", dataDto);
     ViewDto viewDto = dataDto.getView();
     ensureNotNull("view", viewDto);
     ensureNotEmpty("view operation", viewDto.getOperation());
     ensureNotEmpty("visualization", dataDto.getVisualization());
     ensureNotNull("group by", dataDto.getGroupBy());
-    validateDefinition(dataDto);
+    validateDefinitionData(dataDto);
     validateFilters(dataDto.getFilter());
   }
 
@@ -83,7 +94,7 @@ public class ValidationHelper {
   }
 
   public static void ensureAtLeastOneNotNull(String fieldName, Object... objects) {
-    boolean oneNotNull = Arrays.stream(objects).anyMatch(o -> o != null);
+    boolean oneNotNull = Arrays.stream(objects).anyMatch(Objects::nonNull);
     if (!oneNotNull) {
       throw new OptimizeValidationException(fieldName + " at least one sub field not allowed to be empty or null");
     }

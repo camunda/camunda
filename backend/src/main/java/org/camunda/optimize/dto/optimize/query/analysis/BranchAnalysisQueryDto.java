@@ -1,6 +1,6 @@
 package org.camunda.optimize.dto.optimize.query.analysis;
 
-import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.FilterDto;
 
 import java.util.ArrayList;
 import java.util.List;

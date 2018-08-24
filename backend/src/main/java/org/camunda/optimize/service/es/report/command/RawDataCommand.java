@@ -2,8 +2,8 @@ package org.camunda.optimize.service.es.report.command;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataProcessInstanceDto;
-import org.camunda.optimize.dto.optimize.query.report.result.raw.RawDataReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.raw.RawDataProcessInstanceDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.raw.RawDataSingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.variable.value.VariableInstanceDto;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.elasticsearch.action.search.SearchResponse;
@@ -22,11 +22,11 @@ import java.util.TreeMap;
 
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 
-public class RawDataCommand extends ReportCommand<RawDataReportResultDto> {
+public class RawDataCommand extends ReportCommand<RawDataSingleReportResultDto> {
 
   private static final Long RAW_DATA_LIMIT = 1_000L;
 
-  public RawDataReportResultDto evaluate() {
+  public RawDataSingleReportResultDto evaluate() {
     logger.debug("Evaluating raw data report for process definition key [{}] and version [{}]",
       reportData.getProcessDefinitionKey(),
       reportData.getProcessDefinitionVersion());
@@ -123,8 +123,8 @@ public class RawDataCommand extends ReportCommand<RawDataReportResultDto> {
     return rawData;
   }
 
-  private RawDataReportResultDto createResult(List<RawDataProcessInstanceDto> rawDataResult) {
-    RawDataReportResultDto result = new RawDataReportResultDto();
+  private RawDataSingleReportResultDto createResult(List<RawDataProcessInstanceDto> rawDataResult) {
+    RawDataSingleReportResultDto result = new RawDataSingleReportResultDto();
     result.setResult(rawDataResult);
     result.setProcessInstanceCount(rawDataResult.size());
     return result;

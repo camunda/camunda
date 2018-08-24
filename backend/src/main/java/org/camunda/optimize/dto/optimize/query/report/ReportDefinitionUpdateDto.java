@@ -13,6 +13,7 @@ public class ReportDefinitionUpdateDto {
   protected OffsetDateTime created;
   protected String owner;
   protected String lastModifier;
+  protected String reportType;
   protected Object data;
 
   public String getId() {
@@ -69,5 +70,13 @@ public class ReportDefinitionUpdateDto {
 
   public void setData(Object data) {
     this.data = data;
+  }
+
+  public String getReportType() {
+    return reportType;
+  }
+
+  public void setReportType(String reportType) {
+    this.reportType = reportType;
   }
 }

@@ -2,8 +2,8 @@ package org.camunda.optimize.service.util;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.variable.BooleanVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -40,10 +40,10 @@ public class ObjectMapperFactoryTest {
 
   @Test
   public void testFilterSerialization() throws Exception {
-    ReportDataDto data = optimizeMapper.readValue(this.getClass().getResourceAsStream("/test/data/filter_request.json"), ReportDataDto.class);
+    SingleReportDataDto data = optimizeMapper.readValue(this.getClass().getResourceAsStream("/test/data/filter_request.json"), SingleReportDataDto.class);
     assertThat(((BooleanVariableFilterDataDto)data.getFilter().get(0).getData()).getData().getValue(), is("true"));
 
-    data = optimizeMapper.readValue(this.getClass().getResourceAsStream("/test/data/filter_request_single.json"), ReportDataDto.class);
+    data = optimizeMapper.readValue(this.getClass().getResourceAsStream("/test/data/filter_request_single.json"), SingleReportDataDto.class);
     assertThat(((BooleanVariableFilterDataDto)data.getFilter().get(0).getData()).getData().getValue(), is("true"));
   }
 

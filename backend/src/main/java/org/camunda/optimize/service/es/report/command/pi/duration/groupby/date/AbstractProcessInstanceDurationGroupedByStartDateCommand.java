@@ -1,8 +1,8 @@
 package org.camunda.optimize.service.es.report.command.pi.duration.groupby.date;
 
-import org.camunda.optimize.dto.optimize.query.report.group.StartDateGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.group.value.StartDateGroupByValueDto;
-import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.StartDateGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.value.StartDateGroupByValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapSingleReportResultDto;
 import org.camunda.optimize.service.es.report.command.ReportCommand;
 import org.camunda.optimize.service.es.report.command.util.ReportUtil;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
@@ -22,13 +22,13 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public abstract class AbstractProcessInstanceDurationGroupedByStartDateCommand<AGG extends Aggregation>
-    extends ReportCommand<MapReportResultDto> {
+    extends ReportCommand<MapSingleReportResultDto> {
 
   private static final String DURATION_AGGREGATION = "durationAggregation";
   private static final String DATE_HISTOGRAM_AGGREGATION = "dateIntervalGrouping";
 
   @Override
-  protected MapReportResultDto evaluate() throws OptimizeException {
+  protected MapSingleReportResultDto evaluate() throws OptimizeException {
 
     logger.debug("Evaluating process instance duration grouped by start date report " +
       "for process definition key [{}] and version [{}]",
@@ -54,7 +54,7 @@ public abstract class AbstractProcessInstanceDurationGroupedByStartDateCommand<A
       .get();
 
 
-    MapReportResultDto mapResult = new MapReportResultDto();
+    MapSingleReportResultDto mapResult = new MapSingleReportResultDto();
     mapResult.setResult(processAggregations(response.getAggregations()));
     mapResult.setProcessInstanceCount(response.getHits().getTotalHits());
     return mapResult;

@@ -4,13 +4,14 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.ReportLocationDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.result.ReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchResultDto;
 import org.camunda.optimize.service.dashboard.DashboardService;
 import org.camunda.optimize.service.es.reader.SharingReader;
+import org.camunda.optimize.service.es.report.PlainReportEvaluationHandler;
 import org.camunda.optimize.service.es.writer.SharingWriter;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.exceptions.ReportEvaluationException;
@@ -40,6 +41,9 @@ public class SharingService  {
 
   @Autowired
   private ReportService reportService;
+
+  @Autowired
+  private PlainReportEvaluationHandler reportEvaluationHandler;
 
   @Autowired
   private DashboardService dashboardService;
@@ -181,7 +185,7 @@ public class SharingService  {
 
   public ReportResultDto evaluateReport(String reportId) {
     try {
-      return reportService.evaluateSavedReport(reportId);
+      return reportEvaluationHandler.evaluateSavedReport(reportId);
     } catch (ReportEvaluationException e) {
       throw e;
     } catch (Exception e) {

@@ -1,13 +1,13 @@
 package org.camunda.optimize.test.util;
 
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.DurationFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.FilterDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.StartDateFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.DurationFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.startDate.FixedStartDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.startDate.RelativeStartDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.filter.data.startDate.RelativeStartDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.DurationFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.FilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.StartDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.DurationFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.startDate.FixedStartDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.startDate.RelativeStartDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.startDate.RelativeStartDateFilterStartDto;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;

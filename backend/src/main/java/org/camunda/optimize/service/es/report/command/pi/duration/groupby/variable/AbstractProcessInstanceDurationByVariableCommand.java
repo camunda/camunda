@@ -1,8 +1,8 @@
 package org.camunda.optimize.service.es.report.command.pi.duration.groupby.variable;
 
-import org.camunda.optimize.dto.optimize.query.report.group.VariableGroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.group.value.VariableGroupByValueDto;
-import org.camunda.optimize.dto.optimize.query.report.result.MapReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.VariableGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.group.value.VariableGroupByValueDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapSingleReportResultDto;
 import org.camunda.optimize.service.es.report.command.ReportCommand;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
@@ -30,7 +30,7 @@ import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
 public abstract class AbstractProcessInstanceDurationByVariableCommand<AGG extends Aggregation>
-    extends ReportCommand<MapReportResultDto> {
+    extends ReportCommand<MapSingleReportResultDto> {
 
   public static final String NESTED_AGGREGATION = "nested";
   public static final String VARIABLES_AGGREGATION = "variables";
@@ -39,7 +39,7 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand<AGG exten
   public static final String REVERSE_NESTED_AGGREGATION = "reverseNested";
 
   @Override
-  protected MapReportResultDto evaluate() {
+  protected MapSingleReportResultDto evaluate() {
 
     logger.debug("Evaluating average process instance duration grouped by variable report " +
       "for process definition key [{}] and version [{}]",
@@ -63,7 +63,7 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand<AGG exten
       .addAggregation(createAggregation(groupByVariable.getName(), groupByVariable.getType()))
       .get();
 
-    MapReportResultDto mapResult = new MapReportResultDto();
+    MapSingleReportResultDto mapResult = new MapSingleReportResultDto();
     mapResult.setResult(processAggregations(response.getAggregations()));
     mapResult.setProcessInstanceCount(response.getHits().getTotalHits());
     return mapResult;
