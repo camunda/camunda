@@ -46,7 +46,7 @@ import org.junit.rules.RuleChain;
 public class ZeebeObjectMapperTest {
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
-  public ClientRule clientRule = new ClientRule();
+  public ClientRule clientRule = new ClientRule(brokerRule);
 
   public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule, false);
 

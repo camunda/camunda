@@ -21,13 +21,12 @@ import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.gateway.ClientProperties;
 import io.zeebe.gateway.api.clients.JobClient;
 import io.zeebe.gateway.api.events.JobEvent;
 import io.zeebe.gateway.api.events.JobState;
 import io.zeebe.gateway.cmd.BrokerErrorException;
+import java.time.Duration;
 import java.util.Collections;
-import java.util.Properties;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -39,12 +38,7 @@ public class CreateJobTest {
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
   public ClientRule clientRule =
-      new ClientRule(
-          () -> {
-            final Properties p = new Properties();
-            p.setProperty(ClientProperties.REQUEST_TIMEOUT_SEC, "3");
-            return p;
-          });
+      new ClientRule(brokerRule, builder -> builder.requestTimeout(Duration.ofSeconds(3)));
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 

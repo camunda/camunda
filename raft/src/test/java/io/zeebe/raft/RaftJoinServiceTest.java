@@ -29,8 +29,8 @@ public class RaftJoinServiceTest {
   public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
   public ServiceContainerRule serviceContainerRule = new ServiceContainerRule(actorSchedulerRule);
 
-  public RaftRule raft1 = new RaftRule(serviceContainerRule, 1, "default", 0);
-  public RaftRule raft2 = new RaftRule(serviceContainerRule, 2, "default", 0, raft1);
+  public RaftRule raft1 = new RaftRule(serviceContainerRule, "default", 0);
+  public RaftRule raft2 = new RaftRule(serviceContainerRule, "default", 0, raft1);
 
   // Do not add raft 1 to cluster rule so raft 2 is never able to join
   @Rule

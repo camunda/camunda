@@ -55,8 +55,8 @@ public class ManagementSubscriptionTest {
 
   private static final RecordHandler DO_NOTHING = e -> {};
 
-  public ClientRule clientRule = new ClientRule();
   public StubBrokerRule broker = new StubBrokerRule();
+  public ClientRule clientRule = new ClientRule(broker);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(broker).around(clientRule);
 
@@ -226,7 +226,10 @@ public class ManagementSubscriptionTest {
     final int bufferSize = 999;
 
     final ZeebeClient configuredClient =
-        ZeebeClient.newClientBuilder().defaultTopicSubscriptionBufferSize(bufferSize).build();
+        ZeebeClient.newClientBuilder()
+            .defaultTopicSubscriptionBufferSize(bufferSize)
+            .brokerContactPoint(broker.getSocketAddress().toString())
+            .build();
     closeables.manage(configuredClient);
 
     configuredClient

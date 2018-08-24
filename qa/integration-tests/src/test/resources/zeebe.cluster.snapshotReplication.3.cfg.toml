@@ -1,14 +1,8 @@
 # Broker 3
 
-[network]
-portOffset = 2
-
 [network.gateway]
 enabled = false
 
 [data]
 snapshotPeriod = "15m"
 snapshotReplicationPeriod = "5ms"
-
-[cluster]
-initialContactPoints = [ "localhost:26502" ]

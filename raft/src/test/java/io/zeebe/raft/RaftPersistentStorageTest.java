@@ -29,8 +29,8 @@ public class RaftPersistentStorageTest {
   public ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
   public ServiceContainerRule serviceContainer = new ServiceContainerRule(actorScheduler);
 
-  public RaftRule raft1 = new RaftRule(serviceContainer, 1, "default", 0);
-  public RaftRule raft2 = new RaftRule(serviceContainer, 2, "default", 0, raft1);
+  public RaftRule raft1 = new RaftRule(serviceContainer, "default", 0);
+  public RaftRule raft2 = new RaftRule(serviceContainer, "default", 0, raft1);
 
   @Rule
   public RaftClusterRule cluster =

@@ -46,7 +46,7 @@ public class CompleteJobTest {
   private static final String JOB_TYPE = "foo";
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientApiRule apiRule = new ClientApiRule();
+  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
 
   private TestTopicClient testClient;
 

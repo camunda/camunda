@@ -30,9 +30,9 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 
 public class GossipJoinTest {
-  private GossipRule gossip1 = new GossipRule(1);
-  private GossipRule gossip2 = new GossipRule(2);
-  private GossipRule gossip3 = new GossipRule(3);
+  private GossipRule gossip1 = new GossipRule();
+  private GossipRule gossip2 = new GossipRule();
+  private GossipRule gossip3 = new GossipRule();
 
   @Rule public GossipClusterRule cluster = new GossipClusterRule(gossip1, gossip2, gossip3);
 

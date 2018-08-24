@@ -32,8 +32,8 @@ import org.junit.rules.RuleChain;
 public class MultipleClientTest {
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
-  public ClientRule client1 = new ClientRule();
-  public ClientRule client2 = new ClientRule();
+  public ClientRule client1 = new ClientRule(brokerRule);
+  public ClientRule client2 = new ClientRule(brokerRule);
 
   @Rule
   public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(client1).around(client2);

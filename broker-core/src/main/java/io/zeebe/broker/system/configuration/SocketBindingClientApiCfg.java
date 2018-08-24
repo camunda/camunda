@@ -33,4 +33,21 @@ public class SocketBindingClientApiCfg extends SocketBindingCfg {
   public void setControlMessageBufferSize(String controlMessageBufferSize) {
     this.controlMessageBufferSize = controlMessageBufferSize;
   }
+
+  @Override
+  public String toString() {
+    return "SocketBindingClientApiCfg{"
+        + "controlMessageBufferSize='"
+        + controlMessageBufferSize
+        + '\''
+        + ", host='"
+        + host
+        + '\''
+        + ", port="
+        + port
+        + ", sendBufferSize='"
+        + sendBufferSize
+        + '\''
+        + '}';
+  }
 }

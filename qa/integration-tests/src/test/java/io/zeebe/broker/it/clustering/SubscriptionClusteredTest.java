@@ -24,7 +24,6 @@ import io.zeebe.gateway.api.commands.Partition;
 import io.zeebe.gateway.api.commands.Topic;
 import io.zeebe.gateway.api.events.JobState;
 import io.zeebe.gateway.impl.job.CreateJobCommandImpl;
-import io.zeebe.test.util.AutoCloseableRule;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Before;
@@ -37,14 +36,13 @@ import org.junit.rules.Timeout;
 public class SubscriptionClusteredTest {
   private static final int PARTITION_COUNT = 3;
 
-  public AutoCloseableRule closeables = new AutoCloseableRule();
   public Timeout testTimeout = Timeout.seconds(30);
-  public ClientRule clientRule = new ClientRule();
-  public ClusteringRule clusteringRule = new ClusteringRule(closeables, clientRule);
+  public ClusteringRule clusteringRule = new ClusteringRule();
+  public ClientRule clientRule = new ClientRule(clusteringRule);
 
   @Rule
   public RuleChain ruleChain =
-      RuleChain.outerRule(closeables).around(testTimeout).around(clientRule).around(clusteringRule);
+      RuleChain.outerRule(testTimeout).around(clusteringRule).around(clientRule);
 
   @Rule public ExpectedException thrown = ExpectedException.none();
 

@@ -63,4 +63,18 @@ public abstract class SocketBindingCfg {
   public void setSendBufferSize(String sendBufferSize) {
     this.sendBufferSize = sendBufferSize;
   }
+
+  @Override
+  public String toString() {
+    return "SocketBindingCfg{"
+        + "host='"
+        + host
+        + '\''
+        + ", port="
+        + port
+        + ", sendBufferSize='"
+        + sendBufferSize
+        + '\''
+        + '}';
+  }
 }

@@ -58,6 +58,7 @@ import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.TransportMessage;
 import io.zeebe.transport.Transports;
+import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.LogUtil;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.ActorScheduler;
@@ -120,31 +121,12 @@ public class RaftRule extends ExternalResource implements RaftStateListener {
 
   public RaftRule(
       final ServiceContainerRule serviceContainerRule,
-      final int portOffset,
-      final String topicName,
-      final int partition,
-      final RaftRule... members) {
-    this(
-        serviceContainerRule,
-        DEFAULT_HOST,
-        DEFAULT_PORT + portOffset,
-        topicName,
-        partition,
-        members);
-  }
-
-  public RaftRule(
-      final ServiceContainerRule serviceContainerRule,
-      final String host,
-      final int port,
       final String topicName,
       final int partition,
       final RaftRule... members) {
     this(
         serviceContainerRule,
         new RaftConfiguration().setLeaveTimeout("10s"),
-        host,
-        port,
         topicName,
         partition,
         members);
@@ -153,15 +135,13 @@ public class RaftRule extends ExternalResource implements RaftStateListener {
   public RaftRule(
       final ServiceContainerRule serviceContainerRule,
       final RaftConfiguration configuration,
-      final String host,
-      final int port,
       final String topicName,
       final int partition,
       final RaftRule... members) {
     this.actorScheduler = serviceContainerRule.getActorScheduler();
     this.serviceContainer = serviceContainerRule.get();
     this.configuration = configuration;
-    this.socketAddress = new SocketAddress(host, port);
+    this.socketAddress = SocketUtil.getNextAddress();
 
     this.topicName = topicName;
     this.partition = partition;

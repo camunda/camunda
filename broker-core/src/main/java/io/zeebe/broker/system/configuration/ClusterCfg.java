@@ -17,6 +17,8 @@
  */
 package io.zeebe.broker.system.configuration;
 
+import java.util.Arrays;
+
 public class ClusterCfg implements ConfigurationEntry {
   private String[] initialContactPoints = new String[0];
 
@@ -26,5 +28,10 @@ public class ClusterCfg implements ConfigurationEntry {
 
   public void setInitialContactPoints(String[] initialContactPoints) {
     this.initialContactPoints = initialContactPoints;
+  }
+
+  @Override
+  public String toString() {
+    return "ClusterCfg{" + "initialContactPoints=" + Arrays.toString(initialContactPoints) + '}';
   }
 }

@@ -28,6 +28,7 @@ import io.zeebe.transport.impl.TransportChannel;
 import io.zeebe.transport.impl.TransportChannel.ChannelLifecycleListener;
 import io.zeebe.transport.impl.TransportChannel.TransportChannelMetrics;
 import io.zeebe.transport.impl.TransportChannelFactory;
+import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.transport.util.RecordingChannelListener;
 import io.zeebe.transport.util.RecordingChannelListener.Event;
 import io.zeebe.util.buffer.DirectBufferWriter;
@@ -50,7 +51,7 @@ public class TransportChannelListenerTest {
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
 
-  private static final SocketAddress ADDRESS = new SocketAddress("localhost", 51115);
+  private static final SocketAddress ADDRESS = SocketUtil.getNextAddress();
   protected static final DirectBuffer EMPTY_BUFFER = new UnsafeBuffer(0, 0);
 
   protected ServerTransport serverTransport;

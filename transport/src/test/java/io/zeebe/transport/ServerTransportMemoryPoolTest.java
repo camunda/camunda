@@ -28,6 +28,7 @@ import static org.mockito.Mockito.when;
 
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.impl.memory.TransportMemoryPool;
+import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.nio.ByteBuffer;
@@ -40,7 +41,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class ServerTransportMemoryPoolTest {
-  protected static final SocketAddress ADDRESS = new SocketAddress("127.0.0.1", 51115);
+  protected static final SocketAddress ADDRESS = SocketUtil.getNextAddress();
 
   public static final DirectBuffer BUF1 = new UnsafeBuffer(new byte[32]);
 

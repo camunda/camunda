@@ -51,7 +51,6 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
 
     } catch (final RuntimeException e) {
       responseObserver.onError(e);
-      responseObserver.onCompleted();
     }
   }
 }

@@ -33,7 +33,10 @@ public class ZeebeClientTest {
 
   @Before
   public void setUp() {
-    client = ZeebeClient.newClient();
+    client =
+        ZeebeClient.newClientBuilder()
+            .brokerContactPoint(rule.getClientAddress().toString())
+            .build();
   }
 
   @Test
@@ -46,7 +49,7 @@ public class ZeebeClientTest {
               assertThat(response).isNotNull();
 
               final BrokerInfo broker = response.getBrokers().get(0);
-              assertThat(broker.getAddress()).isEqualTo("0.0.0.0:26501");
+              assertThat(broker.getAddress()).isNotEmpty();
               assertThat(broker.getPartitions().size()).isEqualTo(1);
 
               broker

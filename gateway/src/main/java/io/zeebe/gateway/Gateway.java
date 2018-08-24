@@ -34,6 +34,7 @@ public class Gateway {
 
   private Server server;
   private ZeebeClient zbClient;
+  private String brokerContactPoint = "0.0.0.0:26501";
 
   public Gateway() {
     this(GATEWAY_DEFAULT_PORT);
@@ -46,6 +47,10 @@ public class Gateway {
   public Gateway(final String host, final int port) {
     this.host = host;
     this.port = port;
+  }
+
+  public void setBrokerContactPoint(String brokerContactPoint) {
+    this.brokerContactPoint = brokerContactPoint;
   }
 
   public static void main(final String[] args) {
@@ -65,14 +70,18 @@ public class Gateway {
     try {
       gateway.listenAndServe();
     } catch (final Exception e) {
-      LOG.error("Gateway failed ", e);
+      LOG.error("Gateway failed to start: {}", gateway, e);
     } finally {
       gateway.stop();
     }
   }
 
   public void start() throws IOException {
-    zbClient = ZeebeClient.newClientBuilder().requestTimeout(Duration.ofMillis(250)).build();
+    zbClient =
+        ZeebeClient.newClientBuilder()
+            .requestTimeout(Duration.ofMillis(250))
+            .brokerContactPoint(brokerContactPoint)
+            .build();
 
     server =
         NettyServerBuilder.forAddress(new InetSocketAddress(host, port))
@@ -80,7 +89,7 @@ public class Gateway {
             .build();
 
     server.start();
-    LOG.info("Gateway started at port: {}", port);
+    LOG.info("Gateway started: {}", this);
   }
 
   public void listenAndServe() throws InterruptedException, IOException {
@@ -96,7 +105,18 @@ public class Gateway {
 
     if (server != null && !server.isShutdown()) {
       server.shutdown();
-      server = null;
+      try {
+        server.awaitTermination();
+      } catch (InterruptedException e) {
+        LOG.error("Failed to await termination of gateway", e);
+      } finally {
+        server = null;
+      }
     }
+  }
+
+  @Override
+  public String toString() {
+    return "Gateway{" + "host='" + host + '\'' + ", port=" + port + '}';
   }
 }

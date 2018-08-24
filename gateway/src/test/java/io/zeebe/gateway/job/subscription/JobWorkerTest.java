@@ -66,9 +66,9 @@ public class JobWorkerTest {
 
   private static final JobHandler DO_NOTHING = (c, t) -> {};
 
-  public ClientRule clientRule =
-      new ClientRule(b -> b.numSubscriptionExecutionThreads(NUM_EXECUTION_THREADS));
   public StubBrokerRule broker = new StubBrokerRule();
+  public ClientRule clientRule =
+      new ClientRule(broker, b -> b.numSubscriptionExecutionThreads(NUM_EXECUTION_THREADS));
 
   protected final MsgPackConverter msgPackConverter = new MsgPackConverter();
 
@@ -202,7 +202,10 @@ public class JobWorkerTest {
     final int bufferSize = 975;
 
     final ZeebeClient configuredClient =
-        ZeebeClient.newClientBuilder().defaultJobSubscriptionBufferSize(bufferSize).build();
+        ZeebeClient.newClientBuilder()
+            .defaultJobSubscriptionBufferSize(bufferSize)
+            .brokerContactPoint(broker.getSocketAddress().toString())
+            .build();
     closeables.manage(configuredClient);
 
     broker.stubJobSubscriptionApi(123L);

@@ -48,4 +48,16 @@ public class MetricsCfg implements ConfigurationEntry {
   public void setFile(String metricsFile) {
     this.file = metricsFile;
   }
+
+  @Override
+  public String toString() {
+    return "MetricsCfg{"
+        + "reportingInterval='"
+        + reportingInterval
+        + '\''
+        + ", file='"
+        + file
+        + '\''
+        + '}';
+  }
 }

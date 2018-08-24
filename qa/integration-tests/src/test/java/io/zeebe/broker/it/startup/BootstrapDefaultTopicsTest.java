@@ -21,8 +21,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.clustering.ClusteringRule;
 import io.zeebe.gateway.api.commands.Partition;
-import io.zeebe.test.util.AutoCloseableRule;
-import io.zeebe.transport.SocketAddress;
 import java.util.List;
 import java.util.Map;
 import org.junit.Rule;
@@ -36,21 +34,14 @@ public class BootstrapDefaultTopicsTest {
   private final String[] clusterConfigs = {
     BOOTSTRAPPED_BROKER_CONFIG, OTHER_BROKER_CONFIG, ClusteringRule.BROKER_3_TOML
   };
-  private final SocketAddress[] clusterAddresses = {
-    ClusteringRule.BROKER_1_CLIENT_ADDRESS,
-    ClusteringRule.BROKER_2_CLIENT_ADDRESS,
-    ClusteringRule.BROKER_3_CLIENT_ADDRESS
-  };
 
-  private AutoCloseableRule closeables = new AutoCloseableRule();
   private Timeout testTimeout = Timeout.seconds(30);
-  private ClientRule clientRule = new ClientRule();
-  private ClusteringRule clusteringRule =
-      new ClusteringRule(closeables, clientRule, clusterAddresses, clusterConfigs);
+  private ClusteringRule clusteringRule = new ClusteringRule(clusterConfigs);
+  private ClientRule clientRule = new ClientRule(clusteringRule);
 
   @Rule
   public RuleChain ruleChain =
-      RuleChain.outerRule(closeables).around(testTimeout).around(clientRule).around(clusteringRule);
+      RuleChain.outerRule(testTimeout).around(clusteringRule).around(clientRule);
 
   @Test
   public void shouldCreateDefaultTopicsOnBootstrappedBrokers() {

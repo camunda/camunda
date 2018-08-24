@@ -38,4 +38,21 @@ public class SocketBindingManagementCfg extends SocketBindingCfg {
   public void setReceiveBufferSize(String receiveBufferSize) {
     this.receiveBufferSize = receiveBufferSize;
   }
+
+  @Override
+  public String toString() {
+    return "SocketBindingManagementCfg{"
+        + "receiveBufferSize='"
+        + receiveBufferSize
+        + '\''
+        + ", host='"
+        + host
+        + '\''
+        + ", port="
+        + port
+        + ", sendBufferSize='"
+        + sendBufferSize
+        + '\''
+        + '}';
+  }
 }

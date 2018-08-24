@@ -15,10 +15,7 @@
  */
 package io.zeebe.broker.it.clustering;
 
-import static io.zeebe.broker.it.clustering.ClusteringRule.BROKER_1_CLIENT_ADDRESS;
-import static io.zeebe.broker.it.clustering.ClusteringRule.BROKER_2_CLIENT_ADDRESS;
 import static io.zeebe.broker.it.clustering.ClusteringRule.BROKER_2_TOML;
-import static io.zeebe.broker.it.clustering.ClusteringRule.BROKER_3_CLIENT_ADDRESS;
 import static io.zeebe.broker.it.clustering.ClusteringRule.BROKER_3_TOML;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -27,8 +24,6 @@ import io.zeebe.broker.it.ClientRule;
 import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.api.events.RaftEvent;
 import io.zeebe.gateway.api.events.RaftState;
-import io.zeebe.test.util.AutoCloseableRule;
-import io.zeebe.transport.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Before;
@@ -40,21 +35,15 @@ import org.junit.rules.Timeout;
 
 public class SubscriptionClusteredSinglePartitionTest {
 
-  public AutoCloseableRule closeables = new AutoCloseableRule();
   public Timeout testTimeout = Timeout.seconds(30);
-  public ClientRule clientRule = new ClientRule();
   public ClusteringRule clusteringRule =
       new ClusteringRule(
-          closeables,
-          clientRule,
-          new SocketAddress[] {
-            BROKER_1_CLIENT_ADDRESS, BROKER_2_CLIENT_ADDRESS, BROKER_3_CLIENT_ADDRESS
-          },
           new String[] {"zeebe.cluster.1.singlePartition.cfg.toml", BROKER_2_TOML, BROKER_3_TOML});
+  public ClientRule clientRule = new ClientRule(clusteringRule);
 
   @Rule
   public RuleChain ruleChain =
-      RuleChain.outerRule(closeables).around(testTimeout).around(clientRule).around(clusteringRule);
+      RuleChain.outerRule(testTimeout).around(clusteringRule).around(clientRule);
 
   @Rule public ExpectedException thrown = ExpectedException.none();
 

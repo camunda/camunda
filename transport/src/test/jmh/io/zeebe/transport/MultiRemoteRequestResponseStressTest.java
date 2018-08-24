@@ -17,6 +17,7 @@ package io.zeebe.transport;
 
 import io.zeebe.transport.impl.memory.BlockingMemoryPool;
 import io.zeebe.transport.impl.memory.NonBlockingMemoryPool;
+import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.buffer.DirectBufferWriter;
 import io.zeebe.util.sched.ActorScheduler;
@@ -158,8 +159,8 @@ public class MultiRemoteRequestResponseStressTest {
     public void setUp() {
       scheduler.start();
 
-      final SocketAddress addr1 = new SocketAddress("localhost", 51115);
-      final SocketAddress addr2 = new SocketAddress("localhost", 51116);
+      final SocketAddress addr1 = SocketUtil.getNextAddress();
+      final SocketAddress addr2 = SocketUtil.getNextAddress();
 
       clientTransport =
           Transports.newClientTransport()

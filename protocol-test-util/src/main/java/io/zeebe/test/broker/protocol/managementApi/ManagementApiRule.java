@@ -25,6 +25,7 @@ import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
+import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 import org.junit.rules.ExternalResource;
 
@@ -32,18 +33,14 @@ public class ManagementApiRule extends ExternalResource {
 
   private ClientTransport transport;
 
-  private final SocketAddress brokerAddress;
+  private final Supplier<SocketAddress> brokerAddressSupplier;
   private RemoteAddress remoteAddress;
 
   private ControlledActorClock controlledActorClock = new ControlledActorClock();
   private ActorScheduler scheduler;
 
-  public ManagementApiRule() {
-    this("localhost", 26502);
-  }
-
-  public ManagementApiRule(String host, int port) {
-    this.brokerAddress = new SocketAddress(host, port);
+  public ManagementApiRule(Supplier<SocketAddress> brokerAddressSupplier) {
+    this.brokerAddressSupplier = brokerAddressSupplier;
   }
 
   @Override
@@ -57,7 +54,7 @@ public class ManagementApiRule extends ExternalResource {
 
     transport = Transports.newClientTransport().scheduler(scheduler).build();
 
-    remoteAddress = transport.registerRemoteAddress(brokerAddress);
+    remoteAddress = transport.registerRemoteAddress(brokerAddressSupplier.get());
   }
 
   @Override
@@ -76,7 +73,7 @@ public class ManagementApiRule extends ExternalResource {
   }
 
   public SocketAddress getBrokerAddress() {
-    return brokerAddress;
+    return brokerAddressSupplier.get();
   }
 
   public ClientTransport getTransport() {

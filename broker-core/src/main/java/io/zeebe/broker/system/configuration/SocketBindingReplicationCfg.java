@@ -24,4 +24,18 @@ public class SocketBindingReplicationCfg extends SocketBindingCfg {
   public SocketBindingReplicationCfg() {
     port = DEFAULT_PORT;
   }
+
+  @Override
+  public String toString() {
+    return "SocketBindingReplicationCfg{"
+        + "host='"
+        + host
+        + '\''
+        + ", port="
+        + port
+        + ", sendBufferSize='"
+        + sendBufferSize
+        + '\''
+        + '}';
+  }
 }

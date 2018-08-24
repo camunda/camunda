@@ -33,10 +33,11 @@ import io.zeebe.test.broker.protocol.brokerapi.data.Topology;
 import io.zeebe.test.broker.protocol.brokerapi.data.TopologyBroker;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerTransport;
+import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.Transports;
+import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
-import java.net.InetSocketAddress;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -56,34 +57,23 @@ public class StubBrokerRule extends ExternalResource {
   private ControlledActorClock clock = new ControlledActorClock();
   protected ActorScheduler scheduler;
 
-  protected final String host;
-  protected final int port;
+  protected final SocketAddress socketAddress;
 
   protected ServerTransport transport;
 
   protected StubResponseChannelHandler channelHandler;
   protected MsgPackHelper msgPackHelper;
-  private InetSocketAddress bindAddr;
 
   protected AtomicReference<Topology> currentTopology = new AtomicReference<>();
 
   private final int partitionCount;
 
   public StubBrokerRule() {
-    this("127.0.0.1", 26501, 1);
+    this(1);
   }
 
   public StubBrokerRule(int partitionCount) {
-    this("127.0.0.1", 26501, partitionCount);
-  }
-
-  public StubBrokerRule(String host, int port) {
-    this(host, port, 1);
-  }
-
-  public StubBrokerRule(String host, int port, int partitionCount) {
-    this.host = host;
-    this.port = port;
+    this.socketAddress = SocketUtil.getNextAddress();
     this.partitionCount = partitionCount;
   }
 
@@ -101,13 +91,12 @@ public class StubBrokerRule extends ExternalResource {
     scheduler.start();
 
     channelHandler = new StubResponseChannelHandler(msgPackHelper);
-    bindAddr = new InetSocketAddress(host, port);
 
     final Topology topology = new Topology();
-    topology.addLeader(host, port, Protocol.SYSTEM_TOPIC, Protocol.SYSTEM_PARTITION);
+    topology.addLeader(socketAddress, Protocol.SYSTEM_TOPIC, Protocol.SYSTEM_PARTITION);
 
     for (int i = TEST_PARTITION_ID; i < TEST_PARTITION_ID + partitionCount; i++) {
-      topology.addLeader(host, port, DEFAULT_TOPIC, i);
+      topology.addLeader(socketAddress, DEFAULT_TOPIC, i);
     }
 
     currentTopology.set(topology);
@@ -142,7 +131,7 @@ public class StubBrokerRule extends ExternalResource {
     if (transport == null) {
       transport =
           Transports.newServerTransport()
-              .bindAddress(bindAddr)
+              .bindAddress(socketAddress.toInetSocketAddress())
               .scheduler(scheduler)
               .build(null, channelHandler);
     } else {
@@ -254,7 +243,7 @@ public class StubBrokerRule extends ExternalResource {
   public void addTopic(String topic, int partition) {
     final Topology newTopology = new Topology(currentTopology.get());
 
-    newTopology.addLeader(host, port, topic, partition);
+    newTopology.addLeader(socketAddress, topic, partition);
     currentTopology.set(newTopology);
   }
 
@@ -440,12 +429,8 @@ public class StubBrokerRule extends ExternalResource {
     return new DeploymentStubs(this);
   }
 
-  public String getHost() {
-    return host;
-  }
-
-  public int getPort() {
-    return port;
+  public SocketAddress getSocketAddress() {
+    return socketAddress;
   }
 
   public ControlledActorClock getClock() {

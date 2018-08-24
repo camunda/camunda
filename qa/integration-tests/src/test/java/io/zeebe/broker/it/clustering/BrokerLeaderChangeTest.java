@@ -24,7 +24,6 @@ import io.zeebe.gateway.api.events.JobEvent;
 import io.zeebe.gateway.api.events.JobState;
 import io.zeebe.gateway.api.subscription.JobWorker;
 import io.zeebe.gateway.api.subscription.TopicSubscription;
-import io.zeebe.test.util.AutoCloseableRule;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.Ignore;
@@ -37,14 +36,13 @@ public class BrokerLeaderChangeTest {
   public static final String NULL_PAYLOAD = null;
   public static final String JOB_TYPE = "testTask";
 
-  public AutoCloseableRule closeables = new AutoCloseableRule();
   public Timeout testTimeout = Timeout.seconds(90);
-  public ClientRule clientRule = new ClientRule();
-  public ClusteringRule clusteringRule = new ClusteringRule(closeables, clientRule);
+  public ClusteringRule clusteringRule = new ClusteringRule();
+  public ClientRule clientRule = new ClientRule(clusteringRule);
 
   @Rule
   public RuleChain ruleChain =
-      RuleChain.outerRule(closeables).around(testTimeout).around(clientRule).around(clusteringRule);
+      RuleChain.outerRule(testTimeout).around(clusteringRule).around(clientRule);
 
   @Test
   @Ignore("https://github.com/zeebe-io/zeebe/issues/844")

@@ -46,8 +46,7 @@ public class ClientConfigurationTest {
     final Duration expectedTimeout = Duration.ofMillis(KEEP_ALIVE_TIMEOUT);
 
     // when
-    final ZeebeClient client = ZeebeClient.newClientBuilder().withProperties(props).build();
-    closeables.manage(client);
+    final ZeebeClient client = buildClient(props);
 
     // then
     final ClientTransport transport = ((ZeebeClientImpl) client).getTransport();
@@ -61,8 +60,7 @@ public class ClientConfigurationTest {
     config.setProperty(ClientProperties.DEFAULT_JOB_WORKER_NAME, "me");
 
     // when
-    final ZeebeClient client = ZeebeClient.newClientBuilder().withProperties(config).build();
-    closeables.manage(client);
+    final ZeebeClient client = buildClient(config);
 
     // then
     assertThat(client.getConfiguration().getDefaultJobWorkerName()).isEqualTo("me");
@@ -75,8 +73,7 @@ public class ClientConfigurationTest {
     config.setProperty(ClientProperties.DEFAULT_JOB_TIMEOUT, "5000");
 
     // when
-    final ZeebeClient client = ZeebeClient.newClientBuilder().withProperties(config).build();
-    closeables.manage(client);
+    final ZeebeClient client = buildClient(config);
 
     // then
     assertThat(client.getConfiguration().getDefaultJobTimeout()).isEqualTo(Duration.ofMillis(5000));
@@ -90,8 +87,7 @@ public class ClientConfigurationTest {
     config.setProperty(ClientProperties.JOB_SUBSCRIPTION_BUFFER_SIZE, "345");
 
     // when
-    final ZeebeClient client = ZeebeClient.newClientBuilder().withProperties(config).build();
-    closeables.manage(client);
+    final ZeebeClient client = buildClient(config);
 
     // then
     assertThat(client.getConfiguration().getDefaultTopicSubscriptionBufferSize()).isEqualTo(123);
@@ -105,8 +101,7 @@ public class ClientConfigurationTest {
     config.setProperty(ClientProperties.DEFAULT_MESSAGE_TIME_TO_LIVE, "123");
 
     // when
-    final ZeebeClient client = ZeebeClient.newClientBuilder().withProperties(config).build();
-    closeables.manage(client);
+    final ZeebeClient client = buildClient(config);
 
     // then
     assertThat(client.getConfiguration().getDefaultMessageTimeToLive())
@@ -128,5 +123,17 @@ public class ClientConfigurationTest {
     assertThat(configuration.getDefaultTopicSubscriptionBufferSize()).isEqualTo(1024);
     assertThat(configuration.getDefaultJobSubscriptionBufferSize()).isEqualTo(32);
     assertThat(configuration.getDefaultMessageTimeToLive()).isEqualTo(Duration.ofHours(1));
+  }
+
+  private ZeebeClient buildClient(Properties config) {
+    final ZeebeClient client =
+        ZeebeClient.newClientBuilder()
+            .withProperties(config)
+            .brokerContactPoint(broker.getSocketAddress().toString())
+            .build();
+
+    closeables.manage(client);
+
+    return client;
   }
 }

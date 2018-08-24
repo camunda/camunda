@@ -47,8 +47,8 @@ public class CreateJobTest {
   private static final String PAYLOAD = "{\"foo\":\"bar\"}";
   private static final byte[] MSGPACK_PAYLOAD = new MsgPackConverter().convertToMsgPack(PAYLOAD);
 
-  public ClientRule clientRule = new ClientRule();
   public StubBrokerRule brokerRule = new StubBrokerRule();
+  public ClientRule clientRule = new ClientRule(brokerRule);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 

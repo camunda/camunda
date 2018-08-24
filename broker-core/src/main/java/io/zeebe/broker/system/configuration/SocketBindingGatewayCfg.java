@@ -33,4 +33,20 @@ public class SocketBindingGatewayCfg extends SocketBindingCfg {
   public void setEnabled(final boolean enabled) {
     this.enabled = enabled;
   }
+
+  @Override
+  public String toString() {
+    return "SocketBindingGatewayCfg{"
+        + "enabled="
+        + enabled
+        + ", host='"
+        + host
+        + '\''
+        + ", port="
+        + port
+        + ", sendBufferSize='"
+        + sendBufferSize
+        + '\''
+        + '}';
+  }
 }

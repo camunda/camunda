@@ -36,8 +36,8 @@ import org.junit.rules.RuleChain;
 @SuppressWarnings("unchecked")
 public class RequestPartitionsTest {
   public static final int EXPECTED_TOTAL_PARTITIONS = 1;
-  public ClientApiRule apiRule = new ClientApiRule();
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 

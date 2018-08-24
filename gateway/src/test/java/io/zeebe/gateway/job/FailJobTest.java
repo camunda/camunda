@@ -34,8 +34,8 @@ import org.junit.rules.RuleChain;
 
 public class FailJobTest {
 
-  public ClientRule clientRule = new ClientRule();
   public StubBrokerRule brokerRule = new StubBrokerRule();
+  public ClientRule clientRule = new ClientRule(brokerRule);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 

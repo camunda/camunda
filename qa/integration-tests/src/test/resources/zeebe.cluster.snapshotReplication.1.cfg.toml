@@ -11,10 +11,6 @@ name = "default-topic"
 partitions = 1
 replicationFactor = 2
 
-
 [data]
 snapshotPeriod = "15m"
 snapshotReplicationPeriod = "5ms"
-
-[cluster]
-initialContactPoints = []

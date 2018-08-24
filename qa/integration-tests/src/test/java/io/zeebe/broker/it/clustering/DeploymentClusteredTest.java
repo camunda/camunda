@@ -30,7 +30,6 @@ import io.zeebe.gateway.cmd.ClientCommandRejectedException;
 import io.zeebe.gateway.impl.workflow.CreateWorkflowInstanceCommandImpl;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.test.util.AutoCloseableRule;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -45,14 +44,13 @@ public class DeploymentClusteredTest {
   private static final BpmnModelInstance WORKFLOW =
       Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
 
-  public AutoCloseableRule closeables = new AutoCloseableRule();
   public Timeout testTimeout = Timeout.seconds(60);
-  public ClientRule clientRule = new ClientRule();
-  public ClusteringRule clusteringRule = new ClusteringRule(closeables, clientRule);
+  public ClusteringRule clusteringRule = new ClusteringRule();
+  public ClientRule clientRule = new ClientRule(clusteringRule);
 
   @Rule
   public RuleChain ruleChain =
-      RuleChain.outerRule(closeables).around(testTimeout).around(clientRule).around(clusteringRule);
+      RuleChain.outerRule(testTimeout).around(clusteringRule).around(clientRule);
 
   @Rule public ExpectedException expectedException = ExpectedException.none();
 
@@ -122,7 +120,7 @@ public class DeploymentClusteredTest {
     // given
 
     // when
-    clusteringRule.stopBroker(ClusteringRule.BROKER_3_CLIENT_ADDRESS);
+    clusteringRule.stopBroker(2);
 
     // then
     final DeploymentEvent deploymentEvent =
@@ -143,7 +141,7 @@ public class DeploymentClusteredTest {
   public void shouldCreateInstancesOnRestartedBroker() {
     // given
 
-    clusteringRule.stopBroker(ClusteringRule.BROKER_3_CLIENT_ADDRESS);
+    clusteringRule.stopBroker(2);
     final DeploymentEvent deploymentEvent =
         client
             .topicClient()
@@ -156,7 +154,7 @@ public class DeploymentClusteredTest {
     clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
 
     // when
-    clusteringRule.restartBroker(ClusteringRule.BROKER_3_CLIENT_ADDRESS);
+    clusteringRule.restartBroker(2);
     clusteringRule.waitForTopicPartitionReplicationFactor(
         DEFAULT_TOPIC, PARTITION_COUNT, DEFAULT_REPLICATION_FACTOR);
 
@@ -195,7 +193,7 @@ public class DeploymentClusteredTest {
     // given
 
     // when
-    clusteringRule.restartBroker(ClusteringRule.BROKER_3_CLIENT_ADDRESS);
+    clusteringRule.restartBroker(2);
 
     // then
     final DeploymentEvent deploymentEvent =
