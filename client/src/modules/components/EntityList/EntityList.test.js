@@ -544,3 +544,49 @@ describe('getEntityIconName', () => {
     expect(name).toBe('endpointHeat');
   });
 });
+
+it('should display a button to create combined report if specified', () => {
+  const node = mount(
+    shallow(<EntityList api="endpoint" label="Report" operations={['combine']} />).get(0)
+  );
+  node.setState({
+    loaded: true,
+    data: [sampleEntity]
+  });
+
+  expect(node.find('.combineButton')).toBePresent();
+});
+
+it('should invok createEntity with parameter "combined" when create combined button is clicked', async () => {
+  const node = mount(
+    shallow(<EntityList api="endpoint" label="Report" operations={['combine']} />).get(0)
+  );
+  node.setState({
+    loaded: true,
+    data: [sampleEntity]
+  });
+
+  const spy = jest.spyOn(node.instance(), 'createEntity');
+  node.find('button.combineButton').simulate('click');
+
+  await node.update();
+
+  expect(spy).toBeCalledWith('combined');
+});
+
+it('should invok createEntity with parameter "single" when create new Entity is clicked', async () => {
+  const node = mount(
+    shallow(<EntityList api="endpoint" label="Report" operations={['create']} />).get(0)
+  );
+  node.setState({
+    loaded: true,
+    data: [sampleEntity]
+  });
+
+  const spy = jest.spyOn(node.instance(), 'createEntity');
+  node.find('button.createButton').simulate('click');
+
+  await node.update();
+
+  expect(spy).toBeCalledWith('single');
+});

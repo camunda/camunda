@@ -36,7 +36,7 @@ class EntityList extends React.Component {
 
   loadData = async () => {
     this.props.mightFail(
-      load(this.props.api, this.props.displayOnly, this.props.sortBy),
+      await load(this.props.api, this.props.displayOnly, this.props.sortBy),
       response => {
         this.setState({
           data: response,
@@ -46,10 +46,10 @@ class EntityList extends React.Component {
     );
   };
 
-  createEntity = async evt => {
+  createEntity = type => async evt => {
     if (this.props.EditModal) return this.openNewEditModal();
     this.setState({
-      redirectToEntity: await create(this.props.api)
+      redirectToEntity: await create(this.props.api, {reportType: type})
     });
   };
 
@@ -70,8 +70,13 @@ class EntityList extends React.Component {
   };
 
   duplicateEntity = id => async evt => {
-    const {data, reports, name} = this.state.data.find(entity => entity.id === id);
-    const copy = {...(data && {data}), ...(reports && {reports}), name: `${name} - Copy`};
+    const {data, reports, name, reportType} = this.state.data.find(entity => entity.id === id);
+    const copy = {
+      ...(data && {data}),
+      ...(reports && {reports}),
+      name: `${name} - Copy`,
+      reportType
+    };
     await duplicate(this.props.api, copy);
     // fetch the data again after duplication to update the state
     await this.loadData();
@@ -263,10 +268,18 @@ class EntityList extends React.Component {
   render() {
     let createButton = null;
     let searchInput = null;
+    let combineButton = null;
     if (this.props.operations.includes('create')) {
       createButton = (
-        <Button color="green" className="createButton" onClick={this.createEntity}>
-          Create new {this.props.label}
+        <Button color="green" className="createButton" onClick={this.createEntity('single')}>
+          Create New {this.props.label}
+        </Button>
+      );
+    }
+    if (this.props.operations.includes('combine')) {
+      combineButton = (
+        <Button className="combineButton" onClick={this.createEntity('combined')}>
+          Create a Combined {this.props.label}
         </Button>
       );
     }
@@ -284,7 +297,10 @@ class EntityList extends React.Component {
       <div className="header">
         {HeaderIcon && <HeaderIcon />}
         <h1 className="heading">{this.props.label}s</h1>
-        <div className="tools">{createButton}</div>
+        <div className="tools">
+          {combineButton}
+          {createButton}
+        </div>
       </div>
     );
 
@@ -308,7 +324,7 @@ class EntityList extends React.Component {
     const isListEmpty = this.state.data.length === 0;
 
     const createLink = (
-      <a className="createLink" role="button" onClick={this.createEntity}>
+      <a className="createLink" role="button" onClick={this.createEntity('single')}>
         Create a new {this.props.label}…
       </a>
     );

@@ -62,7 +62,8 @@ const props = {
 const sampleReport = {
   name: 'name',
   lastModifier: 'lastModifier',
-  lastModified: '2017-11-11T11:11:11.1111+0200'
+  lastModified: '2017-11-11T11:11:11.1111+0200',
+  reportType: 'single'
 };
 
 const reportResult = {
@@ -185,7 +186,21 @@ it('should contain a ReportView with the report evaluation result', () => {
   expect(node).toIncludeText('ReportView');
 });
 
-it('should contain a Control Panel in edit mode', () => {
+it('should not contain a Control Panel in edit mode for a combined report', () => {
+  props.match.params.viewMode = 'edit';
+
+  const combinedReport = {
+    ...sampleReport,
+    reportType: 'combined'
+  };
+
+  const node = mount(shallow(<Report {...props} />).get(0));
+  node.setState({loaded: true, reportResult, ...combinedReport});
+
+  expect(node).not.toIncludeText('ControlPanel');
+});
+
+it('should contain a Control Panel in edit mode for a single report', () => {
   props.match.params.viewMode = 'edit';
 
   const node = mount(shallow(<Report {...props} />).get(0));

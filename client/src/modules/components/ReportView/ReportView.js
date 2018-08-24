@@ -30,22 +30,38 @@ export default class ReportView extends React.Component {
     return this.props.report.data.processDefinitionVersion;
   };
 
-  componentDidMount() {
-    const {processDefinitionVersion, processDefinitionKey} = this.getDataFromProps(this.props);
-    if (processDefinitionKey && processDefinitionVersion) {
-      this.loadFlowNodeNames(processDefinitionKey, processDefinitionVersion);
+  async componentDidMount() {
+    let {reportType, result} = this.props.report;
+    if (result) {
+      if (reportType === 'single') result = {report: this.props.report};
+
+      Object.keys(result).forEach(async key => {
+        const {processDefinitionVersion, processDefinitionKey} = result[key].data;
+        if (processDefinitionKey && processDefinitionVersion)
+          await this.loadFlowNodeNames(processDefinitionKey, processDefinitionVersion);
+      });
     }
+
+    this.setState({loaded: true});
   }
 
   getDataFromProps = ({report: {data}}) => data;
 
   render() {
-    if (this.props.report) {
-      return this.checkProcDefAndRenderReport(this.props.report);
+    const {report} = this.props;
+    if (report) {
+      return report.reportType === 'single'
+        ? this.checkProcDefAndRenderReport(report)
+        : this.checkCombinedAndRender(report);
     } else {
       return <div className="Message Message--error">{defaultErrorMessage}</div>;
     }
   }
+  checkCombinedAndRender = report => {
+    if (this.isEmpty(report.data.reportIds))
+      return this.buildInstructionMessage('one or more reports from the list');
+    return this.renderReport(report);
+  };
 
   checkProcDefAndRenderReport = report => {
     const {data} = report;
@@ -59,7 +75,7 @@ export default class ReportView extends React.Component {
   checkViewAndRenderReport = report => {
     const {data} = report;
     if (!data.view) {
-      return this.buildInstructionMessage('View');
+      return this.buildInstructionMessage('an option for ”View”');
     } else {
       return this.checkGroupByAndRenderReport(report);
     }
@@ -68,7 +84,7 @@ export default class ReportView extends React.Component {
   checkGroupByAndRenderReport = report => {
     const {data} = report;
     if (!data.groupBy) {
-      return this.buildInstructionMessage('Group by');
+      return this.buildInstructionMessage('an option for ”Group by”');
     } else {
       return this.checkVisualizationAndRenderReport(report);
     }
@@ -77,18 +93,14 @@ export default class ReportView extends React.Component {
   checkVisualizationAndRenderReport = report => {
     const {data} = report;
     if (!data.visualization) {
-      return this.buildInstructionMessage('Visualize as');
+      return this.buildInstructionMessage('an option for ”Visualize as”');
     } else {
       return this.renderReport(report);
     }
   };
 
   buildInstructionMessage = field => {
-    return (
-      <ReportBlankSlate
-        message={'To display a report, please select an option for ”' + field + '”.'}
-      />
-    );
+    return <ReportBlankSlate message={'To display a report, please select ' + field + '.'} />;
   };
 
   isEmpty = str => {
@@ -97,37 +109,45 @@ export default class ReportView extends React.Component {
 
   loadFlowNodeNames = async (key, version) => {
     this.setState({
-      flowNodeNames: await getFlowNodeNames(key, version),
-      loaded: true
+      flowNodeNames: {
+        ...this.state.flowNodeNames,
+        [key + version]: await getFlowNodeNames(key, version)
+      }
     });
   };
 
-  componentDidUpdate(prevProps) {
-    const {
-      processDefinitionVersion: nextProcDefVersion,
-      processDefinitionKey: nextProcDefKey
-    } = this.getDataFromProps(this.props);
+  async componentDidUpdate(prevProps) {
+    if (this.props.report.reportType === 'single') {
+      const {
+        processDefinitionVersion: nextProcDefVersion,
+        processDefinitionKey: nextProcDefKey
+      } = this.getDataFromProps(this.props);
 
-    const {
-      processDefinitionVersion: prevProcDefVersion,
-      processDefinitionKey: prevProcDefKey
-    } = this.getDataFromProps(prevProps);
+      const {
+        processDefinitionVersion: prevProcDefVersion,
+        processDefinitionKey: prevProcDefKey
+      } = this.getDataFromProps(prevProps);
 
-    const procDefKeyChanged = nextProcDefKey && nextProcDefKey !== prevProcDefKey;
-    const procDefVersionChanged = nextProcDefVersion && nextProcDefVersion !== prevProcDefVersion;
-    if (procDefKeyChanged || procDefVersionChanged) {
-      this.setState({loaded: false});
-      this.loadFlowNodeNames(nextProcDefKey, nextProcDefVersion);
+      const procDefKeyChanged = nextProcDefKey && nextProcDefKey !== prevProcDefKey;
+      const procDefVersionChanged = nextProcDefVersion && nextProcDefVersion !== prevProcDefVersion;
+      if (procDefKeyChanged || procDefVersionChanged) {
+        this.setState({loaded: false});
+        await this.loadFlowNodeNames(nextProcDefKey, nextProcDefVersion);
+        this.setState({loaded: true});
+      }
     }
   }
 
-  applyFlowNodeNames = data => {
+  applyFlowNodeNames = report => {
     if (this.state.flowNodeNames) {
+      const {result, processDefinitionKey, processDefinitionVersion} = report;
       const chartData = {};
-      Object.keys(data).forEach(key => {
-        chartData[this.state.flowNodeNames[key] || key] = data[key];
+      Object.keys(result).forEach(key => {
+        chartData[
+          this.state.flowNodeNames[processDefinitionKey + processDefinitionVersion][key] || key
+        ] =
+          result[key];
       });
-
       return chartData;
     }
   };
@@ -135,89 +155,116 @@ export default class ReportView extends React.Component {
   renderReport = report => {
     let {data, result, processInstanceCount} = report;
     let config;
+    let reports = [];
 
     const visualizations = ['pie', 'line', 'bar', 'table'];
-    if (data.view.entity === 'flowNode' && visualizations.includes(data.visualization) && result) {
-      result = this.applyFlowNodeNames(result) || result;
-    }
+    if (report.reportType === 'combined')
+      reports = Object.keys(result).map(reportId => result[reportId]);
+    else reports = [report];
+
+    result = reports.map(report => {
+      const {data, result} = report;
+      if (
+        data.view.entity === 'flowNode' &&
+        visualizations.includes(data.visualization) &&
+        result
+      ) {
+        return this.applyFlowNodeNames(report) || result;
+      }
+      return result;
+    });
 
     if (!this.state.loaded) {
       return <LoadingIndicator />;
     }
 
-    switch (data.visualization) {
-      case 'number':
-        config = {
-          component: Number,
-          props: {data: result, targetValue: data.configuration.targetValue}
-        };
-        break;
-      case 'table':
-        const viewLabel = getLabelFor(view, data.view);
-        const groupByLabel = getLabelFor(groupBy, data.groupBy);
-        const formattedResult = this.formatResult(data, result);
-        config = {
-          component: Table,
-          props: {
-            data: formattedResult,
-            labels: [groupByLabel, viewLabel],
-            configuration: data.configuration,
-            disableReportScrolling: this.props.disableReportScrolling,
-            property: data.view.property,
-            processInstanceCount
-          }
-        };
-        break;
-      case 'heat':
-        config = {
-          component: Heatmap,
-          props: {
-            data: result,
-            xml: data.configuration.xml,
-            alwaysShowTooltips: data.configuration.alwaysShowTooltips,
-            targetValue: data.configuration.targetValue,
-            property: data.view.property,
-            processInstanceCount
-          }
-        };
-        break;
-      case 'bar':
-      case 'line':
-      case 'pie':
-        config = {
-          component: Chart,
-          props: {
-            data: this.formatResult(data, result),
-            type: data.visualization,
-            property: data.view.property,
-            processInstanceCount,
-            targetValue: data.configuration.targetValue
-          }
-        };
-        break;
-      default:
-        config = {
-          component: ReportBlankSlate,
-          props: {
-            message: defaultErrorMessage
-          }
-        };
-        break;
-    }
+    let Component;
 
-    switch (data.view.property) {
-      case 'frequency':
-        config.props.formatter = formatters.frequency;
-        break;
-      case 'duration':
-        config.props.formatter = formatters.duration;
-        break;
-      default:
-        config.props.formatter = v => v;
-    }
+    if (report.reportType === 'single') {
+      result = result[0];
 
-    config.props.errorMessage = defaultErrorMessage;
-    const Component = config.component;
+      switch (data.visualization) {
+        case 'number':
+          config = {
+            component: Number,
+            props: {data: result, targetValue: data.configuration.targetValue}
+          };
+          break;
+        case 'table':
+          const viewLabel = getLabelFor(view, data.view);
+          const groupByLabel = getLabelFor(groupBy, data.groupBy);
+          const formattedResult = this.formatResult(data, result);
+          config = {
+            component: Table,
+            props: {
+              data: formattedResult,
+              labels: [groupByLabel, viewLabel],
+              configuration: data.configuration,
+              disableReportScrolling: this.props.disableReportScrolling,
+              property: data.view.property,
+              processInstanceCount
+            }
+          };
+          break;
+        case 'heat':
+          config = {
+            component: Heatmap,
+            props: {
+              data: result,
+              xml: data.configuration.xml,
+              alwaysShowTooltips: data.configuration.alwaysShowTooltips,
+              targetValue: data.configuration.targetValue,
+              property: data.view.property,
+              processInstanceCount
+            }
+          };
+          break;
+        case 'bar':
+        case 'line':
+        case 'pie':
+          config = {
+            component: Chart,
+            props: {
+              data: this.formatResult(data, result),
+              type: data.visualization,
+              property: data.view.property,
+              processInstanceCount,
+              targetValue: data.configuration.targetValue
+            }
+          };
+          break;
+        default:
+          config = {
+            component: ReportBlankSlate,
+            props: {
+              message: defaultErrorMessage
+            }
+          };
+          break;
+      }
+
+      switch (data.view.property) {
+        case 'frequency':
+          config.props.formatter = formatters.frequency;
+          break;
+        case 'duration':
+          config.props.formatter = formatters.duration;
+          break;
+        default:
+          config.props.formatter = v => v;
+      }
+
+      config.props.errorMessage = defaultErrorMessage;
+      Component = config.component;
+    } else {
+      config = {
+        component: ReportBlankSlate,
+        props: {
+          message: 'Empty Combined ReportView'
+        }
+      };
+      Component = config.component;
+    }
 
     return (
       <ErrorBoundary>

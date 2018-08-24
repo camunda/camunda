@@ -7,8 +7,11 @@ export default function Reports() {
       api="report"
       label="Report"
       sortBy={'lastModified'}
-      operations={['create', 'edit', 'delete', 'duplicate', 'search']}
-      renderCustom={report => (report.data ? report.data.processDefinitionKey : 'Empty') || 'Empty'}
+      operations={['create', 'edit', 'delete', 'duplicate', 'search', 'combine']}
+      renderCustom={report => {
+        if (report.reportType === 'combined') return `Combined Report`;
+        return (report.data ? report.data.processDefinitionKey : 'Empty') || 'Empty';
+      }}
     />
   );
 }

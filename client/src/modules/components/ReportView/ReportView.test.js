@@ -47,6 +47,7 @@ jest.mock('./ReportBlankSlate', () => {
 
 it('should display a number if visualization is number', () => {
   const report = {
+    reportType: 'single',
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '1',
@@ -71,6 +72,7 @@ it('should display a number if visualization is number', () => {
 
 it('should provide an errorMessage property to the component', () => {
   const report = {
+    reportType: 'single',
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '1',
@@ -95,6 +97,7 @@ it('should provide an errorMessage property to the component', () => {
 
 it('should instruct to add a process definition key if not available', () => {
   const report = {
+    reportType: 'single',
     data: {
       processDefinitionKey: '',
       processDefinitionVersion: '1',
@@ -118,6 +121,7 @@ it('should instruct to add a process definition key if not available', () => {
 
 it('should instruct to add a process definition version if not available', () => {
   const report = {
+    reportType: 'single',
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '',
@@ -141,6 +145,7 @@ it('should instruct to add a process definition version if not available', () =>
 
 it('should instruct to add view option if not available', () => {
   const report = {
+    reportType: 'single',
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '1',
@@ -162,6 +167,7 @@ it('should instruct to add view option if not available', () => {
 
 it('should instruct to add group by option if not available', () => {
   const report = {
+    reportType: 'single',
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '1',
@@ -183,6 +189,7 @@ it('should instruct to add group by option if not available', () => {
 
 it('should instruct to add visualization option if not available', () => {
   const report = {
+    reportType: 'single',
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '1',
@@ -206,6 +213,7 @@ it('should instruct to add visualization option if not available', () => {
 
 it('should not add instruction for group by if operation is raw data', () => {
   const report = {
+    reportType: 'single',
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '1',
@@ -228,6 +236,7 @@ it('should not add instruction for group by if operation is raw data', () => {
 });
 
 const exampleDurationReport = {
+  reportType: 'single',
   data: {
     processDefinitionKey: 'aKey',
     processDefinitionVersion: '1',
@@ -332,9 +341,40 @@ it('should return flownode Id if name is null when calling applyFlowNodeNames', 
     loaded: true
   });
   await node.instance().loadFlowNodeNames('aKey', 1);
-  expect(node.instance().applyFlowNodeNames({a: 25, b: 35, c: 25})).toEqual({
+  expect(
+    node.instance().applyFlowNodeNames({
+      processDefinitionKey: 'aKey',
+      processDefinitionVersion: '1',
+      result: {
+        a: 25,
+        b: 35,
+        c: 25
+      }
+    })
+  ).toEqual({
     foo: 25,
     bar: 35,
     c: 25
   });
+});
+
+it('should instruct to select one or more reports if no reports are selected for combined reports', () => {
+  const report = {
+    name: '',
+    reportType: 'combined',
+    data: {
+      configuration: {},
+      reports: []
+    },
+    result: {
+      reportA: {data: {}},
+      reportB: {data: {}}
+    }
+  };
+
+  const node = mount(<ReportView report={report} />);
+  node.setState({
+    loaded: true
+  });
+  expect(node.find('.message')).toIncludeText('one or more reports');
 });

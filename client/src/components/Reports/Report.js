@@ -53,7 +53,8 @@ export default withErrorHandling(
         redirect: false,
         originalName: null,
         deleteModalVisible: false,
-        serverError: null
+        serverError: null,
+        reportType: null
       };
     }
 
@@ -91,7 +92,7 @@ export default withErrorHandling(
       await this.props.mightFail(
         loadSingleReport(this.id),
         async response => {
-          const {name, lastModifier, lastModified, data} = response;
+          const {name, lastModifier, lastModified, data, reportType} = response;
 
           const reportResult = await getReportData(this.id);
           const stateData = data || (await this.initializeReport());
@@ -103,8 +104,9 @@ export default withErrorHandling(
               loaded: true,
               data: stateData,
               originalData: {...stateData},
-              reportResult: reportResult || {data: stateData},
-              originalName: name
+              reportResult: reportResult || {reportType, data: stateData},
+              originalName: name,
+              reportType
             },
             () => {
               if (isNew) {
@@ -183,7 +185,7 @@ export default withErrorHandling(
         let reportResult;
         if (this.allFieldsAreSelected(data)) {
           this.setState({loadingReportData: true});
-          reportResult = await getReportData(data);
+          reportResult = await getReportData(data, 'single');
           this.setState({loadingReportData: false});
         }
         if (!reportResult) {
@@ -241,7 +243,8 @@ export default withErrorHandling(
     save = async evt => {
       saveReport(this.id, {
         name: this.state.name,
-        data: this.state.data
+        data: this.state.data,
+        reportType: this.state.reportType
       });
 
       this.setState({
@@ -284,7 +287,15 @@ export default withErrorHandling(
       `/api/export/csv/${this.id}/${encodeURIComponent(this.state.name.replace(/\s/g, '_'))}.csv`;
 
     renderEditMode = () => {
-      const {name, lastModifier, lastModified, data, reportResult, loadingReportData} = this.state;
+      const {
+        name,
+        lastModifier,
+        lastModified,
+        data,
+        reportResult,
+        loadingReportData,
+        reportType
+      } = this.state;
       return (
         <div className="Report">
           <div className="Report__header">
@@ -329,11 +340,13 @@ export default withErrorHandling(
             </div>
           </div>
 
-          <ReportControlPanel
-            {...data}
-            reportResult={reportResult}
-            updateReport={this.updateReport}
-          />
+          {reportType === 'single' && (
+            <ReportControlPanel
+              {...data}
+              reportResult={reportResult}
+              updateReport={this.updateReport}
+            />
+          )}
           <div className="Report__view">
             {loadingReportData ? (
               <LoadingIndicator />

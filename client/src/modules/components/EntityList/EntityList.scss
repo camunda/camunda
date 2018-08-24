@@ -19,11 +19,11 @@
 
   .tools {
     flex-shrink: 0;
+    display: flex;
     vertical-align: baseline;
 
-    .createButton {
-      width: 100%;
-      margin-bottom: 10px;
+    .combineButton {
+      margin-right: 10px;
     }
   }
 

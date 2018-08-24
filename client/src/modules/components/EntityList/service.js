@@ -30,7 +30,9 @@ export async function load(api, numResults, sortBy) {
 }
 
 export async function create(api, data) {
-  const response = await post(`/api/${api}`, data);
+  const subUrl = api === 'report' ? `/${data.reportType}` : '';
+
+  const response = await post(`/api/${api}${subUrl}`, data);
 
   const json = await response.json();
 
@@ -38,7 +40,9 @@ export async function create(api, data) {
 }
 
 export async function duplicate(api, copyData) {
-  const createResponse = await post(`/api/${api}`);
+  const subUrl = copyData.reportType ? `/${copyData.reportType}` : '';
+
+  const createResponse = await post(`/api/${api}${subUrl}`);
 
   const json = await createResponse.json();
 
