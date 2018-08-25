@@ -52,11 +52,10 @@ public class ExporterJarRepositoryTest {
   @Test
   public void shouldThrowExceptionOnLoadIfNotReadable() throws Exception {
     // given
-    assumeTrue(!System.getProperty("os.name").startsWith("Windows"));
     final File dummy = temporaryFolder.newFile("unreadable.jar");
 
-    // when
-    dummy.setReadable(false);
+    // when (ignoring test if file cannot be set to not be readable)
+    assumeTrue(dummy.setReadable(false));
 
     // then
     // System.out.println("was set = " + isSet);
