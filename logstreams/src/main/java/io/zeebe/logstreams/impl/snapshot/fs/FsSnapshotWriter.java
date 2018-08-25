@@ -94,8 +94,8 @@ public class FsSnapshotWriter implements SnapshotWriter {
   @Override
   public void abort() {
     FileUtil.closeSilently(dataOutputStream);
-    dataFile.delete();
-    checksumFile.delete();
+    FileUtil.deleteFile(dataFile);
+    FileUtil.deleteFile(checksumFile);
   }
 
   public File getChecksumFile() {
@@ -141,7 +141,7 @@ public class FsSnapshotWriter implements SnapshotWriter {
 
     try (FileOutputStream checksumFileOutputStream = new FileOutputStream(checksumFile);
         BufferedOutputStream checksumOutputStream =
-            new BufferedOutputStream(checksumFileOutputStream); ) {
+            new BufferedOutputStream(checksumFileOutputStream)) {
       final String checksumHex = BitUtil.toHex(checksum);
       final String checksumFileContents = config.checksumContent(checksumHex, getDataFileName());
 

@@ -40,6 +40,7 @@ import io.zeebe.map.types.LongValueHandler;
 import io.zeebe.test.util.io.AlwaysFailingInputStream;
 import io.zeebe.test.util.io.RepeatedlyFailingInputStream;
 import io.zeebe.test.util.io.RepeatedlyFailingOutputStream;
+import io.zeebe.util.FileUtil;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -297,7 +298,7 @@ public class BucketBufferArrayIOTest {
     final File tmpFile = File.createTempFile("tmpFile", ".tmp");
     final FileOutputStream outputStream = new FileOutputStream(tmpFile);
     outputStream.close();
-    tmpFile.delete();
+    FileUtil.deleteFile(tmpFile);
 
     // expect IOException
     expectedException.expect(IOException.class);

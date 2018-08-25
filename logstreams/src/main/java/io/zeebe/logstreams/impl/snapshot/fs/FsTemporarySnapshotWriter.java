@@ -43,7 +43,7 @@ public class FsTemporarySnapshotWriter extends FsSnapshotWriter {
     try {
       writeChecksumFile(checksum);
       FileUtil.replace(dataFile.toPath(), snapshotFile.toPath());
-      dataFile.delete();
+      FileUtil.deleteFile(dataFile);
     } catch (final Exception ex) {
       abort();
       throw ex;
@@ -55,7 +55,7 @@ public class FsTemporarySnapshotWriter extends FsSnapshotWriter {
   @Override
   public void abort() {
     super.abort();
-    snapshotFile.delete();
+    FileUtil.deleteFile(snapshotFile);
   }
 
   @Override

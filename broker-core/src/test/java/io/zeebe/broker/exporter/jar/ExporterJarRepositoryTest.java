@@ -23,6 +23,7 @@ import static org.junit.Assume.assumeTrue;
 
 import io.zeebe.broker.exporter.util.JarCreatorRule;
 import io.zeebe.broker.exporter.util.TestJarExporter;
+import io.zeebe.util.FileUtil;
 import java.io.File;
 import java.io.IOException;
 import org.junit.Rule;
@@ -69,7 +70,7 @@ public class ExporterJarRepositoryTest {
     final File dummy = temporaryFolder.newFile("missing.jar");
 
     // when
-    dummy.delete();
+    FileUtil.deleteFile(dummy);
 
     // then
     assertThatThrownBy(() -> jarRepository.load(dummy.getAbsolutePath()))

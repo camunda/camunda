@@ -20,6 +20,7 @@ import static io.zeebe.map.ZbMap.DEFAULT_BLOCK_COUNT;
 import io.zeebe.logstreams.snapshot.ComposedSnapshot;
 import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.map.Long2LongZbMap;
+import io.zeebe.util.FileUtil;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.util.Random;
@@ -54,6 +55,6 @@ public class WrittenMapSnapshotSupplier {
   @TearDown(Level.Iteration)
   public void closeMap() {
     map.close();
-    tmpFile.delete();
+    FileUtil.deleteFile(tmpFile);
   }
 }

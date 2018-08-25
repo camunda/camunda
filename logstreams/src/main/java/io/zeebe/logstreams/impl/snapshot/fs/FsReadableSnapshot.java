@@ -80,8 +80,8 @@ public class FsReadableSnapshot extends FsSnapshotMetadata implements ReadableSn
   public void delete() {
     FileUtil.closeSilently(inputStream);
 
-    dataFile.delete();
-    checksumFile.delete();
+    FileUtil.deleteFile(dataFile);
+    FileUtil.deleteFile(checksumFile);
   }
 
   @Override

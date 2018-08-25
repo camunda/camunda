@@ -33,8 +33,11 @@ import java.nio.file.Paths;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import org.agrona.LangUtil;
+import org.slf4j.Logger;
 
 public class FileUtil {
+
+  public static final Logger LOG = Loggers.FILE_LOGGER;
 
   public static void closeSilently(Closeable out) {
     if (out != null) {
@@ -159,5 +162,11 @@ public class FileUtil {
     }
 
     return path;
+  }
+
+  public static void deleteFile(File file) {
+    if (file.exists() && !file.delete()) {
+      LOG.warn("Failed to delete file '{}'", file);
+    }
   }
 }
