@@ -26,7 +26,7 @@ exports[`DiagramPanel should render pane header and body 1`] = `
             foo
           </td>
           <td>
-            20 Jun 2018 | 08:57:20
+            20 Jun 2018 08:57:20
           </td>
           <td>
             Invalid Date
