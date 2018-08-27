@@ -107,7 +107,6 @@ public class ClientRule extends ExternalResource {
         .name("deployment-await")
         .recordHandler(
             record -> {
-              System.out.println("search record");
               if (record.getMetadata().getPartitionId() == 1
                   && record.getMetadata().getValueType() == ValueType.DEPLOYMENT
                   && record.getMetadata().getIntent().equals(DeploymentIntent.CREATED.name())

@@ -17,8 +17,6 @@
  */
 package io.zeebe.broker.job.processor;
 
-import static io.zeebe.util.StringUtil.getBytes;
-
 import io.zeebe.broker.job.CreditsRequest;
 import io.zeebe.broker.job.JobSubscriptionManager;
 import io.zeebe.broker.job.data.JobRecord;
@@ -43,7 +41,6 @@ import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.protocol.intent.JobIntent;
-import java.nio.ByteBuffer;
 import java.util.function.Consumer;
 
 public class JobInstanceStreamProcessor implements StreamProcessorLifecycleAware {
@@ -59,10 +56,6 @@ public class JobInstanceStreamProcessor implements StreamProcessorLifecycleAware
 
   protected int logStreamPartitionId;
 
-  private static final byte[] LATEST_JOB_KEY_BUFFER = getBytes("latestJobKey");
-  private final ByteBuffer dbLongBuffer = ByteBuffer.allocate(Long.BYTES);
-  private final ByteBuffer dbShortBuffer = ByteBuffer.allocate(Short.BYTES);
-
   public JobInstanceStreamProcessor(JobSubscriptionManager jobSubscriptionManager) {
     this.jobSubscriptionManager = jobSubscriptionManager;
   }
@@ -73,7 +66,7 @@ public class JobInstanceStreamProcessor implements StreamProcessorLifecycleAware
 
     return environment
         .newStreamProcessor()
-        .keyGenerator(KeyGenerator.createJobKeyGenerator())
+        .keyGenerator(KeyGenerator.createJobKeyGenerator(stateController))
         .onCommand(ValueType.JOB, JobIntent.CREATE, new CreateJobProcessor())
         .onCommand(ValueType.JOB, JobIntent.ACTIVATE, new ActivateJobProcessor())
         .onCommand(ValueType.JOB, JobIntent.COMPLETE, new CompleteJobProcessor())
@@ -90,17 +83,11 @@ public class JobInstanceStreamProcessor implements StreamProcessorLifecycleAware
     return new StateSnapshotController(stateController, storage);
   }
 
-  @Override
-  public void onOpen(TypedStreamProcessor streamProcessor) {
-    stateController.recoverLatestJobKey(streamProcessor.getKeyGenerator());
-  }
-
   private class CreateJobProcessor implements CommandProcessor<JobRecord> {
 
     @Override
     public void onCommand(TypedRecord<JobRecord> command, CommandControl commandControl) {
       final long jobKey = commandControl.accept(JobIntent.CREATED);
-      stateController.putLatestJobKey(jobKey);
       stateController.putJobState(jobKey, STATE_CREATED);
     }
   }

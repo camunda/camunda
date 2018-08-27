@@ -17,60 +17,27 @@
  */
 package io.zeebe.broker.job.state;
 
-import static io.zeebe.util.StringUtil.getBytes;
+import io.zeebe.broker.util.KeyStateController;
+import java.nio.ByteOrder;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
-import io.zeebe.broker.logstreams.processor.KeyGenerator;
-import io.zeebe.logstreams.state.StateController;
-import io.zeebe.util.LangUtil;
-import java.nio.ByteBuffer;
-import org.rocksdb.RocksDBException;
-
-public class JobInstanceStateController extends StateController {
-  private static final byte[] LATEST_JOB_KEY_BUFFER = getBytes("latestJobKey");
-  private final ByteBuffer dbLongBuffer = ByteBuffer.allocate(Long.BYTES);
-  private final ByteBuffer dbShortBuffer = ByteBuffer.allocate(Short.BYTES);
-
-  public void recoverLatestJobKey(KeyGenerator keyGenerator) {
-    ensureIsOpened("recoverLatestJobKey");
-
-    if (tryGet(LATEST_JOB_KEY_BUFFER, dbLongBuffer.array())) {
-      keyGenerator.setKey(dbLongBuffer.getLong(0));
-    }
-  }
-
-  public void putLatestJobKey(long key) {
-    ensureIsOpened("putLatestJobKey");
-
-    dbLongBuffer.putLong(0, key);
-
-    try {
-      getDb().put(LATEST_JOB_KEY_BUFFER, dbLongBuffer.array());
-    } catch (RocksDBException e) {
-      LangUtil.rethrowUnchecked(e);
-    }
-  }
+public class JobInstanceStateController extends KeyStateController {
+  private final MutableDirectBuffer dbShortBuffer = new UnsafeBuffer(new byte[Short.BYTES]);
 
   public void putJobState(long key, short state) {
     ensureIsOpened("putJobState");
 
-    dbLongBuffer.putLong(0, key);
-    dbShortBuffer.putShort(0, state);
-
-    try {
-      getDb().put(dbLongBuffer.array(), dbShortBuffer.array());
-    } catch (RocksDBException e) {
-      LangUtil.rethrowUnchecked(e);
-    }
+    dbShortBuffer.putShort(0, state, ByteOrder.LITTLE_ENDIAN);
+    put(key, dbShortBuffer.byteArray());
   }
 
   public short getJobState(long key) {
     ensureIsOpened("getJobState");
 
     short state = -1;
-    dbLongBuffer.putLong(0, key);
-
-    if (tryGet(dbLongBuffer.array(), dbShortBuffer.array())) {
-      state = dbShortBuffer.getShort(0);
+    if (tryGet(key, dbShortBuffer.byteArray())) {
+      state = dbShortBuffer.getShort(0, ByteOrder.LITTLE_ENDIAN);
     }
 
     return state;
@@ -79,25 +46,6 @@ public class JobInstanceStateController extends StateController {
   public void deleteJobState(long key) {
     ensureIsOpened("deleteJobState");
 
-    dbLongBuffer.putLong(0, key);
-
-    try {
-      getDb().delete(dbLongBuffer.array());
-    } catch (RocksDBException e) {
-      LangUtil.rethrowUnchecked(e);
-    }
-  }
-
-  private boolean tryGet(final byte[] keyBuffer, final byte[] valueBuffer) {
-    boolean found = false;
-
-    try {
-      final int bytesRead = getDb().get(keyBuffer, valueBuffer);
-      found = bytesRead == valueBuffer.length;
-    } catch (RocksDBException e) {
-      LangUtil.rethrowUnchecked(e);
-    }
-
-    return found;
+    delete(key);
   }
 }

@@ -17,21 +17,28 @@
  */
 package io.zeebe.broker.system.workflow.repository.processor;
 
-import io.zeebe.util.sched.future.ActorFuture;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
+
+import io.zeebe.util.buffer.BufferReader;
+import io.zeebe.util.buffer.BufferWriter;
+import java.nio.ByteOrder;
 import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
 
-public class PendingDeploymentDistribution {
-  private final DirectBuffer deployment;
-  private final long sourcePosition;
-  private final ActorFuture<Void> pushFuture;
+public class PendingDeploymentDistribution implements BufferReader, BufferWriter {
 
+  private static final int POSITION_OFFSET = 0;
+  private static final int DEPLOYMENT_LENGTH_OFFSET = SIZE_OF_LONG;
+  private static final int DEPLOYMENT_OFFSET = DEPLOYMENT_LENGTH_OFFSET + SIZE_OF_INT;
+
+  private DirectBuffer deployment;
+  private long sourcePosition;
   private long distributionCount;
 
-  public PendingDeploymentDistribution(
-      DirectBuffer deployment, long sourcePosition, ActorFuture<Void> pushFuture) {
+  public PendingDeploymentDistribution(DirectBuffer deployment, long sourcePosition) {
     this.deployment = deployment;
     this.sourcePosition = sourcePosition;
-    this.pushFuture = pushFuture;
   }
 
   public void setDistributionCount(long distributionCount) {
@@ -42,10 +49,6 @@ public class PendingDeploymentDistribution {
     return --distributionCount;
   }
 
-  public void complete() {
-    pushFuture.complete(null);
-  }
-
   public DirectBuffer getDeployment() {
     return deployment;
   }
@@ -54,7 +57,26 @@ public class PendingDeploymentDistribution {
     return sourcePosition;
   }
 
-  public ActorFuture<Void> getPushFuture() {
-    return pushFuture;
+  @Override
+  public void wrap(DirectBuffer buffer, int offset, int length) {
+    this.sourcePosition = buffer.getLong(POSITION_OFFSET, ByteOrder.LITTLE_ENDIAN);
+    final int deploymentSize = buffer.getInt(DEPLOYMENT_LENGTH_OFFSET, ByteOrder.LITTLE_ENDIAN);
+    deployment.wrap(buffer, DEPLOYMENT_OFFSET, deploymentSize);
+  }
+
+  @Override
+  public int getLength() {
+    final int deploymentSize = deployment.capacity();
+    final int length = DEPLOYMENT_OFFSET + deploymentSize;
+    return length;
+  }
+
+  @Override
+  public void write(MutableDirectBuffer buffer, int offset) {
+    final int deploymentSize = deployment.capacity();
+
+    buffer.putLong(offset + POSITION_OFFSET, sourcePosition, ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(offset + DEPLOYMENT_LENGTH_OFFSET, deploymentSize, ByteOrder.LITTLE_ENDIAN);
+    buffer.putBytes(offset + DEPLOYMENT_OFFSET, deployment, 0, deploymentSize);
   }
 }
