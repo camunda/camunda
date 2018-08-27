@@ -89,8 +89,8 @@ describe('Filters', () => {
     expect(node.state().currentWorkflow).toEqual({});
     expect(node.state().currentWorkflowVersion).toEqual(EMPTY_OPTION);
     expect(node.state().currentActivityId).toEqual(EMPTY_OPTION);
-    expect(node.state().ids).toEqual('');
-    expect(node.state().errorMessage).toEqual('');
+    expect(node.state().filter.ids).toEqual('');
+    expect(node.state().filter.errorMessage).toEqual('');
     expect(node.state().workflowNameOptions).toEqual([]);
   });
 
@@ -160,7 +160,7 @@ describe('Filters', () => {
     it('should initialize the field with empty value', () => {
       const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
 
-      expect(node.state().errorMessage).toEqual('');
+      expect(node.state().filter.errorMessage).toEqual('');
     });
 
     it('should be prefilled with the value from props.filter.errorMessage ', async () => {
@@ -171,7 +171,9 @@ describe('Filters', () => {
       node.update();
       const field = node.find({name: 'errorMessage'});
       // then
-      expect(node.state().errorMessage).toEqual('This is an error message');
+      expect(node.state().filter.errorMessage).toEqual(
+        'This is an error message'
+      );
       expect(field.props().value).toEqual('This is an error message');
     });
 
@@ -182,7 +184,7 @@ describe('Filters', () => {
         target: {value: 'error message', name: 'errorMessage'}
       });
 
-      expect(node.state().errorMessage).toEqual('error message');
+      expect(node.state().filter.errorMessage).toEqual('error message');
     });
 
     it('should call onFilterChange with the right error message', () => {
@@ -232,7 +234,7 @@ describe('Filters', () => {
     it('should initialize the field with empty value', () => {
       const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
 
-      expect(node.state().ids).toEqual('');
+      expect(node.state().filter.ids).toEqual('');
     });
 
     it('should update state when input receives text', () => {
@@ -242,7 +244,7 @@ describe('Filters', () => {
         target: {value: "['a', 'b', 'c']", name: 'ids'}
       });
 
-      expect(node.state().ids).toEqual("['a', 'b', 'c']");
+      expect(node.state().filter.ids).toEqual("['a', 'b', 'c']");
     });
 
     it('should be prefilled with the value from props.filter.ids ', async () => {
@@ -253,7 +255,7 @@ describe('Filters', () => {
       node.update();
       const field = node.find({name: 'ids'});
       // then
-      expect(node.state().ids).toEqual(['a', 'b', 'c']);
+      expect(node.state().filter.ids).toEqual(['a', 'b', 'c']);
       expect(field.props().value).toEqual(['a', 'b', 'c']);
     });
 

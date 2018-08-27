@@ -51,3 +51,13 @@ export function getPayload({selectionId, state}) {
     ]
   };
 }
+
+export function decodeFields(object) {
+  let result = {};
+
+  for (let key in object) {
+    const value = object[key];
+    result[key] = typeof value === 'string' ? decodeURI(object[key]) : value;
+  }
+  return result;
+}

@@ -16,9 +16,16 @@ import {
   parseWorkflowNames,
   parseWorkflowVersions,
   addAllVersionsOption,
-  fieldParser
+  fieldParser,
+  getFilterWithDefaults
 } from './service';
-import {FIELDS, EMPTY_OPTION, ALL_VERSIONS_OPTION} from './constants';
+
+import {
+  FIELDS,
+  EMPTY_OPTION,
+  ALL_VERSIONS_OPTION,
+  DEFAULT_CONTROLLED_VALUES
+} from './constants';
 
 export default class Filters extends React.Component {
   static propTypes = {
@@ -50,8 +57,9 @@ export default class Filters extends React.Component {
     currentWorkflow: {},
     currentWorkflowVersion: EMPTY_OPTION,
     currentActivityId: EMPTY_OPTION,
-    ids: '',
-    errorMessage: '',
+    filter: {
+      ...DEFAULT_CONTROLLED_VALUES
+    },
     workflowNameOptions: []
   };
 
@@ -61,10 +69,18 @@ export default class Filters extends React.Component {
 
     this.setState({
       groupedWorkflows,
-      ids: this.props.filter.ids || '',
-      errorMessage: this.props.filter.errorMessage || '',
+      filter: {
+        ...getFilterWithDefaults(this.props.filter)
+      },
       workflowNameOptions
     });
+  };
+
+  componentDidUpdate = prevProps => {
+    if (prevProps.filter !== this.props.filter)
+      this.setState({
+        filter: {...getFilterWithDefaults(this.props.filter)}
+      });
   };
 
   handleWorkflowNameChange = event => {
@@ -155,7 +171,12 @@ export default class Filters extends React.Component {
   };
 
   onFieldChange = event => {
-    this.setState({[event.target.name]: event.target.value});
+    this.setState({
+      filter: {
+        ...this.state.filter,
+        [event.target.name]: event.target.value
+      }
+    });
   };
 
   render() {
@@ -191,7 +212,7 @@ export default class Filters extends React.Component {
             </Styled.Field>
             <Styled.Field>
               <Textarea
-                value={this.state.ids}
+                value={this.state.filter.ids}
                 name={FIELDS.ids.name}
                 placeholder={FIELDS.ids.placeholder}
                 onBlur={this.handleFieldChange}
@@ -200,7 +221,7 @@ export default class Filters extends React.Component {
             </Styled.Field>
             <Styled.Field>
               <TextInput
-                value={this.state.errorMessage}
+                value={this.state.filter.errorMessage}
                 name={FIELDS.errorMessage.name}
                 placeholder={FIELDS.errorMessage.placeholder}
                 onBlur={this.handleFieldChange}

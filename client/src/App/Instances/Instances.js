@@ -24,18 +24,15 @@ import ListView from './ListView';
 import Filters from './Filters';
 import Selections from './Selections';
 
+import sortArrayByKey from 'modules/utils/sortArrayByKey';
+
 import {
   parseQueryString,
   createNewSelectionFragment,
-  getPayload
+  getPayload,
+  decodeFields
 } from './service';
 import * as Styled from './styled.js';
-
-function sortArrayByKey(array, key) {
-  return [...array].sort(function(a, b) {
-    return a[key].toLowerCase().localeCompare(b[key].toLowerCase());
-  });
-}
 
 class Instances extends Component {
   static propTypes = {
@@ -155,8 +152,7 @@ class Instances extends Component {
       this.setFilterInURL(filter);
     }
 
-    // filter is valid
-    this.setState({filter}, () => {
+    this.setState({filter: {...decodeFields(filter)}}, () => {
       this.handleFilterCount();
     });
   };

@@ -1,5 +1,5 @@
 import {isValid, addDays, startOfDay, addMinutes, format} from 'date-fns';
-import {ALL_VERSIONS_OPTION} from './constants';
+import {ALL_VERSIONS_OPTION, DEFAULT_CONTROLLED_VALUES} from './constants';
 
 export function parseWorkflowNames(workflows = []) {
   return workflows.map(item => ({
@@ -62,3 +62,11 @@ export const fieldParser = {
   },
   activityId: value => value
 };
+
+// prevents controlled filter filds from receiving undefined values
+export function getFilterWithDefaults(filter) {
+  return {
+    ...DEFAULT_CONTROLLED_VALUES,
+    ...filter
+  };
+}
