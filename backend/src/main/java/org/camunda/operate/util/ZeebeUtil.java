@@ -103,7 +103,7 @@ public class ZeebeUtil {
     final WorkflowInstanceEvent workflowInstanceEvent =
       client.topicClient(topic).workflowClient()
       .newCreateInstanceCommand().bpmnProcessId(bpmnProcessId)
-      .latestVersion()
+      .latestVersionForce()
       .payload(payload)
       .send().join();
     logger.debug("Workflow instance created for workflow [{}]", bpmnProcessId);

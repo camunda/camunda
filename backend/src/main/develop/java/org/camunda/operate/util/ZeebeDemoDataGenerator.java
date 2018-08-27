@@ -77,7 +77,6 @@ public class ZeebeDemoDataGenerator {
     jobWorkers.add(progressSimpleTask("taskG"));
     jobWorkers.add(progressSimpleTask("taskH"));
 
-
     jobWorkers.add(progressSimpleTask("requestPayment"));
     jobWorkers.add(progressSimpleTask("shipArticles"));
 
@@ -87,7 +86,12 @@ public class ZeebeDemoDataGenerator {
 
     //    final TopicSubscription updateRetriesIncidentSubscription = updateRetries();
 
+    //start more instances after 1 minute
     ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    scheduler.schedule(() ->
+      startWorkflowInstances(1)
+    , 1, TimeUnit.MINUTES);
+
     scheduler.schedule(() -> {
       for (JobWorker subscription: jobWorkers) {
         subscription.close();
@@ -119,19 +123,22 @@ public class ZeebeDemoDataGenerator {
       .newWorker()
       .jobType("checkPayment")
       .handler((jobClient, job) -> {
-        final int scenario = random.nextInt(10);
-        if (scenario<5) {
+        final int scenario = random.nextInt(6);
+        switch (scenario){
+        case 0:
           //fail
           throw new RuntimeException("Payment system not available.");
-        } else if (scenario<9) {
-          if (scenario<7) {
-            jobClient.newCompleteCommand(job).payload("{\"paid\":false}").send().join();
-          } else {
-//            jobClient.newCompleteCommand(job).payload("{\"paid\":true}").send().join();
-            jobClient.newCompleteCommand(job).send().join();
-          }
-        } else {
-          //leave the task active
+        case 1:
+          jobClient.newCompleteCommand(job).payload("{\"paid\":false}").send().join();
+          break;
+        case 2:
+        case 3:
+        case 4:
+          jobClient.newCompleteCommand(job).payload("{\"paid\":true}").send().join();
+          break;
+        case 5:
+          jobClient.newCompleteCommand(job).send().join();    //incident in gateway for v.1
+          break;
         }
       })
       .name("operate")
@@ -144,12 +151,14 @@ public class ZeebeDemoDataGenerator {
     return client.topicClient(topic).jobClient().newWorker()
       .jobType("checkItems")
       .handler((jobClient, job) -> {
-        final int scenario = random.nextInt(2);
+        final int scenario = random.nextInt(4);
         switch (scenario) {
         case 0:
+        case 1:
+        case 2:
           jobClient.newCompleteCommand(job).payload("{\"smthIsMissing\":false}").send().join();
           break;
-        case 1:
+        case 4:
           jobClient.newCompleteCommand(job).payload("{\"smthIsMissing\":true}").send().join();
           break;
         }
