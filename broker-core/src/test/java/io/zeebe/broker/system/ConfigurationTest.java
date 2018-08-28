@@ -31,12 +31,17 @@ import io.zeebe.broker.system.configuration.SocketBindingSubscriptionCfg;
 import io.zeebe.broker.system.configuration.TomlConfigurationReader;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
+import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import org.assertj.core.api.Condition;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 
 public class ConfigurationTest {
+
+  @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   public Map<String, String> environment = new HashMap<>();
 
@@ -124,7 +129,8 @@ public class ConfigurationTest {
                     + "id=\"internal-2\"")
                 .getBytes());
     final BrokerCfg config = TomlConfigurationReader.read(input);
-    final String base = "/opt/zeebe";
+    final String base = temporaryFolder.getRoot().getAbsolutePath();
+    final String jarFile = Paths.get(base, "exporters", "exporter.jar").toAbsolutePath().toString();
 
     // when
     config.init(base);
@@ -132,7 +138,7 @@ public class ConfigurationTest {
     // then
     assertThat(config.getExporters()).hasSize(3);
     assertThat(config.getExporters().get(0))
-        .hasFieldOrPropertyWithValue("jarPath", base + "/exporters/exporter.jar")
+        .hasFieldOrPropertyWithValue("jarPath", jarFile)
         .is(new Condition<>(ExporterCfg::isExternal, "is external"));
     assertThat(config.getExporters().get(1).isExternal()).isFalse();
     assertThat(config.getExporters().get(2).isExternal()).isFalse();

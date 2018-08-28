@@ -18,6 +18,7 @@ package io.zeebe.logstreams.impl.snapshot.fs;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.spi.SnapshotMetadata;
 import io.zeebe.logstreams.spi.SnapshotStorage;
+import io.zeebe.util.FileUtil;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -74,8 +75,8 @@ public class FsSnapshotStorage implements SnapshotStorage {
     boolean deletionSuccessful = false;
     if (snapshotFiles.size() > 0) {
       for (File snapshotFile : snapshotFiles) {
-        getChecksumFile(snapshotFile, name).delete();
-        snapshotFile.delete();
+        FileUtil.deleteFile(getChecksumFile(snapshotFile, name));
+        FileUtil.deleteFile(snapshotFile);
       }
 
       deletionSuccessful = true;
@@ -102,7 +103,7 @@ public class FsSnapshotStorage implements SnapshotStorage {
     try {
       snapshotFile.createNewFile();
     } catch (IOException e) {
-      snapshotFile.delete();
+      FileUtil.deleteFile(snapshotFile);
       throw e;
     }
 

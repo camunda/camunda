@@ -85,8 +85,8 @@ public class RaftPersistentConfiguration implements RaftPersistentStorage {
   }
 
   public void delete() {
-    file.delete();
-    tmpFile.delete();
+    FileUtil.deleteFile(file);
+    FileUtil.deleteFile(tmpFile);
   }
 
   @Override

@@ -104,9 +104,7 @@ public class FsLogSegment {
 
   public void delete() {
     final File file = new File(fileName);
-    if (file.exists()) {
-      file.delete();
-    }
+    FileUtil.deleteFile(file);
   }
 
   public String getFileName() {

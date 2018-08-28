@@ -362,10 +362,7 @@ public class FsLogStorage implements LogStorage {
   protected void deleteBackupFilesIfExist(File logDir) {
     final List<File> backupFiles =
         Arrays.asList(logDir.listFiles(config::matchesBackupFileNamePattern));
-    backupFiles.forEach(
-        (file) -> {
-          file.delete();
-        });
+    backupFiles.forEach(FileUtil::deleteFile);
   }
 
   protected void applyTruncatedFileIfExists(File logDir) {
@@ -380,10 +377,7 @@ public class FsLogStorage implements LogStorage {
       if (shouldApplyTruncatedSegment(logDir, truncatedFile, truncatedSegmentId)) {
         moveFile(truncatedFile.getAbsolutePath(), config.fileName(truncatedSegmentId));
       } else {
-        truncatedFiles.forEach(
-            (file) -> {
-              file.delete();
-            });
+        truncatedFiles.forEach(FileUtil::deleteFile);
       }
 
     } else if (truncatedApplicableFiles > 1) {

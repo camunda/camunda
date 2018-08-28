@@ -23,6 +23,7 @@ import static org.junit.Assume.assumeTrue;
 
 import io.zeebe.broker.exporter.util.JarCreatorRule;
 import io.zeebe.broker.exporter.util.TestJarExporter;
+import io.zeebe.util.FileUtil;
 import java.io.File;
 import java.io.IOException;
 import org.junit.Rule;
@@ -51,11 +52,10 @@ public class ExporterJarRepositoryTest {
   @Test
   public void shouldThrowExceptionOnLoadIfNotReadable() throws Exception {
     // given
-    assumeTrue(!System.getProperty("os.name").startsWith("Windows"));
     final File dummy = temporaryFolder.newFile("unreadable.jar");
 
-    // when
-    dummy.setReadable(false);
+    // when (ignoring test if file cannot be set to not be readable)
+    assumeTrue(dummy.setReadable(false));
 
     // then
     // System.out.println("was set = " + isSet);
@@ -69,7 +69,7 @@ public class ExporterJarRepositoryTest {
     final File dummy = temporaryFolder.newFile("missing.jar");
 
     // when
-    dummy.delete();
+    FileUtil.deleteFile(dummy);
 
     // then
     assertThatThrownBy(() -> jarRepository.load(dummy.getAbsolutePath()))
