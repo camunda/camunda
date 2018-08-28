@@ -74,7 +74,6 @@ import io.zeebe.model.bpmn.instance.TimeDuration;
 import io.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.zeebe.model.bpmn.instance.Transaction;
 import io.zeebe.model.bpmn.instance.UserTask;
-import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
 import org.camunda.bpm.model.xml.Model;
@@ -86,14 +85,11 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
-/** @author Sebastian Menski */
 public class ProcessBuilderTest {
 
   public static final String TIMER_DATE = "2011-03-11T12:13:14Z";
   public static final String TIMER_DURATION = "P10D";
   public static final String TIMER_CYCLE = "R3/PT10H";
-
-  public static final String FAILED_JOB_RETRY_TIME_CYCLE = "R5/PT1M";
 
   @Rule public ExpectedException thrown = ExpectedException.none();
 
@@ -113,7 +109,7 @@ public class ProcessBuilderTest {
   }
 
   @After
-  public void validateModel() throws IOException {
+  public void validateModel() {
     if (modelInstance != null) {
       Bpmn.validateModel(modelInstance);
     }
@@ -2013,11 +2009,11 @@ public class ProcessBuilderTest {
     final SubProcess subProcess = eventSubProcess.getElement();
 
     // no input or output from the sub process
-    assertThat(subProcess.getIncoming().isEmpty());
-    assertThat(subProcess.getOutgoing().isEmpty());
+    assertThat(subProcess.getIncoming()).isEmpty();
+    assertThat(subProcess.getOutgoing()).isEmpty();
 
     // subProcess was triggered by event
-    assertThat(eventSubProcess.getElement().triggeredByEvent());
+    assertThat(eventSubProcess.getElement().triggeredByEvent()).isTrue();
 
     // subProcess contains startEvent, sendTask and endEvent
     assertThat(subProcess.getChildElementsByType(StartEvent.class)).isNotNull();
@@ -2054,11 +2050,11 @@ public class ProcessBuilderTest {
     final SubProcess eventSubProcess = modelInstance.getModelElementById("myeventsubprocess");
 
     // no input or output from the sub process
-    assertThat(eventSubProcess.getIncoming().isEmpty());
-    assertThat(eventSubProcess.getOutgoing().isEmpty());
+    assertThat(eventSubProcess.getIncoming()).isEmpty();
+    assertThat(eventSubProcess.getOutgoing()).isEmpty();
 
     // subProcess was triggered by event
-    assertThat(eventSubProcess.triggeredByEvent());
+    assertThat(eventSubProcess.triggeredByEvent()).isTrue();
 
     // subProcess contains startEvent, sendTask and endEvent
     assertThat(eventSubProcess.getChildElementsByType(StartEvent.class)).isNotNull();

@@ -19,7 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.map.iterator.Long2LongZbMapEntry;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
@@ -37,7 +36,7 @@ public class Long2LongZbMapLargeBlockSizeTest {
   @Rule public ExpectedException expectedException = ExpectedException.none();
 
   @Before
-  public void createmap() throws Exception {
+  public void createMap() {
     map = new Long2LongZbMap(16, 3);
   }
 
@@ -49,7 +48,7 @@ public class Long2LongZbMapLargeBlockSizeTest {
   @Test
   public void shouldReturnMissingValueForEmptyMap() {
     // given that the map is empty
-    assertThat(map.get(0, MISSING_VALUE) == MISSING_VALUE);
+    assertThat(map.get(0, MISSING_VALUE)).isEqualTo(MISSING_VALUE);
   }
 
   @Test
@@ -58,7 +57,7 @@ public class Long2LongZbMapLargeBlockSizeTest {
     map.put(1, 1);
 
     // then
-    assertThat(map.get(0, MISSING_VALUE) == MISSING_VALUE);
+    assertThat(map.get(0, MISSING_VALUE)).isEqualTo(MISSING_VALUE);
   }
 
   @Test
@@ -203,10 +202,7 @@ public class Long2LongZbMapLargeBlockSizeTest {
     // if then
     final List<Long> foundKeys = new ArrayList<>();
 
-    final Iterator<Long2LongZbMapEntry> iterator = map.iterator();
-    while (iterator.hasNext()) {
-      final Long2LongZbMapEntry entry = iterator.next();
-
+    for (Long2LongZbMapEntry entry : map) {
       assertThat(entry.getKey()).isEqualTo(entry.getValue());
 
       foundKeys.add(entry.getKey());

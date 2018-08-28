@@ -440,12 +440,6 @@ public class CreateWorkflowInstanceTest {
 
     final long workflowInstance1 = testClient.createWorkflowInstance("process");
 
-    testClient
-        .receiveEvents()
-        .ofTypeWorkflowInstance()
-        .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-        .getFirst();
-
     // when
     testClient.deploy(workflow);
 
@@ -492,12 +486,6 @@ public class CreateWorkflowInstanceTest {
     testClient.deploy(workflow);
 
     final long workflowInstance1 = testClient.createWorkflowInstance("process");
-
-    testClient
-        .receiveEvents()
-        .ofTypeWorkflowInstance()
-        .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-        .getFirst();
 
     // when
     testClient.deploy(workflow);
@@ -561,7 +549,7 @@ public class CreateWorkflowInstanceTest {
   }
 
   @Test
-  public void shouldCreateWorkflowInstanceOnAllPartitions() throws Exception {
+  public void shouldCreateWorkflowInstanceOnAllPartitions() {
     // given
     final int partitions = 3;
 

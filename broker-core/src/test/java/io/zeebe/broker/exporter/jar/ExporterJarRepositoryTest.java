@@ -81,8 +81,8 @@ public class ExporterJarRepositoryTest {
     // given
     final File dummy = temporaryFolder.newFile("readable.jar");
 
-    // when
-    dummy.setReadable(true);
+    // when (ignoring test if file cannot be set to be readable)
+    assumeTrue(dummy.setReadable(true));
 
     // then
     assertThat(jarRepository.load(dummy.getAbsolutePath()))

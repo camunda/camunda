@@ -271,7 +271,6 @@ public class PublishMessageTest {
 
     // when
     final TestTopicClient testClient = apiRule.topic();
-    testClient.receiveEvents().filter(intent(MessageIntent.PUBLISHED)).findFirst();
 
     brokerRule
         .getClock()
@@ -311,7 +310,6 @@ public class PublishMessageTest {
 
     // when
     final TestTopicClient testClient = apiRule.topic();
-    testClient.receiveEvents().filter(intent(MessageIntent.PUBLISHED)).findFirst();
 
     brokerRule.getClock().addTime(MessageStreamProcessor.MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL);
 

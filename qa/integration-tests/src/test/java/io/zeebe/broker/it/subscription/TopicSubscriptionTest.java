@@ -85,7 +85,7 @@ public class TopicSubscriptionTest {
         client.newSubscription().name(SUBSCRIPTION_NAME).recordHandler(recordingHandler).open();
 
     // then
-    assertThat(subscription.isOpen());
+    assertThat(subscription.isOpen()).isTrue();
   }
 
   @Test
@@ -156,7 +156,7 @@ public class TopicSubscriptionTest {
   }
 
   @Test
-  public void shouldReceiveEventsFromPosition() throws IOException {
+  public void shouldReceiveEventsFromPosition() {
     client.jobClient().newCreateCommand().jobType("foo").send().join();
 
     client
@@ -211,7 +211,7 @@ public class TopicSubscriptionTest {
     waitUntil(() -> recordingHandler.numJobRecords() == 2);
 
     // the events are nevertheless received, although they have a lower position
-    assertThat(recordingHandler.numJobRecords() == 2);
+    assertThat(recordingHandler.numJobRecords()).isEqualTo(2);
   }
 
   @Test
@@ -233,7 +233,7 @@ public class TopicSubscriptionTest {
   }
 
   @Test
-  public void shouldRepeatedlyRecoverSubscription() throws InterruptedException {
+  public void shouldRepeatedlyRecoverSubscription() {
     for (int i = 0; i < 100; i++) {
       // given
       final TopicSubscription subscription =
