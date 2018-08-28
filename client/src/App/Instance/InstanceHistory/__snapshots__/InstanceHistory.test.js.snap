@@ -5,9 +5,11 @@ exports[`InstanceHistory should render a pane with InstanceLog section and Copyr
   activitiesDetails={
     Object {
       "bar": Object {
+        "activityId": "barAID",
         "name": "bar name",
       },
       "foo": Object {
+        "activityId": "fooAID",
         "name": "foo name",
       },
     }
@@ -18,7 +20,7 @@ exports[`InstanceHistory should render a pane with InstanceLog section and Copyr
     }
   }
   onActivitySelected={[Function]}
-  selectedActivityId="foo"
+  selectedActivityId="fooAID"
 >
   <PanelHeader
     isRounded={false}
@@ -30,9 +32,11 @@ exports[`InstanceHistory should render a pane with InstanceLog section and Copyr
       activitiesDetails={
         Object {
           "bar": Object {
+            "activityId": "barAID",
             "name": "bar name",
           },
           "foo": Object {
+            "activityId": "fooAID",
             "name": "foo name",
           },
         }
@@ -43,49 +47,21 @@ exports[`InstanceHistory should render a pane with InstanceLog section and Copyr
         }
       }
       onActivitySelected={[Function]}
-      selectedActivityId="foo"
+      selectedActivityId="fooAID"
     />
     <InstanceEvents
       groupedEvents={
         Array [
           Object {
-            "events": Array [
-              Object {
-                "activityInstanceId": "foo",
-                "eventType": "fooCreated",
-                "metadata": Object {
-                  "a": "b",
-                },
-              },
-              Object {
-                "activityInstanceId": "foo",
-                "eventType": "fooActiviated",
-              },
-            ],
-            "name": "foo name",
-          },
-          Object {
-            "events": Array [
-              Object {
-                "activityInstanceId": "bar",
-                "eventType": "barCreated",
-              },
-              Object {
-                "activityInstanceId": "bar",
-                "eventType": "barActivated",
-              },
-            ],
-            "name": "bar name",
-          },
-          Object {
-            "eventType": "baz",
+            "activityInstanceId": "foo",
+            "eventType": "fooCreated",
             "metadata": Object {
-              "c": Object {
-                "d": "e",
-                "e": null,
-              },
-              "f": null,
+              "a": "b",
             },
+          },
+          Object {
+            "activityInstanceId": "foo",
+            "eventType": "fooActiviated",
           },
         ]
       }

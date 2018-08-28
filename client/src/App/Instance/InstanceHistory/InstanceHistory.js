@@ -7,7 +7,7 @@ import {fetchEvents} from 'modules/api/events';
 
 import InstanceLog from './InstanceLog';
 import InstanceEvents from './InstanceEvents';
-import {getGroupedEvents} from './service';
+import {getGroupedEvents, getEventsBySelectedActivityId} from './service';
 import * as Styled from './styled';
 
 export default class InstanceHistory extends React.Component {
@@ -29,7 +29,7 @@ export default class InstanceHistory extends React.Component {
   }
 
   componentDidUpdate(prevProps, prevState) {
-    const {activitiesDetails, selectedActivityId} = this.props;
+    const {activitiesDetails} = this.props;
     const {events} = this.state;
 
     if (!activitiesDetails || !events) {
@@ -38,19 +38,12 @@ export default class InstanceHistory extends React.Component {
 
     const haveActivitiesDetailsChanged =
       activitiesDetails !== prevProps.activitiesDetails;
-    const hasSelectedActivityIdChanged =
-      selectedActivityId !== prevProps.selectedActivityId;
     const haveEventsChanged = events !== prevState.events;
 
-    if (
-      haveActivitiesDetailsChanged ||
-      haveEventsChanged ||
-      hasSelectedActivityIdChanged
-    ) {
+    if (haveActivitiesDetailsChanged || haveEventsChanged) {
       const groupedEvents = getGroupedEvents({
         events: this.state.events,
-        activitiesDetails,
-        selectedActivityId
+        activitiesDetails
       });
 
       this.setState({groupedEvents});
@@ -58,6 +51,13 @@ export default class InstanceHistory extends React.Component {
   }
 
   render() {
+    const filteredGroupedEvents = !this.state.groupedEvents
+      ? null
+      : getEventsBySelectedActivityId({
+          selectedActivityId: this.props.selectedActivityId,
+          groupedEvents: this.state.groupedEvents
+        });
+
     return (
       <SplitPane.Pane {...this.props}>
         <SplitPane.Pane.Header>Instance History</SplitPane.Pane.Header>
@@ -68,7 +68,7 @@ export default class InstanceHistory extends React.Component {
             selectedActivityId={this.props.selectedActivityId}
             onActivitySelected={this.props.onActivitySelected}
           />
-          <InstanceEvents groupedEvents={this.state.groupedEvents} />
+          <InstanceEvents groupedEvents={filteredGroupedEvents} />
           <Styled.Section>C</Styled.Section>
         </Styled.PaneBody>
         <Styled.PaneFooter>

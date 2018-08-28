@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 import {getWorkflowName} from 'modules/utils/instance';
 import {HEADER} from 'modules/constants';
 
-import {mapActivityIdToActivityInstanceId} from '../service';
+import {getActivityInstanceIdByActivityId} from './service';
 import * as Styled from './styled';
 
 export default class InstanceLog extends React.Component {
@@ -30,7 +30,8 @@ export default class InstanceLog extends React.Component {
 
   renderLogEntry = ([id, {state, type, name}]) => {
     const {activitiesDetails, selectedActivityId} = this.props;
-    const selectedActivityInstanceId = mapActivityIdToActivityInstanceId(
+
+    const selectedActivityInstanceId = getActivityInstanceIdByActivityId(
       activitiesDetails,
       selectedActivityId
     );

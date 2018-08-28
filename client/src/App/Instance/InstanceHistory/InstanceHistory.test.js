@@ -56,25 +56,9 @@ const mockEvents = [
 ];
 
 const mockActivitiesDetails = {
-  foo: {name: 'foo name'},
-  bar: {name: 'bar name'}
+  foo: {name: 'foo name', activityId: 'fooAID'},
+  bar: {name: 'bar name', activityId: 'barAID'}
 };
-
-const fooGroupedEvents = {
-  ...mockActivitiesDetails.foo,
-  events: fooActivityEvents
-};
-
-const barGroupedEvents = {
-  ...mockActivitiesDetails.bar,
-  events: barActivityEvents
-};
-
-const expectedGroupedEvents = [
-  {...fooGroupedEvents},
-  {...barGroupedEvents},
-  ...instanceEvents
-];
 
 api.fetchEvents = mockResolvedAsyncFn(mockEvents);
 
@@ -94,7 +78,7 @@ describe('InstanceHistory', () => {
     // given
     const mockProps = {
       instance: {id: 'someInstanceId'},
-      selectedActivityId: 'foo',
+      selectedActivityId: 'fooAID',
       onActivitySelected: jest.fn()
     };
 
@@ -133,9 +117,7 @@ describe('InstanceHistory', () => {
     // Instance Events
     const InstanceEventsNode = PaneBodyNode.find(InstanceEvents);
     expect(InstanceEventsNode).toHaveLength(1);
-    expect(InstanceEventsNode.prop('groupedEvents')).toEqual(
-      expectedGroupedEvents
-    );
+    expect(InstanceEventsNode.prop('groupedEvents')).toEqual(fooActivityEvents);
 
     // Pane Footer
     const PaneFooterNode = node.find(Styled.PaneFooter);

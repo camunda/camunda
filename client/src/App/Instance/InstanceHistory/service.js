@@ -1,19 +1,4 @@
 /**
- * gets the activityInstanceId from activityId
- * @param {*} activitiesDetails
- * @param {*} selectedActivityId
- */
-export function mapActivityIdToActivityInstanceId(
-  activitiesDetails,
-  activityId
-) {
-  return Object.keys(activitiesDetails).find(
-    activityInstanceId =>
-      activitiesDetails[activityInstanceId].activityId === activityId
-  );
-}
-
-/**
  * @returns {Array} of both:
  *  (1) events that don't have any activityInstanceId
  *  (2) events grouped by activityInstanceId
@@ -28,46 +13,45 @@ export function mapActivityIdToActivityInstanceId(
  *  }
  * ]
  */
-export function getGroupedEvents({
-  events,
-  activitiesDetails,
-  selectedActivityId
-}) {
-  let groupedEvents = [];
+export function getGroupedEvents({events, activitiesDetails}) {
   // make a deep clone of the activitiesDetails object
   let activitiesEvents = JSON.parse(JSON.stringify(activitiesDetails));
-  const selectedActivityInstanceId = mapActivityIdToActivityInstanceId(
-    activitiesDetails,
-    selectedActivityId
-  );
 
+  let groupedEvents = [];
   events.forEach(event => {
-    if (
-      selectedActivityInstanceId &&
-      selectedActivityInstanceId !== event.activityInstanceId
-    ) {
-      return;
-    }
-
     // if it doesn't have an activityInstanceId it doesn't belong to an activity events group
-    if (
-      !event.activityInstanceId ||
-      selectedActivityInstanceId === event.activityInstanceId
-    ) {
+    if (!event.activityInstanceId) {
       return groupedEvents.push(event);
     }
 
-    const targetActivityInstance = activitiesEvents[event.activityInstanceId];
+    // eventActivityInstance = activity instance related to this event
+    const eventActivityInstance = activitiesEvents[event.activityInstanceId];
 
-    if (!targetActivityInstance.events) {
-      targetActivityInstance.events = [event];
-      // this allows to only push once a reference to the targetActivityInstance object to groupedEvents
-      return groupedEvents.push(targetActivityInstance);
+    // If the eventActivityInstance doesn't have events, it means that it has not been pushed to
+    // the groupedEvents yet.
+    // Therefore, we add to it an events array here containing the current event and we push it to
+    // the groupedEvents array.
+    if (!eventActivityInstance.events) {
+      eventActivityInstance.events = [event];
+      return groupedEvents.push(eventActivityInstance);
     }
 
-    // modifying the targetActivityInstance object will also affect the one in the array since it's a reference
-    targetActivityInstance.events.push(event);
+    // If the eventActivityInstance has events, it means it has already been pushed to the groupedEvents.
+    // Therefore, we push in it the current event.
+    // Notice that modifying the eventActivityInstance object will also affect the one in the array since
+    // it's a reference
+    eventActivityInstance.events.push(event);
   });
 
   return groupedEvents;
+}
+
+export function getEventsBySelectedActivityId({
+  selectedActivityId,
+  groupedEvents
+}) {
+  return !selectedActivityId
+    ? groupedEvents
+    : groupedEvents.find(({activityId}) => activityId === selectedActivityId)
+        .events;
 }
