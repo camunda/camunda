@@ -41,7 +41,7 @@ exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
     key="1"
   >
     <Themed(styled.button)
-      data-test-key="1"
+      data-test="1"
       isSelected={false}
       onClick={[Function]}
     >
@@ -57,7 +57,7 @@ exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
     key="2"
   >
     <Themed(styled.button)
-      data-test-key="2"
+      data-test="2"
       isSelected={false}
       onClick={[Function]}
     >

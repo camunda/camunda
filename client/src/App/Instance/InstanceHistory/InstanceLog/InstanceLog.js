@@ -38,7 +38,7 @@ export default class InstanceLog extends React.Component {
     return (
       <Styled.LogEntry key={id}>
         <Styled.LogEntryToggle
-          data-test-key={id}
+          data-test={id}
           isSelected={id === selectedActivityInstanceId}
           onClick={() =>
             this.props.onActivitySelected(activitiesDetails[id].activityId)

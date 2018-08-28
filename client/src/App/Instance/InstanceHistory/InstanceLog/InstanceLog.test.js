@@ -125,7 +125,7 @@ describe('InstanceLog', () => {
         LogEntryToggleNode.simulate('click');
 
         // then
-        const id = LogEntryToggleNode.prop('data-test-key');
+        const id = LogEntryToggleNode.prop('data-test');
         expect(mockProps.onActivitySelected).toBeCalledWith(
           mockProps.activitiesDetails[id].activityId
         );
