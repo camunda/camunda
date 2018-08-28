@@ -11,29 +11,42 @@ export default class InstanceEvents extends React.Component {
     groupedEvents: PropTypes.array
   };
 
-  renderData = data => {
-    return Object.entries(data)
-      .filter(([_, value]) => {
-        if (typeof value === 'object') {
-          return !isEmpty(value);
-        }
+  /**
+   * Filters foldable details and renders them properly
+   * @param {object} details
+   */
+  renderFoldableDetails = details => {
+    return (
+      Object.entries(details)
+        // filter out empty primitives and objects
+        .filter(([_, value]) => {
+          if (typeof value === 'object') {
+            return !isEmpty(value);
+          }
 
-        return Boolean(value);
-      })
-      .map(([key, value], idx) => {
-        if (typeof value !== 'object') {
+          return Boolean(value);
+        })
+        .map(([key, value], idx) => {
+          // if the value is a primitive, render a DataEntry
+          if (typeof value !== 'object') {
+            return (
+              <Styled.DataEntry
+                key={idx}
+              >{`${key}: ${value}`}</Styled.DataEntry>
+            );
+          }
+
+          // if the value is of type object, render a Foldable
           return (
-            <Styled.DataEntry key={idx}>{`${key}: ${value}`}</Styled.DataEntry>
+            <Foldable key={idx}>
+              <Foldable.Summary>{key}</Foldable.Summary>
+              <Foldable.Details>
+                {this.renderFoldableDetails(value)}
+              </Foldable.Details>
+            </Foldable>
           );
-        }
-
-        return (
-          <Foldable key={idx}>
-            <Foldable.Summary>{key}</Foldable.Summary>
-            <Foldable.Details>{this.renderData(value)}</Foldable.Details>
-          </Foldable>
-        );
-      });
+        })
+    );
   };
 
   renderEvent = ({eventType, metadata}, idx) => {
@@ -45,7 +58,7 @@ export default class InstanceEvents extends React.Component {
           {eventType}
         </Foldable.Summary>
         <Foldable.Details>
-          {!!metadata && this.renderData(metadata)}
+          {!!metadata && this.renderFoldableDetails(metadata)}
         </Foldable.Details>
       </Foldable>
     );
