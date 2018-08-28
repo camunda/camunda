@@ -134,10 +134,11 @@ public class CombinedReportHandlingIT {
   @Test
   public void reportEvaluationReturnsMetaData() {
     // given
+    ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
+    String singleReportId = createNewSingleMapReport(engineDto);
     String reportId = createNewCombinedReport();
     CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
-    CombinedReportDataDto dataDto = new CombinedReportDataDto();
-    report.setData(createCombinedReport());
+    report.setData(createCombinedReport(singleReportId));
     report.setName("name");
     OffsetDateTime now = OffsetDateTime.now();
     report.setOwner("owner");
@@ -153,6 +154,11 @@ public class CombinedReportHandlingIT {
     assertThat(result.getCreated().truncatedTo(ChronoUnit.DAYS), is(now.truncatedTo(ChronoUnit.DAYS)));
     assertThat(result.getLastModifier(), is(DEFAULT_USERNAME));
     assertThat(result.getLastModified().truncatedTo(ChronoUnit.DAYS), is(now.truncatedTo(ChronoUnit.DAYS)));
+    assertThat(result.getData(), is(notNullValue()));
+    CombinedReportDataDto dataDto = result.getData();
+    assertThat(dataDto.getReportIds().size(), is(1));
+    assertThat(dataDto.getReportIds().get(0), is(singleReportId));
+    assertThat(dataDto.getConfiguration(), is("aRandomConfiguration"));
   }
 
   @Test

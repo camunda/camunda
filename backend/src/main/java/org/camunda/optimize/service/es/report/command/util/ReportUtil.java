@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es.report.command.util;
 
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.SingleReportResultDto;
@@ -48,6 +49,10 @@ public class ReportUtil {
     }
   }
 
+  public static void copyCombinedReportMetaData(CombinedReportDefinitionDto from, CombinedReportDefinitionDto to) {
+    copyMetaData(from, to);
+    to.setData(from.getData());
+  }
 
   public static void copyMetaData(ReportDefinitionDto from, ReportDefinitionDto to) {
     to.setId(from.getId());

@@ -84,7 +84,7 @@ public abstract class ReportEvaluationHandler {
     CombinedMapReportResultDto combinedReportResult =
       new CombinedMapReportResultDto();
     combinedReportResult.setResult(reportIdToMapResult);
-    ReportUtil.copyMetaData(combinedReportDefinition, combinedReportResult);
+    ReportUtil.copyCombinedReportMetaData(combinedReportDefinition, combinedReportResult);
     return combinedReportResult;
   }
 
