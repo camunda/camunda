@@ -26,9 +26,6 @@ import java.util.List;
  * <p>See {@link io.zeebe.protocol.intent.DeploymentIntent} for intents.
  */
 public interface DeploymentRecordValue extends RecordValue {
-  /** @return the name of the topic to deploy to */
-  String getDeploymentTopic();
-
   /** @return the resources to deploy */
   List<DeploymentResource> getResources();
 

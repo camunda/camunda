@@ -13,10 +13,10 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.exporter.record.value.raft;
+package io.zeebe.exporter.record.value.deployment;
 
-/** Represents a single Raft member. */
-public interface RaftMember {
-  /** @return the node id of the member */
-  int getNodeId();
+public enum ResourceType {
+  BPMN_XML,
+
+  YAML_WORKFLOW
 }

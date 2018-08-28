@@ -15,25 +15,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.clustering.orchestration.id;
+package io.zeebe.broker.exporter.repo;
 
-import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.property.IntegerProperty;
+public class ExporterInstantiationException extends RuntimeException {
+  private static final long serialVersionUID = -7231999951981994615L;
+  private static final String MESSAGE_FORMAT = "Cannot instantiate exporter [%s]";
 
-public class IdRecord extends UnpackedObject {
-
-  private final IntegerProperty id = new IntegerProperty("id");
-
-  public IdRecord() {
-    this.declareProperty(id);
-  }
-
-  public Integer getId() {
-    return id.getValue();
-  }
-
-  public IdRecord setId(final int id) {
-    this.id.setValue(id);
-    return this;
+  public ExporterInstantiationException(final String id, Throwable cause) {
+    super(String.format(MESSAGE_FORMAT, id), cause);
   }
 }

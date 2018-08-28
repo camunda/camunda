@@ -15,25 +15,20 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.clustering.orchestration.id;
+package io.zeebe.broker.exporter.record;
 
-import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.property.IntegerProperty;
+import io.zeebe.exporter.record.RecordValue;
+import io.zeebe.gateway.impl.data.ZeebeObjectMapperImpl;
 
-public class IdRecord extends UnpackedObject {
+public abstract class RecordValueImpl implements RecordValue {
+  protected final ZeebeObjectMapperImpl objectMapper;
 
-  private final IntegerProperty id = new IntegerProperty("id");
-
-  public IdRecord() {
-    this.declareProperty(id);
+  public RecordValueImpl(ZeebeObjectMapperImpl objectMapper) {
+    this.objectMapper = objectMapper;
   }
 
-  public Integer getId() {
-    return id.getValue();
-  }
-
-  public IdRecord setId(final int id) {
-    this.id.setValue(id);
-    return this;
+  @Override
+  public String toJson() {
+    return objectMapper.toJson(this);
   }
 }

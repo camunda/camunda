@@ -19,34 +19,14 @@ import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.Intent;
-import java.time.Instant;
 
 /** Encapsulates metadata information shared by all records. */
 public interface RecordMetadata {
-  /**
-   * Retrieves the key of the record.
-   *
-   * <p>Multiple records can have the same key if they belongs to the same logical entity. Keys are
-   * unique for the combination of topic, partition and record type.
-   *
-   * @return the key of the record
-   */
-  long getKey();
-
   /** @return the intent of the record */
   Intent getIntent();
 
   /** @return the partition ID on which the record was published */
   int getPartitionId();
-
-  /**
-   * Retrieves the position of the record. Positions are locally unique to the partition, and
-   * monotonically increasing. Records are then ordered on the partition by their positions, i.e.
-   * lower position means the record was published earlier.
-   *
-   * @return position the record
-   */
-  long getPosition();
 
   /** @return the type of the record (event, command or command rejection) */
   RecordType getRecordType();
@@ -62,22 +42,6 @@ public interface RecordMetadata {
    *     io.zeebe.protocol.clientapi.RecordType#COMMAND_REJECTION} or else <code>null</code>.
    */
   String getRejectionReason();
-
-  /**
-   * Returns the position of the source record. The source record denotes the record which caused
-   * the current record. It can be unset (meaning there is no source record), at which point the
-   * position returned here will be -1. Anything >= 0 implies a source record.
-   *
-   * @return position of the source record
-   */
-  long getSourceRecordPosition();
-
-  /**
-   * Returns the instant at which the record was published on the partition.
-   *
-   * @return timestamp of the event
-   */
-  Instant getTimestamp();
 
   /** @return the type of the record (e.g. job, workflow, workflow instance, etc.) */
   ValueType getValueType();

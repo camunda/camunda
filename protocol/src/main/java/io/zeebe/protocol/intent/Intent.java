@@ -81,6 +81,8 @@ public interface Intent {
         return MessageSubscriptionIntent.from(intent);
       case WORKFLOW_INSTANCE_SUBSCRIPTION:
         return WorkflowInstanceSubscriptionIntent.from(intent);
+      case EXPORTER:
+        return ExporterIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;

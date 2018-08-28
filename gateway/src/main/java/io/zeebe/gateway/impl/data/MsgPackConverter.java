@@ -56,7 +56,11 @@ public class MsgPackConverter {
   }
 
   public String convertToJson(byte[] msgPack) {
-    final byte[] jsonBytes = convertToJsonBytes(msgPack);
+    return convertToJson(new ByteArrayInputStream(msgPack));
+  }
+
+  public String convertToJson(InputStream msgPackInputStream) {
+    final byte[] jsonBytes = convertToJsonBytes(msgPackInputStream);
     return new String(jsonBytes, JSON_CHARSET);
   }
 
@@ -67,12 +71,14 @@ public class MsgPackConverter {
 
   protected byte[] convertToJsonBytes(byte[] msgPack) {
     final InputStream inputStream = new ByteArrayInputStream(msgPack);
+    return convertToJsonBytes(inputStream);
+  }
 
+  protected byte[] convertToJsonBytes(InputStream msgPackInputStream) {
     try (ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
-      convert(inputStream, outputStream, msgPackFactory, jsonFactory);
+      convert(msgPackInputStream, outputStream, msgPackFactory, jsonFactory);
 
-      final byte[] jsonBytes = outputStream.toByteArray();
-      return jsonBytes;
+      return outputStream.toByteArray();
     } catch (Exception e) {
       throw new RuntimeException("Failed to convert MessagePack to JSON", e);
     }

@@ -13,21 +13,19 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.exporter.record.value.deployment;
+package io.zeebe.exporter.record.value.job;
 
-/** Lists the different types of deploy-able resources */
-public enum DeploymentResourceType {
-  /**
-   * Implies the resource blob is a BPMN XML document.
-   *
-   * @see <a href="https://docs.zeebe.io/bpmn-workflows/README.html">
-   *     https://docs.zeebe.io/bpmn-workflows/README.html</a>
-   */
-  BPMN_XML,
-  /**
-   * Implies the resource blob is a YAML document. See {@see
-   * @see <a href="https://docs.zeebe.io/yaml-workflows/README.html">
-   *   https://docs.zeebe.io/yaml-workflows/README.html</a>
-   */
-  YAML_WORKFLOW;
+/** represents broker-defined headers associated with this job */
+public interface Headers {
+  String getActivityId();
+
+  long getActivityInstanceKey();
+
+  String getBpmnProcessId();
+
+  int getWorkflowDefinitionVersion();
+
+  long getWorkflowInstanceKey();
+
+  long getWorkflowKey();
 }

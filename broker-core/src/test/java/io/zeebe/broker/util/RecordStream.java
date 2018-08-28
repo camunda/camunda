@@ -43,6 +43,12 @@ public class RecordStream extends StreamWrapper<LoggedEvent> {
     return new RecordStream(filter(r -> Records.hasIntent(r, intent)));
   }
 
+  public LoggedEvent withPosition(long position) {
+    return filter(e -> e.getPosition() == position)
+        .findFirst()
+        .orElseThrow(() -> new AssertionError("No event found with position " + position));
+  }
+
   public TypedRecordStream<JobRecord> onlyJobRecords() {
     return new TypedRecordStream<>(
         filter(Records::isJobRecord).map(e -> CopiedTypedEvent.toTypedEvent(e, JobRecord.class)));

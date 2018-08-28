@@ -194,15 +194,16 @@ public final class BufferUtil {
     return builder.toString();
   }
 
-  public static byte[] bufferAsArray(DirectBuffer buffer) {
-    byte[] array = null;
+  public static byte[] bufferAsArray(final DirectBuffer buffer) {
+    final byte[] array;
 
-    if (buffer.byteArray() != null) {
+    if (buffer.byteArray() != null && buffer.wrapAdjustment() == 0) {
       array = buffer.byteArray();
     } else {
       array = new byte[buffer.capacity()];
       buffer.getBytes(0, array);
     }
+
     return array;
   }
 

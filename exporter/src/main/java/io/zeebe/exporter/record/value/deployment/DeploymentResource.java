@@ -21,7 +21,7 @@ public interface DeploymentResource {
   byte[] getResource();
 
   /** @return the type of the resource */
-  DeploymentResourceType getResourceType();
+  ResourceType getResourceType();
 
   /** @return the name of the resource */
   String getResourceName();

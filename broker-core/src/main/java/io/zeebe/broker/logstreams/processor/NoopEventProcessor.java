@@ -15,25 +15,27 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.clustering.orchestration.id;
+package io.zeebe.broker.logstreams.processor;
 
-import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.property.IntegerProperty;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.zeebe.logstreams.processor.EventLifecycleContext;
+import io.zeebe.logstreams.processor.EventProcessor;
 
-public class IdRecord extends UnpackedObject {
+public class NoopEventProcessor implements EventProcessor {
 
-  private final IntegerProperty id = new IntegerProperty("id");
+  @Override
+  public void processEvent(EventLifecycleContext ctx) {}
 
-  public IdRecord() {
-    this.declareProperty(id);
+  @Override
+  public boolean executeSideEffects() {
+    return true;
   }
 
-  public Integer getId() {
-    return id.getValue();
+  @Override
+  public long writeEvent(LogStreamRecordWriter writer) {
+    return 0;
   }
 
-  public IdRecord setId(final int id) {
-    this.id.setValue(id);
-    return this;
-  }
+  @Override
+  public void updateState() {}
 }

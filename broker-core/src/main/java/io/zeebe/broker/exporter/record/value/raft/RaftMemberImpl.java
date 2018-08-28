@@ -15,25 +15,42 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.clustering.orchestration.id;
+package io.zeebe.broker.exporter.record.value.raft;
 
-import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.property.IntegerProperty;
+import io.zeebe.exporter.record.value.raft.RaftMember;
+import java.util.Objects;
 
-public class IdRecord extends UnpackedObject {
+public class RaftMemberImpl implements RaftMember {
+  private final int nodeId;
 
-  private final IntegerProperty id = new IntegerProperty("id");
-
-  public IdRecord() {
-    this.declareProperty(id);
+  public RaftMemberImpl(final int nodeId) {
+    this.nodeId = nodeId;
   }
 
-  public Integer getId() {
-    return id.getValue();
+  @Override
+  public int getNodeId() {
+    return nodeId;
   }
 
-  public IdRecord setId(final int id) {
-    this.id.setValue(id);
-    return this;
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final RaftMemberImpl that = (RaftMemberImpl) o;
+    return nodeId == that.nodeId;
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(nodeId);
+  }
+
+  @Override
+  public String toString() {
+    return "RaftMemberImpl{" + "nodeId=" + nodeId + '}';
   }
 }

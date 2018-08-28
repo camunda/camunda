@@ -43,20 +43,23 @@ public class TopicRecord extends UnpackedObject {
     return name.getValue();
   }
 
-  public void setName(DirectBuffer name) {
+  public TopicRecord setName(DirectBuffer name) {
     this.name.setValue(name);
+    return this;
   }
 
   public int getPartitions() {
     return partitions.getValue();
   }
 
-  public void setPartitions(int partitions) {
+  public TopicRecord setPartitions(int partitions) {
     this.partitions.setValue(partitions);
+    return this;
   }
 
-  public void setReplicationFactor(int replicationFactor) {
+  public TopicRecord setReplicationFactor(int replicationFactor) {
     this.replicationFactor.setValue(replicationFactor);
+    return this;
   }
 
   public int getReplicationFactor() {
