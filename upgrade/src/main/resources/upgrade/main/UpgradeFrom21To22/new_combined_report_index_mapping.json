@@ -1,6 +1,6 @@
 {
   "mappings": {
-    "users": {
+    "combined-report": {
       "properties": {
         "created": {
           "type": "date",
