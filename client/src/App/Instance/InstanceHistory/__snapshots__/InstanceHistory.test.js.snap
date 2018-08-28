@@ -18,7 +18,7 @@ exports[`InstanceHistory should render a pane with InstanceLog section and Copyr
     }
   }
   onActivitySelected={[Function]}
-  selectedActivity="foo"
+  selectedActivityId="foo"
 >
   <PanelHeader
     isRounded={false}
@@ -43,7 +43,7 @@ exports[`InstanceHistory should render a pane with InstanceLog section and Copyr
         }
       }
       onActivitySelected={[Function]}
-      selectedActivity="foo"
+      selectedActivityId="foo"
     />
     <InstanceEvents
       groupedEvents={

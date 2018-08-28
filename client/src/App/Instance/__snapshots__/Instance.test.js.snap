@@ -145,7 +145,7 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
             }
           }
           onActivitySelected={[Function]}
-          selectedActivity="foo"
+          selectedActivityId="foo"
         />
       </SplitPane>
     </styled.div>

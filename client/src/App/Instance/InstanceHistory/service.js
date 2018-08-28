@@ -1,4 +1,19 @@
 /**
+ * gets the activityInstanceId from activityId
+ * @param {*} activitiesDetails
+ * @param {*} selectedActivityId
+ */
+export function mapActivityIdToActivityInstanceId(
+  activitiesDetails,
+  activityId
+) {
+  return Object.keys(activitiesDetails).find(
+    activityInstanceId =>
+      activitiesDetails[activityInstanceId].activityId === activityId
+  );
+}
+
+/**
  * @returns {Array} of both:
  *  (1) events that don't have any activityInstanceId
  *  (2) events grouped by activityInstanceId
@@ -16,21 +31,20 @@
 export function getGroupedEvents({
   events,
   activitiesDetails,
-  selectedActivity
+  selectedActivityId
 }) {
   let groupedEvents = [];
   // make a deep clone of the activitiesDetails object
   let activitiesEvents = JSON.parse(JSON.stringify(activitiesDetails));
-  const selectedActivityInstance = (Object.entries(activitiesDetails).filter(
-    ([_, {activityId}]) => {
-      return activityId === selectedActivity;
-    }
-  )[0] || [])[0];
+  const selectedActivityInstanceId = mapActivityIdToActivityInstanceId(
+    activitiesDetails,
+    selectedActivityId
+  );
 
   events.forEach(event => {
     if (
-      selectedActivityInstance &&
-      selectedActivityInstance !== event.activityInstanceId
+      selectedActivityInstanceId &&
+      selectedActivityInstanceId !== event.activityInstanceId
     ) {
       return;
     }
@@ -38,7 +52,7 @@ export function getGroupedEvents({
     // if it doesn't have an activityInstanceId it doesn't belong to an activity events group
     if (
       !event.activityInstanceId ||
-      selectedActivityInstance === event.activityInstanceId
+      selectedActivityInstanceId === event.activityInstanceId
     ) {
       return groupedEvents.push(event);
     }

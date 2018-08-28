@@ -24,7 +24,7 @@ const mockProps = {
       activityId: 'activity2'
     }
   },
-  selectedActivity: null,
+  selectedActivityId: null,
   onActivitySelected: jest.fn()
 };
 
@@ -87,10 +87,10 @@ describe('InstanceLog', () => {
   });
 
   describe('selection', () => {
-    it('should select header ROW on prop.selectedActivity', () => {
+    it('should select header ROW on prop.selectedActivityId', () => {
       // given
       const node = shallow(
-        <InstanceLog {...mockProps} selectedActivity={null} />
+        <InstanceLog {...mockProps} selectedActivityId={null} />
       );
       let HeaderToggleNode = node.find(Styled.HeaderToggle);
 
@@ -101,10 +101,10 @@ describe('InstanceLog', () => {
       ).toBe(true);
     });
 
-    it('should select row based on prop.selectedActivity', () => {
+    it('should select row based on prop.selectedActivityId', () => {
       // given
       const node = shallow(
-        <InstanceLog {...mockProps} selectedActivity="activity1" />
+        <InstanceLog {...mockProps} selectedActivityId="activity1" />
       );
 
       // then
@@ -135,7 +135,7 @@ describe('InstanceLog', () => {
     it('should change selection to null when clicking on the header', () => {
       // given
       const node = shallow(
-        <InstanceLog {...mockProps} selectedActivity="foo" />
+        <InstanceLog {...mockProps} selectedActivityId="foo" />
       );
       let HeaderToggleNode = node.find(Styled.HeaderToggle);
 

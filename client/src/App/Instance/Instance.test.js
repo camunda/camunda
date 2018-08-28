@@ -58,7 +58,7 @@ api.fetchWorkflowInstance = mockResolvedAsyncFn(INSTANCE);
 const initialState = {
   instance: null,
   activitiesDetails: null,
-  selectedActivity: null,
+  selectedActivityId: null,
   loaded: false
 };
 
@@ -81,7 +81,7 @@ describe('Instance', () => {
   });
 
   describe('handleActivitySelection', () => {
-    it('should set state.selectedActivity to provided value', () => {
+    it('should set state.selectedActivityId to provided value', () => {
       // given
       const node = shallow(component);
 
@@ -90,7 +90,7 @@ describe('Instance', () => {
       node.update();
 
       // then
-      expect(node.state('selectedActivity')).toBe('foo');
+      expect(node.state('selectedActivityId')).toBe('foo');
     });
   });
 
@@ -157,7 +157,7 @@ describe('Instance', () => {
       node.setState({
         instance: INSTANCE,
         activitiesDetails: ACTIVITIES_DETAILS,
-        selectedActivity: 'foo'
+        selectedActivityId: 'foo'
       });
       await flushPromises();
       node.update();
@@ -189,7 +189,7 @@ describe('Instance', () => {
       expect(InstanceHistoryNode.prop('activitiesDetails')).toEqual(
         ACTIVITIES_DETAILS
       );
-      expect(InstanceHistoryNode.prop('selectedActivity')).toBe('foo');
+      expect(InstanceHistoryNode.prop('selectedActivityId')).toBe('foo');
       expect(InstanceHistoryNode.prop('onActivitySelected')).toBe(
         node.instance().handleActivitySelection
       );

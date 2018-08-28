@@ -24,7 +24,7 @@ exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
     }
   }
   onActivitySelected={[Function]}
-  selectedActivity={null}
+  selectedActivityId={null}
 >
   <styled.li>
     <Themed(Styled(Themed(styled.button)))

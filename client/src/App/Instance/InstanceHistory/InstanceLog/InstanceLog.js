@@ -4,6 +4,7 @@ import PropTypes from 'prop-types';
 import {getWorkflowName} from 'modules/utils/instance';
 import {HEADER} from 'modules/constants';
 
+import {mapActivityIdToActivityInstanceId} from '../service';
 import * as Styled from './styled';
 
 export default class InstanceLog extends React.Component {
@@ -15,7 +16,7 @@ export default class InstanceLog extends React.Component {
       type: PropTypes.string,
       name: PropTypes.string
     }),
-    selectedActivity: PropTypes.string,
+    selectedActivityId: PropTypes.string,
     onActivitySelected: PropTypes.func
   };
 
@@ -28,18 +29,17 @@ export default class InstanceLog extends React.Component {
   };
 
   renderLogEntry = ([id, {state, type, name}]) => {
-    const {activitiesDetails, selectedActivity} = this.props;
-    const selectedActivityInstance = (Object.entries(activitiesDetails).filter(
-      ([_, {activityId}]) => {
-        return activityId === selectedActivity;
-      }
-    )[0] || [])[0];
+    const {activitiesDetails, selectedActivityId} = this.props;
+    const selectedActivityInstanceId = mapActivityIdToActivityInstanceId(
+      activitiesDetails,
+      selectedActivityId
+    );
 
     return (
       <Styled.LogEntry key={id}>
         <Styled.LogEntryToggle
           data-test-key={id}
-          isSelected={id === selectedActivityInstance}
+          isSelected={id === selectedActivityInstanceId}
           onClick={() =>
             this.props.onActivitySelected(activitiesDetails[id].activityId)
           }
@@ -47,7 +47,7 @@ export default class InstanceLog extends React.Component {
           <Styled.FlowNodeIcon
             state={state}
             type={type}
-            isSelected={id === selectedActivityInstance}
+            isSelected={id === selectedActivityInstanceId}
           />
           {name}
         </Styled.LogEntryToggle>
@@ -62,11 +62,11 @@ export default class InstanceLog extends React.Component {
       <Styled.InstanceLog {...this.props}>
         <Styled.LogEntry>
           <Styled.HeaderToggle
-            isSelected={this.props.selectedActivity === null}
+            isSelected={this.props.selectedActivityId === null}
             onClick={() => this.props.onActivitySelected(null)}
           >
             <Styled.DocumentIcon
-              isSelected={this.props.selectedActivity === null}
+              isSelected={this.props.selectedActivityId === null}
             />
             {getWorkflowName(instance)}
           </Styled.HeaderToggle>

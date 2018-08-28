@@ -23,7 +23,7 @@ export default class Instance extends Component {
   state = {
     instance: null,
     activitiesDetails: null,
-    selectedActivity: null,
+    selectedActivityId: null,
     loaded: false
   };
 
@@ -56,8 +56,8 @@ export default class Instance extends Component {
     this.setState({activitiesDetails});
   };
 
-  handleActivitySelection = selectedActivity => {
-    this.setState({selectedActivity});
+  handleActivitySelection = selectedActivityId => {
+    this.setState({selectedActivityId});
   };
 
   render() {
@@ -85,13 +85,13 @@ export default class Instance extends Component {
                 instance={this.state.instance}
                 onFlowNodesDetailsReady={this.handleFlowNodesDetailsReady}
                 selectableFlowNodes={instanceActivitiesIds}
-                selectedFlowNode={this.state.selectedActivity}
+                selectedFlowNode={this.state.selectedActivityId}
                 onFlowNodeSelected={this.handleActivitySelection}
               />
               <InstanceHistory
                 instance={this.state.instance}
                 activitiesDetails={this.state.activitiesDetails}
-                selectedActivity={this.state.selectedActivity}
+                selectedActivityId={this.state.selectedActivityId}
                 onActivitySelected={this.handleActivitySelection}
               />
             </SplitPane>

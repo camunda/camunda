@@ -14,7 +14,7 @@ export default class InstanceHistory extends React.Component {
   static propTypes = {
     instance: PropTypes.object.isRequired,
     activitiesDetails: PropTypes.object,
-    selectedActivity: PropTypes.string,
+    selectedActivityId: PropTypes.string,
     onActivitySelected: PropTypes.func
   };
 
@@ -29,7 +29,7 @@ export default class InstanceHistory extends React.Component {
   }
 
   componentDidUpdate(prevProps, prevState) {
-    const {activitiesDetails, selectedActivity} = this.props;
+    const {activitiesDetails, selectedActivityId} = this.props;
     const {events} = this.state;
 
     if (!activitiesDetails || !events) {
@@ -38,19 +38,19 @@ export default class InstanceHistory extends React.Component {
 
     const haveActivitiesDetailsChanged =
       activitiesDetails !== prevProps.activitiesDetails;
-    const hasSelectedActivityChanged =
-      selectedActivity !== prevProps.selectedActivity;
+    const hasSelectedActivityIdChanged =
+      selectedActivityId !== prevProps.selectedActivityId;
     const haveEventsChanged = events !== prevState.events;
 
     if (
       haveActivitiesDetailsChanged ||
       haveEventsChanged ||
-      hasSelectedActivityChanged
+      hasSelectedActivityIdChanged
     ) {
       const groupedEvents = getGroupedEvents({
         events: this.state.events,
         activitiesDetails,
-        selectedActivity
+        selectedActivityId
       });
 
       this.setState({groupedEvents});
@@ -65,7 +65,7 @@ export default class InstanceHistory extends React.Component {
           <InstanceLog
             instance={this.props.instance}
             activitiesDetails={this.props.activitiesDetails}
-            selectedActivity={this.props.selectedActivity}
+            selectedActivityId={this.props.selectedActivityId}
             onActivitySelected={this.props.onActivitySelected}
           />
           <InstanceEvents groupedEvents={this.state.groupedEvents} />

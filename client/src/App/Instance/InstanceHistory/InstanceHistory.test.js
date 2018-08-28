@@ -94,7 +94,7 @@ describe('InstanceHistory', () => {
     // given
     const mockProps = {
       instance: {id: 'someInstanceId'},
-      selectedActivity: 'foo',
+      selectedActivityId: 'foo',
       onActivitySelected: jest.fn()
     };
 
@@ -123,8 +123,8 @@ describe('InstanceHistory', () => {
     expect(InstanceLogNode.prop('activitiesDetails')).toEqual(
       mockActivitiesDetails
     );
-    expect(InstanceLogNode.prop('selectedActivity')).toEqual(
-      mockProps.selectedActivity
+    expect(InstanceLogNode.prop('selectedActivityId')).toEqual(
+      mockProps.selectedActivityId
     );
     expect(InstanceLogNode.prop('onActivitySelected')).toEqual(
       mockProps.onActivitySelected
