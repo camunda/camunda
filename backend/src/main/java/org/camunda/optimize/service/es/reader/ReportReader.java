@@ -2,9 +2,13 @@ package org.camunda.optimize.service.es.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.service.es.schema.type.CombinedReportType;
+import org.camunda.optimize.service.es.schema.type.SingleReportType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.action.get.MultiGetItemResponse;
+import org.elasticsearch.action.get.MultiGetResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.unit.TimeValue;
@@ -19,6 +23,7 @@ import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class ReportReader {
@@ -36,48 +41,70 @@ public class ReportReader {
    * Obtain report by it's ID from elasticsearch
    *
    * @param reportId - id of report, expected not null
-   * @return fully serialized ReportDefinitionDto
    * @throws OptimizeRuntimeException if report with specified ID does not
    * exist or deserialization was not successful.
    */
   public ReportDefinitionDto getReport(String reportId) {
     logger.debug("Fetching report with id [{}]", reportId);
-    GetResponse getResponse = esclient
-      .prepareGet(
-        configurationService.getOptimizeIndex(configurationService.getReportType()),
-        configurationService.getReportType(),
-        reportId
-      )
-      .setRealtime(false)
-      .get();
+    MultiGetResponse multiGetItemResponses = esclient.prepareMultiGet()
+    .add(
+      configurationService.getOptimizeIndex(SingleReportType.SINGLE_REPORT_TYPE),
+      SingleReportType.SINGLE_REPORT_TYPE, reportId
+    )
+    .add(
+      configurationService.getOptimizeIndex(CombinedReportType.COMBINED_REPORT_TYPE),
+      CombinedReportType.COMBINED_REPORT_TYPE, reportId
+    )
+    .setRealtime(false)
+    .get();
 
+    Optional<ReportDefinitionDto> result = Optional.empty();
+    for (MultiGetItemResponse itemResponse : multiGetItemResponses) {
+      GetResponse response = itemResponse.getResponse();
+      Optional<ReportDefinitionDto> reportDefinitionDto = processGetReportResponse(reportId, response);
+      if (reportDefinitionDto.isPresent()) {
+        result = reportDefinitionDto;
+        break;
+      }
+    }
+
+    if (!result.isPresent()) {
+      String reason = "Was not able to retrieve report with id [" + reportId +
+        "] from Elasticsearch. Report does not exist.";
+      logger.error(reason);
+      throw new NotFoundException(reason);
+    }
+    return result.get();
+  }
+
+  private Optional<ReportDefinitionDto> processGetReportResponse(String reportId, GetResponse getResponse) {
+    Optional<ReportDefinitionDto> result = Optional.empty();
     if (getResponse.isExists()) {
       String responseAsString = getResponse.getSourceAsString();
       try {
         ReportDefinitionDto report = objectMapper.readValue(responseAsString, ReportDefinitionDto.class);
-        return report;
+        result = Optional.of(report);
       } catch (IOException e) {
         String reason = "While retrieving report with id [" + reportId +
           "] could not deserialize report from Elasticsearch!";
         logger.error(reason, e);
         throw new OptimizeRuntimeException(reason);
       }
-    } else {
-      String reason = "Was not able to retrieve report with id [" + reportId +
-        "] from Elasticsearch. Report does not exist.";
-      logger.error(reason);
-      throw new NotFoundException(reason);
     }
+    return result;
   }
+
 
   public List<ReportDefinitionDto> getAllReports() {
     logger.debug("Fetching all available reports");
     SearchResponse scrollResp = esclient
-      .prepareSearch(configurationService.getOptimizeIndex(configurationService.getReportType()))
-      .setTypes(configurationService.getReportType())
+      .prepareSearch(
+        configurationService.getOptimizeIndex(SingleReportType.SINGLE_REPORT_TYPE),
+        configurationService.getOptimizeIndex(CombinedReportType.COMBINED_REPORT_TYPE)
+      )
       .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
       .setQuery(QueryBuilders.matchAllQuery())
-      .setSize(100)
+      .setSize(1000)
       .get();
     List<ReportDefinitionDto> reportRequests = new ArrayList<>();
 

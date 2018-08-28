@@ -10,6 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDef
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.schema.type.CombinedReportType;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -28,8 +29,12 @@ import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.COMBINED_REPORT_TYPE;
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
@@ -74,8 +79,8 @@ public class CombinedReportHandlingIT {
     GetResponse response =
       elasticSearchRule.getClient()
         .prepareGet(
-          elasticSearchRule.getOptimizeIndex(elasticSearchRule.getReportType()),
-          elasticSearchRule.getReportType(),
+          elasticSearchRule.getOptimizeIndex(CombinedReportType.COMBINED_REPORT_TYPE),
+          CombinedReportType.COMBINED_REPORT_TYPE,
           id
         )
         .get();
@@ -84,18 +89,21 @@ public class CombinedReportHandlingIT {
   }
 
   @Test
-  public void writeAndThenReadGivesTheSameResult() {
+  public void getSingleAndCombinedReport() {
     // given
-    String id = createNewCombinedReport();
+    String singleReportId = createNewSingleMapReport();
+    String combinedReportId = createNewCombinedReport();
 
     // when
     List<ReportDefinitionDto> reports = getAllReports();
 
     // then
-    assertThat(reports, is(notNullValue()));
-    assertThat(reports.size(), is(1));
-    assertThat(reports.get(0).getId(), is(id));
-    assertThat(reports.get(0).getReportType(), is(COMBINED_REPORT_TYPE));
+    Set<String> resultSet = reports.stream()
+      .map(ReportDefinitionDto::getId)
+      .collect(Collectors.toSet());
+    assertThat(resultSet.size(), is(2));
+    assertThat(resultSet.contains(singleReportId), is(true));
+    assertThat(resultSet.contains(combinedReportId), is(true));
   }
 
   @Test
@@ -220,6 +228,34 @@ public class CombinedReportHandlingIT {
     assertThat(result.getId(), is(reportId));
     Map<String, Map<String, Long>> resultMap = result.getResult();
     assertThat(resultMap.size(), is(0));
+  }
+
+  @Test
+  public void deletedSingleReportsAreRemovedFromCombinedReport() {
+    // given
+    ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
+    String singleReportIdToDelete = createNewSingleMapReport();
+    String remainingSingleReportId = createNewSingleMapReport(engineDto);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    String combinedReportId = createNewCombinedReport(singleReportIdToDelete, remainingSingleReportId);
+    deleteReport(singleReportIdToDelete);
+    List<ReportDefinitionDto> reports = getAllReports();
+
+    // then
+    Set<String> resultSet = reports.stream()
+      .map(ReportDefinitionDto::getId)
+      .collect(Collectors.toSet());
+    assertThat(resultSet.size(), is(2));
+    assertThat(resultSet.contains(remainingSingleReportId), is(true));
+    assertThat(resultSet.contains(combinedReportId), is(true));
+    Optional<CombinedReportDefinitionDto> combinedReport = reports.stream().filter(r -> r instanceof CombinedReportDefinitionDto).map(r -> (CombinedReportDefinitionDto)r).findFirst();
+    assertThat(combinedReport.isPresent(), is(true));
+    CombinedReportDataDto dataDto = combinedReport.get().getData();
+    assertThat(dataDto.getReportIds().size(), is(1));
+    assertThat(dataDto.getReportIds().get(0), is(remainingSingleReportId));
   }
 
   @Test

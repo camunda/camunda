@@ -2,11 +2,11 @@ package org.camunda.optimize.rest;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.camunda.optimize.dto.optimize.query.IdDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.exceptions.OptimizeException;
@@ -27,12 +27,9 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.MultivaluedMap;
 import javax.ws.rs.core.UriInfo;
-import java.io.IOException;
 import java.util.List;
 
 import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUser;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.COMBINED_REPORT_TYPE;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.SINGLE_REPORT_TYPE;
 
 
 @Secured
@@ -54,7 +51,7 @@ public class ReportRestService {
   @Path("/single")
   public IdDto createNewSingleReport(@Context ContainerRequestContext requestContext) {
     String userId = getRequestUser(requestContext);
-    return reportService.createNewReportAndReturnId(userId, SINGLE_REPORT_TYPE);
+    return reportService.createNewSingleReportAndReturnId(userId);
   }
 
   /**
@@ -68,7 +65,7 @@ public class ReportRestService {
   @Path("/combined")
   public IdDto createNewCombinedReport(@Context ContainerRequestContext requestContext) {
     String userId = getRequestUser(requestContext);
-    return reportService.createNewReportAndReturnId(userId, COMBINED_REPORT_TYPE);
+    return reportService.createNewCombinedReportAndReturnId(userId);
   }
 
   /**
@@ -91,12 +88,11 @@ public class ReportRestService {
   /**
    * Get a list of all available reports.
    *
-   * @throws IOException If there was a problem retrieving the reports from Elasticsearch.
    */
   @GET
   @Produces(MediaType.APPLICATION_JSON)
   public List<ReportDefinitionDto> getStoredReports(@Context UriInfo uriInfo,
-                                                    @Context ContainerRequestContext requestContext) throws IOException {
+                                                    @Context ContainerRequestContext requestContext) {
     MultivaluedMap<String, String> queryParameters = uriInfo.getQueryParameters();
 
     String userId = getRequestUser(requestContext);

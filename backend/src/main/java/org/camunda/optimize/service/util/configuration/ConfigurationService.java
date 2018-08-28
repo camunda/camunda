@@ -57,7 +57,6 @@ public class ConfigurationService {
   private String durationHeatmapTargetValueType;
   private String processInstanceType;
   private String licenseType;
-  private String reportType;
   private String dashboardType;
   private String alertType;
   private String reportShareType;
@@ -512,13 +511,6 @@ public class ConfigurationService {
     return licenseType;
   }
 
-  public String getReportType() {
-    if (reportType == null) {
-      reportType = jsonContext.read(ConfigurationServiceConstants.REPORT_TYPE);
-    }
-    return reportType;
-  }
-
   public String getDashboardType() {
     if (dashboardType == null) {
       dashboardType = jsonContext.read(ConfigurationServiceConstants.DASHBOARD_TYPE);
@@ -942,10 +934,6 @@ public class ConfigurationService {
 
   public void setLicenseType(String licenseType) {
     this.licenseType = licenseType;
-  }
-
-  public void setReportType(String reportType) {
-    this.reportType = reportType;
   }
 
   public void setDashboardType(String dashboardType) {

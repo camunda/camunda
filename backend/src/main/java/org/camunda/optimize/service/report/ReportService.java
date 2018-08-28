@@ -28,6 +28,7 @@ import javax.ws.rs.core.MultivaluedMap;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.COMBINED_REPORT_TYPE;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.SINGLE_REPORT_TYPE;
 
 @Component
@@ -58,13 +59,21 @@ public class ReportService {
         reportDefinition.getName() + "].");
     }
 
-    alertService.deleteAlertsForReport(reportId);
-    sharingService.deleteShareForReport(reportId);
-    reportWriter.deleteReport(reportId);
+    if (SINGLE_REPORT_TYPE.equals(reportDefinition.getReportType())) {
+      alertService.deleteAlertsForReport(reportId);
+      sharingService.deleteShareForReport(reportId);
+      reportWriter.deleteSingleReport(reportId);
+    } else if (COMBINED_REPORT_TYPE.equals(reportDefinition.getReportType())) {
+      reportWriter.deleteCombinedReport(reportId);
+    }
   }
 
-  public IdDto createNewReportAndReturnId(String userId, String reportType) {
-    return reportWriter.createNewReportAndReturnId(userId, reportType);
+  public IdDto createNewSingleReportAndReturnId(String userId) {
+    return reportWriter.createNewSingleReportAndReturnId(userId);
+  }
+
+  public IdDto createNewCombinedReportAndReturnId(String userId) {
+    return reportWriter.createNewCombinedReportAndReturnId(userId);
   }
 
   public void updateReportWithAuthorizationCheck(String reportId,
@@ -73,8 +82,13 @@ public class ReportService {
     ValidationHelper.validateDefinitionData(updatedReport.getData());
     getReportWithAuthorizationCheck(reportId, userId);
     ReportDefinitionUpdateDto reportUpdate = convertToReportUpdate(reportId, updatedReport, userId);
-    reportWriter.updateReport(reportUpdate);
-    alertService.deleteAlertsIfNeeded(reportId, updatedReport);
+    if (SINGLE_REPORT_TYPE.equals(updatedReport.getReportType())) {
+      reportWriter.updateSingleReport(reportUpdate);
+      alertService.deleteAlertsIfNeeded(reportId, updatedReport);
+    } else if (COMBINED_REPORT_TYPE.equals(updatedReport.getReportType())) {
+      reportWriter.updateCombinedReport(reportUpdate);
+    }
+
   }
 
   private ReportDefinitionUpdateDto convertToReportUpdate(String reportId, ReportDefinitionDto updatedReport, String userId) {

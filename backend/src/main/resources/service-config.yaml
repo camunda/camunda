@@ -155,7 +155,6 @@ es:
   #An index name used to create all Camunda Optimize types, shards, etc.
   index: optimize
   licenseType: license
-  reportType: report
   dashboardType: dashboard
   alertType: alert
   alertStatusType: alert-status

@@ -2,12 +2,10 @@ package org.camunda.optimize.service.es.schema.type;
 
 import org.camunda.optimize.service.es.schema.StrictTypeMappingCreator;
 import org.elasticsearch.common.xcontent.XContentBuilder;
-import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
-@Component
-public class ReportType extends StrictTypeMappingCreator {
+public abstract class AbstractReportType extends StrictTypeMappingCreator {
 
   public static final String ID = "id";
   public static final String NAME = "name";
@@ -18,11 +16,6 @@ public class ReportType extends StrictTypeMappingCreator {
 
   public static final String REPORT_TYPE = "reportType";
   public static final String DATA = "data";
-
-  @Override
-  public String getType() {
-    return configurationService.getReportType();
-  }
 
   @Override
   protected XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
@@ -49,11 +42,11 @@ public class ReportType extends StrictTypeMappingCreator {
       .endObject()
       .startObject(REPORT_TYPE)
         .field("type", "keyword")
-      .endObject()
-      .startObject(DATA)
-        .field("enabled", false)
       .endObject();
+     newBuilder = addDataField(newBuilder);
      return newBuilder;
   }
+
+  protected abstract XContentBuilder addDataField(XContentBuilder xContentBuilder) throws IOException;
 
 }

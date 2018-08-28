@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import org.camunda.optimize.dto.optimize.query.report.single.filter.util.ExecutedFlowNodeFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.result.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.raw.RawDataSingleReportResultDto;
+import org.camunda.optimize.service.es.schema.type.SingleReportType;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -63,8 +64,8 @@ public class SingleReportHandlingIT {
     GetResponse response =
       elasticSearchRule.getClient()
         .prepareGet(
-          elasticSearchRule.getOptimizeIndex(elasticSearchRule.getReportType()),
-          elasticSearchRule.getReportType(),
+          elasticSearchRule.getOptimizeIndex(SingleReportType.SINGLE_REPORT_TYPE),
+          SingleReportType.SINGLE_REPORT_TYPE,
           id
         )
         .get();

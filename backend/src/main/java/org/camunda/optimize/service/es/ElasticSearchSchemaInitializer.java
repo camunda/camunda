@@ -2,6 +2,7 @@ package org.camunda.optimize.service.es;
 
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
 import org.camunda.optimize.service.es.schema.type.AlertType;
+import org.camunda.optimize.service.es.schema.type.CombinedReportType;
 import org.camunda.optimize.service.es.schema.type.DashboardShareType;
 import org.camunda.optimize.service.es.schema.type.DashboardType;
 import org.camunda.optimize.service.es.schema.type.DurationHeatmapTargetValueType;
@@ -10,7 +11,7 @@ import org.camunda.optimize.service.es.schema.type.MetadataType;
 import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.es.schema.type.ReportShareType;
-import org.camunda.optimize.service.es.schema.type.ReportType;
+import org.camunda.optimize.service.es.schema.type.SingleReportType;
 import org.camunda.optimize.service.es.schema.type.index.ImportIndexType;
 import org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -49,7 +50,10 @@ public class ElasticSearchSchemaInitializer {
   private TimestampBasedImportIndexType timestampBasedImportIndexType;
 
   @Autowired
-  private ReportType reportType;
+  private SingleReportType singleReportType;
+
+  @Autowired
+  private CombinedReportType combinedReportType;
 
   @Autowired
   private DashboardType dashboardType;
@@ -89,7 +93,8 @@ public class ElasticSearchSchemaInitializer {
     schemaManager.addMapping(processInstanceType);
     schemaManager.addMapping(timestampBasedImportIndexType);
     schemaManager.addMapping(licenseType);
-    schemaManager.addMapping(reportType);
+    schemaManager.addMapping(singleReportType);
+    schemaManager.addMapping(combinedReportType);
     schemaManager.addMapping(dashboardType);
     schemaManager.addMapping(alertType);
     schemaManager.addMapping(reportShareType);
