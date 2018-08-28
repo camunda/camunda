@@ -20,7 +20,7 @@ public class Transports {
     return new ServerTransportBuilder();
   }
 
-  public static ClientTransportBuilder newClientTransport() {
-    return new ClientTransportBuilder();
+  public static ClientTransportBuilder newClientTransport(final String name) {
+    return new ClientTransportBuilder(name);
   }
 }

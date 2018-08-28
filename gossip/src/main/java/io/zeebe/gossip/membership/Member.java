@@ -15,35 +15,29 @@
  */
 package io.zeebe.gossip.membership;
 
-import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.collection.Tuple;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import org.agrona.DirectBuffer;
 
 public class Member {
-  private final String id;
-  private final SocketAddress address;
+  private final int id;
   private final GossipTerm term;
 
   private MembershipStatus status = MembershipStatus.ALIVE;
 
   private final List<Tuple<DirectBuffer, GossipTerm>> gossipTermByEventType = new ArrayList<>();
 
-  public Member(SocketAddress address) {
-    this.address = new SocketAddress(address);
-    this.id = address.toString();
+  public Member(final int id) {
+    this.id = id;
 
     this.term = new GossipTerm().epoch(ActorClock.currentTimeMillis()).heartbeat(0);
   }
 
-  public SocketAddress getAddress() {
-    return address;
-  }
-
-  public String getId() {
+  public int getId() {
     return id;
   }
 
@@ -94,32 +88,19 @@ public class Member {
   }
 
   @Override
-  public int hashCode() {
-    final int prime = 31;
-    int result = 1;
-    result = prime * result + ((id == null) ? 0 : id.hashCode());
-    return result;
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final Member member = (Member) o;
+    return id == member.id;
   }
 
   @Override
-  public boolean equals(Object obj) {
-    if (this == obj) {
-      return true;
-    }
-    if (obj == null) {
-      return false;
-    }
-    if (getClass() != obj.getClass()) {
-      return false;
-    }
-    final Member other = (Member) obj;
-    if (id == null) {
-      if (other.id != null) {
-        return false;
-      }
-    } else if (!id.equals(other.id)) {
-      return false;
-    }
-    return true;
+  public int hashCode() {
+    return Objects.hash(id);
   }
 }

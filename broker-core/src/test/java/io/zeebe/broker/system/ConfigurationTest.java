@@ -17,7 +17,9 @@
  */
 package io.zeebe.broker.system;
 
-import static io.zeebe.broker.system.configuration.NetworkCfg.ENV_PORT_OFFSET;
+import static io.zeebe.broker.system.configuration.BrokerCfg.DEFAULT_NODE_ID;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_NODE_ID;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PORT_OFFSET;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.system.configuration.BrokerCfg;
@@ -49,6 +51,34 @@ public class ConfigurationTest {
   public static final int MANAGEMENT_PORT = SocketBindingManagementCfg.DEFAULT_PORT;
   public static final int REPLICATION_PORT = SocketBindingReplicationCfg.DEFAULT_PORT;
   public static final int SUBSCRIPTION_PORT = SocketBindingSubscriptionCfg.DEFAULT_PORT;
+
+  @Test
+  public void shouldUseDefaultNodeId() {
+    assertNodeId("default", DEFAULT_NODE_ID);
+  }
+
+  @Test
+  public void shouldUseSpecifiedNodeId() {
+    assertNodeId("specific-node-id", 123);
+  }
+
+  @Test
+  public void shouldUseNodeIdFromEnvironment() {
+    environment.put(ENV_NODE_ID, "42");
+    assertNodeId("default", 42);
+  }
+
+  @Test
+  public void shouldUseNodeIdFromEnvironmentWithSpecifiedNodeId() {
+    environment.put(ENV_NODE_ID, "42");
+    assertNodeId("specific-node-id", 42);
+  }
+
+  @Test
+  public void shouldIgnoreInvalidNodeIdFromEnvironment() {
+    environment.put(ENV_NODE_ID, "a");
+    assertNodeId("default", DEFAULT_NODE_ID);
+  }
 
   @Test
   public void shouldUseDefaultPorts() {
@@ -145,13 +175,20 @@ public class ConfigurationTest {
   }
 
   private BrokerCfg readConfig(String name) {
-    final InputStream resourceAsStream =
-        ConfigurationTest.class.getResourceAsStream("/system/" + name + ".toml");
-    assertThat(resourceAsStream).isNotNull();
+    final String configPath = "/system/" + name + ".toml";
+    final InputStream resourceAsStream = ConfigurationTest.class.getResourceAsStream(configPath);
+    assertThat(resourceAsStream)
+        .withFailMessage("Unable to read configuration file %s", configPath)
+        .isNotNull();
 
     final BrokerCfg config = TomlConfigurationReader.read(resourceAsStream);
     config.init("test", new Environment(environment));
     return config;
+  }
+
+  private void assertNodeId(String configFileName, int nodeId) {
+    final BrokerCfg cfg = readConfig(configFileName);
+    assertThat(cfg.getNodeId()).isEqualTo(nodeId);
   }
 
   private void assertPorts(

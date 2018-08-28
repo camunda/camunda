@@ -17,7 +17,6 @@ package io.zeebe.test.broker.protocol.managementApi;
 
 import io.zeebe.transport.ClientResponse;
 import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.Transports;
 import io.zeebe.util.buffer.BufferReader;
@@ -34,7 +33,8 @@ public class ManagementApiRule extends ExternalResource {
   private ClientTransport transport;
 
   private final Supplier<SocketAddress> brokerAddressSupplier;
-  private RemoteAddress remoteAddress;
+
+  private int remoteId;
 
   private ControlledActorClock controlledActorClock = new ControlledActorClock();
   private ActorScheduler scheduler;
@@ -52,9 +52,10 @@ public class ManagementApiRule extends ExternalResource {
             .build();
     scheduler.start();
 
-    transport = Transports.newClientTransport().scheduler(scheduler).build();
+    transport = Transports.newClientTransport("management").scheduler(scheduler).build();
 
-    remoteAddress = transport.registerRemoteAddress(brokerAddressSupplier.get());
+    remoteId = 1;
+    transport.registerEndpoint(remoteId, brokerAddressSupplier.get());
   }
 
   @Override
@@ -85,7 +86,7 @@ public class ManagementApiRule extends ExternalResource {
   }
 
   public ActorFuture<ClientResponse> send(BufferWriter request) {
-    return transport.getOutput().sendRequest(remoteAddress, request);
+    return transport.getOutput().sendRequest(remoteId, request);
   }
 
   public void sendAndAwait(BufferWriter request, BufferReader response) {

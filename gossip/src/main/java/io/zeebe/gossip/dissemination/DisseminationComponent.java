@@ -133,7 +133,7 @@ public class DisseminationComponent
   public boolean consumeMembershipEvent(MembershipEvent event) {
     addMembershipEvent()
         .type(event.getType())
-        .address(event.getAddress())
+        .memberId(event.getMemberId())
         .gossipTerm(event.getGossipTerm());
 
     return true;
@@ -142,7 +142,7 @@ public class DisseminationComponent
   @Override
   public boolean consumeCustomEvent(CustomEvent event) {
     addCustomEvent()
-        .senderAddress(event.getSenderAddress())
+        .senderId(event.getSenderId())
         .senderGossipTerm(event.getSenderGossipTerm())
         .type(event.getType())
         .payload(event.getPayload());

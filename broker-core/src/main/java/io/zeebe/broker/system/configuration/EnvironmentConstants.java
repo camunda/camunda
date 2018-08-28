@@ -15,26 +15,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.clustering.base.raft;
+package io.zeebe.broker.system.configuration;
 
-public class RaftConfigurationMetadataMember {
-  private String host;
-  private int port;
+public class EnvironmentConstants {
 
-  public RaftConfigurationMetadataMember() {
-    this("", 0);
-  }
-
-  public RaftConfigurationMetadataMember(String host, int port) {
-    this.host = host;
-    this.port = port;
-  }
-
-  public String getHost() {
-    return host;
-  }
-
-  public int getPort() {
-    return port;
-  }
+  public static final String ENV_NODE_ID = "ZEEBE_NODE_ID";
+  public static final String ENV_PORT_OFFSET = "ZEEBE_PORT_OFFSET";
 }

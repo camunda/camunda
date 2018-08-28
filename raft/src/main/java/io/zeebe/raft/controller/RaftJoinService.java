@@ -26,7 +26,6 @@ import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.ClientResponse;
-import io.zeebe.transport.RemoteAddress;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
@@ -86,9 +85,9 @@ public class RaftJoinService implements Service<Void> {
           whenJoinCompleted.complete(null);
         };
 
-    final Consumer<RemoteAddress> joinRequestConfigurator =
+    final Consumer<Integer> joinRequestConfigurator =
         (nextMember) -> {
-          LOG.debug("Send join configuration request to {}", nextMember);
+          LOG.debug("Send join configuration request to node {}", nextMember);
           configurationRequest.reset().setRaft(raft);
         };
 
@@ -129,8 +128,8 @@ public class RaftJoinService implements Service<Void> {
   }
 
   private void sendConfigurationRequest(
-      Consumer<RemoteAddress> configureRequest, Runnable configurationAcceptedCallback) {
-    final RemoteAddress nextMember = getNextMember();
+      Consumer<Integer> configureRequest, Runnable configurationAcceptedCallback) {
+    final Integer nextMember = getNextMember();
 
     if (nextMember != null) {
       configureRequest.accept(nextMember);
@@ -186,14 +185,14 @@ public class RaftJoinService implements Service<Void> {
     }
   }
 
-  private RemoteAddress getNextMember() {
+  private Integer getNextMember() {
     final List<RaftMember> memberList = raftMembers.getMemberList();
     final int memberSize = memberList.size();
     if (memberSize > 0) {
       final int nextMember = currentMember % memberSize;
       currentMember++;
 
-      return memberList.get(nextMember).getRemoteAddress();
+      return memberList.get(nextMember).getNodeId();
     } else {
       return null;
     }

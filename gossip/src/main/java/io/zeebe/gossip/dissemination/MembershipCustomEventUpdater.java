@@ -20,7 +20,6 @@ import io.zeebe.gossip.membership.Member;
 import io.zeebe.gossip.membership.MembershipList;
 import io.zeebe.gossip.protocol.CustomEvent;
 import io.zeebe.gossip.protocol.CustomEventConsumer;
-import io.zeebe.transport.SocketAddress;
 import org.agrona.DirectBuffer;
 
 public class MembershipCustomEventUpdater implements CustomEventConsumer {
@@ -34,12 +33,12 @@ public class MembershipCustomEventUpdater implements CustomEventConsumer {
   public boolean consumeCustomEvent(CustomEvent event) {
     boolean isNew = false;
 
-    final SocketAddress sender = event.getSenderAddress();
+    final int senderId = event.getSenderId();
     final DirectBuffer eventType = event.getType();
     final GossipTerm senderGossipTerm = event.getSenderGossipTerm();
 
-    if (membershipList.hasMember(sender)) {
-      final Member member = membershipList.get(sender);
+    if (membershipList.hasMember(senderId)) {
+      final Member member = membershipList.get(senderId);
       final GossipTerm currentTerm = member.getTermForEventType(eventType);
 
       if (currentTerm == null) {

@@ -30,9 +30,9 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 
 public class GossipJoinTest {
-  private GossipRule gossip1 = new GossipRule();
-  private GossipRule gossip2 = new GossipRule();
-  private GossipRule gossip3 = new GossipRule();
+  private GossipRule gossip1 = new GossipRule(1);
+  private GossipRule gossip2 = new GossipRule(2);
+  private GossipRule gossip3 = new GossipRule(3);
 
   @Rule public GossipClusterRule cluster = new GossipClusterRule(gossip1, gossip2, gossip3);
 
@@ -153,19 +153,6 @@ public class GossipJoinTest {
     // then
     assertThat(gossip3.hasMember(gossip1)).isTrue();
     assertThat(gossip3.hasMember(gossip2)).isTrue();
-  }
-
-  @Test
-  public void shouldJoinIfOneContactPointIsAvailable() {
-    // given
-    cluster.interruptConnectionBetween(gossip1, gossip3);
-
-    // when
-    gossip3.join(gossip1, gossip2).join();
-
-    // then
-    assertThat(gossip2.receivedMembershipEvent(MembershipEventType.JOIN, gossip3)).isTrue();
-    assertThat(gossip1.receivedMembershipEvent(MembershipEventType.JOIN, gossip3)).isFalse();
   }
 
   @Test

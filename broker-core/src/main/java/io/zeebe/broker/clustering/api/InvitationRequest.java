@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.clustering.api;
 
-import static io.zeebe.clustering.management.InvitationRequestEncoder.MembersEncoder.hostHeaderLength;
 import static io.zeebe.clustering.management.InvitationRequestEncoder.MembersEncoder.sbeBlockLength;
 import static io.zeebe.clustering.management.InvitationRequestEncoder.MembersEncoder.sbeHeaderSize;
 import static io.zeebe.clustering.management.InvitationRequestEncoder.partitionIdNullValue;
@@ -31,17 +30,16 @@ import io.zeebe.clustering.management.InvitationRequestEncoder;
 import io.zeebe.clustering.management.InvitationRequestEncoder.MembersEncoder;
 import io.zeebe.clustering.management.MessageHeaderDecoder;
 import io.zeebe.clustering.management.MessageHeaderEncoder;
-import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferWriter;
-import java.util.Iterator;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.collections.IntArrayList;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class InvitationRequest implements BufferWriter, BufferReader {
+
   protected final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
   protected final InvitationRequestDecoder bodyDecoder = new InvitationRequestDecoder();
 
@@ -53,7 +51,7 @@ public class InvitationRequest implements BufferWriter, BufferReader {
   protected int replicationFactor = replicationFactorNullValue();
 
   protected int term = termNullValue();
-  protected List<SocketAddress> members = new CopyOnWriteArrayList<>();
+  protected IntArrayList members = new IntArrayList();
 
   public int partitionId() {
     return partitionId;
@@ -91,11 +89,11 @@ public class InvitationRequest implements BufferWriter, BufferReader {
     return this;
   }
 
-  public List<SocketAddress> members() {
+  public List<Integer> members() {
     return members;
   }
 
-  public InvitationRequest members(final List<SocketAddress> members) {
+  public InvitationRequest members(final List<Integer> members) {
     this.members.clear();
     this.members.addAll(members);
     return this;
@@ -107,11 +105,7 @@ public class InvitationRequest implements BufferWriter, BufferReader {
 
     int length = headerEncoder.encodedLength() + bodyEncoder.sbeBlockLength();
 
-    length += sbeHeaderSize() + (sbeBlockLength() + hostHeaderLength()) * size;
-
-    for (int i = 0; i < size; i++) {
-      length += members.get(i).hostLength();
-    }
+    length += sbeHeaderSize() + (sbeBlockLength() * size);
 
     length += topicNameHeaderLength();
 
@@ -133,20 +127,16 @@ public class InvitationRequest implements BufferWriter, BufferReader {
 
     offset += headerEncoder.encodedLength();
 
-    final int size = members.size();
-
     final MembersEncoder encoder =
         bodyEncoder
             .wrap(buffer, offset)
             .partitionId(partitionId)
             .replicationFactor(replicationFactor)
             .term(term)
-            .membersCount(size);
+            .membersCount(members.size());
 
-    for (int i = 0; i < size; i++) {
-      final SocketAddress member = members.get(i);
-
-      encoder.next().port(member.port()).putHost(member.getHostBuffer(), 0, member.hostLength());
+    for (int member : members) {
+      encoder.next().nodeId(member);
     }
 
     bodyEncoder.putTopicName(topicName, 0, topicName.capacity());
@@ -167,20 +157,8 @@ public class InvitationRequest implements BufferWriter, BufferReader {
 
     members.clear();
 
-    final Iterator<MembersDecoder> iterator = bodyDecoder.members().iterator();
-
-    while (iterator.hasNext()) {
-      final MembersDecoder decoder = iterator.next();
-
-      final SocketAddress member = new SocketAddress();
-      member.port(decoder.port());
-
-      final MutableDirectBuffer hostBuffer = member.getHostBuffer();
-      final int hostLength = decoder.hostLength();
-      member.hostLength(hostLength);
-      decoder.getHost(hostBuffer, 0, hostLength);
-
-      members.add(member);
+    for (MembersDecoder decoder : bodyDecoder.members()) {
+      members.addInt(decoder.nodeId());
     }
 
     final int topicNameLength = bodyDecoder.topicNameLength();

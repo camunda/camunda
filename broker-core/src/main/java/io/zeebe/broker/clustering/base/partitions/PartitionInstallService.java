@@ -31,7 +31,6 @@ import static io.zeebe.raft.RaftServiceNames.raftServiceName;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfiguration;
-import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
 import io.zeebe.broker.logstreams.SnapshotStorageService;
 import io.zeebe.broker.logstreams.state.StateStorageFactory;
@@ -50,7 +49,6 @@ import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.channel.OneToOneRingBufferChannel;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -71,7 +69,6 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
   private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
   private final BrokerCfg brokerCfg;
-  private final Injector<NodeInfo> localNodeInjector = new Injector<>();
   private final Injector<ClientTransport> clientTransportInjector = new Injector<>();
   private final RaftPersistentConfiguration configuration;
   private final PartitionInfo partitionInfo;
@@ -106,7 +103,6 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
   public void start(ServiceStartContext startContext) {
     this.startContext = startContext;
 
-    final NodeInfo localNode = localNodeInjector.getValue();
     final ClientTransport clientTransport = clientTransportInjector.getValue();
 
     final DirectBuffer topicName = configuration.getTopicName();
@@ -153,7 +149,7 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
         new Raft(
             logName,
             brokerCfg.getRaft(),
-            localNode.getReplicationApiAddress(),
+            brokerCfg.getNodeId(),
             clientTransport,
             configuration,
             messageBuffer,
@@ -173,10 +169,10 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
   }
 
   @Override
-  public ActorFuture<Void> onMemberLeaving(Raft raft, Collection<SocketAddress> addresses) {
+  public ActorFuture<Void> onMemberLeaving(Raft raft, Collection<Integer> nodeIds) {
     final ServiceName<Partition> partitionServiceName = leaderPartitionServiceName(raft.getName());
 
-    final int raftMemberSize = addresses.size() + 1; // raft does not count itself as member
+    final int raftMemberSize = nodeIds.size() + 1; // raft does not count itself as member
     final int replicationFactor = partitionInfo.getReplicationFactor();
 
     ActorFuture<Void> leaveHandledFuture = CompletableActorFuture.completed(null);
@@ -203,7 +199,7 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
   }
 
   @Override
-  public void onMemberJoined(Raft raft, Collection<SocketAddress> currentMembers) {
+  public void onMemberJoined(Raft raft, Collection<Integer> currentNodeIds) {
     if (raft.getState() == RaftState.LEADER) {
       installLeaderPartition(raft);
     }
@@ -292,9 +288,5 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
 
   public Injector<ClientTransport> getClientTransportInjector() {
     return clientTransportInjector;
-  }
-
-  public Injector<NodeInfo> getLocalNodeInjector() {
-    return localNodeInjector;
   }
 }

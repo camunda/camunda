@@ -18,6 +18,7 @@ package io.zeebe.transport;
 import static io.zeebe.test.util.BufferAssert.assertThatBuffer;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
+import static io.zeebe.util.buffer.DirectBufferWriter.writerFor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
@@ -28,7 +29,6 @@ import static org.mockito.Mockito.when;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.test.util.io.FailingBufferWriter;
@@ -76,13 +76,16 @@ public class ClientTransportTest {
   @Rule public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
 
   public static final DirectBuffer BUF1 = BufferUtil.wrapBytes(1, 2, 3, 4);
+  public static final BufferWriter WRITER1 = writerFor(BUF1);
+
+  public static final int NODE_ID1 = 1;
   public static final SocketAddress SERVER_ADDRESS1 = SocketUtil.getNextAddress();
+
+  public static final int NODE_ID2 = 2;
   public static final SocketAddress SERVER_ADDRESS2 = SocketUtil.getNextAddress();
 
   public static final int REQUEST_POOL_SIZE = 4;
   public static final ByteValue BUFFER_SIZE = ByteValue.ofKilobytes(16);
-  public static final int MESSAGES_REQUIRED_TO_SATURATE_SEND_BUFFER =
-      (int) BUFFER_SIZE.toBytes() / BUF1.capacity();
 
   protected Dispatcher clientReceiveBuffer;
 
@@ -98,7 +101,7 @@ public class ClientTransportTest {
     closeables.manage(clientReceiveBuffer);
 
     clientTransport =
-        Transports.newClientTransport()
+        Transports.newClientTransport("test")
             .scheduler(actorSchedulerRule.get())
             .messageReceiveBuffer(clientReceiveBuffer)
             .build();
@@ -130,34 +133,36 @@ public class ClientTransportTest {
   }
 
   @Test
-  public void shouldOpenChannelOnRegistrationOfRemote() {
+  public void shouldOpenChannelOnRegistrationOfEndpoint() {
     // given
+    final int nodeId = 123;
     final ControllableServerTransport serverTransport = buildControllableServerTransport();
     serverTransport.listenOn(SERVER_ADDRESS1);
     final RecordingChannelListener channelListener = new RecordingChannelListener();
     clientTransport.registerChannelListener(channelListener);
 
     // when
-    final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+    clientTransport.registerEndpoint(nodeId, SERVER_ADDRESS1);
 
     // then
     waitUntil(() -> channelListener.getOpenedConnections().size() == 1);
 
     assertThat(channelListener.getOpenedConnections()).hasSize(1);
-    assertThat(channelListener.getOpenedConnections().get(0)).isEqualTo(remoteAddress);
+    assertThat(channelListener.getOpenedConnections().get(0))
+        .hasFieldOrPropertyWithValue("address", SERVER_ADDRESS1);
   }
 
   @Test
-  public void shouldUseSameChannelForConsecutiveRequestsToSameRemote() {
+  public void shouldUseSameChannelForConsecutiveRequestsToSameEndpoint() {
     // given
     final ControllableServerTransport serverTransport = buildControllableServerTransport();
     serverTransport.listenOn(SERVER_ADDRESS1);
 
-    final RemoteAddress remote = clientTransport.registerRemoteAndAwaitChannel(SERVER_ADDRESS1);
+    clientTransport.registerEndpointAndAwaitChannel(NODE_ID1, SERVER_ADDRESS1);
 
     final ClientOutput output = clientTransport.getOutput();
-    output.sendRequest(remote, new DirectBufferWriter().wrap(BUF1));
-    output.sendRequest(remote, new DirectBufferWriter().wrap(BUF1));
+    output.sendRequest(NODE_ID1, WRITER1);
+    output.sendRequest(NODE_ID1, WRITER1);
 
     final AtomicInteger messageCounter = serverTransport.acceptNextConnection(SERVER_ADDRESS1);
 
@@ -170,18 +175,18 @@ public class ClientTransportTest {
   }
 
   @Test
-  public void shouldUseDifferentChannelsForDifferentRemotes() {
+  public void shouldUseDifferentChannelsForDifferentEndpoints() {
     // given
     final ControllableServerTransport serverTransport = buildControllableServerTransport();
     serverTransport.listenOn(SERVER_ADDRESS1);
     serverTransport.listenOn(SERVER_ADDRESS2);
     final ClientOutput output = clientTransport.getOutput();
 
-    final RemoteAddress remote1 = clientTransport.registerRemoteAndAwaitChannel(SERVER_ADDRESS1);
-    final RemoteAddress remote2 = clientTransport.registerRemoteAndAwaitChannel(SERVER_ADDRESS2);
+    clientTransport.registerEndpointAndAwaitChannel(NODE_ID1, SERVER_ADDRESS1);
+    clientTransport.registerEndpointAndAwaitChannel(NODE_ID2, SERVER_ADDRESS2);
 
-    output.sendRequest(remote1, new DirectBufferWriter().wrap(BUF1));
-    output.sendRequest(remote2, new DirectBufferWriter().wrap(BUF1));
+    output.sendRequest(NODE_ID1, WRITER1);
+    output.sendRequest(NODE_ID2, WRITER1);
 
     // when
     final AtomicInteger messageCounter1 = serverTransport.acceptNextConnection(SERVER_ADDRESS1);
@@ -206,7 +211,7 @@ public class ClientTransportTest {
     final RecordingChannelListener channelListener = new RecordingChannelListener();
 
     clientTransport.registerChannelListener(channelListener);
-    clientTransport.registerRemoteAndAwaitChannel(SERVER_ADDRESS1);
+    clientTransport.registerEndpointAndAwaitChannel(NODE_ID1, SERVER_ADDRESS1);
 
     serverTransport.acceptNextConnection(SERVER_ADDRESS1);
 
@@ -228,7 +233,7 @@ public class ClientTransportTest {
     final ControllableServerTransport serverTransport = buildControllableServerTransport();
     serverTransport.listenOn(SERVER_ADDRESS1);
 
-    clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+    clientTransport.registerEndpoint(NODE_ID1, SERVER_ADDRESS1);
     serverTransport.acceptNextConnection(SERVER_ADDRESS1);
 
     waitUntil(() -> serverTransport.getClientChannels(SERVER_ADDRESS1).size() == 1);
@@ -249,32 +254,29 @@ public class ClientTransportTest {
   @Test
   public void shouldTimeoutRequestWhenChannelNotAvailable() {
     // given
-    final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
-
+    clientTransport.registerEndpoint(NODE_ID1, SERVER_ADDRESS1);
     final ClientOutput output = clientTransport.getOutput();
 
     // when
     final ActorFuture<ClientResponse> responseFuture =
-        output.sendRequest(remote, new DirectBufferWriter().wrap(BUF1), Duration.ofMillis(500));
+        output.sendRequest(NODE_ID1, WRITER1, Duration.ofMillis(500));
 
     // then
-    assertThatThrownBy(() -> responseFuture.join())
-        .hasMessageContaining("Request timed out after PT0.5S");
+    assertThatThrownBy(responseFuture::join).hasMessageContaining("Request timed out after PT0.5S");
   }
 
   @Test
   public void shouldOpenRequestWhenClientRequestPoolCapacityIsExceeded() {
     // given
     final ClientOutput clientOutput = clientTransport.getOutput();
-    final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+    clientTransport.registerEndpoint(NODE_ID1, SERVER_ADDRESS1);
 
     for (int i = 0; i < REQUEST_POOL_SIZE; i++) {
-      clientOutput.sendRequest(remoteAddress, new DirectBufferWriter().wrap(BUF1));
+      clientOutput.sendRequest(NODE_ID1, WRITER1);
     }
 
     // when
-    final ActorFuture<ClientResponse> responseFuture =
-        clientOutput.sendRequest(remoteAddress, new DirectBufferWriter().wrap(BUF1));
+    final ActorFuture<ClientResponse> responseFuture = clientOutput.sendRequest(NODE_ID1, WRITER1);
 
     // then
     assertThat(responseFuture).isNotNull();
@@ -290,17 +292,9 @@ public class ClientTransportTest {
         clientTransport
             .openSubscription(
                 "foo",
-                new ClientMessageHandler() {
-                  @Override
-                  public boolean onMessage(
-                      ClientOutput output,
-                      RemoteAddress remoteAddress,
-                      DirectBuffer buffer,
-                      int offset,
-                      int length) {
-                    numInvocations.incrementAndGet();
-                    return consumeMessage.getAndSet(true);
-                  }
+                (output, remoteAddress, buffer, offset, length) -> {
+                  numInvocations.incrementAndGet();
+                  return consumeMessage.getAndSet(true);
                 })
             .join();
 
@@ -309,7 +303,7 @@ public class ClientTransportTest {
 
     // then handler has been invoked twice, once when the message was postponed, and once when it
     // was consumed
-    doRepeatedly(() -> subscription.poll()).until(i -> i != 0);
+    doRepeatedly(subscription::poll).until(i -> i != 0);
     assertThat(numInvocations.get()).isEqualTo(2);
   }
 
@@ -336,10 +330,8 @@ public class ClientTransportTest {
         clientTransport.openSubscription("foo", clientHandler).join();
 
     // triggering the server pushing a the messages
-    final RemoteAddress remote = clientTransport.registerRemoteAndAwaitChannel(SERVER_ADDRESS1);
-    clientTransport
-        .getOutput()
-        .sendMessage(new TransportMessage().remoteAddress(remote).buffer(BUF1));
+    clientTransport.registerEndpoint(NODE_ID1, SERVER_ADDRESS1);
+    clientTransport.getOutput().sendMessage(NODE_ID1, writerFor(BUF1));
 
     TransportTestUtil.waitUntilExhausted(clientReceiveBuffer);
     Thread.sleep(200L); // give transport a bit of time to try to push more messages on top
@@ -363,16 +355,16 @@ public class ClientTransportTest {
     final ControllableServerTransport serverTransport = buildControllableServerTransport();
     serverTransport.listenOn(SERVER_ADDRESS1);
 
-    final RemoteAddress remote1 = clientTransport.registerRemoteAndAwaitChannel(SERVER_ADDRESS1);
-    final RemoteAddress remote2 = clientTransport.registerRemoteAddress(SERVER_ADDRESS2);
+    clientTransport.registerEndpointAndAwaitChannel(NODE_ID1, SERVER_ADDRESS1);
+    clientTransport.registerEndpoint(NODE_ID2, SERVER_ADDRESS2);
 
     final AtomicInteger messageCounter = serverTransport.acceptNextConnection(SERVER_ADDRESS1);
 
     final ClientOutput output = clientTransport.getOutput();
 
     // when
-    output.sendRequest(remote2, new DirectBufferWriter().wrap(BUF1));
-    output.sendRequest(remote1, new DirectBufferWriter().wrap(BUF1));
+    output.sendRequest(NODE_ID2, WRITER1);
+    output.sendRequest(NODE_ID1, WRITER1);
 
     // then blocked request 1 should not block sending request 2
     doRepeatedly(() -> serverTransport.receive(SERVER_ADDRESS1))
@@ -383,6 +375,7 @@ public class ClientTransportTest {
   @Test
   public void shouldNotCreateChannelsWhenRemoteAddressIsRetired() throws InterruptedException {
     // given
+    final int nodeId = 123;
     buildServerTransport(
         b ->
             b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
@@ -391,16 +384,20 @@ public class ClientTransportTest {
     final RecordingChannelListener channelListener = new RecordingChannelListener();
     clientTransport.registerChannelListener(channelListener).join();
 
-    final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+    clientTransport.registerEndpoint(nodeId, SERVER_ADDRESS1);
 
-    waitUntil(() -> channelListener.getOpenedConnections().contains(remote));
+    waitUntil(
+        () ->
+            channelListener.getOpenedConnections().stream().anyMatch(this::containsServerAddress1));
 
     // when
-    clientTransport.retireRemoteAddress(remote);
+    clientTransport.retireEndpoint(nodeId);
     clientTransport.closeAllChannels().join();
 
     // then
-    waitUntil(() -> channelListener.getClosedConnections().contains(remote));
+    waitUntil(
+        () ->
+            channelListener.getClosedConnections().stream().anyMatch(this::containsServerAddress1));
     Thread.sleep(1000L); // timeout for potential reconnection of channel
 
     // no new channel was connected
@@ -410,6 +407,7 @@ public class ClientTransportTest {
   @Test
   public void shouldNotCreateChannelsWhenRemoteAddressIsDeactivated() throws InterruptedException {
     // given
+    final int nodeId = 123;
     buildServerTransport(
         b ->
             b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
@@ -418,16 +416,20 @@ public class ClientTransportTest {
     final RecordingChannelListener channelListener = new RecordingChannelListener();
     clientTransport.registerChannelListener(channelListener).join();
 
-    final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+    clientTransport.registerEndpoint(nodeId, SERVER_ADDRESS1);
 
-    waitUntil(() -> channelListener.getOpenedConnections().contains(remote));
+    waitUntil(
+        () ->
+            channelListener.getOpenedConnections().stream().anyMatch(this::containsServerAddress1));
 
     // when
-    clientTransport.deactivateRemoteAddress(remote);
+    clientTransport.deactivateEndpoint(nodeId);
     clientTransport.closeAllChannels().join();
 
     // then
-    waitUntil(() -> channelListener.getClosedConnections().contains(remote));
+    waitUntil(
+        () ->
+            channelListener.getClosedConnections().stream().anyMatch(this::containsServerAddress1));
     Thread.sleep(1000L); // timeout for potential reconnection of channel
 
     // no new channel was connected
@@ -437,6 +439,7 @@ public class ClientTransportTest {
   @Test
   public void shouldReopenChannelAfterReactivation() {
     // given
+    final int nodeId = 123;
     buildServerTransport(
         b ->
             b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
@@ -445,18 +448,22 @@ public class ClientTransportTest {
     final RecordingChannelListener channelListener = new RecordingChannelListener();
     clientTransport.registerChannelListener(channelListener).join();
 
-    final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
-    waitUntil(() -> channelListener.getOpenedConnections().contains(remote));
+    clientTransport.registerEndpoint(nodeId, SERVER_ADDRESS1);
+    waitUntil(
+        () ->
+            channelListener.getOpenedConnections().stream().anyMatch(this::containsServerAddress1));
 
-    clientTransport.deactivateRemoteAddress(remote);
+    clientTransport.deactivateEndpoint(nodeId);
     clientTransport.closeAllChannels().join();
 
     // when
-    clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+    clientTransport.registerEndpoint(nodeId, SERVER_ADDRESS1);
 
     // then
     waitUntil(() -> channelListener.getOpenedConnections().size() >= 2);
-    assertThat(channelListener.getOpenedConnections()).contains(remote, remote);
+    assertThat(channelListener.getOpenedConnections())
+        .extracting("address")
+        .contains(SERVER_ADDRESS1, SERVER_ADDRESS1);
   }
 
   @Test
@@ -467,13 +474,11 @@ public class ClientTransportTest {
             b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
                 .build(null, new EchoRequestResponseHandler()));
 
-    final RemoteAddress remote1 = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+    clientTransport.registerEndpoint(NODE_ID1, SERVER_ADDRESS1);
 
     // when
     final ActorFuture<ClientResponse> request =
-        clientTransport
-            .getOutput()
-            .sendRequest(remote1, new DirectBufferWriter().wrap(BUF1), Duration.ofSeconds(10));
+        clientTransport.getOutput().sendRequest(NODE_ID1, WRITER1, Duration.ofSeconds(10));
 
     // then
     final ClientResponse response = request.join();
@@ -488,11 +493,11 @@ public class ClientTransportTest {
             b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
                 .build(null, new EchoRequestResponseHandler()));
 
-    final RemoteAddress remote1 = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+    clientTransport.registerEndpoint(NODE_ID1, SERVER_ADDRESS1);
 
     // when/then
     assertThatThrownBy(
-            () -> clientTransport.getOutput().sendRequest(remote1, new FailingBufferWriter()))
+            () -> clientTransport.getOutput().sendRequest(NODE_ID1, new FailingBufferWriter()))
         .isInstanceOf(FailingBufferWriterException.class);
   }
 
@@ -506,9 +511,9 @@ public class ClientTransportTest {
     final BufferWriter writer = mock(BufferWriter.class);
     when(writer.getLength()).thenReturn(16);
 
-    final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+    clientTransport.registerEndpoint(NODE_ID1, SERVER_ADDRESS1);
     final ActorFuture<ClientResponse> response =
-        clientTransport.getOutput().sendRequest(remote, writer);
+        clientTransport.getOutput().sendRequest(NODE_ID1, writer);
 
     // when
     Thread.sleep(1000L); // should make a couple of send attempts in this second
@@ -523,7 +528,7 @@ public class ClientTransportTest {
   }
 
   @Test
-  public void shouldSendMultipleRequests() throws InterruptedException {
+  public void shouldSendMultipleRequests() {
     // given
     final BufferWriter writer = mock(BufferWriter.class);
     when(writer.getLength()).thenReturn(16);
@@ -533,15 +538,15 @@ public class ClientTransportTest {
             b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
                 .build(null, new EchoRequestResponseHandler()));
 
-    final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+    clientTransport.registerEndpoint(NODE_ID1, SERVER_ADDRESS1);
 
     for (int i = 0; i < 10; i++) {
-      clientTransport.getOutput().sendRequest(remote, writer).join();
+      clientTransport.getOutput().sendRequest(NODE_ID1, writer).join();
     }
   }
 
   @Test
-  public void shouldSendMultipleRequestsAsync() throws InterruptedException {
+  public void shouldSendMultipleRequestsAsync() {
     // given
     final BufferWriter writer = mock(BufferWriter.class);
     when(writer.getLength()).thenReturn(16);
@@ -551,22 +556,20 @@ public class ClientTransportTest {
             b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
                 .build(null, new EchoRequestResponseHandler()));
 
-    final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+    clientTransport.registerEndpoint(NODE_ID1, SERVER_ADDRESS1);
 
     final List<ActorFuture<ClientResponse>> responseList = new ArrayList<>();
 
     for (int i = 0; i < 10; i++) {
-      responseList.add(clientTransport.getOutput().sendRequest(remote, writer));
+      responseList.add(clientTransport.getOutput().sendRequest(NODE_ID1, writer));
     }
 
     responseList.forEach(ActorFuture::join);
   }
 
   @Test
-  public void shouldProvideResponseProperties() throws InterruptedException {
+  public void shouldProvideResponseProperties() {
     // given
-    final BufferWriter writer = new DirectBufferWriter().wrap(BUF1);
-
     final AtomicLong capturedRequestId = new AtomicLong();
 
     final EchoRequestResponseHandler requestHandler =
@@ -588,10 +591,11 @@ public class ClientTransportTest {
     buildServerTransport(
         b -> b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress()).build(null, requestHandler));
 
-    final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+    clientTransport.registerEndpoint(NODE_ID1, SERVER_ADDRESS1);
 
     // when
-    final ClientResponse response = clientTransport.getOutput().sendRequest(remote, writer).join();
+    final ClientResponse response =
+        clientTransport.getOutput().sendRequest(NODE_ID1, WRITER1).join();
 
     // then
     assertThat(response.getRemoteAddress().getAddress()).isEqualTo(SERVER_ADDRESS1);
@@ -600,7 +604,7 @@ public class ClientTransportTest {
   }
 
   @Test
-  public void shouldSendMultipleMessages() throws InterruptedException {
+  public void shouldSendMultipleMessages() {
     // given
     final BufferWriter writer = mock(BufferWriter.class);
     when(writer.getLength()).thenReturn(16);
@@ -608,19 +612,12 @@ public class ClientTransportTest {
     final RecordingMessageHandler messageHandler = new RecordingMessageHandler();
 
     buildServerTransport(
-        b -> {
-          return b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress()).build(messageHandler, null);
-        });
+        b -> b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress()).build(messageHandler, null));
 
-    final RemoteAddress remote = clientTransport.registerRemoteAndAwaitChannel(SERVER_ADDRESS1);
+    clientTransport.registerEndpoint(NODE_ID1, SERVER_ADDRESS1);
 
     for (int i = 0; i < 10; i++) {
-      final TransportMessage message = new TransportMessage();
-
-      message.writer(writer);
-      message.remoteAddress(remote);
-
-      clientTransport.getOutput().sendMessage(message);
+      clientTransport.getOutput().sendMessage(NODE_ID1, writer);
     }
 
     waitUntil(() -> messageHandler.numReceivedMessages() == 10);
@@ -637,46 +634,18 @@ public class ClientTransportTest {
     final BufferWriter writer = mock(BufferWriter.class);
     when(writer.getLength()).thenReturn(16);
 
-    final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+    clientTransport.registerEndpoint(NODE_ID1, SERVER_ADDRESS1);
 
     // when
     final ActorFuture<ClientResponse> clientRequestActorFuture =
-        clientTransport.getOutput().sendRequest(remote, writer, Duration.ofSeconds(10));
+        clientTransport.getOutput().sendRequest(NODE_ID1, writer, Duration.ofSeconds(10));
 
     // then
     doRepeatedly(() -> clock.addTime(Duration.ofSeconds(10)))
         .until((v) -> clientRequestActorFuture.isDone());
 
-    assertThatThrownBy(() -> clientRequestActorFuture.join())
+    assertThatThrownBy(clientRequestActorFuture::join)
         .hasMessageContaining("Request timed out after PT10S");
-  }
-
-  @Test
-  public void shouldRetryAfterTimeoutWhenAddressSupplierReturnsNull() {
-    // given
-    buildServerTransport(
-        b ->
-            b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
-                .build(null, new EchoRequestResponseHandler()));
-
-    final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
-
-    final AtomicInteger attemptCounter = new AtomicInteger(0);
-    final Supplier<RemoteAddress> addressSupplier =
-        () -> attemptCounter.getAndIncrement() == 0 ? null : remote;
-
-    // when
-    final ActorFuture<ClientResponse> responseFuture =
-        clientTransport
-            .getOutput()
-            .sendRequestWithRetry(
-                addressSupplier,
-                b -> false,
-                new DirectBufferWriter().wrap(BUF1),
-                Duration.ofSeconds(2));
-
-    final ClientResponse response = responseFuture.join();
-    assertThatBuffer(response.getResponseBuffer()).hasBytes(BUF1);
   }
 
   @Test
@@ -690,12 +659,10 @@ public class ClientTransportTest {
     // when
 
     // don't wait until the channel is opened
-    final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+    clientTransport.registerEndpoint(NODE_ID1, SERVER_ADDRESS1);
 
     final ActorFuture<ClientResponse> responseFuture =
-        clientTransport
-            .getOutput()
-            .sendRequest(remote, new DirectBufferWriter().wrap(BUF1), Duration.ofSeconds(2));
+        clientTransport.getOutput().sendRequest(NODE_ID1, WRITER1, Duration.ofSeconds(2));
 
     // then
     final ClientResponse response = responseFuture.join();
@@ -703,7 +670,7 @@ public class ClientTransportTest {
   }
 
   @Test
-  public void shouldRetrySendMessageIfChannelIsNotOpen() throws InterruptedException {
+  public void shouldRetrySendMessageIfChannelIsNotOpen() {
     // given
     final DirectBufferWriter writer = new DirectBufferWriter();
     writer.wrap(BUF1);
@@ -711,19 +678,11 @@ public class ClientTransportTest {
     final RecordingMessageHandler messageHandler = new RecordingMessageHandler();
 
     buildServerTransport(
-        b -> {
-          return b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress()).build(messageHandler, null);
-        });
+        b -> b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress()).build(messageHandler, null));
 
     // when
-    final TransportMessage message = new TransportMessage();
-    message.writer(writer);
-
-    // don't wait until the channel is opened
-    final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
-    message.remoteAddress(remote);
-
-    clientTransport.getOutput().sendMessage(message);
+    clientTransport.registerEndpoint(NODE_ID1, SERVER_ADDRESS1);
+    clientTransport.getOutput().sendMessage(NODE_ID1, writer);
 
     // then
     waitUntil(() -> messageHandler.numReceivedMessages() == 1);
@@ -746,12 +705,12 @@ public class ClientTransportTest {
                       return false;
                     }));
 
-    final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+    clientTransport.registerEndpoint(NODE_ID1, SERVER_ADDRESS1);
 
     final BufferWriter writer = mock(BufferWriter.class);
     when(writer.getLength()).thenReturn(16);
 
-    clientTransport.getOutput().sendRequest(remote, writer);
+    clientTransport.getOutput().sendRequest(NODE_ID1, writer);
 
     final Thread closerThread =
         new Thread(
@@ -759,7 +718,7 @@ public class ClientTransportTest {
               clientTransport.close();
               transportClosed.set(true);
             });
-    waitUntil(() -> requestReceived.get());
+    waitUntil(requestReceived::get);
 
     // when
     closerThread.start();
@@ -798,18 +757,15 @@ public class ClientTransportTest {
           }
         };
 
-    final RemoteAddress remote = clientTransport.registerRemoteAddress(SERVER_ADDRESS1);
+    clientTransport.registerEndpoint(NODE_ID1, SERVER_ADDRESS1);
 
     final ActorFuture<ClientResponse> responseFuture =
         clientTransport
             .getOutput()
             .sendRequestWithRetry(
-                () -> remote,
-                blockingInspector,
-                new DirectBufferWriter().wrap(BUF1),
-                Duration.ofSeconds(30));
+                () -> NODE_ID1, blockingInspector, WRITER1, Duration.ofSeconds(30));
 
-    waitUntil(() -> isWaiting.get());
+    waitUntil(isWaiting::get);
 
     // when
     final ActorFuture<Void> closeFuture = clientTransport.closeAsync();
@@ -826,7 +782,7 @@ public class ClientTransportTest {
     }
 
     // then
-    waitUntil(() -> closeFuture.isDone());
+    waitUntil(closeFuture::isDone);
 
     assertThat(closeFuture).isDone();
     assertThat(responseFuture).isDone();
@@ -835,7 +791,7 @@ public class ClientTransportTest {
   @Test
   public void shouldCloseTransportWithUnreachableRemote() {
     // given
-    clientTransport.registerRemoteAddress(SocketUtil.getNextAddress());
+    clientTransport.registerEndpoint(1, SocketUtil.getNextAddress());
 
     // when
     try {
@@ -845,31 +801,206 @@ public class ClientTransportTest {
     }
   }
 
-  protected class CountFragmentsHandler implements FragmentHandler {
+  @Test
+  public void shouldSendMessageToNodeId() {
+    // given
+    final int nodeId = 123;
+    final DirectBufferWriter writer = new DirectBufferWriter();
+    writer.wrap(BUF1);
 
-    protected AtomicInteger i = new AtomicInteger(0);
+    final RecordingMessageHandler messageHandler = new RecordingMessageHandler();
 
-    @Override
-    public int onFragment(
-        DirectBuffer buffer, int offset, int length, int streamId, boolean isMarkedFailed) {
-      i.incrementAndGet();
-      return FragmentHandler.CONSUME_FRAGMENT_RESULT;
-    }
+    buildServerTransport(
+        b -> b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress()).build(messageHandler, null));
 
-    public int getCount() {
-      return i.get();
-    }
+    clientTransport.registerEndpoint(nodeId, SERVER_ADDRESS1);
+
+    // when
+    clientTransport.getOutput().sendMessage(nodeId, writer);
+
+    // then
+    waitUntil(() -> messageHandler.numReceivedMessages() == 1);
+    assertThatBuffer(messageHandler.getMessage(0).getBuffer()).hasBytes(BUF1);
+  }
+
+  @Test
+  public void shouldIgnoreMessageToUnknownNodeId() {
+    // given
+    final int nodeId = 123;
+    final DirectBufferWriter writer = new DirectBufferWriter();
+    writer.wrap(BUF1);
+
+    // when
+    final boolean messageSent = clientTransport.getOutput().sendMessage(nodeId, writer);
+
+    // then
+    assertThat(messageSent).isFalse();
+  }
+
+  @Test
+  public void shouldSendRequestToNodeId() {
+    // given
+    final int nodeId = 123;
+    buildServerTransport(
+        b ->
+            b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
+                .build(null, new EchoRequestResponseHandler()));
+
+    clientTransport.registerEndpoint(nodeId, SERVER_ADDRESS1);
+
+    // when
+    final ActorFuture<ClientResponse> request =
+        clientTransport.getOutput().sendRequest(nodeId, WRITER1);
+
+    // then
+    final ClientResponse response = request.join();
+    assertThatBuffer(response.getResponseBuffer()).hasBytes(BUF1);
+  }
+
+  @Test
+  public void shouldSendRequestToNodeIdWithRetries() {
+    // given
+    final int nodeId = 123;
+    buildServerTransport(
+        b ->
+            b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
+                .build(null, new EchoRequestResponseHandler()));
+
+    clientTransport.registerEndpoint(nodeId, SERVER_ADDRESS1);
+
+    // when
+    final ActorFuture<ClientResponse> request =
+        clientTransport.getOutput().sendRequest(nodeId, WRITER1, Duration.ofSeconds(10));
+
+    // then
+    final ClientResponse response = request.join();
+    assertThatBuffer(response.getResponseBuffer()).hasBytes(BUF1);
+  }
+
+  @Test
+  public void shouldTimeoutRequestToUnknownNodeIdWithRetries() {
+    // given
+    final ClientOutput output = clientTransport.getOutput();
+
+    // when
+    final ActorFuture<ClientResponse> responseFuture =
+        output.sendRequest(123, WRITER1, Duration.ofMillis(500));
+
+    // then
+    assertThatThrownBy(responseFuture::join).hasMessageContaining("Request timed out after PT0.5S");
+  }
+
+  @Test
+  public void shouldRetryAfterTimeoutWhenNodeIdSupplierReturnsNull() {
+    // given
+    final int nodeId = 123;
+    buildServerTransport(
+        b ->
+            b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
+                .build(null, new EchoRequestResponseHandler()));
+
+    clientTransport.registerEndpointAndAwaitChannel(NODE_ID1, SERVER_ADDRESS1);
+
+    final AtomicBoolean attemptToggle = new AtomicBoolean();
+    final Supplier<Integer> nodeIdSupplier =
+        () -> {
+          if (attemptToggle.getAndSet(true)) {
+            return nodeId;
+          } else {
+            clientTransport.registerEndpoint(nodeId, SERVER_ADDRESS1);
+            return null;
+          }
+        };
+
+    // when
+    final ActorFuture<ClientResponse> responseFuture =
+        clientTransport
+            .getOutput()
+            .sendRequestWithRetry(nodeIdSupplier, b -> false, WRITER1, Duration.ofSeconds(2));
+
+    final ClientResponse response = responseFuture.join();
+    assertThatBuffer(response.getResponseBuffer()).hasBytes(BUF1);
+  }
+
+  @Test
+  public void shouldNotCreateChannelsWhenEndpointIsDeactivated() throws InterruptedException {
+    // given
+    final int nodeId = 123;
+    buildServerTransport(
+        b ->
+            b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
+                .build(null, new EchoRequestResponseHandler()));
+
+    final RecordingChannelListener channelListener = new RecordingChannelListener();
+    clientTransport.registerChannelListener(channelListener).join();
+
+    clientTransport.registerEndpoint(nodeId, SERVER_ADDRESS1);
+
+    waitUntil(
+        () ->
+            channelListener.getOpenedConnections().stream().anyMatch(this::containsServerAddress1));
+
+    // when
+    clientTransport.deactivateEndpoint(nodeId);
+    clientTransport.closeAllChannels().join();
+
+    // then
+    waitUntil(
+        () ->
+            channelListener.getClosedConnections().stream().anyMatch(this::containsServerAddress1));
+    Thread.sleep(1000L); // timeout for potential reconnection of channel
+
+    // no new channel was connected
+    assertThat(channelListener.getOpenedConnections()).hasSize(1);
+  }
+
+  @Test
+  public void shouldReopenChannelAfterEndpointReactivation() {
+    // given
+    final int nodeId = 123;
+    buildServerTransport(
+        b ->
+            b.bindAddress(SERVER_ADDRESS1.toInetSocketAddress())
+                .build(null, new EchoRequestResponseHandler()));
+
+    final RecordingChannelListener channelListener = new RecordingChannelListener();
+    clientTransport.registerChannelListener(channelListener).join();
+
+    clientTransport.registerEndpoint(nodeId, SERVER_ADDRESS1);
+    waitUntil(
+        () ->
+            channelListener.getOpenedConnections().stream().anyMatch(this::containsServerAddress1));
+
+    clientTransport.deactivateEndpoint(nodeId);
+    clientTransport.closeAllChannels().join();
+
+    // when
+    clientTransport.registerEndpoint(nodeId, SERVER_ADDRESS1);
+
+    // then
+    waitUntil(() -> channelListener.getOpenedConnections().size() >= 2);
+    final long openedConnections =
+        channelListener
+            .getOpenedConnections()
+            .stream()
+            .filter(this::containsServerAddress1)
+            .count();
+    assertThat(openedConnections).isGreaterThanOrEqualTo(2);
+  }
+
+  private boolean containsServerAddress1(final RemoteAddress remoteAddress) {
+    return SERVER_ADDRESS1.equals(remoteAddress.getAddress());
   }
 
   protected class SendMessagesHandler implements ServerMessageHandler {
     final int numMessagesToSend;
     int messagesSent;
-    final TransportMessage message;
+    BufferWriter writer;
 
     public SendMessagesHandler(int numMessagesToSend, DirectBuffer messageToSend) {
       this.numMessagesToSend = numMessagesToSend;
       this.messagesSent = 0;
-      this.message = new TransportMessage().buffer(messageToSend);
+      this.writer = writerFor(messageToSend);
     }
 
     @Override
@@ -879,9 +1010,10 @@ public class ClientTransportTest {
         DirectBuffer buffer,
         int offset,
         int length) {
-      message.remoteAddress(remoteAddress);
+
+      final int remoteStreamId = remoteAddress.getStreamId();
       for (int i = messagesSent; i < numMessagesToSend; i++) {
-        if (output.sendMessage(message)) {
+        if (output.sendMessage(remoteStreamId, writer)) {
           messagesSent++;
         } else {
           return false;

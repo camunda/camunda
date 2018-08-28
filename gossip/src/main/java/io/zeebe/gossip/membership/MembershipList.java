@@ -16,7 +16,6 @@
 package io.zeebe.gossip.membership;
 
 import io.zeebe.gossip.GossipMembershipListener;
-import io.zeebe.transport.SocketAddress;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -37,8 +36,8 @@ public class MembershipList implements Iterable<Member> {
 
   private int aliveMemberSize = 0;
 
-  public MembershipList(SocketAddress address, Consumer<Member> onSuspectedMember) {
-    this.self = new Member(address);
+  public MembershipList(int nodeId, Consumer<Member> onSuspectedMember) {
+    this.self = new Member(nodeId);
     this.onSuspectedMember = onSuspectedMember;
   }
 
@@ -46,29 +45,29 @@ public class MembershipList implements Iterable<Member> {
     return self;
   }
 
-  public boolean hasMember(SocketAddress address) {
-    return get(address) != null;
+  public boolean hasMember(int nodeId) {
+    return get(nodeId) != null;
   }
 
-  public Member get(SocketAddress address) {
+  public Member get(int nodeId) {
     for (Member member : members) {
-      if (member.getAddress().equals(address)) {
+      if (member.getId() == nodeId) {
         return member;
       }
     }
     return null;
   }
 
-  public Member getMemberOrSelf(SocketAddress address) {
-    if (address.equals(self.getAddress())) {
+  public Member getMemberOrSelf(int nodeId) {
+    if (nodeId == self.getId()) {
       return self;
     } else {
-      return get(address);
+      return get(nodeId);
     }
   }
 
-  public Member newMember(SocketAddress address, GossipTerm term) {
-    final Member member = new Member(address);
+  public Member newMember(int nodeId, GossipTerm term) {
+    final Member member = new Member(nodeId);
     member.getTerm().wrap(term);
 
     members.add(member);
@@ -81,8 +80,8 @@ public class MembershipList implements Iterable<Member> {
     return member;
   }
 
-  public void removeMember(SocketAddress address) {
-    final Member member = get(address);
+  public void removeMember(int nodeId) {
+    final Member member = get(nodeId);
     if (member != null) {
       // keep the member in the list (for now) to avoid that an old ALIVE event add it again
       member.setStatus(MembershipStatus.DEAD);
@@ -94,8 +93,8 @@ public class MembershipList implements Iterable<Member> {
     }
   }
 
-  public void aliveMember(SocketAddress address, GossipTerm gossipTerm) {
-    final Member member = get(address);
+  public void aliveMember(int nodeId, GossipTerm gossipTerm) {
+    final Member member = get(nodeId);
     if (member != null) {
       final boolean isUndead = member.getStatus() == MembershipStatus.DEAD;
 
@@ -111,8 +110,8 @@ public class MembershipList implements Iterable<Member> {
     }
   }
 
-  public void suspectMember(SocketAddress address, GossipTerm gossipTerm) {
-    final Member member = get(address);
+  public void suspectMember(int nodeId, GossipTerm gossipTerm) {
+    final Member member = get(nodeId);
     if (member != null) {
       member.setStatus(MembershipStatus.SUSPECT).setGossipTerm(gossipTerm);
 
@@ -190,7 +189,7 @@ public class MembershipList implements Iterable<Member> {
       index -= 1;
 
       final Member member = members.get(index);
-      removeMember(member.getAddress());
+      removeMember(member.getId());
     }
   }
 }

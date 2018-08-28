@@ -15,16 +15,15 @@
  */
 package io.zeebe.gateway.impl.clustering;
 
+import static io.zeebe.transport.ClientTransport.UNKNOWN_NODE_ID;
+
 import io.zeebe.gateway.api.commands.Topology;
-import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Random;
-import java.util.function.Function;
-import org.agrona.collections.Int2ObjectHashMap;
+import java.util.function.BiConsumer;
+import org.agrona.collections.Int2IntHashMap;
 import org.agrona.collections.IntArrayList;
 import org.agrona.collections.IntHashSet;
 
@@ -33,28 +32,33 @@ import org.agrona.collections.IntHashSet;
  * make sure to make copies in the right places.
  */
 public class ClusterStateImpl implements ClusterState {
-  private final Int2ObjectHashMap<RemoteAddress> topicLeaders = new Int2ObjectHashMap<>();
-  private final List<RemoteAddress> brokers = new ArrayList<>();
+
+  private static final int NODE_ID_NULL = UNKNOWN_NODE_ID - 1;
+
+  private final Int2IntHashMap topicLeaders = new Int2IntHashMap(NODE_ID_NULL);
+  private final IntArrayList brokers = new IntArrayList(5, NODE_ID_NULL);
   private final Map<String, IntArrayList> partitionsByTopic = new HashMap<>();
 
   private final Random randomBroker = new Random();
 
-  public ClusterStateImpl(RemoteAddress endpoint) {
-    brokers.add(endpoint);
+  public ClusterStateImpl(
+      final SocketAddress initialContactPoint,
+      BiConsumer<Integer, SocketAddress> endpointRegistry) {
+    endpointRegistry.accept(UNKNOWN_NODE_ID, initialContactPoint);
+    brokers.add(UNKNOWN_NODE_ID);
   }
 
   public ClusterStateImpl(
-      Topology topologyDto, Function<SocketAddress, RemoteAddress> remoteAddressProvider) {
+      Topology topologyDto, BiConsumer<Integer, SocketAddress> endpointRegistry) {
     final Map<String, IntHashSet> partitions = new HashMap<>();
 
     topologyDto
         .getBrokers()
-        .stream()
         .forEach(
             b -> {
-              final RemoteAddress remoteAddress =
-                  remoteAddressProvider.apply(new SocketAddress(b.getHost(), b.getPort()));
-              brokers.add(remoteAddress);
+              final int nodeId = b.getNodeId();
+              endpointRegistry.accept(nodeId, new SocketAddress(b.getHost(), b.getPort()));
+              brokers.add(nodeId);
 
               b.getPartitions()
                   .forEach(
@@ -67,7 +71,7 @@ public class ClusterStateImpl implements ClusterState {
                             .add(partitionId);
 
                         if (p.isLeader()) {
-                          topicLeaders.put(partitionId, remoteAddress);
+                          topicLeaders.put(partitionId, nodeId);
                         }
                       });
             });
@@ -85,15 +89,15 @@ public class ClusterStateImpl implements ClusterState {
   }
 
   @Override
-  public RemoteAddress getLeaderForPartition(int partition) {
+  public int getLeaderForPartition(int partition) {
     return topicLeaders.get(partition);
   }
 
   @Override
-  public RemoteAddress getRandomBroker() {
+  public int getRandomBroker() {
     if (!brokers.isEmpty()) {
       final int nextBroker = randomBroker.nextInt(brokers.size());
-      return brokers.get(nextBroker);
+      return brokers.getInt(nextBroker);
     } else {
       throw new RuntimeException("Unable to select random broker from empty list");
     }

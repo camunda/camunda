@@ -42,7 +42,6 @@ import io.zeebe.raft.RaftServiceNames;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.test.util.TestUtil;
-import io.zeebe.transport.SocketAddress;
 import java.time.Duration;
 import java.util.List;
 import java.util.Map;
@@ -484,7 +483,6 @@ public class BrokerReprocessingTest {
             clientRule.getDefaultTopic() + "-" + clientRule.getDefaultPartition());
 
     final Raft raft = brokerRule.getService(serviceName);
-    final int raftPort = raft.getSocketAddress().port();
     waitUntil(() -> raft.getState() == RaftState.LEADER);
 
     raft.setTerm(testTerm);
@@ -499,7 +497,7 @@ public class BrokerReprocessingTest {
     assertThat(raftAfterRestart.getState()).isEqualTo(RaftState.LEADER);
     assertThat(raftAfterRestart.getTerm()).isGreaterThanOrEqualTo(9);
     assertThat(raftAfterRestart.getMemberSize()).isEqualTo(0);
-    assertThat(raftAfterRestart.getVotedFor()).isEqualTo(new SocketAddress("0.0.0.0", raftPort));
+    assertThat(raftAfterRestart.getVotedFor()).isEqualTo(0);
   }
 
   @Test

@@ -51,15 +51,14 @@ public class PingReqEventHandler implements GossipEventConsumer {
 
   @Override
   public void accept(GossipEvent event, long requestId, int streamId) {
-    final Member sender = membershipList.get(event.getSender());
-    final Member probeMember = membershipList.get(event.getProbeMember());
+    final Member sender = membershipList.get(event.getSenderId());
+    final Member probeMember = membershipList.get(event.getProbeMemberId());
 
     if (probeMember != null) {
       LOG.trace("Forward PING to '{}'", probeMember.getId());
 
       final ActorFuture<ClientResponse> respFuture =
-          gossipEventSender.sendPing(
-              probeMember.getAddress(), configuration.getProbeTimeoutDuration());
+          gossipEventSender.sendPing(probeMember.getId(), configuration.getProbeTimeoutDuration());
 
       actor.runOnCompletion(
           respFuture,
@@ -80,7 +79,7 @@ public class PingReqEventHandler implements GossipEventConsumer {
             }
           });
     } else {
-      LOG.debug("Reject PING-REQ for unknown member '{}'", event.getProbeMember());
+      LOG.debug("Reject PING-REQ for unknown member '{}'", event.getProbeMemberId());
     }
   }
 }

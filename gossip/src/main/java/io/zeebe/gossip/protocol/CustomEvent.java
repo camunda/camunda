@@ -15,12 +15,12 @@
  */
 package io.zeebe.gossip.protocol;
 
+import static io.zeebe.clustering.gossip.GossipEventEncoder.CustomEventsEncoder.senderIdNullValue;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.zeebe.gossip.membership.GossipTerm;
-import io.zeebe.transport.SocketAddress;
-import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.collection.Reusable;
+import java.util.Objects;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -28,7 +28,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public class CustomEvent implements Reusable {
   private final GossipTerm senderGossipTerm = new GossipTerm();
-  private final SocketAddress senderAddress = new SocketAddress();
+  private long senderId;
 
   private final MutableDirectBuffer typeBuffer = new ExpandableArrayBuffer();
   private final DirectBuffer typeView = new UnsafeBuffer(typeBuffer);
@@ -54,8 +54,8 @@ public class CustomEvent implements Reusable {
     return payloadBuffer;
   }
 
-  public CustomEvent senderAddress(SocketAddress address) {
-    this.senderAddress.wrap(address);
+  public CustomEvent senderId(int senderId) {
+    this.senderId = senderId;
     return this;
   }
 
@@ -84,8 +84,8 @@ public class CustomEvent implements Reusable {
     return senderGossipTerm;
   }
 
-  public SocketAddress getSenderAddress() {
-    return senderAddress;
+  public int getSenderId() {
+    return (int) senderId;
   }
 
   public DirectBuffer getType() {
@@ -109,7 +109,7 @@ public class CustomEvent implements Reusable {
   @Override
   public void reset() {
     senderGossipTerm.epoch(0L).heartbeat(0L);
-    senderAddress.reset();
+    senderId = senderIdNullValue();
 
     typeLength(0);
     payloadLength(0);
@@ -118,8 +118,8 @@ public class CustomEvent implements Reusable {
   @Override
   public String toString() {
     final StringBuilder builder = new StringBuilder();
-    builder.append("CustomEvent [senderAddress=");
-    builder.append(senderAddress);
+    builder.append("CustomEvent [senderId=");
+    builder.append(senderId);
     builder.append(", senderGossipTerm=");
     builder.append(senderGossipTerm);
     builder.append(", type=");
@@ -131,56 +131,22 @@ public class CustomEvent implements Reusable {
   }
 
   @Override
-  public int hashCode() {
-    final int prime = 31;
-    int result = 1;
-    result = prime * result + ((senderAddress == null) ? 0 : senderAddress.hashCode());
-    result = prime * result + ((senderGossipTerm == null) ? 0 : senderGossipTerm.hashCode());
-    result = prime * result + ((payloadView == null) ? 0 : payloadView.hashCode());
-    result = prime * result + ((typeView == null) ? 0 : typeView.hashCode());
-    return result;
-  }
-
-  @Override
   public boolean equals(Object obj) {
     if (this == obj) {
       return true;
     }
-    if (obj == null) {
+    if (obj == null || getClass() != obj.getClass()) {
       return false;
     }
-    if (getClass() != obj.getClass()) {
-      return false;
-    }
-    final CustomEvent other = (CustomEvent) obj;
-    if (senderAddress == null) {
-      if (other.senderAddress != null) {
-        return false;
-      }
-    } else if (!senderAddress.equals(other.senderAddress)) {
-      return false;
-    }
-    if (senderGossipTerm == null) {
-      if (other.senderGossipTerm != null) {
-        return false;
-      }
-    } else if (!senderGossipTerm.equals(other.senderGossipTerm)) {
-      return false;
-    }
-    if (typeView == null) {
-      if (other.typeView != null) {
-        return false;
-      }
-    } else if (!BufferUtil.equals(typeView, other.typeView)) {
-      return false;
-    }
-    if (payloadView == null) {
-      if (other.payloadView != null) {
-        return false;
-      }
-    } else if (!BufferUtil.equals(payloadView, other.payloadView)) {
-      return false;
-    }
-    return true;
+    final CustomEvent that = (CustomEvent) obj;
+    return senderId == that.senderId
+        && Objects.equals(senderGossipTerm, that.senderGossipTerm)
+        && Objects.equals(typeView, that.typeView)
+        && Objects.equals(payloadView, that.payloadView);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(senderGossipTerm, senderId, typeView, payloadView);
   }
 }

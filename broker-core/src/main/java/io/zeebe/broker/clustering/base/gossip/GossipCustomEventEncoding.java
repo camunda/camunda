@@ -22,7 +22,6 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 
 import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
-import io.zeebe.broker.clustering.base.topology.Topology;
 import io.zeebe.broker.clustering.base.topology.TopologyManagerImpl;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.transport.SocketAddress;
@@ -34,14 +33,20 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public final class GossipCustomEventEncoding {
 
-  public static int writeSockedAddresses(
+  public static int writeNodeInfo(
       NodeInfo memberInfo, MutableDirectBuffer directBuffer, int offset) {
+    offset = writeNodeId(memberInfo.getNodeId(), directBuffer, offset);
     offset = writeSocketAddress(memberInfo.getManagementApiAddress(), directBuffer, offset);
     offset = writeSocketAddress(memberInfo.getClientApiAddress(), directBuffer, offset);
     offset = writeSocketAddress(memberInfo.getReplicationApiAddress(), directBuffer, offset);
     offset = writeSocketAddress(memberInfo.getSubscriptionApiAddress(), directBuffer, offset);
 
     return offset;
+  }
+
+  private static int writeNodeId(int nodeId, MutableDirectBuffer directBuffer, int offset) {
+    directBuffer.putInt(offset, nodeId, ByteOrder.LITTLE_ENDIAN);
+    return offset + SIZE_OF_INT;
   }
 
   private static int writeSocketAddress(
@@ -58,7 +63,26 @@ public final class GossipCustomEventEncoding {
     return offset;
   }
 
-  public static int readSocketAddress(
+  public static NodeInfo readNodeInfo(int offset, DirectBuffer directBuffer) {
+    final int nodeId = directBuffer.getInt(offset, ByteOrder.LITTLE_ENDIAN);
+    offset += SIZE_OF_INT;
+
+    final SocketAddress managementApi = new SocketAddress();
+    offset = readSocketAddress(offset, directBuffer, managementApi);
+
+    final SocketAddress clientApi = new SocketAddress();
+    offset = readSocketAddress(offset, directBuffer, clientApi);
+
+    final SocketAddress replicationApi = new SocketAddress();
+    offset = readSocketAddress(offset, directBuffer, replicationApi);
+
+    final SocketAddress subscriptionApi = new SocketAddress();
+    readSocketAddress(offset, directBuffer, subscriptionApi);
+
+    return new NodeInfo(nodeId, clientApi, managementApi, replicationApi, subscriptionApi);
+  }
+
+  private static int readSocketAddress(
       int offset, DirectBuffer directBuffer, SocketAddress apiAddress) {
     final int hostLength = directBuffer.getInt(offset, ByteOrder.LITTLE_ENDIAN);
     offset += SIZE_OF_INT;
@@ -72,14 +96,6 @@ public final class GossipCustomEventEncoding {
 
     apiAddress.host(host, 0, hostLength);
     apiAddress.port(port);
-
-    return offset;
-  }
-
-  public static int writeTopology(Topology topology, MutableDirectBuffer writeBuffer, int offset) {
-    for (NodeInfo member : topology.getMembers()) {
-      offset = writePartitions(member, writeBuffer, offset);
-    }
 
     return offset;
   }

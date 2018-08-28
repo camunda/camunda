@@ -17,6 +17,10 @@
  */
 package io.zeebe.broker.clustering.base.gossip;
 
+import static io.zeebe.broker.clustering.base.gossip.GossipCustomEventEncoding.writeNodeInfo;
+import static io.zeebe.broker.clustering.base.topology.TopologyManagerImpl.CONTACT_POINTS_EVENT_TYPE;
+
+import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.gossip.Gossip;
 import io.zeebe.servicecontainer.Injector;
@@ -27,15 +31,19 @@ import io.zeebe.transport.SocketAddress;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
 
 /** Join / leave cluster on broker start / stop */
 public class GossipJoinService implements Service<Object> {
   private final Injector<Gossip> gossipInjector = new Injector<>();
   private final ClusterCfg clusterCfg;
+  private final NodeInfo localMember;
   private Gossip gossip;
 
-  public GossipJoinService(ClusterCfg clusterCfg) {
+  public GossipJoinService(ClusterCfg clusterCfg, NodeInfo localMember) {
     this.clusterCfg = clusterCfg;
+    this.localMember = localMember;
   }
 
   @Override
@@ -46,6 +54,8 @@ public class GossipJoinService implements Service<Object> {
         Arrays.stream(clusterCfg.getInitialContactPoints())
             .map(SocketAddress::from)
             .collect(Collectors.toList());
+
+    publishLocalContactPoints();
 
     if (!initalContactPoints.isEmpty()) {
       // TODO: check if join is retrying internally on failure.
@@ -66,5 +76,12 @@ public class GossipJoinService implements Service<Object> {
 
   public Injector<Gossip> getGossipInjector() {
     return gossipInjector;
+  }
+
+  private void publishLocalContactPoints() {
+    final MutableDirectBuffer eventBuffer = new ExpandableArrayBuffer();
+    final int eventLength = writeNodeInfo(localMember, eventBuffer, 0);
+
+    gossip.publishEvent(CONTACT_POINTS_EVENT_TYPE, eventBuffer, 0, eventLength);
   }
 }

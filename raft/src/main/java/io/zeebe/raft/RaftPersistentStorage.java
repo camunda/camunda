@@ -15,8 +15,6 @@
  */
 package io.zeebe.raft;
 
-import io.zeebe.transport.SocketAddress;
-
 /**
  * Raft requires some information to be stored in persistent storage and be available throughout
  * restarts of the raft node. Additionally to the required term and voteFor this also keeps a list
@@ -37,21 +35,21 @@ public interface RaftPersistentStorage {
   RaftPersistentStorage setTerm(int term);
 
   /** @return the member which was granted the vote for the current term */
-  SocketAddress getVotedFor();
+  Integer getVotedFor();
 
   /**
    * Set the member which was granted the vote for the current term.
    *
-   * @param votedFor the address of the member the vote was granted or null to clear the voteFor
+   * @param nodeId the node id of the member the vote was granted or null to clear the voteFor
    *     property
    */
-  RaftPersistentStorage setVotedFor(SocketAddress votedFor);
+  RaftPersistentStorage setVotedFor(Integer nodeId);
 
   /** Add a new member to the members list. */
-  RaftPersistentStorage addMember(SocketAddress member);
+  RaftPersistentStorage addMember(int nodeId);
 
   /** Remove a member from the members list. */
-  RaftPersistentStorage removeMember(SocketAddress member);
+  RaftPersistentStorage removeMember(int nodeId);
 
   /** Clears the list of members. */
   RaftPersistentStorage clearMembers();

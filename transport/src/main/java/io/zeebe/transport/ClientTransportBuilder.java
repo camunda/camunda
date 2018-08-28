@@ -20,6 +20,7 @@ import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.transport.impl.ClientOutputImpl;
 import io.zeebe.transport.impl.ClientReceiveHandler;
 import io.zeebe.transport.impl.DefaultChannelFactory;
+import io.zeebe.transport.impl.EndpointRegistryImpl;
 import io.zeebe.transport.impl.RemoteAddressListImpl;
 import io.zeebe.transport.impl.TransportChannelFactory;
 import io.zeebe.transport.impl.TransportContext;
@@ -41,6 +42,7 @@ public class ClientTransportBuilder {
   protected static final Duration DEFAULT_CHANNEL_KEEP_ALIVE_PERIOD = Duration.ofSeconds(5);
 
   protected static final long DEFAULT_CHANNEL_CONNECT_TIMEOUT = 500;
+  private final String name;
 
   private int messageMaxLength = 1024 * 512;
   protected Duration keepAlivePeriod = DEFAULT_CHANNEL_KEEP_ALIVE_PERIOD;
@@ -57,6 +59,10 @@ public class ClientTransportBuilder {
 
   protected Duration defaultRequestRetryTimeout = Duration.ofSeconds(15);
   protected Duration defaultMessageRetryTimeout = Duration.ofSeconds(1);
+
+  public ClientTransportBuilder(final String name) {
+    this.name = name;
+  }
 
   public ClientTransportBuilder scheduler(ActorScheduler scheduler) {
     this.scheduler = scheduler;
@@ -129,10 +135,12 @@ public class ClientTransportBuilder {
         new Sender(actorContext, messageMemoryPool, requestMemoryPool, keepAlivePeriod);
 
     final RemoteAddressListImpl remoteAddressList = new RemoteAddressListImpl();
+    final EndpointRegistry endpointRegistry = new EndpointRegistryImpl(name, remoteAddressList);
 
     final TransportContext transportContext =
         buildTransportContext(
             remoteAddressList,
+            endpointRegistry,
             new ClientReceiveHandler(sender, receiveBuffer, listeners),
             receiveBuffer);
 
@@ -140,12 +148,16 @@ public class ClientTransportBuilder {
   }
 
   protected TransportContext buildTransportContext(
-      RemoteAddressListImpl addressList, FragmentHandler receiveHandler, Dispatcher receiveBuffer) {
+      RemoteAddressListImpl addressList,
+      EndpointRegistry endpointRegistry,
+      FragmentHandler receiveHandler,
+      Dispatcher receiveBuffer) {
     final TransportContext context = new TransportContext();
     context.setName("client");
     context.setReceiveBuffer(receiveBuffer);
     context.setMessageMaxLength(messageMaxLength);
     context.setRemoteAddressList(addressList);
+    context.setEndpointRegistry(endpointRegistry);
     context.setReceiveHandler(receiveHandler);
     context.setChannelKeepAlivePeriod(keepAlivePeriod);
 
@@ -167,7 +179,11 @@ public class ClientTransportBuilder {
     final Sender sender = actorContext.getSender();
 
     final ClientOutput output =
-        new ClientOutputImpl(sender, defaultRequestRetryTimeout, defaultMessageRetryTimeout);
+        new ClientOutputImpl(
+            context.getEndpointRegistry(),
+            sender,
+            defaultRequestRetryTimeout,
+            defaultMessageRetryTimeout);
 
     context.setClientOutput(output);
 

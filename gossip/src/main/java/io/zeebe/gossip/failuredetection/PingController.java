@@ -77,8 +77,7 @@ public class PingController {
       LOG.trace("Send PING to '{}'", probeMember.getId());
 
       final ActorFuture<ClientResponse> responseFuture =
-          gossipEventSender.sendPing(
-              probeMember.getAddress(), configuration.getProbeTimeoutDuration());
+          gossipEventSender.sendPing(probeMember.getId(), configuration.getProbeTimeoutDuration());
 
       actor.runOnCompletion(
           responseFuture,
@@ -114,8 +113,8 @@ public class PingController {
 
         final ActorFuture<ClientResponse> responseFuture =
             gossipEventSender.sendPingReq(
-                member.getAddress(),
-                probeMember.getAddress(),
+                member.getId(),
+                probeMember.getId(),
                 configuration.getProbeIndirectTimeoutDuration());
         indirectResponseFutures.add(responseFuture);
 
@@ -154,11 +153,11 @@ public class PingController {
     if (probeMember.getStatus() == MembershipStatus.ALIVE) {
       LOG.debug("Spread SUSPECT event of member '{}'", probeMember.getId());
 
-      membershipList.suspectMember(probeMember.getAddress(), probeMember.getTerm());
+      membershipList.suspectMember(probeMember.getId(), probeMember.getTerm());
 
       disseminationComponent
           .addMembershipEvent()
-          .address(probeMember.getAddress())
+          .memberId(probeMember.getId())
           .type(MembershipEventType.SUSPECT)
           .gossipTerm(probeMember.getTerm());
     }

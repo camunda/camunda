@@ -22,7 +22,6 @@ import io.zeebe.gossip.membership.MembershipList;
 import io.zeebe.gossip.membership.MembershipStatus;
 import io.zeebe.gossip.protocol.MembershipEvent;
 import io.zeebe.gossip.protocol.MembershipEventSupplier;
-import io.zeebe.transport.SocketAddress;
 import java.util.Iterator;
 
 public class MembershipListEventSupplier implements MembershipEventSupplier {
@@ -89,8 +88,7 @@ public class MembershipListEventSupplier implements MembershipEventSupplier {
         final GossipTerm gossipTerm = member.getTerm();
         membershipEvent.getGossipTerm().wrap(gossipTerm);
 
-        final SocketAddress address = member.getAddress();
-        membershipEvent.getAddress().wrap(address);
+        membershipEvent.memberId(member.getId());
       }
 
       index += 1;

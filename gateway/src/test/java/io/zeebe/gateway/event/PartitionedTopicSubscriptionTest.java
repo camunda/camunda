@@ -54,8 +54,8 @@ public class PartitionedTopicSubscriptionTest {
   public static final int PARTITION_1 = 1;
   public static final int PARTITION_2 = 2;
 
-  public StubBrokerRule broker1 = new StubBrokerRule();
-  public StubBrokerRule broker2 = new StubBrokerRule();
+  public StubBrokerRule broker1 = new StubBrokerRule(0);
+  public StubBrokerRule broker2 = new StubBrokerRule(1);
   public ClientRule clientRule = new ClientRule(broker1);
 
   protected ZeebeClient client;

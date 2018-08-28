@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.clustering.api;
 
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LOCAL_NODE;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.partitionInstallServiceName;
 import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_CLIENT_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.clientTransport;
@@ -44,18 +43,17 @@ import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerRequestHandler;
 import io.zeebe.transport.ServerResponse;
 import io.zeebe.transport.ServerTransportBuilder;
-import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.buffer.DirectBufferWriter;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
-import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.IntArrayList;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.slf4j.Logger;
 
@@ -152,7 +150,7 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
     final DirectBuffer topicName = BufferUtil.cloneBuffer(createPartitionRequest.getTopicName());
     final int partitionId = createPartitionRequest.getPartitionId();
     final int replicationFactor = createPartitionRequest.getReplicationFactor();
-    final List<SocketAddress> members = Collections.emptyList();
+    final List<Integer> members = Collections.emptyList();
 
     LOG.info(
         "Received create partition request for topic={}, partitionId={} and replicationFactor={}",
@@ -178,7 +176,8 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
     final DirectBuffer topicName = BufferUtil.cloneBuffer(invitationRequest.topicName());
     final int partitionId = invitationRequest.partitionId();
     final int replicationFactor = invitationRequest.replicationFactor();
-    final List<SocketAddress> members = new ArrayList<>(invitationRequest.members());
+    final IntArrayList members = new IntArrayList();
+    members.addAll(invitationRequest.members());
 
     LOG.info(
         "Received invitation request for topicName={}, partitionId={}, replicationFactor={} with members={}",
@@ -197,7 +196,7 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
       final DirectBuffer topicName,
       final int partitionId,
       final int replicationFactor,
-      final List<SocketAddress> members,
+      final List<Integer> members,
       ServerOutput output,
       RemoteAddress remoteAddress,
       long requestId) {
@@ -232,7 +231,6 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
             final ActorFuture<Void> partitionInstallFuture =
                 serviceStartContext
                     .createService(partitionInstallServiceName, partitionInstallService)
-                    .dependency(LOCAL_NODE, partitionInstallService.getLocalNodeInjector())
                     .dependency(
                         clientTransport(REPLICATION_API_CLIENT_NAME),
                         partitionInstallService.getClientTransportInjector())

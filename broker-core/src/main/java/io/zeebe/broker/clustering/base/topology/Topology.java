@@ -56,6 +56,20 @@ public class Topology implements ReadableTopology {
     return local;
   }
 
+  public NodeInfo getMember(int nodeId) {
+    NodeInfo member = null;
+
+    for (int i = 0; i < members.size() && member == null; i++) {
+      final NodeInfo current = members.get(i);
+
+      if (nodeId == current.getNodeId()) {
+        member = current;
+      }
+    }
+
+    return member;
+  }
+
   @Override
   public NodeInfo getMemberByClientApi(SocketAddress apiAddress) {
     return getMemberByApi(NodeInfo::getClientApiAddress, apiAddress);
@@ -224,6 +238,7 @@ public class Topology implements ReadableTopology {
     for (NodeInfo member : members) {
       final BrokerDto broker = dto.brokers().add();
       final SocketAddress apiContactPoint = member.getClientApiAddress();
+      broker.setNodeId(member.getNodeId());
       broker.setHost(
           apiContactPoint.getHostBuffer(), 0, apiContactPoint.getHostBuffer().capacity());
       broker.setPort(apiContactPoint.port());

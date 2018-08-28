@@ -18,7 +18,6 @@
 package io.zeebe.broker.clustering.base.topology;
 
 import io.zeebe.protocol.Protocol;
-import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.channel.ActorConditions;
@@ -27,7 +26,7 @@ import org.agrona.collections.Int2ObjectHashMap;
 public class TopologyPartitionListenerImpl implements TopologyPartitionListener {
 
   private final Int2ObjectHashMap<NodeInfo> partitionLeaders = new Int2ObjectHashMap<>();
-  private volatile SocketAddress systemPartitionLeader;
+  private volatile Integer systemPartitionLeaderId;
   private final ActorControl actor;
   private final ActorConditions conditions = new ActorConditions();
 
@@ -51,11 +50,10 @@ public class TopologyPartitionListenerImpl implements TopologyPartitionListener 
   }
 
   private void updateSystemPartitionLeader(NodeInfo member) {
-    final SocketAddress currentLeader = systemPartitionLeader;
+    final Integer currentLeader = systemPartitionLeaderId;
 
-    final SocketAddress managementApiAddress = member.getManagementApiAddress();
-    if (currentLeader == null || !currentLeader.equals(managementApiAddress)) {
-      systemPartitionLeader = managementApiAddress;
+    if (currentLeader == null || !currentLeader.equals(member.getNodeId())) {
+      systemPartitionLeaderId = member.getNodeId();
     }
   }
 
@@ -71,8 +69,8 @@ public class TopologyPartitionListenerImpl implements TopologyPartitionListener 
     return partitionLeaders;
   }
 
-  public SocketAddress getSystemPartitionLeader() {
-    return systemPartitionLeader;
+  public Integer getSystemPartitionLeaderId() {
+    return systemPartitionLeaderId;
   }
 
   public void addCondition(ActorCondition condition) {

@@ -28,7 +28,6 @@ import io.zeebe.broker.clustering.api.InvitationResponse;
 import io.zeebe.broker.clustering.api.ListSnapshotsRequest;
 import io.zeebe.broker.clustering.api.ListSnapshotsResponse;
 import io.zeebe.clustering.management.ErrorResponseCode;
-import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
 import org.agrona.DirectBuffer;
@@ -45,9 +44,7 @@ public class ManagementMessageTest {
             .topicName(TOPIC_NAME)
             .partitionId(111)
             .term(222)
-            .members(
-                Arrays.asList(
-                    new SocketAddress("localhost", 8001), new SocketAddress("localhost", 8002)));
+            .members(Arrays.asList(12, 43));
 
     assertEqualFieldsAfterWriteAndRead(
         invitationRequest, "topicName", "partitionId", "replicationFactor", "term", "members");

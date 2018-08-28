@@ -13,19 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.gossip;
+package io.zeebe.transport;
 
-import org.agrona.DirectBuffer;
+public interface EndpointRegistry {
 
-/** Listen on custom gossip events. */
-@FunctionalInterface
-public interface GossipCustomEventListener {
-  /**
-   * Handle the custom event. If the event is handled asynchronously then the data should be copied
-   * (another invocation reuse the same data).
-   *
-   * @param senderId the node id of the (original) sender of the event
-   * @param payload the event as payload
-   */
-  void onEvent(int senderId, DirectBuffer payload);
+  String getName();
+
+  RemoteAddress getEndpoint(Integer nodeId);
+
+  SocketAddress setEndpoint(int nodeId, SocketAddress socketAddress);
+
+  SocketAddress removeEndpoint(int nodeId);
+
+  SocketAddress retire(int nodeId);
 }

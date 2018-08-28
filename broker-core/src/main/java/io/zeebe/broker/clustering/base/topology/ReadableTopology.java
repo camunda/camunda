@@ -24,6 +24,8 @@ import java.util.List;
 public interface ReadableTopology {
   NodeInfo getLocal();
 
+  NodeInfo getMember(int nodeId);
+
   NodeInfo getMemberByClientApi(SocketAddress apiAddress);
 
   NodeInfo getMemberByManagementApi(SocketAddress apiAddress);

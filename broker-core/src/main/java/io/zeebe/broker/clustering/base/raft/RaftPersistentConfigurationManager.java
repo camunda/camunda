@@ -19,7 +19,6 @@ package io.zeebe.broker.clustering.base.raft;
 
 import io.zeebe.broker.clustering.base.partitions.PartitionAlreadyExistsException;
 import io.zeebe.broker.system.configuration.DataCfg;
-import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.buffer.BufferUtil;
@@ -88,7 +87,7 @@ public class RaftPersistentConfigurationManager extends Actor {
   }
 
   public ActorFuture<RaftPersistentConfiguration> createConfiguration(
-      DirectBuffer topicName, int partitionId, int replicationFactor, List<SocketAddress> members) {
+      DirectBuffer topicName, int partitionId, int replicationFactor, List<Integer> members) {
     final ActorFuture<RaftPersistentConfiguration> future = new CompletableActorFuture<>();
 
     actor.run(

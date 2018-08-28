@@ -22,10 +22,21 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class BrokerInfoImpl implements BrokerInfo {
+  private int nodeId;
   private String host;
   private int port;
 
   private List<PartitionInfo> partitions = new ArrayList<>();
+
+  @Override
+  public int getNodeId() {
+    return nodeId;
+  }
+
+  public BrokerInfoImpl setNodeId(int nodeId) {
+    this.nodeId = nodeId;
+    return this;
+  }
 
   public BrokerInfoImpl setHost(final String host) {
     this.host = host;

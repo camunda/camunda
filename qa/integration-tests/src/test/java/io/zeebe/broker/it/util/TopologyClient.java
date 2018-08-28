@@ -23,7 +23,6 @@ import io.zeebe.gateway.impl.clustering.TopologyRequestImpl;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.transport.ClientResponse;
 import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
 import java.time.Duration;
 import java.util.Collections;
@@ -43,12 +42,13 @@ public class TopologyClient {
             zeebeClient.getObjectMapper(), new TopologyRequestImpl(null, null));
   }
 
-  public List<BrokerInfo> requestTopologyFromBroker(final SocketAddress socketAddress) {
-    final RemoteAddress remoteAddress = transport.registerRemoteAndAwaitChannel(socketAddress);
+  public List<BrokerInfo> requestTopologyFromBroker(
+      final int nodeId, final SocketAddress socketAddress) {
+    transport.registerEndpointAndAwaitChannel(nodeId, socketAddress);
     final ClientResponse response =
         transport
             .getOutput()
-            .sendRequest(remoteAddress, requestHandler, Duration.ofSeconds(5))
+            .sendRequestWithRetry(() -> nodeId, b -> false, requestHandler, Duration.ofSeconds(5))
             .join();
     final DirectBuffer responseBuffer = response.getResponseBuffer();
 

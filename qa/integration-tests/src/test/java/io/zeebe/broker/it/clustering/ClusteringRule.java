@@ -129,8 +129,7 @@ public class ClusteringRule extends ExternalResource {
 
   private void waitUntilBrokersInTopology(final Broker... brokers) {
     final Set<SocketAddress> addresses =
-        Arrays.asList(brokers)
-            .stream()
+        Arrays.stream(brokers)
             .map(b -> b.getConfig().getNetwork().getClient().toSocketAddress())
             .collect(Collectors.toSet());
 
@@ -520,14 +519,15 @@ public class ClusteringRule extends ExternalResource {
   public void waitForTopology(final Function<List<BrokerInfo>, Boolean> topologyPredicate) {
     waitUntil(
         () ->
-            getBrokers()
-                .stream()
+            Arrays.stream(brokers)
+                .filter(Objects::nonNull)
                 .allMatch(
-                    broker -> {
+                    b -> {
+                      final BrokerCfg config = b.getConfig();
                       final List<BrokerInfo> topology =
                           topologyClient.requestTopologyFromBroker(
-                              broker.getConfig().getNetwork().getClient().toSocketAddress());
-                      // printTopology(topology);
+                              config.getNodeId(),
+                              config.getNetwork().getClient().toSocketAddress());
                       return topologyPredicate.apply(topology);
                     }),
         250);

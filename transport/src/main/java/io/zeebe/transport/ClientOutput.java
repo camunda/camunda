@@ -23,22 +23,24 @@ import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 
 public interface ClientOutput {
+
   /**
    * Sends a message according to the single message protocol.
    *
-   * <p>Returns false if the message cannot be currently written due to exhausted capacity. Throws
-   * an exception if the request is not sendable at all (e.g. buffer writer throws exception).
+   * <p>Returns false if the message cannot be currently written due to an unknown endpoint or
+   * exhausted capacity. Throws an exception if the request is not sendable at all (e.g. buffer
+   * writer throws exception).
    */
-  boolean sendMessage(TransportMessage transportMessage);
+  boolean sendMessage(Integer nodeId, BufferWriter writer);
 
   /**
-   * Same as {@link #sendRequest(RemoteAddress, BufferWriter, long)} where the timeout is set to the
+   * Like {@link #sendRequest(Integer, BufferWriter, Duration)} where the timeout is set to the
    * configured default timeout.
    *
    * @return the response future or null in case no memory is currently available to allocate the
    *     request
    */
-  ActorFuture<ClientResponse> sendRequest(RemoteAddress addr, BufferWriter writer);
+  ActorFuture<ClientResponse> sendRequest(Integer nodeId, BufferWriter writer);
 
   /**
    * Like {@link #sendRequestWithRetry(Supplier, Predicate, BufferWriter, Duration)} with a static
@@ -47,13 +49,11 @@ public interface ClientOutput {
    * @return the response future or null in case no memory is currently available to allocate the
    *     request
    */
-  ActorFuture<ClientResponse> sendRequest(
-      RemoteAddress addr, BufferWriter writer, Duration timeout);
+  ActorFuture<ClientResponse> sendRequest(Integer nodeId, BufferWriter writer, Duration timeout);
 
   /**
-   * Like {@link #sendRequest(RemoteAddress, BufferWriter)} but retries the request if there is no
-   * current connection. Makes this method more robust in the presence of short intermittent
-   * disconnects.
+   * Send a request to a node with retries if there is no current connection or the node is not
+   * resolvable. Makes this method more robust in the presence of short intermittent disconnects.
    *
    * <p>Guarantees:
    *
@@ -62,10 +62,10 @@ public interface ClientOutput {
    *   <li>n intermediary copies of the request (one local copy for making retries, one copy on the
    *       send buffer per try)
    *
-   * @param remoteAddressSupplier supplier for the remote address the retries are executed against
-   *     (retries may be executed against different remotes). The future may resolve to <code>null
-   *     </code> to signal that a remote can not be determined. In that case, the request is retried
-   *     after resubmit timeout.
+   * @param nodeIdSupplier supplier for the node id the retries are executed against (retries may be
+   *     executed against different nodes). The supplier may resolve to <code>null
+   *     </code> to signal that a node id can not be determined. In that case, the request is
+   *     retried after resubmit timeout.
    * @param responseInspector function getting the response and returning a boolean. If the function
    *     returns true, the request will be retried: usecase: in a system like zeebe, we may send a
    *     request to the wrong node. The node will send a response indicating that it is not able to
@@ -77,7 +77,7 @@ public interface ClientOutput {
    *     timeout.
    */
   ActorFuture<ClientResponse> sendRequestWithRetry(
-      Supplier<RemoteAddress> remoteAddressSupplier,
+      Supplier<Integer> nodeIdSupplier,
       Predicate<DirectBuffer> responseInspector,
       BufferWriter writer,
       Duration timeout);

@@ -43,10 +43,9 @@
     <field name="name" id="3" type="uint16"/>
     <!-- TODO: provide more details to raft -->
     <group name="members" id="4" dimensionType="groupSizeEncoding">
-      <field name="port" id="5" type="uint16"/>
-      <data name="host" id="6" type="varDataEncoding"/>
+      <field name="nodeId" id="5" type="uint16"/>
     </group>
-    <data name="topicName" id="7" type="varDataEncoding"/>
+    <data name="topicName" id="6" type="varDataEncoding"/>
   </sbe:message>
 
   <sbe:message name="InvitationResponse" id="1">

@@ -33,7 +33,6 @@ import io.zeebe.gateway.impl.topic.TopicsRequestImpl;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.ClientTransportBuilder;
-import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.Transports;
 import io.zeebe.transport.impl.memory.BlockingMemoryPool;
@@ -106,7 +105,7 @@ public class ZeebeClientImpl implements ZeebeClient {
             .build();
 
     final ClientTransportBuilder transportBuilder =
-        Transports.newClientTransport()
+        Transports.newClientTransport("broker")
             .messageMaxLength(1024 * 1024)
             .messageReceiveBuffer(dataFrameReceiveBuffer)
             .messageMemoryPool(
@@ -116,7 +115,7 @@ public class ZeebeClientImpl implements ZeebeClient {
 
     // internal transport is used for topology request
     final ClientTransportBuilder internalTransportBuilder =
-        Transports.newClientTransport()
+        Transports.newClientTransport("broker-internal")
             .messageMaxLength(1024 * 1024)
             .messageMemoryPool(new UnboundedMemoryPool())
             .requestMemoryPool(new UnboundedMemoryPool())
@@ -132,10 +131,8 @@ public class ZeebeClientImpl implements ZeebeClient {
 
     this.objectMapper = new ZeebeObjectMapperImpl();
 
-    final RemoteAddress initialContactPoint = transport.registerRemoteAddress(contactPoint);
-
     topologyManager =
-        new ClientTopologyManager(transport, internalTransport, objectMapper, initialContactPoint);
+        new ClientTopologyManager(transport, internalTransport, objectMapper, contactPoint);
     scheduler.submitActor(topologyManager);
 
     apiCommandManager =

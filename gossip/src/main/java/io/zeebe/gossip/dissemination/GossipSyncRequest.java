@@ -15,7 +15,6 @@
  */
 package io.zeebe.gossip.dissemination;
 
-import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.collection.Reusable;
 import io.zeebe.util.collection.ReusableObjectList;
 import org.agrona.DirectBuffer;
@@ -23,7 +22,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public class GossipSyncRequest implements Reusable {
   private final ReusableObjectList<GossipSyncResponsePart> parts =
-      new ReusableObjectList<>(() -> new GossipSyncResponsePart());
+      new ReusableObjectList<>(GossipSyncResponsePart::new);
 
   private final DirectBuffer type = new UnsafeBuffer(0, 0);
 
@@ -32,15 +31,14 @@ public class GossipSyncRequest implements Reusable {
     this.parts.clear();
   }
 
-  public GossipSyncRequest addPayload(
-      SocketAddress sender, DirectBuffer payload, int offset, int length) {
-    parts.add().wrap(sender, payload, offset, length);
+  public GossipSyncRequest addPayload(int nodeId, DirectBuffer payload, int offset, int length) {
+    parts.add().wrap(nodeId, payload, offset, length);
 
     return this;
   }
 
-  public GossipSyncRequest addPayload(SocketAddress sender, DirectBuffer payload) {
-    parts.add().wrap(sender, payload);
+  public GossipSyncRequest addPayload(int nodeId, DirectBuffer payload) {
+    parts.add().wrap(nodeId, payload);
 
     return this;
   }

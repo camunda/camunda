@@ -15,7 +15,6 @@
  */
 package io.zeebe.raft.protocol;
 
-import static io.zeebe.raft.ConfigurationResponseEncoder.MembersEncoder.hostHeaderLength;
 import static io.zeebe.raft.ConfigurationResponseEncoder.MembersEncoder.sbeBlockLength;
 import static io.zeebe.raft.ConfigurationResponseEncoder.MembersEncoder.sbeHeaderSize;
 import static io.zeebe.raft.ConfigurationResponseEncoder.termNullValue;
@@ -25,26 +24,19 @@ import io.zeebe.raft.ConfigurationResponseDecoder;
 import io.zeebe.raft.ConfigurationResponseEncoder;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftMember;
-import io.zeebe.transport.SocketAddress;
-import java.util.ArrayList;
 import java.util.List;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.collections.IntArrayList;
 
 public class ConfigurationResponse extends AbstractRaftMessage implements HasTerm {
 
   protected final ConfigurationResponseDecoder bodyDecoder = new ConfigurationResponseDecoder();
   protected final ConfigurationResponseEncoder bodyEncoder = new ConfigurationResponseEncoder();
 
-  // read + write
   protected int term;
   protected boolean succeeded;
-
-  // read
-  protected List<SocketAddress> readMembers = new ArrayList<>();
-
-  // write
-  protected List<SocketAddress> writeMembers = new ArrayList<>();
+  protected IntArrayList members = new IntArrayList();
 
   public ConfigurationResponse() {
     reset();
@@ -53,10 +45,7 @@ public class ConfigurationResponse extends AbstractRaftMessage implements HasTer
   public ConfigurationResponse reset() {
     term = termNullValue();
     succeeded = false;
-
-    readMembers.clear();
-
-    writeMembers.clear();
+    members.clear();
 
     return this;
   }
@@ -90,38 +79,28 @@ public class ConfigurationResponse extends AbstractRaftMessage implements HasTer
     return this;
   }
 
-  public List<SocketAddress> getMembers() {
-    return readMembers;
+  public List<Integer> getMembers() {
+    return members;
   }
 
   public ConfigurationResponse setRaft(final Raft raft) {
     term = raft.getTerm();
-    writeMembers.add(raft.getSocketAddress());
+    members.addInt(raft.getNodeId());
 
     final List<RaftMember> memberList = raft.getRaftMembers().getMemberList();
-    memberList.forEach(
-        (m) -> {
-          writeMembers.add(m.getRemoteAddress().getAddress());
-        });
+    memberList.forEach((m) -> members.addInt(m.getNodeId()));
 
     return this;
   }
 
   @Override
   public int getLength() {
-    final int membersCount = writeMembers.size();
+    final int membersCount = members.size();
 
-    int length =
-        headerEncoder.encodedLength()
-            + bodyEncoder.sbeBlockLength()
-            + sbeHeaderSize()
-            + (sbeBlockLength() + hostHeaderLength()) * membersCount;
-
-    for (int i = 0; i < membersCount; i++) {
-      length += writeMembers.get(i).hostLength();
-    }
-
-    return length;
+    return headerEncoder.encodedLength()
+        + bodyEncoder.sbeBlockLength()
+        + sbeHeaderSize()
+        + (sbeBlockLength() * membersCount);
   }
 
   @Override
@@ -139,16 +118,7 @@ public class ConfigurationResponse extends AbstractRaftMessage implements HasTer
     succeeded = bodyDecoder.succeeded() == BooleanType.TRUE;
 
     for (final ConfigurationResponseDecoder.MembersDecoder decoder : bodyDecoder.members()) {
-      final SocketAddress socketAddress = new SocketAddress();
-      socketAddress.port(decoder.port());
-
-      final int hostLength = decoder.hostLength();
-      final MutableDirectBuffer endpointBuffer = socketAddress.getHostBuffer();
-      socketAddress.hostLength(hostLength);
-      decoder.getHost(endpointBuffer, 0, hostLength);
-
-      // TODO: make this garbage free or not!?
-      readMembers.add(socketAddress);
+      members.addInt(decoder.nodeId());
     }
 
     assert bodyDecoder.limit() == frameEnd
@@ -175,16 +145,10 @@ public class ConfigurationResponse extends AbstractRaftMessage implements HasTer
         .term(term)
         .succeeded(succeeded ? BooleanType.TRUE : BooleanType.FALSE);
 
-    final int membersCount = writeMembers.size();
-
     final ConfigurationResponseEncoder.MembersEncoder encoder =
-        bodyEncoder.membersCount(membersCount);
-    for (int i = 0; i < membersCount; i++) {
-      final SocketAddress socketAddress = writeMembers.get(i);
-      encoder
-          .next()
-          .port(socketAddress.port())
-          .putHost(socketAddress.getHostBuffer(), 0, socketAddress.hostLength());
+        bodyEncoder.membersCount(members.size());
+    for (int member : members) {
+      encoder.next().nodeId(member);
     }
   }
 }

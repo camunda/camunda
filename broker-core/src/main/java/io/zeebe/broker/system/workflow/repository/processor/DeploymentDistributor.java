@@ -30,8 +30,6 @@ import io.zeebe.broker.system.workflow.repository.processor.state.DeploymentsSta
 import io.zeebe.protocol.Protocol;
 import io.zeebe.transport.ClientResponse;
 import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -93,8 +91,8 @@ public class DeploymentDistributor {
     pendingDeploymentFutures.put(key, pushedFuture);
 
     if (!partitionsResolved.isDone()) {
-      final SocketAddress systemPartitionLeader = partitionListener.getSystemPartitionLeader();
-      if (systemPartitionLeader == null) {
+      final Integer systemPartitionLeaderId = partitionListener.getSystemPartitionLeaderId();
+      if (systemPartitionLeaderId == null) {
         partitionListener.addCondition(updatePartition);
       } else {
         fetchTopics();
@@ -167,26 +165,24 @@ public class DeploymentDistributor {
       final NodeInfo leader = currentPartitionLeaders.get(partitionId);
       if (leader != null) {
         iterator.remove();
-        pushDeploymentToPartition(leader.getManagementApiAddress(), partitionId);
+        pushDeploymentToPartition(leader.getNodeId(), partitionId);
       }
     }
     return remainingPartitions;
   }
 
-  private void pushDeploymentToPartition(SocketAddress partitionLeader, int partition) {
-    final RemoteAddress remoteAddress = managementApi.registerRemoteAddress(partitionLeader);
-
+  private void pushDeploymentToPartition(int partitionLeaderId, int partition) {
     pushDeploymentRequest.partitionId(partition);
     final ActorFuture<ClientResponse> pushResponseFuture =
         managementApi
             .getOutput()
             .sendRequestWithRetry(
-                () -> remoteAddress,
+                () -> partitionLeaderId,
                 (response) -> !pushDeploymentResponse.tryWrap(response),
                 pushDeploymentRequest,
                 PUSH_REQUEST_TIMEOUT);
 
-    LOG.debug("Deployment pushed to partition {} ({}).", partition, partitionLeader);
+    LOG.debug("Deployment pushed to partition {} (node id: {}).", partition, partitionLeaderId);
     actor.runOnCompletion(
         pushResponseFuture,
         (response, throwable) -> {
@@ -202,9 +198,9 @@ public class DeploymentDistributor {
                 partitionListener.getPartitionLeaders();
             final NodeInfo currentLeader = partitionLeaders.get(partition);
             if (currentLeader != null) {
-              pushDeploymentToPartition(currentLeader.getManagementApiAddress(), partition);
+              pushDeploymentToPartition(currentLeader.getNodeId(), partition);
             } else {
-              pushDeploymentToPartition(partitionLeader, partition);
+              pushDeploymentToPartition(partitionLeaderId, partition);
             }
           }
         });
@@ -232,18 +228,15 @@ public class DeploymentDistributor {
   ////////////////////////////////////////////////
 
   private void fetchTopics() {
-    final SocketAddress systemPartitionLeader = partitionListener.getSystemPartitionLeader();
-    if (systemPartitionLeader != null) {
+    final Integer systemPartitionLeaderId = partitionListener.getSystemPartitionLeaderId();
+    if (systemPartitionLeaderId != null) {
       partitionListener.removeCondition(updatePartition);
-
-      final RemoteAddress remoteAddress =
-          managementApi.registerRemoteAddress(systemPartitionLeader);
 
       final ActorFuture<ClientResponse> future =
           managementApi
               .getOutput()
               .sendRequestWithRetry(
-                  () -> remoteAddress,
+                  () -> systemPartitionLeaderId,
                   b -> !fetchCreatedTopicsResponse.tryWrap(b),
                   fetchCreatedTopicsRequest,
                   FETCH_TOPICS_TIMEOUT);

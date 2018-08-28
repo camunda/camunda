@@ -24,7 +24,6 @@ import io.zeebe.raft.protocol.AppendResponse;
 import io.zeebe.raft.protocol.ConfigurationRequest;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerOutput;
-import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorControl;
 import java.util.Arrays;
@@ -48,7 +47,7 @@ public class LeaderState extends AbstractRaftState {
     super.onEnterState();
 
     if (raftMembers.getMemberSize() == 0) {
-      createOnAppendContition();
+      createOnAppendCondition();
     }
   }
 
@@ -59,7 +58,7 @@ public class LeaderState extends AbstractRaftState {
     super.onLeaveState();
   }
 
-  private void createOnAppendContition() {
+  private void createOnAppendCondition() {
     if (appendCondition == null) {
       appendCondition = raftActor.onCondition("append-condition", this::commitPositionOnSingleNode);
       logStream.registerOnAppendCondition(appendCondition);
@@ -88,7 +87,7 @@ public class LeaderState extends AbstractRaftState {
       final ConfigurationRequest configurationRequest) {
     if (!raft.mayStepDown(configurationRequest)) {
       if (initialEventCommitted && !configurationChangeController.isHandlingConfigurationChange()) {
-        final SocketAddress member = configurationRequest.getSocketAddress();
+        final int member = configurationRequest.getNodeId();
         if (configurationRequest.isJoinRequest()) {
           join(serverOutput, remoteAddress, requestId, member);
         } else {
@@ -104,12 +103,11 @@ public class LeaderState extends AbstractRaftState {
       final ServerOutput serverOutput,
       final RemoteAddress remoteAddress,
       final long requestId,
-      SocketAddress newMember) {
+      final int newMember) {
     if (raftMembers.hasMember(newMember)) {
       acceptConfigurationRequest(serverOutput, remoteAddress, requestId);
     } else {
-      // create new socket address object as it is stored in a map
-      if (raft.joinMember(new SocketAddress(newMember))) {
+      if (raft.joinMember(newMember)) {
         configurationChangeController.prepare(
             serverOutput, remoteAddress, requestId, RaftIntent.MEMBER_ADDED);
         configurationChangeController.appendEvent();
@@ -124,7 +122,7 @@ public class LeaderState extends AbstractRaftState {
       final ServerOutput serverOutput,
       final RemoteAddress remoteAddress,
       final long requestId,
-      SocketAddress member) {
+      final int member) {
     if (!raftMembers.hasMember(member)) {
       acceptConfigurationRequest(serverOutput, remoteAddress, requestId);
     } else {
@@ -137,7 +135,7 @@ public class LeaderState extends AbstractRaftState {
             if (canLeave) {
               // re-add append condition
               if (raftMembers.getMemberSize() == 0) {
-                createOnAppendContition();
+                createOnAppendCondition();
               }
 
               configurationChangeController.appendEvent();
@@ -154,8 +152,7 @@ public class LeaderState extends AbstractRaftState {
       final boolean succeeded = appendResponse.isSucceeded();
       final long eventPosition = appendResponse.getPreviousEventPosition();
 
-      final RaftMember member =
-          raftMembers.getMemberBySocketAddress(appendResponse.getSocketAddress());
+      final RaftMember member = raftMembers.getMember(appendResponse.getNodeId());
 
       if (member != null) {
         if (succeeded) {

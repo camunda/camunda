@@ -21,7 +21,6 @@ import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
 import io.zeebe.transport.impl.ControlMessages;
 import io.zeebe.transport.impl.util.SocketUtil;
-import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
@@ -29,7 +28,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
-import org.agrona.DirectBuffer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -37,10 +35,10 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class ClientChannelKeepAliveTest {
-  protected static final DirectBuffer BUF = BufferUtil.wrapBytes(1, 2, 3, 4);
-
   protected static final Duration KEEP_ALIVE_PERIOD = Duration.ofSeconds(1);
+  protected static final int NODE_ID = 1;
   protected static final SocketAddress ADDRESS = SocketUtil.getNextAddress();
+  protected static final int NODE_ID2 = 2;
   protected static final SocketAddress ADDRESS2 = SocketUtil.getNextAddress();
 
   private ControlledActorClock clock = new ControlledActorClock();
@@ -72,7 +70,7 @@ public class ClientChannelKeepAliveTest {
 
   protected ClientTransport buildClientTransport(Duration keepAlivePeriod) {
     final ClientTransportBuilder transportBuilder =
-        Transports.newClientTransport().scheduler(actorSchedulerRule.get());
+        Transports.newClientTransport("test").scheduler(actorSchedulerRule.get());
 
     if (keepAlivePeriod != null) {
       transportBuilder.keepAlivePeriod(keepAlivePeriod);
@@ -84,8 +82,8 @@ public class ClientChannelKeepAliveTest {
     return clientTransport;
   }
 
-  protected void openChannel(ClientTransport transport, SocketAddress target) {
-    transport.registerRemoteAndAwaitChannel(target);
+  protected void openChannel(ClientTransport transport, int nodeId, SocketAddress target) {
+    transport.registerEndpointAndAwaitChannel(nodeId, target);
   }
 
   @After
@@ -106,7 +104,7 @@ public class ClientChannelKeepAliveTest {
     clock.setCurrentTime(1000);
     final ClientTransport transport = buildClientTransport(KEEP_ALIVE_PERIOD);
 
-    openChannel(transport, ADDRESS);
+    openChannel(transport, NODE_ID, ADDRESS);
 
     // when
     clock.addTime(KEEP_ALIVE_PERIOD.plusMillis(1));
@@ -126,7 +124,7 @@ public class ClientChannelKeepAliveTest {
     clock.setCurrentTime(Instant.now());
     final ClientTransport transport = buildClientTransport(KEEP_ALIVE_PERIOD);
 
-    openChannel(transport, ADDRESS);
+    openChannel(transport, NODE_ID, ADDRESS);
 
     clock.addTime(KEEP_ALIVE_PERIOD.plusMillis(1));
     final long timestamp1 = clock.getCurrentTimeInMillis();
@@ -156,7 +154,7 @@ public class ClientChannelKeepAliveTest {
     final int expectedDefaultKeepAlive = 5000;
     final ClientTransport transport = buildClientTransport(null);
 
-    openChannel(transport, ADDRESS);
+    openChannel(transport, NODE_ID, ADDRESS);
 
     // when
     clock.addTime(Duration.ofMillis(expectedDefaultKeepAlive - 1));
@@ -186,8 +184,8 @@ public class ClientChannelKeepAliveTest {
 
     final ClientTransport clientTransport = buildClientTransport(KEEP_ALIVE_PERIOD);
 
-    openChannel(clientTransport, ADDRESS);
-    openChannel(clientTransport, ADDRESS2);
+    openChannel(clientTransport, NODE_ID, ADDRESS);
+    openChannel(clientTransport, NODE_ID2, ADDRESS2);
 
     // when
     clock.addTime(KEEP_ALIVE_PERIOD.plusMillis(1));
@@ -211,7 +209,7 @@ public class ClientChannelKeepAliveTest {
     clock.setCurrentTime(Instant.now());
     final ClientTransport clientTransport = buildClientTransport(null);
 
-    openChannel(clientTransport, ADDRESS);
+    openChannel(clientTransport, NODE_ID, ADDRESS);
 
     // when
     clock.setCurrentTime(Long.MAX_VALUE);

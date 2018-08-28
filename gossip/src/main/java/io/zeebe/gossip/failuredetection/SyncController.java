@@ -55,11 +55,11 @@ public class SyncController {
         () -> {
           if (memberIterator.hasNext()) {
             final Member nextMember = memberIterator.next();
-            LOG.debug("Send sync request to '{}'.", nextMember.getAddress());
+            LOG.debug("Send sync request to node '{}'.", nextMember.getId());
 
             final ActorFuture<ClientResponse> requestFuture =
                 gossipEventSender.sendSyncRequest(
-                    nextMember.getAddress(), configuration.getSyncTimeoutDuration());
+                    nextMember.getId(), configuration.getSyncTimeoutDuration());
 
             actor.runOnCompletion(
                 requestFuture,
@@ -71,7 +71,7 @@ public class SyncController {
                   } else {
                     LOG.debug(
                         "Failed to receive SYNC response from '{}'. Try again in {}",
-                        nextMember.getAddress(),
+                        nextMember.getId(),
                         configuration.getSyncIntervalDuration());
                   }
                 });

@@ -15,57 +15,43 @@
  */
 package io.zeebe.raft;
 
-import static io.zeebe.util.EnsureUtil.ensureNotNull;
-
 import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.raft.event.RaftConfigurationEventMember;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.SocketAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class RaftMembers {
-  private final Map<SocketAddress, RaftMember> memberLookup = new HashMap<>();
+  private final Map<Integer, RaftMember> memberLookup = new HashMap<>();
   private final List<RaftMember> members = new ArrayList<>();
   private final RaftPersistentStorage persistentStorage;
   private final RaftMember localMember;
-  private final Function<SocketAddress, RemoteAddress> remoteAddressResolver;
 
-  public RaftMembers(
-      SocketAddress localMember,
-      RaftPersistentStorage persistentStorage,
-      Function<SocketAddress, RemoteAddress> remoteAddressResolver) {
+  public RaftMembers(int localNodeId, RaftPersistentStorage persistentStorage) {
     this.persistentStorage = persistentStorage;
-    this.remoteAddressResolver = remoteAddressResolver;
-    this.localMember = new RaftMember(remoteAddressResolver.apply(localMember));
+    this.localMember = new RaftMember(localNodeId);
   }
 
   public List<RaftMember> getMemberList() {
     return members;
   }
 
-  public List<SocketAddress> getMemberAddresses() {
-    return members
-        .stream()
-        .map((rm) -> rm.getRemoteAddress().getAddress())
-        .collect(Collectors.toList());
+  public List<Integer> getMemberIds() {
+    return members.stream().map(RaftMember::getNodeId).collect(Collectors.toList());
   }
 
   public int getMemberSize() {
     return members.size();
   }
 
-  public RaftMember getMemberBySocketAddress(SocketAddress address) {
-    return memberLookup.get(address);
+  public RaftMember getMember(int nodeId) {
+    return memberLookup.get(nodeId);
   }
 
-  public boolean hasMember(SocketAddress socketAddress) {
-    return memberLookup.containsKey(socketAddress);
+  public boolean hasMember(int nodeId) {
+    return memberLookup.containsKey(nodeId);
   }
 
   public void replaceMembersOnConfigurationChange(
@@ -74,34 +60,30 @@ public class RaftMembers {
     memberLookup.clear();
     persistentStorage.clearMembers();
 
-    final Iterator<RaftConfigurationEventMember> iterator = newMembers.iterator();
-    while (iterator.hasNext()) {
-      addMember(iterator.next().getSocketAddress());
+    for (RaftConfigurationEventMember newMember : newMembers) {
+      addMember(newMember.getNodeId());
     }
 
     persistentStorage.save();
   }
 
-  public void addMembersWhenJoined(final List<SocketAddress> membersToAdd) {
+  public void addMembersWhenJoined(final List<Integer> membersToAdd) {
     membersToAdd.forEach(this::addMember);
     persistentStorage.save();
   }
 
-  public RaftMember addMember(final SocketAddress socketAddress) {
-    ensureNotNull("Raft node socket address", socketAddress);
-
-    if (socketAddress.equals(localMember.getRemoteAddress().getAddress())) {
+  public RaftMember addMember(final int nodeId) {
+    if (nodeId == localMember.getNodeId()) {
       return null;
     }
 
-    if (!hasMember(socketAddress)) {
-      final RemoteAddress remoteAddress = remoteAddressResolver.apply(socketAddress);
-      final RaftMember member = new RaftMember(remoteAddress);
+    if (!hasMember(nodeId)) {
+      final RaftMember member = new RaftMember(nodeId);
 
       members.add(member);
-      memberLookup.put(socketAddress, member);
+      memberLookup.put(nodeId, member);
 
-      persistentStorage.addMember(socketAddress);
+      persistentStorage.addMember(nodeId);
 
       return member;
     } else {
@@ -109,18 +91,16 @@ public class RaftMembers {
     }
   }
 
-  public RaftMember removeMember(final SocketAddress socketAddress) {
-    ensureNotNull("Raft node socket address", socketAddress);
-
-    if (socketAddress.equals(localMember.getRemoteAddress().getAddress())) {
+  public RaftMember removeMember(final int nodeId) {
+    if (nodeId == localMember.getNodeId()) {
       return null;
     }
 
-    final RaftMember member = getMemberBySocketAddress(socketAddress);
+    final RaftMember member = getMember(nodeId);
     if (member != null) {
       members.remove(member);
-      memberLookup.remove(socketAddress, member);
-      persistentStorage.removeMember(socketAddress);
+      memberLookup.remove(nodeId, member);
+      persistentStorage.removeMember(nodeId);
     }
 
     return member;

@@ -1,6 +1,6 @@
-# Broker 2
+# Broker 4
 
-nodeId = 1
+nodeId = 3
 
 [network.gateway]
 enabled = false

@@ -66,7 +66,7 @@ public class GossipRequestHandler implements ServerRequestHandler {
 
       final GossipEventConsumer consumer = consumers.get(eventType);
       if (consumer != null) {
-        LOG.trace("Received gossip event {} from '{}'", eventType, gossipEvent.getSender());
+        LOG.trace("Received gossip event {} from node '{}'", eventType, gossipEvent.getSenderId());
 
         consumer.accept(gossipEvent, requestId, remoteAddress.getStreamId());
       } else {

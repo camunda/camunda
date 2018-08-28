@@ -37,8 +37,8 @@ public class RaftProtocolMessageTest {
   public static ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
   public static ServiceContainerRule serviceContainer = new ServiceContainerRule(actorScheduler);
 
-  public static RaftRule raft1 = new RaftRule(serviceContainer, "test", 123);
-  public static RaftRule raft2 = new RaftRule(serviceContainer, "test", 123, raft1);
+  public static RaftRule raft1 = new RaftRule(serviceContainer, 1, "test", 123);
+  public static RaftRule raft2 = new RaftRule(serviceContainer, 2, "test", 123, raft1);
 
   @ClassRule
   public static RaftClusterRule cluster =
@@ -84,7 +84,7 @@ public class RaftProtocolMessageTest {
     // then
     assertTerm(configurationResponse);
     assertThat(configurationResponse.getMembers())
-        .containsOnly(raft1.getSocketAddress(), raft2.getSocketAddress());
+        .containsOnly(raft1.getNodeId(), raft2.getNodeId());
   }
 
   @Test
@@ -99,7 +99,7 @@ public class RaftProtocolMessageTest {
     // then
     assertPartition(pollRequest);
     assertTerm(pollRequest);
-    assertSocketAddress(pollRequest);
+    assertNodeId(pollRequest);
     assertThat(pollRequest.getLastEventPosition()).isEqualTo(111);
     assertThat(pollRequest.getLastEventTerm()).isEqualTo(222);
   }
@@ -129,7 +129,7 @@ public class RaftProtocolMessageTest {
     // then
     assertPartition(voteRequest);
     assertTerm(voteRequest);
-    assertSocketAddress(voteRequest);
+    assertNodeId(voteRequest);
     assertThat(voteRequest.getLastEventPosition()).isEqualTo(111);
     assertThat(voteRequest.getLastEventTerm()).isEqualTo(222);
   }
@@ -159,7 +159,7 @@ public class RaftProtocolMessageTest {
     // then
     assertPartition(appendRequest);
     assertTerm(appendRequest);
-    assertSocketAddress(appendRequest);
+    assertNodeId(appendRequest);
     assertThat(appendRequest.getPreviousEventPosition()).isEqualTo(111);
     assertThat(appendRequest.getPreviousEventTerm()).isEqualTo(222);
     assertThat(appendRequest.getEvent()).isNull();
@@ -191,7 +191,7 @@ public class RaftProtocolMessageTest {
     // then
     assertPartition(appendRequest);
     assertTerm(appendRequest);
-    assertSocketAddress(appendRequest);
+    assertNodeId(appendRequest);
     assertThat(appendRequest.getPreviousEventPosition()).isEqualTo(111);
     assertThat(appendRequest.getPreviousEventTerm()).isEqualTo(222);
 
@@ -212,7 +212,7 @@ public class RaftProtocolMessageTest {
     // then
     assertPartition(appendResponse);
     assertTerm(appendResponse);
-    assertSocketAddress(appendResponse);
+    assertNodeId(appendResponse);
     assertThat(appendResponse.getPreviousEventPosition()).isEqualTo(111);
     assertThat(appendResponse.isSucceeded()).isTrue();
   }
@@ -225,7 +225,7 @@ public class RaftProtocolMessageTest {
     assertThat(hasTerm.getTerm()).isEqualTo(raft.getTerm());
   }
 
-  protected void assertSocketAddress(final HasSocketAddress hasSocketAddress) {
-    assertThat(hasSocketAddress.getSocketAddress()).isEqualTo(raft.getSocketAddress());
+  protected void assertNodeId(final HasNodeId hasNodeId) {
+    assertThat(hasNodeId.getNodeId()).isEqualTo(raft.getNodeId());
   }
 }

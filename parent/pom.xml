@@ -26,42 +26,42 @@
 
     <!-- EXTERNAL LIBS -->
     <version.agrona>0.9.13</version.agrona>
-    <version.junit>4.12</version.junit>
-    <version.mockito>2.13.0</version.mockito>
     <version.assertj>3.8.0</version.assertj>
-    <version.msgpack>0.8.16</version.msgpack>
+    <version.grpc>1.13.2</version.grpc>
+    <version.hamcrest>1.3</version.hamcrest>
     <version.jackson>2.9.5</version.jackson>
     <version.jmh>1.21</version.jmh>
-    <version.sbe>1.5.6</version.sbe>
-    <version.slf4j>1.7.23</version.slf4j>
+    <version.junit>4.12</version.junit>
     <version.log4j>2.8.1</version.log4j>
-    <version.toml>0.5.1</version.toml>
+    <version.mockito>2.13.0</version.mockito>
     <version.model>7.7.0</version.model>
-    <version.hamcrest>1.3</version.hamcrest>
-    <version.scala>2.12.2</version.scala>
-    <version.scala-parser>1.0.6</version.scala-parser>
-
-    <version.rocksdbjni>5.14.2</version.rocksdbjni>
-    <version.grpc>1.13.2</version.grpc>
-    <version.protoc>3.6.0</version.protoc>
-    <version.protobuf>3.6.0</version.protobuf>
+    <version.msgpack>0.8.16</version.msgpack>
     <version.netty.tcnative>2.0.7.Final</version.netty.tcnative>
+    <version.protobuf>3.6.0</version.protobuf>
+    <version.protoc>3.6.0</version.protoc>
+    <version.rocksdbjni>5.14.2</version.rocksdbjni>
+    <version.sbe>1.5.6</version.sbe>
+    <version.scala-parser>1.0.6</version.scala-parser>
+    <version.scala>2.12.2</version.scala>
+    <version.slf4j>1.7.23</version.slf4j>
+    <version.streamex>0.6.7</version.streamex>
+    <version.toml>0.5.1</version.toml>
 
     <!-- maven plugins -->
-    <plugin.version.compiler>3.5.1</plugin.version.compiler>
-    <plugin.version.checkstyle>2.17</plugin.version.checkstyle>
-    <plugin.version.license>3.0</plugin.version.license>
-    <plugin.version.surefire>2.20</plugin.version.surefire>
-    <plugin.version.build-helper>1.12</plugin.version.build-helper>
-    <plugin.version.shade>2.2</plugin.version.shade>
+    <plugin.version.antrun>1.8</plugin.version.antrun>
     <plugin.version.appassembler>1.10</plugin.version.appassembler>
+    <plugin.version.build-helper>1.12</plugin.version.build-helper>
+    <plugin.version.checkstyle>2.17</plugin.version.checkstyle>
+    <plugin.version.compiler>3.5.1</plugin.version.compiler>
     <plugin.version.exec>1.6.0</plugin.version.exec>
+    <plugin.version.fmt>2.5.1</plugin.version.fmt>
+    <plugin.version.license>3.0</plugin.version.license>
+    <plugin.version.protobuf-maven-plugin>0.5.1</plugin.version.protobuf-maven-plugin>
     <plugin.version.resources>2.6</plugin.version.resources>
     <plugin.version.scala>3.2.1</plugin.version.scala>
-    <plugin.version.antrun>1.8</plugin.version.antrun>
+    <plugin.version.shade>2.2</plugin.version.shade>
+    <plugin.version.surefire>2.20</plugin.version.surefire>
     <plugin.version.versions>2.5</plugin.version.versions>
-    <plugin.version.fmt>2.5.1</plugin.version.fmt>
-    <plugin.version.protobuf-maven-plugin>0.5.1</plugin.version.protobuf-maven-plugin>
 
     <!-- maven extensions -->
     <extension.version.os-maven-plugin>1.5.0.Final</extension.version.os-maven-plugin>
@@ -201,6 +201,12 @@
         <groupId>io.grpc</groupId>
         <artifactId>grpc-netty</artifactId>
         <version>${version.grpc}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>one.util</groupId>
+        <artifactId>streamex</artifactId>
+        <version>${version.streamex}</version>
       </dependency>
     </dependencies>
   </dependencyManagement>

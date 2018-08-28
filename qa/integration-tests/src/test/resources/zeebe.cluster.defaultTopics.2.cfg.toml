@@ -2,6 +2,8 @@
 # bootstrap < 1
 # based on zeebe.cluster.2.cfg.toml
 
+nodeId = 1
+
 [[topics]]
 name = "default-topic-2"
 partitions = 1

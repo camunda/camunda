@@ -38,7 +38,7 @@ import io.zeebe.raft.controller.MemberReplicateLogController;
 import io.zeebe.raft.controller.RaftJoinService;
 import io.zeebe.raft.controller.RaftPollService;
 import io.zeebe.raft.event.RaftConfigurationEventMember;
-import io.zeebe.raft.protocol.HasSocketAddress;
+import io.zeebe.raft.protocol.HasNodeId;
 import io.zeebe.raft.protocol.HasTerm;
 import io.zeebe.raft.state.AbstractRaftState;
 import io.zeebe.raft.state.CandidateState;
@@ -60,8 +60,6 @@ import io.zeebe.transport.ServerMessageHandler;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerRequestHandler;
 import io.zeebe.transport.ServerResponse;
-import io.zeebe.transport.SocketAddress;
-import io.zeebe.transport.TransportMessage;
 import io.zeebe.transport.impl.actor.Receiver;
 import io.zeebe.util.LogUtil;
 import io.zeebe.util.buffer.BufferWriter;
@@ -94,7 +92,7 @@ public class Raft extends Actor
       new ConcurrentQueueChannel<>(new ManyToOneConcurrentLinkedQueue<>());
   private final OneToOneRingBufferChannel messageReceiveBuffer;
   private final RaftConfiguration configuration;
-  private final SocketAddress socketAddress;
+  private final int nodeId;
   private final ClientTransport clientTransport;
 
   private ServiceName<?> currentStateServiceName;
@@ -113,7 +111,6 @@ public class Raft extends Actor
   private final RaftMembers raftMembers;
 
   // reused entities
-  private final TransportMessage transportMessage = new TransportMessage();
   private final ServerResponse serverResponse = new ServerResponse();
 
   private ServiceStartContext serviceContext;
@@ -125,21 +122,20 @@ public class Raft extends Actor
   public Raft(
       final String raftName,
       final RaftConfiguration configuration,
-      final SocketAddress socketAddress,
+      final int nodeId,
       final ClientTransport clientTransport,
       final RaftPersistentStorage persistentStorage,
       final OneToOneRingBufferChannel messageReceiveBuffer,
       final RaftStateListener... listeners) {
     this.configuration = configuration;
-    this.socketAddress = socketAddress;
+    this.nodeId = nodeId;
     this.clientTransport = clientTransport;
     this.persistentStorage = persistentStorage;
     this.messageReceiveBuffer = messageReceiveBuffer;
     this.raftName = raftName;
 
     this.heartbeat = new Heartbeat(configuration.getElectionIntervalDuration().toMillis());
-    this.raftMembers =
-        new RaftMembers(socketAddress, persistentStorage, clientTransport::registerRemoteAddress);
+    this.raftMembers = new RaftMembers(nodeId, persistentStorage);
 
     raftStateListeners.addAll(Arrays.asList(listeners));
 
@@ -220,7 +216,7 @@ public class Raft extends Actor
     state = null;
 
     setTerm(term);
-    setVotedFor(getSocketAddress());
+    setVotedFor(getNodeId());
 
     final ServiceName<AbstractRaftState> candidateServiceName =
         candidateServiceName(raftName, term);
@@ -273,8 +269,7 @@ public class Raft extends Actor
 
     for (final RaftMember raftMember : raftMembers.getMemberList()) {
       final ServiceName<Void> replicateLogControllerServiceName =
-          replicateLogConrollerServiceName(
-              raftName, term, raftMember.getRemoteAddress().getAddress());
+          replicateLogConrollerServiceName(raftName, term, raftMember.getNodeId());
       final MemberReplicateLogController replicationController =
           new MemberReplicateLogController(this, raftMember, clientTransport);
       installOperation
@@ -384,7 +379,7 @@ public class Raft extends Actor
         (l) -> LogUtil.catchAndLog(LOG, () -> l.onStateChange(this, getState())));
   }
 
-  private List<ActorFuture<Void>> notifyMemberLeavingListeners(List<SocketAddress> newMembers) {
+  private List<ActorFuture<Void>> notifyMemberLeavingListeners(List<Integer> newMembers) {
     final List<ActorFuture<Void>> futures = new ArrayList<>();
 
     raftStateListeners.forEach(
@@ -394,10 +389,10 @@ public class Raft extends Actor
   }
 
   private void notifyMemberJoinedListeners() {
-    final List<SocketAddress> memberAddresses = raftMembers.getMemberAddresses();
+    final List<Integer> memberNodeIds = raftMembers.getMemberIds();
 
     raftStateListeners.forEach(
-        (l) -> LogUtil.catchAndLog(LOG, () -> l.onMemberJoined(this, memberAddresses)));
+        (l) -> LogUtil.catchAndLog(LOG, () -> l.onMemberJoined(this, memberNodeIds)));
   }
 
   // message handler
@@ -449,8 +444,8 @@ public class Raft extends Actor
     return configuration;
   }
 
-  public SocketAddress getSocketAddress() {
-    return socketAddress;
+  public int getNodeId() {
+    return nodeId;
   }
 
   // state
@@ -515,19 +510,19 @@ public class Raft extends Actor
    * @return the raft which this node voted for in the current term, or null if not voted yet in the
    *     current term
    */
-  public SocketAddress getVotedFor() {
+  public Integer getVotedFor() {
     return persistentStorage.getVotedFor();
   }
 
   /** @return true if not voted yet in the term or already vote the provided raft node */
-  public boolean canVoteFor(final HasSocketAddress hasSocketAddress) {
-    final SocketAddress votedFor = getVotedFor();
-    return votedFor == null || votedFor.equals(hasSocketAddress.getSocketAddress());
+  public boolean canVoteFor(final HasNodeId hasNodeId) {
+    final Integer votedFor = getVotedFor();
+    return votedFor == null || votedFor.equals(hasNodeId.getNodeId());
   }
 
   /** Set the raft which was granted a vote in the current term. */
-  public void setVotedFor(final SocketAddress votedFor) {
-    persistentStorage.setVotedFor(votedFor).save();
+  public void setVotedFor(final int nodeId) {
+    persistentStorage.setVotedFor(nodeId).save();
   }
 
   public RaftMembers getRaftMembers() {
@@ -552,7 +547,7 @@ public class Raft extends Actor
    * <p><b>Note:</b> If this node is part of the members list provided it will be ignored and not
    * added to the known members. This would distort the quorum determination.
    */
-  public void addMembersWhenJoined(final List<SocketAddress> members) {
+  public void addMembersWhenJoined(final List<Integer> members) {
     raftMembers.addMembersWhenJoined(members);
     notifyMemberJoinedListeners();
   }
@@ -561,17 +556,16 @@ public class Raft extends Actor
    * Add raft to list of known members of this node and starts the {@link AppendRaftEventController}
    * to write the new configuration to the log stream
    */
-  public boolean joinMember(final SocketAddress socketAddress) {
-    LOG.debug("New member {} joining the cluster", socketAddress);
-    final RaftMember newMember = raftMembers.addMember(socketAddress);
+  public boolean joinMember(final int nodeId) {
+    LOG.debug("New member {} joining the cluster", nodeId);
+    final RaftMember newMember = raftMembers.addMember(nodeId);
 
     if (newMember != null && state.getState() == RaftState.LEADER) {
       // start replication
       final int term = getTerm();
       final ServiceName<AbstractRaftState> leaderServiceName = leaderServiceName(raftName, term);
       final ServiceName<Void> replicateLogControllerServiceName =
-          replicateLogConrollerServiceName(
-              raftName, term, newMember.getRemoteAddress().getAddress());
+          replicateLogConrollerServiceName(raftName, term, newMember.getNodeId());
 
       serviceContext
           .createService(
@@ -587,25 +581,25 @@ public class Raft extends Actor
     return false;
   }
 
-  public ActorFuture<Boolean> memberLeaves(final SocketAddress memberAddress) {
+  public ActorFuture<Boolean> memberLeaves(final int nodeId) {
     final CompletableActorFuture<Boolean> leaveFuture = new CompletableActorFuture<>();
 
-    LOG.debug("Member {} leaving the cluster", memberAddress);
+    LOG.debug("Member {} leaving the cluster", nodeId);
 
-    if (raftMembers.hasMember(memberAddress)) {
-      final List<SocketAddress> listWithoutMemberThatIsLeaving = raftMembers.getMemberAddresses();
+    if (raftMembers.hasMember(nodeId)) {
+      final List<Integer> listWithoutMemberThatIsLeaving = raftMembers.getMemberIds();
 
-      listWithoutMemberThatIsLeaving.remove(memberAddress);
+      listWithoutMemberThatIsLeaving.removeIf(member -> member.equals(nodeId));
 
       actor.runOnCompletion(
           notifyMemberLeavingListeners(listWithoutMemberThatIsLeaving),
           (t) -> {
             if (state.getState() == RaftState.LEADER) {
-              raftMembers.removeMember(memberAddress);
+              raftMembers.removeMember(nodeId);
               persistentStorage.save();
               // stop replication
               serviceContext.removeService(
-                  replicateLogConrollerServiceName(raftName, getTerm(), memberAddress));
+                  replicateLogConrollerServiceName(raftName, getTerm(), nodeId));
               leaveFuture.complete(true);
             } else {
               leaveFuture.complete(false);
@@ -630,28 +624,8 @@ public class Raft extends Actor
    *
    * @return true if the message was written to the send buffer, false otherwise
    */
-  public boolean sendMessage(final RemoteAddress remoteAddress, final BufferWriter writer) {
-    transportMessage.reset().remoteAddress(remoteAddress).writer(writer);
-
-    return clientTransport.getOutput().sendMessage(transportMessage);
-  }
-
-  /**
-   * Send a {@link TransportMessage} to the given address
-   *
-   * @return true if the message was written to the send buffer, false otherwise
-   */
-  public void sendMessage(final SocketAddress socketAddress, final BufferWriter writer) {
-    final RaftMember member = raftMembers.getMemberBySocketAddress(socketAddress);
-
-    final RemoteAddress remoteAddress;
-    if (member != null) {
-      remoteAddress = member.getRemoteAddress();
-    } else {
-      remoteAddress = clientTransport.registerRemoteAddress(socketAddress);
-    }
-
-    sendMessage(remoteAddress, writer);
+  public boolean sendMessage(final int nodeId, final BufferWriter writer) {
+    return clientTransport.getOutput().sendMessage(nodeId, writer);
   }
 
   /**
@@ -661,15 +635,11 @@ public class Raft extends Actor
    *     at the moment
    */
   public ActorFuture<ClientResponse> sendRequest(
-      final RemoteAddress remoteAddress, final BufferWriter writer, Duration timeout) {
-    return clientTransport.getOutput().sendRequest(remoteAddress, writer, timeout);
+      final int nodeId, final BufferWriter writer, Duration timeout) {
+    return clientTransport.getOutput().sendRequest(nodeId, writer, timeout);
   }
 
-  /**
-   * Send a response over the given output to the given address
-   *
-   * @return true if the message was written to the send buffer, false otherwise
-   */
+  /** Send a response over the given output to the given address */
   public void sendResponse(
       final ServerOutput serverOutput,
       final RemoteAddress remoteAddress,
@@ -682,12 +652,7 @@ public class Raft extends Actor
 
   @Override
   public String toString() {
-    return "raft-"
-        + logStream.getLogName()
-        + "-"
-        + socketAddress.host()
-        + ":"
-        + socketAddress.port();
+    return "raft-" + logStream.getLogName() + "-" + nodeId;
   }
 
   /** TODO: needed for testing(?) */

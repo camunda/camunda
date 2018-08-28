@@ -33,8 +33,6 @@ import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.TransportMessage;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorPriority;
@@ -51,7 +49,6 @@ public class MemberReplicateLogController extends Actor implements Service<Void>
   private static final boolean IS_TRACE_ENABLED = LOG.isTraceEnabled();
 
   private final AppendRequest appendRequest = new AppendRequest();
-  private final TransportMessage transportMessage = new TransportMessage();
 
   private final BackpressureHelper backpressureHelper = new BackpressureHelper(REMOTE_BUFFER_SIZE);
 
@@ -62,7 +59,7 @@ public class MemberReplicateLogController extends Actor implements Service<Void>
   private final Raft raft;
   private final LogStream logStream;
   private final Duration heartbeatInterval;
-  private final RemoteAddress remoteAddress;
+  private final int nodeId;
   private final ClientOutput clientOutput;
 
   private final BufferedLogStreamReader reader;
@@ -75,11 +72,13 @@ public class MemberReplicateLogController extends Actor implements Service<Void>
 
   private RaftMember member;
 
+  private volatile boolean isClosing = false;
+
   public MemberReplicateLogController(
       Raft raft, RaftMember member, ClientTransport clientTransport) {
     this.member = member;
-    this.remoteAddress = member.getRemoteAddress();
-    this.name = String.format("raft-repl-%s-%s", raft.getName(), remoteAddress.toString());
+    this.nodeId = member.getNodeId();
+    this.name = String.format("raft-repl-%s-%d", raft.getName(), nodeId);
 
     this.raft = raft;
     this.heartbeatInterval = raft.getConfiguration().getHeartbeatIntervalDuration();
@@ -100,6 +99,8 @@ public class MemberReplicateLogController extends Actor implements Service<Void>
 
   @Override
   public void stop(ServiceStopContext stopContext) {
+    // signal closing to abort try send loop
+    isClosing = true;
     stopContext.async(actor.close());
   }
 
@@ -175,7 +176,7 @@ public class MemberReplicateLogController extends Actor implements Service<Void>
 
   private void sendNextEvents() {
     if (IS_TRACE_ENABLED) {
-      LOG.trace("try send next event to {}", remoteAddress);
+      LOG.trace("try send next event to node {}", nodeId);
     }
 
     actor.setPriority(ActorPriority.REGULAR);
@@ -195,10 +196,8 @@ public class MemberReplicateLogController extends Actor implements Service<Void>
     final boolean isBackpressured = !backpressureHelper.canSend(requestSize);
     final boolean trySend = isHeartbeatTimeout || (nextEvent != null && !isBackpressured);
 
-    if (trySend) {
-      transportMessage.reset().remoteAddress(remoteAddress).writer(appendRequest);
-
-      if (clientOutput.sendMessage(transportMessage)) {
+    if (trySend && !isClosing) {
+      if (clientOutput.sendMessage(nodeId, appendRequest)) {
         lastRequestTimestamp = now;
 
         if (nextEvent != null) {

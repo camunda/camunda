@@ -24,7 +24,7 @@ import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.ClientResponse;
 import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -64,12 +64,13 @@ public class ClientTopologyManager extends Actor {
       ClientTransport transport,
       ClientTransport internalTransport,
       ZeebeObjectMapperImpl objectMapper,
-      RemoteAddress initialContact) {
+      SocketAddress initialContact) {
     this.transport = transport;
     this.internalTransport = internalTransport;
     this.output = transport.getOutput();
 
-    this.topology = new AtomicReference<>(new ClusterStateImpl(initialContact));
+    this.topology =
+        new AtomicReference<>(new ClusterStateImpl(initialContact, this::registerEndpoint));
     this.requestWriter =
         new ControlMessageRequestHandler(objectMapper, new TopologyRequestImpl(null, null));
   }
@@ -112,7 +113,7 @@ public class ClientTopologyManager extends Actor {
     } else {
       final long timeoutToNextRefresh =
           MIN_REFRESH_INTERVAL_MILLIS.toMillis() - timeSinceLastRefresh;
-      actor.runDelayed(Duration.ofMillis(timeoutToNextRefresh), () -> refreshTopology());
+      actor.runDelayed(Duration.ofMillis(timeoutToNextRefresh), this::refreshTopology);
     }
   }
 
@@ -126,13 +127,9 @@ public class ClientTopologyManager extends Actor {
   }
 
   private void refreshTopology() {
-    final RemoteAddress endpoint = topology.get().getRandomBroker();
-    final RemoteAddress internalRemoteAddress =
-        internalTransport.registerRemoteAddress(endpoint.getAddress());
+    final int endpoint = topology.get().getRandomBroker();
     final ActorFuture<ClientResponse> responseFuture =
-        internalTransport
-            .getOutput()
-            .sendRequest(internalRemoteAddress, requestWriter, Duration.ofSeconds(1));
+        internalTransport.getOutput().sendRequest(endpoint, requestWriter, Duration.ofSeconds(1));
 
     refreshAttempt++;
     lastRefreshTime = ActorClock.currentTimeMillis();
@@ -162,10 +159,14 @@ public class ClientTopologyManager extends Actor {
   }
 
   private void onNewTopology(Topology response) {
-    final ClusterStateImpl newClusterState =
-        new ClusterStateImpl(response, transport::registerRemoteAddress);
+    final ClusterStateImpl newClusterState = new ClusterStateImpl(response, this::registerEndpoint);
     this.topology.set(newClusterState);
     completeRefreshFutures(newClusterState);
+  }
+
+  private void registerEndpoint(final int nodeId, final SocketAddress socketAddress) {
+    transport.registerEndpoint(nodeId, socketAddress);
+    internalTransport.registerEndpoint(nodeId, socketAddress);
   }
 
   private void completeRefreshFutures(ClusterStateImpl newClusterState) {

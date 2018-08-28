@@ -17,6 +17,7 @@ package io.zeebe.transport;
 
 import static io.zeebe.test.util.BufferAssert.assertThatBuffer;
 import static io.zeebe.test.util.TestUtil.waitUntil;
+import static io.zeebe.util.buffer.DirectBufferWriter.writerFor;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.dispatcher.Dispatcher;
@@ -38,9 +39,10 @@ import org.junit.rules.RuleChain;
 public class ServerTransportTest {
   public static final DirectBuffer BUF1 = BufferUtil.wrapBytes(1, 2, 3, 4);
   public static final DirectBuffer BUF2 = BufferUtil.wrapBytes(5, 6, 7, 8);
+
+  public static final int NODE_ID = 1;
   public static final SocketAddress SERVER_ADDRESS = SocketUtil.getNextAddress();
 
-  public static final int REQUEST_POOL_SIZE = 4;
   public static final ByteValue SEND_BUFFER_SIZE = ByteValue.ofKilobytes(16);
 
   public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
@@ -66,7 +68,7 @@ public class ServerTransportTest {
     closeables.manage(clientReceiveBuffer);
 
     clientTransport =
-        Transports.newClientTransport()
+        Transports.newClientTransport("test")
             .messageReceiveBuffer(clientReceiveBuffer)
             .scheduler(actorSchedulerRule.get())
             .build();
@@ -91,8 +93,6 @@ public class ServerTransportTest {
   @Test
   public void shouldNotSendMessagesForPreviousStreamIdAfterReconnect() {
     // given
-    final TransportMessage message = new TransportMessage();
-
     final ServerOutput serverOutput = serverTransport.getOutput();
     final ClientOutput clientOutput = clientTransport.getOutput();
 
@@ -100,12 +100,11 @@ public class ServerTransportTest {
 
     clientTransport.registerChannelListener(channelListener);
 
-    final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(SERVER_ADDRESS);
+    clientTransport.registerEndpoint(NODE_ID, SERVER_ADDRESS);
     waitUntil(() -> channelListener.getOpenedConnections().size() == 1);
 
     // make first request
-    message.buffer(BUF1).remoteAddress(remoteAddress);
-    clientOutput.sendMessage(message);
+    clientOutput.sendMessage(NODE_ID, writerFor(BUF1));
     TestUtil.waitUntil(() -> serverHandler.numReceivedMessages() == 1);
 
     final RemoteAddress firstRemote = serverHandler.getMessage(0).getRemote();
@@ -117,18 +116,16 @@ public class ServerTransportTest {
     waitUntil(() -> channelListener.getOpenedConnections().size() == 2);
 
     // make a second request
-    clientOutput.sendMessage(message);
+    clientOutput.sendMessage(NODE_ID, writerFor(BUF1));
     TestUtil.waitUntil(() -> serverHandler.numReceivedMessages() == 2);
     final RemoteAddress secondRemote = serverHandler.getMessage(1).getRemote();
 
     // when
     // sending server message with previous stream id
-    message.buffer(BUF1).remoteStreamId(firstRemote.getStreamId());
-    serverOutput.sendMessage(message);
+    serverOutput.sendMessage(firstRemote.getStreamId(), writerFor(BUF1));
 
     // and sending server message with new stream id
-    message.buffer(BUF2).remoteStreamId(secondRemote.getStreamId());
-    serverOutput.sendMessage(message);
+    serverOutput.sendMessage(secondRemote.getStreamId(), writerFor(BUF2));
 
     // then
     // first message has not been received by client

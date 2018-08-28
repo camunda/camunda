@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.clustering.base.bootstrap;
 
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LOCAL_NODE;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.partitionInstallServiceName;
 import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_CLIENT_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.clientTransport;
@@ -80,7 +79,6 @@ public class BootstrapLocalPartitions implements Service<Object> {
 
     startContext
         .createService(partitionInstallServiceName, partitionInstallService)
-        .dependency(LOCAL_NODE, partitionInstallService.getLocalNodeInjector())
         .dependency(
             clientTransport(REPLICATION_API_CLIENT_NAME),
             partitionInstallService.getClientTransportInjector())

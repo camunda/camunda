@@ -17,13 +17,10 @@
  */
 package io.zeebe.broker.clustering.base.raft;
 
-import static io.zeebe.util.EnsureUtil.ensureNotNull;
-
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import io.zeebe.raft.RaftPersistentStorage;
-import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.buffer.BufferUtil;
 import java.io.File;
@@ -33,8 +30,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 /**
@@ -65,7 +62,7 @@ public class RaftPersistentConfiguration implements RaftPersistentStorage {
   private final Path path;
   private final Path tmpPath;
 
-  private final SocketAddress votedFor = new SocketAddress();
+  private Integer votedFor;
 
   private final File logDirectory;
   private final File snapshotsDirectory;
@@ -101,62 +98,36 @@ public class RaftPersistentConfiguration implements RaftPersistentStorage {
   }
 
   @Override
-  public SocketAddress getVotedFor() {
-    if (votedFor.hostLength() > 0) {
-      return votedFor;
-    } else {
-      return null;
-    }
+  public Integer getVotedFor() {
+    return votedFor;
   }
 
   @Override
-  public RaftPersistentConfiguration setVotedFor(final SocketAddress votedFor) {
-    if (votedFor != null) {
-      configuration.setVotedForHost(votedFor.host());
-      configuration.setVotedForPort(votedFor.port());
-      this.votedFor.wrap(votedFor);
-    } else {
-      configuration.setVotedForHost("");
-      configuration.setVotedForPort(0);
-      this.votedFor.reset();
-    }
+  public RaftPersistentConfiguration setVotedFor(final Integer votedFor) {
+    configuration.setVotedFor(votedFor);
+    this.votedFor = votedFor;
 
     return this;
   }
 
-  public List<SocketAddress> getMembers() {
-    return configuration
-        .getMembers()
-        .stream()
-        .map(member -> new SocketAddress(member.getHost(), member.getPort()))
-        .collect(Collectors.toList());
+  public List<Integer> getMembers() {
+    return new ArrayList<>(configuration.getMembers());
   }
 
-  public RaftPersistentConfiguration setMembers(List<SocketAddress> members) {
+  public RaftPersistentConfiguration setMembers(List<Integer> members) {
     members.forEach(this::addMember);
     return this;
   }
 
   @Override
-  public RaftPersistentConfiguration addMember(final SocketAddress memberAddress) {
-    ensureNotNull("Member address", memberAddress);
-    final RaftConfigurationMetadataMember member =
-        new RaftConfigurationMetadataMember(memberAddress.host(), memberAddress.port());
-    configuration.getMembers().add(member);
-
+  public RaftPersistentConfiguration addMember(final int nodeId) {
+    configuration.getMembers().add(nodeId);
     return this;
   }
 
   @Override
-  public RaftPersistentStorage removeMember(final SocketAddress memberAddress) {
-    ensureNotNull("Member address", memberAddress);
-
-    configuration
-        .getMembers()
-        .removeIf(
-            member ->
-                member.getHost().equals(memberAddress.host())
-                    && member.getPort() == memberAddress.port());
+  public RaftPersistentStorage removeMember(final int nodeId) {
+    configuration.getMembers().removeIf(member -> member.equals(nodeId));
     return this;
   }
 
@@ -179,8 +150,7 @@ public class RaftPersistentConfiguration implements RaftPersistentStorage {
 
       if (metadata != null) {
         configuration.copy(metadata);
-        votedFor.host(configuration.getVotedForHost());
-        votedFor.port(configuration.getVotedForPort());
+        votedFor = configuration.getVotedFor();
       }
     }
   }

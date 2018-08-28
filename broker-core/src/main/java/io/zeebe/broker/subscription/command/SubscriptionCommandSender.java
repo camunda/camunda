@@ -28,9 +28,6 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.impl.SubscriptionUtil;
 import io.zeebe.transport.ClientResponse;
 import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.RemoteAddress;
-import io.zeebe.transport.SocketAddress;
-import io.zeebe.transport.TransportMessage;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -81,8 +78,6 @@ public class SubscriptionCommandSender {
 
   private final CorrelateMessageSubscriptionCommand correlateMessageSubscriptionCommand =
       new CorrelateMessageSubscriptionCommand();
-
-  private final TransportMessage subscriptionMessage = new TransportMessage();
 
   private final ClientTransport managementClient;
   private final ClientTransport subscriptionClient;
@@ -198,13 +193,7 @@ public class SubscriptionCommandSender {
       return true;
     }
 
-    final SocketAddress subscriptionApiAddress = partitionLeader.getSubscriptionApiAddress();
-    final RemoteAddress remoteAddress =
-        subscriptionClient.registerRemoteAddress(subscriptionApiAddress);
-    subscriptionMessage.remoteAddress(remoteAddress);
-    subscriptionMessage.writer(command);
-
-    return subscriptionClient.getOutput().sendMessage(subscriptionMessage);
+    return subscriptionClient.getOutput().sendMessage(partitionLeader.getNodeId(), command);
   }
 
   public boolean hasPartitionIds() {
@@ -233,20 +222,10 @@ public class SubscriptionCommandSender {
     return managementClient
         .getOutput()
         .sendRequestWithRetry(
-            this::getSystemPartitionLeaderAddress,
+            partitionListener::getSystemPartitionLeaderId,
             b -> !fetchCreatedTopicsResponse.tryWrap(b),
             fetchCreatedTopicsRequest,
             Duration.ofSeconds(15));
-  }
-
-  private RemoteAddress getSystemPartitionLeaderAddress() {
-    RemoteAddress remoteAddress = null;
-
-    final SocketAddress systemPartitionLeader = partitionListener.getSystemPartitionLeader();
-    if (systemPartitionLeader != null) {
-      remoteAddress = managementClient.registerRemoteAddress(systemPartitionLeader);
-    }
-    return remoteAddress;
   }
 
   private void handleFetchCreatedTopicsResponse(DirectBuffer response) {

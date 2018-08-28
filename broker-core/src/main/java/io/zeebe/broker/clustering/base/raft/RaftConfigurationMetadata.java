@@ -29,13 +29,12 @@ public class RaftConfigurationMetadata {
   private int partitionId;
   private int replicationFactor;
   private int term;
-  private String votedForHost;
-  private int votedForPort;
+  private Integer votedFor;
 
   @JsonProperty("segmentSize")
   private long logSegmentSize;
 
-  private List<RaftConfigurationMetadataMember> members;
+  private List<Integer> members;
 
   public RaftConfigurationMetadata() {
     topicName = "";
@@ -43,8 +42,7 @@ public class RaftConfigurationMetadata {
     replicationFactor = -1;
     logSegmentSize = ByteValue.ofMegabytes(512).toBytes();
     term = 0;
-    votedForHost = "";
-    votedForPort = 0;
+    votedFor = null;
     members = new ArrayList<>();
   }
 
@@ -81,27 +79,19 @@ public class RaftConfigurationMetadata {
     this.term = term;
   }
 
-  public int getVotedForPort() {
-    return votedForPort;
+  public Integer getVotedFor() {
+    return votedFor;
   }
 
-  public String getVotedForHost() {
-    return votedForHost;
+  public void setVotedFor(final Integer nodeId) {
+    this.votedFor = nodeId;
   }
 
-  public void setVotedForHost(final String votedForHost) {
-    this.votedForHost = votedForHost;
-  }
-
-  public void setVotedForPort(final int votedForPort) {
-    this.votedForPort = votedForPort;
-  }
-
-  public List<RaftConfigurationMetadataMember> getMembers() {
+  public List<Integer> getMembers() {
     return members;
   }
 
-  public void setMembers(final List<RaftConfigurationMetadataMember> members) {
+  public void setMembers(final List<Integer> members) {
     this.members.clear();
     this.members.addAll(members);
   }
@@ -121,7 +111,6 @@ public class RaftConfigurationMetadata {
     setTerm(source.getTerm());
     setTopicName(source.getTopicName());
     setMembers(source.getMembers());
-    setVotedForHost(source.getVotedForHost());
-    setVotedForPort(source.getVotedForPort());
+    setVotedFor(source.getVotedFor());
   }
 }

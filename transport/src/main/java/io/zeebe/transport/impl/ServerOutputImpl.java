@@ -17,7 +17,6 @@ package io.zeebe.transport.impl;
 
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerResponse;
-import io.zeebe.transport.TransportMessage;
 import io.zeebe.transport.impl.sender.OutgoingMessage;
 import io.zeebe.transport.impl.sender.Sender;
 import io.zeebe.transport.impl.sender.TransportHeaderWriter;
@@ -35,8 +34,7 @@ public class ServerOutputImpl implements ServerOutput {
   }
 
   @Override
-  public boolean sendMessage(TransportMessage transportMessage) {
-    final BufferWriter writer = transportMessage.getWriter();
+  public boolean sendMessage(int remoteStreamId, BufferWriter writer) {
     final int framedMessageLength =
         TransportHeaderWriter.getFramedMessageLength(writer.getLength());
 
@@ -44,7 +42,6 @@ public class ServerOutputImpl implements ServerOutput {
 
     if (allocatedBuffer != null) {
       try {
-        final int remoteStreamId = transportMessage.getRemoteStreamId();
         final UnsafeBuffer bufferView = new UnsafeBuffer(allocatedBuffer);
         final TransportHeaderWriter headerWriter = new TransportHeaderWriter();
         headerWriter.wrapMessage(bufferView, writer, remoteStreamId);
