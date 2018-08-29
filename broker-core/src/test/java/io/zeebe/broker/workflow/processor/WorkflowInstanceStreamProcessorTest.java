@@ -17,6 +17,8 @@
  */
 package io.zeebe.broker.workflow.processor;
 
+import static io.zeebe.broker.subscription.message.processor.MessageStreamProcessor.SUBSCRIPTION_CHECK_INTERVAL;
+import static io.zeebe.broker.subscription.message.processor.MessageStreamProcessor.SUBSCRIPTION_TIMEOUT;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
@@ -339,10 +341,7 @@ public class WorkflowInstanceStreamProcessorTest {
         awaitElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
-    rule.getClock()
-        .addTime(
-            WorkflowInstanceStreamProcessor.SUBSCRIPTION_CHECK_INTERVAL.plus(
-                WorkflowInstanceStreamProcessor.SUBSCRIPTION_TIMEOUT));
+    rule.getClock().addTime(SUBSCRIPTION_CHECK_INTERVAL.plus(SUBSCRIPTION_TIMEOUT));
 
     streamProcessor.unblock();
 
