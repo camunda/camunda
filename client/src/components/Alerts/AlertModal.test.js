@@ -2,14 +2,13 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import AlertModal from './AlertModal';
-import {emailNotificationIsEnabled, loadReports} from './service';
+import {emailNotificationIsEnabled} from './service';
 
-import {formatters} from 'services';
+import {formatters, loadEntity} from 'services';
 
 jest.mock('./service', () => {
   return {
-    emailNotificationIsEnabled: jest.fn(),
-    loadReports: jest.fn()
+    emailNotificationIsEnabled: jest.fn()
   };
 });
 
@@ -49,7 +48,8 @@ jest.mock('services', () => {
     formatters: {
       convertDurationToSingleNumber: jest.fn().mockReturnValue(723),
       convertDurationToObject: jest.fn().mockReturnValue({value: '14', unit: 'seconds'})
-    }
+    },
+    loadEntity: jest.fn()
   };
 });
 
@@ -78,7 +78,7 @@ const reports = [
   }
 ];
 
-loadReports.mockReturnValue(reports);
+loadEntity.mockReturnValue(reports);
 
 it('should apply the alert property to the state when changing props', () => {
   const node = mount(<AlertModal reports={reports} />);

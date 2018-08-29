@@ -14,12 +14,6 @@ export async function update(id, state) {
   return await put(`/api/dashboard/${id}`, state);
 }
 
-export async function loadReports() {
-  const response = await get('/api/report', {orderBy: 'name', sortOrder: 'asc'});
-
-  return await response.json();
-}
-
 export async function loadReport(report) {
   try {
     const response = await get(`/api/report/${report.id}/evaluate`);

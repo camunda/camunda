@@ -1,9 +1,8 @@
 import React from 'react';
 import {EntityList} from 'components';
 import AlertModal from './AlertModal';
-import {loadReports} from './service';
 
-import {formatters} from 'services';
+import {formatters, loadEntity} from 'services';
 
 import './Alerts.css';
 const {duration, frequency} = formatters;
@@ -14,7 +13,7 @@ export default class Alerts extends React.Component {
   };
 
   componentDidMount = async () => {
-    const reports = (await loadReports()).filter(
+    const reports = (await loadEntity('report')).filter(
       ({data: {visualization}}) => visualization === 'number'
     );
     this.setState({

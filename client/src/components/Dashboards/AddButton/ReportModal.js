@@ -2,7 +2,7 @@ import React from 'react';
 
 import {Modal, Button, Select, ControlGroup, Input, ErrorMessage} from 'components';
 
-import {loadReports} from '../service';
+import {loadEntity} from 'services';
 
 import './ReportModal.css';
 
@@ -15,7 +15,7 @@ export default class ReportModal extends React.Component {
   };
 
   componentDidMount = async () => {
-    const reports = await loadReports();
+    const reports = await loadEntity('report');
 
     this.setState({
       availableReports: reports

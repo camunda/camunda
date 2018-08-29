@@ -2,12 +2,7 @@ import React from 'react';
 import {mount, shallow} from 'enzyme';
 
 import Alerts from './Alerts';
-import {loadReports} from './service';
-jest.mock('./service', () => {
-  return {
-    loadReports: jest.fn()
-  };
-});
+import {loadEntity} from 'services';
 
 jest.mock('components', () => {
   return {EntityList: props => <span id="EntityList">{JSON.stringify(props)}</span>};
@@ -24,7 +19,8 @@ jest.mock('services', () => {
     formatters: {
       duration: () => '14 seconds',
       frequency: () => '12'
-    }
+    },
+    loadEntity: jest.fn()
   };
 });
 
@@ -32,12 +28,12 @@ const reports = [
   {id: '1', data: {visualization: 'table', view: {property: 'frequency'}}, name: 'Report 1'},
   {id: '2', data: {visualization: 'number', view: {property: 'duration'}}, name: 'Report 2'}
 ];
-loadReports.mockReturnValue(reports);
+loadEntity.mockReturnValue(reports);
 
 it('should load existing reports', async () => {
   await mount(<Alerts />);
 
-  expect(loadReports).toHaveBeenCalled();
+  expect(loadEntity).toHaveBeenCalled();
 });
 
 it('should only save single number reports', async () => {

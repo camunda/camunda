@@ -2,7 +2,7 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import ReportModal from './ReportModal';
-import {loadReports} from '../service';
+import {loadEntity} from 'services';
 
 jest.mock('components', () => {
   const Modal = props => <div id="Modal">{props.open && props.children}</div>;
@@ -23,16 +23,16 @@ jest.mock('components', () => {
   };
 });
 
-jest.mock('../service', () => {
+jest.mock('services', () => {
   return {
-    loadReports: jest.fn().mockReturnValue([])
+    loadEntity: jest.fn().mockReturnValue([])
   };
 });
 
 it('should load the available reports', () => {
   mount(<ReportModal />);
 
-  expect(loadReports).toHaveBeenCalled();
+  expect(loadEntity).toHaveBeenCalled();
 });
 
 it('should render a select element with the available reports as options', () => {

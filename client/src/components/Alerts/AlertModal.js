@@ -2,13 +2,13 @@ import React from 'react';
 import update from 'immutability-helper';
 
 import {Modal, Button, Input, Select, ErrorMessage, Typeahead} from 'components';
-import {emailNotificationIsEnabled, loadReports} from './service';
+import {emailNotificationIsEnabled} from './service';
 
 import ThresholdInput from './ThresholdInput';
 
 import './AlertModal.css';
 
-import {formatters} from 'services';
+import {formatters, loadEntity} from 'services';
 const {convertDurationToObject, convertDurationToSingleNumber} = formatters;
 
 const newAlert = {
@@ -39,7 +39,9 @@ export default class AlertModal extends React.Component {
   componentDidMount = async () => {
     this.setState({
       emailNotificationIsEnabled: await emailNotificationIsEnabled(),
-      reports: (await loadReports()).filter(({data: {visualization}}) => visualization === 'number')
+      reports: (await loadEntity('report')).filter(
+        ({data: {visualization}}) => visualization === 'number'
+      )
     });
   };
 

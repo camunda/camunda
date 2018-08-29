@@ -1,20 +1,9 @@
-import {get, post, del, put} from 'request';
+import {post, del, put} from 'request';
+import {loadEntity} from 'services';
 
 export async function load(api, numResults, sortBy) {
-  const url = `/api/${api}`;
+  const json = await loadEntity(api, numResults, sortBy);
   const apis = api + 's';
-
-  const params = {};
-  if (numResults) {
-    params['numResults'] = numResults;
-  }
-
-  if (sortBy) {
-    params['orderBy'] = sortBy;
-  }
-
-  const response = await get(url, params);
-  const json = await response.json();
 
   const idList = json.map(entry => entry.id);
 
