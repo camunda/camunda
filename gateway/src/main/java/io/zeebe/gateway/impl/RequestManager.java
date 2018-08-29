@@ -80,19 +80,46 @@ public class RequestManager extends Actor {
   }
 
   private <R> ResponseFuture<R> executeAsync(final RequestResponseHandler requestHandler) {
-    final Supplier<Integer> remoteProvider = determineRemoteProvider(requestHandler);
+    final ActorFuture<Supplier<Integer>> remoteProviderFuture =
+        determineRemoteProvider(requestHandler);
 
-    final ActorFuture<ClientResponse> responseFuture =
-        output.sendRequestWithRetry(
-            remoteProvider, RequestManager::shouldRetryRequest, requestHandler, requestTimeout);
+    final CompletableActorFuture<ClientResponse> deferredFuture = new CompletableActorFuture<>();
 
-    if (responseFuture != null) {
-      return new ResponseFuture<>(responseFuture, requestHandler, requestTimeout);
-    } else {
-      throw new ClientOutOfMemoryException(
-          "Zeebe client is out of buffer memory and cannot make "
-              + "new requests until memory is reclaimed.");
-    }
+    actor.call(
+        () ->
+            actor.runOnCompletion(
+                remoteProviderFuture,
+                (remoteProvider, throwable) -> {
+                  if (throwable == null) {
+                    final ActorFuture<ClientResponse> responseFuture =
+                        output.sendRequestWithRetry(
+                            remoteProvider,
+                            RequestManager::shouldRetryRequest,
+                            requestHandler,
+                            requestTimeout);
+
+                    if (responseFuture != null) {
+                      actor.runOnCompletion(
+                          responseFuture,
+                          (response, error) -> {
+                            if (error == null) {
+                              deferredFuture.complete(response);
+                            } else {
+                              deferredFuture.completeExceptionally(error);
+                            }
+                          });
+                    } else {
+                      deferredFuture.completeExceptionally(
+                          new ClientOutOfMemoryException(
+                              "Zeebe client is out of buffer memory and cannot make "
+                                  + "new requests until memory is reclaimed."));
+                    }
+                  } else {
+                    deferredFuture.completeExceptionally(throwable);
+                  }
+                }));
+
+    return new ResponseFuture<>(deferredFuture, requestHandler, requestTimeout);
   }
 
   private static boolean shouldRetryRequest(DirectBuffer responseContent) {
@@ -144,43 +171,49 @@ public class RequestManager extends Actor {
         });
   }
 
-  private Supplier<Integer> determineRemoteProvider(RequestResponseHandler requestHandler) {
-    if (!requestHandler.addressesSpecificTopic() && !requestHandler.addressesSpecificPartition()) {
-      return new BrokerProvider(ClusterStateImpl::getRandomBroker);
-    } else {
-      final int targetPartition;
-      if (!requestHandler.addressesSpecificPartition()) {
-        int proposedPartition =
-            dispatchStrategy.determinePartition(requestHandler.getTargetTopic());
-
-        if (proposedPartition >= 0) {
-          targetPartition = proposedPartition;
-        } else {
-          final ActorFuture<Integer> partitionFuture =
-              updateTopologyAndDeterminePartition(requestHandler.getTargetTopic());
-
-          try {
-            proposedPartition =
-                partitionFuture.get(requestTimeout.toMillis(), TimeUnit.MILLISECONDS);
-          } catch (InterruptedException | ExecutionException | TimeoutException e) {
-            proposedPartition = -1;
-          }
-
-          targetPartition = proposedPartition;
-        }
-        if (targetPartition < 0) {
-          throw new ClientException(
-              "Cannot determine target partition for request. Request was: "
-                  + requestHandler.describeRequest());
-        } else {
-          requestHandler.onSelectedPartition(targetPartition);
-        }
+  private ActorFuture<Supplier<Integer>> determineRemoteProvider(
+      RequestResponseHandler requestHandler) {
+    final CompletableActorFuture<Supplier<Integer>> supplierFuture = new CompletableActorFuture<>();
+    if (requestHandler.addressesSpecificPartition()) {
+      // partition already known
+      supplierFuture.complete(providerForPartition(requestHandler.getTargetPartition()));
+    } else if (requestHandler.addressesSpecificTopic()) {
+      // topic known but have to select partition
+      final int targetPartition =
+          dispatchStrategy.determinePartition(requestHandler.getTargetTopic());
+      if (targetPartition >= 0) {
+        // topic and partition known
+        requestHandler.onSelectedPartition(targetPartition);
+        supplierFuture.complete(providerForPartition(targetPartition));
       } else {
-        targetPartition = requestHandler.getTargetPartition();
-      }
+        // topic not known -> refresh topology and try again
+        final ActorFuture<Integer> partitionFuture =
+            updateTopologyAndDeterminePartition(requestHandler.getTargetTopic());
 
-      return new BrokerProvider((topology) -> topology.getLeaderForPartition(targetPartition));
+        actor.call(
+            () ->
+                actor.runOnCompletion(
+                    partitionFuture,
+                    (partition, throwable) -> {
+                      if (throwable != null) {
+                        supplierFuture.completeExceptionally(throwable);
+                      } else if (partition >= 0) {
+                        requestHandler.onSelectedPartition(partition);
+                        supplierFuture.complete(providerForPartition(partition));
+                      } else {
+                        supplierFuture.completeExceptionally(
+                            new ClientException(
+                                "Cannot determine target partition for request. Request was: "
+                                    + requestHandler.describeRequest()));
+                      }
+                    }));
+      }
+    } else {
+      // no specific topic or partition required -> random broker
+      supplierFuture.complete(providerForRandomBroker());
     }
+
+    return supplierFuture;
   }
 
   public <E> ResponseFuture<E> send(final ControlMessageRequest<E> controlMessage) {
@@ -207,6 +240,14 @@ public class RequestManager extends Actor {
         throw new ClientException("Could not make request", e);
       }
     }
+  }
+
+  private BrokerProvider providerForRandomBroker() {
+    return new BrokerProvider(ClusterStateImpl::getRandomBroker);
+  }
+
+  private BrokerProvider providerForPartition(int partitionId) {
+    return new BrokerProvider(topology -> topology.getLeaderForPartition(partitionId));
   }
 
   private class BrokerProvider implements Supplier<Integer> {
