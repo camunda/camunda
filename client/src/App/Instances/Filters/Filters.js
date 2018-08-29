@@ -56,9 +56,9 @@ export default class Filters extends React.Component {
     groupedWorkflows: [],
     currentWorkflow: {},
     currentWorkflowVersion: EMPTY_OPTION,
-    currentActivityId: EMPTY_OPTION,
     filter: {
-      ...DEFAULT_CONTROLLED_VALUES
+      ...DEFAULT_CONTROLLED_VALUES,
+      activityId: ''
     },
     workflowNameOptions: []
   };
@@ -96,7 +96,7 @@ export default class Filters extends React.Component {
       {
         currentWorkflow: currentWorkflow || {},
         currentWorkflowVersion: version,
-        currentActivityId: EMPTY_OPTION
+        filter: {...this.state.filter, activityId: ''}
       },
       this.updateByWorkflowVersion
     );
@@ -113,7 +113,10 @@ export default class Filters extends React.Component {
       versions = version ? [version] : null;
     }
 
-    this.props.onFilterChange({[FIELDS.workflowVersion.name]: versions});
+    this.props.onFilterChange({
+      [FIELDS.workflowVersion.name]: versions,
+      activityId: ''
+    });
   };
 
   updateWorkflowOnInstancesPage = version => {
@@ -146,8 +149,14 @@ export default class Filters extends React.Component {
 
     value !== EMPTY_OPTION &&
       this.setState(
-        {currentWorkflowVersion: value, currentActivityId: EMPTY_OPTION},
-        this.updateByWorkflowVersion
+        {
+          currentWorkflowVersion: value,
+          filter: {...this.state.filter, activityId: ''}
+        },
+        () => {
+          console.log(this.state.filter);
+          this.updateByWorkflowVersion();
+        }
       );
   };
 
@@ -165,9 +174,14 @@ export default class Filters extends React.Component {
   handleActivityIdChange = event => {
     event.persist();
     const {value} = event.target;
-    this.setState({currentActivityId: value}, () => {
-      this.handleFieldChange(event);
-    });
+    this.setState(
+      {
+        filter: {...this.state.filter, activityId: value}
+      },
+      () => {
+        this.handleFieldChange(event);
+      }
+    );
   };
 
   onFieldChange = event => {
@@ -244,12 +258,12 @@ export default class Filters extends React.Component {
             </Styled.Field>
             <Styled.Field>
               <Select
-                value={this.state.currentActivityId}
+                value={this.state.filter.activityId}
                 disabled={
                   this.state.currentWorkflowVersion === EMPTY_OPTION ||
                   this.state.currentWorkflowVersion === ALL_VERSIONS_OPTION
                 }
-                name={FIELDS.activityId.name}
+                name="activityId"
                 placeholder={FIELDS.activityId.placeholder}
                 options={this.props.activityIds}
                 onChange={this.handleActivityIdChange}
