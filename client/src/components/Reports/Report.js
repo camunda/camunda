@@ -30,6 +30,7 @@ import {
 
 import {loadProcessDefinitions} from 'services';
 import ReportControlPanel from './ReportControlPanel';
+import CombinedSelectionPanel from './CombinedSelectionPanel';
 
 import ColumnSelection from './ColumnSelection';
 import ColumnRearrangement from './ColumnRearrangement';
@@ -69,7 +70,12 @@ export default withErrorHandling(
       return {theOnlyKey: null, latestVersion: null};
     };
 
-    initializeReport = async () => {
+    initializeReport = async reportType => {
+      if (reportType === 'combined')
+        return {
+          reportIds: null,
+          configuration: {}
+        };
       const {theOnlyKey, latestVersion} = await this.getTheOnlyDefinition();
 
       const data = {
@@ -95,7 +101,7 @@ export default withErrorHandling(
           const {name, lastModifier, lastModified, data, reportType} = response;
 
           const reportResult = await getReportData(this.id);
-          const stateData = data || (await this.initializeReport());
+          const stateData = data || (await this.initializeReport(reportType));
           this.setState(
             {
               name,
@@ -178,14 +184,18 @@ export default withErrorHandling(
 
       this.setState({data});
 
+      this.updateReportResult(updates, data);
+    };
+
+    updateReportResult = async (updates, data) => {
       const updatedSomethingOtherThanConfiguration = Object.keys(updates).find(
         entry => entry !== 'configuration'
       );
       if (updatedSomethingOtherThanConfiguration && !this.onlyVisualizationChanged(updates)) {
         let reportResult;
-        if (this.allFieldsAreSelected(data)) {
+        if (this.state.reportType === 'combined' || this.allFieldsAreSelected(data)) {
           this.setState({loadingReportData: true});
-          reportResult = await getReportData(data, 'single');
+          reportResult = await getReportData(data, this.state.reportType);
           this.setState({loadingReportData: false});
         }
         if (!reportResult) {
@@ -200,7 +210,8 @@ export default withErrorHandling(
             data: {
               ...reportResult.data,
               configuration: data.configuration,
-              visualization: data.visualization
+              ...(data.visualization && {visualization: data.visualization}),
+              ...(data.reportIds && {reportIds: data.reportIds})
             }
           }
         });
@@ -347,14 +358,24 @@ export default withErrorHandling(
               updateReport={this.updateReport}
             />
           )}
-          <div className="Report__view">
-            {loadingReportData ? (
-              <LoadingIndicator />
-            ) : (
-              <ReportView
-                report={reportResult}
-                applyAddons={this.applyAddons(ColumnRearrangement, ColumnSelection)}
-              />
+          <div className="reportViewWrapper">
+            <div className="Report__view">
+              {loadingReportData ? (
+                <LoadingIndicator />
+              ) : (
+                <ReportView
+                  report={reportResult}
+                  applyAddons={this.applyAddons(ColumnRearrangement, ColumnSelection)}
+                />
+              )}
+            </div>
+            {reportType === 'combined' && (
+              <div className="columnSelectionPanel">
+                <CombinedSelectionPanel
+                  reportResult={reportResult}
+                  updateReport={this.updateReport}
+                />
+              </div>
             )}
           </div>
         </div>

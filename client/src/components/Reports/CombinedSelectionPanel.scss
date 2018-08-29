@@ -1,0 +1,42 @@
+.PanelSelection {
+  height: 100%;
+  margin-left: 10px;
+  background: #fff;
+  border: 1px solid #f2f3f4;
+  border-radius: 3px;
+  overflow: scroll;
+  min-width: 200px;
+
+  .searchInput {
+    width: 100%;
+    height: 40px;
+  }
+
+  .list {
+    padding: 0 20px;
+    margin-top: 10px;
+
+    ul {
+      padding: 10px 0px;
+      margin: 0px;
+
+      li {
+        list-style: none;
+        border-bottom: 1px solid #f2f3f4;
+
+        &:hover {
+          background: #00a8ff;
+        }
+
+        label {
+          cursor: pointer;
+          display: block;
+        }
+
+        input {
+          margin: 10px 10px;
+        }
+      }
+    }
+  }
+}

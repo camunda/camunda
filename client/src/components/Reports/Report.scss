@@ -64,6 +64,11 @@
   margin-right: 0;
 }
 
+.reportViewWrapper {
+  display: flex;
+  flex-grow: 1;
+}
+
 .Report__view {
   display: flex;
   flex-grow: 1;
@@ -78,4 +83,11 @@
   flex-grow: 1;
   overflow: auto;
   min-height: 0;
+}
+
+.columnSelectionPanel {
+  flex-grow: 1;
+  flex-basis: 10%;
+  margin-top: 24px;
+  margin-bottom: 24px;
 }

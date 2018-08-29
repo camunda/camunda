@@ -54,6 +54,10 @@ jest.mock('./ReportControlPanel', () => {
   return () => <div>ControlPanel</div>;
 });
 
+jest.mock('./CombinedSelectionPanel', () => {
+  return () => <div>CombinedSelectionPanel</div>;
+});
+
 const props = {
   match: {params: {id: '1'}},
   location: {}

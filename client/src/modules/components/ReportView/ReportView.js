@@ -55,8 +55,8 @@ export default class ReportView extends React.Component {
   }
 
   checkCombinedAndRender = report => {
-    if (this.isEmpty(report.data.reportIds))
-      return this.buildInstructionMessage('one or more reports from the list');
+    if (this.isEmpty(report.result))
+      return this.buildInstructionMessage('one or more reports from the list', true);
     return this.renderCombinedReport(report);
   };
 
@@ -96,12 +96,17 @@ export default class ReportView extends React.Component {
     }
   };
 
-  buildInstructionMessage = field => {
-    return <ReportBlankSlate message={'To display a report, please select ' + field + '.'} />;
+  buildInstructionMessage = (field, isCombined) => {
+    return (
+      <ReportBlankSlate
+        isCombined={isCombined}
+        message={'To display a report, please select ' + field + '.'}
+      />
+    );
   };
 
   isEmpty = str => {
-    return !str || 0 === str.length;
+    return !str || 0 === str.length || !Object.keys(str).length;
   };
 
   loadFlowNodeNames = async (key, version) => {
@@ -240,7 +245,8 @@ export default class ReportView extends React.Component {
     const config = {
       component: ReportBlankSlate,
       props: {
-        message: 'Empty Combined ReportView'
+        message: 'Result is Available',
+        isCombined: true
       }
     };
     const Component = config.component;

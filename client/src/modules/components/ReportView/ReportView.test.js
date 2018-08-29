@@ -350,15 +350,10 @@ it('should return flownode Id if name is null when calling applyFlowNodeNames', 
 
 it('should instruct to select one or more reports if no reports are selected for combined reports', () => {
   const report = {
-    name: '',
     reportType: 'combined',
     data: {
       configuration: {},
       reports: []
-    },
-    result: {
-      reportA: {data: {}},
-      reportB: {data: {}}
     }
   };
 
