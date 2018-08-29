@@ -1,7 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
-<Themed(styled.ul)
+<Themed(styled.div)
   activitiesDetails={
     Object {
       "1": Object {
@@ -26,48 +26,50 @@ exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
   onActivitySelected={[Function]}
   selectedActivityId={null}
 >
-  <styled.li>
-    <Themed(Styled(Themed(styled.button)))
-      isSelected={true}
-      onClick={[Function]}
-    >
-      <Themed(Styled(withStrippedProps(Document)))
+  <styled.ul>
+    <styled.li>
+      <Themed(Styled(Themed(styled.button)))
         isSelected={true}
-      />
-      foo
-    </Themed(Styled(Themed(styled.button)))>
-  </styled.li>
-  <styled.li
-    key="1"
-  >
-    <Themed(styled.button)
-      data-test="1"
-      isSelected={false}
-      onClick={[Function]}
+        onClick={[Function]}
+      >
+        <Themed(Styled(withStrippedProps(Document)))
+          isSelected={true}
+        />
+        foo
+      </Themed(Styled(Themed(styled.button)))>
+    </styled.li>
+    <styled.li
+      key="1"
     >
-      <Themed(Styled(withStrippedProps(FlowNodeIcon)))
+      <Themed(styled.button)
+        data-test="1"
         isSelected={false}
-        state="someState1"
-        type="someType1"
-      />
-      someName1
-    </Themed(styled.button)>
-  </styled.li>
-  <styled.li
-    key="2"
-  >
-    <Themed(styled.button)
-      data-test="2"
-      isSelected={false}
-      onClick={[Function]}
+        onClick={[Function]}
+      >
+        <Themed(Styled(withStrippedProps(FlowNodeIcon)))
+          isSelected={false}
+          state="someState1"
+          type="someType1"
+        />
+        someName1
+      </Themed(styled.button)>
+    </styled.li>
+    <styled.li
+      key="2"
     >
-      <Themed(Styled(withStrippedProps(FlowNodeIcon)))
+      <Themed(styled.button)
+        data-test="2"
         isSelected={false}
-        state="someState2"
-        type="someType2"
-      />
-      someName2
-    </Themed(styled.button)>
-  </styled.li>
-</Themed(styled.ul)>
+        onClick={[Function]}
+      >
+        <Themed(Styled(withStrippedProps(FlowNodeIcon)))
+          isSelected={false}
+          state="someState2"
+          type="someType2"
+        />
+        someName2
+      </Themed(styled.button)>
+    </styled.li>
+  </styled.ul>
+</Themed(styled.div)>
 `;

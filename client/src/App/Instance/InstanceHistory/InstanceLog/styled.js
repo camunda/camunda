@@ -5,13 +5,9 @@ import {Document} from 'modules/components/Icon';
 import BasicFlowNodeIcon from 'modules/components/FlowNodeIcon';
 import withStrippedProps from 'modules/utils/withStrippedProps';
 
-export const InstanceLog = themed(styled.ul`
+export const InstanceLog = themed(styled.div`
   flex: 1;
   display: flex;
-  flex-direction: column;
-  list-style-type: none;
-  margin: 0;
-  padding: 0;
 
   overflow: auto;
   border: solid 1px
@@ -21,7 +17,20 @@ export const InstanceLog = themed(styled.ul`
     })};
   border-top: none;
   border-bottom: none;
+  position: relative;
 `);
+
+export const EntriesContainer = styled.ul`
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: min-content;
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+`;
 
 const backgroundColorStyle = css`
   &:nth-child(odd) {
