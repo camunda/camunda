@@ -156,9 +156,11 @@ public class EmbeddedBrokerRule extends ExternalResource {
   }
 
   public void stopBroker() {
-    broker.close();
-    broker = null;
-    System.gc();
+    if (broker != null) {
+      broker.close();
+      broker = null;
+      System.gc();
+    }
   }
 
   public void startBroker() {

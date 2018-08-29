@@ -34,6 +34,8 @@ import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.logstreams.state.StateController;
+import io.zeebe.logstreams.state.StateSnapshotController;
+import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
@@ -42,6 +44,7 @@ import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorControl;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import org.slf4j.LoggerFactory;
 
@@ -60,7 +63,7 @@ public class ExporterStreamProcessor implements StreamProcessor {
   private LogStreamReader logStreamReader;
 
   public ExporterStreamProcessor(
-      final int partitionId, final List<ExporterDescriptor> descriptors) {
+      final int partitionId, final Collection<ExporterDescriptor> descriptors) {
     this.partitionId = partitionId;
 
     this.containers = new ArrayList<>(descriptors.size());
@@ -77,6 +80,10 @@ public class ExporterStreamProcessor implements StreamProcessor {
   @Override
   public StateController getStateController() {
     return state;
+  }
+
+  public StateSnapshotController createSnapshotController(final StateStorage storage) {
+    return new StateSnapshotController(state, storage);
   }
 
   @Override
@@ -147,7 +154,7 @@ public class ExporterStreamProcessor implements StreamProcessor {
   }
 
   private class ExporterContainer implements Controller {
-    private static final String LOGGER_NAME_FORMAT = "exporter-%s";
+    private static final String LOGGER_NAME_FORMAT = "io.zeebe.broker.exporter.%s";
 
     private final ExporterContext context;
     private final Exporter exporter;
