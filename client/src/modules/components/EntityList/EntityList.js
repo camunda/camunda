@@ -278,7 +278,7 @@ class EntityList extends React.Component {
     }
     if (this.props.operations.includes('combine')) {
       combineButton = (
-        <Button className="combineButton" onClick={this.createEntity('combined')}>
+        <Button color="green" className="combineButton" onClick={this.createEntity('combined')}>
           Create a Combined {this.props.label}
         </Button>
       );

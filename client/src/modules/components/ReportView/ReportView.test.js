@@ -341,17 +341,7 @@ it('should return flownode Id if name is null when calling applyFlowNodeNames', 
     loaded: true
   });
   await node.instance().loadFlowNodeNames('aKey', 1);
-  expect(
-    node.instance().applyFlowNodeNames({
-      processDefinitionKey: 'aKey',
-      processDefinitionVersion: '1',
-      result: {
-        a: 25,
-        b: 35,
-        c: 25
-      }
-    })
-  ).toEqual({
+  expect(node.instance().applyFlowNodeNames({a: 25, b: 35, c: 25})).toEqual({
     foo: 25,
     bar: 35,
     c: 25
