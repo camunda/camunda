@@ -6,6 +6,8 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.camunda.optimize.dto.optimize.query.report.single.group.value.GroupByValueDto;
 
+import java.util.Objects;
+
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_FLOW_NODES_TYPE;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_NONE_TYPE;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_START_DATE_TYPE;
@@ -54,5 +56,18 @@ public abstract class GroupByDto<VALUE extends GroupByValueDto>{
   @Override
   public String toString() {
     return type;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof GroupByDto)) {
+      return false;
+    }
+    GroupByDto<?> that = (GroupByDto<?>) o;
+    return Objects.equals(type, that.type) &&
+      Objects.equals(value, that.value);
   }
 }

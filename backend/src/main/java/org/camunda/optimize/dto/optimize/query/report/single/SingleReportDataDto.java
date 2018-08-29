@@ -7,6 +7,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDto;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 public class SingleReportDataDto implements ReportDataDto {
 
@@ -72,5 +73,19 @@ public class SingleReportDataDto implements ReportDataDto {
 
   public void setProcessDefinitionVersion(String processDefinitionVersion) {
     this.processDefinitionVersion = processDefinitionVersion;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof SingleReportDataDto)) {
+      return false;
+    }
+    SingleReportDataDto that = (SingleReportDataDto) o;
+    return Objects.equals(view, that.view) &&
+      Objects.equals(groupBy, that.groupBy) &&
+      Objects.equals(visualization, that.visualization);
   }
 }

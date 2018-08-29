@@ -29,7 +29,6 @@ import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -37,6 +36,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.COMBINED_REPORT_TYPE;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_START_DATE_TYPE;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.TABLE_VISUALIZATION;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_PROCESS_INSTANCE_ENTITY;
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
 import static org.camunda.optimize.test.util.ReportDataHelper.createCombinedReport;
 import static org.camunda.optimize.test.util.ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode;
@@ -91,7 +93,7 @@ public class CombinedReportHandlingIT {
   @Test
   public void getSingleAndCombinedReport() {
     // given
-    String singleReportId = createNewSingleMapReport();
+    String singleReportId = createNewSingleReport();
     String combinedReportId = createNewCombinedReport();
 
     // when
@@ -216,7 +218,7 @@ public class CombinedReportHandlingIT {
   public void reportsThatCantBeEvaluatedAreIgnored() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
-    String singleReportId = createNewSingleMapReport();
+    String singleReportId = createNewSingleReport();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -234,7 +236,7 @@ public class CombinedReportHandlingIT {
   public void deletedSingleReportsAreRemovedFromCombinedReport() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
-    String singleReportIdToDelete = createNewSingleMapReport();
+    String singleReportIdToDelete = createNewSingleReport();
     String remainingSingleReportId = createNewSingleMapReport(engineDto);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -251,7 +253,121 @@ public class CombinedReportHandlingIT {
     assertThat(resultSet.size(), is(2));
     assertThat(resultSet.contains(remainingSingleReportId), is(true));
     assertThat(resultSet.contains(combinedReportId), is(true));
-    Optional<CombinedReportDefinitionDto> combinedReport = reports.stream().filter(r -> r instanceof CombinedReportDefinitionDto).map(r -> (CombinedReportDefinitionDto)r).findFirst();
+    Optional<CombinedReportDefinitionDto> combinedReport = reports.stream()
+      .filter(r -> r instanceof CombinedReportDefinitionDto)
+      .map(r -> (CombinedReportDefinitionDto)r)
+      .findFirst();
+    assertThat(combinedReport.isPresent(), is(true));
+    CombinedReportDataDto dataDto = combinedReport.get().getData();
+    assertThat(dataDto.getReportIds().size(), is(1));
+    assertThat(dataDto.getReportIds().get(0), is(remainingSingleReportId));
+  }
+
+  @Test
+  public void singleReportsAreRemovedFromCombinedReportOnReportUpdateWithVisualizeAsChanged() {
+    // given
+    ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
+    SingleReportDataDto countFlowNodeFrequencyGroupByFlowNode = createCountFlowNodeFrequencyGroupByFlowNode(
+      engineDto.getProcessDefinitionKey(),
+      engineDto.getProcessDefinitionVersion()
+    );
+    String singleReportIdToUpdate = createNewSingleMapReport(countFlowNodeFrequencyGroupByFlowNode);
+    String remainingSingleReportId = createNewSingleMapReport(engineDto);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    String combinedReportId = createNewCombinedReport(singleReportIdToUpdate, remainingSingleReportId);
+    SingleReportDefinitionDto report = new SingleReportDefinitionDto();
+    countFlowNodeFrequencyGroupByFlowNode.setVisualization(TABLE_VISUALIZATION);
+    report.setData(countFlowNodeFrequencyGroupByFlowNode);
+    updateReport(singleReportIdToUpdate, report);
+    List<ReportDefinitionDto> reports = getAllReports();
+
+    // then
+    Set<String> resultSet = reports.stream()
+      .map(ReportDefinitionDto::getId)
+      .collect(Collectors.toSet());
+    assertThat(resultSet.size(), is(3));
+    assertThat(resultSet.contains(combinedReportId), is(true));
+    Optional<CombinedReportDefinitionDto> combinedReport = reports.stream()
+      .filter(r -> r instanceof CombinedReportDefinitionDto)
+      .map(r -> (CombinedReportDefinitionDto)r)
+      .findFirst();
+    assertThat(combinedReport.isPresent(), is(true));
+    CombinedReportDataDto dataDto = combinedReport.get().getData();
+    assertThat(dataDto.getReportIds().size(), is(1));
+    assertThat(dataDto.getReportIds().get(0), is(remainingSingleReportId));
+  }
+
+  @Test
+  public void singleReportsAreRemovedFromCombinedReportOnReportUpdateWithGroupByChanged() {
+    // given
+    ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
+    SingleReportDataDto countFlowNodeFrequencyGroupByFlowNode = createCountFlowNodeFrequencyGroupByFlowNode(
+      engineDto.getProcessDefinitionKey(),
+      engineDto.getProcessDefinitionVersion()
+    );
+    String singleReportIdToUpdate = createNewSingleMapReport(countFlowNodeFrequencyGroupByFlowNode);
+    String remainingSingleReportId = createNewSingleMapReport(engineDto);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    String combinedReportId = createNewCombinedReport(singleReportIdToUpdate, remainingSingleReportId);
+    SingleReportDefinitionDto report = new SingleReportDefinitionDto();
+    countFlowNodeFrequencyGroupByFlowNode.getGroupBy().setType(GROUP_BY_START_DATE_TYPE);
+    report.setData(countFlowNodeFrequencyGroupByFlowNode);
+    updateReport(singleReportIdToUpdate, report);
+    List<ReportDefinitionDto> reports = getAllReports();
+
+    // then
+    Set<String> resultSet = reports.stream()
+      .map(ReportDefinitionDto::getId)
+      .collect(Collectors.toSet());
+    assertThat(resultSet.size(), is(3));
+    assertThat(resultSet.contains(combinedReportId), is(true));
+    Optional<CombinedReportDefinitionDto> combinedReport = reports.stream()
+      .filter(r -> r instanceof CombinedReportDefinitionDto)
+      .map(r -> (CombinedReportDefinitionDto)r)
+      .findFirst();
+    assertThat(combinedReport.isPresent(), is(true));
+    CombinedReportDataDto dataDto = combinedReport.get().getData();
+    assertThat(dataDto.getReportIds().size(), is(1));
+    assertThat(dataDto.getReportIds().get(0), is(remainingSingleReportId));
+  }
+
+  @Test
+  public void singleReportsAreRemovedFromCombinedReportOnReportUpdateWithViewChanged() {
+    // given
+    ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
+    SingleReportDataDto countFlowNodeFrequencyGroupByFlowNode = createCountFlowNodeFrequencyGroupByFlowNode(
+      engineDto.getProcessDefinitionKey(),
+      engineDto.getProcessDefinitionVersion()
+    );
+    String singleReportIdToUpdate = createNewSingleMapReport(countFlowNodeFrequencyGroupByFlowNode);
+    String remainingSingleReportId = createNewSingleMapReport(engineDto);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    String combinedReportId = createNewCombinedReport(singleReportIdToUpdate, remainingSingleReportId);
+    SingleReportDefinitionDto report = new SingleReportDefinitionDto();
+    countFlowNodeFrequencyGroupByFlowNode.getView().setEntity(VIEW_PROCESS_INSTANCE_ENTITY);
+    report.setData(countFlowNodeFrequencyGroupByFlowNode);
+    updateReport(singleReportIdToUpdate, report);
+    List<ReportDefinitionDto> reports = getAllReports();
+
+    // then
+    Set<String> resultSet = reports.stream()
+      .map(ReportDefinitionDto::getId)
+      .collect(Collectors.toSet());
+    assertThat(resultSet.size(), is(3));
+    assertThat(resultSet.contains(combinedReportId), is(true));
+    Optional<CombinedReportDefinitionDto> combinedReport = reports.stream()
+      .filter(r -> r instanceof CombinedReportDefinitionDto)
+      .map(r -> (CombinedReportDefinitionDto)r)
+      .findFirst();
     assertThat(combinedReport.isPresent(), is(true));
     CombinedReportDataDto dataDto = combinedReport.get().getData();
     assertThat(dataDto.getReportIds().size(), is(1));
@@ -339,19 +455,27 @@ public class CombinedReportHandlingIT {
   }
 
   private String createNewSingleMapReport(ProcessInstanceEngineDto engineDto) {
-    String singleReportId = createNewSingleMapReport();
     SingleReportDataDto countFlowNodeFrequencyGroupByFlowNode =
-      createCountFlowNodeFrequencyGroupByFlowNode(engineDto.getProcessDefinitionKey(),engineDto.getProcessDefinitionVersion());
+      createCountFlowNodeFrequencyGroupByFlowNode(
+        engineDto.getProcessDefinitionKey(),
+        engineDto.getProcessDefinitionVersion()
+      );
+    return createNewSingleMapReport(countFlowNodeFrequencyGroupByFlowNode);
+  }
+
+  private String createNewSingleMapReport(SingleReportDataDto data) {
+    String singleReportId = createNewSingleReport();
     SingleReportDefinitionDto definitionDto = new SingleReportDefinitionDto();
-    definitionDto.setData(countFlowNodeFrequencyGroupByFlowNode);
+    definitionDto.setData(data);
     updateReport(singleReportId, definitionDto);
     return singleReportId;
   }
 
+
   private String createNewSingleNumberReport(ProcessInstanceEngineDto engineDto) {
-    String singleReportId = createNewSingleMapReport();
+    String singleReportId = createNewSingleReport();
     SingleReportDataDto countFlowNodeFrequencyGroupByFlowNode =
-      createPiFrequencyCountGroupedByNone(engineDto.getProcessDefinitionKey(),engineDto.getProcessDefinitionVersion());
+      createPiFrequencyCountGroupedByNone(engineDto.getProcessDefinitionKey(), engineDto.getProcessDefinitionVersion());
     SingleReportDefinitionDto definitionDto = new SingleReportDefinitionDto();
     definitionDto.setData(countFlowNodeFrequencyGroupByFlowNode);
     updateReport(singleReportId, definitionDto);
@@ -359,7 +483,7 @@ public class CombinedReportHandlingIT {
   }
 
   private String createNewSingleRawReport(ProcessInstanceEngineDto engineDto) {
-    String singleReportId = createNewSingleMapReport();
+    String singleReportId = createNewSingleReport();
     SingleReportDataDto countFlowNodeFrequencyGroupByFlowNode =
       createReportDataViewRawAsTable(engineDto.getProcessDefinitionKey(),engineDto.getProcessDefinitionVersion());
     SingleReportDefinitionDto definitionDto = new SingleReportDefinitionDto();
@@ -410,7 +534,7 @@ public class CombinedReportHandlingIT {
     return response.readEntity(IdDto.class).getId();
   }
 
-  private String createNewSingleMapReport() {
+  private String createNewSingleReport() {
     Response response =
       embeddedOptimizeRule.target("report/single")
         .request()

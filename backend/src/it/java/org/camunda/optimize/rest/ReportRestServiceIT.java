@@ -265,7 +265,7 @@ public class ReportRestServiceIT {
   public void evaluateInvalidReportById() {
     //given
     String id = createAndStoreDefaultReportDefinition(
-      ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNoneNumber(RANDOM_KEY, RANDOM_VERSION)
+      ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNodeNumber(RANDOM_KEY, RANDOM_VERSION)
     );
 
     // then
@@ -283,7 +283,7 @@ public class ReportRestServiceIT {
   @Test
   public void evaluateReportWithoutViewById() {
     //given
-    SingleReportDataDto countFlowNodeFrequencyGroupByFlowNoneNumber = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNoneNumber(RANDOM_KEY, RANDOM_VERSION);
+    SingleReportDataDto countFlowNodeFrequencyGroupByFlowNoneNumber = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNodeNumber(RANDOM_KEY, RANDOM_VERSION);
     countFlowNodeFrequencyGroupByFlowNoneNumber.setView(null);
     String id = createAndStoreDefaultReportDefinition(
       countFlowNodeFrequencyGroupByFlowNoneNumber

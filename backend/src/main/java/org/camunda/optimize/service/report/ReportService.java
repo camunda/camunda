@@ -80,15 +80,30 @@ public class ReportService {
                                                  ReportDefinitionDto updatedReport,
                                                  String userId) throws OptimizeException, JsonProcessingException {
     ValidationHelper.validateDefinitionData(updatedReport.getData());
-    getReportWithAuthorizationCheck(reportId, userId);
+    ReportDefinitionDto oldReportVersion = getReportWithAuthorizationCheck(reportId, userId);
     ReportDefinitionUpdateDto reportUpdate = convertToReportUpdate(reportId, updatedReport, userId);
     if (SINGLE_REPORT_TYPE.equals(updatedReport.getReportType())) {
       reportWriter.updateSingleReport(reportUpdate);
       alertService.deleteAlertsIfNeeded(reportId, updatedReport);
+
+      SingleReportDefinitionDto singleReportUpdate = (SingleReportDefinitionDto) updatedReport;
+      if (semanticsForCombinedReportChanged(oldReportVersion, singleReportUpdate)) {
+        reportWriter.removeSingleReportFromCombinedReports(reportId);
+      }
     } else if (COMBINED_REPORT_TYPE.equals(updatedReport.getReportType())) {
       reportWriter.updateCombinedReport(reportUpdate);
     }
 
+  }
+
+  private boolean semanticsForCombinedReportChanged(ReportDefinitionDto oldReportVersion, SingleReportDefinitionDto reportUpdate) {
+    if (SINGLE_REPORT_TYPE.equals(oldReportVersion.getReportType())) {
+      SingleReportDefinitionDto oldSingleReport = (SingleReportDefinitionDto) oldReportVersion;
+      SingleReportDataDto oldData = oldSingleReport.getData();
+      SingleReportDataDto newData = reportUpdate.getData();
+      return !newData.equals(oldData);
+    }
+    return false;
   }
 
   private ReportDefinitionUpdateDto convertToReportUpdate(String reportId, ReportDefinitionDto updatedReport, String userId) {

@@ -2,6 +2,8 @@ package org.camunda.optimize.dto.optimize.query.report;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import java.util.Objects;
+
 public class ViewDto {
 
   protected String operation;
@@ -45,4 +47,20 @@ public class ViewDto {
     String separator = "_";
     return operation + separator + entity + separator + property;
   }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (!(o instanceof ViewDto)) {
+      return false;
+    }
+    ViewDto viewDto = (ViewDto) o;
+    // note: different view operations are okay, since users might want to
+    // compare the results of those in a combined report.
+    return Objects.equals(entity, viewDto.entity) &&
+      Objects.equals(property, viewDto.property);
+  }
+
 }

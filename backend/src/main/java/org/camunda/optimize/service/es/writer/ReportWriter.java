@@ -150,6 +150,10 @@ public class ReportWriter {
     .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
     .get();
 
+    removeSingleReportFromCombinedReports(reportId);
+  }
+
+  public void removeSingleReportFromCombinedReports(String reportId) {
     UpdateByQueryRequestBuilder updateByQuery = UpdateByQueryAction.INSTANCE.newRequestBuilder(esclient);
     Script removeReportIdFromCombinedReportsScript = new Script(
       ScriptType.INLINE,

@@ -640,7 +640,7 @@ public class SharingServiceIT extends AbstractSharingIT {
 
     String reportId = this.createNewReport();
     SingleReportDataDto reportData = ReportDataHelper
-      .createCountFlowNodeFrequencyGroupByFlowNoneNumber(
+      .createCountFlowNodeFrequencyGroupByFlowNodeNumber(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion()
       );

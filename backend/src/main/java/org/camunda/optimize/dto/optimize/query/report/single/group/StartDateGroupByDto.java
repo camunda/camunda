@@ -13,4 +13,6 @@ public class StartDateGroupByDto extends GroupByDto<StartDateGroupByValueDto> {
   public String toString() {
     return super.toString() + "_" + this.getValue().getUnit();
   }
+
+
 }

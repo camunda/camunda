@@ -137,12 +137,12 @@ public class ReportDataHelper {
     return reportData;
   }
 
-  public static SingleReportDataDto createReportDataViewRaw(
-      String processDefinitionKey,
-      String processDefinitionVersion,
-      String visualization,
-      ViewDto viewDto,
-      GroupByDto groupByDto
+  private static SingleReportDataDto createReportDataViewRaw(
+    String processDefinitionKey,
+    String processDefinitionVersion,
+    String visualization,
+    ViewDto viewDto,
+    GroupByDto groupByDto
   ) {
     SingleReportDataDto reportData = new SingleReportDataDto();
     reportData.setProcessDefinitionKey(processDefinitionKey);
@@ -270,7 +270,7 @@ public class ReportDataHelper {
     );
   }
 
-  public static SingleReportDataDto createCountFlowNodeFrequencyGroupByFlowNoneNumber(
+  public static SingleReportDataDto createCountFlowNodeFrequencyGroupByFlowNodeNumber(
     String processDefinitionKey,
     String processDefinitionVersion
   ) {
