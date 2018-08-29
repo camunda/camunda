@@ -68,9 +68,9 @@ public class CreateDeploymentTest {
     assertThat(deployedResource.getResourceType()).isEqualTo(ResourceType.BPMN_XML);
     assertThat(deployedResource.getResourceName()).isEqualTo("workflow.bpmn");
 
-    assertThat(result.getDeployedWorkflows()).hasSize(1);
+    assertThat(result.getWorkflows()).hasSize(1);
 
-    final Workflow deployedWorkflow = result.getDeployedWorkflows().get(0);
+    final Workflow deployedWorkflow = result.getWorkflows().get(0);
     assertThat(deployedWorkflow.getBpmnProcessId()).isEqualTo("process");
     assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
     assertThat(deployedWorkflow.getWorkflowKey()).isEqualTo(1L);
@@ -149,9 +149,9 @@ public class CreateDeploymentTest {
     assertThat(deployedResource.getResourceType()).isEqualTo(ResourceType.YAML_WORKFLOW);
     assertThat(deployedResource.getResourceName()).isEqualTo("workflows/simple-workflow.yaml");
 
-    assertThat(result.getDeployedWorkflows()).hasSize(1);
+    assertThat(result.getWorkflows()).hasSize(1);
 
-    final Workflow deployedWorkflow = result.getDeployedWorkflows().get(0);
+    final Workflow deployedWorkflow = result.getWorkflows().get(0);
     assertThat(deployedWorkflow.getBpmnProcessId()).isEqualTo("yaml-workflow");
     assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
     assertThat(deployedWorkflow.getWorkflowKey()).isGreaterThan(0);

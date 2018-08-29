@@ -87,9 +87,9 @@ public class WorkflowRepositoryTest {
 
     clientRule.waitUntilDeploymentIsDone(thirdDeployment.getKey());
 
-    deployedWorkflows.addAll(firstDeployment.getDeployedWorkflows());
-    deployedWorkflows.addAll(secondDeployment.getDeployedWorkflows());
-    deployedWorkflows.addAll(thirdDeployment.getDeployedWorkflows());
+    deployedWorkflows.addAll(firstDeployment.getWorkflows());
+    deployedWorkflows.addAll(secondDeployment.getWorkflows());
+    deployedWorkflows.addAll(thirdDeployment.getWorkflows());
   }
 
   @Test
@@ -223,7 +223,7 @@ public class WorkflowRepositoryTest {
     assertThat(workflows).isEmpty();
   }
 
-  private long getWorkflowKey(String bpmnProcessId, int version) {
+  private long getWorkflowKey(final String bpmnProcessId, final int version) {
     return deployedWorkflows
         .stream()
         .filter(w -> w.getBpmnProcessId().equals(bpmnProcessId) && w.getVersion() == version)

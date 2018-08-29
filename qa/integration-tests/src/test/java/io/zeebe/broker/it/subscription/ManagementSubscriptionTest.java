@@ -107,13 +107,13 @@ public class ManagementSubscriptionTest {
 
     assertThat(events)
         .extracting(DeploymentEvent::getState)
-        .contains(DeploymentState.CREATED, DeploymentState.DISTRIBUTE);
-    for (DeploymentEvent event : events) {
+        .contains(DeploymentState.CREATED, DeploymentState.DISTRIBUTED);
+    for (final DeploymentEvent event : events) {
       assertThat(event.getKey()).isEqualTo(deploymentEvent.getKey());
       assertThat(event.getDeploymentTopic()).isEqualTo(clientRule.getDefaultTopic());
 
-      assertThat(event.getDeployedWorkflows()).hasSize(1);
-      final Workflow deployedWorkflow = event.getDeployedWorkflows().get(0);
+      assertThat(event.getWorkflows()).hasSize(1);
+      final Workflow deployedWorkflow = event.getWorkflows().get(0);
       assertThat(deployedWorkflow.getBpmnProcessId()).isEqualTo("wf");
       assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
       assertThat(deployedWorkflow.getWorkflowKey()).isEqualTo(1L);
@@ -155,10 +155,10 @@ public class ManagementSubscriptionTest {
 
     assertThat(commands)
         .extracting(DeploymentCommand::getName)
-        .contains(DeploymentCommandName.CREATE, DeploymentCommandName.CREATING);
+        .contains(DeploymentCommandName.CREATE, DeploymentCommandName.DISTRIBUTE);
     assertThat(commands).extracting(Record::getKey).contains(-1L, deploymentEvent.getKey());
 
-    for (DeploymentCommand command : commands) {
+    for (final DeploymentCommand command : commands) {
       assertThat(command.getDeploymentTopic()).isEqualTo(clientRule.getDefaultTopic());
 
       assertThat(command.getResources()).hasSize(1);

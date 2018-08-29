@@ -53,11 +53,8 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.transport.ClientResponse;
 import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.ActorControl;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -190,7 +187,8 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
     final DeployedWorkflow deployedWorkflow = workflowCache.getWorkflowByKey(workflowKey);
 
     if (deployedWorkflow == null) {
-      fetchWorkflow(workflowKey, this::callStepHandler, ctx);
+      throw new IllegalStateException(
+          "Error while processing workflow. Workflow with " + workflowKey + " is not deployed");
     } else {
       callStepHandler(deployedWorkflow);
     }
@@ -247,35 +245,5 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
 
     final Predicate<BpmnStepContext> guard = stepGuards.get(context.getState());
     return guard.test(context);
-  }
-
-  private void fetchWorkflow(
-      long workflowKey, Consumer<DeployedWorkflow> onFetched, EventLifecycleContext ctx) {
-    final ActorFuture<ClientResponse> responseFuture =
-        workflowCache.fetchWorkflowByKey(workflowKey);
-    final ActorFuture<Void> onCompleted = new CompletableActorFuture<>();
-
-    ctx.async(onCompleted);
-
-    actor.runOnCompletion(
-        responseFuture,
-        (response, err) -> {
-          if (err != null) {
-            onCompleted.completeExceptionally(
-                new RuntimeException("Could not fetch workflow", err));
-          } else {
-            try {
-              final DeployedWorkflow workflow =
-                  workflowCache.addWorkflow(response.getResponseBuffer());
-
-              onFetched.accept(workflow);
-
-              onCompleted.complete(null);
-            } catch (Exception e) {
-              onCompleted.completeExceptionally(
-                  new RuntimeException("Error while processing fetched workflow", e));
-            }
-          }
-        });
   }
 }

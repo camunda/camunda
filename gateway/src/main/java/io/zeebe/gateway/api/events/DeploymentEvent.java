@@ -24,5 +24,5 @@ public interface DeploymentEvent extends DeploymentRecord {
   DeploymentState getState();
 
   /** @return the workflows which are deployed */
-  List<Workflow> getDeployedWorkflows();
+  List<Workflow> getWorkflows();
 }

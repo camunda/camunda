@@ -28,21 +28,21 @@ import io.zeebe.protocol.clientapi.RecordType;
 import java.util.List;
 
 public class DeploymentEventImpl extends DeploymentRecordImpl implements DeploymentEvent {
-  private List<Workflow> deployedWorkflows;
+  private List<Workflow> workflows;
 
   @JsonCreator
-  public DeploymentEventImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper) {
+  public DeploymentEventImpl(@JacksonInject final ZeebeObjectMapperImpl objectMapper) {
     super(objectMapper, RecordType.EVENT);
   }
 
   @Override
   @JsonDeserialize(contentAs = WorkflowImpl.class)
-  public List<Workflow> getDeployedWorkflows() {
-    return deployedWorkflows;
+  public List<Workflow> getWorkflows() {
+    return workflows;
   }
 
-  public void setDeployedWorkflows(List<Workflow> deployedWorkflows) {
-    this.deployedWorkflows = deployedWorkflows;
+  public void setWorkflows(final List<Workflow> deployedWorkflows) {
+    this.workflows = deployedWorkflows;
   }
 
   @JsonIgnore
@@ -60,8 +60,8 @@ public class DeploymentEventImpl extends DeploymentRecordImpl implements Deploym
     builder.append(getDeploymentTopic());
     builder.append(", resource=");
     builder.append(getResources());
-    builder.append(", deployedWorkflows=");
-    builder.append(deployedWorkflows);
+    builder.append(", workflows=");
+    builder.append(workflows);
     builder.append("]");
     return builder.toString();
   }

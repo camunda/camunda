@@ -115,7 +115,7 @@ public class CreateDeploymentTest {
                 b.sourceRecordPosition(1L)
                     .key(2L)
                     .value()
-                    .put("deployedWorkflows", deployedWorkflows)
+                    .put("workflows", deployedWorkflows)
                     .done());
 
     // when
@@ -140,15 +140,13 @@ public class CreateDeploymentTest {
     assertThat(deployment.getMetadata().getPartitionId()).isEqualTo(DEPLOYMENT_PARTITION);
     assertThat(deployment.getMetadata().getSourceRecordPosition()).isEqualTo(1L);
 
-    assertThat(deployment.getDeployedWorkflows()).hasSize(2);
-    assertThat(deployment.getDeployedWorkflows())
+    assertThat(deployment.getWorkflows()).hasSize(2);
+    assertThat(deployment.getWorkflows())
         .extracting(Workflow::getBpmnProcessId)
         .contains("foo", "bar");
-    assertThat(deployment.getDeployedWorkflows()).extracting(Workflow::getVersion).contains(1, 2);
-    assertThat(deployment.getDeployedWorkflows())
-        .extracting(Workflow::getWorkflowKey)
-        .contains(2L, 3L);
-    assertThat(deployment.getDeployedWorkflows())
+    assertThat(deployment.getWorkflows()).extracting(Workflow::getVersion).contains(1, 2);
+    assertThat(deployment.getWorkflows()).extracting(Workflow::getWorkflowKey).contains(2L, 3L);
+    assertThat(deployment.getWorkflows())
         .extracting(Workflow::getResourceName)
         .contains("foo.bpmn", "bar.bpmn");
   }

@@ -33,15 +33,15 @@ import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKF
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
-import io.zeebe.broker.system.workflow.repository.data.ResourceType;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.broker.workflow.map.WorkflowCache;
+import io.zeebe.broker.workflow.deployment.data.ResourceType;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
@@ -51,7 +51,6 @@ import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
 import io.zeebe.util.StreamUtil;
 import java.io.IOException;
 import java.io.InputStream;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -62,6 +61,7 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class CreateWorkflowInstanceTest {
+
   public EmbeddedBrokerRule brokerRule =
       new EmbeddedBrokerRule("zeebe.unit-test.increased.partitions.cfg.toml");
 
@@ -470,68 +470,17 @@ public class CreateWorkflowInstanceTest {
   }
 
   @Test
-  public void shouldCreateMultipleWorkflowInstancesForDifferentVersionsAfterTimeout() {
-    // given
-    final BpmnModelInstance workflow =
-        Bpmn.createExecutableProcess("process")
-            .startEvent("start")
-            .serviceTask(
-                "task",
-                task ->
-                    task.zeebeTaskType("test").zeebeTaskRetries(3).zeebeTaskHeader("foo", "bar"))
-            .endEvent("end")
-            .done();
-
-    testClient.deploy(workflow);
-
-    final long workflowInstance1 = testClient.createWorkflowInstance("process");
-
-    // when
-    testClient.deploy(workflow);
-
-    // when wait for refresh timeout
-    brokerRule
-        .getClock()
-        .addTime(Duration.ofSeconds(WorkflowCache.LATEST_VERSION_REFRESH_INTERVAL + 1));
-
-    final ExecuteCommandResponse resp = testClient.createWorkflowInstanceWithResponse("process");
-
-    // then
-    final List<SubscribedRecord> workflowInstanceEvents =
-        testClient
-            .receiveEvents()
-            .ofTypeWorkflowInstance()
-            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .filter(r -> "task".equals(r.value().get("activityId")))
-            .limit(2)
-            .collect(Collectors.toList());
-
-    assertThat(workflowInstanceEvents.get(0).value())
-        .containsEntry("workflowInstanceKey", workflowInstance1)
-        .containsEntry("version", 1L);
-
-    assertThat(workflowInstanceEvents.get(1).value())
-        .containsEntry("workflowInstanceKey", resp.key())
-        .containsEntry("version", 2L);
-
-    final long createdJobs =
-        testClient.receiveEvents().ofTypeJob().withIntent(JobIntent.CREATED).limit(2).count();
-    assertThat(createdJobs).isEqualTo(2);
-  }
-
-  @Test
   public void shouldCreateInstanceOfYamlWorkflow() throws Exception {
     // given
     final InputStream resourceAsStream =
         getClass().getResourceAsStream("/workflows/simple-workflow.yaml");
 
-    final ExecuteCommandResponse resp =
-        apiRule
-            .topic()
-            .deployWithResponse(
-                StreamUtil.read(resourceAsStream),
-                ResourceType.YAML_WORKFLOW.name(),
-                "simple-workflow.yaml");
+    apiRule
+        .topic()
+        .deployWithResponse(
+            StreamUtil.read(resourceAsStream),
+            ResourceType.YAML_WORKFLOW.name(),
+            "simple-workflow.yaml");
 
     // when
     final long workflowInstanceKey = testClient.createWorkflowInstance("yaml-workflow");
@@ -556,12 +505,15 @@ public class CreateWorkflowInstanceTest {
         Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
 
     // when
-    apiRule.topic().deploy(definition);
+    final long deploymentKey = apiRule.topic().deploy(definition);
 
     // then
     final List<Long> workflowInstanceKeys = new ArrayList<>();
     partitionIds.forEach(
         partitionId -> {
+          apiRule
+              .topic(partitionId)
+              .receiveFirstDeploymentEvent(DeploymentIntent.CREATED, deploymentKey);
           final long workflowInstanceKey =
               apiRule.topic(partitionId).createWorkflowInstance("process");
 
@@ -576,13 +528,10 @@ public class CreateWorkflowInstanceTest {
     final InputStream resourceAsStream =
         getClass().getResourceAsStream("/workflows/collaboration.bpmn");
 
-    final ExecuteCommandResponse resp =
-        apiRule
-            .topic()
-            .deployWithResponse(
-                StreamUtil.read(resourceAsStream),
-                ResourceType.BPMN_XML.name(),
-                "collaboration.bpmn");
+    apiRule
+        .topic()
+        .deployWithResponse(
+            StreamUtil.read(resourceAsStream), ResourceType.BPMN_XML.name(), "collaboration.bpmn");
 
     // when
     final long wfInstance1 = testClient.createWorkflowInstance("process1");
@@ -603,7 +552,7 @@ public class CreateWorkflowInstanceTest {
   @SuppressWarnings("unchecked")
   private long extractWorkflowKey(final ExecuteCommandResponse deployment1) {
     final List<Map<String, Object>> deployedWorkflows =
-        (List<Map<String, Object>>) deployment1.getValue().get("deployedWorkflows");
+        (List<Map<String, Object>>) deployment1.getValue().get("workflows");
     return (long) deployedWorkflows.get(0).get(PROP_WORKFLOW_KEY);
   }
 }

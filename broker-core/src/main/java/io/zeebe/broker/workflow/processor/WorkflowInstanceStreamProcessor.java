@@ -17,10 +17,13 @@
  */
 package io.zeebe.broker.workflow.processor;
 
+import static io.zeebe.protocol.intent.DeploymentIntent.CREATE;
+
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
 import io.zeebe.broker.logstreams.processor.TypedEventStreamProcessorBuilder;
+import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamReader;
@@ -29,6 +32,8 @@ import io.zeebe.broker.subscription.message.processor.OpenWorkflowInstanceSubscr
 import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionDataStore;
 import io.zeebe.broker.workflow.index.ElementInstanceIndex;
 import io.zeebe.broker.workflow.map.WorkflowCache;
+import io.zeebe.broker.workflow.processor.deployment.DeploymentCreateProcessor;
+import io.zeebe.broker.workflow.processor.deployment.TransformingDeploymentCreateProcessor;
 import io.zeebe.broker.workflow.processor.instance.CancelWorkflowInstanceProcessor;
 import io.zeebe.broker.workflow.processor.instance.CreateWorkflowInstanceEventProcessor;
 import io.zeebe.broker.workflow.processor.instance.UpdatePayloadProcessor;
@@ -37,33 +42,51 @@ import io.zeebe.broker.workflow.processor.instance.WorkflowInstanceRejectedEvent
 import io.zeebe.broker.workflow.processor.job.JobCompletedEventProcessor;
 import io.zeebe.broker.workflow.processor.job.JobCreatedProcessor;
 import io.zeebe.broker.workflow.processor.message.CorrelateWorkflowInstanceSubscription;
+import io.zeebe.broker.workflow.state.WorkflowRepositoryIndex;
+import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
+import java.util.function.Consumer;
 
 public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycleAware {
 
   private final ElementInstanceIndex scopeInstances = new ElementInstanceIndex();
 
   private TypedStreamReader streamReader;
-  private WorkflowInstanceSubscriptionDataStore subscriptionStore =
+  private final WorkflowInstanceSubscriptionDataStore subscriptionStore =
       new WorkflowInstanceSubscriptionDataStore();
+  private final WorkflowRepositoryIndex repositoryIndex = new WorkflowRepositoryIndex();
 
   private final TopologyManager topologyManager;
   private final WorkflowCache workflowCache;
   private final SubscriptionCommandSender subscriptionCommandSender;
+  private final Consumer<StreamProcessorContext> onRecoveredCallback;
+  private final Runnable onClosedCallback;
 
   public WorkflowInstanceStreamProcessor(
-      WorkflowCache workflowCache,
-      SubscriptionCommandSender subscriptionCommandSender,
-      TopologyManager topologyManager) {
+      final WorkflowCache workflowCache,
+      final SubscriptionCommandSender subscriptionCommandSender,
+      final TopologyManager topologyManager) {
+    this((ctx) -> {}, () -> {}, workflowCache, subscriptionCommandSender, topologyManager);
+  }
+
+  public WorkflowInstanceStreamProcessor(
+      final Consumer<StreamProcessorContext> onRecoveredCallback,
+      final Runnable onClosedCallback,
+      final WorkflowCache workflowCache,
+      final SubscriptionCommandSender subscriptionCommandSender,
+      final TopologyManager topologyManager) {
+    this.onRecoveredCallback = onRecoveredCallback;
+    this.onClosedCallback = onClosedCallback;
     this.workflowCache = workflowCache;
     this.subscriptionCommandSender = subscriptionCommandSender;
     this.topologyManager = topologyManager;
   }
 
-  public TypedStreamProcessor createStreamProcessor(TypedStreamEnvironment environment) {
+  public TypedStreamProcessor createStreamProcessor(final TypedStreamEnvironment environment) {
 
     final ComposeableSerializableSnapshot<ElementInstanceIndex> snapshotSupport =
         new ComposeableSerializableSnapshot<>(scopeInstances);
@@ -73,27 +96,43 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
             .newStreamProcessor()
             .keyGenerator(KeyGenerator.createWorkflowInstanceKeyGenerator());
 
+    final int partitionId = environment.getStream().getPartitionId();
+
     addWorkflowInstanceEventStreamProcessors(streamProcessorBuilder);
     addBpmnStepProcessor(streamProcessorBuilder);
     addJobStreamProcessors(streamProcessorBuilder);
     addMessageStreamProcessors(streamProcessorBuilder);
+    addDeploymentStreamProcessors(streamProcessorBuilder, partitionId);
 
     return streamProcessorBuilder
         // this is pretty ugly, but goes away when we switch to rocksdb
         .withStateResource(snapshotSupport)
         .withStateResource(subscriptionStore)
+        .withStateResource(repositoryIndex)
         .withListener(this)
         .withListener(
             new StreamProcessorLifecycleAware() {
               @Override
-              public void onOpen(TypedStreamProcessor streamProcessor) {
+              public void onOpen(final TypedStreamProcessor streamProcessor) {
                 scopeInstances.shareState(snapshotSupport.getObject());
               }
             })
         .build();
   }
 
-  public void addWorkflowInstanceEventStreamProcessors(TypedEventStreamProcessorBuilder builder) {
+  private void addDeploymentStreamProcessors(
+      final TypedEventStreamProcessorBuilder streamProcessorBuilder, final int partitionId) {
+
+    final TypedRecordProcessor<?> processor =
+        Protocol.DEPLOYMENT_PARTITION == partitionId
+            ? new TransformingDeploymentCreateProcessor(this.workflowCache, repositoryIndex)
+            : new DeploymentCreateProcessor(this.workflowCache);
+
+    streamProcessorBuilder.onCommand(ValueType.DEPLOYMENT, CREATE, processor);
+  }
+
+  public void addWorkflowInstanceEventStreamProcessors(
+      final TypedEventStreamProcessorBuilder builder) {
     builder
         .onCommand(
             ValueType.WORKFLOW_INSTANCE,
@@ -117,7 +156,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
             new UpdatePayloadProcessor(scopeInstances));
   }
 
-  private void addBpmnStepProcessor(TypedEventStreamProcessorBuilder streamProcessorBuilder) {
+  private void addBpmnStepProcessor(final TypedEventStreamProcessorBuilder streamProcessorBuilder) {
     final BpmnStepProcessor bpmnStepProcessor =
         new BpmnStepProcessor(
             scopeInstances, workflowCache, subscriptionCommandSender, subscriptionStore);
@@ -163,7 +202,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
             bpmnStepProcessor);
   }
 
-  private void addMessageStreamProcessors(TypedEventStreamProcessorBuilder streamProcessorBuilder) {
+  private void addMessageStreamProcessors(
+      final TypedEventStreamProcessorBuilder streamProcessorBuilder) {
     streamProcessorBuilder
         .onCommand(
             ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION,
@@ -180,7 +220,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
                 subscriptionCommandSender));
   }
 
-  private void addJobStreamProcessors(TypedEventStreamProcessorBuilder streamProcessorBuilder) {
+  private void addJobStreamProcessors(
+      final TypedEventStreamProcessorBuilder streamProcessorBuilder) {
     streamProcessorBuilder
         .onEvent(ValueType.JOB, JobIntent.CREATED, new JobCreatedProcessor(scopeInstances))
         .onEvent(
@@ -188,13 +229,18 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
   }
 
   @Override
-  public void onOpen(TypedStreamProcessor streamProcessor) {
+  public void onOpen(final TypedStreamProcessor streamProcessor) {
     this.streamReader = streamProcessor.getEnvironment().buildStreamReader();
   }
 
   @Override
+  public void onRecovered(final TypedStreamProcessor streamProcessor) {
+    onRecoveredCallback.accept(streamProcessor.getStreamProcessorContext());
+  }
+
+  @Override
   public void onClose() {
-    workflowCache.close();
+    onClosedCallback.run();
     streamReader.close();
   }
 }

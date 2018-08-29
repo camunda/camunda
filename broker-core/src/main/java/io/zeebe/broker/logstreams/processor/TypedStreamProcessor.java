@@ -61,14 +61,14 @@ public class TypedStreamProcessor implements StreamProcessor {
   private StreamProcessorContext streamProcessorContext;
 
   public TypedStreamProcessor(
-      StateController stateController,
-      SnapshotSupport snapshotSupport,
-      ServerOutput output,
-      RecordProcessorMap recordProcessors,
-      List<StreamProcessorLifecycleAware> lifecycleListeners,
-      EnumMap<ValueType, Class<? extends UnpackedObject>> eventRegistry,
-      KeyGenerator keyGenerator,
-      TypedStreamEnvironment environment) {
+      final StateController stateController,
+      final SnapshotSupport snapshotSupport,
+      final ServerOutput output,
+      final RecordProcessorMap recordProcessors,
+      final List<StreamProcessorLifecycleAware> lifecycleListeners,
+      final EnumMap<ValueType, Class<? extends UnpackedObject>> eventRegistry,
+      final KeyGenerator keyGenerator,
+      final TypedStreamEnvironment environment) {
     this.stateController = stateController;
     this.snapshotSupport = snapshotSupport;
     this.output = output;
@@ -86,7 +86,7 @@ public class TypedStreamProcessor implements StreamProcessor {
   }
 
   @Override
-  public void onOpen(StreamProcessorContext context) {
+  public void onOpen(final StreamProcessorContext context) {
     this.eventProcessorWrapper =
         new DelegatingEventProcessor(
             context.getId(), output, context.getLogStream(), eventRegistry, keyGenerator);
@@ -117,7 +117,7 @@ public class TypedStreamProcessor implements StreamProcessor {
   }
 
   @Override
-  public EventProcessor onEvent(LoggedEvent event) {
+  public EventProcessor onEvent(final LoggedEvent event) {
     metadata.reset();
     event.readMetadata(metadata);
 
@@ -143,7 +143,7 @@ public class TypedStreamProcessor implements StreamProcessor {
         recordProcessors.containsKey(m.getRecordType(), m.getValueType(), m.getIntent().value());
   }
 
-  public ActorFuture<Void> runAsync(Runnable runnable) {
+  public ActorFuture<Void> runAsync(final Runnable runnable) {
     return actor.call(runnable);
   }
 
@@ -159,24 +159,24 @@ public class TypedStreamProcessor implements StreamProcessor {
     private SideEffectProducer sideEffectProducer;
 
     public DelegatingEventProcessor(
-        int streamProcessorId,
-        ServerOutput output,
-        LogStream logStream,
-        EnumMap<ValueType, Class<? extends UnpackedObject>> eventRegistry,
-        KeyGenerator keyGenerator) {
+        final int streamProcessorId,
+        final ServerOutput output,
+        final LogStream logStream,
+        final EnumMap<ValueType, Class<? extends UnpackedObject>> eventRegistry,
+        final KeyGenerator keyGenerator) {
       this.streamProcessorId = streamProcessorId;
       this.logStream = logStream;
       this.writer = new TypedStreamWriterImpl(logStream, eventRegistry, keyGenerator);
       this.responseWriter = new TypedResponseWriterImpl(output, logStream.getPartitionId());
     }
 
-    public void wrap(TypedRecordProcessor<?> eventProcessor, TypedEventImpl event) {
+    public void wrap(final TypedRecordProcessor<?> eventProcessor, final TypedEventImpl event) {
       this.eventProcessor = eventProcessor;
       this.event = event;
     }
 
     @Override
-    public void processEvent(EventLifecycleContext ctx) {
+    public void processEvent(final EventLifecycleContext ctx) {
       writer.reset();
       responseWriter.reset();
 
@@ -188,7 +188,7 @@ public class TypedStreamProcessor implements StreamProcessor {
       eventProcessor.processRecord(event, responseWriter, writer, this::setSideEffectProducer, ctx);
     }
 
-    public void setSideEffectProducer(SideEffectProducer sideEffectProducer) {
+    public void setSideEffectProducer(final SideEffectProducer sideEffectProducer) {
       this.sideEffectProducer = sideEffectProducer;
     }
 
@@ -198,7 +198,7 @@ public class TypedStreamProcessor implements StreamProcessor {
     }
 
     @Override
-    public long writeEvent(LogStreamRecordWriter writer) {
+    public long writeEvent(final LogStreamRecordWriter writer) {
       return this.writer.flush();
     }
   }

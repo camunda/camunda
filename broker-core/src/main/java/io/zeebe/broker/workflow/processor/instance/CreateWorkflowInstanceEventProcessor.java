@@ -55,9 +55,6 @@ public final class CreateWorkflowInstanceEventProcessor
     this.requestId = command.getMetadata().getRequestId();
     this.requestStreamId = command.getMetadata().getRequestStreamId();
 
-    // keys must be generated here (regardless if workflow can be fetched or not)
-    // to avoid inconsistencies on reprocessing (if keys are generated must no depend
-    // on the success of the workflow fetch request)
     final KeyGenerator keyGenerator = streamWriter.getKeyGenerator();
     this.workflowInstanceKey = keyGenerator.nextKey();
 

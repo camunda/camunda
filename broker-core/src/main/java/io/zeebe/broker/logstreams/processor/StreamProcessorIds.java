@@ -30,7 +30,7 @@ public class StreamProcessorIds {
 
   public static final int TOPIC_SUBSCRIPTION_MANAGEMENT_PROCESSOR_ID = 50;
 
-  public static final int DEPLOYMENT_PROCESSOR_ID = 60;
+  public static final int DISTRIBUTE_PROCESSOR_ID = 60;
 
   public static final int WORKFLOW_INSTANCE_PROCESSOR_ID = 70;
 

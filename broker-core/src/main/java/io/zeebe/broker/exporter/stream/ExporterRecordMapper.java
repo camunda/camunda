@@ -40,8 +40,8 @@ import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.subscription.message.data.MessageRecord;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
-import io.zeebe.broker.system.workflow.repository.data.DeploymentRecord;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
+import io.zeebe.broker.workflow.deployment.data.DeploymentRecord;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.RecordMetadata;
 import io.zeebe.exporter.record.RecordValue;
@@ -191,8 +191,7 @@ public class ExporterRecordMapper {
 
     event.readValue(record);
 
-    for (final io.zeebe.broker.system.workflow.repository.data.DeployedWorkflow workflow :
-        record.deployedWorkflows()) {
+    for (final io.zeebe.broker.workflow.deployment.data.Workflow workflow : record.workflows()) {
       deployedWorkflows.add(
           new DeployedWorkflowImpl(
               asString(workflow.getBpmnProcessId()),
@@ -201,7 +200,7 @@ public class ExporterRecordMapper {
               workflow.getVersion()));
     }
 
-    for (final io.zeebe.broker.system.workflow.repository.data.DeploymentResource resource :
+    for (final io.zeebe.broker.workflow.deployment.data.DeploymentResource resource :
         record.resources()) {
       resources.add(
           new DeploymentResourceImpl(
@@ -321,7 +320,7 @@ public class ExporterRecordMapper {
   }
 
   private ResourceType asResourceType(
-      io.zeebe.broker.system.workflow.repository.data.ResourceType resourceType) {
+      final io.zeebe.broker.workflow.deployment.data.ResourceType resourceType) {
     switch (resourceType) {
       case BPMN_XML:
         return ResourceType.BPMN_XML;

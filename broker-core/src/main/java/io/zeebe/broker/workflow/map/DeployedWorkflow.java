@@ -18,21 +18,33 @@
 package io.zeebe.broker.workflow.map;
 
 import io.zeebe.broker.workflow.model.ExecutableWorkflow;
+import org.agrona.DirectBuffer;
 
 public class DeployedWorkflow {
   private final ExecutableWorkflow workflow;
-
   private final long key;
-
   private final int version;
+  private final DirectBuffer resource;
+  private final DirectBuffer resourceName;
+  private final DirectBuffer bpmnProcessId;
 
-  private long fetched;
-
-  public DeployedWorkflow(ExecutableWorkflow workflow, long key, int version, long fetched) {
+  public DeployedWorkflow(
+      final ExecutableWorkflow workflow,
+      final long key,
+      final int version,
+      final DirectBuffer resource,
+      final DirectBuffer resourceName,
+      final DirectBuffer bpmnProcessId) {
     this.workflow = workflow;
     this.key = key;
     this.version = version;
-    this.fetched = fetched;
+    this.resource = resource;
+    this.resourceName = resourceName;
+    this.bpmnProcessId = bpmnProcessId;
+  }
+
+  public DirectBuffer getResourceName() {
+    return resourceName;
   }
 
   public ExecutableWorkflow getWorkflow() {
@@ -47,11 +59,11 @@ public class DeployedWorkflow {
     return key;
   }
 
-  public long getFetched() {
-    return fetched;
+  public DirectBuffer getResource() {
+    return resource;
   }
 
-  public void setFetched(long fetched) {
-    this.fetched = fetched;
+  public DirectBuffer getBpmnProcessId() {
+    return bpmnProcessId;
   }
 }

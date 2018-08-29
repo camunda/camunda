@@ -23,9 +23,9 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.zeebe.broker.system.workflow.repository.data.ResourceType;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
+import io.zeebe.broker.workflow.deployment.data.ResourceType;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
@@ -94,7 +94,7 @@ public class CreateDeploymentTest {
     assertThat(resp.partitionId()).isEqualTo(DEPLOYMENT_PARTITION);
 
     assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(resp.intent()).isEqualTo(DeploymentIntent.DISTRIBUTE);
+    assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATED);
   }
 
   @SuppressWarnings("unchecked")
@@ -108,7 +108,7 @@ public class CreateDeploymentTest {
 
     // then
     List<Map<String, Object>> deployedWorkflows =
-        (List<Map<String, Object>>) firstDeployment.getValue().get("deployedWorkflows");
+        (List<Map<String, Object>>) firstDeployment.getValue().get("workflows");
     assertThat(deployedWorkflows).hasSize(1);
     assertThat(deployedWorkflows.get(0))
         .containsExactly(
@@ -117,8 +117,7 @@ public class CreateDeploymentTest {
             entry("workflowKey", 1L),
             entry("resourceName", "wf1.bpmn"));
 
-    deployedWorkflows =
-        (List<Map<String, Object>>) secondDeployment.getValue().get("deployedWorkflows");
+    deployedWorkflows = (List<Map<String, Object>>) secondDeployment.getValue().get("workflows");
     assertThat(deployedWorkflows).hasSize(1);
     assertThat(deployedWorkflows.get(0))
         .containsExactly(
@@ -145,7 +144,7 @@ public class CreateDeploymentTest {
 
     // then
     assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(resp.intent()).isEqualTo(DeploymentIntent.DISTRIBUTE);
+    assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATED);
 
     final List<Map<String, Object>> deployedWorkflows =
         Arrays.asList(getDeployedWorkflow(resp, 0), getDeployedWorkflow(resp, 1));
@@ -176,7 +175,7 @@ public class CreateDeploymentTest {
 
     // then
     assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(resp.intent()).isEqualTo(DeploymentIntent.DISTRIBUTE);
+    assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATED);
 
     final List<Map<String, Object>> deployedWorkflows =
         Arrays.asList(getDeployedWorkflow(resp, 0), getDeployedWorkflow(resp, 1));
@@ -193,7 +192,7 @@ public class CreateDeploymentTest {
     final byte[] resource = Files.readAllBytes(path);
 
     // when
-    final ExecuteCommandResponse resp = apiRule.topic().deployWithResponse(resource, false);
+    final ExecuteCommandResponse resp = apiRule.topic().deployWithResponse(resource);
 
     // then
     final SubscribedRecord createDeploymentCommand = getFirstDeploymentCreateCommand();
@@ -214,7 +213,7 @@ public class CreateDeploymentTest {
     final byte[] resource = Files.readAllBytes(path);
 
     // when
-    final ExecuteCommandResponse resp = apiRule.topic().deployWithResponse(resource, false);
+    final ExecuteCommandResponse resp = apiRule.topic().deployWithResponse(resource);
 
     // then
     final SubscribedRecord createDeploymentCommand = getFirstDeploymentCreateCommand();
@@ -293,10 +292,7 @@ public class CreateDeploymentTest {
         apiRule
             .topic()
             .deployWithResponse(
-                "not a workflow".getBytes(UTF_8),
-                ResourceType.BPMN_XML.name(),
-                "invalid.bpmn",
-                false);
+                "not a workflow".getBytes(UTF_8), ResourceType.BPMN_XML.name(), "invalid.bpmn");
 
     // then
     assertThat(resp.key()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
@@ -324,7 +320,7 @@ public class CreateDeploymentTest {
 
     // then
     assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(resp.intent()).isEqualTo(DeploymentIntent.DISTRIBUTE);
+    assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATED);
 
     final Map<String, Object> deployedWorkflow = getDeployedWorkflow(resp, 0);
 
@@ -348,7 +344,7 @@ public class CreateDeploymentTest {
     assertThat(workflow2.get("version")).isEqualTo(2L);
   }
 
-  private Map<String, Object> deploymentResource(final byte[] resource, String name) {
+  private Map<String, Object> deploymentResource(final byte[] resource, final String name) {
     final Map<String, Object> deploymentResource = new HashMap<>();
     deploymentResource.put("resource", resource);
     deploymentResource.put("resourceType", ResourceType.BPMN_XML);
@@ -364,9 +360,10 @@ public class CreateDeploymentTest {
   }
 
   @SuppressWarnings("unchecked")
-  private Map<String, Object> getDeployedWorkflow(final ExecuteCommandResponse d1, int offset) {
+  private Map<String, Object> getDeployedWorkflow(
+      final ExecuteCommandResponse d1, final int offset) {
     final List<Map<String, Object>> d1Workflows =
-        (List<Map<String, Object>>) d1.getValue().get("deployedWorkflows");
+        (List<Map<String, Object>>) d1.getValue().get("workflows");
     return d1Workflows.get(offset);
   }
 

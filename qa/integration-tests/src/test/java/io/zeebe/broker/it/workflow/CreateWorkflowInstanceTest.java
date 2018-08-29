@@ -116,7 +116,7 @@ public class CreateWorkflowInstanceTest {
 
   @Test
   public void shouldCreateBpmnProcessByKey() {
-    final long workflowKey = firstDeployment.getDeployedWorkflows().get(0).getWorkflowKey();
+    final long workflowKey = firstDeployment.getWorkflows().get(0).getWorkflowKey();
 
     // when
     final WorkflowInstanceEvent workflowInstance =
