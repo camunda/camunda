@@ -29,10 +29,10 @@ import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowReposi
 import io.zeebe.msgpack.value.ValueArray;
 import io.zeebe.util.buffer.BufferUtil;
 
-public class DeploymentCreatedEventProcessor implements TypedRecordProcessor<DeploymentRecord> {
+public class DeploymentCreatedProcessor implements TypedRecordProcessor<DeploymentRecord> {
   private WorkflowRepositoryIndex repositoryIndex;
 
-  public DeploymentCreatedEventProcessor(WorkflowRepositoryIndex repositoryIndex) {
+  public DeploymentCreatedProcessor(WorkflowRepositoryIndex repositoryIndex) {
     this.repositoryIndex = repositoryIndex;
   }
 

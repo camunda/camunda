@@ -88,7 +88,7 @@ public class CreateDeploymentMultiplePartitionsTest {
     assertThat(resp.partitionId()).isEqualTo(PARTITION_ID);
 
     assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATED);
+    assertThat(resp.intent()).isEqualTo(DeploymentIntent.DISTRIBUTE);
 
     assertCreatedDeploymentEventOnPartition(1, resp.key());
     assertCreatedDeploymentEventOnPartition(2, resp.key());
@@ -115,7 +115,7 @@ public class CreateDeploymentMultiplePartitionsTest {
     assertThat(resp.partitionId()).isEqualTo(PARTITION_ID);
 
     assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATED);
+    assertThat(resp.intent()).isEqualTo(DeploymentIntent.DISTRIBUTE);
 
     final Map<String, Object> resources = deploymentResource(yamlWorkflow, "simple-workflow.yaml");
     resources.put("resourceType", ResourceType.YAML_WORKFLOW.name());
@@ -144,6 +144,40 @@ public class CreateDeploymentMultiplePartitionsTest {
   }
 
   @Test
+  public void shouldRejectedCreatingCommandsAfterReprocessing() throws Exception {
+    // given
+    final ExecuteCommandResponse resp =
+        apiRule
+            .createCmdRequest()
+            .partitionId(1)
+            .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
+            .command()
+            .put("topicName", DEFAULT_TOPIC)
+            .put(
+                "resources",
+                Collections.singletonList(deploymentResource(bpmnXml(WORKFLOW), "process.bpmn")))
+            .done()
+            .sendAndAwait();
+
+    assertCreatedDeploymentEventOnPartition(1, resp.key());
+    brokerRule.stopBroker();
+    brokerRule.purgeSnapshots();
+
+    // when
+    brokerRule.startBroker();
+
+    // then
+    apiRule.topic().closeTopicSubscription();
+    assertCreatedDeploymentEventOnPartition(1, resp.key());
+    assertCreatedDeploymentEventOnPartition(2, resp.key());
+    assertCreatedDeploymentEventOnPartition(3, resp.key());
+
+    assertRejectedCreatingDeploymentEventResources(1, resp.key());
+    assertRejectedCreatingDeploymentEventResources(2, resp.key());
+    assertRejectedCreatingDeploymentEventResources(3, resp.key());
+  }
+
+  @Test
   public void shouldCreateDeploymentResourceWithMultipleWorkflows() {
     // given
     final List<Map<String, Object>> resources = new ArrayList<>();
@@ -164,7 +198,7 @@ public class CreateDeploymentMultiplePartitionsTest {
 
     // then
     assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATED);
+    assertThat(resp.intent()).isEqualTo(DeploymentIntent.DISTRIBUTE);
 
     for (int i = 1; i < PARTITION_COUNT + 1; i++) {
       assertCreatedDeploymentEventResources(
@@ -331,6 +365,25 @@ public class CreateDeploymentMultiplePartitionsTest {
     assertThat(deploymentCreatedEvent.partitionId()).isEqualTo(expectedPartition);
 
     deploymentAssert.accept(deploymentCreatedEvent);
+  }
+
+  private void assertRejectedCreatingDeploymentEventResources(
+      int expectedPartition, long expectedKey) {
+    final SubscribedRecord deploymentCreatedEvent =
+        apiRule
+            .topic(expectedPartition)
+            .receiveRecords()
+            .filter(
+                r ->
+                    r.recordType() == RecordType.COMMAND_REJECTION
+                        && r.valueType() == ValueType.DEPLOYMENT
+                        && r.intent() == DeploymentIntent.CREATING
+                        && r.key() == expectedKey)
+            .findFirst()
+            .get();
+
+    assertThat(deploymentCreatedEvent.key()).isEqualTo(expectedKey);
+    assertThat(deploymentCreatedEvent.partitionId()).isEqualTo(expectedPartition);
   }
 
   private void assertAnyCreatedDeploymentEventResources(

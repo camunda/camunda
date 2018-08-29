@@ -22,6 +22,7 @@ import static io.zeebe.util.StringUtil.getBytes;
 import io.zeebe.logstreams.state.StateController;
 import java.io.File;
 import java.nio.ByteOrder;
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -32,7 +33,13 @@ public class KeyStateController extends StateController {
   private final MutableDirectBuffer dbLongBuffer = new UnsafeBuffer(new byte[Long.BYTES]);
   private AtomicReference<Runnable> onOpenCallback = new AtomicReference<>();
 
+  public KeyStateController() {
+    onOpenCallback.set(() -> {});
+  }
+
   public void addOnOpenCallback(Runnable runnable) {
+    Objects.requireNonNull(runnable);
+
     final Runnable existingCallback = onOpenCallback.get();
     onOpenCallback.compareAndSet(existingCallback, runnable);
   }

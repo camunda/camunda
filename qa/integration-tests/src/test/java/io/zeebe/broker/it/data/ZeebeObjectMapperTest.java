@@ -23,6 +23,7 @@ import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.gateway.api.events.DeploymentEvent;
 import io.zeebe.gateway.api.events.DeploymentState;
 import io.zeebe.gateway.api.events.IncidentState;
 import io.zeebe.gateway.api.events.JobEvent;
@@ -30,12 +31,15 @@ import io.zeebe.gateway.api.events.JobState;
 import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
 import io.zeebe.gateway.api.events.WorkflowInstanceState;
 import io.zeebe.gateway.api.record.Record;
+import io.zeebe.gateway.api.record.RecordType;
 import io.zeebe.gateway.api.record.ValueType;
 import io.zeebe.gateway.impl.record.RecordClassMapping;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.junit.Rule;
@@ -252,13 +256,7 @@ public class ZeebeObjectMapperTest {
   @Test
   public void shouldSerializeWorkflowInstanceRecordWithPayload() throws InterruptedException {
     // given
-    clientRule
-        .getWorkflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(
-            Bpmn.createExecutableProcess("workflow").startEvent().done(), "workflow.bpmn")
-        .send()
-        .join();
+    deployWorkflow();
 
     final WorkflowInstanceEvent workflowInstanceEvent =
         clientRule
@@ -282,13 +280,7 @@ public class ZeebeObjectMapperTest {
   @Test
   public void shouldSerializeWorkflowInstanceRecordWithoutPayload() throws InterruptedException {
     // given
-    clientRule
-        .getWorkflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(
-            Bpmn.createExecutableProcess("workflow").startEvent().done(), "workflow.bpmn")
-        .send()
-        .join();
+    deployWorkflow();
 
     final WorkflowInstanceEvent workflowInstanceEvent =
         clientRule
@@ -307,6 +299,43 @@ public class ZeebeObjectMapperTest {
         clientRule.getClient().objectMapper().fromJson(json, WorkflowInstanceEvent.class);
     assertThat(deserializedRecord.getPayload()).isEqualTo("{}");
     assertThat(deserializedRecord.getPayloadAsMap()).isEmpty();
+  }
+
+  private void deployWorkflow() {
+    final DeploymentEvent deploymentEvent =
+        clientRule
+            .getWorkflowClient()
+            .newDeployCommand()
+            .addWorkflowModel(
+                Bpmn.createExecutableProcess("workflow").startEvent().done(), "workflow.bpmn")
+            .send()
+            .join();
+
+    final CountDownLatch latch = new CountDownLatch(1);
+    clientRule
+        .getTopicClient()
+        .newSubscription()
+        .name("deploy")
+        .recordHandler(
+            r -> {
+              final ValueType valueType = r.getMetadata().getValueType();
+              final RecordType recordType = r.getMetadata().getRecordType();
+              final String intent = r.getMetadata().getIntent();
+              final long key = r.getKey();
+              if (recordType == RecordType.EVENT
+                  && valueType == ValueType.DEPLOYMENT
+                  && intent.equals("CREATED")
+                  && key == deploymentEvent.getKey()) {
+                latch.countDown();
+              }
+            })
+        .open();
+
+    try {
+      assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private static Predicate<Record> recordFilter(ValueType valueType, String intent) {

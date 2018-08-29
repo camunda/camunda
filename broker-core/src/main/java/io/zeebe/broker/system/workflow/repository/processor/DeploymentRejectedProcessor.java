@@ -23,7 +23,7 @@ import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.system.workflow.repository.data.DeploymentRecord;
 
-public class DeploymentRejectedEventProcessor implements TypedRecordProcessor<DeploymentRecord> {
+public class DeploymentRejectedProcessor implements TypedRecordProcessor<DeploymentRecord> {
 
   @Override
   public void processRecord(

@@ -54,6 +54,7 @@ public class ClientApiRule extends ExternalResource {
   protected MsgPackHelper msgPackHelper;
   protected RawMessageCollector incomingMessageCollector;
 
+  private Int2ObjectHashMap<TestTopicClient> testTopicClients = new Int2ObjectHashMap<>();
   private ControlledActorClock controlledActorClock = new ControlledActorClock();
   private ActorScheduler scheduler;
 
@@ -127,8 +128,6 @@ public class ClientApiRule extends ExternalResource {
   public int numSubscribedEventsAvailable() {
     return (int) incomingMessageCollector.getNumMessagesFulfilling(this::isSubscribedEvent);
   }
-
-  private Int2ObjectHashMap<TestTopicClient> testTopicClients = new Int2ObjectHashMap<>();
 
   public TestTopicClient topic() {
     return topic(defaultPartitionId);

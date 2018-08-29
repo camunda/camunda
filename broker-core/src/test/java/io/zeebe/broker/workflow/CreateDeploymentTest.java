@@ -94,7 +94,7 @@ public class CreateDeploymentTest {
     assertThat(resp.partitionId()).isEqualTo(DEPLOYMENT_PARTITION);
 
     assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATED);
+    assertThat(resp.intent()).isEqualTo(DeploymentIntent.DISTRIBUTE);
   }
 
   @SuppressWarnings("unchecked")
@@ -145,7 +145,7 @@ public class CreateDeploymentTest {
 
     // then
     assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATED);
+    assertThat(resp.intent()).isEqualTo(DeploymentIntent.DISTRIBUTE);
 
     final List<Map<String, Object>> deployedWorkflows =
         Arrays.asList(getDeployedWorkflow(resp, 0), getDeployedWorkflow(resp, 1));
@@ -176,7 +176,7 @@ public class CreateDeploymentTest {
 
     // then
     assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATED);
+    assertThat(resp.intent()).isEqualTo(DeploymentIntent.DISTRIBUTE);
 
     final List<Map<String, Object>> deployedWorkflows =
         Arrays.asList(getDeployedWorkflow(resp, 0), getDeployedWorkflow(resp, 1));
@@ -324,7 +324,7 @@ public class CreateDeploymentTest {
 
     // then
     assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATED);
+    assertThat(resp.intent()).isEqualTo(DeploymentIntent.DISTRIBUTE);
 
     final Map<String, Object> deployedWorkflow = getDeployedWorkflow(resp, 0);
 

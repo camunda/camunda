@@ -16,12 +16,17 @@
 package io.zeebe.test;
 
 import static io.zeebe.test.EmbeddedBrokerRule.DEFAULT_CONFIG_SUPPLIER;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.system.configuration.SocketBindingClientApiCfg;
 import io.zeebe.gateway.ClientProperties;
 import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
+import io.zeebe.gateway.api.record.RecordType;
+import io.zeebe.gateway.api.record.ValueType;
 import java.util.Properties;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -42,7 +47,7 @@ public class WorkflowTest {
   private ZeebeClient client;
 
   @Before
-  public void deploy() {
+  public void deploy() throws Exception {
     client = testRule.getClient();
 
     client
@@ -52,6 +57,26 @@ public class WorkflowTest {
         .addResourceFromClasspath("process.bpmn")
         .send()
         .join();
+
+    final CountDownLatch latch = new CountDownLatch(1);
+    client
+        .topicClient()
+        .newSubscription()
+        .name("deploy")
+        .recordHandler(
+            r -> {
+              final ValueType valueType = r.getMetadata().getValueType();
+              final RecordType recordType = r.getMetadata().getRecordType();
+              final String intent = r.getMetadata().getIntent();
+              if (recordType == RecordType.EVENT
+                  && valueType == ValueType.DEPLOYMENT
+                  && intent.equals("CREATED")) {
+                latch.countDown();
+              }
+            })
+        .open();
+
+    assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
   }
 
   @Test

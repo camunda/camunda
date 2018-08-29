@@ -620,7 +620,6 @@ public class WorkflowInstanceFunctionalTest {
             .sendAndAwait();
 
     testClient.receiveFirstDeploymentEvent(DeploymentIntent.CREATED, deploymentResp.key());
-    assertThat(deploymentResp.intent()).isEqualTo(DeploymentIntent.CREATED);
 
     final long workflowInstanceKey = testClient.createWorkflowInstance("yaml-workflow");
 

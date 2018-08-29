@@ -103,9 +103,9 @@ public class PushDeploymentRequestHandler {
           }
 
           final boolean success =
-              writeDeploymentCreated(partition, deploymentKey, deploymentRecord);
+              writeCreatingDeployment(partition, deploymentKey, deploymentRecord);
           if (success) {
-            LOG.debug("Deployment CREATED Event was written on partition {}", partitionId);
+            LOG.debug("Deployment CREATING command was written on partition {}", partitionId);
             actor.done();
 
             sendResponse(output, remoteAddress, requestId, deploymentKey, partitionId);
@@ -140,10 +140,10 @@ public class PushDeploymentRequestHandler {
         });
   }
 
-  private boolean writeDeploymentCreated(Partition partition, long key, UnpackedObject event) {
-    final RecordType recordType = RecordType.EVENT;
+  private boolean writeCreatingDeployment(Partition partition, long key, UnpackedObject event) {
+    final RecordType recordType = RecordType.COMMAND;
     final ValueType valueType = ValueType.DEPLOYMENT;
-    final Intent intent = DeploymentIntent.CREATED;
+    final Intent intent = DeploymentIntent.CREATING;
 
     logStreamWriter.wrap(partition.getLogStream());
 

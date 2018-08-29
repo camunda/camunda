@@ -27,7 +27,6 @@ import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.system.workflow.repository.data.DeploymentRecord;
 import io.zeebe.broker.system.workflow.repository.processor.state.DeploymentsStateController;
-import io.zeebe.broker.system.workflow.repository.processor.state.WorkflowRepositoryIndex;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.protocol.clientapi.RecordType;
@@ -41,10 +40,9 @@ import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 
-public class DeploymentCreateEventProcessor implements TypedRecordProcessor<DeploymentRecord> {
+public class DeploymentDistributeProcessor implements TypedRecordProcessor<DeploymentRecord> {
 
   private final TopologyManager topologyManager;
-  private final DeploymentTransformer deploymentTransformer;
   private final LogStreamWriterImpl logStreamWriter;
   private final ClientTransport managementApi;
   private final DeploymentsStateController deploymentsStateController;
@@ -54,13 +52,11 @@ public class DeploymentCreateEventProcessor implements TypedRecordProcessor<Depl
   private DeploymentDistributor deploymentDistributor;
   private int streamProcessorId;
 
-  public DeploymentCreateEventProcessor(
+  public DeploymentDistributeProcessor(
       TopologyManager topologyManager,
-      WorkflowRepositoryIndex index,
       DeploymentsStateController deploymentsStateController,
       ClientTransport managementClient,
       LogStreamWriterImpl logStreamWriter) {
-    deploymentTransformer = new DeploymentTransformer(index);
     this.deploymentsStateController = deploymentsStateController;
     this.topologyManager = topologyManager;
     managementApi = managementClient;
@@ -89,7 +85,7 @@ public class DeploymentCreateEventProcessor implements TypedRecordProcessor<Depl
           final DirectBuffer deployment = pendingDeploymentDistribution.getDeployment();
           buffer.putBytes(0, deployment, 0, deployment.capacity());
 
-          deploymentCreation(key, pendingDeploymentDistribution.getSourcePosition(), buffer);
+          distributeDeployment(key, pendingDeploymentDistribution.getSourcePosition(), buffer);
         }));
   }
 
@@ -100,45 +96,26 @@ public class DeploymentCreateEventProcessor implements TypedRecordProcessor<Depl
       TypedStreamWriter streamWriter,
       Consumer<SideEffectProducer> sideEffect,
       EventLifecycleContext ctx) {
+
+    responseWriter.writeEvent(event);
+
     final DeploymentRecord deploymentEvent = event.getValue();
-
-    final boolean accepted = deploymentTransformer.transform(deploymentEvent);
-    if (accepted) {
-      processValidDeployment(event, responseWriter, streamWriter, sideEffect, deploymentEvent);
-    } else {
-      streamWriter.writeRejection(
-          event,
-          deploymentTransformer.getRejectionType(),
-          deploymentTransformer.getRejectionReason(),
-          m ->
-              m.requestId(event.getMetadata().getRequestId())
-                  .requestStreamId(event.getMetadata().getRequestStreamId()));
-    }
-  }
-
-  private void processValidDeployment(
-      TypedRecord<DeploymentRecord> event,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter,
-      Consumer<SideEffectProducer> sideEffect,
-      DeploymentRecord deploymentEvent) {
-    final long key = streamWriter.getKeyGenerator().nextKey();
+    final long key = event.getKey();
 
     final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
     deploymentEvent.write(buffer, 0);
-    deploymentCreation(key, event.getPosition(), buffer);
-
-    responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, event);
+    distributeDeployment(key, event.getPosition(), buffer);
   }
 
-  private void deploymentCreation(long key, long position, DirectBuffer buffer) {
+  private void distributeDeployment(long key, long position, DirectBuffer buffer) {
     final ActorFuture<Void> pushDeployment =
         deploymentDistributor.pushDeployment(key, position, buffer);
 
-    actor.runOnCompletion(pushDeployment, (aVoid, throwable) -> writeDeploymentCreatedEvent(key));
+    actor.runOnCompletion(
+        pushDeployment, (aVoid, throwable) -> writeCreatingDeploymentCommand(key));
   }
 
-  private void writeDeploymentCreatedEvent(long deploymentKey) {
+  private void writeCreatingDeploymentCommand(long deploymentKey) {
     final PendingDeploymentDistribution pendingDeploymentDistribution =
         deploymentDistributor.removePendingDeployment(deploymentKey);
     final DirectBuffer buffer = pendingDeploymentDistribution.getDeployment();
@@ -148,9 +125,9 @@ public class DeploymentCreateEventProcessor implements TypedRecordProcessor<Depl
     deploymentRecord.wrap(buffer);
     final RecordMetadata recordMetadata = new RecordMetadata();
     recordMetadata
-        .intent(DeploymentIntent.CREATED)
+        .intent(DeploymentIntent.CREATING)
         .valueType(ValueType.DEPLOYMENT)
-        .recordType(RecordType.EVENT);
+        .recordType(RecordType.COMMAND);
 
     actor.runUntilDone(
         () -> {
