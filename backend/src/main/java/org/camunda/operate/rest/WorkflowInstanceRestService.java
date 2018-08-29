@@ -78,7 +78,7 @@ public class WorkflowInstanceRestService {
     if (workflowIds == null || workflowIds.size() != 1) {
       throw new InvalidRequestException("Exactly one workflowId must be specified in the request.");
     }
-    return workflowInstanceReader.getStatistics(queries.get(0));
+    return workflowInstanceReader.getActivityStatistics(queries.get(0));
   }
 
 }

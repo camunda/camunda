@@ -53,7 +53,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 public class OperationIT extends OperateIntegrationTest {
 
-  private static final String POST_BATCH_OPERATION_URL = "/api/workflow-instances/operation";
+  private static final String POST_BATCH_OPERATION_URL = WORKFLOW_INSTANCE_URL + "/operation";
   private static final String QUERY_INSTANCES_URL = WORKFLOW_INSTANCE_URL;
 
   @Rule

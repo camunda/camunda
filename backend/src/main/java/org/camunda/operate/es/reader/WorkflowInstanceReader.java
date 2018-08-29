@@ -440,7 +440,7 @@ public class WorkflowInstanceReader {
     return ElasticsearchUtil.mapSearchHits(response.getHits().getHits(), objectMapper);
   }
 
-  public Collection<ActivityStatisticsDto> getStatistics(WorkflowInstanceQueryDto query) {
+  public Collection<ActivityStatisticsDto> getActivityStatistics(WorkflowInstanceQueryDto query) {
 
     Map<String, ActivityStatisticsDto> statisticsMap = new HashMap<>();
 

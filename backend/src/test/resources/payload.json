@@ -2,7 +2,7 @@
   "objectLevel1": {
     "stringFieldL1": "stringValue1",
     "intFieldL1": 111,
-    "longFieldL1": 111,
+    "longFieldL1": 2147483648,
     "doubleFieldL1": 0.555,
     "booleanFieldL1": true,
     "arrayFieldL1": [1, 2, 3],

@@ -2,7 +2,7 @@ package org.camunda.operate.util;
 
 import java.util.Arrays;
 import java.util.List;
-import org.camunda.operate.entities.WorkflowInstanceEntity;
+import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.es.ElasticsearchSchemaManager;
 import org.camunda.operate.es.types.TypeMappingCreator;
 import org.camunda.operate.es.writer.ElasticsearchBulkProcessor;
@@ -126,7 +126,7 @@ public class ElasticsearchTestRule extends ExternalResource {
     }
   }
 
-  public void persist(WorkflowInstanceEntity... entitiesToPersist) {
+  public void persist(OperateEntity... entitiesToPersist) {
     try {
       elasticsearchBulkProcessor.persistOperateEntities(Arrays.asList(entitiesToPersist));
     } catch (PersistenceException e) {

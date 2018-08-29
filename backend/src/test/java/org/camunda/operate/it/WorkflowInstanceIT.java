@@ -174,7 +174,7 @@ public class WorkflowInstanceIT extends OperateIntegrationTest {
     assertVariable(workflowInstanceEntity, "objectLevel1.stringFieldL1","stringValue1");
     assertVariable(workflowInstanceEntity, "objectLevel1.stringFieldL1", "stringValue1");
     assertVariable(workflowInstanceEntity, "objectLevel1.intFieldL1", 111L);
-    assertVariable(workflowInstanceEntity, "objectLevel1.longFieldL1", 111L);
+    assertVariable(workflowInstanceEntity, "objectLevel1.longFieldL1", 2147483648L);
     assertVariable(workflowInstanceEntity, "objectLevel1.doubleFieldL1", 0.555);
     assertVariable(workflowInstanceEntity, "objectLevel1.booleanFieldL1", true);
     assertVariable(workflowInstanceEntity, "objectLevel1.arrayFieldL1[0]", 1L);

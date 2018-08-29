@@ -84,6 +84,10 @@ public class WorkflowReader {
     return workflow;
   }
 
+  /**
+   * Returns map of Workflow entities to bpmnProcessId.
+   * @return
+   */
   public Map<String, List<WorkflowEntity>> getWorkflowsGrouped() {
     final String groupsAggName = "group_by_bpmnProcessId";
     final String workflowsAggName = "workflows";

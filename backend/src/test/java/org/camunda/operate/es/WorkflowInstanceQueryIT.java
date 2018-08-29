@@ -38,6 +38,9 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import com.fasterxml.jackson.core.type.TypeReference;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
+import static org.camunda.operate.util.TestUtil.createActivityInstance;
+import static org.camunda.operate.util.TestUtil.createIncident;
+import static org.camunda.operate.util.TestUtil.createWorkflowInstance;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -999,54 +1002,6 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     elasticsearchTestRule.persist(runningInstance, completedInstance, instanceWithIncident, instanceWithoutIncident, canceledInstance);
   }
 
-  private WorkflowInstanceEntity createWorkflowInstance(WorkflowInstanceState state) {
-    WorkflowInstanceEntity workflowInstance = new WorkflowInstanceEntity();
-    workflowInstance.setId(UUID.randomUUID().toString());
-    workflowInstance.setBusinessKey("testProcess" + random.nextInt(10));
-    workflowInstance.setStartDate(DateUtil.getRandomStartDate());
-    if (state.equals(WorkflowInstanceState.COMPLETED) || state.equals(WorkflowInstanceState.CANCELED)) {
-      final OffsetDateTime endDate = DateUtil.getRandomEndDate();
-      workflowInstance.setEndDate(endDate);
-    }
-    workflowInstance.setState(state);
-    return workflowInstance;
-  }
-
-  private WorkflowInstanceEntity createWorkflowInstance(OffsetDateTime startDate, OffsetDateTime endDate) {
-    WorkflowInstanceEntity workflowInstance = new WorkflowInstanceEntity();
-    workflowInstance.setId(UUID.randomUUID().toString());
-    workflowInstance.setBusinessKey("testProcess" + random.nextInt(10));
-    workflowInstance.setStartDate(startDate);
-    workflowInstance.setState(WorkflowInstanceState.ACTIVE);
-    if (endDate != null) {
-      workflowInstance.setEndDate(endDate);
-      workflowInstance.setState(WorkflowInstanceState.COMPLETED);
-    }
-    return workflowInstance;
-  }
-
-  private IncidentEntity createIncident(IncidentState state) {
-    IncidentEntity incidentEntity = new IncidentEntity();
-    incidentEntity.setId(UUID.randomUUID().toString());
-    incidentEntity.setActivityId("start");
-    incidentEntity.setActivityInstanceId(UUID.randomUUID().toString());
-    incidentEntity.setErrorType("TASK_NO_RETRIES");
-    incidentEntity.setErrorMessage("No more retries left.");
-    incidentEntity.setState(state);
-    return incidentEntity;
-  }
-
-  private ActivityInstanceEntity createActivityInstance(ActivityState state) {
-    ActivityInstanceEntity activityInstanceEntity = new ActivityInstanceEntity();
-    activityInstanceEntity.setId(UUID.randomUUID().toString());
-    activityInstanceEntity.setActivityId("start");
-    activityInstanceEntity.setStartDate(DateUtil.getRandomStartDate());
-    activityInstanceEntity.setState(state);
-    if (state.equals(ActivityState.COMPLETED) || state.equals(ActivityState.TERMINATED)) {
-      activityInstanceEntity.setEndDate(DateUtil.getRandomEndDate());
-    }
-    return activityInstanceEntity;
-  }
 
   private void addVariableEntity(WorkflowInstanceEntity workflowInstance, String name, String value) {
     workflowInstance.getStringVariables().add(new StringVariableEntity(name, value));
