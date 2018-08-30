@@ -606,7 +606,7 @@ public class BrokerReprocessingTest {
     waitUntil(
         () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_ACTIVATED));
 
-    brokerRule.restartBroker();
+    reprocessingTrigger.accept(this);
 
     // when
     publishMessage("order canceled", "order-123", singletonMap("foo", "bar"));
@@ -635,7 +635,7 @@ public class BrokerReprocessingTest {
         .join();
 
     publishMessage("order canceled", "order-123", singletonMap("foo", "bar"));
-    brokerRule.restartBroker();
+    reprocessingTrigger.accept(this);
 
     // when
     final long workflowInstanceKey =
