@@ -5,6 +5,12 @@ import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
 import {Colors} from 'modules/theme';
 import * as api from 'modules/api/diagram/diagram';
 import {ACTIVITY_STATE} from 'modules/constants';
+import incidentIcon from 'modules/components/Icon/diagram-badge-single-instance-incident.svg';
+import activeIcon from 'modules/components/Icon/diagram-badge-single-instance-active.svg';
+import completedLightIcon from 'modules/components/Icon/diagram-badge-single-instance-completed-light.svg';
+import completedDarkIcon from 'modules/components/Icon/diagram-badge-single-instance-completed-dark.svg';
+import canceledLightIcon from 'modules/components/Icon/diagram-badge-single-instance-canceled-light.svg';
+import canceledDarkIcon from 'modules/components/Icon/diagram-badge-single-instance-canceled-dark.svg';
 
 import ThemedDiagram from './Diagram';
 import DiagramControls from './DiagramControls';
@@ -200,7 +206,7 @@ describe('Diagram', () => {
       expect(handleZoomResetSpy).toHaveBeenCalledTimes(1);
     });
 
-    it('should add a selectable overlay to each selectable flowNode', async () => {
+    it('should add a selectable marker to each selectable flowNode', async () => {
       // given
       const selectableFlowNodes = ['foo', 'bar'];
       const node = shallow(
@@ -267,12 +273,14 @@ describe('Diagram', () => {
           flowNodeStateOverlay={flowNodeStateOverlay}
         />
       );
+      const overlaysAddSpy = jest.spyOn(
+        node.instance(),
+        'addFlowNodeStateOverlay'
+      );
       await flushPromises();
 
       // then
-      const overlaysAddSpy = node.instance().Viewer.overlays.add;
-      expect(overlaysAddSpy).toBeCalledWith('foo', expect.any(Object));
-      expect(overlaysAddSpy.mock.calls[0][1]).toMatchSnapshot();
+      expect(overlaysAddSpy).toBeCalledWith(flowNodeStateOverlay);
     });
   });
 
@@ -503,6 +511,140 @@ describe('Diagram', () => {
 
       // then
       expect(onFlowNodeSelected).toBeCalledWith(null);
+    });
+  });
+
+  describe('addFlowNodeStateOverlay', () => {
+    it('should add incident overlay', async () => {
+      // given
+      const flowNodeStateOverlay = {id: 'foo', state: ACTIVITY_STATE.INCIDENT};
+      const node = shallow(<Diagram workflowId={workflowId} theme={'light'} />);
+      await flushPromises();
+
+      // when
+      node.instance().addFlowNodeStateOverlay(flowNodeStateOverlay);
+
+      // then
+      const overlaysAddSpy = node.instance().Viewer.overlays.add;
+      expect(overlaysAddSpy.mock.calls[0][0]).toBe('foo');
+      expect(
+        overlaysAddSpy.mock.calls[0][1].html.src.replace(
+          'http://localhost/',
+          ''
+        )
+      ).toBe(incidentIcon);
+      expect(overlaysAddSpy.mock.calls[0][1]).toMatchSnapshot();
+    });
+
+    it('should add active overlay', async () => {
+      // given
+      const flowNodeStateOverlay = {id: 'foo', state: ACTIVITY_STATE.ACTIVE};
+      const node = shallow(<Diagram workflowId={workflowId} theme={'light'} />);
+      await flushPromises();
+
+      // when
+      node.instance().addFlowNodeStateOverlay(flowNodeStateOverlay);
+
+      // then
+      const overlaysAddSpy = node.instance().Viewer.overlays.add;
+      expect(overlaysAddSpy.mock.calls[0][0]).toBe('foo');
+      expect(
+        overlaysAddSpy.mock.calls[0][1].html.src.replace(
+          'http://localhost/',
+          ''
+        )
+      ).toBe(activeIcon);
+      expect(overlaysAddSpy.mock.calls[0][1]).toMatchSnapshot();
+    });
+
+    it('should add completed light overlay', async () => {
+      // given
+      const flowNodeStateOverlay = {id: 'foo', state: ACTIVITY_STATE.COMPLETED};
+      const node = shallow(<Diagram workflowId={workflowId} theme={'light'} />);
+      await flushPromises();
+
+      // when
+      node.instance().addFlowNodeStateOverlay(flowNodeStateOverlay);
+
+      // then
+      const overlaysAddSpy = node.instance().Viewer.overlays.add;
+      expect(overlaysAddSpy.mock.calls[0][0]).toBe('foo');
+      expect(
+        overlaysAddSpy.mock.calls[0][1].html.src.replace(
+          'http://localhost/',
+          ''
+        )
+      ).toBe(completedLightIcon);
+      expect(overlaysAddSpy.mock.calls[0][1]).toMatchSnapshot();
+    });
+
+    it('should add completed dark overlay', async () => {
+      // given
+      const flowNodeStateOverlay = {id: 'foo', state: ACTIVITY_STATE.COMPLETED};
+      const node = shallow(<Diagram workflowId={workflowId} theme={'dark'} />);
+      await flushPromises();
+
+      // when
+      node.instance().addFlowNodeStateOverlay(flowNodeStateOverlay);
+
+      // then
+      const overlaysAddSpy = node.instance().Viewer.overlays.add;
+      expect(overlaysAddSpy.mock.calls[0][0]).toBe('foo');
+      expect(
+        overlaysAddSpy.mock.calls[0][1].html.src.replace(
+          'http://localhost/',
+          ''
+        )
+      ).toBe(completedDarkIcon);
+      expect(overlaysAddSpy.mock.calls[0][1]).toMatchSnapshot();
+    });
+
+    it('should add canceled light overlay', async () => {
+      // given
+      const flowNodeStateOverlay = {
+        id: 'foo',
+        state: ACTIVITY_STATE.TERMINATED
+      };
+      const node = shallow(<Diagram workflowId={workflowId} theme={'light'} />);
+      await flushPromises();
+
+      // when
+      node.instance().addFlowNodeStateOverlay(flowNodeStateOverlay);
+
+      // then
+      const overlaysAddSpy = node.instance().Viewer.overlays.add;
+      expect(overlaysAddSpy.mock.calls[0][0]).toBe('foo');
+      expect(
+        overlaysAddSpy.mock.calls[0][1].html.src.replace(
+          'http://localhost/',
+          ''
+        )
+      ).toBe(canceledLightIcon);
+      expect(overlaysAddSpy.mock.calls[0][1]).toMatchSnapshot();
+    });
+
+    it('should add terminated dark overlay', async () => {
+      // given
+      const flowNodeStateOverlay = {
+        id: 'foo',
+        state: ACTIVITY_STATE.TERMINATED
+      };
+      const node = shallow(<Diagram workflowId={workflowId} theme={'dark'} />);
+      await flushPromises();
+
+      // when
+      node.instance().addFlowNodeStateOverlay(flowNodeStateOverlay);
+
+      // then
+      const overlaysAddSpy = node.instance().Viewer.overlays.add;
+      expect(overlaysAddSpy.mock.calls[0][0]).toBe('foo');
+      expect(
+        overlaysAddSpy.mock.calls[0][1].html.src.replace(
+          'http://localhost/',
+          ''
+        )
+      ).toBe(canceledDarkIcon);
+      expect(overlaysAddSpy.mock.calls[0][1]).toMatchSnapshot();
     });
   });
 });
