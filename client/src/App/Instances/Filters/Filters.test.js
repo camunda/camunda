@@ -88,7 +88,7 @@ describe('Filters', () => {
     expect(node.state().groupedWorkflows).toEqual([]);
     expect(node.state().currentWorkflow).toEqual({});
     expect(node.state().currentWorkflowVersion).toEqual(EMPTY_OPTION);
-    expect(node.state().filter.activityId).toEqual(EMPTY_OPTION);
+    expect(node.state().currentActivityId).toEqual(EMPTY_OPTION);
     expect(node.state().filter.ids).toEqual('');
     expect(node.state().filter.errorMessage).toEqual('');
     expect(node.state().workflowNameOptions).toEqual([]);
@@ -586,7 +586,7 @@ describe('Filters', () => {
       });
 
       // then
-      expect(node.state().filter.activityId).toEqual(activityId);
+      expect(node.state().currentActivityId).toEqual(activityId);
     });
   });
 
