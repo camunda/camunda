@@ -2,6 +2,7 @@ package org.camunda.optimize.dto.optimize.query.report.combined;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapSingleReportResultDto;
 
 import java.util.Map;
 
@@ -11,6 +12,6 @@ import static org.camunda.optimize.service.es.report.command.util.ReportConstant
 @JsonSubTypes({
     @JsonSubTypes.Type(value = CombinedMapReportResultDto.class, name = COMBINED_REPORT_TYPE),
 })
-public class CombinedMapReportResultDto extends CombinedReportResultDto<Map<String, Long>> {
+public class CombinedMapReportResultDto extends CombinedReportResultDto<MapSingleReportResultDto> {
 
 }

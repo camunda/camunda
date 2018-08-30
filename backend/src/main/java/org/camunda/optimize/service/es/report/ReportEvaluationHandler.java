@@ -74,12 +74,12 @@ public abstract class ReportEvaluationHandler {
 
   private CombinedMapReportResultDto transformToCombinedReportResult(CombinedReportDefinitionDto combinedReportDefinition,
                                                                      List<SingleReportResultDto> resultList) {
-    Map<String, Map<String, Long>> reportIdToMapResult = new HashMap<>();
+    Map<String, MapSingleReportResultDto> reportIdToMapResult = new HashMap<>();
     resultList
       .stream()
       .filter(r -> r instanceof MapSingleReportResultDto)
       .map(r -> (MapSingleReportResultDto) r)
-      .forEach(r -> reportIdToMapResult.put(r.getId(), r.getResult()));
+      .forEach(r -> reportIdToMapResult.put(r.getId(), r));
 
     CombinedMapReportResultDto combinedReportResult =
       new CombinedMapReportResultDto();

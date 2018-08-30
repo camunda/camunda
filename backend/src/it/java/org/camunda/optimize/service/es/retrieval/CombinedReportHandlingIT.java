@@ -9,6 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDat
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapSingleReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.schema.type.CombinedReportType;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -58,6 +59,7 @@ public class CombinedReportHandlingIT {
 
   private static final String FOO_PROCESS_DEFINITION_KEY = "fooProcessDefinitionKey";
   private static final String FOO_PROCESS_DEFINITION_VERSION = "1";
+  public static final String TEST_REPORT_NAME = "My foo report";
 
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
@@ -206,11 +208,11 @@ public class CombinedReportHandlingIT {
 
     // then
     assertThat(result.getId(), is(reportId));
-    Map<String, Map<String, Long>> resultMap = result.getResult();
+    Map<String, MapSingleReportResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(2));
-    Map<String, Long> flowNodeToCount = resultMap.get(singleReportId);
+    Map<String, Long> flowNodeToCount = resultMap.get(singleReportId).getResult();
     assertThat(flowNodeToCount.size(), is(3));
-    Map<String, Long> flowNodeToCount2 = resultMap.get(singleReportId2);
+    Map<String, Long> flowNodeToCount2 = resultMap.get(singleReportId2).getResult();
     assertThat(flowNodeToCount.size(), is(3));
   }
 
@@ -228,7 +230,7 @@ public class CombinedReportHandlingIT {
 
     // then
     assertThat(result.getId(), is(reportId));
-    Map<String, Map<String, Long>> resultMap = result.getResult();
+    Map<String, MapSingleReportResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(0));
   }
 
@@ -388,12 +390,31 @@ public class CombinedReportHandlingIT {
       evaluateUnsavedCombined(createCombinedReport(singleReportId, singleReportId2));
 
     // then
-    Map<String, Map<String, Long>> resultMap = result.getResult();
+    Map<String, MapSingleReportResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(2));
-    Map<String, Long> flowNodeToCount = resultMap.get(singleReportId);
+    Map<String, Long> flowNodeToCount = resultMap.get(singleReportId).getResult();
     assertThat(flowNodeToCount.size(), is(3));
-    Map<String, Long> flowNodeToCount2 = resultMap.get(singleReportId2);
+    Map<String, Long> flowNodeToCount2 = resultMap.get(singleReportId2).getResult();
     assertThat(flowNodeToCount.size(), is(3));
+  }
+
+  @Test
+  public void evaluationResultContainsSingleResultMetaData() {
+    // given
+    ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
+    String singleReportId = createNewSingleMapReport(engineDto);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    CombinedMapReportResultDto result =
+      evaluateUnsavedCombined(createCombinedReport(singleReportId));
+
+    // then
+    Map<String, MapSingleReportResultDto> resultMap = result.getResult();
+    assertThat(resultMap.size(), is(1));
+    MapSingleReportResultDto mapResult = resultMap.get(singleReportId);
+    assertThat(mapResult.getName(), is(TEST_REPORT_NAME));
   }
 
   @Test
@@ -410,7 +431,7 @@ public class CombinedReportHandlingIT {
       evaluateUnsavedCombined(createCombinedReport(singleReportId, singleReportId2));
 
     // then
-    Map<String, Map<String, Long>> resultMap = result.getResult();
+    Map<String, MapSingleReportResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(1));
     assertThat(resultMap.containsKey(singleReportId2), is(true));
   }
@@ -429,7 +450,7 @@ public class CombinedReportHandlingIT {
       evaluateUnsavedCombined(createCombinedReport(singleReportId, singleReportId2));
 
     // then
-    Map<String, Map<String, Long>> resultMap = result.getResult();
+    Map<String, MapSingleReportResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(1));
     assertThat(resultMap.containsKey(singleReportId2), is(true));
   }
@@ -448,9 +469,9 @@ public class CombinedReportHandlingIT {
       evaluateUnsavedCombined(createCombinedReport(combinedReportId, singleReportId2));
 
     // then
-    Map<String, Map<String, Long>> resultMap = result.getResult();
+    Map<String, MapSingleReportResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(1));
-    Map<String, Long> flowNodeToCount = resultMap.get(singleReportId2);
+    Map<String, Long> flowNodeToCount = resultMap.get(singleReportId2).getResult();
     assertThat(flowNodeToCount.size(), is(3));
   }
 
@@ -466,6 +487,7 @@ public class CombinedReportHandlingIT {
   private String createNewSingleMapReport(SingleReportDataDto data) {
     String singleReportId = createNewSingleReport();
     SingleReportDefinitionDto definitionDto = new SingleReportDefinitionDto();
+    definitionDto.setName(TEST_REPORT_NAME);
     definitionDto.setData(data);
     updateReport(singleReportId, definitionDto);
     return singleReportId;

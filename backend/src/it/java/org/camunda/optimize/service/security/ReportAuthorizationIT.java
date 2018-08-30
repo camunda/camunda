@@ -9,6 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedMapReport
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.MapSingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -215,10 +216,10 @@ public class ReportAuthorizationIT {
     // then
     assertThat(response.getStatus(), is(200));
     CombinedMapReportResultDto result = response.readEntity(CombinedMapReportResultDto.class);
-    Map<String, Map<String, Long>> resultMap = result.getResult();
+    Map<String, MapSingleReportResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(1));
     assertThat(resultMap.containsKey(notAuthorizedReportId), is(false));
-    Map<String, Long> flowNodeToCount = resultMap.get(authorizedReportId);
+    Map<String, Long> flowNodeToCount = resultMap.get(authorizedReportId).getResult();
     assertThat(flowNodeToCount.size(), is(2));
   }
 
