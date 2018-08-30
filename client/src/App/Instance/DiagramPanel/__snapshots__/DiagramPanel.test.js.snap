@@ -1,7 +1,17 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`DiagramPanel should render pane header and body 1`] = `
-<Pane>
+<Pane
+  flowNodeStateOverlay={Object {}}
+  onFlowNodeSelected={[Function]}
+  onFlowNodesDetailsReady={[Function]}
+  selectableFlowNodes={
+    Array [
+      "foo",
+    ]
+  }
+  selectedFlowNode="foo"
+>
   <PanelHeader
     isRounded={false}
   >
@@ -48,6 +58,15 @@ exports[`DiagramPanel should render pane header and body 1`] = `
       }
     />
     <Themed(Diagram)
+      flowNodeStateOverlay={Object {}}
+      onFlowNodeSelected={[Function]}
+      onFlowNodesDetailsReady={[Function]}
+      selectableFlowNodes={
+        Array [
+          "foo",
+        ]
+      }
+      selectedFlowNode="foo"
       workflowId="bar"
     />
   </Styled(PanelBody)>

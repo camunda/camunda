@@ -182,6 +182,11 @@ describe('Instance', () => {
       expect(DiagramPanelNode.prop('onFlowNodeSelected')).toBe(
         node.instance().handleActivitySelection
       );
+      expect(DiagramPanelNode.prop('flowNodeStateOverlay')).toEqual({
+        id: 'taskA',
+        state: ACTIVITY_STATE.INCIDENT
+      });
+
       // InstanceHistory
       const InstanceHistoryNode = node.find(InstanceHistory);
       expect(InstanceHistoryNode).toHaveLength(1);

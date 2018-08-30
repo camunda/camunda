@@ -3,11 +3,31 @@ import PropTypes from 'prop-types';
 import BPMNViewer from 'bpmn-js/lib/NavigatedViewer';
 
 import {themed} from 'modules/theme';
+import {ACTIVITY_STATE} from 'modules/constants';
+import incidentIcon from 'modules/components/Icon/diagram-badge-single-instance-incident.svg';
+import activeIcon from 'modules/components/Icon/diagram-badge-single-instance-active.svg';
+import completedLightIcon from 'modules/components/Icon/diagram-badge-single-instance-completed-light.svg';
+import completedDarkIcon from 'modules/components/Icon/diagram-badge-single-instance-completed-dark.svg';
+import canceledLightIcon from 'modules/components/Icon/diagram-badge-single-instance-canceled-light.svg';
+import canceledDarkIcon from 'modules/components/Icon/diagram-badge-single-instance-canceled-dark.svg';
 
 import * as Styled from './styled';
 import DiagramControls from './DiagramControls';
 import * as api from 'modules/api/diagram';
 import {getDiagramColors, getFlowNodesDetails} from './service';
+
+const iconMap = {
+  [ACTIVITY_STATE.INCIDENT]: {light: incidentIcon, dark: incidentIcon},
+  [ACTIVITY_STATE.ACTIVE]: {light: activeIcon, dark: activeIcon},
+  [ACTIVITY_STATE.COMPLETED]: {
+    light: completedLightIcon,
+    dark: completedDarkIcon
+  },
+  [ACTIVITY_STATE.TERMINATED]: {
+    light: canceledLightIcon,
+    dark: canceledDarkIcon
+  }
+};
 
 class Diagram extends React.Component {
   static propTypes = {
@@ -18,7 +38,11 @@ class Diagram extends React.Component {
     clickableFlowNodes: PropTypes.arrayOf(PropTypes.string),
     selectableFlowNodes: PropTypes.arrayOf(PropTypes.string),
     selectedFlowNode: PropTypes.string,
-    onFlowNodeSelected: PropTypes.func
+    onFlowNodeSelected: PropTypes.func,
+    flowNodeStateOverlay: PropTypes.shape({
+      id: PropTypes.string.isRequired,
+      state: PropTypes.oneOf(Object.keys(ACTIVITY_STATE)).isRequired
+    })
   };
 
   constructor(props) {
@@ -87,6 +111,10 @@ class Diagram extends React.Component {
     if (this.props.selectableFlowNodes && this.props.onFlowNodeSelected) {
       this.addEventListeners();
     }
+
+    if (this.props.flowNodeStateOverlay) {
+      this.addFlowNodeStateOverlay(this.props.flowNodeStateOverlay);
+    }
   };
 
   initViewer = () => {
@@ -125,7 +153,7 @@ class Diagram extends React.Component {
     canvas.zoom('fit-viewport', 'auto');
   };
 
-  addOverlay = (id, className) => {
+  addMarker = (id, className) => {
     const canvas = this.Viewer.get('canvas');
     const elementRegistry = this.Viewer.get('elementRegistry');
     canvas.addMarker(id, className);
@@ -134,26 +162,26 @@ class Diagram extends React.Component {
     gfx.setAttribute('ry', '14px');
   };
 
-  removeOverlay = (id, className) => {
+  removeMarker = (id, className) => {
     const canvas = this.Viewer.get('canvas');
     canvas.removeMarker(id, className);
   };
 
   handleSelectableFlowNodes = selectableFlowNodes => {
     selectableFlowNodes.forEach(id => {
-      this.addOverlay(id, 'op-selectable');
+      this.addMarker(id, 'op-selectable');
     });
   };
 
   handleSelectedFlowNode = (selectedFlowNode, prevSelectedFlowNode) => {
     // clear previously selected flow node marker is there is one
     if (prevSelectedFlowNode) {
-      this.removeOverlay(prevSelectedFlowNode, 'op-selected');
+      this.removeMarker(prevSelectedFlowNode, 'op-selected');
     }
 
     // add marker for newly selected flow node if there is one
     if (selectedFlowNode) {
-      this.addOverlay(selectedFlowNode, 'op-selected');
+      this.addMarker(selectedFlowNode, 'op-selected');
     }
   };
 
@@ -174,6 +202,20 @@ class Diagram extends React.Component {
   addEventListeners = () => {
     const eventBus = this.Viewer.get('eventBus');
     eventBus.on('element.click', this.handleElementClick);
+  };
+
+  addFlowNodeStateOverlay = ({id, state}) => {
+    const img = document.createElement('img');
+    Object.assign(img, {
+      src: iconMap[state][this.props.theme],
+      width: 24,
+      height: 24
+    });
+    const overlays = this.Viewer.get('overlays');
+    overlays.add(id, {
+      position: {bottom: 14, left: -10},
+      html: img
+    });
   };
 
   render() {

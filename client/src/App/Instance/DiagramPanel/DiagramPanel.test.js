@@ -12,20 +12,29 @@ import DiagramPanel from './DiagramPanel';
 import * as Styled from './styled';
 import DiagramBar from './DiagramBar';
 
-describe('DiagramPanel', () => {
-  let mockInstance = {
-    id: 'foo',
-    workflowId: 'bar',
-    startDate: 'Wed Jun 20 2018 08:57:20',
-    endDate: formatDate(null),
-    state: INSTANCE_STATE.ACTIVE
-  };
+const mockInstance = {
+  id: 'foo',
+  workflowId: 'bar',
+  startDate: 'Wed Jun 20 2018 08:57:20',
+  endDate: formatDate(null),
+  state: INSTANCE_STATE.ACTIVE
+};
 
+const mockProps = {
+  instance: mockInstance,
+  onFlowNodesDetailsReady: jest.fn(),
+  selectableFlowNodes: ['foo'],
+  selectedFlowNode: 'foo',
+  onFlowNodeSelected: jest.fn(),
+  flowNodeStateOverlay: {}
+};
+
+describe('DiagramPanel', () => {
   it('should render pane header and body', () => {
     // given
     const formattedStartDate = formatDate(mockInstance.startDate);
     const formattedEndDate = formatDate(mockInstance.endDate);
-    const node = shallow(<DiagramPanel instance={mockInstance} />);
+    const node = shallow(<DiagramPanel {...mockProps} />);
 
     // then
     expect(node.find(Pane)).toHaveLength(1);
@@ -49,12 +58,29 @@ describe('DiagramPanel', () => {
     // Pane.Body
     const PaneBodyNode = node.find(Pane.Body);
     expect(PaneBodyNode).toHaveLength(1);
+    // DiagramBar
     const DiagramBarNode = PaneBodyNode.find(DiagramBar);
     expect(DiagramBarNode).toHaveLength(1);
     expect(DiagramBarNode.prop('instance')).toBe(mockInstance);
+    // DiagramNode
     const DiagramNode = PaneBodyNode.find(Diagram);
     expect(DiagramNode).toHaveLength(1);
     expect(DiagramNode.prop('workflowId')).toBe(mockInstance.workflowId);
+    expect(DiagramNode.prop('onFlowNodesDetailsReady')).toBe(
+      mockProps.onFlowNodesDetailsReady
+    );
+    expect(DiagramNode.prop('selectableFlowNodes')).toBe(
+      mockProps.selectableFlowNodes
+    );
+    expect(DiagramNode.prop('selectedFlowNode')).toBe(
+      mockProps.selectedFlowNode
+    );
+    expect(DiagramNode.prop('onFlowNodeSelected')).toBe(
+      mockProps.onFlowNodeSelected
+    );
+    expect(DiagramNode.prop('flowNodeStateOverlay')).toBe(
+      mockProps.flowNodeStateOverlay
+    );
     expect(node).toMatchSnapshot();
   });
 });

@@ -65,9 +65,15 @@ export default class Instance extends Component {
       return 'Loading';
     }
 
-    const instanceActivitiesIds = (
-      (this.state.instance || {}).activities || []
-    ).map(({activityId}) => activityId);
+    // get information for the diagram
+    const instanceActivities = (this.state.instance || {}).activities || [];
+    const selectableFlowNodes = instanceActivities.map(
+      ({activityId}) => activityId
+    );
+    const {activityId, state} = instanceActivities[
+      instanceActivities.length - 1
+    ];
+    const flowNodeStateOverlay = {id: activityId, state};
 
     return (
       <Fragment>
@@ -84,9 +90,10 @@ export default class Instance extends Component {
               <DiagramPanel
                 instance={this.state.instance}
                 onFlowNodesDetailsReady={this.handleFlowNodesDetailsReady}
-                selectableFlowNodes={instanceActivitiesIds}
+                selectableFlowNodes={selectableFlowNodes}
                 selectedFlowNode={this.state.selectedActivityId}
                 onFlowNodeSelected={this.handleActivitySelection}
+                flowNodeStateOverlay={flowNodeStateOverlay}
               />
               <InstanceHistory
                 instance={this.state.instance}

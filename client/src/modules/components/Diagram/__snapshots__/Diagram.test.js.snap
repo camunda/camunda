@@ -1,5 +1,19 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`Diagram initViewer should add flow node state overlay if provided 1`] = `
+Object {
+  "html": <img
+    src="diagram-badge-single-instance-incident.svg"
+    width="24"
+    height="24"
+/>,
+  "position": Object {
+    "bottom": 14,
+    "left": -10,
+  },
+}
+`;
+
 exports[`Diagram should render Diagram with controls 1`] = `
 <styled.div>
   <Themed(styled.div)
