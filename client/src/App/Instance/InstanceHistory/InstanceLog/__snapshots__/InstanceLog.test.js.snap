@@ -27,7 +27,10 @@ exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
   selectedActivityId={null}
 >
   <styled.ul>
-    <styled.li>
+    <Themed(styled.li)
+      isSelected={true}
+    >
+      &gt;
       <Themed(Styled(Themed(styled.button)))
         isSelected={true}
         onClick={[Function]}
@@ -37,8 +40,9 @@ exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
         />
         foo
       </Themed(Styled(Themed(styled.button)))>
-    </styled.li>
-    <styled.li
+    </Themed(styled.li)>
+    <Themed(styled.li)
+      isSelected={false}
       key="1"
     >
       <Themed(styled.button)
@@ -53,8 +57,9 @@ exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
         />
         someName1
       </Themed(styled.button)>
-    </styled.li>
-    <styled.li
+    </Themed(styled.li)>
+    <Themed(styled.li)
+      isSelected={false}
       key="2"
     >
       <Themed(styled.button)
@@ -69,7 +74,7 @@ exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
         />
         someName2
       </Themed(styled.button)>
-    </styled.li>
+    </Themed(styled.li)>
   </styled.ul>
 </Themed(styled.div)>
 `;

@@ -37,7 +37,7 @@ export default class InstanceLog extends React.Component {
     );
 
     return (
-      <Styled.LogEntry key={id}>
+      <Styled.LogEntry key={id} isSelected={id === selectedActivityInstanceId}>
         <Styled.LogEntryToggle
           data-test={id}
           isSelected={id === selectedActivityInstanceId}
@@ -62,7 +62,8 @@ export default class InstanceLog extends React.Component {
     return (
       <Styled.InstanceLog {...this.props}>
         <Styled.EntriesContainer>
-          <Styled.LogEntry>
+          <Styled.LogEntry isSelected={this.props.selectedActivityId === null}>
+            >
             <Styled.HeaderToggle
               isSelected={this.props.selectedActivityId === null}
               onClick={() => this.props.onActivitySelected(null)}
