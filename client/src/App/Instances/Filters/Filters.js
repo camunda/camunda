@@ -20,12 +20,7 @@ import {
   getFilterWithDefaults
 } from './service';
 
-import {
-  FIELDS,
-  EMPTY_OPTION,
-  ALL_VERSIONS_OPTION,
-  DEFAULT_CONTROLLED_VALUES
-} from './constants';
+import {ALL_VERSIONS_OPTION, DEFAULT_CONTROLLED_VALUES} from './constants';
 
 export default class Filters extends React.Component {
   static propTypes = {
@@ -42,7 +37,7 @@ export default class Filters extends React.Component {
       workflowIds: PropTypes.array
     }).isRequired,
     onFilterChange: PropTypes.func,
-    resetFilter: PropTypes.func,
+    onFilterReset: PropTypes.func,
     onWorkflowVersionChange: PropTypes.func,
     activityIds: PropTypes.arrayOf(
       PropTypes.shape({
@@ -54,13 +49,17 @@ export default class Filters extends React.Component {
 
   state = {
     groupedWorkflows: [],
-    currentWorkflow: {},
-    currentWorkflowVersion: EMPTY_OPTION,
-    currentActivityId: EMPTY_OPTION,
+    currentWorkflow: {bpmnProcessId: '', versions: []},
+    workflowNameOptions: [],
+    // field values
+    workflowIds: '',
+    activityId: '',
+    startDate: '',
+    endDate: '',
+    // fields under filter support back and fw navigation
     filter: {
       ...DEFAULT_CONTROLLED_VALUES
-    },
-    workflowNameOptions: []
+    }
   };
 
   componentDidMount = async () => {
@@ -69,10 +68,10 @@ export default class Filters extends React.Component {
 
     this.setState({
       groupedWorkflows,
+      workflowNameOptions,
       filter: {
         ...getFilterWithDefaults(this.props.filter)
-      },
-      workflowNameOptions
+      }
     });
   };
 
@@ -88,15 +87,13 @@ export default class Filters extends React.Component {
     const currentWorkflow = this.state.groupedWorkflows.find(
       item => item.bpmnProcessId === value
     );
-    const version = currentWorkflow
-      ? currentWorkflow.workflows[0].id
-      : EMPTY_OPTION;
+    const version = currentWorkflow ? currentWorkflow.workflows[0].id : '';
 
     this.setState(
       {
         currentWorkflow: currentWorkflow || {},
-        currentWorkflowVersion: version,
-        currentActivityId: EMPTY_OPTION
+        workflowIds: version,
+        activityId: ''
       },
       this.updateByWorkflowVersion
     );
@@ -113,7 +110,7 @@ export default class Filters extends React.Component {
       versions = version ? [version] : null;
     }
 
-    this.props.onFilterChange({[FIELDS.workflowVersion.name]: versions});
+    this.props.onFilterChange({workflowIds: versions});
   };
 
   updateWorkflowOnInstancesPage = version => {
@@ -135,7 +132,7 @@ export default class Filters extends React.Component {
   };
 
   updateByWorkflowVersion = () => {
-    const version = this.state.currentWorkflowVersion;
+    const version = this.state.workflowIds;
 
     this.updateWorkflowOnInstancesPage(version);
     this.updateFilterWithWorkflowVersion(version);
@@ -144,9 +141,9 @@ export default class Filters extends React.Component {
   handleWorkflowVersionChange = event => {
     const {value} = event.target;
 
-    value !== EMPTY_OPTION &&
+    value !== '' &&
       this.setState(
-        {currentWorkflowVersion: value, currentActivityId: EMPTY_OPTION},
+        {workflowIds: value, activityId: ''},
         this.updateByWorkflowVersion
       );
   };
@@ -155,7 +152,7 @@ export default class Filters extends React.Component {
     const {value, name} = event.target;
     const parsedValue = fieldParser[name](value);
     const filterValue =
-      name === FIELDS.startDate.name || name === FIELDS.endDate.name
+      name === 'startDate' || name === 'endDate'
         ? {...parsedValue} // value is an object, nr: startDate: {startDateAfter: ..., startDateBefore: ...}
         : {[name]: parsedValue}; // value is an string
 
@@ -165,17 +162,45 @@ export default class Filters extends React.Component {
   handleActivityIdChange = event => {
     event.persist();
     const {value} = event.target;
-    this.setState({currentActivityId: value}, () => {
+    this.setState({activityId: value}, () => {
       this.handleFieldChange(event);
     });
   };
 
+  onUncontrolledFieldChange = event => {
+    const {name} = event.target;
+
+    this.setState({
+      ...this.state,
+      [name]: event.target.value
+    });
+  };
+
   onFieldChange = event => {
+    const {name} = event.target;
+
     this.setState({
       filter: {
         ...this.state.filter,
-        [event.target.name]: event.target.value
+        [name]: event.target.value
       }
+    });
+  };
+
+  onFilterReset = () => {
+    const emptyFields = {
+      currentWorkflow: {bpmnProcessId: '', versions: []},
+      filter: {
+        ...DEFAULT_CONTROLLED_VALUES
+      },
+      workflowIds: '',
+      activityId: '',
+      startDate: '',
+      endDate: ''
+    };
+
+    this.setState({...this.state, ...emptyFields}, () => {
+      this.props.onFilterReset();
     });
   };
 
@@ -192,20 +217,20 @@ export default class Filters extends React.Component {
           <Styled.Filters>
             <Styled.Field>
               <Select
-                value={this.state.currentWorkflow.bpmnProcessId || EMPTY_OPTION}
+                value={this.state.currentWorkflow.bpmnProcessId || ''}
                 disabled={this.state.groupedWorkflows.length === 0}
-                name={FIELDS.workflowName.name}
-                placeholder={FIELDS.workflowName.placeholder}
+                name="workflowName"
+                placeholder="Workflow"
                 options={this.state.workflowNameOptions}
                 onChange={this.handleWorkflowNameChange}
               />
             </Styled.Field>
             <Styled.Field>
               <Select
-                value={this.state.currentWorkflowVersion}
+                value={this.state.workflowIds}
                 disabled={!this.state.currentWorkflow.bpmnProcessId}
-                name={FIELDS.workflowVersion.name}
-                placeholder={FIELDS.workflowVersion.placeholder}
+                name="workflowIds"
+                placeholder="Workflow Version"
                 options={workflowVersions}
                 onChange={this.handleWorkflowVersionChange}
               />
@@ -213,8 +238,8 @@ export default class Filters extends React.Component {
             <Styled.Field>
               <Textarea
                 value={this.state.filter.ids}
-                name={FIELDS.ids.name}
-                placeholder={FIELDS.ids.placeholder}
+                name="ids"
+                placeholder="Instance Id(s) separated by space or comma"
                 onBlur={this.handleFieldChange}
                 onChange={this.onFieldChange}
               />
@@ -222,35 +247,39 @@ export default class Filters extends React.Component {
             <Styled.Field>
               <TextInput
                 value={this.state.filter.errorMessage}
-                name={FIELDS.errorMessage.name}
-                placeholder={FIELDS.errorMessage.placeholder}
+                name="errorMessage"
+                placeholder="Error Message"
                 onBlur={this.handleFieldChange}
                 onChange={this.onFieldChange}
               />
             </Styled.Field>
             <Styled.Field>
               <TextInput
-                name={FIELDS.startDate.name}
-                placeholder={FIELDS.startDate.placeholder}
+                value={this.state.startDate}
+                name="startDate"
+                placeholder="Start Date"
                 onBlur={this.handleFieldChange}
+                onChange={this.onUncontrolledFieldChange}
               />
             </Styled.Field>
             <Styled.Field>
               <TextInput
-                name={FIELDS.endDate.name}
-                placeholder={FIELDS.endDate.placeholder}
-                onBlur={this.handleFieldChange}
+                value={this.state.endDate}
+                name="endDate"
+                placeholder="End Date"
+                onBlur={this.onFilterChange}
+                onChange={this.onUncontrolledFieldChange}
               />
             </Styled.Field>
             <Styled.Field>
               <Select
-                value={this.state.currentActivityId}
+                value={this.state.activityId}
                 disabled={
-                  this.state.currentWorkflowVersion === EMPTY_OPTION ||
-                  this.state.currentWorkflowVersion === ALL_VERSIONS_OPTION
+                  this.state.workflowIds === '' ||
+                  this.state.workflowIds === ALL_VERSIONS_OPTION
                 }
-                name={FIELDS.activityId.name}
-                placeholder={FIELDS.activityId.placeholder}
+                name="activityId"
+                placeholder="Flow Node"
                 options={this.props.activityIds}
                 onChange={this.handleActivityIdChange}
               />
@@ -278,7 +307,7 @@ export default class Filters extends React.Component {
           <Button
             title="Reset filters"
             disabled={isEqual(this.props.filter, DEFAULT_FILTER)}
-            onClick={this.props.resetFilter}
+            onClick={this.onFilterReset}
           >
             Reset Filters
           </Button>

@@ -189,7 +189,7 @@ class Instances extends Component {
     });
   };
 
-  resetFilter = () => {
+  handleFilterReset = () => {
     this.setFilterInURL(DEFAULT_FILTER);
 
     // reset filter in local storage
@@ -230,7 +230,7 @@ class Instances extends Component {
               <Filters
                 filter={this.state.filter}
                 activityIds={this.state.activityIds}
-                resetFilter={this.resetFilter}
+                onFilterReset={this.handleFilterReset}
                 onFilterChange={this.handleFilterChange}
                 onWorkflowVersionChange={this.handleWorkflowChange}
               />
