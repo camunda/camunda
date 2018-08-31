@@ -1,8 +1,11 @@
 # Broker with default topic, but one that should not be created since
 # bootstrap < 1
 # based on zeebe.cluster.2.cfg.toml
-
+[cluster]
 nodeId = 1
+clusterSize = 2
+partitionsCount = 2
+replicationFactor = 2
 
 [[topics]]
 name = "default-topic-2"

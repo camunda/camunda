@@ -1,6 +1,9 @@
 # Broker 4
-
+[cluster]
 nodeId = 3
+clusterSize = 3
+partitionsCount = 3
+replicationFactor = 3
 
 [network.gateway]
 enabled = false

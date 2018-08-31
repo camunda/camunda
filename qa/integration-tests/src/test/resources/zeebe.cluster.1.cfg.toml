@@ -6,3 +6,8 @@ bootstrap = 3
 name = "default-topic"
 partitions = 3
 replicationFactor = 3
+
+[cluster]
+clusterSize = 3
+partitionsCount = 3
+replicationFactor = 3

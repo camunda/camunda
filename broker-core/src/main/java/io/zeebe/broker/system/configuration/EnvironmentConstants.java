@@ -24,4 +24,7 @@ public class EnvironmentConstants {
   public static final String ENV_PORT_OFFSET = "ZEEBE_PORT_OFFSET";
   public static final String ENV_INITIAL_CONTACT_POINTS = "ZEEBE_CONTACT_POINTS";
   public static final String ENV_DIRECTORIES = "ZEEBE_DIRECTORIES";
+  public static final String ENV_PARTITIONS_COUNT = "ZEEBE_PARTITIONS_COUNT";
+  public static final String ENV_REPLICATION_FACTOR = "ZEEBE_REPLICATION_FACTOR";
+  public static final String ENV_CLUSTER_SIZE = "ZEEBE_CLUSTER_SIZE";
 }

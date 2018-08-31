@@ -87,7 +87,7 @@ public class ClusterComponent implements Component {
 
     final NodeInfo localMember =
         new NodeInfo(
-            brokerConfig.getNodeId(),
+            brokerConfig.getCluster().getNodeId(),
             networkCfg.getClient().toSocketAddress(),
             networkCfg.getManagement().toSocketAddress(),
             networkCfg.getReplication().toSocketAddress(),
