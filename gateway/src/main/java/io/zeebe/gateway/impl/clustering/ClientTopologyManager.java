@@ -24,6 +24,7 @@ import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.ClientResponse;
 import io.zeebe.transport.ClientTransport;
+import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.clock.ActorClock;
@@ -165,8 +166,16 @@ public class ClientTopologyManager extends Actor {
   }
 
   private void registerEndpoint(final int nodeId, final SocketAddress socketAddress) {
-    transport.registerEndpoint(nodeId, socketAddress);
-    internalTransport.registerEndpoint(nodeId, socketAddress);
+    registerEndpoint(transport, nodeId, socketAddress);
+    registerEndpoint(internalTransport, nodeId, socketAddress);
+  }
+
+  private void registerEndpoint(
+      final ClientTransport transport, final int nodeId, final SocketAddress socketAddress) {
+    final RemoteAddress endpoint = transport.getEndpoint(nodeId);
+    if (endpoint == null || !socketAddress.equals(endpoint.getAddress())) {
+      transport.registerEndpoint(nodeId, socketAddress);
+    }
   }
 
   private void completeRefreshFutures(ClusterStateImpl newClusterState) {

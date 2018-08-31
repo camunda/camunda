@@ -32,3 +32,5 @@ docs/book
 docs/mdbook
 
 hs_err*.log
+data/
+metrics/

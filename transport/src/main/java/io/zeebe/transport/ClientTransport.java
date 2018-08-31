@@ -54,6 +54,10 @@ public class ClientTransport implements AutoCloseable {
     endpointRegistry.setEndpoint(nodeId, socketAddress);
   }
 
+  public RemoteAddress getEndpoint(int nodeId) {
+    return endpointRegistry.getEndpoint(nodeId);
+  }
+
   /**
    * Signals that the endpoint of the node is no longer in use for the time being. A transport
    * channel will no longer be managed. A endpoint is reactivated when the endpoint is registered
