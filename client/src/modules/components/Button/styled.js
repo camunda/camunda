@@ -37,7 +37,8 @@ const disabledStyle = css`
       light: '#f1f2f5'
     })};
     border-color: ${themeStyle({
-      dark: Colors.uiDark05
+      dark: Colors.uiDark05,
+      light: Colors.uiLight03
     })};
     color: ${themeStyle({
       dark: 'rgba(247, 248, 250, 0.5)',
