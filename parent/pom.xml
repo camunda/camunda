@@ -585,7 +585,7 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
-              <forkCount>1C</forkCount>
+              <forkCount>0.5C</forkCount>
               <reuseForks>true</reuseForks>
               <systemPropertyVariables>
                 <!-- use two dollar signs to prevent maven properties resolution, surefire will resolve
