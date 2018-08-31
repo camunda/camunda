@@ -195,14 +195,14 @@ You should see similar the output:
 ```json
 {
   "TopicName": "default-topic",
-  "Resources": [
+  "resources": [
     {
       "Resource": "[...]",
       "ResourceType": "BPMN_XML",
       "ResourceName": "order-process.bpmn"
     }
   ],
-  "DeployedWorkflows": [
+  "workflows": [
     {
       "BpmnProcessId": "order-process",
       "Version": 1,

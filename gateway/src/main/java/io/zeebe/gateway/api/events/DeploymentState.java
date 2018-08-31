@@ -16,6 +16,6 @@
 package io.zeebe.gateway.api.events;
 
 public enum DeploymentState {
-  DISTRIBUTE,
+  DISTRIBUTED,
   CREATED
 }

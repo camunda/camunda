@@ -47,7 +47,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -58,26 +57,27 @@ import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
-@Ignore("https://github.com/zeebe-io/zeebe/issues/1207")
 public class BrokerReprocessingTest {
   private static final String NULL_PAYLOAD = null;
 
   @Parameters(name = "{index}: {1}")
   public static Object[][] reprocessingTriggers() {
     return new Object[][] {
+      // Ignore until 1219 is done
+      // TODO https://github.com/zeebe-io/zeebe/issues/1219
+      //      new Object[] {
+      //        new Consumer<BrokerReprocessingTest>() {
+      //          @Override
+      //          public void accept(final BrokerReprocessingTest t) {
+      //            t.restartBroker();
+      //          }
+      //        },
+      //        "restart"
+      //      },
       new Object[] {
         new Consumer<BrokerReprocessingTest>() {
           @Override
-          public void accept(BrokerReprocessingTest t) {
-            t.restartBroker();
-          }
-        },
-        "restart"
-      },
-      new Object[] {
-        new Consumer<BrokerReprocessingTest>() {
-          @Override
-          public void accept(BrokerReprocessingTest t) {
+          public void accept(final BrokerReprocessingTest t) {
             t.deleteSnapshotsAndRestart();
           }
         },
@@ -272,7 +272,7 @@ public class BrokerReprocessingTest {
             .join();
 
     // then
-    assertThat(deploymentResult.getDeployedWorkflows().get(0).getVersion()).isEqualTo(2);
+    assertThat(deploymentResult.getWorkflows().get(0).getVersion()).isEqualTo(2);
 
     final WorkflowInstanceEvent workflowInstanceV1 =
         clientRule
@@ -655,7 +655,7 @@ public class BrokerReprocessingTest {
         .containsOnly(entry("orderId", "order-123"), entry("foo", "bar"));
   }
 
-  private WorkflowInstanceEvent startWorkflowInstance(String bpmnProcessId) {
+  private WorkflowInstanceEvent startWorkflowInstance(final String bpmnProcessId) {
     return clientRule
         .getWorkflowClient()
         .newCreateInstanceCommand()
@@ -666,7 +666,7 @@ public class BrokerReprocessingTest {
   }
 
   protected WorkflowInstanceEvent startWorkflowInstance(
-      String bpmnProcessId, Map<String, Object> payload) {
+      final String bpmnProcessId, final Map<String, Object> payload) {
     return clientRule
         .getWorkflowClient()
         .newCreateInstanceCommand()
@@ -678,7 +678,7 @@ public class BrokerReprocessingTest {
   }
 
   protected MessageEvent publishMessage(
-      String messageName, String correlationKey, Map<String, Object> payload) {
+      final String messageName, final String correlationKey, final Map<String, Object> payload) {
     return clientRule
         .getWorkflowClient()
         .newPublishMessageCommand()
@@ -693,7 +693,7 @@ public class BrokerReprocessingTest {
     deleteSnapshotsAndRestart(() -> {});
   }
 
-  protected void deleteSnapshotsAndRestart(Runnable onStop) {
+  protected void deleteSnapshotsAndRestart(final Runnable onStop) {
     eventRecorder.stopRecordingEvents();
 
     final String[] dataDirectories =
@@ -709,7 +709,7 @@ public class BrokerReprocessingTest {
     // delete snapshot files to trigger recovery
     try {
       brokerRule.purgeSnapshots(dataDirectories);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       e.printStackTrace();
       fail(e.getMessage());
     }
@@ -730,7 +730,7 @@ public class BrokerReprocessingTest {
     restartBroker(() -> {});
   }
 
-  protected void restartBroker(Runnable onStop) {
+  protected void restartBroker(final Runnable onStop) {
     eventRecorder.stopRecordingEvents();
     brokerRule.stopBroker();
 
@@ -740,7 +740,7 @@ public class BrokerReprocessingTest {
     eventRecorder.startRecordingEvents();
   }
 
-  private void deploy(BpmnModelInstance workflowTwoTasks, String s) {
+  private void deploy(final BpmnModelInstance workflowTwoTasks, final String s) {
     final DeploymentEvent deploymentEvent =
         clientRule
             .getWorkflowClient()

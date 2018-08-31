@@ -17,6 +17,8 @@
  */
 package io.zeebe.broker.workflow.processor;
 
+import static io.zeebe.broker.subscription.message.processor.MessageStreamProcessor.SUBSCRIPTION_CHECK_INTERVAL;
+import static io.zeebe.broker.subscription.message.processor.MessageStreamProcessor.SUBSCRIPTION_TIMEOUT;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
@@ -26,7 +28,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,10 +37,11 @@ import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
-import io.zeebe.broker.system.workflow.repository.api.management.FetchWorkflowResponse;
 import io.zeebe.broker.topic.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
+import io.zeebe.broker.workflow.deployment.data.DeploymentRecord;
+import io.zeebe.broker.workflow.deployment.data.ResourceType;
 import io.zeebe.broker.workflow.map.WorkflowCache;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -106,7 +108,7 @@ public class WorkflowInstanceStreamProcessorTest {
   public void setUp() {
     MockitoAnnotations.initMocks(this);
 
-    workflowCache = new WorkflowCache(null, mock(TopologyManager.class));
+    workflowCache = new WorkflowCache();
 
     when(mockSubscriptionCommandSender.hasPartitionIds()).thenReturn(true);
     when(mockSubscriptionCommandSender.openMessageSubscription(anyLong(), anyLong(), any(), any()))
@@ -339,10 +341,7 @@ public class WorkflowInstanceStreamProcessorTest {
         awaitElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
-    rule.getClock()
-        .addTime(
-            WorkflowInstanceStreamProcessor.SUBSCRIPTION_CHECK_INTERVAL.plus(
-                WorkflowInstanceStreamProcessor.SUBSCRIPTION_TIMEOUT));
+    rule.getClock().addTime(SUBSCRIPTION_CHECK_INTERVAL.plus(SUBSCRIPTION_TIMEOUT));
 
     streamProcessor.unblock();
 
@@ -455,23 +454,23 @@ public class WorkflowInstanceStreamProcessorTest {
     return createWorkflowInstance(wrapString(""));
   }
 
-  private TypedRecord<WorkflowInstanceRecord> createWorkflowInstance(DirectBuffer payload) {
+  private TypedRecord<WorkflowInstanceRecord> createWorkflowInstance(final DirectBuffer payload) {
     rule.writeCommand(WorkflowInstanceIntent.CREATE, workflowInstanceRecord(payload));
     final TypedRecord<WorkflowInstanceRecord> createdEvent =
         awaitAndGetFirstRecordInState(WorkflowInstanceIntent.CREATED);
     return createdEvent;
   }
 
-  private Predicate<TypedRecord<WorkflowInstanceRecord>> isForElement(String elementId) {
+  private Predicate<TypedRecord<WorkflowInstanceRecord>> isForElement(final String elementId) {
     return r -> BufferUtil.wrapString(elementId).equals(r.getValue().getActivityId());
   }
 
   private Predicate<TypedRecord<WorkflowInstanceRecord>> isForElement(
-      String elementId, WorkflowInstanceIntent intent) {
+      final String elementId, final WorkflowInstanceIntent intent) {
     return isForElement(elementId).and(t -> t.getMetadata().getIntent() == intent);
   }
 
-  private static WorkflowInstanceRecord workflowInstanceRecord(DirectBuffer payload) {
+  private static WorkflowInstanceRecord workflowInstanceRecord(final DirectBuffer payload) {
     final WorkflowInstanceRecord record = new WorkflowInstanceRecord();
 
     record.setBpmnProcessId(PROCESS_ID_BUFFER);
@@ -489,32 +488,38 @@ public class WorkflowInstanceStreamProcessorTest {
         .setMessageName(wrapString("order canceled"));
   }
 
-  // TODO: this is not nice, but should go away once we get rid of workflow fetching
-  private void deploy(BpmnModelInstance modelInstance) {
-    final FetchWorkflowResponse response = new FetchWorkflowResponse();
+  private void deploy(final BpmnModelInstance modelInstance) {
     final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
     Bpmn.writeModelToStream(outStream, modelInstance);
-
     final DirectBuffer xmlBuffer = new UnsafeBuffer(outStream.toByteArray());
-    response
-        .bpmnXml(xmlBuffer)
-        .deploymentKey(1)
-        .workflowKey(1)
-        .bpmnProcessId(PROCESS_ID_BUFFER)
-        .version(1);
 
-    final UnsafeBuffer responseBuffer = new UnsafeBuffer(new byte[response.getLength()]);
-    response.write(responseBuffer, 0);
+    final DeploymentRecord record = new DeploymentRecord();
+    final DirectBuffer resourceName = wrapString("resourceName");
 
-    workflowCache.addWorkflow(responseBuffer);
+    record
+        .resources()
+        .add()
+        .setResource(xmlBuffer)
+        .setResourceName(resourceName)
+        .setResourceType(ResourceType.BPMN_XML);
+
+    record
+        .workflows()
+        .add()
+        .setKey(1)
+        .setResourceName(resourceName)
+        .setBpmnProcessId(PROCESS_ID_BUFFER)
+        .setVersion(1);
+
+    workflowCache.addWorkflow(1, record);
   }
 
-  private void awaitFirstRecordInState(Intent state) {
+  private void awaitFirstRecordInState(final Intent state) {
     waitUntil(() -> rule.events().withIntent(state).findFirst().isPresent());
   }
 
   private TypedRecord<WorkflowInstanceRecord> awaitElementInState(
-      String elementId, WorkflowInstanceIntent intent) {
+      final String elementId, final WorkflowInstanceIntent intent) {
     final DirectBuffer elementIdAsBuffer = BufferUtil.wrapString(elementId);
 
     return doRepeatedly(
@@ -529,12 +534,12 @@ public class WorkflowInstanceStreamProcessorTest {
   }
 
   private TypedRecord<WorkflowInstanceRecord> awaitAndGetFirstRecordInState(
-      WorkflowInstanceIntent state) {
+      final WorkflowInstanceIntent state) {
     awaitFirstRecordInState(state);
     return rule.events().onlyWorkflowInstanceRecords().withIntent(state).findFirst().get();
   }
 
-  private TypedRecord<JobRecord> awaitAndGetFirstRecordInState(JobIntent state) {
+  private TypedRecord<JobRecord> awaitAndGetFirstRecordInState(final JobIntent state) {
     awaitFirstRecordInState(state);
     return rule.events().onlyJobRecords().withIntent(state).findFirst().get();
   }

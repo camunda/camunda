@@ -35,6 +35,7 @@ import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.SubscriptionUtil;
+import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
@@ -102,7 +103,11 @@ public class MessageCorrelationTest {
   public void init() {
     apiRule.waitForTopic(3);
     testClient = apiRule.topic();
-    testClient.deploy(workflow);
+    final long deploymentKey = testClient.deploy(workflow);
+
+    testClient.receiveFirstDeploymentEvent(DeploymentIntent.CREATED, deploymentKey);
+    apiRule.topic(2).receiveFirstDeploymentEvent(DeploymentIntent.CREATED, deploymentKey);
+    apiRule.topic(3).receiveFirstDeploymentEvent(DeploymentIntent.CREATED, deploymentKey);
   }
 
   @Test
@@ -497,7 +502,7 @@ public class MessageCorrelationTest {
   }
 
   private SubscribedRecord findMessageSubscription(
-      TestTopicClient client, MessageSubscriptionIntent intent) throws AssertionError {
+      final TestTopicClient client, final MessageSubscriptionIntent intent) throws AssertionError {
     return client
         .receiveEvents()
         .filter(intent(intent))
@@ -505,7 +510,7 @@ public class MessageCorrelationTest {
         .orElseThrow(() -> new AssertionError("no message subscription event found"));
   }
 
-  private int getPartitionId(String correlationKey) {
+  private int getPartitionId(final String correlationKey) {
     final List<Integer> partitionIds = apiRule.getPartitionIds();
     final int index =
         Math.abs(SubscriptionUtil.getSubscriptionHashCode(correlationKey) % partitionIds.size());

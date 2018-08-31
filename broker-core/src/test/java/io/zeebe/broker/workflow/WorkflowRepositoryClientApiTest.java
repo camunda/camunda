@@ -405,9 +405,10 @@ public class WorkflowRepositoryClientApiTest {
   }
 
   @SuppressWarnings("unchecked")
-  private Map<String, Object> getDeployedWorkflow(final ExecuteCommandResponse d1, int offset) {
+  private Map<String, Object> getDeployedWorkflow(
+      final ExecuteCommandResponse d1, final int offset) {
     final List<Map<String, Object>> d1Workflows =
-        (List<Map<String, Object>>) d1.getValue().get("deployedWorkflows");
+        (List<Map<String, Object>>) d1.getValue().get("workflows");
     return d1Workflows.get(offset);
   }
 }

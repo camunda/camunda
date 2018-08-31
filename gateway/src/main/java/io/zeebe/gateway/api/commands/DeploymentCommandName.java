@@ -17,5 +17,5 @@ package io.zeebe.gateway.api.commands;
 
 public enum DeploymentCommandName {
   CREATE,
-  CREATING
+  DISTRIBUTE
 }

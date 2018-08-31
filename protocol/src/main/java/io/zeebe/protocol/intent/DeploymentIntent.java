@@ -17,13 +17,13 @@ package io.zeebe.protocol.intent;
 
 public enum DeploymentIntent implements Intent {
   CREATE((short) 0),
-  DISTRIBUTE((short) 1),
-  CREATING((short) 2),
-  CREATED((short) 3);
+  CREATED((short) 1),
+  DISTRIBUTE((short) 2),
+  DISTRIBUTED((short) 3);
 
-  private short value;
+  private final short value;
 
-  DeploymentIntent(short value) {
+  DeploymentIntent(final short value) {
     this.value = value;
   }
 
@@ -31,16 +31,16 @@ public enum DeploymentIntent implements Intent {
     return value;
   }
 
-  public static Intent from(short value) {
+  public static Intent from(final short value) {
     switch (value) {
       case 0:
         return CREATE;
       case 1:
-        return DISTRIBUTE;
-      case 2:
-        return CREATING;
-      case 3:
         return CREATED;
+      case 2:
+        return DISTRIBUTE;
+      case 3:
+        return DISTRIBUTED;
       default:
         return Intent.UNKNOWN;
     }

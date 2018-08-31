@@ -79,7 +79,7 @@ public class DeploymentClusteredTest {
             .join();
 
     // then
-    assertThat(deploymentEvent.getDeployedWorkflows().size()).isEqualTo(1);
+    assertThat(deploymentEvent.getWorkflows().size()).isEqualTo(1);
   }
 
   @Test
@@ -132,7 +132,7 @@ public class DeploymentClusteredTest {
             .send()
             .join();
 
-    assertThat(deploymentEvent.getDeployedWorkflows().size()).isEqualTo(1);
+    assertThat(deploymentEvent.getWorkflows().size()).isEqualTo(1);
     clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
   }
 
@@ -173,7 +173,7 @@ public class DeploymentClusteredTest {
   }
 
   protected WorkflowInstanceEvent createWorkflowInstanceOnPartition(
-      String topic, int partition, String processId) {
+      final String topic, final int partition, final String processId) {
     final CreateWorkflowInstanceCommandImpl command =
         (CreateWorkflowInstanceCommandImpl)
             client
@@ -205,7 +205,7 @@ public class DeploymentClusteredTest {
             .send()
             .join();
 
-    assertThat(deploymentEvent.getDeployedWorkflows().size()).isEqualTo(1);
+    assertThat(deploymentEvent.getWorkflows().size()).isEqualTo(1);
     clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
   }
 

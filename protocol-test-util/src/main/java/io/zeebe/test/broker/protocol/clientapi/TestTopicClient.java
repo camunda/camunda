@@ -69,16 +69,11 @@ public class TestTopicClient {
         .withFailMessage("Deployment failed: %s", response.rejectionReason())
         .isEqualTo(RecordType.EVENT);
 
-    receiveFirstDeploymentEvent(DeploymentIntent.CREATED, response.key());
     return response.key();
   }
 
-  public ExecuteCommandResponse deployWithResponse(byte[] resource) {
+  public ExecuteCommandResponse deployWithResponse(final byte[] resource) {
     return deployWithResponse(resource, "BPMN_XML", "process.bpmn");
-  }
-
-  public ExecuteCommandResponse deployWithResponse(byte[] resource, boolean waitUntilDeployed) {
-    return deployWithResponse(resource, "BPMN_XML", "process.bpmn", waitUntilDeployed);
   }
 
   public ExecuteCommandResponse deployWithResponse(final BpmnModelInstance workflow) {
@@ -86,7 +81,7 @@ public class TestTopicClient {
   }
 
   public ExecuteCommandResponse deployWithResponse(
-      final BpmnModelInstance workflow, String resourceName) {
+      final BpmnModelInstance workflow, final String resourceName) {
     final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
     Bpmn.writeModelToStream(outStream, workflow);
     final byte[] resource = outStream.toByteArray();
@@ -96,14 +91,6 @@ public class TestTopicClient {
 
   public ExecuteCommandResponse deployWithResponse(
       final byte[] resource, final String resourceType, final String resourceName) {
-    return deployWithResponse(resource, resourceType, resourceName, true);
-  }
-
-  public ExecuteCommandResponse deployWithResponse(
-      final byte[] resource,
-      final String resourceType,
-      final String resourceName,
-      boolean waitUntilDeployed) {
     final Map<String, Object> deploymentResource = new HashMap<>();
     deploymentResource.put("resource", resource);
     deploymentResource.put("resourceType", resourceType);
@@ -120,14 +107,10 @@ public class TestTopicClient {
             .done()
             .sendAndAwait();
 
-    if (waitUntilDeployed) {
-      receiveFirstDeploymentEvent(DeploymentIntent.CREATED, commandResponse.key());
-    }
-
     return commandResponse;
   }
 
-  public ExecuteCommandResponse createWorkflowInstanceWithResponse(String bpmnProcessId) {
+  public ExecuteCommandResponse createWorkflowInstanceWithResponse(final String bpmnProcessId) {
     return apiRule
         .createCmdRequest()
         .partitionId(partitionId)
@@ -139,7 +122,7 @@ public class TestTopicClient {
   }
 
   public ExecuteCommandResponse createWorkflowInstanceWithResponse(
-      String bpmnProcessId, int version) {
+      final String bpmnProcessId, final int version) {
     return apiRule
         .createCmdRequest()
         .partitionId(partitionId)
@@ -151,7 +134,7 @@ public class TestTopicClient {
         .sendAndAwait();
   }
 
-  public long createWorkflowInstance(String bpmnProcessId) {
+  public long createWorkflowInstance(final String bpmnProcessId) {
     final ExecuteCommandResponse response = createWorkflowInstanceWithResponse(bpmnProcessId);
 
     assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
@@ -161,11 +144,11 @@ public class TestTopicClient {
     return response.key();
   }
 
-  public long createWorkflowInstance(String bpmnProcessId, DirectBuffer payload) {
+  public long createWorkflowInstance(final String bpmnProcessId, final DirectBuffer payload) {
     return createWorkflowInstance(bpmnProcessId, bufferAsArray(payload));
   }
 
-  public long createWorkflowInstance(String bpmnProcessId, byte[] payload) {
+  public long createWorkflowInstance(final String bpmnProcessId, final byte[] payload) {
     final ExecuteCommandResponse response =
         apiRule
             .createCmdRequest()
@@ -183,7 +166,7 @@ public class TestTopicClient {
     return response.key();
   }
 
-  public ExecuteCommandResponse createJob(String type) {
+  public ExecuteCommandResponse createJob(final String type) {
     return apiRule
         .createCmdRequest()
         .type(ValueType.JOB, JobIntent.CREATE)
@@ -194,21 +177,21 @@ public class TestTopicClient {
         .sendAndAwait();
   }
 
-  public void completeJobOfType(String jobType) {
+  public void completeJobOfType(final String jobType) {
     completeJobOfType(jobType, (byte[]) null);
   }
 
-  public void completeJobOfType(String jobType, DirectBuffer payload) {
+  public void completeJobOfType(final String jobType, final DirectBuffer payload) {
     completeJobOfType(jobType, bufferAsArray(payload));
   }
 
-  public void completeJobOfType(String jobType, byte[] payload) {
+  public void completeJobOfType(final String jobType, final byte[] payload) {
     completeJob(jobType, payload, e -> true);
   }
 
   @SuppressWarnings("rawtypes")
   public void completeJobOfWorkflowInstance(
-      String jobType, long workflowInstanceKey, byte[] payload) {
+      final String jobType, final long workflowInstanceKey, final byte[] payload) {
     completeJob(
         jobType,
         payload,
@@ -219,7 +202,9 @@ public class TestTopicClient {
   }
 
   public void completeJob(
-      String jobType, byte[] payload, Predicate<SubscribedRecord> jobEventFilter) {
+      final String jobType,
+      final byte[] payload,
+      final Predicate<SubscribedRecord> jobEventFilter) {
     apiRule.openJobSubscription(partitionId, jobType, 1000L).await();
 
     final SubscribedRecord jobEvent =
@@ -243,7 +228,7 @@ public class TestTopicClient {
   }
 
   public ExecuteCommandResponse completeJob(
-      long sourceRecordPosition, long key, Map<String, Object> event) {
+      final long sourceRecordPosition, final long key, final Map<String, Object> event) {
     return apiRule
         .createCmdRequest()
         .type(ValueType.JOB, JobIntent.COMPLETE)
@@ -256,7 +241,7 @@ public class TestTopicClient {
   }
 
   public ExecuteCommandResponse failJob(
-      long sourceRecordPosition, long key, Map<String, Object> event) {
+      final long sourceRecordPosition, final long key, final Map<String, Object> event) {
     return apiRule
         .createCmdRequest()
         .type(ValueType.JOB, JobIntent.FAIL)
@@ -269,7 +254,7 @@ public class TestTopicClient {
   }
 
   public ExecuteCommandResponse updateJobRetries(
-      long sourceRecordPosition, long key, Map<String, Object> event) {
+      final long sourceRecordPosition, final long key, final Map<String, Object> event) {
     return apiRule
         .createCmdRequest()
         .type(ValueType.JOB, JobIntent.UPDATE_RETRIES)
@@ -281,27 +266,31 @@ public class TestTopicClient {
         .sendAndAwait();
   }
 
-  public ExecuteCommandResponse publishMessage(String messageName, String correlationKey) {
+  public ExecuteCommandResponse publishMessage(
+      final String messageName, final String correlationKey) {
     return publishMessage(messageName, correlationKey, new byte[0]);
   }
 
   public ExecuteCommandResponse publishMessage(
-      String messageName, String correlationKey, DirectBuffer payload) {
+      final String messageName, final String correlationKey, final DirectBuffer payload) {
     return publishMessage(messageName, correlationKey, BufferUtil.bufferAsArray(payload));
   }
 
   public ExecuteCommandResponse publishMessage(
-      String messageName, String correlationKey, DirectBuffer payload, long ttl) {
+      final String messageName,
+      final String correlationKey,
+      final DirectBuffer payload,
+      final long ttl) {
     return publishMessage(messageName, correlationKey, BufferUtil.bufferAsArray(payload), ttl);
   }
 
   public ExecuteCommandResponse publishMessage(
-      String messageName, String correlationKey, byte[] payload) {
+      final String messageName, final String correlationKey, final byte[] payload) {
     return publishMessage(messageName, correlationKey, payload, Duration.ofHours(1).toMillis());
   }
 
   public ExecuteCommandResponse publishMessage(
-      String messageName, String correlationKey, byte[] payload, long ttl) {
+      final String messageName, final String correlationKey, final byte[] payload, final long ttl) {
     return apiRule
         .createCmdRequest()
         .type(ValueType.MESSAGE, MessageIntent.PUBLISH)
@@ -355,15 +344,15 @@ public class TestTopicClient {
     partitionIdsOfOpenSubscription.clear();
   }
 
-  public static Predicate<SubscribedRecord> intent(Intent intent) {
+  public static Predicate<SubscribedRecord> intent(final Intent intent) {
     return e -> e.intent() == intent;
   }
 
-  public static Predicate<SubscribedRecord> recordType(RecordType recordType) {
+  public static Predicate<SubscribedRecord> recordType(final RecordType recordType) {
     return e -> e.recordType() == recordType;
   }
 
-  public static Predicate<SubscribedRecord> workflowInstanceKey(long workflowInstanceKey) {
+  public static Predicate<SubscribedRecord> workflowInstanceKey(final long workflowInstanceKey) {
     return e -> e.value().get(PROP_WORKFLOW_INSTANCE_KEY).equals(workflowInstanceKey);
   }
 
@@ -371,22 +360,22 @@ public class TestTopicClient {
     return e -> e.valueType() == ValueType.WORKFLOW_INSTANCE;
   }
 
-  public static Predicate<SubscribedRecord> workflowInstanceRecords(Intent intent) {
+  public static Predicate<SubscribedRecord> workflowInstanceRecords(final Intent intent) {
     return workflowInstanceRecords().and(intent(intent));
   }
 
-  public static Predicate<SubscribedRecord> workflowInstanceEvents(Intent intent) {
+  public static Predicate<SubscribedRecord> workflowInstanceEvents(final Intent intent) {
     return workflowInstanceRecords().and(recordType(RecordType.EVENT)).and(intent(intent));
   }
 
-  public static Predicate<SubscribedRecord> workflowInstanceRejections(Intent intent) {
+  public static Predicate<SubscribedRecord> workflowInstanceRejections(final Intent intent) {
     return workflowInstanceRecords()
         .and(recordType(RecordType.COMMAND_REJECTION))
         .and(intent(intent));
   }
 
   public static Predicate<SubscribedRecord> workflowInstanceRecords(
-      Intent intent, long workflowInstanceKey) {
+      final Intent intent, final long workflowInstanceKey) {
     return workflowInstanceRecords(intent).and(workflowInstanceKey(workflowInstanceKey));
   }
 
@@ -394,11 +383,11 @@ public class TestTopicClient {
     return e -> e.valueType() == ValueType.JOB;
   }
 
-  public static Predicate<SubscribedRecord> jobRecords(Intent intent) {
+  public static Predicate<SubscribedRecord> jobRecords(final Intent intent) {
     return jobRecords().and(intent(intent));
   }
 
-  public static Predicate<SubscribedRecord> jobType(String jobType) {
+  public static Predicate<SubscribedRecord> jobType(final String jobType) {
     return e -> jobType.equals(e.value().get("type"));
   }
 
@@ -406,12 +395,12 @@ public class TestTopicClient {
     return e -> e.valueType() == ValueType.INCIDENT;
   }
 
-  public static Predicate<SubscribedRecord> incidentRecords(Intent intent) {
+  public static Predicate<SubscribedRecord> incidentRecords(final Intent intent) {
     return incidentEvents().and(intent(intent));
   }
 
   public static Predicate<SubscribedRecord> incidentRecords(
-      Intent intent, long workflowInstanceKey) {
+      final Intent intent, final long workflowInstanceKey) {
     return incidentRecords(intent).and(workflowInstanceKey(workflowInstanceKey));
   }
 
@@ -419,11 +408,11 @@ public class TestTopicClient {
   // short cuts ////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////////////
 
-  public SubscribedRecord receiveFirstIncidentEvent(IncidentIntent intent) {
+  public SubscribedRecord receiveFirstIncidentEvent(final IncidentIntent intent) {
     return receiveEvents().ofTypeIncident().withIntent(intent).getFirst();
   }
 
-  public SubscribedRecord receiveFirstIncidentEvent(long wfInstanceKey, Intent intent) {
+  public SubscribedRecord receiveFirstIncidentEvent(final long wfInstanceKey, final Intent intent) {
     return receiveEvents()
         .ofTypeIncident()
         .withIntent(intent)
@@ -432,11 +421,12 @@ public class TestTopicClient {
         .get();
   }
 
-  public SubscribedRecord receiveFirstIncidentCommand(IncidentIntent intent) {
+  public SubscribedRecord receiveFirstIncidentCommand(final IncidentIntent intent) {
     return receiveCommands().ofTypeIncident().withIntent(intent).getFirst();
   }
 
-  public SubscribedRecord receiveFirstDeploymentEvent(DeploymentIntent intent, long deploymentKey) {
+  public SubscribedRecord receiveFirstDeploymentEvent(
+      final DeploymentIntent intent, final long deploymentKey) {
     return receiveEvents()
         .ofTypeDeployment()
         .withIntent(intent)
@@ -445,11 +435,12 @@ public class TestTopicClient {
         .orElseThrow(() -> new AssertionError("no event received"));
   }
 
-  public SubscribedRecord receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent intent) {
+  public SubscribedRecord receiveFirstWorkflowInstanceEvent(final WorkflowInstanceIntent intent) {
     return receiveEvents().ofTypeWorkflowInstance().withIntent(intent).getFirst();
   }
 
-  public SubscribedRecord receiveElementInState(String elementId, WorkflowInstanceIntent intent) {
+  public SubscribedRecord receiveElementInState(
+      final String elementId, final WorkflowInstanceIntent intent) {
     return receiveEvents()
         .ofTypeWorkflowInstance()
         .withIntent(intent)
@@ -459,7 +450,7 @@ public class TestTopicClient {
   }
 
   public SubscribedRecord receiveElementInState(
-      long workflowInstanceKey, String elementId, WorkflowInstanceIntent intent) {
+      final long workflowInstanceKey, final String elementId, final WorkflowInstanceIntent intent) {
     return receiveEvents()
         .ofTypeWorkflowInstance()
         .withIntent(intent)
@@ -469,11 +460,12 @@ public class TestTopicClient {
         .get();
   }
 
-  public SubscribedRecord receiveFirstWorkflowInstanceCommand(WorkflowInstanceIntent intent) {
+  public SubscribedRecord receiveFirstWorkflowInstanceCommand(final WorkflowInstanceIntent intent) {
     return receiveCommands().ofTypeWorkflowInstance().withIntent(intent).getFirst();
   }
 
-  public SubscribedRecord receiveFirstWorkflowInstanceEvent(long wfInstanceKey, Intent intent) {
+  public SubscribedRecord receiveFirstWorkflowInstanceEvent(
+      final long wfInstanceKey, final Intent intent) {
     return receiveEvents()
         .ofTypeWorkflowInstance()
         .withIntent(intent)
@@ -483,7 +475,7 @@ public class TestTopicClient {
   }
 
   public SubscribedRecord receiveFirstWorkflowInstanceEvent(
-      long wfInstanceKey, String activityId, Intent intent) {
+      final long wfInstanceKey, final String activityId, final Intent intent) {
     return receiveEvents()
         .ofTypeWorkflowInstance()
         .withIntent(intent)
@@ -493,11 +485,11 @@ public class TestTopicClient {
         .get();
   }
 
-  public SubscribedRecord receiveFirstJobEvent(JobIntent intent) {
+  public SubscribedRecord receiveFirstJobEvent(final JobIntent intent) {
     return receiveEvents().ofTypeJob().withIntent(intent).getFirst();
   }
 
-  public SubscribedRecord receiveFirstJobCommand(JobIntent intent) {
+  public SubscribedRecord receiveFirstJobCommand(final JobIntent intent) {
     return receiveCommands().ofTypeJob().withIntent(intent).getFirst();
   }
 }

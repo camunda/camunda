@@ -144,9 +144,9 @@ public class SystemTopicSubscriptionTest {
         .extracting(SubscribedRecord::intent)
         .containsExactly(
             DeploymentIntent.CREATE,
+            DeploymentIntent.CREATED,
             DeploymentIntent.DISTRIBUTE,
-            DeploymentIntent.CREATING,
-            DeploymentIntent.CREATED);
+            DeploymentIntent.DISTRIBUTED);
   }
 
   @Test

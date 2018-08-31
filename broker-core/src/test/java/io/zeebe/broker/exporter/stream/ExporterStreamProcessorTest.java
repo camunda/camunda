@@ -49,11 +49,11 @@ import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.subscription.message.data.MessageRecord;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
-import io.zeebe.broker.system.workflow.repository.data.DeploymentRecord;
-import io.zeebe.broker.system.workflow.repository.data.ResourceType;
 import io.zeebe.broker.topic.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
+import io.zeebe.broker.workflow.deployment.data.DeploymentRecord;
+import io.zeebe.broker.workflow.deployment.data.ResourceType;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.RecordMetadata;
 import io.zeebe.exporter.record.RecordValue;
@@ -380,7 +380,7 @@ public class ExporterStreamProcessorTest {
         .setResourceType(resourceType)
         .setResource(resource);
     record
-        .deployedWorkflows()
+        .workflows()
         .add()
         .setBpmnProcessId(wrapString(bpmnProcessId))
         .setKey(workflowKey)

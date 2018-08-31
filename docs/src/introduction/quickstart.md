@@ -338,14 +338,14 @@ the topic to deploy to and the resource we want to deploy, in our case the
 ```
 {
   "TopicName": "quickstart",
-  "Resources": [
+  "resources": [
     {
       "Resource": "[...]",
       "ResourceType": "BPMN_XML",
       "ResourceName": "order-process.bpmn"
     }
   ],
-  "DeployedWorkflows": [
+  "workflows": [
     {
       "BpmnProcessId": "order-process",
       "Version": 1,
