@@ -1,6 +1,8 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
+import {ACTIVITY_STATE} from 'modules/constants';
+
 import InstanceEvents from './InstanceEvents';
 import * as Styled from './styled';
 import Foldable from './Foldable';
@@ -51,7 +53,8 @@ const fooGroupedEvents = {
 const barGroupedEvents = {
   id: 'foo',
   name: 'bar name',
-  events: barActivityEvents
+  events: barActivityEvents,
+  state: ACTIVITY_STATE.INCIDENT
 };
 
 const mockGroupedEvents = [
@@ -81,10 +84,13 @@ describe('InstanceEvents', () => {
     expect(FoldableNodes).toHaveLength(8);
 
     // Foo Foldable
-    const FooFoldableNode = FoldableNodes.at(0);
+    const FooFoldableNode = FoldableNodes.findWhere(
+      node => node.key() && node.key().includes('foo')
+    );
+
     // Foo Summary
-    const SummaryNode = FooFoldableNode.find(Foldable.Summary).at(0);
-    expect(SummaryNode.contains(fooGroupedEvents.name));
+    const SummaryNode = FooFoldableNode.find(Styled.GroupFoldableSummary).at(0);
+    expect(SummaryNode.contains(fooGroupedEvents.name)).toBe(true);
 
     // Foo Details
     const FoldableDetailsNode = FooFoldableNode.find(Foldable.Details).at(0);
@@ -93,6 +99,26 @@ describe('InstanceEvents', () => {
     // Foo Events Foldables
     expect(FoldableDetailsNode.find(Foldable)).toHaveLength(
       fooActivityEvents.length
+    );
+
+    // Bar Foldable
+    const BarFoldableNode = FoldableNodes.findWhere(
+      node => node.key() && node.key().includes('bar')
+    );
+    // Bar Summary
+    const BarSummaryNode = BarFoldableNode.find(Styled.GroupFoldableSummary).at(
+      0
+    );
+    expect(BarSummaryNode.contains(barGroupedEvents.name)).toBe(true);
+    expect(BarSummaryNode.find(Styled.IncidentIcon)).toHaveLength(1);
+
+    // Bar Details
+    const BarFoldableDetailsNode = BarFoldableNode.find(Foldable.Details).at(0);
+    expect(BarFoldableDetailsNode).toHaveLength(1);
+
+    // Bar Events Foldables
+    expect(BarFoldableDetailsNode.find(Foldable)).toHaveLength(
+      barActivityEvents.length
     );
 
     // Instance Events Foldables

@@ -1,6 +1,7 @@
 import styled from 'styled-components';
 
 import {Colors, themed, themeStyle} from 'modules/theme';
+import {InstanceHistoryIconIncidentActive} from 'modules/components/Icon';
 
 import Foldable from './Foldable';
 
@@ -47,4 +48,10 @@ export const DataEntry = themed(styled.div`
 
 export const GroupFoldableSummary = styled(Foldable.Summary)`
   font-weight: bold;
+`;
+
+export const IncidentIcon = styled(InstanceHistoryIconIncidentActive)`
+  position: absolute;
+  right: 8px;
+  top: 5px;
 `;

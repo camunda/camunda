@@ -34,6 +34,7 @@ exports[`InstanceEvents should render grouped events 1`] = `
         ],
         "id": "foo",
         "name": "bar name",
+        "state": "INCIDENT",
       },
       Object {
         "eventType": "baz",
@@ -96,6 +97,7 @@ exports[`InstanceEvents should render grouped events 1`] = `
       >
         <Styled(Summary)>
           bar name
+          <Styled(InstanceHistoryIconIncidentActive) />
         </Styled(Summary)>
         <Details>
           <Foldable

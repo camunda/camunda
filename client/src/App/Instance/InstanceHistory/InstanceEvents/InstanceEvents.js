@@ -2,6 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import {isEmpty} from 'modules/utils';
+import {ACTIVITY_STATE} from 'modules/constants';
 
 import Foldable from './Foldable';
 import * as Styled from './styled';
@@ -64,12 +65,15 @@ export default class InstanceEvents extends React.Component {
     );
   };
 
-  renderEventsGroup = ({name, events}, idx) => {
+  renderEventsGroup = ({name, events, state}, idx) => {
     const key = `${name}${idx}`;
 
     return (
       <Foldable key={key}>
-        <Styled.GroupFoldableSummary>{name}</Styled.GroupFoldableSummary>
+        <Styled.GroupFoldableSummary>
+          {name}
+          {state !== ACTIVITY_STATE.INCIDENT ? '' : <Styled.IncidentIcon />}
+        </Styled.GroupFoldableSummary>
         <Foldable.Details>{events.map(this.renderEvent)}</Foldable.Details>
       </Foldable>
     );
