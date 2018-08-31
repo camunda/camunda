@@ -69,7 +69,7 @@ export default class InstanceEvents extends React.Component {
 
     return (
       <Foldable key={key}>
-        <Foldable.Summary isBold={true}>{name}</Foldable.Summary>
+        <Styled.GroupFoldableSummary>{name}</Styled.GroupFoldableSummary>
         <Foldable.Details>{events.map(this.renderEvent)}</Foldable.Details>
       </Foldable>
     );

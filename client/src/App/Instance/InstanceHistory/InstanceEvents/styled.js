@@ -2,6 +2,8 @@ import styled from 'styled-components';
 
 import {Colors, themed, themeStyle} from 'modules/theme';
 
+import Foldable from './Foldable';
+
 export const InstanceEvents = themed(styled.div`
   flex: 1;
   position: relative;
@@ -42,3 +44,7 @@ export const DataEntry = themed(styled.div`
   padding-top: 7px;
   padding-bottom: 7px;
 `);
+
+export const GroupFoldableSummary = styled(Foldable.Summary)`
+  font-weight: bold;
+`;

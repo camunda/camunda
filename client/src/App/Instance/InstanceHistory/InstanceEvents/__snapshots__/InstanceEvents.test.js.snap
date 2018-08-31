@@ -55,12 +55,9 @@ exports[`InstanceEvents should render grouped events 1`] = `
       <Foldable
         key="foo name0"
       >
-        <Summary
-          isBold={true}
-          isFoldable={true}
-        >
+        <Styled(Summary)>
           foo name
-        </Summary>
+        </Styled(Summary)>
         <Details>
           <Foldable
             key="fooCreated0"
@@ -97,12 +94,9 @@ exports[`InstanceEvents should render grouped events 1`] = `
       <Foldable
         key="bar name1"
       >
-        <Summary
-          isBold={true}
-          isFoldable={true}
-        >
+        <Styled(Summary)>
           bar name
-        </Summary>
+        </Styled(Summary)>
         <Details>
           <Foldable
             key="barCreated0"

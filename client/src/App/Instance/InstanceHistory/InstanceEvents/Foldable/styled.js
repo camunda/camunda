@@ -44,9 +44,9 @@ export const Summary = themed(styled.div`
   position: relative;
   padding-top: 7px;
   padding-bottom: 7px;
-  font-weight: ${({isBold}) => (!isBold ? 'normal' : 'bold')};
-  color: ${({isBold, theme}) =>
-    !isBold || theme === 'dark' ? '' : 'rgba(69, 70, 78, 0.9)'};
+  color: ${themeStyle({
+    light: 'rgba(69, 70, 78, 0.9)'
+  })};
 `);
 
 export const SummaryLabel = styled.span`

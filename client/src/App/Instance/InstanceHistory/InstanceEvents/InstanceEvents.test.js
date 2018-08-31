@@ -84,7 +84,6 @@ describe('InstanceEvents', () => {
     const FooFoldableNode = FoldableNodes.at(0);
     // Foo Summary
     const SummaryNode = FooFoldableNode.find(Foldable.Summary).at(0);
-    expect(SummaryNode.prop('isBold')).toBe(true);
     expect(SummaryNode.contains(fooGroupedEvents.name));
 
     // Foo Details
