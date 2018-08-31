@@ -38,6 +38,7 @@ import static io.zeebe.broker.transport.TransportServiceNames.CONTROL_MESSAGE_HA
 import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_CLIENT_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_SERVER_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_CLIENT_NAME;
+import static io.zeebe.broker.transport.TransportServiceNames.SUBSCRIPTION_API_CLIENT_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.bufferingServerTransport;
 import static io.zeebe.broker.transport.TransportServiceNames.clientTransport;
 import static io.zeebe.broker.transport.TransportServiceNames.serverTransport;
@@ -110,6 +111,9 @@ public class ClusterComponent implements Component {
         .dependency(
             clientTransport(REPLICATION_API_CLIENT_NAME),
             remoteAddressManager.getReplicationClientTransportInjector())
+        .dependency(
+            clientTransport(SUBSCRIPTION_API_CLIENT_NAME),
+            remoteAddressManager.getSubscriptionClientTransportInjector())
         .install();
 
     final ManagementApiRequestHandlerService managementApiRequestHandlerService =
