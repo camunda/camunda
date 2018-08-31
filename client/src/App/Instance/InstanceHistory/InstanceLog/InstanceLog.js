@@ -2,7 +2,6 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import {getWorkflowName} from 'modules/utils/instance';
-import {HEADER} from 'modules/constants';
 
 import {getActivityInstanceIdByActivityId} from './service';
 import * as Styled from './styled';
@@ -22,10 +21,6 @@ export default class InstanceLog extends React.Component {
 
   static defaultProps = {
     onActivitySelected: () => {}
-  };
-
-  state = {
-    selected: HEADER
   };
 
   renderLogEntry = ([id, {state, type, name}]) => {

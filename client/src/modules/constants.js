@@ -5,8 +5,6 @@ export const DIRECTION = {
   LEFT: 'LEFT'
 };
 
-export const HEADER = 'HEADER';
-
 export const FILTER_TYPES = {
   RUNNING: 'running',
   FINISHED: 'finished'
