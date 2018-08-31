@@ -17,6 +17,15 @@ es:
     http: 9200
   sampler:
     interval: 100
+  security:
+    username: ''
+    password: ''
+    ssl:
+      key: ''
+      certificate: ''
+      certificate_authorities: ''
+      verification_mode: ''
+      enabled: false
 
 email:
   enabled: true
