@@ -38,6 +38,15 @@ public interface ConfigurationServiceConstants {
   String ELASTIC_SEARCH_SCROLL_TIMEOUT = "$.es.scrollTimeout";
   String SAMPLER_INTERVAL = "$.es.sampler.interval";
 
+
+  String ELASTIC_SEARCH_SECURITY_USERNAME = "$.es.security.username";
+  String ELASTIC_SEARCH_SECURITY_PASSWORD = "$.es.security.password";
+  String ELASTIC_SEARCH_SECURITY_SSL_ENABLED = "$.es.security.ssl.enabled";
+  String ELASTIC_SEARCH_SECURITY_SSL_KEY = "$.es.security.ssl.key";
+  String ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE = "$.es.security.ssl.certificate";
+  String ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES = "$.es.security.ssl.certificate_authorities";
+  String ELASTIC_SEARCH_SECURITY_SSL_VERIFICATION_MODE = "$.es.security.ssl.verification_mode";
+
   String OPTIMIZE_INDEX = "$.es.index";
   String PROCESS_INSTANCE_TYPE = "$.import.data.process-instance.elasticsearchType";
   String DURATION_HEATMAP_TARGET_VALUE_TYPE = "$.es.heatmap.duration.targetValueType";

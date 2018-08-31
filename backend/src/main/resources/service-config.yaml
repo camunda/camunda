@@ -152,6 +152,32 @@ es:
     tcp: 9300
     # A port number used by Elasticsearch to accept HTTP connections.
     http: 9200
+
+  # define a secured connection to be able to communicate
+  # with an Elasticsearch instance secured with x-pack
+  security:
+    # the x-pack username that has the rights to start a transport connection
+    username: 'elastic'
+    # the x-pack password of the user
+    password: 'I-love-optimize'
+    ssl:
+      # the path to the PEM encoded file containing the private key
+      key: ''
+      # path to a PEM encoded file containing the certificate (or certificate chain)
+      # that will be presented to clients when they connect.
+      certificate: ''
+      # the path to the PEM encoded certificate file that should be trusted.
+      # Note: if you are using a public CA that is already trusted by the Java runtime,
+      # you do not need to set the certificate_authorities.
+      certificate_authorities: ''
+      # controls the verification of certificates. Valid values are none, certificate, and full.
+      # See the elasticsearch security setting 'xpack.security.transport.ssl.verification_mode'
+      # for more information about the values.
+      verification_mode: 'certificate'
+      # used to enable or disable TLS/SSL and also decides if a secured connection is
+      # build up at all.
+      enabled: false
+
   #An index name used to create all Camunda Optimize types, shards, etc.
   index: optimize
   licenseType: license

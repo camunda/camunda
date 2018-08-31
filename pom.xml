@@ -293,6 +293,19 @@
         <enabled>true</enabled>
       </snapshots>
     </repository>
+
+    <!-- add the elasticsearch repo -->
+    <repository>
+      <id>elasticsearch-releases</id>
+      <url>https://artifacts.elastic.co/maven</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <layout>default</layout>
+    </repository>
   </repositories>
 
 </project>

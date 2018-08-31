@@ -29,6 +29,8 @@ import java.util.Properties;
 import java.util.Set;
 
 import static org.camunda.optimize.service.util.ValidationHelper.ensureGreaterThanZero;
+import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.cutTrailingSlash;
+import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.resolvePath;
 
 public class ConfigurationService {
 
@@ -44,14 +46,10 @@ public class ConfigurationService {
 
   private Map<String, EngineConfiguration> configuredEngines;
   private Integer tokenLifeTime;
-  private String elasticSearchHost;
-  private String elasticSearchClusterName;
-  private Integer elasticSearchTcpPort;
-  private Integer elasticSearchHttpPort;
-  private String optimizeIndex;
   private String userValidationEndpoint;
   private String processDefinitionEndpoint;
 
+  private String optimizeIndex;
   private String processDefinitionType;
   private String importIndexType;
   private String durationHeatmapTargetValueType;
@@ -71,17 +69,37 @@ public class ConfigurationService {
   private Long importHandlerWait;
   private Long maximumBackoff;
   private Boolean backoffEnabled;
-  private Integer elasticsearchJobExecutorQueueSize;
-  private Integer elasticsearchJobExecutorThreadCount;
+
+  // elasticsearch connection
+  private String elasticSearchHost;
+  private Integer elasticSearchTcpPort;
+  private Integer elasticSearchHttpPort;
   private Integer elasticsearchScrollTimeout;
   private Integer elasticsearchConnectionTimeout;
+
+  // elasticsearch connection security
+  private String elasticsearchSecurityUsername;
+  private String elasticsearchSecurityPassword;
+  private Boolean elasticsearchSecuritySSLEnabled;
+  private String elasticsearchSecuritySSLKey;
+  private String elasticsearchSecuritySSLCertificate;
+  private String elasticsearchSecuritySSLCertificateAuthorities;
+  private String elasticsearchSecuritySSLVerificationMode;
+
+  // elasticsearch cluster settings
+  private String elasticSearchClusterName;
+  private Integer esNumberOfReplicas;
+  private Integer esNumberOfShards;
+  private String esRefreshInterval;
+
+  // job executor settings
+  private Integer elasticsearchJobExecutorQueueSize;
+  private Integer elasticsearchJobExecutorThreadCount;
+
   private Integer engineConnectTimeout;
   private Integer engineReadTimeout;
   private Integer engineImportProcessInstanceMaxPageSize;
   private Integer engineImportVariableInstanceMaxPageSize;
-  private String esRefreshInterval;
-  private Integer esNumberOfReplicas;
-  private Integer esNumberOfShards;
   private Integer engineImportProcessDefinitionXmlMaxPageSize;
   private String processDefinitionXmlEndpoint;
   private Integer importIndexAutoStorageIntervalInSec;
@@ -213,13 +231,6 @@ public class ConfigurationService {
 
   private InputStream wrapInputStream(String location) {
     return this.getClass().getClassLoader().getResourceAsStream(location);
-  }
-
-  private String cutTrailingSlash(String string) {
-    if (string != null && !string.isEmpty() && string.endsWith("/")) {
-      string = string.substring(0, string.length() - 1);
-    }
-    return string;
   }
 
   public Map<String, EngineConfiguration> getConfiguredEngines() {
@@ -736,6 +747,62 @@ public class ConfigurationService {
     return exportCsvOffset;
   }
 
+  public String getElasticsearchSecurityUsername() {
+    if (elasticsearchSecurityUsername == null) {
+      elasticsearchSecurityUsername = jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_USERNAME);
+    }
+    return elasticsearchSecurityUsername;
+  }
+
+  public String getElasticsearchSecurityPassword() {
+    if (elasticsearchSecurityPassword == null) {
+      elasticsearchSecurityPassword = jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_PASSWORD);
+    }
+    return elasticsearchSecurityPassword;
+  }
+
+  public Boolean getElasticsearchSecuritySSLEnabled() {
+    if (elasticsearchSecuritySSLEnabled == null) {
+      elasticsearchSecuritySSLEnabled =
+        jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_ENABLED);
+    }
+    return elasticsearchSecuritySSLEnabled;
+  }
+
+  public String getElasticsearchSecuritySSLKey() {
+    if (elasticsearchSecuritySSLKey == null) {
+      elasticsearchSecuritySSLKey = jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_KEY);
+      elasticsearchSecuritySSLKey = resolvePath(elasticsearchSecuritySSLKey);
+    }
+    return elasticsearchSecuritySSLKey;
+  }
+
+  public String getElasticsearchSecuritySSLCertificate() {
+    if (elasticsearchSecuritySSLCertificate == null) {
+      elasticsearchSecuritySSLCertificate =
+        jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE);
+      elasticsearchSecuritySSLCertificate = resolvePath(elasticsearchSecuritySSLCertificate);
+    }
+    return elasticsearchSecuritySSLCertificate;
+  }
+
+  public String getElasticsearchSecuritySSLCertificateAuthorities() {
+    if (elasticsearchSecuritySSLCertificateAuthorities == null) {
+      elasticsearchSecuritySSLCertificateAuthorities =
+        jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES);
+      elasticsearchSecuritySSLCertificateAuthorities = resolvePath(elasticsearchSecuritySSLCertificateAuthorities);
+    }
+    return elasticsearchSecuritySSLCertificateAuthorities;
+  }
+
+  public String getElasticsearchSecuritySSLVerificationMode() {
+    if (elasticsearchSecuritySSLVerificationMode == null) {
+      elasticsearchSecuritySSLVerificationMode =
+        jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_VERIFICATION_MODE);
+    }
+    return elasticsearchSecuritySSLVerificationMode;
+  }
+
   public void setMaxStatusConnections(Integer maxStatusConnections) {
     this.maxStatusConnections = maxStatusConnections;
   }
@@ -1012,4 +1079,31 @@ public class ConfigurationService {
     this.alertEmailProtocol = alertEmailProtocol;
   }
 
+  public void setElasticsearchSecurityUsername(String elasticsearchSecurityUsername) {
+    this.elasticsearchSecurityUsername = elasticsearchSecurityUsername;
+  }
+
+  public void setElasticsearchSecurityPassword(String elasticsearchSecurityPassword) {
+    this.elasticsearchSecurityPassword = elasticsearchSecurityPassword;
+  }
+
+  public void setElasticsearchSecuritySSLEnabled(Boolean elasticsearchSecuritySSLEnabled) {
+    this.elasticsearchSecuritySSLEnabled = elasticsearchSecuritySSLEnabled;
+  }
+
+  public void setElasticsearchSecuritySSLKey(String elasticsearchSecuritySSLKey) {
+    this.elasticsearchSecuritySSLKey = elasticsearchSecuritySSLKey;
+  }
+
+  public void setElasticsearchSecuritySSLCertificate(String elasticsearchSecuritySSLCertificate) {
+    this.elasticsearchSecuritySSLCertificate = elasticsearchSecuritySSLCertificate;
+  }
+
+  public void setElasticsearchSecuritySSLCertificateAuthorities(String elasticsearchSecuritySSLCertificateAuthorities) {
+    this.elasticsearchSecuritySSLCertificateAuthorities = elasticsearchSecuritySSLCertificateAuthorities;
+  }
+
+  public void setElasticsearchSecuritySSLVerificationMode(String elasticsearchSecuritySSLVerificationMode) {
+    this.elasticsearchSecuritySSLVerificationMode = elasticsearchSecuritySSLVerificationMode;
+  }
 }
