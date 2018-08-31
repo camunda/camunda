@@ -13,8 +13,14 @@ export default class InstanceEvents extends React.Component {
   };
 
   /**
-   * Filters foldable details and renders them properly
-   * @param {object} details
+   * Filters foldable details and renders them.
+   * @param {object} details: An object of key-value entries where the value can be a string | number | object | null.
+   * e.g. {
+   *  jobCustomHeaders: {}
+      jobDeadline: "2018-08-31T07:16:52.805+0000"
+      jobId: "8590888008"
+      jobRetries: 3
+   * }
    */
   renderFoldableDetails = details => {
     return (
