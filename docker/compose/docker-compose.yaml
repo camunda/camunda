@@ -13,6 +13,7 @@ services:
             - 26500:26500
         environment:
             - ZEEBE_LOG_LEVEL=${ZEEBE_LOG_LEVEL:-debug}
+            - ZEEBE_NODE_ID=0
             - BOOTSTRAP=3
         volumes:
             - broker_1:/usr/local/zeebe/data
@@ -23,6 +24,7 @@ services:
             - 26510:26500
         environment:
             - ZEEBE_LOG_LEVEL=${ZEEBE_LOG_LEVEL:-debug}
+            - ZEEBE_NODE_ID=1
             - INITIAL_CONTACT_POINT=broker-1:26502
             - BOOTSTRAP=0
         volumes:
@@ -34,6 +36,7 @@ services:
             - 26520:26500
         environment:
             - ZEEBE_LOG_LEVEL=${ZEEBE_LOG_LEVEL:-debug}
+            - ZEEBE_NODE_ID=2
             - INITIAL_CONTACT_POINT=broker-1:26502
             - BOOTSTRAP=0
         volumes:
