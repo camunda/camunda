@@ -40,7 +40,7 @@ public class RaftPersistentConfigurationTest {
     final BrokerCfg brokerCfg = brokerRule.getBroker().getBrokerContext().getBrokerConfiguration();
     final ObjectReader jsonReader = new ObjectMapper().readerFor(RaftConfigurationMetadata.class);
 
-    final String dataDirectory = brokerCfg.getData().getDirectories()[0];
+    final String dataDirectory = brokerCfg.getData().getDirectories().get(0);
     final File configFile =
         new File(String.format("%s/%s-%d/partition.json", dataDirectory, topicName, partitionId));
 

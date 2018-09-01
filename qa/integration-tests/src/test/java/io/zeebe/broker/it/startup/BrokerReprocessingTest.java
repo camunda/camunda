@@ -696,7 +696,7 @@ public class BrokerReprocessingTest {
   protected void deleteSnapshotsAndRestart(final Runnable onStop) {
     eventRecorder.stopRecordingEvents();
 
-    final String[] dataDirectories =
+    final List<String> dataDirectories =
         brokerRule
             .getBroker()
             .getBrokerContext()

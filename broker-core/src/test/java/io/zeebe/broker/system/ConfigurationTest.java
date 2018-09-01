@@ -19,6 +19,8 @@ package io.zeebe.broker.system;
 
 import static io.zeebe.broker.system.configuration.BrokerCfg.DEFAULT_NODE_ID;
 import static io.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_CONTACT_POINTS;
+import static io.zeebe.broker.system.configuration.DataCfg.DEFAULT_DIRECTORY;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_DIRECTORIES;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_HOST;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_INITIAL_CONTACT_POINTS;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_NODE_ID;
@@ -28,6 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
+import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.broker.system.configuration.Environment;
 import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
@@ -43,6 +46,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.assertj.core.api.Condition;
 import org.junit.Rule;
 import org.junit.Test;
@@ -50,6 +54,7 @@ import org.junit.rules.TemporaryFolder;
 
 public class ConfigurationTest {
 
+  public static final String BROKER_BASE = "test";
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   public Map<String, String> environment = new HashMap<>();
@@ -268,6 +273,40 @@ public class ConfigurationTest {
     assertContactPoints("contact-points", "foo", "bar");
   }
 
+  @Test
+  public void shouldUseDefaultDirectories() {
+    assertDirectories("default", DEFAULT_DIRECTORY);
+  }
+
+  @Test
+  public void shouldUseSpecifiedDirectories() {
+    assertDirectories("directories", "data1", "data2", "data3");
+  }
+
+  @Test
+  public void shouldUseDirectoriesFromEnvironment() {
+    environment.put(ENV_DIRECTORIES, "foo,bar");
+    assertDirectories("default", "foo", "bar");
+  }
+
+  @Test
+  public void shouldUseDirectoriesFromEnvironmentWithSpecifiedDirectories() {
+    environment.put(ENV_DIRECTORIES, "foo,bar");
+    assertDirectories("directories", "foo", "bar");
+  }
+
+  @Test
+  public void shouldUseSingleDirectoryFromEnvironment() {
+    environment.put(ENV_DIRECTORIES, "hello");
+    assertDirectories("directories", "hello");
+  }
+
+  @Test
+  public void shouldIgnoreTrailingCommaDirectoriesFromEnvironment() {
+    environment.put(ENV_DIRECTORIES, "foo,bar,");
+    assertDirectories("directories", "foo", "bar");
+  }
+
   private BrokerCfg readConfig(final String name) {
     final String configPath = "/system/" + name + ".toml";
     final InputStream resourceAsStream = ConfigurationTest.class.getResourceAsStream(configPath);
@@ -276,7 +315,7 @@ public class ConfigurationTest {
         .isNotNull();
 
     final BrokerCfg config = TomlConfigurationReader.read(resourceAsStream);
-    config.init("test", new Environment(environment));
+    config.init(BROKER_BASE, new Environment(environment));
     return config;
   }
 
@@ -326,5 +365,19 @@ public class ConfigurationTest {
   private void assertContactPoints(final String configFileName, final List<String> contactPoints) {
     final ClusterCfg cfg = readConfig(configFileName).getCluster();
     assertThat(cfg.getInitialContactPoints()).containsExactlyElementsOf(contactPoints);
+  }
+
+  private void assertDirectories(final String configFileName, final String... directories) {
+    assertDirectories(configFileName, Arrays.asList(directories));
+  }
+
+  private void assertDirectories(final String configFileName, final List<String> directories) {
+    final DataCfg cfg = readConfig(configFileName).getData();
+    final List<String> expected =
+        directories
+            .stream()
+            .map(d -> Paths.get(BROKER_BASE, d).toString())
+            .collect(Collectors.toList());
+    assertThat(cfg.getDirectories()).containsExactlyElementsOf(expected);
   }
 }
