@@ -18,13 +18,16 @@
 package io.zeebe.broker.system;
 
 import static io.zeebe.broker.system.configuration.BrokerCfg.DEFAULT_NODE_ID;
+import static io.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_CONTACT_POINTS;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_HOST;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_INITIAL_CONTACT_POINTS;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_NODE_ID;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PORT_OFFSET;
 import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_HOST;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.Environment;
 import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
@@ -36,7 +39,9 @@ import io.zeebe.broker.system.configuration.TomlConfigurationReader;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.assertj.core.api.Condition;
 import org.junit.Rule;
@@ -223,6 +228,46 @@ public class ConfigurationTest {
         "subscriptionHost");
   }
 
+  @Test
+  public void shouldUseDefaultContactPoints() {
+    assertContactPoints("default", DEFAULT_CONTACT_POINTS);
+  }
+
+  @Test
+  public void shouldUseSpecifiedContactPoints() {
+    assertContactPoints("contact-points", "broker1", "broker2", "broker3");
+  }
+
+  @Test
+  public void shouldUseContactPointsFromEnvironment() {
+    environment.put(ENV_INITIAL_CONTACT_POINTS, "foo,bar");
+    assertContactPoints("default", "foo", "bar");
+  }
+
+  @Test
+  public void shouldUseContactPointsFromEnvironmentWithSpecifiedContactPoints() {
+    environment.put(ENV_INITIAL_CONTACT_POINTS, "1.1.1.1,2.2.2.2");
+    assertContactPoints("contact-points", "1.1.1.1", "2.2.2.2");
+  }
+
+  @Test
+  public void shouldUseSingleContactPointFromEnvironment() {
+    environment.put(ENV_INITIAL_CONTACT_POINTS, "hello");
+    assertContactPoints("contact-points", "hello");
+  }
+
+  @Test
+  public void shouldClearContactPointFromEnvironment() {
+    environment.put(ENV_INITIAL_CONTACT_POINTS, "");
+    assertContactPoints("contact-points");
+  }
+
+  @Test
+  public void shouldIgnoreTrailingCommaContactPointFromEnvironment() {
+    environment.put(ENV_INITIAL_CONTACT_POINTS, "foo,bar,");
+    assertContactPoints("contact-points", "foo", "bar");
+  }
+
   private BrokerCfg readConfig(final String name) {
     final String configPath = "/system/" + name + ".toml";
     final InputStream resourceAsStream = ConfigurationTest.class.getResourceAsStream(configPath);
@@ -272,5 +317,14 @@ public class ConfigurationTest {
     assertThat(cfg.getManagement().getHost()).isEqualTo(management);
     assertThat(cfg.getReplication().getHost()).isEqualTo(replication);
     assertThat(cfg.getSubscription().getHost()).isEqualTo(subscription);
+  }
+
+  private void assertContactPoints(final String configFileName, final String... contactPoints) {
+    assertContactPoints(configFileName, Arrays.asList(contactPoints));
+  }
+
+  private void assertContactPoints(final String configFileName, final List<String> contactPoints) {
+    final ClusterCfg cfg = readConfig(configFileName).getCluster();
+    assertThat(cfg.getInitialContactPoints()).containsExactlyElementsOf(contactPoints);
   }
 }

@@ -39,6 +39,7 @@ import java.io.File;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -308,9 +309,12 @@ public class ClusteringRule extends ExternalResource {
         brokerCfg
             .getCluster()
             .setInitialContactPoints(
-                new String[] {
-                  brokerCfgs[brokerId - 1].getNetwork().getManagement().toSocketAddress().toString()
-                });
+                Collections.singletonList(
+                    brokerCfgs[brokerId - 1]
+                        .getNetwork()
+                        .getManagement()
+                        .toSocketAddress()
+                        .toString()));
       }
 
       brokerCfgs[brokerId] = brokerCfg;

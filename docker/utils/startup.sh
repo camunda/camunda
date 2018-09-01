@@ -2,7 +2,6 @@
 
 configFile=/usr/local/zeebe/conf/zeebe.cfg.toml
 
-INITIAL_CONTACT_POINT=${INITIAL_CONTACT_POINT:-}
 export ZEEBE_HOST=${ZEEBE_HOST:-$(hostname -i)}
 BOOTSTAP=${BOOTSTRAP:-0}
 
@@ -11,9 +10,5 @@ if [[ "$DEPLOY_ON_KUBERNETES" == "true" ]]; then
 fi
 
 sed -i "s/bootstrap =.*/bootstrap = ${BOOTSTRAP}/g" $configFile
-
-if [ -n "${INITIAL_CONTACT_POINT}" ]; then
-    sed -i "s/# initialContactPoints = \[\].*/initialContactPoints = \[\n\t\"${INITIAL_CONTACT_POINT}\"\n\]/g" $configFile
-fi
 
 exec /usr/local/zeebe/bin/broker

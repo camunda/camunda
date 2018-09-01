@@ -209,6 +209,9 @@ replicationFactor = 1
 # Example:
 # initialContactPoints = [ "192.168.1.22:26502", "192.168.1.32:26502" ]
 #
+# This setting can also be overridden using the environment variable ZEEBE_CONTACT_POINTS
+# specifying a comma-separated list of contact points.
+#
 # Default is empty list:
 # initialContactPoints = []
 
