@@ -65,6 +65,7 @@ public class Broker implements AutoCloseable {
 
   protected void start() {
     LOG.info("Version: {}", VERSION);
+    LOG.info("Starting broker with configuration {}", getConfig().toJson());
 
     brokerContext.addComponent(new SystemComponent());
     brokerContext.addComponent(new TransportComponent());
@@ -87,7 +88,7 @@ public class Broker implements AutoCloseable {
           if (!isClosed) {
             brokerContext.close();
             isClosed = true;
-            LOG.info("Broker closed. Configuration: {}", getConfig());
+            LOG.info("Broker closed");
           }
         });
   }

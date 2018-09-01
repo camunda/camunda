@@ -199,7 +199,7 @@ public class ClusterComponent implements Component {
     final int bootstrap = brokerConfiguration.getBootstrap();
 
     if (bootstrap == 1) {
-      LOG.info("Starting standalone broker. Configuration: {}", brokerConfiguration);
+      LOG.info("Starting standalone broker");
 
       final BootstrapSystemTopic systemPartitionBootstrapService =
           new BootstrapSystemTopic(1, context.getBrokerConfiguration());
@@ -212,7 +212,7 @@ public class ClusterComponent implements Component {
               systemPartitionBootstrapService.getRaftPersistentConfigurationManagerInjector())
           .install();
     } else {
-      LOG.info("Starting clustered broker. Configuration: {}", brokerConfiguration);
+      LOG.info("Starting clustered broker");
 
       if (bootstrap > 0) {
         LOG.info(

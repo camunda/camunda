@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.system.configuration;
 
+import com.google.gson.GsonBuilder;
 import io.zeebe.gossip.GossipConfiguration;
 import io.zeebe.raft.RaftConfiguration;
 import java.util.ArrayList;
@@ -164,5 +165,9 @@ public class BrokerCfg {
         + ", exporters="
         + exporters
         + '}';
+  }
+
+  public String toJson() {
+    return new GsonBuilder().setPrettyPrinting().create().toJson(this);
   }
 }
