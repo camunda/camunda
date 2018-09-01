@@ -18,8 +18,10 @@
 package io.zeebe.broker.system;
 
 import static io.zeebe.broker.system.configuration.BrokerCfg.DEFAULT_NODE_ID;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_HOST;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_NODE_ID;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PORT_OFFSET;
+import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_HOST;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.system.configuration.BrokerCfg;
@@ -174,7 +176,54 @@ public class ConfigurationTest {
     assertThat(config.getExporters().get(2).isExternal()).isFalse();
   }
 
-  private BrokerCfg readConfig(String name) {
+  @Test
+  public void shouldUseDefaultHost() {
+    assertHost("default", DEFAULT_HOST);
+  }
+
+  @Test
+  public void shouldUseSpecifiedHosts() {
+    assertHost(
+        "specific-hosts",
+        DEFAULT_HOST,
+        "gatewayHost",
+        "clientHost",
+        "managementHost",
+        "replicationHost",
+        "subscriptionHost");
+  }
+
+  @Test
+  public void shouldUseGlobalHost() {
+    assertHost("host", "1.1.1.1");
+  }
+
+  @Test
+  public void shouldUseHostFromEnvironment() {
+    environment.put(ENV_HOST, "2.2.2.2");
+    assertHost("default", "2.2.2.2");
+  }
+
+  @Test
+  public void shouldUseHostFromEnvironmentWithGlobalHost() {
+    environment.put(ENV_HOST, "myHost");
+    assertHost("host", "myHost");
+  }
+
+  @Test
+  public void shouldNotOverrideSpecifiedHostsFromEnvironment() {
+    environment.put(ENV_HOST, "myHost");
+    assertHost(
+        "specific-hosts",
+        "myHost",
+        "gatewayHost",
+        "clientHost",
+        "managementHost",
+        "replicationHost",
+        "subscriptionHost");
+  }
+
+  private BrokerCfg readConfig(final String name) {
     final String configPath = "/system/" + name + ".toml";
     final InputStream resourceAsStream = ConfigurationTest.class.getResourceAsStream(configPath);
     assertThat(resourceAsStream)
@@ -186,17 +235,42 @@ public class ConfigurationTest {
     return config;
   }
 
-  private void assertNodeId(String configFileName, int nodeId) {
+  private void assertNodeId(final String configFileName, final int nodeId) {
     final BrokerCfg cfg = readConfig(configFileName);
     assertThat(cfg.getNodeId()).isEqualTo(nodeId);
   }
 
   private void assertPorts(
-      String configFileName, int client, int management, int replication, int subscription) {
+      final String configFileName,
+      final int client,
+      final int management,
+      final int replication,
+      final int subscription) {
     final NetworkCfg network = readConfig(configFileName).getNetwork();
     assertThat(network.getClient().getPort()).isEqualTo(client);
     assertThat(network.getManagement().getPort()).isEqualTo(management);
     assertThat(network.getReplication().getPort()).isEqualTo(replication);
     assertThat(network.getSubscription().getPort()).isEqualTo(subscription);
+  }
+
+  private void assertHost(final String configFileName, final String host) {
+    assertHost(configFileName, host, host, host, host, host, host);
+  }
+
+  private void assertHost(
+      final String configFileName,
+      final String host,
+      final String gateway,
+      final String client,
+      final String management,
+      final String replication,
+      final String subscription) {
+    final NetworkCfg cfg = readConfig(configFileName).getNetwork();
+    assertThat(cfg.getHost()).isEqualTo(host);
+    assertThat(cfg.getGateway().getHost()).isEqualTo(gateway);
+    assertThat(cfg.getClient().getHost()).isEqualTo(client);
+    assertThat(cfg.getManagement().getHost()).isEqualTo(management);
+    assertThat(cfg.getReplication().getHost()).isEqualTo(replication);
+    assertThat(cfg.getSubscription().getHost()).isEqualTo(subscription);
   }
 }

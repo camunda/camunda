@@ -81,6 +81,8 @@ replicationFactor = 1
 
 # Controls the default host the broker should bind to. Can be overwritten on a
 # per binding basis for client, management and replication
+#
+# This setting can also be overridden using the environment variable ZEEBE_HOST.
 # host = "0.0.0.0"
 
 # If a port offset is set it will be added to all ports specified in the config

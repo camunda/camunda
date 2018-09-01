@@ -20,5 +20,6 @@ package io.zeebe.broker.system.configuration;
 public class EnvironmentConstants {
 
   public static final String ENV_NODE_ID = "ZEEBE_NODE_ID";
+  public static final String ENV_HOST = "ZEEBE_HOST";
   public static final String ENV_PORT_OFFSET = "ZEEBE_PORT_OFFSET";
 }

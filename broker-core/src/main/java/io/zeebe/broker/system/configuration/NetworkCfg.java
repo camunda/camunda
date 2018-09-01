@@ -17,11 +17,14 @@
  */
 package io.zeebe.broker.system.configuration;
 
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_HOST;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PORT_OFFSET;
 
 public class NetworkCfg implements ConfigurationEntry {
 
-  private String host = "0.0.0.0";
+  public static final String DEFAULT_HOST = "0.0.0.0";
+
+  private String host = DEFAULT_HOST;
   private String defaultSendBufferSize = "16M";
   private int portOffset = 0;
 
@@ -43,6 +46,7 @@ public class NetworkCfg implements ConfigurationEntry {
   }
 
   private void applyEnvironment(final Environment environment) {
+    environment.get(ENV_HOST).ifPresent(v -> host = v);
     environment.getInt(ENV_PORT_OFFSET).ifPresent(v -> portOffset = v);
   }
 
