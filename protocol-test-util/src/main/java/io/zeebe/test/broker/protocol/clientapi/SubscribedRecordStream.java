@@ -43,8 +43,8 @@ public class SubscribedRecordStream extends StreamWrapper<SubscribedRecord> {
     return recordsOfType(RecordType.COMMAND);
   }
 
-  public SubscribedRecordStream ofTypeWorkflowInstance() {
-    return recordsOfValueType(ValueType.WORKFLOW_INSTANCE);
+  public WorkflowInstanceRecordStream ofTypeWorkflowInstance() {
+    return new WorkflowInstanceRecordStream(recordsOfValueType(ValueType.WORKFLOW_INSTANCE));
   }
 
   public SubscribedRecordStream ofTypeDeployment() {
@@ -65,6 +65,10 @@ public class SubscribedRecordStream extends StreamWrapper<SubscribedRecord> {
 
   public SubscribedRecordStream withIntent(Intent intent) {
     return new SubscribedRecordStream(filter(r -> r.intent() == intent));
+  }
+
+  public SubscribedRecordStream withKey(long key) {
+    return new SubscribedRecordStream(filter(r -> r.key() == key));
   }
 
   public SubscribedRecord getFirst() {

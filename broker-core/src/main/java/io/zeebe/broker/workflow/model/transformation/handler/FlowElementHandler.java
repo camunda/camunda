@@ -31,6 +31,7 @@ import io.zeebe.model.bpmn.instance.EndEvent;
 import io.zeebe.model.bpmn.instance.ExclusiveGateway;
 import io.zeebe.model.bpmn.instance.FlowElement;
 import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
+import io.zeebe.model.bpmn.instance.ParallelGateway;
 import io.zeebe.model.bpmn.instance.ReceiveTask;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
 import io.zeebe.model.bpmn.instance.ServiceTask;
@@ -50,6 +51,7 @@ public class FlowElementHandler implements ModelElementTransformer<FlowElement> 
     ELEMENT_FACTORIES.put(EndEvent.class, ExecutableFlowNode::new);
     ELEMENT_FACTORIES.put(ExclusiveGateway.class, ExecutableExclusiveGateway::new);
     ELEMENT_FACTORIES.put(IntermediateCatchEvent.class, ExecutableMessageCatchElement::new);
+    ELEMENT_FACTORIES.put(ParallelGateway.class, ExecutableFlowNode::new);
     ELEMENT_FACTORIES.put(SequenceFlow.class, ExecutableSequenceFlow::new);
     ELEMENT_FACTORIES.put(ServiceTask.class, ExecutableServiceTask::new);
     ELEMENT_FACTORIES.put(ReceiveTask.class, ExecutableMessageCatchElement::new);

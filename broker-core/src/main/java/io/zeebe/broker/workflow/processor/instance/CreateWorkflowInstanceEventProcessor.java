@@ -75,7 +75,7 @@ public final class CreateWorkflowInstanceEventProcessor
     final DirectBuffer bpmnProcessId = value.getBpmnProcessId();
     final int version = value.getVersion();
 
-    DeployedWorkflow workflowDefinition;
+    final DeployedWorkflow workflowDefinition;
     if (workflowKey <= 0) {
       if (version > 0) {
         workflowDefinition = workflowCache.getWorkflowByProcessIdAndVersion(bpmnProcessId, version);

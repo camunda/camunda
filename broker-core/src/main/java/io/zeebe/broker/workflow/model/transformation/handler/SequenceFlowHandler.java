@@ -29,6 +29,7 @@ import io.zeebe.model.bpmn.instance.EndEvent;
 import io.zeebe.model.bpmn.instance.ExclusiveGateway;
 import io.zeebe.model.bpmn.instance.FlowNode;
 import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
+import io.zeebe.model.bpmn.instance.ParallelGateway;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
 import io.zeebe.msgpack.el.CompiledJsonCondition;
 import io.zeebe.msgpack.el.JsonConditionFactory;
@@ -59,7 +60,7 @@ public class SequenceFlowHandler implements ModelElementTransformer<SequenceFlow
 
     if (target instanceof Activity || target instanceof IntermediateCatchEvent) {
       step = BpmnStep.START_STATEFUL_ELEMENT;
-    } else if (target instanceof ExclusiveGateway) {
+    } else if (target instanceof ExclusiveGateway || target instanceof ParallelGateway) {
       step = BpmnStep.ACTIVATE_GATEWAY;
     } else if (target instanceof EndEvent) {
       step = BpmnStep.TRIGGER_END_EVENT;

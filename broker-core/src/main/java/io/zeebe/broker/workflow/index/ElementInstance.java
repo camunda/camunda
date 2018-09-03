@@ -43,6 +43,8 @@ public class ElementInstance implements Serializable {
 
   private long jobKey;
 
+  private int activeTokens = 0;
+
   public ElementInstance(long key, ElementInstance parent) {
     this.key = key;
     this.parent = parent;
@@ -108,6 +110,18 @@ public class ElementInstance implements Serializable {
 
   public boolean canTerminate() {
     return WorkflowInstanceLifecycle.canTerminate(state);
+  }
+
+  public void spawnTokens(int number) {
+    this.activeTokens += number;
+  }
+
+  public void consumeTokens(int number) {
+    this.activeTokens -= number;
+  }
+
+  public int getActiveTokens() {
+    return activeTokens;
   }
 
   private void writeObject(java.io.ObjectOutputStream out) throws IOException {

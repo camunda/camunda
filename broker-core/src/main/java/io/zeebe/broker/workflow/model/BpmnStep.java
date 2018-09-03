@@ -29,6 +29,9 @@ public enum BpmnStep {
   // xor-gateway
   EXCLUSIVE_SPLIT,
 
+  // parallel gateway
+  PARALLEL_SPLIT,
+
   CREATE_JOB,
 
   APPLY_INPUT_MAPPING,
