@@ -65,8 +65,8 @@ public class WorkflowInstanceEventTransformer extends AbstractEventTransformer i
     ACTIVITY_INSTANCE_START_END_STATES.add(GATEWAY_ACTIVATED);
 
     WORKFLOW_INSTANCE_STATES.add(CREATED);
-    WORKFLOW_INSTANCE_STATES.add(ACTIVITY_COMPLETED);     //to record changed payload
-    WORKFLOW_INSTANCE_STATES.add(ACTIVITY_ACTIVATED);     //to record changed payload
+//    WORKFLOW_INSTANCE_STATES.add(ACTIVITY_COMPLETED);     //to record changed payload
+//    WORKFLOW_INSTANCE_STATES.add(ACTIVITY_ACTIVATED);     //to record changed payload
 //    WORKFLOW_INSTANCE_STATES.add(PAYLOAD_UPDATED);        //to record changed payload
     WORKFLOW_INSTANCE_STATES.addAll(WORKFLOW_INSTANCE_FINISH_STATES);
 
