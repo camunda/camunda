@@ -20,7 +20,6 @@ package io.zeebe.broker.event.processor;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.logstreams.processor.EventProcessor;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.RecordMetadata;
@@ -61,7 +60,7 @@ public class SubscribeProcessor implements EventProcessor {
   }
 
   @Override
-  public void processEvent(EventLifecycleContext ctx) {
+  public void processEvent() {
     final DirectBuffer subscriptionName = subscriberEvent.getName();
 
     subscriberKey = manager.nextSubscriberKey();

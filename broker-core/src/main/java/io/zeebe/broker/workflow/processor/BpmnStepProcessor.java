@@ -50,11 +50,9 @@ import io.zeebe.broker.workflow.processor.servicetask.TerminateServiceTaskHandle
 import io.zeebe.broker.workflow.processor.subprocess.TerminateContainedElementsHandler;
 import io.zeebe.broker.workflow.processor.subprocess.TriggerStartEventHandler;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.metrics.MetricsManager;
-import io.zeebe.util.sched.ActorControl;
 import java.util.EnumMap;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -72,8 +70,6 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
       new EnumMap<>(WorkflowInstanceIntent.class);
 
   private BpmnStepContext context;
-  private ActorControl actor;
-
   private WorkflowInstanceMetrics metrics;
 
   public BpmnStepProcessor(
@@ -158,11 +154,6 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
         new WorkflowInstanceMetrics(
             metricsManager, logStream.getTopicName(), logStream.getPartitionId());
     this.context = new BpmnStepContext<>(elementInstances, metrics);
-
-    this.actor = streamProcessor.getActor();
-    context.setActor(actor);
-
-    stepHandlers.values().forEach(h -> h.onOpen(streamProcessor));
   }
 
   @Override
@@ -175,13 +166,11 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
       TypedRecord<WorkflowInstanceRecord> record,
       TypedResponseWriter responseWriter,
       TypedStreamWriter streamWriter,
-      Consumer<SideEffectProducer> sideEffect,
-      EventLifecycleContext ctx) {
+      Consumer<SideEffectProducer> sideEffect) {
 
     context.setRecord(record);
     context.setStreamWriter(streamWriter);
     context.setSideEffect(sideEffect);
-    context.setAsyncContext(ctx);
 
     final long workflowKey = record.getValue().getWorkflowKey();
     final DeployedWorkflow deployedWorkflow = workflowCache.getWorkflowByKey(workflowKey);

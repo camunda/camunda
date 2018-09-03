@@ -27,7 +27,6 @@ import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriterImpl;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
-import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.TopicIntent;
 import java.util.function.BiConsumer;
@@ -57,8 +56,7 @@ public class TopicCreateProcessor implements TypedRecordProcessor<TopicRecord> {
       TypedRecord<TopicRecord> command,
       TypedResponseWriter responseWriter,
       TypedStreamWriter streamWriter,
-      Consumer<SideEffectProducer> sideEffect,
-      EventLifecycleContext ctx) {
+      Consumer<SideEffectProducer> sideEffect) {
 
     final TopicRecord topicEvent = command.getValue();
     final DirectBuffer topicName = topicEvent.getName();

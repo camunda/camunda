@@ -18,13 +18,12 @@
 package io.zeebe.broker.logstreams.processor;
 
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
-import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.logstreams.processor.EventProcessor;
 
 public class NoopEventProcessor implements EventProcessor {
 
   @Override
-  public void processEvent(EventLifecycleContext ctx) {}
+  public void processEvent() {}
 
   @Override
   public boolean executeSideEffects() {

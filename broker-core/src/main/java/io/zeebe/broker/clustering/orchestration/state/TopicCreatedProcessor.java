@@ -24,7 +24,6 @@ import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
-import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.TopicIntent;
 import io.zeebe.util.buffer.BufferUtil;
@@ -56,8 +55,7 @@ public class TopicCreatedProcessor implements TypedRecordProcessor<TopicRecord> 
       TypedRecord<TopicRecord> event,
       TypedResponseWriter responseWriter,
       TypedStreamWriter streamWriter,
-      Consumer<SideEffectProducer> sideEffect,
-      EventLifecycleContext ctx) {
+      Consumer<SideEffectProducer> sideEffect) {
     final TopicRecord topicEvent = event.getValue();
     final DirectBuffer topicName = topicEvent.getName();
 

@@ -17,17 +17,13 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.msgpack.UnpackedObject;
 import java.util.function.Consumer;
 
 public interface TypedRecordProcessor<T extends UnpackedObject>
     extends StreamProcessorLifecycleAware {
 
-  /**
-   * @see #processRecord(TypedRecord, TypedResponseWriter, TypedStreamWriter, Consumer,
-   *     EventLifecycleContext)
-   */
+  /** @see #processRecord(TypedRecord, TypedResponseWriter, TypedStreamWriter, Consumer) */
   default void processRecord(
       TypedRecord<T> record, TypedResponseWriter responseWriter, TypedStreamWriter streamWriter) {}
 
@@ -40,15 +36,12 @@ public interface TypedRecordProcessor<T extends UnpackedObject>
    *     implement other types of side effects or composite side effects. If a composite side effect
    *     involving the response writer is used, {@link TypedResponseWriter#flush()} must be called
    *     in the {@link SideEffectProducer} implementation.
-   * @param ctx use {@link EventLifecycleContext#async(io.zeebe.util.sched.future.ActorFuture)} to
-   *     submit an asynchronous invocation that processing the record depends on.
    */
   default void processRecord(
       TypedRecord<T> record,
       TypedResponseWriter responseWriter,
       TypedStreamWriter streamWriter,
-      Consumer<SideEffectProducer> sideEffect,
-      EventLifecycleContext ctx) {
+      Consumer<SideEffectProducer> sideEffect) {
     processRecord(record, responseWriter, streamWriter);
   }
 }

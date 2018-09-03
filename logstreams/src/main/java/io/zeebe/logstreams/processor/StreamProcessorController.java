@@ -64,8 +64,6 @@ public class StreamProcessorController extends Actor {
   private final EventFilter eventFilter;
   private final boolean isReadOnlyProcessor;
 
-  private final EventLifecycleContext eventLifecycleContext = new EventLifecycleContext();
-
   private final Runnable readNextEvent = this::readNextEvent;
 
   private long snapshotPosition = -1L;
@@ -239,25 +237,9 @@ public class StreamProcessorController extends Actor {
 
         if (eventProcessor != null) {
           // don't execute side effects or write events
-          eventLifecycleContext.reset();
-          eventProcessor.processEvent(eventLifecycleContext);
-
-          if (eventLifecycleContext.hasFuture()) {
-            actor.runOnCompletion(
-                eventLifecycleContext.getFuture(),
-                (res, err) -> {
-                  if (err == null) {
-                    eventProcessor.updateState();
-                    onRecordReprocessed(currentEvent);
-                  } else {
-                    LOG.error("Exception during async reprocessing", err);
-                    onFailure();
-                  }
-                });
-          } else {
-            eventProcessor.updateState();
-            onRecordReprocessed(currentEvent);
-          }
+          eventProcessor.processEvent();
+          eventProcessor.updateState();
+          onRecordReprocessed(currentEvent);
         } else {
           onRecordReprocessed(currentEvent);
         }
@@ -315,23 +297,8 @@ public class StreamProcessorController extends Actor {
       try {
         metrics.incrementEventsProcessedCount();
 
-        eventLifecycleContext.reset();
-        eventProcessor.processEvent(eventLifecycleContext);
-
-        if (eventLifecycleContext.hasFuture()) {
-          actor.runOnCompletion(
-              eventLifecycleContext.getFuture(),
-              (res, err) -> {
-                if (err != null) {
-                  LOG.error(ERROR_MESSAGE_PROCESSING_FAILED, getName(), err);
-                  onFailure();
-                } else {
-                  actor.runUntilDone(this::executeSideEffects);
-                }
-              });
-        } else {
-          actor.runUntilDone(this::executeSideEffects);
-        }
+        eventProcessor.processEvent();
+        actor.runUntilDone(this::executeSideEffects);
       } catch (Exception e) {
         LOG.error(ERROR_MESSAGE_PROCESSING_FAILED, getName(), e);
         onFailure();

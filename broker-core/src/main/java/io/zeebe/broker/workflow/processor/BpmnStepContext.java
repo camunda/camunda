@@ -28,10 +28,8 @@ import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.broker.workflow.index.ElementInstance;
 import io.zeebe.broker.workflow.index.ElementInstanceIndex;
 import io.zeebe.broker.workflow.model.ExecutableFlowElement;
-import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.util.sched.ActorControl;
 import java.util.function.Consumer;
 
 public class BpmnStepContext<T extends ExecutableFlowElement> {
@@ -40,16 +38,12 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
   private ExecutableFlowElement element;
   private TypedCommandWriter commandWriter;
   private ElementInstanceWriter streamWriter;
+  private Consumer<SideEffectProducer> sideEffect;
 
   private ElementInstance flowScopeInstance;
   private ElementInstance elementInstance;
 
   private final IncidentRecord incidentCommand = new IncidentRecord();
-
-  // TODO: the following things can be removed once we have no more asynchronous processing
-  private ActorControl actor;
-  private EventLifecycleContext asyncContext;
-  private Consumer<SideEffectProducer> sideEffect;
 
   public BpmnStepContext(ElementInstanceIndex scopeInstances, WorkflowInstanceMetrics metrics) {
 
@@ -112,22 +106,6 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
 
   public void setElementInstance(ElementInstance elementInstance) {
     this.elementInstance = elementInstance;
-  }
-
-  public void setActor(ActorControl actor) {
-    this.actor = actor;
-  }
-
-  public ActorControl getActor() {
-    return actor;
-  }
-
-  public void setAsyncContext(EventLifecycleContext asyncContext) {
-    this.asyncContext = asyncContext;
-  }
-
-  public EventLifecycleContext getAsyncContext() {
-    return asyncContext;
   }
 
   public void setSideEffect(Consumer<SideEffectProducer> sideEffect) {
