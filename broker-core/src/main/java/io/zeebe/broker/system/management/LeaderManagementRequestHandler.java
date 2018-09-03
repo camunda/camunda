@@ -20,8 +20,6 @@ package io.zeebe.broker.system.management;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.system.management.deployment.NotLeaderResponse;
 import io.zeebe.broker.system.management.deployment.PushDeploymentRequestHandler;
-import io.zeebe.broker.system.management.topics.FetchCreatedTopicsRequestHandler;
-import io.zeebe.clustering.management.FetchCreatedTopicsRequestDecoder;
 import io.zeebe.clustering.management.FetchWorkflowRequestDecoder;
 import io.zeebe.clustering.management.MessageHeaderDecoder;
 import io.zeebe.clustering.management.PushDeploymentRequestDecoder;
@@ -39,7 +37,6 @@ import io.zeebe.transport.ServerRequestHandler;
 import io.zeebe.transport.ServerResponse;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
-import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 
@@ -49,8 +46,6 @@ public class LeaderManagementRequestHandler extends Actor
 
   private final Injector<BufferingServerTransport> managementApiServerTransportInjector =
       new Injector<>();
-  private final AtomicReference<FetchCreatedTopicsRequestHandler> fetchCreatedTopicsHandlerRef =
-      new AtomicReference<>();
   private PushDeploymentRequestHandler pushDeploymentRequestHandler;
 
   private final ServiceGroupReference<Partition> leaderPartitionsGroupReference =
@@ -133,10 +128,6 @@ public class LeaderManagementRequestHandler extends Actor
       final int templateId = messageHeaderDecoder.templateId();
 
       switch (templateId) {
-        case FetchCreatedTopicsRequestDecoder.TEMPLATE_ID:
-          {
-            return onFetchCreatedTopics(buffer, offset, length, output, remoteAddress, requestId);
-          }
         case PushDeploymentRequestDecoder.TEMPLATE_ID:
           {
             return onPushDeployment(buffer, offset, length, output, remoteAddress, requestId);
@@ -171,24 +162,6 @@ public class LeaderManagementRequestHandler extends Actor
     return true;
   }
 
-  private boolean onFetchCreatedTopics(
-      final DirectBuffer buffer,
-      final int offset,
-      final int length,
-      final ServerOutput output,
-      final RemoteAddress remoteAddress,
-      final long requestId) {
-    final FetchCreatedTopicsRequestHandler handler = fetchCreatedTopicsHandlerRef.get();
-
-    if (handler != null) {
-      handler.onFetchCreatedTopics(buffer, offset, length, output, remoteAddress, requestId, actor);
-
-      return true;
-    } else {
-      return sendNotLeaderResponse(output, remoteAddress, requestId);
-    }
-  }
-
   private boolean sendNotLeaderResponse(
       final ServerOutput output, final RemoteAddress remoteAddress, final long requestId) {
     response
@@ -207,11 +180,6 @@ public class LeaderManagementRequestHandler extends Actor
 
   public Injector<BufferingServerTransport> getManagementApiServerTransportInjector() {
     return managementApiServerTransportInjector;
-  }
-
-  public void setFetchCreatedTopicsRequestHandler(
-      final FetchCreatedTopicsRequestHandler fetchCreatedTopicsRequestHandler) {
-    fetchCreatedTopicsHandlerRef.set(fetchCreatedTopicsRequestHandler);
   }
 
   private void addPartition(final Partition partition) {

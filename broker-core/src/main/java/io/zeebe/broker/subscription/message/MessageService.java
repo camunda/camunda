@@ -24,6 +24,7 @@ import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.processor.MessageStreamProcessor;
+import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceGroupReference;
@@ -46,16 +47,20 @@ public class MessageService implements Service<MessageService> {
           .onAdd((partitionName, partition) -> startStreamProcessors(partitionName, partition))
           .build();
 
+  private final ClusterCfg clusterCfg;
+
+  public MessageService(final ClusterCfg clusterCfg) {
+    this.clusterCfg = clusterCfg;
+  }
+
   private void startStreamProcessors(
-      ServiceName<Partition> partitionServiceName, Partition partition) {
+      final ServiceName<Partition> partitionServiceName, final Partition partition) {
     final ServerTransport transport = clientApiTransportInjector.getValue();
     final StreamProcessorServiceFactory factory = streamProcessorServiceFactoryInjector.getValue();
     final TopologyManager topologyManager = topologyManagerInjector.getValue();
 
     final SubscriptionCommandSender subscriptionCommandSender =
-        new SubscriptionCommandSender(
-            getManagementApiClientInjector().getValue(),
-            getSubscriptionApiClientInjector().getValue());
+        new SubscriptionCommandSender(clusterCfg, getSubscriptionApiClientInjector().getValue());
 
     final TypedStreamEnvironment env =
         new TypedStreamEnvironment(partition.getLogStream(), transport.getOutput());

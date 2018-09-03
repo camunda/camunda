@@ -18,16 +18,12 @@
 package io.zeebe.broker.system;
 
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_SYSTEM_GROUP_NAME;
-import static io.zeebe.broker.clustering.orchestration.ClusterOrchestrationLayerServiceNames.KNOWN_TOPICS_SERVICE_NAME;
-import static io.zeebe.broker.system.SystemServiceNames.FETCH_CREATED_TOPIC_HANDLER;
 import static io.zeebe.broker.system.SystemServiceNames.LEADER_MANAGEMENT_REQUEST_HANDLER;
 import static io.zeebe.broker.system.SystemServiceNames.METRICS_FILE_WRITER;
 import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_SERVER_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.bufferingServerTransport;
 
 import io.zeebe.broker.system.management.LeaderManagementRequestHandler;
-import io.zeebe.broker.system.management.topics.FetchCreatedTopicsRequestHandlerService;
 import io.zeebe.broker.system.metrics.MetricsFileWriterService;
 import io.zeebe.servicecontainer.ServiceContainer;
 
@@ -50,20 +46,6 @@ public class SystemComponent implements Component {
             requestHandlerService.getManagementApiServerTransportInjector())
         .groupReference(
             LEADER_PARTITION_GROUP_NAME, requestHandlerService.getLeaderPartitionsGroupReference())
-        .install();
-
-    final FetchCreatedTopicsRequestHandlerService fetchCreatedTopicsRequestHandler =
-        new FetchCreatedTopicsRequestHandlerService();
-    serviceContainer
-        .createService(FETCH_CREATED_TOPIC_HANDLER, fetchCreatedTopicsRequestHandler)
-        .dependency(
-            KNOWN_TOPICS_SERVICE_NAME, fetchCreatedTopicsRequestHandler.getKnownTopicsInjector())
-        .dependency(
-            LEADER_MANAGEMENT_REQUEST_HANDLER,
-            fetchCreatedTopicsRequestHandler.getRequestHandlerServiceInjector())
-        .groupReference(
-            LEADER_PARTITION_SYSTEM_GROUP_NAME,
-            fetchCreatedTopicsRequestHandler.getPartitionsGroupReference())
         .install();
   }
 }

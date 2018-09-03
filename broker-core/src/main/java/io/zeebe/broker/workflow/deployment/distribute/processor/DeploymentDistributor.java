@@ -17,20 +17,16 @@
  */
 package io.zeebe.broker.workflow.deployment.distribute.processor;
 
-import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
-
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.TopologyPartitionListenerImpl;
+import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.management.deployment.PushDeploymentRequest;
 import io.zeebe.broker.system.management.deployment.PushDeploymentResponse;
-import io.zeebe.broker.system.management.topics.FetchCreatedTopicsRequest;
-import io.zeebe.broker.system.management.topics.FetchCreatedTopicsResponse;
 import io.zeebe.broker.workflow.deployment.distribute.processor.state.DeploymentsStateController;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.transport.ClientResponse;
 import io.zeebe.transport.ClientTransport;
-import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
@@ -47,30 +43,22 @@ public class DeploymentDistributor {
   private static final Logger LOG = Loggers.WORKFLOW_REPOSITORY_LOGGER;
   public static final Duration PUSH_REQUEST_TIMEOUT = Duration.ofSeconds(15);
   public static final Duration PARTITION_LEADER_RESOLVE_RETRY = Duration.ofMillis(100);
-  public static final Duration FETCH_TOPICS_TIMEOUT = Duration.ofSeconds(15);
 
   private final PushDeploymentRequest pushDeploymentRequest = new PushDeploymentRequest();
   private final PushDeploymentResponse pushDeploymentResponse = new PushDeploymentResponse();
 
-  private final FetchCreatedTopicsRequest fetchCreatedTopicsRequest =
-      new FetchCreatedTopicsRequest();
-  private final FetchCreatedTopicsResponse fetchCreatedTopicsResponse =
-      new FetchCreatedTopicsResponse();
-
-  private final ActorFuture<Void> partitionsResolved = new CompletableActorFuture<>();
-
   private final ClientTransport managementApi;
   private final TopologyPartitionListenerImpl partitionListener;
   private final ActorControl actor;
-  private final ActorCondition updatePartition;
 
   private final transient Long2ObjectHashMap<ActorFuture<Void>> pendingDeploymentFutures =
       new Long2ObjectHashMap<>();
   private final DeploymentsStateController deploymentsStateController;
 
-  private IntArrayList partitionsToDistributeTo;
+  private final IntArrayList partitionsToDistributeTo;
 
   public DeploymentDistributor(
+      final ClusterCfg clusterCfg,
       final ClientTransport managementApi,
       final TopologyPartitionListenerImpl partitionListener,
       final DeploymentsStateController deploymentsStateController,
@@ -79,7 +67,16 @@ public class DeploymentDistributor {
     this.partitionListener = partitionListener;
     this.actor = actor;
     this.deploymentsStateController = deploymentsStateController;
-    this.updatePartition = actor.onCondition("updatePartition", this::fetchTopics);
+    partitionsToDistributeTo = partitionsToDistributeTo(clusterCfg);
+  }
+
+  private IntArrayList partitionsToDistributeTo(final ClusterCfg clusterCfg) {
+    final IntArrayList list = new IntArrayList();
+
+    list.addAll(clusterCfg.getPartitionIds());
+    list.removeInt(Protocol.DEPLOYMENT_PARTITION);
+
+    return list;
   }
 
   public ActorFuture<Void> pushDeployment(
@@ -91,20 +88,7 @@ public class DeploymentDistributor {
     deploymentsStateController.putPendingDeployment(key, pendingDeploymentDistribution);
     pendingDeploymentFutures.put(key, pushedFuture);
 
-    if (!partitionsResolved.isDone()) {
-      final Integer systemPartitionLeaderId = partitionListener.getSystemPartitionLeaderId();
-      if (systemPartitionLeaderId == null) {
-        partitionListener.addCondition(updatePartition);
-      } else {
-        fetchTopics();
-      }
-    }
-
-    actor.runOnCompletion(
-        partitionsResolved,
-        (v, failure) -> {
-          pushDeploymentToPartitions(key);
-        });
+    pushDeploymentToPartitions(key);
 
     return pushedFuture;
   }
@@ -221,54 +205,6 @@ public class DeploymentDistributor {
       LOG.trace(
           "Deployment was pushed to partition {} successfully.",
           pushDeploymentResponse.partitionId());
-    }
-  }
-
-  ////////////////////////////////////////////////
-  //////////// topics / partition ids
-  ////////////////////////////////////////////////
-
-  private void fetchTopics() {
-    final Integer systemPartitionLeaderId = partitionListener.getSystemPartitionLeaderId();
-    if (systemPartitionLeaderId != null) {
-      partitionListener.removeCondition(updatePartition);
-
-      final ActorFuture<ClientResponse> future =
-          managementApi
-              .getOutput()
-              .sendRequestWithRetry(
-                  () -> systemPartitionLeaderId,
-                  b -> !fetchCreatedTopicsResponse.tryWrap(b),
-                  fetchCreatedTopicsRequest,
-                  FETCH_TOPICS_TIMEOUT);
-
-      actor.runOnCompletion(
-          future,
-          (response, failure) -> {
-            if (failure == null) {
-              handleFetchCreatedTopicsResponse(response.getResponseBuffer());
-            } else {
-              LOG.debug("Problem on fetching topics", failure);
-            }
-          });
-    }
-  }
-
-  private void handleFetchCreatedTopicsResponse(final DirectBuffer response) {
-    fetchCreatedTopicsResponse.wrap(response);
-    fetchCreatedTopicsResponse
-        .getTopics()
-        .forEach(
-            topic -> {
-              if (topic.getTopicName().equals(DEFAULT_TOPIC)) {
-                partitionsToDistributeTo = topic.getPartitionIds();
-                partitionsToDistributeTo.removeInt(
-                    Protocol.DEPLOYMENT_PARTITION); // no need to send push to him self
-              }
-            });
-
-    if (!partitionsResolved.isDone()) {
-      partitionsResolved.complete(null);
     }
   }
 }
