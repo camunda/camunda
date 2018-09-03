@@ -2,10 +2,13 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import {Down} from 'modules/components/Icon';
+
 import {DROPDOWN_PLACEMENT} from 'modules/constants';
 
 import Menu from './Menu';
+import SubMenu from './SubMenu';
 import Option from './Option';
+import SubOption from './SubOption';
 
 import * as Styled from './styled';
 
@@ -19,10 +22,16 @@ export default class Dropdown extends React.Component {
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
       PropTypes.node
-    ])
+    ]),
+    buttonStyles: PropTypes.object
   };
 
-  state = {isOpen: false};
+  state = {
+    isOpen: false,
+    isSubMenuOpen: false,
+    isSubmenuFixed: false,
+    isFocused: false
+  };
 
   componentDidMount() {
     document.body.addEventListener('click', this.onClose, true);
@@ -32,45 +41,78 @@ export default class Dropdown extends React.Component {
     document.body.removeEventListener('click', this.onClose, true);
   }
 
+  handleKeyPress = evt => {
+    if (evt.key !== 'Tab' && evt.key !== 'Enter') {
+      evt.preventDefault();
+    }
+
+    if (evt.key === 'Escape') {
+      this.onClose({});
+    }
+  };
+
   setRef = node => {
     this.container = node;
   };
 
-  toggleMenu = () => {
-    this.setState({isOpen: !this.state.isOpen});
+  handleStateChange = changes => {
+    return this.setState(changes);
   };
 
-  onClose = ({target}) => {
-    if (!this.container.contains(target)) {
-      this.setState({isOpen: false});
-    }
-  };
-
-  renderLabel = label => {
-    return typeof label === 'string' ? (
-      <Styled.LabelWrapper>{label}</Styled.LabelWrapper>
-    ) : (
-      label
-    );
-  };
-
-  renderChildrenWithProps = () => {
-    return React.Children.map(this.props.children, child => {
-      return React.cloneElement(child, {
-        placement: this.props.placement || DROPDOWN_PLACEMENT.BOTTOM
-      });
+  resetState = () => {
+    this.setState({
+      isOpen: false,
+      isSubMenuOpen: false,
+      isSubmenuFixed: false
     });
   };
 
+  onClose = ({target}) => {
+    if (
+      !this.container.contains(target) &&
+      !target.innerHTML.match(/\bSelection\b/)
+    ) {
+      this.resetState();
+    }
+  };
+
+  handleOnClick = () =>
+    !this.state.isOpen
+      ? this.setState({isOpen: !this.state.isOpen})
+      : this.resetState();
+
+  renderChildrenWithProps = () =>
+    React.Children.map(this.props.children, (child, index) => {
+      return React.cloneElement(child, {
+        isSubMenuOpen: this.state.isSubMenuOpen,
+        isSubmenuFixed: this.state.isSubmenuFixed,
+        onStateChange: this.handleStateChange,
+        placement: this.props.placement
+      });
+    });
+
+  renderLabel = () =>
+    typeof this.props.label === 'string' ? (
+      <Styled.LabelWrapper>{this.props.label}</Styled.LabelWrapper>
+    ) : (
+      this.props.label
+    );
+
   render() {
+    const {isOpen} = this.state;
+    const {placement} = this.props;
     return (
       <Styled.Dropdown innerRef={this.setRef}>
-        <Styled.Button onClick={this.toggleMenu}>
-          {this.renderLabel(this.props.label)}
+        <Styled.Button
+          onKeyDown={this.handleKeyPress}
+          style={this.props.buttonStyles}
+          onClick={() => this.handleOnClick()}
+        >
+          {this.renderLabel()}
           <Down />
         </Styled.Button>
-        {this.state.isOpen && (
-          <Menu placement={this.props.placement || DROPDOWN_PLACEMENT.BOTTOM}>
+        {isOpen && (
+          <Menu onStateChange={this.handleStateChange} placement={placement}>
             {this.renderChildrenWithProps()}
           </Menu>
         )}
@@ -79,5 +121,11 @@ export default class Dropdown extends React.Component {
   }
 }
 
+Dropdown.defaultProps = {
+  placement: DROPDOWN_PLACEMENT.BOTTOM
+};
+
 // export Dropdown-option component
 Dropdown.Option = Option;
+Dropdown.SubMenu = SubMenu;
+Dropdown.SubOption = SubOption;
