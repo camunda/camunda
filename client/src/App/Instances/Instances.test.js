@@ -147,8 +147,8 @@ describe('Instances', () => {
         expect(FiltersNode.prop('onFilterChange')).toBe(
           node.instance().handleFilterChange
         );
-        expect(FiltersNode.prop('resetFilter')).toBe(
-          node.instance().resetFilter
+        expect(FiltersNode.prop('onFilterReset')).toBe(
+          node.instance().handleFilterReset
         );
         expect(FiltersNode.prop('activityIds')).toBe(node.state('activityIds'));
       });
@@ -175,7 +175,7 @@ describe('Instances', () => {
           );
 
           // when
-          node.instance().resetFilter();
+          node.instance().handleFilterReset();
 
           // then
           expect(setFilterInURLlSpy).toHaveBeenCalledWith(DEFAULT_FILTER);

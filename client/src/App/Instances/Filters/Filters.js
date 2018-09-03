@@ -13,14 +13,27 @@ import * as api from 'modules/api/instances';
 import CheckboxGroup from './CheckboxGroup';
 import * as Styled from './styled';
 import {
-  parseWorkflowNames,
-  parseWorkflowVersions,
+  getOptionsForWorkflowName,
+  getOptionsForWorkdflowIds,
   addAllVersionsOption,
   fieldParser,
   getFilterWithDefaults
 } from './service';
 
 import {ALL_VERSIONS_OPTION, DEFAULT_CONTROLLED_VALUES} from './constants';
+
+const DEFAULT_FIELDS_STATE = {
+  currentWorkflow: {name: '', versions: [], bpmnProcessId: ''},
+  // field values
+  workflowIds: '',
+  activityId: '',
+  startDate: '',
+  endDate: '',
+  // fields from filter: {} support back and fw navigation
+  filter: {
+    ...DEFAULT_CONTROLLED_VALUES
+  }
+};
 
 export default class Filters extends React.Component {
   static propTypes = {
@@ -48,27 +61,22 @@ export default class Filters extends React.Component {
   };
 
   state = {
-    groupedWorkflows: [],
-    currentWorkflow: {bpmnProcessId: '', versions: []},
-    workflowNameOptions: [],
-    // field values
-    workflowIds: '',
-    activityId: '',
-    startDate: '',
-    endDate: '',
-    // fields under filter support back and fw navigation
-    filter: {
-      ...DEFAULT_CONTROLLED_VALUES
-    }
+    workflows: [],
+    ...DEFAULT_FIELDS_STATE
   };
 
   componentDidMount = async () => {
     const groupedWorkflows = await api.fetchGroupedWorkflowInstances();
-    const workflowNameOptions = parseWorkflowNames(groupedWorkflows);
+    const workflows = groupedWorkflows.reduce((obj, value) => {
+      obj[value.bpmnProcessId] = {
+        ...value
+      };
+
+      return obj;
+    }, {});
 
     this.setState({
-      groupedWorkflows,
-      workflowNameOptions,
+      workflows,
       filter: {
         ...getFilterWithDefaults(this.props.filter)
       }
@@ -84,9 +92,7 @@ export default class Filters extends React.Component {
 
   handleWorkflowNameChange = event => {
     const {value} = event.target;
-    const currentWorkflow = this.state.groupedWorkflows.find(
-      item => item.bpmnProcessId === value
-    );
+    const currentWorkflow = this.state.workflows[value];
     const version = currentWorkflow ? currentWorkflow.workflows[0].id : '';
 
     this.setState(
@@ -99,7 +105,7 @@ export default class Filters extends React.Component {
     );
   };
 
-  updateFilterWithWorkflowVersion = version => {
+  updateFilterOnInstancesPage = version => {
     let versions = [];
 
     if (version === ALL_VERSIONS_OPTION) {
@@ -135,7 +141,7 @@ export default class Filters extends React.Component {
     const version = this.state.workflowIds;
 
     this.updateWorkflowOnInstancesPage(version);
-    this.updateFilterWithWorkflowVersion(version);
+    this.updateFilterOnInstancesPage(version);
   };
 
   handleWorkflowVersionChange = event => {
@@ -167,7 +173,7 @@ export default class Filters extends React.Component {
     });
   };
 
-  onUncontrolledFieldChange = event => {
+  handleDateFieldChange = event => {
     const {name} = event.target;
 
     this.setState({
@@ -188,18 +194,7 @@ export default class Filters extends React.Component {
   };
 
   onFilterReset = () => {
-    const emptyFields = {
-      currentWorkflow: {bpmnProcessId: '', versions: []},
-      filter: {
-        ...DEFAULT_CONTROLLED_VALUES
-      },
-      workflowIds: '',
-      activityId: '',
-      startDate: '',
-      endDate: ''
-    };
-
-    this.setState({...this.state, ...emptyFields}, () => {
+    this.setState({...this.state, ...DEFAULT_FIELDS_STATE}, () => {
       this.props.onFilterReset();
     });
   };
@@ -207,7 +202,7 @@ export default class Filters extends React.Component {
   render() {
     const {active, incidents, canceled, completed} = this.props.filter;
     const workflowVersions = addAllVersionsOption(
-      parseWorkflowVersions(this.state.currentWorkflow.workflows)
+      getOptionsForWorkdflowIds(this.state.currentWorkflow.workflows)
     );
 
     return (
@@ -216,19 +211,20 @@ export default class Filters extends React.Component {
         <Panel.Body>
           <Styled.Filters>
             <Styled.Field>
+              {/* // this value is not OK */}
               <Select
                 value={this.state.currentWorkflow.bpmnProcessId || ''}
-                disabled={this.state.groupedWorkflows.length === 0}
+                disabled={this.state.workflows.length === 0}
                 name="workflowName"
                 placeholder="Workflow"
-                options={this.state.workflowNameOptions}
+                options={getOptionsForWorkflowName(this.state.workflows)}
                 onChange={this.handleWorkflowNameChange}
               />
             </Styled.Field>
             <Styled.Field>
               <Select
                 value={this.state.workflowIds}
-                disabled={!this.state.currentWorkflow.bpmnProcessId}
+                disabled={this.state.currentWorkflow.bpmnProcessId === ''}
                 name="workflowIds"
                 placeholder="Workflow Version"
                 options={workflowVersions}
@@ -259,7 +255,7 @@ export default class Filters extends React.Component {
                 name="startDate"
                 placeholder="Start Date"
                 onBlur={this.handleFieldChange}
-                onChange={this.onUncontrolledFieldChange}
+                onChange={this.handleDateFieldChange}
               />
             </Styled.Field>
             <Styled.Field>
@@ -267,8 +263,8 @@ export default class Filters extends React.Component {
                 value={this.state.endDate}
                 name="endDate"
                 placeholder="End Date"
-                onBlur={this.onFilterChange}
-                onChange={this.onUncontrolledFieldChange}
+                onBlur={this.handleFieldChange}
+                onChange={this.handleDateFieldChange}
               />
             </Styled.Field>
             <Styled.Field>

@@ -12,8 +12,7 @@ import * as api from 'modules/api/instances/instances';
 import Filters from './Filters';
 import CheckboxGroup from './CheckboxGroup/';
 import * as Styled from './styled';
-import {parseWorkflowNames} from './service';
-import {ALL_VERSIONS_OPTION, EMPTY_OPTION} from './constants';
+import {ALL_VERSIONS_OPTION} from './constants';
 
 const COMPLETE_FILTER = {
   ...DEFAULT_FILTER,
@@ -53,6 +52,39 @@ const groupedWorkflowsMock = [
   }
 ];
 
+// transformed groupedWorkflowsMock in an object structure
+const workflows = {
+  demoProcess: {
+    bpmnProcessId: 'demoProcess',
+    name: 'New demo process',
+    workflows: [
+      {
+        id: '6',
+        name: 'New demo process',
+        version: 3,
+        bpmnProcessId: 'demoProcess'
+      },
+      {
+        id: '4',
+        name: 'Demo process',
+        version: 2,
+        bpmnProcessId: 'demoProcess'
+      },
+      {
+        id: '1',
+        name: 'Demo process',
+        version: 1,
+        bpmnProcessId: 'demoProcess'
+      }
+    ]
+  },
+  orderProcess: {
+    bpmnProcessId: 'orderProcess',
+    name: 'Order',
+    workflows: []
+  }
+};
+
 api.fetchGroupedWorkflowInstances = mockResolvedAsyncFn(groupedWorkflowsMock);
 
 describe('Filters', () => {
@@ -60,14 +92,14 @@ describe('Filters', () => {
   const instancesSpy = jest.fn();
   const mockProps = {
     onFilterChange: spy,
-    resetFilter: jest.fn(),
+    onFilterReset: jest.fn(),
     onWorkflowVersionChange: instancesSpy,
     activityIds: []
   };
 
   const mockPropsWithActivityIds = {
     onFilterChange: spy,
-    resetFilter: jest.fn(),
+    onFilterReset: jest.fn(),
     onWorkflowVersionChange: instancesSpy,
     activityIds: [
       {value: 'taskA', label: 'task A'},
@@ -85,13 +117,17 @@ describe('Filters', () => {
     const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
 
     // then
-    expect(node.state().groupedWorkflows).toEqual([]);
-    expect(node.state().currentWorkflow).toEqual({});
-    expect(node.state().currentWorkflowVersion).toEqual(EMPTY_OPTION);
-    expect(node.state().currentActivityId).toEqual(EMPTY_OPTION);
+    expect(node.state().workflows).toEqual([]);
+    expect(node.state().currentWorkflow).toEqual({
+      bpmnProcessId: '',
+      versions: [],
+      name: ''
+    });
+    expect(node.state().workflowIds).toEqual('');
+    expect(node.state().startDate).toEqual('');
+    expect(node.state().endDate).toEqual('');
     expect(node.state().filter.ids).toEqual('');
     expect(node.state().filter.errorMessage).toEqual('');
-    expect(node.state().workflowNameOptions).toEqual([]);
   });
 
   it('should render the running and finished filters', () => {
@@ -120,27 +156,6 @@ describe('Filters', () => {
     expect(ExpandButtonNode).toHaveLength(1);
     expect(ExpandButtonNode.prop('direction')).toBe(DIRECTION.LEFT);
     expect(ExpandButtonNode.prop('isExpanded')).toBe(true);
-  });
-
-  it('should render the disabled reset filters button', () => {
-    // given filter is different from DEFAULT_FILTER
-    const node = shallow(<Filters {...mockProps} filter={COMPLETE_FILTER} />);
-    const ResetButtonNode = node.find(Button);
-
-    // then
-    expect(ResetButtonNode).toHaveLength(1);
-    expect(ResetButtonNode.prop('disabled')).toBe(false);
-    expect(ResetButtonNode.prop('onClick')).toBe(mockProps.resetFilter);
-  });
-
-  it('should render the disabled reset filters button', () => {
-    // given
-    const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
-    const ResetButtonNode = node.find(Button);
-
-    // then
-    expect(ResetButtonNode).toHaveLength(1);
-    expect(ResetButtonNode.prop('disabled')).toBe(true);
   });
 
   describe('errorMessage filter', () => {
@@ -217,8 +232,8 @@ describe('Filters', () => {
     });
   });
 
-  describe('instanceIds filter', () => {
-    it('should render an instanceIds field', () => {
+  describe('ids filter', () => {
+    it('should render an ids field', () => {
       // given
       const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
       const field = node.find({name: 'ids'});
@@ -320,13 +335,11 @@ describe('Filters', () => {
 
       // then
       expect(api.fetchGroupedWorkflowInstances).toHaveBeenCalled();
-      expect(node.state().groupedWorkflows).toEqual(groupedWorkflowsMock);
-      expect(node.state().workflowNameOptions).toEqual(
-        parseWorkflowNames(groupedWorkflowsMock)
-      );
-      expect(node.find({name: 'workflowName'}).props().options).toEqual(
-        node.state().workflowNameOptions
-      );
+      expect(node.state().workflows).toEqual(workflows);
+      expect(node.find({name: 'workflowName'}).props().options).toEqual([
+        {value: 'demoProcess', label: 'New demo process'},
+        {value: 'orderProcess', label: 'Order'}
+      ]);
     });
 
     it('should update state with selected option', async () => {
@@ -344,7 +357,7 @@ describe('Filters', () => {
     });
   });
 
-  describe('workflowVersion filter', () => {
+  describe('workflowIds filter', () => {
     it('should exist and be disabled by default', () => {
       // given
       const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
@@ -586,7 +599,7 @@ describe('Filters', () => {
       });
 
       // then
-      expect(node.state().currentActivityId).toEqual(activityId);
+      expect(node.state().activityId).toEqual(activityId);
     });
   });
 
@@ -602,6 +615,29 @@ describe('Filters', () => {
       expect(field.props().name).toEqual('startDate');
       expect(field.props().placeholder).toEqual('Start Date');
       expect(field.props().onBlur).toEqual(node.instance().handleFieldChange);
+      expect(field.props().onChange).toEqual(
+        node.instance().handleDateFieldChange
+      );
+    });
+
+    it('should update the state with new value', async () => {
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const handlerSpy = jest.spyOn(node.instance(), 'handleDateFieldChange');
+
+      //when
+      await flushPromises();
+
+      node.instance().handleDateFieldChange({
+        target: {value: '25 January 2009', name: 'startDate'}
+      });
+      node.update();
+
+      // then
+      expect(handlerSpy).toHaveBeenCalled();
+      expect(node.find({name: 'startDate'}).props().value).toEqual(
+        '25 January 2009'
+      );
+      expect(node.state().startDate).toEqual('25 January 2009');
     });
 
     it('should update the filters with startDateAfter and startDateBefore values', async () => {
@@ -671,6 +707,29 @@ describe('Filters', () => {
       expect(field.props().name).toEqual('endDate');
       expect(field.props().placeholder).toEqual('End Date');
       expect(field.props().onBlur).toEqual(node.instance().handleFieldChange);
+      expect(field.props().onChange).toEqual(
+        node.instance().handleDateFieldChange
+      );
+    });
+
+    it('should update the state with new value', async () => {
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const handlerSpy = jest.spyOn(node.instance(), 'handleDateFieldChange');
+
+      //when
+      await flushPromises();
+
+      node.instance().handleDateFieldChange({
+        target: {value: '25 January 2009', name: 'endDate'}
+      });
+      node.update();
+
+      // then
+      expect(handlerSpy).toHaveBeenCalled();
+      expect(node.find({name: 'endDate'}).props().value).toEqual(
+        '25 January 2009'
+      );
+      expect(node.state().endDate).toEqual('25 January 2009');
     });
 
     it('should update the filters with endDateAfter and endDateBefore values', async () => {
@@ -725,6 +784,95 @@ describe('Filters', () => {
         endDateAfter: null,
         endDateBefore: null
       });
+    });
+  });
+
+  describe('reset button', () => {
+    it('should render the disabled reset filters button', () => {
+      // given filter is different from DEFAULT_FILTER
+      const node = shallow(<Filters {...mockProps} filter={COMPLETE_FILTER} />);
+      const ResetButtonNode = node.find(Button);
+
+      // then
+      expect(ResetButtonNode).toHaveLength(1);
+      expect(ResetButtonNode.prop('disabled')).toBe(false);
+      expect(ResetButtonNode.prop('onClick')).toBe(
+        node.instance().onFilterReset
+      );
+    });
+
+    it('should render the disabled reset filters button', () => {
+      // given
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const ResetButtonNode = node.find(Button);
+
+      // then
+      expect(ResetButtonNode).toHaveLength(1);
+      expect(ResetButtonNode.prop('disabled')).toBe(true);
+    });
+
+    it('should reset all fields', async () => {
+      // given
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const ResetButtonNode = node.find(Button);
+
+      //when
+      await flushPromises();
+      node.update();
+
+      // enter errorMessage
+      node.instance().handleFieldChange({
+        target: {value: 'errorMessage', name: 'errorMessage'}
+      });
+      node.update();
+
+      // enter workFlowName, workflowIds takes by default latest version
+      node
+        .instance()
+        .handleWorkflowNameChange({target: {value: 'demoProcess'}});
+      node.update();
+
+      // enter ids
+      node.instance().onFieldChange({
+        target: {value: "['a', 'b', 'c']", name: 'ids'}
+      });
+      node.update();
+
+      // enter startDate
+      node.instance().handleDateFieldChange({
+        target: {value: '25 January 2009', name: 'startDate'}
+      });
+      node.update();
+
+      // enter endDate
+      node.instance().handleDateFieldChange({
+        target: {value: '25 January 2009', name: 'endDate'}
+      });
+      node.update();
+
+      // select activityId
+      node.instance().handleActivityIdChange({
+        target: {
+          value: mockPropsWithActivityIds.activityIds[0].value,
+          name: 'activityId'
+        },
+
+        persist: () => {}
+      });
+      node.update();
+
+      // click reset filters
+      ResetButtonNode.simulate('click');
+      node.update();
+
+      // then
+      expect(node.find({name: 'workflowName'}).props().value).toBe('');
+      expect(node.find({name: 'workflowIds'}).props().value).toBe('');
+      expect(node.find({name: 'ids'}).props().value).toBe('');
+      expect(node.find({name: 'errorMessage'}).props().value).toBe('');
+      expect(node.find({name: 'startDate'}).props().value).toBe('');
+      expect(node.find({name: 'endDate'}).props().value).toBe('');
+      expect(node.find({name: 'activityId'}).props().value).toBe('');
     });
   });
 });
