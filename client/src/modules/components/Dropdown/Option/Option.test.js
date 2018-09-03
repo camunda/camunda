@@ -60,16 +60,5 @@ describe('Option', () => {
 
     expect(clickSpy).toHaveBeenCalled();
     expect(onClickMock).toHaveBeenCalled();
-
-    //TODO: handle click event & should click not be on the button itself?
-
-    // node.setProps({disabled: true});
-
-    // console.log(node.props().onClick);
-
-    // node.find(Styled.Option).simulate('click');
-    // // expect(clickSpy).toHaveBeenCalled();
-    // // expect(node.props().disabled).toBe(true);
-    // expect(onClickMock).not.toHaveBeenCalled();
   });
 });
