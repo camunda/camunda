@@ -1,82 +1,55 @@
 import styled, {css} from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
-import {DROPDOWN_PLACEMENT} from 'modules/constants';
 
-import {PointerBasics, PointerBody} from '../styled';
+export const Option = themed(styled.div`
+  /* Display & Box Model */
+  display: flex;
+  align-items: center;
+  height: 36px;
+  width: 100%;
 
-const bottomPointer = css`
-&:first-child:hover:after, &:first-child:hover:before {
-  ${PointerBasics};
-  }
+  /* Text */
+  text-align: left;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 36px;
 
-  &:first-child:hover:after, &:first-child:hover:before {
-  ${PointerBasics};
-  }
-
-  &:first-child:hover:after{
-    z-index: 1;
-    ${PointerBody}
-      border-bottom-color: ${themeStyle({
+  /* Add Border between options */
+  &:not(:last-child) {
+    border-bottom: 1px solid
+      ${themeStyle({
         dark: Colors.uiDark06,
         light: Colors.uiLight05
       })};
   }
+`);
 
-  &:first-child:active:after{
-      ${PointerBody}
-      border-bottom-color: ${themeStyle({
-        dark: Colors.darkActive,
-        light: Colors.lightActive
-      })};
-  }
-`;
-
-const topPointer = css`
-&:last-child:hover:after, &:last-child:hover:before {
-${PointerBasics};
-}
-
-&:last-child:hover:after, &:last-child:hover:before {
-${PointerBasics};
-}
-
-&:last-child:hover:after{
-  z-index: 1;
-  ${PointerBody}
-    border-bottom-color: ${themeStyle({
-      dark: Colors.uiDark06,
-      light: Colors.uiLight05
-    })};
-}
-
-&:last-child:active:after{
-    ${PointerBody}
-    border-bottom-color: ${themeStyle({
-      dark: Colors.darkActive,
-      light: Colors.lightActive
-    })};
-}
-`;
-
-export const Option = themed(styled.button`
-  /* Positioning */
-  height: 36px;
+export const OptionButton = themed(styled.button`
+  position: relative;
 
   /* Display & Box Model */
-  display:flex;
+  display: flex;
   align-items: center;
   width: 100%;
+  height: 100%;
   padding: 0 10px;
+
   border: none;
   outline: none;
+  background: none;
 
   /* Color */
-  color: currentColor;
-  background: none;
-  color: ${themeStyle({
-    dark: 'rgba(255, 255, 255, 0.9)',
-    light: 'rgba(98, 98, 110, 0.9)'
-  })};
+  color: ${({disabled}) =>
+    disabled
+      ? themeStyle({
+          dark: 'rgba(255, 255, 255, 0.6)',
+          light: 'rgba(98, 98, 110, 0.6);'
+        })
+      : themeStyle({
+          dark: 'rgba(255, 255, 255, 0.9)',
+          light: 'rgba(98, 98, 110, 0.9)'
+        })};
+
   /* Text */
   text-align: left;
   font-size: 15px;
@@ -84,8 +57,11 @@ export const Option = themed(styled.button`
   line-height: 36px;
 
   /* Other */
-  cursor: pointer;
+  ${({disabled}) => (!disabled ? interactionStyles : '')};
+`);
 
+const interactionStyles = css`
+  cursor: pointer;
 
   &:hover {
     background: ${themeStyle({
@@ -101,15 +77,13 @@ export const Option = themed(styled.button`
     })};
   }
 
-  /* DropDown pointer direction styles */
-  ${({placement}) =>
-    placement === DROPDOWN_PLACEMENT.TOP ? topPointer : bottomPointer};
-
-
-  /* Add Border between options */
-  &:not(:last-child) {
-    border-bottom: 1px solid ${themeStyle({
-      dark: Colors.uiDark06,
-      light: Colors.uiLight05
-    })}
-`);
+  &:focus {
+    z-index: 1;
+    box-shadow: ${themeStyle({
+      dark: `0 0 0 1px ${Colors.focusOuter},0 0 0 4px ${Colors.darkFocusInner}`,
+      light: `0 0 0 1px ${Colors.focusOuter}, 0 0 0 4px ${
+        Colors.lightFocusInner
+      }`
+    })};
+  }
+`;
