@@ -29,6 +29,7 @@ import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory.Builder;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
+import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.transport.controlmessage.ControlMessageHandlerManager;
 import io.zeebe.broker.workflow.deployment.distribute.processor.DistributionStreamProcessor;
 import io.zeebe.broker.workflow.map.WorkflowCache;
@@ -63,6 +64,12 @@ public class WorkflowManagerService implements Service<WorkflowManagerService> {
       ServiceGroupReference.<Partition>create()
           .onAdd((partitionName, partition) -> startStreamProcessors(partitionName, partition))
           .build();
+
+  private final BrokerCfg brokerCfg;
+
+  public WorkflowManagerService(final BrokerCfg brokerCfg) {
+    this.brokerCfg = brokerCfg;
+  }
 
   private GetWorkflowControlMessageHandler getWorkflowMessageHandler;
   private ListWorkflowsControlMessageHandler listWorkflowsControlMessageHandler;
@@ -117,7 +124,7 @@ public class WorkflowManagerService implements Service<WorkflowManagerService> {
         new TypedStreamEnvironment(partition.getLogStream(), clientApiTransport.getOutput());
 
     final DistributionStreamProcessor distributionStreamProcessor =
-        new DistributionStreamProcessor(topologyManager, managementApi);
+        new DistributionStreamProcessor(brokerCfg.getCluster(), topologyManager, managementApi);
 
     final StateStorage stateStorage =
         partition.getStateStorageFactory().create(deploymentProcessorId, processorName);

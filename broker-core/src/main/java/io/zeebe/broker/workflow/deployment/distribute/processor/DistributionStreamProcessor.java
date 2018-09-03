@@ -20,6 +20,7 @@ package io.zeebe.broker.workflow.deployment.distribute.processor;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
+import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.workflow.deployment.distribute.processor.state.DeploymentsStateController;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
@@ -32,24 +33,32 @@ import io.zeebe.transport.ClientTransport;
 
 public class DistributionStreamProcessor implements StreamProcessorLifecycleAware {
 
-  private DeploymentsStateController deploymentsStateController;
-  private TopologyManager topologyManager;
-  private ClientTransport managementApi;
+  private final DeploymentsStateController deploymentsStateController;
+  private final TopologyManager topologyManager;
+  private final ClientTransport managementApi;
+  private final ClusterCfg clusterCfg;
 
   public DistributionStreamProcessor(
-      TopologyManager topologyManager, ClientTransport managementApi) {
+      final ClusterCfg clusterCfg,
+      final TopologyManager topologyManager,
+      final ClientTransport managementApi) {
+    this.clusterCfg = clusterCfg;
     this.topologyManager = topologyManager;
     this.managementApi = managementApi;
     this.deploymentsStateController = new DeploymentsStateController();
   }
 
-  public StreamProcessor createStreamProcessor(TypedStreamEnvironment streamEnvironment) {
+  public StreamProcessor createStreamProcessor(final TypedStreamEnvironment streamEnvironment) {
     final LogStream stream = streamEnvironment.getStream();
     final LogStreamWriterImpl logStreamWriter = new LogStreamWriterImpl(stream);
 
     final DeploymentDistributeProcessor deploymentDistributeProcessor =
         new DeploymentDistributeProcessor(
-            topologyManager, deploymentsStateController, managementApi, logStreamWriter);
+            clusterCfg,
+            topologyManager,
+            deploymentsStateController,
+            managementApi,
+            logStreamWriter);
 
     return streamEnvironment
         .newStreamProcessor()
@@ -60,7 +69,7 @@ public class DistributionStreamProcessor implements StreamProcessorLifecycleAwar
         .build();
   }
 
-  public StateSnapshotController createStateSnapshotController(StateStorage stateStorage) {
+  public StateSnapshotController createStateSnapshotController(final StateStorage stateStorage) {
     return new StateSnapshotController(deploymentsStateController, stateStorage);
   }
 }
