@@ -17,22 +17,15 @@
  */
 package io.zeebe.broker.subscription.command;
 
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
-
 import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.clustering.base.topology.TopologyPartitionListenerImpl;
-import io.zeebe.broker.system.management.topics.FetchCreatedTopicsRequest;
-import io.zeebe.broker.system.management.topics.FetchCreatedTopicsResponse;
+import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.impl.SubscriptionUtil;
-import io.zeebe.transport.ClientResponse;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.ActorControl;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
-import java.time.Duration;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.collections.IntArrayList;
@@ -60,12 +53,6 @@ import org.agrona.collections.IntArrayList;
  */
 public class SubscriptionCommandSender {
 
-  private final FetchCreatedTopicsRequest fetchCreatedTopicsRequest =
-      new FetchCreatedTopicsRequest();
-
-  private final FetchCreatedTopicsResponse fetchCreatedTopicsResponse =
-      new FetchCreatedTopicsResponse();
-
   private final OpenMessageSubscriptionCommand openMessageSubscriptionCommand =
       new OpenMessageSubscriptionCommand();
 
@@ -79,25 +66,21 @@ public class SubscriptionCommandSender {
   private final CorrelateMessageSubscriptionCommand correlateMessageSubscriptionCommand =
       new CorrelateMessageSubscriptionCommand();
 
-  private final ClientTransport managementClient;
   private final ClientTransport subscriptionClient;
+  private final IntArrayList partitionIds;
 
-  private ActorControl actor;
-  private String topicName;
   private int partitionId;
-
-  private IntArrayList partitionIds;
   private TopologyPartitionListenerImpl partitionListener;
 
   public SubscriptionCommandSender(
-      ClientTransport managementClient, ClientTransport subscriptionClient) {
-    this.managementClient = managementClient;
+      final ClusterCfg clusterCfg, final ClientTransport subscriptionClient) {
     this.subscriptionClient = subscriptionClient;
+    partitionIds = new IntArrayList();
+    partitionIds.addAll(clusterCfg.getPartitionIds());
   }
 
-  public void init(TopologyManager topologyManager, ActorControl actor, LogStream logStream) {
-    this.actor = actor;
-    this.topicName = bufferAsString(logStream.getTopicName());
+  public void init(
+      final TopologyManager topologyManager, final ActorControl actor, final LogStream logStream) {
     this.partitionId = logStream.getPartitionId();
 
     this.partitionListener = new TopologyPartitionListenerImpl(actor);
@@ -105,10 +88,10 @@ public class SubscriptionCommandSender {
   }
 
   public boolean openMessageSubscription(
-      long workflowInstanceKey,
-      long activityInstanceKey,
-      DirectBuffer messageName,
-      DirectBuffer correlationKey) {
+      final long workflowInstanceKey,
+      final long activityInstanceKey,
+      final DirectBuffer messageName,
+      final DirectBuffer correlationKey) {
 
     final int subscriptionPartitionId = getSubscriptionPartitionId(correlationKey);
 
@@ -122,7 +105,7 @@ public class SubscriptionCommandSender {
     return sendSubscriptionCommand(subscriptionPartitionId, openMessageSubscriptionCommand);
   }
 
-  private int getSubscriptionPartitionId(DirectBuffer correlationKey) {
+  private int getSubscriptionPartitionId(final DirectBuffer correlationKey) {
     if (partitionIds == null) {
       throw new IllegalStateException("no partition ids available");
     }
@@ -133,10 +116,10 @@ public class SubscriptionCommandSender {
   }
 
   public boolean openWorkflowInstanceSubscription(
-      int workflowInstancePartitionId,
-      long workflowInstanceKey,
-      long activityInstanceKey,
-      DirectBuffer messageName) {
+      final int workflowInstancePartitionId,
+      final long workflowInstanceKey,
+      final long activityInstanceKey,
+      final DirectBuffer messageName) {
 
     openWorkflowInstanceSubscriptionCommand.setSubscriptionPartitionId(partitionId);
     openWorkflowInstanceSubscriptionCommand.setWorkflowInstancePartitionId(
@@ -150,11 +133,11 @@ public class SubscriptionCommandSender {
   }
 
   public boolean correlateWorkflowInstanceSubscription(
-      int workflowInstancePartitionId,
-      long workflowInstanceKey,
-      long activityInstanceKey,
-      DirectBuffer messageName,
-      DirectBuffer payload) {
+      final int workflowInstancePartitionId,
+      final long workflowInstanceKey,
+      final long activityInstanceKey,
+      final DirectBuffer messageName,
+      final DirectBuffer payload) {
 
     correlateWorkflowInstanceSubscriptionCommand.setSubscriptionPartitionId(partitionId);
     correlateWorkflowInstanceSubscriptionCommand.setWorkflowInstancePartitionId(
@@ -169,10 +152,10 @@ public class SubscriptionCommandSender {
   }
 
   public boolean correlateMessageSubscription(
-      int subscriptionPartitionId,
-      long workflowInstanceKey,
-      long activityInstanceKey,
-      DirectBuffer messageName) {
+      final int subscriptionPartitionId,
+      final long workflowInstanceKey,
+      final long activityInstanceKey,
+      final DirectBuffer messageName) {
 
     correlateMessageSubscriptionCommand.setSubscriptionPartitionId(subscriptionPartitionId);
     correlateMessageSubscriptionCommand.setWorkflowInstancePartitionId(partitionId);
@@ -198,45 +181,5 @@ public class SubscriptionCommandSender {
 
   public boolean hasPartitionIds() {
     return partitionIds != null;
-  }
-
-  public ActorFuture<Void> fetchCreatedTopics() {
-    // the fetching will be removed when the partitions are known on startup
-    final CompletableActorFuture<Void> onCompleted = new CompletableActorFuture<>();
-
-    actor.runOnCompletion(
-        sendFetchCreatedTopicsRequest(),
-        (response, failure) -> {
-          if (failure == null) {
-            handleFetchCreatedTopicsResponse(response.getResponseBuffer());
-            onCompleted.complete(null);
-          } else {
-            onCompleted.completeExceptionally(failure);
-          }
-        });
-
-    return onCompleted;
-  }
-
-  private ActorFuture<ClientResponse> sendFetchCreatedTopicsRequest() {
-    return managementClient
-        .getOutput()
-        .sendRequestWithRetry(
-            partitionListener::getSystemPartitionLeaderId,
-            b -> !fetchCreatedTopicsResponse.tryWrap(b),
-            fetchCreatedTopicsRequest,
-            Duration.ofSeconds(15));
-  }
-
-  private void handleFetchCreatedTopicsResponse(DirectBuffer response) {
-    fetchCreatedTopicsResponse.wrap(response);
-    fetchCreatedTopicsResponse
-        .getTopics()
-        .forEach(
-            topic -> {
-              if (topic.getTopicName().equals(topicName)) {
-                partitionIds = topic.getPartitionIds();
-              }
-            });
   }
 }

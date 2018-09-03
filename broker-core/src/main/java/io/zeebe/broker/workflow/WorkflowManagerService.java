@@ -29,7 +29,7 @@ import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory.Builder;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
-import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.transport.controlmessage.ControlMessageHandlerManager;
 import io.zeebe.broker.workflow.deployment.distribute.processor.DistributionStreamProcessor;
 import io.zeebe.broker.workflow.map.WorkflowCache;
@@ -65,10 +65,10 @@ public class WorkflowManagerService implements Service<WorkflowManagerService> {
           .onAdd((partitionName, partition) -> startStreamProcessors(partitionName, partition))
           .build();
 
-  private final BrokerCfg brokerCfg;
+  private final ClusterCfg clusterCfg;
 
-  public WorkflowManagerService(final BrokerCfg brokerCfg) {
-    this.brokerCfg = brokerCfg;
+  public WorkflowManagerService(final ClusterCfg clusterCfg) {
+    this.clusterCfg = clusterCfg;
   }
 
   private GetWorkflowControlMessageHandler getWorkflowMessageHandler;
@@ -124,7 +124,7 @@ public class WorkflowManagerService implements Service<WorkflowManagerService> {
         new TypedStreamEnvironment(partition.getLogStream(), clientApiTransport.getOutput());
 
     final DistributionStreamProcessor distributionStreamProcessor =
-        new DistributionStreamProcessor(brokerCfg.getCluster(), topologyManager, managementApi);
+        new DistributionStreamProcessor(clusterCfg, topologyManager, managementApi);
 
     final StateStorage stateStorage =
         partition.getStateStorageFactory().create(deploymentProcessorId, processorName);
@@ -144,7 +144,7 @@ public class WorkflowManagerService implements Service<WorkflowManagerService> {
     final WorkflowCache workflowCache = new WorkflowCache();
 
     final SubscriptionCommandSender subscriptionCommandSender =
-        new SubscriptionCommandSender(managementApi, subscriptionApiClientInjector.getValue());
+        new SubscriptionCommandSender(clusterCfg, subscriptionApiClientInjector.getValue());
 
     final WorkflowInstanceStreamProcessor streamProcessor =
         createWorkflowStreamProcessor(

@@ -40,7 +40,7 @@ public class WorkflowComponent implements Component {
     final BrokerCfg brokerConfiguration = context.getBrokerConfiguration();
 
     final WorkflowManagerService workflowManagerService =
-        new WorkflowManagerService(brokerConfiguration);
+        new WorkflowManagerService(brokerConfiguration.getCluster());
     serviceContainer
         .createService(WORKFLOW_MANAGER, workflowManagerService)
         .dependency(

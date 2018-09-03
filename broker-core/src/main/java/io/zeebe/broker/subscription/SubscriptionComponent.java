@@ -34,12 +34,15 @@ import io.zeebe.broker.subscription.command.SubscriptionApiCommandMessageHandler
 import io.zeebe.broker.subscription.message.MessageService;
 import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
+import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.servicecontainer.ServiceContainer;
 
 public class SubscriptionComponent implements Component {
 
   @Override
-  public void init(SystemContext context) {
+  public void init(final SystemContext context) {
+    final BrokerCfg brokerConfiguration = context.getBrokerConfiguration();
+
     final ServiceContainer serviceContainer = context.getServiceContainer();
 
     final SubscriptionApiCommandMessageHandlerService messageHandlerService =
@@ -53,7 +56,7 @@ public class SubscriptionComponent implements Component {
             LEADER_PARTITION_GROUP_NAME, messageHandlerService.getLeaderParitionsGroupReference())
         .install();
 
-    final MessageService messageService = new MessageService();
+    final MessageService messageService = new MessageService(brokerConfiguration.getCluster());
     serviceContainer
         .createService(MESSAGE_SERVICE_NAME, messageService)
         .dependency(

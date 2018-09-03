@@ -30,8 +30,6 @@ import io.zeebe.msgpack.query.MsgPackQueryProcessor;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResult;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResults;
 import io.zeebe.util.sched.clock.ActorClock;
-import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import org.agrona.DirectBuffer;
 
 public class SubscribeMessageHandler implements BpmnStepHandler<ExecutableMessageCatchElement> {
@@ -47,44 +45,19 @@ public class SubscribeMessageHandler implements BpmnStepHandler<ExecutableMessag
   private final WorkflowInstanceSubscriptionDataStore subscriptionStore;
 
   public SubscribeMessageHandler(
-      SubscriptionCommandSender subscriptionCommandSender,
-      WorkflowInstanceSubscriptionDataStore subscriptionStore) {
+      final SubscriptionCommandSender subscriptionCommandSender,
+      final WorkflowInstanceSubscriptionDataStore subscriptionStore) {
     this.subscriptionCommandSender = subscriptionCommandSender;
     this.subscriptionStore = subscriptionStore;
   }
 
   @Override
-  public void handle(BpmnStepContext<ExecutableMessageCatchElement> context) {
+  public void handle(final BpmnStepContext<ExecutableMessageCatchElement> context) {
 
     this.workflowInstance = context.getValue();
     this.activityInstanceKey = context.getRecord().getKey();
     this.catchEvent = context.getElement();
 
-    if (subscriptionCommandSender.hasPartitionIds()) {
-      onPartitionIdsAvailable(context);
-
-    } else {
-      // this async fetching will be removed when the partitions are known on startup
-      final ActorFuture<Void> onCompleted = new CompletableActorFuture<>();
-      context.getAsyncContext().async(onCompleted);
-
-      context
-          .getActor()
-          .runOnCompletion(
-              subscriptionCommandSender.fetchCreatedTopics(),
-              (v, failure) -> {
-                if (failure == null) {
-                  onPartitionIdsAvailable(context);
-
-                  onCompleted.complete(null);
-                } else {
-                  onCompleted.completeExceptionally(failure);
-                }
-              });
-    }
-  }
-
-  private void onPartitionIdsAvailable(BpmnStepContext<ExecutableMessageCatchElement> context) {
     extractedCorrelationKey = extractCorrelationKey();
     context.getSideEffect().accept(this::openMessageSubscription);
 
