@@ -3,6 +3,7 @@ import {Colors, themed, themeStyle} from 'modules/theme';
 
 export const Dropdown = styled.div`
   position: relative;
+  height: 20px;
 `;
 
 export const Button = themed(styled.button`

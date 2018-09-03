@@ -10,7 +10,7 @@ describe('DropdownMenu', () => {
   let node;
   beforeEach(() => {
     node = shallow(
-      <Menu placement={DROPDOWN_PLACEMENT.TOP}>
+      <Menu onKeyDown={jest.fn()} placement={DROPDOWN_PLACEMENT.TOP}>
         <span>I am a Dropdown.Option Component</span>
       </Menu>
     );
@@ -24,7 +24,9 @@ describe('DropdownMenu', () => {
     expect(node.find(Styled.Li)).toExist();
 
     //when
-    node = shallow(<Menu placement={DROPDOWN_PLACEMENT.TOP} />);
+    node = shallow(
+      <Menu onKeyDown={jest.fn()} placement={DROPDOWN_PLACEMENT.TOP} />
+    );
     //then
     expect(node.find(Styled.Li)).not.toExist();
   });

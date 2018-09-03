@@ -3,6 +3,7 @@ import {Colors, themed, themeStyle} from 'modules/theme';
 
 export const SubMenu = themed(styled.div`
   position: relative;
+  z-index: 2;
   width: 100%;
   height: 100%;
 `);

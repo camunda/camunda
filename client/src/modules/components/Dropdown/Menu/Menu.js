@@ -5,6 +5,7 @@ import * as Styled from './styled';
 
 export default class Menu extends React.Component {
   static propTypes = {
+    onKeyDown: PropTypes.func.isRequired,
     /** This defines if the dropdown opens to the top or bottom.*/
     placement: PropTypes.oneOf(['top', 'bottom']),
     /** The options of this dropdown. Each child should be a `Dropdown.Option` instance */
@@ -16,12 +17,17 @@ export default class Menu extends React.Component {
   };
 
   render() {
-    const {placement, children} = this.props;
+    const {onKeyDown, placement, children} = this.props;
 
     return (
       <Styled.Ul placement={placement}>
         {React.Children.map(children, (child, index) => (
-          <Styled.Li placement={placement} key={index} tabindex={index + 1}>
+          <Styled.Li
+            onKeyDown={onKeyDown}
+            placement={placement}
+            key={index}
+            tabindex={index + 1}
+          >
             {child}
           </Styled.Li>
         ))}

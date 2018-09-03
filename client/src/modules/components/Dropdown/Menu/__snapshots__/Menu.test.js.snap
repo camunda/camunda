@@ -6,6 +6,7 @@ exports[`DropdownMenu should match snapshot 1`] = `
 >
   <Themed(styled.li)
     key="0/.0"
+    onKeyDown={[Function]}
     placement="top"
     tabindex={1}
   >

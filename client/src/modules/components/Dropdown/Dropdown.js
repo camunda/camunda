@@ -42,11 +42,11 @@ export default class Dropdown extends React.Component {
   }
 
   handleKeyPress = evt => {
-    if (evt.key !== 'Tab' && evt.key !== 'Enter') {
+    if (evt && evt.key !== 'Tab' && evt.key !== 'Enter') {
       evt.preventDefault();
     }
 
-    if (evt.key === 'Escape') {
+    if (evt && evt.key === 'Escape') {
       this.onClose({});
     }
   };
@@ -68,10 +68,7 @@ export default class Dropdown extends React.Component {
   };
 
   onClose = ({target}) => {
-    if (
-      !this.container.contains(target) &&
-      !target.innerHTML.match(/\bSelection\b/)
-    ) {
+    if (!this.container.contains(target) || !target) {
       this.resetState();
     }
   };
@@ -112,7 +109,11 @@ export default class Dropdown extends React.Component {
           <Down />
         </Styled.Button>
         {isOpen && (
-          <Menu onStateChange={this.handleStateChange} placement={placement}>
+          <Menu
+            onKeyDown={this.handleKeyPress}
+            onStateChange={this.handleStateChange}
+            placement={placement}
+          >
             {this.renderChildrenWithProps()}
           </Menu>
         )}
