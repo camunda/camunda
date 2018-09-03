@@ -18,19 +18,19 @@ export default class Selections extends React.Component {
     rollingSelectionIndex: PropTypes.number,
     selectionCount: PropTypes.number,
     instancesInSelectionsCount: PropTypes.number,
-    handleStateChange: PropTypes.func.isRequired,
+    onStateChange: PropTypes.func.isRequired,
     storeStateLocally: PropTypes.func.isRequired,
     filter: PropTypes.object
   };
 
-  toggleSelection = selectionId => {
-    this.props.handleStateChange({
+  handleToggleSelection = selectionId => {
+    this.props.onStateChange({
       openSelection:
         selectionId !== this.props.openSelection ? selectionId : null
     });
   };
 
-  deleteSelection = async deleteId => {
+  handleDeleteSelection = async deleteId => {
     const {selections, instancesInSelectionsCount, selectionCount} = this.props;
 
     const selectionToRemove = getSelectionById(selections, deleteId);
@@ -38,7 +38,7 @@ export default class Selections extends React.Component {
     // remove the selection
     selections.splice(selectionToRemove.index, 1);
 
-    await this.props.handleStateChange({
+    await this.props.onStateChange({
       selections,
       instancesInSelectionsCount:
         instancesInSelectionsCount - selectionToRemove.totalCount,
@@ -51,7 +51,7 @@ export default class Selections extends React.Component {
     });
   };
 
-  retrySelection = async evt => {
+  handleRetrySelection = async evt => {
     evt && evt.stopPropagation();
 
     try {
@@ -77,9 +77,9 @@ export default class Selections extends React.Component {
             <SelectionList
               selections={this.props.selections}
               openSelection={this.props.openSelection}
-              toggleSelection={this.toggleSelection}
-              deleteSelection={this.deleteSelection}
-              retrySelection={this.retrySelection}
+              onToggleSelection={this.handleToggleSelection}
+              onDeleteSelection={this.handleDeleteSelection}
+              onRetrySelection={this.handleRetrySelection}
             />
           </Panel.Body>
           <Styled.RightExpandButton

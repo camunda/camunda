@@ -42,11 +42,11 @@ const MockSelections = [
 
 describe('Selections', () => {
   let node;
-  let mockHandleStateChange;
+  let mockonStateChange;
   let storeStateLocally;
 
   beforeEach(() => {
-    mockHandleStateChange = jest.fn();
+    mockonStateChange = jest.fn();
     storeStateLocally = jest.fn();
 
     node = shallow(
@@ -55,7 +55,7 @@ describe('Selections', () => {
         selections={MockSelections}
         selectionCount={2}
         instancesInSelectionsCount={6}
-        handleStateChange={mockHandleStateChange}
+        onStateChange={mockonStateChange}
         storeStateLocally={storeStateLocally}
       />
     );
@@ -67,10 +67,10 @@ describe('Selections', () => {
 
   it('should close a selection', () => {
     //when
-    node.instance().toggleSelection(0);
+    node.instance().handleToggleSelection(0);
 
     //then
-    expect(node.instance().props.handleStateChange).toBeCalledWith({
+    expect(node.instance().props.onStateChange).toBeCalledWith({
       openSelection: null
     });
   });
@@ -80,10 +80,10 @@ describe('Selections', () => {
     node.setProps({openSelection: null});
 
     // when
-    node.instance().toggleSelection(0);
+    node.instance().handleToggleSelection(0);
 
     // then
-    expect(node.instance().props.handleStateChange).toBeCalledWith({
+    expect(node.instance().props.onStateChange).toBeCalledWith({
       openSelection: 0
     });
   });
@@ -93,19 +93,19 @@ describe('Selections', () => {
     node.setProps({openSelection: null});
 
     //when
-    node.instance().toggleSelection(0);
+    node.instance().handleToggleSelection(0);
     // then
-    expect(node.instance().props.handleStateChange).toBeCalledWith({
+    expect(node.instance().props.onStateChange).toBeCalledWith({
       openSelection: 0
     });
   });
 
   it('should delete a selection', () => {
     //when
-    node.instance().deleteSelection(0);
+    node.instance().handleDeleteSelection(0);
 
     //then
-    expect(node.instance().props.handleStateChange).toBeCalledWith({
+    expect(node.instance().props.onStateChange).toBeCalledWith({
       selections: MockSelections,
       instancesInSelectionsCount: 3,
       selectionCount: 1
@@ -114,7 +114,7 @@ describe('Selections', () => {
 
   it('retry instances in a selection', () => {
     //when
-    node.instance().retrySelection(0);
+    node.instance().handleRetrySelection(0);
 
     //then
     expect(api.batchRetry).toBeCalled();

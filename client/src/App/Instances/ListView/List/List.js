@@ -17,7 +17,7 @@ const {THead, TBody, TH, TR, TD} = Table;
 export default class List extends React.Component {
   static propTypes = {
     data: PropTypes.arrayOf(PropTypes.object).isRequired,
-    updateSelection: PropTypes.func.isRequired,
+    onUpdateSelection: PropTypes.func.isRequired,
     onEntriesPerPageChange: PropTypes.func.isRequired,
     selection: PropTypes.shape({
       excludeIds: PropTypes.instanceOf(Set)
@@ -79,7 +79,7 @@ export default class List extends React.Component {
 
   handleToggleSelectAll = (event, isChecked) => {
     const selected = isChecked ? this.props.filter : {ids: new Set()};
-    this.props.updateSelection({...selected, excludeIds: new Set()});
+    this.props.onUpdateSelection({...selected, excludeIds: new Set()});
   };
 
   isSelected = id => {
@@ -115,7 +115,7 @@ export default class List extends React.Component {
 
     const modifiedSet = this.getModifiedIdSet(IdSetChanges);
 
-    this.props.updateSelection(
+    this.props.onUpdateSelection(
       changeType === 'excludeIds'
         ? {...filter, ids: new Set(), excludeIds: modifiedSet}
         : {ids: modifiedSet, excludeIds: new Set()}

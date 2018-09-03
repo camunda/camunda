@@ -15,12 +15,15 @@ export default class ListView extends React.Component {
   static propTypes = {
     selection: PropTypes.object.isRequired,
     instancesInFilter: PropTypes.number.isRequired,
-    updateSelection: PropTypes.func.isRequired,
+    onUpdateSelection: PropTypes.func.isRequired,
     filter: PropTypes.object.isRequired,
-    addNewSelection: PropTypes.func,
-    addToOpenSelection: PropTypes.func,
+    openSelection: PropTypes.number,
     expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
-    errorMessage: PropTypes.string
+    errorMessage: PropTypes.string,
+    selections: PropTypes.array,
+    onAddNewSelection: PropTypes.func,
+    onAddToSpecificSelection: PropTypes.func,
+    onAddToOpenSelection: PropTypes.func
   };
 
   state = {
@@ -89,10 +92,11 @@ export default class ListView extends React.Component {
       selection,
       filter,
       expandState,
-      updateSelection,
+      onUpdateSelection,
       instancesInFilter,
-      addToOpenSelection,
-      addNewSelection
+      onAddToOpenSelection,
+      onAddNewSelection,
+      onAddToSpecificSelection
     } = this.props;
     return (
       <SplitPane.Pane {...this.props}>
@@ -107,7 +111,7 @@ export default class ListView extends React.Component {
               expandState={expandState}
               sorting={this.state.sorting}
               handleSorting={this.handleSorting}
-              updateSelection={updateSelection}
+              onUpdateSelection={onUpdateSelection}
               onEntriesPerPageChange={entriesPerPage =>
                 this.setState({entriesPerPage})
               }
@@ -120,8 +124,11 @@ export default class ListView extends React.Component {
               total={instancesInFilter}
               perPage={this.state.entriesPerPage}
               firstElement={this.state.firstElement}
-              addToOpenSelection={addToOpenSelection}
-              addNewSelection={addNewSelection}
+              selections={this.props.selections}
+              openSelection={this.props.openSelection}
+              onAddToSpecificSelection={onAddToSpecificSelection}
+              onAddToOpenSelection={onAddToOpenSelection}
+              onAddNewSelection={onAddNewSelection}
               onFirstElementChange={firstElement =>
                 this.setState({firstElement})
               }

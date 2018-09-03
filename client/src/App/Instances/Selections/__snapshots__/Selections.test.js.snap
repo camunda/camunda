@@ -19,9 +19,10 @@ exports[`Selections should match this snapshot 1`] = `
     </Styled(PanelHeader)>
     <PanelBody>
       <SelectionList
-        deleteSelection={[Function]}
+        onDeleteSelection={[Function]}
+        onRetrySelection={[Function]}
+        onToggleSelection={[Function]}
         openSelection={0}
-        retrySelection={[Function]}
         selections={
           Array [
             Object {
@@ -74,7 +75,6 @@ exports[`Selections should match this snapshot 1`] = `
             },
           ]
         }
-        toggleSelection={[Function]}
       />
     </PanelBody>
     <Styled(ExpandButton)

@@ -18,28 +18,37 @@ const selection = {
 
 const filter = {defaultFilterSelection};
 const total = 27;
-
+const selections = [];
 const successResponse = {totalCount: 123, workflowInstances: [{id: 1}]};
 api.fetchWorkflowInstances = mockResolvedAsyncFn(successResponse);
 
 describe('ListView', () => {
   let node;
-  let updateSelection;
-  let addToOpenSelection;
-  let addNewSelection;
+  let onUpdateSelection;
+  let onAddToOpenSelection;
+  let onAddNewSelection;
+  let onAddToSpecificSelection;
+  let onFirstElementChange;
 
   beforeEach(() => {
-    updateSelection = jest.fn();
-    addToOpenSelection = jest.fn();
-    addNewSelection = jest.fn();
+    onUpdateSelection = jest.fn();
+    onAddToOpenSelection = jest.fn();
+    onAddNewSelection = jest.fn();
+    onAddToSpecificSelection = jest.fn();
+    onFirstElementChange = jest.fn();
+
     node = shallow(
       <ListView
         selection={selection}
         filter={filter}
         instancesInFilter={total}
-        updateSelection={updateSelection}
-        addToOpenSelection={addToOpenSelection}
-        addNewSelection={addNewSelection}
+        selections={selections}
+        openSelection={0}
+        onUpdateSelection={onUpdateSelection}
+        onAddToSpecificSelection={onAddToSpecificSelection}
+        onAddToOpenSelection={onAddToOpenSelection}
+        onAddNewSelection={onAddNewSelection}
+        onFirstElementChange={onFirstElementChange}
       />
     );
     api.fetchWorkflowInstances.mockClear();
@@ -80,18 +89,7 @@ describe('ListView', () => {
     expect(list.prop('data')).toBe(instances);
     expect(list.prop('selection')).toBe(selection);
     expect(list.prop('total')).toBe(total);
-    expect(list.prop('updateSelection')).toBe(updateSelection);
-  });
-
-  it('should pass properties to the Footer', () => {
-    node.setState({entriesPerPage: 14, firstElement: 8});
-    const footer = node.find(ListFooter);
-
-    expect(footer.prop('total')).toBe(total);
-    expect(footer.prop('perPage')).toBe(14);
-    expect(footer.prop('firstElement')).toBe(8);
-    expect(footer.prop('addToOpenSelection')).toBe(addToOpenSelection);
-    expect(footer.prop('addNewSelection')).toBe(addNewSelection);
+    expect(list.prop('onUpdateSelection')).toBe(onUpdateSelection);
   });
 
   it('should pass a method to the footer to change the firstElement', () => {
@@ -116,10 +114,10 @@ describe('ListView', () => {
     expect(node.state('entriesPerPage')).toBe(87);
   });
 
-  it('should pass the updateSelection prop to the instances list ', () => {
-    const updateSelection = node.find(List).prop('updateSelection');
+  it('should pass the onUpdateSelection prop to the instances list ', () => {
+    const onUpdateSelection = node.find(List).prop('onUpdateSelection');
 
-    expect(updateSelection).toBe(updateSelection);
+    expect(onUpdateSelection).toBe(onUpdateSelection);
   });
 
   describe('loadData', () => {
@@ -137,9 +135,10 @@ describe('ListView', () => {
           selection={selection}
           filter={{}}
           instancesInFilter={total}
-          updateSelection={updateSelection}
-          addToOpenSelection={addToOpenSelection}
-          addNewSelection={addNewSelection}
+          onUpdateSelection={onUpdateSelection}
+          onAddToOpenSelection={onAddToOpenSelection}
+          onAddNewSelection={onAddNewSelection}
+          onAddToSpecificSelection={onAddToSpecificSelection}
         />
       );
 

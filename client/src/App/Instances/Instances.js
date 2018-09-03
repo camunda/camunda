@@ -88,7 +88,7 @@ class Instances extends Component {
       selections
     } = this.state;
 
-    const currentSelectionIndex = rollingSelectionIndex;
+    const currentSelectionIndex = rollingSelectionIndex + 1;
 
     // Add Id for each selection
     this.setState(
@@ -100,7 +100,7 @@ class Instances extends Component {
           },
           ...prevState.selections
         ],
-        rollingSelectionIndex: currentSelectionIndex + 1,
+        rollingSelectionIndex: currentSelectionIndex,
         instancesInSelectionsCount:
           instancesInSelectionsCount + selection.totalCount,
         selectionCount: selectionCount + 1
@@ -116,13 +116,13 @@ class Instances extends Component {
     );
   };
 
-  addNewSelection = async () => {
+  handleAddNewSelection = async () => {
     const payload = getPayload({state: this.state});
     const instancesDetails = await fetchWorkflowInstanceBySelection(payload);
     this.addSelectionToList({...payload, ...instancesDetails});
   };
 
-  addToOpenSelection = async selectionId => {
+  handleAddToSelectionById = async selectionId => {
     const {selections} = this.state;
     const selectiondata = getSelectionById(selections, selectionId);
     const payload = getPayload({state: this.state, selectionId});
@@ -254,17 +254,20 @@ class Instances extends Component {
               </SplitPane.Pane>
 
               <ListView
+                openSelection={this.state.openSelection}
                 instancesInFilter={this.state.filterCount}
-                updateSelection={change => {
+                onUpdateSelection={change => {
                   this.handleStateChange({selection: {...change}});
                 }}
                 selection={this.state.selection}
+                selections={this.state.selections}
                 filter={this.state.filter}
-                addNewSelection={this.addNewSelection}
-                addToOpenSelection={() =>
-                  this.addToOpenSelection(this.state.openSelection)
-                }
                 errorMessage={this.state.errorMessage}
+                onAddNewSelection={this.handleAddNewSelection}
+                onAddToSpecificSelection={this.handleAddToSelectionById}
+                onAddToOpenSelection={() =>
+                  this.handleAddToSelectionById(this.state.openSelection)
+                }
               />
             </Styled.Center>
             <Selections
@@ -274,8 +277,8 @@ class Instances extends Component {
               selectionCount={this.state.selectionCount}
               instancesInSelectionsCount={this.state.instancesInSelectionsCount}
               filter={this.state.filter}
-              handleStateChange={this.handleStateChange}
               storeStateLocally={this.props.storeStateLocally}
+              onStateChange={this.handleStateChange}
             />
           </Styled.Instances>
         </Content>

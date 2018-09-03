@@ -27,7 +27,7 @@ const instance = {
 
 const mockProps = {
   data: [instance],
-  updateSelection: jest.fn(),
+  onUpdateSelection: jest.fn(),
   onEntriesPerPageChange: jest.fn(),
   handleSorting: jest.fn(),
   selection: {

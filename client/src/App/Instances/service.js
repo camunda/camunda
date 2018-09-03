@@ -39,6 +39,7 @@ export function getPayload({selectionId, state}) {
   }
 
   return {
+    // makes arrays out of 'ids' and 'excludeIds' Sets.
     queries: [
       {
         ...filter,

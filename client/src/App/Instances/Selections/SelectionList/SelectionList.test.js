@@ -22,9 +22,9 @@ describe('SelectionList', () => {
     node = shallow(
       <SelectionList
         selections={selections}
-        deleteSelection={jest.fn()}
-        toggleSelection={jest.fn()}
-        retrySelection={jest.fn()}
+        onDeleteSelection={jest.fn()}
+        onToggleSelection={jest.fn()}
+        onRetrySelection={jest.fn()}
       />
     );
   });
@@ -42,7 +42,7 @@ describe('SelectionList', () => {
   });
 
   it('should render Selection when existent', () => {
-    expect(node.find(Styled.SelectionWrapper));
+    expect(node.find(Styled.MessageWrapper));
   });
 
   it('should evaluate which Selection is currently open', () => {
