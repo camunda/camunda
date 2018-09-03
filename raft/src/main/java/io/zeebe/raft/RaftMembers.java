@@ -29,7 +29,7 @@ public class RaftMembers {
   private final RaftPersistentStorage persistentStorage;
   private final RaftMember localMember;
 
-  public RaftMembers(int localNodeId, RaftPersistentStorage persistentStorage) {
+  public RaftMembers(final int localNodeId, final RaftPersistentStorage persistentStorage) {
     this.persistentStorage = persistentStorage;
     this.localMember = new RaftMember(localNodeId);
   }
@@ -46,11 +46,11 @@ public class RaftMembers {
     return members.size();
   }
 
-  public RaftMember getMember(int nodeId) {
+  public RaftMember getMember(final int nodeId) {
     return memberLookup.get(nodeId);
   }
 
-  public boolean hasMember(int nodeId) {
+  public boolean hasMember(final int nodeId) {
     return memberLookup.containsKey(nodeId);
   }
 
@@ -60,7 +60,7 @@ public class RaftMembers {
     memberLookup.clear();
     persistentStorage.clearMembers();
 
-    for (RaftConfigurationEventMember newMember : newMembers) {
+    for (final RaftConfigurationEventMember newMember : newMembers) {
       addMember(newMember.getNodeId());
     }
 
@@ -83,7 +83,7 @@ public class RaftMembers {
       members.add(member);
       memberLookup.put(nodeId, member);
 
-      persistentStorage.addMember(nodeId);
+      persistentStorage.addMember(nodeId).save();
 
       return member;
     } else {
@@ -100,7 +100,7 @@ public class RaftMembers {
     if (member != null) {
       members.remove(member);
       memberLookup.remove(nodeId, member);
-      persistentStorage.removeMember(nodeId);
+      persistentStorage.removeMember(nodeId).save();
     }
 
     return member;

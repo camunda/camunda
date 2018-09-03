@@ -115,7 +115,7 @@ public class Raft extends Actor
 
   private ServiceStartContext serviceContext;
 
-  private String raftName;
+  private final String raftName;
   private AbstractRaftState state;
   private RaftJoinService raftJoinedService;
 
@@ -143,7 +143,7 @@ public class Raft extends Actor
   }
 
   @Override
-  public void start(ServiceStartContext startContext) {
+  public void start(final ServiceStartContext startContext) {
     this.logStream = logStreamInjector.getValue();
     this.logStream.setTerm(getTerm());
 
@@ -156,7 +156,7 @@ public class Raft extends Actor
   }
 
   @Override
-  public void stop(ServiceStopContext stopContext) {
+  public void stop(final ServiceStopContext stopContext) {
     stopContext.async(actor.close());
   }
 
@@ -379,7 +379,7 @@ public class Raft extends Actor
         (l) -> LogUtil.catchAndLog(LOG, () -> l.onStateChange(this, getState())));
   }
 
-  private List<ActorFuture<Void>> notifyMemberLeavingListeners(List<Integer> newMembers) {
+  private List<ActorFuture<Void>> notifyMemberLeavingListeners(final List<Integer> newMembers) {
     final List<ActorFuture<Void>> futures = new ArrayList<>();
 
     raftStateListeners.forEach(
@@ -596,7 +596,7 @@ public class Raft extends Actor
           (t) -> {
             if (state.getState() == RaftState.LEADER) {
               raftMembers.removeMember(nodeId);
-              persistentStorage.save();
+
               // stop replication
               serviceContext.removeService(
                   replicateLogConrollerServiceName(raftName, getTerm(), nodeId));
@@ -635,7 +635,7 @@ public class Raft extends Actor
    *     at the moment
    */
   public ActorFuture<ClientResponse> sendRequest(
-      final int nodeId, final BufferWriter writer, Duration timeout) {
+      final int nodeId, final BufferWriter writer, final Duration timeout) {
     return clientTransport.getOutput().sendRequest(nodeId, writer, timeout);
   }
 

@@ -17,14 +17,18 @@ package io.zeebe.broker.it.clustering;
 
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.gateway.api.commands.BrokerInfo;
+import io.zeebe.gateway.api.commands.PartitionBrokerRole;
+import io.zeebe.gateway.api.commands.PartitionInfo;
 import io.zeebe.gateway.api.events.JobEvent;
 import io.zeebe.gateway.api.events.JobState;
 import io.zeebe.gateway.api.subscription.JobWorker;
 import io.zeebe.gateway.api.subscription.TopicSubscription;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -43,6 +47,33 @@ public class BrokerLeaderChangeTest {
   @Rule
   public RuleChain ruleChain =
       RuleChain.outerRule(testTimeout).around(clusteringRule).around(clientRule);
+
+  @Test
+  public void shouldBecomeFollowerAfterRestartLeaderChange() {
+    // given
+    final int partition = 1;
+    final int oldLeader = clusteringRule.getLeaderForPartition(partition).getNodeId();
+
+    clusteringRule.stopBroker(oldLeader);
+
+    waitUntil(() -> clusteringRule.getLeaderForPartition(partition).getNodeId() != oldLeader);
+
+    // when
+    clusteringRule.restartBroker(oldLeader);
+    clusteringRule.waitForTopic(3, 3);
+
+    // then
+    final Optional<PartitionInfo> partitionInfo =
+        clusteringRule
+            .getTopologyFromBroker(oldLeader)
+            .stream()
+            .filter(b -> b.getNodeId() == oldLeader)
+            .flatMap(b -> b.getPartitions().stream().filter(p -> p.getPartitionId() == partition))
+            .findFirst();
+
+    assertThat(partitionInfo)
+        .hasValueSatisfying(p -> assertThat(p.getRole()).isEqualTo(PartitionBrokerRole.FOLLOWER));
+  }
 
   @Test
   @Ignore("https://github.com/zeebe-io/zeebe/issues/844")
@@ -72,7 +103,7 @@ public class BrokerLeaderChangeTest {
     private final JobWorker jobSubscription;
     private final TopicSubscription topicSubscription;
 
-    JobCompleter(JobEvent jobEvent) {
+    JobCompleter(final JobEvent jobEvent) {
       final long eventKey = jobEvent.getMetadata().getKey();
 
       jobSubscription =
