@@ -48,15 +48,15 @@ public class RaftPersistentConfigurationManager extends Actor {
 
   public RaftPersistentConfigurationManager(DataCfg dataConfiguration) {
     this.dataConfiguration = dataConfiguration;
-    this.partitionCountPerDataDirectory = new int[dataConfiguration.getDirectories().length];
+    this.partitionCountPerDataDirectory = new int[dataConfiguration.getDirectories().size()];
   }
 
   @Override
   protected void onActorStarting() {
-    final String[] directories = dataConfiguration.getDirectories();
+    final List<String> directories = dataConfiguration.getDirectories();
 
-    for (int i = 0; i < directories.length; i++) {
-      readConfigurations(directories[i], i);
+    for (int i = 0; i < directories.size(); i++) {
+      readConfigurations(directories.get(i), i);
     }
   }
 
@@ -103,7 +103,7 @@ public class RaftPersistentConfigurationManager extends Actor {
 
             final int assignedDataDirOffset = assignDataDirectory();
             final String assignedDataDirectoryName =
-                dataConfiguration.getDirectories()[assignedDataDirOffset];
+                dataConfiguration.getDirectories().get(assignedDataDirOffset);
             final File partitionDirectory = new File(assignedDataDirectoryName, partitionName);
 
             try {

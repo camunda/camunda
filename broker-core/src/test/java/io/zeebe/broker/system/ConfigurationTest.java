@@ -18,11 +18,19 @@
 package io.zeebe.broker.system;
 
 import static io.zeebe.broker.system.configuration.BrokerCfg.DEFAULT_NODE_ID;
+import static io.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_CONTACT_POINTS;
+import static io.zeebe.broker.system.configuration.DataCfg.DEFAULT_DIRECTORY;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_DIRECTORIES;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_HOST;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_INITIAL_CONTACT_POINTS;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_NODE_ID;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PORT_OFFSET;
+import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_HOST;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.broker.system.configuration.ClusterCfg;
+import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.broker.system.configuration.Environment;
 import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
@@ -34,8 +42,11 @@ import io.zeebe.broker.system.configuration.TomlConfigurationReader;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.file.Paths;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 import org.assertj.core.api.Condition;
 import org.junit.Rule;
 import org.junit.Test;
@@ -43,6 +54,7 @@ import org.junit.rules.TemporaryFolder;
 
 public class ConfigurationTest {
 
+  public static final String BROKER_BASE = "test";
   @Rule public TemporaryFolder temporaryFolder = new TemporaryFolder();
 
   public Map<String, String> environment = new HashMap<>();
@@ -174,7 +186,128 @@ public class ConfigurationTest {
     assertThat(config.getExporters().get(2).isExternal()).isFalse();
   }
 
-  private BrokerCfg readConfig(String name) {
+  @Test
+  public void shouldUseDefaultHost() {
+    assertHost("default", DEFAULT_HOST);
+  }
+
+  @Test
+  public void shouldUseSpecifiedHosts() {
+    assertHost(
+        "specific-hosts",
+        DEFAULT_HOST,
+        "gatewayHost",
+        "clientHost",
+        "managementHost",
+        "replicationHost",
+        "subscriptionHost");
+  }
+
+  @Test
+  public void shouldUseGlobalHost() {
+    assertHost("host", "1.1.1.1");
+  }
+
+  @Test
+  public void shouldUseHostFromEnvironment() {
+    environment.put(ENV_HOST, "2.2.2.2");
+    assertHost("default", "2.2.2.2");
+  }
+
+  @Test
+  public void shouldUseHostFromEnvironmentWithGlobalHost() {
+    environment.put(ENV_HOST, "myHost");
+    assertHost("host", "myHost");
+  }
+
+  @Test
+  public void shouldNotOverrideSpecifiedHostsFromEnvironment() {
+    environment.put(ENV_HOST, "myHost");
+    assertHost(
+        "specific-hosts",
+        "myHost",
+        "gatewayHost",
+        "clientHost",
+        "managementHost",
+        "replicationHost",
+        "subscriptionHost");
+  }
+
+  @Test
+  public void shouldUseDefaultContactPoints() {
+    assertContactPoints("default", DEFAULT_CONTACT_POINTS);
+  }
+
+  @Test
+  public void shouldUseSpecifiedContactPoints() {
+    assertContactPoints("contact-points", "broker1", "broker2", "broker3");
+  }
+
+  @Test
+  public void shouldUseContactPointsFromEnvironment() {
+    environment.put(ENV_INITIAL_CONTACT_POINTS, "foo,bar");
+    assertContactPoints("default", "foo", "bar");
+  }
+
+  @Test
+  public void shouldUseContactPointsFromEnvironmentWithSpecifiedContactPoints() {
+    environment.put(ENV_INITIAL_CONTACT_POINTS, "1.1.1.1,2.2.2.2");
+    assertContactPoints("contact-points", "1.1.1.1", "2.2.2.2");
+  }
+
+  @Test
+  public void shouldUseSingleContactPointFromEnvironment() {
+    environment.put(ENV_INITIAL_CONTACT_POINTS, "hello");
+    assertContactPoints("contact-points", "hello");
+  }
+
+  @Test
+  public void shouldClearContactPointFromEnvironment() {
+    environment.put(ENV_INITIAL_CONTACT_POINTS, "");
+    assertContactPoints("contact-points");
+  }
+
+  @Test
+  public void shouldIgnoreTrailingCommaContactPointFromEnvironment() {
+    environment.put(ENV_INITIAL_CONTACT_POINTS, "foo,bar,");
+    assertContactPoints("contact-points", "foo", "bar");
+  }
+
+  @Test
+  public void shouldUseDefaultDirectories() {
+    assertDirectories("default", DEFAULT_DIRECTORY);
+  }
+
+  @Test
+  public void shouldUseSpecifiedDirectories() {
+    assertDirectories("directories", "data1", "data2", "data3");
+  }
+
+  @Test
+  public void shouldUseDirectoriesFromEnvironment() {
+    environment.put(ENV_DIRECTORIES, "foo,bar");
+    assertDirectories("default", "foo", "bar");
+  }
+
+  @Test
+  public void shouldUseDirectoriesFromEnvironmentWithSpecifiedDirectories() {
+    environment.put(ENV_DIRECTORIES, "foo,bar");
+    assertDirectories("directories", "foo", "bar");
+  }
+
+  @Test
+  public void shouldUseSingleDirectoryFromEnvironment() {
+    environment.put(ENV_DIRECTORIES, "hello");
+    assertDirectories("directories", "hello");
+  }
+
+  @Test
+  public void shouldIgnoreTrailingCommaDirectoriesFromEnvironment() {
+    environment.put(ENV_DIRECTORIES, "foo,bar,");
+    assertDirectories("directories", "foo", "bar");
+  }
+
+  private BrokerCfg readConfig(final String name) {
     final String configPath = "/system/" + name + ".toml";
     final InputStream resourceAsStream = ConfigurationTest.class.getResourceAsStream(configPath);
     assertThat(resourceAsStream)
@@ -182,21 +315,69 @@ public class ConfigurationTest {
         .isNotNull();
 
     final BrokerCfg config = TomlConfigurationReader.read(resourceAsStream);
-    config.init("test", new Environment(environment));
+    config.init(BROKER_BASE, new Environment(environment));
     return config;
   }
 
-  private void assertNodeId(String configFileName, int nodeId) {
+  private void assertNodeId(final String configFileName, final int nodeId) {
     final BrokerCfg cfg = readConfig(configFileName);
     assertThat(cfg.getNodeId()).isEqualTo(nodeId);
   }
 
   private void assertPorts(
-      String configFileName, int client, int management, int replication, int subscription) {
+      final String configFileName,
+      final int client,
+      final int management,
+      final int replication,
+      final int subscription) {
     final NetworkCfg network = readConfig(configFileName).getNetwork();
     assertThat(network.getClient().getPort()).isEqualTo(client);
     assertThat(network.getManagement().getPort()).isEqualTo(management);
     assertThat(network.getReplication().getPort()).isEqualTo(replication);
     assertThat(network.getSubscription().getPort()).isEqualTo(subscription);
+  }
+
+  private void assertHost(final String configFileName, final String host) {
+    assertHost(configFileName, host, host, host, host, host, host);
+  }
+
+  private void assertHost(
+      final String configFileName,
+      final String host,
+      final String gateway,
+      final String client,
+      final String management,
+      final String replication,
+      final String subscription) {
+    final NetworkCfg cfg = readConfig(configFileName).getNetwork();
+    assertThat(cfg.getHost()).isEqualTo(host);
+    assertThat(cfg.getGateway().getHost()).isEqualTo(gateway);
+    assertThat(cfg.getClient().getHost()).isEqualTo(client);
+    assertThat(cfg.getManagement().getHost()).isEqualTo(management);
+    assertThat(cfg.getReplication().getHost()).isEqualTo(replication);
+    assertThat(cfg.getSubscription().getHost()).isEqualTo(subscription);
+  }
+
+  private void assertContactPoints(final String configFileName, final String... contactPoints) {
+    assertContactPoints(configFileName, Arrays.asList(contactPoints));
+  }
+
+  private void assertContactPoints(final String configFileName, final List<String> contactPoints) {
+    final ClusterCfg cfg = readConfig(configFileName).getCluster();
+    assertThat(cfg.getInitialContactPoints()).containsExactlyElementsOf(contactPoints);
+  }
+
+  private void assertDirectories(final String configFileName, final String... directories) {
+    assertDirectories(configFileName, Arrays.asList(directories));
+  }
+
+  private void assertDirectories(final String configFileName, final List<String> directories) {
+    final DataCfg cfg = readConfig(configFileName).getData();
+    final List<String> expected =
+        directories
+            .stream()
+            .map(d -> Paths.get(BROKER_BASE, d).toString())
+            .collect(Collectors.toList());
+    assertThat(cfg.getDirectories()).containsExactlyElementsOf(expected);
   }
 }

@@ -17,21 +17,36 @@
  */
 package io.zeebe.broker.system.configuration;
 
-import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 
 public class ClusterCfg implements ConfigurationEntry {
-  private String[] initialContactPoints = new String[0];
+  public static final List<String> DEFAULT_CONTACT_POINTS = Collections.emptyList();
 
-  public String[] getInitialContactPoints() {
+  private List<String> initialContactPoints = DEFAULT_CONTACT_POINTS;
+
+  @Override
+  public void init(
+      final BrokerCfg globalConfig, final String brokerBase, final Environment environment) {
+    applyEnvironment(environment);
+  }
+
+  private void applyEnvironment(final Environment environment) {
+    environment
+        .getList(EnvironmentConstants.ENV_INITIAL_CONTACT_POINTS)
+        .ifPresent(v -> initialContactPoints = v);
+  }
+
+  public List<String> getInitialContactPoints() {
     return initialContactPoints;
   }
 
-  public void setInitialContactPoints(String[] initialContactPoints) {
+  public void setInitialContactPoints(List<String> initialContactPoints) {
     this.initialContactPoints = initialContactPoints;
   }
 
   @Override
   public String toString() {
-    return "ClusterCfg{" + "initialContactPoints=" + Arrays.toString(initialContactPoints) + '}';
+    return "ClusterCfg{" + "initialContactPoints=" + initialContactPoints + '}';
   }
 }

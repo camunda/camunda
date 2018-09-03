@@ -219,7 +219,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
     return injector.getValue();
   }
 
-  public void purgeSnapshots(String[] dataDirectories) {
+  public void purgeSnapshots(List<String> dataDirectories) {
     for (String dataDirectoryName : dataDirectories) {
       final File dataDirectory = new File(dataDirectoryName);
 

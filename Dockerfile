@@ -10,7 +10,8 @@ ENV PATH "${ZB_HOME}/bin:${PATH}"
 
 COPY ${DISTBALL} ${ZB_HOME}/
 
-RUN apk add --no-cache bash && \
+# libc6-compat is required to run rocksdb on alpine
+RUN apk add --no-cache bash libc6-compat && \
     tar xfvz ${ZB_HOME}/*.tar.gz --strip 1 -C ${ZB_HOME}/ && rm ${ZB_HOME}/*.tar.gz
 
 WORKDIR ${ZB_HOME}

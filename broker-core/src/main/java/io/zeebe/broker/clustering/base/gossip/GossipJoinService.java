@@ -28,7 +28,6 @@ import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.SocketAddress;
-import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.agrona.ExpandableArrayBuffer;
@@ -51,7 +50,9 @@ public class GossipJoinService implements Service<Object> {
     gossip = gossipInjector.getValue();
 
     final List<SocketAddress> initalContactPoints =
-        Arrays.stream(clusterCfg.getInitialContactPoints())
+        clusterCfg
+            .getInitialContactPoints()
+            .stream()
             .map(SocketAddress::from)
             .collect(Collectors.toList());
 

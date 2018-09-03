@@ -18,9 +18,13 @@
 package io.zeebe.broker.system.configuration;
 
 import java.util.Arrays;
+import java.util.List;
 
 public class DataCfg implements ConfigurationEntry {
-  private String[] directories = new String[] {"data"};
+  public static final String DEFAULT_DIRECTORY = "data";
+
+  // Hint: do not use Collections.singletonList as this does not support replaceAll
+  private List<String> directories = Arrays.asList(DEFAULT_DIRECTORY);
 
   private String defaultLogSegmentSize = "512M";
 
@@ -30,16 +34,19 @@ public class DataCfg implements ConfigurationEntry {
 
   @Override
   public void init(BrokerCfg globalConfig, String brokerBase, Environment environment) {
-    for (int i = 0; i < directories.length; i++) {
-      directories[i] = ConfigurationUtil.toAbsolutePath(directories[i], brokerBase);
-    }
+    applyEnvironment(environment);
+    directories.replaceAll(d -> ConfigurationUtil.toAbsolutePath(d, brokerBase));
   }
 
-  public String[] getDirectories() {
+  private void applyEnvironment(final Environment environment) {
+    environment.getList(EnvironmentConstants.ENV_DIRECTORIES).ifPresent(v -> directories = v);
+  }
+
+  public List<String> getDirectories() {
     return directories;
   }
 
-  public void setDirectories(String[] directories) {
+  public void setDirectories(List<String> directories) {
     this.directories = directories;
   }
 
@@ -71,7 +78,7 @@ public class DataCfg implements ConfigurationEntry {
   public String toString() {
     return "DataCfg{"
         + "directories="
-        + Arrays.toString(directories)
+        + directories
         + ", defaultLogSegmentSize='"
         + defaultLogSegmentSize
         + '\''

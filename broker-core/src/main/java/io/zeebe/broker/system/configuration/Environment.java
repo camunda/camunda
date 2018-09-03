@@ -18,8 +18,11 @@
 package io.zeebe.broker.system.configuration;
 
 import io.zeebe.broker.Loggers;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
 public class Environment {
@@ -47,5 +50,17 @@ public class Environment {
       LOG.warn("Failed to parse environment variable {}", name, e);
       return Optional.empty();
     }
+  }
+
+  public Optional<List<String>> getList(final String name) {
+    return get(name)
+        .map(v -> v.split(","))
+        .map(Arrays::asList)
+        .map(
+            list ->
+                list.stream()
+                    .map(String::trim)
+                    .filter(e -> !e.isEmpty())
+                    .collect(Collectors.toList()));
   }
 }

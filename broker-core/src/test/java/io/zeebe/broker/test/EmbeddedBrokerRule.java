@@ -96,7 +96,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
   protected long startTime;
 
   private File newTemporaryFolder;
-  private String[] dataDirectories;
+  private List<String> dataDirectories;
 
   @Override
   protected void before() {
