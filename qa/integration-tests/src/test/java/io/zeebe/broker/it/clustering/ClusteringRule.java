@@ -525,16 +525,18 @@ public class ClusteringRule extends ExternalResource {
         () ->
             Arrays.stream(brokers)
                 .filter(Objects::nonNull)
-                .allMatch(
-                    b -> {
-                      final BrokerCfg config = b.getConfig();
-                      final List<BrokerInfo> topology =
-                          topologyClient.requestTopologyFromBroker(
-                              config.getNodeId(),
-                              config.getNetwork().getClient().toSocketAddress());
-                      return topologyPredicate.apply(topology);
-                    }),
+                .allMatch(b -> topologyPredicate.apply(requestTopology(b))),
         250);
+  }
+
+  public List<BrokerInfo> getTopologyFromBroker(final int nodeId) {
+    return requestTopology(brokers[nodeId]);
+  }
+
+  private List<BrokerInfo> requestTopology(Broker broker) {
+    final BrokerCfg config = broker.getConfig();
+    return topologyClient.requestTopologyFromBroker(
+        config.getNodeId(), config.getNetwork().getClient().toSocketAddress());
   }
 
   public SocketAddress getClientAddress() {
