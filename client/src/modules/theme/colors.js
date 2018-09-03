@@ -39,7 +39,15 @@ const Colors = {
 
   // Link Colors
   darkLinkBlue: '#D9EAFF',
-  lightLinkBlue: '#346AC4'
+  darkLinkVisited: '#c889fe',
+
+  lightLinkBlue: '#346AC4',
+  lightLinkVisited: '#a846fe',
+
+  // Focus Colors
+  focusOuter: '#8CB7FF',
+  lightFocusInner: '#C8E1FF',
+  darkFocusInner: '#2B7BFF'
 };
 
 export default Colors;

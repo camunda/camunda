@@ -2,79 +2,120 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import Dropdown from 'modules/components/Dropdown';
-import withSharedState from 'modules/components/withSharedState';
-import {DROPDOWN_PLACEMENT} from 'modules/constants';
+import ContextualMessage from 'modules/components/ContextualMessage';
+import {DROPDOWN_PLACEMENT, CONTEXTUAL_MESSAGE_TYPE} from 'modules/constants';
+import {Colors} from 'modules/theme';
 
 import Paginator from './Paginator';
-
 import {getMaxPage} from './service';
-import {
-  DROPDOWN_LABEL,
-  DROPDOWN_CREATE_OPTION,
-  DROPDOWN_ADD_CURRENT_OPTION
-} from './constants';
 import * as Styled from './styled';
 
-class ListFooter extends React.Component {
+export default class ListFooter extends React.Component {
   static propTypes = {
     onFirstElementChange: PropTypes.func.isRequired,
     perPage: PropTypes.number.isRequired,
     firstElement: PropTypes.number.isRequired,
     total: PropTypes.number.isRequired,
-    addNewSelection: PropTypes.func.isRequired,
-    addToOpenSelection: PropTypes.func,
-    getStateLocally: PropTypes.func.isRequired,
-    storeStateLocally: PropTypes.func.isRequired
-  };
-
-  renderSelectionDropDown = () => {
-    return (
-      <Styled.SelectionButton>
-        <Dropdown placement={DROPDOWN_PLACEMENT.TOP} label={DROPDOWN_LABEL}>
-          <Dropdown.Option onClick={this.props.addToOpenSelection}>
-            {DROPDOWN_ADD_CURRENT_OPTION}
-          </Dropdown.Option>
-          <Dropdown.Option onClick={this.props.addNewSelection}>
-            {DROPDOWN_CREATE_OPTION}
-          </Dropdown.Option>
-        </Dropdown>
-      </Styled.SelectionButton>
-    );
-  };
-
-  renderSelectionButton = () => {
-    return (
-      <Styled.SelectionButton onClick={this.props.addNewSelection}>
-        Create Selection
-      </Styled.SelectionButton>
-    );
+    openSelection: PropTypes.number,
+    onAddNewSelection: PropTypes.func.isRequired,
+    onAddToSpecificSelection: PropTypes.func,
+    onAddToOpenSelection: PropTypes.func,
+    selections: PropTypes.array
   };
 
   isPaginationRequired = (maxPage, total) => {
     return !(maxPage === 1 || total === 0);
   };
 
-  render() {
-    const maxPage = getMaxPage(this.props.total, this.props.perPage);
+  renderButton = () => {
     return (
-      <React.Fragment>
-        {this.props.getStateLocally().selections
-          ? this.renderSelectionDropDown()
-          : this.renderSelectionButton()}
-        {this.isPaginationRequired(maxPage, this.props.total) ? (
-          <Paginator
-            firstElement={this.props.firstElement}
-            perPage={this.props.perPage}
-            maxPage={maxPage}
-            onFirstElementChange={this.props.onFirstElementChange}
+      <Styled.SelectionButton onClick={this.props.onAddNewSelection}>
+        Create Selection
+      </Styled.SelectionButton>
+    );
+  };
+
+  renderDropDown = () => {
+    const {onAddToOpenSelection, onAddNewSelection, selections} = this.props;
+
+    const DropdownButtonStyles = {
+      fontSize: '13px',
+      fontWeight: 600,
+      cursor: 'pointer',
+      background: Colors.selections,
+      height: '26px',
+      borderRadius: '13px',
+      border: 'none',
+      padding: '4px 11px 5px 11px',
+      color: 'rgba(255, 255, 255, 1)'
+    };
+
+    return (
+      <Dropdown
+        placement={DROPDOWN_PLACEMENT.TOP}
+        label="Add to Selection..."
+        buttonStyles={DropdownButtonStyles}
+      >
+        {selections.length < 10 ? (
+          <Dropdown.Option
+            onClick={onAddNewSelection}
+            label="Create New Selection"
           />
-        ) : null}
-      </React.Fragment>
+        ) : (
+          <Dropdown.Option disabled={true}>
+            <Styled.Wrapper>
+              <ContextualMessage
+                type={CONTEXTUAL_MESSAGE_TYPE.DROP_SELECTION}
+              />
+            </Styled.Wrapper>
+          </Dropdown.Option>
+        )}
+        <Dropdown.Option
+          disabled={!this.props.openSelection}
+          onClick={onAddToOpenSelection}
+          label="Add to current Selection"
+        />
+        <Styled.DropdownOption>
+          <Dropdown.SubMenu label={'Add to Selection...'}>
+            {selections.map(({selectionId}) => (
+              <Dropdown.SubOption
+                onClick={() => this.props.onAddToSpecificSelection(selectionId)}
+                key={selectionId}
+              >
+                {selectionId}
+              </Dropdown.SubOption>
+            ))}
+          </Dropdown.SubMenu>
+        </Styled.DropdownOption>
+      </Dropdown>
+    );
+  };
+
+  render() {
+    const {
+      total,
+      perPage,
+      selections,
+      firstElement,
+      onFirstElementChange
+    } = this.props;
+    const maxPage = getMaxPage(total, perPage);
+    return (
+      <Styled.Footer>
+        <Styled.SelectionWrapper>
+          {selections.length > 0 ? this.renderDropDown() : this.renderButton()}
+        </Styled.SelectionWrapper>
+        <Styled.PaginatorWrapper>
+          {this.isPaginationRequired(maxPage, total) ? (
+            <Paginator
+              firstElement={firstElement}
+              perPage={perPage}
+              maxPage={maxPage}
+              onFirstElementChange={onFirstElementChange}
+            />
+          ) : null}
+        </Styled.PaginatorWrapper>
+      </Styled.Footer>
     );
   }
 }
-
-const WrappedFooter = withSharedState(ListFooter);
-WrappedFooter.WrappedComponent = ListFooter;
-
-export default WrappedFooter;

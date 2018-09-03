@@ -78,11 +78,10 @@ export default class Header extends React.Component {
         <Styled.ProfileDropdown>
           <Dropdown label={`${firstname} ${lastname}`}>
             <Dropdown.Option
+              label="Logout"
               data-test="logout-button"
               onClick={this.handleLogout}
-            >
-              Logout
-            </Dropdown.Option>
+            />
           </Dropdown>
         </Styled.ProfileDropdown>
       </Styled.Header>

@@ -101,13 +101,13 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
   <styled.span>
     <Dropdown
       label="undefined undefined"
+      placement="bottom"
     >
       <Option
         data-test="logout-button"
+        label="Logout"
         onClick={[Function]}
-      >
-        Logout
-      </Option>
+      />
     </Dropdown>
   </styled.span>
 </Themed(styled.header)>

@@ -8,13 +8,20 @@ const themedWith = (dark, light) => {
   });
 };
 
-export const SelectionList = styled.div`
-  padding: 20px 0 0 35px;
+export const SelectionList = styled.ul`
+  padding-left: 35px;
   overflow: auto;
+  list-style: none;
 `;
 
-export const SelectionWrapper = styled.div`
-  margin-bottom: 20px;
+export const MessageWrapper = styled.div`
+  margin-top: 20px;
+  width: 442px;
+  padding: 0 44px;
+`;
+
+export const Li = styled.li`
+  margin: 20px 0;
 `;
 
 export const NoSelectionWrapper = themed(styled.div`
@@ -23,6 +30,7 @@ export const NoSelectionWrapper = themed(styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
+  margin: 20px 0;
 
   color: ${themedWith('#ffffff', Colors.uiLight06)};
   opacity: ${themedWith(0.9, 1)};

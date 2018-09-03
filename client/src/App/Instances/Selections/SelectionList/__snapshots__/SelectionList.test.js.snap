@@ -1,9 +1,9 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`SelectionList should render "no selection text" when no selection exists 1`] = `
-<styled.div>
+<styled.ul>
   <Themed(styled.div)>
     To create a new Selection, select some instances from the list and click ”Create new Selection”.
   </Themed(styled.div)>
-</styled.div>
+</styled.ul>
 `;

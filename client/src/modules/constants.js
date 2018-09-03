@@ -38,6 +38,10 @@ export const INSTANCES_LABELS = {
   canceled: 'Canceled'
 };
 
+export const CONTEXTUAL_MESSAGE_TYPE = {
+  DROP_SELECTION: 'DROP_SELECTION'
+};
+
 export const INSTANCE_STATE = {
   ACTIVE: 'ACTIVE',
   COMPLETED: 'COMPLETED',

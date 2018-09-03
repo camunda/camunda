@@ -3,6 +3,7 @@ import {themed, themeStyle, Colors} from 'modules/theme';
 
 import {RemoveItem} from 'modules/components/Icon';
 
+import {Retry} from 'modules/components/Icon';
 import BadgeComponent from 'modules/components/Badge';
 
 const themedWith = (dark, light) => {
@@ -69,6 +70,12 @@ export const DeleteIcon = styled(RemoveItem)`
 
 export const Badge = styled(BadgeComponent)`
   top: 2px;
+`;
+
+export const RetryIcon = styled(Retry)`
+  position: relative;
+  top: 3px;
+  margin-right: 10px;
 `;
 
 export const OptionLabel = styled.label`

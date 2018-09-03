@@ -5,7 +5,7 @@ import Dropdown from 'modules/components/Dropdown';
 
 import {getWorkflowName} from 'modules/utils/instance';
 import {BADGE_TYPE} from 'modules/constants';
-import {Down, Right, Batch, Retry} from 'modules/components/Icon';
+import {Down, Right, Batch} from 'modules/components/Icon';
 
 import * as Styled from './styled.js';
 
@@ -48,14 +48,17 @@ export default class Selection extends React.Component {
     </Styled.Footer>
   );
 
+  renderRetryLabel = () => (
+    <div>
+      <Styled.RetryIcon />Retry
+    </div>
+  );
+
   renderActions = (onRetry, onDelete) => (
     <Styled.Actions>
       <Styled.DropdownTrigger onClick={this.stopClickPropagation}>
         <Dropdown label={<Batch />}>
-          <Dropdown.Option onClick={onRetry}>
-            <Retry />
-            <Styled.OptionLabel>Retry</Styled.OptionLabel>
-          </Dropdown.Option>
+          <Dropdown.Option onClick={onRetry} label={this.renderRetryLabel()} />
         </Dropdown>
       </Styled.DropdownTrigger>
       <Styled.DeleteIcon onClick={onDelete} />
@@ -77,7 +80,7 @@ export default class Selection extends React.Component {
       <Styled.Selection>
         <Styled.Header onClick={onToggle} {...{isOpen}}>
           {renderArrowIcon(isOpen)}
-          <Styled.Headline>Selection {selectionId + 1}</Styled.Headline>
+          <Styled.Headline>Selection {selectionId}</Styled.Headline>
           <Styled.Badge
             type={
               isOpen ? BADGE_TYPE.OPENSELECTIONHEAD : BADGE_TYPE.SELECTIONHEAD
