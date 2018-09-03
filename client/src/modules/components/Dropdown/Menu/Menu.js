@@ -11,14 +11,21 @@ export default class Menu extends React.Component {
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
       PropTypes.node
-    ])
+    ]),
+    onStateChange: PropTypes.func
   };
 
   render() {
+    const {placement, children} = this.props;
+
     return (
-      <Styled.DropdownMenu placement={this.props.placement}>
-        {this.props.children}
-      </Styled.DropdownMenu>
+      <Styled.Ul placement={placement}>
+        {React.Children.map(children, (child, index) => (
+          <Styled.Li placement={placement} key={index} tabindex={index + 1}>
+            {child}
+          </Styled.Li>
+        ))}
+      </Styled.Ul>
     );
   }
 }
