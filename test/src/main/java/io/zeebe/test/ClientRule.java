@@ -42,13 +42,16 @@ public class ClientRule extends ExternalResource {
   protected ZeebeClient client;
 
   protected final Properties properties;
+  protected final EmbeddedBrokerRule brokerRule;
 
-  public ClientRule() {
-    this(Properties::new);
+  public ClientRule(final EmbeddedBrokerRule brokerRule) {
+    this(Properties::new, brokerRule);
   }
 
-  public ClientRule(final Supplier<Properties> propertiesProvider) {
+  public ClientRule(
+      final Supplier<Properties> propertiesProvider, final EmbeddedBrokerRule brokerRule) {
     this.properties = propertiesProvider.get();
+    this.brokerRule = brokerRule;
   }
 
   public ZeebeClient getClient() {
@@ -77,7 +80,11 @@ public class ClientRule extends ExternalResource {
 
   @Override
   protected void before() {
-    client = ZeebeClient.newClientBuilder().withProperties(properties).build();
+    client =
+        ZeebeClient.newClientBuilder()
+            .withProperties(properties)
+            .brokerContactPoint(brokerRule.getClientAddress().toString())
+            .build();
     createDefaultTopic();
   }
 

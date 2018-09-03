@@ -15,18 +15,19 @@
  */
 package io.zeebe.broker.it.workflow;
 
+import static io.zeebe.test.util.RecordingExporter.getFirstActivityEvent;
+import static io.zeebe.test.util.RecordingExporter.hasActivityEvent;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.gateway.api.events.DeploymentEvent;
-import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
-import io.zeebe.gateway.api.events.WorkflowInstanceState;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.Collections;
 import org.junit.Before;
 import org.junit.Rule;
@@ -42,11 +43,8 @@ public class MessageCorrelationTest {
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
   public ClientRule clientRule = new ClientRule(brokerRule);
-  public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
 
-  @Rule
-  public RuleChain ruleChain =
-      RuleChain.outerRule(brokerRule).around(clientRule).around(eventRecorder);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   private static final BpmnModelInstance CATCH_EVENT_WORKFLOW =
       Bpmn.createExecutableProcess("wf")
@@ -105,10 +103,7 @@ public class MessageCorrelationTest {
         .send()
         .join();
 
-    waitUntil(
-        () ->
-            eventRecorder.hasElementInState(
-                "receive-message", WorkflowInstanceState.ELEMENT_ACTIVATED));
+    waitUntil(() -> hasActivityEvent("receive-message", WorkflowInstanceIntent.ELEMENT_ACTIVATED));
 
     // when
     clientRule
@@ -120,7 +115,7 @@ public class MessageCorrelationTest {
         .join();
 
     // then
-    waitUntil(() -> eventRecorder.hasElementInState("wf", WorkflowInstanceState.ELEMENT_COMPLETED));
+    waitUntil(() -> hasActivityEvent("wf", WorkflowInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -145,7 +140,7 @@ public class MessageCorrelationTest {
         .join();
 
     // then
-    waitUntil(() -> eventRecorder.hasElementInState("wf", WorkflowInstanceState.ELEMENT_COMPLETED));
+    waitUntil(() -> hasActivityEvent("wf", WorkflowInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -171,10 +166,10 @@ public class MessageCorrelationTest {
         .join();
 
     // then
-    waitUntil(() -> eventRecorder.hasElementInState("wf", WorkflowInstanceState.ELEMENT_COMPLETED));
+    waitUntil(() -> hasActivityEvent("wf", WorkflowInstanceIntent.ELEMENT_COMPLETED));
 
-    final WorkflowInstanceEvent catchEventOccurredEvent =
-        eventRecorder.getElementInState("receive-message", WorkflowInstanceState.ELEMENT_COMPLETED);
+    final WorkflowInstanceRecordValue catchEventOccurredEvent =
+        getFirstActivityEvent("receive-message", WorkflowInstanceIntent.ELEMENT_COMPLETED);
     assertThat(catchEventOccurredEvent.getPayloadAsMap())
         .containsExactly(entry("orderId", "order-123"), entry("foo", "bar"));
   }

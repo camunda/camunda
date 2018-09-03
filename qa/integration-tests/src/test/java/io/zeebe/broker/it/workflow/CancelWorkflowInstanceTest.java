@@ -15,20 +15,21 @@
  */
 package io.zeebe.broker.it.workflow;
 
+import static io.zeebe.test.util.RecordingExporter.hasActivityEvent;
+import static io.zeebe.test.util.RecordingExporter.hasJobEvent;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.gateway.api.events.DeploymentEvent;
 import io.zeebe.gateway.api.events.JobEvent;
-import io.zeebe.gateway.api.events.JobState;
 import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
-import io.zeebe.gateway.api.events.WorkflowInstanceState;
 import io.zeebe.gateway.cmd.ClientCommandRejectedException;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Before;
@@ -47,11 +48,8 @@ public class CancelWorkflowInstanceTest {
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
   public ClientRule clientRule = new ClientRule(brokerRule);
-  public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
 
-  @Rule
-  public RuleChain ruleChain =
-      RuleChain.outerRule(brokerRule).around(clientRule).around(eventRecorder);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   @Rule public ExpectedException thrown = ExpectedException.none();
 
@@ -84,8 +82,7 @@ public class CancelWorkflowInstanceTest {
     clientRule.getWorkflowClient().newCancelInstanceCommand(workflowInstance).send().join();
 
     // then
-    waitUntil(
-        () -> eventRecorder.hasElementInState("process", WorkflowInstanceState.ELEMENT_TERMINATED));
+    waitUntil(() -> hasActivityEvent("process", WorkflowInstanceIntent.ELEMENT_TERMINATED));
   }
 
   @Test
@@ -121,8 +118,7 @@ public class CancelWorkflowInstanceTest {
         .isInstanceOf(ClientCommandRejectedException.class);
 
     // then
-    waitUntil(() -> eventRecorder.hasJobEvent(JobState.CANCELED));
-    waitUntil(
-        () -> eventRecorder.hasElementInState("process", WorkflowInstanceState.ELEMENT_TERMINATED));
+    waitUntil(() -> hasJobEvent(JobIntent.CANCELED));
+    waitUntil(() -> hasActivityEvent("process", WorkflowInstanceIntent.ELEMENT_TERMINATED));
   }
 }

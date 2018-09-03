@@ -15,19 +15,23 @@
  */
 package io.zeebe.broker.it.workflow;
 
+import static io.zeebe.test.util.RecordingExporter.getFirstWorkflowInstanceEvent;
+import static io.zeebe.test.util.RecordingExporter.hasActivityEvent;
+import static io.zeebe.test.util.RecordingExporter.hasJobEvent;
+import static io.zeebe.test.util.RecordingExporter.hasWorkflowInstanceEvent;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
-import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.gateway.api.clients.WorkflowClient;
 import io.zeebe.gateway.api.events.DeploymentEvent;
 import io.zeebe.gateway.api.events.JobEvent;
-import io.zeebe.gateway.api.events.JobState;
 import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
-import io.zeebe.gateway.api.events.WorkflowInstanceState;
+import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -37,11 +41,8 @@ public class YamlWorkflowTest {
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
   public ClientRule clientRule = new ClientRule(brokerRule);
-  public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
 
-  @Rule
-  public RuleChain ruleChain =
-      RuleChain.outerRule(brokerRule).around(clientRule).around(eventRecorder);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   @Rule public ExpectedException exception = ExpectedException.none();
 
@@ -63,7 +64,7 @@ public class YamlWorkflowTest {
 
     // then
     assertThat(workflowInstance.getWorkflowInstanceKey()).isGreaterThan(0);
-    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.CREATED));
+    waitUntil(() -> hasWorkflowInstanceEvent(WorkflowInstanceIntent.CREATED));
   }
 
   @Test
@@ -89,11 +90,8 @@ public class YamlWorkflowTest {
         .open();
 
     // then
-    waitUntil(() -> eventRecorder.hasJobEvent(JobState.COMPLETED));
-    waitUntil(
-        () ->
-            eventRecorder.hasElementInState(
-                "yaml-workflow", WorkflowInstanceState.ELEMENT_COMPLETED));
+    waitUntil(() -> hasJobEvent(JobIntent.COMPLETED));
+    waitUntil(() -> hasActivityEvent("yaml-workflow", WorkflowInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -150,11 +148,10 @@ public class YamlWorkflowTest {
     final JobEvent jobEvent = recordingTaskHandler.getHandledJobs().get(0);
     assertThat(jobEvent.getPayload()).isEqualTo("{\"bar\":1}");
 
-    waitUntil(
-        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED));
+    waitUntil(() -> hasWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED));
 
-    final WorkflowInstanceEvent workflowEvent =
-        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED);
+    final WorkflowInstanceRecordValue workflowEvent =
+        getFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
     assertThat(workflowEvent.getPayload()).isEqualTo("{\"foo\":1,\"result\":3}");
   }
 

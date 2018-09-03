@@ -19,6 +19,9 @@ import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.junit.Assert.fail;
 
 import io.zeebe.broker.it.clustering.ClusteringRule;
+import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.RecordMetadata;
+import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.ZeebeClientBuilder;
 import io.zeebe.gateway.api.clients.JobClient;
@@ -29,9 +32,11 @@ import io.zeebe.gateway.api.commands.PartitionInfo;
 import io.zeebe.gateway.api.commands.Topic;
 import io.zeebe.gateway.api.commands.Topics;
 import io.zeebe.gateway.api.commands.Topology;
+import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
 import io.zeebe.gateway.api.record.ValueType;
 import io.zeebe.gateway.impl.ZeebeClientBuilderImpl;
 import io.zeebe.gateway.impl.ZeebeClientImpl;
+import io.zeebe.gateway.impl.event.WorkflowInstanceEventImpl;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.sched.clock.ControlledActorClock;
@@ -47,7 +52,7 @@ public class ClientRule extends ExternalResource {
 
   private final Consumer<ZeebeClientBuilder> configurator;
 
-  protected ZeebeClient client;
+  protected ZeebeClientImpl client;
   private ControlledActorClock actorClock = new ControlledActorClock();
 
   public ClientRule(EmbeddedBrokerRule brokerRule) {
@@ -74,7 +79,7 @@ public class ClientRule extends ExternalResource {
   protected void before() {
     final ZeebeClientBuilderImpl builder = (ZeebeClientBuilderImpl) ZeebeClient.newClientBuilder();
     configurator.accept(builder);
-    client = builder.setActorClock(actorClock).build();
+    client = (ZeebeClientImpl) builder.setActorClock(actorClock).build();
   }
 
   @Override
@@ -172,5 +177,29 @@ public class ClientRule extends ExternalResource {
 
   public TopicClient getTopicClient() {
     return getClient().topicClient();
+  }
+
+  // Delete after https://github.com/zeebe-io/zeebe/issues/1242 is implemented
+  public WorkflowInstanceEvent asWorkflowInstanceEvent(Record record) {
+    final WorkflowInstanceEventImpl event = new WorkflowInstanceEventImpl(client.getObjectMapper());
+
+    event.setKey(record.getKey());
+    event.setPosition(record.getPosition());
+    event.setTimestamp(record.getTimestamp());
+
+    final RecordMetadata metadata = record.getMetadata();
+    event.setPartitionId(metadata.getPartitionId());
+    event.setIntent(metadata.getIntent());
+
+    final WorkflowInstanceRecordValue value = (WorkflowInstanceRecordValue) record.getValue();
+    event.setBpmnProcessId(value.getBpmnProcessId());
+    event.setWorkflowKey(value.getWorkflowKey());
+    event.setVersion(value.getVersion());
+    event.setWorkflowInstanceKey(value.getWorkflowInstanceKey());
+    event.setScopeInstanceKey(value.getScopeInstanceKey());
+    event.setActivityId(value.getActivityId());
+    event.setPayload(value.getPayload());
+
+    return event;
   }
 }

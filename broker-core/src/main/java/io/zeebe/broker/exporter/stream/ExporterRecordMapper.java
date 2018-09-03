@@ -173,12 +173,17 @@ public class ExporterRecordMapper {
             jobHeaders.getWorkflowKey(),
             jobHeaders.getWorkflowDefinitionVersion());
 
+    Instant deadline = null;
+    if (record.getDeadline() != Long.MIN_VALUE) {
+      deadline = Instant.ofEpochMilli(record.getDeadline());
+    }
+
     return new JobRecordValueImpl(
         objectMapper,
         asJson(record.getPayload()),
         asString(record.getType()),
         asString(record.getWorker()),
-        Instant.ofEpochMilli(record.getDeadline()),
+        deadline,
         headers,
         asMsgPackMap(record.getCustomHeaders()),
         record.getRetries());

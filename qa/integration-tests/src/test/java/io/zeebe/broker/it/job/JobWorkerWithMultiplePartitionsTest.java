@@ -22,7 +22,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
-import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.api.clients.JobClient;
 import io.zeebe.gateway.api.commands.Topic;
@@ -44,11 +43,7 @@ public class JobWorkerWithMultiplePartitionsTest {
 
   public ClientRule clientRule = new ClientRule(brokerRule);
 
-  public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule, false);
-
-  @Rule
-  public RuleChain ruleChain =
-      RuleChain.outerRule(brokerRule).around(clientRule).around(eventRecorder);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   @Rule public ExpectedException exception = ExpectedException.none();
 

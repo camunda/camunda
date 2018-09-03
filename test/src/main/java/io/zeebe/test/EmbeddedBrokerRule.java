@@ -18,11 +18,19 @@ package io.zeebe.test;
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.exporter.DebugExporter;
 import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.broker.system.configuration.ExporterCfg;
+import io.zeebe.broker.system.configuration.NetworkCfg;
+import io.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.zeebe.broker.system.configuration.TomlConfigurationReader;
+import io.zeebe.test.util.RecordingExporter;
+import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.FileUtil;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Arrays;
+import java.util.List;
 import java.util.function.Supplier;
 import org.assertj.core.util.Files;
 import org.junit.rules.ExternalResource;
@@ -33,6 +41,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
 
   private static final boolean ENABLE_DEBUG_EXPORTER = false;
 
+  private BrokerCfg brokerCfg;
   private Broker broker;
   private Supplier<InputStream> configSupplier;
   private File brokerBase;
@@ -74,10 +83,17 @@ public class EmbeddedBrokerRule extends ExternalResource {
         brokerBase = Files.newTemporaryFolder();
       }
 
-      final BrokerCfg brokerCfg = TomlConfigurationReader.read(configStream);
+      brokerCfg = TomlConfigurationReader.read(configStream);
+      assignSocketAddresses(brokerCfg);
+
       if (ENABLE_DEBUG_EXPORTER) {
         brokerCfg.getExporters().add(DebugExporter.defaultConfig(false));
       }
+
+      final ExporterCfg exporterCfg = new ExporterCfg();
+      exporterCfg.setId("recording");
+      exporterCfg.setClassName(RecordingExporter.class.getName());
+      brokerCfg.getExporters().add(exporterCfg);
 
       broker = new Broker(brokerCfg, brokerBase.getAbsolutePath(), null);
     } catch (final IOException e) {
@@ -89,6 +105,31 @@ public class EmbeddedBrokerRule extends ExternalResource {
       Thread.sleep(1000);
     } catch (final InterruptedException e) {
       // ignore
+    }
+  }
+
+  public SocketAddress getClientAddress() {
+    return brokerCfg.getNetwork().getClient().toSocketAddress();
+  }
+
+  public static void assignSocketAddresses(BrokerCfg brokerCfg) {
+    final NetworkCfg network = brokerCfg.getNetwork();
+    final List<SocketBindingCfg> socketBindingCfgs =
+        Arrays.asList(
+            network.getClient(),
+            network.getGateway(),
+            network.getManagement(),
+            network.getSubscription(),
+            network.getReplication());
+
+    if (network.getPortOffset() > 0) {
+      throw new UnsupportedOperationException(
+          "Please don't set the port offset in a test configuration");
+    }
+
+    for (SocketBindingCfg socketBindingCfg : socketBindingCfgs) {
+      final SocketAddress address = SocketUtil.getNextAddress();
+      socketBindingCfg.setPort(address.port());
     }
   }
 }

@@ -2,9 +2,6 @@
 
 bootstrap = 1
 
-[network]
-portOffset = 20
-
 [[topics]]
 name = "default-topic"
 partitions = 1

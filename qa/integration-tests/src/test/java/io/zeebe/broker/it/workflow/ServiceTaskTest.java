@@ -15,6 +15,14 @@
  */
 package io.zeebe.broker.it.workflow;
 
+import static io.zeebe.test.util.RecordingExporter.getActivityEvents;
+import static io.zeebe.test.util.RecordingExporter.getFirstActivityEvent;
+import static io.zeebe.test.util.RecordingExporter.getFirstActivityRecord;
+import static io.zeebe.test.util.RecordingExporter.getFirstWorkflowInstanceEvent;
+import static io.zeebe.test.util.RecordingExporter.getJobEvents;
+import static io.zeebe.test.util.RecordingExporter.hasActivityEvent;
+import static io.zeebe.test.util.RecordingExporter.hasJobEvent;
+import static io.zeebe.test.util.RecordingExporter.hasWorkflowInstanceEvent;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -22,16 +30,17 @@ import static org.assertj.core.api.Assertions.entry;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
-import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.gateway.api.clients.JobClient;
 import io.zeebe.gateway.api.events.DeploymentEvent;
 import io.zeebe.gateway.api.events.JobEvent;
-import io.zeebe.gateway.api.events.JobState;
 import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
-import io.zeebe.gateway.api.events.WorkflowInstanceState;
 import io.zeebe.gateway.api.subscription.JobHandler;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Rule;
@@ -43,11 +52,8 @@ public class ServiceTaskTest {
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
   public ClientRule clientRule = new ClientRule(brokerRule);
-  public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
 
-  @Rule
-  public RuleChain ruleChain =
-      RuleChain.outerRule(brokerRule).around(clientRule).around(eventRecorder);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   @Rule public ExpectedException exception = ExpectedException.none();
 
@@ -74,7 +80,7 @@ public class ServiceTaskTest {
 
     // then
     assertThat(workflowInstance.getWorkflowInstanceKey()).isGreaterThan(0);
-    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.CREATED));
+    waitUntil(() -> hasWorkflowInstanceEvent(WorkflowInstanceIntent.CREATED));
   }
 
   @Test
@@ -115,8 +121,8 @@ public class ServiceTaskTest {
 
     assertThat(recordingJobHandler.getHandledJobs()).hasSize(1);
 
-    final WorkflowInstanceEvent activityInstance =
-        eventRecorder.getElementInState("task", WorkflowInstanceState.ELEMENT_ACTIVATED);
+    final Record activityInstance =
+        getFirstActivityRecord("task", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     final JobEvent jobEvent = recordingJobHandler.getHandledJobs().get(0);
     assertThat(jobEvent.getHeaders())
@@ -126,7 +132,7 @@ public class ServiceTaskTest {
             entry("workflowKey", (int) workflowInstance.getWorkflowKey()),
             entry("workflowInstanceKey", (int) workflowInstance.getWorkflowInstanceKey()),
             entry("activityId", "task"),
-            entry("activityInstanceKey", (int) activityInstance.getMetadata().getKey()));
+            entry("activityInstanceKey", (int) activityInstance.getKey()));
 
     assertThat(jobEvent.getCustomHeaders()).containsOnly(entry("cust1", "a"), entry("cust2", "b"));
   }
@@ -160,9 +166,8 @@ public class ServiceTaskTest {
         .open();
 
     // then
-    waitUntil(() -> eventRecorder.hasJobEvent(JobState.COMPLETED));
-    waitUntil(
-        () -> eventRecorder.hasElementInState("process", WorkflowInstanceState.ELEMENT_COMPLETED));
+    waitUntil(() -> hasJobEvent(JobIntent.COMPLETED));
+    waitUntil(() -> hasActivityEvent("process", WorkflowInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -225,11 +230,10 @@ public class ServiceTaskTest {
         .open();
 
     // then
-    waitUntil(
-        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED));
+    waitUntil(() -> hasWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED));
 
-    final WorkflowInstanceEvent workflowEvent =
-        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED);
+    final WorkflowInstanceRecordValue workflowEvent =
+        getFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
     assertThat(workflowEvent.getPayload()).isEqualTo("{\"bar\":2}");
   }
 
@@ -271,11 +275,10 @@ public class ServiceTaskTest {
         .open();
 
     // then
-    waitUntil(
-        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED));
+    waitUntil(() -> hasWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED));
 
-    final WorkflowInstanceEvent workflowEvent =
-        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED);
+    final WorkflowInstanceRecordValue workflowEvent =
+        getFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
     assertThat(workflowEvent.getPayload()).isEqualTo("{\"foo\":2}");
   }
 
@@ -322,13 +325,10 @@ public class ServiceTaskTest {
 
     // then
     waitUntil(
-        () ->
-            eventRecorder.hasElementInState(
-                wfEvent.getActivityId(), WorkflowInstanceState.ELEMENT_COMPLETED));
+        () -> hasActivityEvent(wfEvent.getActivityId(), WorkflowInstanceIntent.ELEMENT_COMPLETED));
 
-    final WorkflowInstanceEvent workflowEvent =
-        eventRecorder.getElementInState(
-            wfEvent.getActivityId(), WorkflowInstanceState.ELEMENT_COMPLETED);
+    final WorkflowInstanceRecordValue workflowEvent =
+        getFirstActivityEvent(wfEvent.getActivityId(), WorkflowInstanceIntent.ELEMENT_COMPLETED);
     assertThat(workflowEvent.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
   }
 
@@ -369,12 +369,10 @@ public class ServiceTaskTest {
         .open();
 
     // then
-    waitUntil(() -> eventRecorder.getJobEvents(JobState.COMPLETED).size() == instances);
+    waitUntil(() -> getJobEvents(JobIntent.COMPLETED).size() == instances);
     waitUntil(
         () ->
-            eventRecorder
-                    .getElementsInState("process", WorkflowInstanceState.ELEMENT_COMPLETED)
-                    .size()
+            getActivityEvents("process", WorkflowInstanceIntent.ELEMENT_COMPLETED).size()
                 == instances);
   }
 

@@ -16,6 +16,9 @@
 package io.zeebe.broker.it.workflow;
 
 import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
+import static io.zeebe.test.util.RecordingExporter.getActivityEvents;
+import static io.zeebe.test.util.RecordingExporter.getFirstActivityEvent;
+import static io.zeebe.test.util.RecordingExporter.hasActivityEvent;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -23,16 +26,15 @@ import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.gateway.api.ZeebeFuture;
 import io.zeebe.gateway.api.clients.WorkflowClient;
 import io.zeebe.gateway.api.events.DeploymentEvent;
 import io.zeebe.gateway.api.events.MessageEvent;
-import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
-import io.zeebe.gateway.api.events.WorkflowInstanceState;
 import io.zeebe.gateway.cmd.ClientCommandRejectedException;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.time.Duration;
 import java.util.Collections;
 import org.junit.Before;
@@ -45,12 +47,8 @@ public class PublishMessageTest {
   public EmbeddedBrokerRule brokerRule =
       new EmbeddedBrokerRule("zeebe.unit-test.increased.partitions.cfg.toml");
   public ClientRule clientRule = new ClientRule(brokerRule);
-  public TopicEventRecorder eventRecorder =
-      new TopicEventRecorder(clientRule, DEFAULT_TOPIC, false);
 
-  @Rule
-  public RuleChain ruleChain =
-      RuleChain.outerRule(brokerRule).around(clientRule).around(eventRecorder);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   private static final BpmnModelInstance WORKFLOW =
       Bpmn.createExecutableProcess("wf")
@@ -73,8 +71,6 @@ public class PublishMessageTest {
         workflowClient.newDeployCommand().addWorkflowModel(WORKFLOW, "wf.bpmn").send().join();
 
     clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
-
-    eventRecorder.startRecordingEvents();
   }
 
   @Test
@@ -105,10 +101,7 @@ public class PublishMessageTest {
         .join();
 
     // then
-    waitUntil(
-        () ->
-            eventRecorder.getElementsInState("wf", WorkflowInstanceState.ELEMENT_COMPLETED).size()
-                == 2);
+    waitUntil(() -> getActivityEvents("wf", WorkflowInstanceIntent.ELEMENT_COMPLETED).size() == 2);
   }
 
   @Test
@@ -122,10 +115,7 @@ public class PublishMessageTest {
         .send()
         .join();
 
-    waitUntil(
-        () ->
-            eventRecorder.hasElementInState(
-                "catch-event", WorkflowInstanceState.ELEMENT_ACTIVATED));
+    waitUntil(() -> hasActivityEvent("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED));
 
     // when
     workflowClient
@@ -137,10 +127,7 @@ public class PublishMessageTest {
         .join();
 
     // then
-    waitUntil(
-        () ->
-            eventRecorder.hasElementInState(
-                "catch-event", WorkflowInstanceState.ELEMENT_COMPLETED));
+    waitUntil(() -> hasActivityEvent("catch-event", WorkflowInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -174,13 +161,10 @@ public class PublishMessageTest {
         .join();
 
     // then
-    waitUntil(
-        () ->
-            eventRecorder.hasElementInState(
-                "catch-event", WorkflowInstanceState.ELEMENT_COMPLETED));
+    waitUntil(() -> hasActivityEvent("catch-event", WorkflowInstanceIntent.ELEMENT_COMPLETED));
 
-    final WorkflowInstanceEvent catchEventOccurred =
-        eventRecorder.getElementInState("catch-event", WorkflowInstanceState.ELEMENT_COMPLETED);
+    final WorkflowInstanceRecordValue catchEventOccurred =
+        getFirstActivityEvent("catch-event", WorkflowInstanceIntent.ELEMENT_COMPLETED);
     assertThat(catchEventOccurred.getPayloadAsMap()).contains(entry("msg", "expected"));
   }
 
@@ -224,10 +208,7 @@ public class PublishMessageTest {
         .join();
 
     // then
-    waitUntil(
-        () ->
-            eventRecorder.getElementsInState("wf", WorkflowInstanceState.ELEMENT_COMPLETED).size()
-                == 2);
+    waitUntil(() -> getActivityEvents("wf", WorkflowInstanceIntent.ELEMENT_COMPLETED).size() == 2);
   }
 
   @Test

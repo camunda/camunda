@@ -15,19 +15,19 @@
  */
 package io.zeebe.broker.it.data;
 
-import static io.zeebe.broker.it.util.TopicEventRecorder.state;
+import static io.zeebe.test.util.RecordingExporter.getFirstJobEvent;
+import static io.zeebe.test.util.RecordingExporter.hasJobEvent;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
-import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.gateway.api.events.DeploymentEvent;
 import io.zeebe.gateway.api.events.DeploymentState;
 import io.zeebe.gateway.api.events.IncidentState;
 import io.zeebe.gateway.api.events.JobEvent;
-import io.zeebe.gateway.api.events.JobState;
 import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
 import io.zeebe.gateway.api.events.WorkflowInstanceState;
 import io.zeebe.gateway.api.record.Record;
@@ -36,6 +36,7 @@ import io.zeebe.gateway.api.record.ValueType;
 import io.zeebe.gateway.impl.record.RecordClassMapping;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.intent.JobIntent;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
@@ -52,19 +53,13 @@ public class ZeebeObjectMapperTest {
 
   public ClientRule clientRule = new ClientRule(brokerRule);
 
-  public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule, false);
-
-  @Rule
-  public RuleChain ruleChain =
-      RuleChain.outerRule(brokerRule).around(clientRule).around(eventRecorder);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   @Rule public ExpectedException exception = ExpectedException.none();
 
   @Test
   public void shouldCompleteJobWithDeserializedEvent() throws InterruptedException {
     // given
-    eventRecorder.startRecordingEvents();
-
     clientRule
         .getJobClient()
         .newCreateCommand()
@@ -95,9 +90,9 @@ public class ZeebeObjectMapperTest {
         .join();
 
     // then
-    waitUntil(() -> eventRecorder.hasJobEvent(state(JobState.COMPLETED)));
+    waitUntil(() -> hasJobEvent(JobIntent.COMPLETED));
 
-    final JobEvent completedJobEvent = eventRecorder.getJobEvents(JobState.COMPLETED).get(0);
+    final JobRecordValue completedJobEvent = getFirstJobEvent(JobIntent.COMPLETED);
     assertThat(completedJobEvent.getPayload()).isEqualTo("{\"foo\":\"baz\"}");
   }
 
