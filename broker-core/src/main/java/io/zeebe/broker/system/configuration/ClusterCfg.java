@@ -19,6 +19,7 @@ package io.zeebe.broker.system.configuration;
 
 import java.util.Collections;
 import java.util.List;
+import org.agrona.collections.IntArrayList;
 
 public class ClusterCfg implements ConfigurationEntry {
   public static final List<String> DEFAULT_CONTACT_POINTS = Collections.emptyList();
@@ -29,6 +30,7 @@ public class ClusterCfg implements ConfigurationEntry {
 
   private List<String> initialContactPoints = DEFAULT_CONTACT_POINTS;
 
+  private List<Integer> partitionIds;
   private int nodeId = DEFAULT_NODE_ID;
   private int partitionsCount = DEFAULT_PARTITIONS_COUNT;
   private int replicationFactor = DEFAULT_REPLICATION_FACTOR;
@@ -38,6 +40,19 @@ public class ClusterCfg implements ConfigurationEntry {
   public void init(
       final BrokerCfg globalConfig, final String brokerBase, final Environment environment) {
     applyEnvironment(environment);
+
+    initPartitionIds();
+  }
+
+  private void initPartitionIds() {
+    final IntArrayList list = new IntArrayList();
+    for (int i = 0; i < partitionsCount; i++) {
+      // +1 'cause of system partition
+      final int partitionId = i + 1;
+      list.add(partitionId);
+    }
+
+    partitionIds = Collections.unmodifiableList(list);
   }
 
   private void applyEnvironment(final Environment environment) {
@@ -76,6 +91,10 @@ public class ClusterCfg implements ConfigurationEntry {
 
   public void setPartitionsCount(final int partitionsCount) {
     this.partitionsCount = partitionsCount;
+  }
+
+  public List<Integer> getPartitionIds() {
+    return partitionIds;
   }
 
   public int getReplicationFactor() {

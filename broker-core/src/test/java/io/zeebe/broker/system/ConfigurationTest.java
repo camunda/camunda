@@ -337,6 +337,18 @@ public class ConfigurationTest {
   }
 
   @Test
+  public void shouldCreatePartitionIds() {
+    // given
+    final BrokerCfg cfg = readConfig("cluster-cfg");
+    final ClusterCfg cfgCluster = cfg.getCluster();
+
+    // when - then
+    assertThat(cfgCluster.getPartitionsCount()).isEqualTo(3);
+    final List<Integer> partitionIds = cfgCluster.getPartitionIds();
+    assertThat(partitionIds).contains(1, 2, 3);
+  }
+
+  @Test
   public void shouldOverrideReplicationFactorViaEnvironment() {
     // given
     environment.put(ENV_REPLICATION_FACTOR, "2");
