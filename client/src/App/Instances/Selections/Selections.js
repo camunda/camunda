@@ -51,11 +51,12 @@ export default class Selections extends React.Component {
     });
   };
 
-  handleRetrySelection = async evt => {
-    evt && evt.stopPropagation();
+  handleRetrySelection = async openSelectionId => {
+    const {selections} = this.props;
+    const {queries} = getSelectionById(selections, openSelectionId);
 
     try {
-      await batchRetry();
+      await batchRetry(queries);
     } catch (e) {
       console.log(e);
     }

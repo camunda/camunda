@@ -1,9 +1,11 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {mockResolvedAsyncFn} from 'modules/testUtils';
+import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
 
 import Selections from './Selections';
+
+// import {getSelectionById} from 'modules/utils/selection';
 
 import * as api from 'modules/api/selections/selections';
 
@@ -112,11 +114,14 @@ describe('Selections', () => {
     });
   });
 
-  it('retry instances in a selection', () => {
+  it('retry instances in a selection', async () => {
     //when
-    node.instance().handleRetrySelection(0);
+    node.instance().handleRetrySelection(1);
+
+    // when data fetched
+    await flushPromises();
 
     //then
-    expect(api.batchRetry).toBeCalled();
+    expect(api.batchRetry).toHaveBeenCalled();
   });
 });
