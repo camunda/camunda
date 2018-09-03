@@ -21,6 +21,7 @@ import org.camunda.operate.util.OperateIntegrationTest;
 import org.camunda.operate.util.ZeebeTestRule;
 import org.camunda.operate.util.ZeebeUtil;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -81,6 +82,7 @@ public class WorkflowInstanceIT extends OperateIntegrationTest {
   }
 
   @Test
+  @Ignore
   public void testPayloadUpdated() {
     // having
     String topicName = zeebeTestRule.getTopicName();
