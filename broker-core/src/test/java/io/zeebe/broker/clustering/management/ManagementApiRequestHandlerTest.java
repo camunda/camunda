@@ -72,13 +72,15 @@ import org.junit.rules.TemporaryFolder;
 
 public class ManagementApiRequestHandlerTest {
   private Map<Integer, Partition> trackedSnapshotPartitions;
-  private TestActor actor = new TestActor();
+  private final TestActor actor = new TestActor();
   private BufferingServerOutput output = new BufferingServerOutput();
   private ManagementApiRequestHandler handler = createHandler();
 
-  private TemporaryFolder tempFolder = new TemporaryFolder();
-  private ControlledActorSchedulerRule actorSchedulerRule = new ControlledActorSchedulerRule();
-  private ServiceContainerRule serviceContainerRule = new ServiceContainerRule(actorSchedulerRule);
+  private final TemporaryFolder tempFolder = new TemporaryFolder();
+  private final ControlledActorSchedulerRule actorSchedulerRule =
+      new ControlledActorSchedulerRule();
+  private final ServiceContainerRule serviceContainerRule =
+      new ServiceContainerRule(actorSchedulerRule);
 
   @Rule
   public RuleChain ruleChain =
@@ -154,7 +156,8 @@ public class ManagementApiRequestHandlerTest {
     assertError(
         output,
         ErrorResponseCode.PARTITION_NOT_FOUND,
-        SnapshotReplicationRequestHandler.PARTITION_NOT_FOUND_MESSAGE);
+        String.format(
+            SnapshotReplicationRequestHandler.PARTITION_NOT_FOUND_MESSAGE, partitionId + 1));
   }
 
   @Test
@@ -572,7 +575,7 @@ public class ManagementApiRequestHandlerTest {
       return mocked;
     }
 
-    void run(Runnable r) {
+    void run(final Runnable r) {
       mocked.run(r);
     }
   }

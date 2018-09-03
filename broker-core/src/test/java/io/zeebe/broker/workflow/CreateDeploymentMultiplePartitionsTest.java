@@ -18,6 +18,7 @@
 package io.zeebe.broker.workflow;
 
 import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
+import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.data.MapEntry.entry;
@@ -27,6 +28,7 @@ import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.broker.workflow.deployment.data.ResourceType;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.DeploymentIntent;
@@ -56,7 +58,7 @@ public class CreateDeploymentMultiplePartitionsTest {
   private static final BpmnModelInstance WORKFLOW_2 =
       Bpmn.createExecutableProcess("process2").startEvent().endEvent().done();
 
-  public static final int PARTITION_ID = 1;
+  public static final int PARTITION_ID = DEPLOYMENT_PARTITION;
   public static final int PARTITION_COUNT = 3;
 
   public EmbeddedBrokerRule brokerRule =
@@ -72,7 +74,7 @@ public class CreateDeploymentMultiplePartitionsTest {
     final ExecuteCommandResponse resp =
         apiRule
             .createCmdRequest()
-            .partitionId(1)
+            .partitionId(Protocol.DEPLOYMENT_PARTITION)
             .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
             .command()
             .put("topicName", DEFAULT_TOPIC)
@@ -90,9 +92,9 @@ public class CreateDeploymentMultiplePartitionsTest {
     assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
     assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATED);
 
+    assertCreatedDeploymentEventOnPartition(0, resp.key());
     assertCreatedDeploymentEventOnPartition(1, resp.key());
     assertCreatedDeploymentEventOnPartition(2, resp.key());
-    assertCreatedDeploymentEventOnPartition(3, resp.key());
   }
 
   @Test
@@ -120,7 +122,7 @@ public class CreateDeploymentMultiplePartitionsTest {
     final Map<String, Object> resources = deploymentResource(yamlWorkflow, "simple-workflow.yaml");
     resources.put("resourceType", ResourceType.YAML_WORKFLOW.name());
 
-    for (int i = 1; i < PARTITION_COUNT + 1; i++) {
+    for (int i = 0; i < PARTITION_COUNT; i++) {
       assertCreatedDeploymentEventResources(
           i,
           resp.key(),
@@ -154,7 +156,7 @@ public class CreateDeploymentMultiplePartitionsTest {
     final ExecuteCommandResponse resp =
         apiRule
             .createCmdRequest()
-            .partitionId(1)
+            .partitionId(DEPLOYMENT_PARTITION)
             .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
             .command()
             .put("topicName", DEFAULT_TOPIC)
@@ -166,7 +168,7 @@ public class CreateDeploymentMultiplePartitionsTest {
     assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
     assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATED);
 
-    for (int i = 1; i < PARTITION_COUNT + 1; i++) {
+    for (int i = 0; i < PARTITION_COUNT; i++) {
       assertCreatedDeploymentEventResources(
           i,
           resp.key(),
@@ -194,7 +196,7 @@ public class CreateDeploymentMultiplePartitionsTest {
     final Map<String, Object> workflow1 = getDeployedWorkflow(d1, 0);
     assertThat(workflow1.get("version")).isEqualTo(1L);
 
-    for (int i = 1; i < PARTITION_COUNT + 1; i++) {
+    for (int i = 0; i < PARTITION_COUNT; i++) {
       assertCreatedDeploymentEventResources(
           i,
           d1.key(),
@@ -206,7 +208,7 @@ public class CreateDeploymentMultiplePartitionsTest {
     final Map<String, Object> workflow2 = getDeployedWorkflow(d2, 0);
     assertThat(workflow2.get("version")).isEqualTo(2L);
 
-    for (int i = 1; i < PARTITION_COUNT + 1; i++) {
+    for (int i = 0; i < PARTITION_COUNT; i++) {
       assertCreatedDeploymentEventResources(
           i,
           d2.key(),
@@ -221,7 +223,7 @@ public class CreateDeploymentMultiplePartitionsTest {
     // given
     apiRule
         .createCmdRequest()
-        .partitionId(1)
+        .partitionId(Protocol.DEPLOYMENT_PARTITION)
         .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
         .command()
         .put("topicName", DEFAULT_TOPIC)
@@ -229,16 +231,17 @@ public class CreateDeploymentMultiplePartitionsTest {
             "resources",
             Collections.singletonList(deploymentResource(bpmnXml(WORKFLOW), "process.bpmn")))
         .done()
-        .send();
+        .send()
+        .await();
 
     // when
     brokerRule.restartBroker();
     doRepeatedly(apiRule::getPartitionIds).until(p -> !p.isEmpty());
 
     // then
+    assertAnyCreatedDeploymentEventOnPartition(0);
     assertAnyCreatedDeploymentEventOnPartition(1);
     assertAnyCreatedDeploymentEventOnPartition(2);
-    assertAnyCreatedDeploymentEventOnPartition(3);
   }
 
   private Map<String, Object> deploymentResource(final byte[] resource, final String name) {

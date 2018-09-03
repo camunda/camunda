@@ -29,7 +29,6 @@ import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.RAFT_
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.RAFT_SERVICE_GROUP;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.REMOTE_ADDRESS_MANAGER_SERVICE;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.SNAPSHOT_REPLICATION_INSTALL_SERVICE_NAME;
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.SYSTEM_PARTITION_BOOTSTRAP_EXPECTED_SERVICE_NAME;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.SYSTEM_PARTITION_BOOTSTRAP_SERVICE_NAME;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.TOPOLOGY_MANAGER_SERVICE;
 import static io.zeebe.broker.clustering.orchestration.ClusterOrchestrationLayerServiceNames.CLUSTER_ORCHESTRATION_INSTALL_SERVICE_NAME;
@@ -45,7 +44,6 @@ import static io.zeebe.broker.transport.TransportServiceNames.serverTransport;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.api.ManagementApiRequestHandlerService;
-import io.zeebe.broker.clustering.base.bootstrap.BootstrapExpectNodes;
 import io.zeebe.broker.clustering.base.bootstrap.BootstrapLocalPartitions;
 import io.zeebe.broker.clustering.base.bootstrap.BootstrapSystemTopic;
 import io.zeebe.broker.clustering.base.connections.RemoteAddressManager;
@@ -59,6 +57,7 @@ import io.zeebe.broker.clustering.orchestration.ClusterOrchestrationInstallServi
 import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.servicecontainer.CompositeServiceBuilder;
@@ -71,11 +70,13 @@ public class ClusterComponent implements Component {
 
   @Override
   public void init(final SystemContext context) {
+    final BrokerCfg brokerConfiguration = context.getBrokerConfiguration();
+
     final ServiceContainer serviceContainer = context.getServiceContainer();
 
     initClusterBaseLayer(context, serviceContainer);
     initBootstrapSystemPartition(context, serviceContainer);
-    initClusterOrchestrationLayer(serviceContainer);
+    initClusterOrchestrationLayer(serviceContainer, brokerConfiguration.getCluster());
   }
 
   private void initClusterBaseLayer(
@@ -195,47 +196,23 @@ public class ClusterComponent implements Component {
   private void initBootstrapSystemPartition(
       final SystemContext context, final ServiceContainer serviceContainer) {
     final BrokerCfg brokerConfiguration = context.getBrokerConfiguration();
+    final BootstrapSystemTopic systemPartitionBootstrapService =
+        new BootstrapSystemTopic(
+            brokerConfiguration.getCluster().getReplicationFactor(), brokerConfiguration);
 
-    final int bootstrap = brokerConfiguration.getBootstrap();
-
-    if (bootstrap == 1) {
-      LOG.info("Starting standalone broker");
-
-      final BootstrapSystemTopic systemPartitionBootstrapService =
-          new BootstrapSystemTopic(1, context.getBrokerConfiguration());
-
-      serviceContainer
-          .createService(SYSTEM_PARTITION_BOOTSTRAP_SERVICE_NAME, systemPartitionBootstrapService)
-          .dependency(RAFT_BOOTSTRAP_SERVICE)
-          .dependency(
-              RAFT_CONFIGURATION_MANAGER,
-              systemPartitionBootstrapService.getRaftPersistentConfigurationManagerInjector())
-          .install();
-    } else {
-      LOG.info("Starting clustered broker");
-
-      if (bootstrap > 0) {
-        LOG.info(
-            "Node started in bootstrap mode. Expecting {} nodes to join the cluster before bootstrap.",
-            bootstrap);
-
-        final int replicationFactor = bootstrap;
-
-        final BootstrapExpectNodes bootstrapExpectService =
-            new BootstrapExpectNodes(
-                replicationFactor, bootstrap, context.getBrokerConfiguration());
-        serviceContainer
-            .createService(SYSTEM_PARTITION_BOOTSTRAP_EXPECTED_SERVICE_NAME, bootstrapExpectService)
-            .dependency(
-                TOPOLOGY_MANAGER_SERVICE, bootstrapExpectService.getTopologyManagerInjector())
-            .install();
-      }
-    }
+    serviceContainer
+        .createService(SYSTEM_PARTITION_BOOTSTRAP_SERVICE_NAME, systemPartitionBootstrapService)
+        .dependency(RAFT_BOOTSTRAP_SERVICE)
+        .dependency(
+            RAFT_CONFIGURATION_MANAGER,
+            systemPartitionBootstrapService.getRaftPersistentConfigurationManagerInjector())
+        .install();
   }
 
-  private void initClusterOrchestrationLayer(final ServiceContainer serviceContainer) {
+  private void initClusterOrchestrationLayer(
+      final ServiceContainer serviceContainer, final ClusterCfg cluster) {
     final ClusterOrchestrationInstallService clusterOrchestrationInstallService =
-        new ClusterOrchestrationInstallService(serviceContainer);
+        new ClusterOrchestrationInstallService(serviceContainer, cluster);
 
     serviceContainer
         .createService(
@@ -247,7 +224,7 @@ public class ClusterComponent implements Component {
             serverTransport(CLIENT_API_SERVER_NAME),
             clusterOrchestrationInstallService.getTransportInjector())
         .groupReference(
-            LEADER_PARTITION_SYSTEM_GROUP_NAME,
+            LEADER_PARTITION_GROUP_NAME,
             clusterOrchestrationInstallService.getSystemLeaderGroupReference())
         .install();
   }

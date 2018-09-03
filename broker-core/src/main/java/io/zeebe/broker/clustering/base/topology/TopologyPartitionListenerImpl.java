@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.clustering.base.topology;
 
-import io.zeebe.protocol.Protocol;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.channel.ActorConditions;
@@ -30,26 +29,22 @@ public class TopologyPartitionListenerImpl implements TopologyPartitionListener 
   private final ActorControl actor;
   private final ActorConditions conditions = new ActorConditions();
 
-  public TopologyPartitionListenerImpl(ActorControl actor) {
+  public TopologyPartitionListenerImpl(final ActorControl actor) {
     this.actor = actor;
   }
 
   @Override
-  public void onPartitionUpdated(PartitionInfo partitionInfo, NodeInfo member) {
+  public void onPartitionUpdated(final PartitionInfo partitionInfo, final NodeInfo member) {
     if (member.getLeaders().contains(partitionInfo)) {
       actor.submit(
           () -> {
-            if (partitionInfo.getPartitionId() == Protocol.SYSTEM_PARTITION) {
-              updateSystemPartitionLeader(member);
-            } else {
-              updatePartitionLeader(partitionInfo, member);
-            }
+            updatePartitionLeader(partitionInfo, member);
             conditions.signalConsumers();
           });
     }
   }
 
-  private void updateSystemPartitionLeader(NodeInfo member) {
+  private void updateSystemPartitionLeader(final NodeInfo member) {
     final Integer currentLeader = systemPartitionLeaderId;
 
     if (currentLeader == null || !currentLeader.equals(member.getNodeId())) {
@@ -57,7 +52,7 @@ public class TopologyPartitionListenerImpl implements TopologyPartitionListener 
     }
   }
 
-  private void updatePartitionLeader(PartitionInfo partitionInfo, NodeInfo member) {
+  private void updatePartitionLeader(final PartitionInfo partitionInfo, final NodeInfo member) {
     final NodeInfo currentLeader = partitionLeaders.get(partitionInfo.getPartitionId());
 
     if (currentLeader == null || !currentLeader.equals(member)) {
@@ -73,11 +68,11 @@ public class TopologyPartitionListenerImpl implements TopologyPartitionListener 
     return systemPartitionLeaderId;
   }
 
-  public void addCondition(ActorCondition condition) {
+  public void addCondition(final ActorCondition condition) {
     conditions.registerConsumer(condition);
   }
 
-  public void removeCondition(ActorCondition condition) {
+  public void removeCondition(final ActorCondition condition) {
     conditions.removeConsumer(condition);
   }
 }

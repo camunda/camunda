@@ -32,6 +32,7 @@ import io.zeebe.gateway.api.commands.Topology;
 import io.zeebe.gateway.api.record.ValueType;
 import io.zeebe.gateway.impl.ZeebeClientBuilderImpl;
 import io.zeebe.gateway.impl.ZeebeClientImpl;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.sched.clock.ControlledActorClock;
@@ -48,13 +49,14 @@ public class ClientRule extends ExternalResource {
   private final Consumer<ZeebeClientBuilder> configurator;
 
   protected ZeebeClient client;
-  private ControlledActorClock actorClock = new ControlledActorClock();
+  private final ControlledActorClock actorClock = new ControlledActorClock();
 
-  public ClientRule(EmbeddedBrokerRule brokerRule) {
+  public ClientRule(final EmbeddedBrokerRule brokerRule) {
     this(brokerRule, config -> {});
   }
 
-  public ClientRule(EmbeddedBrokerRule brokerRule, Consumer<ZeebeClientBuilder> configurator) {
+  public ClientRule(
+      final EmbeddedBrokerRule brokerRule, final Consumer<ZeebeClientBuilder> configurator) {
     this(
         config -> {
           config.brokerContactPoint(brokerRule.getClientAddress().toString());
@@ -62,7 +64,7 @@ public class ClientRule extends ExternalResource {
         });
   }
 
-  public ClientRule(ClusteringRule clusteringRule) {
+  public ClientRule(final ClusteringRule clusteringRule) {
     this(config -> config.brokerContactPoint(clusteringRule.getClientAddress().toString()));
   }
 
@@ -99,7 +101,7 @@ public class ClientRule extends ExternalResource {
         .until(t -> t != null && t.keySet().containsAll(expectedTopicNames));
   }
 
-  public void waitUntilDeploymentIsDone(long key) {
+  public void waitUntilDeploymentIsDone(final long key) {
     final AtomicBoolean deploymentFound = new AtomicBoolean(false);
 
     client
@@ -108,7 +110,7 @@ public class ClientRule extends ExternalResource {
         .name("deployment-await")
         .recordHandler(
             record -> {
-              if (record.getMetadata().getPartitionId() == 1
+              if (record.getMetadata().getPartitionId() == Protocol.DEPLOYMENT_PARTITION
                   && record.getMetadata().getValueType() == ValueType.DEPLOYMENT
                   && record.getMetadata().getIntent().equals(DeploymentIntent.CREATED.name())
                   && record.getKey() == key) {

@@ -37,6 +37,7 @@ import io.zeebe.broker.clustering.orchestration.state.KnownTopics;
 import io.zeebe.broker.clustering.orchestration.topic.ReplicationFactorService;
 import io.zeebe.broker.clustering.orchestration.topic.RequestPartitionsMessageHandler;
 import io.zeebe.broker.clustering.orchestration.topic.TopicCreationService;
+import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.broker.transport.controlmessage.ControlMessageHandlerManager;
 import io.zeebe.servicecontainer.CompositeServiceBuilder;
@@ -63,14 +64,17 @@ public class ClusterOrchestrationInstallService implements Service<Void> {
           .onAdd(this::installClusterOrchestrationServices)
           .onRemove(this::removeClusterOrchestrationServices)
           .build();
+  private final ClusterCfg clusterCfg;
 
   private ServiceStartContext startContext;
 
   private RequestPartitionsMessageHandler requestPartitionsMessageHandler;
   private final ServiceContainer serviceContainer;
 
-  public ClusterOrchestrationInstallService(ServiceContainer serviceContainer) {
+  public ClusterOrchestrationInstallService(
+      final ServiceContainer serviceContainer, final ClusterCfg clusterCfg) {
     this.serviceContainer = serviceContainer;
+    this.clusterCfg = clusterCfg;
   }
 
   @Override
@@ -78,7 +82,7 @@ public class ClusterOrchestrationInstallService implements Service<Void> {
     this.startContext = startContext;
 
     final ServerOutput serverOutput = transportInjector.getValue().getOutput();
-    requestPartitionsMessageHandler = new RequestPartitionsMessageHandler(serverOutput);
+    requestPartitionsMessageHandler = new RequestPartitionsMessageHandler(serverOutput, clusterCfg);
 
     final ControlMessageHandlerManager controlMessageHandlerManager =
         controlMessageHandlerManagerInjector.getValue();
@@ -87,19 +91,15 @@ public class ClusterOrchestrationInstallService implements Service<Void> {
 
   private void installClusterOrchestrationServices(
       final ServiceName<Partition> partitionServiceName, final Partition partition) {
+
+    if (partition.getInfo().getPartitionId() > 0) {
+      return;
+    }
     final CompositeServiceBuilder compositeInstall =
         startContext.createComposite(CLUSTER_ORCHESTRATION_COMPOSITE_SERVICE_NAME);
 
-    final KnownTopics knownTopics = new KnownTopics(serviceContainer);
-    compositeInstall
-        .createService(KNOWN_TOPICS_SERVICE_NAME, knownTopics)
-        .dependency(partitionServiceName, knownTopics.getPartitionInjector())
-        .dependency(
-            serverTransport(CLIENT_API_SERVER_NAME), knownTopics.getServerTransportInjector())
-        .dependency(
-            STREAM_PROCESSOR_SERVICE_FACTORY,
-            knownTopics.getStreamProcessorServiceFactoryInjector())
-        .install();
+    final KnownTopics knownTopics = new KnownTopics(clusterCfg);
+    compositeInstall.createService(KNOWN_TOPICS_SERVICE_NAME, knownTopics).install();
 
     final IdGenerator idGenerator = new IdGenerator();
     compositeInstall
@@ -148,9 +148,6 @@ public class ClusterOrchestrationInstallService implements Service<Void> {
     compositeInstall
         .createService(
             REQUEST_PARTITIONS_MESSAGE_HANDLER_SERVICE_NAME, requestPartitionsMessageHandler)
-        .dependency(
-            KNOWN_TOPICS_SERVICE_NAME,
-            requestPartitionsMessageHandler.getClusterTopicStateInjector())
         .install();
 
     compositeInstall.install();

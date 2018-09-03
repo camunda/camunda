@@ -345,7 +345,7 @@ public class ConfigurationTest {
     // when - then
     assertThat(cfgCluster.getPartitionsCount()).isEqualTo(3);
     final List<Integer> partitionIds = cfgCluster.getPartitionIds();
-    assertThat(partitionIds).contains(1, 2, 3);
+    assertThat(partitionIds).contains(0, 1, 2);
   }
 
   @Test

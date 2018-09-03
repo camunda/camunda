@@ -19,7 +19,6 @@ package io.zeebe.broker.clustering.base.partitions;
 
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.FOLLOWER_PARTITION_GROUP_NAME;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_SYSTEM_GROUP_NAME;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.RAFT_SERVICE_GROUP;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.followerPartitionServiceName;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.leaderPartitionServiceName;
@@ -244,10 +243,7 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
             .dependency(logStreamServiceName, partition.getLogStreamInjector())
             .dependency(snapshotStorageServiceName, partition.getSnapshotStorageInjector())
             .dependency(stateStorageFactoryServiceName, partition.getStateStorageFactoryInjector())
-            .group(
-                isInternalSystemPartition
-                    ? LEADER_PARTITION_SYSTEM_GROUP_NAME
-                    : LEADER_PARTITION_GROUP_NAME)
+            .group(LEADER_PARTITION_GROUP_NAME)
             .install();
       } else {
         LOG.debug(

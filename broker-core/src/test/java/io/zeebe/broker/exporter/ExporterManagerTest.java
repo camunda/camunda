@@ -43,6 +43,7 @@ public class ExporterManagerTest {
       new EmbeddedBrokerRule(
           brokerCfg -> {
             brokerCfg.getTopics().get(0).setPartitions(PARTITIONS);
+            brokerCfg.getCluster().setPartitionsCount(PARTITIONS);
 
             final ExporterCfg exporterCfg = new ExporterCfg();
             exporterCfg.setClassName(TestExporter.class.getName());
@@ -57,7 +58,7 @@ public class ExporterManagerTest {
   @Test
   public void shouldRunExporterForEveryPartition() throws InterruptedException {
     // given
-    IntStream.range(1, PARTITIONS + 1) // shift after internal system topic
+    IntStream.range(0, PARTITIONS) // shift after internal system topic
         .forEach(this::createJob);
 
     // then

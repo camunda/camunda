@@ -47,8 +47,7 @@ public class ClusterCfg implements ConfigurationEntry {
   private void initPartitionIds() {
     final IntArrayList list = new IntArrayList();
     for (int i = 0; i < partitionsCount; i++) {
-      // +1 'cause of system partition
-      final int partitionId = i + 1;
+      final int partitionId = i;
       list.add(partitionId);
     }
 

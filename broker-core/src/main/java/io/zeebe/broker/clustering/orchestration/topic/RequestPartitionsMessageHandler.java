@@ -17,48 +17,32 @@
  */
 package io.zeebe.broker.clustering.orchestration.topic;
 
-import io.zeebe.broker.clustering.orchestration.state.KnownTopics;
-import io.zeebe.broker.clustering.orchestration.state.TopicInfo;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+
+import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.transport.controlmessage.AbstractControlMessageHandler;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.impl.RecordMetadata;
-import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
-import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.sched.ActorControl;
-import io.zeebe.util.sched.future.ActorFuture;
-import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.DirectBuffer;
 
 public class RequestPartitionsMessageHandler extends AbstractControlMessageHandler
     implements Service<RequestPartitionsMessageHandler> {
 
-  private final Injector<KnownTopics> clusterTopicStateInjector = new Injector<>();
+  private final ClusterCfg clusterCfg;
 
-  private final AtomicReference<KnownTopics> clusterTopicStateReference = new AtomicReference<>();
-
-  public RequestPartitionsMessageHandler(final ServerOutput serverOutput) {
+  public RequestPartitionsMessageHandler(
+      final ServerOutput serverOutput, final ClusterCfg clusterCfg) {
     super(serverOutput);
+    this.clusterCfg = clusterCfg;
   }
 
   @Override
   public RequestPartitionsMessageHandler get() {
     return this;
-  }
-
-  @Override
-  public void start(final ServiceStartContext startContext) {
-    final KnownTopics knownTopics = clusterTopicStateInjector.getValue();
-    clusterTopicStateReference.set(knownTopics);
-  }
-
-  @Override
-  public void stop(final ServiceStopContext stopContext) {
-    clusterTopicStateReference.set(null);
   }
 
   @Override
@@ -72,67 +56,20 @@ public class RequestPartitionsMessageHandler extends AbstractControlMessageHandl
       final int partitionId,
       final DirectBuffer buffer,
       final RecordMetadata metadata) {
+
     final int requestStreamId = metadata.getRequestStreamId();
     final long requestId = metadata.getRequestId();
-    final KnownTopics knownTopics = clusterTopicStateReference.get();
-
-    if (partitionId != Protocol.SYSTEM_PARTITION) {
-      sendErrorResponse(
-          actor,
-          requestStreamId,
-          requestId,
-          "Partitions request must address the system partition %d",
-          Protocol.SYSTEM_PARTITION);
-    } else if (knownTopics == null) {
-      // it is important that partition not found is returned here to signal a client that it may
-      // have addressed a broker
-      // that appeared as the system partition leader but is not (yet) able to respond
-      sendErrorResponse(
-          actor,
-          requestStreamId,
-          requestId,
-          ErrorCode.PARTITION_NOT_FOUND,
-          "Partitions request must address the leader of the system partition %d",
-          Protocol.SYSTEM_PARTITION);
-    } else {
-      final ActorFuture<PartitionsResponse> responseFuture =
-          knownTopics.queryTopics(this::createResponse);
-
-      actor.runOnCompletion(
-          responseFuture,
-          (partitionsResponse, throwable) -> {
-            if (throwable == null) {
-              sendResponse(actor, requestStreamId, requestId, partitionsResponse);
-            } else {
-              // it is important that partition not found is returned here to signal a client that
-              // it may have addressed a broker
-              // that appeared as the system partition leader but is not (yet) able to respond
-              sendErrorResponse(
-                  actor,
-                  requestStreamId,
-                  requestId,
-                  ErrorCode.PARTITION_NOT_FOUND,
-                  throwable.getMessage());
-            }
-          });
-    }
+    sendResponse(actor, requestStreamId, requestId, createResponse());
   }
 
-  private PartitionsResponse createResponse(final Iterable<TopicInfo> topicInfos) {
+  private PartitionsResponse createResponse() {
     final PartitionsResponse response = new PartitionsResponse();
 
-    for (final TopicInfo topicInfo : topicInfos) {
-      final DirectBuffer topicName = topicInfo.getTopicNameBuffer();
-      topicInfo
-          .getPartitionIds()
-          .iterator()
-          .forEachRemaining(id -> response.addPartition(id.getValue(), topicName));
+    final DirectBuffer topic = wrapString(Protocol.SYSTEM_TOPIC);
+    for (int i = 0; i < clusterCfg.getPartitionsCount(); i++) {
+      response.addPartition(i, topic);
     }
 
     return response;
-  }
-
-  public Injector<KnownTopics> getClusterTopicStateInjector() {
-    return clusterTopicStateInjector;
   }
 }

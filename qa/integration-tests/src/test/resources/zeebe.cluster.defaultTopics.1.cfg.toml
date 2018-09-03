@@ -3,6 +3,12 @@
 
 bootstrap = 3
 
+[cluster]
+nodeId = 0
+clusterSize = 2
+partitionsCount = 2
+replicationFactor = 2
+
 [[topics]]
 name = "default-topic"
 partitions = 2

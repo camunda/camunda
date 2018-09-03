@@ -21,6 +21,7 @@ import io.zeebe.gateway.api.commands.FinalCommandStep;
 import io.zeebe.gateway.api.events.JobEvent;
 import io.zeebe.gateway.impl.ZeebeClientImpl;
 import io.zeebe.gateway.util.ClientRule;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -34,7 +35,7 @@ import org.junit.rules.RuleChain;
 
 public class AsyncClusterRequestTest {
 
-  private static final int PARTITION_ID = 123;
+  private static final int PARTITION_ID = Protocol.DEPLOYMENT_PARTITION;
 
   public StubBrokerRule brokerRule = new StubBrokerRule();
   public ClientRule clientRule = new ClientRule(brokerRule);
@@ -77,7 +78,7 @@ public class AsyncClusterRequestTest {
   static class TestRequestActor extends Actor {
 
     @SuppressWarnings("unchecked")
-    <R> void awaitResponse(FinalCommandStep<R> request, Consumer<R> responseConsumer) {
+    <R> void awaitResponse(final FinalCommandStep<R> request, final Consumer<R> responseConsumer) {
       actor.call(
           () ->
               actor.runOnCompletion(

@@ -106,8 +106,8 @@ public class MessageCorrelationTest {
     final long deploymentKey = testClient.deploy(workflow);
 
     testClient.receiveFirstDeploymentEvent(DeploymentIntent.CREATED, deploymentKey);
+    apiRule.topic(1).receiveFirstDeploymentEvent(DeploymentIntent.CREATED, deploymentKey);
     apiRule.topic(2).receiveFirstDeploymentEvent(DeploymentIntent.CREATED, deploymentKey);
-    apiRule.topic(3).receiveFirstDeploymentEvent(DeploymentIntent.CREATED, deploymentKey);
   }
 
   @Test

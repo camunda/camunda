@@ -43,8 +43,8 @@ import org.junit.rules.RuleChain;
 
 public class PartitionedJobSubscriptionTest {
 
-  public static final int PARTITION_1 = 1;
-  public static final int PARTITION_2 = 2;
+  public static final int PARTITION_1 = 0;
+  public static final int PARTITION_2 = 1;
 
   public static final String JOB_TYPE = "foo";
 
@@ -103,7 +103,7 @@ public class PartitionedJobSubscriptionTest {
     assertThat(request2.partitionId()).isEqualTo(PARTITION_2);
   }
 
-  protected List<ControlMessageRequest> getSubscribeRequests(StubBrokerRule broker) {
+  protected List<ControlMessageRequest> getSubscribeRequests(final StubBrokerRule broker) {
     return broker
         .getReceivedControlMessageRequests()
         .stream()

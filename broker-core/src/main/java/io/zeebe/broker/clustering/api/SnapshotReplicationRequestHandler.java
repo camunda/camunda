@@ -52,7 +52,8 @@ public class SnapshotReplicationRequestHandler {
       new FetchSnapshotChunkResponse();
 
   private final ErrorResponse errorResponse = new ErrorResponse();
-  public static final String PARTITION_NOT_FOUND_MESSAGE = "not currently tracking given partition";
+  public static final String PARTITION_NOT_FOUND_MESSAGE =
+      "not currently tracking given partition %d";
   public static final String GET_SNAPSHOT_ERROR_MESSAGE = "could not open snapshot";
   public static final String INVALID_CHUNK_OFFSET_MESSAGE = "chunkOffset must be >= 0";
   public static final String INVALID_CHUNK_LENGTH_MESSAGE =
@@ -81,7 +82,10 @@ public class SnapshotReplicationRequestHandler {
     final Partition partition = trackedPartitions.get(partitionId);
 
     if (partition == null) {
-      return () -> prepareError(ErrorResponseCode.PARTITION_NOT_FOUND, PARTITION_NOT_FOUND_MESSAGE);
+      return () ->
+          prepareError(
+              ErrorResponseCode.PARTITION_NOT_FOUND,
+              String.format(PARTITION_NOT_FOUND_MESSAGE, partitionId));
     }
 
     final SnapshotStorage storage = partition.getSnapshotStorage();
@@ -158,7 +162,7 @@ public class SnapshotReplicationRequestHandler {
     }
 
     int bytesRead = 0;
-    try (InputStream snapshotData = snapshot.getData()) {
+    try (final InputStream snapshotData = snapshot.getData()) {
       final long bytesSkipped = snapshotData.skip(chunkOffset);
       if (bytesSkipped < chunkOffset) {
         return prepareError(ErrorResponseCode.READ_ERROR, SEEK_ERROR_MESSAGE);

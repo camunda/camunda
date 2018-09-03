@@ -51,8 +51,8 @@ import org.junit.rules.RuleChain;
 
 public class PartitionedTopicSubscriptionTest {
 
-  public static final int PARTITION_1 = 1;
-  public static final int PARTITION_2 = 2;
+  public static final int PARTITION_1 = 0;
+  public static final int PARTITION_2 = 1;
 
   public StubBrokerRule broker1 = new StubBrokerRule(0);
   public StubBrokerRule broker2 = new StubBrokerRule(1);
@@ -106,7 +106,7 @@ public class PartitionedTopicSubscriptionTest {
     assertThat(request2.partitionId()).isEqualTo(PARTITION_2);
   }
 
-  protected List<ExecuteCommandRequest> getSubscribeRequests(StubBrokerRule broker) {
+  protected List<ExecuteCommandRequest> getSubscribeRequests(final StubBrokerRule broker) {
     return broker
         .getReceivedCommandRequests()
         .stream()
@@ -426,7 +426,7 @@ public class PartitionedTopicSubscriptionTest {
     assertThat(broker2Request.getCommand()).containsEntry("startPosition", -1L);
   }
 
-  protected List<ExecuteCommandRequest> getOpenSubscriptionRequests(StubBrokerRule broker) {
+  protected List<ExecuteCommandRequest> getOpenSubscriptionRequests(final StubBrokerRule broker) {
     return broker
         .getReceivedCommandRequests()
         .stream()
@@ -435,7 +435,7 @@ public class PartitionedTopicSubscriptionTest {
         .collect(Collectors.toList());
   }
 
-  protected List<ControlMessageRequest> getCloseSubscriptionRequests(StubBrokerRule broker) {
+  protected List<ControlMessageRequest> getCloseSubscriptionRequests(final StubBrokerRule broker) {
     return broker
         .getReceivedControlMessageRequests()
         .stream()
@@ -443,7 +443,7 @@ public class PartitionedTopicSubscriptionTest {
         .collect(Collectors.toList());
   }
 
-  private void assertFailed(Future<?> future) {
+  private void assertFailed(final Future<?> future) {
     assertThatThrownBy(() -> future.get()).isInstanceOf(ExecutionException.class);
   }
 }
