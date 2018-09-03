@@ -30,12 +30,6 @@
 
 # ----------------------------------------------------
 
-# Specifies the unique id of this broker node in a cluster.
-# The id should be between 0 and number of nodes in the cluster (exclusive).
-#
-# This setting can also be overridden using the environment variable ZEEBE_NODE_ID.
-# nodeId = 0;
-
 # Controls the number of nodes this broker waits for until doing bootstrapping:
 #
 # * When using a single-node cluster, the value should be 1
@@ -204,6 +198,31 @@ replicationFactor = 1
 
 
 [cluster]
+
+# This section contains all cluster related configurations, to setup an zeebe cluster
+
+# Specifies the unique id of this broker node in a cluster.
+# The id should be between 0 and number of nodes in the cluster (exclusive).
+#
+# This setting can also be overridden using the environment variable ZEEBE_NODE_ID.
+# nodeId = 0;
+
+# Controls the number of partitions, which should exist in the cluster.
+#
+# This can also be overridden using the environment variable ZEEBE_PARTITIONS_COUNT.
+# partitionsCount = 1
+
+# Controls the replication factor, which defines the count of replicas per partition.
+# The replication factor cannot be greater than the number of nodes in the cluster.
+#
+# This can also be overridden using the environment variable ZEEBE_REPLICATION_FACTOR.
+# replicationFactor = 1
+
+# Specifies the zeebe cluster size. This value is used to determine which broker
+# is responsible for which partition.
+#
+# This can also be overridden using the environment variable ZEEBE_CLUSTER_SIZE.
+# clusterSize = 1
 
 # Allows to specify a list of known other nodes to connect to on startup
 # The contact points of the management api must be specified.

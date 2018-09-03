@@ -24,9 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class BrokerCfg {
-  public static final int DEFAULT_NODE_ID = 0;
-
-  private int nodeId = DEFAULT_NODE_ID;
   private int bootstrap = 0;
 
   private NetworkCfg network = new NetworkCfg();
@@ -39,12 +36,11 @@ public class BrokerCfg {
   private List<TopicCfg> topics = new ArrayList<>();
   private List<ExporterCfg> exporters = new ArrayList<>();
 
-  public void init(String brokerBase) {
+  public void init(final String brokerBase) {
     init(brokerBase, new Environment());
   }
 
-  public void init(String brokerBase, Environment environment) {
-    applyEnvironment(environment);
+  public void init(final String brokerBase, final Environment environment) {
     network.init(this, brokerBase, environment);
     cluster.init(this, brokerBase, environment);
     threads.init(this, brokerBase, environment);
@@ -53,19 +49,11 @@ public class BrokerCfg {
     exporters.forEach(e -> e.init(this, brokerBase, environment));
   }
 
-  private void applyEnvironment(final Environment environment) {
-    environment.getInt(EnvironmentConstants.ENV_NODE_ID).ifPresent(v -> nodeId = v);
-  }
-
-  public int getNodeId() {
-    return nodeId;
-  }
-
   public int getBootstrap() {
     return bootstrap;
   }
 
-  public void setBootstrap(int bootstrap) {
+  public void setBootstrap(final int bootstrap) {
     this.bootstrap = bootstrap;
   }
 
@@ -73,7 +61,7 @@ public class BrokerCfg {
     return network;
   }
 
-  public void setNetwork(NetworkCfg network) {
+  public void setNetwork(final NetworkCfg network) {
     this.network = network;
   }
 
@@ -81,7 +69,7 @@ public class BrokerCfg {
     return cluster;
   }
 
-  public void setCluster(ClusterCfg cluster) {
+  public void setCluster(final ClusterCfg cluster) {
     this.cluster = cluster;
   }
 
@@ -89,7 +77,7 @@ public class BrokerCfg {
     return threads;
   }
 
-  public void setThreads(ThreadsCfg threads) {
+  public void setThreads(final ThreadsCfg threads) {
     this.threads = threads;
   }
 
@@ -97,7 +85,7 @@ public class BrokerCfg {
     return metrics;
   }
 
-  public void setMetrics(MetricsCfg metrics) {
+  public void setMetrics(final MetricsCfg metrics) {
     this.metrics = metrics;
   }
 
@@ -105,7 +93,7 @@ public class BrokerCfg {
     return data;
   }
 
-  public void setData(DataCfg logs) {
+  public void setData(final DataCfg logs) {
     this.data = logs;
   }
 
@@ -113,7 +101,7 @@ public class BrokerCfg {
     return gossip;
   }
 
-  public void setGossip(GossipConfiguration gossip) {
+  public void setGossip(final GossipConfiguration gossip) {
     this.gossip = gossip;
   }
 
@@ -121,7 +109,7 @@ public class BrokerCfg {
     return raft;
   }
 
-  public void setRaft(RaftConfiguration raft) {
+  public void setRaft(final RaftConfiguration raft) {
     this.raft = raft;
   }
 
@@ -129,7 +117,7 @@ public class BrokerCfg {
     return topics;
   }
 
-  public void setTopics(List<TopicCfg> topics) {
+  public void setTopics(final List<TopicCfg> topics) {
     this.topics = topics;
   }
 
@@ -137,7 +125,7 @@ public class BrokerCfg {
     return exporters;
   }
 
-  public void setExporters(List<ExporterCfg> exporters) {
+  public void setExporters(final List<ExporterCfg> exporters) {
     this.exporters = exporters;
   }
 

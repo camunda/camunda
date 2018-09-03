@@ -66,7 +66,7 @@ public class ClusteringRule extends ExternalResource {
   private ZeebeClient zeebeClient;
   private TopologyClient topologyClient;
 
-  private List<AutoCloseable> closeables = new ArrayList<>();
+  private final List<AutoCloseable> closeables = new ArrayList<>();
 
   private final String[] brokerConfigFiles;
   private final BrokerCfg[] brokerCfgs;
@@ -117,7 +117,7 @@ public class ClusteringRule extends ExternalResource {
     for (int i = size - 1; i >= 0; i--) {
       try {
         closeables.remove(i).close();
-      } catch (Exception e) {
+      } catch (final Exception e) {
         failed.addSuppressed(e);
         LOG.error("Failed to close something after the test, postponing and continuing", e);
       }
@@ -234,11 +234,11 @@ public class ClusteringRule extends ExternalResource {
    * @param partitionCount to number of partitions for the new topic
    * @return the created topic
    */
-  public Topic waitForTopic(int partitionCount) {
+  public Topic waitForTopic(final int partitionCount) {
     return waitForTopic(partitionCount, DEFAULT_REPLICATION_FACTOR);
   }
 
-  public Topic waitForTopic(int partitionCount, int replicationFactor) {
+  public Topic waitForTopic(final int partitionCount, final int replicationFactor) {
     waitForTopicPartitionReplicationFactor(DEFAULT_TOPIC, partitionCount, replicationFactor);
 
     return waitForTopicAvailability(DEFAULT_TOPIC);
@@ -345,11 +345,11 @@ public class ClusteringRule extends ExternalResource {
     waitForInternalSystemAndReplicationFactor();
   }
 
-  public void restartBroker(Broker broker) {
+  public void restartBroker(final Broker broker) {
     restartBroker(brokerId(broker));
   }
 
-  private int brokerId(Broker broker) {
+  private int brokerId(final Broker broker) {
     for (int i = 0; i < brokers.length; i++) {
       if (broker.equals(brokers[i])) {
         return i;
@@ -412,7 +412,7 @@ public class ClusteringRule extends ExternalResource {
   }
 
   public Broker getBroker(final SocketAddress address) {
-    for (Broker broker : brokers) {
+    for (final Broker broker : brokers) {
       if (address.equals(broker.getConfig().getNetwork().getClient().toSocketAddress())) {
         return broker;
       }
@@ -464,7 +464,7 @@ public class ClusteringRule extends ExternalResource {
   public void stopBroker(final String address) {
     final SocketAddress socketAddress = SocketAddress.from(address);
 
-    for (Broker broker : brokers) {
+    for (final Broker broker : brokers) {
       if (broker.getConfig().getNetwork().getClient().toSocketAddress().equals(socketAddress)) {
         stopBroker(broker);
         break;
@@ -533,10 +533,10 @@ public class ClusteringRule extends ExternalResource {
     return requestTopology(brokers[nodeId]);
   }
 
-  private List<BrokerInfo> requestTopology(Broker broker) {
+  private List<BrokerInfo> requestTopology(final Broker broker) {
     final BrokerCfg config = broker.getConfig();
     return topologyClient.requestTopologyFromBroker(
-        config.getNodeId(), config.getNetwork().getClient().toSocketAddress());
+        config.getCluster().getNodeId(), config.getNetwork().getClient().toSocketAddress());
   }
 
   public SocketAddress getClientAddress() {

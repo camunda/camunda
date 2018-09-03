@@ -15,8 +15,6 @@
  */
 package io.zeebe.broker.it.clustering;
 
-import static io.zeebe.broker.it.clustering.ClusteringRule.BROKER_2_TOML;
-import static io.zeebe.broker.it.clustering.ClusteringRule.BROKER_3_TOML;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -38,7 +36,11 @@ public class SubscriptionClusteredSinglePartitionTest {
   public Timeout testTimeout = Timeout.seconds(30);
   public ClusteringRule clusteringRule =
       new ClusteringRule(
-          new String[] {"zeebe.cluster.1.singlePartition.cfg.toml", BROKER_2_TOML, BROKER_3_TOML});
+          new String[] {
+            "zeebe.cluster.1.singlePartition.cfg.toml",
+            "zeebe.cluster.2.singlePartition.cfg.toml",
+            "zeebe.cluster.3.singlePartition.cfg.toml"
+          });
   public ClientRule clientRule = new ClientRule(clusteringRule);
 
   @Rule
@@ -75,12 +77,12 @@ public class SubscriptionClusteredSinglePartitionTest {
     assertThat(raftEvents).hasSize(4);
     assertThat(raftEvents)
         .extracting(RaftEvent::getState)
-        .containsExactly(
+        .containsOnly(
             RaftState.MEMBER_ADDED,
             RaftState.MEMBER_ADDED,
             RaftState.MEMBER_REMOVED,
             RaftState.MEMBER_ADDED);
-    assertThat(raftEvents.get(1).getMembers()).hasSize(clusteringRule.getBrokersInCluster().size());
+    assertThat(raftEvents.get(3).getMembers()).hasSize(clusteringRule.getBrokersInCluster().size());
   }
 
   @Test
@@ -103,11 +105,11 @@ public class SubscriptionClusteredSinglePartitionTest {
     assertThat(raftEvents).hasSize(4);
     assertThat(raftEvents)
         .extracting(RaftEvent::getState)
-        .containsExactly(
+        .containsOnly(
             RaftState.MEMBER_ADDED,
             RaftState.MEMBER_ADDED,
             RaftState.MEMBER_REMOVED,
             RaftState.MEMBER_ADDED);
-    assertThat(raftEvents.get(1).getMembers()).hasSize(clusteringRule.getBrokersInCluster().size());
+    assertThat(raftEvents.get(3).getMembers()).hasSize(clusteringRule.getBrokersInCluster().size());
   }
 }

@@ -81,9 +81,9 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
   private ServiceName<StateStorageFactory> stateStorageFactoryServiceName;
 
   public PartitionInstallService(
-      BrokerCfg brokerCfg,
-      RaftPersistentConfiguration configuration,
-      boolean isInternalSystemPartition) {
+      final BrokerCfg brokerCfg,
+      final RaftPersistentConfiguration configuration,
+      final boolean isInternalSystemPartition) {
     this.brokerCfg = brokerCfg;
     this.configuration = configuration;
     this.isInternalSystemPartition = isInternalSystemPartition;
@@ -100,7 +100,7 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
   }
 
   @Override
-  public void start(ServiceStartContext startContext) {
+  public void start(final ServiceStartContext startContext) {
     this.startContext = startContext;
 
     final ClientTransport clientTransport = clientTransportInjector.getValue();
@@ -149,7 +149,7 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
         new Raft(
             logName,
             brokerCfg.getRaft(),
-            brokerCfg.getNodeId(),
+            brokerCfg.getCluster().getNodeId(),
             clientTransport,
             configuration,
             messageBuffer,
@@ -169,7 +169,7 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
   }
 
   @Override
-  public ActorFuture<Void> onMemberLeaving(Raft raft, Collection<Integer> nodeIds) {
+  public ActorFuture<Void> onMemberLeaving(final Raft raft, final Collection<Integer> nodeIds) {
     final ServiceName<Partition> partitionServiceName = leaderPartitionServiceName(raft.getName());
 
     final int raftMemberSize = nodeIds.size() + 1; // raft does not count itself as member
@@ -199,14 +199,14 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
   }
 
   @Override
-  public void onMemberJoined(Raft raft, Collection<Integer> currentNodeIds) {
+  public void onMemberJoined(final Raft raft, final Collection<Integer> currentNodeIds) {
     if (raft.getState() == RaftState.LEADER) {
       installLeaderPartition(raft);
     }
   }
 
   @Override
-  public void onStateChange(Raft raft, RaftState raftState) {
+  public void onStateChange(final Raft raft, final RaftState raftState) {
     switch (raftState) {
       case LEADER:
         removeFollowerPartitionService(raft);
@@ -222,7 +222,7 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
     }
   }
 
-  private void installLeaderPartition(Raft raft) {
+  private void installLeaderPartition(final Raft raft) {
     final ServiceName<Partition> partitionServiceName = leaderPartitionServiceName(raft.getName());
 
     final int raftMemberSize = raft.getMemberSize() + 1; // raft does not count itself as member
@@ -259,7 +259,7 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
     }
   }
 
-  private void installFollowerPartition(Raft raft) {
+  private void installFollowerPartition(final Raft raft) {
     final Partition partition = new Partition(partitionInfo, RaftState.FOLLOWER);
     final ServiceName<Partition> partitionServiceName =
         followerPartitionServiceName(raft.getName());
@@ -276,7 +276,7 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
     }
   }
 
-  private void removeFollowerPartitionService(Raft raft) {
+  private void removeFollowerPartitionService(final Raft raft) {
     final ServiceName<Partition> partitionServiceName =
         followerPartitionServiceName(raft.getName());
 

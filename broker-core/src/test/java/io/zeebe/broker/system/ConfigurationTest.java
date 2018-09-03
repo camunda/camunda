@@ -17,14 +17,20 @@
  */
 package io.zeebe.broker.system;
 
-import static io.zeebe.broker.system.configuration.BrokerCfg.DEFAULT_NODE_ID;
+import static io.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_CLUSTER_SIZE;
 import static io.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_CONTACT_POINTS;
+import static io.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_NODE_ID;
+import static io.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_PARTITIONS_COUNT;
+import static io.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_REPLICATION_FACTOR;
 import static io.zeebe.broker.system.configuration.DataCfg.DEFAULT_DIRECTORY;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_CLUSTER_SIZE;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_DIRECTORIES;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_HOST;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_INITIAL_CONTACT_POINTS;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_NODE_ID;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PARTITIONS_COUNT;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PORT_OFFSET;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_REPLICATION_FACTOR;
 import static io.zeebe.broker.system.configuration.NetworkCfg.DEFAULT_HOST;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -63,11 +69,6 @@ public class ConfigurationTest {
   public static final int MANAGEMENT_PORT = SocketBindingManagementCfg.DEFAULT_PORT;
   public static final int REPLICATION_PORT = SocketBindingReplicationCfg.DEFAULT_PORT;
   public static final int SUBSCRIPTION_PORT = SocketBindingSubscriptionCfg.DEFAULT_PORT;
-
-  @Test
-  public void shouldUseDefaultNodeId() {
-    assertNodeId("default", DEFAULT_NODE_ID);
-  }
 
   @Test
   public void shouldUseSpecifiedNodeId() {
@@ -307,6 +308,92 @@ public class ConfigurationTest {
     assertDirectories("directories", "foo", "bar");
   }
 
+  @Test
+  public void shouldReadDefaultSystemClusterConfiguration() {
+    // given
+    final BrokerCfg cfg = readConfig("default");
+    final ClusterCfg cfgCluster = cfg.getCluster();
+
+    // when - then
+    assertThat(cfgCluster.getInitialContactPoints()).isEmpty();
+    assertThat(cfgCluster.getNodeId()).isEqualTo(DEFAULT_NODE_ID);
+    assertThat(cfgCluster.getPartitionsCount()).isEqualTo(DEFAULT_PARTITIONS_COUNT);
+    assertThat(cfgCluster.getReplicationFactor()).isEqualTo(DEFAULT_REPLICATION_FACTOR);
+    assertThat(cfgCluster.getClusterSize()).isEqualTo(DEFAULT_CLUSTER_SIZE);
+  }
+
+  @Test
+  public void shouldReadSpecificSystemClusterConfiguration() {
+    // given
+    final BrokerCfg cfg = readConfig("cluster-cfg");
+    final ClusterCfg cfgCluster = cfg.getCluster();
+
+    // when - then
+    assertThat(cfgCluster.getInitialContactPoints()).isEmpty();
+    assertThat(cfgCluster.getNodeId()).isEqualTo(2);
+    assertThat(cfgCluster.getPartitionsCount()).isEqualTo(3);
+    assertThat(cfgCluster.getReplicationFactor()).isEqualTo(4);
+    assertThat(cfgCluster.getClusterSize()).isEqualTo(5);
+  }
+
+  @Test
+  public void shouldOverrideReplicationFactorViaEnvironment() {
+    // given
+    environment.put(ENV_REPLICATION_FACTOR, "2");
+
+    // when
+    final BrokerCfg cfg = readConfig("cluster-cfg");
+    final ClusterCfg cfgCluster = cfg.getCluster();
+
+    // then
+    assertThat(cfgCluster.getReplicationFactor()).isEqualTo(2);
+  }
+
+  @Test
+  public void shouldOverridePartitionsCountViaEnvironment() {
+    // given
+    environment.put(ENV_PARTITIONS_COUNT, "2");
+
+    // when
+    final BrokerCfg cfg = readConfig("cluster-cfg");
+    final ClusterCfg cfgCluster = cfg.getCluster();
+
+    // then
+    assertThat(cfgCluster.getPartitionsCount()).isEqualTo(2);
+  }
+
+  @Test
+  public void shouldOverrideClusterSizeViaEnvironment() {
+    // given
+    environment.put(ENV_CLUSTER_SIZE, "2");
+
+    // when
+    final BrokerCfg cfg = readConfig("cluster-cfg");
+    final ClusterCfg cfgCluster = cfg.getCluster();
+
+    // then
+    assertThat(cfgCluster.getClusterSize()).isEqualTo(2);
+  }
+
+  @Test
+  public void shouldOverrideAllClusterPropertiesViaEnvironment() {
+    // given
+    environment.put(ENV_CLUSTER_SIZE, "1");
+    environment.put(ENV_PARTITIONS_COUNT, "2");
+    environment.put(ENV_REPLICATION_FACTOR, "3");
+    environment.put(ENV_NODE_ID, "4");
+
+    // when
+    final BrokerCfg cfg = readConfig("cluster-cfg");
+    final ClusterCfg cfgCluster = cfg.getCluster();
+
+    // then
+    assertThat(cfgCluster.getClusterSize()).isEqualTo(1);
+    assertThat(cfgCluster.getPartitionsCount()).isEqualTo(2);
+    assertThat(cfgCluster.getReplicationFactor()).isEqualTo(3);
+    assertThat(cfgCluster.getNodeId()).isEqualTo(4);
+  }
+
   private BrokerCfg readConfig(final String name) {
     final String configPath = "/system/" + name + ".toml";
     final InputStream resourceAsStream = ConfigurationTest.class.getResourceAsStream(configPath);
@@ -321,7 +408,7 @@ public class ConfigurationTest {
 
   private void assertNodeId(final String configFileName, final int nodeId) {
     final BrokerCfg cfg = readConfig(configFileName);
-    assertThat(cfg.getNodeId()).isEqualTo(nodeId);
+    assertThat(cfg.getCluster().getNodeId()).isEqualTo(nodeId);
   }
 
   private void assertPorts(

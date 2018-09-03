@@ -36,12 +36,12 @@ public class GossipService implements Service<Gossip> {
 
   private Gossip gossip;
 
-  public GossipService(BrokerCfg configuration) {
+  public GossipService(final BrokerCfg configuration) {
     this.configuration = configuration;
   }
 
   @Override
-  public void start(ServiceStartContext startContext) {
+  public void start(final ServiceStartContext startContext) {
     final BufferingServerTransport serverTransport = bufferingServerTransportInjector.getValue();
     final ClientTransport clientTransport = clientTransportInjector.getValue();
 
@@ -49,13 +49,16 @@ public class GossipService implements Service<Gossip> {
 
     gossip =
         new Gossip(
-            configuration.getNodeId(), serverTransport, clientTransport, gossipConfiguration);
+            configuration.getCluster().getNodeId(),
+            serverTransport,
+            clientTransport,
+            gossipConfiguration);
 
     startContext.async(startContext.getScheduler().submitActor(gossip));
   }
 
   @Override
-  public void stop(ServiceStopContext stopContext) {
+  public void stop(final ServiceStopContext stopContext) {
     stopContext.async(gossip.close());
   }
 
