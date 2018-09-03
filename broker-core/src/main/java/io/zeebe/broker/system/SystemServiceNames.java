@@ -18,19 +18,12 @@
 package io.zeebe.broker.system;
 
 import io.zeebe.broker.system.management.LeaderManagementRequestHandler;
-import io.zeebe.broker.system.management.topics.FetchCreatedTopicsRequestHandlerService;
 import io.zeebe.broker.system.metrics.MetricsFileWriter;
 import io.zeebe.servicecontainer.ServiceName;
 
 public class SystemServiceNames {
   public static final ServiceName<MetricsFileWriter> METRICS_FILE_WRITER =
       ServiceName.newServiceName("broker.metricsFileWriter", MetricsFileWriter.class);
-
-  public static final ServiceName<FetchCreatedTopicsRequestHandlerService>
-      FETCH_CREATED_TOPIC_HANDLER =
-          ServiceName.newServiceName(
-              "broker.system.management.topics.handler",
-              FetchCreatedTopicsRequestHandlerService.class);
 
   public static final ServiceName<LeaderManagementRequestHandler>
       LEADER_MANAGEMENT_REQUEST_HANDLER =
