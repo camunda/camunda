@@ -5,6 +5,7 @@ import Selection from '../Selection/index.js';
 import ContextualMessage from 'modules/components/ContextualMessage';
 
 import {NO_SELECTIONS_MESSAGE} from './constants';
+
 import * as Styled from './styled.js';
 
 export default class SelectionList extends React.Component {
@@ -35,7 +36,9 @@ export default class SelectionList extends React.Component {
                   selectionId={selectionId}
                   instances={workflowInstances}
                   instanceCount={totalCount}
-                  onRetry={this.props.onRetrySelection}
+                  onRetry={() =>
+                    this.props.onRetrySelection(this.props.openSelection)
+                  }
                   onToggle={() => this.props.onToggleSelection(selectionId)}
                   onDelete={() => this.props.onDeleteSelection(selectionId)}
                 />
