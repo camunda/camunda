@@ -1,0 +1,55 @@
+import styled from 'styled-components';
+import {Colors, themed, themeStyle} from 'modules/theme';
+
+export const OptionButton = themed(styled.button`
+  /* Positioning */
+  position: relative;
+  height: 36px;
+
+  /* Display & Box Model */
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0 10px;
+  border: none;
+  outline: none;
+
+  /* Color */
+  background: none;
+  color: ${themeStyle({
+    dark: 'rgba(255, 255, 255, 0.9)',
+    light: 'rgba(98, 98, 110, 0.9)'
+  })};
+  /* Text */
+  text-align: left;
+  font-size: 15px;
+  font-weight: 600;
+  line-height: 36px;
+
+  /* Other */
+  cursor: pointer;
+
+  &:hover {
+    background: ${themeStyle({
+      dark: Colors.uiDark06,
+      light: Colors.uiLight05
+    })};
+  }
+
+  &:active {
+    background: ${themeStyle({
+      dark: Colors.darkActive,
+      light: Colors.lightActive
+    })};
+  }
+
+  &:focus {
+    z-index: 1;
+    box-shadow: ${themeStyle({
+      dark: `0 0 0 1px ${Colors.focusOuter},0 0 0 4px ${Colors.darkFocusInner}`,
+      light: `0 0 0 1px ${Colors.focusOuter}, 0 0 0 4px ${
+        Colors.lightFocusInner
+      }`
+    })};
+  }
+`);
