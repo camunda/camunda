@@ -10,7 +10,7 @@ import {Number, Table, Heatmap, Chart} from './views';
 const {view, groupBy, getLabelFor} = reportConfig;
 
 const defaultErrorMessage =
-  'Cannot display data for the given report builder settings. Please choose another combination!';
+  'Cannot display data for the given report builder settings!. Please choose another combination!';
 
 export default class ReportView extends React.Component {
   constructor(props) {
@@ -55,9 +55,10 @@ export default class ReportView extends React.Component {
   }
 
   checkCombinedAndRender = report => {
-    if (this.isEmpty(report.result))
-      return this.buildInstructionMessage('one or more reports from the list', true);
-    return this.renderCombinedReport(report);
+    const result = report.result;
+    if (result && typeof result === 'object' && Object.keys(result).length)
+      return this.renderCombinedReport(report);
+    return this.buildInstructionMessage('one or more reports from the list', true);
   };
 
   checkProcDefAndRenderReport = report => {
@@ -106,7 +107,7 @@ export default class ReportView extends React.Component {
   };
 
   isEmpty = str => {
-    return !str || 0 === str.length || !Object.keys(str).length;
+    return !str || 0 === str.length;
   };
 
   loadFlowNodeNames = async (key, version) => {
@@ -151,7 +152,6 @@ export default class ReportView extends React.Component {
 
   renderSingleReport = report => {
     let {data, result, processInstanceCount} = report;
-    let config;
 
     const visualizations = ['pie', 'line', 'bar', 'table'];
     if (data.view.entity === 'flowNode' && visualizations.includes(data.visualization) && result) {
@@ -162,9 +162,34 @@ export default class ReportView extends React.Component {
       return <LoadingIndicator />;
     }
 
-    let Component;
+    return this.getConfig(data.visualization, 'single', result, data, processInstanceCount);
+  };
 
-    switch (data.visualization) {
+  renderCombinedReport = report => {
+    const reports = Object.keys(report.result).map(reportId => report.result[reportId]);
+
+    const {result, data, processInstanceCount} = reports[0];
+    if (reports.length === 1) {
+      return this.getConfig(data.visualization, 'single', result, data, processInstanceCount);
+    }
+    return this.getConfig(reports[0].data.visualization, 'combined', report.result, data);
+  };
+
+  getConfig = (visualization, reportType, result, data, processInstanceCount) => {
+    // temporary check
+    if (reportType === 'combined' && visualization !== 'table') {
+      const config = {
+        component: ReportBlankSlate,
+        props: {
+          message: 'combined bar charts and area charts are not available yet'
+        }
+      };
+      return this.getReportViewTemplate(config, config.component);
+    }
+
+    let config;
+
+    switch (visualization) {
       case 'number':
         config = {
           component: Number,
@@ -172,18 +197,14 @@ export default class ReportView extends React.Component {
         };
         break;
       case 'table':
-        const viewLabel = getLabelFor(view, data.view);
-        const groupByLabel = getLabelFor(groupBy, data.groupBy);
-        const formattedResult = this.formatResult(data, result);
         config = {
           component: Table,
           props: {
-            data: formattedResult,
-            labels: [groupByLabel, viewLabel],
+            ...this.getTableProps(reportType, result, data, processInstanceCount),
+            reportType,
             configuration: data.configuration,
             disableReportScrolling: this.props.disableReportScrolling,
-            property: data.view.property,
-            processInstanceCount
+            property: data.view.property
           }
         };
         break;
@@ -236,22 +257,8 @@ export default class ReportView extends React.Component {
     }
 
     config.props.errorMessage = defaultErrorMessage;
-    Component = config.component;
 
-    return this.getReportViewTemplate(config, Component);
-  };
-
-  renderCombinedReport = report => {
-    const config = {
-      component: ReportBlankSlate,
-      props: {
-        message: 'Result is Available',
-        isCombined: true
-      }
-    };
-    const Component = config.component;
-
-    return this.getReportViewTemplate(config, Component);
+    return this.getReportViewTemplate(config, config.component);
   };
 
   getReportViewTemplate = (config, Component) => {
@@ -264,6 +271,61 @@ export default class ReportView extends React.Component {
         )}
       </ErrorBoundary>
     );
+  };
+
+  getTableProps(reportType, result, data, processInstanceCount) {
+    if (reportType === 'combined') {
+      return this.getCombinedProps(result);
+    }
+    const viewLabel = getLabelFor(view, data.view);
+    const groupByLabel = getLabelFor(groupBy, data.groupBy);
+    const formattedResult = this.formatResult(data, result);
+    return {
+      data: formattedResult,
+      labels: [groupByLabel, viewLabel],
+      processInstanceCount
+    };
+  }
+
+  getCombinedProps = result => {
+    const reports = Object.keys(result).map(reportId => result[reportId]);
+    const initialData = {
+      labels: [],
+      reportsNames: [],
+      data: [],
+      processInstanceCount: []
+    };
+
+    const combinedProps = reports.reduce((prevReport, report) => {
+      const {data, result, processInstanceCount, name} = report;
+
+      // build 2d array of all labels
+      const viewLabel = getLabelFor(view, data.view);
+      const groupByLabel = getLabelFor(groupBy, data.groupBy);
+      const labels = [...prevReport.labels, [groupByLabel, viewLabel]];
+
+      // 2d array of all names
+      const reportsNames = [...prevReport.reportsNames, name];
+
+      // 2d array of all results
+      const formattedResult = this.formatResult(data, result);
+      const reportsResult = [...prevReport.data, formattedResult];
+
+      // 2d array of all process instances count
+      const reportsProcessInstanceCount = [
+        ...prevReport.processInstanceCount,
+        processInstanceCount
+      ];
+
+      return {
+        labels,
+        reportsNames,
+        data: reportsResult,
+        processInstanceCount: reportsProcessInstanceCount
+      };
+    }, initialData);
+
+    return combinedProps;
   };
 
   getDateFormat(unit) {

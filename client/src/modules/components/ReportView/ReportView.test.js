@@ -363,3 +363,93 @@ it('should instruct to select one or more reports if no reports are selected for
   });
   expect(node.find('.message')).toIncludeText('one or more reports');
 });
+
+describe('combined Report View', () => {
+  const reportA = {
+    name: 'report A',
+    data: {
+      processDefinitionKey: 'aKey',
+      processDefinitionVersion: '1',
+      view: {
+        operation: 'foo'
+      },
+      groupBy: {
+        type: 'processInstance',
+        unit: 'day'
+      },
+      visualization: 'table',
+      configuration: {}
+    },
+    processInstanceCount: 100,
+    result: {
+      '2015-03-25T12:00:00Z': 2
+    }
+  };
+
+  const CombinedReport = {
+    reportType: 'combined',
+    data: {
+      configuration: {},
+      reports: ['report A']
+    },
+    result: {
+      'report A': reportA
+    }
+  };
+
+  it('should invok getConfig function when only one combined report is selected', () => {
+    const node = mount(<ReportView report={CombinedReport} />);
+    const spy = jest.spyOn(node.instance(), 'getConfig');
+    node.setState({
+      loaded: true
+    });
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it('should invok getCombinedProps function when multiple combined reports are selected', () => {
+    const report = {
+      reportType: 'combined',
+      data: {
+        configuration: {},
+        reports: ['report A', 'report B']
+      },
+      result: {
+        'report A': reportA,
+        'report B': reportA
+      }
+    };
+
+    const node = mount(<ReportView report={report} />);
+    const spy = jest.spyOn(node.instance(), 'getCombinedProps');
+    node.setState({
+      loaded: true
+    });
+    expect(spy).toHaveBeenCalled();
+  });
+
+  it('should return correct table proberties', () => {
+    const report = {
+      reportType: 'combined',
+      data: {
+        configuration: {},
+        reports: ['report A', 'report B']
+      },
+      result: {
+        'report A': reportA,
+        'report B': reportA
+      }
+    };
+
+    const reports = [reportA, reportA];
+
+    const node = mount(<ReportView report={report} />);
+
+    node.setState({
+      loaded: true
+    });
+    const props = node.instance().getCombinedProps(reports);
+    expect(props.data[1]).toEqual({'2015-03-25': 2});
+    expect(props.labels).toHaveLength(2);
+    expect(props.processInstanceCount).toHaveLength(2);
+  });
+});

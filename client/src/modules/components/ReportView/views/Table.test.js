@@ -1,5 +1,5 @@
 import React from 'react';
-import {mount} from 'enzyme';
+import {mount, shallow} from 'enzyme';
 
 import Table from './Table';
 import {processRawData} from 'services';
@@ -160,4 +160,68 @@ it('should format data according to the provided formatter', async () => {
   expect(node).toIncludeText('2');
   expect(node).toIncludeText('4');
   expect(node).toIncludeText('6');
+});
+
+describe('Combined Data', () => {
+  const props = {
+    data: [
+      {
+        a: 1,
+        b: 2,
+        c: 3
+      },
+      {
+        a: 1,
+        b: 2,
+        c: 3
+      }
+    ],
+    labels: [['key', 'value'], ['key', 'value']],
+    reportType: 'combined',
+    property: 'frequency',
+    processInstanceCount: [100, 100],
+    reportsNames: ['Report A', 'Report B'],
+    configuration: {}
+  };
+
+  let node;
+  beforeEach(async () => (node = await mount(shallow(<Table {...props} />).get(0))));
+
+  it('should unify the keys of all result object by filling empty ones with null', () => {
+    expect(node.instance().uniteResults([{a: 1, b: 2}, {b: 1}], ['a', 'b'])).toEqual([
+      {a: 1, b: 2},
+      {a: '', b: 1}
+    ]);
+  });
+
+  it('should return correctly formatted body rows', () => {
+    expect(
+      node
+        .instance()
+        .getBodyRows([{a: 1, b: 2}, {a: '', b: 1}], ['a', 'b'], v => v, false, [100, 100])
+    ).toEqual([['a', 1, ''], ['b', 2, 1]]);
+  });
+
+  it('should return correct table label structure', () => {
+    expect(
+      node
+        .instance()
+        .getFormattedLabels([['key', 'value'], ['key', 'value']], ['Report A', 'Report B'], false)
+    ).toEqual([{label: 'Report A', columns: ['value']}, {label: 'Report B', columns: ['value']}]);
+  });
+
+  it('should return correct labels and body when combining to table report', async () => {
+    expect(node.instance().processCombinedData()).toEqual({
+      head: [
+        'key',
+        {label: 'Report A', columns: ['value', 'Relative Frequency']},
+        {label: 'Report B', columns: ['value', 'Relative Frequency']}
+      ],
+      body: [
+        ['a', 1, '12.3%', 1, '12.3%'],
+        ['b', 2, '12.3%', 2, '12.3%'],
+        ['c', 3, '12.3%', 3, '12.3%']
+      ]
+    });
+  });
 });

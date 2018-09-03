@@ -74,13 +74,24 @@ export default class CombinedSelectionPanel extends React.Component {
   };
 
   isCompatible = report => {
+    const {referenceReport} = this.state;
     return (
-      !this.state.referenceReport ||
-      (report.data.groupBy.type === this.state.referenceReport.groupBy.type &&
-        report.data.visualization === this.state.referenceReport.visualization &&
-        report.data.view.property === this.state.referenceReport.view.property &&
-        report.data.view.entity === this.state.referenceReport.view.entity)
+      !referenceReport ||
+      (this.checkSameGroupBy(referenceReport, report.data) &&
+        report.data.visualization === referenceReport.visualization &&
+        report.data.view.property === referenceReport.view.property &&
+        report.data.view.entity === referenceReport.view.entity)
     );
+  };
+
+  checkSameGroupBy = (referenceReport, data) => {
+    let isSameValue = true;
+    if (referenceReport.groupBy.value) {
+      isSameValue =
+        referenceReport.groupBy.value.unit === data.groupBy.value.unit &&
+        referenceReport.groupBy.value.name === data.groupBy.value.name;
+    }
+    return data.groupBy.type === referenceReport.groupBy.type && isSameValue;
   };
 
   renderList = checked => report => {

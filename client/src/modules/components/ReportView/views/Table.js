@@ -14,8 +14,8 @@ export default withErrorHandling(
       needEndpoint: false
     };
 
-    static getDerivedStateFromProps({data}) {
-      if (data && isRaw(data)) {
+    static getDerivedStateFromProps({data, reportType}) {
+      if (data && (!reportType || reportType === 'single') && isRaw(data)) {
         return {needEndpoint: true};
       }
       return null;
@@ -27,6 +27,97 @@ export default withErrorHandling(
           this.setState({camundaEndpoints})
         );
       }
+    }
+
+    processSingleData(labels, data, processInstanceCount) {
+      const {formatter = v => v, property} = this.props;
+      const isFrequency = property === 'frequency';
+      // normal two-dimensional data
+      return {
+        head: [...labels, ...(isFrequency ? ['Relative Frequency'] : [])],
+        body: Object.keys(data).map(key => [
+          key,
+          formatter(data[key]),
+          ...(isFrequency ? [getRelativeValue(data[key], processInstanceCount)] : [])
+        ])
+      };
+    }
+
+    uniteResults(results, allKeys) {
+      const unitedResults = [];
+      results.forEach(result => {
+        const newResult = {};
+        allKeys.forEach(key => {
+          if (typeof result[key] === 'undefined') {
+            newResult[key] = '';
+          } else {
+            newResult[key] = result[key];
+          }
+        });
+        unitedResults.push(newResult);
+      });
+      return unitedResults;
+    }
+
+    getBodyRows = (unitedResults, allKeys, formatter, isFrequency, processInstanceCount) => {
+      const rows = allKeys.map(key => {
+        const row = [key];
+        unitedResults.forEach((result, i) => {
+          row.push(formatter(result[key]));
+          if (isFrequency) row.push(getRelativeValue(result[key], processInstanceCount[i]));
+        });
+        return row;
+      });
+      return rows;
+    };
+
+    getFormattedLabels = (reportsLabels, reportsNames, isFrequency) =>
+      reportsLabels.reduce(
+        (prev, reportLabels, i) => [
+          ...prev,
+          {
+            label: reportsNames[i],
+            columns: [...reportLabels.slice(1), ...(isFrequency ? ['Relative Frequency'] : [])]
+          }
+        ],
+        []
+      );
+
+    processCombinedData() {
+      const {
+        data,
+        labels,
+        reportsNames,
+        processInstanceCount,
+        formatter = v => v,
+        property
+      } = this.props;
+
+      const isFrequency = property === 'frequency';
+
+      const keysLabel = labels[0][0];
+
+      const formattedLabels = this.getFormattedLabels(labels, reportsNames, isFrequency);
+
+      // get all unique keys of results of multiple reports
+      let allKeys = Object.keys(Object.assign({}, ...data));
+
+      // make all hash tables look exactly the same by filling empty keys with empty string
+      const unitedResults = this.uniteResults(data, allKeys);
+
+      // convert hashtables into a table rows array
+      const rows = this.getBodyRows(
+        unitedResults,
+        allKeys,
+        formatter,
+        isFrequency,
+        processInstanceCount
+      );
+
+      return {
+        head: [keysLabel, ...formattedLabels],
+        body: rows
+      };
     }
 
     render() {
@@ -47,35 +138,20 @@ export default withErrorHandling(
 
     formatData = () => {
       const {
-        formatter = v => v,
-        labels,
         configuration: {excludedColumns, columnOrder},
+        labels = [],
         data,
-        property,
+        reportType = 'single',
         processInstanceCount
       } = this.props;
 
-      if (isRaw(data)) {
-        // raw data
+      // Combined Report
+      if (reportType === 'combined') return this.processCombinedData();
+      // raw data
+      if (isRaw(data))
         return processRawData(data, excludedColumns, columnOrder, this.state.camundaEndpoints);
-      } else {
-        // normal two-dimensional data
-        if (property === 'frequency') {
-          return {
-            head: [...labels, 'Relative Frequency'],
-            body: Object.keys(data).map(key => [
-              key,
-              formatter(data[key]),
-              getRelativeValue(data[key], processInstanceCount)
-            ])
-          };
-        } else {
-          return {
-            head: labels,
-            body: Object.keys(data).map(key => [key, formatter(data[key])])
-          };
-        }
-      }
+      // Normal single Report
+      return this.processSingleData(labels, data, processInstanceCount);
     };
   }
 );
