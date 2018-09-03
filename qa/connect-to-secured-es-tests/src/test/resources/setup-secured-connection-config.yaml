@@ -1,0 +1,14 @@
+---
+
+# overwrites the default elasticsearch connection security
+# properties in Optimize
+es:
+  security:
+    username: 'elastic'
+    password: 'optimize'
+    ssl:
+      key: 'certs/optimize/optimize.key'
+      certificate: 'certs/optimize/optimize.crt'
+      certificate_authorities: 'certs/ca/ca.crt'
+      verification_mode: 'certificate'
+      enabled: true

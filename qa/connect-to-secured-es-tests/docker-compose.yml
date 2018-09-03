@@ -1,0 +1,42 @@
+version: '2.4'
+
+services:
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch-platinum:${ES_VERSION:-6.0.0}
+    container_name: elasticsearch
+    environment:
+      - cluster.name=elasticsearch
+      - ELASTIC_PASSWORD=optimize
+      - bootstrap.memory_lock=true
+      - discovery.type=single-node
+      - "ES_JAVA_OPTS=-Xms1g -Xmx1g"
+      - xpack.ssl.certificate_authorities=/usr/share/elasticsearch/config/certs/ca/ca.crt
+      - xpack.ssl.certificate=/usr/share/elasticsearch/config/certs/optimize/optimize.crt
+      - xpack.ssl.key=/usr/share/elasticsearch/config/certs/optimize/optimize.key
+      - xpack.security.transport.ssl.verification_mode=certificate
+      - xpack.security.transport.ssl.enabled=true
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - 9200:9200
+      - 9300:9300
+    volumes:
+      - "./src/test/resources/certs/ca/ca.crt:/usr/share/elasticsearch/config/certs/ca/ca.crt"
+      - "./src/test/resources/certs/ca/ca.key:/usr/share/elasticsearch/config/certs/ca/ca.key"
+      - "./src/test/resources/certs/optimize/optimize.crt:/usr/share/elasticsearch/config/certs/optimize/optimize.crt"
+      - "./src/test/resources/certs/optimize/optimize.key:/usr/share/elasticsearch/config/certs/optimize/optimize.key"
+    restart: always
+    cpu_count: 2
+    mem_limit: 2g
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f -u elastic:optimize http://localhost:9200/_cat/health | grep -q -E 'yellow|green'"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+
+  wait_until_ready:
+    image: docker.elastic.co/elasticsearch/elasticsearch-platinum:${ES_VERSION:-6.0.0}
+    command: /usr/bin/true
+    depends_on: {"elasticsearch": {"condition": "service_healthy"}}

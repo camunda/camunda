@@ -99,6 +99,29 @@ pipeline {
             }
           }
         }
+        stage('Security') {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build-it-security_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yamlFile '.ci/podSpecs/mavenDindAgent.yml'
+            }
+          }
+          steps {
+            container('maven') {
+              installDockerBinaries()
+              dockerRegistryLogin()
+              setupPermissionsForHostDirs('qa/connect-to-secured-es-tests')
+              runMaven("verify -f qa/connect-to-secured-es-tests/pom.xml -Psecured-es-it")
+            }
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+            }
+          }
+        }
         stage('IT Latest') {
           agent {
             kubernetes {

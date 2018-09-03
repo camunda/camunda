@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.camunda.optimize</groupId>
+    <artifactId>qa</artifactId>
+    <version>2.2.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>connect-to-secured-es-tests</artifactId>
+
+  <dependencies>
+    <dependency>
+      <groupId>org.camunda.optimize</groupId>
+      <artifactId>optimize-backend</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.camunda.optimize</groupId>
+      <artifactId>optimize-backend</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+      <exclusions>
+        <exclusion>
+          <artifactId>spring-beans</artifactId>
+          <groupId>org.springframework</groupId>
+        </exclusion>
+      </exclusions>
+    </dependency>
+
+    <!--testing-->
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-all</artifactId>
+      <version>${hamcrest.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-test</artifactId>
+      <version>${spring.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.springframework</groupId>
+      <artifactId>spring-core</artifactId>
+      <version>${spring.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.mockito</groupId>
+      <artifactId>mockito-core</artifactId>
+      <version>${mockito.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+
+  </dependencies>
+
+  <build>
+    <testResources>
+      <testResource>
+        <directory>src/test/resources</directory>
+        <filtering>true</filtering>
+      </testResource>
+    </testResources>
+
+  </build>
+
+  <profiles>
+    <profile>
+      <id>secured-es-it</id>
+
+      <build>
+        <testResources>
+          <testResource>
+            <directory>src/test/resources</directory>
+            <filtering>true</filtering>
+          </testResource>
+        </testResources>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>copy-dependencies</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>copy-dependencies</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-failsafe-plugin</artifactId>
+            <configuration>
+              <redirectTestOutputToFile>true</redirectTestOutputToFile>
+            </configuration>
+            <executions>
+              <execution>
+                <goals>
+                  <goal>integration-test</goal>
+                  <goal>verify</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>docker-start</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <configuration>
+                  <environmentVariables>
+                    <ES_VERSION>${elasticsearch.version}</ES_VERSION>
+                  </environmentVariables>
+                  <executable>docker-compose</executable>
+                  <workingDirectory>.</workingDirectory>
+                  <arguments>
+                    <argument>-f</argument>
+                    <argument>${docker.compose.file}</argument>
+                    <argument>up</argument>
+                    <argument>-d</argument>
+                    <argument>--force-recreate</argument>
+                    <argument>--renew-anon-volumes</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+              <execution>
+                <id>docker-remove</id>
+                <phase>post-integration-test</phase>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <configuration>
+                  <executable>docker-compose</executable>
+                  <workingDirectory>.</workingDirectory>
+                  <arguments>
+                    <argument>-f</argument>
+                    <argument>${docker.compose.file}</argument>
+                    <argument>rm</argument>
+                    <argument>-sfv</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+        <resources>
+          <resource>
+            <directory>src/main/java</directory>
+            <includes>
+              <include>**/*.xml</include>
+            </includes>
+          </resource>
+          <resource>
+            <directory>src/main/resources</directory>
+            <filtering>true</filtering>
+          </resource>
+        </resources>
+      </build>
+    </profile>
+  </profiles>
+
+</project>

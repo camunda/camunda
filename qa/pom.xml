@@ -20,6 +20,7 @@
         <module>service-performance-tests</module>
         <module>data-generation</module>
         <module>upgrade-es-schema-tests</module>
+        <module>connect-to-secured-es-tests</module>
     </modules>
 
     <dependencyManagement>
