@@ -19,3 +19,14 @@ import:
   handler:
     backoff:
       isEnabled: true
+
+es:
+  security:
+    username: ''
+    password: ''
+    ssl:
+      key: ''
+      certificate: ''
+      certificate_authorities: ''
+      verification_mode: ''
+      enabled: false
