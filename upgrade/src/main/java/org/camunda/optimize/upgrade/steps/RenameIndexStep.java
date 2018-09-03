@@ -1,6 +1,8 @@
 package org.camunda.optimize.upgrade.steps;
 
 
+import com.jayway.jsonpath.DocumentContext;
+import com.jayway.jsonpath.JsonPath;
 import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
 
 public class RenameIndexStep extends ReindexStep {
@@ -15,7 +17,9 @@ public class RenameIndexStep extends ReindexStep {
 
   @Override
   protected String adjustIndexMappings(String oldMapping) {
-    return oldMapping;
+    DocumentContext parse = JsonPath.parse(oldMapping);
+    parse.renameKey("$.mappings", getInitialTypeName(), getFinalTypeName());
+    return parse.jsonString();
   }
 
   @Override

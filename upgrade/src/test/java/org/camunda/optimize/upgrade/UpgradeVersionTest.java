@@ -34,7 +34,7 @@ public class UpgradeVersionTest extends AbstractUpgradeTest {
   private static final String SEARCH = "/_search";
   private static final String MAPPING = "/_mapping";
 
-  public static final String GET = "GET";
+  private static final String GET = "GET";
 
   private static final String TEST_TYPE = "users";
   private static final String TEST_INDEX = "optimize-users";
@@ -275,6 +275,7 @@ public class UpgradeVersionTest extends AbstractUpgradeTest {
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
         .addUpgradeStep(buildCreateIndexStep(TEST_TYPE))
+        .addUpgradeStep(buildInsertDataStep())
         .addUpgradeStep(buildRenameIndexStep())
         .build();
 
@@ -380,21 +381,21 @@ public class UpgradeVersionTest extends AbstractUpgradeTest {
     assertThat(passwordField, notNullValue());
   }
 
-  public void assertThatThereIsNoDataInElasticsearch() throws IOException {
+  private void assertThatThereIsNoDataInElasticsearch() throws IOException {
     Response response = restClient.performRequest(GET, SEARCH);
     String bodyAsJson = EntityUtils.toString(response.getEntity());
     Integer numberOfDocuments = JsonPath.read(bodyAsJson, "$.hits.total");
     assertThat(numberOfDocuments, is(0));
   }
 
-  public InsertDataStep buildInsertDataStep() {
+  private InsertDataStep buildInsertDataStep() {
     return new InsertDataStep(
       TEST_TYPE,
       SchemaUpgradeUtil.readClasspathFileAsString("steps/insert_data/test_data.json")
     );
   }
 
-  public CreateIndexStep buildCreateIndexStep(String indexName) {
+  private CreateIndexStep buildCreateIndexStep(String indexName) {
     return new CreateIndexStep(
       indexName,
       SchemaUpgradeUtil.readClasspathFileAsString("steps/create_index/new_index_mapping.json")

@@ -54,8 +54,15 @@ public class ESIndexAdjuster {
     this.restClient = restClient;
   }
 
-  public void reindex(String sourceIndex, String destinationIndex) {
-    this.reindex(sourceIndex, destinationIndex, null);
+  public void reindex(String sourceTypeToConstructIndexFrom, String destinationTypeToConstructIndexFrom,
+                      String sourceType, String destType) {
+    this.reindex(
+      sourceTypeToConstructIndexFrom,
+      destinationTypeToConstructIndexFrom,
+      sourceType,
+      destType,
+      null
+    );
   }
 
   public void deleteIndex(String typeName) {
@@ -93,16 +100,19 @@ public class ESIndexAdjuster {
     return objectMapper.writeValueAsString(read);
   }
 
-  public void reindex(String sourceTypeName, String destinationTypename, String mappingScript) {
-    String sourceIndex = configurationService.getOptimizeIndex(sourceTypeName);
-    String destinationIndex = configurationService.getOptimizeIndex(destinationTypename);
-    logger.debug("Reindexing from index [{}] to [{}] using the mapping script [{}].",
+  public void reindex(String sourceTypeToConstructIndexFrom, String destinationTypeToConstructIndexFrom,
+                      String sourceType, String destType, String mappingScript) {
+    String sourceIndex = configurationService.getOptimizeIndex(sourceTypeToConstructIndexFrom);
+    String destinationIndex = configurationService.getOptimizeIndex(destinationTypeToConstructIndexFrom);
+    logger.debug(
+      "Reindexing from index [{}] to [{}] using the mapping script [{}].",
       sourceIndex,
       destinationIndex,
-      mappingScript);
+      mappingScript
+    );
     ReindexPayload toSend = new ReindexPayload();
-    toSend.setSource(new SourceWrapper(sourceIndex));
-    toSend.setDest(new DestinationWrapper(destinationIndex));
+    toSend.setSource(new SourceWrapper(sourceIndex, sourceType));
+    toSend.setDest(new DestinationWrapper(destinationIndex, destType));
     if (mappingScript != null) {
       toSend.setScript(new ScriptWrapper(mappingScript));
     }
@@ -116,7 +126,8 @@ public class ESIndexAdjuster {
       reindexResponse = restClient.performRequest(POST, getReindexEndpoint(), getParamsWithRefresh(), entity);
     } catch (IOException e) {
       String errorMessage =
-        String.format("Could not reindex data from index [%s] to [%s]!",
+        String.format(
+          "Could not reindex data from index [%s] to [%s]!",
           sourceIndex,
           destinationIndex
         );
@@ -127,7 +138,8 @@ public class ESIndexAdjuster {
       waitUntilReindexingIsFinished();
     } else {
       String errorMessage =
-        String.format("Could not reindex data from index [%s] to [%s]! Reindex request was not successful!",
+        String.format(
+          "Could not reindex data from index [%s] to [%s]! Reindex request was not successful!",
           sourceIndex,
           destinationIndex
         );

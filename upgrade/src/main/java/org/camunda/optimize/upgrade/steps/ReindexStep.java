@@ -11,10 +11,16 @@ public abstract class ReindexStep implements UpgradeStep {
     indexMappings = adjustIndexMappings(indexMappings);
 
     esIndexAdjuster.createIndex(tempTypeName, indexMappings);
-    esIndexAdjuster.reindex(getInitialTypeName(), tempTypeName, getMappingScript());
+    esIndexAdjuster.reindex(
+      getInitialTypeName(),
+      tempTypeName,
+      getInitialTypeName(),
+      getFinalTypeName(),
+      getMappingScript()
+    );
     esIndexAdjuster.deleteIndex(getInitialTypeName());
     esIndexAdjuster.createIndex(getFinalTypeName(), indexMappings);
-    esIndexAdjuster.reindex(tempTypeName, getFinalTypeName());
+    esIndexAdjuster.reindex(tempTypeName, getFinalTypeName(), getFinalTypeName(), getFinalTypeName());
     esIndexAdjuster.deleteIndex(tempTypeName);
   }
 
@@ -26,10 +32,10 @@ public abstract class ReindexStep implements UpgradeStep {
   /**
    * Uses the the old mapping to perform the adjustments
    * that are defined in the step and returns the new mapping.
-   *
+   * <p>
    * Context: each step that needs to reindex the data has
    * to perform some adjustments on the mapping/schema of
-   * a specific index. 
+   * a specific index.
    */
   protected abstract String adjustIndexMappings(String oldMapping);
 
