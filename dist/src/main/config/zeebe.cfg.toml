@@ -304,6 +304,15 @@ replicationFactor = 1
 # A nested table as [exporters.args] will allow you to inject arbitrary arguments into your
 # class through the use of annotations.
 #
+# Enable the following exporter to get debug output of the exporter records
+#
+# [[exporters]]
+# id = "debug"
+# className = "io.zeebe.broker.exporter.DebugExporter"
+# [exporters.args]
+#   logLevel = "debug"
+#   prettyPrint = false
+#
 # An example configuration for a MongoDB exporter:
 #
 # [[exporters]]

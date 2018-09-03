@@ -20,6 +20,7 @@ package io.zeebe.broker.exporter.context;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
+import io.zeebe.broker.exporter.ExporterException;
 import io.zeebe.exporter.context.Configuration;
 import java.util.Map;
 
@@ -48,7 +49,19 @@ public class ExporterConfiguration implements Configuration {
 
   @Override
   public <T> T instantiate(Class<T> configClass) {
-    return CONFIG_INSTANTIATOR.fromJson(getIntermediateConfiguration(), configClass);
+    if (arguments != null) {
+      return CONFIG_INSTANTIATOR.fromJson(getIntermediateConfiguration(), configClass);
+    } else {
+      try {
+        return configClass.newInstance();
+      } catch (Exception e) {
+        throw new ExporterException(
+            "Unable to instantiate config class "
+                + configClass.getName()
+                + " with default constructor",
+            e);
+      }
+    }
   }
 
   private JsonElement getIntermediateConfiguration() {

@@ -84,7 +84,7 @@ public class ExporterManagerTest {
         .sendAndAwait();
   }
 
-  public static class TestExporter extends LoggingExporter {
+  public static class TestExporter extends DebugExporter {
 
     // configure will be called initial for validation and after that for every partition
     static CountDownLatch configureLatch = new CountDownLatch(PARTITIONS + 1);

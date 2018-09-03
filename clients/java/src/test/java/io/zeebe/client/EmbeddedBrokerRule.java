@@ -17,6 +17,7 @@ package io.zeebe.client;
 
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
+import io.zeebe.broker.exporter.DebugExporter;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.broker.system.configuration.SocketBindingCfg;
@@ -49,6 +50,9 @@ import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 
 public class EmbeddedBrokerRule extends ExternalResource {
+
+  private static final boolean ENABLE_DEBUG_EXPORTER = false;
+
   static final ServiceName<Object> AWAIT_BROKER_SERVICE_NAME =
       ServiceName.newServiceName("testService", Object.class);
 
@@ -142,6 +146,9 @@ public class EmbeddedBrokerRule extends ExternalResource {
     if (brokerCfg == null) {
       try (InputStream configStream = configSupplier.get()) {
         brokerCfg = TomlConfigurationReader.read(configStream);
+        if (ENABLE_DEBUG_EXPORTER) {
+          brokerCfg.getExporters().add(DebugExporter.defaultConfig(false));
+        }
         assignSocketAddresses(brokerCfg);
       } catch (final IOException e) {
         throw new RuntimeException("Unable to open configuration", e);

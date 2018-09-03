@@ -88,6 +88,10 @@ public class ZeebeObjectMapperImpl implements ZeebeObjectMapper {
     return objectMapper;
   }
 
+  public void setPrettyPrint() {
+    jsonObjectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+  }
+
   @Override
   public String toJson(Record record) {
     return toJson((Object) record);
