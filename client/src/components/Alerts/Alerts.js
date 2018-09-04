@@ -39,13 +39,14 @@ export default class Alerts extends React.Component {
   };
 
   render() {
+    const {reports} = this.state;
     return (
       <EntityList
         api="alert"
         label="Alert"
         sortBy={'lastModified'}
         operations={['create', 'edit', 'delete']}
-        EditModal={AlertModal}
+        ContentPanel={reports ? AlertModal(reports) : undefined}
         renderCustom={this.renderMetadata}
       />
     );

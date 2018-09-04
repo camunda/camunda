@@ -1,10 +1,10 @@
 import React from 'react';
 import {mount} from 'enzyme';
 
-import AlertModal from './AlertModal';
+import AlertModalFunc from './AlertModal';
 import {emailNotificationIsEnabled} from './service';
 
-import {formatters, loadEntity} from 'services';
+import {formatters} from 'services';
 
 jest.mock('./service', () => {
   return {
@@ -48,12 +48,11 @@ jest.mock('services', () => {
     formatters: {
       convertDurationToSingleNumber: jest.fn().mockReturnValue(723),
       convertDurationToObject: jest.fn().mockReturnValue({value: '14', unit: 'seconds'})
-    },
-    loadEntity: jest.fn()
+    }
   };
 });
 
-const alert = {
+const entity = {
   id: '71395',
   name: 'Sample Alert',
   email: 'test@camunda.com',
@@ -78,12 +77,12 @@ const reports = [
   }
 ];
 
-loadEntity.mockReturnValue(reports);
+const AlertModal = AlertModalFunc(reports);
 
 it('should apply the alert property to the state when changing props', () => {
   const node = mount(<AlertModal reports={reports} />);
 
-  node.setProps({alert});
+  node.setProps({entity});
 
   expect(node.state()).toEqual({
     id: '71395',
@@ -96,7 +95,6 @@ it('should apply the alert property to the state when changing props', () => {
       value: '1',
       unit: 'hours'
     },
-    reports: [],
     reminder: null,
     fixNotification: true,
     errorInput: null
@@ -107,7 +105,7 @@ it('should call the onConfirm method', () => {
   const spy = jest.fn();
   const node = mount(<AlertModal reports={reports} onConfirm={spy} />);
 
-  node.setProps({alert});
+  node.setProps({entity});
 
   node.find('button[type="primary"]').simulate('click');
 
@@ -117,14 +115,14 @@ it('should call the onConfirm method', () => {
 it('should disable the submit button if the name is empty', () => {
   const node = mount(<AlertModal reports={reports} />);
 
-  node.setProps({alert});
+  node.setProps({entity});
   node.setState({name: ''}, expect(node.find('button[type="primary"]')).toBeDisabled);
 });
 
 it('should disable the submit button if the email is not valid', () => {
   const node = mount(<AlertModal reports={reports} />);
 
-  node.setProps({alert});
+  node.setProps({entity});
   node.setState(
     {email: 'this is not a valid email'},
     expect(node.find('button[type="primary"]')).toBeDisabled
@@ -134,21 +132,21 @@ it('should disable the submit button if the email is not valid', () => {
 it('should disable the submit button if no report is selected', () => {
   const node = mount(<AlertModal reports={reports} />);
 
-  node.setProps({alert});
+  node.setProps({entity});
   node.setState({reportId: ''}, expect(node.find('button[type="primary"]')).toBeDisabled);
 });
 
 it('should disable the submit button if the threshold is not a number', () => {
   const node = mount(<AlertModal reports={reports} />);
 
-  node.setProps({alert});
+  node.setProps({entity});
   node.setState({threshold: 'five'}, expect(node.find('button[type="primary"]')).toBeDisabled);
 });
 
 it('should disable the submit button if the check interval is negative', () => {
   const node = mount(<AlertModal reports={reports} />);
 
-  node.setProps({alert});
+  node.setProps({entity});
   node.setState(
     {
       checkInterval: {
@@ -198,7 +196,7 @@ it('should convert a duration threshold when opening', async () => {
   await node.instance().componentDidMount();
 
   node.setProps({
-    alert: {
+    entity: {
       name: 'New Alert',
       id: '1234',
       email: '',

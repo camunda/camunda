@@ -91,9 +91,9 @@ jest.mock('components', () => {
 
 load.mockReturnValue([sampleEntity]);
 
-const EditModal = props => (
+const ContentPanel = props => (
   <span>
-    EditModal: <span id="ModalProps">{JSON.stringify(props)}</span>
+    ContentPanel: <span id="ModalProps">{JSON.stringify(props)}</span>
   </span>
 );
 
@@ -429,14 +429,15 @@ it('should include an edit/add modal after reports are loaded', async () => {
   load.mockReturnValue([alertEntity]);
   const node = mount(
     shallow(
-      <EntityList api="endpoint" label="Alert" operations={['Edit']} EditModal={EditModal} />
+      <EntityList api="endpoint" label="Alert" operations={['Edit']} ContentPanel={ContentPanel} />
     ).get(0)
   );
   await node.instance().componentDidMount();
   node.setState({
-    loaded: true
+    loaded: true,
+    editEntity: {}
   });
-  expect(node).toIncludeText('EditModal');
+  expect(node).toIncludeText('ContentPanel');
 });
 
 it('should pass an alert entity configuration to the edit/add modal', async () => {
@@ -444,7 +445,7 @@ it('should pass an alert entity configuration to the edit/add modal', async () =
 
   const node = mount(
     shallow(
-      <EntityList api="endpoint" label="Alert" operations={['Edit']} EditModal={EditModal} />
+      <EntityList api="endpoint" label="Alert" operations={['Edit']} ContentPanel={ContentPanel} />
     ).get(0)
   );
 
@@ -458,15 +459,15 @@ it('should pass an alert entity configuration to the edit/add modal', async () =
   expect(node.find('#ModalProps')).toIncludeText('preconfigured alert');
 });
 
-it('should invoke openNewEditModal when click on create new button', async () => {
+it('should invoke openNewContentPanel when click on create new button', async () => {
   load.mockReturnValue([]);
 
   const node = mount(
     shallow(
-      <EntityList api="endpoint" label="Alert" operations={['Edit']} EditModal={EditModal} />
+      <EntityList api="endpoint" label="Alert" operations={['Edit']} ContentPanel={ContentPanel} />
     ).get(0)
   );
-  const spy = jest.spyOn(node.instance(), 'openNewEditModal');
+  const spy = jest.spyOn(node.instance(), 'openNewContentPanel');
 
   await node.instance().componentDidMount();
   node.setState({
@@ -482,7 +483,7 @@ it('should invok update when entityId is already available', async () => {
 
   const node = mount(
     shallow(
-      <EntityList api="endpoint" label="Alert" operations={['Edit']} EditModal={EditModal} />
+      <EntityList api="endpoint" label="Alert" operations={['Edit']} ContentPanel={ContentPanel} />
     ).get(0)
   );
 
@@ -493,12 +494,12 @@ it('should invok update when entityId is already available', async () => {
 
   node.find('.info').simulate('click');
 
-  node.instance().confirmEditModal();
+  node.instance().confirmContentPanel();
 
   expect(update).toHaveBeenCalled();
 });
 
-it('should return a react Link when editModal is not defined', async () => {
+it('should return a react Link when ContentPanel is not defined', async () => {
   load.mockReturnValue([alertEntity]);
 
   const node = mount(

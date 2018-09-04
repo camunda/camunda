@@ -47,7 +47,7 @@ class EntityList extends React.Component {
   };
 
   createEntity = type => async evt => {
-    if (this.props.EditModal) return this.openNewEditModal();
+    if (this.props.ContentPanel) return this.openNewContentPanel();
     this.setState({
       redirectToEntity: await create(this.props.api, {reportType: type})
     });
@@ -166,26 +166,26 @@ class EntityList extends React.Component {
       return entry;
     });
 
-  openNewEditModal = () => {
+  openNewContentPanel = () => {
     this.setState({
       editEntity: {}
     });
   };
 
-  closeEditModal = () => {
+  closeContentPanel = () => {
     this.setState({
       editEntity: null
     });
   };
 
-  confirmEditModal = async entity => {
+  confirmContentPanel = async entity => {
     const editEntity = this.state.editEntity;
     if (editEntity.id) {
       await update(this.props.api, editEntity.id, entity);
     } else {
       await create(this.props.api, entity);
     }
-    this.closeEditModal();
+    this.closeContentPanel();
     await this.loadData();
   };
 
@@ -239,11 +239,11 @@ class EntityList extends React.Component {
 
   // if a modal is provided add onClick event otherwise use a router Link
   renderLink = data => {
-    const {EditModal} = this.props;
-    const EntityLink = EditModal ? 'a' : Link;
+    const {ContentPanel} = this.props;
+    const EntityLink = ContentPanel ? 'a' : Link;
     const linkProps = {
-      to: EditModal ? undefined : data.link,
-      onClick: EditModal ? () => this.setState({editEntity: data.editData}) : undefined,
+      to: ContentPanel ? undefined : data.link,
+      onClick: ContentPanel ? () => this.setState({editEntity: data.editData}) : undefined,
       className: data.className
     };
     return (
@@ -319,7 +319,7 @@ class EntityList extends React.Component {
 
     const {redirectToEntity, loaded} = this.state;
     const {includeViewAllLink} = this.props;
-    const {EditModal} = this.props;
+    const {ContentPanel} = this.props;
     const modal = this.renderModal();
     const isListEmpty = this.state.data.length === 0;
 
@@ -383,11 +383,11 @@ class EntityList extends React.Component {
           {header}
           {list}
           {modal}
-          {EditModal && (
-            <EditModal
-              onConfirm={this.confirmEditModal}
-              onClose={this.closeEditModal}
-              alert={this.state.editEntity}
+          {this.state.editEntity && (
+            <ContentPanel
+              onConfirm={this.confirmContentPanel}
+              onClose={this.closeContentPanel}
+              entity={this.state.editEntity}
             />
           )}
           {this.props.children}

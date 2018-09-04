@@ -8,9 +8,9 @@ jest.mock('components', () => {
   return {EntityList: props => <span id="EntityList">{JSON.stringify(props)}</span>};
 });
 
-jest.mock('./AlertModal', () => props => (
+jest.mock('./AlertModal', () => reports => props => (
   <span>
-    EditModal: <span id="ModalProps">{JSON.stringify(props)}</span>
+    ContentPanel: <span id="ModalProps">{JSON.stringify(props)}</span>
   </span>
 ));
 
