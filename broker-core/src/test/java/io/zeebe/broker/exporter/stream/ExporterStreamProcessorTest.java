@@ -119,16 +119,22 @@ public class ExporterStreamProcessorTest {
   private List<ControlledTestExporter> exporters;
 
   @Test
-  public void shouldConfigureAllExportersProperlyOnStart() {
+  public void shouldConfigureAllExportersProperlyOnStart() throws InterruptedException {
     // given
     final Map[] arguments = new Map[] {newConfig("foo", "bar"), newConfig("bar", "foo")};
     final List<ExporterDescriptor> descriptors = createMockedExporters(arguments);
     final ExporterStreamProcessor processor =
         new ExporterStreamProcessor(PARTITION_ID, descriptors);
 
+    final CountDownLatch latch = new CountDownLatch(exporters.size());
+    for (ControlledTestExporter exporter : exporters) {
+      exporter.onOpen(c -> latch.countDown());
+    }
+
     // when
     final StreamProcessorControl control = rule.initStreamProcessor(e -> processor);
     control.start();
+    assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
 
     // then
     for (int i = 0; i < exporters.size(); i++) {
