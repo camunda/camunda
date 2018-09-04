@@ -1,9 +1,12 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
+import StateIcon from 'modules/components/StateIcon';
+
 import Dropdown from 'modules/components/Dropdown';
 import Selection from './Selection';
 import * as Styled from './styled';
+// import {debug} from 'util';
 
 const demoInstance = {
   id: '4294984040',
@@ -39,18 +42,28 @@ describe('Selection', () => {
 
   it('should contain a Header', () => {
     expect(node.find(Styled.Header)).toExist();
+    expect(node.find(Styled.Header).props().isOpen).toBe(true);
   });
 
   it('should contain Instances', () => {
     expect(node.find(Styled.Instance)).toExist();
+    expect(node.find(StateIcon)).toExist();
+    expect(node.find(Styled.WorkflowName)).toExist();
+    expect(node.find(Styled.InstanceId)).toExist();
   });
 
   it('should contain a Footer', () => {
     expect(node.find(Styled.Footer)).toExist();
+    expect(node.find(Styled.MoreInstances)).toExist();
+    expect(node.find(Styled.MoreInstances).contains('144 more Instances'));
   });
 
-  it('should contain Action Icons', () => {
+  it('should contain Actions', () => {
     expect(node.find(Styled.Actions)).toExist();
+    expect(node.find(Styled.DropdownTrigger)).toExist();
+    expect(node.find(Dropdown)).toExist();
+    expect(node.find(Styled.DeleteIcon)).toExist();
+    expect(node.find(Styled.DeleteIcon).props().onClick).toBe(mockOnDelete);
   });
 
   it('should only have Header when closed', () => {
