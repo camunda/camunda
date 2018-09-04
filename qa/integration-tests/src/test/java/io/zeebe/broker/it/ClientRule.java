@@ -80,6 +80,7 @@ public class ClientRule extends ExternalResource {
   @Override
   protected void after() {
     client.close();
+    client = null;
   }
 
   public ZeebeClient getClient() {

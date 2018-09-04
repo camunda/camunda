@@ -98,6 +98,7 @@ public class ClusteringRule extends ExternalResource {
             .brokerContactPoint(brokerCfgs[0].getNetwork().getClient().toSocketAddress().toString())
             .build();
 
+    closeables.add(zeebeClient);
     topologyClient = new TopologyClient((ZeebeClientImpl) zeebeClient);
 
     waitForInternalSystemAndReplicationFactor();
@@ -124,6 +125,10 @@ public class ClusteringRule extends ExternalResource {
         failed.addSuppressed(e);
         LOG.error("Failed to close something after the test, postponing and continuing", e);
       }
+    }
+
+    for (int i = 0; i < brokers.length; i++) {
+      brokers[i] = null;
     }
 
     if (failed.getSuppressed().length > 0) {
