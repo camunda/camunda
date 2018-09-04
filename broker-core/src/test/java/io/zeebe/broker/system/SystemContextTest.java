@@ -97,7 +97,6 @@ public class SystemContextTest {
   }
 
   private SystemContext initSystemContext(BrokerCfg brokerCfg) {
-    return new SystemContext(
-        brokerCfg, SystemContextTest.class.getResource("").getPath(), new ControlledActorClock());
+    return new SystemContext(brokerCfg, "test", new ControlledActorClock());
   }
 }
