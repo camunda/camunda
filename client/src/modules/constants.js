@@ -98,3 +98,7 @@ export const DROPDOWN_PLACEMENT = {
   TOP: 'top',
   BOTTOM: 'bottom'
 };
+
+export const MESSAGES_TYPE = {
+  DROP_SELECTION: 'DROP_SELECTION'
+};

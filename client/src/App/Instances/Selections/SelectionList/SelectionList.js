@@ -5,6 +5,7 @@ import Selection from '../Selection/index.js';
 import ContextualMessage from 'modules/components/ContextualMessage';
 
 import {NO_SELECTIONS_MESSAGE} from './constants';
+import {MESSAGES_TYPE} from 'modules/constants';
 
 import * as Styled from './styled.js';
 
@@ -18,29 +19,34 @@ export default class SelectionList extends React.Component {
   };
 
   render() {
+    const {
+      selections,
+      openSelection,
+      onRetrySelection,
+      onToggleSelection,
+      onDeleteSelection
+    } = this.props;
     return (
       <Styled.SelectionList>
-        {this.props.selections.length === 10 && (
+        {selections.length === 10 && (
           <Styled.MessageWrapper>
-            <ContextualMessage type={'DROP_SELECTION'} />
+            <ContextualMessage type={MESSAGES_TYPE.DROP_SELECTION} />
           </Styled.MessageWrapper>
         )}
-        {this.props.selections.length ? (
-          this.props.selections.map(selection => {
+        {selections.length ? (
+          selections.map(selection => {
             const {selectionId, workflowInstances, totalCount} = selection;
 
             return (
               <Styled.Li key={selectionId}>
                 <Selection
-                  isOpen={this.props.openSelection === selectionId}
+                  isOpen={openSelection === selectionId}
                   selectionId={selectionId}
                   instances={workflowInstances}
                   instanceCount={totalCount}
-                  onRetry={() =>
-                    this.props.onRetrySelection(this.props.openSelection)
-                  }
-                  onToggle={() => this.props.onToggleSelection(selectionId)}
-                  onDelete={() => this.props.onDeleteSelection(selectionId)}
+                  onRetry={() => onRetrySelection(openSelection)}
+                  onToggle={() => onToggleSelection(selectionId)}
+                  onDelete={() => onDeleteSelection(selectionId)}
                 />
               </Styled.Li>
             );
