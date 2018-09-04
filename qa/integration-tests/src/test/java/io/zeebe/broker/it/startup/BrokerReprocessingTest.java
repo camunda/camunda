@@ -15,6 +15,14 @@
  */
 package io.zeebe.broker.it.startup;
 
+import static io.zeebe.test.util.RecordingExporter.getFirstActivityRecord;
+import static io.zeebe.test.util.RecordingExporter.getFirstWorkflowInstanceEvent;
+import static io.zeebe.test.util.RecordingExporter.getIncidentRecords;
+import static io.zeebe.test.util.RecordingExporter.getJobEvents;
+import static io.zeebe.test.util.RecordingExporter.hasActivityEvent;
+import static io.zeebe.test.util.RecordingExporter.hasIncidentEvent;
+import static io.zeebe.test.util.RecordingExporter.hasJobEvent;
+import static io.zeebe.test.util.RecordingExporter.hasWorkflowInstanceEvent;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static java.util.Collections.singletonMap;
@@ -25,18 +33,18 @@ import static org.junit.Assert.fail;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
-import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.gateway.api.events.DeploymentEvent;
-import io.zeebe.gateway.api.events.IncidentEvent;
-import io.zeebe.gateway.api.events.IncidentState;
 import io.zeebe.gateway.api.events.JobEvent;
-import io.zeebe.gateway.api.events.JobState;
 import io.zeebe.gateway.api.events.MessageEvent;
 import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
-import io.zeebe.gateway.api.events.WorkflowInstanceState;
 import io.zeebe.gateway.api.subscription.JobWorker;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.intent.IncidentIntent;
+import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftServiceNames;
 import io.zeebe.raft.state.RaftState;
@@ -127,11 +135,7 @@ public class BrokerReprocessingTest {
 
   public ClientRule clientRule = new ClientRule(brokerRule);
 
-  public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
-
-  @Rule
-  public RuleChain ruleChain =
-      RuleChain.outerRule(brokerRule).around(clientRule).around(eventRecorder);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   @Rule public ExpectedException exception = ExpectedException.none();
 
@@ -152,7 +156,7 @@ public class BrokerReprocessingTest {
         .join();
 
     // then
-    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.CREATED));
+    waitUntil(() -> hasWorkflowInstanceEvent(WorkflowInstanceIntent.CREATED));
   }
 
   @Test
@@ -168,7 +172,7 @@ public class BrokerReprocessingTest {
         .send()
         .join();
 
-    waitUntil(() -> eventRecorder.hasJobEvent(JobState.CREATED));
+    waitUntil(() -> hasJobEvent(JobIntent.CREATED));
 
     // when
     reprocessingTrigger.accept(this);
@@ -181,9 +185,8 @@ public class BrokerReprocessingTest {
         .open();
 
     // then
-    waitUntil(() -> eventRecorder.hasJobEvent(JobState.COMPLETED));
-    waitUntil(
-        () -> eventRecorder.hasElementInState("process", WorkflowInstanceState.ELEMENT_COMPLETED));
+    waitUntil(() -> hasJobEvent(JobIntent.COMPLETED));
+    waitUntil(() -> hasActivityEvent("process", WorkflowInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -212,9 +215,8 @@ public class BrokerReprocessingTest {
     clientRule.getJobClient().newCompleteCommand(jobEvent).send().join();
 
     // then
-    waitUntil(() -> eventRecorder.hasJobEvent(JobState.COMPLETED));
-    waitUntil(
-        () -> eventRecorder.hasElementInState("process", WorkflowInstanceState.ELEMENT_COMPLETED));
+    waitUntil(() -> hasJobEvent(JobIntent.COMPLETED));
+    waitUntil(() -> hasActivityEvent("process", WorkflowInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -237,7 +239,7 @@ public class BrokerReprocessingTest {
         .handler((client, job) -> client.newCompleteCommand(job).payload(NULL_PAYLOAD).send())
         .open();
 
-    waitUntil(() -> eventRecorder.getJobEvents(JobState.CREATED).size() > 1);
+    waitUntil(() -> getJobEvents(JobIntent.CREATED).size() > 1);
 
     // when
     reprocessingTrigger.accept(this);
@@ -250,9 +252,8 @@ public class BrokerReprocessingTest {
         .open();
 
     // then
-    waitUntil(() -> eventRecorder.getJobEvents(JobState.COMPLETED).size() > 1);
-    waitUntil(
-        () -> eventRecorder.hasElementInState("process", WorkflowInstanceState.ELEMENT_COMPLETED));
+    waitUntil(() -> getJobEvents(JobIntent.COMPLETED).size() > 1);
+    waitUntil(() -> hasActivityEvent("process", WorkflowInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
@@ -302,7 +303,7 @@ public class BrokerReprocessingTest {
     // given
     clientRule.getJobClient().newCreateCommand().jobType("foo").send().join();
 
-    waitUntil(() -> eventRecorder.hasJobEvent(JobState.CREATED));
+    waitUntil(() -> hasJobEvent(JobIntent.CREATED));
 
     // when
     reprocessingTrigger.accept(this);
@@ -315,7 +316,7 @@ public class BrokerReprocessingTest {
         .open();
 
     // then
-    waitUntil(() -> eventRecorder.hasJobEvent(JobState.COMPLETED));
+    waitUntil(() -> hasJobEvent(JobIntent.COMPLETED));
   }
 
   @Test
@@ -335,7 +336,7 @@ public class BrokerReprocessingTest {
     clientRule.getJobClient().newCompleteCommand(jobEvent).send().join();
 
     // then
-    waitUntil(() -> eventRecorder.hasJobEvent(JobState.COMPLETED));
+    waitUntil(() -> hasJobEvent(JobIntent.COMPLETED));
   }
 
   @Test
@@ -384,7 +385,7 @@ public class BrokerReprocessingTest {
                   .addTime(Duration.ofSeconds(60)); // retriggers lock expiration check in broker
               return null;
             })
-        .until(t -> eventRecorder.hasJobEvent(JobState.TIMED_OUT));
+        .until(t -> hasJobEvent(JobIntent.TIMED_OUT));
     jobHandler.clear();
 
     clientRule.getJobClient().newWorker().jobType("foo").handler(jobHandler).open();
@@ -395,7 +396,7 @@ public class BrokerReprocessingTest {
     final JobEvent jobEvent = jobHandler.getHandledJobs().get(0);
     clientRule.getJobClient().newCompleteCommand(jobEvent).send().join();
 
-    waitUntil(() -> eventRecorder.hasJobEvent(JobState.COMPLETED));
+    waitUntil(() -> hasJobEvent(JobIntent.COMPLETED));
   }
 
   @Test
@@ -411,24 +412,24 @@ public class BrokerReprocessingTest {
         .send()
         .join();
 
-    waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.CREATED));
+    waitUntil(() -> hasIncidentEvent(IncidentIntent.CREATED));
 
-    final WorkflowInstanceEvent activityInstance =
-        eventRecorder.getElementInState("task", WorkflowInstanceState.ELEMENT_READY);
+    final Record activityInstance =
+        getFirstActivityRecord("task", WorkflowInstanceIntent.ELEMENT_READY);
 
     // when
     reprocessingTrigger.accept(this);
 
     clientRule
         .getWorkflowClient()
-        .newUpdatePayloadCommand(activityInstance)
+        .newUpdatePayloadCommand(clientRule.asWorkflowInstanceEvent(activityInstance))
         .payload("{\"foo\":\"bar\"}")
         .send()
         .join();
 
     // then
-    waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.RESOLVED));
-    waitUntil(() -> eventRecorder.hasJobEvent(JobState.CREATED));
+    waitUntil(() -> hasIncidentEvent(IncidentIntent.RESOLVED));
+    waitUntil(() -> hasJobEvent(JobIntent.CREATED));
   }
 
   @Test
@@ -444,33 +445,35 @@ public class BrokerReprocessingTest {
         .send()
         .join();
 
-    waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.CREATED));
+    waitUntil(() -> hasIncidentEvent(IncidentIntent.CREATED));
 
-    final WorkflowInstanceEvent activityInstance =
-        eventRecorder.getElementInState("task", WorkflowInstanceState.ELEMENT_READY);
+    final Record activityInstance =
+        getFirstActivityRecord("task", WorkflowInstanceIntent.ELEMENT_READY);
+
+    final WorkflowInstanceEvent event = clientRule.asWorkflowInstanceEvent(activityInstance);
 
     clientRule
         .getWorkflowClient()
-        .newUpdatePayloadCommand(activityInstance)
+        .newUpdatePayloadCommand(event)
         .payload("{\"x\":\"y\"}")
         .send()
         .join();
 
-    waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.RESOLVE_FAILED));
+    waitUntil(() -> hasIncidentEvent(IncidentIntent.RESOLVE_FAILED));
 
     // when
     reprocessingTrigger.accept(this);
 
     clientRule
         .getWorkflowClient()
-        .newUpdatePayloadCommand(activityInstance)
+        .newUpdatePayloadCommand(event)
         .payload("{\"foo\":\"bar\"}")
         .send()
         .join();
 
     // then
-    waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.RESOLVED));
-    waitUntil(() -> eventRecorder.hasJobEvent(JobState.CREATED));
+    waitUntil(() -> hasIncidentEvent(IncidentIntent.RESOLVED));
+    waitUntil(() -> hasJobEvent(JobIntent.CREATED));
   }
 
   @Test
@@ -542,7 +545,7 @@ public class BrokerReprocessingTest {
 
     startWorkflowInstance("process");
 
-    waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.CREATED));
+    waitUntil(() -> hasIncidentEvent(IncidentIntent.CREATED));
 
     // when
     reprocessingTrigger.accept(this);
@@ -550,9 +553,9 @@ public class BrokerReprocessingTest {
     startWorkflowInstance("process");
 
     // then
-    final List<IncidentEvent> incidents =
-        doRepeatedly(() -> eventRecorder.getIncidentEvents(IncidentState.CREATED))
-            .until(l -> l.size() == 2);
+    final List<Record> incidents =
+        doRepeatedly(() -> getIncidentRecords(IncidentIntent.CREATED)).until(l -> l.size() == 2);
+    incidents.forEach(r -> System.out.println(r.toJson()));
 
     final long incident1Key = incidents.get(0).getKey();
     final long incident2Key = incidents.get(1).getKey();
@@ -603,8 +606,7 @@ public class BrokerReprocessingTest {
         startWorkflowInstance("process", singletonMap("orderId", "order-123"))
             .getWorkflowInstanceKey();
 
-    waitUntil(
-        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_ACTIVATED));
+    waitUntil(() -> hasWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATED));
 
     reprocessingTrigger.accept(this);
 
@@ -612,11 +614,10 @@ public class BrokerReprocessingTest {
     publishMessage("order canceled", "order-123", singletonMap("foo", "bar"));
 
     // then
-    waitUntil(
-        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED));
+    waitUntil(() -> hasWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED));
 
-    final WorkflowInstanceEvent event =
-        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED);
+    final WorkflowInstanceRecordValue event =
+        getFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     assertThat(event.getWorkflowInstanceKey()).isEqualTo(workflowInstanceKey);
     assertThat(event.getActivityId()).isEqualTo("catch-event");
@@ -642,12 +643,11 @@ public class BrokerReprocessingTest {
         startWorkflowInstance("process", singletonMap("orderId", "order-123"))
             .getWorkflowInstanceKey();
 
-    waitUntil(
-        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED));
+    waitUntil(() -> hasWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED));
 
     // then
-    final WorkflowInstanceEvent event =
-        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED);
+    final WorkflowInstanceRecordValue event =
+        getFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     assertThat(event.getWorkflowInstanceKey()).isEqualTo(workflowInstanceKey);
     assertThat(event.getActivityId()).isEqualTo("catch-event");
@@ -694,8 +694,6 @@ public class BrokerReprocessingTest {
   }
 
   protected void deleteSnapshotsAndRestart(final Runnable onStop) {
-    eventRecorder.stopRecordingEvents();
-
     final List<String> dataDirectories =
         brokerRule
             .getBroker()
@@ -717,13 +715,6 @@ public class BrokerReprocessingTest {
     onStop.run();
 
     brokerRule.startBroker();
-    doRepeatedly(
-            () -> {
-              eventRecorder.startRecordingEvents();
-              return true;
-            })
-        .until(t -> t == Boolean.TRUE, e -> e == null);
-    // this can fail immediately after restart due to https://github.com/zeebe-io/zeebe/issues/590
   }
 
   protected void restartBroker() {
@@ -731,13 +722,11 @@ public class BrokerReprocessingTest {
   }
 
   protected void restartBroker(final Runnable onStop) {
-    eventRecorder.stopRecordingEvents();
     brokerRule.stopBroker();
 
     onStop.run();
 
     brokerRule.startBroker();
-    eventRecorder.startRecordingEvents();
   }
 
   private void deploy(final BpmnModelInstance workflowTwoTasks, final String s) {

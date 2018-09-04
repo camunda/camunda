@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.gateway.api.commands.DeploymentResource;
 import io.zeebe.gateway.api.commands.ResourceType;
 import io.zeebe.gateway.api.commands.Workflow;
@@ -36,11 +35,8 @@ import org.junit.rules.RuleChain;
 public class CreateDeploymentTest {
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
   public ClientRule clientRule = new ClientRule(brokerRule);
-  public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
 
-  @Rule
-  public RuleChain ruleChain =
-      RuleChain.outerRule(brokerRule).around(clientRule).around(eventRecorder);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   @Rule public ExpectedException exception = ExpectedException.none();
 

@@ -15,17 +15,19 @@
  */
 package io.zeebe.broker.it.workflow;
 
+import static io.zeebe.test.util.RecordingExporter.getFirstActivityEvent;
+import static io.zeebe.test.util.RecordingExporter.getFirstWorkflowInstanceEvent;
+import static io.zeebe.test.util.RecordingExporter.hasActivityEvent;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.gateway.api.events.DeploymentEvent;
-import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
-import io.zeebe.gateway.api.events.WorkflowInstanceState;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -34,11 +36,8 @@ public class ExclusiveGatewayTest {
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
   public ClientRule clientRule = new ClientRule(brokerRule);
-  public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
 
-  @Rule
-  public RuleChain ruleChain =
-      RuleChain.outerRule(brokerRule).around(clientRule).around(eventRecorder);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   @Test
   public void shouldEvaluateConditionOnFlow() {
@@ -65,11 +64,10 @@ public class ExclusiveGatewayTest {
         .send()
         .join();
 
-    waitUntil(
-        () -> eventRecorder.hasElementInState("workflow", WorkflowInstanceState.ELEMENT_COMPLETED));
+    waitUntil(() -> hasActivityEvent("workflow", WorkflowInstanceIntent.ELEMENT_COMPLETED));
 
-    final WorkflowInstanceEvent endEvent =
-        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.END_EVENT_OCCURRED);
+    final WorkflowInstanceRecordValue endEvent =
+        getFirstWorkflowInstanceEvent(WorkflowInstanceIntent.END_EVENT_OCCURRED);
     assertThat(endEvent.getActivityId()).isEqualTo("a");
   }
 
@@ -98,11 +96,10 @@ public class ExclusiveGatewayTest {
         .send()
         .join();
 
-    waitUntil(
-        () -> eventRecorder.hasElementInState("workflow", WorkflowInstanceState.ELEMENT_COMPLETED));
+    waitUntil(() -> hasActivityEvent("workflow", WorkflowInstanceIntent.ELEMENT_COMPLETED));
 
-    final WorkflowInstanceEvent endEvent =
-        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.END_EVENT_OCCURRED);
+    final WorkflowInstanceRecordValue endEvent =
+        getFirstWorkflowInstanceEvent(WorkflowInstanceIntent.END_EVENT_OCCURRED);
     assertThat(endEvent.getActivityId()).isEqualTo("b");
   }
 
@@ -148,11 +145,10 @@ public class ExclusiveGatewayTest {
         .open();
 
     // then
-    waitUntil(
-        () -> eventRecorder.hasElementInState("workflow", WorkflowInstanceState.ELEMENT_COMPLETED));
+    waitUntil(() -> hasActivityEvent("workflow", WorkflowInstanceIntent.ELEMENT_COMPLETED));
 
-    final WorkflowInstanceEvent event =
-        eventRecorder.getElementInState("workflow", WorkflowInstanceState.ELEMENT_COMPLETED);
+    final WorkflowInstanceRecordValue event =
+        getFirstActivityEvent("workflow", WorkflowInstanceIntent.ELEMENT_COMPLETED);
     assertThat(event.getPayload()).isEqualTo("{\"count\":6}");
   }
 

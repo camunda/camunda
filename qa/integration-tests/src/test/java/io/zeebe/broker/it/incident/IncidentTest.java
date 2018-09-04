@@ -15,23 +15,25 @@
  */
 package io.zeebe.broker.it.incident;
 
-import static io.zeebe.broker.it.util.TopicEventRecorder.state;
+import static io.zeebe.test.util.RecordingExporter.getFirstActivityRecord;
+import static io.zeebe.test.util.RecordingExporter.hasIncidentEvent;
+import static io.zeebe.test.util.RecordingExporter.hasJobEvent;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.exporter.record.Record;
 import io.zeebe.gateway.api.clients.JobClient;
 import io.zeebe.gateway.api.clients.WorkflowClient;
 import io.zeebe.gateway.api.events.DeploymentEvent;
-import io.zeebe.gateway.api.events.IncidentState;
 import io.zeebe.gateway.api.events.JobEvent;
-import io.zeebe.gateway.api.events.JobState;
 import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
-import io.zeebe.gateway.api.events.WorkflowInstanceState;
 import io.zeebe.gateway.api.subscription.JobHandler;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.intent.IncidentIntent;
+import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.time.Duration;
 import org.junit.Before;
 import org.junit.Rule;
@@ -49,11 +51,8 @@ public class IncidentTest {
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
   public ClientRule clientRule = new ClientRule(brokerRule);
-  public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
 
-  @Rule
-  public RuleChain ruleChain =
-      RuleChain.outerRule(brokerRule).around(clientRule).around(eventRecorder);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   private WorkflowClient workflowClient;
   private JobClient jobClient;
@@ -76,17 +75,21 @@ public class IncidentTest {
         .send()
         .join();
 
-    waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.CREATED));
+    waitUntil(() -> hasIncidentEvent(IncidentIntent.CREATED));
 
-    final WorkflowInstanceEvent activityInstanceEvent =
-        eventRecorder.getElementInState("failingTask", WorkflowInstanceState.ELEMENT_READY);
+    final Record activityInstanceEvent =
+        getFirstActivityRecord("failingTask", WorkflowInstanceIntent.ELEMENT_READY);
 
     // when
-    workflowClient.newUpdatePayloadCommand(activityInstanceEvent).payload(PAYLOAD).send().join();
+    workflowClient
+        .newUpdatePayloadCommand(clientRule.asWorkflowInstanceEvent(activityInstanceEvent))
+        .payload(PAYLOAD)
+        .send()
+        .join();
 
     // then
-    waitUntil(() -> eventRecorder.hasJobEvent(state(JobState.CREATED)));
-    waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.RESOLVED));
+    waitUntil(() -> hasJobEvent(JobIntent.CREATED));
+    waitUntil(() -> hasIncidentEvent(IncidentIntent.RESOLVED));
   }
 
   @Test
@@ -102,13 +105,13 @@ public class IncidentTest {
             .send()
             .join();
 
-    waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.CREATED));
+    waitUntil(() -> hasIncidentEvent(IncidentIntent.CREATED));
 
     // when
     workflowClient.newCancelInstanceCommand(workflowInstance).send().join();
 
     // then
-    waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.DELETED));
+    waitUntil(() -> hasIncidentEvent(IncidentIntent.DELETED));
   }
 
   @Test
@@ -138,7 +141,7 @@ public class IncidentTest {
         .open();
 
     // then an incident is created
-    waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.CREATED));
+    waitUntil(() -> hasIncidentEvent(IncidentIntent.CREATED));
 
     // when the job retries are increased
     jobHandler.failJob = false;
@@ -148,7 +151,7 @@ public class IncidentTest {
     jobClient.newUpdateRetriesCommand(job).retries(3).send().join();
 
     // then the incident is deleted
-    waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.DELETED));
+    waitUntil(() -> hasIncidentEvent(IncidentIntent.DELETED));
   }
 
   private void deploy() {

@@ -19,6 +19,7 @@ import io.zeebe.broker.Broker;
 import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
 import io.zeebe.broker.exporter.DebugExporter;
 import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.zeebe.broker.system.configuration.TomlConfigurationReader;
@@ -30,6 +31,7 @@ import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.test.util.RecordingExporter;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.FileUtil;
@@ -152,11 +154,18 @@ public class EmbeddedBrokerRule extends ExternalResource {
           brokerCfg.getExporters().add(DebugExporter.defaultConfig(false));
         }
         assignSocketAddresses(brokerCfg);
+
+        final ExporterCfg exporterCfg = new ExporterCfg();
+        exporterCfg.setId("recording");
+        exporterCfg.setClassName(RecordingExporter.class.getName());
+
+        brokerCfg.getExporters().add(exporterCfg);
       } catch (final IOException e) {
         throw new RuntimeException("Unable to open configuration", e);
       }
     }
 
+    RecordingExporter.reset();
     broker = new Broker(brokerCfg, brokerBase.getAbsolutePath(), controlledActorClock);
 
     final ServiceContainer serviceContainer = broker.getBrokerContext().getServiceContainer();

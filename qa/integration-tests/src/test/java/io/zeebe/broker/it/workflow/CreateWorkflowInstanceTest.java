@@ -15,6 +15,7 @@
  */
 package io.zeebe.broker.it.workflow;
 
+import static io.zeebe.test.util.RecordingExporter.hasWorkflowInstanceEvent;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
@@ -22,13 +23,12 @@ import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.gateway.api.events.DeploymentEvent;
 import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
-import io.zeebe.gateway.api.events.WorkflowInstanceState;
 import io.zeebe.gateway.cmd.BrokerErrorException;
 import io.zeebe.gateway.cmd.ClientCommandRejectedException;
 import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.Collections;
 import org.junit.Before;
 import org.junit.Rule;
@@ -39,11 +39,8 @@ import org.junit.rules.RuleChain;
 public class CreateWorkflowInstanceTest {
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
   public ClientRule clientRule = new ClientRule(brokerRule);
-  public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
 
-  @Rule
-  public RuleChain ruleChain =
-      RuleChain.outerRule(brokerRule).around(clientRule).around(eventRecorder);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   @Rule public ExpectedException exception = ExpectedException.none();
 
@@ -91,7 +88,7 @@ public class CreateWorkflowInstanceTest {
     assertThat(workflowInstance.getVersion()).isEqualTo(2);
     assertThat(workflowInstance.getWorkflowInstanceKey()).isGreaterThan(0);
 
-    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.CREATED));
+    waitUntil(() -> hasWorkflowInstanceEvent(WorkflowInstanceIntent.CREATED));
   }
 
   @Test
@@ -111,7 +108,7 @@ public class CreateWorkflowInstanceTest {
     assertThat(workflowInstance.getVersion()).isEqualTo(1);
     assertThat(workflowInstance.getWorkflowInstanceKey()).isGreaterThan(0);
 
-    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.CREATED));
+    waitUntil(() -> hasWorkflowInstanceEvent(WorkflowInstanceIntent.CREATED));
   }
 
   @Test
@@ -132,7 +129,7 @@ public class CreateWorkflowInstanceTest {
     assertThat(workflowInstance.getVersion()).isEqualTo(1);
     assertThat(workflowInstance.getWorkflowKey()).isEqualTo(workflowKey);
 
-    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.CREATED));
+    waitUntil(() -> hasWorkflowInstanceEvent(WorkflowInstanceIntent.CREATED));
   }
 
   @Test

@@ -27,6 +27,7 @@ import io.zeebe.gateway.api.record.ValueType;
 import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -101,5 +102,10 @@ public class WorkflowTest {
         .open();
 
     testRule.waitUntilWorkflowInstanceCompleted(workflowInstance.getWorkflowInstanceKey());
+  }
+
+  @After
+  public void after() {
+    testRule.printWorkflowInstanceEvents(6);
   }
 }

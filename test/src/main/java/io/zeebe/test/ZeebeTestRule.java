@@ -16,15 +16,20 @@
 package io.zeebe.test;
 
 import static io.zeebe.test.EmbeddedBrokerRule.DEFAULT_CONFIG_SUPPLIER;
-import static io.zeebe.test.TopicEventRecorder.jobKey;
-import static io.zeebe.test.TopicEventRecorder.wfInstanceKey;
+import static io.zeebe.test.util.RecordingExporter.asWorkflowInstanceValue;
+import static io.zeebe.test.util.RecordingExporter.hasRecord;
+import static io.zeebe.test.util.RecordingExporter.hasWorkflowInstanceEvent;
+import static io.zeebe.test.util.RecordingExporter.recordsOfType;
+import static io.zeebe.test.util.RecordingExporter.withIntent;
+import static io.zeebe.test.util.RecordingExporter.withKey;
+import static io.zeebe.test.util.RecordingExporter.withWorkflowInstanceKey;
 import static org.assertj.core.api.Assertions.fail;
 
 import io.zeebe.gateway.ZeebeClient;
-import io.zeebe.gateway.api.events.JobEvent;
-import io.zeebe.gateway.api.events.JobState;
-import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
-import io.zeebe.gateway.api.events.WorkflowInstanceState;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.io.InputStream;
 import java.time.Duration;
 import java.time.Instant;
@@ -36,7 +41,6 @@ import org.junit.rules.ExternalResource;
 public class ZeebeTestRule extends ExternalResource {
   private EmbeddedBrokerRule brokerRule;
   private ClientRule clientRule;
-  private TopicEventRecorder topicEventRecorder;
 
   public ZeebeTestRule() {
     this(DEFAULT_CONFIG_SUPPLIER, Properties::new);
@@ -45,9 +49,7 @@ public class ZeebeTestRule extends ExternalResource {
   public ZeebeTestRule(
       final Supplier<InputStream> configSupplier, final Supplier<Properties> propertiesProvider) {
     brokerRule = new EmbeddedBrokerRule(configSupplier);
-    clientRule = new ClientRule(propertiesProvider);
-
-    topicEventRecorder = new TopicEventRecorder(clientRule);
+    clientRule = new ClientRule(propertiesProvider, brokerRule);
   }
 
   public ZeebeClient getClient() {
@@ -58,51 +60,49 @@ public class ZeebeTestRule extends ExternalResource {
   protected void before() {
     brokerRule.before();
     clientRule.before();
-    topicEventRecorder.before();
   }
 
   @Override
   protected void after() {
-    topicEventRecorder.after();
     clientRule.after();
     brokerRule.after();
   }
 
   public void waitUntilWorkflowInstanceCompleted(final long key) {
     waitUntil(
-        () -> !topicEventRecorder.getWorkflowInstanceEvents(wfInstanceKey(key)).isEmpty(),
+        () ->
+            hasWorkflowInstanceEvent(WorkflowInstanceIntent.CREATED, withWorkflowInstanceKey(key)),
         "no workflow instance found with key " + key);
 
     waitUntil(
-        () -> {
-          final WorkflowInstanceEvent event =
-              topicEventRecorder.getLastWorkflowInstanceEvent(wfInstanceKey(key));
-          return event.getKey() == key
-              && event.getState().equals(WorkflowInstanceState.ELEMENT_COMPLETED);
-        },
+        () ->
+            hasRecord(
+                recordsOfType(ValueType.WORKFLOW_INSTANCE)
+                    .filter(withKey(key))
+                    .filter(withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED))
+                    .map(asWorkflowInstanceValue())
+                    .filter(withWorkflowInstanceKey(key))),
         "workflow instance is not completed");
   }
 
   public void waitUntilJobCompleted(final long key) {
     waitUntil(
-        () -> !topicEventRecorder.getJobEvents(jobKey(key)).isEmpty(),
+        () -> hasRecord(recordsOfType(ValueType.JOB).filter(withKey(key))),
         "no job found with key " + key);
 
     waitUntil(
-        () -> {
-          final JobEvent event = topicEventRecorder.getLastJobEvent(jobKey(key));
-          return event.getState().equals(JobState.COMPLETED);
-        },
+        () ->
+            hasRecord(
+                recordsOfType(ValueType.JOB)
+                    .filter(withKey(key))
+                    .filter(withIntent(JobIntent.COMPLETED))),
         "job is not completed");
   }
 
   public void printWorkflowInstanceEvents(final long key) {
-    topicEventRecorder
-        .getWorkflowInstanceEvents(wfInstanceKey(key))
-        .forEach(
-            event -> {
-              System.out.println("> " + event);
-            });
+    recordsOfType(ValueType.WORKFLOW_INSTANCE, RecordType.EVENT)
+        .filter(r -> withWorkflowInstanceKey(key).test(asWorkflowInstanceValue().apply(r)))
+        .forEach(event -> System.out.println("> " + event.toJson()));
   }
 
   private void waitUntil(final BooleanSupplier condition, final String failureMessage) {
