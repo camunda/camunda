@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.exporter.record;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.RecordMetadata;
 import io.zeebe.exporter.record.RecordValue;
@@ -35,7 +36,7 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
   private final RecordMetadata metadata;
   private final T value;
 
-  private final ZeebeObjectMapperImpl objectMapper;
+  @JsonIgnore private final ZeebeObjectMapperImpl objectMapper;
 
   public RecordImpl(
       ZeebeObjectMapperImpl objectMapper,
@@ -113,6 +114,10 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
   @Override
   public T getValue() {
     return value;
+  }
+
+  public ZeebeObjectMapperImpl getObjectMapper() {
+    return objectMapper;
   }
 
   @Override

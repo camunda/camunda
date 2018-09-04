@@ -16,6 +16,9 @@
 package io.zeebe.test;
 
 import io.zeebe.broker.Broker;
+import io.zeebe.broker.exporter.DebugExporter;
+import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.broker.system.configuration.TomlConfigurationReader;
 import io.zeebe.util.FileUtil;
 import java.io.File;
 import java.io.IOException;
@@ -27,6 +30,9 @@ import org.junit.rules.ExternalResource;
 public class EmbeddedBrokerRule extends ExternalResource {
   public static final Supplier<InputStream> DEFAULT_CONFIG_SUPPLIER =
       () -> EmbeddedBrokerRule.class.getResourceAsStream("/zeebe.default.cfg.toml");
+
+  private static final boolean ENABLE_DEBUG_EXPORTER = false;
+
   private Broker broker;
   private Supplier<InputStream> configSupplier;
   private File brokerBase;
@@ -68,7 +74,12 @@ public class EmbeddedBrokerRule extends ExternalResource {
         brokerBase = Files.newTemporaryFolder();
       }
 
-      broker = new Broker(configStream, brokerBase.getAbsolutePath(), null);
+      final BrokerCfg brokerCfg = TomlConfigurationReader.read(configStream);
+      if (ENABLE_DEBUG_EXPORTER) {
+        brokerCfg.getExporters().add(DebugExporter.defaultConfig(false));
+      }
+
+      broker = new Broker(brokerCfg, brokerBase.getAbsolutePath(), null);
     } catch (final IOException e) {
       throw new RuntimeException("Unable to read configuration", e);
     }

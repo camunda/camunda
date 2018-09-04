@@ -20,6 +20,7 @@ import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 
 import io.zeebe.broker.Broker;
+import io.zeebe.broker.exporter.DebugExporter;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopologyClient;
 import io.zeebe.broker.system.configuration.BrokerCfg;
@@ -52,6 +53,8 @@ import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 
 public class ClusteringRule extends ExternalResource {
+
+  private static final boolean ENABLE_DEBUG_EXPORTER = false;
 
   public static final Logger LOG = new ZbLogger(ClusteringRule.class);
 
@@ -303,6 +306,10 @@ public class ClusteringRule extends ExternalResource {
       final InputStream config =
           this.getClass().getClassLoader().getResourceAsStream(brokerConfigFiles[brokerId]);
       final BrokerCfg brokerCfg = TomlConfigurationReader.read(config);
+      if (ENABLE_DEBUG_EXPORTER) {
+        brokerCfg.getExporters().add(DebugExporter.defaultConfig(false));
+      }
+
       EmbeddedBrokerRule.assignSocketAddresses(brokerCfg);
 
       if (brokerId > 0) {
