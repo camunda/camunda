@@ -5,8 +5,6 @@ import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
 
 import Selections from './Selections';
 
-// import {getSelectionById} from 'modules/utils/selection';
-
 import * as api from 'modules/api/selections/selections';
 
 api.batchRetry = mockResolvedAsyncFn();
