@@ -468,7 +468,7 @@ describe('Filters', () => {
       node.update();
 
       // then
-      expect(spy).toHaveBeenCalledWith({workflowIds: ['6']});
+      expect(spy).toHaveBeenCalledWith({workflowIds: ['6'], activityId: ''});
     });
 
     it('should call onFilterChange when all workflow versions are selected', async () => {
@@ -485,7 +485,11 @@ describe('Filters', () => {
         .handleWorkflowVersionChange({target: {value: ALL_VERSIONS_OPTION}});
 
       // then
-      expect(spy).toHaveBeenCalledWith({workflowIds: ['6', '4', '1']});
+      expect(spy).toHaveBeenCalled();
+      expect(spy.mock.calls[0][0].workflowIds).toEqual(['6']);
+      expect(spy.mock.calls[0][0].activityId).toBe('');
+      expect(spy.mock.calls[1][0].workflowIds).toEqual(['6', '4', '1']);
+      expect(spy.mock.calls[1][0].activityId).toBe('');
     });
   });
 

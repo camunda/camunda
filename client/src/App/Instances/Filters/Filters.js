@@ -116,7 +116,10 @@ export default class Filters extends React.Component {
       versions = version ? [version] : null;
     }
 
-    this.props.onFilterChange({workflowIds: versions});
+    this.props.onFilterChange({
+      workflowIds: versions,
+      activityId: this.state.activityId
+    });
   };
 
   updateWorkflowOnInstancesPage = version => {
@@ -161,7 +164,6 @@ export default class Filters extends React.Component {
       name === 'startDate' || name === 'endDate'
         ? {...parsedValue} // value is an object, nr: startDate: {startDateAfter: ..., startDateBefore: ...}
         : {[name]: parsedValue}; // value is an string
-
     this.props.onFilterChange(filterValue);
   };
 
