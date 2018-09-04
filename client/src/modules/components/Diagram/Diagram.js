@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import BPMNViewer from 'bpmn-js/lib/NavigatedViewer';
 
 import {themed} from 'modules/theme';
-import {ACTIVITY_STATE} from 'modules/constants';
+import {ACTIVITY_STATE, FLOW_NODE_STATE} from 'modules/constants';
 import incidentIcon from 'modules/components/Icon/diagram-badge-single-instance-incident.svg';
 import activeIcon from 'modules/components/Icon/diagram-badge-single-instance-active.svg';
 import completedLightIcon from 'modules/components/Icon/diagram-badge-single-instance-completed-light.svg';
@@ -39,10 +39,12 @@ class Diagram extends React.Component {
     selectableFlowNodes: PropTypes.arrayOf(PropTypes.string),
     selectedFlowNode: PropTypes.string,
     onFlowNodeSelected: PropTypes.func,
-    flowNodeStateOverlay: PropTypes.shape({
-      id: PropTypes.string.isRequired,
-      state: PropTypes.oneOf(Object.keys(ACTIVITY_STATE)).isRequired
-    })
+    flowNodeStateOverlays: PropTypes.arrayOf(
+      PropTypes.shape({
+        id: PropTypes.string.isRequired,
+        state: PropTypes.oneOf(Object.keys(ACTIVITY_STATE)).isRequired
+      })
+    )
   };
 
   constructor(props) {
@@ -81,6 +83,12 @@ class Diagram extends React.Component {
         selectedFlowNode
       );
     }
+
+    // Clear overlays of type flow-node-state and add new ones
+    if (this.props.flowNodeStateOverlays) {
+      this.clearOverlaysByType(FLOW_NODE_STATE);
+      this.props.flowNodeStateOverlays.forEach(this.addFlowNodeStateOverlay);
+    }
   }
 
   async fetchAndSetWorkflowXML() {
@@ -109,11 +117,7 @@ class Diagram extends React.Component {
     }
 
     if (this.props.selectableFlowNodes && this.props.onFlowNodeSelected) {
-      this.addEventListeners();
-    }
-
-    if (this.props.flowNodeStateOverlay) {
-      this.addFlowNodeStateOverlay(this.props.flowNodeStateOverlay);
+      this.addElementClickListeners();
     }
   };
 
@@ -199,23 +203,31 @@ class Diagram extends React.Component {
     }
   };
 
-  addEventListeners = () => {
+  addElementClickListeners = () => {
     const eventBus = this.Viewer.get('eventBus');
     eventBus.on('element.click', this.handleElementClick);
   };
 
   addFlowNodeStateOverlay = ({id, state}) => {
+    // Create an overlay dom element as an img
     const img = document.createElement('img');
     Object.assign(img, {
       src: iconMap[state][this.props.theme],
       width: 24,
       height: 24
     });
-    const overlays = this.Viewer.get('overlays');
-    overlays.add(id, {
+
+    // Add the created overlay to the diagram.
+    // Note that we also pass the type 'flow-node-state' to
+    // the overlay to be able to clear all overlays of such type. (c.f. c)
+    this.Viewer.get('overlays').add(id, FLOW_NODE_STATE, {
       position: {bottom: 14, left: -10},
       html: img
     });
+  };
+
+  clearOverlaysByType = type => {
+    this.Viewer.get('overlays').remove({type});
   };
 
   render() {

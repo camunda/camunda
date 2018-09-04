@@ -71,9 +71,12 @@ export const EXPAND_STATE = {
 
 export const UNNAMED_ACTIVITY = 'Unnamed Activity';
 
-export const ACTIVITY_TYPE = {
+export const FLOW_NODE_STATE = 'flow-node-state';
+
+export const FLOW_NODE_TYPE = {
   TASK: 'TASK',
-  EVENT: 'EVENT',
+  START_EVENT: 'START_EVENT',
+  END_EVENT: 'END_EVENT',
   GATEWAY: 'GATEWAY'
 };
 

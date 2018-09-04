@@ -25,7 +25,7 @@ export default class DiagramPanel extends React.Component {
     selectableFlowNodes: PropTypes.arrayOf(PropTypes.string),
     selectedFlowNode: PropTypes.string,
     onFlowNodeSelected: PropTypes.func,
-    flowNodeStateOverlay: PropTypes.object
+    flowNodeStateOverlays: PropTypes.array
   };
 
   render() {
@@ -55,7 +55,7 @@ export default class DiagramPanel extends React.Component {
             selectableFlowNodes={this.props.selectableFlowNodes}
             selectedFlowNode={this.props.selectedFlowNode}
             onFlowNodeSelected={this.props.onFlowNodeSelected}
-            flowNodeStateOverlay={this.props.flowNodeStateOverlay}
+            flowNodeStateOverlays={this.props.flowNodeStateOverlays}
           />
         </SplitPane.Pane.Body>
       </SplitPane.Pane>

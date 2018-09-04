@@ -1,5 +1,5 @@
 import {Colors, themeStyle} from 'modules/theme';
-import {ACTIVITY_TYPE, UNNAMED_ACTIVITY} from 'modules/constants';
+import {FLOW_NODE_TYPE, UNNAMED_ACTIVITY} from 'modules/constants';
 
 export function getDiagramColors(theme) {
   return {
@@ -19,15 +19,19 @@ export function getElementType({businessObject, type}) {
     return null;
   }
   if (businessObject.$instanceOf('bpmn:Task')) {
-    return ACTIVITY_TYPE.TASK;
+    return FLOW_NODE_TYPE.TASK;
   }
 
-  if (businessObject.$instanceOf('bpmn:Event')) {
-    return ACTIVITY_TYPE.EVENT;
+  if (businessObject.$instanceOf('bpmn:StartEvent')) {
+    return FLOW_NODE_TYPE.START_EVENT;
+  }
+
+  if (businessObject.$instanceOf('bpmn:EndEvent')) {
+    return FLOW_NODE_TYPE.END_EVENT;
   }
 
   if (businessObject.$instanceOf('bpmn:Gateway')) {
-    return ACTIVITY_TYPE.GATEWAY;
+    return FLOW_NODE_TYPE.GATEWAY;
   }
 }
 

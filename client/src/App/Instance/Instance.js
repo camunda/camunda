@@ -9,6 +9,7 @@ import InstanceDetail from './InstanceDetail';
 import Header from '../Header';
 import DiagramPanel from './DiagramPanel';
 import InstanceHistory from './InstanceHistory';
+import {getFlowNodeStateOverlays} from './service';
 import * as Styled from './styled';
 
 export default class Instance extends Component {
@@ -53,7 +54,7 @@ export default class Instance extends Component {
       {}
     );
 
-    this.setState({activitiesDetails});
+    this.setState({activitiesDetails}, this.handleActivitiesDetailsChange);
   };
 
   handleActivitySelection = selectedActivityId => {
@@ -65,15 +66,13 @@ export default class Instance extends Component {
       return 'Loading';
     }
 
-    // get information for the diagram
-    const instanceActivities = (this.state.instance || {}).activities || [];
-    const selectableFlowNodes = instanceActivities.map(
+    // Get extra information for the diagram
+    const selectableFlowNodes = (this.state.instance || {}).activities.map(
       ({activityId}) => activityId
     );
-    const {activityId, state} = instanceActivities[
-      instanceActivities.length - 1
-    ];
-    const flowNodeStateOverlay = {id: activityId, state};
+    const flowNodeStateOverlays = this.state.activitiesDetails
+      ? getFlowNodeStateOverlays(this.state.activitiesDetails)
+      : null;
 
     return (
       <Fragment>
@@ -93,7 +92,7 @@ export default class Instance extends Component {
                 selectableFlowNodes={selectableFlowNodes}
                 selectedFlowNode={this.state.selectedActivityId}
                 onFlowNodeSelected={this.handleActivitySelection}
-                flowNodeStateOverlay={flowNodeStateOverlay}
+                flowNodeStateOverlays={flowNodeStateOverlays}
               />
               <InstanceHistory
                 instance={this.state.instance}

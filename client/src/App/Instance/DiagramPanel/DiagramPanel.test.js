@@ -26,7 +26,7 @@ const mockProps = {
   selectableFlowNodes: ['foo'],
   selectedFlowNode: 'foo',
   onFlowNodeSelected: jest.fn(),
-  flowNodeStateOverlay: {}
+  flowNodeStateOverlays: [{}]
 };
 
 describe('DiagramPanel', () => {
@@ -78,8 +78,8 @@ describe('DiagramPanel', () => {
     expect(DiagramNode.prop('onFlowNodeSelected')).toBe(
       mockProps.onFlowNodeSelected
     );
-    expect(DiagramNode.prop('flowNodeStateOverlay')).toBe(
-      mockProps.flowNodeStateOverlay
+    expect(DiagramNode.prop('flowNodeStateOverlays')).toBe(
+      mockProps.flowNodeStateOverlays
     );
     expect(node).toMatchSnapshot();
   });

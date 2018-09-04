@@ -2,7 +2,11 @@
 
 exports[`DiagramPanel should render pane header and body 1`] = `
 <Pane
-  flowNodeStateOverlay={Object {}}
+  flowNodeStateOverlays={
+    Array [
+      Object {},
+    ]
+  }
   onFlowNodeSelected={[Function]}
   onFlowNodesDetailsReady={[Function]}
   selectableFlowNodes={
@@ -58,7 +62,11 @@ exports[`DiagramPanel should render pane header and body 1`] = `
       }
     />
     <Themed(Diagram)
-      flowNodeStateOverlay={Object {}}
+      flowNodeStateOverlays={
+        Array [
+          Object {},
+        ]
+      }
       onFlowNodeSelected={[Function]}
       onFlowNodesDetailsReady={[Function]}
       selectableFlowNodes={

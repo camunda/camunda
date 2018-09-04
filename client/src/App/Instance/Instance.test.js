@@ -2,7 +2,11 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
-import {INSTANCE_STATE, ACTIVITY_STATE} from 'modules/constants';
+import {
+  INSTANCE_STATE,
+  ACTIVITY_STATE,
+  FLOW_NODE_TYPE
+} from 'modules/constants';
 import * as api from 'modules/api/instances/instances';
 
 import Instance from './Instance';
@@ -153,7 +157,23 @@ describe('Instance', () => {
     it('should display a Header, DiagramPanel and Copyright', async () => {
       // given
       const node = shallow(component);
-      const ACTIVITIES_DETAILS = {foo: 'foo', taskA: 'taskA'};
+      const ACTIVITIES_DETAILS = {
+        foo: {
+          activityId: 'foo',
+          state: ACTIVITY_STATE.COMPLETED,
+          type: FLOW_NODE_TYPE.END_EVENT
+        },
+        bar: {
+          activityId: 'bar',
+          state: ACTIVITY_STATE.COMPLETED,
+          type: FLOW_NODE_TYPE.TASK
+        },
+        taskA: {
+          activityId: 'taskA',
+          state: ACTIVITY_STATE.INCIDENT,
+          type: FLOW_NODE_TYPE.TASK
+        }
+      };
       node.setState({
         instance: INSTANCE,
         activitiesDetails: ACTIVITIES_DETAILS,
@@ -182,10 +202,16 @@ describe('Instance', () => {
       expect(DiagramPanelNode.prop('onFlowNodeSelected')).toBe(
         node.instance().handleActivitySelection
       );
-      expect(DiagramPanelNode.prop('flowNodeStateOverlay')).toEqual({
-        id: 'taskA',
-        state: ACTIVITY_STATE.INCIDENT
-      });
+      expect(DiagramPanelNode.prop('flowNodeStateOverlays')).toEqual([
+        {
+          id: 'foo',
+          state: ACTIVITY_STATE.COMPLETED
+        },
+        {
+          id: 'taskA',
+          state: ACTIVITY_STATE.INCIDENT
+        }
+      ]);
 
       // InstanceHistory
       const InstanceHistoryNode = node.find(InstanceHistory);

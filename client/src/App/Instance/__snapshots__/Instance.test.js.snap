@@ -53,11 +53,17 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
     <styled.div>
       <SplitPane>
         <DiagramPanel
-          flowNodeStateOverlay={
-            Object {
-              "id": "taskA",
-              "state": "INCIDENT",
-            }
+          flowNodeStateOverlays={
+            Array [
+              Object {
+                "id": "foo",
+                "state": "COMPLETED",
+              },
+              Object {
+                "id": "taskA",
+                "state": "INCIDENT",
+              },
+            ]
           }
           instance={
             Object {
@@ -109,8 +115,21 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
         <InstanceHistory
           activitiesDetails={
             Object {
-              "foo": "foo",
-              "taskA": "taskA",
+              "bar": Object {
+                "activityId": "bar",
+                "state": "COMPLETED",
+                "type": "TASK",
+              },
+              "foo": Object {
+                "activityId": "foo",
+                "state": "COMPLETED",
+                "type": "END_EVENT",
+              },
+              "taskA": Object {
+                "activityId": "taskA",
+                "state": "INCIDENT",
+                "type": "TASK",
+              },
             }
           }
           instance={

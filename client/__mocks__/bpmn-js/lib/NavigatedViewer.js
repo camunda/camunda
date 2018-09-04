@@ -14,7 +14,7 @@ class Viewer {
       }))
     };
     this.eventBus = {on: jest.fn()};
-    this.overlays = {add: jest.fn()};
+    this.overlays = {add: jest.fn(), remove: jest.fn()};
   }
 
   importXML = jest.fn((_, callback) => {

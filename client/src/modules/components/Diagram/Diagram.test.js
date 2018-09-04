@@ -4,7 +4,7 @@ import {shallow} from 'enzyme';
 import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
 import {Colors} from 'modules/theme';
 import * as api from 'modules/api/diagram/diagram';
-import {ACTIVITY_STATE} from 'modules/constants';
+import {ACTIVITY_STATE, FLOW_NODE_STATE} from 'modules/constants';
 import incidentIcon from 'modules/components/Icon/diagram-badge-single-instance-incident.svg';
 import activeIcon from 'modules/components/Icon/diagram-badge-single-instance-active.svg';
 import completedLightIcon from 'modules/components/Icon/diagram-badge-single-instance-completed-light.svg';
@@ -263,24 +263,33 @@ describe('Diagram', () => {
       );
     });
 
-    it('should add flow node state overlay if provided', async () => {
+    it('should add flow node state overlays if provided', async () => {
       // given
-      const flowNodeStateOverlay = {id: 'foo', state: ACTIVITY_STATE.INCIDENT};
-      const node = shallow(
-        <Diagram
-          workflowId={workflowId}
-          theme={'light'}
-          flowNodeStateOverlay={flowNodeStateOverlay}
-        />
-      );
+      const flowNodeStateOverlays = [
+        {id: 'foo', state: ACTIVITY_STATE.INCIDENT},
+        {id: 'bar', state: ACTIVITY_STATE.ACTIVE}
+      ];
+      const node = shallow(<Diagram workflowId={workflowId} theme={'light'} />);
+      await flushPromises();
       const overlaysAddSpy = jest.spyOn(
         node.instance(),
         'addFlowNodeStateOverlay'
       );
-      await flushPromises();
+      const overlaysRemoveSpy = jest.spyOn(
+        node.instance().Viewer.overlays,
+        'remove'
+      );
+
+      // when
+      node.setProps({flowNodeStateOverlays});
 
       // then
-      expect(overlaysAddSpy).toBeCalledWith(flowNodeStateOverlay);
+      expect(overlaysAddSpy).toHaveBeenCalledTimes(
+        flowNodeStateOverlays.length
+      );
+      expect(overlaysAddSpy.mock.calls[0][0]).toEqual(flowNodeStateOverlays[0]);
+      expect(overlaysAddSpy.mock.calls[1][0]).toEqual(flowNodeStateOverlays[1]);
+      expect(overlaysRemoveSpy).toBeCalledWith({type: FLOW_NODE_STATE});
     });
   });
 
@@ -527,13 +536,14 @@ describe('Diagram', () => {
       // then
       const overlaysAddSpy = node.instance().Viewer.overlays.add;
       expect(overlaysAddSpy.mock.calls[0][0]).toBe('foo');
+      expect(overlaysAddSpy.mock.calls[0][1]).toBe(FLOW_NODE_STATE);
       expect(
-        overlaysAddSpy.mock.calls[0][1].html.src.replace(
+        overlaysAddSpy.mock.calls[0][2].html.src.replace(
           'http://localhost/',
           ''
         )
       ).toBe(incidentIcon);
-      expect(overlaysAddSpy.mock.calls[0][1]).toMatchSnapshot();
+      expect(overlaysAddSpy.mock.calls[0][2]).toMatchSnapshot();
     });
 
     it('should add active overlay', async () => {
@@ -548,13 +558,14 @@ describe('Diagram', () => {
       // then
       const overlaysAddSpy = node.instance().Viewer.overlays.add;
       expect(overlaysAddSpy.mock.calls[0][0]).toBe('foo');
+      expect(overlaysAddSpy.mock.calls[0][1]).toBe(FLOW_NODE_STATE);
       expect(
-        overlaysAddSpy.mock.calls[0][1].html.src.replace(
+        overlaysAddSpy.mock.calls[0][2].html.src.replace(
           'http://localhost/',
           ''
         )
       ).toBe(activeIcon);
-      expect(overlaysAddSpy.mock.calls[0][1]).toMatchSnapshot();
+      expect(overlaysAddSpy.mock.calls[0][2]).toMatchSnapshot();
     });
 
     it('should add completed light overlay', async () => {
@@ -569,13 +580,14 @@ describe('Diagram', () => {
       // then
       const overlaysAddSpy = node.instance().Viewer.overlays.add;
       expect(overlaysAddSpy.mock.calls[0][0]).toBe('foo');
+      expect(overlaysAddSpy.mock.calls[0][1]).toBe(FLOW_NODE_STATE);
       expect(
-        overlaysAddSpy.mock.calls[0][1].html.src.replace(
+        overlaysAddSpy.mock.calls[0][2].html.src.replace(
           'http://localhost/',
           ''
         )
       ).toBe(completedLightIcon);
-      expect(overlaysAddSpy.mock.calls[0][1]).toMatchSnapshot();
+      expect(overlaysAddSpy.mock.calls[0][2]).toMatchSnapshot();
     });
 
     it('should add completed dark overlay', async () => {
@@ -590,13 +602,14 @@ describe('Diagram', () => {
       // then
       const overlaysAddSpy = node.instance().Viewer.overlays.add;
       expect(overlaysAddSpy.mock.calls[0][0]).toBe('foo');
+      expect(overlaysAddSpy.mock.calls[0][1]).toBe(FLOW_NODE_STATE);
       expect(
-        overlaysAddSpy.mock.calls[0][1].html.src.replace(
+        overlaysAddSpy.mock.calls[0][2].html.src.replace(
           'http://localhost/',
           ''
         )
       ).toBe(completedDarkIcon);
-      expect(overlaysAddSpy.mock.calls[0][1]).toMatchSnapshot();
+      expect(overlaysAddSpy.mock.calls[0][2]).toMatchSnapshot();
     });
 
     it('should add canceled light overlay', async () => {
@@ -614,13 +627,14 @@ describe('Diagram', () => {
       // then
       const overlaysAddSpy = node.instance().Viewer.overlays.add;
       expect(overlaysAddSpy.mock.calls[0][0]).toBe('foo');
+      expect(overlaysAddSpy.mock.calls[0][1]).toBe(FLOW_NODE_STATE);
       expect(
-        overlaysAddSpy.mock.calls[0][1].html.src.replace(
+        overlaysAddSpy.mock.calls[0][2].html.src.replace(
           'http://localhost/',
           ''
         )
       ).toBe(canceledLightIcon);
-      expect(overlaysAddSpy.mock.calls[0][1]).toMatchSnapshot();
+      expect(overlaysAddSpy.mock.calls[0][2]).toMatchSnapshot();
     });
 
     it('should add terminated dark overlay', async () => {
@@ -638,13 +652,14 @@ describe('Diagram', () => {
       // then
       const overlaysAddSpy = node.instance().Viewer.overlays.add;
       expect(overlaysAddSpy.mock.calls[0][0]).toBe('foo');
+      expect(overlaysAddSpy.mock.calls[0][1]).toBe(FLOW_NODE_STATE);
       expect(
-        overlaysAddSpy.mock.calls[0][1].html.src.replace(
+        overlaysAddSpy.mock.calls[0][2].html.src.replace(
           'http://localhost/',
           ''
         )
       ).toBe(canceledDarkIcon);
-      expect(overlaysAddSpy.mock.calls[0][1]).toMatchSnapshot();
+      expect(overlaysAddSpy.mock.calls[0][2]).toMatchSnapshot();
     });
   });
 });

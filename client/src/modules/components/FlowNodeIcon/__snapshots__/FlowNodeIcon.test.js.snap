@@ -7,6 +7,13 @@ exports[`FlowNodeIcon should render icon for ACTIVE EVENT 1`] = `
 />
 `;
 
+exports[`FlowNodeIcon should render icon for ACTIVE EVENT 2`] = `
+<FlownodeEvent
+  height="16px"
+  width="16px"
+/>
+`;
+
 exports[`FlowNodeIcon should render icon for ACTIVE GATEWAY 1`] = `
 <FlownodeGateway
   height="16px"
@@ -22,6 +29,13 @@ exports[`FlowNodeIcon should render icon for ACTIVE TASK 1`] = `
 `;
 
 exports[`FlowNodeIcon should render icon for COMPLETED EVENT 1`] = `
+<FlownodeEventCompleted
+  height="16px"
+  width="16px"
+/>
+`;
+
+exports[`FlowNodeIcon should render icon for COMPLETED EVENT 2`] = `
 <FlownodeEventCompleted
   height="16px"
   width="16px"
@@ -49,6 +63,13 @@ exports[`FlowNodeIcon should render icon for INCIDENT EVENT 1`] = `
 />
 `;
 
+exports[`FlowNodeIcon should render icon for INCIDENT EVENT 2`] = `
+<StateIconIncident
+  height="16px"
+  width="16px"
+/>
+`;
+
 exports[`FlowNodeIcon should render icon for INCIDENT GATEWAY 1`] = `
 <StateIconGatewayIncident
   height="16px"
@@ -64,6 +85,13 @@ exports[`FlowNodeIcon should render icon for INCIDENT TASK 1`] = `
 `;
 
 exports[`FlowNodeIcon should render icon for TERMINATED EVENT 1`] = `
+<Stop
+  height="16px"
+  width="16px"
+/>
+`;
+
+exports[`FlowNodeIcon should render icon for TERMINATED EVENT 2`] = `
 <Stop
   height="16px"
   width="16px"

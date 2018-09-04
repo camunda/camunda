@@ -1,7 +1,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {ACTIVITY_STATE, ACTIVITY_TYPE} from 'modules/constants';
+import {ACTIVITY_STATE, FLOW_NODE_TYPE} from 'modules/constants';
 
 import FlowNodeIcon from './FlowNodeIcon';
 
@@ -10,7 +10,7 @@ describe('FlowNodeIcon', () => {
     expect(
       shallow(
         <FlowNodeIcon
-          type={ACTIVITY_TYPE.TASK}
+          type={FLOW_NODE_TYPE.TASK}
           state={ACTIVITY_STATE.COMPLETED}
         />
       )
@@ -20,7 +20,10 @@ describe('FlowNodeIcon', () => {
   it('should render icon for ACTIVE TASK', () => {
     expect(
       shallow(
-        <FlowNodeIcon type={ACTIVITY_TYPE.TASK} state={ACTIVITY_STATE.ACTIVE} />
+        <FlowNodeIcon
+          type={FLOW_NODE_TYPE.TASK}
+          state={ACTIVITY_STATE.ACTIVE}
+        />
       )
     ).toMatchSnapshot();
   });
@@ -29,7 +32,7 @@ describe('FlowNodeIcon', () => {
     expect(
       shallow(
         <FlowNodeIcon
-          type={ACTIVITY_TYPE.TASK}
+          type={FLOW_NODE_TYPE.TASK}
           state={ACTIVITY_STATE.INCIDENT}
         />
       )
@@ -40,7 +43,7 @@ describe('FlowNodeIcon', () => {
     expect(
       shallow(
         <FlowNodeIcon
-          type={ACTIVITY_TYPE.TASK}
+          type={FLOW_NODE_TYPE.TASK}
           state={ACTIVITY_STATE.TERMINATED}
         />
       )
@@ -51,7 +54,15 @@ describe('FlowNodeIcon', () => {
     expect(
       shallow(
         <FlowNodeIcon
-          type={ACTIVITY_TYPE.EVENT}
+          type={FLOW_NODE_TYPE.START_EVENT}
+          state={ACTIVITY_STATE.COMPLETED}
+        />
+      )
+    ).toMatchSnapshot();
+    expect(
+      shallow(
+        <FlowNodeIcon
+          type={FLOW_NODE_TYPE.END_EVENT}
           state={ACTIVITY_STATE.COMPLETED}
         />
       )
@@ -62,7 +73,15 @@ describe('FlowNodeIcon', () => {
     expect(
       shallow(
         <FlowNodeIcon
-          type={ACTIVITY_TYPE.EVENT}
+          type={FLOW_NODE_TYPE.START_EVENT}
+          state={ACTIVITY_STATE.ACTIVE}
+        />
+      )
+    ).toMatchSnapshot();
+    expect(
+      shallow(
+        <FlowNodeIcon
+          type={FLOW_NODE_TYPE.END_EVENT}
           state={ACTIVITY_STATE.ACTIVE}
         />
       )
@@ -73,7 +92,15 @@ describe('FlowNodeIcon', () => {
     expect(
       shallow(
         <FlowNodeIcon
-          type={ACTIVITY_TYPE.EVENT}
+          type={FLOW_NODE_TYPE.START_EVENT}
+          state={ACTIVITY_STATE.INCIDENT}
+        />
+      )
+    ).toMatchSnapshot();
+    expect(
+      shallow(
+        <FlowNodeIcon
+          type={FLOW_NODE_TYPE.END_EVENT}
           state={ACTIVITY_STATE.INCIDENT}
         />
       )
@@ -84,7 +111,15 @@ describe('FlowNodeIcon', () => {
     expect(
       shallow(
         <FlowNodeIcon
-          type={ACTIVITY_TYPE.EVENT}
+          type={FLOW_NODE_TYPE.START_EVENT}
+          state={ACTIVITY_STATE.TERMINATED}
+        />
+      )
+    ).toMatchSnapshot();
+    expect(
+      shallow(
+        <FlowNodeIcon
+          type={FLOW_NODE_TYPE.END_EVENT}
           state={ACTIVITY_STATE.TERMINATED}
         />
       )
@@ -95,7 +130,7 @@ describe('FlowNodeIcon', () => {
     expect(
       shallow(
         <FlowNodeIcon
-          type={ACTIVITY_TYPE.GATEWAY}
+          type={FLOW_NODE_TYPE.GATEWAY}
           state={ACTIVITY_STATE.COMPLETED}
         />
       )
@@ -106,7 +141,7 @@ describe('FlowNodeIcon', () => {
     expect(
       shallow(
         <FlowNodeIcon
-          type={ACTIVITY_TYPE.GATEWAY}
+          type={FLOW_NODE_TYPE.GATEWAY}
           state={ACTIVITY_STATE.ACTIVE}
         />
       )
@@ -117,7 +152,7 @@ describe('FlowNodeIcon', () => {
     expect(
       shallow(
         <FlowNodeIcon
-          type={ACTIVITY_TYPE.GATEWAY}
+          type={FLOW_NODE_TYPE.GATEWAY}
           state={ACTIVITY_STATE.INCIDENT}
         />
       )
@@ -128,7 +163,7 @@ describe('FlowNodeIcon', () => {
     expect(
       shallow(
         <FlowNodeIcon
-          type={ACTIVITY_TYPE.GATEWAY}
+          type={FLOW_NODE_TYPE.GATEWAY}
           state={ACTIVITY_STATE.TERMINATED}
         />
       )
