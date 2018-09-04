@@ -42,7 +42,8 @@ export default class Dropdown extends React.Component {
   }
 
   handleKeyPress = evt => {
-    if (evt && evt.key !== 'Tab' && evt.key !== 'Enter') {
+    //The space bar is interpreted as empty evt.key by react;
+    if (evt && evt.key !== 'Tab' && evt.key !== 'Enter' && evt.key !== '') {
       evt.preventDefault();
     }
 
