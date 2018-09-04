@@ -29,7 +29,6 @@ import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.workflow.deployment.data.DeploymentRecord;
 import io.zeebe.broker.workflow.deployment.distribute.processor.state.DeploymentsStateController;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
-import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
@@ -98,8 +97,7 @@ public class DeploymentDistributeProcessor implements TypedRecordProcessor<Deplo
       final TypedRecord<DeploymentRecord> event,
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter,
-      final Consumer<SideEffectProducer> sideEffect,
-      final EventLifecycleContext ctx) {
+      final Consumer<SideEffectProducer> sideEffect) {
 
     final DeploymentRecord deploymentEvent = event.getValue();
     final long key = event.getKey();

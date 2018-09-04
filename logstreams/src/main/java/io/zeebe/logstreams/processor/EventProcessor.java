@@ -23,7 +23,7 @@ public interface EventProcessor {
    * Process the event. Do no execute any side effect, or write an event, or update the internal
    * state.
    */
-  default void processEvent(EventLifecycleContext ctx) {}
+  default void processEvent() {}
 
   /**
    * (Optional) Execute the side effects which are caused by the processed event. A side effect can

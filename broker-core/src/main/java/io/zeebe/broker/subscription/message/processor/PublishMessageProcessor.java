@@ -32,7 +32,6 @@ import io.zeebe.broker.subscription.message.state.MessageDataStore;
 import io.zeebe.broker.subscription.message.state.MessageDataStore.Message;
 import io.zeebe.broker.subscription.message.state.MessageSubscriptionDataStore;
 import io.zeebe.broker.subscription.message.state.MessageSubscriptionDataStore.MessageSubscription;
-import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.util.sched.clock.ActorClock;
@@ -63,8 +62,7 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
       TypedRecord<MessageRecord> record,
       TypedResponseWriter responseWriter,
       TypedStreamWriter streamWriter,
-      Consumer<SideEffectProducer> sideEffect,
-      EventLifecycleContext ctx) {
+      Consumer<SideEffectProducer> sideEffect) {
     this.responseWriter = responseWriter;
 
     messageRecord = record.getValue();

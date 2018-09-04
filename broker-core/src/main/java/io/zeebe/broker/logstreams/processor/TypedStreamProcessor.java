@@ -20,7 +20,6 @@ package io.zeebe.broker.logstreams.processor;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.logstreams.processor.EventProcessor;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
@@ -176,7 +175,7 @@ public class TypedStreamProcessor implements StreamProcessor {
     }
 
     @Override
-    public void processEvent(final EventLifecycleContext ctx) {
+    public void processEvent() {
       writer.reset();
       responseWriter.reset();
 
@@ -185,7 +184,7 @@ public class TypedStreamProcessor implements StreamProcessor {
       // default side effect is responses; can be changed by processor
       sideEffectProducer = responseWriter;
 
-      eventProcessor.processRecord(event, responseWriter, writer, this::setSideEffectProducer, ctx);
+      eventProcessor.processRecord(event, responseWriter, writer, this::setSideEffectProducer);
     }
 
     public void setSideEffectProducer(final SideEffectProducer sideEffectProducer) {

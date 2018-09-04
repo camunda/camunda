@@ -48,15 +48,11 @@ import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.logstreams.util.LogStreamWriterRule;
 import io.zeebe.logstreams.util.MutableStateSnapshotMetadata;
 import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.agrona.DirectBuffer;
@@ -137,7 +133,7 @@ public class StreamProcessorControllerTest {
     inOrder.verify(streamProcessor, times(1)).onOpen(any());
     inOrder.verify(streamProcessor, times(1)).onEvent(any());
 
-    inOrder.verify(eventProcessor, times(1)).processEvent(any());
+    inOrder.verify(eventProcessor, times(1)).processEvent();
     inOrder.verify(eventProcessor, times(1)).executeSideEffects();
     inOrder.verify(eventProcessor, times(1)).writeEvent(any());
     inOrder.verify(eventProcessor, times(1)).updateState();
@@ -145,124 +141,6 @@ public class StreamProcessorControllerTest {
     inOrder.verify(snapshotController, times(1)).takeSnapshot(any(), anyLong());
     inOrder.verify(streamProcessor, times(1)).onClose();
 
-    inOrder.verifyNoMoreInteractions();
-  }
-
-  @Test
-  public void testAsyncProcessEvent()
-      throws InterruptedException, ExecutionException, TimeoutException {
-    // given
-    final ActorFuture<Void> whenProcessingInvoked = new CompletableActorFuture<>();
-    final ActorFuture<Void> whenProcessingDone = new CompletableActorFuture<>();
-
-    // when
-    changeMockInActorContext(
-        () ->
-            doAnswer(
-                    invocation -> {
-                      final EventLifecycleContext ctx = invocation.getArgument(0);
-                      ctx.async(whenProcessingDone);
-                      whenProcessingInvoked.complete(null);
-                      return null;
-                    })
-                .when(eventProcessor)
-                .processEvent(any()));
-
-    writer.writeEvent(EVENT_1, true);
-    whenProcessingInvoked.get(5, TimeUnit.SECONDS);
-
-    // then
-    final InOrder inOrder = inOrder(eventProcessor);
-
-    inOrder.verify(eventProcessor, times(1)).processEvent(any());
-    inOrder.verifyNoMoreInteractions();
-
-    // and when
-    whenProcessingDone.complete(null);
-    waitUntil(() -> streamProcessor.getProcessedEventCount() == 1);
-
-    // then
-    inOrder.verify(eventProcessor, times(1)).executeSideEffects();
-    inOrder.verify(eventProcessor, times(1)).writeEvent(any());
-    inOrder.verify(eventProcessor, times(1)).updateState();
-
-    inOrder.verifyNoMoreInteractions();
-  }
-
-  @Test
-  public void testAsyncProcessEventWaitEvenIfNewEventIsWritten()
-      throws InterruptedException, ExecutionException, TimeoutException {
-    // tests that the stream processor that is currently blocked on
-    // future passed during processEvent does not continue when a new
-    // event is written (the stream processor is triggered on commit update)
-
-    // given
-    final ActorFuture<Void> whenProcessingInvoked = new CompletableActorFuture<>();
-    final ActorFuture<Void> whenProcessingDone = new CompletableActorFuture<>();
-
-    // when
-    changeMockInActorContext(
-        () ->
-            doAnswer(
-                    invocation -> {
-                      final EventLifecycleContext ctx = invocation.getArgument(0);
-                      if (!whenProcessingDone.isDone()) { // only block on first invocation
-                        ctx.async(whenProcessingDone);
-                        whenProcessingInvoked.complete(null);
-                      }
-
-                      return null;
-                    })
-                .when(eventProcessor)
-                .processEvent(any()));
-
-    // given
-    writer.writeEvent(EVENT_1, true);
-    whenProcessingInvoked.get(5, TimeUnit.SECONDS);
-
-    // when
-    writer.writeEvent(EVENT_2, true);
-    Thread.sleep(500); // how to do it better?
-
-    // then
-    verify(eventProcessor, times(1)).processEvent(any());
-
-    // and when
-    whenProcessingDone.complete(null);
-    waitUntil(() -> streamProcessor.getProcessedEventCount() == 2);
-
-    // then
-    verify(eventProcessor, times(2)).processEvent(any());
-  }
-
-  @Test
-  public void testAsyncProcessEventCompleteExceptionally()
-      throws InterruptedException, ExecutionException, TimeoutException {
-    // given
-    final ActorFuture<Void> whenProcessingInvoked = new CompletableActorFuture<>();
-
-    // when
-    changeMockInActorContext(
-        () ->
-            doAnswer(
-                    invocation -> {
-                      final EventLifecycleContext ctx = invocation.getArgument(0);
-                      ctx.async(
-                          CompletableActorFuture.completedExceptionally(new RuntimeException()));
-                      whenProcessingInvoked.complete(null);
-                      return null;
-                    })
-                .when(eventProcessor)
-                .processEvent(any()));
-
-    // when
-    writer.writeEvent(EVENT_1, true);
-    whenProcessingInvoked.get(5, TimeUnit.SECONDS);
-
-    // then
-    final InOrder inOrder = inOrder(eventProcessor);
-
-    inOrder.verify(eventProcessor, times(1)).processEvent(any());
     inOrder.verifyNoMoreInteractions();
   }
 
@@ -288,7 +166,7 @@ public class StreamProcessorControllerTest {
 
     // then
     final InOrder inOrder = inOrder(eventProcessor);
-    inOrder.verify(eventProcessor, times(1)).processEvent(any());
+    inOrder.verify(eventProcessor, times(1)).processEvent();
     inOrder.verify(eventProcessor, times(3)).executeSideEffects();
     inOrder.verify(eventProcessor, times(1)).writeEvent(any());
     inOrder.verify(eventProcessor, times(1)).updateState();
@@ -303,7 +181,7 @@ public class StreamProcessorControllerTest {
 
     // then
     final InOrder inOrder = inOrder(eventProcessor);
-    inOrder.verify(eventProcessor, times(1)).processEvent(any());
+    inOrder.verify(eventProcessor, times(1)).processEvent();
     inOrder.verify(eventProcessor, times(1)).executeSideEffects();
     inOrder.verify(eventProcessor, times(3)).writeEvent(any());
     inOrder.verify(eventProcessor, times(1)).updateState();
@@ -327,7 +205,7 @@ public class StreamProcessorControllerTest {
 
     final InOrder inOrder = inOrder(streamProcessor, eventProcessor);
     inOrder.verify(streamProcessor, times(2)).onEvent(any());
-    inOrder.verify(eventProcessor, times(1)).processEvent(any());
+    inOrder.verify(eventProcessor, times(1)).processEvent();
   }
 
   @Test
@@ -345,7 +223,7 @@ public class StreamProcessorControllerTest {
 
     final InOrder inOrder = inOrder(streamProcessor, eventProcessor);
     inOrder.verify(streamProcessor, times(1)).onEvent(any());
-    inOrder.verify(eventProcessor, times(1)).processEvent(any());
+    inOrder.verify(eventProcessor, times(1)).processEvent();
   }
 
   @Test
@@ -619,14 +497,14 @@ public class StreamProcessorControllerTest {
   public void shouldFailOnProcessEvent() {
     // when
     changeMockInActorContext(
-        () -> doThrow(new RuntimeException("expected")).when(eventProcessor).processEvent(any()));
+        () -> doThrow(new RuntimeException("expected")).when(eventProcessor).processEvent());
     writer.writeEvents(2, EVENT_1, true);
 
     // then
     waitUntil(() -> streamProcessorController.isFailed());
 
     final InOrder inOrder = inOrder(eventProcessor);
-    inOrder.verify(eventProcessor, times(1)).processEvent(any());
+    inOrder.verify(eventProcessor, times(1)).processEvent();
     inOrder.verifyNoMoreInteractions();
   }
 
@@ -641,7 +519,7 @@ public class StreamProcessorControllerTest {
     waitUntil(() -> streamProcessorController.isFailed());
 
     final InOrder inOrder = inOrder(eventProcessor);
-    inOrder.verify(eventProcessor, times(1)).processEvent(any());
+    inOrder.verify(eventProcessor, times(1)).processEvent();
     inOrder.verify(eventProcessor, times(1)).executeSideEffects();
     inOrder.verifyNoMoreInteractions();
   }
@@ -657,7 +535,7 @@ public class StreamProcessorControllerTest {
     waitUntil(() -> streamProcessorController.isFailed());
 
     final InOrder inOrder = inOrder(eventProcessor);
-    inOrder.verify(eventProcessor, times(1)).processEvent(any());
+    inOrder.verify(eventProcessor, times(1)).processEvent();
     inOrder.verify(eventProcessor, times(1)).executeSideEffects();
     inOrder.verify(eventProcessor, times(1)).writeEvent(any());
     inOrder.verifyNoMoreInteractions();
@@ -674,7 +552,7 @@ public class StreamProcessorControllerTest {
     waitUntil(() -> streamProcessorController.isFailed());
 
     final InOrder inOrder = inOrder(eventProcessor);
-    inOrder.verify(eventProcessor, times(1)).processEvent(any());
+    inOrder.verify(eventProcessor, times(1)).processEvent();
     inOrder.verify(eventProcessor, times(1)).executeSideEffects();
     inOrder.verify(eventProcessor, times(1)).writeEvent(any());
     inOrder.verify(eventProcessor, times(1)).updateState();
@@ -716,7 +594,7 @@ public class StreamProcessorControllerTest {
     waitUntil(() -> streamProcessorController.isFailed());
 
     final InOrder inOrder = inOrder(eventProcessor);
-    inOrder.verify(eventProcessor, times(1)).processEvent(any());
+    inOrder.verify(eventProcessor, times(1)).processEvent();
     inOrder.verify(eventProcessor, times(1)).executeSideEffects();
     inOrder.verify(eventProcessor, times(1)).writeEvent(any());
     inOrder.verifyNoMoreInteractions();

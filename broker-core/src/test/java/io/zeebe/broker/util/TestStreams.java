@@ -42,7 +42,6 @@ import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.logstreams.processor.EventProcessor;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
@@ -457,9 +456,9 @@ public class TestStreams {
       return new EventProcessor() {
 
         @Override
-        public void processEvent(EventLifecycleContext ctx) {
+        public void processEvent() {
           if (actualProcessor != null) {
-            actualProcessor.processEvent(ctx);
+            actualProcessor.processEvent();
           }
         }
 

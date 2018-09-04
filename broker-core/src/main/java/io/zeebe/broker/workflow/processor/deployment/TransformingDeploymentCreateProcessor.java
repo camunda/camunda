@@ -26,7 +26,6 @@ import io.zeebe.broker.workflow.deployment.data.DeploymentRecord;
 import io.zeebe.broker.workflow.deployment.transform.DeploymentTransformer;
 import io.zeebe.broker.workflow.map.WorkflowCache;
 import io.zeebe.broker.workflow.state.WorkflowRepositoryIndex;
-import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import java.util.function.Consumer;
@@ -48,8 +47,7 @@ public class TransformingDeploymentCreateProcessor
       final TypedRecord<DeploymentRecord> event,
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter,
-      final Consumer<SideEffectProducer> sideEffect,
-      final EventLifecycleContext ctx) {
+      final Consumer<SideEffectProducer> sideEffect) {
     final DeploymentRecord deploymentEvent = event.getValue();
 
     final boolean accepted = deploymentTransformer.transform(deploymentEvent);

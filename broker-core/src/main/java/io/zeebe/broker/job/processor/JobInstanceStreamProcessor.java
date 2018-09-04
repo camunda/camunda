@@ -32,7 +32,6 @@ import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.transport.clientapi.SubscribedRecordWriter;
-import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.protocol.clientapi.RecordType;
@@ -108,8 +107,7 @@ public class JobInstanceStreamProcessor implements StreamProcessorLifecycleAware
         TypedRecord<JobRecord> command,
         TypedResponseWriter responseWriter,
         TypedStreamWriter streamWriter,
-        Consumer<SideEffectProducer> sideEffect,
-        EventLifecycleContext ctx) {
+        Consumer<SideEffectProducer> sideEffect) {
 
       final short state = stateController.getJobState(command.getKey());
 

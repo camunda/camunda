@@ -31,7 +31,6 @@ import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
-import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.msgpack.value.IntegerValue;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.RecordType;
@@ -79,8 +78,7 @@ public class IdGenerator implements TypedRecordProcessor<IdRecord>, Service<IdGe
       TypedRecord<IdRecord> record,
       TypedResponseWriter responseWriter,
       TypedStreamWriter streamWriter,
-      Consumer<SideEffectProducer> sideEffect,
-      EventLifecycleContext ctx) {
+      Consumer<SideEffectProducer> sideEffect) {
 
     final IdRecord value = record.getValue();
 

@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.logstreams.snapshot.BaseValueSnapshotSupport;
 import io.zeebe.logstreams.snapshot.ComposedSnapshot;
 import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
@@ -183,11 +182,10 @@ public class TypedEventStreamProcessorBuilder {
         TypedRecord<T> record,
         TypedResponseWriter responseWriter,
         TypedStreamWriter streamWriter,
-        Consumer<SideEffectProducer> sideEffect,
-        EventLifecycleContext ctx) {
+        Consumer<SideEffectProducer> sideEffect) {
       selectedProcessor = dispatcher.apply(record);
       if (selectedProcessor != null) {
-        selectedProcessor.processRecord(record, responseWriter, streamWriter, sideEffect, ctx);
+        selectedProcessor.processRecord(record, responseWriter, streamWriter, sideEffect);
       }
     }
   }

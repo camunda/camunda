@@ -35,7 +35,6 @@ import io.zeebe.broker.workflow.index.ElementInstanceIndex;
 import io.zeebe.broker.workflow.map.DeployedWorkflow;
 import io.zeebe.broker.workflow.map.WorkflowCache;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
@@ -94,8 +93,7 @@ public final class CorrelateWorkflowInstanceSubscription
       TypedRecord<WorkflowInstanceSubscriptionRecord> record,
       TypedResponseWriter responseWriter,
       TypedStreamWriter streamWriter,
-      Consumer<SideEffectProducer> sideEffect,
-      EventLifecycleContext ctx) {
+      Consumer<SideEffectProducer> sideEffect) {
 
     this.record = record;
     this.subscription = record.getValue();
