@@ -38,6 +38,7 @@ export const Header = themed(styled.div`
   font-weight: 600;
 
   /* Other */
+  ${({isOpen}) => (!isOpen ? 'cursor: pointer' : '')};
   border-style: solid;
   border-width: 1px 0 1px 1px;
   border-color: ${({isOpen}) =>
@@ -66,6 +67,13 @@ export const DropdownTrigger = styled.div`
 
 export const DeleteIcon = styled(RemoveItem)`
   opacity: 0.45;
+  cursor: pointer;
+`;
+
+export const ArrowIcon = styled.div`
+  position: relative;
+  top: 2px;
+  cursor: pointer;
 `;
 
 export const Badge = styled(BadgeComponent)`

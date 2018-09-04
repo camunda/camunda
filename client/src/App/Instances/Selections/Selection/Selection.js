@@ -28,7 +28,9 @@ export default class Selection extends React.Component {
 
   stopClickPropagation = evt => evt && evt.stopPropagation();
 
-  renderArrowIcon = isOpen => (isOpen ? <Down /> : <Right />);
+  renderArrowIcon = isOpen => (
+    <Styled.ArrowIcon>{isOpen ? <Down /> : <Right />}</Styled.ArrowIcon>
+  );
 
   renderBody = instances => {
     return instances.map((instance, index) => (
