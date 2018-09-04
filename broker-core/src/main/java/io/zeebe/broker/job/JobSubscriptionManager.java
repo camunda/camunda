@@ -17,13 +17,13 @@
  */
 package io.zeebe.broker.job;
 
-import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.JOB_ACTIVATE_STREAM_PROCESSOR_ID;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.job.processor.ActivateJobStreamProcessor;
 import io.zeebe.broker.job.processor.JobSubscription;
+import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
@@ -401,11 +401,15 @@ public class JobSubscriptionManager extends Actor implements TransportListener {
     private ActorFuture<StreamProcessorService> createStreamProcessor(DirectBuffer type) {
       final ActivateJobStreamProcessor processor = new ActivateJobStreamProcessor(type);
 
+      // generating the id based on the type is a hack; motivation and proper solution are
+      // discussed in https://github.com/zeebe-io/zeebe/issues/927
+      final int streamProcessorId = StreamProcessorIds.generateJobActivationStreamProcessorId(type);
+
       final ActorFuture<StreamProcessorService> openFuture =
           factory
               .createService(partition, partitionServiceName)
               .processor(processor.createStreamProcessor(env))
-              .processorId(JOB_ACTIVATE_STREAM_PROCESSOR_ID)
+              .processorId(streamProcessorId)
               .processorName(streamProcessorName(type))
               .build();
 

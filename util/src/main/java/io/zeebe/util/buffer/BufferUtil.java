@@ -216,6 +216,16 @@ public final class BufferUtil {
     return new UnsafeBuffer(intArrayToByteArray(bytes));
   }
 
+  public static int bufferContentsHash(DirectBuffer buffer) {
+    int hashCode = 1;
+
+    for (int i = 0, length = buffer.capacity(); i < length; i++) {
+      hashCode = 31 * hashCode + buffer.getByte(i);
+    }
+
+    return hashCode;
+  }
+
   protected static byte[] intArrayToByteArray(int[] input) {
     final byte[] result = new byte[input.length];
     for (int i = 0; i < input.length; i++) {
