@@ -15,6 +15,7 @@ package org.camunda.operate.util;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.es.writer.PersistenceException;
 import org.elasticsearch.ElasticsearchException;
@@ -92,22 +93,22 @@ public abstract class ElasticsearchUtil {
     return boolQuery().must(QueryBuilders.wrapperQuery("{\"match_none\": {}}"));
   }
 
-  public static List<WorkflowInstanceEntity> mapSearchHits(SearchHit[] searchHits, ObjectMapper objectMapper) {
-    List<WorkflowInstanceEntity> result = new ArrayList<>();
+  public static <T extends OperateEntity> List<T> mapSearchHits(SearchHit[] searchHits, ObjectMapper objectMapper, Class<T> clazz) {
+    List<T> result = new ArrayList<>();
     for (SearchHit searchHit : searchHits) {
       String searchHitAsString = searchHit.getSourceAsString();
-      result.add(fromSearchHit(searchHitAsString, objectMapper));
+      result.add(fromSearchHit(searchHitAsString, objectMapper, clazz));
     }
     return result;
   }
 
-  public static WorkflowInstanceEntity fromSearchHit(String workflowInstanceString, ObjectMapper objectMapper) {
-    WorkflowInstanceEntity workflowInstance;
+  public static <T extends OperateEntity> T fromSearchHit(String searchHitString, ObjectMapper objectMapper, Class<T> clazz) {
+    T workflowInstance;
     try {
-      workflowInstance = objectMapper.readValue(workflowInstanceString, WorkflowInstanceEntity.class);
+      workflowInstance = objectMapper.readValue(searchHitString, clazz);
     } catch (IOException e) {
-      logger.error("Error while reading workflow instance from Elasticsearch!", e);
-      throw new RuntimeException("Error while reading workflow instance from Elasticsearch!", e);
+      logger.error(String.format("Error while reading entity of type %s from Elasticsearch!", clazz.getName()), e);
+      throw new RuntimeException(String.format("Error while reading entity of type %s from Elasticsearch!", clazz.getName()), e);
     }
     return workflowInstance;
   }

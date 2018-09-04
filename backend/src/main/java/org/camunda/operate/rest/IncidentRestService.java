@@ -14,6 +14,7 @@ package org.camunda.operate.rest;
 
 import java.util.Collection;
 import org.camunda.operate.es.reader.IncidentStatisticsReader;
+import org.camunda.operate.rest.dto.incidents.IncidentsByErrorMsgStatisticsDto;
 import org.camunda.operate.rest.dto.incidents.IncidentsByWorkflowGroupStatisticsDto;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -33,7 +34,7 @@ import static org.camunda.operate.rest.IncidentRestService.INCIDENT_URL;
 @RequestMapping(value = INCIDENT_URL)
 public class IncidentRestService {
 
-  public static final String INCIDENT_URL = "/api/incident";
+  public static final String INCIDENT_URL = "/api/incidents";
 
   @Autowired
   private IncidentStatisticsReader incidentStatisticsReader;
@@ -42,6 +43,12 @@ public class IncidentRestService {
   @GetMapping("/byWorkflow")
   public Collection<IncidentsByWorkflowGroupStatisticsDto> getIncidentStatisticsByWorkflow() {
     return incidentStatisticsReader.getIncidentStatisticsByWorkflow();
+  }
+
+  @ApiOperation("Get incident statistics by error message")
+  @GetMapping("/byError")
+  public Collection<IncidentsByErrorMsgStatisticsDto> getIncidentStatisticsByError() {
+    return incidentStatisticsReader.getIncidentStatisticsByError();
   }
 
 

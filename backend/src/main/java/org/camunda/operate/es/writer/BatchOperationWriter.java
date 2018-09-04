@@ -219,7 +219,7 @@ public class BatchOperationWriter {
     logger.debug("Persisting [{}] operations to Elasticsearch", hits.getHits().length);
     BulkRequestBuilder bulkRequest = esClient.prepareBulk();
     for (SearchHit searchHit : hits.getHits()) {
-      final WorkflowInstanceEntity workflowInstanceEntity = ElasticsearchUtil.fromSearchHit(searchHit.getSourceAsString(), objectMapper);
+      final WorkflowInstanceEntity workflowInstanceEntity = ElasticsearchUtil.fromSearchHit(searchHit.getSourceAsString(), objectMapper,WorkflowInstanceEntity.class);
       bulkRequest.add(createRequestToAddOperation(workflowInstanceEntity, batchOperationRequest));
     }
     ElasticsearchUtil.processBulkRequest(bulkRequest);

@@ -20,6 +20,8 @@ public class IncidentByWorkflowStatisticsDto implements Comparable {
 
   private String name;
 
+  private String errorMessage;
+
   private long instancesWithActiveIncidentsCount;
 
   private long activeInstancesCount;
@@ -31,6 +33,12 @@ public class IncidentByWorkflowStatisticsDto implements Comparable {
     this.workflowId = workflowId;
     this.instancesWithActiveIncidentsCount = instancesWithActiveIncidentsCount;
     this.activeInstancesCount = activeInstancesCount;
+  }
+
+  public IncidentByWorkflowStatisticsDto(String workflowId, String errorMessage, long instancesWithActiveIncidentsCount) {
+    this.workflowId = workflowId;
+    this.errorMessage = errorMessage;
+    this.instancesWithActiveIncidentsCount = instancesWithActiveIncidentsCount;
   }
 
   public String getWorkflowId() {
@@ -55,6 +63,14 @@ public class IncidentByWorkflowStatisticsDto implements Comparable {
 
   public void setName(String name) {
     this.name = name;
+  }
+
+  public String getErrorMessage() {
+    return errorMessage;
+  }
+
+  public void setErrorMessage(String errorMessage) {
+    this.errorMessage = errorMessage;
   }
 
   public long getInstancesWithActiveIncidentsCount() {
@@ -90,7 +106,9 @@ public class IncidentByWorkflowStatisticsDto implements Comparable {
       return false;
     if (workflowId != null ? !workflowId.equals(that.workflowId) : that.workflowId != null)
       return false;
-    return name != null ? name.equals(that.name) : that.name == null;
+    if (name != null ? !name.equals(that.name) : that.name != null)
+      return false;
+    return errorMessage != null ? errorMessage.equals(that.errorMessage) : that.errorMessage == null;
   }
 
   @Override
@@ -98,6 +116,7 @@ public class IncidentByWorkflowStatisticsDto implements Comparable {
     int result = workflowId != null ? workflowId.hashCode() : 0;
     result = 31 * result + version;
     result = 31 * result + (name != null ? name.hashCode() : 0);
+    result = 31 * result + (errorMessage != null ? errorMessage.hashCode() : 0);
     result = 31 * result + (int) (instancesWithActiveIncidentsCount ^ (instancesWithActiveIncidentsCount >>> 32));
     result = 31 * result + (int) (activeInstancesCount ^ (activeInstancesCount >>> 32));
     return result;
@@ -108,6 +127,11 @@ public class IncidentByWorkflowStatisticsDto implements Comparable {
     if (o == null || ! (o instanceof IncidentByWorkflowStatisticsDto)){
       return 1;
     }
-    return Long.compare(((IncidentByWorkflowStatisticsDto) o).getInstancesWithActiveIncidentsCount(), this.getInstancesWithActiveIncidentsCount());
+    final IncidentByWorkflowStatisticsDto stat = (IncidentByWorkflowStatisticsDto) o;
+    int compare = Long.compare(stat.getInstancesWithActiveIncidentsCount(), this.getInstancesWithActiveIncidentsCount());
+    if (compare == 0) {
+      compare = this.getWorkflowId().compareTo(stat.getWorkflowId());
+    }
+    return compare;
   }
 }

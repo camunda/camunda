@@ -39,6 +39,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.camunda.operate.util.TestUtil.createActivityInstance;
+import static org.camunda.operate.util.TestUtil.createIncident;
+import static org.camunda.operate.util.TestUtil.createWorkflowInstance;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -338,44 +341,6 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
     elasticsearchTestRule.persist(instances.toArray(new WorkflowInstanceEntity[instances.size()]));
 
-  }
-
-  private WorkflowInstanceEntity createWorkflowInstance(WorkflowInstanceState state, String workflowId) {
-    WorkflowInstanceEntity workflowInstance = new WorkflowInstanceEntity();
-    workflowInstance.setId(UUID.randomUUID().toString());
-    workflowInstance.setWorkflowId(workflowId);
-    workflowInstance.setBusinessKey("testProcess" + random.nextInt(10));
-    workflowInstance.setStartDate(DateUtil.getRandomStartDate());
-    if (state.equals(WorkflowInstanceState.COMPLETED) || state.equals(WorkflowInstanceState.CANCELED)) {
-      final OffsetDateTime endDate = DateUtil.getRandomEndDate();
-      workflowInstance.setEndDate(endDate);
-    }
-    workflowInstance.setState(state);
-    return workflowInstance;
-  }
-
-  private IncidentEntity createIncident(IncidentState state, String activityId, String activityInstanceId) {
-    IncidentEntity incidentEntity = new IncidentEntity();
-    incidentEntity.setId(UUID.randomUUID().toString());
-    incidentEntity.setActivityId(activityId);
-    incidentEntity.setActivityInstanceId(activityInstanceId);
-    incidentEntity.setErrorType("TASK_NO_RETRIES");
-    incidentEntity.setErrorMessage("No more retries left.");
-    incidentEntity.setState(state);
-    return incidentEntity;
-  }
-
-  private ActivityInstanceEntity createActivityInstance(ActivityState state, String activityId, ActivityType activityType) {
-    ActivityInstanceEntity activityInstanceEntity = new ActivityInstanceEntity();
-    activityInstanceEntity.setId(UUID.randomUUID().toString());
-    activityInstanceEntity.setActivityId(activityId);
-    activityInstanceEntity.setType(activityType);
-    activityInstanceEntity.setStartDate(DateUtil.getRandomStartDate());
-    activityInstanceEntity.setState(state);
-    if (state.equals(ActivityState.COMPLETED) || state.equals(ActivityState.TERMINATED)) {
-      activityInstanceEntity.setEndDate(DateUtil.getRandomEndDate());
-    }
-    return activityInstanceEntity;
   }
 
 }

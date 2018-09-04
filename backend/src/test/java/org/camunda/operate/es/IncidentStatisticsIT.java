@@ -20,14 +20,18 @@ import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
+import org.camunda.operate.es.reader.WorkflowReader;
 import org.camunda.operate.rest.dto.incidents.IncidentByWorkflowStatisticsDto;
+import org.camunda.operate.rest.dto.incidents.IncidentsByErrorMsgStatisticsDto;
 import org.camunda.operate.rest.dto.incidents.IncidentsByWorkflowGroupStatisticsDto;
 import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
+import org.camunda.operate.util.TestUtil;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -43,16 +47,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 public class IncidentStatisticsIT extends OperateIntegrationTest {
 
   private static final String QUERY_INCIDENTS_BY_WORKFLOW_URL = INCIDENT_URL + "/byWorkflow";
+  private static final String QUERY_INCIDENTS_BY_ERROR_URL = INCIDENT_URL + "/byError";
   public static final String DEMO_BPMN_PROCESS_ID = "demoProcess";
   public static final String DEMO_PROCESS_NAME = "Demo process";
   public static final String ORDER_BPMN_PROCESS_ID = "orderProcess";
   public static final String ORDER_PROCESS_NAME = "Order process";
+  public static final String ERRMSG_OTHER = "Other error message";
 
   @Rule
   public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
 
   @Rule
   public MockMvcTestRule mockMvcTestRule = new MockMvcTestRule();
+
+  @Autowired
+  private WorkflowReader workflowReader;
 
   private MockMvc mockMvc;
 
@@ -62,7 +71,58 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
   }
 
   @Test
-  public void testIncidentStatistics() throws Exception {
+  public void testIncidentStatisticsByError() throws Exception {
+    createData();
+    MockHttpServletRequestBuilder request = get(QUERY_INCIDENTS_BY_ERROR_URL);
+    MvcResult mvcResult = mockMvc.perform(request)
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
+      .andReturn();
+
+    List<IncidentsByErrorMsgStatisticsDto> response = mockMvcTestRule.listFromResponse(mvcResult, IncidentsByErrorMsgStatisticsDto.class);
+
+    assertThat(response).hasSize(2);
+
+    //assert NO_RETRIES_LEFT
+    IncidentsByErrorMsgStatisticsDto incidentsByErrorStat = response.get(0);
+    assertThat(incidentsByErrorStat.getErrorMessage()).isEqualTo(TestUtil.ERROR_MSG);
+    assertThat(incidentsByErrorStat.getInstancesWithErrorCount()).isEqualTo(3L);
+    assertThat(incidentsByErrorStat.getWorkflows()).hasSize(2);
+
+    final Iterator<IncidentByWorkflowStatisticsDto> iterator = incidentsByErrorStat.getWorkflows().iterator();
+    IncidentByWorkflowStatisticsDto next = iterator.next();
+    assertThat(next.getName()).isEqualTo(DEMO_PROCESS_NAME + 1);
+    assertThat(next.getInstancesWithActiveIncidentsCount()).isEqualTo(2L);
+    assertThat(next.getVersion()).isEqualTo(1);
+    assertThat(next.getErrorMessage()).isEqualTo(TestUtil.ERROR_MSG);
+    assertThat(next.getWorkflowId()).isNotNull().isNotEmpty();
+
+    next = iterator.next();
+    assertThat(next.getName()).isEqualTo(ORDER_PROCESS_NAME + 2);
+    assertThat(next.getInstancesWithActiveIncidentsCount()).isEqualTo(1L);
+    assertThat(next.getVersion()).isEqualTo(2);
+    assertThat(next.getErrorMessage()).isEqualTo(TestUtil.ERROR_MSG);
+    assertThat(next.getWorkflowId()).isNotNull().isNotEmpty();
+
+    //assert OTHER_ERRMSG
+    incidentsByErrorStat = response.get(1);
+    assertThat(incidentsByErrorStat.getErrorMessage()).isEqualTo(ERRMSG_OTHER);
+    assertThat(incidentsByErrorStat.getInstancesWithErrorCount()).isEqualTo(2L);
+    assertThat(incidentsByErrorStat.getWorkflows()).hasSize(2);
+    assertThat(incidentsByErrorStat.getWorkflows()).allMatch(
+      s ->
+        s.getWorkflowId() != null &&
+          s.getName().equals(DEMO_PROCESS_NAME + s.getVersion()) &&
+          s.getErrorMessage().equals(ERRMSG_OTHER) &&
+          s.getInstancesWithActiveIncidentsCount() == 1L &&
+          (s.getVersion() == 1 || s.getVersion() == 2)
+    );
+
+
+  }
+
+  @Test
+  public void testIncidentStatisticsByWorkflow() throws Exception {
     createData();
     MockHttpServletRequestBuilder request = get(QUERY_INCIDENTS_BY_WORKFLOW_URL);
     MvcResult mvcResult = mockMvc.perform(request)
@@ -129,7 +189,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     instances.add(workflowInstance);
     //instance #2
     workflowInstance = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
-    createIncidents(workflowInstance, 1, 1, 0);
+    createIncidents(workflowInstance, 1, 1, 0, true);
     instances.add(workflowInstance);
     //instance #3
     workflowInstance = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
@@ -144,7 +204,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     workflowId = workflowVersions.get(1).getId();
     //instance #1
     workflowInstance = createWorkflowInstance(WorkflowInstanceState.ACTIVE, workflowId);
-    createIncidents(workflowInstance, 2, 0, 0);
+    createIncidents(workflowInstance, 2, 0, 0, true);
     instances.add(workflowInstance);
     //instances #2-7
     for (int i = 2; i<=7; i++) {
@@ -199,14 +259,19 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
   }
 
   private void createIncidents(WorkflowInstanceEntity workflowInstance, int activeIncidentsCount, int resolvedIncidentsCount, int deletedIncidentsCount) {
+    createIncidents(workflowInstance, activeIncidentsCount, resolvedIncidentsCount, deletedIncidentsCount, false);
+  }
+
+  private void createIncidents(WorkflowInstanceEntity workflowInstance, int activeIncidentsCount, int resolvedIncidentsCount, int deletedIncidentsCount,
+    boolean withOtherMsg) {
     for (int i = 0; i < activeIncidentsCount; i++) {
-      workflowInstance.getIncidents().add(createIncident(IncidentState.ACTIVE));
+      workflowInstance.getIncidents().add(createIncident(IncidentState.ACTIVE, withOtherMsg ? ERRMSG_OTHER : null));
     }
     for (int i = 0; i < resolvedIncidentsCount; i++) {
-      workflowInstance.getIncidents().add(createIncident(IncidentState.RESOLVED));
+      workflowInstance.getIncidents().add(createIncident(IncidentState.RESOLVED, ERRMSG_OTHER));
     }
     for (int i = 0; i < deletedIncidentsCount; i++) {
-      workflowInstance.getIncidents().add(createIncident(IncidentState.DELETED));
+      workflowInstance.getIncidents().add(createIncident(IncidentState.DELETED, ERRMSG_OTHER));
     }
   }
 

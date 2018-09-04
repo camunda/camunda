@@ -295,7 +295,7 @@ public class WorkflowInstanceReader {
       .setSize(maxResults)
       .get();
 
-    final List<WorkflowInstanceEntity> workflowInstanceEntities = ElasticsearchUtil.mapSearchHits(response.getHits().getHits(), objectMapper);
+    final List<WorkflowInstanceEntity> workflowInstanceEntities = ElasticsearchUtil.mapSearchHits(response.getHits().getHits(), objectMapper, WorkflowInstanceEntity.class);
     WorkflowInstanceResponseDto responseDto = new WorkflowInstanceResponseDto();
     responseDto.setWorkflowInstances(WorkflowInstanceDto.createFrom(workflowInstanceEntities));
     responseDto.setTotalCount(response.getHits().getTotalHits());
@@ -316,7 +316,7 @@ public class WorkflowInstanceReader {
       SearchHits hits = response.getHits();
       String scrollId = response.getScrollId();
 
-      result.addAll(ElasticsearchUtil.mapSearchHits(hits.getHits(), objectMapper));
+      result.addAll(ElasticsearchUtil.mapSearchHits(hits.getHits(), objectMapper, WorkflowInstanceEntity.class));
 
       response = esClient
           .prepareSearchScroll(scrollId)
@@ -340,7 +340,7 @@ public class WorkflowInstanceReader {
     final GetResponse response = esClient.prepareGet(workflowInstanceType.getType(), workflowInstanceType.getType(), workflowInstanceId).get();
 
     if (response.isExists()) {
-      return ElasticsearchUtil.fromSearchHit(response.getSourceAsString(), objectMapper);
+      return ElasticsearchUtil.fromSearchHit(response.getSourceAsString(), objectMapper, WorkflowInstanceEntity.class);
     }
     else {
       throw new NotFoundException(String.format("Could not find workflow instance with id '%s'.", workflowInstanceId));
@@ -437,7 +437,7 @@ public class WorkflowInstanceReader {
       .setSize(batchSize)
       .get();
 
-    return ElasticsearchUtil.mapSearchHits(response.getHits().getHits(), objectMapper);
+    return ElasticsearchUtil.mapSearchHits(response.getHits().getHits(), objectMapper, WorkflowInstanceEntity.class);
   }
 
   public Collection<ActivityStatisticsDto> getActivityStatistics(WorkflowInstanceQueryDto query) {
@@ -445,15 +445,15 @@ public class WorkflowInstanceReader {
     Map<String, ActivityStatisticsDto> statisticsMap = new HashMap<>();
 
     if (query.isActive()) {
-      getStatisticsForActivities(query, WorkflowInstanceState.ACTIVE, ActivityState.ACTIVE, (s, v) -> s.setActiveCount(v), statisticsMap);
+      getStatisticsForActivities(query, WorkflowInstanceState.ACTIVE, ActivityState.ACTIVE, ActivityStatisticsDto::setActiveCount, statisticsMap);
     }
     if (query.isCanceled()) {
-      getStatisticsForActivities(query, WorkflowInstanceState.CANCELED, ActivityState.TERMINATED, (s, v) -> s.setCanceledCount(v), statisticsMap);
+      getStatisticsForActivities(query, WorkflowInstanceState.CANCELED, ActivityState.TERMINATED, ActivityStatisticsDto::setCanceledCount, statisticsMap);
     }
     if (query.isIncidents()) {
-      getStatisticsForActivities(query, WorkflowInstanceState.ACTIVE, ActivityState.INCIDENT, (s, v) -> s.setIncidentsCount(v), statisticsMap);
+      getStatisticsForActivities(query, WorkflowInstanceState.ACTIVE, ActivityState.INCIDENT, ActivityStatisticsDto::setIncidentsCount, statisticsMap);
     }
-    getStatisticsForFinishedActivities(query, (s, v) -> s.setFinishedCount(v), statisticsMap);
+    getStatisticsForFinishedActivities(query, ActivityStatisticsDto::setFinishedCount, statisticsMap);
 
     return statisticsMap.values();
   }

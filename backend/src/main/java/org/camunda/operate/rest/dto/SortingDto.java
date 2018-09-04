@@ -31,8 +31,8 @@ public class SortingDto {
     VALID_SORT_ORDER_VALUES.add(SORT_ORDER_DESC_VALUE);
   }
 
-  private String sortBy = SORT_ORDER_ASC_VALUE;
-  private String sortOrder;
+  private String sortBy;
+  private String sortOrder = SORT_ORDER_ASC_VALUE;
 
   @ApiModelProperty(value = "Data field to sort by", required = true)
   public String getSortBy() {

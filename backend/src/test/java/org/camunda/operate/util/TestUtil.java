@@ -19,6 +19,7 @@ import java.util.Random;
 import java.util.UUID;
 import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.ActivityState;
+import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.WorkflowEntity;
@@ -27,6 +28,7 @@ import org.camunda.operate.entities.WorkflowInstanceState;
 
 public abstract class TestUtil {
 
+  public static final String ERROR_MSG = "No more retries left.";
   private static Random random = new Random();
 
   public static String createRandomString(int length) {
@@ -65,20 +67,41 @@ public abstract class TestUtil {
   }
 
   public static IncidentEntity createIncident(IncidentState state) {
+    return createIncident(state, "start", UUID.randomUUID().toString(), null);
+  }
+
+  public static IncidentEntity createIncident(IncidentState state, String errorMsg) {
+    return createIncident(state, "start", UUID.randomUUID().toString(), errorMsg);
+  }
+
+  public static IncidentEntity createIncident(IncidentState state, String activityId, String activityInstanceId) {
+    return createIncident(state, activityId, activityInstanceId, null);
+  }
+
+  public static IncidentEntity createIncident(IncidentState state, String activityId, String activityInstanceId, String errorMsg) {
     IncidentEntity incidentEntity = new IncidentEntity();
     incidentEntity.setId(UUID.randomUUID().toString());
-    incidentEntity.setActivityId("start");
-    incidentEntity.setActivityInstanceId(UUID.randomUUID().toString());
-    incidentEntity.setErrorType("JOB_NO_RETRIES");
-    incidentEntity.setErrorMessage("No more retries left.");
+    incidentEntity.setActivityId(activityId);
+    incidentEntity.setActivityInstanceId(activityInstanceId);
+    incidentEntity.setErrorType("TASK_NO_RETRIES");
+    if (errorMsg == null) {
+      incidentEntity.setErrorMessage(ERROR_MSG);
+    } else {
+      incidentEntity.setErrorMessage(errorMsg);
+    }
     incidentEntity.setState(state);
     return incidentEntity;
   }
 
   public static ActivityInstanceEntity createActivityInstance(ActivityState state) {
+    return createActivityInstance(state, "start", ActivityType.START_EVENT);
+  }
+
+  public static ActivityInstanceEntity createActivityInstance(ActivityState state, String activityId, ActivityType activityType) {
     ActivityInstanceEntity activityInstanceEntity = new ActivityInstanceEntity();
     activityInstanceEntity.setId(UUID.randomUUID().toString());
-    activityInstanceEntity.setActivityId("start");
+    activityInstanceEntity.setActivityId(activityId);
+    activityInstanceEntity.setType(activityType);
     activityInstanceEntity.setStartDate(DateUtil.getRandomStartDate());
     activityInstanceEntity.setState(state);
     if (state.equals(ActivityState.COMPLETED) || state.equals(ActivityState.TERMINATED)) {
