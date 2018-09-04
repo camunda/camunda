@@ -35,11 +35,13 @@ public class ActorScheduler {
   private final AtomicReference<SchedulerState> state = new AtomicReference<>();
   private final ActorExecutor actorTaskExecutor;
   private final MetricsManager metricsManager;
+  private final String schedulerName;
 
   public ActorScheduler(ActorSchedulerBuilder builder) {
     state.set(SchedulerState.NEW);
     actorTaskExecutor = builder.getActorExecutor();
     metricsManager = builder.getMetricsManager();
+    schedulerName = builder.getSchedulerName();
   }
 
   /**
@@ -308,7 +310,7 @@ public class ActorScheduler {
                 60L,
                 TimeUnit.SECONDS,
                 new SynchronousQueue<>(),
-                new BlockingTasksThreadFactory());
+                new BlockingTasksThreadFactory(schedulerName));
       }
     }
 
@@ -368,11 +370,17 @@ public class ActorScheduler {
 
   public static class BlockingTasksThreadFactory implements ThreadFactory {
     final AtomicLong idGenerator = new AtomicLong();
+    private final String schedulerName;
+
+    public BlockingTasksThreadFactory(String schedulerName) {
+      this.schedulerName = schedulerName;
+    }
 
     @Override
     public Thread newThread(Runnable r) {
       final Thread thread = new Thread(r);
-      thread.setName("zb-blocking-task-runner-" + idGenerator.incrementAndGet());
+      thread.setName(
+          "zb-blocking-task-runner-" + idGenerator.incrementAndGet() + "-" + schedulerName);
       return thread;
     }
   }
