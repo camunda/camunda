@@ -46,7 +46,6 @@ import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -741,7 +740,6 @@ public class JobSubscriptionTest {
   }
 
   @Test
-  @Ignore("https://github.com/zeebe-io/zeebe/issues/927")
   public void shouldActivateJobsOfDifferentTypeLocatedInFrontOfAlreadyActivatedJob() {
     // given
     final String jobType1 = "foo";
@@ -762,7 +760,7 @@ public class JobSubscriptionTest {
     final SubscribedRecord secondSubscribedJob =
         apiRule.subscribedEvents().skip(1).findFirst().get();
     final Object secondJobType = secondSubscribedJob.value().get("type");
-    assertThat(secondJobType).isEqualTo(jobType2);
+    assertThat(secondJobType).isEqualTo(jobType1);
   }
 
   @Test
