@@ -125,12 +125,16 @@ Read more on [styled-components](https://www.styled-components.com/docs/advanced
 ### Event handler naming
 
 **For props**
-When defining the prop names, prefix with on*, as in onClick, onDeleteItem, etc.
+When defining the prop names, prefix with on*, as in onClick, onRemove, etc. 
+When having more detailed prop names, keep the verb at the end:
+onItemClick
+onItemDelete
 
 **For component methods**
-When passing down a function to a child component that contains logic related to an action, use the handle* prefix, as is handleClick, handleDeleteItem.
+When passing down a function to a child component that contains logic related to an action:
+use the handle* prefix, as is handleClick, handleItemDelete.
 
-As below, put the noun first (Alert), then the verb (Click). Then, as other events pile up around that concept, they are grouped together nicely:
+As below, put the noun first (Alert), then the verb last (Click). Then, as other events pile up around that concept, they are grouped together nicely:
 
 ```js
 onAlertClick={this.handleAlertClick}
