@@ -82,6 +82,28 @@
           </replacements>
         </configuration>
       </plugin>
+      
+      <!-- this is only needed to make working in Eclipse more pleasant:
+          The assertj plugin already adds the generated files as a source directory, but eclipse
+          is not able to update the project based on that plugin, so we explicitly declare it a second time -->
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>add-source</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>${project.build.directory}/generated-sources/assertj-assertions</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
