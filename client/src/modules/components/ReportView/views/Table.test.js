@@ -26,7 +26,32 @@ jest.mock('services', () => {
 jest.mock('./service', () => {
   return {
     getCamundaEndpoints: jest.fn().mockReturnValue('camundaEndpoint'),
-    getRelativeValue: jest.fn()
+    getRelativeValue: jest.fn(),
+    uniteResults: jest.fn().mockReturnValue([
+      {
+        a: 1,
+        b: 2,
+        c: 3
+      },
+      {
+        a: 1,
+        b: 2,
+        c: 3
+      }
+    ]),
+    getFormattedLabels: jest
+      .fn()
+      .mockReturnValue([
+        {label: 'Report A', columns: ['value', 'Relative Frequency']},
+        {label: 'Report B', columns: ['value', 'Relative Frequency']}
+      ]),
+    getBodyRows: jest
+      .fn()
+      .mockReturnValue([
+        ['a', 1, '12.3%', 1, '12.3%'],
+        ['b', 2, '12.3%', 2, '12.3%'],
+        ['c', 3, '12.3%', 3, '12.3%']
+      ])
   };
 });
 
@@ -162,7 +187,7 @@ it('should format data according to the provided formatter', async () => {
   expect(node).toIncludeText('6');
 });
 
-describe('Combined Data', () => {
+it('should return correct labels and body when combining to table report', async () => {
   const props = {
     data: [
       {
@@ -184,44 +209,17 @@ describe('Combined Data', () => {
     configuration: {}
   };
 
-  let node;
-  beforeEach(async () => (node = await mount(shallow(<Table {...props} />).get(0))));
-
-  it('should unify the keys of all result object by filling empty ones with null', () => {
-    expect(node.instance().uniteResults([{a: 1, b: 2}, {b: 1}], ['a', 'b'])).toEqual([
-      {a: 1, b: 2},
-      {a: '', b: 1}
-    ]);
-  });
-
-  it('should return correctly formatted body rows', () => {
-    expect(
-      node
-        .instance()
-        .getBodyRows([{a: 1, b: 2}, {a: '', b: 1}], ['a', 'b'], v => v, false, [100, 100])
-    ).toEqual([['a', 1, ''], ['b', 2, 1]]);
-  });
-
-  it('should return correct table label structure', () => {
-    expect(
-      node
-        .instance()
-        .getFormattedLabels([['key', 'value'], ['key', 'value']], ['Report A', 'Report B'], false)
-    ).toEqual([{label: 'Report A', columns: ['value']}, {label: 'Report B', columns: ['value']}]);
-  });
-
-  it('should return correct labels and body when combining to table report', async () => {
-    expect(node.instance().processCombinedData()).toEqual({
-      head: [
-        'key',
-        {label: 'Report A', columns: ['value', 'Relative Frequency']},
-        {label: 'Report B', columns: ['value', 'Relative Frequency']}
-      ],
-      body: [
-        ['a', 1, '12.3%', 1, '12.3%'],
-        ['b', 2, '12.3%', 2, '12.3%'],
-        ['c', 3, '12.3%', 3, '12.3%']
-      ]
-    });
+  const node = await mount(shallow(<Table {...props} />).get(0));
+  expect(node.instance().processCombinedData()).toEqual({
+    head: [
+      'key',
+      {label: 'Report A', columns: ['value', 'Relative Frequency']},
+      {label: 'Report B', columns: ['value', 'Relative Frequency']}
+    ],
+    body: [
+      ['a', 1, '12.3%', 1, '12.3%'],
+      ['b', 2, '12.3%', 2, '12.3%'],
+      ['c', 3, '12.3%', 3, '12.3%']
+    ]
   });
 });

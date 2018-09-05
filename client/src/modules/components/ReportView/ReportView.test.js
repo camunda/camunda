@@ -2,7 +2,7 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import ReportView from './ReportView';
-import {Number, Table, Chart} from './views';
+import {Number} from './views';
 
 jest.mock('./views', () => {
   return {
@@ -25,16 +25,20 @@ jest.mock('components', () => {
 
 jest.mock('services', () => {
   return {
-    reportConfig: {
-      getLabelFor: () => 'foo',
-      view: {foo: {data: 'foo', label: 'viewfoo'}},
-      groupBy: {
-        foo: {data: 'foo', label: 'groupbyfoo'}
-      }
-    },
     getFlowNodeNames: jest.fn().mockReturnValue({
       a: 'foo',
       b: 'bar'
+    })
+  };
+});
+
+jest.mock('./service', () => {
+  return {
+    formatResult: (data, result) => result,
+    getTableProps: (reportType, result, data, processInstanceCount) => ({
+      data: {a: 1, b: 2},
+      labels: ['a', 'b'],
+      processInstanceCount
     })
   };
 });
@@ -256,75 +260,6 @@ const exampleDurationReport = {
   }
 };
 
-it('should adjust date shown in table to unit', () => {
-  const node = mount(<ReportView report={exampleDurationReport} />);
-  node.setState({
-    loaded: true
-  });
-  expect(node.find(Table)).not.toIncludeText('2015-03-25T12:00:00Z');
-  expect(node.find(Table)).toIncludeText('2015-03-25');
-});
-
-it('should adjust groupby Start Date option in table to unit', () => {
-  const specialExampleReport = {
-    ...exampleDurationReport,
-    data: {
-      ...exampleDurationReport.data,
-      groupBy: {
-        type: 'startDate',
-        value: {unit: 'month'}
-      }
-    }
-  };
-  const node = mount(<ReportView report={specialExampleReport} />);
-  node.setState({
-    loaded: true
-  });
-  expect(node.find(Table)).not.toIncludeText('2015-03-25T12:00:00Z');
-  expect(node.find(Table)).toIncludeText('Mar 2015');
-});
-
-it('should adjust groupby Variable Date option in table to unit', () => {
-  const specialExampleReport = {
-    ...exampleDurationReport,
-    data: {
-      ...exampleDurationReport.data,
-      groupBy: {
-        type: 'variable',
-        value: {type: 'Date'}
-      }
-    }
-  };
-  const node = mount(<ReportView report={specialExampleReport} />);
-  node.setState({
-    loaded: true
-  });
-  expect(node.find(Table)).not.toIncludeText('2015-03-25T');
-  expect(node.find(Table)).toIncludeText('2015-03-25 ');
-});
-
-it('should sort time data descending for tables', () => {
-  const node = mount(<ReportView report={exampleDurationReport} />);
-  node.setState({
-    loaded: true
-  });
-
-  expect(node.find(Table)).toIncludeText('{"2015-03-26":3,"2015-03-25":2}');
-});
-
-it('should sort time data ascending for charts', () => {
-  const report = {
-    ...exampleDurationReport,
-    data: {...exampleDurationReport.data, visualization: 'line'}
-  };
-  const node = mount(<ReportView report={report} />);
-  node.setState({
-    loaded: true
-  });
-
-  expect(node.find(Chart)).toIncludeText('{"2015-03-25":2,"2015-03-26":3}');
-});
-
 it('should call the applyAddons function if provided', () => {
   const spy = jest.fn();
   const node = mount(<ReportView report={exampleDurationReport} applyAddons={spy} />);
@@ -404,52 +339,5 @@ describe('combined Report View', () => {
       loaded: true
     });
     expect(spy).toHaveBeenCalled();
-  });
-
-  it('should invok getCombinedProps function when multiple combined reports are selected', () => {
-    const report = {
-      reportType: 'combined',
-      data: {
-        configuration: {},
-        reports: ['report A', 'report B']
-      },
-      result: {
-        'report A': reportA,
-        'report B': reportA
-      }
-    };
-
-    const node = mount(<ReportView report={report} />);
-    const spy = jest.spyOn(node.instance(), 'getCombinedProps');
-    node.setState({
-      loaded: true
-    });
-    expect(spy).toHaveBeenCalled();
-  });
-
-  it('should return correct table proberties', () => {
-    const report = {
-      reportType: 'combined',
-      data: {
-        configuration: {},
-        reports: ['report A', 'report B']
-      },
-      result: {
-        'report A': reportA,
-        'report B': reportA
-      }
-    };
-
-    const reports = [reportA, reportA];
-
-    const node = mount(<ReportView report={report} />);
-
-    node.setState({
-      loaded: true
-    });
-    const props = node.instance().getCombinedProps(reports);
-    expect(props.data[1]).toEqual({'2015-03-25': 2});
-    expect(props.labels).toHaveLength(2);
-    expect(props.processInstanceCount).toHaveLength(2);
   });
 });

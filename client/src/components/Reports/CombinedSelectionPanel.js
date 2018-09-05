@@ -86,7 +86,7 @@ export default class CombinedSelectionPanel extends React.Component {
 
   checkSameGroupBy = (referenceReport, data) => {
     let isSameValue = true;
-    if (referenceReport.groupBy.value) {
+    if (referenceReport.groupBy.value && data.groupBy.value) {
       isSameValue =
         referenceReport.groupBy.value.unit === data.groupBy.value.unit &&
         referenceReport.groupBy.value.name === data.groupBy.value.name;

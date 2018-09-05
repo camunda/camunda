@@ -5,7 +5,13 @@ import {Table as TableRenderer, LoadingIndicator} from 'components';
 import {processRawData} from 'services';
 import {withErrorHandling} from 'HOC';
 
-import {getCamundaEndpoints, getRelativeValue} from './service';
+import {
+  getCamundaEndpoints,
+  getRelativeValue,
+  uniteResults,
+  getFormattedLabels,
+  getBodyRows
+} from './service';
 
 export default withErrorHandling(
   class Table extends React.Component {
@@ -43,46 +49,6 @@ export default withErrorHandling(
       };
     }
 
-    uniteResults(results, allKeys) {
-      const unitedResults = [];
-      results.forEach(result => {
-        const newResult = {};
-        allKeys.forEach(key => {
-          if (typeof result[key] === 'undefined') {
-            newResult[key] = '';
-          } else {
-            newResult[key] = result[key];
-          }
-        });
-        unitedResults.push(newResult);
-      });
-      return unitedResults;
-    }
-
-    getBodyRows = (unitedResults, allKeys, formatter, isFrequency, processInstanceCount) => {
-      const rows = allKeys.map(key => {
-        const row = [key];
-        unitedResults.forEach((result, i) => {
-          row.push(formatter(result[key]));
-          if (isFrequency) row.push(getRelativeValue(result[key], processInstanceCount[i]));
-        });
-        return row;
-      });
-      return rows;
-    };
-
-    getFormattedLabels = (reportsLabels, reportsNames, isFrequency) =>
-      reportsLabels.reduce(
-        (prev, reportLabels, i) => [
-          ...prev,
-          {
-            label: reportsNames[i],
-            columns: [...reportLabels.slice(1), ...(isFrequency ? ['Relative Frequency'] : [])]
-          }
-        ],
-        []
-      );
-
     processCombinedData() {
       const {
         data,
@@ -97,16 +63,16 @@ export default withErrorHandling(
 
       const keysLabel = labels[0][0];
 
-      const formattedLabels = this.getFormattedLabels(labels, reportsNames, isFrequency);
+      const formattedLabels = getFormattedLabels(labels, reportsNames, isFrequency);
 
       // get all unique keys of results of multiple reports
       let allKeys = Object.keys(Object.assign({}, ...data));
 
       // make all hash tables look exactly the same by filling empty keys with empty string
-      const unitedResults = this.uniteResults(data, allKeys);
+      const unitedResults = uniteResults(data, allKeys);
 
       // convert hashtables into a table rows array
-      const rows = this.getBodyRows(
+      const rows = getBodyRows(
         unitedResults,
         allKeys,
         formatter,
