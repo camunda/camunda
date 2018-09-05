@@ -21,7 +21,6 @@ import org.camunda.operate.util.OperateIntegrationTest;
 import org.camunda.operate.util.ZeebeTestRule;
 import org.camunda.operate.util.ZeebeUtil;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -82,7 +81,31 @@ public class WorkflowInstanceIT extends OperateIntegrationTest {
   }
 
   @Test
-  @Ignore
+  public void testActivityCompleted() {
+    // having
+    String topicName = zeebeTestRule.getTopicName();
+
+    String processId = "demoProcess";
+    final String workflowId = zeebeUtil.deployWorkflowToTheTopic(topicName, "demoProcess_v_1.bpmn");
+
+    //when
+    final String workflowInstanceId = zeebeUtil.startWorkflowInstance(topicName, processId, "{\"a\": \"b\"}");
+    elasticsearchTestRule.processAllEvents(10);
+
+    zeebeTestRule.setJobWorker(zeebeUtil.completeTask(topicName, "taskA", zeebeTestRule.getWorkerName(), null));
+    elasticsearchTestRule.processAllEvents(10);
+
+    //then
+    final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
+    assertThat(workflowInstanceEntity.getState()).isEqualTo(WorkflowInstanceState.ACTIVE);
+
+    //assert activity completed
+    assertThat(workflowInstanceEntity.getActivities()).filteredOn(a -> a.getActivityId().equals("taskA"))
+      .allMatch(a -> a.getState().equals(ActivityState.COMPLETED) && !a.getEndDate().isBefore(testStartTime));
+
+  }
+
+  @Test
   public void testPayloadUpdated() {
     // having
     String topicName = zeebeTestRule.getTopicName();
