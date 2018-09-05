@@ -200,7 +200,7 @@ export default withErrorHandling(
           newReportResult = await getReportData(data, reportType);
           this.setState({loadingReportData: false});
         }
-        if (!reportResult) {
+        if (!newReportResult) {
           newReportResult = {reportType, data};
         }
         this.setState({reportResult: newReportResult});
