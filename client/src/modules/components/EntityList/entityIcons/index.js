@@ -22,7 +22,7 @@ const icons = {
     header: reports,
     generic: reportEmpty,
     bar: {label: 'Bar chart Report', Component: reportBar},
-    head: {label: 'Heatmap Report', Component: reportHeat},
+    heat: {label: 'Heatmap Report', Component: reportHeat},
     line: {label: 'Line chart Report', Component: reportLine},
     number: {label: 'Number Report', Component: reportNumber},
     pie: {label: 'Pie chart Report', Component: reportPie},
