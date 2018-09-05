@@ -670,10 +670,6 @@ public class Raft extends Actor
     return logStream.getPartitionId();
   }
 
-  public DirectBuffer getTopicName() {
-    return logStream.getTopicName();
-  }
-
   public int getReplicationFactor() {
     return persistentStorage.getReplicationFactor();
   }

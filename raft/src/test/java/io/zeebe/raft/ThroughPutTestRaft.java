@@ -15,8 +15,6 @@
  */
 package io.zeebe.raft;
 
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
-
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.log.LogStream;
@@ -49,7 +47,6 @@ public class ThroughPutTestRaft implements RaftStateListener {
   protected final RaftConfiguration configuration;
   protected final SocketAddress socketAddress;
   protected final int nodeId;
-  protected final String topicName;
   protected final int partition;
   protected final RaftConfigurationEvent configurationEvent = new RaftConfigurationEvent();
   protected final LogStreamWriterImpl writer = new LogStreamWriterImpl();
@@ -71,7 +68,6 @@ public class ThroughPutTestRaft implements RaftStateListener {
     this.socketAddress = SocketUtil.getNextAddress();
     this.name = socketAddress.toString();
     this.configuration = new RaftConfiguration();
-    this.topicName = "someTopic";
     this.partition = 0;
     this.members = Arrays.asList(members);
     this.nodeId = socketAddress.port();
@@ -90,11 +86,11 @@ public class ThroughPutTestRaft implements RaftStateListener {
 
     clientTransport = Transports.newClientTransport("test").scheduler(scheduler).build();
 
-    final String logName = String.format("%s-%d-%s", topicName, partition, socketAddress);
+    final String logName = String.format("%d-%s", partition, socketAddress);
     final ServiceName<LogStream> logStreamServiceName =
         LogStreamServiceNames.logStreamServiceName(logName);
     logStream =
-        LogStreams.createFsLogStream(wrapString(topicName), partition)
+        LogStreams.createFsLogStream(partition)
             .logName(logName)
             .deleteOnClose(true)
             .logDirectory(
@@ -150,10 +146,6 @@ public class ThroughPutTestRaft implements RaftStateListener {
 
   public int getNodeId() {
     return nodeId;
-  }
-
-  public String getTopicName() {
-    return topicName;
   }
 
   public int getPartition() {
