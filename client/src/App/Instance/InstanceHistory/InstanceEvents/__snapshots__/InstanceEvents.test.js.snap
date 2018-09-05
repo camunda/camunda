@@ -100,7 +100,9 @@ exports[`InstanceEvents should render grouped events 1`] = `
       >
         <Styled(Summary)>
           bar name
-          <Styled(InstanceHistoryIconIncidentActive) />
+          <Styled(InstanceHistoryIconIncidentActive)
+            title="bar name has an incident"
+          />
         </Styled(Summary)>
         <Details>
           <Foldable

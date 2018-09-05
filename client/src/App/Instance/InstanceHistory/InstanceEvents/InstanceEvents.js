@@ -85,7 +85,11 @@ export default class InstanceEvents extends React.Component {
       <Foldable key={key}>
         <Styled.GroupFoldableSummary>
           {name}
-          {state !== ACTIVITY_STATE.INCIDENT ? '' : <Styled.IncidentIcon />}
+          {state !== ACTIVITY_STATE.INCIDENT ? (
+            ''
+          ) : (
+            <Styled.IncidentIcon title={`${name} has an incident`} />
+          )}
         </Styled.GroupFoldableSummary>
         <Foldable.Details>{events.map(this.renderEvent)}</Foldable.Details>
       </Foldable>
