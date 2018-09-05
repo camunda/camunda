@@ -37,10 +37,11 @@ import io.zeebe.broker.workflow.processor.activity.InputMappingHandler;
 import io.zeebe.broker.workflow.processor.activity.OutputMappingHandler;
 import io.zeebe.broker.workflow.processor.activity.PropagateTerminationHandler;
 import io.zeebe.broker.workflow.processor.catchevent.SubscribeMessageHandler;
-import io.zeebe.broker.workflow.processor.exclusivegw.ExclusiveSplitHandler;
 import io.zeebe.broker.workflow.processor.flownode.ConsumeTokenHandler;
 import io.zeebe.broker.workflow.processor.flownode.TakeSequenceFlowHandler;
 import io.zeebe.broker.workflow.processor.flownode.TerminateElementHandler;
+import io.zeebe.broker.workflow.processor.gateway.ExclusiveSplitHandler;
+import io.zeebe.broker.workflow.processor.gateway.ParallelSplitHandler;
 import io.zeebe.broker.workflow.processor.process.CompleteProcessHandler;
 import io.zeebe.broker.workflow.processor.sequenceflow.ActivateGatewayHandler;
 import io.zeebe.broker.workflow.processor.sequenceflow.StartStatefulElementHandler;
@@ -100,6 +101,9 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
 
     // flow element container (process, sub process)
     stepHandlers.put(BpmnStep.TRIGGER_START_EVENT, new TriggerStartEventHandler());
+
+    // parallel gateway
+    stepHandlers.put(BpmnStep.PARALLEL_SPLIT, new ParallelSplitHandler());
 
     // termination
     stepHandlers.put(BpmnStep.TERMINATE_ELEMENT, new TerminateElementHandler());

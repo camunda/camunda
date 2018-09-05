@@ -29,7 +29,9 @@ public class PropagateTerminationHandler implements BpmnStepHandler<ExecutableFl
   public void handle(BpmnStepContext<ExecutableFlowNode> context) {
     final ElementInstance flowScopeInstance = context.getFlowScopeInstance();
 
-    if (flowScopeInstance.getChildren().isEmpty()) {
+    flowScopeInstance.consumeTokens(1);
+
+    if (flowScopeInstance.getActiveTokens() == 0) {
       context
           .getStreamWriter()
           .writeFollowUpEvent(

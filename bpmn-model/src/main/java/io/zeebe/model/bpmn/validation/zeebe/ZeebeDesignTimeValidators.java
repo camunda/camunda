@@ -31,6 +31,7 @@ public class ZeebeDesignTimeValidators {
     VALIDATORS.add(new ExclusiveGatewayValidator());
     VALIDATORS.add(new FlowElementValidator());
     VALIDATORS.add(new MessageValidator());
+    VALIDATORS.add(new ParallelGatewayValidator());
     VALIDATORS.add(new ProcessValidator());
     VALIDATORS.add(new SequenceFlowValidator());
     VALIDATORS.add(new ServiceTaskValidator());

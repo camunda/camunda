@@ -15,28 +15,35 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.processor.subprocess;
+package io.zeebe.broker.workflow.processor.gateway;
 
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
-import io.zeebe.broker.workflow.model.ExecutableFlowElementContainer;
 import io.zeebe.broker.workflow.model.ExecutableFlowNode;
+import io.zeebe.broker.workflow.model.ExecutableSequenceFlow;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
+import io.zeebe.broker.workflow.processor.ElementInstanceWriter;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import java.util.List;
 
-public class TriggerStartEventHandler implements BpmnStepHandler<ExecutableFlowElementContainer> {
+public class ParallelSplitHandler implements BpmnStepHandler<ExecutableFlowNode> {
 
   @Override
-  public void handle(BpmnStepContext<ExecutableFlowElementContainer> context) {
-    final ExecutableFlowElementContainer element = context.getElement();
-    final ExecutableFlowNode startEvent = element.getStartEvent();
-
+  public void handle(BpmnStepContext<ExecutableFlowNode> context) {
+    final ExecutableFlowNode element = context.getElement();
     final WorkflowInstanceRecord value = context.getValue();
-    value.setActivityId(startEvent.getId());
-    value.setScopeInstanceKey(context.getRecord().getKey());
 
-    context.getElementInstance().spawnTokens(1);
+    final List<ExecutableSequenceFlow> outgoingFlows = element.getOutgoing();
+    final ElementInstanceWriter streamWriter = context.getStreamWriter();
+    streamWriter.newBatch();
 
-    context.getStreamWriter().writeNewEvent(WorkflowInstanceIntent.START_EVENT_OCCURRED, value);
+    context.getFlowScopeInstance().spawnTokens(outgoingFlows.size() - 1); // minus "this" token
+
+    for (int i = 0; i < outgoingFlows.size(); i++) {
+      final ExecutableSequenceFlow flow = outgoingFlows.get(i);
+
+      value.setActivityId(flow.getId());
+      streamWriter.writeNewEvent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, value);
+    }
   }
 }

@@ -57,8 +57,10 @@ public class FlowNodeHandler implements ModelElementTransformer<FlowNode> {
 
     if (outgoingFlows == 0) {
       return BpmnStep.CONSUME_TOKEN;
-    } else {
+    } else if (outgoingFlows == 1) {
       return BpmnStep.TAKE_SEQUENCE_FLOW;
+    } else {
+      return BpmnStep.PARALLEL_SPLIT;
     }
   }
 

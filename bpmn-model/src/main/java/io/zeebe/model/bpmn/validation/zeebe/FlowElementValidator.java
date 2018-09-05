@@ -19,6 +19,7 @@ import io.zeebe.model.bpmn.instance.EndEvent;
 import io.zeebe.model.bpmn.instance.ExclusiveGateway;
 import io.zeebe.model.bpmn.instance.FlowElement;
 import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
+import io.zeebe.model.bpmn.instance.ParallelGateway;
 import io.zeebe.model.bpmn.instance.ReceiveTask;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
 import io.zeebe.model.bpmn.instance.ServiceTask;
@@ -37,6 +38,7 @@ public class FlowElementValidator implements ModelElementValidator<FlowElement> 
     SUPPORTED_ELEMENT_TYPES.add(EndEvent.class);
     SUPPORTED_ELEMENT_TYPES.add(ExclusiveGateway.class);
     SUPPORTED_ELEMENT_TYPES.add(IntermediateCatchEvent.class);
+    SUPPORTED_ELEMENT_TYPES.add(ParallelGateway.class);
     SUPPORTED_ELEMENT_TYPES.add(ReceiveTask.class);
     SUPPORTED_ELEMENT_TYPES.add(SequenceFlow.class);
     SUPPORTED_ELEMENT_TYPES.add(ServiceTask.class);

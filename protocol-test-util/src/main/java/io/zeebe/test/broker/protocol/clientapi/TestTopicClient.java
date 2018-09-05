@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
 public class TestTopicClient {
@@ -481,6 +482,24 @@ public class TestTopicClient {
         .withIntent(intent)
         .filter(r -> (Long) r.value().get("workflowInstanceKey") == wfInstanceKey)
         .filter(r -> activityId.equals(r.value().get("activityId")))
+        .findFirst()
+        .get();
+  }
+
+  public List<SubscribedRecord> receiveElementInstancesInState(Intent intent, int expectedNumber) {
+    return receiveEvents()
+        .ofTypeWorkflowInstance()
+        .withIntent(intent)
+        .limit(expectedNumber)
+        .collect(Collectors.toList());
+  }
+
+  public SubscribedRecord receiveElementInstanceInState(long key, Intent intent) {
+    return receiveEvents()
+        .ofTypeWorkflowInstance()
+        .withIntent(intent)
+        .filter(r -> r.key() == key)
+        .limit(1)
         .findFirst()
         .get();
   }

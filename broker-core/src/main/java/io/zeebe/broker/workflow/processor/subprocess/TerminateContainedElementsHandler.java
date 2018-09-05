@@ -21,6 +21,7 @@ import io.zeebe.broker.workflow.index.ElementInstance;
 import io.zeebe.broker.workflow.model.ExecutableFlowElementContainer;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
+import io.zeebe.broker.workflow.processor.ElementInstanceWriter;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.List;
 
@@ -32,22 +33,31 @@ public class TerminateContainedElementsHandler
     final ElementInstance subProcessInstance = context.getElementInstance();
 
     final List<ElementInstance> children = subProcessInstance.getChildren();
+    final ElementInstanceWriter streamWriter = context.getStreamWriter();
+
+    final int activeTokens = subProcessInstance.getActiveTokens();
+    // all execution paths that are not currently represented as element instances terminate
+    // immediately
+    subProcessInstance.consumeTokens(activeTokens - children.size());
 
     if (children.isEmpty()) {
-      context
-          .getStreamWriter()
-          .writeFollowUpEvent(
-              context.getRecord().getKey(),
-              WorkflowInstanceIntent.ELEMENT_TERMINATED,
-              context.getValue());
+      streamWriter.writeFollowUpEvent(
+          context.getRecord().getKey(),
+          WorkflowInstanceIntent.ELEMENT_TERMINATED,
+          context.getValue());
     } else {
-      final ElementInstance child = children.get(0);
 
-      if (child.canTerminate()) {
-        context
-            .getStreamWriter()
-            .writeFollowUpEvent(
-                child.getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATING, child.getValue());
+      streamWriter.newBatch();
+
+      for (int i = 0; i < children.size(); i++) {
+        final ElementInstance child = children.get(i);
+
+        if (child.canTerminate()) {
+          context
+              .getStreamWriter()
+              .writeFollowUpEvent(
+                  child.getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATING, child.getValue());
+        }
       }
     }
   }
