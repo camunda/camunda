@@ -74,10 +74,10 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
   private WorkflowInstanceMetrics metrics;
 
   public BpmnStepProcessor(
-      ElementInstanceIndex scopeInstances,
-      WorkflowCache workflowCache,
-      SubscriptionCommandSender subscriptionCommandSender,
-      WorkflowInstanceSubscriptionDataStore subscriptionStore) {
+      final ElementInstanceIndex scopeInstances,
+      final WorkflowCache workflowCache,
+      final SubscriptionCommandSender subscriptionCommandSender,
+      final WorkflowInstanceSubscriptionDataStore subscriptionStore) {
 
     this.elementInstances = scopeInstances;
     this.workflowCache = workflowCache;
@@ -147,16 +147,14 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
   }
 
   @Override
-  public void onOpen(TypedStreamProcessor streamProcessor) {
+  public void onOpen(final TypedStreamProcessor streamProcessor) {
     final StreamProcessorContext streamProcessorContext =
         streamProcessor.getStreamProcessorContext();
     final MetricsManager metricsManager =
         streamProcessorContext.getActorScheduler().getMetricsManager();
     final LogStream logStream = streamProcessorContext.getLogStream();
 
-    this.metrics =
-        new WorkflowInstanceMetrics(
-            metricsManager, logStream.getTopicName(), logStream.getPartitionId());
+    this.metrics = new WorkflowInstanceMetrics(metricsManager, logStream.getPartitionId());
     this.context = new BpmnStepContext<>(elementInstances, metrics);
   }
 
@@ -167,11 +165,10 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
 
   @Override
   public void processRecord(
-      TypedRecord<WorkflowInstanceRecord> record,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter,
-      Consumer<SideEffectProducer> sideEffect) {
-
+      final TypedRecord<WorkflowInstanceRecord> record,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter,
+      final Consumer<SideEffectProducer> sideEffect) {
     context.setRecord(record);
     context.setStreamWriter(streamWriter);
     context.setSideEffect(sideEffect);
@@ -187,7 +184,7 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
     }
   }
 
-  private void callStepHandler(DeployedWorkflow deployedWorkflow) {
+  private void callStepHandler(final DeployedWorkflow deployedWorkflow) {
 
     populateElementInContext(deployedWorkflow);
     populateElementInstancesInContext();
@@ -208,7 +205,7 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
     }
   }
 
-  private void populateElementInContext(DeployedWorkflow deployedWorkflow) {
+  private void populateElementInContext(final DeployedWorkflow deployedWorkflow) {
     final WorkflowInstanceRecord value = context.getValue();
     final DirectBuffer currentActivityId = value.getActivityId();
 

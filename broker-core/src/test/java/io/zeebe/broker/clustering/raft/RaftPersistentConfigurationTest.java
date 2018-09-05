@@ -34,7 +34,6 @@ public class RaftPersistentConfigurationTest {
 
   @Test
   public void shouldPersistConfigurationAsJSON() throws IOException {
-    final String topicName = "internal-system";
     final int partitionId = 0;
 
     final BrokerCfg brokerCfg = brokerRule.getBroker().getBrokerContext().getBrokerConfiguration();
@@ -42,10 +41,9 @@ public class RaftPersistentConfigurationTest {
 
     final String dataDirectory = brokerCfg.getData().getDirectories().get(0);
     final File configFile =
-        new File(String.format("%s/%s-%d/partition.json", dataDirectory, topicName, partitionId));
+        new File(String.format("%s/partition-%d/partition.json", dataDirectory, partitionId));
 
     final RaftConfigurationMetadata persisted = jsonReader.readValue(configFile);
-    assertThat(persisted.getTopicName()).isEqualTo(topicName);
     assertThat(persisted.getPartitionId()).isEqualTo(partitionId);
   }
 }

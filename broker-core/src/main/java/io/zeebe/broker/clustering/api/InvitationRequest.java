@@ -22,7 +22,6 @@ import static io.zeebe.clustering.management.InvitationRequestEncoder.MembersEnc
 import static io.zeebe.clustering.management.InvitationRequestEncoder.partitionIdNullValue;
 import static io.zeebe.clustering.management.InvitationRequestEncoder.replicationFactorNullValue;
 import static io.zeebe.clustering.management.InvitationRequestEncoder.termNullValue;
-import static io.zeebe.clustering.management.InvitationRequestEncoder.topicNameHeaderLength;
 
 import io.zeebe.clustering.management.InvitationRequestDecoder;
 import io.zeebe.clustering.management.InvitationRequestDecoder.MembersDecoder;
@@ -36,7 +35,6 @@ import java.util.List;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.IntArrayList;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class InvitationRequest implements BufferWriter, BufferReader {
 
@@ -46,7 +44,6 @@ public class InvitationRequest implements BufferWriter, BufferReader {
   protected final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
   protected final InvitationRequestEncoder bodyEncoder = new InvitationRequestEncoder();
 
-  protected DirectBuffer topicName = new UnsafeBuffer(0, 0);
   protected int partitionId = partitionIdNullValue();
   protected int replicationFactor = replicationFactorNullValue();
 
@@ -66,17 +63,8 @@ public class InvitationRequest implements BufferWriter, BufferReader {
     return replicationFactor;
   }
 
-  public InvitationRequest replicationFactor(int replicationFactor) {
+  public InvitationRequest replicationFactor(final int replicationFactor) {
     this.replicationFactor = replicationFactor;
-    return this;
-  }
-
-  public DirectBuffer topicName() {
-    return topicName;
-  }
-
-  public InvitationRequest topicName(final DirectBuffer topicName) {
-    this.topicName.wrap(topicName);
     return this;
   }
 
@@ -107,12 +95,6 @@ public class InvitationRequest implements BufferWriter, BufferReader {
 
     length += sbeHeaderSize() + (sbeBlockLength() * size);
 
-    length += topicNameHeaderLength();
-
-    if (topicName != null) {
-      length += topicName.capacity();
-    }
-
     return length;
   }
 
@@ -135,11 +117,9 @@ public class InvitationRequest implements BufferWriter, BufferReader {
             .term(term)
             .membersCount(members.size());
 
-    for (int member : members) {
+    for (final int member : members) {
       encoder.next().nodeId(member);
     }
-
-    bodyEncoder.putTopicName(topicName, 0, topicName.capacity());
   }
 
   @Override
@@ -157,16 +137,9 @@ public class InvitationRequest implements BufferWriter, BufferReader {
 
     members.clear();
 
-    for (MembersDecoder decoder : bodyDecoder.members()) {
+    for (final MembersDecoder decoder : bodyDecoder.members()) {
       members.addInt(decoder.nodeId());
     }
-
-    final int topicNameLength = bodyDecoder.topicNameLength();
-    final int topicNameOffset = bodyDecoder.limit() + topicNameHeaderLength();
-    topicName.wrap(buffer, topicNameOffset, topicNameLength);
-
-    // skip topic name in decoder
-    bodyDecoder.limit(topicNameOffset + topicNameLength);
 
     assert bodyDecoder.limit() == frameEnd
         : "Decoder read only to position "
@@ -177,7 +150,6 @@ public class InvitationRequest implements BufferWriter, BufferReader {
   }
 
   public void reset() {
-    topicName.wrap(0, 0);
     partitionId = partitionIdNullValue();
     term = termNullValue();
     members.clear();

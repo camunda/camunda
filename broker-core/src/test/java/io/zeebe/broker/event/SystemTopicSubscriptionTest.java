@@ -90,7 +90,7 @@ public class SystemTopicSubscriptionTest {
   public void shouldPushDeploymentEvents() {
     // given
     final long deploymentKey =
-        apiRule.topic().deploy(Bpmn.createExecutableProcess("wf").startEvent().done());
+        apiRule.partition().deploy(Bpmn.createExecutableProcess("wf").startEvent().done());
 
     // when
     final ExecuteCommandResponse addResponse =

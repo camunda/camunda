@@ -75,7 +75,6 @@ public class ClientApiMessageHandlerTest {
   protected static final RemoteAddress DEFAULT_ADDRESS =
       new RemoteAddressImpl(21, new SocketAddress("foo", 4242));
 
-  protected static final DirectBuffer LOG_STREAM_TOPIC_NAME = wrapString("default-topic");
   protected static final int LOG_STREAM_PARTITION_ID = 1;
 
   protected static final byte[] JOB_EVENT;
@@ -128,7 +127,7 @@ public class ClientApiMessageHandlerTest {
     serverOutput = new BufferingServerOutput();
 
     logStream =
-        LogStreams.createFsLogStream(LOG_STREAM_TOPIC_NAME, LOG_STREAM_PARTITION_ID)
+        LogStreams.createFsLogStream(LOG_STREAM_PARTITION_ID)
             .logRootPath(tempFolder.getRoot().getAbsolutePath())
             .serviceContainer(serviceContainerRule.get())
             .logName("Test")
@@ -140,9 +139,7 @@ public class ClientApiMessageHandlerTest {
     messageHandler = new ClientApiMessageHandler(mockControlMessageDispatcher);
 
     final Partition partition =
-        new Partition(
-            new PartitionInfo(LOG_STREAM_TOPIC_NAME, LOG_STREAM_PARTITION_ID, 1),
-            RaftState.LEADER) {
+        new Partition(new PartitionInfo(LOG_STREAM_PARTITION_ID, 1), RaftState.LEADER) {
           @Override
           public LogStream getLogStream() {
             return logStream;
@@ -293,7 +290,7 @@ public class ClientApiMessageHandlerTest {
   }
 
   @Test
-  public void shouldSendErrorMessageIfTopicNotFound() {
+  public void shouldSendErrorMessageIfPartitionNotFound() {
     // given
     final int writtenLength =
         writeCommandRequestToBuffer(buffer, 99, null, ValueType.JOB, JobIntent.CREATE);

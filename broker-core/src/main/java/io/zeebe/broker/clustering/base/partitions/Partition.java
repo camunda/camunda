@@ -28,6 +28,12 @@ import io.zeebe.servicecontainer.ServiceStartContext;
 
 /** Service representing a partition. */
 public class Partition implements Service<Partition> {
+  public static final String PARTITION_NAME_FORMAT = "partition-%d";
+
+  public static String getPartitionName(final int partitionId) {
+    return String.format(PARTITION_NAME_FORMAT, partitionId);
+  }
+
   private final Injector<LogStream> logStreamInjector = new Injector<>();
 
   private final Injector<SnapshotStorage> snapshotStorageInjector = new Injector<>();
@@ -44,13 +50,13 @@ public class Partition implements Service<Partition> {
 
   private StateStorageFactory stateStorageFactory;
 
-  public Partition(PartitionInfo partitionInfo, RaftState state) {
+  public Partition(final PartitionInfo partitionInfo, final RaftState state) {
     this.info = partitionInfo;
     this.state = state;
   }
 
   @Override
-  public void start(ServiceStartContext startContext) {
+  public void start(final ServiceStartContext startContext) {
     logStream = logStreamInjector.getValue();
     snapshotStorage = snapshotStorageInjector.getValue();
     stateStorageFactory = stateStorageFactoryInjector.getValue();

@@ -18,6 +18,7 @@
 package io.zeebe.broker.util;
 
 import io.zeebe.broker.Broker;
+import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
@@ -44,12 +45,12 @@ public class LogStreamPrinter {
 
   private static final Logger LOGGER = LoggerFactory.getLogger("io.zeebe.broker.test");
 
-  public static void printRecords(Broker broker, String topic, int partitionId) {
+  public static void printRecords(final Broker broker, final int partitionId) {
     try {
       final ServiceContainer serviceContainer = broker.getBrokerContext().getServiceContainer();
 
       final ServiceName<LogStream> logStreamServiceName =
-          LogStreamServiceNames.logStreamServiceName(topic + "-" + partitionId);
+          LogStreamServiceNames.logStreamServiceName(Partition.getPartitionName(partitionId));
 
       final PrinterService printerService = new PrinterService();
       serviceContainer
@@ -59,20 +60,20 @@ public class LogStreamPrinter {
           .join();
 
       serviceContainer.removeService(PRINTER_SERVICE_NAME).join();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOGGER.error(
           "Could not print log entries. This exception is not propagated to avoid interference with the test.",
           e);
     }
   }
 
-  public static void printRecords(LogStream logStream) {
+  public static void printRecords(final LogStream logStream) {
     final StringBuilder sb = new StringBuilder();
     sb.append("Records on partition ");
     sb.append(logStream.getPartitionId());
     sb.append(":\n");
 
-    try (LogStreamReader streamReader = new BufferedLogStreamReader(logStream)) {
+    try (final LogStreamReader streamReader = new BufferedLogStreamReader(logStream)) {
       streamReader.seekToFirstEvent();
 
       while (streamReader.hasNext()) {
@@ -110,22 +111,23 @@ public class LogStreamPrinter {
     }
   }
 
-  private static void writeRecordHeader(LoggedEvent event, StringBuilder sb) {
+  private static void writeRecordHeader(final LoggedEvent event, final StringBuilder sb) {
     sb.append("Position: ");
     sb.append(event.getPosition());
   }
 
-  private static void writeWorkflowInstanceBody(WorkflowInstanceRecord record, StringBuilder sb) {
+  private static void writeWorkflowInstanceBody(
+      final WorkflowInstanceRecord record, final StringBuilder sb) {
     record.writeJSON(sb);
   }
 
-  private static void writeMetadata(RecordMetadata metadata, StringBuilder sb) {
+  private static void writeMetadata(final RecordMetadata metadata, final StringBuilder sb) {
     sb.append(metadata.toString());
   }
 
   private static class PrinterService implements Service<Object> {
 
-    private Injector<LogStream> logStreamInjector = new Injector<>();
+    private final Injector<LogStream> logStreamInjector = new Injector<>();
 
     @Override
     public Object get() {
@@ -133,7 +135,7 @@ public class LogStreamPrinter {
     }
 
     @Override
-    public void start(ServiceStartContext startContext) {
+    public void start(final ServiceStartContext startContext) {
       final LogStream logStream = logStreamInjector.getValue();
 
       printRecords(logStream);

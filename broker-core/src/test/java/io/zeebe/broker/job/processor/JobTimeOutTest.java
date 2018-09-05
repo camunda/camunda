@@ -29,7 +29,7 @@ import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
-import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
+import io.zeebe.test.broker.protocol.clientapi.TestPartitionClient;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
@@ -138,7 +138,7 @@ public class JobTimeOutTest {
 
     // then activated again
     final List<SubscribedRecord> events =
-        apiRule.topic().receiveRecords().ofTypeJob().limit(8).collect(Collectors.toList());
+        apiRule.partition().receiveRecords().ofTypeJob().limit(8).collect(Collectors.toList());
 
     assertThat(events).extracting(e -> e.key()).contains(jobKey1);
     assertThat(events)
@@ -175,13 +175,13 @@ public class JobTimeOutTest {
 
     // then activated again
     final SubscribedRecord jobActiviated = apiRule.subscribedEvents().findAny().get();
-    final TestTopicClient topicClient = apiRule.topic();
+    final TestPartitionClient partitionClient = apiRule.partition();
     final SubscribedRecord firstActivateCommand =
-        topicClient.receiveRecords().ofTypeJob().withIntent(ACTIVATE).findFirst().get();
+        partitionClient.receiveRecords().ofTypeJob().withIntent(ACTIVATE).findFirst().get();
     assertThat(jobActiviated.sourceRecordPosition()).isNotEqualTo(firstActivateCommand.position());
 
     final SubscribedRecord secondActivateCommand =
-        topicClient
+        partitionClient
             .receiveRecords()
             .ofTypeJob()
             .withIntent(ACTIVATE)
@@ -215,7 +215,7 @@ public class JobTimeOutTest {
 
     // then
     final List<SubscribedRecord> expiredEvents =
-        apiRule.topic().receiveRecords().ofTypeJob().limit(16).collect(Collectors.toList());
+        apiRule.partition().receiveRecords().ofTypeJob().limit(16).collect(Collectors.toList());
 
     assertThat(expiredEvents)
         .filteredOn(e -> e.intent() == JobIntent.ACTIVATED)
@@ -229,7 +229,7 @@ public class JobTimeOutTest {
         .containsExactlyInAnyOrder(jobKey1, jobKey2);
   }
 
-  private long createJob(String type) {
+  private long createJob(final String type) {
     final ExecuteCommandResponse resp =
         apiRule
             .createCmdRequest()
@@ -243,7 +243,7 @@ public class JobTimeOutTest {
     return resp.key();
   }
 
-  private void completeJob(SubscribedRecord activatedJob) {
+  private void completeJob(final SubscribedRecord activatedJob) {
     apiRule
         .createCmdRequest()
         .type(ValueType.JOB, JobIntent.COMPLETE)
@@ -254,7 +254,7 @@ public class JobTimeOutTest {
         .sendAndAwait();
   }
 
-  private void failJob(long key, Map<String, Object> event) {
+  private void failJob(final long key, final Map<String, Object> event) {
     apiRule
         .createCmdRequest()
         .type(ValueType.JOB, JobIntent.FAIL)
@@ -268,7 +268,7 @@ public class JobTimeOutTest {
   private void assertNoMoreJobsReceived() {
     try {
       Thread.sleep(1000L);
-    } catch (InterruptedException e) {
+    } catch (final InterruptedException e) {
       throw new RuntimeException(e);
     }
 

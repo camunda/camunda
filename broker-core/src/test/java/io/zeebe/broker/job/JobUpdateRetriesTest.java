@@ -31,7 +31,7 @@ import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
-import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
+import io.zeebe.test.broker.protocol.clientapi.TestPartitionClient;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,11 +50,11 @@ public class JobUpdateRetriesTest {
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
-  private TestTopicClient client;
+  private TestPartitionClient client;
 
   @Before
   public void setup() {
-    client = apiRule.topic();
+    client = apiRule.partition();
   }
 
   @Test
@@ -80,7 +80,7 @@ public class JobUpdateRetriesTest {
 
     // then
     final SubscribedRecord jobCommand =
-        apiRule.topic().receiveFirstJobCommand(JobIntent.UPDATE_RETRIES);
+        apiRule.partition().receiveFirstJobCommand(JobIntent.UPDATE_RETRIES);
 
     assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
     assertThat(response.sourceRecordPosition()).isEqualTo(jobCommand.position());

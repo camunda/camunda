@@ -23,7 +23,7 @@ import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW
 import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_INSTANCE_KEY;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_VERSION;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.intent;
+import static io.zeebe.test.broker.protocol.clientapi.TestPartitionClient.intent;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
@@ -42,7 +42,7 @@ import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
-import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
+import io.zeebe.test.broker.protocol.clientapi.TestPartitionClient;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
@@ -97,17 +97,17 @@ public class MessageCorrelationTest {
     };
   }
 
-  private TestTopicClient testClient;
+  private TestPartitionClient testClient;
 
   @Before
   public void init() {
-    apiRule.waitForTopic(3);
-    testClient = apiRule.topic();
+    apiRule.waitForPartition(3);
+    testClient = apiRule.partition();
     final long deploymentKey = testClient.deploy(workflow);
 
     testClient.receiveFirstDeploymentEvent(DeploymentIntent.CREATED, deploymentKey);
-    apiRule.topic(1).receiveFirstDeploymentEvent(DeploymentIntent.CREATED, deploymentKey);
-    apiRule.topic(2).receiveFirstDeploymentEvent(DeploymentIntent.CREATED, deploymentKey);
+    apiRule.partition(1).receiveFirstDeploymentEvent(DeploymentIntent.CREATED, deploymentKey);
+    apiRule.partition(2).receiveFirstDeploymentEvent(DeploymentIntent.CREATED, deploymentKey);
   }
 
   @Test
@@ -183,8 +183,9 @@ public class MessageCorrelationTest {
 
     final String correlationKey = "order-123";
 
-    final TestTopicClient workflowPartition = apiRule.topic(partitionIds.get(0));
-    final TestTopicClient subscriptionPartition = apiRule.topic(getPartitionId(correlationKey));
+    final TestPartitionClient workflowPartition = apiRule.partition(partitionIds.get(0));
+    final TestPartitionClient subscriptionPartition =
+        apiRule.partition(getPartitionId(correlationKey));
 
     testClient.deploy(CATCH_EVENT_WORKFLOW);
 
@@ -502,7 +503,8 @@ public class MessageCorrelationTest {
   }
 
   private SubscribedRecord findMessageSubscription(
-      final TestTopicClient client, final MessageSubscriptionIntent intent) throws AssertionError {
+      final TestPartitionClient client, final MessageSubscriptionIntent intent)
+      throws AssertionError {
     return client
         .receiveEvents()
         .filter(intent(intent))

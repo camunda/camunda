@@ -17,11 +17,11 @@
  */
 package io.zeebe.broker.event;
 
-import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.UnstableCI;
+import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
@@ -509,9 +509,7 @@ public class TopicSubscriptionTest {
     // and the subscription service has abnormally closed
     final String name =
         "log.log."
-            + DEFAULT_TOPIC
-            + "."
-            + apiRule.getDefaultPartitionId()
+            + Partition.getPartitionName(apiRule.getDefaultPartitionId())
             + ".subscription.push.foo"; // TODO: ist das der richtige Name?
     final ServiceName<Object> subscriptionServiceName =
         ServiceName.newServiceName(name, Object.class);
@@ -593,13 +591,13 @@ public class TopicSubscriptionTest {
         .isGreaterThan(subscriptionResponse.getSequenceNumber());
   }
 
-  protected String getStringOfLength(int numCharacters) {
+  protected String getStringOfLength(final int numCharacters) {
     final char[] characters = new char[numCharacters];
     Arrays.fill(characters, 'a');
     return new String(characters);
   }
 
-  protected static ExecuteCommandResponse asCommandResponse(RawMessage message) {
+  protected static ExecuteCommandResponse asCommandResponse(final RawMessage message) {
     final ExecuteCommandResponse response = new ExecuteCommandResponse(new MsgPackHelper());
     response.wrap(message.getMessage(), 0, message.getMessage().capacity());
     return response;

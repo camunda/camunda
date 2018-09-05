@@ -35,25 +35,22 @@ public final class WorkflowInstanceCreatedEventProcessor
   private final ElementInstanceIndex scopeInstances;
   private Metric workflowInstanceEventCreate;
 
-  public WorkflowInstanceCreatedEventProcessor(ElementInstanceIndex scopeInstances) {
+  public WorkflowInstanceCreatedEventProcessor(final ElementInstanceIndex scopeInstances) {
     this.scopeInstances = scopeInstances;
   }
 
   @Override
-  public void onOpen(TypedStreamProcessor streamProcessor) {
+  public void onOpen(final TypedStreamProcessor streamProcessor) {
     final MetricsManager metricsManager =
         streamProcessor.getStreamProcessorContext().getActorScheduler().getMetricsManager();
 
     final LogStream logStream = streamProcessor.getEnvironment().getStream();
-    final String topicName =
-        logStream.getTopicName().getStringWithoutLengthUtf8(0, logStream.getTopicName().capacity());
     final String partitionId = Integer.toString(logStream.getPartitionId());
 
     workflowInstanceEventCreate =
         metricsManager
             .newMetric("workflow_instance_events_count")
             .type("counter")
-            .label("topic", topicName)
             .label("partition", partitionId)
             .label("type", "created")
             .create();
@@ -66,9 +63,9 @@ public final class WorkflowInstanceCreatedEventProcessor
 
   @Override
   public void processRecord(
-      TypedRecord<WorkflowInstanceRecord> record,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter) {
+      final TypedRecord<WorkflowInstanceRecord> record,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter) {
     workflowInstanceEventCreate.incrementOrdered();
     responseWriter.writeEvent(record);
 

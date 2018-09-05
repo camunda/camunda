@@ -93,7 +93,7 @@ public class ReplicationFactorService extends Actor implements Service<Replicati
           if (error == null) {
             computeStateDifferences(currentState);
           } else {
-            LOG.error("Unable to compute current cluster topic state from topology", error);
+            LOG.error("Unable to compute current cluster state from topology", error);
           }
         });
   }
@@ -163,7 +163,6 @@ public class ReplicationFactorService extends Actor implements Service<Replicati
 
     final InvitationRequest request =
         new InvitationRequest()
-            .topicName(partitionInfo.getTopicNameBuffer())
             .partitionId(partitionInfo.getPartitionId())
             .replicationFactor(partitionInfo.getReplicationFactor())
             .members(members);

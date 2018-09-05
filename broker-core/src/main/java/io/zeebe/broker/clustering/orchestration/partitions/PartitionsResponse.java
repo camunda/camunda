@@ -20,46 +20,29 @@ package io.zeebe.broker.clustering.orchestration.partitions;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.ArrayProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
-import io.zeebe.msgpack.property.StringProperty;
-import org.agrona.DirectBuffer;
-import org.agrona.ExpandableArrayBuffer;
-import org.agrona.MutableDirectBuffer;
 
 public class PartitionsResponse extends UnpackedObject {
   protected ArrayProperty<Partition> partitions =
       new ArrayProperty<>("partitions", new Partition());
-  protected final MutableDirectBuffer topicName = new ExpandableArrayBuffer(128);
 
   public PartitionsResponse() {
     declareProperty(partitions);
   }
 
-  public void addPartition(final int id, final DirectBuffer topic) {
+  public void addPartition(final int id) {
     final Partition partition = partitions.add();
-
-    topicName.putBytes(0, topic, 0, topic.capacity());
-    // copy the topic name because arrayproperty#add does not
-    // copy the value immediately (only on the next add() or write() invocation),
-    // and the buffer's content may change until then
-
     partition.setId(id);
-    partition.setTopic(topicName, 0, topic.capacity());
   }
 
   protected static class Partition extends UnpackedObject {
     protected IntegerProperty idProperty = new IntegerProperty("id");
-    protected StringProperty topicProperty = new StringProperty("topic");
 
     public Partition() {
-      declareProperty(idProperty).declareProperty(topicProperty);
+      declareProperty(idProperty);
     }
 
     public void setId(final int id) {
       this.idProperty.setValue(id);
-    }
-
-    public void setTopic(final DirectBuffer topic, final int offset, final int length) {
-      this.topicProperty.setValue(topic, offset, length);
     }
   }
 }

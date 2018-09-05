@@ -60,7 +60,6 @@ import io.zeebe.raft.event.RaftConfigurationEvent;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.LangUtil;
-import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorScheduler;
@@ -124,7 +123,7 @@ public class TestStreams {
   public LogStream createLogStream(final String name, final int partitionId) {
     final String rootPath = storageDirectory.getAbsolutePath();
     final LogStream logStream =
-        LogStreams.createFsLogStream(BufferUtil.wrapString(name), partitionId)
+        LogStreams.createFsLogStream(partitionId)
             .logRootPath(rootPath)
             .serviceContainer(serviceContainer)
             .logName(name)

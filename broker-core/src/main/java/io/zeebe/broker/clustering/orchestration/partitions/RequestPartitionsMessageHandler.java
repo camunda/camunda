@@ -17,11 +17,8 @@
  */
 package io.zeebe.broker.clustering.orchestration.partitions;
 
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
-
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.transport.controlmessage.AbstractControlMessageHandler;
-import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.transport.ServerOutput;
@@ -58,9 +55,8 @@ public class RequestPartitionsMessageHandler extends AbstractControlMessageHandl
   private PartitionsResponse createResponse() {
     final PartitionsResponse response = new PartitionsResponse();
 
-    final DirectBuffer topic = wrapString(Protocol.SYSTEM_TOPIC);
     for (int i = 0; i < clusterCfg.getPartitionsCount(); i++) {
-      response.addPartition(i, topic);
+      response.addPartition(i);
     }
 
     return response;

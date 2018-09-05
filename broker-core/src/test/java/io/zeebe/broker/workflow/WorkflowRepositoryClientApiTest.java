@@ -20,7 +20,6 @@ package io.zeebe.broker.workflow;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_KEY;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_VERSION;
-import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -56,7 +55,7 @@ public class WorkflowRepositoryClientApiTest {
   @Test
   public void shouldRequestWorkflowByKey() {
     final ExecuteCommandResponse deployment =
-        apiRule.topic().deployWithResponse(WORKFLOW, "wf.bpmn");
+        apiRule.partition().deployWithResponse(WORKFLOW, "wf.bpmn");
 
     final Map<String, Object> deployedWorkflow = getDeployedWorkflow(deployment, 0);
 
@@ -65,7 +64,6 @@ public class WorkflowRepositoryClientApiTest {
             .createControlMessageRequest()
             .messageType(ControlMessageType.GET_WORKFLOW)
             .data()
-            .put("topicName", DEFAULT_TOPIC)
             .put(PROP_WORKFLOW_KEY, deployedWorkflow.get(PROP_WORKFLOW_KEY))
             .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "")
             .put(PROP_WORKFLOW_VERSION, -1)
@@ -92,7 +90,6 @@ public class WorkflowRepositoryClientApiTest {
         .createControlMessageRequest()
         .messageType(ControlMessageType.GET_WORKFLOW)
         .data()
-        .put("topicName", DEFAULT_TOPIC)
         .put(PROP_WORKFLOW_KEY, 1231)
         .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "")
         .put(PROP_WORKFLOW_VERSION, -1)
@@ -110,7 +107,6 @@ public class WorkflowRepositoryClientApiTest {
         .createControlMessageRequest()
         .messageType(ControlMessageType.GET_WORKFLOW)
         .data()
-        .put("topicName", DEFAULT_TOPIC)
         .put(PROP_WORKFLOW_KEY, -1)
         .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "notExisting")
         .put(PROP_WORKFLOW_VERSION, -1)
@@ -128,7 +124,6 @@ public class WorkflowRepositoryClientApiTest {
         .createControlMessageRequest()
         .messageType(ControlMessageType.GET_WORKFLOW)
         .data()
-        .put("topicName", DEFAULT_TOPIC)
         .put(PROP_WORKFLOW_KEY, -1)
         .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "notExisting")
         .put(PROP_WORKFLOW_VERSION, 99)
@@ -138,7 +133,7 @@ public class WorkflowRepositoryClientApiTest {
 
   @Test
   public void shouldNotGetWorkflowByExistingBpmnProcessKeyAndNonExistingVersion() {
-    apiRule.topic().deployWithResponse(WORKFLOW);
+    apiRule.partition().deployWithResponse(WORKFLOW);
 
     expectedException.expect(RuntimeException.class);
     expectedException.expectMessage(
@@ -148,7 +143,6 @@ public class WorkflowRepositoryClientApiTest {
         .createControlMessageRequest()
         .messageType(ControlMessageType.GET_WORKFLOW)
         .data()
-        .put("topicName", DEFAULT_TOPIC)
         .put(PROP_WORKFLOW_KEY, -1)
         .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
         .put(PROP_WORKFLOW_VERSION, 99)
@@ -159,7 +153,7 @@ public class WorkflowRepositoryClientApiTest {
   @Test
   public void shouldRequestLatestWorkflowBpmnProcessId() {
     // given
-    final ExecuteCommandResponse deployment1 = apiRule.topic().deployWithResponse(WORKFLOW);
+    final ExecuteCommandResponse deployment1 = apiRule.partition().deployWithResponse(WORKFLOW);
 
     final Map<String, Object> deployedWorkflow = getDeployedWorkflow(deployment1, 0);
 
@@ -170,7 +164,6 @@ public class WorkflowRepositoryClientApiTest {
             .createControlMessageRequest()
             .messageType(ControlMessageType.GET_WORKFLOW)
             .data()
-            .put("topicName", DEFAULT_TOPIC)
             .put(PROP_WORKFLOW_KEY, -1)
             .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
             .put(PROP_WORKFLOW_VERSION, -1)
@@ -184,7 +177,7 @@ public class WorkflowRepositoryClientApiTest {
 
     // and when
 
-    final ExecuteCommandResponse deployment2 = apiRule.topic().deployWithResponse(WORKFLOW);
+    final ExecuteCommandResponse deployment2 = apiRule.partition().deployWithResponse(WORKFLOW);
 
     final Map<String, Object> deployedWorkflow2 = getDeployedWorkflow(deployment2, 0);
 
@@ -193,7 +186,6 @@ public class WorkflowRepositoryClientApiTest {
             .createControlMessageRequest()
             .messageType(ControlMessageType.GET_WORKFLOW)
             .data()
-            .put("topicName", DEFAULT_TOPIC)
             .put(PROP_WORKFLOW_KEY, -1)
             .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
             .put(PROP_WORKFLOW_VERSION, -1)
@@ -208,7 +200,7 @@ public class WorkflowRepositoryClientApiTest {
   @Test
   public void shouldGetWorkflowVersionBpmnProcessId() {
     // given
-    final ExecuteCommandResponse deployment1 = apiRule.topic().deployWithResponse(WORKFLOW);
+    final ExecuteCommandResponse deployment1 = apiRule.partition().deployWithResponse(WORKFLOW);
 
     final Map<String, Object> deployedWorkflow = getDeployedWorkflow(deployment1, 0);
 
@@ -219,7 +211,6 @@ public class WorkflowRepositoryClientApiTest {
             .createControlMessageRequest()
             .messageType(ControlMessageType.GET_WORKFLOW)
             .data()
-            .put("topicName", DEFAULT_TOPIC)
             .put(PROP_WORKFLOW_KEY, -1)
             .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
             .put(PROP_WORKFLOW_VERSION, 1)
@@ -233,7 +224,7 @@ public class WorkflowRepositoryClientApiTest {
 
     // and when
 
-    final ExecuteCommandResponse deployment2 = apiRule.topic().deployWithResponse(WORKFLOW);
+    final ExecuteCommandResponse deployment2 = apiRule.partition().deployWithResponse(WORKFLOW);
 
     final Map<String, Object> deployedWorkflow2 = getDeployedWorkflow(deployment2, 0);
 
@@ -242,7 +233,6 @@ public class WorkflowRepositoryClientApiTest {
             .createControlMessageRequest()
             .messageType(ControlMessageType.GET_WORKFLOW)
             .data()
-            .put("topicName", DEFAULT_TOPIC)
             .put(PROP_WORKFLOW_KEY, -1)
             .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
             .put(PROP_WORKFLOW_VERSION, 2)
@@ -256,13 +246,12 @@ public class WorkflowRepositoryClientApiTest {
 
   @Test
   @SuppressWarnings("unchecked")
-  public void shouldListWorkflowsByTopicIfNothingDeployed() {
+  public void shouldListWorkflowsIfNothingDeployed() {
     final ControlMessageResponse requestWorkflowResponse =
         apiRule
             .createControlMessageRequest()
             .messageType(ControlMessageType.LIST_WORKFLOWS)
             .data()
-            .put("topicName", DEFAULT_TOPIC)
             .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "")
             .done()
             .sendAndAwait();
@@ -274,13 +263,12 @@ public class WorkflowRepositoryClientApiTest {
 
   @Test
   @SuppressWarnings("unchecked")
-  public void shouldListWorkflowsByTopicAndBpmnProcessIdIfNothingDeployed() {
+  public void shouldListWorkflowsByBpmnProcessIdIfNothingDeployed() {
     final ControlMessageResponse requestWorkflowResponse =
         apiRule
             .createControlMessageRequest()
             .messageType(ControlMessageType.LIST_WORKFLOWS)
             .data()
-            .put("topicName", DEFAULT_TOPIC)
             .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "nonExisting")
             .done()
             .sendAndAwait();
@@ -292,9 +280,9 @@ public class WorkflowRepositoryClientApiTest {
 
   @Test
   @SuppressWarnings("unchecked")
-  public void shouldListWorkflowByTopic() {
+  public void shouldListWorkflow() {
     final ExecuteCommandResponse deployment =
-        apiRule.topic().deployWithResponse(WORKFLOW, "wf.bpmn");
+        apiRule.partition().deployWithResponse(WORKFLOW, "wf.bpmn");
 
     final Map<String, Object> deployedWorkflow = getDeployedWorkflow(deployment, 0);
 
@@ -326,9 +314,9 @@ public class WorkflowRepositoryClientApiTest {
 
   @Test
   @SuppressWarnings("unchecked")
-  public void shouldListWorkflowsByTopicAndBpmnProcessId() {
-    apiRule.topic().deployWithResponse(WORKFLOW);
-    apiRule.topic().deployWithResponse(WORKFLOW_2);
+  public void shouldListWorkflowsByBpmnProcessId() {
+    apiRule.partition().deployWithResponse(WORKFLOW);
+    apiRule.partition().deployWithResponse(WORKFLOW_2);
 
     ControlMessageResponse requestWorkflowResponse =
         apiRule
@@ -350,7 +338,6 @@ public class WorkflowRepositoryClientApiTest {
             .createControlMessageRequest()
             .messageType(ControlMessageType.LIST_WORKFLOWS)
             .data()
-            .put("topicName", DEFAULT_TOPIC)
             .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "process2")
             .done()
             .sendAndAwait();
@@ -363,16 +350,15 @@ public class WorkflowRepositoryClientApiTest {
 
   @Test
   @SuppressWarnings("unchecked")
-  public void shouldListWorkflowsByTopicAndBpmnProcessIdNonExisting() {
-    apiRule.topic().deployWithResponse(WORKFLOW);
-    apiRule.topic().deployWithResponse(WORKFLOW_2);
+  public void shouldListWorkflowsByBpmnProcessIdNonExisting() {
+    apiRule.partition().deployWithResponse(WORKFLOW);
+    apiRule.partition().deployWithResponse(WORKFLOW_2);
 
     final ControlMessageResponse requestWorkflowResponse =
         apiRule
             .createControlMessageRequest()
             .messageType(ControlMessageType.LIST_WORKFLOWS)
             .data()
-            .put("topicName", DEFAULT_TOPIC)
             .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "nonExisting")
             .done()
             .sendAndAwait();
@@ -384,10 +370,10 @@ public class WorkflowRepositoryClientApiTest {
 
   @Test
   @SuppressWarnings("unchecked")
-  public void shouldListMultipleWorkflowsByTopic() {
-    apiRule.topic().deployWithResponse(WORKFLOW);
-    apiRule.topic().deployWithResponse(WORKFLOW);
-    apiRule.topic().deployWithResponse(WORKFLOW);
+  public void shouldListMultipleWorkflows() {
+    apiRule.partition().deployWithResponse(WORKFLOW);
+    apiRule.partition().deployWithResponse(WORKFLOW);
+    apiRule.partition().deployWithResponse(WORKFLOW);
 
     final ControlMessageResponse requestWorkflowResponse =
         apiRule

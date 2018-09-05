@@ -42,7 +42,6 @@ import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerRequestHandler;
 import io.zeebe.transport.ServerResponse;
 import io.zeebe.transport.ServerTransportBuilder;
-import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.buffer.DirectBufferWriter;
 import io.zeebe.util.sched.ActorControl;
@@ -71,11 +70,11 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
   private final SnapshotReplicationRequestHandler snapshotReplicationRequestHandler;
 
   public ManagementApiRequestHandler(
-      RaftPersistentConfigurationManager raftPersistentConfigurationManager,
-      ActorControl actor,
-      ServiceStartContext serviceStartContext,
-      BrokerCfg brokerCfg,
-      Map<Integer, Partition> trackedSnapshotPartitions) {
+      final RaftPersistentConfigurationManager raftPersistentConfigurationManager,
+      final ActorControl actor,
+      final ServiceStartContext serviceStartContext,
+      final BrokerCfg brokerCfg,
+      final Map<Integer, Partition> trackedSnapshotPartitions) {
     this.raftPersistentConfigurationManager = raftPersistentConfigurationManager;
     this.actor = actor;
     this.serviceStartContext = serviceStartContext;
@@ -87,12 +86,12 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
 
   @Override
   public boolean onRequest(
-      ServerOutput output,
-      RemoteAddress remoteAddress,
-      DirectBuffer buffer,
-      int offset,
-      int length,
-      long requestId) {
+      final ServerOutput output,
+      final RemoteAddress remoteAddress,
+      final DirectBuffer buffer,
+      final int offset,
+      final int length,
+      final long requestId) {
     messageHeaderDecoder.wrap(buffer, offset);
 
     final int schemaId = messageHeaderDecoder.schemaId();
@@ -131,44 +130,40 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
   }
 
   private boolean onInvitationRequest(
-      DirectBuffer buffer,
-      int offset,
-      int length,
-      ServerOutput output,
-      RemoteAddress remoteAddress,
-      long requestId) {
+      final DirectBuffer buffer,
+      final int offset,
+      final int length,
+      final ServerOutput output,
+      final RemoteAddress remoteAddress,
+      final long requestId) {
     invitationRequest.wrap(buffer, offset, length);
 
-    final DirectBuffer topicName = BufferUtil.cloneBuffer(invitationRequest.topicName());
     final int partitionId = invitationRequest.partitionId();
     final int replicationFactor = invitationRequest.replicationFactor();
     final IntArrayList members = new IntArrayList();
     members.addAll(invitationRequest.members());
 
     LOG.info(
-        "Received invitation request for topicName={}, partitionId={}, replicationFactor={} with members={}",
-        BufferUtil.bufferAsString(topicName),
+        "Received invitation request for partitionId={}, replicationFactor={} with members={}",
         partitionId,
         replicationFactor,
         members);
 
-    installPartition(
-        topicName, partitionId, replicationFactor, members, output, remoteAddress, requestId);
+    installPartition(partitionId, replicationFactor, members, output, remoteAddress, requestId);
 
     return true;
   }
 
   private void installPartition(
-      final DirectBuffer topicName,
       final int partitionId,
       final int replicationFactor,
       final List<Integer> members,
-      ServerOutput output,
-      RemoteAddress remoteAddress,
-      long requestId) {
+      final ServerOutput output,
+      final RemoteAddress remoteAddress,
+      final long requestId) {
     final ActorFuture<RaftPersistentConfiguration> configurationFuture =
         raftPersistentConfigurationManager.createConfiguration(
-            topicName, partitionId, replicationFactor, members);
+            partitionId, replicationFactor, members);
 
     actor.runOnCompletion(
         configurationFuture,
@@ -182,11 +177,7 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
 
             sendEmptyResponse(output, remoteAddress, requestId);
           } else {
-            final String partitionName =
-                String.format(
-                    "%s-%d",
-                    BufferUtil.bufferAsString(configuration.getTopicName()),
-                    configuration.getPartitionId());
+            final String partitionName = Partition.getPartitionName(configuration.getPartitionId());
             final ServiceName<Void> partitionInstallServiceName =
                 partitionInstallServiceName(partitionName);
             final boolean isSystemPartition =
@@ -254,11 +245,11 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
 
   @Override
   public boolean onMessage(
-      ServerOutput output,
-      RemoteAddress remoteAddress,
-      DirectBuffer buffer,
-      int offset,
-      int length) {
+      final ServerOutput output,
+      final RemoteAddress remoteAddress,
+      final DirectBuffer buffer,
+      final int offset,
+      final int length) {
     // no messages currently supported
     return true;
   }

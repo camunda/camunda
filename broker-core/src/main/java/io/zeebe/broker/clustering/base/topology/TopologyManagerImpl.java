@@ -17,10 +17,7 @@
  */
 package io.zeebe.broker.clustering.base.topology;
 
-import static io.zeebe.broker.clustering.base.gossip.GossipCustomEventEncoding.readNodeInfo;
-import static io.zeebe.broker.clustering.base.gossip.GossipCustomEventEncoding.readPartitions;
-import static io.zeebe.broker.clustering.base.gossip.GossipCustomEventEncoding.writeNodeInfo;
-import static io.zeebe.broker.clustering.base.gossip.GossipCustomEventEncoding.writePartitions;
+import static io.zeebe.broker.clustering.base.gossip.GossipCustomEventEncoding.*;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.gossip.Gossip;
@@ -105,13 +102,9 @@ public class TopologyManagerImpl extends Actor implements TopologyManager, RaftS
   }
 
   public void updatePartition(
-      int partitionId,
-      DirectBuffer topicBuffer,
-      int replicationFactor,
-      NodeInfo member,
-      RaftState raftState) {
+      int partitionId, int replicationFactor, NodeInfo member, RaftState raftState) {
     final PartitionInfo updatedPartition =
-        topology.updatePartition(partitionId, topicBuffer, replicationFactor, member, raftState);
+        topology.updatePartition(partitionId, replicationFactor, member, raftState);
 
     notifyPartitionUpdated(updatedPartition, member);
   }
@@ -136,11 +129,7 @@ public class TopologyManagerImpl extends Actor implements TopologyManager, RaftS
           final NodeInfo memberInfo = topology.getLocal();
 
           updatePartition(
-              raft.getPartitionId(),
-              raft.getTopicName(),
-              raft.getReplicationFactor(),
-              memberInfo,
-              raft.getState());
+              raft.getPartitionId(), raft.getReplicationFactor(), memberInfo, raft.getState());
 
           publishLocalPartitions();
         });

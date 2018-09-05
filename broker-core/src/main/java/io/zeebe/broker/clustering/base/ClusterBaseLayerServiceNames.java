@@ -51,9 +51,9 @@ public class ClusterBaseLayerServiceNames {
   public static final ServiceName<Raft> RAFT_SERVICE_GROUP =
       ServiceName.newServiceName("cluster.base.raft.service", Raft.class);
 
-  public static ServiceName<Void> raftInstallServiceName(final String topicName, int partitionId) {
+  public static ServiceName<Void> raftInstallServiceName(int partitionId) {
     return ServiceName.newServiceName(
-        String.format("cluster.base.raft.install.%s-%d", topicName, partitionId), Void.class);
+        String.format("cluster.base.raft.install.partition-%d", partitionId), Void.class);
   }
 
   public static ServiceName<Partition> leaderPartitionServiceName(final String partitionName) {
@@ -86,8 +86,7 @@ public class ClusterBaseLayerServiceNames {
       final Partition partition) {
     final PartitionInfo info = partition.getInfo();
     final String name =
-        String.format(
-            "cluster.base.snapshot.%s-%d.replicate", info.getTopicName(), info.getPartitionId());
+        String.format("cluster.base.snapshot.partition-%d.replicate", info.getPartitionId());
 
     return ServiceName.newServiceName(name, SnapshotReplicationService.class);
   }

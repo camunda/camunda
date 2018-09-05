@@ -28,7 +28,7 @@ import io.zeebe.model.bpmn.instance.ServiceTask;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
-import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
+import io.zeebe.test.broker.protocol.clientapi.TestPartitionClient;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
@@ -62,11 +62,11 @@ public class ParallelGatewayTest {
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
-  private TestTopicClient testClient;
+  private TestPartitionClient testClient;
 
   @Before
   public void init() {
-    testClient = apiRule.topic();
+    testClient = apiRule.partition();
   }
 
   @Test
@@ -246,7 +246,8 @@ public class ParallelGatewayTest {
             tuple(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETING));
   }
 
-  private static boolean isServiceTaskInProcess(String activityId, BpmnModelInstance process) {
+  private static boolean isServiceTaskInProcess(
+      final String activityId, final BpmnModelInstance process) {
     return process
         .getModelElementsByType(ServiceTask.class)
         .stream()

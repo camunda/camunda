@@ -88,13 +88,11 @@ public class TopologyDto extends UnpackedObject {
 
   public static class PartitionDto extends UnpackedObject {
     private final EnumProperty<RaftState> stateProp = new EnumProperty<>("state", RaftState.class);
-    private final StringProperty topicNameProp = new StringProperty("topicName");
     private final IntegerProperty partitionIdProp = new IntegerProperty("partitionId");
     private final IntegerProperty replicationFactorProp = new IntegerProperty("replicationFactor");
 
     public PartitionDto() {
       this.declareProperty(stateProp)
-          .declareProperty(topicNameProp)
           .declareProperty(partitionIdProp)
           .declareProperty(replicationFactorProp);
     }
@@ -105,12 +103,6 @@ public class TopologyDto extends UnpackedObject {
 
     public PartitionDto setState(RaftState eventType) {
       this.stateProp.setValue(eventType);
-      return this;
-    }
-
-    public PartitionDto setTopicName(
-        final DirectBuffer topicName, final int offset, final int length) {
-      this.topicNameProp.setValue(topicName, offset, length);
       return this;
     }
 

@@ -45,7 +45,6 @@
     <group name="members" id="4" dimensionType="groupSizeEncoding">
       <field name="nodeId" id="5" type="uint16"/>
     </group>
-    <data name="topicName" id="6" type="varDataEncoding"/>
   </sbe:message>
 
   <sbe:message name="InvitationResponse" id="1">

@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.topic;
 
-import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
@@ -42,7 +41,7 @@ public class RequestPartitionsTest {
   @Test
   public void shouldReturnCreatedPartitions() {
     // given
-    apiRule.waitForTopic(EXPECTED_TOTAL_PARTITIONS);
+    apiRule.waitForPartition(EXPECTED_TOTAL_PARTITIONS);
 
     // when
     final ControlMessageResponse response =
@@ -53,38 +52,34 @@ public class RequestPartitionsTest {
             .sendAndAwait();
 
     // then
-    assertResponse(response, EXPECTED_TOTAL_PARTITIONS, DEFAULT_TOPIC);
+    assertResponse(response, EXPECTED_TOTAL_PARTITIONS);
   }
 
   /** testing snapshotting */
   @Test
   public void shouldReturnCreatedPartitionsAfterRestart() {
     // given
-    apiRule.waitForTopic(EXPECTED_TOTAL_PARTITIONS);
+    apiRule.waitForPartition(EXPECTED_TOTAL_PARTITIONS);
 
     brokerRule.restartBroker();
 
     // when
     // have to do this multiple times as the stream processor for answering the request may not be
     // available yet
-    apiRule.waitForTopic(EXPECTED_TOTAL_PARTITIONS);
+    apiRule.waitForPartition(EXPECTED_TOTAL_PARTITIONS);
 
     // then
-    assertResponse(apiRule.requestPartitions(), EXPECTED_TOTAL_PARTITIONS, DEFAULT_TOPIC);
+    assertResponse(apiRule.requestPartitions(), EXPECTED_TOTAL_PARTITIONS);
   }
 
   private void assertResponse(
-      final ControlMessageResponse response,
-      final int expectedTotalPartitions,
-      final String... expectedTopics) {
+      final ControlMessageResponse response, final int expectedTotalPartitions) {
     final Map<String, Object> responseData = response.getData();
     assertThat(responseData).hasSize(1);
     final List<Map<String, Object>> partitions =
         (List<Map<String, Object>>) responseData.get("partitions");
     assertThat(partitions).isNotNull();
-    assertThat(partitions.size())
-        .isGreaterThanOrEqualTo(expectedTotalPartitions); // system partition included
-    assertThat(partitions).extracting("topic").contains((Object[]) expectedTopics);
+    assertThat(partitions.size()).isGreaterThanOrEqualTo(expectedTotalPartitions);
     assertThat(partitions).extracting("id").doesNotHaveDuplicates();
   }
 }

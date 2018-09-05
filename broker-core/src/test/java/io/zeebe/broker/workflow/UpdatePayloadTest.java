@@ -35,7 +35,7 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
-import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
+import io.zeebe.test.broker.protocol.clientapi.TestPartitionClient;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -61,11 +61,11 @@ public class UpdatePayloadTest {
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
-  private TestTopicClient testClient;
+  private TestPartitionClient testClient;
 
   @Before
   public void init() {
-    testClient = apiRule.topic();
+    testClient = apiRule.partition();
   }
 
   @Test
@@ -312,10 +312,10 @@ public class UpdatePayloadTest {
   }
 
   private ExecuteCommandResponse updatePayload(
-      long sourceRecordPosition,
+      final long sourceRecordPosition,
       final long workflowInstanceKey,
       final long activityInstanceKey,
-      byte[] payload)
+      final byte[] payload)
       throws Exception {
     return apiRule
         .createCmdRequest()

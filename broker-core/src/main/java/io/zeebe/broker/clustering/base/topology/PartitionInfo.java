@@ -17,30 +17,15 @@
  */
 package io.zeebe.broker.clustering.base.topology;
 
-import io.zeebe.util.buffer.BufferUtil;
 import java.util.Objects;
-import org.agrona.DirectBuffer;
 
 public class PartitionInfo {
-  private final String topicName;
-  private final DirectBuffer topicNameBuffer;
   private final int partitionId;
   private final int replicationFactor;
 
-  public PartitionInfo(
-      final DirectBuffer topicNameBuffer, final int partitionId, final int replicationFactor) {
-    this.topicName = BufferUtil.bufferAsString(topicNameBuffer);
-    this.topicNameBuffer = topicNameBuffer;
+  public PartitionInfo(final int partitionId, final int replicationFactor) {
     this.partitionId = partitionId;
     this.replicationFactor = replicationFactor;
-  }
-
-  public String getTopicName() {
-    return topicName;
-  }
-
-  public DirectBuffer getTopicNameBuffer() {
-    return topicNameBuffer;
   }
 
   public int getPartitionId() {
@@ -60,20 +45,21 @@ public class PartitionInfo {
       return false;
     }
     final PartitionInfo that = (PartitionInfo) o;
-    return partitionId == that.partitionId
-        && replicationFactor == that.replicationFactor
-        && BufferUtil.equals(topicNameBuffer, that.topicNameBuffer);
+    return partitionId == that.partitionId && replicationFactor == that.replicationFactor;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(topicNameBuffer, partitionId, replicationFactor);
+    return Objects.hash(partitionId, replicationFactor);
   }
 
   @Override
   public String toString() {
-    return String.format(
-        "Partition{topic=%s, partitionId=%d, replicationFactor=%d}",
-        topicName, partitionId, replicationFactor);
+    return "PartitionInfo{"
+        + "partitionId="
+        + partitionId
+        + ", replicationFactor="
+        + replicationFactor
+        + '}';
   }
 }

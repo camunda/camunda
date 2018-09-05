@@ -22,7 +22,6 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import io.zeebe.raft.RaftPersistentStorage;
 import io.zeebe.util.FileUtil;
-import io.zeebe.util.buffer.BufferUtil;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -32,7 +31,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import org.agrona.DirectBuffer;
 
 /**
  * Represents the configuration that Raft persists locally on the filesystem.
@@ -41,7 +39,6 @@ import org.agrona.DirectBuffer;
  *
  * <ul>
  *   <li>partition id
- *   <li>topic name
  *   <li>directory path of the local data directory of the logstream used
  * </ul>
  */
@@ -69,7 +66,10 @@ public class RaftPersistentConfiguration implements RaftPersistentStorage {
   private final File statesDirectory;
 
   public RaftPersistentConfiguration(
-      final File metaFile, File partitionLogDir, File partitionSnapshotsDir, File statesDir) {
+      final File metaFile,
+      final File partitionLogDir,
+      final File partitionSnapshotsDir,
+      final File statesDir) {
     this.logDirectory = partitionLogDir;
     this.snapshotsDirectory = partitionSnapshotsDir;
     this.statesDirectory = statesDir;
@@ -114,7 +114,7 @@ public class RaftPersistentConfiguration implements RaftPersistentStorage {
     return new ArrayList<>(configuration.getMembers());
   }
 
-  public RaftPersistentConfiguration setMembers(List<Integer> members) {
+  public RaftPersistentConfiguration setMembers(final List<Integer> members) {
     members.forEach(this::addMember);
     return this;
   }
@@ -142,7 +142,7 @@ public class RaftPersistentConfiguration implements RaftPersistentStorage {
     if (file.exists()) {
       final RaftConfigurationMetadata metadata;
 
-      try (InputStream is = new FileInputStream(file)) {
+      try (final InputStream is = new FileInputStream(file)) {
         metadata = JSON_READER.readValue(is);
       } catch (final IOException e) {
         throw new RuntimeException("Unable to read raft storage", e);
@@ -157,7 +157,7 @@ public class RaftPersistentConfiguration implements RaftPersistentStorage {
 
   @Override
   public RaftPersistentConfiguration save() {
-    try (FileOutputStream os = new FileOutputStream(tmpFile)) {
+    try (final FileOutputStream os = new FileOutputStream(tmpFile)) {
       os.write(JSON_WRITER.writeValueAsBytes(configuration));
       os.flush();
     } catch (final IOException e) {
@@ -173,10 +173,6 @@ public class RaftPersistentConfiguration implements RaftPersistentStorage {
     return this;
   }
 
-  public DirectBuffer getTopicName() {
-    return BufferUtil.wrapString(configuration.getTopicName());
-  }
-
   public int getPartitionId() {
     return configuration.getPartitionId();
   }
@@ -190,22 +186,17 @@ public class RaftPersistentConfiguration implements RaftPersistentStorage {
     return logDirectory;
   }
 
-  public RaftPersistentConfiguration setTopicName(DirectBuffer topicName) {
-    configuration.setTopicName(BufferUtil.bufferAsString(topicName));
-    return this;
-  }
-
-  public RaftPersistentConfiguration setPartitionId(int partitionId) {
+  public RaftPersistentConfiguration setPartitionId(final int partitionId) {
     configuration.setPartitionId(partitionId);
     return this;
   }
 
-  public RaftPersistentConfiguration setReplicationFactor(int replicationFactor) {
+  public RaftPersistentConfiguration setReplicationFactor(final int replicationFactor) {
     configuration.setReplicationFactor(replicationFactor);
     return this;
   }
 
-  public RaftPersistentConfiguration setLogSegmentSize(long value) {
+  public RaftPersistentConfiguration setLogSegmentSize(final long value) {
     configuration.setLogSegmentSize(value);
     return this;
   }

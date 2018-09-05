@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -79,7 +78,6 @@ public class CreateDeploymentTest {
             .partitionId(DEPLOYMENT_PARTITION)
             .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
             .command()
-            .put("topicName", DEFAULT_TOPIC)
             .put(
                 "resources",
                 Collections.singletonList(deploymentResource(bpmnXml(WORKFLOW), "process.bpmn")))
@@ -103,9 +101,9 @@ public class CreateDeploymentTest {
   public void shouldReturnDeployedWorkflowDefinitions() {
     // when
     final ExecuteCommandResponse firstDeployment =
-        apiRule.topic().deployWithResponse(WORKFLOW, "wf1.bpmn");
+        apiRule.partition().deployWithResponse(WORKFLOW, "wf1.bpmn");
     final ExecuteCommandResponse secondDeployment =
-        apiRule.topic().deployWithResponse(WORKFLOW, "wf2.bpmn");
+        apiRule.partition().deployWithResponse(WORKFLOW, "wf2.bpmn");
 
     // then
     List<Map<String, Object>> deployedWorkflows =
@@ -137,7 +135,7 @@ public class CreateDeploymentTest {
     // when
     final ExecuteCommandResponse resp =
         apiRule
-            .topic()
+            .partition()
             .deployWithResponse(
                 StreamUtil.read(resourceAsStream),
                 ResourceType.BPMN_XML.name(),
@@ -169,7 +167,6 @@ public class CreateDeploymentTest {
             .partitionId(Protocol.DEPLOYMENT_PARTITION)
             .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
             .command()
-            .put("topicName", DEFAULT_TOPIC)
             .put("resources", resources)
             .done()
             .sendAndAwait();
@@ -193,7 +190,7 @@ public class CreateDeploymentTest {
     final byte[] resource = Files.readAllBytes(path);
 
     // when
-    final ExecuteCommandResponse resp = apiRule.topic().deployWithResponse(resource);
+    final ExecuteCommandResponse resp = apiRule.partition().deployWithResponse(resource);
 
     // then
     final SubscribedRecord createDeploymentCommand = getFirstDeploymentCreateCommand();
@@ -214,7 +211,7 @@ public class CreateDeploymentTest {
     final byte[] resource = Files.readAllBytes(path);
 
     // when
-    final ExecuteCommandResponse resp = apiRule.topic().deployWithResponse(resource);
+    final ExecuteCommandResponse resp = apiRule.partition().deployWithResponse(resource);
 
     // then
     final SubscribedRecord createDeploymentCommand = getFirstDeploymentCreateCommand();
@@ -291,7 +288,7 @@ public class CreateDeploymentTest {
     // when
     final ExecuteCommandResponse resp =
         apiRule
-            .topic()
+            .partition()
             .deployWithResponse(
                 "not a workflow".getBytes(UTF_8), ResourceType.BPMN_XML.name(), "invalid.bpmn");
 
@@ -315,7 +312,7 @@ public class CreateDeploymentTest {
     // when
     final ExecuteCommandResponse resp =
         apiRule
-            .topic()
+            .partition()
             .deployWithResponse(
                 yamlWorkflow, ResourceType.YAML_WORKFLOW.name(), "simple-workflow.yaml");
 
@@ -334,8 +331,8 @@ public class CreateDeploymentTest {
     // given
 
     // when
-    final ExecuteCommandResponse d1 = apiRule.topic().deployWithResponse(WORKFLOW);
-    final ExecuteCommandResponse d2 = apiRule.topic().deployWithResponse(WORKFLOW);
+    final ExecuteCommandResponse d1 = apiRule.partition().deployWithResponse(WORKFLOW);
+    final ExecuteCommandResponse d2 = apiRule.partition().deployWithResponse(WORKFLOW);
 
     // then
     final Map<String, Object> workflow1 = getDeployedWorkflow(d1, 0);
@@ -370,7 +367,7 @@ public class CreateDeploymentTest {
 
   public SubscribedRecord getFirstDeploymentCreateCommand() {
     return apiRule
-        .topic(DEPLOYMENT_PARTITION)
+        .partition(DEPLOYMENT_PARTITION)
         .receiveRecords()
         .skipUntil(r -> r.valueType() == ValueType.DEPLOYMENT)
         .filter(r -> r.valueType() == ValueType.DEPLOYMENT && r.intent() == DeploymentIntent.CREATE)

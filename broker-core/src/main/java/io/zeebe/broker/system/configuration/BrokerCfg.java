@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class BrokerCfg {
-  private int bootstrap = 0;
 
   private NetworkCfg network = new NetworkCfg();
   private ClusterCfg cluster = new ClusterCfg();
@@ -33,7 +32,6 @@ public class BrokerCfg {
   private DataCfg data = new DataCfg();
   private GossipConfiguration gossip = new GossipConfiguration();
   private RaftConfiguration raft = new RaftConfiguration();
-  private List<TopicCfg> topics = new ArrayList<>();
   private List<ExporterCfg> exporters = new ArrayList<>();
 
   public void init(final String brokerBase) {
@@ -47,14 +45,6 @@ public class BrokerCfg {
     metrics.init(this, brokerBase, environment);
     data.init(this, brokerBase, environment);
     exporters.forEach(e -> e.init(this, brokerBase, environment));
-  }
-
-  public int getBootstrap() {
-    return bootstrap;
-  }
-
-  public void setBootstrap(final int bootstrap) {
-    this.bootstrap = bootstrap;
   }
 
   public NetworkCfg getNetwork() {
@@ -113,14 +103,6 @@ public class BrokerCfg {
     this.raft = raft;
   }
 
-  public List<TopicCfg> getTopics() {
-    return topics;
-  }
-
-  public void setTopics(final List<TopicCfg> topics) {
-    this.topics = topics;
-  }
-
   public List<ExporterCfg> getExporters() {
     return exporters;
   }
@@ -132,9 +114,7 @@ public class BrokerCfg {
   @Override
   public String toString() {
     return "BrokerCfg{"
-        + "bootstrap="
-        + bootstrap
-        + ", network="
+        + "network="
         + network
         + ", cluster="
         + cluster
@@ -148,8 +128,6 @@ public class BrokerCfg {
         + gossip
         + ", raft="
         + raft
-        + ", topics="
-        + topics
         + ", exporters="
         + exporters
         + '}';

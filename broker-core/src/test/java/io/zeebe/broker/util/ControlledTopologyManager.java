@@ -18,14 +18,7 @@
 package io.zeebe.broker.util;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
-import io.zeebe.broker.clustering.base.topology.NodeInfo;
-import io.zeebe.broker.clustering.base.topology.PartitionInfo;
-import io.zeebe.broker.clustering.base.topology.ReadableTopology;
-import io.zeebe.broker.clustering.base.topology.Topology;
-import io.zeebe.broker.clustering.base.topology.TopologyDto;
-import io.zeebe.broker.clustering.base.topology.TopologyManager;
-import io.zeebe.broker.clustering.base.topology.TopologyMemberListener;
-import io.zeebe.broker.clustering.base.topology.TopologyPartitionListener;
+import io.zeebe.broker.clustering.base.topology.*;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -62,7 +55,6 @@ public class ControlledTopologyManager implements TopologyManager {
     final PartitionInfo partitionInfo = partition.getInfo();
     topology.updatePartition(
         partitionInfo.getPartitionId(),
-        partitionInfo.getTopicNameBuffer(),
         partitionInfo.getReplicationFactor(),
         leaderInfo,
         RaftState.LEADER);

@@ -18,7 +18,6 @@
 package io.zeebe.broker.util;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.protocol.Protocol;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,7 +36,6 @@ public class LogStreamPrinterTest {
    */
   @Test
   public void testExistanceOfClass() {
-    LogStreamPrinter.printRecords(
-        brokerRule.getBroker(), Protocol.DEFAULT_TOPIC, apiRule.getDefaultPartitionId());
+    LogStreamPrinter.printRecords(brokerRule.getBroker(), apiRule.getDefaultPartitionId());
   }
 }

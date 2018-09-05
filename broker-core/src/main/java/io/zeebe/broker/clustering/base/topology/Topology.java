@@ -21,13 +21,11 @@ import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.topology.TopologyDto.BrokerDto;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.transport.SocketAddress;
-import io.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.Function;
-import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.slf4j.Logger;
 
@@ -175,16 +173,12 @@ public class Topology implements ReadableTopology {
   }
 
   public PartitionInfo updatePartition(
-      int partitionId,
-      DirectBuffer topicName,
-      int replicationFactor,
-      NodeInfo member,
-      RaftState state) {
+      int partitionId, int replicationFactor, NodeInfo member, RaftState state) {
     List<NodeInfo> followers = partitionFollowers.get(partitionId);
 
     PartitionInfo partition = partitions.get(partitionId);
     if (partition == null) {
-      partition = new PartitionInfo(topicName, partitionId, replicationFactor);
+      partition = new PartitionInfo(partitionId, replicationFactor);
       partitions.put(partitionId, partition);
     }
 
@@ -244,25 +238,20 @@ public class Topology implements ReadableTopology {
       broker.setPort(apiContactPoint.port());
 
       for (PartitionInfo partition : member.getLeaders()) {
-        final DirectBuffer topicName = BufferUtil.cloneBuffer(partition.getTopicNameBuffer());
 
         broker
             .partitionStates()
             .add()
             .setPartitionId(partition.getPartitionId())
-            .setTopicName(topicName, 0, topicName.capacity())
             .setReplicationFactor(partition.getReplicationFactor())
             .setState(RaftState.LEADER);
       }
 
       for (PartitionInfo partition : member.getFollowers()) {
-        final DirectBuffer topicName = BufferUtil.cloneBuffer(partition.getTopicNameBuffer());
-
         broker
             .partitionStates()
             .add()
             .setPartitionId(partition.getPartitionId())
-            .setTopicName(topicName, 0, topicName.capacity())
             .setReplicationFactor(partition.getReplicationFactor())
             .setState(RaftState.FOLLOWER);
       }

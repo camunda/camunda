@@ -21,18 +21,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.*;
 
-import io.zeebe.broker.clustering.api.ErrorResponse;
-import io.zeebe.broker.clustering.api.FetchSnapshotChunkRequest;
-import io.zeebe.broker.clustering.api.FetchSnapshotChunkResponse;
-import io.zeebe.broker.clustering.api.ListSnapshotsRequest;
-import io.zeebe.broker.clustering.api.ListSnapshotsResponse;
-import io.zeebe.broker.clustering.api.ManagementApiRequestHandler;
-import io.zeebe.broker.clustering.api.SnapshotReplicationRequestHandler;
+import io.zeebe.broker.clustering.api.*;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
@@ -51,7 +42,6 @@ import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.impl.RemoteAddressImpl;
-import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorControl;
@@ -469,7 +459,7 @@ public class ManagementApiRequestHandlerTest {
   }
 
   private Partition createAndTrackPartition(final int id, final SnapshotStorage storage) {
-    final PartitionInfo info = new PartitionInfo(BufferUtil.wrapString("test"), id, 1);
+    final PartitionInfo info = new PartitionInfo(id, 1);
     final Partition partition =
         new Partition(info, RaftState.LEADER) {
           @Override

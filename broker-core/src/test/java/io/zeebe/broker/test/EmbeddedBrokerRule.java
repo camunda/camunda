@@ -20,6 +20,7 @@ package io.zeebe.broker.test;
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.TestLoggers;
 import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
+import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.exporter.DebugExporter;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ExporterCfg;
@@ -113,7 +114,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
   private List<String> dataDirectories;
 
   @Override
-  public Statement apply(Statement base, Description description) {
+  public Statement apply(final Statement base, final Description description) {
     final Statement statement = recordingExporterTestWatcher.apply(base, description);
     return super.apply(statement, description);
   }
@@ -221,11 +222,11 @@ public class EmbeddedBrokerRule extends ExternalResource {
       // this is required in the broker-test suite, because the client rule does not perform request
       // retries
       // How to make it better: https://github.com/zeebe-io/zeebe/issues/196
-      final String systemTopicName = Protocol.SYSTEM_TOPIC + "-" + Protocol.SYSTEM_PARTITION;
+      final String partitionName = Partition.getPartitionName(Protocol.SYSTEM_PARTITION);
 
       serviceContainer
           .createService(TestService.NAME, new TestService())
-          .dependency(ClusterBaseLayerServiceNames.leaderPartitionServiceName(systemTopicName))
+          .dependency(ClusterBaseLayerServiceNames.leaderPartitionServiceName(partitionName))
           .dependency(
               TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME))
           .install()

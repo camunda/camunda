@@ -18,7 +18,6 @@
 package io.zeebe.broker.clustering.management.message;
 
 import static io.zeebe.test.util.BufferWriterUtil.assertEqualFieldsAfterWriteAndRead;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.zeebe.broker.clustering.api.ErrorResponse;
 import io.zeebe.broker.clustering.api.FetchSnapshotChunkRequest;
@@ -35,19 +34,13 @@ import org.junit.Test;
 
 public class ManagementMessageTest {
 
-  public static final DirectBuffer TOPIC_NAME = wrapString("test-topic");
-
   @Test
   public void testInvitationRequest() {
     final InvitationRequest invitationRequest =
-        new InvitationRequest()
-            .topicName(TOPIC_NAME)
-            .partitionId(111)
-            .term(222)
-            .members(Arrays.asList(12, 43));
+        new InvitationRequest().partitionId(111).term(222).members(Arrays.asList(12, 43));
 
     assertEqualFieldsAfterWriteAndRead(
-        invitationRequest, "topicName", "partitionId", "replicationFactor", "term", "members");
+        invitationRequest, "partitionId", "replicationFactor", "term", "members");
   }
 
   @Test

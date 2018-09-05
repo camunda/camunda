@@ -444,7 +444,7 @@ public class SnapshotReplicationServiceTest {
   }
 
   private Partition createPartition() {
-    final PartitionInfo info = new PartitionInfo(BufferUtil.wrapString("test"), 1, 1);
+    final PartitionInfo info = new PartitionInfo(1, 1);
     return new Partition(info, RaftState.FOLLOWER) {
       @Override
       public SnapshotStorage getSnapshotStorage() {

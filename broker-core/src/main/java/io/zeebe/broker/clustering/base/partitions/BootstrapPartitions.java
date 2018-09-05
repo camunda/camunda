@@ -20,8 +20,6 @@ package io.zeebe.broker.clustering.base.partitions;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.partitionInstallServiceName;
 import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_CLIENT_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.clientTransport;
-import static io.zeebe.protocol.Protocol.SYSTEM_TOPIC;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfiguration;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
@@ -33,7 +31,6 @@ import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
-import io.zeebe.util.buffer.BufferUtil;
 import java.util.Collections;
 import java.util.List;
 import org.agrona.collections.IntArrayList;
@@ -95,10 +92,7 @@ public class BootstrapPartitions implements Service<Object> {
     final RaftPersistentConfiguration configuration =
         configurationManager
             .createConfiguration(
-                wrapString(SYSTEM_TOPIC),
-                partitionId,
-                brokerCfg.getCluster().getReplicationFactor(),
-                members)
+                partitionId, brokerCfg.getCluster().getReplicationFactor(), members)
             .join();
 
     installPartition(startContext, configuration);
@@ -106,11 +100,7 @@ public class BootstrapPartitions implements Service<Object> {
 
   private void installPartition(
       final ServiceStartContext startContext, final RaftPersistentConfiguration configuration) {
-    final String partitionName =
-        String.format(
-            "%s-%d",
-            BufferUtil.bufferAsString(configuration.getTopicName()),
-            configuration.getPartitionId());
+    final String partitionName = Partition.getPartitionName(configuration.getPartitionId());
     final ServiceName<Void> partitionInstallServiceName =
         partitionInstallServiceName(partitionName);
     final boolean isInternalSystemPartition =
