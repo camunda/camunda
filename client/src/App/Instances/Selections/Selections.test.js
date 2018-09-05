@@ -120,6 +120,6 @@ describe('Selections', () => {
     await flushPromises();
 
     //then
-    expect(api.batchRetry).toHaveBeenCalled();
+    expect(api.batchRetry).toHaveBeenCalledWith(MockSelections[0].queries);
   });
 });

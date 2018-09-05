@@ -113,3 +113,7 @@ export const EVENT_TYPE = {
 export const EVENT_SOURCE_TYPE = {
   INCIDENT: 'INCIDENT'
 };
+
+export const BATCH_OPERATION_TYPE = {
+  UPDATE_RETRIES: 'UPDATE_RETRIES'
+};

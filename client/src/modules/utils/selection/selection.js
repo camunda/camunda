@@ -1,9 +1,4 @@
 export function getSelectionById(selections, id) {
-  return selections
-    .map(
-      (selection, index) =>
-        selection.selectionId === id && {...selection, index}
-    )
-    .filter(selection => selection.selectionId >= 0)
-    .shift();
+  const index = selections.findIndex(({selectionId}) => selectionId === id);
+  return {...selections[index], index};
 }
