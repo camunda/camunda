@@ -188,27 +188,29 @@ export default withErrorHandling(
     };
 
     updateReportResult = async (updates, data) => {
+      const {reportType, reportResult} = this.state;
+
       const updatedSomethingOtherThanConfiguration = Object.keys(updates).find(
         entry => entry !== 'configuration'
       );
       if (updatedSomethingOtherThanConfiguration && !this.onlyVisualizationChanged(updates)) {
-        let reportResult;
-        if (this.state.reportType === 'combined' || this.allFieldsAreSelected(data)) {
+        let newReportResult;
+        if (reportType === 'combined' || this.allFieldsAreSelected(data)) {
           this.setState({loadingReportData: true});
-          reportResult = await getReportData(data, this.state.reportType);
+          newReportResult = await getReportData(data, reportType);
           this.setState({loadingReportData: false});
         }
         if (!reportResult) {
-          reportResult = {data};
+          newReportResult = {reportType, data};
         }
-        this.setState({reportResult});
+        this.setState({reportResult: newReportResult});
       } else {
-        let reportResult = this.state.reportResult || {data};
+        let newReportResult = reportResult || {reportType, data};
         this.setState({
           reportResult: {
-            ...reportResult,
+            ...newReportResult,
             data: {
-              ...reportResult.data,
+              ...newReportResult.data,
               configuration: data.configuration,
               ...(data.visualization && {visualization: data.visualization}),
               ...(data.reportIds && {reportIds: data.reportIds})
@@ -266,12 +268,13 @@ export default withErrorHandling(
 
     cancel = async () => {
       let reportResult = await getReportData(this.id);
+      const {reportType, originalData, originalName} = this.state;
       if (!reportResult) {
-        reportResult = {data: this.state.originalData};
+        reportResult = {reportType, data: originalData};
       }
       this.setState({
-        name: this.state.originalName,
-        data: {...this.state.originalData},
+        name: originalName,
+        data: {...originalData},
         reportResult
       });
     };
@@ -370,7 +373,7 @@ export default withErrorHandling(
               )}
             </div>
             {reportType === 'combined' && (
-              <div className="columnSelectionPanel">
+              <div className="combinedSelectionPanel">
                 <CombinedSelectionPanel
                   reportResult={reportResult}
                   updateReport={this.updateReport}
@@ -428,7 +431,10 @@ export default withErrorHandling(
       });
 
     updateConfiguration = prop => newValue => {
-      const changes = {data: {configuration: {[prop]: {$set: newValue}}}};
+      const changes = {
+        reportType: this.state.reportType,
+        data: {configuration: {[prop]: {$set: newValue}}}
+      };
       this.setState(
         update(this.state, {
           ...changes,
