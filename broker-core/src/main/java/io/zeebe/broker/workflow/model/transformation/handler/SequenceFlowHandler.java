@@ -43,7 +43,7 @@ public class SequenceFlowHandler implements ModelElementTransformer<SequenceFlow
   }
 
   @Override
-  public void transform(SequenceFlow element, TransformContext context) {
+  public void transform(final SequenceFlow element, final TransformContext context) {
     final ExecutableWorkflow workflow = context.getCurrentWorkflow();
     final ExecutableSequenceFlow sequenceFlow =
         workflow.getElementById(element.getId(), ExecutableSequenceFlow.class);
@@ -53,7 +53,8 @@ public class SequenceFlowHandler implements ModelElementTransformer<SequenceFlow
     bindLifecycle(element, sequenceFlow);
   }
 
-  private void bindLifecycle(SequenceFlow element, final ExecutableSequenceFlow sequenceFlow) {
+  private void bindLifecycle(
+      final SequenceFlow element, final ExecutableSequenceFlow sequenceFlow) {
     final FlowNode target = element.getTarget();
 
     final BpmnStep step;
@@ -72,7 +73,7 @@ public class SequenceFlowHandler implements ModelElementTransformer<SequenceFlow
   }
 
   private void connectWithFlowNodes(
-      SequenceFlow element,
+      final SequenceFlow element,
       final ExecutableWorkflow workflow,
       final ExecutableSequenceFlow sequenceFlow) {
     final ExecutableFlowNode source =
@@ -84,7 +85,8 @@ public class SequenceFlowHandler implements ModelElementTransformer<SequenceFlow
     sequenceFlow.setTarget(target);
   }
 
-  private void compileCondition(SequenceFlow element, final ExecutableSequenceFlow sequenceFlow) {
+  private void compileCondition(
+      final SequenceFlow element, final ExecutableSequenceFlow sequenceFlow) {
     final ConditionExpression conditionExpression = element.getConditionExpression();
     if (conditionExpression != null) {
       final String rawExpression = conditionExpression.getTextContent();

@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.clustering.orchestration.topic;
+package io.zeebe.broker.clustering.orchestration.partitions;
 
 import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
@@ -30,7 +30,7 @@ public class PartitionNodes {
 
   private final List<NodeInfo> nodes;
 
-  public PartitionNodes(PartitionInfo partitionInfo) {
+  public PartitionNodes(final PartitionInfo partitionInfo) {
     this.partitionInfo = partitionInfo;
     this.followers = new ArrayList<>();
     this.nodes = new ArrayList<>();
@@ -48,7 +48,7 @@ public class PartitionNodes {
     return followers;
   }
 
-  public void addFollowers(List<NodeInfo> newNodes) {
+  public void addFollowers(final List<NodeInfo> newNodes) {
     followers.addAll(newNodes);
     nodes.addAll(newNodes);
   }
@@ -57,7 +57,7 @@ public class PartitionNodes {
     return leader;
   }
 
-  public void setLeader(NodeInfo newLeader) {
+  public void setLeader(final NodeInfo newLeader) {
     if (leader != null) {
       nodes.remove(leader);
     }

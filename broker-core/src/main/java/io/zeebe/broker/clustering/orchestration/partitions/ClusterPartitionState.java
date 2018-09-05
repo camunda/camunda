@@ -15,19 +15,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.clustering.orchestration.topic;
+package io.zeebe.broker.clustering.orchestration.partitions;
 
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
 import io.zeebe.broker.clustering.base.topology.ReadableTopology;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import org.agrona.DirectBuffer;
 
 public class ClusterPartitionState {
-  final Map<DirectBuffer, List<PartitionNodes>> state = new HashMap<>();
+  final List<PartitionNodes> state = new ArrayList<>();
 
   public static ClusterPartitionState computeCurrentState(final ReadableTopology topology) {
     final ClusterPartitionState currentState = new ClusterPartitionState();
@@ -37,8 +33,7 @@ public class ClusterPartitionState {
   }
 
   public void addPartition(final PartitionInfo partitionInfo, final ReadableTopology topology) {
-    final List<PartitionNodes> listOfPartitionNodes =
-        state.computeIfAbsent(partitionInfo.getTopicNameBuffer(), t -> new ArrayList<>());
+    final List<PartitionNodes> listOfPartitionNodes = state;
 
     final PartitionNodes newPartitionNodes = new PartitionNodes(partitionInfo);
     newPartitionNodes.setLeader(topology.getLeader(partitionInfo.getPartitionId()));
@@ -47,7 +42,7 @@ public class ClusterPartitionState {
     listOfPartitionNodes.add(newPartitionNodes);
   }
 
-  public List<PartitionNodes> getPartitions(final DirectBuffer topicName) {
-    return state.getOrDefault(topicName, Collections.emptyList());
+  public List<PartitionNodes> getPartitions() {
+    return state;
   }
 }

@@ -29,7 +29,6 @@ import io.zeebe.broker.clustering.base.raft.RaftPersistentConfiguration;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.clustering.gossip.MessageHeaderDecoder;
-import io.zeebe.clustering.management.CreatePartitionRequestDecoder;
 import io.zeebe.clustering.management.FetchSnapshotChunkRequestDecoder;
 import io.zeebe.clustering.management.InvitationRequestEncoder;
 import io.zeebe.clustering.management.InvitationResponseDecoder;
@@ -48,7 +47,6 @@ import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.buffer.DirectBufferWriter;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
@@ -63,7 +61,6 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
   private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
   private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
-  private final CreatePartitionRequest createPartitionRequest = new CreatePartitionRequest();
   private final InvitationRequest invitationRequest = new InvitationRequest();
 
   private final RaftPersistentConfigurationManager raftPersistentConfigurationManager;
@@ -107,11 +104,6 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
           {
             return onInvitationRequest(buffer, offset, length, output, remoteAddress, requestId);
           }
-        case CreatePartitionRequestDecoder.TEMPLATE_ID:
-          {
-            return onCreatePartitionRequest(
-                buffer, offset, length, output, remoteAddress, requestId);
-          }
         case ListSnapshotsRequestDecoder.TEMPLATE_ID:
           {
             sendResponseAsync(
@@ -134,32 +126,6 @@ public class ManagementApiRequestHandler implements ServerRequestHandler, Server
           }
       }
     }
-
-    return true;
-  }
-
-  private boolean onCreatePartitionRequest(
-      DirectBuffer buffer,
-      int offset,
-      int length,
-      ServerOutput output,
-      RemoteAddress remoteAddress,
-      long requestId) {
-    createPartitionRequest.wrap(buffer, offset, length);
-
-    final DirectBuffer topicName = BufferUtil.cloneBuffer(createPartitionRequest.getTopicName());
-    final int partitionId = createPartitionRequest.getPartitionId();
-    final int replicationFactor = createPartitionRequest.getReplicationFactor();
-    final List<Integer> members = Collections.emptyList();
-
-    LOG.info(
-        "Received create partition request for topic={}, partitionId={} and replicationFactor={}",
-        BufferUtil.bufferAsString(topicName),
-        partitionId,
-        replicationFactor);
-
-    installPartition(
-        topicName, partitionId, replicationFactor, members, output, remoteAddress, requestId);
 
     return true;
   }

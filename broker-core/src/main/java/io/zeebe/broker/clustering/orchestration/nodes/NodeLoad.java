@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.clustering.orchestration;
+package io.zeebe.broker.clustering.orchestration.nodes;
 
 import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
@@ -25,9 +25,9 @@ import java.util.Set;
 
 public class NodeLoad {
   private final NodeInfo nodeInfo;
-  private Set<PartitionInfo> load;
+  private final Set<PartitionInfo> load;
 
-  private Set<PartitionInfo> pendings;
+  private final Set<PartitionInfo> pendings;
 
   public NodeLoad(final NodeInfo nodeInfo) {
     this.nodeInfo = nodeInfo;
@@ -55,11 +55,11 @@ public class NodeLoad {
     return pendings;
   }
 
-  public boolean removePending(PartitionInfo partitionInfo) {
+  public boolean removePending(final PartitionInfo partitionInfo) {
     return pendings.remove(partitionInfo);
   }
 
-  public boolean doesNotHave(PartitionInfo forPartitionInfo) {
+  public boolean doesNotHave(final PartitionInfo forPartitionInfo) {
     return !load.contains(forPartitionInfo) && !pendings.contains(forPartitionInfo);
   }
 

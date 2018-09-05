@@ -24,16 +24,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 
-import io.zeebe.broker.clustering.orchestration.id.IdRecord;
-import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
 import io.zeebe.broker.exporter.record.value.DeploymentRecordValueImpl;
-import io.zeebe.broker.exporter.record.value.IdRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.IncidentRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.JobRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.MessageRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.MessageSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.RaftRecordValueImpl;
-import io.zeebe.broker.exporter.record.value.TopicRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.WorkflowInstanceRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.WorkflowInstanceSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.deployment.DeployedWorkflowImpl;
@@ -59,13 +55,11 @@ import io.zeebe.broker.workflow.deployment.data.ResourceType;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.RecordValue;
 import io.zeebe.exporter.record.value.DeploymentRecordValue;
-import io.zeebe.exporter.record.value.IdRecordValue;
 import io.zeebe.exporter.record.value.IncidentRecordValue;
 import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.exporter.record.value.MessageRecordValue;
 import io.zeebe.exporter.record.value.MessageSubscriptionRecordValue;
 import io.zeebe.exporter.record.value.RaftRecordValue;
-import io.zeebe.exporter.record.value.TopicRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.gateway.impl.data.ZeebeObjectMapperImpl;
@@ -73,14 +67,12 @@ import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.ExporterIntent;
-import io.zeebe.protocol.intent.IdIntent;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.intent.RaftIntent;
-import io.zeebe.protocol.intent.TopicIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.raft.event.RaftConfigurationEvent;
@@ -358,18 +350,6 @@ public class ExporterStreamProcessorTest {
   }
 
   @Test
-  public void shouldExportIdEvent() {
-    // given
-    final int id = 1;
-
-    final IdRecord record = new IdRecord().setId(id);
-    final IdRecordValue expectedRecordValue = new IdRecordValueImpl(OBJECT_MAPPER, id);
-
-    // then
-    assertRecordExported(IdIntent.GENERATED, record, expectedRecordValue);
-  }
-
-  @Test
   public void shouldExportDeploymentEvent() {
     // given
     final String resourceName = "resource";
@@ -575,29 +555,6 @@ public class ExporterStreamProcessorTest {
   }
 
   @Test
-  public void shouldExportTopicRecord() {
-    // given
-    final String topic = "test-topic";
-    final int partitions = 12;
-    final int replicationFactor = 34;
-    final List<Integer> partitionIds =
-        IntStream.of(partitions).boxed().collect(Collectors.toList());
-
-    final TopicRecord record =
-        new TopicRecord()
-            .setName(wrapString(topic))
-            .setPartitions(partitions)
-            .setReplicationFactor(replicationFactor);
-    partitionIds.forEach(i -> record.getPartitionIds().add().setValue(i));
-
-    final TopicRecordValue recordValue =
-        new TopicRecordValueImpl(OBJECT_MAPPER, topic, partitionIds, partitions, replicationFactor);
-
-    // then
-    assertRecordExported(TopicIntent.CREATED, record, recordValue);
-  }
-
-  @Test
   public void shouldExportWorkflowInstanceRecord() {
     // given
     final String bpmnProcessId = "test-process";
@@ -688,9 +645,8 @@ public class ExporterStreamProcessorTest {
   }
 
   private long writeEvent() {
-    final IdRecord event = new IdRecord();
-    event.setId(0);
-    return rule.writeEvent(IdIntent.GENERATED, event);
+    final DeploymentRecord event = new DeploymentRecord();
+    return rule.writeEvent(DeploymentIntent.CREATED, event);
   }
 
   private long writeExporterEvent(final String id, final long position) {

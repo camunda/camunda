@@ -47,7 +47,7 @@ import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.JobIntent;
-import io.zeebe.protocol.intent.TopicIntent;
+import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.TestUtil;
@@ -378,7 +378,7 @@ public class ClientApiMessageHandlerTest {
     // values are not present
     final int writtenLength =
         writeCommandRequestToBuffer(
-            buffer, LOG_STREAM_PARTITION_ID, null, ValueType.TOPIC, TopicIntent.CREATE);
+            buffer, LOG_STREAM_PARTITION_ID, null, ValueType.MESSAGE, MessageIntent.PUBLISH);
 
     // when
     final boolean isHandled =
@@ -424,7 +424,11 @@ public class ClientApiMessageHandlerTest {
   }
 
   protected int writeCommandRequestToBuffer(
-      UnsafeBuffer buffer, int partitionId, Short protocolVersion, ValueType type, Intent intent) {
+      final UnsafeBuffer buffer,
+      final int partitionId,
+      final Short protocolVersion,
+      final ValueType type,
+      final Intent intent) {
     int offset = 0;
 
     final int protocolVersionToWrite =
@@ -451,7 +455,7 @@ public class ClientApiMessageHandlerTest {
     return headerEncoder.encodedLength() + commandRequestEncoder.encodedLength();
   }
 
-  private int writeControlRequestToBuffer(UnsafeBuffer buffer) {
+  private int writeControlRequestToBuffer(final UnsafeBuffer buffer) {
     int offset = 0;
 
     headerEncoder
@@ -484,7 +488,7 @@ public class ClientApiMessageHandlerTest {
     };
   }
 
-  protected void waitForAvailableEvent(BufferedLogStreamReader logStreamReader) {
+  protected void waitForAvailableEvent(final BufferedLogStreamReader logStreamReader) {
     TestUtil.waitUntil(() -> logStreamReader.hasNext());
   }
 }

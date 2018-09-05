@@ -76,19 +76,6 @@ public class ClusterBaseLayerServiceNames {
   public static final ServiceName<Partition> FOLLOWER_PARTITION_GROUP_NAME =
       ServiceName.newServiceName("cluster.base.followerGroup", Partition.class);
 
-  public static final ServiceName<Partition> LEADER_PARTITION_SYSTEM_GROUP_NAME =
-      ServiceName.newServiceName("cluster.base.leaderGroup.system", Partition.class);
-
-  public static final ServiceName<Void> SYSTEM_PARTITION_BOOTSTRAP_SERVICE_NAME =
-      ServiceName.newServiceName("cluster.base.system.partition.bootstrap", Void.class);
-  public static final ServiceName<Void> SYSTEM_PARTITION_BOOTSTRAP_EXPECTED_SERVICE_NAME =
-      ServiceName.newServiceName("cluster.base.system.partition.bootstrap.expect", Void.class);
-  public static final ServiceName<Void> SYSTEM_PARTITION_BOOTSTRAP_REPLICATION_SERVICE_NAME =
-      ServiceName.newServiceName("cluster.base.system.partition.bootstrap.replication", Void.class);
-
-  public static final ServiceName<Void> DEFAULT_TOPICS_BOOTSTRAP_SERVICE_NAME =
-      ServiceName.newServiceName("cluster.base.bootstrap.defaultTopics", Void.class);
-
   public static final ServiceName<SnapshotReplicationInstallService>
       SNAPSHOT_REPLICATION_INSTALL_SERVICE_NAME =
           ServiceName.newServiceName(

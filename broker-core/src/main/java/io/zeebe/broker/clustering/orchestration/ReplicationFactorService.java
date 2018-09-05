@@ -15,17 +15,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.clustering.orchestration.topic;
+package io.zeebe.broker.clustering.orchestration;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.api.InvitationRequest;
 import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
-import io.zeebe.broker.clustering.orchestration.NodeSelector;
-import io.zeebe.broker.clustering.orchestration.state.KnownTopics;
-import io.zeebe.broker.clustering.orchestration.state.KnownTopicsListener;
-import io.zeebe.broker.clustering.orchestration.state.TopicInfo;
+import io.zeebe.broker.clustering.orchestration.nodes.NodeSelector;
+import io.zeebe.broker.clustering.orchestration.partitions.ClusterPartitionState;
+import io.zeebe.broker.clustering.orchestration.partitions.PartitionNodes;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
@@ -42,19 +41,16 @@ import java.util.Set;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 
-public class ReplicationFactorService extends Actor
-    implements Service<ReplicationFactorService>, KnownTopicsListener {
+public class ReplicationFactorService extends Actor implements Service<ReplicationFactorService> {
   private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
   public static final Duration TIMER_RATE = Duration.ofSeconds(1);
-  public static final Duration PENDING_TOPIC_CREATION_TIMEOUT = Duration.ofSeconds(30);
+  public static final Duration PENDING_CREATION_TIMEOUT = Duration.ofSeconds(30);
 
-  private final Injector<KnownTopics> stateInjector = new Injector<>();
   private final Injector<TopologyManager> topologyManagerInjector = new Injector<>();
   private final Injector<NodeSelector> nodeOrchestratingServiceInjector = new Injector<>();
   private final Injector<ClientTransport> managementClientApiInjector = new Injector<>();
 
-  private KnownTopics knownTopics;
   private TopologyManager topologyManager;
   private NodeSelector nodeSelector;
   private ClientTransport clientTransport;
@@ -63,12 +59,9 @@ public class ReplicationFactorService extends Actor
 
   @Override
   public void start(final ServiceStartContext startContext) {
-    knownTopics = stateInjector.getValue();
     topologyManager = topologyManagerInjector.getValue();
     nodeSelector = nodeOrchestratingServiceInjector.getValue();
     clientTransport = managementClientApiInjector.getValue();
-
-    knownTopics.registerTopicListener(this);
 
     pendingInvitations = new HashSet<>();
 
@@ -90,16 +83,7 @@ public class ReplicationFactorService extends Actor
     actor.runAtFixedRate(TIMER_RATE, this::checkCurrentState);
   }
 
-  @Override
-  public void topicCreated(final String topicName) {
-    actor.run(() -> checkCurrentState(topicName));
-  }
-
   private void checkCurrentState() {
-    checkCurrentState(null);
-  }
-
-  private void checkCurrentState(final String filterTopicName) {
     final ActorFuture<ClusterPartitionState> queryFuture =
         topologyManager.query(ClusterPartitionState::computeCurrentState);
 
@@ -107,63 +91,43 @@ public class ReplicationFactorService extends Actor
         queryFuture,
         (currentState, error) -> {
           if (error == null) {
-            computeStateDifferences(currentState, filterTopicName);
+            computeStateDifferences(currentState);
           } else {
             LOG.error("Unable to compute current cluster topic state from topology", error);
           }
         });
   }
 
-  private void computeStateDifferences(
-      final ClusterPartitionState currentState, final String filterTopicName) {
-    final ActorFuture<List<PartitionNodes>> requiredInvitationsFuture =
-        knownTopics.queryTopics(
-            topics -> computeRequiredInvitations(topics, currentState, filterTopicName));
+  private void computeStateDifferences(final ClusterPartitionState currentState) {
 
-    actor.runOnCompletion(
-        requiredInvitationsFuture,
-        (requiredInvitations, error) -> {
-          if (error == null) {
-            for (final PartitionNodes requiredInvitation : requiredInvitations) {
-              inviteMember(requiredInvitation);
+    final List<PartitionNodes> requiredInvitations = computeRequiredInvitations(currentState);
 
-              final int partitionId = requiredInvitation.getPartitionId();
-              pendingInvitations.add(partitionId);
-              actor.runDelayed(
-                  PENDING_TOPIC_CREATION_TIMEOUT, () -> pendingInvitations.remove(partitionId));
-            }
-          } else {
-            LOG.error("Unable to compute required invitations");
-          }
-        });
+    for (final PartitionNodes requiredInvitation : requiredInvitations) {
+      inviteMember(requiredInvitation);
+
+      final int partitionId = requiredInvitation.getPartitionId();
+      pendingInvitations.add(partitionId);
+      actor.runDelayed(PENDING_CREATION_TIMEOUT, () -> pendingInvitations.remove(partitionId));
+    }
   }
 
   private List<PartitionNodes> computeRequiredInvitations(
-      final Iterable<TopicInfo> topics,
-      final ClusterPartitionState currentState,
-      final String filterTopicName) {
+      final ClusterPartitionState currentState) {
     final List<PartitionNodes> requiredInvitations = new ArrayList<>();
 
-    for (final TopicInfo topic : topics) {
-      // limit invitations to topic name if specified
-      if (filterTopicName == null || filterTopicName.equals(topic.getTopicName())) {
-        final List<PartitionNodes> listOfPartitionNodes =
-            currentState.getPartitions(topic.getTopicNameBuffer());
-        for (final PartitionNodes partitionNode : listOfPartitionNodes) {
-          final int missingReplications =
-              partitionNode.getPartitionInfo().getReplicationFactor()
-                  - partitionNode.getNodes().size();
-          if (missingReplications > 0) {
-            final int partitionId = partitionNode.getPartitionId();
-            if (!pendingInvitations.contains(partitionId)) {
-              LOG.debug(
-                  "Inviting {} members for partition {}",
-                  missingReplications,
-                  partitionNode.getPartitionInfo());
-              for (int i = 0; i < missingReplications; i++) {
-                requiredInvitations.add(partitionNode);
-              }
-            }
+    final List<PartitionNodes> listOfPartitionNodes = currentState.getPartitions();
+    for (final PartitionNodes partitionNode : listOfPartitionNodes) {
+      final int missingReplications =
+          partitionNode.getPartitionInfo().getReplicationFactor() - partitionNode.getNodes().size();
+      if (missingReplications > 0) {
+        final int partitionId = partitionNode.getPartitionId();
+        if (!pendingInvitations.contains(partitionId)) {
+          LOG.debug(
+              "Inviting {} members for partition {}",
+              missingReplications,
+              partitionNode.getPartitionInfo());
+          for (int i = 0; i < missingReplications; i++) {
+            requiredInvitations.add(partitionNode);
           }
         }
       }
@@ -228,10 +192,6 @@ public class ReplicationFactorService extends Actor
   @Override
   public ReplicationFactorService get() {
     return this;
-  }
-
-  public Injector<KnownTopics> getStateInjector() {
-    return stateInjector;
   }
 
   public Injector<TopologyManager> getTopologyManagerInjector() {

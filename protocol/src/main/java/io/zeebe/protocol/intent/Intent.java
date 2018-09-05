@@ -23,12 +23,10 @@ public interface Intent {
   Collection<Class<? extends Intent>> INTENT_CLASSES =
       Arrays.asList(
           DeploymentIntent.class,
-          IdIntent.class,
           IncidentIntent.class,
           SubscriberIntent.class,
           SubscriptionIntent.class,
           JobIntent.class,
-          TopicIntent.class,
           WorkflowInstanceIntent.class,
           MessageIntent.class,
           MessageSubscriptionIntent.class,
@@ -53,12 +51,10 @@ public interface Intent {
 
   String name();
 
-  static Intent fromProtocolValue(ValueType valueType, short intent) {
+  static Intent fromProtocolValue(final ValueType valueType, final short intent) {
     switch (valueType) {
       case DEPLOYMENT:
         return DeploymentIntent.from(intent);
-      case ID:
-        return IdIntent.from(intent);
       case INCIDENT:
         return IncidentIntent.from(intent);
       case NOOP:
@@ -71,8 +67,6 @@ public interface Intent {
         return SubscriptionIntent.from(intent);
       case JOB:
         return JobIntent.from(intent);
-      case TOPIC:
-        return TopicIntent.from(intent);
       case WORKFLOW_INSTANCE:
         return WorkflowInstanceIntent.from(intent);
       case MESSAGE:
@@ -91,12 +85,10 @@ public interface Intent {
     }
   }
 
-  static Intent fromProtocolValue(ValueType valueType, String intent) {
+  static Intent fromProtocolValue(final ValueType valueType, final String intent) {
     switch (valueType) {
       case DEPLOYMENT:
         return DeploymentIntent.valueOf(intent);
-      case ID:
-        return IdIntent.valueOf(intent);
       case INCIDENT:
         return IncidentIntent.valueOf(intent);
       case NOOP:
@@ -109,8 +101,6 @@ public interface Intent {
         return SubscriptionIntent.valueOf(intent);
       case JOB:
         return JobIntent.valueOf(intent);
-      case TOPIC:
-        return TopicIntent.valueOf(intent);
       case WORKFLOW_INSTANCE:
         return WorkflowInstanceIntent.valueOf(intent);
       case MESSAGE:

@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.clustering.orchestration.topic;
+package io.zeebe.broker.clustering.orchestration.partitions;
 
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
@@ -24,13 +24,11 @@ import io.zeebe.broker.transport.controlmessage.AbstractControlMessageHandler;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.impl.RecordMetadata;
-import io.zeebe.servicecontainer.Service;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.sched.ActorControl;
 import org.agrona.DirectBuffer;
 
-public class RequestPartitionsMessageHandler extends AbstractControlMessageHandler
-    implements Service<RequestPartitionsMessageHandler> {
+public class RequestPartitionsMessageHandler extends AbstractControlMessageHandler {
 
   private final ClusterCfg clusterCfg;
 
@@ -38,11 +36,6 @@ public class RequestPartitionsMessageHandler extends AbstractControlMessageHandl
       final ServerOutput serverOutput, final ClusterCfg clusterCfg) {
     super(serverOutput);
     this.clusterCfg = clusterCfg;
-  }
-
-  @Override
-  public RequestPartitionsMessageHandler get() {
-    return this;
   }
 
   @Override

@@ -57,9 +57,6 @@ public class TopicSubscriptionService extends Actor
         // such events (e.g. ACKs)
         valueType != ValueType.SUBSCRIPTION
             && valueType != ValueType.SUBSCRIBER
-            &&
-            // don't push internal events
-            valueType != ValueType.ID
             && valueType != ValueType.NOOP;
       };
 
@@ -87,7 +84,7 @@ public class TopicSubscriptionService extends Actor
           .onRemove(this::onPartitionRemoved)
           .build();
 
-  public TopicSubscriptionService(ServiceContainer serviceContainer) {
+  public TopicSubscriptionService(final ServiceContainer serviceContainer) {
     this.serviceContainer = serviceContainer;
   }
 
@@ -113,7 +110,7 @@ public class TopicSubscriptionService extends Actor
   }
 
   @Override
-  public void start(ServiceStartContext startContext) {
+  public void start(final ServiceStartContext startContext) {
     this.streamProcessorServiceFactory = streamProcessorServiceFactoryInjector.getValue();
 
     final ServerTransport transport = clientApiTransportInjector.getValue();
@@ -126,11 +123,12 @@ public class TopicSubscriptionService extends Actor
   }
 
   @Override
-  public void stop(ServiceStopContext stopContext) {
+  public void stop(final ServiceStopContext stopContext) {
     actor.close();
   }
 
-  public void onPartitionAdded(ServiceName<Partition> partitionServiceName, Partition partition) {
+  public void onPartitionAdded(
+      final ServiceName<Partition> partitionServiceName, final Partition partition) {
     actor.call(
         () -> {
           final TopicSubscriptionManagementProcessor ackProcessor =
@@ -167,11 +165,12 @@ public class TopicSubscriptionService extends Actor
         });
   }
 
-  public void onPartitionRemoved(ServiceName<Partition> partitionServiceName, Partition partition) {
+  public void onPartitionRemoved(
+      final ServiceName<Partition> partitionServiceName, final Partition partition) {
     actor.call(() -> managersByPartition.remove(partition.getInfo().getPartitionId()));
   }
 
-  public void onClientChannelCloseAsync(int channelId) {
+  public void onClientChannelCloseAsync(final int channelId) {
     actor.call(
         () -> {
           managersByPartition.forEach(
@@ -203,10 +202,10 @@ public class TopicSubscriptionService extends Actor
   }
 
   @Override
-  public void onConnectionEstablished(RemoteAddress remoteAddress) {}
+  public void onConnectionEstablished(final RemoteAddress remoteAddress) {}
 
   @Override
-  public void onConnectionClosed(RemoteAddress remoteAddress) {
+  public void onConnectionClosed(final RemoteAddress remoteAddress) {
     onClientChannelCloseAsync(remoteAddress.getStreamId());
   }
 }

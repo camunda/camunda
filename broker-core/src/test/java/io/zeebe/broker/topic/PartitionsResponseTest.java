@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.broker.clustering.orchestration.topic.PartitionsResponse;
+import io.zeebe.broker.clustering.orchestration.partitions.PartitionsResponse;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.io.DirectBufferInputStream;

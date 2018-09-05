@@ -17,17 +17,13 @@
  */
 package io.zeebe.broker.exporter.stream;
 
-import io.zeebe.broker.clustering.orchestration.id.IdRecord;
-import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
 import io.zeebe.broker.exporter.record.RecordImpl;
 import io.zeebe.broker.exporter.record.value.DeploymentRecordValueImpl;
-import io.zeebe.broker.exporter.record.value.IdRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.IncidentRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.JobRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.MessageRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.MessageSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.RaftRecordValueImpl;
-import io.zeebe.broker.exporter.record.value.TopicRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.WorkflowInstanceRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.WorkflowInstanceSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.deployment.DeployedWorkflowImpl;
@@ -46,13 +42,11 @@ import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.RecordMetadata;
 import io.zeebe.exporter.record.RecordValue;
 import io.zeebe.exporter.record.value.DeploymentRecordValue;
-import io.zeebe.exporter.record.value.IdRecordValue;
 import io.zeebe.exporter.record.value.IncidentRecordValue;
 import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.exporter.record.value.MessageRecordValue;
 import io.zeebe.exporter.record.value.MessageSubscriptionRecordValue;
 import io.zeebe.exporter.record.value.RaftRecordValue;
-import io.zeebe.exporter.record.value.TopicRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.exporter.record.value.deployment.DeployedWorkflow;
@@ -61,7 +55,6 @@ import io.zeebe.exporter.record.value.deployment.ResourceType;
 import io.zeebe.exporter.record.value.raft.RaftMember;
 import io.zeebe.gateway.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.msgpack.value.IntegerValue;
 import io.zeebe.raft.event.RaftConfigurationEvent;
 import io.zeebe.raft.event.RaftConfigurationEventMember;
 import io.zeebe.util.buffer.BufferUtil;
@@ -88,9 +81,6 @@ public class ExporterRecordMapper {
       case DEPLOYMENT:
         valueSupplier = this::ofDeploymentRecord;
         break;
-      case ID:
-        valueSupplier = this::ofIdRecord;
-        break;
       case INCIDENT:
         valueSupplier = this::ofIncidentRecord;
         break;
@@ -105,9 +95,6 @@ public class ExporterRecordMapper {
         break;
       case RAFT:
         valueSupplier = this::ofRaftRecord;
-        break;
-      case TOPIC:
-        valueSupplier = this::ofTopicRecord;
         break;
       case WORKFLOW_INSTANCE:
         valueSupplier = this::ofWorkflowInstanceRecord;
@@ -139,13 +126,6 @@ public class ExporterRecordMapper {
   }
 
   // VALUE SUPPLIERS
-
-  private IdRecordValue ofIdRecord(final LoggedEvent event) {
-    final IdRecord record = new IdRecord();
-    event.readValue(record);
-
-    return new IdRecordValueImpl(objectMapper, record.getId());
-  }
 
   private RaftRecordValue ofRaftRecord(final LoggedEvent event) {
     final RaftConfigurationEvent record = new RaftConfigurationEvent();
@@ -252,23 +232,6 @@ public class ExporterRecordMapper {
         record.getWorkflowInstancePartitionId(),
         record.getWorkflowInstanceKey(),
         record.getActivityInstanceKey());
-  }
-
-  private TopicRecordValue ofTopicRecord(final LoggedEvent event) {
-    final TopicRecord record = new TopicRecord();
-    event.readValue(record);
-
-    final List<Integer> partitionIds = new ArrayList<>();
-    for (final IntegerValue partitionId : record.getPartitionIds()) {
-      partitionIds.add(partitionId.getValue());
-    }
-
-    return new TopicRecordValueImpl(
-        objectMapper,
-        asString(record.getName()),
-        partitionIds,
-        record.getPartitions(),
-        record.getReplicationFactor());
   }
 
   private WorkflowInstanceRecordValue ofWorkflowInstanceRecord(final LoggedEvent event) {

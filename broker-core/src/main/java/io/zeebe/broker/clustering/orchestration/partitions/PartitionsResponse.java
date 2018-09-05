@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.clustering.orchestration.topic;
+package io.zeebe.broker.clustering.orchestration.partitions;
 
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.ArrayProperty;
@@ -34,7 +34,7 @@ public class PartitionsResponse extends UnpackedObject {
     declareProperty(partitions);
   }
 
-  public void addPartition(int id, DirectBuffer topic) {
+  public void addPartition(final int id, final DirectBuffer topic) {
     final Partition partition = partitions.add();
 
     topicName.putBytes(0, topic, 0, topic.capacity());
@@ -54,11 +54,11 @@ public class PartitionsResponse extends UnpackedObject {
       declareProperty(idProperty).declareProperty(topicProperty);
     }
 
-    public void setId(int id) {
+    public void setId(final int id) {
       this.idProperty.setValue(id);
     }
 
-    public void setTopic(DirectBuffer topic, int offset, int length) {
+    public void setTopic(final DirectBuffer topic, final int offset, final int length) {
       this.topicProperty.setValue(topic, offset, length);
     }
   }

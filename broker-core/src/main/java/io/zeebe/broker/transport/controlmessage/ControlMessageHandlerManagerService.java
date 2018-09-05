@@ -19,9 +19,11 @@ package io.zeebe.broker.transport.controlmessage;
 
 import io.zeebe.broker.clustering.base.topology.RequestTopologyHandler;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
+import io.zeebe.broker.clustering.orchestration.partitions.RequestPartitionsMessageHandler;
 import io.zeebe.broker.event.handler.RemoveTopicSubscriptionHandler;
 import io.zeebe.broker.event.processor.TopicSubscriptionService;
 import io.zeebe.broker.job.JobSubscriptionManager;
+import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
@@ -46,6 +48,12 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
 
   protected ControlMessageHandlerManager service;
 
+  private final ClusterCfg clusterCfg;
+
+  public ControlMessageHandlerManagerService(ClusterCfg clusterCfg) {
+    this.clusterCfg = clusterCfg;
+  }
+
   @Override
   public void start(ServiceStartContext context) {
     final Dispatcher controlMessageBuffer = controlMessageBufferInjector.getValue();
@@ -66,7 +74,8 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
             new IncreaseJobSubscriptionCreditsHandler(output, jobSubscriptionManager),
             new RemoveJobSubscriptionHandler(output, jobSubscriptionManager),
             new RemoveTopicSubscriptionHandler(output, topicSubscriptionService),
-            new RequestTopologyHandler(output, topologyManager));
+            new RequestTopologyHandler(output, topologyManager),
+            new RequestPartitionsMessageHandler(output, clusterCfg));
 
     service =
         new ControlMessageHandlerManager(
