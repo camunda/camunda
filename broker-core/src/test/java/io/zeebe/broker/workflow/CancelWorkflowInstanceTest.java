@@ -237,10 +237,6 @@ public class CancelWorkflowInstanceTest {
 
     final SubscribedRecord processTerminatedEvent = terminatedElements.get(2);
     assertThat(processTerminatedEvent.value().get("activityId")).isEqualTo(PROCESS_ID);
-    assertThat(terminatedElements.get(2).sourceRecordPosition())
-        .describedAs(
-            "Only the second activity that terminated in the scope should have triggered scope termination")
-        .isEqualTo(terminatedElements.get(1).position());
   }
 
   @Test

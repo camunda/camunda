@@ -23,7 +23,6 @@ import static org.assertj.core.api.Assertions.tuple;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
 import io.zeebe.model.bpmn.instance.ServiceTask;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
@@ -42,20 +41,28 @@ public class ParallelGatewayTest {
 
   private static final String PROCESS_ID = "process";
 
-  private static final BpmnModelInstance FORK_PROCESS;
+  private static final BpmnModelInstance FORK_PROCESS =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent("start")
+          .parallelGateway("fork")
+          .serviceTask("task1", b -> b.zeebeTaskType("type1"))
+          .endEvent("end1")
+          .moveToNode("fork")
+          .serviceTask("task2", b -> b.zeebeTaskType("type2"))
+          .endEvent("end2")
+          .done();
 
-  static {
-    final AbstractFlowNodeBuilder<?, ?> builder =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent("start")
-            .parallelGateway("fork")
-            .serviceTask("task1", b -> b.zeebeTaskType("type1"))
-            .endEvent("end1")
-            .moveToNode("fork");
-
-    FORK_PROCESS =
-        builder.serviceTask("task2", b -> b.zeebeTaskType("type2")).endEvent("end2").done();
-  }
+  private static final BpmnModelInstance FORK_JOIN_PROCESS =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent("start")
+          .parallelGateway("fork")
+          .sequenceFlowId("flow1")
+          .parallelGateway("join")
+          .endEvent("end")
+          .moveToNode("fork")
+          .sequenceFlowId("flow2")
+          .connectTo("join")
+          .done();
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
   public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
@@ -246,8 +253,128 @@ public class ParallelGatewayTest {
             tuple(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETING));
   }
 
-  private static boolean isServiceTaskInProcess(
-      final String activityId, final BpmnModelInstance process) {
+  @Test
+  public void shouldMergeParallelBranches() {
+    // given
+    testClient.deploy(FORK_JOIN_PROCESS);
+
+    // when
+    final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
+
+    // then
+    final List<SubscribedRecord> events =
+        testClient
+            .receiveEvents()
+            .ofTypeWorkflowInstance()
+            .limit(
+                r ->
+                    r.key() == workflowInstanceKey
+                        && WorkflowInstanceIntent.ELEMENT_COMPLETED == r.intent())
+            .collect(Collectors.toList());
+
+    assertThat(events)
+        .extracting(e -> e.value().get("activityId"), e -> e.intent())
+        .containsSubsequence(
+            tuple("flow1", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("join", WorkflowInstanceIntent.GATEWAY_ACTIVATED))
+        .containsSubsequence(
+            tuple("flow2", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("join", WorkflowInstanceIntent.GATEWAY_ACTIVATED))
+        .containsOnlyOnce(tuple("join", WorkflowInstanceIntent.GATEWAY_ACTIVATED));
+  }
+
+  @Test
+  public void shouldOnlyTriggerGatewayWhenAllBranchesAreActivated() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .parallelGateway("fork")
+            .exclusiveGateway("exclusiveJoin")
+            .moveToLastGateway()
+            .connectTo("exclusiveJoin")
+            .sequenceFlowId("joinFlow1")
+            .parallelGateway("join")
+            .moveToNode("fork")
+            .serviceTask("waitState", b -> b.zeebeTaskType("type"))
+            .sequenceFlowId("joinFlow2")
+            .connectTo("join")
+            .endEvent()
+            .done();
+
+    testClient.deploy(process);
+
+    testClient.createWorkflowInstance(PROCESS_ID);
+
+    // waiting until we have signalled the first incoming sequence flow twice
+    // => this should not trigger the gateway yet
+    testClient
+        .receiveEvents()
+        .ofTypeWorkflowInstance()
+        .limit(r -> "joinFlow1".equals(r.value().get("activityId")))
+        .limit(2)
+        .skip(1)
+        .findFirst();
+
+    // when
+    // we complete the job
+    testClient.completeJobOfType("type");
+
+    // then
+    final List<SubscribedRecord> events =
+        testClient
+            .receiveEvents()
+            .ofTypeWorkflowInstance()
+            .limit(
+                r ->
+                    "join".equals(r.value().get("activityId"))
+                        && WorkflowInstanceIntent.GATEWAY_ACTIVATED == r.intent())
+            .collect(Collectors.toList());
+
+    assertThat(events)
+        .extracting(e -> e.value().get("activityId"), e -> e.intent())
+        .containsSubsequence(
+            tuple("joinFlow1", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("joinFlow1", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("joinFlow2", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN),
+            tuple("join", WorkflowInstanceIntent.GATEWAY_ACTIVATED));
+  }
+
+  @Test
+  public void shouldMergeAndSplitInOneGateway() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .parallelGateway("fork")
+            .parallelGateway("join-fork")
+            .moveToNode("fork")
+            .connectTo("join-fork")
+            .serviceTask("task1", b -> b.zeebeTaskType("type1"))
+            .moveToLastGateway()
+            .serviceTask("task2", b -> b.zeebeTaskType("type2"))
+            .done();
+
+    testClient.deploy(process);
+
+    // when
+    testClient.createWorkflowInstance(PROCESS_ID);
+
+    // then
+    final List<SubscribedRecord> elementInstances =
+        testClient
+            .receiveEvents()
+            .ofTypeWorkflowInstance()
+            .filter(r -> r.intent() == WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .limit(3)
+            .collect(Collectors.toList());
+
+    assertThat(elementInstances)
+        .extracting(e -> e.value().get("activityId"))
+        .contains(PROCESS_ID, "task1", "task2");
+  }
+
+  private static boolean isServiceTaskInProcess(String activityId, BpmnModelInstance process) {
     return process
         .getModelElementsByType(ServiceTask.class)
         .stream()

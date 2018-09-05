@@ -34,13 +34,11 @@ public class ConsumeTokenHandler implements BpmnStepHandler<ExecutableFlowNode> 
     final ElementInstance scopeInstance = context.getFlowScopeInstance();
     final WorkflowInstanceRecord scopeInstanceValue = scopeInstance.getValue();
 
-    scopeInstance.consumeTokens(1);
-
-    if (scopeInstance.getActiveTokens() == 0) {
+    if (scopeInstance.getNumberOfActiveExecutionPaths() == 0) {
       scopeInstanceValue.setPayload(value.getPayload());
 
       context
-          .getStreamWriter()
+          .getOutput()
           .writeFollowUpEvent(
               scopeInstanceKey, WorkflowInstanceIntent.ELEMENT_COMPLETING, scopeInstanceValue);
     }

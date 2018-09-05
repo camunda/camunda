@@ -87,7 +87,7 @@ public class DeploymentsStateController extends KeyStateController {
   public void foreach(final BiConsumer<Long, PendingDeploymentDistribution> consumer) {
     ensureIsOpened("foreach");
 
-    try (final RocksIterator rocksIterator = getDb().newIterator()) {
+    try (RocksIterator rocksIterator = getDb().newIterator()) {
       rocksIterator.seekToFirst();
 
       final UnsafeBuffer readBuffer = new UnsafeBuffer();

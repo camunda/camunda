@@ -31,6 +31,7 @@ public enum BpmnStep {
 
   // parallel gateway
   PARALLEL_SPLIT,
+  PARALLEL_MERGE,
 
   CREATE_JOB,
 

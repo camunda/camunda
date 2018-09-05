@@ -24,6 +24,7 @@ import java.util.List;
 
 public class ExecutableFlowNode extends ExecutableFlowElement {
 
+  private List<ExecutableSequenceFlow> incoming = new ArrayList<>();
   private List<ExecutableSequenceFlow> outgoing = new ArrayList<>();
 
   private Mapping[] inputMappings = new Mapping[0];
@@ -41,6 +42,14 @@ public class ExecutableFlowNode extends ExecutableFlowElement {
 
   public void addOutgoing(ExecutableSequenceFlow flow) {
     this.outgoing.add(flow);
+  }
+
+  public List<ExecutableSequenceFlow> getIncoming() {
+    return incoming;
+  }
+
+  public void addIncoming(ExecutableSequenceFlow flow) {
+    this.incoming.add(flow);
   }
 
   public Mapping[] getInputMappings() {

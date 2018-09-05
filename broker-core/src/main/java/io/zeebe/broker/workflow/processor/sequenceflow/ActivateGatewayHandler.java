@@ -35,6 +35,6 @@ public class ActivateGatewayHandler implements BpmnStepHandler<ExecutableSequenc
     final WorkflowInstanceRecord value = context.getValue();
     value.setActivityId(targetNode.getId());
 
-    context.getStreamWriter().writeNewEvent(WorkflowInstanceIntent.GATEWAY_ACTIVATED, value);
+    context.getOutput().writeNewEvent(WorkflowInstanceIntent.GATEWAY_ACTIVATED, value);
   }
 }

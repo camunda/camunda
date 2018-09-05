@@ -21,7 +21,7 @@ import io.zeebe.broker.workflow.index.ElementInstance;
 import io.zeebe.broker.workflow.model.ExecutableFlowElementContainer;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
-import io.zeebe.broker.workflow.processor.ElementInstanceWriter;
+import io.zeebe.broker.workflow.processor.EventOutput;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.List;
 
@@ -33,12 +33,7 @@ public class TerminateContainedElementsHandler
     final ElementInstance subProcessInstance = context.getElementInstance();
 
     final List<ElementInstance> children = subProcessInstance.getChildren();
-    final ElementInstanceWriter streamWriter = context.getStreamWriter();
-
-    final int activeTokens = subProcessInstance.getActiveTokens();
-    // all execution paths that are not currently represented as element instances terminate
-    // immediately
-    subProcessInstance.consumeTokens(activeTokens - children.size());
+    final EventOutput streamWriter = context.getOutput();
 
     if (children.isEmpty()) {
       streamWriter.writeFollowUpEvent(
@@ -54,7 +49,7 @@ public class TerminateContainedElementsHandler
 
         if (child.canTerminate()) {
           context
-              .getStreamWriter()
+              .getOutput()
               .writeFollowUpEvent(
                   child.getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATING, child.getValue());
         }

@@ -26,7 +26,7 @@ import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriterImpl;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.broker.workflow.index.ElementInstance;
-import io.zeebe.broker.workflow.index.ElementInstanceIndex;
+import io.zeebe.broker.workflow.index.WorkflowEngineState;
 import io.zeebe.broker.workflow.model.ExecutableFlowElement;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
@@ -37,7 +37,7 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
   private TypedRecord<WorkflowInstanceRecord> record;
   private ExecutableFlowElement element;
   private TypedCommandWriter commandWriter;
-  private ElementInstanceWriter streamWriter;
+  private EventOutput eventOutput;
   private Consumer<SideEffectProducer> sideEffect;
 
   private ElementInstance flowScopeInstance;
@@ -45,9 +45,9 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
 
   private final IncidentRecord incidentCommand = new IncidentRecord();
 
-  public BpmnStepContext(ElementInstanceIndex scopeInstances, WorkflowInstanceMetrics metrics) {
+  public BpmnStepContext(WorkflowEngineState state) {
 
-    this.streamWriter = new ElementInstanceWriter(scopeInstances, metrics);
+    this.eventOutput = new EventOutput(state);
   }
 
   public TypedRecord<WorkflowInstanceRecord> getRecord() {
@@ -74,12 +74,12 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
     this.element = element;
   }
 
-  public ElementInstanceWriter getStreamWriter() {
-    return streamWriter;
+  public EventOutput getOutput() {
+    return eventOutput;
   }
 
   public void setStreamWriter(TypedStreamWriter streamWriter) {
-    this.streamWriter.setStreamWriter(streamWriter);
+    this.eventOutput.setStreamWriter(streamWriter);
     this.commandWriter = streamWriter;
   }
 

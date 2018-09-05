@@ -17,27 +17,20 @@
  */
 package io.zeebe.broker.workflow.index;
 
+import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.broker.workflow.processor.WorkflowInstanceLifecycle;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
-import org.agrona.ExpandableDirectByteBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class ElementInstance implements Serializable {
 
   private static final long serialVersionUID = 1L;
 
-  private final long key;
+  private final IndexedRecord elementRecord;
   private final ElementInstance parent;
-
-  private WorkflowInstanceIntent state;
-
-  private transient ExpandableDirectByteBuffer valueBuffer = new ExpandableDirectByteBuffer();
-  private transient WorkflowInstanceRecord value = new WorkflowInstanceRecord();
 
   private List<ElementInstance> children = new ArrayList<>();
 
@@ -45,8 +38,11 @@ public class ElementInstance implements Serializable {
 
   private int activeTokens = 0;
 
+  // records in this scope that have been stored for later reference
+  private List<IndexedRecord> storedRecords = new ArrayList<>();
+
   public ElementInstance(long key, ElementInstance parent) {
-    this.key = key;
+    this.elementRecord = new IndexedRecord(key);
     this.parent = parent;
 
     if (this.parent != null) {
@@ -55,27 +51,23 @@ public class ElementInstance implements Serializable {
   }
 
   public long getKey() {
-    return key;
+    return elementRecord.getKey();
   }
 
   public WorkflowInstanceIntent getState() {
-    return state;
+    return elementRecord.getState();
   }
 
   public void setState(WorkflowInstanceIntent state) {
-    this.state = state;
+    this.elementRecord.setState(state);
   }
 
   public WorkflowInstanceRecord getValue() {
-    return value;
+    return elementRecord.getValue();
   }
 
   public void setValue(WorkflowInstanceRecord value) {
-    final int encodedLength = value.getLength();
-    valueBuffer.checkLimit(encodedLength);
-    value.write(valueBuffer, 0);
-
-    this.value.wrap(valueBuffer, 0, encodedLength);
+    this.elementRecord.setValue(value);
   }
 
   public ElementInstance getParent() {
@@ -94,6 +86,22 @@ public class ElementInstance implements Serializable {
     this.jobKey = jobKey;
   }
 
+  public List<IndexedRecord> getStoredRecords() {
+    return storedRecords;
+  }
+
+  public void storeRecord(TypedRecord<WorkflowInstanceRecord> record) {
+    final IndexedRecord indexedRecord = new IndexedRecord(record.getKey());
+    indexedRecord.setState((WorkflowInstanceIntent) record.getMetadata().getIntent());
+    indexedRecord.setValue(record.getValue());
+
+    storedRecords.add(indexedRecord);
+  }
+
+  public boolean removeStoredRecords(long key) {
+    return storedRecords.removeIf(r -> r.getKey() == key);
+  }
+
   private void addChild(ElementInstance scopeInstance) {
     this.children.add(scopeInstance);
   }
@@ -109,44 +117,26 @@ public class ElementInstance implements Serializable {
   }
 
   public boolean canTerminate() {
-    return WorkflowInstanceLifecycle.canTerminate(state);
+    return WorkflowInstanceLifecycle.canTerminate(getState());
   }
 
-  public void spawnTokens(int number) {
-    this.activeTokens += number;
+  public void spawnToken() {
+    this.activeTokens += 1;
   }
 
-  public void consumeTokens(int number) {
-    this.activeTokens -= number;
+  public void consumeToken() {
+    this.activeTokens -= 1;
   }
 
-  public int getActiveTokens() {
+  public int getNumberOfActiveTokens() {
     return activeTokens;
   }
 
-  private void writeObject(java.io.ObjectOutputStream out) throws IOException {
-    out.defaultWriteObject();
-
-    final byte[] valueArray = new byte[value.getLength()];
-    out.writeInt(valueArray.length);
-
-    final UnsafeBuffer buf = new UnsafeBuffer(valueArray);
-    value.write(buf, 0);
-
-    out.write(valueArray);
+  public int getNumberOfActiveElementInstances() {
+    return children.size();
   }
 
-  private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException {
-    in.defaultReadObject();
-    final int valueLength = in.readInt();
-
-    final byte[] valueArray = new byte[valueLength];
-    in.readFully(valueArray);
-
-    valueBuffer = new ExpandableDirectByteBuffer();
-    value = new WorkflowInstanceRecord();
-
-    valueBuffer.putBytes(0, valueArray);
-    value.wrap(valueBuffer, 0, valueLength);
+  public int getNumberOfActiveExecutionPaths() {
+    return activeTokens + getNumberOfActiveElementInstances();
   }
 }

@@ -23,7 +23,7 @@ import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.broker.workflow.model.ExecutableFlowNode;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
-import io.zeebe.broker.workflow.processor.ElementInstanceWriter;
+import io.zeebe.broker.workflow.processor.EventOutput;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class TerminateElementHandler implements BpmnStepHandler<ExecutableFlowNode> {
@@ -32,7 +32,7 @@ public class TerminateElementHandler implements BpmnStepHandler<ExecutableFlowNo
   public void handle(BpmnStepContext<ExecutableFlowNode> context) {
     final TypedRecord<WorkflowInstanceRecord> terminatingRecord = context.getRecord();
 
-    final ElementInstanceWriter instanceWriter = context.getStreamWriter();
+    final EventOutput instanceWriter = context.getOutput();
     instanceWriter.newBatch();
 
     addTerminatingRecords(context, instanceWriter.getBatchWriter());

@@ -43,14 +43,29 @@ public class ExclusiveSplitHandler implements BpmnStepHandler<ExecutableExclusiv
 
       if (sequenceFlow != null) {
         value.setActivityId(sequenceFlow.getId());
-        context.getStreamWriter().writeNewEvent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, value);
+        context.getOutput().writeNewEvent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, value);
       } else {
         final String errorMessage = "All conditions evaluated to false and no default flow is set.";
-        context.raiseIncident(ErrorType.CONDITION_ERROR, errorMessage);
+        raiseIncident(context, errorMessage);
       }
     } catch (JsonConditionException e) {
-      context.raiseIncident(ErrorType.CONDITION_ERROR, e.getMessage());
+      raiseIncident(context, e.getMessage());
     }
+  }
+
+  private void raiseIncident(
+      BpmnStepContext<ExecutableExclusiveGateway> context, final String errorMessage) {
+    context.raiseIncident(ErrorType.CONDITION_ERROR, errorMessage);
+
+    // TODO: this is a hack to avoid that we believe this token is consumed when the incident is
+    // raised (because no follow-up token event is published), which could wrongfully lead to
+    // scope completion on a parallel branch.
+    // Ideas to resolve this:
+    //     - explicitly represent incidents in the index, so we can consider them when checking if a
+    // scope can complete etc.
+    //     - rework incident concept via https://github.com/zeebe-io/zeebe/issues/1033; maybe this
+    // will also then go away
+    context.getFlowScopeInstance().spawnToken();
   }
 
   private ExecutableSequenceFlow getSequenceFlowWithFulfilledCondition(

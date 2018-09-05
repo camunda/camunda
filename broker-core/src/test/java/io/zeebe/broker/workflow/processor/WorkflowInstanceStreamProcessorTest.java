@@ -20,52 +20,36 @@ package io.zeebe.broker.workflow.processor;
 import static io.zeebe.broker.subscription.message.processor.MessageStreamProcessor.SUBSCRIPTION_CHECK_INTERVAL;
 import static io.zeebe.broker.subscription.message.processor.MessageStreamProcessor.SUBSCRIPTION_TIMEOUT;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
-import io.zeebe.broker.clustering.base.topology.TopologyManager;
-import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
-import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.topic.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
-import io.zeebe.broker.workflow.deployment.data.DeploymentRecord;
-import io.zeebe.broker.workflow.deployment.data.ResourceType;
-import io.zeebe.broker.workflow.map.WorkflowCache;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.util.buffer.BufferUtil;
-import java.io.ByteArrayOutputStream;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.junit.rules.RuleChain;
 
 public class WorkflowInstanceStreamProcessorTest {
 
   private static final String PROCESS_ID = "process";
-  private static final DirectBuffer PROCESS_ID_BUFFER = BufferUtil.wrapString(PROCESS_ID);
 
   private static final BpmnModelInstance SERVICE_TASK_WORKFLOW =
       Bpmn.createExecutableProcess(PROCESS_ID)
@@ -96,67 +80,49 @@ public class WorkflowInstanceStreamProcessorTest {
               c -> c.message(m -> m.name("order canceled").zeebeCorrelationKey("$.orderId")))
           .done();
 
-  @Rule public StreamProcessorRule rule = new StreamProcessorRule();
+  public StreamProcessorRule envRule = new StreamProcessorRule();
+  public WorkflowInstanceStreamProcessorRule streamProcessorRule =
+      new WorkflowInstanceStreamProcessorRule(envRule);
 
-  @Mock private SubscriptionCommandSender mockSubscriptionCommandSender;
-  @Mock private TopologyManager mockTopologyManager;
+  @Rule public RuleChain chain = RuleChain.outerRule(envRule).around(streamProcessorRule);
 
   private StreamProcessorControl streamProcessor;
-  private WorkflowCache workflowCache;
 
   @Before
   public void setUp() {
-    MockitoAnnotations.initMocks(this);
-
-    workflowCache = new WorkflowCache();
-
-    when(mockSubscriptionCommandSender.hasPartitionIds()).thenReturn(true);
-    when(mockSubscriptionCommandSender.openMessageSubscription(anyLong(), anyLong(), any(), any()))
-        .thenReturn(true);
-    when(mockSubscriptionCommandSender.correlateMessageSubscription(
-            anyInt(), anyLong(), anyLong(), any()))
-        .thenReturn(true);
-
-    streamProcessor =
-        rule.runStreamProcessor(
-            env -> {
-              final WorkflowInstanceStreamProcessor streamProcessor =
-                  new WorkflowInstanceStreamProcessor(
-                      workflowCache, mockSubscriptionCommandSender, mockTopologyManager);
-
-              return streamProcessor.createStreamProcessor(env);
-            });
+    streamProcessor = streamProcessorRule.getStreamProcessor();
   }
 
   @Test
   public void shouldRejectCancellationInDirectSuccession() {
     // given
-    deploy(SERVICE_TASK_WORKFLOW);
+    streamProcessorRule.deploy(SERVICE_TASK_WORKFLOW);
 
     streamProcessor.blockAfterJobEvent(r -> r.getMetadata().getIntent() == JobIntent.CREATE);
 
-    final TypedRecord<WorkflowInstanceRecord> createdEvent = createWorkflowInstance();
+    final TypedRecord<WorkflowInstanceRecord> createdEvent =
+        streamProcessorRule.createWorkflowInstance(PROCESS_ID);
     waitUntil(() -> streamProcessor.isBlocked());
 
-    rule.writeCommand(
+    envRule.writeCommand(
         createdEvent.getKey(), WorkflowInstanceIntent.CANCEL, createdEvent.getValue());
     final long secondCommandPosition =
-        rule.writeCommand(
+        envRule.writeCommand(
             createdEvent.getKey(), WorkflowInstanceIntent.CANCEL, createdEvent.getValue());
 
     // when
     streamProcessor.unblock();
 
     // then
-    awaitElementInState("process", WorkflowInstanceIntent.ELEMENT_TERMINATED);
+    streamProcessorRule.awaitElementInState("process", WorkflowInstanceIntent.ELEMENT_TERMINATED);
 
     final List<WorkflowInstanceIntent> workflowInstanceLifecycle =
-        rule.events().onlyStatesOf("process").collect(Collectors.toList());
+        envRule.events().onlyStatesOf("process").collect(Collectors.toList());
 
     LifecycleAssert.assertThat(workflowInstanceLifecycle).compliesWithCompleteLifecycle();
 
     final TypedRecord<WorkflowInstanceRecord> rejection =
-        rule.events().onlyWorkflowInstanceRecords().onlyRejections().findFirst().get();
+        envRule.events().onlyWorkflowInstanceRecords().onlyRejections().findFirst().get();
 
     assertThat(rejection.getMetadata().getIntent()).isEqualTo(WorkflowInstanceIntent.CANCEL);
     assertThat(rejection.getSourcePosition()).isEqualTo(secondCommandPosition);
@@ -167,30 +133,31 @@ public class WorkflowInstanceStreamProcessorTest {
   @Test
   public void shouldCancelActivityInStateReady() throws InterruptedException {
     // given
-    deploy(SERVICE_TASK_WORKFLOW);
+    streamProcessorRule.deploy(SERVICE_TASK_WORKFLOW);
 
     streamProcessor.blockAfterWorkflowInstanceRecord(
         isForElement("start")); // blocks before handling sequence flow taken
 
-    final TypedRecord<WorkflowInstanceRecord> createdEvent = createWorkflowInstance();
+    final TypedRecord<WorkflowInstanceRecord> createdEvent =
+        streamProcessorRule.createWorkflowInstance(PROCESS_ID);
     waitUntil(() -> streamProcessor.isBlocked());
 
     // when
-    rule.writeCommand(
+    envRule.writeCommand(
         createdEvent.getKey(), WorkflowInstanceIntent.CANCEL, createdEvent.getValue());
     streamProcessor.unblock();
 
     // then
-    awaitElementInState(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_TERMINATED);
+    streamProcessorRule.awaitElementInState(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_TERMINATED);
 
     final List<TypedRecord<WorkflowInstanceRecord>> records =
-        rule.events().onlyWorkflowInstanceRecords().collect(Collectors.toList());
+        envRule.events().onlyWorkflowInstanceRecords().collect(Collectors.toList());
 
     final List<WorkflowInstanceIntent> workflowInstanceLifecycle =
-        rule.events().onlyStatesOf("process").collect(Collectors.toList());
+        envRule.events().onlyStatesOf("process").collect(Collectors.toList());
 
     final List<WorkflowInstanceIntent> taskLifecycle =
-        rule.events().onlyStatesOf("task").collect(Collectors.toList());
+        envRule.events().onlyStatesOf("task").collect(Collectors.toList());
 
     LifecycleAssert.assertThat(workflowInstanceLifecycle)
         .compliesWithCompleteLifecycle()
@@ -204,34 +171,35 @@ public class WorkflowInstanceStreamProcessorTest {
   @Test
   public void shouldCancelScopeBeforeTakingSequenceFlow() {
     // given
-    deploy(SERVICE_TASK_WORKFLOW);
+    streamProcessorRule.deploy(SERVICE_TASK_WORKFLOW);
 
     // stop when ELEMENT_COMPLETED is written
     streamProcessor.blockAfterWorkflowInstanceRecord(
         r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_COMPLETING);
 
-    final TypedRecord<WorkflowInstanceRecord> createdEvent = createWorkflowInstance();
+    final TypedRecord<WorkflowInstanceRecord> createdEvent =
+        streamProcessorRule.createWorkflowInstance(PROCESS_ID);
 
-    completeJob();
+    streamProcessorRule.completeFirstJob();
 
     waitUntil(() -> streamProcessor.isBlocked());
 
     // when
-    rule.writeCommand(
+    envRule.writeCommand(
         createdEvent.getKey(), WorkflowInstanceIntent.CANCEL, createdEvent.getValue());
     streamProcessor.unblock();
 
     // then
-    awaitElementInState(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_TERMINATED);
+    streamProcessorRule.awaitElementInState(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_TERMINATED);
 
     final List<TypedRecord<WorkflowInstanceRecord>> records =
-        rule.events().onlyWorkflowInstanceRecords().collect(Collectors.toList());
+        envRule.events().onlyWorkflowInstanceRecords().collect(Collectors.toList());
 
     final List<WorkflowInstanceIntent> workflowInstanceLifecycle =
-        rule.events().onlyStatesOf("process").collect(Collectors.toList());
+        envRule.events().onlyStatesOf("process").collect(Collectors.toList());
 
     final List<WorkflowInstanceIntent> taskLifecycle =
-        rule.events().onlyStatesOf("task").collect(Collectors.toList());
+        envRule.events().onlyStatesOf("task").collect(Collectors.toList());
 
     LifecycleAssert.assertThat(workflowInstanceLifecycle)
         .compliesWithCompleteLifecycle()
@@ -242,43 +210,37 @@ public class WorkflowInstanceStreamProcessorTest {
         .doesNotEvaluateFlowAfterTerminatingElement("process");
   }
 
-  private void completeJob() {
-    final TypedRecord<JobRecord> createCommand = awaitAndGetFirstRecordInState(JobIntent.CREATE);
-
-    final long jobKey = rule.writeEvent(JobIntent.CREATED, createCommand.getValue());
-    rule.writeEvent(jobKey, JobIntent.COMPLETED, createCommand.getValue());
-  }
-
   @Test
   public void shouldCancelActivityInStateCompleting() {
     // given
-    deploy(SERVICE_TASK_WORKFLOW);
+    streamProcessorRule.deploy(SERVICE_TASK_WORKFLOW);
 
     // stop when ELEMENT_COMPLETING is written
     streamProcessor.blockAfterJobEvent(r -> r.getMetadata().getIntent() == JobIntent.COMPLETED);
 
-    final TypedRecord<WorkflowInstanceRecord> createdEvent = createWorkflowInstance();
+    final TypedRecord<WorkflowInstanceRecord> createdEvent =
+        streamProcessorRule.createWorkflowInstance(PROCESS_ID);
 
-    completeJob();
+    streamProcessorRule.completeFirstJob();
 
     waitUntil(() -> streamProcessor.isBlocked());
 
     // when
-    rule.writeCommand(
+    envRule.writeCommand(
         createdEvent.getKey(), WorkflowInstanceIntent.CANCEL, createdEvent.getValue());
     streamProcessor.unblock();
 
     // then
-    awaitElementInState(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_TERMINATED);
+    streamProcessorRule.awaitElementInState(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_TERMINATED);
 
     final List<TypedRecord<WorkflowInstanceRecord>> records =
-        rule.events().onlyWorkflowInstanceRecords().collect(Collectors.toList());
+        envRule.events().onlyWorkflowInstanceRecords().collect(Collectors.toList());
 
     final List<WorkflowInstanceIntent> workflowInstanceLifecycle =
-        rule.events().onlyStatesOf("process").collect(Collectors.toList());
+        envRule.events().onlyStatesOf("process").collect(Collectors.toList());
 
     final List<WorkflowInstanceIntent> taskLifecycle =
-        rule.events().onlyStatesOf("task").collect(Collectors.toList());
+        envRule.events().onlyStatesOf("task").collect(Collectors.toList());
 
     LifecycleAssert.assertThat(workflowInstanceLifecycle)
         .compliesWithCompleteLifecycle()
@@ -292,29 +254,30 @@ public class WorkflowInstanceStreamProcessorTest {
   @Test
   public void shouldCancelAndCompleteJobConcurrentlyInSubProcess() {
     // given
-    deploy(SUB_PROCESS_WORKFLOW);
+    streamProcessorRule.deploy(SUB_PROCESS_WORKFLOW);
 
     streamProcessor.blockAfterJobEvent(r -> r.getMetadata().getIntent() == JobIntent.CREATE);
 
-    final TypedRecord<WorkflowInstanceRecord> createdEvent = createWorkflowInstance();
+    final TypedRecord<WorkflowInstanceRecord> createdEvent =
+        streamProcessorRule.createWorkflowInstance(PROCESS_ID);
     waitUntil(() -> streamProcessor.isBlocked());
 
-    rule.writeCommand(
+    envRule.writeCommand(
         createdEvent.getKey(), WorkflowInstanceIntent.CANCEL, createdEvent.getValue());
-    completeJob();
+    streamProcessorRule.completeFirstJob();
 
     // when
     streamProcessor.unblock();
 
     // then
-    awaitElementInState("process", WorkflowInstanceIntent.ELEMENT_TERMINATED);
+    streamProcessorRule.awaitElementInState("process", WorkflowInstanceIntent.ELEMENT_TERMINATED);
 
     final List<WorkflowInstanceIntent> workflowInstanceLifecycle =
-        rule.events().onlyStatesOf("process").collect(Collectors.toList());
+        envRule.events().onlyStatesOf("process").collect(Collectors.toList());
     final List<WorkflowInstanceIntent> subProcessLifecycle =
-        rule.events().onlyStatesOf("subProcess").collect(Collectors.toList());
+        envRule.events().onlyStatesOf("subProcess").collect(Collectors.toList());
     final List<WorkflowInstanceIntent> taskLifecycle =
-        rule.events().onlyStatesOf("task").collect(Collectors.toList());
+        envRule.events().onlyStatesOf("task").collect(Collectors.toList());
 
     LifecycleAssert.assertThat(workflowInstanceLifecycle)
         .compliesWithCompleteLifecycle()
@@ -328,25 +291,26 @@ public class WorkflowInstanceStreamProcessorTest {
   @Test
   public void shouldRetryToOpenMessageSubscription() {
     // given
-    deploy(MESSAGE_CATCH_EVENT_WORKFLOW);
+    streamProcessorRule.deploy(MESSAGE_CATCH_EVENT_WORKFLOW);
 
     streamProcessor.blockAfterWorkflowInstanceRecord(
         isForElement("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED));
 
-    createWorkflowInstance(asMsgPack("orderId", "order-123"));
+    streamProcessorRule.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
     waitUntil(() -> streamProcessor.isBlocked());
 
     final TypedRecord<WorkflowInstanceRecord> catchEvent =
-        awaitElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        streamProcessorRule.awaitElementInState(
+            "catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
-    rule.getClock().addTime(SUBSCRIPTION_CHECK_INTERVAL.plus(SUBSCRIPTION_TIMEOUT));
+    envRule.getClock().addTime(SUBSCRIPTION_CHECK_INTERVAL.plus(SUBSCRIPTION_TIMEOUT));
 
     streamProcessor.unblock();
 
     // then
-    verify(mockSubscriptionCommandSender, timeout(5_000).times(2))
+    verify(streamProcessorRule.getMockSubscriptionCommandSender(), timeout(5_000).times(2))
         .openMessageSubscription(
             catchEvent.getValue().getWorkflowInstanceKey(),
             catchEvent.getKey(),
@@ -357,39 +321,46 @@ public class WorkflowInstanceStreamProcessorTest {
   @Test
   public void shouldRejectDuplicatedOpenWorkflowInstanceSubscription() {
     // given
-    deploy(MESSAGE_CATCH_EVENT_WORKFLOW);
+    streamProcessorRule.deploy(MESSAGE_CATCH_EVENT_WORKFLOW);
 
     streamProcessor.blockAfterWorkflowInstanceRecord(
         isForElement("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED));
 
-    createWorkflowInstance(asMsgPack("orderId", "order-123"));
+    streamProcessorRule.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
     waitUntil(() -> streamProcessor.isBlocked());
 
     final TypedRecord<WorkflowInstanceRecord> catchEvent =
-        awaitElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        streamProcessorRule.awaitElementInState(
+            "catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
     final WorkflowInstanceSubscriptionRecord subscription = subscriptionRecordForEvent(catchEvent);
 
-    rule.writeCommand(WorkflowInstanceSubscriptionIntent.OPEN, subscription);
+    envRule.writeCommand(WorkflowInstanceSubscriptionIntent.OPEN, subscription);
 
     final long secondCommandPosition =
-        rule.writeCommand(WorkflowInstanceSubscriptionIntent.OPEN, subscription);
+        envRule.writeCommand(WorkflowInstanceSubscriptionIntent.OPEN, subscription);
 
     streamProcessor.unblock();
 
     // then
     waitUntil(
         () ->
-            rule.events()
+            envRule
+                .events()
                 .onlyWorkflowInstanceSubscriptionRecords()
                 .onlyRejections()
                 .findFirst()
                 .isPresent());
 
     final TypedRecord<WorkflowInstanceSubscriptionRecord> rejection =
-        rule.events().onlyWorkflowInstanceSubscriptionRecords().onlyRejections().findFirst().get();
+        envRule
+            .events()
+            .onlyWorkflowInstanceSubscriptionRecords()
+            .onlyRejections()
+            .findFirst()
+            .get();
 
     assertThat(rejection.getMetadata().getIntent())
         .isEqualTo(WorkflowInstanceSubscriptionIntent.OPEN);
@@ -401,40 +372,47 @@ public class WorkflowInstanceStreamProcessorTest {
   @Test
   public void shouldRejectDuplicatedCorrelateWorkflowInstanceSubscription() {
     // given
-    deploy(MESSAGE_CATCH_EVENT_WORKFLOW);
+    streamProcessorRule.deploy(MESSAGE_CATCH_EVENT_WORKFLOW);
 
-    createWorkflowInstance(asMsgPack("orderId", "order-123"));
+    streamProcessorRule.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
     final TypedRecord<WorkflowInstanceRecord> catchEvent =
-        awaitElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+        streamProcessorRule.awaitElementInState(
+            "catch-event", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     final WorkflowInstanceSubscriptionRecord subscription = subscriptionRecordForEvent(catchEvent);
 
     streamProcessor.blockAfterWorkflowInstanceSubscriptionEvent(
         e -> e.getMetadata().getIntent() == WorkflowInstanceSubscriptionIntent.OPENED);
 
-    rule.writeCommand(WorkflowInstanceSubscriptionIntent.OPEN, subscription);
+    envRule.writeCommand(WorkflowInstanceSubscriptionIntent.OPEN, subscription);
 
     waitUntil(() -> streamProcessor.isBlocked());
 
     // when
-    rule.writeCommand(WorkflowInstanceSubscriptionIntent.CORRELATE, subscription);
+    envRule.writeCommand(WorkflowInstanceSubscriptionIntent.CORRELATE, subscription);
     final long secondCommandPosition =
-        rule.writeCommand(WorkflowInstanceSubscriptionIntent.CORRELATE, subscription);
+        envRule.writeCommand(WorkflowInstanceSubscriptionIntent.CORRELATE, subscription);
 
     streamProcessor.unblock();
 
     // then
     waitUntil(
         () ->
-            rule.events()
+            envRule
+                .events()
                 .onlyWorkflowInstanceSubscriptionRecords()
                 .onlyRejections()
                 .findFirst()
                 .isPresent());
 
     final TypedRecord<WorkflowInstanceSubscriptionRecord> rejection =
-        rule.events().onlyWorkflowInstanceSubscriptionRecords().onlyRejections().findFirst().get();
+        envRule
+            .events()
+            .onlyWorkflowInstanceSubscriptionRecords()
+            .onlyRejections()
+            .findFirst()
+            .get();
 
     assertThat(rejection.getMetadata().getIntent())
         .isEqualTo(WorkflowInstanceSubscriptionIntent.CORRELATE);
@@ -442,23 +420,12 @@ public class WorkflowInstanceStreamProcessorTest {
     assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
         .isEqualTo("subscription is already correlated");
 
-    verify(mockSubscriptionCommandSender, timeout(5_000).times(2))
+    verify(streamProcessorRule.getMockSubscriptionCommandSender(), timeout(5_000).times(2))
         .correlateMessageSubscription(
             eq(subscription.getSubscriptionPartitionId()),
             eq(subscription.getWorkflowInstanceKey()),
             eq(subscription.getActivityInstanceKey()),
             any());
-  }
-
-  private TypedRecord<WorkflowInstanceRecord> createWorkflowInstance() {
-    return createWorkflowInstance(wrapString(""));
-  }
-
-  private TypedRecord<WorkflowInstanceRecord> createWorkflowInstance(final DirectBuffer payload) {
-    rule.writeCommand(WorkflowInstanceIntent.CREATE, workflowInstanceRecord(payload));
-    final TypedRecord<WorkflowInstanceRecord> createdEvent =
-        awaitAndGetFirstRecordInState(WorkflowInstanceIntent.CREATED);
-    return createdEvent;
   }
 
   private Predicate<TypedRecord<WorkflowInstanceRecord>> isForElement(final String elementId) {
@@ -470,15 +437,6 @@ public class WorkflowInstanceStreamProcessorTest {
     return isForElement(elementId).and(t -> t.getMetadata().getIntent() == intent);
   }
 
-  private static WorkflowInstanceRecord workflowInstanceRecord(final DirectBuffer payload) {
-    final WorkflowInstanceRecord record = new WorkflowInstanceRecord();
-
-    record.setBpmnProcessId(PROCESS_ID_BUFFER);
-    record.setPayload(payload);
-
-    return record;
-  }
-
   private WorkflowInstanceSubscriptionRecord subscriptionRecordForEvent(
       final TypedRecord<WorkflowInstanceRecord> catchEvent) {
     return new WorkflowInstanceSubscriptionRecord()
@@ -486,61 +444,5 @@ public class WorkflowInstanceStreamProcessorTest {
         .setWorkflowInstanceKey(catchEvent.getValue().getWorkflowInstanceKey())
         .setActivityInstanceKey(catchEvent.getKey())
         .setMessageName(wrapString("order canceled"));
-  }
-
-  private void deploy(final BpmnModelInstance modelInstance) {
-    final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
-    Bpmn.writeModelToStream(outStream, modelInstance);
-    final DirectBuffer xmlBuffer = new UnsafeBuffer(outStream.toByteArray());
-
-    final DeploymentRecord record = new DeploymentRecord();
-    final DirectBuffer resourceName = wrapString("resourceName");
-
-    record
-        .resources()
-        .add()
-        .setResource(xmlBuffer)
-        .setResourceName(resourceName)
-        .setResourceType(ResourceType.BPMN_XML);
-
-    record
-        .workflows()
-        .add()
-        .setKey(1)
-        .setResourceName(resourceName)
-        .setBpmnProcessId(PROCESS_ID_BUFFER)
-        .setVersion(1);
-
-    workflowCache.addWorkflow(1, record);
-  }
-
-  private void awaitFirstRecordInState(final Intent state) {
-    waitUntil(() -> rule.events().withIntent(state).findFirst().isPresent());
-  }
-
-  private TypedRecord<WorkflowInstanceRecord> awaitElementInState(
-      final String elementId, final WorkflowInstanceIntent intent) {
-    final DirectBuffer elementIdAsBuffer = BufferUtil.wrapString(elementId);
-
-    return doRepeatedly(
-            () ->
-                rule.events()
-                    .onlyWorkflowInstanceRecords()
-                    .withIntent(intent)
-                    .filter(r -> elementIdAsBuffer.equals(r.getValue().getActivityId()))
-                    .findFirst())
-        .until(o -> o.isPresent())
-        .get();
-  }
-
-  private TypedRecord<WorkflowInstanceRecord> awaitAndGetFirstRecordInState(
-      final WorkflowInstanceIntent state) {
-    awaitFirstRecordInState(state);
-    return rule.events().onlyWorkflowInstanceRecords().withIntent(state).findFirst().get();
-  }
-
-  private TypedRecord<JobRecord> awaitAndGetFirstRecordInState(final JobIntent state) {
-    awaitFirstRecordInState(state);
-    return rule.events().onlyJobRecords().withIntent(state).findFirst().get();
   }
 }

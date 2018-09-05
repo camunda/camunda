@@ -61,8 +61,14 @@ public class SequenceFlowHandler implements ModelElementTransformer<SequenceFlow
 
     if (target instanceof Activity || target instanceof IntermediateCatchEvent) {
       step = BpmnStep.START_STATEFUL_ELEMENT;
-    } else if (target instanceof ExclusiveGateway || target instanceof ParallelGateway) {
+    } else if (target instanceof ExclusiveGateway) {
       step = BpmnStep.ACTIVATE_GATEWAY;
+    } else if (target instanceof ParallelGateway) {
+      if (target.getIncoming().size() == 1) {
+        step = BpmnStep.ACTIVATE_GATEWAY;
+      } else {
+        step = BpmnStep.PARALLEL_MERGE;
+      }
     } else if (target instanceof EndEvent) {
       step = BpmnStep.TRIGGER_END_EVENT;
     } else {
@@ -82,6 +88,7 @@ public class SequenceFlowHandler implements ModelElementTransformer<SequenceFlow
         workflow.getElementById(element.getTarget().getId(), ExecutableFlowNode.class);
 
     source.addOutgoing(sequenceFlow);
+    target.addIncoming(sequenceFlow);
     sequenceFlow.setTarget(target);
   }
 
