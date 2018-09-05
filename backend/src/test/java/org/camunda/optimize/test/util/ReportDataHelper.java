@@ -4,6 +4,7 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDat
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.processpart.ProcessPartDto;
 
 import java.util.Arrays;
 
@@ -479,6 +480,13 @@ public class ReportDataHelper {
     combinedReportDataDto.setReportIds(Arrays.asList(reportIds));
     combinedReportDataDto.setConfiguration("aRandomConfiguration");
     return combinedReportDataDto;
+  }
+
+  public static ProcessPartDto createProcessPart(String start, String end) {
+    ProcessPartDto processPartDto = new ProcessPartDto();
+    processPartDto.setStart(start);
+    processPartDto.setEnd(end);
+    return processPartDto;
   }
 
 }

@@ -4,6 +4,7 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.FilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.processpart.ProcessPartDto;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -17,6 +18,7 @@ public class SingleReportDataDto implements ReportDataDto {
   protected ViewDto view;
   protected GroupByDto groupBy;
   protected String visualization;
+  protected ProcessPartDto processPart;
   protected Object configuration;
 
   public List<FilterDto> getFilter() {
@@ -75,6 +77,14 @@ public class SingleReportDataDto implements ReportDataDto {
     this.processDefinitionVersion = processDefinitionVersion;
   }
 
+  public ProcessPartDto getProcessPart() {
+    return processPart;
+  }
+
+  public void setProcessPart(ProcessPartDto processPart) {
+    this.processPart = processPart;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -86,6 +96,7 @@ public class SingleReportDataDto implements ReportDataDto {
     SingleReportDataDto that = (SingleReportDataDto) o;
     return Objects.equals(view, that.view) &&
       Objects.equals(groupBy, that.groupBy) &&
-      Objects.equals(visualization, that.visualization);
+      Objects.equals(visualization, that.visualization) &&
+      Objects.equals(processPart, that.processPart);
   }
 }

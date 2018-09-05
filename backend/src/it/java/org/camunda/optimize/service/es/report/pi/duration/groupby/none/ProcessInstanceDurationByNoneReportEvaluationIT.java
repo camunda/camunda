@@ -45,6 +45,7 @@ import static org.camunda.optimize.service.es.report.command.util.ReportConstant
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_PROCESS_INSTANCE_ENTITY;
 import static org.camunda.optimize.test.util.VariableFilterUtilHelper.createBooleanVariableFilter;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
 
@@ -93,6 +94,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
     assertThat(resultReportDataDto.getView().getEntity(), is(VIEW_PROCESS_INSTANCE_ENTITY));
     assertThat(resultReportDataDto.getView().getProperty(), is(VIEW_DURATION_PROPERTY));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(GROUP_BY_NONE_TYPE));
+    assertThat(resultReportDataDto.getProcessPart(), is(nullValue()));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult(), is(1000L));
   }

@@ -9,6 +9,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.FilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.util.ExecutedFlowNodeFilterBuilder;
+import org.camunda.optimize.dto.optimize.query.report.single.processpart.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.raw.RawDataSingleReportResultDto;
 import org.camunda.optimize.service.es.schema.type.SingleReportType;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -134,6 +135,10 @@ public class SingleReportHandlingIT {
     reportData.setProcessDefinitionVersion("123");
     reportData.setFilter(Collections.emptyList());
     reportData.setConfiguration("aRandomConfiguration");
+    ProcessPartDto processPartDto = new ProcessPartDto();
+    processPartDto.setStart("start123");
+    processPartDto.setEnd("end123");
+    reportData.setProcessPart(processPartDto);
     SingleReportDefinitionDto report = new SingleReportDefinitionDto();
     report.setData(reportData);
     report.setId("shouldNotBeUpdated");
@@ -154,6 +159,8 @@ public class SingleReportHandlingIT {
     assertThat(newReport.getData().getProcessDefinitionKey(), is("procdef"));
     assertThat(newReport.getData().getProcessDefinitionVersion(), is("123"));
     assertThat(newReport.getData().getConfiguration(), is("aRandomConfiguration"));
+    assertThat(newReport.getData().getProcessPart().getStart(), is("start123"));
+    assertThat(newReport.getData().getProcessPart().getEnd(), is("end123"));
     assertThat(newReport.getId(), is(id));
     assertThat(newReport.getCreated(), is(not(shouldBeIgnoredDate)));
     assertThat(newReport.getLastModified(), is(not(shouldBeIgnoredDate)));
