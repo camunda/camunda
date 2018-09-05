@@ -26,7 +26,7 @@ const newAlert = {
 };
 
 export default function AlertModal(reports) {
-  return class extends React.Component {
+  return class AlertModal extends React.Component {
     constructor(props) {
       super(props);
 
