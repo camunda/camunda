@@ -40,15 +40,11 @@ var _ = Describe("should send HealthRequest to Gateway and receive HealthRespons
 				Expect(response.Brokers[0].Host).To(Equal("0.0.0.0"))
 				Expect(response.Brokers[0].Port).To(Equal(int32(26501)))
 
-				Expect(len(response.Brokers[0].Partitions)).To(Equal(2))
+				Expect(len(response.Brokers[0].Partitions)).To(Equal(1))
 
 				Expect(response.Brokers[0].Partitions[0].PartitionId).To(Equal(int32(0)))
 				Expect(response.Brokers[0].Partitions[0].Role).To(Equal(pb.Partition_LEADER))
 				Expect(response.Brokers[0].Partitions[0].TopicName).To(Equal("internal-system"))
-
-				Expect(response.Brokers[0].Partitions[1].PartitionId).To(Equal(int32(1)))
-				Expect(response.Brokers[0].Partitions[1].Role).To(Equal(pb.Partition_LEADER))
-				Expect(response.Brokers[0].Partitions[1].TopicName).To(Equal("default-topic"))
 
 				Expect(err).To(BeNil())
 				Expect(response).NotTo(BeNil())

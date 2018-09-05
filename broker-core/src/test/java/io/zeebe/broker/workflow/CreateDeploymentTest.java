@@ -28,6 +28,7 @@ import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.broker.workflow.deployment.data.ResourceType;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
@@ -165,7 +166,7 @@ public class CreateDeploymentTest {
     final ExecuteCommandResponse resp =
         apiRule
             .createCmdRequest()
-            .partitionId(1)
+            .partitionId(Protocol.DEPLOYMENT_PARTITION)
             .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
             .command()
             .put("topicName", DEFAULT_TOPIC)

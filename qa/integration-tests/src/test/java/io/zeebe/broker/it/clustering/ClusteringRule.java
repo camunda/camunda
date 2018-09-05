@@ -24,6 +24,7 @@ import io.zeebe.broker.exporter.DebugExporter;
 import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopologyClient;
 import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.TomlConfigurationReader;
 import io.zeebe.broker.system.configuration.TopicCfg;
 import io.zeebe.gateway.ZeebeClient;
@@ -93,15 +94,17 @@ public class ClusteringRule extends ExternalResource {
       startBroker(i);
     }
 
+    final BrokerCfg brokerCfg = brokerCfgs[0];
     zeebeClient =
         ZeebeClient.newClientBuilder()
-            .brokerContactPoint(brokerCfgs[0].getNetwork().getClient().toSocketAddress().toString())
+            .brokerContactPoint(brokerCfg.getNetwork().getClient().toSocketAddress().toString())
             .build();
 
     closeables.add(zeebeClient);
     topologyClient = new TopologyClient((ZeebeClientImpl) zeebeClient);
 
-    waitForInternalSystemAndReplicationFactor();
+    final ClusterCfg clusterCfg = brokerCfg.getCluster();
+    waitForInternalSystemAndReplicationFactor(clusterCfg);
 
     final Broker leaderBroker = brokers[0];
     final BrokerCfg brokerConfiguration = leaderBroker.getBrokerContext().getBrokerConfiguration();
@@ -151,8 +154,9 @@ public class ClusteringRule extends ExternalResource {
                 .containsAll(addresses));
   }
 
-  private void waitForInternalSystemAndReplicationFactor() {
-    waitForTopicPartitionReplicationFactor("internal-system", 1, SYSTEM_TOPIC_REPLICATION_FACTOR);
+  private void waitForInternalSystemAndReplicationFactor(final ClusterCfg clusterCfg) {
+    waitForTopicPartitionReplicationFactor(
+        Protocol.DEFAULT_TOPIC, clusterCfg.getPartitionsCount(), clusterCfg.getReplicationFactor());
   }
 
   /**
@@ -354,7 +358,9 @@ public class ClusteringRule extends ExternalResource {
 
     waitUntilBrokerIsAddedToTopology(
         brokerCfgs[brokerId].getNetwork().getClient().toSocketAddress());
-    waitForInternalSystemAndReplicationFactor();
+    final BrokerCfg brokerCfg = brokerCfgs[brokerId];
+    final ClusterCfg clusterCfg = brokerCfg.getCluster();
+    waitForInternalSystemAndReplicationFactor(clusterCfg);
   }
 
   public void restartBroker(final Broker broker) {

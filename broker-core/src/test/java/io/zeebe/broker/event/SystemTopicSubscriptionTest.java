@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.event;
 
-import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
@@ -30,7 +29,6 @@ import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.DeploymentIntent;
-import io.zeebe.protocol.intent.TopicIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ControlMessageResponse;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
@@ -44,7 +42,7 @@ import org.junit.rules.RuleChain;
 
 public class SystemTopicSubscriptionTest {
 
-  public static final int DEFAULT_PARTITION = 1;
+  public static final int DEFAULT_PARTITION = Protocol.SYSTEM_PARTITION;
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
   public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
 
@@ -147,56 +145,5 @@ public class SystemTopicSubscriptionTest {
             DeploymentIntent.CREATED,
             DeploymentIntent.DISTRIBUTE,
             DeploymentIntent.DISTRIBUTED);
-  }
-
-  @Test
-  public void shouldPushTopicEvents() {
-    // given
-
-    // when
-    final ExecuteCommandResponse addResponse =
-        apiRule.openTopicSubscription(Protocol.SYSTEM_PARTITION, "foo", 0).await();
-
-    final long subscriberKey = addResponse.key();
-
-    // then
-    final List<SubscribedRecord> topicEvents =
-        apiRule
-            .subscribedEvents()
-            .filter(
-                (e) ->
-                    e.valueType() == ValueType.TOPIC && DEFAULT_TOPIC.equals(e.value().get("name")))
-            .limit(4)
-            .collect(Collectors.toList());
-
-    assertThat(topicEvents).hasSize(4);
-
-    assertThat(topicEvents).extracting(SubscribedRecord::subscriberKey).containsOnly(subscriberKey);
-    assertThat(topicEvents)
-        .extracting(SubscribedRecord::subscriptionType)
-        .containsOnly(SubscriptionType.TOPIC_SUBSCRIPTION);
-    assertThat(topicEvents)
-        .extracting(SubscribedRecord::partitionId)
-        .containsOnly(Protocol.SYSTEM_PARTITION);
-
-    assertThat(topicEvents).extracting(SubscribedRecord::valueType).containsOnly(ValueType.TOPIC);
-    assertThat(topicEvents)
-        .extracting(SubscribedRecord::recordType)
-        .contains(RecordType.COMMAND, RecordType.EVENT);
-
-    assertThat(topicEvents)
-        .extracting(SubscribedRecord::sourceRecordPosition)
-        .containsExactly(
-            -1L,
-            topicEvents.get(0).position(),
-            -1L, // since current topic creation impl do not know the source event
-            topicEvents.get(2).position());
-    assertThat(topicEvents)
-        .extracting(SubscribedRecord::intent)
-        .containsExactly(
-            TopicIntent.CREATE,
-            TopicIntent.CREATING,
-            TopicIntent.CREATE_COMPLETE,
-            TopicIntent.CREATED);
   }
 }

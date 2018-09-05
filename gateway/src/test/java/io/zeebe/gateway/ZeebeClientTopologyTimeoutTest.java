@@ -60,7 +60,7 @@ public class ZeebeClientTopologyTimeoutTest {
         "Request timed out (PT1S). "
             + "Request was: [ topic = "
             + DEFAULT_TOPIC
-            + ", partition = 1, value type = JOB, command = COMPLETE ]");
+            + ", partition = 0, value type = JOB, command = COMPLETE ]");
 
     // when
     client.topicClient().jobClient().newCompleteCommand(baseEvent).send().join();

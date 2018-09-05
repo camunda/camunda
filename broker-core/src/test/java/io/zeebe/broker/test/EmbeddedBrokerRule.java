@@ -73,15 +73,16 @@ public class EmbeddedBrokerRule extends ExternalResource {
     this(NOOP_CONFIGURATOR);
   }
 
-  public EmbeddedBrokerRule(String configFileClasspathLocation) {
+  public EmbeddedBrokerRule(final String configFileClasspathLocation) {
     this(configFileClasspathLocation, NOOP_CONFIGURATOR);
   }
 
-  public EmbeddedBrokerRule(Consumer<BrokerCfg> configurator) {
+  public EmbeddedBrokerRule(final Consumer<BrokerCfg> configurator) {
     this("zeebe.unit-test.cfg.toml", configurator);
   }
 
-  public EmbeddedBrokerRule(String configFileClasspathLocation, Consumer<BrokerCfg> configurator) {
+  public EmbeddedBrokerRule(
+      final String configFileClasspathLocation, final Consumer<BrokerCfg> configurator) {
     this(
         () ->
             EmbeddedBrokerRule.class
@@ -91,7 +92,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
   }
 
   public EmbeddedBrokerRule(
-      Supplier<InputStream> configSupplier, Consumer<BrokerCfg> configurator) {
+      final Supplier<InputStream> configSupplier, final Consumer<BrokerCfg> configurator) {
     this.configSupplier = configSupplier;
     this.configurator = configurator;
   }
@@ -127,7 +128,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
     } finally {
       try {
         FileUtil.deleteFolder(newTemporaryFolder.getAbsolutePath());
-      } catch (IOException e) {
+      } catch (final IOException e) {
         e.printStackTrace();
       }
     }
@@ -168,7 +169,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
 
   public void startBroker() {
     if (brokerCfg == null) {
-      try (InputStream configStream = configSupplier.get()) {
+      try (final InputStream configStream = configSupplier.get()) {
         brokerCfg = TomlConfigurationReader.read(configStream);
         if (ENABLE_DEBUG_EXPORTER) {
           brokerCfg.getExporters().add(DebugExporter.defaultConfig(false));
@@ -197,31 +198,31 @@ public class EmbeddedBrokerRule extends ExternalResource {
           .dependency(
               TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME))
           .install()
-          .get(25, TimeUnit.SECONDS);
+          .get(5, TimeUnit.SECONDS);
 
-    } catch (InterruptedException | ExecutionException | TimeoutException e) {
+    } catch (final InterruptedException | ExecutionException | TimeoutException e) {
       stopBroker();
       throw new RuntimeException(
-          "System patition not installed into the container withing 25 seconds.");
+          "System patition not installed into the container withing 25 seconds.", e);
     }
 
     dataDirectories = broker.getBrokerContext().getBrokerConfiguration().getData().getDirectories();
   }
 
   public void purgeSnapshots() {
-    for (String dataDirectoryName : dataDirectories) {
+    for (final String dataDirectoryName : dataDirectories) {
       final File dataDirectory = new File(dataDirectoryName);
 
       final File[] partitionDirectories =
           dataDirectory.listFiles((d, f) -> new File(d, f).isDirectory());
 
-      for (File partitionDirectory : partitionDirectories) {
+      for (final File partitionDirectory : partitionDirectories) {
         deleteSnapshots(partitionDirectory);
 
         final File stateDirectory = new File(partitionDirectory, STATE_DIRECTORY);
         if (stateDirectory.exists()) {
           final File[] stateDirs = stateDirectory.listFiles();
-          for (File processorStateDir : stateDirs) {
+          for (final File processorStateDir : stateDirs) {
             if (processorStateDir.exists()) {
               deleteSnapshots(processorStateDir);
             }
@@ -231,28 +232,28 @@ public class EmbeddedBrokerRule extends ExternalResource {
     }
   }
 
-  private void deleteSnapshots(File parentDir) {
+  private void deleteSnapshots(final File parentDir) {
     final File snapshotDirectory = new File(parentDir, SNAPSHOTS_DIRECTORY);
 
     if (snapshotDirectory.exists()) {
       try {
         FileUtil.deleteFolder(snapshotDirectory.getAbsolutePath());
-      } catch (IOException e) {
+      } catch (final IOException e) {
         throw new RuntimeException(
             "Could not delete snapshot directory " + snapshotDirectory.getAbsolutePath(), e);
       }
     }
   }
 
-  public <T> void removeService(ServiceName<T> name) {
+  public <T> void removeService(final ServiceName<T> name) {
     try {
       broker.getBrokerContext().getServiceContainer().removeService(name).get(10, TimeUnit.SECONDS);
-    } catch (InterruptedException | ExecutionException | TimeoutException e) {
+    } catch (final InterruptedException | ExecutionException | TimeoutException e) {
       throw new RuntimeException("Could not remove service " + name.getName() + " in 10 seconds.");
     }
   }
 
-  public void assignSocketAddresses(BrokerCfg brokerCfg) {
+  public void assignSocketAddresses(final BrokerCfg brokerCfg) {
     final NetworkCfg network = brokerCfg.getNetwork();
     final List<SocketBindingCfg> socketBindingCfgs =
         Arrays.asList(
@@ -267,7 +268,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
           "Please don't set the port offset in a test configuration");
     }
 
-    for (SocketBindingCfg socketBindingCfg : socketBindingCfgs) {
+    for (final SocketBindingCfg socketBindingCfg : socketBindingCfgs) {
       final SocketAddress address = SocketUtil.getNextAddress();
       socketBindingCfg.setPort(address.port());
     }
@@ -279,10 +280,10 @@ public class EmbeddedBrokerRule extends ExternalResource {
         ServiceName.newServiceName("testService", TestService.class);
 
     @Override
-    public void start(ServiceStartContext startContext) {}
+    public void start(final ServiceStartContext startContext) {}
 
     @Override
-    public void stop(ServiceStopContext stopContext) {}
+    public void stop(final ServiceStopContext stopContext) {}
 
     @Override
     public TestService get() {

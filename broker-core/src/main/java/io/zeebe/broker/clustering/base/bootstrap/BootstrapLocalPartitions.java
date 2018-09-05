@@ -42,12 +42,12 @@ public class BootstrapLocalPartitions implements Service<Object> {
       new Injector<>();
   private final BrokerCfg brokerCfg;
 
-  public BootstrapLocalPartitions(BrokerCfg brokerCfg) {
+  public BootstrapLocalPartitions(final BrokerCfg brokerCfg) {
     this.brokerCfg = brokerCfg;
   }
 
   @Override
-  public void start(ServiceStartContext startContext) {
+  public void start(final ServiceStartContext startContext) {
     final RaftPersistentConfigurationManager configurationManager =
         configurationManagerInjector.getValue();
 
@@ -56,14 +56,14 @@ public class BootstrapLocalPartitions implements Service<Object> {
           final List<RaftPersistentConfiguration> configurations =
               configurationManager.getConfigurations().join();
 
-          for (RaftPersistentConfiguration configuration : configurations) {
+          for (final RaftPersistentConfiguration configuration : configurations) {
             installPartition(startContext, configuration);
           }
         });
   }
 
   private void installPartition(
-      ServiceStartContext startContext, RaftPersistentConfiguration configuration) {
+      final ServiceStartContext startContext, final RaftPersistentConfiguration configuration) {
     final String partitionName =
         String.format(
             "%s-%d",

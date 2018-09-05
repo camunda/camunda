@@ -22,23 +22,29 @@ import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.SYSTE
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.partitionInstallServiceName;
 import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_CLIENT_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.clientTransport;
+import static io.zeebe.protocol.Protocol.SYSTEM_TOPIC;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
 import io.zeebe.broker.clustering.base.partitions.PartitionInstallService;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfiguration;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
+import io.zeebe.broker.clustering.orchestration.PartitionsLeaderMatrix;
 import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.util.Collections;
 import java.util.List;
+import org.agrona.collections.IntArrayList;
 import org.slf4j.Logger;
 
 /**
@@ -60,10 +66,22 @@ public class BootstrapSystemTopic extends Actor implements Service<Void> {
   private ServiceStartContext serviceStartContext;
 
   private final BrokerCfg brokerCfg;
+  private final PartitionsLeaderMatrix partitionsLeaderMatrix;
+  private final IntArrayList followingPartitions;
+  private final IntArrayList leadingPartitions;
 
-  public BootstrapSystemTopic(int replicationFactor, BrokerCfg brokerCfg) {
+  public BootstrapSystemTopic(final int replicationFactor, final BrokerCfg brokerCfg) {
     this.replicationFactor = replicationFactor;
     this.brokerCfg = brokerCfg;
+
+    final ClusterCfg cluster = brokerCfg.getCluster();
+
+    partitionsLeaderMatrix =
+        new PartitionsLeaderMatrix(
+            cluster.getPartitionsCount(), cluster.getClusterSize(), cluster.getReplicationFactor());
+    final int nodeId = cluster.getNodeId();
+    followingPartitions = partitionsLeaderMatrix.getFollowingPartitions(nodeId);
+    leadingPartitions = partitionsLeaderMatrix.getLeadingPartitions(nodeId);
   }
 
   public Injector<RaftPersistentConfigurationManager>
@@ -86,23 +104,69 @@ public class BootstrapSystemTopic extends Actor implements Service<Void> {
         configurationsFuture,
         (configurations, throwable) -> {
           if (throwable == null) {
-            final long count =
-                configurations
-                    .stream()
-                    .filter(
-                        configuration ->
-                            configuration.getPartitionId() == Protocol.SYSTEM_PARTITION)
-                    .count();
 
-            if (count == 0) {
-              installSystemPartition();
-            } else {
-              LOG.debug("Internal system partition already present. Not bootstrapping it.");
+            for (final RaftPersistentConfiguration configuration : configurations) {
+              followingPartitions.removeInt(configuration.getPartitionId());
+              leadingPartitions.removeInt(configuration.getPartitionId());
             }
+
+            for (int i = 0; i < leadingPartitions.size(); i++) {
+              installPartition(leadingPartitions.getInt(i), Collections.emptyList());
+            }
+
+            for (int i = 0; i < followingPartitions.size(); i++) {
+              final IntArrayList membersForPartition =
+                  partitionsLeaderMatrix.getMembersForPartition(
+                      brokerCfg.getCluster().getNodeId(), i);
+              installPartition(followingPartitions.getInt(i), membersForPartition);
+            }
+
           } else {
             throw new RuntimeException(throwable);
           }
         });
+  }
+
+  private void installPartition(final int partitionId, final List<Integer> members) {
+    final ActorFuture<RaftPersistentConfiguration> configurationFuture =
+        configurationManager.createConfiguration(
+            wrapString(SYSTEM_TOPIC),
+            partitionId,
+            brokerCfg.getCluster().getReplicationFactor(),
+            members);
+
+    actor.runOnCompletion(
+        configurationFuture,
+        (configuration, exception) -> {
+          if (exception == null) {
+            installPartition(serviceStartContext, configuration);
+          } else {
+            throw new IllegalStateException(exception);
+          }
+        });
+  }
+
+  private void installPartition(
+      final ServiceStartContext startContext, final RaftPersistentConfiguration configuration) {
+    final String partitionName =
+        String.format(
+            "%s-%d",
+            BufferUtil.bufferAsString(configuration.getTopicName()),
+            configuration.getPartitionId());
+    final ServiceName<Void> partitionInstallServiceName =
+        partitionInstallServiceName(partitionName);
+    final boolean isInternalSystemPartition =
+        configuration.getPartitionId() == Protocol.SYSTEM_PARTITION;
+
+    final PartitionInstallService partitionInstallService =
+        new PartitionInstallService(brokerCfg, configuration, isInternalSystemPartition);
+
+    startContext
+        .createService(partitionInstallServiceName, partitionInstallService)
+        .dependency(
+            clientTransport(REPLICATION_API_CLIENT_NAME),
+            partitionInstallService.getClientTransportInjector())
+        .install();
   }
 
   private void installSystemPartition() {
@@ -115,7 +179,7 @@ public class BootstrapSystemTopic extends Actor implements Service<Void> {
 
     LOG.info(
         "Boostrapping internal system topic '{}' with replication factor {}.",
-        Protocol.SYSTEM_TOPIC,
+        SYSTEM_TOPIC,
         replicationFactor);
 
     actor.runOnCompletion(
@@ -125,7 +189,7 @@ public class BootstrapSystemTopic extends Actor implements Service<Void> {
             throw new RuntimeException(throwable);
           } else {
             final String partitionName =
-                String.format("%s-%d", Protocol.SYSTEM_TOPIC, Protocol.SYSTEM_PARTITION);
+                String.format("%s-%d", SYSTEM_TOPIC, Protocol.SYSTEM_PARTITION);
             final ServiceName<Void> partitionInstallServiceName =
                 partitionInstallServiceName(partitionName);
             final PartitionInstallService partitionInstallService =

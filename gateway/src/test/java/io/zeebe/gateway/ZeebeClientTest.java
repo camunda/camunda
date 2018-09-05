@@ -77,7 +77,7 @@ public class ZeebeClientTest {
   @Rule public RuleChain ruleChain = RuleChain.outerRule(broker).around(clientRule);
 
   private int clientMaxRequests;
-  private String topic = DEFAULT_TOPIC;
+  private final String topic = DEFAULT_TOPIC;
 
   @Before
   public void setUp() {
@@ -185,7 +185,7 @@ public class ZeebeClientTest {
     }
 
     // when
-    for (ZeebeFuture<JobEvent> future : futures) {
+    for (final ZeebeFuture<JobEvent> future : futures) {
       future.join();
     }
 
@@ -215,11 +215,11 @@ public class ZeebeClientTest {
     }
 
     // when
-    for (ZeebeFuture<JobEvent> future : futures) {
+    for (final ZeebeFuture<JobEvent> future : futures) {
       try {
         future.join();
         fail("exception expected");
-      } catch (Exception e) {
+      } catch (final Exception e) {
         // expected
       }
     }
@@ -270,7 +270,7 @@ public class ZeebeClientTest {
         "Request timed out (PT3S). "
             + "Request was: [ topic = "
             + DEFAULT_TOPIC
-            + ", partition = 1, value type = JOB, command = COMPLETE ]");
+            + ", partition = 0, value type = JOB, command = COMPLETE ]");
 
     // when
     client.topicClient().jobClient().newCompleteCommand(baseEvent).send().join();
@@ -288,7 +288,7 @@ public class ZeebeClientTest {
       client.topicClient().jobClient().newCompleteCommand(baseEvent).send().join();
 
       fail("should throw exception");
-    } catch (ClientCommandRejectedException e) {
+    } catch (final ClientCommandRejectedException e) {
       // then
       assertThat(e.getStackTrace())
           .anySatisfy(
@@ -311,7 +311,7 @@ public class ZeebeClientTest {
       client.topicClient().jobClient().newCompleteCommand(baseEvent).send().join();
 
       fail("should throw exception");
-    } catch (Exception e) {
+    } catch (final Exception e) {
       // then
       assertThat(e.getStackTrace())
           .anySatisfy(
@@ -506,12 +506,12 @@ public class ZeebeClientTest {
     protected List<ConnectionState> connectionState = new CopyOnWriteArrayList<>();
 
     @Override
-    public void onConnectionEstablished(RemoteAddress remoteAddress) {
+    public void onConnectionEstablished(final RemoteAddress remoteAddress) {
       connectionState.add(ConnectionState.CONNECTED);
     }
 
     @Override
-    public void onConnectionClosed(RemoteAddress remoteAddress) {
+    public void onConnectionClosed(final RemoteAddress remoteAddress) {
       connectionState.add(ConnectionState.CLOSED);
     }
   }

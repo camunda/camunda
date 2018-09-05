@@ -41,7 +41,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 public class PublishMessageTest {
-  private static final int FIRST_PARTITION = 1;
+  private static final int FIRST_PARTITION = 0;
   private static final int PARTITION_COUNT = 10;
 
   public StubBrokerRule brokerRule = new StubBrokerRule(0, PARTITION_COUNT);

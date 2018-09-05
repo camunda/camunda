@@ -23,10 +23,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ControlMessageResponse;
-import io.zeebe.test.broker.protocol.clientapi.ErrorResponse;
 import java.util.List;
 import java.util.Map;
 import org.junit.Rule;
@@ -73,28 +71,6 @@ public class RequestPartitionsTest {
 
     // then
     assertResponse(apiRule.requestPartitions(), EXPECTED_TOTAL_PARTITIONS, DEFAULT_TOPIC);
-  }
-
-  @Test
-  public void shouldRespondWithErrorWhenRequestAddressesNonSystemPartition() {
-    // given
-
-    // when
-    // have to do this multiple times as the stream processor for answering the request may not be
-    // available yet
-    final ErrorResponse errorResponse =
-        apiRule
-            .createControlMessageRequest()
-            .messageType(ControlMessageType.REQUEST_PARTITIONS)
-            .partitionId(Protocol.SYSTEM_PARTITION + 1)
-            .send()
-            .awaitError();
-
-    // then
-    assertThat(errorResponse.getErrorCode()).isEqualTo(ErrorCode.REQUEST_PROCESSING_FAILURE);
-    assertThat(errorResponse.getErrorData())
-        .isEqualTo(
-            "Partitions request must address the system partition " + Protocol.SYSTEM_PARTITION);
   }
 
   private void assertResponse(

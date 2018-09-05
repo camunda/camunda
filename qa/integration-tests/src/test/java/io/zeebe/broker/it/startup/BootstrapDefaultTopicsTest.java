@@ -31,13 +31,11 @@ import org.junit.rules.Timeout;
 public class BootstrapDefaultTopicsTest {
   private static final String BOOTSTRAPPED_BROKER_CONFIG = "zeebe.cluster.defaultTopics.1.cfg.toml";
   private static final String OTHER_BROKER_CONFIG = "zeebe.cluster.defaultTopics.2.cfg.toml";
-  private final String[] clusterConfigs = {
-    BOOTSTRAPPED_BROKER_CONFIG, OTHER_BROKER_CONFIG, ClusteringRule.BROKER_3_TOML
-  };
+  private final String[] clusterConfigs = {BOOTSTRAPPED_BROKER_CONFIG, OTHER_BROKER_CONFIG};
 
-  private Timeout testTimeout = Timeout.seconds(30);
-  private ClusteringRule clusteringRule = new ClusteringRule(clusterConfigs);
-  private ClientRule clientRule = new ClientRule(clusteringRule);
+  private final Timeout testTimeout = Timeout.seconds(30);
+  private final ClusteringRule clusteringRule = new ClusteringRule(clusterConfigs);
+  private final ClientRule clientRule = new ClientRule(clusteringRule);
 
   @Rule
   public RuleChain ruleChain =
@@ -54,7 +52,6 @@ public class BootstrapDefaultTopicsTest {
     // then
     assertThat(topics.containsKey(DEFAULT_TOPIC)).isTrue();
     assertThat(topics.get(DEFAULT_TOPIC).size()).isEqualTo(2);
-    assertThat(topics.containsKey("default-topic-2")).isFalse();
-    assertThat(topics.size()).isEqualTo(2); // default + internal
+    assertThat(topics.size()).isEqualTo(1); // only internal
   }
 }

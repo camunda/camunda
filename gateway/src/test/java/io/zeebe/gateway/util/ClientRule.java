@@ -22,6 +22,7 @@ import io.zeebe.gateway.api.clients.TopicClient;
 import io.zeebe.gateway.api.clients.WorkflowClient;
 import io.zeebe.gateway.impl.ZeebeClientBuilderImpl;
 import io.zeebe.gateway.impl.ZeebeClientImpl;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.util.function.Consumer;
@@ -29,18 +30,19 @@ import org.junit.rules.ExternalResource;
 
 public class ClientRule extends ExternalResource {
 
-  public static final int DEFAULT_PARTITION = 1;
+  public static final int DEFAULT_PARTITION = Protocol.DEPLOYMENT_PARTITION;
 
   protected final Consumer<ZeebeClientBuilder> configurator;
 
   protected ZeebeClient client;
   protected ControlledActorClock clock;
 
-  public ClientRule(StubBrokerRule brokerRule) {
+  public ClientRule(final StubBrokerRule brokerRule) {
     this(brokerRule, c -> {});
   }
 
-  public ClientRule(StubBrokerRule brokerRule, Consumer<ZeebeClientBuilder> configurator) {
+  public ClientRule(
+      final StubBrokerRule brokerRule, final Consumer<ZeebeClientBuilder> configurator) {
     this.configurator =
         config -> {
           config.brokerContactPoint(brokerRule.getSocketAddress().toString());
