@@ -41,12 +41,18 @@ public class ZeebeDemoDataGenerator {
 
   @PostConstruct
   private void createZeebeData() {
+    this.createZeebeData(false);
+  }
+
+  public void createZeebeData(boolean manuallyCalled) {
     try {
       createTopic();
     } catch (ClientCommandRejectedException ex) {
       //data already exists
       logger.debug("Topic [{}] already exists.", operateProperties.getZeebe().getTopics().get(0));
-      return;
+      if (!manuallyCalled) {
+        return;
+      }
     }
     deployVersion1();
     startWorkflowInstances(1);
@@ -102,6 +108,15 @@ public class ZeebeDemoDataGenerator {
       //      updateRetriesIncidentSubscription.close();
       logger.info("Subscriptions for demo data generation were canceled");
     }, 2, TimeUnit.MINUTES);
+
+    scheduler.shutdown();
+    try {
+      if (!scheduler.awaitTermination(3, TimeUnit.MINUTES)) {
+        scheduler.shutdownNow();
+      }
+    } catch (InterruptedException e) {
+      scheduler.shutdownNow();
+    }
   }
 
   private TopicSubscription cancelSomeInstances() {
@@ -264,5 +279,15 @@ public class ZeebeDemoDataGenerator {
     zeebeUtil.deployWorkflowToTheTopic(topic, "demoProcess_v_3.bpmn");
   }
 
+  public void setClient(ZeebeClient client) {
+    this.client = client;
+  }
 
+  public void setOperateProperties(OperateProperties operateProperties) {
+    this.operateProperties = operateProperties;
+  }
+
+  public void setZeebeUtil(ZeebeUtil zeebeUtil) {
+    this.zeebeUtil = zeebeUtil;
+  }
 }

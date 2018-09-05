@@ -4,7 +4,6 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
-import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.zeebe.JobEventTransformer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,9 +35,6 @@ public class ZeebeUtil {
 
   @Autowired
   private ZeebeClient client;
-
-  @Autowired
-  private OperateProperties operateProperties;
 
   /**
    * Creates the topic synchronously.
@@ -203,4 +199,7 @@ public class ZeebeUtil {
     client.topicClient(topicName).workflowClient().newUpdatePayloadCommand(workflowInstanceEvent).payload(newPayload).send().join();
   }
 
+  public void setClient(ZeebeClient client) {
+    this.client = client;
+  }
 }
