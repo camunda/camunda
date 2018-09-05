@@ -122,6 +122,7 @@ export default class Filter extends React.Component {
         </label>
         <FilterList
           {...this.definitionConfig()}
+          flowNodeNames={this.props.flowNodeNames}
           openEditFilterModal={this.openEditFilterModal}
           data={this.props.data}
           deleteFilter={this.deleteFilter}

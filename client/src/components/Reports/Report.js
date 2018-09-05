@@ -84,6 +84,7 @@ export default withErrorHandling(
         view: null,
         groupBy: null,
         visualization: null,
+        processPart: null,
         filter: [],
         configuration: {}
       };
@@ -139,14 +140,6 @@ export default withErrorHandling(
       });
     };
 
-    deleteReport = async evt => {
-      await remove(this.id);
-
-      this.setState({
-        redirect: true
-      });
-    };
-
     updateName = evt => {
       this.setState({
         name: evt.target.value
@@ -166,6 +159,7 @@ export default withErrorHandling(
         data.filter = data.filter.filter(
           ({type}) => type !== 'executedFlowNodes' && type !== 'variable'
         );
+        data.processPart = null;
 
         if (data.groupBy && data.groupBy.type === 'variable') {
           data.groupBy = null;
@@ -176,6 +170,7 @@ export default withErrorHandling(
 
       if (updates.view) {
         data.configuration = {...data.configuration, targetValue: {}};
+        data.processPart = null;
       }
 
       if (updates.visualization && updates.visualization !== this.state.data.visualization) {
@@ -227,6 +222,8 @@ export default withErrorHandling(
         updates.visualization &&
         // visualization data should be loaded before
         visualization &&
+        // new visualization is different
+        updates.visualization !== visualization &&
         // should be the same view
         (!updates.view || updates.view === view) &&
         // should be the same groupBy

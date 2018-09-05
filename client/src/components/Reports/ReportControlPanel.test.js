@@ -2,9 +2,11 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import ReportControlPanel from './ReportControlPanel';
-import {extractProcessDefinitionName, reportConfig} from 'services';
+import {extractProcessDefinitionName, reportConfig, getFlowNodeNames} from 'services';
 
 import {loadVariables} from './service';
+
+const flushPromises = () => new Promise(resolve => setImmediate(resolve));
 
 jest.mock('./filter', () => {
   return {
@@ -46,8 +48,16 @@ jest.mock('services', () => {
     extractProcessDefinitionName: jest.fn(),
     formatters: {
       getHighlightedText: text => text
-    }
+    },
+    getFlowNodeNames: jest.fn().mockReturnValue({
+      a: 'foo',
+      b: 'bar'
+    })
   };
+});
+
+jest.mock('./ProcessPart', () => {
+  return {ProcessPart: () => <div>ProcessPart</div>};
 });
 
 jest.mock('./targetValue', () => {
@@ -213,4 +223,29 @@ it('should not show an "Always show tooltips" button for other visualizations', 
   const node = mount(<ReportControlPanel {...data} visualization="something" />);
 
   expect(node).not.toIncludeText('Always show tooltips');
+});
+
+it('should load the flownode names and hand them to the filter and process part', async () => {
+  const node = mount(
+    <ReportControlPanel {...data} view={{entity: 'processInstance', property: 'duration'}} />
+  );
+
+  await flushPromises();
+  node.update();
+
+  expect(getFlowNodeNames).toHaveBeenCalled();
+  expect(node.find('Filter').prop('flowNodeNames')).toEqual(getFlowNodeNames());
+  expect(node.find('ProcessPart').prop('flowNodeNames')).toEqual(getFlowNodeNames());
+});
+
+it('should only display process part button if view is process instance duration', () => {
+  const node = mount(
+    <ReportControlPanel {...data} view={{entity: 'processInstance', property: 'duration'}} />
+  );
+
+  expect(node.find('ProcessPart')).toBePresent();
+
+  node.setProps({view: {entity: 'processInstance', property: 'frequency'}});
+
+  expect(node.find('ProcessPart')).not.toBePresent();
 });

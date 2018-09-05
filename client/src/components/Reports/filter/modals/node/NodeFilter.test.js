@@ -18,11 +18,10 @@ jest.mock('components', () => {
       <div id="diagram">
         Diagram {props.children} {props.xml}
       </div>
-    )
+    ),
+    ClickBehavior: props => <span>ClickBehavior</span>
   };
 });
-
-jest.mock('./ClickBehavior', () => props => <span>ClickBehavior</span>);
 
 it('should contain a modal', () => {
   const node = mount(<NodeFilter />);

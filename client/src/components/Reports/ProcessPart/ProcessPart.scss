@@ -1,0 +1,14 @@
+.ProcessPartModal .Modal__content {
+  display: flex;
+  flex-direction: column;
+
+  .diagram-container {
+    display: flex;
+    flex-grow: 1;
+  }
+}
+
+.ProcessPart__current {
+  cursor: pointer;
+  white-space: pre-wrap;
+}

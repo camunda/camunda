@@ -1,0 +1,118 @@
+import React from 'react';
+import {Button, Modal, BPMNDiagram, ClickBehavior, ActionItem} from 'components';
+
+import './ProcessPart.css';
+
+export default class ProcessPart extends React.Component {
+  state = {
+    modalOpen: false,
+    start: null,
+    end: null
+  };
+
+  render() {
+    return (
+      <React.Fragment>
+        {this.renderButton()}
+        {this.renderPart()}
+        {this.renderModal()}
+      </React.Fragment>
+    );
+  }
+
+  renderButton() {
+    if (!this.props.processPart)
+      return <Button onClick={this.openModal}>Process Instance Part</Button>;
+  }
+
+  renderFlowNodeName = id => {
+    return this.props.flowNodeNames ? this.props.flowNodeNames[id] || id : id;
+  };
+
+  renderPart() {
+    if (this.props.processPart) {
+      return (
+        <div onClick={this.openModal} className="ProcessPart__current">
+          <ActionItem
+            onClick={evt => {
+              evt.stopPropagation();
+              this.props.update(null);
+            }}
+          >
+            Only regard part between{' '}
+            <span className="FilterList__value">
+              {this.renderFlowNodeName(this.props.processPart.start)}
+            </span>
+            <span> and </span>
+            <span className="FilterList__value">
+              {this.renderFlowNodeName(this.props.processPart.end)}
+            </span>
+          </ActionItem>
+        </div>
+      );
+    }
+  }
+
+  renderModal() {
+    return (
+      <Modal
+        open={this.state.modalOpen}
+        onClose={this.closeModal}
+        onConfirm={this.isValid() ? this.applyPart : undefined}
+        size="max"
+        className="ProcessPartModal"
+      >
+        <Modal.Header>Set Process Instance Part</Modal.Header>
+        <Modal.Content>
+          <span>
+            Only regard the process instance part between{' '}
+            <ActionItem disabled={!this.state.start} onClick={() => this.setState({start: null})}>
+              {this.state.start ? this.state.start.name : 'Please select start'}
+            </ActionItem>{' '}
+            and{' '}
+            <ActionItem disabled={!this.state.end} onClick={() => this.setState({end: null})}>
+              {this.state.end ? this.state.end.name : 'Please select end'}
+            </ActionItem>
+          </span>
+          <div className="diagram-container">
+            <BPMNDiagram xml={this.props.xml}>
+              <ClickBehavior
+                setSelectedNodes={this.setSelectedNodes}
+                onClick={this.selectNode}
+                selectedNodes={[this.state.start, this.state.end].filter(v => v)}
+              />
+            </BPMNDiagram>
+          </div>
+        </Modal.Content>
+        <Modal.Actions>
+          <Button onClick={this.closeModal}>Cancel</Button>
+          <Button type="primary" color="blue" onClick={this.applyPart} disabled={!this.isValid()}>
+            Apply
+          </Button>
+        </Modal.Actions>
+      </Modal>
+    );
+  }
+
+  openModal = () => this.setState({modalOpen: true, ...this.props.processPart});
+  closeModal = () => this.setState({modalOpen: false, start: null, end: null});
+
+  setSelectedNodes = ([start, end]) => {
+    this.setState({start, end});
+  };
+
+  selectNode = node => {
+    if (!this.state.start) {
+      this.setState({start: node});
+    } else {
+      this.setState({end: node});
+    }
+  };
+
+  applyPart = () => {
+    this.props.update({start: this.state.start.id, end: this.state.end.id});
+    this.closeModal();
+  };
+
+  isValid = () => this.state.start && this.state.end;
+}

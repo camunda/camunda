@@ -6,11 +6,11 @@ import './ActionItem.css';
 
 export default function ActionItem(props) {
   return (
-    <React.Fragment>
+    <div className="ActionItem">
       <Button disabled={props.disabled} onClick={props.onClick} className="ActionItem__button">
         ×
       </Button>
       <span className={classnames('ActionItem__content', props.className)}>{props.children}</span>
-    </React.Fragment>
+    </div>
   );
 }

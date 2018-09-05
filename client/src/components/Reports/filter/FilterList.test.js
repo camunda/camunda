@@ -1,7 +1,6 @@
 import React from 'react';
 
 import FilterList from './FilterList';
-import {getFlowNodeNames} from 'services';
 
 import {mount} from 'enzyme';
 
@@ -10,12 +9,6 @@ jest.mock('components', () => {
     ActionItem: props => <button {...props}>{props.children}</button>
   };
 });
-
-jest.mock('services', () => {
-  return {getFlowNodeNames: jest.fn()};
-});
-
-getFlowNodeNames.mockReturnValue({flowNode: 'flow Node hello'});
 
 it('should render an unordered list', () => {
   const node = mount(<FilterList data={[]} />);
@@ -150,7 +143,7 @@ it('should display a simple flow node filter', async () => {
   expect(node).toIncludeText('Executed Flow Node is flowNode');
 });
 
-it('should display flow node name instead of id after the names are loaded', async () => {
+it('should display flow node name instead of id', async () => {
   const data = [
     {
       type: 'executedFlowNodes',
@@ -168,9 +161,9 @@ it('should display flow node name instead of id after the names are loaded', asy
       processDefinitionVersion="1"
       data={data}
       openEditFilterModal={jest.fn()}
+      flowNodeNames={{flowNode: 'flow Node hello'}}
     />
   );
-  await node.instance().loadFlowNodeNames();
 
   expect(node).toIncludeText('Executed Flow Node is flow Node hello');
 });

@@ -2,47 +2,10 @@ import React from 'react';
 import moment from 'moment';
 
 import {ActionItem} from 'components';
-import {getFlowNodeNames} from 'services';
 
 import './FilterList.css';
 
 export default class FilterList extends React.Component {
-  constructor(props) {
-    super(props);
-    this.state = {
-      flowNodeNames: null
-    };
-  }
-
-  componentDidMount() {
-    this.loadFlowNodeNames();
-  }
-
-  getProcDefKey = () => {
-    return this.props.processDefinitionKey;
-  };
-
-  getProcDefVersion = () => {
-    return this.props.processDefinitionVersion;
-  };
-
-  componentDidUpdate(prevProps, prevState) {
-    const prevProcDefKey = prevProps.processDefinitionKey;
-    const prevProcDefVersion = prevProps.processDefinitionVersion;
-    const procDefKeyWillChange = prevProcDefKey !== this.getProcDefKey();
-    const procDefVersionWillChange = prevProcDefVersion !== this.getProcDefVersion();
-    if (procDefKeyWillChange || procDefVersionWillChange) {
-      this.loadFlowNodeNames();
-    }
-  }
-
-  loadFlowNodeNames = async () => {
-    if (this.getProcDefKey() && this.getProcDefVersion()) {
-      const flowNodeNames = await getFlowNodeNames(this.getProcDefKey(), this.getProcDefVersion());
-      this.setState({flowNodeNames});
-    }
-  };
-
   createOperator = name => {
     return <span className="FilterList__operator"> {name} </span>;
   };
@@ -197,7 +160,7 @@ export default class FilterList extends React.Component {
           }
         } else if (filter.type === 'executedFlowNodes') {
           const {values, operator} = filter.data;
-          const flowNodes = this.state.flowNodeNames;
+          const flowNodes = this.props.flowNodeNames;
 
           list.push(
             <li

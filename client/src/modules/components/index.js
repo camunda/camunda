@@ -6,7 +6,7 @@ export {Dropdown} from './Dropdown';
 export {Input} from './Input';
 export {Select} from './Select';
 export {ButtonGroup} from './ButtonGroup';
-export {BPMNDiagram} from './BPMNDiagram';
+export {BPMNDiagram, ClickBehavior} from './BPMNDiagram';
 export {ControlGroup} from './ControlGroup';
 export {CopyToClipboard} from './CopyToClipboard';
 export {ReportView} from './ReportView';

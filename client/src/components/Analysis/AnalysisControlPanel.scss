@@ -47,14 +47,10 @@
 }
 
 .AnalysisControlPanel__config {
-  color: #333;
-  background-color: #f8f8f8;
-  border: 1px solid #bbb;
-  border-radius: 3px;
   display: inline-block;
   cursor: default;
 }
 
-.AnalysisControlPanel__config--hover {
+.AnalysisControlPanel__config--hover .ActionItem {
   background-color: rgba(48, 116, 142, 0.6);
 }

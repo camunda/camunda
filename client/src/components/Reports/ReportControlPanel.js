@@ -2,9 +2,10 @@ import React from 'react';
 import {Popover, ProcessDefinitionSelection, Button, Dropdown, Input} from 'components';
 
 import {Filter} from './filter';
-import {extractProcessDefinitionName, reportConfig, formatters} from 'services';
+import {extractProcessDefinitionName, getFlowNodeNames, reportConfig, formatters} from 'services';
 
 import {TargetValueComparison} from './targetValue';
+import {ProcessPart} from './ProcessPart';
 
 import {loadVariables} from './service';
 
@@ -23,14 +24,25 @@ export default class ReportControlPanel extends React.Component {
       processDefinitionName: this.props.processDefinitionKey,
       variables: [],
       variableTypeaheadValue: '',
-      variableStartIdx: 0
+      variableStartIdx: 0,
+      flowNodeNames: null
     };
   }
 
   componentDidMount() {
     this.loadProcessDefinitionName();
     this.loadVariables();
+    this.loadFlowNodeNames();
   }
+
+  loadFlowNodeNames = async () => {
+    this.setState({
+      flowNodeNames: await getFlowNodeNames(
+        this.props.processDefinitionKey,
+        this.props.processDefinitionVersion
+      )
+    });
+  };
 
   loadProcessDefinitionName = async () => {
     const {xml} = this.props.configuration;
@@ -68,6 +80,7 @@ export default class ReportControlPanel extends React.Component {
       this.props.processDefinitionVersion !== prevProps.processDefinitionVersion
     ) {
       this.loadVariables();
+      this.loadFlowNodeNames();
     }
   }
 
@@ -113,6 +126,7 @@ export default class ReportControlPanel extends React.Component {
           </li>
           <li className="filter">
             <Filter
+              flowNodeNames={this.state.flowNodeNames}
               data={this.props.filter}
               onChange={this.props.updateReport}
               {...this.definitionConfig()}
@@ -136,10 +150,25 @@ export default class ReportControlPanel extends React.Component {
               </Button>
             </li>
           )}
+          {this.shouldDisplayProcessPart() && (
+            <li>
+              <ProcessPart
+                flowNodeNames={this.state.flowNodeNames}
+                xml={this.props.configuration.xml}
+                processPart={this.props.processPart}
+                update={newPart => this.update('processPart', newPart)}
+              />
+            </li>
+          )}
         </ul>
       </div>
     );
   }
+
+  shouldDisplayProcessPart = () => {
+    const {view} = this.props;
+    return view && view.entity === 'processInstance' && view.property === 'duration';
+  };
 
   toggleAllTooltips = () => {
     this.props.updateReport({

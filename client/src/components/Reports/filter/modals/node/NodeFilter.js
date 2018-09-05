@@ -1,8 +1,6 @@
 import React from 'react';
 import classnames from 'classnames';
-import {Modal, ButtonGroup, Button, BPMNDiagram} from 'components';
-
-import ClickBehavior from './ClickBehavior';
+import {Modal, ButtonGroup, Button, BPMNDiagram, ClickBehavior} from 'components';
 
 import './NodeFilter.css';
 
