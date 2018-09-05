@@ -2,7 +2,7 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import {isEmpty} from 'modules/utils';
-import {ACTIVITY_STATE} from 'modules/constants';
+import {ACTIVITY_STATE, EVENT_TYPE, EVENT_SOURCE_TYPE} from 'modules/constants';
 
 import Foldable from './Foldable';
 import * as Styled from './styled';
@@ -56,14 +56,21 @@ export default class InstanceEvents extends React.Component {
     );
   };
 
-  renderEvent = ({eventType, metadata}, idx) => {
+  renderEvent = ({eventType, eventSourceType, metadata}, idx) => {
     const key = `${eventType}${idx}`;
+    const isOpenIncidentEvent =
+      eventType === EVENT_TYPE.CREATED &&
+      eventSourceType === EVENT_SOURCE_TYPE.INCIDENT;
 
     return (
       <Foldable key={key}>
-        <Foldable.Summary isFoldable={!isEmpty(metadata)}>
+        <Styled.EventFoldableSummary
+          isFoldable={!isEmpty(metadata)}
+          isOpenIncidentEvent={isOpenIncidentEvent}
+        >
+          {!isOpenIncidentEvent ? '' : <Styled.IncidentIcon />}
           {eventType}
-        </Foldable.Summary>
+        </Styled.EventFoldableSummary>
         <Foldable.Details>
           {!!metadata && this.renderFoldableDetails(metadata)}
         </Foldable.Details>

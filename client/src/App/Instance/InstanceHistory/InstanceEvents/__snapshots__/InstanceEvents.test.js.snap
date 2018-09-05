@@ -25,7 +25,8 @@ exports[`InstanceEvents should render grouped events 1`] = `
         "events": Array [
           Object {
             "activityInstanceId": "bar",
-            "eventType": "barCreated",
+            "eventSourceType": "INCIDENT",
+            "eventType": "CREATED",
           },
           Object {
             "activityInstanceId": "bar",
@@ -63,11 +64,12 @@ exports[`InstanceEvents should render grouped events 1`] = `
           <Foldable
             key="fooCreated0"
           >
-            <Summary
+            <Styled(Summary)
               isFoldable={true}
+              isOpenIncidentEvent={false}
             >
               fooCreated
-            </Summary>
+            </Styled(Summary)>
             <Details>
               <Themed(styled.div)
                 key="0"
@@ -79,11 +81,12 @@ exports[`InstanceEvents should render grouped events 1`] = `
           <Foldable
             key="fooActiviated1"
           >
-            <Summary
+            <Styled(Summary)
               isFoldable={false}
+              isOpenIncidentEvent={false}
             >
               fooActiviated
-            </Summary>
+            </Styled(Summary)>
             <Details />
           </Foldable>
         </Details>
@@ -101,23 +104,26 @@ exports[`InstanceEvents should render grouped events 1`] = `
         </Styled(Summary)>
         <Details>
           <Foldable
-            key="barCreated0"
+            key="CREATED0"
           >
-            <Summary
+            <Styled(Summary)
               isFoldable={false}
+              isOpenIncidentEvent={true}
             >
-              barCreated
-            </Summary>
+              <Styled(InstanceHistoryIconIncidentActive) />
+              CREATED
+            </Styled(Summary)>
             <Details />
           </Foldable>
           <Foldable
             key="barActivated1"
           >
-            <Summary
+            <Styled(Summary)
               isFoldable={false}
+              isOpenIncidentEvent={false}
             >
               barActivated
-            </Summary>
+            </Styled(Summary)>
             <Details />
           </Foldable>
         </Details>
@@ -129,11 +135,12 @@ exports[`InstanceEvents should render grouped events 1`] = `
       <Foldable
         key="baz2"
       >
-        <Summary
+        <Styled(Summary)
           isFoldable={true}
+          isOpenIncidentEvent={false}
         >
           baz
-        </Summary>
+        </Styled(Summary)>
         <Details>
           <Foldable
             key="0"

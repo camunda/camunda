@@ -105,3 +105,11 @@ export const DROPDOWN_PLACEMENT = {
 export const MESSAGES_TYPE = {
   DROP_SELECTION: 'DROP_SELECTION'
 };
+
+export const EVENT_TYPE = {
+  CREATED: 'CREATED'
+};
+
+export const EVENT_SOURCE_TYPE = {
+  INCIDENT: 'INCIDENT'
+};

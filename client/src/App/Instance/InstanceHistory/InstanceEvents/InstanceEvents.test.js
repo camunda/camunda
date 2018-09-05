@@ -1,7 +1,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {ACTIVITY_STATE} from 'modules/constants';
+import {ACTIVITY_STATE, EVENT_TYPE, EVENT_SOURCE_TYPE} from 'modules/constants';
 
 import InstanceEvents from './InstanceEvents';
 import * as Styled from './styled';
@@ -23,7 +23,8 @@ const fooActivityEvents = [
 
 const barActivityEvents = [
   {
-    eventType: 'barCreated',
+    eventType: EVENT_TYPE.CREATED,
+    eventSourceType: EVENT_SOURCE_TYPE.INCIDENT,
     activityInstanceId: 'bar'
   },
   {
@@ -119,6 +120,14 @@ describe('InstanceEvents', () => {
     // Bar Events Foldables
     expect(BarFoldableDetailsNode.find(Foldable)).toHaveLength(
       barActivityEvents.length
+    );
+    const BarIncidentEventNode = BarFoldableDetailsNode.find(Foldable).at(0);
+    const BarIncidentEventSummaryNode = BarIncidentEventNode.find(
+      Styled.EventFoldableSummary
+    );
+    expect(BarIncidentEventSummaryNode.prop('isOpenIncidentEvent')).toBe(true);
+    expect(BarIncidentEventSummaryNode.find(Styled.IncidentIcon)).toHaveLength(
+      1
     );
 
     // Instance Events Foldables

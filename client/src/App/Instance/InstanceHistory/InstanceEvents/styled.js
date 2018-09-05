@@ -46,6 +46,11 @@ export const DataEntry = themed(styled.div`
   padding-bottom: 7px;
 `);
 
+export const EventFoldableSummary = styled(Foldable.Summary)`
+  ${({isOpenIncidentEvent}) =>
+    !isOpenIncidentEvent ? '' : `color: ${Colors.incidentsAndErrors};`};
+`;
+
 export const GroupFoldableSummary = styled(Foldable.Summary)`
   font-weight: bold;
 `;
