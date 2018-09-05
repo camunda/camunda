@@ -54,17 +54,36 @@ public class RequestManager extends Actor {
   protected final long blockTimeMillis;
 
   public RequestManager(
-      ClientOutput output,
-      ClientTopologyManager topologyManager,
-      ZeebeObjectMapperImpl objectMapper,
-      Duration requestTimeout,
-      long blockTimeMillis) {
+      final ClientOutput output,
+      final ClientTopologyManager topologyManager,
+      final ZeebeObjectMapperImpl objectMapper,
+      final Duration requestTimeout,
+      final long blockTimeMillis) {
     this.output = output;
     this.topologyManager = topologyManager;
     this.objectMapper = objectMapper;
     this.requestTimeout = requestTimeout;
     this.blockTimeMillis = blockTimeMillis;
     this.dispatchStrategy = new RoundRobinDispatchStrategy(topologyManager);
+  }
+
+  private static boolean shouldRetryRequest(final DirectBuffer responseContent) {
+    final ErrorResponseHandler errorHandler = new ErrorResponseHandler();
+    final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
+    headerDecoder.wrap(responseContent, 0);
+
+    if (errorHandler.handlesResponse(headerDecoder)) {
+      errorHandler.wrap(
+          responseContent,
+          headerDecoder.encodedLength(),
+          headerDecoder.blockLength(),
+          headerDecoder.version());
+
+      final ErrorCode errorCode = errorHandler.getErrorCode();
+      return errorCode == ErrorCode.PARTITION_NOT_FOUND || errorCode == ErrorCode.REQUEST_TIMEOUT;
+    } else {
+      return false;
+    }
   }
 
   public ActorFuture<Void> close() {
@@ -75,7 +94,7 @@ public class RequestManager extends Actor {
     return waitAndResolve(send(command));
   }
 
-  public <E> E execute(ControlMessageRequest<E> controlMessage) {
+  public <E> E execute(final ControlMessageRequest<E> controlMessage) {
     return waitAndResolve(send(controlMessage));
   }
 
@@ -122,26 +141,7 @@ public class RequestManager extends Actor {
     return new ResponseFuture<>(deferredFuture, requestHandler, requestTimeout);
   }
 
-  private static boolean shouldRetryRequest(DirectBuffer responseContent) {
-    final ErrorResponseHandler errorHandler = new ErrorResponseHandler();
-    final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-    headerDecoder.wrap(responseContent, 0);
-
-    if (errorHandler.handlesResponse(headerDecoder)) {
-      errorHandler.wrap(
-          responseContent,
-          headerDecoder.encodedLength(),
-          headerDecoder.blockLength(),
-          headerDecoder.version());
-
-      final ErrorCode errorCode = errorHandler.getErrorCode();
-      return errorCode == ErrorCode.PARTITION_NOT_FOUND || errorCode == ErrorCode.REQUEST_TIMEOUT;
-    } else {
-      return false;
-    }
-  }
-
-  private ActorFuture<Integer> updateTopologyAndDeterminePartition(String topic) {
+  private ActorFuture<Integer> updateTopologyAndDeterminePartition(final String topic) {
     final CompletableActorFuture<Integer> future = new CompletableActorFuture<>();
 
     actor.call(
@@ -153,7 +153,7 @@ public class RequestManager extends Actor {
   }
 
   private void updateTopologyAndDeterminePartition(
-      String topic, CompletableActorFuture<Integer> future, long timeout) {
+      final String topic, final CompletableActorFuture<Integer> future, final long timeout) {
     final ActorFuture<ClusterState> topologyFuture = topologyManager.requestTopology();
     actor.runOnCompletion(
         topologyFuture,
@@ -172,7 +172,7 @@ public class RequestManager extends Actor {
   }
 
   private ActorFuture<Supplier<Integer>> determineRemoteProvider(
-      RequestResponseHandler requestHandler) {
+      final RequestResponseHandler requestHandler) {
     final CompletableActorFuture<Supplier<Integer>> supplierFuture = new CompletableActorFuture<>();
     if (requestHandler.addressesSpecificPartition()) {
       // partition already known
@@ -227,7 +227,7 @@ public class RequestManager extends Actor {
     return executeAsync(requestHandler);
   }
 
-  private <E> E waitAndResolve(Future<E> future) {
+  private <E> E waitAndResolve(final Future<E> future) {
     try {
       return future.get();
     } catch (final InterruptedException e) {
@@ -246,30 +246,8 @@ public class RequestManager extends Actor {
     return new BrokerProvider(ClusterStateImpl::getRandomBroker);
   }
 
-  private BrokerProvider providerForPartition(int partitionId) {
+  private BrokerProvider providerForPartition(final int partitionId) {
     return new BrokerProvider(topology -> topology.getLeaderForPartition(partitionId));
-  }
-
-  private class BrokerProvider implements Supplier<Integer> {
-    private int attempt = 0;
-
-    private final Function<ClusterStateImpl, Integer> addressStrategy;
-
-    BrokerProvider(Function<ClusterStateImpl, Integer> addressStrategy) {
-      this.addressStrategy = addressStrategy;
-    }
-
-    @Override
-    public Integer get() {
-      if (attempt > 0) {
-        topologyManager.requestTopology();
-      }
-
-      attempt++;
-
-      final ClusterStateImpl topology = topologyManager.getTopology();
-      return addressStrategy.apply(topology);
-    }
   }
 
   public static class ResponseFuture<E> implements ActorFuture<E>, ZeebeFuture<E> {
@@ -283,16 +261,16 @@ public class RequestManager extends Actor {
     protected ExecutionException failure = null;
 
     ResponseFuture(
-        ActorFuture<ClientResponse> transportFuture,
-        RequestResponseHandler responseHandler,
-        Duration requestTimeout) {
+        final ActorFuture<ClientResponse> transportFuture,
+        final RequestResponseHandler responseHandler,
+        final Duration requestTimeout) {
       this.transportFuture = transportFuture;
       this.responseHandler = responseHandler;
       this.requestTimeout = requestTimeout;
     }
 
     @Override
-    public boolean cancel(boolean mayInterruptIfRunning) {
+    public boolean cancel(final boolean mayInterruptIfRunning) {
       throw new UnsupportedOperationException();
     }
 
@@ -306,7 +284,7 @@ public class RequestManager extends Actor {
       return transportFuture.isDone();
     }
 
-    protected void ensureResponseAvailable(long timeout, TimeUnit unit) {
+    protected void ensureResponseAvailable(final long timeout, final TimeUnit unit) {
       if (result != null || failure != null) {
         return;
       }
@@ -327,14 +305,14 @@ public class RequestManager extends Actor {
           failWith("Unexpected response format");
           return;
         }
-      } catch (ExecutionException e) {
+      } catch (final ExecutionException e) {
         if (e.getCause() != null && e.getCause() instanceof RequestTimeoutException) {
           failWith("Request timed out (" + requestTimeout + ")", e);
         } else {
           failWith("Could not complete request", e);
         }
         return;
-      } catch (InterruptedException | TimeoutException e) {
+      } catch (final InterruptedException | TimeoutException e) {
         failWith("Could not complete request", e);
         return;
       }
@@ -366,7 +344,6 @@ public class RequestManager extends Actor {
       }
     }
 
-    @SuppressWarnings("unchecked")
     private void handleExpectedResponse(
         final ClientResponse response, final DirectBuffer responseBuffer) {
       try {
@@ -383,25 +360,25 @@ public class RequestManager extends Actor {
         }
 
         return;
-      } catch (ClientCommandRejectedException e) {
+      } catch (final ClientCommandRejectedException e) {
         failWith(e);
         return;
-      } catch (Exception e) {
+      } catch (final Exception e) {
         failWith("Unexpected exception during response handling", e);
         return;
       }
     }
 
-    protected void failWith(Exception e) {
+    protected void failWith(final Exception e) {
       this.failure = new ExecutionException(e);
     }
 
-    protected void failWith(String message) {
+    protected void failWith(final String message) {
       failWith(
           new ClientException(message + ". Request was: " + responseHandler.describeRequest()));
     }
 
-    protected void failWith(String message, Throwable cause) {
+    protected void failWith(final String message, final Throwable cause) {
       failWith(
           new ClientException(
               message + ". Request was: " + responseHandler.describeRequest(), cause));
@@ -411,13 +388,13 @@ public class RequestManager extends Actor {
     public E get() throws InterruptedException, ExecutionException {
       try {
         return get(1, TimeUnit.DAYS);
-      } catch (TimeoutException e) {
+      } catch (final TimeoutException e) {
         throw new ClientException("Failed to wait for response", e);
       }
     }
 
     @Override
-    public E get(long timeout, TimeUnit unit)
+    public E get(final long timeout, final TimeUnit unit)
         throws InterruptedException, ExecutionException, TimeoutException {
       ensureResponseAvailable(timeout, unit);
 
@@ -429,17 +406,17 @@ public class RequestManager extends Actor {
     }
 
     @Override
-    public void complete(E value) {
+    public void complete(final E value) {
       throw new UnsupportedOperationException();
     }
 
     @Override
-    public void completeExceptionally(String failure, Throwable throwable) {
+    public void completeExceptionally(final String failure, final Throwable throwable) {
       throw new UnsupportedOperationException();
     }
 
     @Override
-    public void completeExceptionally(Throwable throwable) {
+    public void completeExceptionally(final Throwable throwable) {
       throw new UnsupportedOperationException();
     }
 
@@ -447,7 +424,7 @@ public class RequestManager extends Actor {
     public E join() {
       try {
         return get();
-      } catch (ExecutionException e) {
+      } catch (final ExecutionException e) {
         final Throwable cause = e.getCause();
 
         if (cause instanceof ClientException) {
@@ -456,16 +433,16 @@ public class RequestManager extends Actor {
         } else {
           throw new ClientException(cause.getMessage(), cause);
         }
-      } catch (InterruptedException e) {
+      } catch (final InterruptedException e) {
         throw new ClientException(e.getMessage(), e);
       }
     }
 
     @Override
-    public E join(long timeout, TimeUnit unit) {
+    public E join(final long timeout, final TimeUnit unit) {
       try {
         return get(timeout, unit);
-      } catch (ExecutionException e) {
+      } catch (final ExecutionException e) {
         final Throwable cause = e.getCause();
 
         if (cause instanceof ClientException) {
@@ -474,13 +451,13 @@ public class RequestManager extends Actor {
         } else {
           throw new ClientException(cause.getMessage(), cause);
         }
-      } catch (InterruptedException | TimeoutException e) {
+      } catch (final InterruptedException | TimeoutException e) {
         throw new ClientException(e.getMessage(), e);
       }
     }
 
     @Override
-    public void block(ActorTask onCompletion) {
+    public void block(final ActorTask onCompletion) {
       transportFuture.block(onCompletion);
     }
 
@@ -497,6 +474,27 @@ public class RequestManager extends Actor {
     @Override
     public Throwable getException() {
       return failure;
+    }
+  }
+
+  private class BrokerProvider implements Supplier<Integer> {
+    private final Function<ClusterStateImpl, Integer> addressStrategy;
+    private int attempt = 0;
+
+    BrokerProvider(final Function<ClusterStateImpl, Integer> addressStrategy) {
+      this.addressStrategy = addressStrategy;
+    }
+
+    @Override
+    public Integer get() {
+      if (attempt > 0) {
+        topologyManager.requestTopology();
+      }
+
+      attempt++;
+
+      final ClusterStateImpl topology = topologyManager.getTopology();
+      return addressStrategy.apply(topology);
     }
   }
 }
