@@ -17,6 +17,8 @@ package io.zeebe.broker.it.startup;
 
 import io.zeebe.broker.Broker;
 import io.zeebe.util.sched.clock.ControlledActorClock;
+import java.net.URISyntaxException;
+import java.nio.file.Paths;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -26,10 +28,15 @@ public class BrokerInvalidCfgTest {
   @Rule public ExpectedException expectedException = ExpectedException.none();
 
   @Test
-  public void shouldThrowExceptionWithNegativePartitions() {
+  public void shouldThrowExceptionWithNegativePartitions() throws URISyntaxException {
     // given
     final String path =
-        BrokerInvalidCfgTest.class.getResource("/invalidCfgs/negativePartitions.toml").getPath();
+        Paths.get(
+                BrokerInvalidCfgTest.class
+                    .getResource("/invalidCfgs/negativePartitions.toml")
+                    .toURI())
+            .toAbsolutePath()
+            .toString();
 
     // expected
     expectedException.expect(IllegalArgumentException.class);
