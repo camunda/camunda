@@ -33,7 +33,11 @@ jest.mock('./service', () => {
 
 jest.mock('./entityIcons', () => {
   return {
-    endpoint: props => <svg {...props} />
+    endpoint: {
+      header: props => <svg {...props} />,
+      generic: props => <svg {...props} />,
+      heat: props => <svg {...props} />
+    }
   };
 });
 
@@ -532,17 +536,17 @@ describe('getEntityIconName', () => {
 
   it('should return the endoint name if data is null', () => {
     const name = node.instance().getEntityIconName({data: null});
-    expect(name).toBe('endpoint');
+    expect(name).toBe('generic');
   });
 
   it('should return the endoint name if visualization is empty', () => {
     const name = node.instance().getEntityIconName({data: {visualization: ''}});
-    expect(name).toBe('endpoint');
+    expect(name).toBe('generic');
   });
 
   it('should return the endpoint name along with the visualization name if visualization is defined', () => {
     const name = node.instance().getEntityIconName({data: {visualization: 'heat'}});
-    expect(name).toBe('endpointHeat');
+    expect(name).toBe('heat');
   });
 });
 

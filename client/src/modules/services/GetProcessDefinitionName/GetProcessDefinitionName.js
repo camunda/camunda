@@ -1,10 +1,8 @@
-import Viewer from 'bpmn-js/lib/NavigatedViewer';
-
 export default function extractProcessDefinitionName(processDefinitionXml) {
-  return new Promise(resolve => {
-    const viewer = new Viewer();
-    viewer.importXML(processDefinitionXml, () => {
-      resolve(viewer._definitions.rootElements.find(e => e.$instanceOf('bpmn:Process')).name);
-    });
-  });
+  const parser = new DOMParser();
+  const xmlDoc = parser.parseFromString(processDefinitionXml, 'text/xml');
+
+  const procesNode =
+    xmlDoc.getElementsByTagName('bpmn:process')[0] || xmlDoc.getElementsByTagName('process')[0];
+  return procesNode.getAttribute('name') || '';
 }

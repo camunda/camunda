@@ -14,18 +14,24 @@ import reports from '-!svg-react-loader!./reports.svg';
 import reportEmpty from '-!svg-react-loader!./report-empty.svg';
 
 const icons = {
-  alert,
-  alerts,
-  reports,
-  report: reportEmpty,
-  dashboard,
-  dashboards,
-  reportBar: {label: 'Bar chart Report', Component: reportBar},
-  reportHeat: {label: 'Heatmap Report', Component: reportHeat},
-  reportLine: {label: 'Line chart Report', Component: reportLine},
-  reportNumber: {label: 'Number Report', Component: reportNumber},
-  reportPie: {label: 'Pie chart Report', Component: reportPie},
-  reportTable: {label: 'Table Report', Component: reportTable}
+  alert: {
+    header: alerts,
+    generic: alert
+  },
+  report: {
+    header: reports,
+    generic: reportEmpty,
+    bar: {label: 'Bar chart Report', Component: reportBar},
+    head: {label: 'Heatmap Report', Component: reportHeat},
+    line: {label: 'Line chart Report', Component: reportLine},
+    number: {label: 'Number Report', Component: reportNumber},
+    pie: {label: 'Pie chart Report', Component: reportPie},
+    table: {label: 'Table Report', Component: reportTable}
+  },
+  dashboard: {
+    header: dashboards,
+    generic: dashboard
+  }
 };
 
 export default icons;

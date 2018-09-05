@@ -21,10 +21,10 @@ export default class AnalysisControlPanel extends React.Component {
     this.loadProcessDefinitionName();
   }
 
-  loadProcessDefinitionName = async () => {
+  loadProcessDefinitionName = () => {
     const {xml} = this.props;
     if (xml) {
-      const processDefinitionName = await extractProcessDefinitionName(xml);
+      const processDefinitionName = extractProcessDefinitionName(xml);
       this.setState({
         processDefinitionName
       });

@@ -14,7 +14,7 @@ describe('getReportCountLabel', () => {
   });
   it('should return empty label if there are no reports', () => {
     const label = node.instance().getReportCountLabel({reports: []});
-    expect(label).toBe('Empty');
+    expect(label).toBe('0 Reports');
   });
 
   it('should return correct single report label', () => {

@@ -1,5 +1,6 @@
 import React from 'react';
 import {EntityList} from 'components';
+import {extractProcessDefinitionName} from 'services';
 
 export default function Reports() {
   return (
@@ -9,8 +10,10 @@ export default function Reports() {
       sortBy={'lastModified'}
       operations={['create', 'edit', 'delete', 'duplicate', 'search', 'combine']}
       renderCustom={report => {
-        if (report.reportType === 'combined') return `Combined Report`;
-        return (report.data ? report.data.processDefinitionKey : 'Empty') || 'Empty';
+        if (report.reportType === 'combined') return 'Combined Report';
+        if (report.data && report.data.configuration.xml)
+          return extractProcessDefinitionName(report.data.configuration.xml);
+        return '';
       }}
     />
   );

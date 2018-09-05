@@ -90,10 +90,8 @@ class EntityList extends React.Component {
   };
 
   getEntityIconName = entity => {
-    const entityType = this.props.api;
-    if (!entity.data || !entity.data.visualization) return entityType;
-    const visualization = entity.data.visualization;
-    return entityType + visualization.charAt(0).toUpperCase() + visualization.slice(1);
+    if (entity.data && entity.data.visualization) return entity.data.visualization;
+    return 'generic';
   };
 
   formatData = data =>
@@ -220,14 +218,11 @@ class EntityList extends React.Component {
   };
 
   renderCells = data => {
-    return data.map(
-      (cell, idx) =>
-        cell.content && (
-          <span key={idx} className={classnames('data', cell.parentClassName)}>
-            {this.renderCell(cell)}
-          </span>
-        )
-    );
+    return data.map((cell, idx) => (
+      <span key={idx} className={classnames('data', cell.parentClassName)}>
+        {this.renderCell(cell)}
+      </span>
+    ));
   };
 
   renderCell = cell => {
@@ -292,7 +287,7 @@ class EntityList extends React.Component {
         />
       );
     }
-    const HeaderIcon = entityIcons[this.props.api + 's'];
+    const HeaderIcon = entityIcons[this.props.api].header;
     const header = (
       <div className="header">
         {HeaderIcon && <HeaderIcon />}
@@ -345,7 +340,7 @@ class EntityList extends React.Component {
             {this.formatData(this.state.data)
               .filter(row => row.name.toLowerCase().includes(this.state.query.toLowerCase()))
               .map((row, idx) => {
-                const EntityIcon = entityIcons[row.iconName];
+                const EntityIcon = entityIcons[this.props.api][row.iconName];
                 const EntityIconComponent = EntityIcon.label ? (
                   <span title={EntityIcon.label}>
                     <EntityIcon.Component />
