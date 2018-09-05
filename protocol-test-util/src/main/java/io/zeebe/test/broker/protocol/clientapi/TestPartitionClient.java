@@ -43,7 +43,7 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 
-public class TestTopicClient {
+public class TestPartitionClient {
   // workflow related properties
 
   public static final String PROP_WORKFLOW_BPMN_PROCESS_ID = "bpmnProcessId";
@@ -58,7 +58,7 @@ public class TestTopicClient {
 
   private final List<Integer> partitionIdsOfOpenSubscription = new ArrayList<>();
 
-  public TestTopicClient(final ClientApiRule apiRule, final int partitionId) {
+  public TestPartitionClient(final ClientApiRule apiRule, final int partitionId) {
     this.apiRule = apiRule;
     this.partitionId = partitionId;
   }

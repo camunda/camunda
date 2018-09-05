@@ -22,12 +22,10 @@ public class BrokerPartitionState {
   public static final String FOLLOWER_STATE = "FOLLOWER";
 
   private final String state;
-  private final String topicName;
   private final int partitionId;
 
-  public BrokerPartitionState(final String state, final String topicName, final int partitionId) {
+  public BrokerPartitionState(final String state, final int partitionId) {
     this.state = state;
-    this.topicName = topicName;
     this.partitionId = partitionId;
   }
 
@@ -35,16 +33,12 @@ public class BrokerPartitionState {
     return state;
   }
 
-  public String getTopicName() {
-    return topicName;
-  }
-
   public int getPartitionId() {
     return partitionId;
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean equals(final Object o) {
     if (this == o) {
       return true;
     }
@@ -52,15 +46,12 @@ public class BrokerPartitionState {
       return false;
     }
     final BrokerPartitionState that = (BrokerPartitionState) o;
-    return partitionId == that.partitionId
-        && Objects.equals(state, that.state)
-        && Objects.equals(topicName, that.topicName);
+    return partitionId == that.partitionId && Objects.equals(state, that.state);
   }
 
   @Override
   public int hashCode() {
-
-    return Objects.hash(state, topicName, partitionId);
+    return Objects.hash(state, partitionId);
   }
 
   @Override
@@ -68,9 +59,6 @@ public class BrokerPartitionState {
     return "BrokerPartitionState{"
         + "state='"
         + state
-        + '\''
-        + ", topicName='"
-        + topicName
         + '\''
         + ", partitionId="
         + partitionId
