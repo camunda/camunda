@@ -19,22 +19,18 @@ import io.zeebe.logstreams.fs.FsSnapshotStorageBuilder;
 import io.zeebe.logstreams.impl.LogStreamBuilder;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorBuilder;
-import io.zeebe.util.buffer.BufferUtil;
-import org.agrona.DirectBuffer;
 
 public class LogStreams {
-  public static LogStreamBuilder createFsLogStream(
-      final DirectBuffer topicName, final int partitionId) {
-    return new LogStreamBuilder(topicName, partitionId)
-        .logName(BufferUtil.bufferAsString(topicName) + "-" + partitionId);
+  public static LogStreamBuilder createFsLogStream(final int partitionId) {
+    return new LogStreamBuilder(partitionId).logName(Integer.toString(partitionId));
   }
 
-  public static FsSnapshotStorageBuilder createFsSnapshotStore(String rootPath) {
+  public static FsSnapshotStorageBuilder createFsSnapshotStore(final String rootPath) {
     return new FsSnapshotStorageBuilder(rootPath);
   }
 
   public static StreamProcessorBuilder createStreamProcessor(
-      String name, int id, StreamProcessor streamProcessor) {
+      final String name, final int id, final StreamProcessor streamProcessor) {
     return new StreamProcessorBuilder(id, name, streamProcessor);
   }
 }

@@ -65,7 +65,7 @@ public class FsLogStorageTest {
 
     fsStorageConfig = new FsLogStorageConfiguration(SEGMENT_SIZE, logPath, 0, false);
 
-    fsLogStorage = new FsLogStorage(fsStorageConfig, new MetricsManager(), "topic", 0);
+    fsLogStorage = new FsLogStorage(fsStorageConfig, new MetricsManager(), 0);
   }
 
   @Test
@@ -138,7 +138,7 @@ public class FsLogStorageTest {
   @Test
   public void shouldDeleteLogOnCloseStorage() {
     fsStorageConfig = new FsLogStorageConfiguration(SEGMENT_SIZE, logPath, 0, true);
-    fsLogStorage = new FsLogStorage(fsStorageConfig, new MetricsManager(), "topic", 0);
+    fsLogStorage = new FsLogStorage(fsStorageConfig, new MetricsManager(), 0);
 
     fsLogStorage.open();
 
@@ -399,7 +399,7 @@ public class FsLogStorageTest {
     fsLogStorage.append(ByteBuffer.wrap(MSG));
     fsLogStorage.close();
 
-    try (FileChannel fileChannel = FileUtil.openChannel(fsStorageConfig.fileName(0), false)) {
+    try (final FileChannel fileChannel = FileUtil.openChannel(fsStorageConfig.fileName(0), false)) {
       final long originalFileSize = fileChannel.size();
 
       // append the underlying file
@@ -423,7 +423,7 @@ public class FsLogStorageTest {
     fsLogStorage.append(ByteBuffer.wrap(MSG));
     fsLogStorage.close();
 
-    try (FileChannel fileChannel = FileUtil.openChannel(fsStorageConfig.fileName(0), false)) {
+    try (final FileChannel fileChannel = FileUtil.openChannel(fsStorageConfig.fileName(0), false)) {
       final long fileSize = fileChannel.size();
 
       // remove bytes of the underlying file
@@ -738,14 +738,14 @@ public class FsLogStorageTest {
 
     try {
       fileChannel.read(buffer, address);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       fail("fail to read from log file: " + logFilePath, e);
     }
 
     return buffer.array();
   }
 
-  protected void assertMessage(long address, byte[] message) {
+  protected void assertMessage(final long address, final byte[] message) {
     final int length = message.length;
     final ByteBuffer readBuffer = ByteBuffer.allocate(length);
     final long result = fsLogStorage.read(readBuffer, address);
@@ -753,22 +753,22 @@ public class FsLogStorageTest {
     assertThat(readBuffer.array()).isEqualTo(message);
   }
 
-  protected void assertNotBackupFile(File file) {
+  protected void assertNotBackupFile(final File file) {
     assertThat(file.getPath()).doesNotEndWith(".bak");
   }
 
-  protected void assertNotTruncatedFile(File file) {
+  protected void assertNotTruncatedFile(final File file) {
     assertThat(file.getPath()).doesNotEndWith(".bak.truncated");
   }
 
-  protected void copyFile(String source, String target) throws IOException {
+  protected void copyFile(final String source, final String target) throws IOException {
     final Path sourcePath = Paths.get(source);
     final Path targetPath = Paths.get(target);
 
     Files.copy(sourcePath, targetPath);
   }
 
-  protected void deleteFile(String file) throws IOException {
+  protected void deleteFile(final String file) throws IOException {
     Files.delete(Paths.get(file));
   }
 }

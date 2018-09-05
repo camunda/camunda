@@ -61,7 +61,7 @@ public class CompleteInBlockProcessorTest {
     processor = new CompleteEventsInBlockProcessor();
     logPath = tempFolder.getRoot().getAbsolutePath();
     fsStorageConfig = new FsLogStorageConfiguration(SEGMENT_SIZE, logPath, 0, false);
-    fsLogStorage = new FsLogStorage(fsStorageConfig, new MetricsManager(), "topic", 0);
+    fsLogStorage = new FsLogStorage(fsStorageConfig, new MetricsManager(), 0);
 
     final ByteBuffer writeBuffer = ByteBuffer.allocate(192);
     final MutableDirectBuffer directBuffer = new UnsafeBuffer(0, 0);

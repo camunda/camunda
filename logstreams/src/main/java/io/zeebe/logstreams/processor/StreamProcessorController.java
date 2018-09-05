@@ -80,7 +80,7 @@ public class StreamProcessorController extends Actor {
 
   private StreamProcessorMetrics metrics;
 
-  public StreamProcessorController(StreamProcessorContext context) {
+  public StreamProcessorController(final StreamProcessorContext context) {
     this.streamProcessorContext = context;
     this.streamProcessorContext.setActorControl(actor);
 
@@ -117,12 +117,10 @@ public class StreamProcessorController extends Actor {
     final LogStream logStream = streamProcessorContext.getLogStream();
 
     final MetricsManager metricsManager = actorScheduler.getMetricsManager();
-    final String topicName =
-        logStream.getTopicName().getStringWithoutLengthUtf8(0, logStream.getTopicName().capacity());
     final String partitionId = String.valueOf(logStream.getPartitionId());
     final String processorName = getName();
 
-    metrics = new StreamProcessorMetrics(metricsManager, processorName, topicName, partitionId);
+    metrics = new StreamProcessorMetrics(metricsManager, processorName, partitionId);
 
     logStreamReader.wrap(logStream);
     logStreamWriter.wrap(logStream);
@@ -131,7 +129,7 @@ public class StreamProcessorController extends Actor {
       snapshotPosition = recoverFromSnapshot(logStream.getCommitPosition(), logStream.getTerm());
       lastSourceEventPosition = seekFromSnapshotPositionToLastSourceEvent();
       streamProcessor.onOpen(streamProcessorContext);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       onFailure();
       LangUtil.rethrowUnchecked(e);
     }
@@ -145,13 +143,13 @@ public class StreamProcessorController extends Actor {
       } else {
         onRecovered();
       }
-    } catch (RuntimeException e) {
+    } catch (final RuntimeException e) {
       onFailure();
       throw e;
     }
   }
 
-  private long recoverFromSnapshot(long commitPosition, int term) throws Exception {
+  private long recoverFromSnapshot(final long commitPosition, final int term) throws Exception {
     final StateSnapshotMetadata recovered =
         snapshotController.recover(commitPosition, term, this::validateSnapshot);
     final long snapshotPosition = recovered.getLastSuccessfulProcessedEventPosition();
@@ -224,13 +222,13 @@ public class StreamProcessorController extends Actor {
             String.format(
                 ERROR_MESSAGE_REPROCESSING_NO_SOURCE_EVENT, getName(), lastSourceEventPosition));
       }
-    } catch (RuntimeException e) {
+    } catch (final RuntimeException e) {
       onFailure();
       throw e;
     }
   }
 
-  private void reprocessEvent(LoggedEvent currentEvent) {
+  private void reprocessEvent(final LoggedEvent currentEvent) {
     if (eventFilter == null || eventFilter.applies(currentEvent)) {
       try {
         final EventProcessor eventProcessor = streamProcessor.onEvent(currentEvent);
@@ -243,7 +241,7 @@ public class StreamProcessorController extends Actor {
         } else {
           onRecordReprocessed(currentEvent);
         }
-      } catch (Exception e) {
+      } catch (final Exception e) {
         throw new RuntimeException(
             String.format(ERROR_MESSAGE_REPROCESSING_FAILED, getName(), currentEvent), e);
       }
@@ -252,7 +250,7 @@ public class StreamProcessorController extends Actor {
     }
   }
 
-  private void onRecordReprocessed(LoggedEvent currentEvent) {
+  private void onRecordReprocessed(final LoggedEvent currentEvent) {
     if (currentEvent.getPosition() == lastSourceEventPosition) {
       onRecovered();
     } else {
@@ -290,7 +288,7 @@ public class StreamProcessorController extends Actor {
     }
   }
 
-  private void processEvent(LoggedEvent event) {
+  private void processEvent(final LoggedEvent event) {
     eventProcessor = streamProcessor.onEvent(event);
 
     if (eventProcessor != null) {
@@ -299,7 +297,7 @@ public class StreamProcessorController extends Actor {
 
         eventProcessor.processEvent();
         actor.runUntilDone(this::executeSideEffects);
-      } catch (Exception e) {
+      } catch (final Exception e) {
         LOG.error(ERROR_MESSAGE_PROCESSING_FAILED, getName(), e);
         onFailure();
       }
@@ -324,7 +322,7 @@ public class StreamProcessorController extends Actor {
       } else {
         actor.done();
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       actor.done();
 
       LOG.error(ERROR_MESSAGE_PROCESSING_FAILED, getName(), e);
@@ -352,7 +350,7 @@ public class StreamProcessorController extends Actor {
       } else {
         actor.done();
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       actor.done();
 
       LOG.error(ERROR_MESSAGE_PROCESSING_FAILED, getName(), e);
@@ -374,7 +372,7 @@ public class StreamProcessorController extends Actor {
       // continue with next event
       eventProcessor = null;
       actor.submit(readNextEvent);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOG.error(ERROR_MESSAGE_PROCESSING_FAILED, getName(), e);
       onFailure();
     }
@@ -412,7 +410,7 @@ public class StreamProcessorController extends Actor {
     actor.setSchedulingHints(SchedulingHints.cpuBound(ActorPriority.REGULAR));
   }
 
-  private void writeSnapshot(final StateSnapshotMetadata metadata, long commitPosition) {
+  private void writeSnapshot(final StateSnapshotMetadata metadata, final long commitPosition) {
     final long start = System.currentTimeMillis();
     final String name = streamProcessorContext.getName();
     LOG.info(
@@ -428,7 +426,7 @@ public class StreamProcessorController extends Actor {
       metrics.recordSnapshotCreationTime(snapshotCreationTime);
 
       snapshotPosition = lastSuccessfulProcessedEventPosition;
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOG.error("Stream processor '{}' failed. Can not write snapshot.", getName(), e);
     }
   }

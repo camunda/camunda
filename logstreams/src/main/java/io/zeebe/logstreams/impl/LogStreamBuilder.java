@@ -37,18 +37,15 @@ import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.servicecontainer.CompositeServiceBuilder;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.io.File;
 import java.time.Duration;
 import java.util.Objects;
 import java.util.function.Function;
-import org.agrona.DirectBuffer;
 import org.agrona.concurrent.status.AtomicLongPosition;
 
 public class LogStreamBuilder {
-  protected final DirectBuffer topicName;
   protected final int partitionId;
 
   protected ServiceContainer serviceContainer;
@@ -57,7 +54,6 @@ public class LogStreamBuilder {
   protected String logRootPath;
   protected String logDirectory;
 
-  protected boolean logStreamControllerDisabled;
   protected int initialLogSegmentId = 0;
   protected boolean deleteOnClose;
 
@@ -76,83 +72,82 @@ public class LogStreamBuilder {
 
   protected Function<FsLogStorage, FsLogStorage> logStorageStubber = Function.identity();
 
-  public LogStreamBuilder(final DirectBuffer topicName, final int partitionId) {
-    this.topicName = topicName;
+  public LogStreamBuilder(final int partitionId) {
     this.partitionId = partitionId;
   }
 
-  public LogStreamBuilder serviceContainer(ServiceContainer serviceContainer) {
+  public LogStreamBuilder serviceContainer(final ServiceContainer serviceContainer) {
     this.serviceContainer = serviceContainer;
     return this;
   }
 
-  public LogStreamBuilder logName(String logName) {
+  public LogStreamBuilder logName(final String logName) {
     this.logName = logName;
     return this;
   }
 
-  public LogStreamBuilder logRootPath(String logRootPath) {
+  public LogStreamBuilder logRootPath(final String logRootPath) {
     this.logRootPath = logRootPath;
     return this;
   }
 
-  public LogStreamBuilder logDirectory(String logDir) {
+  public LogStreamBuilder logDirectory(final String logDir) {
     this.logDirectory = logDir;
     return this;
   }
 
-  public LogStreamBuilder writeBufferSize(int writeBufferSize) {
+  public LogStreamBuilder writeBufferSize(final int writeBufferSize) {
     this.writeBufferSize = writeBufferSize;
     return this;
   }
 
-  public LogStreamBuilder maxAppendBlockSize(int maxAppendBlockSize) {
+  public LogStreamBuilder maxAppendBlockSize(final int maxAppendBlockSize) {
     this.maxAppendBlockSize = maxAppendBlockSize;
     return this;
   }
 
-  public LogStreamBuilder initialLogSegmentId(int logFragmentId) {
+  public LogStreamBuilder initialLogSegmentId(final int logFragmentId) {
     this.initialLogSegmentId = logFragmentId;
     return this;
   }
 
-  public LogStreamBuilder logSegmentSize(int logSegmentSize) {
+  public LogStreamBuilder logSegmentSize(final int logSegmentSize) {
     this.logSegmentSize = logSegmentSize;
     return this;
   }
 
-  public LogStreamBuilder deleteOnClose(boolean deleteOnClose) {
+  public LogStreamBuilder deleteOnClose(final boolean deleteOnClose) {
     this.deleteOnClose = deleteOnClose;
     return this;
   }
 
-  public LogStreamBuilder indexBlockSize(int indexBlockSize) {
+  public LogStreamBuilder indexBlockSize(final int indexBlockSize) {
     this.indexBlockSize = indexBlockSize;
     return this;
   }
 
-  public LogStreamBuilder deviation(float deviation) {
+  public LogStreamBuilder deviation(final float deviation) {
     this.deviation = deviation;
     return this;
   }
 
-  public LogStreamBuilder snapshotStorage(SnapshotStorage snapshotStorage) {
+  public LogStreamBuilder snapshotStorage(final SnapshotStorage snapshotStorage) {
     this.snapshotStorage = snapshotStorage;
     return this;
   }
 
-  public LogStreamBuilder snapshotPeriod(Duration snapshotPeriod) {
+  public LogStreamBuilder snapshotPeriod(final Duration snapshotPeriod) {
     this.snapshotPeriod = snapshotPeriod;
     return this;
   }
 
-  public LogStreamBuilder readBlockSize(int readBlockSize) {
+  public LogStreamBuilder readBlockSize(final int readBlockSize) {
     this.readBlockSize = readBlockSize;
     return this;
   }
 
   public LogStreamBuilder logStorageStubber(
-      Function<FsLogStorage, FsLogStorage> logStorageStubber) {
+      final Function<FsLogStorage, FsLogStorage> logStorageStubber) {
     this.logStorageStubber = logStorageStubber;
     return this;
   }
@@ -166,10 +161,6 @@ public class LogStreamBuilder {
       logDirectory = logRootPath + File.separatorChar + logName + File.separatorChar;
     }
     return logDirectory;
-  }
-
-  public DirectBuffer getTopicName() {
-    return topicName;
   }
 
   public int getPartitionId() {
@@ -216,7 +207,7 @@ public class LogStreamBuilder {
     return onCommitPositionUpdatedConditions;
   }
 
-  public ServiceName<LogStream> buildWith(CompositeServiceBuilder composite) {
+  public ServiceName<LogStream> buildWith(final CompositeServiceBuilder composite) {
     validate();
 
     return addServices(composite);
@@ -234,7 +225,7 @@ public class LogStreamBuilder {
     return installOperation.installAndReturn(logStreamServiceName);
   }
 
-  private ServiceName<LogStream> addServices(CompositeServiceBuilder installOperation) {
+  private ServiceName<LogStream> addServices(final CompositeServiceBuilder installOperation) {
     final ServiceName<LogStorage> logStorageServiceName = logStorageServiceName(logName);
     final ServiceName<LogBlockIndex> logBlockIndexServiceName = logBlockIndexServiceName(logName);
     final ServiceName<LogBlockIndexWriter> logBlockIndexWriterServiceName =
@@ -246,8 +237,7 @@ public class LogStreamBuilder {
             logSegmentSize, getLogDirectory(), initialLogSegmentId, deleteOnClose);
 
     final FsLogStorageService logStorageService =
-        new FsLogStorageService(
-            storageConfig, BufferUtil.bufferAsString(topicName), partitionId, logStorageStubber);
+        new FsLogStorageService(storageConfig, partitionId, logStorageStubber);
     installOperation.createService(logStorageServiceName, logStorageService).install();
 
     final LogBlockIndexService logBlockIndexService = new LogBlockIndexService();
@@ -275,16 +265,8 @@ public class LogStreamBuilder {
 
   private void validate() {
     Objects.requireNonNull(logName, "logName");
-    Objects.requireNonNull(getTopicName(), "topicName");
     ensureGreaterThanOrEqual("partitionId", partitionId, 0);
     ensureFalse("deviation", deviation <= 0f || deviation > 1f);
-
-    if (topicName.capacity() > LogStream.MAX_TOPIC_NAME_LENGTH) {
-      throw new RuntimeException(
-          String.format(
-              "Topic name exceeds max length (%d > %d bytes)",
-              topicName.capacity(), LogStream.MAX_TOPIC_NAME_LENGTH));
-    }
 
     if (snapshotStorage == null) {
       snapshotStorage = new FsSnapshotStorageBuilder(getLogDirectory()).build();

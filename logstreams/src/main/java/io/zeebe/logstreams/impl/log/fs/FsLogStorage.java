@@ -73,17 +73,14 @@ public class FsLogStorage implements LogStorage {
   private Metric totalBytesMetric;
   private Metric segmentCountMetric;
 
-  private String topicName;
-  private int partitionId;
+  private final int partitionId;
 
   public FsLogStorage(
       final FsLogStorageConfiguration cfg,
-      MetricsManager metricsManager,
-      String topicName,
-      int partitionId) {
+      final MetricsManager metricsManager,
+      final int partitionId) {
     this.config = cfg;
     this.metricsManager = metricsManager;
-    this.topicName = topicName;
     this.partitionId = partitionId;
   }
 
@@ -93,7 +90,7 @@ public class FsLogStorage implements LogStorage {
   }
 
   @Override
-  public long append(ByteBuffer buffer) {
+  public long append(final ByteBuffer buffer) {
     ensureOpenedStorage();
 
     final int size = currentSegment.getSize();
@@ -144,7 +141,7 @@ public class FsLogStorage implements LogStorage {
   }
 
   @Override
-  public void truncate(long address) {
+  public void truncate(final long address) {
     ensureOpenedStorage();
 
     final int segmentId = partitionId(address);
@@ -175,7 +172,7 @@ public class FsLogStorage implements LogStorage {
     initLogSegments(logDir);
   }
 
-  protected void addressCheck(int segmentId, int segmentOffset) {
+  protected void addressCheck(final int segmentId, final int segmentOffset) {
     final FsLogSegment segment = logSegments.getSegment(segmentId);
     if (segment == null || segmentOffset < METADATA_LENGTH || segmentOffset >= segment.getSize()) {
       throw new IllegalArgumentException("Invalid address");
@@ -183,7 +180,7 @@ public class FsLogStorage implements LogStorage {
   }
 
   /** Creates a truncated backup file of given segment. */
-  protected void truncateLogSegment(int segmentId, int size) {
+  protected void truncateLogSegment(final int segmentId, final int size) {
     final String source = config.fileName(segmentId);
     final String backup = config.backupFileName(segmentId);
 
@@ -213,12 +210,13 @@ public class FsLogStorage implements LogStorage {
   }
 
   @Override
-  public long read(ByteBuffer readBuffer, long addr) {
+  public long read(final ByteBuffer readBuffer, final long addr) {
     return read(readBuffer, addr, defaultReadResultProcessor);
   }
 
   @Override
-  public long read(ByteBuffer readBuffer, long addr, ReadResultProcessor processor) {
+  public long read(
+      final ByteBuffer readBuffer, final long addr, final ReadResultProcessor processor) {
     ensureOpenedStorage();
 
     final int segmentId = partitionId(addr);
@@ -261,13 +259,11 @@ public class FsLogStorage implements LogStorage {
     totalBytesMetric =
         metricsManager
             .newMetric("storage_fs_total_bytes")
-            .label("topic", topicName)
             .label("partition", String.valueOf(partitionId))
             .create();
     segmentCountMetric =
         metricsManager
             .newMetric("storage_fs_segment_count")
-            .label("topic", topicName)
             .label("partition", String.valueOf(partitionId))
             .create();
 
@@ -285,7 +281,7 @@ public class FsLogStorage implements LogStorage {
     state = STATE_OPENED;
   }
 
-  protected void initLogSegments(File logDir) {
+  protected void initLogSegments(final File logDir) {
     final List<FsLogSegment> readableLogSegments = new ArrayList<>();
 
     final List<File> logFiles =
@@ -354,18 +350,18 @@ public class FsLogStorage implements LogStorage {
       if (!currentSegment.isConsistent()) {
         throw new RuntimeException("Inconsistent log segment: " + currentSegment.getFileName());
       }
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException("Fail to check consistency", e);
     }
   }
 
-  protected void deleteBackupFilesIfExist(File logDir) {
+  protected void deleteBackupFilesIfExist(final File logDir) {
     final List<File> backupFiles =
         Arrays.asList(logDir.listFiles(config::matchesBackupFileNamePattern));
     backupFiles.forEach(FileUtil::deleteFile);
   }
 
-  protected void applyTruncatedFileIfExists(File logDir) {
+  protected void applyTruncatedFileIfExists(final File logDir) {
     final List<File> truncatedFiles =
         Arrays.asList(logDir.listFiles(config::matchesTruncatedFileNamePattern));
 
@@ -386,7 +382,7 @@ public class FsLogStorage implements LogStorage {
   }
 
   protected boolean shouldApplyTruncatedSegment(
-      File logDir, File truncatedFile, int truncatedSegmentId) {
+      final File logDir, final File truncatedFile, final int truncatedSegmentId) {
     final List<File> segments =
         Arrays.asList(logDir.listFiles(config::matchesFragmentFileNamePattern));
 
@@ -423,7 +419,7 @@ public class FsLogStorage implements LogStorage {
       final String logPath = config.getPath();
       try {
         FileUtil.deleteFolder(logPath);
-      } catch (Exception e) {
+      } catch (final Exception e) {
         LOG.error("Failed to delete folder {}: {}", logPath, e);
       }
     }
@@ -446,7 +442,7 @@ public class FsLogStorage implements LogStorage {
     }
   }
 
-  protected void markSegmentAsDirty(FsLogSegment segment) {
+  protected void markSegmentAsDirty(final FsLogSegment segment) {
     if (dirtySegmentId < 0) {
       dirtySegmentId = segment.getSegmentId();
     }
