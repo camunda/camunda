@@ -63,25 +63,6 @@ pipeline {
                     }
                 }
 
-                stage('2 - JMH') {
-                    // delete this line to also run JMH on feature branch
-                    when { anyOf { branch 'master'; branch 'develop' } }
-                    agent { node { label 'ubuntu' } }
-
-                    steps {
-                        withMaven(jdk: jdkVersion, maven: mavenVersion, mavenSettingsConfig: mavenSettingsConfig) {
-                            sh 'mvn -B integration-test -DskipTests -P jmh'
-                        }
-                    }
-
-                    post {
-                        success {
-                            sh joinJmhResults
-                            jmhReport 'target/jmh-result.json'
-                        }
-                    }
-                }
-
                 stage('3 - Go Tests') {
                     agent { node { label 'ubuntu' } }
 
