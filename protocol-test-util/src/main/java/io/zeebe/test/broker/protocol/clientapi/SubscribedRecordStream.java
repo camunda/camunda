@@ -21,10 +21,16 @@ import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.util.stream.StreamWrapper;
 import java.util.stream.Stream;
 
-public class SubscribedRecordStream extends StreamWrapper<SubscribedRecord> {
+public class SubscribedRecordStream
+    extends StreamWrapper<SubscribedRecord, SubscribedRecordStream> {
 
   public SubscribedRecordStream(Stream<SubscribedRecord> wrappedStream) {
     super(wrappedStream);
+  }
+
+  @Override
+  protected SubscribedRecordStream supply(Stream<SubscribedRecord> wrappedStream) {
+    return new SubscribedRecordStream(wrappedStream);
   }
 
   private SubscribedRecordStream recordsOfValueType(ValueType valueType) {

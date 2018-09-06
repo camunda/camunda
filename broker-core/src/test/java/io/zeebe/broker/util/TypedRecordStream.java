@@ -24,10 +24,16 @@ import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.util.stream.StreamWrapper;
 import java.util.stream.Stream;
 
-public class TypedRecordStream<T extends UnpackedObject> extends StreamWrapper<TypedRecord<T>> {
+public class TypedRecordStream<T extends UnpackedObject>
+    extends StreamWrapper<TypedRecord<T>, TypedRecordStream<T>> {
 
   public TypedRecordStream(Stream<TypedRecord<T>> wrappedStream) {
     super(wrappedStream);
+  }
+
+  @Override
+  protected TypedRecordStream<T> supply(Stream<TypedRecord<T>> wrappedStream) {
+    return new TypedRecordStream<>(wrappedStream);
   }
 
   public TypedRecordStream<T> onlyCommands() {
