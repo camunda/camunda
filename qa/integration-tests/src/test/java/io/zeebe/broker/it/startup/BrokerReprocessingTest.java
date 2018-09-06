@@ -23,9 +23,9 @@ import static org.assertj.core.api.Assertions.entry;
 import static org.junit.Assert.fail;
 
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.gateway.api.events.DeploymentEvent;
 import io.zeebe.gateway.api.events.IncidentEvent;
 import io.zeebe.gateway.api.events.IncidentState;
@@ -708,7 +708,7 @@ public class BrokerReprocessingTest {
 
     // delete snapshot files to trigger recovery
     try {
-      brokerRule.purgeSnapshots(dataDirectories);
+      brokerRule.purgeSnapshots();
     } catch (final Exception e) {
       e.printStackTrace();
       fail(e.getMessage());

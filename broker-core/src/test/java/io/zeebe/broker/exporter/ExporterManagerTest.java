@@ -42,7 +42,6 @@ public class ExporterManagerTest {
   public EmbeddedBrokerRule brokerRule =
       new EmbeddedBrokerRule(
           brokerCfg -> {
-            brokerCfg.getTopics().get(0).setPartitions(PARTITIONS);
             brokerCfg.getCluster().setPartitionsCount(PARTITIONS);
 
             final ExporterCfg exporterCfg = new ExporterCfg();

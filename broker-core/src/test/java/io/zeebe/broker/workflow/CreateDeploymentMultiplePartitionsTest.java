@@ -62,7 +62,7 @@ public class CreateDeploymentMultiplePartitionsTest {
   public static final int PARTITION_COUNT = 3;
 
   public EmbeddedBrokerRule brokerRule =
-      new EmbeddedBrokerRule("zeebe.unit-test.increased.partitions.cfg.toml");
+      new EmbeddedBrokerRule("zeebe.test.increased.partitions.cfg.toml");
 
   public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
 

@@ -21,12 +21,12 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.exporter.DebugExporter;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopologyClient;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.TomlConfigurationReader;
 import io.zeebe.broker.system.configuration.TopicCfg;
+import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.api.commands.BrokerInfo;
 import io.zeebe.gateway.api.commands.PartitionInfo;

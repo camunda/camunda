@@ -19,6 +19,7 @@ import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.junit.Assert.fail;
 
 import io.zeebe.broker.it.clustering.ClusteringRule;
+import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.ZeebeClientBuilder;
 import io.zeebe.gateway.api.clients.JobClient;

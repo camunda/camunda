@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
+import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.api.clients.TopicClient;
 import io.zeebe.gateway.api.commands.JobCommandName;
@@ -54,7 +54,7 @@ public class TopicSubscriptionTest {
   public static final String SUBSCRIPTION_NAME = "foo";
 
   public EmbeddedBrokerRule brokerRule =
-      new EmbeddedBrokerRule("zeebe.unit-test.increased.partitions.cfg.toml");
+      new EmbeddedBrokerRule("zeebe.test.increased.partitions.cfg.toml");
 
   public ClientRule clientRule = new ClientRule(brokerRule);
 

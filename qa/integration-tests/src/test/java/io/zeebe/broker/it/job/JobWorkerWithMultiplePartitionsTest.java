@@ -20,9 +20,9 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.api.clients.JobClient;
 import io.zeebe.gateway.api.commands.Topic;
@@ -40,7 +40,7 @@ import org.junit.rules.Timeout;
 public class JobWorkerWithMultiplePartitionsTest {
 
   public EmbeddedBrokerRule brokerRule =
-      new EmbeddedBrokerRule("zeebe.unit-test.increased.partitions.cfg.toml");
+      new EmbeddedBrokerRule("zeebe.test.increased.partitions.cfg.toml");
 
   public ClientRule clientRule = new ClientRule(brokerRule);
 
