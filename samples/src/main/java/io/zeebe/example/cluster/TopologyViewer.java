@@ -26,7 +26,7 @@ public class TopologyViewer {
 
     final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder().brokerContactPoint(broker);
 
-    try (ZeebeClient client = builder.build()) {
+    try (final ZeebeClient client = builder.build()) {
       System.out.println("Requesting topology with initial contact point " + broker);
 
       final Topology topology = client.newTopologyRequest().send().join();
@@ -41,12 +41,7 @@ public class TopologyViewer {
                     .forEach(
                         p ->
                             System.out.println(
-                                "      "
-                                    + p.getTopicName()
-                                    + "."
-                                    + p.getPartitionId()
-                                    + " - "
-                                    + p.getRole()));
+                                "      " + p.getPartitionId() + " - " + p.getRole()));
               });
 
       System.out.println("Done.");

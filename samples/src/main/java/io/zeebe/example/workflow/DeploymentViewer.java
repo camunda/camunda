@@ -30,8 +30,8 @@ public class DeploymentViewer {
     final ZeebeClientBuilder clientBuilder =
         ZeebeClient.newClientBuilder().brokerContactPoint(broker);
 
-    try (ZeebeClient client = clientBuilder.build()) {
-      final WorkflowClient workflowClient = client.topicClient().workflowClient();
+    try (final ZeebeClient client = clientBuilder.build()) {
+      final WorkflowClient workflowClient = client.workflowClient();
 
       final Workflows workflows = workflowClient.newWorkflowRequest().send().join();
 
