@@ -17,6 +17,8 @@
  */
 package io.zeebe.broker.exporter.stream;
 
+import static io.zeebe.exporter.record.Assertions.assertThat;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doAnswer;
@@ -55,7 +57,6 @@ import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.broker.workflow.deployment.data.DeploymentRecord;
 import io.zeebe.broker.workflow.deployment.data.ResourceType;
 import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.RecordMetadata;
 import io.zeebe.exporter.record.RecordValue;
 import io.zeebe.exporter.record.value.DeploymentRecordValue;
 import io.zeebe.exporter.record.value.IdRecordValue;
@@ -728,33 +729,29 @@ public class ExporterStreamProcessorTest {
     final List<Record> exportedRecords = exporters.get(0).getExportedRecords();
     assertThat(exportedRecords).hasSize(1);
 
-    final Record exportedRecord = exportedRecords.get(0);
+    final Record actualRecord = exportedRecords.get(0);
     final LoggedEvent loggedEvent = rule.events().withPosition(position);
-    assertMetadata(exportedRecord, loggedEvent);
-    assertThat(exportedRecord.getValue()).isEqualTo(expectedRecordValue);
-  }
-
-  private void assertMetadata(final Record actualRecord, final LoggedEvent expectedLoggedEvent) {
-    assertThat(actualRecord.getPosition()).isEqualTo(expectedLoggedEvent.getPosition());
-    assertThat(actualRecord.getRaftTerm()).isEqualTo(expectedLoggedEvent.getRaftTerm());
-    assertThat(actualRecord.getSourceRecordPosition())
-        .isEqualTo(expectedLoggedEvent.getSourceEventPosition());
-    assertThat(actualRecord.getProducerId()).isEqualTo(expectedLoggedEvent.getProducerId());
-    assertThat(actualRecord.getKey()).isEqualTo(expectedLoggedEvent.getKey());
-    assertThat(actualRecord.getTimestamp())
-        .isEqualTo(Instant.ofEpochMilli(expectedLoggedEvent.getTimestamp()));
-
-    final RecordMetadata actualMetadata = actualRecord.getMetadata();
-    final io.zeebe.protocol.impl.RecordMetadata expectedMetadata =
+    final io.zeebe.protocol.impl.RecordMetadata metadata =
         new io.zeebe.protocol.impl.RecordMetadata();
-    expectedLoggedEvent.readMetadata(expectedMetadata);
 
-    assertThat(actualMetadata.getIntent()).isEqualTo(expectedMetadata.getIntent());
-    assertThat(actualMetadata.getPartitionId()).isEqualTo(PARTITION_ID);
-    assertThat(actualMetadata.getRecordType()).isEqualTo(expectedMetadata.getRecordType());
-    assertThat(actualMetadata.getRejectionType()).isEqualTo(expectedMetadata.getRejectionType());
-    assertThat(actualMetadata.getRejectionReason())
-        .isEqualTo(BufferUtil.bufferAsString(expectedMetadata.getRejectionReason()));
-    assertThat(actualMetadata.getValueType()).isEqualTo(expectedMetadata.getValueType());
+    assertThat(actualRecord)
+        .hasPosition(loggedEvent.getPosition())
+        .hasRaftTerm(loggedEvent.getRaftTerm())
+        .hasSourceRecordPosition(loggedEvent.getSourceEventPosition())
+        .hasProducerId(loggedEvent.getProducerId())
+        .hasKey(loggedEvent.getKey())
+        .hasTimestamp(Instant.ofEpochMilli(loggedEvent.getTimestamp()));
+
+    loggedEvent.readMetadata(metadata);
+
+    assertThat(actualRecord.getMetadata())
+        .hasIntent(metadata.getIntent())
+        .hasPartitionId(PARTITION_ID)
+        .hasRecordType(metadata.getRecordType())
+        .hasRejectionType(metadata.getRejectionType())
+        .hasRejectionReason(bufferAsString(metadata.getRejectionReason()))
+        .hasValueType(metadata.getValueType());
+
+    assertThat(actualRecord).hasValue(expectedRecordValue);
   }
 }
