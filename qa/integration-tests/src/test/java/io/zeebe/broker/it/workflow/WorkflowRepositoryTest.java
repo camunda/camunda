@@ -21,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.gateway.api.ZeebeFuture;
 import io.zeebe.gateway.api.commands.Workflow;
 import io.zeebe.gateway.api.commands.WorkflowResource;
 import io.zeebe.gateway.api.events.DeploymentEvent;
@@ -29,6 +28,7 @@ import io.zeebe.gateway.cmd.BrokerErrorException;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.util.StreamUtil;
+import io.zeebe.util.sched.future.ActorFuture;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -40,6 +40,13 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 public class WorkflowRepositoryTest {
+  private final List<Workflow> deployedWorkflows = new ArrayList<>();
+  private final BpmnModelInstance workflow1v1 =
+      Bpmn.createExecutableProcess("wf1").startEvent("foo").done();
+  private final BpmnModelInstance workflow1v2 =
+      Bpmn.createExecutableProcess("wf1").startEvent("bar").done();
+  private final BpmnModelInstance workflow2 =
+      Bpmn.createExecutableProcess("wf2").startEvent("start").done();
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
   public ClientRule clientRule = new ClientRule(brokerRule);
   public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
@@ -49,15 +56,6 @@ public class WorkflowRepositoryTest {
       RuleChain.outerRule(brokerRule).around(clientRule).around(eventRecorder);
 
   @Rule public ExpectedException exception = ExpectedException.none();
-
-  private final List<Workflow> deployedWorkflows = new ArrayList<>();
-
-  private final BpmnModelInstance workflow1v1 =
-      Bpmn.createExecutableProcess("wf1").startEvent("foo").done();
-  private final BpmnModelInstance workflow1v2 =
-      Bpmn.createExecutableProcess("wf1").startEvent("bar").done();
-  private final BpmnModelInstance workflow2 =
-      Bpmn.createExecutableProcess("wf2").startEvent("start").done();
 
   @Before
   public void deployWorkflows() {
@@ -149,7 +147,7 @@ public class WorkflowRepositoryTest {
 
   @Test
   public void shouldFailToGetResourceByWorkflowKeyIfNotExist() {
-    final ZeebeFuture<WorkflowResource> future =
+    final ActorFuture<WorkflowResource> future =
         clientRule.getWorkflowClient().newResourceRequest().workflowKey(123).send();
 
     assertThatThrownBy(() -> future.join())
@@ -159,7 +157,7 @@ public class WorkflowRepositoryTest {
 
   @Test
   public void shouldFailToGetResourceByBpmnProcessIdIfNotExist() {
-    final ZeebeFuture<WorkflowResource> future =
+    final ActorFuture<WorkflowResource> future =
         clientRule
             .getWorkflowClient()
             .newResourceRequest()

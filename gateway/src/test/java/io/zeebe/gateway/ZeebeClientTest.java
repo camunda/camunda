@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
 
-import io.zeebe.gateway.api.ZeebeFuture;
 import io.zeebe.gateway.api.clients.JobClient;
 import io.zeebe.gateway.api.events.JobEvent;
 import io.zeebe.gateway.api.subscription.TopicSubscription;
@@ -29,12 +28,12 @@ import io.zeebe.gateway.cmd.ClientException;
 import io.zeebe.gateway.impl.ZeebeClientImpl;
 import io.zeebe.gateway.impl.clustering.ClientTopologyManager;
 import io.zeebe.gateway.impl.event.JobEventImpl;
-import io.zeebe.gateway.util.ClientRule;
 import io.zeebe.gateway.util.Events;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandResponseBuilder;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
@@ -42,48 +41,49 @@ import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.TransportListener;
+import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Properties;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ExecutionException;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.rules.RuleChain;
 import org.junit.rules.TestName;
 
 public class ZeebeClientTest {
-
-  @Rule public ExpectedException exception = ExpectedException.none();
-
-  @Rule public AutoCloseableRule closeables = new AutoCloseableRule();
-
-  @Rule public TestName testContext = new TestName();
-
-  protected ZeebeClient client;
-
-  public StubBrokerRule broker = new StubBrokerRule();
-  public ClientRule clientRule =
-      new ClientRule(
-          broker,
-          config ->
-              config
-                  .requestTimeout(Duration.ofSeconds(3))
-                  .requestBlocktime(Duration.ofMillis(250)));
-
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(broker).around(clientRule);
-
-  private int clientMaxRequests;
   private final String topic = DEFAULT_TOPIC;
+  @Rule public StubBrokerRule broker = new StubBrokerRule();
+  @Rule public ExpectedException exception = ExpectedException.none();
+  @Rule public AutoCloseableRule closeables = new AutoCloseableRule();
+  @Rule public TestName testContext = new TestName();
+  protected ZeebeClientImpl client;
+  private int clientMaxRequests;
 
   @Before
   public void setUp() {
     this.clientMaxRequests = 128;
+    final Properties properties = new Properties();
+    properties.setProperty(ClientProperties.REQUEST_TIMEOUT_SEC, "3");
+    properties.setProperty(ClientProperties.REQUEST_BLOCKTIME_MILLIS, "250");
+
+    client =
+        (ZeebeClientImpl)
+            ZeebeClient.newClientBuilder()
+                .withProperties(properties)
+                .brokerContactPoint(broker.getSocketAddress().toString())
+                .build();
     broker.stubTopicSubscriptionApi(0);
-    client = clientRule.getClient();
+  }
+
+  @After
+  public void tearDown() {
+    client.close();
   }
 
   @Test
@@ -111,7 +111,7 @@ public class ZeebeClientTest {
   @Test
   public void shouldEstablishNewConnectionsAfterDisconnect() {
     // given
-    final ClientTransport clientTransport = ((ZeebeClientImpl) client).getTransport();
+    final ClientTransport clientTransport = client.getTransport();
 
     // ensuring an open connection
     client.newTopicsRequest().send().join();
@@ -176,22 +176,22 @@ public class ZeebeClientTest {
 
     stubJobResponse();
 
-    final List<ZeebeFuture<JobEvent>> futures = new ArrayList<>();
+    final List<ActorFuture<JobEvent>> futures = new ArrayList<>();
     for (int i = 0; i < clientMaxRequests; i++) {
-      final ZeebeFuture<JobEvent> future =
+      final ActorFuture<JobEvent> future =
           client.topicClient().jobClient().newCreateCommand().jobType("bar").send();
 
       futures.add(future);
     }
 
     // when
-    for (final ZeebeFuture<JobEvent> future : futures) {
+    for (final ActorFuture<JobEvent> future : futures) {
       future.join();
     }
 
     // then
     for (int i = 0; i < clientMaxRequests; i++) {
-      final ZeebeFuture<JobEvent> future =
+      final ActorFuture<JobEvent> future =
           client.topicClient().jobClient().newCreateCommand().jobType("bar").send();
 
       futures.add(future);
@@ -206,16 +206,16 @@ public class ZeebeClientTest {
     broker.onExecuteCommandRequest(ValueType.JOB, JobIntent.COMPLETE).doNotRespond();
 
     // given
-    final List<ZeebeFuture<JobEvent>> futures = new ArrayList<>();
+    final List<ActorFuture<JobEvent>> futures = new ArrayList<>();
     for (int i = 0; i < clientMaxRequests; i++) {
-      final ZeebeFuture<JobEvent> future =
+      final ActorFuture<JobEvent> future =
           client.topicClient().jobClient().newCompleteCommand(baseEvent).send();
 
       futures.add(future);
     }
 
     // when
-    for (final ZeebeFuture<JobEvent> future : futures) {
+    for (final ActorFuture<JobEvent> future : futures) {
       try {
         future.join();
         fail("exception expected");
@@ -226,7 +226,7 @@ public class ZeebeClientTest {
 
     // then
     for (int i = 0; i < clientMaxRequests; i++) {
-      final ZeebeFuture<JobEvent> future =
+      final ActorFuture<JobEvent> future =
           client.topicClient().jobClient().newCompleteCommand(baseEvent).send();
 
       futures.add(future);
@@ -281,7 +281,7 @@ public class ZeebeClientTest {
     // given
     final JobEventImpl baseEvent = Events.exampleJob();
 
-    broker.jobs().registerCompleteCommand(r -> r.rejection());
+    broker.jobs().registerCompleteCommand(ExecuteCommandResponseBuilder::rejection);
 
     // when
     try {
@@ -501,6 +501,16 @@ public class ZeebeClientTest {
         .open();
   }
 
+  protected void stubJobResponse() {
+    broker.jobs().registerCreateCommand();
+    broker.jobs().registerCompleteCommand();
+  }
+
+  protected enum ConnectionState {
+    CONNECTED,
+    CLOSED
+  }
+
   protected static class LoggingChannelListener implements TransportListener {
 
     protected List<ConnectionState> connectionState = new CopyOnWriteArrayList<>();
@@ -514,15 +524,5 @@ public class ZeebeClientTest {
     public void onConnectionClosed(final RemoteAddress remoteAddress) {
       connectionState.add(ConnectionState.CLOSED);
     }
-  }
-
-  protected void stubJobResponse() {
-    broker.jobs().registerCreateCommand();
-    broker.jobs().registerCompleteCommand();
-  }
-
-  protected enum ConnectionState {
-    CONNECTED,
-    CLOSED
   }
 }

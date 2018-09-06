@@ -17,6 +17,8 @@ package io.zeebe.gateway;
 
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
+import io.zeebe.gateway.impl.ZeebeClientImpl;
+import io.zeebe.util.sched.ActorScheduler;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.time.Duration;
@@ -30,7 +32,7 @@ public class Gateway {
   private static final String GATEWAY_DEFAULT_HOST = "0.0.0.0";
 
   private final String host;
-  private int port;
+  private final int port;
 
   private Server server;
   private ZeebeClient zbClient;
@@ -47,10 +49,6 @@ public class Gateway {
   public Gateway(final String host, final int port) {
     this.host = host;
     this.port = port;
-  }
-
-  public void setBrokerContactPoint(String brokerContactPoint) {
-    this.brokerContactPoint = brokerContactPoint;
   }
 
   public static void main(final String[] args) {
@@ -70,26 +68,31 @@ public class Gateway {
     try {
       gateway.listenAndServe();
     } catch (final Exception e) {
-      LOG.error("Gateway failed to start: {}", gateway, e);
+      LOG.error("Gateway failed ", e);
     } finally {
       gateway.stop();
     }
   }
 
+  public void setBrokerContactPoint(final String brokerContactPoint) {
+    this.brokerContactPoint = brokerContactPoint;
+  }
+
   public void start() throws IOException {
     zbClient =
         ZeebeClient.newClientBuilder()
-            .requestTimeout(Duration.ofMillis(250))
+            .requestTimeout(Duration.ofMillis(1000))
             .brokerContactPoint(brokerContactPoint)
             .build();
-
+    final ClusterClient clusterClient = new ClusterClient(zbClient);
+    final ActorScheduler actorScheduler = ((ZeebeClientImpl) zbClient).getScheduler();
     server =
         NettyServerBuilder.forAddress(new InetSocketAddress(host, port))
-            .addService(new EndpointManager(new ResponseMapper(), zbClient))
+            .addService(new EndpointManager(new ResponseMapper(), clusterClient, actorScheduler))
             .build();
 
     server.start();
-    LOG.info("Gateway started: {}", this);
+    LOG.info("Gateway started at port: {}", port);
   }
 
   public void listenAndServe() throws InterruptedException, IOException {
@@ -113,10 +116,5 @@ public class Gateway {
         server = null;
       }
     }
-  }
-
-  @Override
-  public String toString() {
-    return "Gateway{" + "host='" + host + '\'' + ", port=" + port + '}';
   }
 }

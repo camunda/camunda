@@ -32,7 +32,7 @@ import java.time.Duration;
 import java.util.Properties;
 
 public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientConfiguration {
-  private String brokerContactPoint = "127.0.0.1:26501";
+  private String brokerContactPoint = "127.0.0.1:26500";
   private Duration requestTimeout = Duration.ofSeconds(15);
   private Duration requestBlocktime = Duration.ofSeconds(15);
   private int sendBufferSize = 2;
@@ -47,13 +47,18 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   private Duration defaultMessageTimeToLive = Duration.ofHours(1);
   private String defaultTopic = Protocol.DEFAULT_TOPIC;
 
+  private static void appendProperty(
+      final StringBuilder sb, final String propertyName, final Object value) {
+    sb.append(propertyName + ": " + value + "\n");
+  }
+
   @Override
   public String getBrokerContactPoint() {
     return brokerContactPoint;
   }
 
   @Override
-  public ZeebeClientBuilder brokerContactPoint(String contactPoint) {
+  public ZeebeClientBuilder brokerContactPoint(final String contactPoint) {
     this.brokerContactPoint = contactPoint;
     return this;
   }
@@ -64,7 +69,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
-  public ZeebeClientBuilder requestTimeout(Duration requestTimeout) {
+  public ZeebeClientBuilder requestTimeout(final Duration requestTimeout) {
     this.requestTimeout = requestTimeout;
     return this;
   }
@@ -75,7 +80,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
-  public ZeebeClientBuilder requestBlocktime(Duration requestBlockTime) {
+  public ZeebeClientBuilder requestBlocktime(final Duration requestBlockTime) {
     this.requestBlocktime = requestBlockTime;
     return this;
   }
@@ -86,7 +91,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
-  public ZeebeClientBuilder sendBufferSize(int sendBufferSize) {
+  public ZeebeClientBuilder sendBufferSize(final int sendBufferSize) {
     this.sendBufferSize = sendBufferSize;
     return this;
   }
@@ -97,7 +102,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
-  public ZeebeClientBuilder numManagementThreads(int numManagementThreads) {
+  public ZeebeClientBuilder numManagementThreads(final int numManagementThreads) {
     this.numManagementThreads = numManagementThreads;
     return this;
   }
@@ -108,7 +113,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
-  public ZeebeClientBuilder numSubscriptionExecutionThreads(int numSubscriptionThreads) {
+  public ZeebeClientBuilder numSubscriptionExecutionThreads(final int numSubscriptionThreads) {
     this.numSubscriptionExecutionThreads = numSubscriptionThreads;
     return this;
   }
@@ -119,7 +124,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
-  public ZeebeClientBuilder defaultTopicSubscriptionBufferSize(int numberOfRecords) {
+  public ZeebeClientBuilder defaultTopicSubscriptionBufferSize(final int numberOfRecords) {
     this.topicSubscriptionBufferSize = numberOfRecords;
     return this;
   }
@@ -130,7 +135,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
-  public ZeebeClientBuilder defaultJobSubscriptionBufferSize(int numberOfJobs) {
+  public ZeebeClientBuilder defaultJobSubscriptionBufferSize(final int numberOfJobs) {
     this.jobSubscriptionBufferSize = numberOfJobs;
     return this;
   }
@@ -141,7 +146,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
-  public ZeebeClientBuilder tcpChannelKeepAlivePeriod(Duration tcpChannelKeepAlivePeriod) {
+  public ZeebeClientBuilder tcpChannelKeepAlivePeriod(final Duration tcpChannelKeepAlivePeriod) {
     this.tcpChannelKeepAlivePeriod = tcpChannelKeepAlivePeriod;
     return this;
   }
@@ -150,7 +155,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
     return actorClock;
   }
 
-  public ZeebeClientBuilder setActorClock(ActorClock actorClock) {
+  public ZeebeClientBuilder setActorClock(final ActorClock actorClock) {
     this.actorClock = actorClock;
     return this;
   }
@@ -166,19 +171,19 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
-  public ZeebeClientBuilder defaultJobWorkerName(String workerName) {
+  public ZeebeClientBuilder defaultJobWorkerName(final String workerName) {
     this.defaultJobWorkerName = workerName;
     return this;
   }
 
   @Override
-  public ZeebeClientBuilder defaultJobTimeout(Duration timeout) {
+  public ZeebeClientBuilder defaultJobTimeout(final Duration timeout) {
     this.defaultJobTimeout = timeout;
     return this;
   }
 
   @Override
-  public ZeebeClientBuilder defaultMessageTimeToLive(Duration timeToLive) {
+  public ZeebeClientBuilder defaultMessageTimeToLive(final Duration timeToLive) {
     this.defaultMessageTimeToLive = timeToLive;
     return null;
   }
@@ -189,7 +194,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
-  public ZeebeClientBuilder defaultTopic(String topic) {
+  public ZeebeClientBuilder defaultTopic(final String topic) {
     this.defaultTopic = topic;
     return this;
   }
@@ -205,7 +210,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
-  public ZeebeClientBuilder withProperties(Properties properties) {
+  public ZeebeClientBuilder withProperties(final Properties properties) {
     if (properties.containsKey(ClientProperties.BROKER_CONTACTPOINT)) {
       brokerContactPoint(properties.getProperty(ClientProperties.BROKER_CONTACTPOINT));
     }
@@ -282,9 +287,5 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
     appendProperty(sb, "defaultTopic", defaultTopic);
 
     return sb.toString();
-  }
-
-  private static void appendProperty(StringBuilder sb, String propertyName, Object value) {
-    sb.append(propertyName + ": " + value + "\n");
   }
 }
