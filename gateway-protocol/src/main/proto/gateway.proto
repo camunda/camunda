@@ -10,7 +10,6 @@ message HealthRequest {
 
 message Partition {
   int32 partitionId = 1;
-  string topicName = 2;
   enum PartitionBrokerRole {
     LEADER = 0;
     FOLLOW = 1;
