@@ -49,7 +49,4 @@ public class ClientProperties {
 
   /** @see ZeebeClientBuilder#defaultJobTimeout(java.time.Duration) */
   public static final String DEFAULT_JOB_TIMEOUT = "zeebe.client.job.timeout";
-
-  /** @see ZeebeClientBuilder#defaultTopic(String) */
-  public static final String DEFAULT_TOPIC = "zeebe.client.defaultTopic";
 }

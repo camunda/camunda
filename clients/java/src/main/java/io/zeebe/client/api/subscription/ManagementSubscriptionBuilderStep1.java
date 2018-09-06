@@ -25,7 +25,7 @@ public interface ManagementSubscriptionBuilderStep1 {
    * last acknowledged position and starts publishing with the next event/command.
    *
    * <p>The initial position of the subscription can be defined by calling <code>
-   * startAtHeadOfTopic()</code>, <code>startAtTailOfTopic()</code> or <code>startAtPosition()
+   * startAtHead()</code>, <code>startAtTail()</code> or <code>startAtPosition()
    * </code>. If the subscription has already an acknowledged position then these calls are ignored
    * and the subscription resumes at the acknowledged position. Use <code>forcedStart()</code> to
    * enforce starting at the supplied start position.
@@ -37,7 +37,7 @@ public interface ManagementSubscriptionBuilderStep1 {
    *  .newManagementSubscription()
    *  .name("my-app")
    *  .deploymentEventHandler(deploymentEventHandler)
-   *  .startAtHeadOfTopic()
+   *  .startAtHead()
    *  .open();
    * </pre>
    *
@@ -76,22 +76,6 @@ public interface ManagementSubscriptionBuilderStep1 {
     ManagementSubscriptionBuilderStep3 deploymentCommandHandler(DeploymentCommandHandler handler);
 
     /**
-     * Register a handler that processes all topic events.
-     *
-     * @param handler the handler to process all topic events
-     * @return the builder for this subscription
-     */
-    ManagementSubscriptionBuilderStep3 topicEventHandler(TopicEventHandler handler);
-
-    /**
-     * Register a handler that processes all topic commands.
-     *
-     * @param handler the handler to process all topic commands
-     * @return the builder for this subscription
-     */
-    ManagementSubscriptionBuilderStep3 topicCommandHandler(TopicCommandHandler handler);
-
-    /**
      * Register a handler that processes all raft events.
      *
      * @param handler the handler to process all raft events
@@ -127,7 +111,7 @@ public interface ManagementSubscriptionBuilderStep1 {
      *
      * @return the builder for this subscription
      */
-    ManagementSubscriptionBuilderStep3 startAtTailOfTopic();
+    ManagementSubscriptionBuilderStep3 startAtTail();
 
     /**
      * Start publishing at the head (i.e. the begin) of the partition.
@@ -137,7 +121,7 @@ public interface ManagementSubscriptionBuilderStep1 {
      *
      * @return the builder for this subscription
      */
-    ManagementSubscriptionBuilderStep3 startAtHeadOfTopic();
+    ManagementSubscriptionBuilderStep3 startAtHead();
 
     /**
      * Force the subscription to start at the given position.

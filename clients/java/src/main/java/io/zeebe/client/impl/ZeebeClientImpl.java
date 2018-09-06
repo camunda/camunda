@@ -20,12 +20,13 @@ import io.grpc.ManagedChannel;
 import io.grpc.ManagedChannelBuilder;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientConfiguration;
-import io.zeebe.client.api.clients.TopicClient;
-import io.zeebe.client.api.commands.CreateTopicCommandStep1;
-import io.zeebe.client.api.commands.TopicsRequestStep1;
+import io.zeebe.client.api.clients.JobClient;
+import io.zeebe.client.api.clients.WorkflowClient;
+import io.zeebe.client.api.commands.PartitionsRequestStep1;
 import io.zeebe.client.api.commands.TopologyRequestStep1;
 import io.zeebe.client.api.record.ZeebeObjectMapper;
 import io.zeebe.client.api.subscription.ManagementSubscriptionBuilderStep1;
+import io.zeebe.client.api.subscription.TopicSubscriptionBuilderStep1;
 import io.zeebe.gateway.protocol.GatewayGrpc;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import java.net.URI;
@@ -56,27 +57,27 @@ public class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
-  public TopicClient topicClient(final String topicName) {
-    return null;
-  }
-
-  @Override
-  public TopicClient topicClient() {
-    return null;
-  }
-
-  @Override
   public ZeebeObjectMapper objectMapper() {
     return null;
   }
 
   @Override
-  public CreateTopicCommandStep1 newCreateTopicCommand() {
+  public WorkflowClient workflowClient() {
     return null;
   }
 
   @Override
-  public TopicsRequestStep1 newTopicsRequest() {
+  public JobClient jobClient() {
+    return null;
+  }
+
+  @Override
+  public TopicSubscriptionBuilderStep1 newSubscription() {
+    return null;
+  }
+
+  @Override
+  public PartitionsRequestStep1 newPartitionsRequest() {
     return null;
   }
 

@@ -23,8 +23,6 @@ public enum ValueType {
   SUBSCRIPTION,
   DEPLOYMENT,
 
-  TOPIC,
-
   RAFT,
 
   UNKNOWN

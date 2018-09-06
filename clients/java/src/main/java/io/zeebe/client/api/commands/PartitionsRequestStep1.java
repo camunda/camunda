@@ -15,12 +15,6 @@
  */
 package io.zeebe.client.api.commands;
 
-import java.util.List;
-
-public interface Topic {
-  /** @return the name of the topic */
-  String getName();
-
-  /** @return all partitions of the topic */
-  List<Partition> getPartitions();
+public interface PartitionsRequestStep1 extends FinalCommandStep<Partitions> {
+  // the place for new optional parameters
 }
