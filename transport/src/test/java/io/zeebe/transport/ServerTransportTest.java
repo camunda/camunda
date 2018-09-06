@@ -88,7 +88,7 @@ public class ServerTransportTest {
    * When a single remote reconnects, the stream ID for messages/responses sent by the server should
    * be changed, so that the client does not accidentally receive any messages that were scheduled
    * before reconnect and were in the send buffer during reconnection (for example this is important
-   * for topic subscriptions).
+   * for subscriptions).
    */
   @Test
   public void shouldNotSendMessagesForPreviousStreamIdAfterReconnect() {
