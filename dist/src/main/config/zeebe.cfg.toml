@@ -30,39 +30,6 @@
 
 # ----------------------------------------------------
 
-# Controls the number of nodes this broker waits for until doing bootstrapping:
-#
-# * When using a single-node cluster, the value should be 1
-# * When using a multi-node cluster, one node should be configured with
-#   bootstrap = 3 (or 5, depending on the cluster size) and for all the other
-#   nodes it should be set to 0 (or removed from the configuration since default
-#   value is 0).
-#
-# (Note that the broker includes itself in the count, ie. when specifying '1',
-# the broker waits for itself.)
-#
-# Explanation: When doing bootstrapping, the broker ensures that internally used
-# resources such as the 'internal-system' topic are available. The
-# 'internal-system' topic is used for storing information about all the other,
-# user-defined, topics that are available in the cluster. When specifying a
-# value > 1 for this configuration property, the broker will wait for the
-# specified number of nodes to appear in the cluster and then create the
-# internal-system topic if not yet present, using the specified value as
-# replication factor.
-bootstrap = 1
-
-# Topics defined below are created automatically during bootstrapping.
-# You can configure them as follows:
-# * name: the topic name, e.g. "default-topic"
-# * partitions: the number of partitions that should be created for this topic, e.g. 1
-# * replicationFactor: the number of nodes this on which the partitions should be replicated, e.g. 3
-#                      the replication factor cannot be greater than the number of nodes in the
-#                      cluster.
-[[topics]]
-name = "default-topic"
-partitions = 1
-replicationFactor = 1
-
 [network]
 
 # This section contains the network configuration. Particularly, it allows to
