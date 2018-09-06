@@ -1889,6 +1889,36 @@ public class ProcessBuilderTest {
     assertThat(eventDefinition.getCondition().getTextContent()).isEqualTo(TEST_CONDITION);
   }
 
+  @Test
+  public void testMoveToDoesNotReturnRawBuilders() {
+    // just checks that it compiles
+    Bpmn.createProcess()
+        .startEvent("goto")
+        .moveToNode("goto")
+        .serviceTask("task", b -> b.name("name"));
+
+    Bpmn.createProcess()
+        .startEvent()
+        .exclusiveGateway()
+        .userTask()
+        .moveToLastExclusiveGateway()
+        .serviceTask("task", b -> b.name("name"));
+
+    Bpmn.createProcess()
+        .startEvent()
+        .parallelGateway()
+        .userTask()
+        .moveToLastGateway()
+        .serviceTask("task", b -> b.name("name"));
+
+    Bpmn.createProcess()
+        .startEvent()
+        .serviceTask("goto")
+        .userTask()
+        .moveToActivity("goto")
+        .serviceTask("task", b -> b.name("name"));
+  }
+
   protected Message assertMessageEventDefinition(String elementId, String messageName) {
     final MessageEventDefinition messageEventDefinition =
         assertAndGetSingleEventDefinition(elementId, MessageEventDefinition.class);
