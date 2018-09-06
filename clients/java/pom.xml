@@ -84,6 +84,12 @@
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-test-util</artifactId>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
 </project>

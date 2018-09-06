@@ -22,6 +22,7 @@ import io.zeebe.broker.TestLoggers;
 import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
 import io.zeebe.broker.exporter.DebugExporter;
 import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.zeebe.broker.system.configuration.TomlConfigurationReader;
@@ -33,6 +34,8 @@ import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.FileUtil;
@@ -50,6 +53,8 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.assertj.core.util.Files;
 import org.junit.rules.ExternalResource;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 
 public class EmbeddedBrokerRule extends ExternalResource {
@@ -62,6 +67,9 @@ public class EmbeddedBrokerRule extends ExternalResource {
   public static final String DEFAULT_CONFIG_FILE = "zeebe.test.cfg.toml";
 
   protected static final Logger LOG = TestLoggers.TEST_LOGGER;
+
+  protected final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   protected BrokerCfg brokerCfg;
   protected Broker broker;
@@ -103,6 +111,12 @@ public class EmbeddedBrokerRule extends ExternalResource {
 
   private File newTemporaryFolder;
   private List<String> dataDirectories;
+
+  @Override
+  public Statement apply(Statement base, Description description) {
+    final Statement statement = recordingExporterTestWatcher.apply(base, description);
+    return super.apply(statement, description);
+  }
 
   @Override
   protected void before() {
@@ -184,6 +198,12 @@ public class EmbeddedBrokerRule extends ExternalResource {
         if (ENABLE_DEBUG_EXPORTER) {
           brokerCfg.getExporters().add(DebugExporter.defaultConfig(false));
         }
+
+        final ExporterCfg exporterCfg = new ExporterCfg();
+        exporterCfg.setId("test-recorder");
+        exporterCfg.setClassName(RecordingExporter.class.getName());
+        brokerCfg.getExporters().add(exporterCfg);
+
         configurator.accept(brokerCfg);
         assignSocketAddresses(brokerCfg);
       } catch (final IOException e) {
@@ -191,6 +211,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
       }
     }
 
+    RecordingExporter.reset();
     broker = new Broker(brokerCfg, newTemporaryFolder.getAbsolutePath(), controlledActorClock);
 
     final ServiceContainer serviceContainer = broker.getBrokerContext().getServiceContainer();
