@@ -43,7 +43,6 @@ import org.elasticsearch.search.sort.SortOrder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.apache.lucene.search.join.ScoreMode.None;
@@ -120,7 +119,7 @@ public class WorkflowInstanceReader {
    */
   public WorkflowInstanceResponseDto queryWorkflowInstances(WorkflowInstanceRequestDto workflowInstanceRequest, Integer firstResult, Integer maxResults) {
     SearchRequestBuilder searchRequest = createSearchRequest(workflowInstanceRequest)
-      .setFetchSource(null, WorkflowInstanceType.ACTIVITIES);
+      .setFetchSource(null, new String[]{WorkflowInstanceType.ACTIVITIES, WorkflowInstanceType.SEQUENCE_FLOWS});
 
     if (firstResult != null && maxResults != null) {
       return paginate(searchRequest, firstResult, maxResults);

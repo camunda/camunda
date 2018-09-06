@@ -34,6 +34,8 @@ public class WorkflowInstanceEntity extends OperateEntity {
 
   private List<BooleanVariableEntity> booleanVariables = new ArrayList<>();
 
+  private List<SequenceFlowEntity> sequenceFlows = new ArrayList<>();
+
   private Integer partitionId;
 
   private long position;
@@ -136,6 +138,14 @@ public class WorkflowInstanceEntity extends OperateEntity {
     this.booleanVariables = booleanVariables;
   }
 
+  public List<SequenceFlowEntity> getSequenceFlows() {
+    return sequenceFlows;
+  }
+
+  public void setSequenceFlows(List<SequenceFlowEntity> sequenceFlows) {
+    this.sequenceFlows = sequenceFlows;
+  }
+
   @JsonIgnore
   public int countVariables() {
     return this.getStringVariables().size() + this.getLongVariables().size() + this.getDoubleVariables().size() + this.getBooleanVariables().size();
@@ -202,6 +212,8 @@ public class WorkflowInstanceEntity extends OperateEntity {
       return false;
     if (booleanVariables != null ? !booleanVariables.equals(that.booleanVariables) : that.booleanVariables != null)
       return false;
+    if (sequenceFlows != null ? !sequenceFlows.equals(that.sequenceFlows) : that.sequenceFlows != null)
+      return false;
     if (partitionId != null ? !partitionId.equals(that.partitionId) : that.partitionId != null)
       return false;
     return topicName != null ? topicName.equals(that.topicName) : that.topicName == null;
@@ -222,6 +234,7 @@ public class WorkflowInstanceEntity extends OperateEntity {
     result = 31 * result + (longVariables != null ? longVariables.hashCode() : 0);
     result = 31 * result + (doubleVariables != null ? doubleVariables.hashCode() : 0);
     result = 31 * result + (booleanVariables != null ? booleanVariables.hashCode() : 0);
+    result = 31 * result + (sequenceFlows != null ? sequenceFlows.hashCode() : 0);
     result = 31 * result + (partitionId != null ? partitionId.hashCode() : 0);
     result = 31 * result + (int) (position ^ (position >>> 32));
     result = 31 * result + (topicName != null ? topicName.hashCode() : 0);

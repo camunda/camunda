@@ -12,6 +12,7 @@ import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.OperationType;
+import org.camunda.operate.entities.SequenceFlowEntity;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.es.types.EventType;
@@ -27,7 +28,6 @@ import org.elasticsearch.script.ScriptType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
@@ -212,7 +212,7 @@ public class ElasticsearchRequestCreatorsHolder {
   }
 
   /**
-   *
+   * Insert Workflow.
    * @return
    */
   public ElasticsearchRequestCreator<WorkflowEntity> workflowEsRequestCreator() {
@@ -227,6 +227,44 @@ public class ElasticsearchRequestCreatorsHolder {
         logger.error("Error preparing the query to insert workflow", e);
         throw new PersistenceException(String.format("Error preparing the query to insert workflow [%s]", entity.getId()), e);
       }
+    };
+  }
+
+  public ElasticsearchRequestCreator<SequenceFlowEntity> sequenceFlowEsRequestCreator() {
+    return (bulkRequestBuilder, entity) -> {
+      try {
+
+        Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(entity), HashMap.class);
+        Map<String, Object> params = new HashMap<>();
+        params.put("sequenceFlow", jsonMap);
+
+        String script =
+          "boolean f = false;" +
+          "for (int j = 0; j < ctx._source.sequenceFlows.size(); j++) {" +
+            "if (ctx._source.sequenceFlows[j].id == params.sequenceFlow.id) {" +
+              "f = true;" +
+              "break;" +
+            "}" +
+          "}" +
+          "if (!f) {" +
+            "ctx._source.sequenceFlows.add(params.sequenceFlow);" +
+          "}";
+
+        Script updateScript = new Script(
+          ScriptType.INLINE,
+          Script.DEFAULT_SCRIPT_LANG,
+          script,
+          params
+        );
+        return bulkRequestBuilder.add(
+          esClient
+            .prepareUpdate(workflowInstanceType.getType(), workflowInstanceType.getType(), entity.getWorkflowInstanceId())
+            .setScript(updateScript));
+      } catch (IOException e) {
+        logger.error("Error preparing the query to insert sequence flow", e);
+        throw new PersistenceException(String.format("Error preparing the query to insert sequence flow instance [%s]", entity.getId()), e);
+      }
+
     };
   }
 
@@ -266,6 +304,7 @@ public class ElasticsearchRequestCreatorsHolder {
     map.put(ActivityInstanceEntity.class, activityInstanceEsRequestCreator());
     map.put(WorkflowEntity.class, workflowEsRequestCreator());
     map.put(EventEntity.class, eventEsRequestCreator());
+    map.put(SequenceFlowEntity.class, sequenceFlowEsRequestCreator());
     return map;
   }
 

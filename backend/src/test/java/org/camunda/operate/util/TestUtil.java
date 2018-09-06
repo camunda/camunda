@@ -22,6 +22,7 @@ import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
+import org.camunda.operate.entities.SequenceFlowEntity;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
@@ -121,6 +122,13 @@ public abstract class TestUtil {
       result.add(workflowEntity);
     }
     return result;
+  }
+
+  public static SequenceFlowEntity createSequenceFlow() {
+    SequenceFlowEntity sequenceFlowEntity = new SequenceFlowEntity();
+    sequenceFlowEntity.setId(UUID.randomUUID().toString());
+    sequenceFlowEntity.setActivityId("SequenceFlow_" + random.nextInt());
+    return sequenceFlowEntity;
   }
 
 }

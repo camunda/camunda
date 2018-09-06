@@ -86,7 +86,7 @@ public class WorkflowInstanceIT extends OperateIntegrationTest {
     String topicName = zeebeTestRule.getTopicName();
 
     String processId = "demoProcess";
-    final String workflowId = zeebeUtil.deployWorkflowToTheTopic(topicName, "demoProcess_v_1.bpmn");
+    zeebeUtil.deployWorkflowToTheTopic(topicName, "demoProcess_v_1.bpmn");
 
     //when
     final String workflowInstanceId = zeebeUtil.startWorkflowInstance(topicName, processId, "{\"a\": \"b\"}");
@@ -102,6 +102,40 @@ public class WorkflowInstanceIT extends OperateIntegrationTest {
     //assert activity completed
     assertThat(workflowInstanceEntity.getActivities()).filteredOn(a -> a.getActivityId().equals("taskA"))
       .allMatch(a -> a.getState().equals(ActivityState.COMPLETED) && !a.getEndDate().isBefore(testStartTime));
+
+  }
+
+  @Test
+  public void testSequenceFlowsPersisted() {
+    // having
+    String topicName = zeebeTestRule.getTopicName();
+
+    String processId = "demoProcess";
+    WorkflowDefinition workflow = Bpmn.createExecutableWorkflow(processId)
+      .startEvent("start")
+      .sequenceFlow("sf1")
+      .serviceTask("task1").taskType("task1").done()
+      .sequenceFlow("sf2")
+      .serviceTask("task2").taskType("task2").done()
+      .sequenceFlow("sf3")
+      .endEvent()
+      .done();
+    zeebeUtil.deployWorkflowToTheTopic(topicName, workflow, processId + ".bpmn");
+
+    final String workflowInstanceId = zeebeUtil.startWorkflowInstance(topicName, processId, null);
+    elasticsearchTestRule.processAllEvents(10);
+
+    JobWorker jobWorker = zeebeUtil.completeTask(topicName, "task1", zeebeTestRule.getWorkerName(), null);
+    elasticsearchTestRule.processAllEvents(10);
+    jobWorker.close();
+
+    jobWorker = zeebeUtil.completeTask(topicName, "task2", zeebeTestRule.getWorkerName(), null);
+    elasticsearchTestRule.processAllEvents(10);
+    jobWorker.close();
+
+    WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
+    assertThat(workflowInstanceEntity.getSequenceFlows()).hasSize(3)
+      .extracting(WorkflowInstanceType.ACTIVITY_ID).containsOnly("sf1", "sf2", "sf3");
 
   }
 

@@ -34,6 +34,7 @@ public class WorkflowInstanceType extends StrictTypeMappingCreator {
   public static final String VARIABLE_NAME = "name";
   public static final String VARIABLE_VALUE = "value";
   public static final String NULL_VALUE = "NULL";
+  public static final String SEQUENCE_FLOWS = "sequenceFlows";
 
   @Autowired
   private OperateProperties operateProperties;
@@ -106,6 +107,12 @@ public class WorkflowInstanceType extends StrictTypeMappingCreator {
         .field("type", "nested")
         .startObject("properties");
           addNestedVariablesField(newBuilder, "boolean")
+        .endObject()
+      .endObject()
+      .startObject(SEQUENCE_FLOWS)
+        .field("type", "nested")
+        .startObject("properties");
+          addNestedSequenceFlowsField(newBuilder)
         .endObject()
       .endObject()
       .startObject(PARTITION_ID)
@@ -201,6 +208,17 @@ public class WorkflowInstanceType extends StrictTypeMappingCreator {
         .field("type", "keyword")
       .endObject()
       .startObject(ERROR_MSG)
+        .field("type", "keyword")
+      .endObject();
+    return builder;
+  }
+
+  private XContentBuilder addNestedSequenceFlowsField(XContentBuilder builder) throws IOException {
+    builder
+      .startObject(ID)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(ACTIVITY_ID)
         .field("type", "keyword")
       .endObject();
     return builder;

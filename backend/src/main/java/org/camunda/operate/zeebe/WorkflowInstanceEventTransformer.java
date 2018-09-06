@@ -8,6 +8,7 @@ import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.entities.EventEntity;
+import org.camunda.operate.entities.SequenceFlowEntity;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.writer.EntityStorage;
@@ -100,7 +101,19 @@ public class WorkflowInstanceEventTransformer extends AbstractEventTransformer i
       convertActivityInstanceEvent(event);
 
     }
+    if (event.getState().equals(SEQUENCE_FLOW_TAKEN)) {
+      convertSequenceFlowTakenEvent(event);
+    }
 
+  }
+
+  private void convertSequenceFlowTakenEvent(WorkflowInstanceEvent event) throws InterruptedException {
+    SequenceFlowEntity sequenceFlow = new SequenceFlowEntity();
+    sequenceFlow.setId(String.valueOf(event.getMetadata().getKey()));
+    sequenceFlow.setActivityId(event.getActivityId());
+    sequenceFlow.setWorkflowInstanceId(String.valueOf(event.getWorkflowInstanceKey()));
+    String topicName = event.getMetadata().getTopicName();
+    entityStorage.getOperateEntitiesQueue(topicName).put(sequenceFlow);
   }
 
   private void convertEvent(WorkflowInstanceEvent event) throws InterruptedException {

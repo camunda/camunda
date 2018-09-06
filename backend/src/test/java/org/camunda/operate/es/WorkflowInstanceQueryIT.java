@@ -11,6 +11,7 @@ import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
+import org.camunda.operate.entities.SequenceFlowEntity;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.entities.variables.BooleanVariableEntity;
@@ -40,6 +41,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
 import static org.camunda.operate.util.TestUtil.createActivityInstance;
 import static org.camunda.operate.util.TestUtil.createIncident;
+import static org.camunda.operate.util.TestUtil.createSequenceFlow;
 import static org.camunda.operate.util.TestUtil.createWorkflowInstance;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -96,6 +98,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
       assertThat(workflowInstanceDto.getEndDate()).isNull();
       assertThat(workflowInstanceDto.getState()).isEqualTo(WorkflowInstanceState.ACTIVE);
       assertThat(workflowInstanceDto.getActivities()).isEmpty();
+      assertThat(workflowInstanceDto.getSequenceFlows()).isEmpty();
     }
   }
 
@@ -762,6 +765,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
       assertThat(workflowInstanceDto.getEndDate()).isNotNull();
       assertThat(workflowInstanceDto.getState()).isIn(WorkflowInstanceState.COMPLETED, WorkflowInstanceState.CANCELED);
       assertThat(workflowInstanceDto.getActivities()).isEmpty();
+      assertThat(workflowInstanceDto.getSequenceFlows()).isEmpty();
     }
   }
 
@@ -977,10 +981,13 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     //running instance with one activity and without incidents
     final WorkflowInstanceEntity runningInstance = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
     runningInstance.getActivities().add(createActivityInstance(ActivityState.ACTIVE));
+    runningInstance.getSequenceFlows().add(createSequenceFlow());
 
     //completed instance with one activity and without incidents
     final WorkflowInstanceEntity completedInstance = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
     completedInstance.getActivities().add(createActivityInstance(ActivityState.COMPLETED));
+    completedInstance.getSequenceFlows().add(createSequenceFlow());
+    completedInstance.getSequenceFlows().add(createSequenceFlow());
 
     //canceled instance with two activities and without incidents
     final WorkflowInstanceEntity canceledInstance = createWorkflowInstance(WorkflowInstanceState.CANCELED);
@@ -1001,7 +1008,6 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     //persist instances
     elasticsearchTestRule.persist(runningInstance, completedInstance, instanceWithIncident, instanceWithoutIncident, canceledInstance);
   }
-
 
   private void addVariableEntity(WorkflowInstanceEntity workflowInstance, String name, String value) {
     workflowInstance.getStringVariables().add(new StringVariableEntity(name, value));

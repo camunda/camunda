@@ -26,6 +26,8 @@ public class WorkflowInstanceDto {
 
   private List<OperationDto> operations = new ArrayList<>();
 
+  private List<SequenceFlowDto> sequenceFlows = new ArrayList<>();
+
   public String getId() {
     return id;
   }
@@ -98,6 +100,14 @@ public class WorkflowInstanceDto {
     this.operations = operations;
   }
 
+  public List<SequenceFlowDto> getSequenceFlows() {
+    return sequenceFlows;
+  }
+
+  public void setSequenceFlows(List<SequenceFlowDto> sequenceFlows) {
+    this.sequenceFlows = sequenceFlows;
+  }
+
   public static WorkflowInstanceDto createFrom(WorkflowInstanceEntity workflowInstanceEntity) {
     if (workflowInstanceEntity == null) {
       return null;
@@ -112,6 +122,7 @@ public class WorkflowInstanceDto {
     workflowInstance.setIncidents(IncidentDto.createFrom(workflowInstanceEntity.getIncidents()));
     workflowInstance.setActivities(ActivityInstanceDto.createFrom(workflowInstanceEntity.getActivities()));
     workflowInstance.setOperations(OperationDto.createFrom(workflowInstanceEntity.getOperations()));
+    workflowInstance.setSequenceFlows(SequenceFlowDto.createFrom(workflowInstanceEntity.getSequenceFlows()));
     return workflowInstance;
   }
 
@@ -152,7 +163,9 @@ public class WorkflowInstanceDto {
       return false;
     if (activities != null ? !activities.equals(that.activities) : that.activities != null)
       return false;
-    return operations != null ? operations.equals(that.operations) : that.operations == null;
+    if (operations != null ? !operations.equals(that.operations) : that.operations != null)
+      return false;
+    return sequenceFlows != null ? sequenceFlows.equals(that.sequenceFlows) : that.sequenceFlows == null;
   }
 
   @Override
@@ -166,6 +179,7 @@ public class WorkflowInstanceDto {
     result = 31 * result + (incidents != null ? incidents.hashCode() : 0);
     result = 31 * result + (activities != null ? activities.hashCode() : 0);
     result = 31 * result + (operations != null ? operations.hashCode() : 0);
+    result = 31 * result + (sequenceFlows != null ? sequenceFlows.hashCode() : 0);
     return result;
   }
 }
