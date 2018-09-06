@@ -147,14 +147,6 @@ public class ZeebeObjectMapperTest {
         .startAtHead()
         .open();
 
-    clientRule
-        .getClient()
-        .newManagementSubscription()
-        .name("test-management")
-        .recordHandler(records::add)
-        .startAtHead()
-        .open();
-
     waitUntil(
         () ->
             records

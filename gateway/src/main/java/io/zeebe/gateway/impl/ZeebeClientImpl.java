@@ -24,14 +24,12 @@ import io.zeebe.gateway.api.clients.WorkflowClient;
 import io.zeebe.gateway.api.commands.PartitionsRequestStep1;
 import io.zeebe.gateway.api.commands.TopologyRequestStep1;
 import io.zeebe.gateway.api.record.ZeebeObjectMapper;
-import io.zeebe.gateway.api.subscription.ManagementSubscriptionBuilderStep1;
 import io.zeebe.gateway.api.subscription.TopicSubscriptionBuilderStep1;
 import io.zeebe.gateway.impl.clustering.ClientTopologyManager;
 import io.zeebe.gateway.impl.clustering.TopologyRequestImpl;
 import io.zeebe.gateway.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.gateway.impl.partitions.PartitionsRequestImpl;
 import io.zeebe.gateway.impl.subscription.SubscriptionManager;
-import io.zeebe.gateway.impl.subscription.topic.ManagementSubscriptionBuilderImpl;
 import io.zeebe.gateway.impl.subscription.topic.TopicSubscriptionBuilderImpl;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.ClientTransportBuilder;
@@ -255,10 +253,5 @@ public class ZeebeClientImpl implements ZeebeClient {
   @Override
   public TopologyRequestStep1 newTopologyRequest() {
     return new TopologyRequestImpl(getCommandManager(), topologyManager);
-  }
-
-  @Override
-  public ManagementSubscriptionBuilderStep1 newManagementSubscription() {
-    return new ManagementSubscriptionBuilderImpl(subscriptionManager, configuration);
   }
 }
