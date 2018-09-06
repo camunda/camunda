@@ -15,7 +15,7 @@
  */
 package io.zeebe.test;
 
-import io.zeebe.gateway.api.clients.TopicClient;
+import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.api.events.JobEvent;
 import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
 import io.zeebe.gateway.api.events.WorkflowInstanceState;
@@ -53,7 +53,7 @@ public class TopicEventRecorder extends ExternalResource {
   }
 
   private void startRecordingEvents() {
-    final TopicClient client = clientRule.getClient().topicClient();
+    final ZeebeClient client = clientRule.getClient();
 
     subscription =
         client

@@ -34,9 +34,9 @@ import java.util.function.Supplier;
 import org.junit.rules.ExternalResource;
 
 public class ZeebeTestRule extends ExternalResource {
-  private EmbeddedBrokerRule brokerRule;
-  private ClientRule clientRule;
-  private TopicEventRecorder topicEventRecorder;
+  private final EmbeddedBrokerRule brokerRule;
+  private final ClientRule clientRule;
+  private final TopicEventRecorder topicEventRecorder;
 
   public ZeebeTestRule() {
     this(DEFAULT_CONFIG_SUPPLIER, Properties::new);
@@ -123,10 +123,6 @@ public class ZeebeTestRule extends ExternalResource {
     } catch (final InterruptedException e) {
       // ignore
     }
-  }
-
-  public String getDefaultTopic() {
-    return clientRule.getDefaultTopic();
   }
 
   public int getDefaultPartition() {

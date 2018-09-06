@@ -51,7 +51,6 @@ public class WorkflowTest {
     client = testRule.getClient();
 
     client
-        .topicClient()
         .workflowClient()
         .newDeployCommand()
         .addResourceFromClasspath("process.bpmn")
@@ -60,7 +59,6 @@ public class WorkflowTest {
 
     final CountDownLatch latch = new CountDownLatch(1);
     client
-        .topicClient()
         .newSubscription()
         .name("deploy")
         .recordHandler(
@@ -83,7 +81,6 @@ public class WorkflowTest {
   public void shouldCompleteWorkflowInstance() {
     final WorkflowInstanceEvent workflowInstance =
         client
-            .topicClient()
             .workflowClient()
             .newCreateInstanceCommand()
             .bpmnProcessId("process")
@@ -92,7 +89,6 @@ public class WorkflowTest {
             .join();
 
     client
-        .topicClient()
         .jobClient()
         .newWorker()
         .jobType("task")

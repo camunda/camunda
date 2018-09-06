@@ -15,24 +15,16 @@
  */
 package io.zeebe.test;
 
-import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
-
 import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.api.clients.JobClient;
-import io.zeebe.gateway.api.clients.TopicClient;
 import io.zeebe.gateway.api.clients.WorkflowClient;
 import io.zeebe.gateway.api.commands.BrokerInfo;
 import io.zeebe.gateway.api.commands.Partition;
 import io.zeebe.gateway.api.commands.PartitionInfo;
-import io.zeebe.gateway.api.commands.Topic;
 import io.zeebe.gateway.api.commands.Topology;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import org.junit.rules.ExternalResource;
 
 public class ClientRule extends ExternalResource {
@@ -55,20 +47,12 @@ public class ClientRule extends ExternalResource {
     return client;
   }
 
-  public TopicClient topicClient() {
-    return client.topicClient();
-  }
-
   public JobClient jobClient() {
-    return client.topicClient().jobClient();
+    return client.jobClient();
   }
 
   public WorkflowClient workflowClient() {
-    return client.topicClient().workflowClient();
-  }
-
-  public String getDefaultTopic() {
-    return DEFAULT_TOPIC;
+    return client.workflowClient();
   }
 
   public int getDefaultPartition() {
@@ -78,23 +62,19 @@ public class ClientRule extends ExternalResource {
   @Override
   protected void before() {
     client = ZeebeClient.newClientBuilder().withProperties(properties).build();
-    createDefaultTopic();
+    determineDefaultPartition();
   }
 
-  private void createDefaultTopic() {
-
-    waitUntilTopicsExists(DEFAULT_TOPIC);
-
+  private void determineDefaultPartition() {
     final Topology topology = client.newTopologyRequest().send().join();
 
     defaultPartition = -1;
     final List<BrokerInfo> topologyBrokers = topology.getBrokers();
 
-    for (BrokerInfo leader : topologyBrokers) {
+    for (final BrokerInfo leader : topologyBrokers) {
       final List<PartitionInfo> partitions = leader.getPartitions();
-      for (PartitionInfo brokerPartitionState : partitions) {
-        if (DEFAULT_TOPIC.equals(brokerPartitionState.getTopicName())
-            && brokerPartitionState.isLeader()) {
+      for (final PartitionInfo brokerPartitionState : partitions) {
+        if (brokerPartitionState.isLeader()) {
           defaultPartition = brokerPartitionState.getPartitionId();
           break;
         }
@@ -106,20 +86,8 @@ public class ClientRule extends ExternalResource {
     }
   }
 
-  public void waitUntilTopicsExists(final String... topicNames) {
-    final List<String> expectedTopicNames = Arrays.asList(topicNames);
-
-    doRepeatedly(this::topicsByName).until(t -> t.keySet().containsAll(expectedTopicNames));
-  }
-
-  public Map<String, List<Partition>> topicsByName() {
-    return client
-        .newTopicsRequest()
-        .send()
-        .join()
-        .getTopics()
-        .stream()
-        .collect(Collectors.toMap(Topic::getName, Topic::getPartitions));
+  public List<Partition> partitions() {
+    return client.newPartitionsRequest().send().join().getPartitions();
   }
 
   @Override
