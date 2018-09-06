@@ -47,7 +47,7 @@ public interface Record<T extends RecordValue> {
    * Retrieves the key of the record.
    *
    * <p>Multiple records can have the same key if they belongs to the same logical entity. Keys are
-   * unique for the combination of topic, partition and record type.
+   * unique for the combination of partition and record type.
    *
    * @return the key of the record
    */
