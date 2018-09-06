@@ -39,19 +39,21 @@ import io.zeebe.protocol.intent.RaftIntent;
 import io.zeebe.protocol.intent.TopicIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
-import io.zeebe.test.util.stream.StreamWrapperException;
 import java.time.Duration;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Spliterator;
+import java.util.Spliterators;
 import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.Supplier;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 public class RecordingExporter implements Exporter {
 
   private static final List<Record<?>> RECORDS = new CopyOnWriteArrayList<>();
 
   private static final Object EXPORT_MONITOR = new Object();
-  private static final long MAX_WAIT = Duration.ofSeconds(10).toMillis();
+  private static final long MAX_WAIT = Duration.ofSeconds(1).toMillis();
 
   @Override
   public void export(final Record record) {
@@ -70,9 +72,11 @@ public class RecordingExporter implements Exporter {
   }
 
   @SuppressWarnings("unchecked")
-  private static <T extends RecordValue> Stream<Record<T>> records(
+  protected static <T extends RecordValue> Stream<Record<T>> records(
       final ValueType valueType, final Class<T> valueClass) {
-    return Stream.generate(new RecordSupplier())
+    final Spliterator<Record<?>> spliterator =
+        Spliterators.spliteratorUnknownSize(new RecordIterator(), Spliterator.ORDERED);
+    return StreamSupport.stream(spliterator, false)
         .filter(r -> r.getMetadata().getValueType() == valueType)
         .map(r -> (Record<T>) r);
   }
@@ -165,7 +169,7 @@ public class RecordingExporter implements Exporter {
     return workflowInstanceRecords().withIntent(intent);
   }
 
-  public static class RecordSupplier implements Supplier<Record<?>> {
+  public static class RecordIterator implements Iterator<Record<?>> {
 
     private int nextIndex = 0;
 
@@ -174,7 +178,7 @@ public class RecordingExporter implements Exporter {
     }
 
     @Override
-    public Record<?> get() {
+    public boolean hasNext() {
       if (isEmpty()) {
         // block haven't got enough records yet
         try {
@@ -186,11 +190,11 @@ public class RecordingExporter implements Exporter {
         }
       }
 
-      if (isEmpty()) {
-        // if still not available
-        throw new StreamWrapperException();
-      }
+      return !isEmpty();
+    }
 
+    @Override
+    public Record<?> next() {
       return RECORDS.get(nextIndex++);
     }
   }
