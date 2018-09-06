@@ -338,30 +338,27 @@ public abstract class AbstractFlowNodeBuilder<
     }
   }
 
-  @SuppressWarnings("rawtypes")
-  public AbstractGatewayBuilder moveToLastGateway() {
+  public AbstractGatewayBuilder<?, ?> moveToLastGateway() {
     return findLastGateway(Gateway.class).builder();
   }
 
-  @SuppressWarnings("rawtypes")
-  public AbstractExclusiveGatewayBuilder moveToLastExclusiveGateway() {
+  public AbstractExclusiveGatewayBuilder<?> moveToLastExclusiveGateway() {
     return findLastGateway(ExclusiveGateway.class).builder();
   }
 
-  @SuppressWarnings("rawtypes")
-  public AbstractFlowNodeBuilder moveToNode(String identifier) {
+  public AbstractFlowNodeBuilder<?, ?> moveToNode(String identifier) {
     final ModelElementInstance instance = modelInstance.getModelElementById(identifier);
-    if (instance != null && instance instanceof FlowNode) {
+    if (instance instanceof FlowNode) {
       return ((FlowNode) instance).builder();
     } else {
       throw new BpmnModelException("Flow node not found for id " + identifier);
     }
   }
 
-  @SuppressWarnings({"rawtypes", "unchecked"})
-  public <T extends AbstractActivityBuilder> T moveToActivity(String identifier) {
+  @SuppressWarnings("unchecked")
+  public <T extends AbstractActivityBuilder<?, ?>> T moveToActivity(String identifier) {
     final ModelElementInstance instance = modelInstance.getModelElementById(identifier);
-    if (instance != null && instance instanceof Activity) {
+    if (instance instanceof Activity) {
       return (T) ((Activity) instance).builder();
     } else {
       throw new BpmnModelException("Activity not found for id " + identifier);
