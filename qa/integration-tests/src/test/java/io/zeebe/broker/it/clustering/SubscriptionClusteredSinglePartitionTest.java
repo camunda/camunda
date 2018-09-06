@@ -64,11 +64,10 @@ public class SubscriptionClusteredSinglePartitionTest {
     // when
     final List<RaftEvent> raftEvents = new ArrayList<>();
     client
-        .topicClient()
         .newSubscription()
         .name("test-subscription")
         .raftEventHandler(raftEvents::add)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     // then we should receive two raft add member events
@@ -86,7 +85,7 @@ public class SubscriptionClusteredSinglePartitionTest {
   }
 
   @Test
-  public void shouldReceiveRaftEventsFromSystemTopic() {
+  public void shouldReceiveRaftEventsFromSystem() {
     // given
     clusteringRule.restartBroker(clusteringRule.getFollowerOnly());
 
@@ -96,7 +95,7 @@ public class SubscriptionClusteredSinglePartitionTest {
         .newManagementSubscription()
         .name("test-subscription")
         .raftEventHandler(raftEvents::add)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     // then we should receive two raft add member events

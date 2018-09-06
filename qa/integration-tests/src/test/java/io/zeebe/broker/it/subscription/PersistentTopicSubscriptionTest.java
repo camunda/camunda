@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.gateway.api.clients.TopicClient;
+import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.api.subscription.TopicSubscription;
 import io.zeebe.test.util.TestUtil;
 import org.junit.Before;
@@ -37,12 +37,12 @@ public class PersistentTopicSubscriptionTest {
 
   @Rule public ExpectedException exception = ExpectedException.none();
 
-  protected TopicClient client;
+  protected ZeebeClient client;
   protected RecordingEventHandler recordingHandler;
 
   @Before
   public void setUp() {
-    this.client = clientRule.getClient().topicClient();
+    this.client = clientRule.getClient();
     this.recordingHandler = new RecordingEventHandler();
   }
 
@@ -65,7 +65,7 @@ public class PersistentTopicSubscriptionTest {
             .newSubscription()
             .name(subscriptionName)
             .recordHandler(recordingHandler)
-            .startAtHeadOfTopic()
+            .startAtHead()
             .open();
 
     // that was received by the subscription
@@ -99,7 +99,7 @@ public class PersistentTopicSubscriptionTest {
         .newSubscription()
         .name(subscriptionName)
         .recordHandler(recordingHandler)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     // then

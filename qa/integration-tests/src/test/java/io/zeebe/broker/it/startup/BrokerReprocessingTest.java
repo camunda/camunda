@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 import static org.junit.Assert.fail;
 
+import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
@@ -480,7 +481,7 @@ public class BrokerReprocessingTest {
 
     final ServiceName<Raft> serviceName =
         RaftServiceNames.raftServiceName(
-            clientRule.getDefaultTopic() + "-" + clientRule.getDefaultPartition());
+            Partition.getPartitionName(clientRule.getDefaultPartition()));
 
     final Raft raft = brokerRule.getService(serviceName);
     waitUntil(() -> raft.getState() == RaftState.LEADER);

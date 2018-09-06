@@ -15,7 +15,6 @@
  */
 package io.zeebe.broker.it.clustering;
 
-import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 
@@ -25,15 +24,11 @@ import io.zeebe.broker.it.util.TopologyClient;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.TomlConfigurationReader;
-import io.zeebe.broker.system.configuration.TopicCfg;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.api.commands.BrokerInfo;
 import io.zeebe.gateway.api.commands.PartitionInfo;
-import io.zeebe.gateway.api.commands.Topic;
-import io.zeebe.gateway.api.commands.Topics;
 import io.zeebe.gateway.impl.ZeebeClientImpl;
-import io.zeebe.protocol.Protocol;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.ZbLogger;
@@ -60,7 +55,7 @@ public class ClusteringRule extends ExternalResource {
   public static final Logger LOG = new ZbLogger(ClusteringRule.class);
 
   public static final int DEFAULT_REPLICATION_FACTOR = 1;
-  public static final int SYSTEM_TOPIC_REPLICATION_FACTOR = 3;
+  public static final int SYSTEM_REPLICATION_FACTOR = 3;
 
   public static final String BROKER_1_TOML = "zeebe.cluster.1.cfg.toml";
   public static final String BROKER_2_TOML = "zeebe.cluster.2.cfg.toml";
@@ -76,6 +71,7 @@ public class ClusteringRule extends ExternalResource {
   private final BrokerCfg[] brokerCfgs;
   private final Broker[] brokers;
   private final File[] brokerBases;
+  private List<Integer> partitionIds;
 
   public ClusteringRule() {
     this(new String[] {BROKER_1_TOML, BROKER_2_TOML, BROKER_3_TOML});
@@ -107,12 +103,11 @@ public class ClusteringRule extends ExternalResource {
     waitForInternalSystemAndReplicationFactor(clusterCfg);
 
     final Broker leaderBroker = brokers[0];
-    final BrokerCfg brokerConfiguration = leaderBroker.getBrokerContext().getBrokerConfiguration();
-    final TopicCfg defaultTopicCfg = brokerConfiguration.getTopics().get(0);
-    final int partitions = defaultTopicCfg.getPartitions();
-    final int replicationFactor = defaultTopicCfg.getReplicationFactor();
+    partitionIds = clusterCfg.getPartitionIds();
+    final int partitions = clusterCfg.getPartitionsCount();
+    final int replicationFactor = clusterCfg.getReplicationFactor();
 
-    waitForTopicPartitionReplicationFactor(DEFAULT_TOPIC, partitions, replicationFactor);
+    waitForPartitionReplicationFactor(partitions, replicationFactor);
 
     waitUntilBrokersInTopology(brokers);
   }
@@ -155,8 +150,12 @@ public class ClusteringRule extends ExternalResource {
   }
 
   private void waitForInternalSystemAndReplicationFactor(final ClusterCfg clusterCfg) {
-    waitForTopicPartitionReplicationFactor(
-        Protocol.DEFAULT_TOPIC, clusterCfg.getPartitionsCount(), clusterCfg.getReplicationFactor());
+    waitForPartitionReplicationFactor(
+        clusterCfg.getPartitionsCount(), clusterCfg.getReplicationFactor());
+  }
+
+  public List<Integer> getPartitionIds() {
+    return partitionIds;
   }
 
   /**
@@ -234,40 +233,32 @@ public class ClusteringRule extends ExternalResource {
   }
 
   /**
-   * Wait for a topic with the given partition count in the cluster.
+   * Wait for a partition count in the cluster.
    *
-   * <p>This method returns to the user, if the topic and the partitions are created and the
-   * replication factor was reached for each partition. Besides that the topic request needs to be
-   * return the created topic.
+   * <p>This method returns to the user, if the partitions are created and the replication factor
+   * was reached for each partition.
    *
    * <p>The replication factor is per default the number of current brokers in the cluster, see
    * {@link #DEFAULT_REPLICATION_FACTOR}.
    *
-   * @param partitionCount to number of partitions for the new topic
-   * @return the created topic
+   * @param partitionCount to number of partitions
    */
-  public Topic waitForTopic(final int partitionCount) {
-    return waitForTopic(partitionCount, DEFAULT_REPLICATION_FACTOR);
+  public void waitForPartition(final int partitionCount) {
+    waitForPartition(partitionCount, DEFAULT_REPLICATION_FACTOR);
   }
 
-  public Topic waitForTopic(final int partitionCount, final int replicationFactor) {
-    waitForTopicPartitionReplicationFactor(DEFAULT_TOPIC, partitionCount, replicationFactor);
-
-    return waitForTopicAvailability(DEFAULT_TOPIC);
+  public void waitForPartition(final int partitionCount, final int replicationFactor) {
+    waitForPartitionReplicationFactor(partitionCount, replicationFactor);
   }
 
   private boolean hasPartitionsWithReplicationFactor(
-      final List<BrokerInfo> brokers,
-      final String topicName,
-      final int partitionCount,
-      final int replicationFactor) {
+      final List<BrokerInfo> brokers, final int partitionCount, final int replicationFactor) {
     final AtomicLong leaders = new AtomicLong();
     final AtomicLong followers = new AtomicLong();
 
     brokers
         .stream()
         .flatMap(b -> b.getPartitions().stream())
-        .filter(p -> p.getTopicName().equals(topicName))
         .forEach(
             p -> {
               if (p.isLeader()) {
@@ -281,30 +272,11 @@ public class ClusteringRule extends ExternalResource {
         && followers.get() >= partitionCount * (replicationFactor - 1);
   }
 
-  public void waitForTopicPartitionReplicationFactor(
-      final String topicName, final int partitionCount, final int replicationFactor) {
+  public void waitForPartitionReplicationFactor(
+      final int partitionCount, final int replicationFactor) {
     waitForTopology(
         topology ->
-            hasPartitionsWithReplicationFactor(
-                topology, topicName, partitionCount, replicationFactor));
-  }
-
-  public Topic getInternalSystemTopic() {
-    return waitForTopicAvailability(Protocol.SYSTEM_TOPIC);
-  }
-
-  private Topic waitForTopicAvailability(final String topicName) {
-    return doRepeatedly(
-            () -> {
-              final Topics topics = zeebeClient.newTopicsRequest().send().join();
-              return topics
-                  .getTopics()
-                  .stream()
-                  .filter(topic -> topicName.equals(topic.getName()))
-                  .findAny();
-            })
-        .until(Optional::isPresent)
-        .get();
+            hasPartitionsWithReplicationFactor(topology, partitionCount, replicationFactor));
   }
 
   private void startBroker(final int brokerId) {
@@ -456,12 +428,11 @@ public class ClusteringRule extends ExternalResource {
   }
 
   /**
-   * Returns the count of partition leaders for a given topic.
+   * Returns the count of partition leaders
    *
-   * @param topic
    * @return
    */
-  public long getPartitionLeaderCountForTopic(final String topic) {
+  public long getPartitionLeaderCount() {
 
     return zeebeClient
         .newTopologyRequest()
@@ -470,7 +441,7 @@ public class ClusteringRule extends ExternalResource {
         .getBrokers()
         .stream()
         .flatMap(broker -> broker.getPartitions().stream())
-        .filter(p -> p.getTopicName().equals(topic) && p.isLeader())
+        .filter(p -> p.isLeader())
         .count();
   }
 

@@ -15,7 +15,6 @@
  */
 package io.zeebe.broker.it.workflow;
 
-import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -52,8 +51,7 @@ public class PublishMessageTest {
   public EmbeddedBrokerRule brokerRule =
       new EmbeddedBrokerRule("zeebe.test.increased.partitions.cfg.toml");
   public ClientRule clientRule = new ClientRule(brokerRule);
-  public TopicEventRecorder eventRecorder =
-      new TopicEventRecorder(clientRule, DEFAULT_TOPIC, false);
+  public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule, false);
 
   @Rule
   public RuleChain ruleChain =
@@ -64,9 +62,7 @@ public class PublishMessageTest {
   @Before
   public void init() {
 
-    clientRule.waitUntilTopicsExists(DEFAULT_TOPIC);
-
-    workflowClient = clientRule.getClient().topicClient().workflowClient();
+    workflowClient = clientRule.getClient().workflowClient();
 
     final DeploymentEvent deploymentEvent =
         workflowClient.newDeployCommand().addWorkflowModel(WORKFLOW, "wf.bpmn").send().join();

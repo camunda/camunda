@@ -140,11 +140,11 @@ public class ZeebeObjectMapperTest {
     final List<Record> records = new CopyOnWriteArrayList<>();
 
     clientRule
-        .getTopicClient()
+        .getClient()
         .newSubscription()
         .name("test")
         .recordHandler(records::add)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     clientRule
@@ -152,7 +152,7 @@ public class ZeebeObjectMapperTest {
         .newManagementSubscription()
         .name("test-management")
         .recordHandler(records::add)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     waitUntil(
@@ -313,7 +313,7 @@ public class ZeebeObjectMapperTest {
 
     final CountDownLatch latch = new CountDownLatch(1);
     clientRule
-        .getTopicClient()
+        .getClient()
         .newSubscription()
         .name("deploy")
         .recordHandler(
@@ -333,12 +333,12 @@ public class ZeebeObjectMapperTest {
 
     try {
       assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException(e);
     }
   }
 
-  private static Predicate<Record> recordFilter(ValueType valueType, String intent) {
+  private static Predicate<Record> recordFilter(final ValueType valueType, final String intent) {
     return r ->
         r.getMetadata().getValueType() == valueType && r.getMetadata().getIntent().equals(intent);
   }

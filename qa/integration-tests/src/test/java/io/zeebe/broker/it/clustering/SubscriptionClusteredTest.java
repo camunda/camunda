@@ -20,8 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.gateway.ZeebeClient;
-import io.zeebe.gateway.api.commands.Partition;
-import io.zeebe.gateway.api.commands.Topic;
 import io.zeebe.gateway.api.events.JobState;
 import io.zeebe.gateway.impl.job.CreateJobCommandImpl;
 import java.util.ArrayList;
@@ -54,13 +52,12 @@ public class SubscriptionClusteredTest {
   }
 
   @Test
-  public void shouldOpenSubscriptionGroupForDistributedTopic() {
+  public void shouldOpenSubscriptionGroup() {
     // given
-    final Topic topic = clusteringRule.waitForTopic(PARTITION_COUNT);
+    clusteringRule.waitForPartition(PARTITION_COUNT);
 
     // when
-    final Integer[] partitionIds =
-        topic.getPartitions().stream().mapToInt(Partition::getId).boxed().toArray(Integer[]::new);
+    final Integer[] partitionIds = clusteringRule.getPartitionIds().toArray(new Integer[3]);
 
     createJobOnPartition(partitionIds[0]);
     createJobOnPartition(partitionIds[1]);
@@ -69,7 +66,6 @@ public class SubscriptionClusteredTest {
     // and
     final List<Integer> receivedPartitionIds = new ArrayList<>();
     client
-        .topicClient()
         .newSubscription()
         .name("SubscriptionName")
         .jobEventHandler(
@@ -78,7 +74,7 @@ public class SubscriptionClusteredTest {
                 receivedPartitionIds.add(e.getMetadata().getPartitionId());
               }
             })
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     // then
@@ -87,9 +83,9 @@ public class SubscriptionClusteredTest {
     assertThat(receivedPartitionIds).containsExactlyInAnyOrder(partitionIds);
   }
 
-  protected void createJobOnPartition(int partition) {
+  protected void createJobOnPartition(final int partition) {
     final CreateJobCommandImpl command =
-        (CreateJobCommandImpl) client.topicClient().jobClient().newCreateCommand().jobType("baz");
+        (CreateJobCommandImpl) client.jobClient().newCreateCommand().jobType("baz");
 
     command.getCommand().setPartitionId(partition);
     command.send().join();

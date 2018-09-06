@@ -21,10 +21,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.UnstableTest;
 import io.zeebe.broker.Broker;
+import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.snapshots.SnapshotReplicationService;
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.gateway.api.commands.Partition;
-import io.zeebe.gateway.api.commands.Topic;
 import io.zeebe.logstreams.snapshot.SerializableWrapper;
 import io.zeebe.logstreams.spi.ReadableSnapshot;
 import io.zeebe.logstreams.spi.SnapshotStorage;
@@ -39,6 +38,7 @@ import io.zeebe.transport.SocketAddress;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.experimental.categories.Category;
@@ -51,7 +51,7 @@ public class SnapshotReplicationTest {
   private static final String BROKER_2_TOML = "zeebe.cluster.snapshotReplication.2.cfg.toml";
   private static final String BROKER_3_TOML = "zeebe.cluster.snapshotReplication.3.cfg.toml";
 
-  private String[] brokerConfigs = new String[] {BROKER_1_TOML, BROKER_2_TOML, BROKER_3_TOML};
+  private final String[] brokerConfigs = new String[] {BROKER_1_TOML, BROKER_2_TOML, BROKER_3_TOML};
 
   public Timeout testTimeout = Timeout.seconds(90);
   public ClusteringRule clusteringRule = new ClusteringRule(brokerConfigs);
@@ -61,40 +61,24 @@ public class SnapshotReplicationTest {
   public RuleChain ruleChain =
       RuleChain.outerRule(testTimeout).around(clusteringRule).around(clientRule);
 
-  @Test
-  public void shouldReplicateSnapshotsFromLeaderForSystemTopic() throws Exception {
-    final Topic topic = clusteringRule.getInternalSystemTopic();
-    final SocketAddress leaderAddress =
-        clusteringRule.getLeaderAddressForPartition(topic.getPartitions().get(0).getId());
+  private SnapshotStorage leaderStorage;
+  private SnapshotStorage followerStorage;
+
+  @Before
+  public void setUp() throws Exception {
+    final List<Integer> partitionIds = clusteringRule.getPartitionIds();
+    final Integer firstPartition = partitionIds.get(0);
+    final SocketAddress leaderAddress = clusteringRule.getLeaderAddressForPartition(firstPartition);
     final SocketAddress followerAddress =
-        clusteringRule.getFollowerAddressForPartition(topic.getPartitions().get(0).getId());
+        clusteringRule.getFollowerAddressForPartition(firstPartition);
 
-    final SnapshotStorage leaderStorage = getSnapshotStorage(topic, leaderAddress);
-    final SnapshotStorage followerStorage = getSnapshotStorage(topic, followerAddress);
-
-    final TestSnapshot snapshot = new TestSnapshot("snarf", 1L, "bar");
-
-    // when
-    snapshot.write(leaderStorage);
-    waitForReplication(followerStorage, snapshot);
-
-    // then
-    assertThat(followerStorage.listSnapshots().size()).isEqualTo(1);
-    assertReplicated(followerStorage, snapshot);
+    leaderStorage = getSnapshotStorage(firstPartition, leaderAddress);
+    followerStorage = getSnapshotStorage(firstPartition, followerAddress);
   }
 
   @Test
   public void shouldReplicateMultipleSnapshots() throws Exception {
     // given
-    final Topic topic = clusteringRule.getInternalSystemTopic();
-    final SocketAddress leaderAddress =
-        clusteringRule.getLeaderAddressForPartition(topic.getPartitions().get(0).getId());
-    final SocketAddress followerAddress =
-        clusteringRule.getFollowerAddressForPartition(topic.getPartitions().get(0).getId());
-
-    final SnapshotStorage leaderStorage = getSnapshotStorage(topic, leaderAddress);
-    final SnapshotStorage followerStorage = getSnapshotStorage(topic, followerAddress);
-
     final TestSnapshot[] snapshots =
         new TestSnapshot[] {
           new TestSnapshot("snap", 1L, "foo"), new TestSnapshot("snop", 1L, "bar")
@@ -114,15 +98,6 @@ public class SnapshotReplicationTest {
   @Test
   public void shouldReplicateNewerSnapshotAndRemoveOlderOne() throws Exception {
     // given
-    final Topic topic = clusteringRule.getInternalSystemTopic();
-    final SocketAddress leaderAddress =
-        clusteringRule.getLeaderAddressForPartition(topic.getPartitions().get(0).getId());
-    final SocketAddress followerAddress =
-        clusteringRule.getFollowerAddressForPartition(topic.getPartitions().get(0).getId());
-
-    final SnapshotStorage leaderStorage = getSnapshotStorage(topic, leaderAddress);
-    final SnapshotStorage followerStorage = getSnapshotStorage(topic, followerAddress);
-
     final TestSnapshot snapshot = new TestSnapshot("snap", 1L, "foo");
 
     // when
@@ -147,16 +122,7 @@ public class SnapshotReplicationTest {
   @Test
   public void shouldNotReplicateLogBlockIndex() throws Exception {
     // given
-    final Topic topic = clusteringRule.getInternalSystemTopic();
-    final SocketAddress leaderAddress =
-        clusteringRule.getLeaderAddressForPartition(topic.getPartitions().get(0).getId());
-    final SocketAddress followerAddress =
-        clusteringRule.getFollowerAddressForPartition(topic.getPartitions().get(0).getId());
-
-    final SnapshotStorage leaderStorage = getSnapshotStorage(topic, leaderAddress);
-    final SnapshotStorage followerStorage = getSnapshotStorage(topic, followerAddress);
-
-    final String logBlockIndexName = logBlockIndexWriterService(topic.getName()).getName();
+    final String logBlockIndexName = logBlockIndexWriterService("name").getName();
     final TestSnapshot[] snapshots =
         new TestSnapshot[] {
           new TestSnapshot(logBlockIndexName, 1L, "bar"), new TestSnapshot("znap", 1L, "foo")
@@ -181,13 +147,6 @@ public class SnapshotReplicationTest {
   @Test
   public void shouldReplicateLargeSnapshot() throws Exception {
     // given
-    final Topic topic = clusteringRule.getInternalSystemTopic();
-    final SocketAddress leaderAddress =
-        clusteringRule.getLeaderAddressForPartition(topic.getPartitions().get(0).getId());
-    final SocketAddress followerAddress =
-        clusteringRule.getFollowerAddressForPartition(topic.getPartitions().get(0).getId());
-    final SnapshotStorage leaderStorage = getSnapshotStorage(topic, leaderAddress);
-    final SnapshotStorage followerStorage = getSnapshotStorage(topic, followerAddress);
 
     // should require 4 requests to fetch all bytes
     final byte[] contents = new byte[SnapshotReplicationService.DEFAULT_CHUNK_LENGTH * 4];
@@ -204,11 +163,10 @@ public class SnapshotReplicationTest {
     assertReplicated(followerStorage, snapshot);
   }
 
-  private SnapshotStorage getSnapshotStorage(final Topic topic, final SocketAddress address)
+  private SnapshotStorage getSnapshotStorage(final int partition, final SocketAddress address)
       throws Exception {
     final Broker broker = clusteringRule.getBroker(address);
-    final Partition partition = topic.getPartitions().get(0);
-    final String logName = String.format("%s-%d", partition.getTopicName(), partition.getId());
+    final String logName = Partition.getPartitionName(partition);
     final ServiceName<Void> name =
         ServiceName.newServiceName(
             String.format("test.snapshotReplication.extractor.%s", logName), Void.class);
@@ -273,10 +231,10 @@ public class SnapshotReplicationTest {
     Injector<SnapshotStorage> storageInjector = new Injector<>();
 
     @Override
-    public void start(ServiceStartContext startContext) {}
+    public void start(final ServiceStartContext startContext) {}
 
     @Override
-    public void stop(ServiceStopContext stopContext) {}
+    public void stop(final ServiceStopContext stopContext) {}
 
     @Override
     public Void get() {

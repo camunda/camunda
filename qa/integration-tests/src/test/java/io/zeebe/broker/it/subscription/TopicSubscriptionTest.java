@@ -15,7 +15,6 @@
  */
 package io.zeebe.broker.it.subscription;
 
-import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -23,10 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.gateway.ZeebeClient;
-import io.zeebe.gateway.api.clients.TopicClient;
 import io.zeebe.gateway.api.commands.JobCommandName;
-import io.zeebe.gateway.api.commands.Topic;
-import io.zeebe.gateway.api.commands.Topics;
 import io.zeebe.gateway.api.events.JobEvent;
 import io.zeebe.gateway.api.record.Record;
 import io.zeebe.gateway.api.record.RecordMetadata;
@@ -64,18 +60,15 @@ public class TopicSubscriptionTest {
 
   @Rule public Timeout timeout = Timeout.seconds(30);
 
-  protected TopicClient client;
+  protected ZeebeClient client;
   protected RecordingEventHandler recordingHandler;
   protected ObjectMapper objectMapper;
 
   @Before
   public void setUp() {
-    this.client = clientRule.getClient().topicClient();
+    this.client = clientRule.getClient();
     this.recordingHandler = new RecordingEventHandler();
     this.objectMapper = new ObjectMapper();
-
-    final String defaultTopic = clientRule.getClient().getConfiguration().getDefaultTopic();
-    clientRule.waitUntilTopicsExists(defaultTopic);
   }
 
   @Test
@@ -116,7 +109,7 @@ public class TopicSubscriptionTest {
         .newSubscription()
         .name(SUBSCRIPTION_NAME)
         .recordHandler(recordingHandler)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     // then
@@ -137,7 +130,7 @@ public class TopicSubscriptionTest {
         .newSubscription()
         .name(SUBSCRIPTION_NAME)
         .recordHandler(recordingHandler)
-        .startAtTailOfTopic()
+        .startAtTail()
         .open();
 
     // when
@@ -163,7 +156,7 @@ public class TopicSubscriptionTest {
         .newSubscription()
         .name(SUBSCRIPTION_NAME)
         .recordHandler(recordingHandler)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     waitUntil(() -> recordingHandler.numJobRecords() == 2);
@@ -255,7 +248,7 @@ public class TopicSubscriptionTest {
   }
 
   @Test
-  public void shouldOpenMultipleSubscriptionsOnSameTopic() throws IOException {
+  public void shouldOpenMultipleSubscriptions() throws IOException {
     // given
     final JobEvent job = client.jobClient().newCreateCommand().jobType("foo").send().join();
 
@@ -263,7 +256,7 @@ public class TopicSubscriptionTest {
         .newSubscription()
         .name(SUBSCRIPTION_NAME)
         .recordHandler(recordingHandler)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     final RecordingEventHandler secondEventHandler = new RecordingEventHandler();
@@ -272,7 +265,7 @@ public class TopicSubscriptionTest {
         .newSubscription()
         .name("another" + SUBSCRIPTION_NAME)
         .recordHandler(secondEventHandler)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     // when
@@ -296,12 +289,7 @@ public class TopicSubscriptionTest {
         new ParallelismDetectionHandler(handlingIntervalLength);
 
     // when
-    client
-        .newSubscription()
-        .name(SUBSCRIPTION_NAME)
-        .recordHandler(handler)
-        .startAtHeadOfTopic()
-        .open();
+    client.newSubscription().name(SUBSCRIPTION_NAME).recordHandler(handler).startAtHead().open();
 
     // then
     final int numExpectedEvents = 2;
@@ -322,7 +310,7 @@ public class TopicSubscriptionTest {
             .newSubscription()
             .name(SUBSCRIPTION_NAME)
             .recordHandler(recordingHandler)
-            .startAtHeadOfTopic()
+            .startAtHead()
             .open();
 
     // that was received by the subscription
@@ -347,7 +335,7 @@ public class TopicSubscriptionTest {
         .newSubscription()
         .name(SUBSCRIPTION_NAME)
         .recordHandler(recordingHandler)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     // then
@@ -366,12 +354,12 @@ public class TopicSubscriptionTest {
     protected AtomicInteger numInvocations = new AtomicInteger(0);
     protected long timeout;
 
-    public ParallelismDetectionHandler(Duration duration) {
+    public ParallelismDetectionHandler(final Duration duration) {
       this.timeout = duration.toMillis();
     }
 
     @Override
-    public void onRecord(Record record) throws Exception {
+    public void onRecord(final Record record) throws Exception {
       numInvocations.incrementAndGet();
       if (executing.compareAndSet(false, true)) {
         try {
@@ -437,7 +425,7 @@ public class TopicSubscriptionTest {
         .newSubscription()
         .name(SUBSCRIPTION_NAME)
         .recordHandler(recordingHandler)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     // then
@@ -448,20 +436,20 @@ public class TopicSubscriptionTest {
   public void shouldReceiveEventsFromMultiplePartitions() {
     // given
     final ZeebeClient zeebeClient = clientRule.getClient();
-
-    final String topicName = DEFAULT_TOPIC;
     final int numPartitions = 3;
 
-    clientRule.waitUntilTopicsExists(topicName);
-
-    final Topics topics = zeebeClient.newTopicsRequest().send().join();
-    final Topic topic =
-        topics.getTopics().stream().filter(t -> t.getName().equals(topicName)).findFirst().get();
-
     final Integer[] partitionIds =
-        topic.getPartitions().stream().mapToInt(p -> p.getId()).boxed().toArray(Integer[]::new);
+        client
+            .newPartitionsRequest()
+            .send()
+            .join()
+            .getPartitions()
+            .stream()
+            .map(p -> p.getId())
+            .collect(Collectors.toList())
+            .toArray(new Integer[3]);
 
-    for (int partitionId : partitionIds) {
+    for (final int partitionId : partitionIds) {
       createTaskOnPartition(partitionId);
     }
 
@@ -469,7 +457,6 @@ public class TopicSubscriptionTest {
 
     // when
     zeebeClient
-        .topicClient()
         .newSubscription()
         .name(SUBSCRIPTION_NAME)
         .recordHandler(recordingHandler)
@@ -479,7 +466,7 @@ public class TopicSubscriptionTest {
                 receivedPartitionIds.add(c.getMetadata().getPartitionId());
               }
             })
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     // then
@@ -488,10 +475,9 @@ public class TopicSubscriptionTest {
     assertThat(receivedPartitionIds).containsExactlyInAnyOrder(partitionIds);
   }
 
-  protected void createTaskOnPartition(int partition) {
+  protected void createTaskOnPartition(final int partition) {
     final CreateJobCommandImpl createCommand =
-        (CreateJobCommandImpl)
-            clientRule.getClient().topicClient().jobClient().newCreateCommand().jobType("baz");
+        (CreateJobCommandImpl) clientRule.getClient().jobClient().newCreateCommand().jobType("baz");
 
     createCommand.getCommand().setPartitionId(partition);
     createCommand.send().join();

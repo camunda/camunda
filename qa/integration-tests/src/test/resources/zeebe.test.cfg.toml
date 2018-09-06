@@ -1,8 +1,1 @@
 # Default configuration for integration tests
-
-bootstrap = 1
-
-[[topics]]
-name = "default-topic"
-partitions = 1
-replicationFactor = 1

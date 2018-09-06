@@ -1,0 +1,10 @@
+# based on zeebe.cluster.2.cfg.toml
+[cluster]
+nodeId = 1
+clusterSize = 2
+partitionsCount = 2
+replicationFactor = 2
+
+[network.gateway]
+enabled = false
+

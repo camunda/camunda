@@ -147,7 +147,7 @@ public class CompleteJobTest {
   @Test
   public void shouldProvideReasonInExceptionMessageOnRejection() {
     // given
-    final JobClient jobClient = clientRule.getClient().topicClient().jobClient();
+    final JobClient jobClient = clientRule.getClient().jobClient();
 
     final JobEvent job = jobClient.newCreateCommand().jobType("bar").send().join();
 

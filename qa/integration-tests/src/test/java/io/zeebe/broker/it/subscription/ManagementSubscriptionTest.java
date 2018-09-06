@@ -65,9 +65,6 @@ public class ManagementSubscriptionTest {
   @Before
   public void setUp() {
     this.client = clientRule.getClient();
-
-    final String topic = client.getConfiguration().getDefaultTopic();
-    clientRule.waitUntilTopicsExists(topic);
   }
 
   @Test
@@ -85,7 +82,6 @@ public class ManagementSubscriptionTest {
     // given
     final DeploymentEvent deploymentEvent =
         client
-            .topicClient()
             .workflowClient()
             .newDeployCommand()
             .addWorkflowModel(WORKFLOW, "wf.bpmn")
@@ -110,7 +106,6 @@ public class ManagementSubscriptionTest {
         .contains(DeploymentState.CREATED, DeploymentState.DISTRIBUTED);
     for (final DeploymentEvent event : events) {
       assertThat(event.getKey()).isEqualTo(deploymentEvent.getKey());
-      assertThat(event.getDeploymentTopic()).isEqualTo(clientRule.getDefaultTopic());
 
       assertThat(event.getWorkflows()).hasSize(1);
       final Workflow deployedWorkflow = event.getWorkflows().get(0);
@@ -133,7 +128,6 @@ public class ManagementSubscriptionTest {
     // given
     final DeploymentEvent deploymentEvent =
         client
-            .topicClient()
             .workflowClient()
             .newDeployCommand()
             .addWorkflowModel(WORKFLOW, "wf.bpmn")
@@ -159,7 +153,6 @@ public class ManagementSubscriptionTest {
     assertThat(commands).extracting(Record::getKey).contains(-1L, deploymentEvent.getKey());
 
     for (final DeploymentCommand command : commands) {
-      assertThat(command.getDeploymentTopic()).isEqualTo(clientRule.getDefaultTopic());
 
       assertThat(command.getResources()).hasSize(1);
       final DeploymentResource deploymentResource = command.getResources().get(0);
@@ -178,17 +171,11 @@ public class ManagementSubscriptionTest {
         .newManagementSubscription()
         .name(SUBSCRIPTION_NAME)
         .recordHandler(records::add)
-        .startAtTailOfTopic()
+        .startAtTail()
         .open();
 
     // when
-    client
-        .topicClient()
-        .workflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(WORKFLOW, "wf.bpmn")
-        .send()
-        .join();
+    client.workflowClient().newDeployCommand().addWorkflowModel(WORKFLOW, "wf.bpmn").send().join();
 
     waitUntil(() -> records.size() >= 4);
 
