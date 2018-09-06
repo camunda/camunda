@@ -58,9 +58,6 @@ public class ResponseMapperTest {
 
                         assertThat(expectedPartition.getRole().toString())
                             .isEqualTo(receivedPartition.getRole().toString());
-
-                        assertThat(expectedPartition.getTopicName())
-                            .isEqualTo(receivedPartition.getTopicName());
                       });
             });
   }

@@ -55,12 +55,12 @@ public abstract class Subscriber {
 
   @SuppressWarnings("unchecked")
   public Subscriber(
-      long subscriberKey,
-      int partitionId,
-      int capacity,
-      RemoteAddress eventSource,
-      SubscriberGroup group,
-      SubscriptionManager acquisition) {
+      final long subscriberKey,
+      final int partitionId,
+      final int capacity,
+      final RemoteAddress eventSource,
+      final SubscriberGroup group,
+      final SubscriptionManager acquisition) {
     this.subscriberKey = subscriberKey;
     this.eventSource = eventSource;
     this.pendingEvents = new ManyToManyConcurrentArrayQueue<>(capacity);
@@ -109,7 +109,7 @@ public abstract class Subscriber {
 
   protected abstract ActorFuture<?> requestEventSourceReplenishment(int eventsProcessed);
 
-  public boolean addEvent(UntypedRecordImpl event) {
+  public boolean addEvent(final UntypedRecordImpl event) {
     final boolean added = this.pendingEvents.offer(event);
 
     if (!added) {
@@ -141,7 +141,7 @@ public abstract class Subscriber {
     this.state = STATE_DISABLED;
   }
 
-  protected int pollEvents(CheckedConsumer<UntypedRecordImpl> pollHandler) {
+  protected int pollEvents(final CheckedConsumer<UntypedRecordImpl> pollHandler) {
     final int currentlyAvailableEvents = size();
     int handledEvents = 0;
 
@@ -170,7 +170,7 @@ public abstract class Subscriber {
 
         try {
           pollHandler.accept(event);
-        } catch (Exception e) {
+        } catch (final Exception e) {
           onUnhandledEventHandlingException(event, e);
         }
       } finally {
@@ -186,21 +186,20 @@ public abstract class Subscriber {
     return handledEvents;
   }
 
-  protected void logHandling(UntypedRecordImpl event) {
+  protected void logHandling(final UntypedRecordImpl event) {
     try {
       LOGGER.trace(LOG_MESSAGE_PREFIX + "Handling event {}", this, event);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       // serializing the event might fail (involves msgpack to JSON conversion)
       LOGGER.warn("Could not construct or write log message", e);
     }
   }
 
-  protected void onUnhandledEventHandlingException(UntypedRecordImpl event, Exception e) {
+  protected void onUnhandledEventHandlingException(
+      final UntypedRecordImpl event, final Exception e) {
     throw new RuntimeException(
         "Exception during handling of event " + event.getMetadata().getKey(), e);
   }
-
-  public abstract String getTopicName();
 
   public int getPartitionId() {
     return partitionId;

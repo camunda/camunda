@@ -37,7 +37,7 @@ import io.zeebe.gateway.api.subscription.TopicSubscriptionBuilderStep1.TopicSubs
 import io.zeebe.gateway.api.subscription.WorkflowInstanceCommandHandler;
 import io.zeebe.gateway.api.subscription.WorkflowInstanceEventHandler;
 import io.zeebe.gateway.cmd.ClientException;
-import io.zeebe.gateway.impl.TopicClientImpl;
+import io.zeebe.gateway.impl.ZeebeClientImpl;
 import io.zeebe.gateway.impl.record.RecordImpl;
 import io.zeebe.gateway.impl.subscription.SubscriptionManager;
 import io.zeebe.util.CheckedConsumer;
@@ -52,32 +52,30 @@ public class TopicSubscriptionBuilderImpl
         TopicSubscriptionBuilderStep3 {
   private RecordHandler defaultRecordHandler;
 
-  private BiEnumMap<RecordType, ValueType, CheckedConsumer<RecordImpl>> handlers =
+  private final BiEnumMap<RecordType, ValueType, CheckedConsumer<RecordImpl>> handlers =
       new BiEnumMap<>(RecordType.class, ValueType.class, CheckedConsumer.class);
 
   private int bufferSize;
-  private final String topic;
   private final SubscriptionManager subscriptionManager;
   private String name;
   private boolean forceStart;
   private long defaultStartPosition;
   private final Long2LongHashMap startPositions = new Long2LongHashMap(-1);
 
-  public TopicSubscriptionBuilderImpl(TopicClientImpl client) {
-    this.topic = client.getTopic();
+  public TopicSubscriptionBuilderImpl(final ZeebeClientImpl client) {
     this.subscriptionManager = client.getSubscriptionManager();
     this.bufferSize = client.getConfiguration().getDefaultTopicSubscriptionBufferSize();
   }
 
   @Override
-  public TopicSubscriptionBuilderStep3 recordHandler(RecordHandler handler) {
+  public TopicSubscriptionBuilderStep3 recordHandler(final RecordHandler handler) {
     EnsureUtil.ensureNotNull("recordHandler", handler);
     this.defaultRecordHandler = handler;
     return this;
   }
 
   @Override
-  public TopicSubscriptionBuilderStep3 jobEventHandler(JobEventHandler handler) {
+  public TopicSubscriptionBuilderStep3 jobEventHandler(final JobEventHandler handler) {
     EnsureUtil.ensureNotNull("jobEventHandler", handler);
     handlers.put(RecordType.EVENT, ValueType.JOB, e -> handler.onJobEvent((JobEvent) e));
 
@@ -85,7 +83,7 @@ public class TopicSubscriptionBuilderImpl
   }
 
   @Override
-  public TopicSubscriptionBuilderStep3 jobCommandHandler(JobCommandHandler handler) {
+  public TopicSubscriptionBuilderStep3 jobCommandHandler(final JobCommandHandler handler) {
     EnsureUtil.ensureNotNull("jobCommandHandler", handler);
     handlers.put(RecordType.COMMAND, ValueType.JOB, e -> handler.onJobCommand((JobCommand) e));
     handlers.put(
@@ -98,7 +96,7 @@ public class TopicSubscriptionBuilderImpl
 
   @Override
   public TopicSubscriptionBuilderStep3 workflowInstanceEventHandler(
-      WorkflowInstanceEventHandler handler) {
+      final WorkflowInstanceEventHandler handler) {
     EnsureUtil.ensureNotNull("workflowInstanceEventHandler", handler);
     handlers.put(
         RecordType.EVENT,
@@ -109,7 +107,7 @@ public class TopicSubscriptionBuilderImpl
 
   @Override
   public TopicSubscriptionBuilderStep3 workflowInstanceCommandHandler(
-      WorkflowInstanceCommandHandler handler) {
+      final WorkflowInstanceCommandHandler handler) {
     EnsureUtil.ensureNotNull("workflowInstanceCommandHandler", handler);
     handlers.put(
         RecordType.COMMAND,
@@ -123,7 +121,7 @@ public class TopicSubscriptionBuilderImpl
   }
 
   @Override
-  public TopicSubscriptionBuilderStep3 incidentEventHandler(IncidentEventHandler handler) {
+  public TopicSubscriptionBuilderStep3 incidentEventHandler(final IncidentEventHandler handler) {
     EnsureUtil.ensureNotNull("incidentEventHandler", handler);
     handlers.put(
         RecordType.EVENT, ValueType.INCIDENT, e -> handler.onIncidentEvent((IncidentEvent) e));
@@ -131,7 +129,8 @@ public class TopicSubscriptionBuilderImpl
   }
 
   @Override
-  public TopicSubscriptionBuilderStep3 incidentCommandHandler(IncidentCommandHandler handler) {
+  public TopicSubscriptionBuilderStep3 incidentCommandHandler(
+      final IncidentCommandHandler handler) {
     EnsureUtil.ensureNotNull("incidentCommandHandler", handler);
     handlers.put(
         RecordType.COMMAND,
@@ -152,28 +151,28 @@ public class TopicSubscriptionBuilderImpl
   }
 
   @Override
-  public TopicSubscriptionBuilderStep3 startAtPosition(int partitionId, long position) {
+  public TopicSubscriptionBuilderStep3 startAtPosition(final int partitionId, final long position) {
     this.startPositions.put(partitionId, position);
     return this;
   }
 
   @Override
-  public TopicSubscriptionBuilderStep3 startAtTailOfTopic() {
+  public TopicSubscriptionBuilderStep3 startAtTail() {
     return defaultStartPosition(-1L);
   }
 
   @Override
-  public TopicSubscriptionBuilderStep3 startAtHeadOfTopic() {
+  public TopicSubscriptionBuilderStep3 startAtHead() {
     return defaultStartPosition(0L);
   }
 
-  private TopicSubscriptionBuilderImpl defaultStartPosition(long position) {
+  private TopicSubscriptionBuilderImpl defaultStartPosition(final long position) {
     this.defaultStartPosition = position;
     return this;
   }
 
   @Override
-  public TopicSubscriptionBuilderStep3 name(String name) {
+  public TopicSubscriptionBuilderStep3 name(final String name) {
     EnsureUtil.ensureNotNull("name", name);
     this.name = name;
     return this;
@@ -186,7 +185,7 @@ public class TopicSubscriptionBuilderImpl
   }
 
   @Override
-  public TopicSubscriptionBuilderStep3 bufferSize(int bufferSize) {
+  public TopicSubscriptionBuilderStep3 bufferSize(final int bufferSize) {
     EnsureUtil.ensureGreaterThan("bufferSize", bufferSize, 0);
 
     this.bufferSize = bufferSize;
@@ -199,7 +198,7 @@ public class TopicSubscriptionBuilderImpl
 
     try {
       return subscription.get();
-    } catch (InterruptedException | ExecutionException e) {
+    } catch (final InterruptedException | ExecutionException e) {
       throw new ClientException("Could not open subscriber group", e);
     }
   }
@@ -207,7 +206,6 @@ public class TopicSubscriptionBuilderImpl
   public Future<TopicSubscriberGroup> buildSubscriberGroup() {
     final TopicSubscriptionSpec subscription =
         new TopicSubscriptionSpec(
-            topic,
             defaultStartPosition,
             startPositions,
             forceStart,

@@ -46,8 +46,7 @@ public class AsyncClusterRequestTest {
 
   @Before
   public void setUp() {
-    brokerRule.addSystemTopic();
-    brokerRule.addTopic(clientRule.getDefaultTopicName(), PARTITION_ID);
+    brokerRule.addPartition(PARTITION_ID);
 
     requestActor = new TestRequestActor();
     ((ZeebeClientImpl) clientRule.getClient()).getScheduler().submitActor(requestActor);
@@ -59,7 +58,7 @@ public class AsyncClusterRequestTest {
     brokerRule.jobs().registerCreateCommand();
 
     final FinalCommandStep<JobEvent> request =
-        clientRule.getClient().topicClient().jobClient().newCreateCommand().jobType("foo");
+        clientRule.getClient().jobClient().newCreateCommand().jobType("foo");
 
     final CountDownLatch latch = new CountDownLatch(1);
 

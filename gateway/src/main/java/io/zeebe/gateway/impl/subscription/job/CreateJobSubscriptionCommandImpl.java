@@ -22,14 +22,14 @@ import io.zeebe.protocol.clientapi.ControlMessageType;
 public class CreateJobSubscriptionCommandImpl extends ControlMessageRequest<JobSubscriptionImpl> {
   protected JobSubscriptionImpl subscription;
 
-  public CreateJobSubscriptionCommandImpl(RequestManager client, int partition) {
+  public CreateJobSubscriptionCommandImpl(final RequestManager client, final int partition) {
     super(client, ControlMessageType.ADD_JOB_SUBSCRIPTION, partition, JobSubscriptionImpl.class);
     this.subscription = new JobSubscriptionImpl();
     this.subscription.setPartitionId(partition);
   }
 
-  public CreateJobSubscriptionCommandImpl(RequestManager client, String topic) {
-    super(client, ControlMessageType.ADD_JOB_SUBSCRIPTION, topic, JobSubscriptionImpl.class);
+  public CreateJobSubscriptionCommandImpl(final RequestManager client) {
+    super(client, ControlMessageType.ADD_JOB_SUBSCRIPTION, JobSubscriptionImpl.class);
     this.subscription = new JobSubscriptionImpl();
     this.subscription.setPartitionId(-1);
   }
@@ -55,13 +55,13 @@ public class CreateJobSubscriptionCommandImpl extends ControlMessageRequest<JobS
   }
 
   @Override
-  public void setTargetPartition(int targetPartition) {
+  public void setTargetPartition(final int targetPartition) {
     super.setTargetPartition(targetPartition);
     subscription.setPartitionId(targetPartition);
   }
 
   @Override
-  public void onResponse(JobSubscriptionImpl response) {
+  public void onResponse(final JobSubscriptionImpl response) {
     response.setPartitionId(targetPartition);
   }
 

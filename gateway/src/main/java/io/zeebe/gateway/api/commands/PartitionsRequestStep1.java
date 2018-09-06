@@ -15,9 +15,6 @@
  */
 package io.zeebe.gateway.api.commands;
 
-import io.zeebe.gateway.api.record.TopicRecord;
-
-public interface TopicCommand extends TopicRecord {
-  /** @return the name of the command */
-  TopicCommandName getCommandName();
+public interface PartitionsRequestStep1 extends FinalCommandStep<Partitions> {
+  // the place for new optional parameters
 }

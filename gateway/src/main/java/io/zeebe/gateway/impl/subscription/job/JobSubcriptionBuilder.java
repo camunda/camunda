@@ -22,7 +22,7 @@ import io.zeebe.gateway.api.subscription.JobWorkerBuilderStep1;
 import io.zeebe.gateway.api.subscription.JobWorkerBuilderStep1.JobWorkerBuilderStep2;
 import io.zeebe.gateway.api.subscription.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
 import io.zeebe.gateway.cmd.ClientException;
-import io.zeebe.gateway.impl.TopicClientImpl;
+import io.zeebe.gateway.impl.ZeebeClientImpl;
 import io.zeebe.gateway.impl.subscription.SubscriptionManager;
 import io.zeebe.util.EnsureUtil;
 import java.time.Duration;
@@ -32,7 +32,6 @@ import java.util.concurrent.Future;
 public class JobSubcriptionBuilder
     implements JobWorkerBuilderStep1, JobWorkerBuilderStep2, JobWorkerBuilderStep3 {
   private final SubscriptionManager subscriptionManager;
-  private final String topic;
 
   private String jobType;
   private long timeout = -1L;
@@ -40,8 +39,7 @@ public class JobSubcriptionBuilder
   private JobHandler jobHandler;
   private int bufferSize;
 
-  public JobSubcriptionBuilder(TopicClientImpl client) {
-    this.topic = client.getTopic();
+  public JobSubcriptionBuilder(final ZeebeClientImpl client) {
     this.subscriptionManager = client.getSubscriptionManager();
 
     // apply defaults from configuration
@@ -52,37 +50,37 @@ public class JobSubcriptionBuilder
   }
 
   @Override
-  public JobWorkerBuilderStep2 jobType(String jobType) {
+  public JobWorkerBuilderStep2 jobType(final String jobType) {
     this.jobType = jobType;
     return this;
   }
 
   @Override
-  public JobWorkerBuilderStep3 timeout(long timeout) {
+  public JobWorkerBuilderStep3 timeout(final long timeout) {
     this.timeout = timeout;
     return this;
   }
 
   @Override
-  public JobWorkerBuilderStep3 timeout(Duration timeout) {
+  public JobWorkerBuilderStep3 timeout(final Duration timeout) {
     this.timeout = timeout.toMillis();
     return this;
   }
 
   @Override
-  public JobWorkerBuilderStep3 name(String name) {
+  public JobWorkerBuilderStep3 name(final String name) {
     this.worker = name;
     return this;
   }
 
   @Override
-  public JobWorkerBuilderStep3 bufferSize(int bufferSize) {
+  public JobWorkerBuilderStep3 bufferSize(final int bufferSize) {
     this.bufferSize = bufferSize;
     return this;
   }
 
   @Override
-  public JobWorkerBuilderStep3 handler(JobHandler handler) {
+  public JobWorkerBuilderStep3 handler(final JobHandler handler) {
     EnsureUtil.ensureNotNull("handler", handler);
     this.jobHandler = handler;
     return this;
@@ -96,13 +94,13 @@ public class JobSubcriptionBuilder
     EnsureUtil.ensureGreaterThan("jobFetchSize", bufferSize, 0);
 
     final JobSubscriptionSpec subscription =
-        new JobSubscriptionSpec(topic, jobHandler, jobType, timeout, worker, bufferSize);
+        new JobSubscriptionSpec(jobHandler, jobType, timeout, worker, bufferSize);
 
     final Future<JobSubscriberGroup> group = subscriptionManager.openJobSubscription(subscription);
 
     try {
       return group.get();
-    } catch (InterruptedException | ExecutionException e) {
+    } catch (final InterruptedException | ExecutionException e) {
       throw new ClientException("Could not open subscription", e);
     }
   }

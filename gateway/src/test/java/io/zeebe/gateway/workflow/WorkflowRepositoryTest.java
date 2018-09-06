@@ -58,14 +58,7 @@ public class WorkflowRepositoryTest {
   @Test
   public void shouldGetResourceByBpmnProcessId() {
     // when
-    client
-        .topicClient()
-        .workflowClient()
-        .newResourceRequest()
-        .bpmnProcessId("wf")
-        .latestVersion()
-        .send()
-        .join();
+    client.workflowClient().newResourceRequest().bpmnProcessId("wf").latestVersion().send().join();
 
     // then
     assertThat(brokerRule.getReceivedControlMessageRequestsByType(ControlMessageType.GET_WORKFLOW))
@@ -81,14 +74,7 @@ public class WorkflowRepositoryTest {
   @Test
   public void shouldGetResourceByBpmnProcessIdAndVersion() {
     // when
-    client
-        .topicClient()
-        .workflowClient()
-        .newResourceRequest()
-        .bpmnProcessId("wf")
-        .version(2)
-        .send()
-        .join();
+    client.workflowClient().newResourceRequest().bpmnProcessId("wf").version(2).send().join();
 
     // then
     assertThat(brokerRule.getReceivedControlMessageRequestsByType(ControlMessageType.GET_WORKFLOW))
@@ -104,7 +90,7 @@ public class WorkflowRepositoryTest {
   @Test
   public void shouldGetResourceByWorkflowKey() {
     // when
-    client.topicClient().workflowClient().newResourceRequest().workflowKey(123L).send().join();
+    client.workflowClient().newResourceRequest().workflowKey(123L).send().join();
 
     // then
     assertThat(brokerRule.getReceivedControlMessageRequestsByType(ControlMessageType.GET_WORKFLOW))
@@ -120,7 +106,6 @@ public class WorkflowRepositoryTest {
     // when
     final WorkflowResource workflowResource =
         client
-            .topicClient()
             .workflowClient()
             .newResourceRequest()
             .bpmnProcessId("wf")
@@ -141,7 +126,7 @@ public class WorkflowRepositoryTest {
   @Test
   public void shouldGetWorkflowsByBpmnProcessId() {
     // when
-    client.topicClient().workflowClient().newWorkflowRequest().bpmnProcessId("wf1").send().join();
+    client.workflowClient().newWorkflowRequest().bpmnProcessId("wf1").send().join();
 
     // then
     assertThat(
@@ -158,7 +143,7 @@ public class WorkflowRepositoryTest {
   @Test
   public void shouldGetAllWorkflows() {
     // when
-    client.topicClient().workflowClient().newWorkflowRequest().send().join();
+    client.workflowClient().newWorkflowRequest().send().join();
 
     // then
     assertThat(
@@ -174,8 +159,7 @@ public class WorkflowRepositoryTest {
   @Test
   public void shouldGetWorkflowResponse() {
     // when
-    final Workflows workflows =
-        client.topicClient().workflowClient().newWorkflowRequest().send().join();
+    final Workflows workflows = client.workflowClient().newWorkflowRequest().send().join();
 
     // then
     assertThat(

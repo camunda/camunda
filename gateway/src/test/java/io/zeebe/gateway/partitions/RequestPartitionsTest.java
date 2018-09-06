@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.gateway.topic;
+package io.zeebe.gateway.partitions;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.api.commands.Partition;
-import io.zeebe.gateway.api.commands.Topic;
-import io.zeebe.gateway.api.commands.Topics;
+import io.zeebe.gateway.api.commands.Partitions;
 import io.zeebe.gateway.util.ClientRule;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
@@ -30,14 +29,12 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import org.assertj.core.api.Condition;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public class RequestTopicsTest {
+public class RequestPartitionsTest {
 
   public StubBrokerRule brokerRule = new StubBrokerRule();
   public ClientRule clientRule = new ClientRule(brokerRule);
@@ -45,12 +42,12 @@ public class RequestTopicsTest {
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   @Test
-  public void shouldRequestTopics() {
+  public void shouldRequestPartitions() {
     // given
     final List<Map<String, Object>> partitions = new ArrayList<>();
-    partitions.add(buildPartition(1, "foo"));
-    partitions.add(buildPartition(2, "foo"));
-    partitions.add(buildPartition(3, "bar"));
+    partitions.add(buildPartition(1));
+    partitions.add(buildPartition(2));
+    partitions.add(buildPartition(3));
 
     brokerRule
         .onControlMessageRequest(
@@ -66,21 +63,13 @@ public class RequestTopicsTest {
     final ZeebeClient client = clientRule.getClient();
 
     // when
-    final Topics result = client.newTopicsRequest().send().join();
+    final Partitions result = client.newPartitionsRequest().send().join();
 
     // then
-    final List<Topic> returnedTopics = result.getTopics();
-    assertThat(returnedTopics).hasSize(2);
+    final List<Partition> returnedPartitions = result.getPartitions();
+    assertThat(returnedPartitions).hasSize(3);
 
-    final Map<String, List<Partition>> topicsByName =
-        returnedTopics.stream().collect(Collectors.toMap(Topic::getName, Topic::getPartitions));
-
-    assertThat(topicsByName.get("foo"))
-        .hasSize(2)
-        .areExactly(1, matching(1, "foo"))
-        .areExactly(1, matching(2, "foo"));
-
-    assertThat(topicsByName.get("bar")).hasSize(1).areExactly(1, matching(3, "bar"));
+    assertThat(returnedPartitions).extracting(p -> p.getId()).containsExactly(1, 2, 3);
 
     final List<ControlMessageRequest> partitionRequests =
         brokerRule
@@ -94,14 +83,8 @@ public class RequestTopicsTest {
     assertThat(request.partitionId()).isEqualTo(Protocol.SYSTEM_PARTITION);
   }
 
-  protected Condition<Partition> matching(int id, String topic) {
-    final Predicate<Partition> predicate = p -> p.getId() == id && topic.equals(p.getTopicName());
-    return new Condition<>(predicate, "foo");
-  }
-
-  public Map<String, Object> buildPartition(int id, String topic) {
+  public Map<String, Object> buildPartition(final int id) {
     final Map<String, Object> partition = new HashMap<>();
-    partition.put("topic", topic);
     partition.put("id", id);
 
     return partition;

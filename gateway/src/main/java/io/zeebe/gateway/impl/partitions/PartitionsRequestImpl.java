@@ -13,20 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.gateway.impl.topic;
+package io.zeebe.gateway.impl.partitions;
 
-import io.zeebe.gateway.api.commands.Topics;
-import io.zeebe.gateway.api.commands.TopicsRequestStep1;
+import io.zeebe.gateway.api.commands.Partitions;
+import io.zeebe.gateway.api.commands.PartitionsRequestStep1;
 import io.zeebe.gateway.impl.ControlMessageRequest;
 import io.zeebe.gateway.impl.RequestManager;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import java.util.Collections;
 
-public class TopicsRequestImpl extends ControlMessageRequest<Topics> implements TopicsRequestStep1 {
+public class PartitionsRequestImpl extends ControlMessageRequest<Partitions>
+    implements PartitionsRequestStep1 {
 
-  public TopicsRequestImpl(RequestManager client) {
-    super(client, ControlMessageType.REQUEST_PARTITIONS, TopicsImpl.class);
+  public PartitionsRequestImpl(final RequestManager client) {
+    super(client, ControlMessageType.REQUEST_PARTITIONS, PartitionsImpl.class);
 
     setTargetPartition(Protocol.SYSTEM_PARTITION);
   }

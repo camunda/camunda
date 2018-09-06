@@ -29,30 +29,29 @@ import io.zeebe.gateway.impl.job.UpdateRetriesJobCommandImpl;
 import io.zeebe.gateway.impl.subscription.job.JobSubcriptionBuilder;
 
 public class JobClientImpl implements JobClient {
-  private final TopicClientImpl client;
+  private final ZeebeClientImpl client;
 
-  public JobClientImpl(TopicClientImpl client) {
+  public JobClientImpl(final ZeebeClientImpl client) {
     this.client = client;
   }
 
   @Override
   public CreateJobCommandStep1 newCreateCommand() {
-    return new CreateJobCommandImpl(
-        client.getCommandManager(), client.getObjectMapper(), client.getTopic());
+    return new CreateJobCommandImpl(client.getCommandManager(), client.getObjectMapper());
   }
 
   @Override
-  public CompleteJobCommandStep1 newCompleteCommand(JobEvent event) {
+  public CompleteJobCommandStep1 newCompleteCommand(final JobEvent event) {
     return new CompleteJobCommandImpl(client.getCommandManager(), event);
   }
 
   @Override
-  public FailJobCommandStep1 newFailCommand(JobEvent event) {
+  public FailJobCommandStep1 newFailCommand(final JobEvent event) {
     return new FailJobCommandImpl(client.getCommandManager(), event);
   }
 
   @Override
-  public UpdateRetriesJobCommandStep1 newUpdateRetriesCommand(JobEvent event) {
+  public UpdateRetriesJobCommandStep1 newUpdateRetriesCommand(final JobEvent event) {
     return new UpdateRetriesJobCommandImpl(client.getCommandManager(), event);
   }
 

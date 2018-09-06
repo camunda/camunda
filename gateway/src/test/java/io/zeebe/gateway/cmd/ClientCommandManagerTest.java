@@ -15,7 +15,6 @@
  */
 package io.zeebe.gateway.cmd;
 
-import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static io.zeebe.protocol.clientapi.ControlMessageType.REQUEST_TOPOLOGY;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -82,15 +81,13 @@ public class ClientCommandManagerTest {
     broker.jobs().registerCompleteCommand();
 
     // extend topology
-    broker.addTopic(DEFAULT_TOPIC, 2);
+    broker.addPartition(2);
 
     final JobEventImpl baseEvent = Events.exampleJob();
-    baseEvent.setTopicName(DEFAULT_TOPIC);
     baseEvent.setPartitionId(2);
 
     // when
-    final JobEvent jobEvent =
-        client.topicClient().jobClient().newCompleteCommand(baseEvent).send().join();
+    final JobEvent jobEvent = client.jobClient().newCompleteCommand(baseEvent).send().join();
 
     // then the client has refreshed its topology
     assertThat(jobEvent).isNotNull();
@@ -109,7 +106,7 @@ public class ClientCommandManagerTest {
         .register();
 
     final ActorFuture<JobEvent> future =
-        client.topicClient().jobClient().newCreateCommand().jobType("foo").send();
+        client.jobClient().newCreateCommand().jobType("foo").send();
 
     assertThatThrownBy(future::join)
         .isInstanceOf(RuntimeException.class)
@@ -160,7 +157,7 @@ public class ClientCommandManagerTest {
     // specifically.
 
     // when
-    client.topicClient().jobClient().newCreateCommand().jobType("foo").send().join();
+    client.jobClient().newCreateCommand().jobType("foo").send().join();
   }
 
   protected void assertTopologyRefreshRequests(final int count) {
@@ -203,7 +200,6 @@ public class ClientCommandManagerTest {
     @JsonCreator
     public FailingCommand() {
       super(null, RecordType.COMMAND, ValueType.JOB);
-      this.setTopicName(StubBrokerRule.TEST_TOPIC_NAME);
       this.setPartitionId(StubBrokerRule.TEST_PARTITION_ID);
       this.setIntent(JobIntent.CREATE);
     }
@@ -223,7 +219,6 @@ public class ClientCommandManagerTest {
     @JsonCreator
     public FailingEvent() {
       super(null, RecordType.EVENT, ValueType.JOB);
-      this.setTopicName(StubBrokerRule.TEST_TOPIC_NAME);
       this.setPartitionId(StubBrokerRule.TEST_PARTITION_ID);
       this.setIntent(JobIntent.CREATED);
     }

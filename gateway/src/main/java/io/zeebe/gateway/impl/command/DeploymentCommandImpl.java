@@ -29,11 +29,11 @@ public class DeploymentCommandImpl extends DeploymentRecordImpl implements Deplo
   private String errorMessage;
 
   @JsonCreator
-  public DeploymentCommandImpl(@JacksonInject ZeebeObjectMapperImpl objectMapper) {
+  public DeploymentCommandImpl(@JacksonInject final ZeebeObjectMapperImpl objectMapper) {
     super(objectMapper, RecordType.COMMAND);
   }
 
-  public DeploymentCommandImpl(DeploymentIntent intent) {
+  public DeploymentCommandImpl(final DeploymentIntent intent) {
     super(null, RecordType.COMMAND);
     setIntent(intent);
   }
@@ -48,7 +48,7 @@ public class DeploymentCommandImpl extends DeploymentRecordImpl implements Deplo
     return errorMessage;
   }
 
-  public void setErrorMessage(String errorMessage) {
+  public void setErrorMessage(final String errorMessage) {
     this.errorMessage = errorMessage;
   }
 
@@ -57,8 +57,6 @@ public class DeploymentCommandImpl extends DeploymentRecordImpl implements Deplo
     final StringBuilder builder = new StringBuilder();
     builder.append("DeploymentCommand [command=");
     builder.append(getName());
-    builder.append(", topic=");
-    builder.append(getDeploymentTopic());
     builder.append(", resource=");
     builder.append(getResources());
     builder.append("]");

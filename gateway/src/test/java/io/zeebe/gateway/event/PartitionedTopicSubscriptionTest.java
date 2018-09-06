@@ -67,9 +67,9 @@ public class PartitionedTopicSubscriptionTest {
   public void setUp() {
     final Topology topology =
         new Topology()
-            .addLeader(broker1, Protocol.SYSTEM_TOPIC, Protocol.SYSTEM_PARTITION)
-            .addLeader(broker1, clientRule.getDefaultTopicName(), PARTITION_1)
-            .addLeader(broker2, clientRule.getDefaultTopicName(), PARTITION_2);
+            .addLeader(broker1, Protocol.SYSTEM_PARTITION)
+            .addLeader(broker1, PARTITION_1)
+            .addLeader(broker2, PARTITION_2);
 
     broker1.setCurrentTopology(topology);
     broker2.setCurrentTopology(topology);
@@ -78,19 +78,14 @@ public class PartitionedTopicSubscriptionTest {
   }
 
   @Test
-  public void shouldSubscribeToMultiplePartitionsOfATopic() {
+  public void shouldSubscribeToMultiplePartitions() {
     // given
     broker1.stubTopicSubscriptionApi(456);
     broker2.stubTopicSubscriptionApi(789);
 
     // when
     final TopicSubscription subscription =
-        clientRule
-            .topicClient()
-            .newSubscription()
-            .name("hohoho")
-            .recordHandler(new RecordingHandler())
-            .open();
+        client.newSubscription().name("hohoho").recordHandler(new RecordingHandler()).open();
 
     // then
     assertThat(subscription.isOpen()).isTrue();
@@ -125,7 +120,7 @@ public class PartitionedTopicSubscriptionTest {
     broker2.stubTopicSubscriptionApi(subscriberKey2);
 
     final RecordingHandler eventHandler = new RecordingHandler();
-    clientRule.topicClient().newSubscription().name("hohoho").recordHandler(eventHandler).open();
+    client.newSubscription().name("hohoho").recordHandler(eventHandler).open();
 
     final RemoteAddress clientAddressFromBroker1 =
         broker1.getReceivedCommandRequests().get(0).getSource();
@@ -158,12 +153,7 @@ public class PartitionedTopicSubscriptionTest {
     broker2.stubTopicSubscriptionApi(subscriberKey2);
 
     final TopicSubscription subscription =
-        clientRule
-            .topicClient()
-            .newSubscription()
-            .name("hohoho")
-            .recordHandler(new RecordingHandler())
-            .open();
+        client.newSubscription().name("hohoho").recordHandler(new RecordingHandler()).open();
 
     // when
     subscription.close();
@@ -194,11 +184,7 @@ public class PartitionedTopicSubscriptionTest {
         .register();
 
     final TopicSubscriptionBuilderStep3 builder =
-        clientRule
-            .topicClient()
-            .newSubscription()
-            .name("hohoho")
-            .recordHandler(new RecordingHandler());
+        client.newSubscription().name("hohoho").recordHandler(new RecordingHandler());
 
     // when
     final Throwable failure = catchThrowable(() -> builder.open());
@@ -229,11 +215,7 @@ public class PartitionedTopicSubscriptionTest {
     // assuming that subscription to broker 1 is successful
     final TopicSubscriptionBuilderImpl builder =
         (TopicSubscriptionBuilderImpl)
-            clientRule
-                .topicClient()
-                .newSubscription()
-                .name("hohoho")
-                .recordHandler(new RecordingHandler());
+            client.newSubscription().name("hohoho").recordHandler(new RecordingHandler());
 
     final Future<TopicSubscriberGroup> groupFuture = builder.buildSubscriberGroup();
     waitUntil(() -> getOpenSubscriptionRequests(broker1).size() == 1);
@@ -259,12 +241,7 @@ public class PartitionedTopicSubscriptionTest {
     broker2.stubTopicSubscriptionApi(subscriberKey2);
 
     final TopicSubscription subscription =
-        clientRule
-            .topicClient()
-            .newSubscription()
-            .name("hohoho")
-            .recordHandler(new RecordingHandler())
-            .open();
+        client.newSubscription().name("hohoho").recordHandler(new RecordingHandler()).open();
 
     // when
     broker1.closeTransport();
@@ -288,8 +265,7 @@ public class PartitionedTopicSubscriptionTest {
 
     final String subscriptionName = "hohoho";
     final TopicSubscription subscription =
-        clientRule
-            .topicClient()
+        client
             .newSubscription()
             .name(subscriptionName)
             .recordHandler(new RecordingHandler())
@@ -323,11 +299,7 @@ public class PartitionedTopicSubscriptionTest {
         .register();
 
     final TopicSubscriptionBuilderStep3 builder =
-        clientRule
-            .topicClient()
-            .newSubscription()
-            .name("hohoho")
-            .recordHandler(new RecordingHandler());
+        client.newSubscription().name("hohoho").recordHandler(new RecordingHandler());
 
     // when
     final Throwable failure = catchThrowable(() -> builder.open());
@@ -355,7 +327,7 @@ public class PartitionedTopicSubscriptionTest {
     final ParallelismDetectionHandler eventHandler =
         new ParallelismDetectionHandler(Duration.ofMillis(500));
 
-    clientRule.topicClient().newSubscription().name("hohoho").recordHandler(eventHandler).open();
+    client.newSubscription().name("hohoho").recordHandler(eventHandler).open();
 
     final RemoteAddress clientAddressFromBroker1 =
         broker1.getReceivedCommandRequests().get(0).getSource();
@@ -384,8 +356,7 @@ public class PartitionedTopicSubscriptionTest {
     final long position1 = 987;
     final long position2 = 546;
 
-    clientRule
-        .topicClient()
+    client
         .newSubscription()
         .name("hohoho")
         .recordHandler(new RecordingHandler())
@@ -409,12 +380,11 @@ public class PartitionedTopicSubscriptionTest {
 
     final long position1 = 987;
 
-    clientRule
-        .topicClient()
+    client
         .newSubscription()
         .name("hohoho")
         .recordHandler(new RecordingHandler())
-        .startAtTailOfTopic()
+        .startAtTail()
         .startAtPosition(PARTITION_1, position1)
         .open();
 

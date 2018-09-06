@@ -15,7 +15,6 @@
  */
 package io.zeebe.gateway;
 
-import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
@@ -53,11 +52,7 @@ public class HealthCheckEndpointTest {
     endpointManager = new EndpointManager(responseMapper, clusterClient, actorSchedulerRule.get());
 
     final Partition partition =
-        Partition.newBuilder()
-            .setPartitionId(5)
-            .setRole(PartitionBrokerRole.LEADER)
-            .setTopicName(DEFAULT_TOPIC)
-            .build();
+        Partition.newBuilder().setPartitionId(5).setRole(PartitionBrokerRole.LEADER).build();
 
     this.response =
         HealthResponse.newBuilder()

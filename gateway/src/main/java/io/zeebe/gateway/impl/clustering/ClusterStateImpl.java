@@ -19,13 +19,10 @@ import static io.zeebe.transport.ClientTransport.UNKNOWN_NODE_ID;
 
 import io.zeebe.gateway.api.commands.Topology;
 import io.zeebe.transport.SocketAddress;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Random;
 import java.util.function.BiConsumer;
 import org.agrona.collections.Int2IntHashMap;
 import org.agrona.collections.IntArrayList;
-import org.agrona.collections.IntHashSet;
 
 /**
  * Immutable; Important because we hand this between actors. If this is supposed to become mutable,
@@ -35,23 +32,21 @@ public class ClusterStateImpl implements ClusterState {
 
   private static final int NODE_ID_NULL = UNKNOWN_NODE_ID - 1;
 
-  private final Int2IntHashMap topicLeaders = new Int2IntHashMap(NODE_ID_NULL);
+  private final Int2IntHashMap partitionLeaders = new Int2IntHashMap(NODE_ID_NULL);
   private final IntArrayList brokers = new IntArrayList(5, NODE_ID_NULL);
-  private final Map<String, IntArrayList> partitionsByTopic = new HashMap<>();
+  private final IntArrayList partitions = new IntArrayList();
 
   private final Random randomBroker = new Random();
 
   public ClusterStateImpl(
       final SocketAddress initialContactPoint,
-      BiConsumer<Integer, SocketAddress> endpointRegistry) {
+      final BiConsumer<Integer, SocketAddress> endpointRegistry) {
     endpointRegistry.accept(UNKNOWN_NODE_ID, initialContactPoint);
     brokers.add(UNKNOWN_NODE_ID);
   }
 
   public ClusterStateImpl(
-      Topology topologyDto, BiConsumer<Integer, SocketAddress> endpointRegistry) {
-    final Map<String, IntHashSet> partitions = new HashMap<>();
-
+      final Topology topologyDto, final BiConsumer<Integer, SocketAddress> endpointRegistry) {
     topologyDto
         .getBrokers()
         .forEach(
@@ -63,34 +58,18 @@ public class ClusterStateImpl implements ClusterState {
               b.getPartitions()
                   .forEach(
                       p -> {
-                        final String topicName = p.getTopicName();
                         final int partitionId = p.getPartitionId();
-
-                        partitions
-                            .computeIfAbsent(topicName, t -> new IntHashSet())
-                            .add(partitionId);
-
+                        partitions.add(partitionId);
                         if (p.isLeader()) {
-                          topicLeaders.put(partitionId, nodeId);
+                          partitionLeaders.put(partitionId, nodeId);
                         }
                       });
             });
-
-    partitions.forEach(
-        (t, p) -> {
-          final IntArrayList partitionsList = new IntArrayList();
-          final IntHashSet.IntIterator iterator = p.iterator();
-          while (iterator.hasNext()) {
-            partitionsList.add(iterator.nextValue());
-          }
-
-          partitionsByTopic.put(t, partitionsList);
-        });
   }
 
   @Override
-  public int getLeaderForPartition(int partition) {
-    return topicLeaders.get(partition);
+  public int getLeaderForPartition(final int partition) {
+    return partitionLeaders.get(partition);
   }
 
   @Override
@@ -104,12 +83,12 @@ public class ClusterStateImpl implements ClusterState {
   }
 
   @Override
-  public IntArrayList getPartitionsOfTopic(String topic) {
-    return partitionsByTopic.get(topic);
+  public IntArrayList getPartitions() {
+    return partitions;
   }
 
-  public int getPartition(String topic, int offset) {
-    final IntArrayList partitions = getPartitionsOfTopic(topic);
+  public int getPartition(final int offset) {
+    final IntArrayList partitions = getPartitions();
 
     if (partitions != null && !partitions.isEmpty()) {
       return partitions.getInt(offset % partitions.size());
@@ -121,8 +100,8 @@ public class ClusterStateImpl implements ClusterState {
   @Override
   public String toString() {
     final StringBuilder builder = new StringBuilder();
-    builder.append("ClusterState [topicLeaders=");
-    builder.append(topicLeaders);
+    builder.append("ClusterState [partitionLeaders=");
+    builder.append(partitionLeaders);
     builder.append(", brokers=");
     builder.append(brokers);
     builder.append("]");

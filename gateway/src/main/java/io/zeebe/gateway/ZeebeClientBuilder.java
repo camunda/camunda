@@ -62,7 +62,7 @@ public interface ZeebeClientBuilder {
   ZeebeClientBuilder numManagementThreads(int numManagementThreads);
 
   /**
-   * @param numSubscriptionThreads The number of threads for invocation of job workers and topic
+   * @param numSubscriptionThreads The number of threads for invocation of job workers and
    *     subscriptions. Setting this value to 0 effectively disables subscriptions and workers.
    *     Default value is 1.
    */
@@ -97,12 +97,6 @@ public interface ZeebeClientBuilder {
 
   /** The time-to-live which is used when none is provided for a message. Default is 1 hour. */
   ZeebeClientBuilder defaultMessageTimeToLive(Duration timeToLive);
-
-  /**
-   * The name of the topic which is used for {@link ZeebeClient#topicClient()}. Default is
-   * "default-topic".
-   */
-  ZeebeClientBuilder defaultTopic(String topic);
 
   /** @return a new {@link ZeebeClient} with the provided configuration options. */
   ZeebeClient build();

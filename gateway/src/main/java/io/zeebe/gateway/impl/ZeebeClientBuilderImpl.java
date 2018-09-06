@@ -18,7 +18,6 @@ package io.zeebe.gateway.impl;
 import static io.zeebe.gateway.ClientProperties.DEFAULT_JOB_TIMEOUT;
 import static io.zeebe.gateway.ClientProperties.DEFAULT_JOB_WORKER_NAME;
 import static io.zeebe.gateway.ClientProperties.DEFAULT_MESSAGE_TIME_TO_LIVE;
-import static io.zeebe.gateway.ClientProperties.DEFAULT_TOPIC;
 import static io.zeebe.gateway.ClientProperties.REQUEST_BLOCKTIME_MILLIS;
 import static io.zeebe.gateway.ClientProperties.SENDBUFFER_SIZE;
 
@@ -26,7 +25,6 @@ import io.zeebe.gateway.ClientProperties;
 import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.ZeebeClientBuilder;
 import io.zeebe.gateway.ZeebeClientConfiguration;
-import io.zeebe.protocol.Protocol;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.time.Duration;
 import java.util.Properties;
@@ -45,12 +43,6 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   private String defaultJobWorkerName = "default";
   private Duration defaultJobTimeout = Duration.ofMinutes(5);
   private Duration defaultMessageTimeToLive = Duration.ofHours(1);
-  private String defaultTopic = Protocol.DEFAULT_TOPIC;
-
-  private static void appendProperty(
-      final StringBuilder sb, final String propertyName, final Object value) {
-    sb.append(propertyName + ": " + value + "\n");
-  }
 
   @Override
   public String getBrokerContactPoint() {
@@ -194,17 +186,6 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
-  public ZeebeClientBuilder defaultTopic(final String topic) {
-    this.defaultTopic = topic;
-    return this;
-  }
-
-  @Override
-  public String getDefaultTopic() {
-    return defaultTopic;
-  }
-
-  @Override
   public ZeebeClient build() {
     return new ZeebeClientImpl(this, actorClock);
   }
@@ -261,9 +242,6 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
       defaultMessageTimeToLive(
           Duration.ofMillis(Long.parseLong(properties.getProperty(DEFAULT_MESSAGE_TIME_TO_LIVE))));
     }
-    if (properties.containsKey(DEFAULT_TOPIC)) {
-      defaultTopic(properties.getProperty(DEFAULT_TOPIC));
-    }
 
     return this;
   }
@@ -284,8 +262,12 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
     appendProperty(sb, "defaultJobWorkerName", defaultJobWorkerName);
     appendProperty(sb, "defaultJobTimeout", defaultJobTimeout);
     appendProperty(sb, "defaultMessageTimeToLive", defaultMessageTimeToLive);
-    appendProperty(sb, "defaultTopic", defaultTopic);
 
     return sb.toString();
+  }
+
+  private static void appendProperty(
+      final StringBuilder sb, final String propertyName, final Object value) {
+    sb.append(propertyName + ": " + value + "\n");
   }
 }

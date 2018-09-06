@@ -13,9 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.gateway.api.commands;
+package io.zeebe.gateway.impl.partitions;
 
-public enum TopicCommandName {
-  CREATE,
-  CREATE_COMPLETE,
+import io.zeebe.gateway.api.commands.Partition;
+
+public class PartitionImpl implements Partition {
+  private int id;
+
+  @Override
+  public int getId() {
+    return id;
+  }
+
+  public void setId(final int id) {
+    this.id = id;
+  }
+
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("Partition [id=");
+    builder.append(id);
+    builder.append("]");
+    return builder.toString();
+  }
 }

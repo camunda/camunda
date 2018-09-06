@@ -57,7 +57,7 @@ public class WorkflowInstancePayloadTest {
 
     events = new ArrayList<>();
     clientRule
-        .topicClient()
+        .getClient()
         .newSubscription()
         .name("test")
         .workflowInstanceEventHandler(events::add)
@@ -66,7 +66,7 @@ public class WorkflowInstancePayloadTest {
     clientAddress = brokerRule.getReceivedCommandRequests().get(0).getSource();
   }
 
-  private WorkflowInstanceEvent workflowInstanceEventWithPayload(byte[] payload) {
+  private WorkflowInstanceEvent workflowInstanceEventWithPayload(final byte[] payload) {
     brokerRule
         .newSubscribedEvent()
         .partitionId(StubBrokerRule.TEST_PARTITION_ID)

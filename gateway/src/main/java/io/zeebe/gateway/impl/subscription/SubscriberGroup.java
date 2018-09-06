@@ -15,13 +15,11 @@
  */
 package io.zeebe.gateway.impl.subscription;
 
-import io.zeebe.gateway.api.commands.Partition;
-import io.zeebe.gateway.api.commands.Topic;
 import io.zeebe.gateway.cmd.ClientException;
 import io.zeebe.gateway.impl.Loggers;
 import io.zeebe.gateway.impl.ZeebeClientImpl;
+import io.zeebe.gateway.impl.partitions.PartitionsRequestImpl;
 import io.zeebe.gateway.impl.record.UntypedRecordImpl;
-import io.zeebe.gateway.impl.topic.TopicsRequestImpl;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.util.CheckedConsumer;
 import io.zeebe.util.sched.ActorCondition;
@@ -31,7 +29,6 @@ import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
 import org.agrona.collections.Int2ObjectHashMap;
@@ -46,7 +43,6 @@ public abstract class SubscriberGroup<T extends Subscriber> {
   // thread-safe data structure for iteration by subscription executors from another thread
   protected final List<T> subscribersList = new CopyOnWriteArrayList<>();
 
-  protected final String topic;
   protected final SubscriptionManager subscriptionManager;
 
   protected CompletableActorFuture<SubscriberGroup<T>> openFuture;
@@ -63,39 +59,32 @@ public abstract class SubscriberGroup<T extends Subscriber> {
   private static final int STATE_CLOSED = 3;
 
   public SubscriberGroup(
-      ActorControl actor, ZeebeClientImpl client, SubscriptionManager acquisition, String topic) {
+      final ActorControl actor,
+      final ZeebeClientImpl client,
+      final SubscriptionManager acquisition) {
     this.actor = actor;
     this.subscriptionManager = acquisition;
     this.client = client;
-    this.topic = topic;
   }
 
-  protected void doAbort(String reason, Throwable cause) {
+  protected void doAbort(final String reason, final Throwable cause) {
     setCloseReason(reason, cause);
     state = STATE_CLOSED;
     onGroupClosed();
   }
 
-  protected void open(CompletableActorFuture<SubscriberGroup<T>> openFuture) {
+  protected void open(final CompletableActorFuture<SubscriberGroup<T>> openFuture) {
     this.openFuture = openFuture;
 
-    final TopicsRequestImpl topicsRequest = (TopicsRequestImpl) client.newTopicsRequest();
+    final PartitionsRequestImpl partitionsRequest =
+        (PartitionsRequestImpl) client.newPartitionsRequest();
     actor.runOnCompletion(
-        topicsRequest.send(),
-        (topics, failure) -> {
+        partitionsRequest.send(),
+        (partitions, failure) -> {
           if (failure != null) {
             doAbort("Requesting partitions failed", failure);
           } else {
-            final Optional<Topic> requestedTopic =
-                topics.getTopics().stream().filter(t -> topic.equals(t.getName())).findFirst();
-
-            if (requestedTopic.isPresent()) {
-              final List<Partition> partitions = requestedTopic.get().getPartitions();
-
-              partitions.forEach(p -> openSubscriber(p.getId()));
-            } else {
-              doAbort("Topic " + topic + " is not known", null);
-            }
+            partitions.getPartitions().forEach(p -> openSubscriber(p.getId()));
           }
         });
   }
@@ -108,7 +97,7 @@ public abstract class SubscriberGroup<T extends Subscriber> {
     }
   }
 
-  public void initClose(String reason, Throwable cause) {
+  public void initClose(final String reason, final Throwable cause) {
     if (state == STATE_OPEN) {
       state = STATE_CLOSING;
       setCloseReason(reason, null);
@@ -161,7 +150,7 @@ public abstract class SubscriberGroup<T extends Subscriber> {
     return subscriptionManager.closeGroup(this, "Close requested");
   }
 
-  public void reopenSubscriptionsForRemoteAsync(RemoteAddress remoteAddress) {
+  public void reopenSubscriptionsForRemoteAsync(final RemoteAddress remoteAddress) {
     final Iterator<T> it = subscribersList.iterator();
 
     while (it.hasNext()) {
@@ -181,12 +170,12 @@ public abstract class SubscriberGroup<T extends Subscriber> {
   public void close() {
     try {
       closeAsync().get();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new ClientException("Exception while closing subscription", e);
     }
   }
 
-  private void openSubscriber(int partitionId) {
+  private void openSubscriber(final int partitionId) {
     this.subscriberState.put(partitionId, SubscriberState.SUBSCRIBING);
     final ActorFuture<? extends EventSubscriptionCreationResult> future =
         requestNewSubscriber(partitionId);
@@ -202,7 +191,7 @@ public abstract class SubscriberGroup<T extends Subscriber> {
         });
   }
 
-  private void closeSubscriber(T subscriber) {
+  private void closeSubscriber(final T subscriber) {
     subscriber.disable();
     subscribersList.remove(subscriber);
     subscriberState.put(subscriber.getPartitionId(), SubscriberState.UNSUBSCRIBING);
@@ -227,18 +216,18 @@ public abstract class SubscriberGroup<T extends Subscriber> {
         });
   }
 
-  protected ActorFuture<Void> doCloseSubscriber(T subscriber) {
+  protected ActorFuture<Void> doCloseSubscriber(final T subscriber) {
     return subscriber.requestSubscriptionClose();
   }
 
-  private void setCloseReason(String closeReason, Throwable cause) {
+  private void setCloseReason(final String closeReason, final Throwable cause) {
     if (this.closeReason == null) {
       this.closeReason = closeReason;
       this.closeCause = cause;
     }
   }
 
-  private void onSubscriberOpenFailed(int partitionId, Throwable t) {
+  private void onSubscriberOpenFailed(final int partitionId, final Throwable t) {
     // TODO: exception handling => should be propagated when group is closed via checkGroupOpen
     subscriberState.put(partitionId, SubscriberState.NOT_SUBSCRIBED);
 
@@ -253,9 +242,9 @@ public abstract class SubscriberGroup<T extends Subscriber> {
     }
   }
 
-  public ActorCondition buildReplenishmentTrigger(T subscriber) {
+  public ActorCondition buildReplenishmentTrigger(final T subscriber) {
     return actor.onCondition(
-        topic,
+        "replenishment-trigger",
         () -> {
           final ActorFuture<?> replenishmentFuture = subscriber.replenishEventSource();
 
@@ -269,7 +258,7 @@ public abstract class SubscriberGroup<T extends Subscriber> {
         });
   }
 
-  private void onSubscriberOpened(EventSubscriptionCreationResult result) {
+  private void onSubscriberOpened(final EventSubscriptionCreationResult result) {
     final T subscriber = buildSubscriber(result);
     subscriberState.put(subscriber.getPartitionId(), SubscriberState.SUBSCRIBED);
 
@@ -283,7 +272,7 @@ public abstract class SubscriberGroup<T extends Subscriber> {
     }
   }
 
-  private void onSubscriberClosed(T subscriber) {
+  private void onSubscriberClosed(final T subscriber) {
     subscriptionManager.removeSubscriber(subscriber);
     subscriberState.put(subscriber.getPartitionId(), SubscriberState.NOT_SUBSCRIBED);
 
@@ -325,19 +314,19 @@ public abstract class SubscriberGroup<T extends Subscriber> {
     return allPartitionsInSubscriberState(s -> s == SubscriberState.NOT_SUBSCRIBED);
   }
 
-  private boolean allPartitionsInSubscriberState(Predicate<SubscriberState> predicate) {
+  private boolean allPartitionsInSubscriberState(final Predicate<SubscriberState> predicate) {
     return subscriberState.values().stream().allMatch(predicate);
   }
 
-  public boolean isSubscribingTo(int partitionId) {
+  public boolean isSubscribingTo(final int partitionId) {
     return subscriberState.get(partitionId) == SubscriberState.SUBSCRIBING;
   }
 
   protected abstract String describeGroup();
 
-  public int pollEvents(CheckedConsumer<UntypedRecordImpl> pollHandler) {
+  public int pollEvents(final CheckedConsumer<UntypedRecordImpl> pollHandler) {
     int events = 0;
-    for (Subscriber subscriber : subscribersList) {
+    for (final Subscriber subscriber : subscribersList) {
       events += subscriber.pollEvents(pollHandler);
     }
 
@@ -354,7 +343,7 @@ public abstract class SubscriberGroup<T extends Subscriber> {
 
   public int size() {
     int events = 0;
-    for (Subscriber subscriber : subscribersList) {
+    for (final Subscriber subscriber : subscribersList) {
       events += subscriber.size();
     }
 

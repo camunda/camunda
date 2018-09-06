@@ -17,7 +17,7 @@ package io.zeebe.gateway.api.commands;
 
 import java.util.List;
 
-public interface Topics {
-  /** @return all available topics */
-  List<Topic> getTopics();
+public interface Partitions {
+  /** @return all available partitions */
+  List<Partition> getPartitions();
 }

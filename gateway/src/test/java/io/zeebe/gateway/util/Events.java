@@ -16,7 +16,6 @@
 package io.zeebe.gateway.util;
 
 import static io.zeebe.gateway.util.ClientRule.DEFAULT_PARTITION;
-import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 
 import io.zeebe.gateway.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.gateway.impl.event.JobEventImpl;
@@ -39,7 +38,6 @@ public class Events {
     baseEvent.setPartitionId(DEFAULT_PARTITION);
     baseEvent.setPayload("{\"key\":\"val\"}");
     baseEvent.setRetries(123);
-    baseEvent.setTopicName(DEFAULT_TOPIC);
     baseEvent.setType("taskTypeFoo");
     baseEvent.setPosition(456);
 
@@ -55,7 +53,6 @@ public class Events {
     baseEvent.setKey(89);
     baseEvent.setPayload("{\"key\":\"val\"}");
     baseEvent.setPartitionId(DEFAULT_PARTITION);
-    baseEvent.setTopicName(DEFAULT_TOPIC);
     baseEvent.setVersion(123);
     baseEvent.setWorkflowInstanceKey(456L);
     baseEvent.setWorkflowKey(789L);

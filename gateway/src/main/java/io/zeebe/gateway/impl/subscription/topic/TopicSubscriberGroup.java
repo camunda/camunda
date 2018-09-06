@@ -31,15 +31,15 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 public class TopicSubscriberGroup extends SubscriberGroup<TopicSubscriber>
     implements TopicSubscription {
-  private AtomicBoolean processingFlag = new AtomicBoolean(false);
+  private final AtomicBoolean processingFlag = new AtomicBoolean(false);
   private final TopicSubscriptionSpec subscription;
 
   public TopicSubscriberGroup(
-      ActorControl actor,
-      ZeebeClientImpl client,
-      SubscriptionManager acquisition,
-      TopicSubscriptionSpec subscription) {
-    super(actor, client, acquisition, subscription.getTopic());
+      final ActorControl actor,
+      final ZeebeClientImpl client,
+      final SubscriptionManager acquisition,
+      final TopicSubscriptionSpec subscription) {
+    super(actor, client, acquisition);
     this.subscription = subscription;
   }
 
@@ -48,15 +48,14 @@ public class TopicSubscriberGroup extends SubscriberGroup<TopicSubscriber>
     return pollEvents(subscription.getHandler());
   }
 
-  public int poll(RecordHandler recordHandler) {
+  public int poll(final RecordHandler recordHandler) {
     return pollEvents((e) -> recordHandler.onRecord(e));
   }
 
   @Override
-  public int pollEvents(CheckedConsumer<UntypedRecordImpl> pollHandler) {
+  public int pollEvents(final CheckedConsumer<UntypedRecordImpl> pollHandler) {
 
-    // ensuring at most one thread polls at a time which is the guarantee we give for
-    // topic subscriptions
+    // ensuring at most one thread polls at a time which is the guarantee we give for subscriptions
     if (processingFlag.compareAndSet(false, true)) {
       try {
         return super.pollEvents(pollHandler);
@@ -70,9 +69,8 @@ public class TopicSubscriberGroup extends SubscriberGroup<TopicSubscriber>
 
   @Override
   protected ActorFuture<? extends EventSubscriptionCreationResult> requestNewSubscriber(
-      int partitionId) {
-    return new CreateTopicSubscriptionCommandImpl(
-            client.getCommandManager(), subscription.getTopic(), partitionId)
+      final int partitionId) {
+    return new CreateTopicSubscriptionCommandImpl(client.getCommandManager(), partitionId)
         .startPosition(subscription.getStartPosition(partitionId))
         .bufferSize(subscription.getBufferSize())
         .name(subscription.getName())
@@ -81,7 +79,7 @@ public class TopicSubscriberGroup extends SubscriberGroup<TopicSubscriber>
   }
 
   @Override
-  protected TopicSubscriber buildSubscriber(EventSubscriptionCreationResult result) {
+  protected TopicSubscriber buildSubscriber(final EventSubscriptionCreationResult result) {
     return new TopicSubscriber(
         client,
         subscription,
@@ -93,7 +91,7 @@ public class TopicSubscriberGroup extends SubscriberGroup<TopicSubscriber>
   }
 
   @Override
-  protected ActorFuture<Void> doCloseSubscriber(TopicSubscriber subscriber) {
+  protected ActorFuture<Void> doCloseSubscriber(final TopicSubscriber subscriber) {
     final ActorFuture<?> ackFuture = subscriber.acknowledgeLastProcessedEvent();
 
     final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();

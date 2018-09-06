@@ -16,45 +16,41 @@
 package io.zeebe.gateway.impl;
 
 import io.zeebe.gateway.ZeebeClient;
-import io.zeebe.gateway.api.commands.Partition;
-import io.zeebe.gateway.api.commands.Topic;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
 public class PartitionManager {
 
   // local state
-  private final Map<String, List<Integer>> topicsByName = new HashMap<>();
+  private final List<Integer> partitions = new ArrayList<>();
 
   private final ZeebeClient client;
 
-  public PartitionManager(ZeebeClient client) {
+  public PartitionManager(final ZeebeClient client) {
     this.client = client;
   }
 
   // currently, this is a blocking request!
   // - but it's ok because it will be removed when Zeebe is a static system with only one topic
-  public synchronized List<Integer> getPartitionIds(String topicName) {
-    final List<Integer> partitions = topicsByName.get(topicName);
-    if (partitions != null) {
+  public synchronized List<Integer> getPartitionIds() {
+    final List<Integer> partitions = this.partitions;
+    if (partitions != null && !partitions.isEmpty()) {
       return partitions;
     }
 
-    updateTopics();
+    updatePartitions();
 
-    return topicsByName.get(topicName);
+    return this.partitions;
   }
 
-  private void updateTopics() {
-    client.newTopicsRequest().send().join().getTopics().forEach(this::addTopic);
-  }
-
-  private void addTopic(Topic topic) {
-    final List<Integer> partitionIds =
-        topic.getPartitions().stream().map(Partition::getId).collect(Collectors.toList());
-
-    topicsByName.put(topic.getName(), partitionIds);
+  private void updatePartitions() {
+    client
+        .newPartitionsRequest()
+        .send()
+        .join()
+        .getPartitions()
+        .stream()
+        .map(p -> p.getId())
+        .forEach(partitions::add);
   }
 }

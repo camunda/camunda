@@ -67,25 +67,6 @@ public class RequestManager extends Actor {
     this.dispatchStrategy = new RoundRobinDispatchStrategy(topologyManager);
   }
 
-  private static boolean shouldRetryRequest(final DirectBuffer responseContent) {
-    final ErrorResponseHandler errorHandler = new ErrorResponseHandler();
-    final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-    headerDecoder.wrap(responseContent, 0);
-
-    if (errorHandler.handlesResponse(headerDecoder)) {
-      errorHandler.wrap(
-          responseContent,
-          headerDecoder.encodedLength(),
-          headerDecoder.blockLength(),
-          headerDecoder.version());
-
-      final ErrorCode errorCode = errorHandler.getErrorCode();
-      return errorCode == ErrorCode.PARTITION_NOT_FOUND || errorCode == ErrorCode.REQUEST_TIMEOUT;
-    } else {
-      return false;
-    }
-  }
-
   public ActorFuture<Void> close() {
     return actor.close();
   }
@@ -141,24 +122,43 @@ public class RequestManager extends Actor {
     return new ResponseFuture<>(deferredFuture, requestHandler, requestTimeout);
   }
 
-  private ActorFuture<Integer> updateTopologyAndDeterminePartition(final String topic) {
+  private static boolean shouldRetryRequest(final DirectBuffer responseContent) {
+    final ErrorResponseHandler errorHandler = new ErrorResponseHandler();
+    final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
+    headerDecoder.wrap(responseContent, 0);
+
+    if (errorHandler.handlesResponse(headerDecoder)) {
+      errorHandler.wrap(
+          responseContent,
+          headerDecoder.encodedLength(),
+          headerDecoder.blockLength(),
+          headerDecoder.version());
+
+      final ErrorCode errorCode = errorHandler.getErrorCode();
+      return errorCode == ErrorCode.PARTITION_NOT_FOUND || errorCode == ErrorCode.REQUEST_TIMEOUT;
+    } else {
+      return false;
+    }
+  }
+
+  private ActorFuture<Integer> updateTopologyAndDeterminePartition() {
     final CompletableActorFuture<Integer> future = new CompletableActorFuture<>();
 
     actor.call(
         () -> {
           final long timeout = ActorClock.currentTimeMillis() + requestTimeout.toMillis();
-          updateTopologyAndDeterminePartition(topic, future, timeout);
+          updateTopologyAndDeterminePartition(future, timeout);
         });
     return future;
   }
 
   private void updateTopologyAndDeterminePartition(
-      final String topic, final CompletableActorFuture<Integer> future, final long timeout) {
+      final CompletableActorFuture<Integer> future, final long timeout) {
     final ActorFuture<ClusterState> topologyFuture = topologyManager.requestTopology();
     actor.runOnCompletion(
         topologyFuture,
         (topology, throwable) -> {
-          final int partition = dispatchStrategy.determinePartition(topic);
+          final int partition = dispatchStrategy.determinePartition();
           if (partition >= 0) {
             future.complete(partition);
           } else if (ActorClock.currentTimeMillis() > timeout) {
@@ -166,7 +166,7 @@ public class RequestManager extends Actor {
                 new ClientException(
                     "Could not determine target partition in time " + requestTimeout));
           } else {
-            updateTopologyAndDeterminePartition(topic, future, timeout);
+            updateTopologyAndDeterminePartition(future, timeout);
           }
         });
   }
@@ -177,19 +177,16 @@ public class RequestManager extends Actor {
     if (requestHandler.addressesSpecificPartition()) {
       // partition already known
       supplierFuture.complete(providerForPartition(requestHandler.getTargetPartition()));
-    } else if (requestHandler.addressesSpecificTopic()) {
-      // topic known but have to select partition
-      final int targetPartition =
-          dispatchStrategy.determinePartition(requestHandler.getTargetTopic());
+    } else {
+      // have to select partition
+      final int targetPartition = dispatchStrategy.determinePartition();
       if (targetPartition >= 0) {
-        // topic and partition known
+        // partition known
         requestHandler.onSelectedPartition(targetPartition);
         supplierFuture.complete(providerForPartition(targetPartition));
       } else {
-        // topic not known -> refresh topology and try again
-        final ActorFuture<Integer> partitionFuture =
-            updateTopologyAndDeterminePartition(requestHandler.getTargetTopic());
-
+        // not known -> refresh topology and try again
+        final ActorFuture<Integer> partitionFuture = updateTopologyAndDeterminePartition();
         actor.call(
             () ->
                 actor.runOnCompletion(
@@ -203,16 +200,12 @@ public class RequestManager extends Actor {
                       } else {
                         supplierFuture.completeExceptionally(
                             new ClientException(
-                                "Cannot determine target partition for request. Request was: "
+                                "Cannot determine target partition for request. Request was:"
                                     + requestHandler.describeRequest()));
                       }
                     }));
       }
-    } else {
-      // no specific topic or partition required -> random broker
-      supplierFuture.complete(providerForRandomBroker());
     }
-
     return supplierFuture;
   }
 

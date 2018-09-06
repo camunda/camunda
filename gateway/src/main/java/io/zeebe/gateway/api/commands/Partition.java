@@ -18,7 +18,4 @@ package io.zeebe.gateway.api.commands;
 public interface Partition {
   /** @return the (unique) id of the partition */
   int getId();
-
-  /** @return the name of the topic this partition belongs to */
-  String getTopicName();
 }

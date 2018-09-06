@@ -53,7 +53,4 @@ public interface ZeebeClientConfiguration {
 
   /** @see ZeebeClientBuilder#defaultMessageTimeToLive(Duration) */
   Duration getDefaultMessageTimeToLive();
-
-  /** @see ZeebeClientBuilder#defaultTopic(String) */
-  String getDefaultTopic();
 }

@@ -113,7 +113,7 @@ public class TopicSubscriptionTest {
 
     // when
     clientRule
-        .topicClient()
+        .getClient()
         .newSubscription()
         .name(SUBSCRIPTION_NAME)
         .recordHandler(DO_NOTHING)
@@ -143,13 +143,7 @@ public class TopicSubscriptionTest {
     broker.stubTopicSubscriptionApi(123L);
 
     // when
-    clientRule
-        .topicClient()
-        .newSubscription()
-        .name(SUBSCRIPTION_NAME)
-        .recordHandler(DO_NOTHING)
-        .forcedStart()
-        .open();
+    client.newSubscription().name(SUBSCRIPTION_NAME).recordHandler(DO_NOTHING).forcedStart().open();
 
     // then
     final ExecuteCommandRequest subscribeRequest =
@@ -164,18 +158,12 @@ public class TopicSubscriptionTest {
   }
 
   @Test
-  public void shouldOpenSubscriptionAtHeadOfTopic() {
+  public void shouldOpenSubscriptionAtHead() {
     // given
     broker.stubTopicSubscriptionApi(123L);
 
     // when
-    clientRule
-        .topicClient()
-        .newSubscription()
-        .name(SUBSCRIPTION_NAME)
-        .recordHandler(DO_NOTHING)
-        .startAtHeadOfTopic()
-        .open();
+    client.newSubscription().name(SUBSCRIPTION_NAME).recordHandler(DO_NOTHING).startAtHead().open();
 
     // then
     final ExecuteCommandRequest subscribeRequest =
@@ -191,18 +179,12 @@ public class TopicSubscriptionTest {
   }
 
   @Test
-  public void shouldOpenSubscriptionAtTailOfTopic() {
+  public void shouldOpenSubscriptionAtTail() {
     // given
     broker.stubTopicSubscriptionApi(123L);
 
     // when
-    clientRule
-        .topicClient()
-        .newSubscription()
-        .name(SUBSCRIPTION_NAME)
-        .recordHandler(DO_NOTHING)
-        .startAtTailOfTopic()
-        .open();
+    client.newSubscription().name(SUBSCRIPTION_NAME).recordHandler(DO_NOTHING).startAtTail().open();
 
     // then
     final ExecuteCommandRequest subscribeRequest =
@@ -228,8 +210,7 @@ public class TopicSubscriptionTest {
     broker.stubTopicSubscriptionApi(123L);
 
     // when
-    clientRule
-        .topicClient()
+    client
         .newSubscription()
         .name(SUBSCRIPTION_NAME)
         .recordHandler(DO_NOTHING)
@@ -261,7 +242,7 @@ public class TopicSubscriptionTest {
     exception.expectMessage("recordHandler must not be null");
 
     // when
-    clientRule.topicClient().newSubscription().name(SUBSCRIPTION_NAME).recordHandler(null).open();
+    client.newSubscription().name(SUBSCRIPTION_NAME).recordHandler(null).open();
   }
 
   @Test
@@ -271,7 +252,7 @@ public class TopicSubscriptionTest {
     exception.expectMessage("name must not be null");
 
     // when
-    clientRule.topicClient().newSubscription().name(null).recordHandler(DO_NOTHING).open();
+    client.newSubscription().name(null).recordHandler(DO_NOTHING).open();
   }
 
   @Test
@@ -281,13 +262,7 @@ public class TopicSubscriptionTest {
     exception.expectMessage("bufferSize must be greater than 0");
 
     // when
-    clientRule
-        .topicClient()
-        .newSubscription()
-        .name("foo")
-        .recordHandler(DO_NOTHING)
-        .bufferSize(-1)
-        .open();
+    client.newSubscription().name("foo").recordHandler(DO_NOTHING).bufferSize(-1).open();
   }
 
   @Test
@@ -297,12 +272,11 @@ public class TopicSubscriptionTest {
 
     final FailingHandler handler = new FailingHandler();
     final TopicSubscription subscription =
-        clientRule
-            .topicClient()
+        client
             .newSubscription()
             .name(SUBSCRIPTION_NAME)
             .recordHandler(handler)
-            .startAtHeadOfTopic()
+            .startAtHead()
             .open();
 
     final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
@@ -335,12 +309,11 @@ public class TopicSubscriptionTest {
 
     final FailingHandler handler = new FailingHandler(e -> e.getMetadata().getPosition() == 2L);
     final TopicSubscription subscription =
-        clientRule
-            .topicClient()
+        client
             .newSubscription()
             .name(SUBSCRIPTION_NAME)
             .recordHandler(handler)
-            .startAtHeadOfTopic()
+            .startAtHead()
             .open();
 
     final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
@@ -390,13 +363,7 @@ public class TopicSubscriptionTest {
         new FailingHandler(
             e -> e.getMetadata().getPosition() == 1L && counter.decrementAndGet() > 0);
 
-    clientRule
-        .topicClient()
-        .newSubscription()
-        .name(SUBSCRIPTION_NAME)
-        .recordHandler(handler)
-        .startAtHeadOfTopic()
-        .open();
+    client.newSubscription().name(SUBSCRIPTION_NAME).recordHandler(handler).startAtHead().open();
 
     final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
     broker.pushRaftEvent(clientAddress, 123L, 1L, 1L);
@@ -436,11 +403,10 @@ public class TopicSubscriptionTest {
     closeables.manage(configuredClient);
 
     configuredClient
-        .topicClient()
         .newSubscription()
         .name(SUBSCRIPTION_NAME)
         .recordHandler(DO_NOTHING)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     // then
@@ -465,12 +431,11 @@ public class TopicSubscriptionTest {
 
     broker.stubTopicSubscriptionApi(123L);
 
-    clientRule
-        .topicClient()
+    client
         .newSubscription()
         .name(SUBSCRIPTION_NAME)
         .recordHandler(DO_NOTHING)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .bufferSize(bufferSize)
         .open();
 
@@ -498,12 +463,11 @@ public class TopicSubscriptionTest {
 
     final TopicSubscriberGroup subscription =
         (TopicSubscriberGroup)
-            clientRule
-                .topicClient()
+            client
                 .newSubscription()
                 .name(SUBSCRIPTION_NAME)
                 .recordHandler(handler)
-                .startAtHeadOfTopic()
+                .startAtHead()
                 .open();
 
     final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
@@ -548,12 +512,11 @@ public class TopicSubscriptionTest {
     broker.stubTopicSubscriptionApi(123L);
 
     final TopicSubscription subscription =
-        clientRule
-            .topicClient()
+        client
             .newSubscription()
             .name(SUBSCRIPTION_NAME)
             .recordHandler(DO_NOTHING)
-            .startAtHeadOfTopic()
+            .startAtHead()
             .open();
 
     // when
@@ -572,12 +535,11 @@ public class TopicSubscriptionTest {
     broker.stubTopicSubscriptionApi(123L);
 
     final TopicSubscription subscription =
-        clientRule
-            .topicClient()
+        client
             .newSubscription()
             .name(SUBSCRIPTION_NAME)
             .recordHandler(DO_NOTHING)
-            .startAtHeadOfTopic()
+            .startAtHead()
             .open();
 
     // when
@@ -593,12 +555,11 @@ public class TopicSubscriptionTest {
     broker.stubTopicSubscriptionApi(123L);
 
     final TopicSubscription firstSubscription =
-        clientRule
-            .topicClient()
+        client
             .newSubscription()
             .name(SUBSCRIPTION_NAME)
             .recordHandler(DO_NOTHING)
-            .startAtHeadOfTopic()
+            .startAtHead()
             .open();
 
     firstSubscription.close();
@@ -609,12 +570,11 @@ public class TopicSubscriptionTest {
 
     // when
     final TopicSubscription secondSubscription =
-        clientRule
-            .topicClient()
+        client
             .newSubscription()
             .name(SUBSCRIPTION_NAME)
             .recordHandler(DO_NOTHING)
-            .startAtHeadOfTopic()
+            .startAtHead()
             .open();
 
     // then
@@ -628,12 +588,11 @@ public class TopicSubscriptionTest {
 
     final RecordingTopicEventHandler eventHandler = new RecordingTopicEventHandler();
 
-    clientRule
-        .topicClient()
+    client
         .newSubscription()
         .name(SUBSCRIPTION_NAME)
         .recordHandler(eventHandler)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
@@ -1104,8 +1063,7 @@ public class TopicSubscriptionTest {
 
     final RecordingTopicEventHandler eventHandler = new RecordingTopicEventHandler();
 
-    clientRule
-        .topicClient()
+    client
         .newSubscription()
         .name(SUBSCRIPTION_NAME)
         .recordHandler(eventHandler)
@@ -1116,7 +1074,7 @@ public class TopicSubscriptionTest {
         .incidentEventHandler(eventHandler)
         .incidentCommandHandler(eventHandler)
         .raftEventHandler(eventHandler)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     return eventHandler;
@@ -1129,12 +1087,11 @@ public class TopicSubscriptionTest {
 
     final RecordingTopicEventHandler defaultEventHandler = new RecordingTopicEventHandler();
 
-    clientRule
-        .topicClient()
+    client
         .newSubscription()
         .name(SUBSCRIPTION_NAME)
         .recordHandler(defaultEventHandler)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
@@ -1167,12 +1124,11 @@ public class TopicSubscriptionTest {
     final RecordingTopicEventHandler defaultEventHandler = new RecordingTopicEventHandler();
 
     final TopicSubscription subscription =
-        clientRule
-            .topicClient()
+        client
             .newSubscription()
             .name(SUBSCRIPTION_NAME)
             .jobEventHandler(defaultEventHandler)
-            .startAtHeadOfTopic()
+            .startAtHead()
             .open();
 
     final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
@@ -1199,13 +1155,7 @@ public class TopicSubscriptionTest {
     // given
     broker.stubTopicSubscriptionApi(123L);
 
-    clientRule
-        .topicClient()
-        .newSubscription()
-        .name(SUBSCRIPTION_NAME)
-        .recordHandler(DO_NOTHING)
-        .startAtHeadOfTopic()
-        .open();
+    client.newSubscription().name(SUBSCRIPTION_NAME).recordHandler(DO_NOTHING).startAtHead().open();
 
     // when
     broker.interruptAllServerChannels();
@@ -1231,12 +1181,11 @@ public class TopicSubscriptionTest {
     broker.stubTopicSubscriptionApi(123L);
     final RecordingHandler recordingHandler = new RecordingHandler();
 
-    clientRule
-        .topicClient()
+    client
         .newSubscription()
         .name(SUBSCRIPTION_NAME)
         .recordHandler(recordingHandler)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     broker.interruptAllServerChannels();
@@ -1260,13 +1209,7 @@ public class TopicSubscriptionTest {
     broker.stubTopicSubscriptionApi(123L);
     final ControllableHandler handler = new ControllableHandler();
 
-    clientRule
-        .topicClient()
-        .newSubscription()
-        .name(SUBSCRIPTION_NAME)
-        .recordHandler(handler)
-        .startAtHeadOfTopic()
-        .open();
+    client.newSubscription().name(SUBSCRIPTION_NAME).recordHandler(handler).startAtHead().open();
 
     final RemoteAddress clientAddress = receivedSubscribeCommands().findFirst().get().getSource();
 
@@ -1310,7 +1253,7 @@ public class TopicSubscriptionTest {
 
     final TopicSubscriptionBuilderImpl builder =
         (TopicSubscriptionBuilderImpl)
-            clientRule.topicClient().newSubscription().name("foo").recordHandler(DO_NOTHING);
+            client.newSubscription().name("foo").recordHandler(DO_NOTHING);
 
     final Future<TopicSubscriberGroup> future = builder.buildSubscriberGroup();
 
@@ -1368,12 +1311,7 @@ public class TopicSubscriptionTest {
             .registerControlled();
 
     final TopicSubscription foo =
-        clientRule
-            .topicClient()
-            .newSubscription()
-            .name(SUBSCRIPTION_NAME)
-            .recordHandler(DO_NOTHING)
-            .open();
+        client.newSubscription().name(SUBSCRIPTION_NAME).recordHandler(DO_NOTHING).open();
 
     final ActorFuture<Void> future = ((TopicSubscriberGroup) foo).closeAsync();
 
@@ -1413,12 +1351,11 @@ public class TopicSubscriptionTest {
         .register();
 
     final TopicSubscription subscription =
-        clientRule
-            .topicClient()
+        client
             .newSubscription()
             .name(SUBSCRIPTION_NAME)
             .recordHandler(DO_NOTHING)
-            .startAtHeadOfTopic()
+            .startAtHead()
             .bufferSize(bufferSize)
             .open();
 
@@ -1449,12 +1386,11 @@ public class TopicSubscriptionTest {
         .register();
 
     final TopicSubscription subscription =
-        clientRule
-            .topicClient()
+        client
             .newSubscription()
             .name(SUBSCRIPTION_NAME)
             .recordHandler(DO_NOTHING)
-            .startAtHeadOfTopic()
+            .startAtHead()
             .open();
 
     // when
@@ -1481,12 +1417,11 @@ public class TopicSubscriptionTest {
 
     final RecordingTopicEventHandler eventHandler = new RecordingTopicEventHandler();
 
-    clientRule
-        .topicClient()
+    client
         .newSubscription()
         .name(SUBSCRIPTION_NAME)
         .jobCommandHandler(eventHandler)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
@@ -1521,13 +1456,13 @@ public class TopicSubscriptionTest {
   }
 
   protected void assertMetadata(
-      Record actualRecord,
-      long expectedKey,
-      long expectedPosition,
-      Instant expectedTimestamp,
-      RecordType expectedRecordType,
-      ValueType expectedValueType,
-      String expectedIntent) {
+      final Record actualRecord,
+      final long expectedKey,
+      final long expectedPosition,
+      final Instant expectedTimestamp,
+      final RecordType expectedRecordType,
+      final ValueType expectedValueType,
+      final String expectedIntent) {
 
     final io.zeebe.gateway.api.record.RecordType clientRecordType =
         io.zeebe.gateway.api.record.RecordType.valueOf(expectedRecordType.name());
@@ -1540,7 +1475,6 @@ public class TopicSubscriptionTest {
     assertThat(metadata.getPosition()).isEqualTo(expectedPosition);
     assertThat(metadata.getTimestamp()).isEqualTo(expectedTimestamp);
     assertThat(metadata.getValueType()).isEqualTo(clientValueType);
-    assertThat(metadata.getTopicName()).isEqualTo(clientRule.getDefaultTopicName());
     assertThat(metadata.getPartitionId()).isEqualTo(clientRule.getDefaultPartitionId());
     assertThat(metadata.getRecordType()).isEqualTo(clientRecordType);
     assertThat(metadata.getIntent()).isEqualTo(expectedIntent);
@@ -1577,47 +1511,47 @@ public class TopicSubscriptionTest {
     protected List<RaftEvent> raftEvents = new CopyOnWriteArrayList<>();
 
     @Override
-    public void onRecord(Record event) throws Exception {
+    public void onRecord(final Record event) throws Exception {
       topicEvents.add(event);
     }
 
     @Override
-    public void onJobEvent(JobEvent jobEvent) {
+    public void onJobEvent(final JobEvent jobEvent) {
       jobEvents.add(jobEvent);
     }
 
     @Override
-    public void onJobCommand(JobCommand jobCommand) {
+    public void onJobCommand(final JobCommand jobCommand) {
       jobCommands.add(jobCommand);
     }
 
     @Override
-    public void onJobCommandRejection(JobCommand jobCommand) throws Exception {
+    public void onJobCommandRejection(final JobCommand jobCommand) throws Exception {
       this.jobCommandRejections.add(jobCommand);
     }
 
     @Override
-    public void onWorkflowInstanceEvent(WorkflowInstanceEvent workflowInstanceEvent) {
+    public void onWorkflowInstanceEvent(final WorkflowInstanceEvent workflowInstanceEvent) {
       workflowInstanceEvents.add(workflowInstanceEvent);
     }
 
     @Override
-    public void onWorkflowInstanceCommand(WorkflowInstanceCommand workflowInstanceCommand) {
+    public void onWorkflowInstanceCommand(final WorkflowInstanceCommand workflowInstanceCommand) {
       workflowInstanceCommands.add(workflowInstanceCommand);
     }
 
     @Override
-    public void onIncidentEvent(IncidentEvent incidentEvent) {
+    public void onIncidentEvent(final IncidentEvent incidentEvent) {
       incidentEvents.add(incidentEvent);
     }
 
     @Override
-    public void onIncidentCommand(IncidentCommand incidentCommand) {
+    public void onIncidentCommand(final IncidentCommand incidentCommand) {
       incidentCommands.add(incidentCommand);
     }
 
     @Override
-    public void onRaftEvent(RaftEvent raftEvent) {
+    public void onRaftEvent(final RaftEvent raftEvent) {
       raftEvents.add(raftEvent);
     }
 

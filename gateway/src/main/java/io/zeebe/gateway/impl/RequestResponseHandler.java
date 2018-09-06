@@ -25,15 +25,8 @@ public interface RequestResponseHandler extends BufferWriter {
 
   Object getResult(DirectBuffer buffer, int offset, int blockLength, int version);
 
-  /** @return null for unspecified topic */
-  String getTargetTopic();
-
   /** @return < 0 for unspecified partition */
   int getTargetPartition();
-
-  default boolean addressesSpecificTopic() {
-    return getTargetTopic() != null;
-  }
 
   default boolean addressesSpecificPartition() {
     return getTargetPartition() >= 0;

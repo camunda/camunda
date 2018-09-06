@@ -15,7 +15,6 @@
  */
 package io.zeebe.gateway.impl.record;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.zeebe.gateway.api.commands.DeploymentResource;
 import io.zeebe.gateway.api.record.DeploymentRecord;
@@ -27,12 +26,10 @@ import io.zeebe.protocol.clientapi.ValueType;
 import java.util.List;
 
 public abstract class DeploymentRecordImpl extends RecordImpl implements DeploymentRecord {
-  @JsonProperty("topicName")
-  private String deploymentTopic;
-
   private List<DeploymentResource> resources;
 
-  public DeploymentRecordImpl(ZeebeObjectMapperImpl objectMapper, RecordType recordType) {
+  public DeploymentRecordImpl(
+      final ZeebeObjectMapperImpl objectMapper, final RecordType recordType) {
     super(objectMapper, recordType, ValueType.DEPLOYMENT);
   }
 
@@ -42,17 +39,8 @@ public abstract class DeploymentRecordImpl extends RecordImpl implements Deploym
   }
 
   @JsonDeserialize(contentAs = DeploymentResourceImpl.class)
-  public void setResources(List<DeploymentResource> resources) {
+  public void setResources(final List<DeploymentResource> resources) {
     this.resources = resources;
-  }
-
-  @Override
-  public String getDeploymentTopic() {
-    return deploymentTopic;
-  }
-
-  public void setDeploymentTopic(String deploymentTopic) {
-    this.deploymentTopic = deploymentTopic;
   }
 
   @Override

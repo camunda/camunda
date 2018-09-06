@@ -27,29 +27,28 @@ public class CreateTopicSubscriptionCommandImpl extends CommandImpl<TopicSubscri
       new TopicSubscriberCommandImpl(SubscriberIntent.SUBSCRIBE);
 
   public CreateTopicSubscriptionCommandImpl(
-      final RequestManager commandManager, final String topicName, final int partitionId) {
+      final RequestManager commandManager, final int partitionId) {
     super(commandManager);
 
-    this.command.setTopicName(topicName);
     this.command.setPartitionId(partitionId);
   }
 
-  public CreateTopicSubscriptionCommandImpl startPosition(long startPosition) {
+  public CreateTopicSubscriptionCommandImpl startPosition(final long startPosition) {
     this.command.setStartPosition(startPosition);
     return this;
   }
 
-  public CreateTopicSubscriptionCommandImpl name(String name) {
+  public CreateTopicSubscriptionCommandImpl name(final String name) {
     this.command.setName(name);
     return this;
   }
 
-  public CreateTopicSubscriptionCommandImpl bufferSize(int bufferSize) {
+  public CreateTopicSubscriptionCommandImpl bufferSize(final int bufferSize) {
     this.command.setBufferSize(bufferSize);
     return this;
   }
 
-  public CreateTopicSubscriptionCommandImpl forceStart(boolean forceStart) {
+  public CreateTopicSubscriptionCommandImpl forceStart(final boolean forceStart) {
     this.command.setForceStart(forceStart);
     return this;
   }

@@ -62,10 +62,10 @@ public class ClientTopologyManager extends Actor {
   protected long lastRefreshTime = -1;
 
   public ClientTopologyManager(
-      ClientTransport transport,
-      ClientTransport internalTransport,
-      ZeebeObjectMapperImpl objectMapper,
-      SocketAddress initialContact) {
+      final ClientTransport transport,
+      final ClientTransport internalTransport,
+      final ZeebeObjectMapperImpl objectMapper,
+      final SocketAddress initialContact) {
     this.transport = transport;
     this.internalTransport = internalTransport;
     this.output = transport.getOutput();
@@ -118,7 +118,7 @@ public class ClientTopologyManager extends Actor {
     }
   }
 
-  public void provideTopology(Topology response) {
+  public void provideTopology(final Topology response) {
     actor.call(
         () -> {
           // TODO: not sure we should complete the refresh futures in this case,
@@ -150,7 +150,7 @@ public class ClientTopologyManager extends Actor {
     };
   }
 
-  private void handleResponse(ClientResponse response, Throwable t) {
+  private void handleResponse(final ClientResponse response, final Throwable t) {
     if (t == null) {
       final TopologyImpl topologyResponse = decodeTopology(response.getResponseBuffer());
       onNewTopology(topologyResponse);
@@ -159,7 +159,7 @@ public class ClientTopologyManager extends Actor {
     }
   }
 
-  private void onNewTopology(Topology response) {
+  private void onNewTopology(final Topology response) {
     final ClusterStateImpl newClusterState = new ClusterStateImpl(response, this::registerEndpoint);
     this.topology.set(newClusterState);
     completeRefreshFutures(newClusterState);
@@ -178,17 +178,17 @@ public class ClientTopologyManager extends Actor {
     }
   }
 
-  private void completeRefreshFutures(ClusterStateImpl newClusterState) {
+  private void completeRefreshFutures(final ClusterStateImpl newClusterState) {
     nextTopologyFutures.forEach(f -> f.complete(newClusterState));
     nextTopologyFutures.clear();
   }
 
-  private void failRefreshFutures(Throwable t) {
+  private void failRefreshFutures(final Throwable t) {
     nextTopologyFutures.forEach(f -> f.completeExceptionally("Could not refresh topology", t));
     nextTopologyFutures.clear();
   }
 
-  private TopologyImpl decodeTopology(DirectBuffer encodedTopology) {
+  private TopologyImpl decodeTopology(final DirectBuffer encodedTopology) {
     messageHeaderDecoder.wrap(encodedTopology, 0);
 
     final int blockLength = messageHeaderDecoder.blockLength();
@@ -201,7 +201,7 @@ public class ClientTopologyManager extends Actor {
         return (TopologyImpl)
             requestWriter.getResult(encodedTopology, responseMessageOffset, blockLength, version);
       } catch (final Exception e) {
-        throw new RuntimeException("Unable to parse topic list from broker response", e);
+        throw new RuntimeException("Unable to parse broker response", e);
       }
     } else if (messageHeaderDecoder.schemaId() == ErrorResponseDecoder.SCHEMA_ID
         && messageHeaderDecoder.templateId() == ErrorResponseDecoder.TEMPLATE_ID) {

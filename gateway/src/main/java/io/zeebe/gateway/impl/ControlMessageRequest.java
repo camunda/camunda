@@ -22,45 +22,26 @@ import io.zeebe.protocol.clientapi.ControlMessageType;
 public abstract class ControlMessageRequest<R> {
 
   protected final ControlMessageType type;
-  protected final String targetTopic;
   protected int targetPartition;
   protected final Class<? extends R> responseClass;
 
   protected final RequestManager client;
 
-  /** Constructor for requests addressing a specific partition */
-  public ControlMessageRequest(
-      RequestManager client,
-      ControlMessageType type,
-      int targetPartition,
-      Class<? extends R> responseClass) {
-    this(client, type, null, targetPartition, responseClass);
-  }
-
-  /** Constructor for requests addressing a specific topic, but unspecified partition */
-  public ControlMessageRequest(
-      RequestManager client,
-      ControlMessageType type,
-      String targetTopic,
-      Class<? extends R> responseClass) {
-    this(client, type, targetTopic, -1, responseClass);
-  }
-
   /** Constructor for requests addressing any broker */
   public ControlMessageRequest(
-      RequestManager client, ControlMessageType type, Class<? extends R> responseClass) {
-    this(client, type, null, -1, responseClass);
+      final RequestManager client,
+      final ControlMessageType type,
+      final Class<? extends R> responseClass) {
+    this(client, type, -1, responseClass);
   }
 
-  private ControlMessageRequest(
-      RequestManager client,
-      ControlMessageType type,
-      String targetTopic,
-      int targetPartition,
-      Class<? extends R> responseClass) {
+  public ControlMessageRequest(
+      final RequestManager client,
+      final ControlMessageType type,
+      final int targetPartition,
+      final Class<? extends R> responseClass) {
     this.client = client;
     this.type = type;
-    this.targetTopic = targetTopic;
     this.targetPartition = targetPartition;
     this.responseClass = responseClass;
   }
@@ -71,16 +52,11 @@ public abstract class ControlMessageRequest<R> {
   }
 
   @JsonIgnore
-  public String getTargetTopic() {
-    return targetTopic;
-  }
-
-  @JsonIgnore
   public int getTargetPartition() {
     return targetPartition;
   }
 
-  public void setTargetPartition(int targetPartition) {
+  public void setTargetPartition(final int targetPartition) {
     this.targetPartition = targetPartition;
   }
 
@@ -89,7 +65,7 @@ public abstract class ControlMessageRequest<R> {
     return responseClass;
   }
 
-  public void onResponse(R response) {}
+  public void onResponse(final R response) {}
 
   public abstract Object getRequest();
 

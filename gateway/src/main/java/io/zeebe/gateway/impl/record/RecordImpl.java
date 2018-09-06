@@ -29,13 +29,15 @@ public abstract class RecordImpl implements Record {
   protected final ZeebeObjectMapperImpl objectMapper;
 
   public RecordImpl(
-      ZeebeObjectMapperImpl objectMapper, RecordType recordType, ValueType valueType) {
+      final ZeebeObjectMapperImpl objectMapper,
+      final RecordType recordType,
+      final ValueType valueType) {
     this.metadata.setRecordType(recordType);
     this.metadata.setValueType(valueType);
     this.objectMapper = objectMapper;
   }
 
-  public RecordImpl(RecordImpl baseEvent, Intent intent) {
+  public RecordImpl(final RecordImpl baseEvent, final Intent intent) {
     updateMetadata(baseEvent.metadata);
     setIntent(intent);
 
@@ -47,11 +49,7 @@ public abstract class RecordImpl implements Record {
     return metadata;
   }
 
-  public void setTopicName(String name) {
-    this.metadata.setTopicName(name);
-  }
-
-  public void setPartitionId(int id) {
+  public void setPartitionId(final int id) {
     this.metadata.setPartitionId(id);
   }
 
@@ -61,15 +59,15 @@ public abstract class RecordImpl implements Record {
     return metadata.getKey();
   }
 
-  public void setKey(long key) {
+  public void setKey(final long key) {
     this.metadata.setKey(key);
   }
 
-  public void setPosition(long position) {
+  public void setPosition(final long position) {
     this.metadata.setPosition(position);
   }
 
-  public void setSourceRecordPosition(long sourceRecordPosition) {
+  public void setSourceRecordPosition(final long sourceRecordPosition) {
     this.metadata.setSourceRecordPosition(sourceRecordPosition);
   }
 
@@ -77,26 +75,25 @@ public abstract class RecordImpl implements Record {
     return this.metadata.hasPartitionId();
   }
 
-  public void setTimestamp(Instant timestamp) {
+  public void setTimestamp(final Instant timestamp) {
     this.metadata.setTimestamp(timestamp);
   }
 
-  public void setTimestamp(long timestamp) {
+  public void setTimestamp(final long timestamp) {
     setTimestamp(Instant.ofEpochMilli(timestamp));
   }
 
-  public void setRejectioReason(String reason) {
+  public void setRejectioReason(final String reason) {
     this.metadata.setRejectionReason(reason);
   }
 
-  public void setRejectionType(RejectionType rejectionType) {
+  public void setRejectionType(final RejectionType rejectionType) {
     this.metadata.setRejectionType(rejectionType);
   }
 
-  public void updateMetadata(RecordMetadataImpl other) {
+  public void updateMetadata(final RecordMetadataImpl other) {
     this.metadata.setKey(other.getKey());
     this.metadata.setPosition(other.getPosition());
-    this.metadata.setTopicName(other.getTopicName());
     this.metadata.setPartitionId(other.getPartitionId());
     this.metadata.setRecordType(other.getProtocolRecordType());
     this.metadata.setValueType(other.getProtocolValueType());
@@ -112,7 +109,7 @@ public abstract class RecordImpl implements Record {
     return objectMapper.toJson(this);
   }
 
-  public void setIntent(Intent intent) {
+  public void setIntent(final Intent intent) {
     this.metadata.setIntent(intent);
   }
 

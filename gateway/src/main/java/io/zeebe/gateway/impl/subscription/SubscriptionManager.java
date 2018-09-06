@@ -59,7 +59,7 @@ public class SubscriptionManager extends Actor
   private boolean isClosing = false;
   private ClientInputMessageSubscription incomingEventSubscription;
 
-  public SubscriptionManager(ZeebeClientImpl client) {
+  public SubscriptionManager(final ZeebeClientImpl client) {
     this.client = client;
   }
 
@@ -85,7 +85,7 @@ public class SubscriptionManager extends Actor
     startSubscriptionExecution(client.getConfiguration().getNumSubscriptionExecutionThreads());
   }
 
-  private void startSubscriptionExecution(int numThreads) {
+  private void startSubscriptionExecution(final int numThreads) {
     for (int i = 0; i < numThreads; i++) {
       final SubscriptionExecutor executor =
           new SubscriptionExecutor(topicSubscribers, taskSubscribers);
@@ -97,12 +97,12 @@ public class SubscriptionManager extends Actor
   }
 
   private void stopSubscriptionExecution() {
-    for (AgentRunner runner : agentRunners) {
+    for (final AgentRunner runner : agentRunners) {
       runner.close();
     }
   }
 
-  private AgentRunner initAgentRunner(Agent agent) {
+  private AgentRunner initAgentRunner(final Agent agent) {
     return new AgentRunner(idleStrategy, errorHandler, null, agent);
   }
 
@@ -123,7 +123,7 @@ public class SubscriptionManager extends Actor
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})
-  public ActorFuture<TopicSubscriberGroup> openTopicSubscription(TopicSubscriptionSpec spec) {
+  public ActorFuture<TopicSubscriberGroup> openTopicSubscription(final TopicSubscriptionSpec spec) {
     final CompletableActorFuture<TopicSubscriberGroup> future = new CompletableActorFuture<>();
     actor.call(
         () -> {
@@ -136,7 +136,7 @@ public class SubscriptionManager extends Actor
   }
 
   @SuppressWarnings({"rawtypes", "unchecked"})
-  public ActorFuture<JobSubscriberGroup> openJobSubscription(JobSubscriptionSpec spec) {
+  public ActorFuture<JobSubscriberGroup> openJobSubscription(final JobSubscriptionSpec spec) {
     final CompletableActorFuture<JobSubscriberGroup> future = new CompletableActorFuture<>();
     actor.call(
         () -> {
@@ -148,7 +148,7 @@ public class SubscriptionManager extends Actor
     return future;
   }
 
-  public void addSubscriber(Subscriber subscriber) {
+  public void addSubscriber(final Subscriber subscriber) {
     if (subscriber instanceof TopicSubscriber) {
       topicSubscribers.add(subscriber);
     } else {
@@ -156,7 +156,7 @@ public class SubscriptionManager extends Actor
     }
   }
 
-  public void removeSubscriber(Subscriber subscriber) {
+  public void removeSubscriber(final Subscriber subscriber) {
     if (subscriber instanceof TopicSubscriber) {
       topicSubscribers.remove(subscriber);
     } else {
@@ -164,12 +164,12 @@ public class SubscriptionManager extends Actor
     }
   }
 
-  public void closeAllSubscribers(String reason) {
+  public void closeAllSubscribers(final String reason) {
     topicSubscribers.closeAllGroups(reason);
     taskSubscribers.closeAllGroups(reason);
   }
 
-  public ActorFuture<Void> reopenSubscriptionsForRemoteAsync(RemoteAddress remoteAddress) {
+  public ActorFuture<Void> reopenSubscriptionsForRemoteAsync(final RemoteAddress remoteAddress) {
     return actor.call(
         () -> {
           topicSubscribers.reopenSubscribersForRemote(remoteAddress);
@@ -177,7 +177,7 @@ public class SubscriptionManager extends Actor
         });
   }
 
-  public ActorFuture<Void> closeGroup(SubscriberGroup<?> group, String reason) {
+  public ActorFuture<Void> closeGroup(final SubscriberGroup<?> group, final String reason) {
     final CompletableActorFuture<Void> closeFuture = new CompletableActorFuture<>();
     actor.call(
         () -> {
@@ -188,7 +188,8 @@ public class SubscriptionManager extends Actor
   }
 
   @Override
-  public boolean onEvent(SubscriptionType type, long subscriberKey, UntypedRecordImpl event) {
+  public boolean onEvent(
+      final SubscriptionType type, final long subscriberKey, final UntypedRecordImpl event) {
     final RecordMetadataImpl eventMetadata = event.getMetadata();
 
     final SubscriberGroups subscribers;
@@ -220,7 +221,6 @@ public class SubscriptionManager extends Actor
     }
 
     if (subscriber != null && subscriber.isOpen()) {
-      event.setTopicName(subscriber.getTopicName());
       return subscriber.addEvent(event);
     } else {
       LOGGER.debug(
@@ -238,10 +238,10 @@ public class SubscriptionManager extends Actor
   }
 
   @Override
-  public void onConnectionEstablished(RemoteAddress remoteAddress) {}
+  public void onConnectionEstablished(final RemoteAddress remoteAddress) {}
 
   @Override
-  public void onConnectionClosed(RemoteAddress remoteAddress) {
+  public void onConnectionClosed(final RemoteAddress remoteAddress) {
     reopenSubscriptionsForRemoteAsync(remoteAddress);
   }
 }

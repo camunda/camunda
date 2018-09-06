@@ -34,7 +34,6 @@ import io.zeebe.gateway.api.subscription.TopicSubscription;
 import io.zeebe.gateway.cmd.ClientException;
 import io.zeebe.gateway.impl.record.RecordImpl;
 import io.zeebe.gateway.impl.subscription.SubscriptionManager;
-import io.zeebe.protocol.Protocol;
 import io.zeebe.util.CheckedConsumer;
 import io.zeebe.util.EnsureUtil;
 import java.util.concurrent.ExecutionException;
@@ -47,7 +46,7 @@ public class ManagementSubscriptionBuilderImpl
         ManagementSubscriptionBuilderStep3 {
   private RecordHandler defaultRecordHandler;
 
-  private BiEnumMap<RecordType, ValueType, CheckedConsumer<RecordImpl>> handlers =
+  private final BiEnumMap<RecordType, ValueType, CheckedConsumer<RecordImpl>> handlers =
       new BiEnumMap<>(RecordType.class, ValueType.class, CheckedConsumer.class);
 
   private int bufferSize;
@@ -58,20 +57,21 @@ public class ManagementSubscriptionBuilderImpl
   private final Long2LongHashMap startPositions = new Long2LongHashMap(-1);
 
   public ManagementSubscriptionBuilderImpl(
-      SubscriptionManager subscriptionManager, ZeebeClientConfiguration configuration) {
+      final SubscriptionManager subscriptionManager, final ZeebeClientConfiguration configuration) {
     this.subscriptionManager = subscriptionManager;
     this.bufferSize = configuration.getDefaultTopicSubscriptionBufferSize();
   }
 
   @Override
-  public ManagementSubscriptionBuilderStep3 recordHandler(RecordHandler handler) {
+  public ManagementSubscriptionBuilderStep3 recordHandler(final RecordHandler handler) {
     EnsureUtil.ensureNotNull("recordHandler", handler);
     this.defaultRecordHandler = handler;
     return this;
   }
 
   @Override
-  public ManagementSubscriptionBuilderStep3 deploymentEventHandler(DeploymentEventHandler handler) {
+  public ManagementSubscriptionBuilderStep3 deploymentEventHandler(
+      final DeploymentEventHandler handler) {
     EnsureUtil.ensureNotNull("deploymentEventHandler", handler);
     handlers.put(
         RecordType.EVENT,
@@ -83,7 +83,7 @@ public class ManagementSubscriptionBuilderImpl
 
   @Override
   public ManagementSubscriptionBuilderStep3 deploymentCommandHandler(
-      DeploymentCommandHandler handler) {
+      final DeploymentCommandHandler handler) {
     EnsureUtil.ensureNotNull("deploymentCommandHandler", handler);
     handlers.put(
         RecordType.COMMAND,
@@ -105,28 +105,28 @@ public class ManagementSubscriptionBuilderImpl
   }
 
   @Override
-  public ManagementSubscriptionBuilderStep3 startAtPosition(long position) {
+  public ManagementSubscriptionBuilderStep3 startAtPosition(final long position) {
     this.startPositions.put(DEPLOYMENT_PARTITION, position);
     return this;
   }
 
   @Override
-  public ManagementSubscriptionBuilderStep3 startAtTailOfTopic() {
+  public ManagementSubscriptionBuilderStep3 startAtTail() {
     return defaultStartPosition(-1L);
   }
 
   @Override
-  public ManagementSubscriptionBuilderStep3 startAtHeadOfTopic() {
+  public ManagementSubscriptionBuilderStep3 startAtHead() {
     return defaultStartPosition(0L);
   }
 
-  private ManagementSubscriptionBuilderImpl defaultStartPosition(long position) {
+  private ManagementSubscriptionBuilderImpl defaultStartPosition(final long position) {
     this.defaultStartPosition = position;
     return this;
   }
 
   @Override
-  public ManagementSubscriptionBuilderStep3 name(String name) {
+  public ManagementSubscriptionBuilderStep3 name(final String name) {
     EnsureUtil.ensureNotNull("name", name);
     this.name = name;
     return this;
@@ -139,7 +139,7 @@ public class ManagementSubscriptionBuilderImpl
   }
 
   @Override
-  public ManagementSubscriptionBuilderStep3 bufferSize(int bufferSize) {
+  public ManagementSubscriptionBuilderStep3 bufferSize(final int bufferSize) {
     EnsureUtil.ensureGreaterThan("bufferSize", bufferSize, 0);
 
     this.bufferSize = bufferSize;
@@ -152,7 +152,7 @@ public class ManagementSubscriptionBuilderImpl
 
     try {
       return subscription.get();
-    } catch (InterruptedException | ExecutionException e) {
+    } catch (final InterruptedException | ExecutionException e) {
       throw new ClientException("Could not open subscriber group", e);
     }
   }
@@ -160,7 +160,6 @@ public class ManagementSubscriptionBuilderImpl
   public Future<TopicSubscriberGroup> buildSubscriberGroup() {
     final TopicSubscriptionSpec subscription =
         new TopicSubscriptionSpec(
-            Protocol.DEFAULT_TOPIC,
             defaultStartPosition,
             startPositions,
             forceStart,

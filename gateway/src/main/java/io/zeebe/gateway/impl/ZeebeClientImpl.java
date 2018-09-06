@@ -19,18 +19,20 @@ import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.ZeebeClientConfiguration;
-import io.zeebe.gateway.api.clients.TopicClient;
-import io.zeebe.gateway.api.commands.TopicsRequestStep1;
+import io.zeebe.gateway.api.clients.JobClient;
+import io.zeebe.gateway.api.clients.WorkflowClient;
+import io.zeebe.gateway.api.commands.PartitionsRequestStep1;
 import io.zeebe.gateway.api.commands.TopologyRequestStep1;
 import io.zeebe.gateway.api.record.ZeebeObjectMapper;
 import io.zeebe.gateway.api.subscription.ManagementSubscriptionBuilderStep1;
+import io.zeebe.gateway.api.subscription.TopicSubscriptionBuilderStep1;
 import io.zeebe.gateway.impl.clustering.ClientTopologyManager;
 import io.zeebe.gateway.impl.clustering.TopologyRequestImpl;
 import io.zeebe.gateway.impl.data.ZeebeObjectMapperImpl;
+import io.zeebe.gateway.impl.partitions.PartitionsRequestImpl;
 import io.zeebe.gateway.impl.subscription.SubscriptionManager;
 import io.zeebe.gateway.impl.subscription.topic.ManagementSubscriptionBuilderImpl;
-import io.zeebe.gateway.impl.topic.TopicsRequestImpl;
-import io.zeebe.protocol.Protocol;
+import io.zeebe.gateway.impl.subscription.topic.TopicSubscriptionBuilderImpl;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.ClientTransportBuilder;
 import io.zeebe.transport.SocketAddress;
@@ -71,13 +73,14 @@ public class ZeebeClientImpl implements ZeebeClient {
 
   protected boolean isClosed;
 
-  private ClientTransport internalTransport;
+  private final ClientTransport internalTransport;
 
   public ZeebeClientImpl(final ZeebeClientConfiguration configuration) {
     this(configuration, null);
   }
 
-  public ZeebeClientImpl(final ZeebeClientConfiguration configuration, ActorClock actorClock) {
+  public ZeebeClientImpl(
+      final ZeebeClientConfiguration configuration, final ActorClock actorClock) {
     LOG.info("Version: {}", VERSION);
 
     this.configuration = configuration;
@@ -178,15 +181,15 @@ public class ZeebeClientImpl implements ZeebeClient {
       scheduler.stop().get(15, TimeUnit.SECONDS);
 
       LOG.debug("Client closed.");
-    } catch (InterruptedException | ExecutionException | TimeoutException e) {
+    } catch (final InterruptedException | ExecutionException | TimeoutException e) {
       throw new RuntimeException("Could not shutdown client successfully", e);
     }
   }
 
-  protected void doAndLogException(Runnable r) {
+  protected void doAndLogException(final Runnable r) {
     try {
       r.run();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       Loggers.CLIENT_LOGGER.error("Exception when closing client. Ignoring", e);
     }
   }
@@ -225,8 +228,18 @@ public class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
-  public TopicClient topicClient() {
-    return new TopicClientImpl(this, Protocol.DEFAULT_TOPIC);
+  public WorkflowClient workflowClient() {
+    return new WorkflowsClientImpl(this);
+  }
+
+  @Override
+  public JobClient jobClient() {
+    return new JobClientImpl(this);
+  }
+
+  @Override
+  public TopicSubscriptionBuilderStep1 newSubscription() {
+    return new TopicSubscriptionBuilderImpl(this);
   }
 
   @Override
@@ -235,8 +248,8 @@ public class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
-  public TopicsRequestStep1 newTopicsRequest() {
-    return new TopicsRequestImpl(getCommandManager());
+  public PartitionsRequestStep1 newPartitionsRequest() {
+    return new PartitionsRequestImpl(getCommandManager());
   }
 
   @Override

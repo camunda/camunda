@@ -13,25 +13,25 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.gateway.impl.topic;
+package io.zeebe.gateway.impl.partitions;
 
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.zeebe.gateway.api.commands.Partition;
-import io.zeebe.gateway.api.commands.Topic;
+import io.zeebe.gateway.api.commands.Partitions;
 import java.util.List;
 
-public class TopicImpl implements Topic {
-  private String name;
+public class PartitionsImpl implements Partitions {
   private List<Partition> partitions;
 
-  public TopicImpl(String name, List<Partition> partitions) {
-    this.name = name;
+  @JsonDeserialize(contentAs = PartitionImpl.class)
+  public void setPartitions(final List<Partition> partitions) {
     this.partitions = partitions;
   }
-
-  @Override
-  public String getName() {
-    return name;
-  }
+  //
+  //  public void setPartitions(final List<PartitionImpl> partitions) {
+  //    this.partitions = new ArrayList<>();
+  //    partitions.addAll(partitions);
+  //  }
 
   @Override
   public List<Partition> getPartitions() {
@@ -41,9 +41,7 @@ public class TopicImpl implements Topic {
   @Override
   public String toString() {
     final StringBuilder builder = new StringBuilder();
-    builder.append("Topic [name=");
-    builder.append(name);
-    builder.append(", partitions=");
+    builder.append("Partitions [");
     builder.append(partitions);
     builder.append("]");
     return builder.toString();

@@ -27,7 +27,7 @@ public interface TopicSubscriptionBuilderStep1 {
    * last acknowledged position and starts publishing with the next event/command.
    *
    * <p>The initial position of the subscription can be defined by calling <code>
-   * startAtHeadOfTopic()</code>, <code>startAtTailOfTopic()</code> or <code>startAtPosition()
+   * startAtHead()</code>, <code>startAtTail()</code> or <code>startAtPosition()
    * </code>. If the subscription has already an acknowledged position then these calls are ignored
    * and the subscription resumes at the acknowledged position. Use <code>forcedStart()</code> to
    * enforce starting at the supplied start position.
@@ -54,9 +54,9 @@ public interface TopicSubscriptionBuilderStep1 {
 
   interface TopicSubscriptionBuilderStep2 {
     /**
-     * Register a handler that processes all types of topic records.
+     * Register a handler that processes all types of records.
      *
-     * @param handler the handler to process all types of topic records
+     * @param handler the handler to process all types of records
      * @return the builder for this subscription
      */
     TopicSubscriptionBuilderStep3 recordHandler(RecordHandler handler);
@@ -151,7 +151,7 @@ public interface TopicSubscriptionBuilderStep1 {
      *
      * @return the builder for this subscription
      */
-    TopicSubscriptionBuilderStep3 startAtTailOfTopic();
+    TopicSubscriptionBuilderStep3 startAtTail();
 
     /**
      * Start publishing at the head (i.e. the begin) of all of the partitions. Can be overridden per
@@ -162,7 +162,7 @@ public interface TopicSubscriptionBuilderStep1 {
      *
      * @return the builder for this subscription
      */
-    TopicSubscriptionBuilderStep3 startAtHeadOfTopic();
+    TopicSubscriptionBuilderStep3 startAtHead();
 
     /**
      * Force the subscription to start at the given position.
