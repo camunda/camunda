@@ -22,16 +22,20 @@ import io.zeebe.broker.TestLoggers;
 import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
 import io.zeebe.broker.exporter.DebugExporter;
 import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.zeebe.broker.system.configuration.TomlConfigurationReader;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.protocol.Protocol;
+import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.FileUtil;
@@ -49,17 +53,23 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 import org.assertj.core.util.Files;
 import org.junit.rules.ExternalResource;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 
 public class EmbeddedBrokerRule extends ExternalResource {
 
   private static final boolean ENABLE_DEBUG_EXPORTER = false;
 
-  private static final Consumer<BrokerCfg> NOOP_CONFIGURATOR = cfg -> {};
+  private static final Consumer<BrokerCfg> DEFAULT_CONFIGURATOR = cfg -> {};
   private static final String SNAPSHOTS_DIRECTORY = "snapshots";
   private static final String STATE_DIRECTORY = "state";
+  public static final String DEFAULT_CONFIG_FILE = "zeebe.test.cfg.toml";
 
   protected static final Logger LOG = TestLoggers.TEST_LOGGER;
+
+  protected final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   protected BrokerCfg brokerCfg;
   protected Broker broker;
@@ -70,15 +80,15 @@ public class EmbeddedBrokerRule extends ExternalResource {
   protected final Consumer<BrokerCfg> configurator;
 
   public EmbeddedBrokerRule() {
-    this(NOOP_CONFIGURATOR);
+    this(DEFAULT_CONFIGURATOR);
   }
 
   public EmbeddedBrokerRule(final String configFileClasspathLocation) {
-    this(configFileClasspathLocation, NOOP_CONFIGURATOR);
+    this(configFileClasspathLocation, DEFAULT_CONFIGURATOR);
   }
 
   public EmbeddedBrokerRule(final Consumer<BrokerCfg> configurator) {
-    this("zeebe.unit-test.cfg.toml", configurator);
+    this(DEFAULT_CONFIG_FILE, configurator);
   }
 
   public EmbeddedBrokerRule(
@@ -101,6 +111,12 @@ public class EmbeddedBrokerRule extends ExternalResource {
 
   private File newTemporaryFolder;
   private List<String> dataDirectories;
+
+  @Override
+  public Statement apply(Statement base, Description description) {
+    final Statement statement = recordingExporterTestWatcher.apply(base, description);
+    return super.apply(statement, description);
+  }
 
   @Override
   protected void before() {
@@ -142,6 +158,10 @@ public class EmbeddedBrokerRule extends ExternalResource {
     return brokerCfg.getNetwork().getClient().toSocketAddress();
   }
 
+  public SocketAddress getGatewayAddress() {
+    return brokerCfg.getNetwork().getGateway().toSocketAddress();
+  }
+
   public SocketAddress getManagementAddress() {
     return brokerCfg.getNetwork().getManagement().toSocketAddress();
   }
@@ -170,10 +190,20 @@ public class EmbeddedBrokerRule extends ExternalResource {
   public void startBroker() {
     if (brokerCfg == null) {
       try (final InputStream configStream = configSupplier.get()) {
+        if (configStream == null) {
+          throw new RuntimeException(
+              "Unable to read configuration. Default filename is " + DEFAULT_CONFIG_FILE);
+        }
         brokerCfg = TomlConfigurationReader.read(configStream);
         if (ENABLE_DEBUG_EXPORTER) {
           brokerCfg.getExporters().add(DebugExporter.defaultConfig(false));
         }
+
+        final ExporterCfg exporterCfg = new ExporterCfg();
+        exporterCfg.setId("test-recorder");
+        exporterCfg.setClassName(RecordingExporter.class.getName());
+        brokerCfg.getExporters().add(exporterCfg);
+
         configurator.accept(brokerCfg);
         assignSocketAddresses(brokerCfg);
       } catch (final IOException e) {
@@ -181,6 +211,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
       }
     }
 
+    RecordingExporter.reset();
     broker = new Broker(brokerCfg, newTemporaryFolder.getAbsolutePath(), controlledActorClock);
 
     final ServiceContainer serviceContainer = broker.getBrokerContext().getServiceContainer();
@@ -232,7 +263,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
     }
   }
 
-  private void deleteSnapshots(final File parentDir) {
+  private static void deleteSnapshots(final File parentDir) {
     final File snapshotDirectory = new File(parentDir, SNAPSHOTS_DIRECTORY);
 
     if (snapshotDirectory.exists()) {
@@ -245,6 +276,28 @@ public class EmbeddedBrokerRule extends ExternalResource {
     }
   }
 
+  public <S> S getService(final ServiceName<S> serviceName) {
+    final ServiceContainer serviceContainer = broker.getBrokerContext().getServiceContainer();
+
+    final Injector<S> injector = new Injector<>();
+
+    final ServiceName<TestService> accessorServiceName =
+        ServiceName.newServiceName("serviceAccess" + serviceName.getName(), TestService.class);
+    try {
+      serviceContainer
+          .createService(accessorServiceName, new TestService())
+          .dependency(serviceName, injector)
+          .install()
+          .get();
+    } catch (final InterruptedException | ExecutionException e) {
+      throw new RuntimeException(e);
+    }
+
+    serviceContainer.removeService(accessorServiceName);
+
+    return injector.getValue();
+  }
+
   public <T> void removeService(final ServiceName<T> name) {
     try {
       broker.getBrokerContext().getServiceContainer().removeService(name).get(10, TimeUnit.SECONDS);
@@ -253,7 +306,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
     }
   }
 
-  public void assignSocketAddresses(final BrokerCfg brokerCfg) {
+  public static void assignSocketAddresses(final BrokerCfg brokerCfg) {
     final NetworkCfg network = brokerCfg.getNetwork();
     final List<SocketBindingCfg> socketBindingCfgs =
         Arrays.asList(

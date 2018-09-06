@@ -17,6 +17,7 @@ package io.zeebe.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.commands.BrokerInfo;
 import io.zeebe.client.api.commands.PartitionBrokerRole;
@@ -35,7 +36,7 @@ public class ZeebeClientTest {
   public void setUp() {
     client =
         ZeebeClient.newClientBuilder()
-            .brokerContactPoint(rule.getClientAddress().toString())
+            .brokerContactPoint(rule.getGatewayAddress().toString())
             .build();
   }
 

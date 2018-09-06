@@ -33,10 +33,15 @@ import io.zeebe.util.buffer.BufferUtil;
 import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
 
-public class RecordStream extends StreamWrapper<LoggedEvent> {
+public class RecordStream extends StreamWrapper<LoggedEvent, RecordStream> {
 
   public RecordStream(Stream<LoggedEvent> stream) {
     super(stream);
+  }
+
+  @Override
+  protected RecordStream supply(Stream<LoggedEvent> wrappedStream) {
+    return new RecordStream(wrappedStream);
   }
 
   public RecordStream withIntent(Intent intent) {

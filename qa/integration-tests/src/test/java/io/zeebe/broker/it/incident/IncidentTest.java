@@ -19,8 +19,8 @@ import static io.zeebe.broker.it.util.TopicEventRecorder.state;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.gateway.api.clients.JobClient;
 import io.zeebe.gateway.api.clients.WorkflowClient;
 import io.zeebe.gateway.api.events.DeploymentEvent;

@@ -16,10 +16,10 @@
 package io.zeebe.broker.it.shutdown;
 
 import io.zeebe.broker.Broker;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.broker.system.configuration.TomlConfigurationReader;
+import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceContainer;
@@ -91,7 +91,7 @@ public class BrokerShutdownTest {
   private Broker startBrokerWithBlockingService(final File brokerBase) {
     final Broker broker;
     try (InputStream configStream =
-        EmbeddedBrokerRule.class.getResourceAsStream("/zeebe.default.cfg.toml")) {
+        EmbeddedBrokerRule.class.getResourceAsStream("/zeebe.test.cfg.toml")) {
       final BrokerCfg brokerCfg = TomlConfigurationReader.read(configStream);
       EmbeddedBrokerRule.assignSocketAddresses(brokerCfg);
       broker = new Broker(brokerCfg, brokerBase.getAbsolutePath(), null);

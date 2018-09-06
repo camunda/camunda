@@ -21,8 +21,8 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.gateway.api.events.DeploymentEvent;
 import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
 import io.zeebe.gateway.api.events.WorkflowInstanceState;

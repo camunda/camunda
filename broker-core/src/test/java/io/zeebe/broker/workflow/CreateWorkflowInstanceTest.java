@@ -63,7 +63,7 @@ import org.junit.rules.RuleChain;
 public class CreateWorkflowInstanceTest {
 
   public EmbeddedBrokerRule brokerRule =
-      new EmbeddedBrokerRule("zeebe.unit-test.increased.partitions.cfg.toml");
+      new EmbeddedBrokerRule("zeebe.test.increased.partitions.cfg.toml");
 
   public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
   private TestTopicClient testClient;

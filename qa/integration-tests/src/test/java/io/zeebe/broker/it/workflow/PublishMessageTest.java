@@ -22,8 +22,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.gateway.api.ZeebeFuture;
 import io.zeebe.gateway.api.clients.WorkflowClient;
 import io.zeebe.gateway.api.events.DeploymentEvent;
@@ -43,7 +43,7 @@ import org.junit.rules.RuleChain;
 public class PublishMessageTest {
 
   public EmbeddedBrokerRule brokerRule =
-      new EmbeddedBrokerRule("zeebe.unit-test.increased.partitions.cfg.toml");
+      new EmbeddedBrokerRule("zeebe.test.increased.partitions.cfg.toml");
   public ClientRule clientRule = new ClientRule(brokerRule);
   public TopicEventRecorder eventRecorder =
       new TopicEventRecorder(clientRule, DEFAULT_TOPIC, false);

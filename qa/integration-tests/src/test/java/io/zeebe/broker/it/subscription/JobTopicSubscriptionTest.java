@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
+import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.gateway.api.clients.TopicClient;
 import io.zeebe.gateway.api.commands.JobCommand;
 import io.zeebe.gateway.api.events.JobEvent;
