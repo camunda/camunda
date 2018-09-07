@@ -45,7 +45,7 @@
     <version.scala>2.12.2</version.scala>
     <version.slf4j>1.7.23</version.slf4j>
     <version.streamex>0.6.7</version.streamex>
-    <version.toml>0.5.1</version.toml>
+    <version.toml>0.7.2</version.toml>
 
     <!-- maven plugins -->
     <plugin.version.antrun>1.8</plugin.version.antrun>
