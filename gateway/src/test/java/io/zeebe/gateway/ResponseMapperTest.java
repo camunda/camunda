@@ -15,13 +15,13 @@
  */
 package io.zeebe.gateway;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.gateway.api.commands.BrokerInfo;
-import io.zeebe.gateway.api.commands.PartitionInfo;
 import io.zeebe.gateway.api.commands.Topology;
 import io.zeebe.gateway.factories.TopologyFactory;
+import io.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import java.util.LinkedList;
 import org.junit.Test;
 
@@ -33,7 +33,7 @@ public class ResponseMapperTest {
     final Topology topology = new TopologyFactory().getFixture();
 
     final HealthResponse response = responseMapper.toResponse(topology);
-    final LinkedList<BrokerInfo> expectedBrokers = new LinkedList<>(topology.getBrokers());
+    final LinkedList<BrokerInfo> expectedBrokers = new LinkedList<>(response.getBrokersList());
     assertThat(response.getBrokersCount()).isEqualTo(expectedBrokers.size());
 
     topology
@@ -44,17 +44,15 @@ public class ResponseMapperTest {
 
               assertThat(expected.getHost()).isEqualTo(received.getHost());
               assertThat(expected.getPort()).isEqualTo(received.getPort());
-              assertThat(expected.getAddress())
-                  .isEqualTo(String.format("%s:%d", received.getHost(), received.getPort()));
 
-              final LinkedList<PartitionInfo> expectedPartitions =
-                  new LinkedList<>(expected.getPartitions());
+              final LinkedList<Partition> expectedPartitions =
+                  new LinkedList<>(expected.getPartitionsList());
 
               received
                   .getPartitions()
                   .forEach(
                       receivedPartition -> {
-                        final PartitionInfo expectedPartition = expectedPartitions.pop();
+                        final Partition expectedPartition = expectedPartitions.pop();
                         assertThat(expectedPartition.getPartitionId())
                             .isEqualTo(receivedPartition.getPartitionId());
 
