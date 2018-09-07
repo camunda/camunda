@@ -90,21 +90,6 @@ export default class Filters extends React.Component {
       });
   };
 
-  handleWorkflowNameChange = event => {
-    const {value} = event.target;
-    const currentWorkflow = this.state.workflows[value];
-    const version = currentWorkflow ? currentWorkflow.workflows[0].id : '';
-
-    this.setState(
-      {
-        currentWorkflow: currentWorkflow || {},
-        workflowIds: version,
-        activityId: ''
-      },
-      this.updateByWorkflowVersion
-    );
-  };
-
   updateFilterOnInstancesPage = version => {
     let versions = [];
 
@@ -145,6 +130,21 @@ export default class Filters extends React.Component {
 
     this.updateWorkflowOnInstancesPage(version);
     this.updateFilterOnInstancesPage(version);
+  };
+
+  handleWorkflowNameChange = event => {
+    const {value} = event.target;
+    const currentWorkflow = this.state.workflows[value];
+    const version = currentWorkflow ? currentWorkflow.workflows[0].id : '';
+
+    this.setState(
+      {
+        currentWorkflow: currentWorkflow || {},
+        workflowIds: version,
+        activityId: ''
+      },
+      this.updateByWorkflowVersion
+    );
   };
 
   handleWorkflowVersionChange = event => {
