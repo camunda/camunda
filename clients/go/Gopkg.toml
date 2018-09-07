@@ -27,7 +27,7 @@
 
 [[constraint]]
   name = "github.com/golang/protobuf"
-  version = "=1.1.0"
+  version = ">= 1.1.0, < 2.0.0"
 
 [[constraint]]
   name = "github.com/onsi/ginkgo"
