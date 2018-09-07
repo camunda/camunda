@@ -197,6 +197,9 @@ export default class Filters extends React.Component {
 
   onFilterReset = () => {
     this.setState({...this.state, ...DEFAULT_FIELDS_STATE}, () => {
+      //reset diagram info in instaces page
+      this.props.onWorkflowVersionChange(null);
+      //update url values
       this.props.onFilterReset();
     });
   };
@@ -213,7 +216,6 @@ export default class Filters extends React.Component {
         <Panel.Body>
           <Styled.Filters>
             <Styled.Field>
-              {/* // this value is not OK */}
               <Select
                 value={this.state.currentWorkflow.bpmnProcessId || ''}
                 disabled={this.state.workflows.length === 0}

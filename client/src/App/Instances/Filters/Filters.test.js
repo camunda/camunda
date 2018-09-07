@@ -878,5 +878,29 @@ describe('Filters', () => {
       expect(node.find({name: 'endDate'}).props().value).toBe('');
       expect(node.find({name: 'activityId'}).props().value).toBe('');
     });
+
+    it('should reset the diagram preview from Instances Page', async () => {
+      // given
+      const value = groupedWorkflowsMock[0].bpmnProcessId;
+      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const ResetButtonNode = node.find(Button);
+
+      //when
+      await flushPromises();
+      // we select a workflow
+      node.instance().handleWorkflowNameChange({target: {value: value}});
+      node.update();
+      // click reset filters
+      ResetButtonNode.simulate('click');
+      node.update();
+
+      // then
+      // first call is made with the last version of the selected workflow
+      expect(instancesSpy.mock.calls[0][0]).toEqual(
+        groupedWorkflowsMock[0].workflows[0]
+      );
+      // second call should reset the diagram, after clicking reset button
+      expect(instancesSpy.mock.calls[1][0]).toEqual(null);
+    });
   });
 });
