@@ -27,23 +27,23 @@
 
 [[constraint]]
   name = "github.com/golang/protobuf"
-  version = "1.1.0"
+  version = "=1.1.0"
 
 [[constraint]]
   name = "github.com/onsi/ginkgo"
-  version = "1.6.0"
+  version = "=1.6.0"
 
 [[constraint]]
   name = "github.com/onsi/gomega"
-  version = "1.4.1"
+  version = "=1.4.1"
 
 [[constraint]]
-  branch = "master"
+  branch = "release-branch.go1.11"
   name = "golang.org/x/net"
 
 [[constraint]]
   name = "google.golang.org/grpc"
-  version = "1.14.0"
+  version = "=1.14.0"
 
 [prune]
   go-tests = true
