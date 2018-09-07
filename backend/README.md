@@ -23,7 +23,7 @@ cd backend
 mvn clean compile exec:java -Dexec.mainClass="org.camunda.operate.util.StandaloneDataGenerator" -Dexec.arguments="localhost:51015,default-topic" -DskipTests -P develop
 ```
 
-If you run into problems during running the maven comman please perfrom the following command in the root folder 
+If you run into problems during running the maven command please perfrom the following command in the root folder 
 ```
 mvn clean install -Pdevelop -DskipTests
 ```
