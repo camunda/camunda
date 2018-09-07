@@ -13,7 +13,7 @@ import java.util.Map;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 public class IndexSettingsBuilder {
-
+  public static final int MAX_GRAM = 10;
   public static Settings build(ConfigurationService configurationService) throws IOException {
     XContentBuilder builder = jsonBuilder();
     builder
@@ -47,7 +47,7 @@ public class IndexSettingsBuilder {
         .startObject("ngram_tokenizer")
           .field("type", "nGram")
           .field("min_gram", 1)
-          .field("max_gram", 10)
+          .field("max_gram", MAX_GRAM)
         .endObject()
       .endObject()
     .endObject();

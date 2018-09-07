@@ -2,6 +2,7 @@ package org.camunda.optimize.service.es.reader;
 
 import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
 import org.camunda.optimize.service.es.report.command.util.ReportConstants;
+import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
 import org.camunda.optimize.service.util.VariableHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.search.SearchRequestBuilder;
@@ -217,11 +218,18 @@ public class VariableReader {
   private void addValueFilter(String variableFieldLabel, String valueFilter, BoolQueryBuilder filterQuery) {
     if (!(valueFilter == null) && !valueFilter.isEmpty() && STRING_VARIABLES.equals(variableFieldLabel)) {
       valueFilter = valueFilter.toLowerCase();
-      QueryBuilder filter = (valueFilter.length() > 10)
+      QueryBuilder filter = (valueFilter.length() > IndexSettingsBuilder.MAX_GRAM)
+          /*
+            using the slow wildcard query for uncommonly large filter strings (> 10 chars)
+          */
           ? wildcardQuery(
               getMultiFieldName(variableFieldLabel, STRING_VARIABLE_VALUE_LOWERCASE),
               buildWildcardQuery(valueFilter)
           )
+          /*
+            using Elasticsearch nGrams to filter for strings < 10 chars,
+            because it's fast but increasing the number of chars makes the index bigger
+          */
           : termQuery(
                   getMultiFieldName(variableFieldLabel, STRING_VARIABLE_VALUE_NGRAM),
                   valueFilter

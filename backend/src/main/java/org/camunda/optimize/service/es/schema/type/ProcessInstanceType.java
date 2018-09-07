@@ -114,7 +114,7 @@ public class ProcessInstanceType extends StrictTypeMappingCreator {
           .field("type", "nested")
           .field("include_in_all", false)
           .startObject("properties");
-            addNestedStringVariableField(newBuilder)
+            addNestedVariableField(newBuilder, "keyword")
           .endObject()
         .endObject()
         .startObject(INTEGER_VARIABLES)
@@ -157,7 +157,8 @@ public class ProcessInstanceType extends StrictTypeMappingCreator {
   }
 
   private XContentBuilder addNestedVariableField(XContentBuilder builder, String type) throws IOException {
-    return builder
+    XContentBuilder newBuilder = builder;
+    newBuilder
       .startObject(VARIABLE_ID)
         .field("type", "keyword")
       .endObject()
@@ -168,40 +169,24 @@ public class ProcessInstanceType extends StrictTypeMappingCreator {
         .field("type", "keyword")
       .endObject()
       .startObject(VARIABLE_VALUE)
-        .field("type", type)
-      .endObject()
+        .field("type", type);
+      if (type.equals("keyword")) {
+        newBuilder
+          .startObject("fields")
+            .startObject("nGramField")
+              .field("type", "text")
+              .field("analyzer", "lowercase_ngram")
+            .endObject()
+            .startObject("lowercaseField")
+              .field("type", "keyword")
+              .field("normalizer", "lowercase_normalizer")
+            .endObject()
+          .endObject();
+      }
+    newBuilder.endObject()
       .startObject(VARIABLE_VERSION)
         .field("type", "long")
       .endObject();
+    return newBuilder;
   }
-
-  private XContentBuilder addNestedStringVariableField(XContentBuilder builder) throws IOException {
-    return builder
-      .startObject(VARIABLE_ID)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(VARIABLE_NAME)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(VARIABLE_TYPE)
-        .field("type", "keyword")
-      .endObject()
-      .startObject(VARIABLE_VALUE)
-        .field("type", "keyword")
-        .startObject("fields")
-          .startObject("nGramField")
-            .field("type", "text")
-            .field("analyzer", "lowercase_ngram")
-          .endObject()
-          .startObject("lowercaseField")
-            .field("type", "keyword")
-            .field("normalizer", "lowercase_normalizer")
-          .endObject()
-        .endObject()
-      .endObject()
-      .startObject(VARIABLE_VERSION)
-        .field("type", "long")
-      .endObject();
-  }
-
 }
