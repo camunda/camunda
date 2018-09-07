@@ -84,8 +84,7 @@ class Instances extends Component {
     const {
       rollingSelectionIndex,
       instancesInSelectionsCount,
-      selectionCount,
-      selections
+      selectionCount
     } = this.state;
 
     const currentSelectionIndex = rollingSelectionIndex + 1;
@@ -106,11 +105,17 @@ class Instances extends Component {
         selectionCount: selectionCount + 1
       }),
       () => {
-        this.props.storeStateLocally({
-          selectionCount,
-          instancesInSelectionsCount,
+        const {
           selections,
-          rollingSelectionIndex
+          rollingSelectionIndex,
+          instancesInSelectionsCount,
+          selectionCount
+        } = this.state;
+        this.props.storeStateLocally({
+          selections,
+          rollingSelectionIndex,
+          instancesInSelectionsCount,
+          selectionCount
         });
       }
     );
