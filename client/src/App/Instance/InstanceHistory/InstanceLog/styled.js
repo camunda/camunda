@@ -46,6 +46,7 @@ const iconPositionStyle = css`
 `;
 
 export const LogEntryToggle = themed(styled.button`
+  display: flex;
   position: absolute;
   left: 0;
   top: 0;
@@ -123,11 +124,6 @@ export const DocumentIcon = themed(styled(
   ${iconPositionStyle};
 `);
 
-export const FlowNodeIcon = themed(styled(
-  withStrippedProps(['isSelected'])(BasicFlowNodeIcon)
-)`
+export const FlowNodeIcon = themed(styled(BasicFlowNodeIcon)`
   margin-right: 8px;
-
-  ${colorStyle};
-  ${iconPositionStyle};
 `);

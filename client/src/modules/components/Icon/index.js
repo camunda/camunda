@@ -16,32 +16,56 @@ export {default as DownBar} from '-!@svgr/webpack?svgo=false!./down-bar.svg';
 export {default as Down} from '-!@svgr/webpack?svgo=false!./down.svg';
 export {default as Edit} from '-!@svgr/webpack?svgo=false!./edit.svg';
 export {
-  default as FlownodeActivityIncident
-} from '-!@svgr/webpack?svgo=false!./flownode-activity-incident.svg';
+  default as FlowNodeEndEvent
+} from '-!@svgr/webpack?svgo=false!./flow-node-end-event.svg';
 export {
-  default as FlownodeActivity
-} from '-!@svgr/webpack?svgo=false!./flownode-activity.svg';
+  default as FlowNodeExclusiveGateway
+} from '-!@svgr/webpack?svgo=false!./flow-node-exclusive-gateway.svg';
 export {
-  default as FlownodeActivityCompleted
-} from '-!@svgr/webpack?svgo=false!./flownode-activity-completed.svg';
+  default as FlowNodeParallelGateway
+} from '-!@svgr/webpack?svgo=false!./flow-node-parallel-gateway.svg';
 export {
-  default as FlownodeEventCompleted
-} from '-!@svgr/webpack?svgo=false!./flownode-event-completed.svg';
+  default as FlowNodeStartEvent
+} from '-!@svgr/webpack?svgo=false!./flow-node-start-event.svg';
 export {
-  default as FlownodeEventIncident
-} from '-!@svgr/webpack?svgo=false!./flownode-event-incident.svg';
+  default as FlowNodeStateCanceledDark
+} from '-!@svgr/webpack?svgo=false!./flow-node-state-canceled-dark.svg';
 export {
-  default as FlownodeEvent
-} from '-!@svgr/webpack?svgo=false!./flownode-event.svg';
+  default as FlowNodeStateCanceledLight
+} from '-!@svgr/webpack?svgo=false!./flow-node-state-canceled-light.svg';
 export {
-  default as FlownodeGatewayCompleted
-} from '-!@svgr/webpack?svgo=false!./flownode-gateway-completed.svg';
+  default as FlowNodeStateCanceledSelected
+} from '-!@svgr/webpack?svgo=false!./flow-node-state-canceled-selected.svg';
 export {
-  default as FlownodeGatewayIncident
-} from '-!@svgr/webpack?svgo=false!./flownode-gateway-incident.svg';
+  default as FlowNodeStateCompletedDark
+} from '-!@svgr/webpack?svgo=false!./flow-node-state-completed-dark.svg';
 export {
-  default as FlownodeGateway
-} from '-!@svgr/webpack?svgo=false!./flownode-gateway.svg';
+  default as FlowNodeStateCompletedLight
+} from '-!@svgr/webpack?svgo=false!./flow-node-state-completed-light.svg';
+export {
+  default as FlowNodeStateCompletedSelected
+} from '-!@svgr/webpack?svgo=false!./flow-node-state-completed-selected.svg';
+export {
+  default as FlowNodeStateIncidentDark
+} from '-!@svgr/webpack?svgo=false!./flow-node-state-incident-dark.svg';
+export {
+  default as FlowNodeStateIncidentLight
+} from '-!@svgr/webpack?svgo=false!./flow-node-state-incident-light.svg';
+export {
+  default as FlowNodeStateOkDark
+} from '-!@svgr/webpack?svgo=false!./flow-node-state-ok-dark.svg';
+export {
+  default as FlowNodeStateOkLight
+} from '-!@svgr/webpack?svgo=false!./flow-node-state-ok-light.svg';
+export {
+  default as FlowNodeTaskDefault
+} from '-!@svgr/webpack?svgo=false!./flow-node-task-default.svg';
+export {
+  default as FlowNodeTaskService
+} from '-!@svgr/webpack?svgo=false!./flow-node-task-service.svg';
+export {
+  default as FlowNodeTaskUser
+} from '-!@svgr/webpack?svgo=false!./flow-node-task-user.svg';
 export {
   default as InstanceHistoryIconCancelDark
 } from '-!@svgr/webpack?svgo=false!./instance-history-icon-cancel-dark.svg';

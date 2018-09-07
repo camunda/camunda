@@ -50,7 +50,7 @@ exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
         isSelected={false}
         onClick={[Function]}
       >
-        <Themed(Styled(withStrippedProps(FlowNodeIcon)))
+        <Themed(Styled(Themed(FlowNodeIcon)))
           isSelected={false}
           state="someState1"
           type="someType1"
@@ -67,7 +67,7 @@ exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
         isSelected={false}
         onClick={[Function]}
       >
-        <Themed(Styled(withStrippedProps(FlowNodeIcon)))
+        <Themed(Styled(Themed(FlowNodeIcon)))
           isSelected={false}
           state="someState2"
           type="someType2"

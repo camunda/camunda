@@ -19,25 +19,43 @@ export const Document = generateMockIcon('Document');
 export const DownBar = generateMockIcon('DownBar');
 export const Down = generateMockIcon('Down');
 export const Edit = generateMockIcon('Edit');
-export const FlownodeActivityIncident = generateMockIcon(
-  'FlownodeActivityIncident'
+export const FlowNodeEndEvent = generateMockIcon('FlowNodeEndEvent');
+export const FlowNodeExclusiveGateway = generateMockIcon(
+  'FlowNodeExclusiveGateway'
 );
-export const FlownodeActivity = generateMockIcon('FlownodeActivity');
-export const FlownodeActivityCompleted = generateMockIcon(
-  'FlownodeActivityCompleted'
+export const FlowNodeParallelGateway = generateMockIcon(
+  'FlowNodeParallelGateway'
 );
-export const FlownodeEventCompleted = generateMockIcon(
-  'FlownodeEventCompleted'
+export const FlowNodeStartEvent = generateMockIcon('FlowNodeStartEvent');
+export const FlowNodeStateCanceledDark = generateMockIcon(
+  'FlowNodeStateCanceledDark'
 );
-export const FlownodeEventIncident = generateMockIcon('FlownodeEventIncident');
-export const FlownodeEvent = generateMockIcon('FlownodeEvent');
-export const FlownodeGatewayCompleted = generateMockIcon(
-  'FlownodeGatewayCompleted'
+export const FlowNodeStateCanceledLight = generateMockIcon(
+  'FlowNodeStateCanceledLight'
 );
-export const FlownodeGatewayIncident = generateMockIcon(
-  'FlownodeGatewayIncident'
+export const FlowNodeStateCanceledSelected = generateMockIcon(
+  'FlowNodeStateCanceledSelected'
 );
-export const FlownodeGateway = generateMockIcon('FlownodeGateway');
+export const FlowNodeStateCompletedDark = generateMockIcon(
+  'FlowNodeStateCompletedDark'
+);
+export const FlowNodeStateCompletedLight = generateMockIcon(
+  'FlowNodeStateCompletedLight'
+);
+export const FlowNodeStateCompletedSelected = generateMockIcon(
+  'FlowNodeStateCompletedSelected'
+);
+export const FlowNodeStateIncidentDark = generateMockIcon(
+  'FlowNodeStateIncidentDark'
+);
+export const FlowNodeStateIncidentLight = generateMockIcon(
+  'FlowNodeStateIncidentLight'
+);
+export const FlowNodeStateOkDark = generateMockIcon('FlowNodeStateOkDark');
+export const FlowNodeStateOkLight = generateMockIcon('FlowNodeStateOkLight');
+export const FlowNodeTaskDefault = generateMockIcon('FlowNodeTaskDefault');
+export const FlowNodeTaskService = generateMockIcon('FlowNodeTaskService');
+export const FlowNodeTaskUser = generateMockIcon('FlowNodeTaskUser');
 export const InstanceHistoryIconCancelDark = generateMockIcon(
   'InstanceHistoryIconCancelDark'
 );

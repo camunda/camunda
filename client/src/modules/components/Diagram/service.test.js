@@ -23,10 +23,16 @@ const someEndEvent = {
     $instanceOf: type => type === 'bpmn:EndEvent'
   }
 };
-const someGateway = {
-  id: 'someGateway',
+const someExclusiveGateway = {
+  id: 'someExclusiveGateway',
   businessObject: {
-    $instanceOf: type => type === 'bpmn:Gateway'
+    $instanceOf: type => type === 'bpmn:ExclusiveGateway'
+  }
+};
+const someParallelGateway = {
+  id: 'someParallelGateway',
+  businessObject: {
+    $instanceOf: type => type === 'bpmn:ParallelGateway'
   }
 };
 const someNoNamed = {
@@ -46,7 +52,12 @@ describe('Diagram service', () => {
       expect(getElementType(someTask)).toBe(FLOW_NODE_TYPE.TASK);
       expect(getElementType(someStartEvent)).toBe(FLOW_NODE_TYPE.START_EVENT);
       expect(getElementType(someEndEvent)).toBe(FLOW_NODE_TYPE.END_EVENT);
-      expect(getElementType(someGateway)).toBe(FLOW_NODE_TYPE.GATEWAY);
+      expect(getElementType(someExclusiveGateway)).toBe(
+        FLOW_NODE_TYPE.EXCLUSIVE_GATEWAY
+      );
+      expect(getElementType(someParallelGateway)).toBe(
+        FLOW_NODE_TYPE.PARALLEL_GATEWAY
+      );
     });
   });
 
@@ -56,7 +67,8 @@ describe('Diagram service', () => {
       someTask,
       someNoNamed,
       someStartEvent,
-      someGateway
+      someExclusiveGateway,
+      someParallelGateway
     ];
     const expectedFlowNodesDetails = {
       someTask: {
@@ -67,7 +79,14 @@ describe('Diagram service', () => {
         name: someStartEvent.businessObject.name,
         type: getElementType(someStartEvent)
       },
-      someGateway: {name: UNNAMED_ACTIVITY, type: getElementType(someGateway)}
+      someExclusiveGateway: {
+        name: UNNAMED_ACTIVITY,
+        type: getElementType(someExclusiveGateway)
+      },
+      someParallelGateway: {
+        name: UNNAMED_ACTIVITY,
+        type: getElementType(someParallelGateway)
+      }
     };
 
     // then

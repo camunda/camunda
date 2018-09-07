@@ -1,113 +1,136 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`FlowNodeIcon should render icon for ACTIVE EVENT 1`] = `
-<FlownodeEvent
-  height="16px"
-  width="16px"
-/>
+exports[`FlowNodeIcon flow node state should render active dark icon 1`] = `
+<styled.span
+  theme="dark"
+>
+  <Styled(FlowNodeTaskDefault) />
+  <Styled(FlowNodeStateOkDark) />
+</styled.span>
 `;
 
-exports[`FlowNodeIcon should render icon for ACTIVE EVENT 2`] = `
-<FlownodeEvent
-  height="16px"
-  width="16px"
-/>
+exports[`FlowNodeIcon flow node state should render active light icon 1`] = `
+<styled.span
+  theme="light"
+>
+  <Styled(FlowNodeTaskDefault) />
+  <Styled(FlowNodeStateOkLight) />
+</styled.span>
 `;
 
-exports[`FlowNodeIcon should render icon for ACTIVE GATEWAY 1`] = `
-<FlownodeGateway
-  height="16px"
-  width="16px"
-/>
+exports[`FlowNodeIcon flow node state should render canceled dark icon 1`] = `
+<styled.span
+  theme="dark"
+>
+  <Styled(FlowNodeTaskDefault) />
+  <Styled(FlowNodeStateCanceledDark) />
+</styled.span>
 `;
 
-exports[`FlowNodeIcon should render icon for ACTIVE TASK 1`] = `
-<FlownodeActivity
-  height="16px"
-  width="16px"
-/>
+exports[`FlowNodeIcon flow node state should render canceled dark icon 2`] = `
+<styled.span
+  theme="light"
+>
+  <Styled(FlowNodeTaskDefault) />
+  <Styled(FlowNodeStateCanceledLight) />
+</styled.span>
 `;
 
-exports[`FlowNodeIcon should render icon for COMPLETED EVENT 1`] = `
-<FlownodeEventCompleted
-  height="16px"
-  width="16px"
-/>
+exports[`FlowNodeIcon flow node state should render canceled selected icon 1`] = `
+<styled.span
+  theme="dark"
+>
+  <Styled(FlowNodeTaskDefault) />
+  <Styled(FlowNodeStateCanceledSelected) />
+</styled.span>
 `;
 
-exports[`FlowNodeIcon should render icon for COMPLETED EVENT 2`] = `
-<FlownodeEventCompleted
-  height="16px"
-  width="16px"
-/>
+exports[`FlowNodeIcon flow node state should render completed dark icon 1`] = `
+<styled.span
+  theme="dark"
+>
+  <Styled(FlowNodeTaskDefault) />
+  <Styled(FlowNodeStateCompletedDark) />
+</styled.span>
 `;
 
-exports[`FlowNodeIcon should render icon for COMPLETED GATEWAY 1`] = `
-<FlownodeGatewayCompleted
-  height="16px"
-  width="16px"
-/>
+exports[`FlowNodeIcon flow node state should render completed dark icon 2`] = `
+<styled.span
+  theme="light"
+>
+  <Styled(FlowNodeTaskDefault) />
+  <Styled(FlowNodeStateCompletedLight) />
+</styled.span>
 `;
 
-exports[`FlowNodeIcon should render icon for COMPLETED TASK 1`] = `
-<FlownodeActivityCompleted
-  height="16px"
-  width="16px"
-/>
+exports[`FlowNodeIcon flow node state should render completed selected icon 1`] = `
+<styled.span
+  theme="dark"
+>
+  <Styled(FlowNodeTaskDefault) />
+  <Styled(FlowNodeStateCompletedSelected) />
+</styled.span>
 `;
 
-exports[`FlowNodeIcon should render icon for INCIDENT EVENT 1`] = `
-<StateIconIncident
-  height="16px"
-  width="16px"
-/>
+exports[`FlowNodeIcon flow node state should render incident dark icon 1`] = `
+<styled.span
+  theme="dark"
+>
+  <Styled(FlowNodeTaskDefault) />
+  <Styled(FlowNodeStateIncidentDark) />
+</styled.span>
 `;
 
-exports[`FlowNodeIcon should render icon for INCIDENT EVENT 2`] = `
-<StateIconIncident
-  height="16px"
-  width="16px"
-/>
+exports[`FlowNodeIcon flow node state should render incident light icon 1`] = `
+<styled.span
+  theme="light"
+>
+  <Styled(FlowNodeTaskDefault) />
+  <Styled(FlowNodeStateIncidentLight) />
+</styled.span>
 `;
 
-exports[`FlowNodeIcon should render icon for INCIDENT GATEWAY 1`] = `
-<StateIconGatewayIncident
-  height="16px"
-  width="16px"
-/>
+exports[`FlowNodeIcon flow node type should render end event icon 1`] = `
+<styled.span
+  theme="dark"
+>
+  <Styled(FlowNodeEndEvent) />
+  <Styled(FlowNodeStateOkDark) />
+</styled.span>
 `;
 
-exports[`FlowNodeIcon should render icon for INCIDENT TASK 1`] = `
-<StateIconFlownodeActivityIncident
-  height="16px"
-  width="16px"
-/>
+exports[`FlowNodeIcon flow node type should render exclusive gateway icon 1`] = `
+<styled.span
+  theme="dark"
+>
+  <Styled(FlowNodeExclusiveGateway) />
+  <Styled(FlowNodeStateOkDark) />
+</styled.span>
 `;
 
-exports[`FlowNodeIcon should render icon for TERMINATED EVENT 1`] = `
-<Stop
-  height="16px"
-  width="16px"
-/>
+exports[`FlowNodeIcon flow node type should render exclusive parallel icon 1`] = `
+<styled.span
+  theme="dark"
+>
+  <Styled(FlowNodeParallelGateway) />
+  <Styled(FlowNodeStateOkDark) />
+</styled.span>
 `;
 
-exports[`FlowNodeIcon should render icon for TERMINATED EVENT 2`] = `
-<Stop
-  height="16px"
-  width="16px"
-/>
+exports[`FlowNodeIcon flow node type should render start event icon 1`] = `
+<styled.span
+  theme="dark"
+>
+  <Styled(FlowNodeStartEvent) />
+  <Styled(FlowNodeStateOkDark) />
+</styled.span>
 `;
 
-exports[`FlowNodeIcon should render icon for TERMINATED GATEWAY 1`] = `
-<Stop
-  height="16px"
-  width="16px"
-/>
-`;
-
-exports[`FlowNodeIcon should render icon for TERMINATED TASK 1`] = `
-<Stop
-  height="16px"
-  width="16px"
-/>
+exports[`FlowNodeIcon flow node type should render task icon 1`] = `
+<styled.span
+  theme="dark"
+>
+  <Styled(FlowNodeTaskDefault) />
+  <Styled(FlowNodeStateOkDark) />
+</styled.span>
 `;

@@ -2,51 +2,66 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import {ACTIVITY_STATE, FLOW_NODE_TYPE} from 'modules/constants';
+import {themed} from 'modules/theme';
 
-import {
-  FlownodeActivity,
-  StateIconFlownodeActivityIncident,
-  FlownodeActivityCompleted,
-  FlownodeEvent,
-  StateIconIncident,
-  FlownodeEventCompleted,
-  FlownodeGateway,
-  StateIconGatewayIncident,
-  FlownodeGatewayCompleted,
-  Stop
-} from 'modules/components/Icon';
+import * as Styled from './styled';
 
-const iconsMap = {
-  [FLOW_NODE_TYPE.TASK]: {
-    [ACTIVITY_STATE.COMPLETED]: FlownodeActivityCompleted,
-    [ACTIVITY_STATE.ACTIVE]: FlownodeActivity,
-    [ACTIVITY_STATE.INCIDENT]: StateIconFlownodeActivityIncident
+const flowNodeTypeIconsMap = {
+  [FLOW_NODE_TYPE.TASK]: Styled.TaskDefault,
+  [FLOW_NODE_TYPE.START_EVENT]: Styled.StartEvent,
+  [FLOW_NODE_TYPE.END_EVENT]: Styled.EndEvent,
+  [FLOW_NODE_TYPE.EXCLUSIVE_GATEWAY]: Styled.ExclusiveGateway,
+  [FLOW_NODE_TYPE.PARALLEL_GATEWAY]: Styled.ParallelGateway
+};
+
+const stateIconsMap = {
+  [ACTIVITY_STATE.COMPLETED]: {
+    dark: Styled.CompletedDark,
+    light: Styled.CompletedLight
   },
-  [FLOW_NODE_TYPE.START_EVENT]: {
-    [ACTIVITY_STATE.COMPLETED]: FlownodeEventCompleted,
-    [ACTIVITY_STATE.ACTIVE]: FlownodeEvent,
-    [ACTIVITY_STATE.INCIDENT]: StateIconIncident
+  [ACTIVITY_STATE.ACTIVE]: {
+    dark: Styled.OkDark,
+    light: Styled.OkLight
   },
-  [FLOW_NODE_TYPE.END_EVENT]: {
-    [ACTIVITY_STATE.COMPLETED]: FlownodeEventCompleted,
-    [ACTIVITY_STATE.ACTIVE]: FlownodeEvent,
-    [ACTIVITY_STATE.INCIDENT]: StateIconIncident
+  [ACTIVITY_STATE.TERMINATED]: {
+    dark: Styled.CanceledDark,
+    light: Styled.CanceledLight
   },
-  [FLOW_NODE_TYPE.GATEWAY]: {
-    [ACTIVITY_STATE.COMPLETED]: FlownodeGatewayCompleted,
-    [ACTIVITY_STATE.ACTIVE]: FlownodeGateway,
-    [ACTIVITY_STATE.INCIDENT]: StateIconGatewayIncident
+  [ACTIVITY_STATE.INCIDENT]: {
+    dark: Styled.IncidentDark,
+    light: Styled.IncidentLight
   }
 };
 
-export default function FlowNodeIcon({state, type, ...props}) {
-  const TargetIcon =
-    state === ACTIVITY_STATE.TERMINATED ? Stop : iconsMap[type][state];
+function FlowNodeIcon({state, type, isSelected, ...props}) {
+  // target flow node icon
+  const TargetFlowNodeTypeIcon = flowNodeTypeIconsMap[type];
 
-  return <TargetIcon width="16px" height="16px" {...props} />;
+  // target state icon
+  let TargetStateIcon = stateIconsMap[state][props.theme];
+
+  // terminated and completed states have a special icon if the flownode is selected
+  if (isSelected && state === ACTIVITY_STATE.TERMINATED) {
+    TargetStateIcon = Styled.CanceledSelected;
+  }
+
+  if (isSelected && state === ACTIVITY_STATE.COMPLETED) {
+    TargetStateIcon = Styled.CompletedSelected;
+  }
+
+  return (
+    <Styled.IconContainer {...props}>
+      <TargetFlowNodeTypeIcon />
+      <TargetStateIcon />
+    </Styled.IconContainer>
+  );
 }
 
 FlowNodeIcon.propTypes = {
   state: PropTypes.oneOf(Object.values(ACTIVITY_STATE)),
-  type: PropTypes.oneOf(Object.values(FLOW_NODE_TYPE))
+  type: PropTypes.oneOf(Object.values(FLOW_NODE_TYPE)),
+  theme: PropTypes.string.isRequired,
+  isSelected: PropTypes.bool
 };
+
+export default themed(FlowNodeIcon);
