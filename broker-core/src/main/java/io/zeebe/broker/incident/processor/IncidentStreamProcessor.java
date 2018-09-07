@@ -55,8 +55,6 @@ public class IncidentStreamProcessor {
   private final Long2LongZbMap resolvingEvents = new Long2LongZbMap();
 
   public TypedStreamProcessor createStreamProcessor(TypedStreamEnvironment env) {
-    final KeyGenerator keyGenerator = KeyGenerator.createIncidentKeyGenerator();
-
     TypedEventStreamProcessorBuilder builder =
         env.newStreamProcessor()
             .keyGenerator(KeyGenerator.createIncidentKeyGenerator())
