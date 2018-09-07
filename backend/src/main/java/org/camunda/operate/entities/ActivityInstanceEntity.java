@@ -15,7 +15,7 @@ package org.camunda.operate.entities;
 import java.time.OffsetDateTime;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-public class ActivityInstanceEntity extends OperateEntity {
+public class ActivityInstanceEntity extends OperateZeebeEntity {
 
   private String activityId;
 

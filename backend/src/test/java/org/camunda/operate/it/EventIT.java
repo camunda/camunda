@@ -9,6 +9,7 @@ import org.camunda.operate.entities.EventType;
 import org.camunda.operate.es.reader.EventReader;
 import org.camunda.operate.rest.dto.EventQueryDto;
 import org.camunda.operate.util.ElasticsearchTestRule;
+import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.util.OperateIntegrationTest;
 import org.camunda.operate.util.ZeebeTestRule;
 import org.camunda.operate.util.ZeebeUtil;
@@ -73,7 +74,7 @@ public class EventIT extends OperateIntegrationTest {
 
     //update process payload
     final String updatedPayload = "{\"a\": \"c\"}";
-    zeebeUtil.updatePayload(topicName, workflowInstanceId, workflowInstanceId, updatedPayload, processId, workflowId);
+    zeebeUtil.updatePayload(topicName, IdUtil.extractKey(workflowInstanceId), workflowInstanceId, updatedPayload, processId, workflowId);
     elasticsearchTestRule.processAllEvents(5);
 
     //complete task C
@@ -139,7 +140,7 @@ public class EventIT extends OperateIntegrationTest {
     final String workflowInstanceId = zeebeUtil.startWorkflowInstance(topicName, processId, "{\"a\": \"b\"}");
     zeebeTestRule.setJobWorker(zeebeUtil.completeTask(topicName, activityId, zeebeTestRule.getWorkerName(), "{\"a\": \"b\"}"));
 
-    zeebeTestRule.getTopicSubscriptions().add(zeebeUtil.cancelWorkflowInstance(topicName, workflowInstanceId, workflowId));
+    zeebeUtil.cancelWorkflowInstance(topicName, workflowInstanceId, workflowId);
     elasticsearchTestRule.processAllEvents(20);
 
     elasticsearchTestRule.refreshIndexesInElasticsearch();

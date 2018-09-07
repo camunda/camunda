@@ -103,20 +103,23 @@ public class ZeebeUtil {
       .payload(payload)
       .send().join();
     logger.debug("Workflow instance created for workflow [{}]", bpmnProcessId);
-    return String.valueOf(workflowInstanceEvent.getKey());
+    return IdUtil.createId(workflowInstanceEvent.getKey(), workflowInstanceEvent.getMetadata().getPartitionId());
   }
 
-  public TopicSubscription cancelWorkflowInstance(String topic, String workflowInstanceId, String workflowKey) {
-    final TopicClient topicClient = client.topicClient(topic);
-    return topicClient.newSubscription().name(UUID.randomUUID().toString().substring(10)).workflowInstanceEventHandler(
-      event -> {
-        if (workflowInstanceId.equals(String.valueOf(event.getWorkflowInstanceKey())) &&
-          ! event.getState().equals(WorkflowInstanceState.CANCELED) && ! event.getState().equals(WorkflowInstanceState.COMPLETED)) {
-          ((WorkflowInstanceEventImpl)event).setWorkflowKey(Long.valueOf(workflowKey));
-          topicClient.workflowClient().newCancelInstanceCommand(event).send();
-        }
-      }
-    ).startAtHeadOfTopic().forcedStart().open();
+  public void cancelWorkflowInstance(String topic, String workflowInstanceId, String workflowKey) {
+
+    long workflowInstanceKey = IdUtil.extractKey(workflowInstanceId);
+    int partitionId = IdUtil.extractPartitionId(workflowInstanceId);
+
+    WorkflowInstanceEventImpl workflowInstanceEvent = new WorkflowInstanceEventImpl(new ZeebeObjectMapperImpl());
+    workflowInstanceEvent.setKey(workflowInstanceKey);
+    workflowInstanceEvent.setVersion(1);
+    workflowInstanceEvent.setWorkflowKey(Long.valueOf(workflowKey));
+    workflowInstanceEvent.setWorkflowInstanceKey(workflowInstanceKey);
+    workflowInstanceEvent.setTopicName(topic);
+    workflowInstanceEvent.setPartitionId(partitionId);
+    client.topicClient(topic).workflowClient().newCancelInstanceCommand(workflowInstanceEvent).send().join();
+
   }
 
   public JobWorker completeTask(String topicName, String jobType, String workerName, String payload) {
@@ -187,15 +190,20 @@ public class ZeebeUtil {
     }).startAtHeadOfTopic().open();
   }
 
-  public void updatePayload(String topicName, String key, String workflowInstanceId, String newPayload, String bpmnProcessId, String workflowId) {
+  public void updatePayload(String topicName, Long key, String workflowInstanceId, String newPayload, String bpmnProcessId, String workflowId) {
+
+    long workflowInstanceKey = IdUtil.extractKey(workflowInstanceId);
+    int partitionId = IdUtil.extractPartitionId(workflowInstanceId);
+
     WorkflowInstanceEventImpl workflowInstanceEvent = new WorkflowInstanceEventImpl(new ZeebeObjectMapperImpl());
-    workflowInstanceEvent.setKey(Long.valueOf(key));
+    workflowInstanceEvent.setKey(key);
     workflowInstanceEvent.setBpmnProcessId(bpmnProcessId);
     workflowInstanceEvent.setVersion(1);
     workflowInstanceEvent.setWorkflowKey(Long.valueOf(workflowId));
-    workflowInstanceEvent.setWorkflowInstanceKey(Long.valueOf(workflowInstanceId));
+    workflowInstanceEvent.setWorkflowInstanceKey(workflowInstanceKey);
     workflowInstanceEvent.setPayload(newPayload);
     workflowInstanceEvent.setTopicName(topicName);
+    workflowInstanceEvent.setPartitionId(partitionId);
     client.topicClient(topicName).workflowClient().newUpdatePayloadCommand(workflowInstanceEvent).payload(newPayload).send().join();
   }
 

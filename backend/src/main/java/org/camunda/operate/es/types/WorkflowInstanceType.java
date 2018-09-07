@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 public class WorkflowInstanceType extends StrictTypeMappingCreator {
 
   public static final String ID = "id";
+  public static final String KEY = "key";
   public static final String WORKFLOW_ID = "workflowId";
   public static final String WORKFLOW_INSTANCE_ID = "workflowInstanceId";
   public static final String START_DATE = "startDate";
@@ -118,6 +119,9 @@ public class WorkflowInstanceType extends StrictTypeMappingCreator {
       .startObject(PARTITION_ID)
         .field("type", "integer")
       .endObject()
+      .startObject(KEY)
+        .field("type", "long")
+      .endObject()
       .startObject(POSITION)
         .field("type", "long")
       .endObject()
@@ -131,6 +135,12 @@ public class WorkflowInstanceType extends StrictTypeMappingCreator {
     builder
       .startObject(ID)
         .field("type", "keyword")
+      .endObject()
+      .startObject(PARTITION_ID)
+        .field("type", "integer")
+      .endObject()
+      .startObject(KEY)
+        .field("type", "long")
       .endObject()
       .startObject(ERROR_MSG)
         .field("type", "keyword")
@@ -160,6 +170,12 @@ public class WorkflowInstanceType extends StrictTypeMappingCreator {
     builder
       .startObject(ID)
         .field("type", "keyword")
+      .endObject()
+      .startObject(PARTITION_ID)
+        .field("type", "integer")
+      .endObject()
+      .startObject(KEY)
+        .field("type", "long")
       .endObject()
       .startObject(STATE)
         .field("type", "keyword")
@@ -217,6 +233,12 @@ public class WorkflowInstanceType extends StrictTypeMappingCreator {
     builder
       .startObject(ID)
         .field("type", "keyword")
+      .endObject()
+      .startObject(PARTITION_ID)
+        .field("type", "integer")
+      .endObject()
+      .startObject(KEY)
+        .field("type", "long")
       .endObject()
       .startObject(ACTIVITY_ID)
         .field("type", "keyword")

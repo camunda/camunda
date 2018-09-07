@@ -185,8 +185,8 @@ public class WorkflowInstanceIT extends OperateIntegrationTest {
     assertVariable(workflowInstanceEntity, "a","b");
 
     //when payload is explicitly updated
-    final String activityInstanceId = workflowInstanceEntity.getActivities().stream().filter(ai -> ai.getActivityId().equals("task3")).findFirst().get().getId();
-    zeebeUtil.updatePayload(zeebeTestRule.getTopicName(), activityInstanceId, workflowInstanceId, "{\"newVar\": 555 }", processId, workflowId);
+    final Long activityInstanceKey = workflowInstanceEntity.getActivities().stream().filter(ai -> ai.getActivityId().equals("task3")).findFirst().get().getKey();
+    zeebeUtil.updatePayload(zeebeTestRule.getTopicName(), activityInstanceKey, workflowInstanceId, "{\"newVar\": 555 }", processId, workflowId);
 //    elasticsearchTestRule.processAllEvents(2);
 
     //then
@@ -375,7 +375,7 @@ public class WorkflowInstanceIT extends OperateIntegrationTest {
     assertActivityIsInIncidentState(gatewayActivity, "xor");
 
     //when payload updated
-    zeebeUtil.updatePayload(topicName, gatewayActivity.getId(), workflowInstanceId, "{\"foo\": 7}", processId, workflowId);
+    zeebeUtil.updatePayload(topicName, gatewayActivity.getKey(), workflowInstanceId, "{\"foo\": 7}", processId, workflowId);
     elasticsearchTestRule.processAllEvents(5);
 
     //then incident is resolved
@@ -403,7 +403,7 @@ public class WorkflowInstanceIT extends OperateIntegrationTest {
     final String workflowInstanceId = zeebeUtil.startWorkflowInstance(topicName, processId, "{\"a\": \"b\"}");
 
     //when
-    zeebeTestRule.getTopicSubscriptions().add(zeebeUtil.cancelWorkflowInstance(topicName, workflowInstanceId, workflowId));
+    zeebeUtil.cancelWorkflowInstance(topicName, workflowInstanceId, workflowId);
     elasticsearchTestRule.processAllEvents(15);
 
     //then

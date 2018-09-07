@@ -11,6 +11,8 @@ public class EventType extends StrictTypeMappingCreator {
 
   public static final String ID = "id";
 
+  public static final String KEY = "key";
+
   public static final String WORKFLOW_ID = "workflowId";
   public static final String WORKFLOW_INSTANCE_ID = "workflowInstanceId";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
@@ -49,6 +51,12 @@ public class EventType extends StrictTypeMappingCreator {
       .startObject(ID)
         .field("type", "keyword")
       .endObject()
+      .startObject(PARTITION_ID)
+        .field("type", "integer")
+      .endObject()
+      .startObject(KEY)
+        .field("type", "long")
+      .endObject()
       .startObject(WORKFLOW_ID)
         .field("type", "keyword")
       .endObject()
@@ -79,9 +87,6 @@ public class EventType extends StrictTypeMappingCreator {
       .endObject()
       .startObject(TOPIC_NAME)
         .field("type", "keyword")
-      .endObject()
-      .startObject(PARTITION_ID)
-        .field("type", "integer")
       .endObject()
       .startObject(METADATA)
         .field("type", "nested")

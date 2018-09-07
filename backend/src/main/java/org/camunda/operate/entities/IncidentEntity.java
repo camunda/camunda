@@ -3,11 +3,9 @@ package org.camunda.operate.entities;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 
-public class IncidentEntity extends OperateEntity {
+public class IncidentEntity extends OperateZeebeEntity {
 
   public static String UNKNOWN_ERROR_TYPE = "UNKNOWN";
-
-  public static String IO_MAPPING_ERROR_ERROR_TYPE = "IO_MAPPING_ERROR";
 
   public static String JOB_NO_RETRIES_ERROR_TYPE = "JOB_NO_RETRIES";
 

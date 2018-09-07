@@ -14,7 +14,7 @@ package org.camunda.operate.entities;
 
 import java.time.OffsetDateTime;
 
-public class EventEntity extends OperateEntity {
+public class EventEntity extends OperateZeebeEntity {
 
   /**
    * Workflow data.
@@ -42,7 +42,6 @@ public class EventEntity extends OperateEntity {
    */
   private EventMetadataEntity metadata;
 
-  private Integer partitionId;
   private String topicName;
 
   public String getWorkflowId() {
@@ -125,14 +124,6 @@ public class EventEntity extends OperateEntity {
     this.metadata = metadata;
   }
 
-  public Integer getPartitionId() {
-    return this.partitionId;
-  }
-
-  public void setPartitionId(Integer partitionId) {
-    this.partitionId = partitionId;
-  }
-
   public String getTopicName() {
     return topicName;
   }
@@ -172,8 +163,6 @@ public class EventEntity extends OperateEntity {
       return false;
     if (metadata != null ? !metadata.equals(that.metadata) : that.metadata != null)
       return false;
-    if (partitionId != null ? !partitionId.equals(that.partitionId) : that.partitionId != null)
-      return false;
     return topicName != null ? topicName.equals(that.topicName) : that.topicName == null;
   }
 
@@ -190,7 +179,6 @@ public class EventEntity extends OperateEntity {
     result = 31 * result + (dateTime != null ? dateTime.hashCode() : 0);
     result = 31 * result + (payload != null ? payload.hashCode() : 0);
     result = 31 * result + (metadata != null ? metadata.hashCode() : 0);
-    result = 31 * result + (partitionId != null ? partitionId.hashCode() : 0);
     result = 31 * result + (topicName != null ? topicName.hashCode() : 0);
     return result;
   }

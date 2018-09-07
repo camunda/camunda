@@ -13,6 +13,7 @@ import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.writer.EntityStorage;
 import org.camunda.operate.util.DateUtil;
+import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.util.ZeebeUtil;
 import org.camunda.operate.zeebe.payload.PayloadUtil;
 import org.slf4j.Logger;
@@ -109,9 +110,11 @@ public class WorkflowInstanceEventTransformer extends AbstractEventTransformer i
 
   private void convertSequenceFlowTakenEvent(WorkflowInstanceEvent event) throws InterruptedException {
     SequenceFlowEntity sequenceFlow = new SequenceFlowEntity();
-    sequenceFlow.setId(String.valueOf(event.getMetadata().getKey()));
+    sequenceFlow.setId(IdUtil.createId(event.getMetadata().getKey(), event.getMetadata().getPartitionId()));
+    sequenceFlow.setKey(event.getMetadata().getKey());
+    sequenceFlow.setPartitionId(event.getMetadata().getPartitionId());
     sequenceFlow.setActivityId(event.getActivityId());
-    sequenceFlow.setWorkflowInstanceId(String.valueOf(event.getWorkflowInstanceKey()));
+    sequenceFlow.setWorkflowInstanceId(IdUtil.createId(event.getWorkflowInstanceKey(), event.getMetadata().getPartitionId()));
     String topicName = event.getMetadata().getTopicName();
     entityStorage.getOperateEntitiesQueue(topicName).put(sequenceFlow);
   }
@@ -126,7 +129,7 @@ public class WorkflowInstanceEventTransformer extends AbstractEventTransformer i
 
       eventEntity.setPayload(event.getPayload());
       eventEntity.setWorkflowId(String.valueOf(event.getWorkflowKey()));
-      eventEntity.setWorkflowInstanceId(String.valueOf(event.getWorkflowInstanceKey()));
+      eventEntity.setWorkflowInstanceId(IdUtil.createId(event.getWorkflowInstanceKey(), event.getMetadata().getPartitionId()));
       eventEntity.setBpmnProcessId(event.getBpmnProcessId());
 
       if (event.getActivityId() != null) {
@@ -134,7 +137,7 @@ public class WorkflowInstanceEventTransformer extends AbstractEventTransformer i
       }
 
       if (ACTIVITY_INSTANCE_STATES.contains(event.getState())) {
-        eventEntity.setActivityInstanceId(String.valueOf(event.getKey()));
+        eventEntity.setActivityInstanceId(IdUtil.createId(event.getKey(), event.getMetadata().getPartitionId()));
       }
 
       RecordMetadata metadata = event.getMetadata();
@@ -147,9 +150,11 @@ public class WorkflowInstanceEventTransformer extends AbstractEventTransformer i
     logger.debug(event.toJson());
 
     ActivityInstanceEntity activityInstanceEntity = new ActivityInstanceEntity();
-    activityInstanceEntity.setId(String.valueOf(event.getKey()));
+    activityInstanceEntity.setId(IdUtil.createId(event.getMetadata().getKey(), event.getMetadata().getPartitionId()));
+    activityInstanceEntity.setKey(event.getMetadata().getKey());
+    activityInstanceEntity.setPartitionId(event.getMetadata().getPartitionId());
     activityInstanceEntity.setActivityId(event.getActivityId());
-    activityInstanceEntity.setWorkflowInstanceId(String.valueOf(event.getWorkflowInstanceKey()));
+    activityInstanceEntity.setWorkflowInstanceId(IdUtil.createId(event.getWorkflowInstanceKey(), event.getMetadata().getPartitionId()));
 
     if (ACTIVITY_INSTANCE_FINISH_STATES.contains(event.getState())) {
       activityInstanceEntity.setEndDate(DateUtil.toOffsetDateTime(event.getMetadata().getTimestamp()));
@@ -194,7 +199,9 @@ public class WorkflowInstanceEventTransformer extends AbstractEventTransformer i
     logger.debug(event.toJson());
 
     WorkflowInstanceEntity entity = new WorkflowInstanceEntity();
-    entity.setId(String.valueOf(event.getWorkflowInstanceKey()));
+    entity.setId(IdUtil.createId(event.getWorkflowInstanceKey(), event.getMetadata().getPartitionId()));
+    entity.setKey(event.getWorkflowInstanceKey());
+    entity.setPartitionId(event.getMetadata().getPartitionId());
     entity.setWorkflowId(String.valueOf(event.getWorkflowKey()));
     entity.setBusinessKey(event.getBpmnProcessId());
     if (WORKFLOW_INSTANCE_FINISH_STATES.contains(event.getState())) {

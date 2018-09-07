@@ -9,7 +9,7 @@ import org.camunda.operate.entities.variables.LongVariableEntity;
 import org.camunda.operate.entities.variables.StringVariableEntity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
-public class WorkflowInstanceEntity extends OperateEntity {
+public class WorkflowInstanceEntity extends OperateZeebeEntity {
 
   private String workflowId;
 
@@ -35,8 +35,6 @@ public class WorkflowInstanceEntity extends OperateEntity {
   private List<BooleanVariableEntity> booleanVariables = new ArrayList<>();
 
   private List<SequenceFlowEntity> sequenceFlows = new ArrayList<>();
-
-  private Integer partitionId;
 
   private long position;
 
@@ -151,14 +149,6 @@ public class WorkflowInstanceEntity extends OperateEntity {
     return this.getStringVariables().size() + this.getLongVariables().size() + this.getDoubleVariables().size() + this.getBooleanVariables().size();
   }
 
-  public Integer getPartitionId() {
-    return partitionId;
-  }
-
-  public void setPartitionId(Integer partitionId) {
-    this.partitionId = partitionId;
-  }
-
   public long getPosition() {
     return position;
   }
@@ -214,8 +204,6 @@ public class WorkflowInstanceEntity extends OperateEntity {
       return false;
     if (sequenceFlows != null ? !sequenceFlows.equals(that.sequenceFlows) : that.sequenceFlows != null)
       return false;
-    if (partitionId != null ? !partitionId.equals(that.partitionId) : that.partitionId != null)
-      return false;
     return topicName != null ? topicName.equals(that.topicName) : that.topicName == null;
   }
 
@@ -235,7 +223,6 @@ public class WorkflowInstanceEntity extends OperateEntity {
     result = 31 * result + (doubleVariables != null ? doubleVariables.hashCode() : 0);
     result = 31 * result + (booleanVariables != null ? booleanVariables.hashCode() : 0);
     result = 31 * result + (sequenceFlows != null ? sequenceFlows.hashCode() : 0);
-    result = 31 * result + (partitionId != null ? partitionId.hashCode() : 0);
     result = 31 * result + (int) (position ^ (position >>> 32));
     result = 31 * result + (topicName != null ? topicName.hashCode() : 0);
     return result;

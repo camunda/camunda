@@ -71,7 +71,7 @@ public class DeploymentEventTransformer extends AbstractEventTransformer impleme
       if (topics.contains(deploymentTopic)) {
         Map<String, DeploymentResource> resources = resourceToMap(event.getResources());
 
-        for (Workflow workflow: event.getDeployedWorkflows()) {
+        for (Workflow workflow : event.getDeployedWorkflows()) {
           String resourceName = workflow.getResourceName();
           DeploymentResource resource = resources.get(resourceName);
 
@@ -81,8 +81,7 @@ public class DeploymentEventTransformer extends AbstractEventTransformer impleme
           entityStorage.getOperateEntitiesQueue(deploymentTopic).put(workflowEntity);
         }
 
-      }
-      else {
+      } else {
         logger.debug("Deployment event won't be processed, as we're not listening for the topic [{}]", deploymentTopic);
       }
 
@@ -123,9 +122,8 @@ public class DeploymentEventTransformer extends AbstractEventTransformer impleme
     return workflowEntity;
   }
 
-  private Map<String,DeploymentResource> resourceToMap(List<DeploymentResource> resources) {
-    return resources.stream()
-        .collect(Collectors.toMap(DeploymentResource::getResourceName, Function.identity()));
+  private Map<String, DeploymentResource> resourceToMap(List<DeploymentResource> resources) {
+    return resources.stream().collect(Collectors.toMap(DeploymentResource::getResourceName, Function.identity()));
   }
 
   private String extractWorkflowName(InputStream xmlInputStream) {

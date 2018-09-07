@@ -1,6 +1,7 @@
 package org.camunda.operate.util;
 
 import javax.annotation.PostConstruct;
+import javax.annotation.PreDestroy;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -39,12 +40,17 @@ public class ZeebeDemoDataGenerator {
 
   private Random random = new Random();
 
+  private boolean manuallyCalled = false;
+
+  private ScheduledExecutorService scheduler;
+
   @PostConstruct
   private void createZeebeData() {
     this.createZeebeData(false);
   }
 
   public void createZeebeData(boolean manuallyCalled) {
+    this.manuallyCalled = manuallyCalled;
     try {
       createTopic();
     } catch (ClientCommandRejectedException ex) {
@@ -93,7 +99,7 @@ public class ZeebeDemoDataGenerator {
     //    final TopicSubscription updateRetriesIncidentSubscription = updateRetries();
 
     //start more instances after 1 minute
-    ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+    scheduler = Executors.newScheduledThreadPool(1);
     scheduler.schedule(() ->
       startWorkflowInstances(1)
     , 1, TimeUnit.MINUTES);
@@ -109,6 +115,13 @@ public class ZeebeDemoDataGenerator {
       logger.info("Subscriptions for demo data generation were canceled");
     }, 2, TimeUnit.MINUTES);
 
+    if (manuallyCalled) {
+      shutdownScheduler();
+    }
+  }
+
+  @PreDestroy
+  private void shutdownScheduler() {
     scheduler.shutdown();
     try {
       if (!scheduler.awaitTermination(3, TimeUnit.MINUTES)) {

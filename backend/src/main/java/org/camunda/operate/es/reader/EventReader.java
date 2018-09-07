@@ -73,7 +73,7 @@ public class EventReader {
   private void applySorting(SearchRequestBuilder searchRequestBuilder, SortingDto sorting) {
     if (sorting == null) {
       //apply default sorting
-      searchRequestBuilder.addSort(EventType.ID, SortOrder.ASC);
+      searchRequestBuilder.addSort(EventType.KEY, SortOrder.ASC);
     } else {
       searchRequestBuilder.addSort(sorting.getSortBy(), SortOrder.fromString(sorting.getSortOrder()));
     }

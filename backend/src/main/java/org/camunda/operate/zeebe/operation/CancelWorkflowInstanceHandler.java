@@ -67,7 +67,7 @@ public class CancelWorkflowInstanceHandler extends AbstractOperationHandler impl
 
   private WorkflowInstanceEvent createWorkflowInstanceEvent(WorkflowInstanceEntity workflowInstance) {
     WorkflowInstanceEventImpl workflowInstanceEvent = new WorkflowInstanceEventImpl(new ZeebeObjectMapperImpl());
-    workflowInstanceEvent.setKey(Long.valueOf(workflowInstance.getId()));
+    workflowInstanceEvent.setKey(workflowInstance.getKey());
     workflowInstanceEvent.setPartitionId(workflowInstance.getPartitionId());
     workflowInstanceEvent.setTopicName(workflowInstance.getTopicName());
     workflowInstanceEvent.setWorkflowKey(Long.valueOf(workflowInstance.getWorkflowId()));

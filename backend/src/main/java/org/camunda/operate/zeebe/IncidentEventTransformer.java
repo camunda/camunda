@@ -6,6 +6,7 @@ import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.entities.EventMetadataEntity;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.es.writer.EntityStorage;
+import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.util.ZeebeUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,18 +49,20 @@ public class IncidentEventTransformer extends AbstractEventTransformer implement
 
       IncidentEntity incidentEntity = new IncidentEntity();
 
-      incidentEntity.setId(String.valueOf(event.getMetadata().getKey()));
+      incidentEntity.setId(IdUtil.createId(event.getMetadata().getKey(), event.getMetadata().getPartitionId()));
+      incidentEntity.setKey(event.getMetadata().getKey());
+      incidentEntity.setPartitionId(event.getMetadata().getPartitionId());
       incidentEntity.setErrorType(event.getErrorType());
       incidentEntity.setErrorMessage(event.getErrorMessage());
       incidentEntity.setActivityId(event.getActivityId());
       if (event.getActivityInstanceKey() != null) {
-        incidentEntity.setActivityInstanceId(String.valueOf(event.getActivityInstanceKey()));
+        incidentEntity.setActivityInstanceId(IdUtil.createId(event.getActivityInstanceKey(), event.getMetadata().getPartitionId()));
       }
       if (event.getJobKey() != null) {
         incidentEntity.setJobId(String.valueOf(event.getJobKey()));
       }
       if (event.getWorkflowInstanceKey() != null) {
-        incidentEntity.setWorkflowInstanceId(String.valueOf(event.getWorkflowInstanceKey()));
+        incidentEntity.setWorkflowInstanceId(IdUtil.createId(event.getWorkflowInstanceKey(), event.getMetadata().getPartitionId()));
       }
 
       org.camunda.operate.entities.IncidentState incidentState = fromZeebeIncidentState(event.getState());
@@ -84,12 +87,12 @@ public class IncidentEventTransformer extends AbstractEventTransformer implement
     loadEventGeneralData(event, eventEntity);
 
     if (event.getWorkflowInstanceKey() != null) {
-      eventEntity.setWorkflowInstanceId(String.valueOf(event.getWorkflowInstanceKey()));
+      eventEntity.setWorkflowInstanceId(IdUtil.createId(event.getWorkflowInstanceKey(), event.getMetadata().getPartitionId()));
     }
     eventEntity.setBpmnProcessId(event.getBpmnProcessId());
     eventEntity.setActivityId(event.getActivityId());
     if (event.getActivityInstanceKey() != null) {
-      eventEntity.setActivityInstanceId(String.valueOf(event.getActivityInstanceKey()));
+      eventEntity.setActivityInstanceId(IdUtil.createId(event.getActivityInstanceKey(), event.getMetadata().getPartitionId()));
     }
 
     EventMetadataEntity eventMetadata = new EventMetadataEntity();

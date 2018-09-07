@@ -19,6 +19,7 @@ import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.entities.EventMetadataEntity;
 import org.camunda.operate.es.writer.EntityStorage;
 import org.camunda.operate.util.DateUtil;
+import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.util.ZeebeUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -59,7 +60,7 @@ public class JobEventTransformer extends AbstractEventTransformer implements Job
 
     final Object workflowInstanceKey = headers.get(WORKFLOW_INSTANCE_KEY_HEADER);
     if (workflowInstanceKey != null) {
-      eventEntity.setWorkflowInstanceId(String.valueOf(workflowInstanceKey));
+      eventEntity.setWorkflowInstanceId(IdUtil.createId((Long)workflowInstanceKey, event.getMetadata().getPartitionId()));
     }
 
     final Object bpmnProcessId = headers.get(BPMN_PROCESS_ID_HEADER);
@@ -74,7 +75,7 @@ public class JobEventTransformer extends AbstractEventTransformer implements Job
 
     final Object activityInstanceKey = headers.get(ACTIVITY_INSTANCE_KEY_HEADER);
     if (activityInstanceKey != null) {
-      eventEntity.setActivityInstanceId(String.valueOf(activityInstanceKey));
+      eventEntity.setActivityInstanceId(IdUtil.createId((Long)activityInstanceKey, event.getMetadata().getPartitionId()));
     }
 
     eventEntity.setPayload(event.getPayload());
