@@ -57,7 +57,7 @@ export default class Dropdown extends React.Component {
   };
 
   handleStateChange = changes => {
-    return this.setState(changes);
+    this.setState(changes);
   };
 
   resetState = () => {
