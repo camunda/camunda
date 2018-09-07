@@ -4,23 +4,23 @@
     <bpmn:startEvent id="start" name="start">
       <bpmn:outgoing>SequenceFlow_1sz6737</bpmn:outgoing>
     </bpmn:startEvent>
-    <bpmn:sequenceFlow id="SequenceFlow_1sz6737" sourceRef="start" targetRef="taskA" />
-    <bpmn:sequenceFlow id="SequenceFlow_06ytcxw" sourceRef="taskA" targetRef="taskB" />
-    <bpmn:sequenceFlow id="SequenceFlow_1oh45y7" sourceRef="taskB" targetRef="taskC" />
+    <bpmn:sequenceFlow id="SequenceFlow_1sz6737" sourceRef="start" targetRef="reviewLoanRequest" />
+    <bpmn:sequenceFlow id="SequenceFlow_06ytcxw" sourceRef="reviewLoanRequest" targetRef="checkSchufa" />
+    <bpmn:sequenceFlow id="SequenceFlow_1oh45y7" sourceRef="checkSchufa" targetRef="taskC" />
     <bpmn:endEvent id="end" name="end">
       <bpmn:incoming>SequenceFlow_148rk2p</bpmn:incoming>
     </bpmn:endEvent>
     <bpmn:sequenceFlow id="SequenceFlow_148rk2p" sourceRef="taskC" targetRef="end" />
-    <bpmn:serviceTask id="taskA" name="Review loan request">
+    <bpmn:serviceTask id="reviewLoanRequest" name="Review loan request">
       <bpmn:extensionElements>
-        <zeebe:taskDefinition type="taskA" />
+        <zeebe:taskDefinition type="reviewLoanRequest" />
       </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_1sz6737</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_06ytcxw</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:serviceTask id="taskB" name="Check SCHUFA">
+    <bpmn:serviceTask id="checkSchufa" name="Check SCHUFA">
       <bpmn:extensionElements>
-        <zeebe:taskDefinition type="taskB" />
+        <zeebe:taskDefinition type="checkSchufa" />
       </bpmn:extensionElements>
       <bpmn:incoming>SequenceFlow_06ytcxw</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1oh45y7</bpmn:outgoing>
@@ -75,10 +75,10 @@
           <dc:Bounds x="831" y="105" width="0" height="0" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
-      <bpmndi:BPMNShape id="ServiceTask_09m0goq_di" bpmnElement="taskA">
+      <bpmndi:BPMNShape id="ServiceTask_09m0goq_di" bpmnElement="reviewLoanRequest">
         <dc:Bounds x="310" y="80" width="100" height="80" />
       </bpmndi:BPMNShape>
-      <bpmndi:BPMNShape id="ServiceTask_0sryj72_di" bpmnElement="taskB">
+      <bpmndi:BPMNShape id="ServiceTask_0sryj72_di" bpmnElement="checkSchufa">
         <dc:Bounds x="502" y="80" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNShape id="ServiceTask_1xu4l3g_di" bpmnElement="taskC">

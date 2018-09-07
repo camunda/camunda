@@ -79,6 +79,8 @@ public class ZeebeDemoDataGenerator {
     List<JobWorker> jobWorkers = new ArrayList<>();
 
     jobWorkers.add(progressDemoProcessTaskA());
+    jobWorkers.add(progressReviewLoanRequestTask());
+    jobWorkers.add(progressCheckSchufaTask());
     jobWorkers.add(progressOrderProcessCheckPayment());
 
     jobWorkers.add(progressSimpleTask("taskB"));
@@ -243,6 +245,48 @@ public class ZeebeDemoDataGenerator {
       .open();
   }
 
+  private JobWorker progressReviewLoanRequestTask() {
+    final String topic = operateProperties.getZeebe().getTopics().get(0);
+    return client.topicClient(topic).jobClient().newWorker()
+      .jobType("reviewLoanRequest")
+      .handler((jobClient, job) -> {
+        final int scenarioCount = random.nextInt(2);
+        switch (scenarioCount) {
+        case 0:
+          //successfully complete task
+          jobClient.newCompleteCommand(job).payload("{\"loanRequestOK\": " + random.nextBoolean()).send().join();
+          break;
+        case 1:
+          //leave the task A active
+          break;
+        }
+      })
+      .name("operate")
+      .timeout(Duration.ofSeconds(3))
+      .open();
+  }
+
+  private JobWorker progressCheckSchufaTask() {
+    final String topic = operateProperties.getZeebe().getTopics().get(0);
+    return client.topicClient(topic).jobClient().newWorker()
+      .jobType("checkSchufa")
+      .handler((jobClient, job) -> {
+        final int scenarioCount = random.nextInt(2);
+        switch (scenarioCount) {
+        case 0:
+          //successfully complete task
+          jobClient.newCompleteCommand(job).payload("{\"schufaOK\": " + random.nextBoolean()).send().join();
+          break;
+        case 1:
+          //leave the task A active
+          break;
+        }
+      })
+      .name("operate")
+      .timeout(Duration.ofSeconds(3))
+      .open();
+  }
+
   public void createTopic() {
     final String topic = operateProperties.getZeebe().getTopics().get(0);
     zeebeUtil.createTopic(topic);
@@ -269,7 +313,28 @@ public class ZeebeDemoDataGenerator {
       zeebeUtil.startWorkflowInstance(topic, "demoProcess", "{\"a\": \"b\"}");
 
       if (version < 2) {
-        zeebeUtil.startWorkflowInstance(topic, "loanProcess", "{\"amount\": \"30000\"}");
+        zeebeUtil.startWorkflowInstance(topic, "loanProcess",
+          "{\"requestId\": \"RDG123000001\",\n"
+          + "  \"amount\": " + (random.nextInt(10000) + 20000) + ",\n"
+          + "  \"applier\": {\n"
+          + "    \"firstname\": \"Max\",\n"
+          + "    \"lastname\": \"Muster\",\n"
+          + "    \"age\": "+ (random.nextInt(30) + 18) +"\n"
+          + "  },\n"
+          + "  \"newClient\": false,\n"
+          + "  \"previousRequestIds\": [\"RDG122000001\", \"RDG122000501\", \"RDG122000057\"],\n"
+          + "  \"attachedDocs\": [\n"
+          + "    {\n"
+          + "      \"docType\": \"ID\",\n"
+          + "      \"number\": 123456789\n"
+          + "    },\n"
+          + "    {\n"
+          + "      \"docType\": \"APPLICATION_FORM\",\n"
+          + "      \"number\": 321547\n"
+          + "    }\n"
+          + "  ],\n"
+          + "  \"otherInfo\": null\n"
+          + "}");
       }
       if (version < 3) {
         zeebeUtil.startWorkflowInstance(topic, "orderProcess", "{\"a\": \"b\"}");
