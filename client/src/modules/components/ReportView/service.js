@@ -17,6 +17,28 @@ export function getTableProps(reportType, result, data, processInstanceCount) {
   };
 }
 
+export function getChartProps(reportType, result, data, processInstanceCount) {
+  if (reportType === 'combined') {
+    return Object.keys(result).reduce(
+      (prev, reportId) => {
+        return {
+          data: [...prev.data, formatResult(data, result[reportId].result)],
+          reportsNames: [...prev.reportsNames, result[reportId].name],
+          processInstanceCount: [
+            ...prev.processInstanceCount,
+            result[reportId].processInstanceCount
+          ]
+        };
+      },
+      {data: [], reportsNames: [], processInstanceCount: []}
+    );
+  }
+  return {
+    data: formatResult(data, result),
+    processInstanceCount
+  };
+}
+
 function getCombinedProps(result) {
   const reports = Object.keys(result).map(reportId => result[reportId]);
   const initialData = {

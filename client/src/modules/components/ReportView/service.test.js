@@ -1,6 +1,7 @@
-import {getTableProps, formatResult} from './service';
+import {getTableProps, formatResult, getChartProps, isDate} from './service';
 
 const exampleDurationReport = {
+  name: 'report A',
   reportType: 'single',
   processInstanceCount: 100,
   data: {
@@ -19,6 +20,18 @@ const exampleDurationReport = {
   result: {
     '2015-03-25T12:00:00Z': 2,
     '2015-03-26T12:00:00Z': 3
+  }
+};
+
+const combinedReport = {
+  reportType: 'combined',
+  data: {
+    configuration: {},
+    reports: ['report A', 'report B']
+  },
+  result: {
+    'report A': exampleDurationReport,
+    'report B': exampleDurationReport
   }
 };
 
@@ -106,50 +119,61 @@ it('should return correct single table repot data proberties', () => {
 });
 
 it('should return correct cominbed table repot data proberties', () => {
-  const reportA = {
-    name: 'report A',
-    data: {
-      processDefinitionKey: 'aKey',
-      processDefinitionVersion: '1',
-      view: {
-        operation: 'foo'
-      },
-      groupBy: {
-        type: 'processInstance',
-        unit: 'day'
-      },
-      visualization: 'table',
-      configuration: {}
-    },
-    processInstanceCount: 100,
-    result: {
-      '2015-03-25T12:00:00Z': 2
-    }
-  };
-
-  const report = {
-    reportType: 'combined',
-    data: {
-      configuration: {},
-      reports: ['report A', 'report B']
-    },
-    result: {
-      'report A': reportA,
-      'report B': reportA
-    }
-  };
-
   const tableProps = getTableProps(
-    report.reportType,
-    report.result,
-    reportA.data,
-    report.processInstanceCount
+    combinedReport.reportType,
+    combinedReport.result,
+    combinedReport.data,
+    combinedReport.processInstanceCount
   );
 
   expect(tableProps).toEqual({
     labels: [['foo', 'foo'], ['foo', 'foo']],
     reportsNames: ['report A', 'report A'],
-    data: [{'2015-03-25': 2}, {'2015-03-25': 2}],
+    data: [{'2015-03-25': 2, '2015-03-26': 3}, {'2015-03-25': 2, '2015-03-26': 3}],
+    processInstanceCount: [100, 100]
+  });
+});
+
+it('should return correct cominbed chart repot data proberties for single report', () => {
+  const chartProps = getChartProps(
+    exampleDurationReport.reportType,
+    exampleDurationReport.result,
+    exampleDurationReport.data,
+    exampleDurationReport.processInstanceCount
+  );
+
+  expect(chartProps).toEqual({
+    data: {'2015-03-26': 3, '2015-03-25': 2},
+    processInstanceCount: 100
+  });
+});
+
+it('should return correct cominbed chart repot data proberties for single report', () => {
+  const exampleChartDurationReport = {
+    ...exampleDurationReport,
+    data: {
+      ...exampleDurationReport.data,
+      visualization: 'line'
+    }
+  };
+  const combinedChartReport = {
+    ...combinedReport,
+    result: {
+      'report A': exampleChartDurationReport,
+      'report B': exampleChartDurationReport
+    }
+  };
+
+  const chartProps = getChartProps(
+    combinedChartReport.reportType,
+    combinedChartReport.result,
+    exampleChartDurationReport.data,
+    combinedChartReport.processInstanceCount
+  );
+
+  expect(chartProps).toEqual({
+    data: [{'2015-03-25': 2, '2015-03-26': 3}, {'2015-03-25': 2, '2015-03-26': 3}],
+    reportsNames: ['report A', 'report A'],
     processInstanceCount: [100, 100]
   });
 });

@@ -6,7 +6,7 @@ export async function getCamundaEndpoints() {
 }
 
 export function getRelativeValue(data, total) {
-  if (typeof data === 'string') return '';
+  if (data === null) return '';
   return Math.round(data / total * 1000) / 10 + '%';
 }
 
@@ -29,7 +29,7 @@ export function uniteResults(results, allKeys) {
     const newResult = {};
     allKeys.forEach(key => {
       if (typeof result[key] === 'undefined') {
-        newResult[key] = '';
+        newResult[key] = null;
       } else {
         newResult[key] = result[key];
       }
@@ -43,10 +43,14 @@ export function getBodyRows(unitedResults, allKeys, formatter, isFrequency, proc
   const rows = allKeys.map(key => {
     const row = [key];
     unitedResults.forEach((result, i) => {
-      row.push(formatter(result[key]));
+      row.push(formatter(result[key] || ''));
       if (isFrequency) row.push(getRelativeValue(result[key], processInstanceCount[i]));
     });
     return row;
   });
   return rows;
+}
+
+export function isDate(date) {
+  return isNaN(date) && new Date(date) !== 'Invalid Date' && !isNaN(new Date(date));
 }

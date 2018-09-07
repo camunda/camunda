@@ -2,7 +2,7 @@ import React from 'react';
 import ChartRenderer from 'chart.js';
 import ReportBlankSlate from '../ReportBlankSlate';
 
-import {getRelativeValue} from './service';
+import {getRelativeValue, uniteResults, isDate} from './service';
 import {formatters} from 'services';
 
 import {themed} from 'theme';
@@ -60,15 +60,7 @@ export default themed(
 
       this.chart = new ChartRenderer(this.container, {
         type,
-        data: {
-          labels: Object.keys(data),
-          datasets: [
-            {
-              data: Object.values(data),
-              ...this.createDatasetOptions(type, data, targetValue)
-            }
-          ]
-        },
+        data: this.createChartData(data, type, targetValue),
         options: this.createChartOptions(type, data, targetValue),
         plugins: [
           {
@@ -77,6 +69,36 @@ export default themed(
           }
         ]
       });
+    };
+
+    createChartData = (data, type, targetValue) => {
+      const isCombined = this.props.reportType === 'combined';
+      let dataArr = data;
+      if (!isCombined) dataArr = [data];
+
+      const colors = this.createColors(dataArr.length);
+
+      let labels = Object.keys(Object.assign({}, ...dataArr));
+
+      if (isDate(labels[0]))
+        labels.sort((a, b) => {
+          return new Date(a) - new Date(b);
+        });
+
+      dataArr = uniteResults(dataArr, labels);
+
+      const datasets = dataArr.map((report, index) => {
+        return {
+          label: this.props.reportsNames && this.props.reportsNames[index],
+          data: Object.values(report),
+          ...this.createDatasetOptions(type, data, targetValue, colors[index], isCombined)
+        };
+      });
+
+      return {
+        labels,
+        datasets
+      };
     };
 
     drawHorizentalLine = chart => {
@@ -101,7 +123,7 @@ export default themed(
     componentDidMount = this.createNewChart;
     componentDidUpdate = this.createNewChart;
 
-    createDatasetOptions = (type, data, targetValue) => {
+    createDatasetOptions = (type, data, targetValue, color, isCombined) => {
       switch (type) {
         case 'pie':
           return {
@@ -111,12 +133,12 @@ export default themed(
           };
         case 'line':
           return {
-            borderColor: this.getColorFor('bar'),
-            backgroundColor: this.getColorFor('area'),
+            borderColor: isCombined ? color : this.getColorFor('bar'),
+            backgroundColor: isCombined ? 'transparent' : this.getColorFor('area'),
             borderWidth: 2
           };
         case 'bar':
-          const barColor = this.determineBarColor(targetValue, data);
+          const barColor = isCombined ? color : this.determineBarColor(targetValue, data);
           return {
             borderColor: barColor,
             backgroundColor: barColor,
@@ -161,8 +183,9 @@ export default themed(
 
     createBarOptions = (data, targetValue) => {
       const targetLine = targetValue ? this.getFormattedTargetValue(targetValue) : 0;
+      const isCombined = this.props.reportType === 'combined';
       return {
-        legend: {display: false},
+        legend: {display: isCombined},
         scales: {
           yAxes: [
             {
@@ -171,7 +194,7 @@ export default themed(
               },
               ticks: {
                 ...(this.props.property === 'duration' &&
-                  this.createDurationFormattingOptions(data, targetLine)),
+                  this.createDurationFormattingOptions(data, targetLine, isCombined)),
                 beginAtZero: true,
                 fontColor: this.getColorFor('label'),
                 suggestedMax: targetLine
@@ -200,12 +223,18 @@ export default themed(
       return convertToMilliseconds(values.target, values.dateFormat);
     };
 
-    createDurationFormattingOptions = (data, targetLine) => {
+    createDurationFormattingOptions = (data, targetLine, isCombined) => {
       // since the duration is given in milliseconds, chart.js cannot create nice y axis
       // ticks. So we define our own set of possible stepSizes and find one that the maximum
       // value of the dataset fits into or the maximum target line value if it is defined.
+      let dataMinStep;
+      if (isCombined) {
+        dataMinStep =
+          Math.max(...data.map(reportResult => Math.max(...Object.values(reportResult)))) / 10;
+      } else {
+        dataMinStep = Math.max(...Object.values(data)) / 10;
+      }
       const targetLineMinStep = targetLine / 10;
-      const dataMinStep = Math.max(...Object.values(data)) / 10;
       const minimumStepSize = Math.max(targetLineMinStep, dataMinStep);
 
       const steps = [
@@ -259,11 +288,14 @@ export default themed(
           callbacks: {
             label: ({index, datasetIndex}, {datasets}) => {
               const formatted = this.props.formatter(datasets[datasetIndex].data[index]);
+              let processInstanceCountArr = this.props.processInstanceCount;
+              if (this.props.reportType === 'single')
+                processInstanceCountArr = [processInstanceCountArr];
 
               if (this.props.property === 'frequency') {
                 return `${formatted} (${getRelativeValue(
                   datasets[datasetIndex].data[index],
-                  this.props.processInstanceCount
+                  processInstanceCountArr[datasetIndex]
                 )})`;
               } else {
                 return formatted;

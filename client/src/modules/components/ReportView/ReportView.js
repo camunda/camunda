@@ -4,7 +4,7 @@ import {ErrorBoundary, LoadingIndicator} from 'components';
 import {getFlowNodeNames, formatters} from 'services';
 import ReportBlankSlate from './ReportBlankSlate';
 
-import {getTableProps, formatResult} from './service';
+import {getTableProps, getChartProps} from './service';
 
 import {Number, Table, Heatmap, Chart} from './views';
 
@@ -55,8 +55,10 @@ export default class ReportView extends React.Component {
 
   checkCombinedAndRender = report => {
     const result = report.result;
-    if (result && typeof result === 'object' && Object.keys(result).length)
-      return this.renderCombinedReport(report);
+    if (result && typeof result === 'object' && Object.keys(result).length) {
+      const {data} = Object.values(report.result)[0];
+      return this.getConfig(data.visualization, 'combined', report.result, data);
+    }
     return this.buildInstructionMessage('one or more reports from the list', true);
   };
 
@@ -164,28 +166,7 @@ export default class ReportView extends React.Component {
     return this.getConfig(data.visualization, 'single', result, data, processInstanceCount);
   };
 
-  renderCombinedReport = report => {
-    const reports = Object.keys(report.result).map(reportId => report.result[reportId]);
-
-    const {result, data, processInstanceCount} = reports[0];
-    if (reports.length === 1) {
-      return this.getConfig(data.visualization, 'single', result, data, processInstanceCount);
-    }
-    return this.getConfig(reports[0].data.visualization, 'combined', report.result, data);
-  };
-
   getConfig = (visualization, reportType, result, data, processInstanceCount) => {
-    // temporary check
-    if (reportType === 'combined' && visualization !== 'table') {
-      const config = {
-        component: ReportBlankSlate,
-        props: {
-          message: 'combined bar charts and area charts are not available yet'
-        }
-      };
-      return this.getReportViewTemplate(config, config.component);
-    }
-
     let config;
 
     switch (visualization) {
@@ -226,10 +207,10 @@ export default class ReportView extends React.Component {
         config = {
           component: Chart,
           props: {
-            data: formatResult(data, result),
-            type: data.visualization,
+            ...getChartProps(reportType, result, data, processInstanceCount),
+            reportType,
+            type: visualization,
             property: data.view.property,
-            processInstanceCount,
             targetValue: data.configuration.targetValue
           }
         };

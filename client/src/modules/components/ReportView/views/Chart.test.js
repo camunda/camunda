@@ -4,7 +4,7 @@ import {mount} from 'enzyme';
 import ThemedChart from './Chart';
 import ChartRenderer from 'chart.js';
 
-import {getRelativeValue} from './service';
+import {getRelativeValue, uniteResults} from './service';
 import {formatters} from 'services';
 
 const {WrappedComponent: Chart} = ThemedChart;
@@ -21,7 +21,9 @@ jest.mock('chart.js', () =>
 
 jest.mock('./service', () => {
   return {
-    getRelativeValue: jest.fn()
+    getRelativeValue: jest.fn(),
+    uniteResults: jest.fn().mockReturnValue([{a: 123, b: 5}]),
+    isDate: jest.fn()
   };
 });
 
@@ -124,6 +126,7 @@ it('should include the relative value in tooltips', () => {
       data={data}
       processInstanceCount={5}
       property="frequency"
+      reportType="single"
       targetValue={{active: false}}
       formatter={v => v}
     />
@@ -185,4 +188,53 @@ it('should invoke convertToMilliSeconds when target value is set to Date Format'
     .instance()
     .getFormattedTargetValue({active: true, values: {target: 10, dateFormat: 'millis'}});
   expect(convertToMilliseconds).toBeCalledWith(10, 'millis');
+});
+
+it('should return correct chart data object for a single report', () => {
+  const data = {foo: 123, bar: 5};
+  const node = mount(<Chart data={data} />);
+
+  const result = node.instance().createChartData(data, 'line');
+
+  expect(result).toEqual({
+    labels: ['foo', 'bar'],
+    datasets: [
+      {
+        label: undefined,
+        data: [123, 5],
+        borderColor: '#1991c8',
+        backgroundColor: '#e5f2f8',
+        borderWidth: 2
+      }
+    ]
+  });
+});
+
+it('should return correct chart data object for a combined report', () => {
+  const data = [{foo: 123, bar: 5}, {foo: 1, dar: 3}];
+  uniteResults.mockReturnValue(data);
+  const node = mount(
+    <Chart data={data} reportType="combined" reportsNames={['Report A', 'Report B']} />
+  );
+
+  const result = node.instance().createChartData(data, 'line');
+  expect(result).toEqual({
+    labels: ['foo', 'bar', 'dar'],
+    datasets: [
+      {
+        label: 'Report A',
+        data: [123, 5],
+        borderColor: 'hsl(0, 65%, 50%)',
+        backgroundColor: 'transparent',
+        borderWidth: 2
+      },
+      {
+        label: 'Report B',
+        data: [1, 3],
+        borderColor: 'hsl(180, 65%, 50%)',
+        backgroundColor: 'transparent',
+        borderWidth: 2
+      }
+    ]
+  });
 });
