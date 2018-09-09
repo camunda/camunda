@@ -65,7 +65,7 @@
     <plugin.version.versions>2.5</plugin.version.versions>
 
     <!-- maven extensions -->
-    <extension.version.os-maven-plugin>1.5.0.Final</extension.version.os-maven-plugin>
+    <extension.version.os-maven-plugin>1.6.0</extension.version.os-maven-plugin>
   </properties>
 
   <dependencyManagement>
