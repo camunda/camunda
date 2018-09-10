@@ -32,6 +32,7 @@ export default class Filter extends React.Component {
   getFilterModal = type => {
     switch (type) {
       case 'startDate':
+      case 'endDate':
         return DateFilter;
       case 'variable':
         return VariableFilter;
@@ -58,6 +59,7 @@ export default class Filter extends React.Component {
   addFilter = newFilter => {
     let filters = this.props.data;
     filters = this.filterIncompatibleExistingFilters(filters, newFilter.type, ['startDate']);
+    filters = this.filterIncompatibleExistingFilters(filters, newFilter.type, ['endDate']);
     filters = this.filterIncompatibleExistingFilters(filters, newFilter.type, [
       'runningInstancesOnly',
       'completedInstancesOnly'
@@ -110,7 +112,6 @@ export default class Filter extends React.Component {
 
   render() {
     const FilterModal = this.getFilterModal(this.state.newFilterType);
-
     const EditFilterModal = this.getFilterModal(
       this.state.editFilter ? this.state.editFilter.type : null
     );
@@ -140,6 +141,7 @@ export default class Filter extends React.Component {
           <Dropdown.Option onClick={this.openNewFilterModal('startDate')}>
             Start Date
           </Dropdown.Option>
+          <Dropdown.Option onClick={this.openNewFilterModal('endDate')}>End Date</Dropdown.Option>
           <Dropdown.Option onClick={this.openNewFilterModal('processInstanceDuration')}>
             Duration
           </Dropdown.Option>
@@ -167,6 +169,7 @@ export default class Filter extends React.Component {
           close={this.closeModal}
           xml={this.props.xml}
           {...this.definitionConfig()}
+          filterType={this.state.newFilterType}
         />
         <EditFilterModal
           addFilter={this.editFilter}
@@ -174,6 +177,7 @@ export default class Filter extends React.Component {
           close={this.closeModal}
           xml={this.props.xml}
           {...this.definitionConfig()}
+          filterType={this.state.editFilter && this.state.editFilter.type}
         />
       </div>
     );

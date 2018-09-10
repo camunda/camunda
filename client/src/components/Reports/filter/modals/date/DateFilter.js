@@ -1,8 +1,17 @@
 import React from 'react';
 import moment from 'moment';
 
-import {Modal, Button, ButtonGroup, Input, Select, ErrorMessage, DatePicker} from 'components';
-
+import {
+  Modal,
+  Button,
+  ButtonGroup,
+  Input,
+  Select,
+  ErrorMessage,
+  DatePicker,
+  Message
+} from 'components';
+import {formatters} from 'services';
 import './DateFilter.css';
 
 export default class DateFilter extends React.Component {
@@ -35,7 +44,7 @@ export default class DateFilter extends React.Component {
   createFilter = () => {
     if (this.state.mode === 'static') {
       this.props.addFilter({
-        type: 'startDate',
+        type: this.props.filterType,
         data: {
           type: 'fixed',
           start: this.state.startDate.startOf('day').format('YYYY-MM-DDTHH:mm:ss'),
@@ -44,7 +53,7 @@ export default class DateFilter extends React.Component {
       });
     } else if (this.state.mode === 'dynamic') {
       this.props.addFilter({
-        type: 'startDate',
+        type: this.props.filterType,
         data: {
           type: 'relative',
           start: {
@@ -79,6 +88,10 @@ export default class DateFilter extends React.Component {
     this.setState(newState);
   };
 
+  filterTypeToOperation = () => {
+    return this.props.filterType.match('[a-z]*') + 'ed';
+  };
+
   render() {
     const {mode, validDate, startDate, endDate, dynamicValue, dynamicUnit} = this.state;
     return (
@@ -88,8 +101,15 @@ export default class DateFilter extends React.Component {
         onConfirm={mode === 'dynamic' && validDate ? this.createFilter : undefined}
         className="DateFilter__modal"
       >
-        <Modal.Header>Add Start Date Filter</Modal.Header>
+        <Modal.Header>{`Add ${formatters.camelCaseToLabel(
+          this.props.filterType
+        )} Filter`}</Modal.Header>
         <Modal.Content>
+          {this.props.filterType === 'endDate' && (
+            <Message type="warning">
+              Reports with an active End Date Filter will only show finished instances.
+            </Message>
+          )}
           <ButtonGroup className="DateFilter__mode-buttons">
             <Button
               onClick={() => this.setMode('static')}
@@ -117,7 +137,7 @@ export default class DateFilter extends React.Component {
           {mode === 'dynamic' && (
             <div className="DateFilter__inputs">
               <label className="DateFilter__input-label">
-                Only include process instances started within the last
+                {`Only include process instances ${this.filterTypeToOperation()} within the last`}
               </label>
               <Input
                 value={dynamicValue}

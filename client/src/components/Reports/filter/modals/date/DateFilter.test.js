@@ -25,6 +25,14 @@ jest.mock('components', () => {
   };
 });
 
+jest.mock('services', () => {
+  return {
+    formatters: {
+      camelCaseToLabel: text => text
+    }
+  };
+});
+
 it('should contain a modal', () => {
   const node = mount(<DateFilter />);
 

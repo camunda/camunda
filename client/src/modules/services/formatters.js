@@ -101,3 +101,7 @@ export function getHighlightedText(text, highlight) {
     </span>
   ));
 }
+
+export function camelCaseToLabel(type) {
+  return type.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
+}

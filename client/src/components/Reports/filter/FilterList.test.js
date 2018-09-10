@@ -10,6 +10,15 @@ jest.mock('components', () => {
   };
 });
 
+jest.mock('services', () => {
+  return {
+    formatters: {
+      camelCaseToLabel: text =>
+        text.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())
+    }
+  };
+});
+
 it('should render an unordered list', () => {
   const node = mount(<FilterList data={[]} />);
 

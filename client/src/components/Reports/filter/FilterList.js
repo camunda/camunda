@@ -2,6 +2,7 @@ import React from 'react';
 import moment from 'moment';
 
 import {ActionItem} from 'components';
+import {formatters} from 'services';
 
 import './FilterList.css';
 
@@ -15,8 +16,7 @@ export default class FilterList extends React.Component {
 
     for (let i = 0; i < this.props.data.length; i++) {
       const filter = this.props.data[i];
-
-      if (filter.type === 'startDate') {
+      if (filter.type === 'startDate' || filter.type === 'endDate') {
         const {type} = filter.data;
 
         if (type === 'fixed') {
@@ -33,7 +33,9 @@ export default class FilterList extends React.Component {
                 }}
                 className="FilterList__action-item"
               >
-                <span className="FilterList__parameter-name">Start Date</span>
+                <span className="FilterList__parameter-name">
+                  {formatters.camelCaseToLabel(filter.type)}
+                </span>
                 {this.createOperator('is between')}
                 <span className="FilterList__value">
                   {moment(filter.data.start).format('YYYY-MM-DD')}
@@ -61,7 +63,9 @@ export default class FilterList extends React.Component {
                 }}
                 className="FilterList__action-item"
               >
-                <span className="FilterList__parameter-name">Start Date </span>
+                <span className="FilterList__parameter-name">
+                  {formatters.camelCaseToLabel(filter.type)}{' '}
+                </span>
                 less than{' '}
                 <span className="FilterList__value">
                   {value.toString()} {unit.slice(0, -1)}
