@@ -28,6 +28,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.collections.Long2ObjectHashMap;
 import org.assertj.core.api.AbstractListAssert;
 import org.assertj.core.api.ObjectAssert;
+import org.assertj.core.util.Lists;
 
 public class WorkflowInstanceAssert
     extends AbstractListAssert<
@@ -44,6 +45,12 @@ public class WorkflowInstanceAssert
   protected ObjectAssert<TypedRecord<WorkflowInstanceRecord>> toAssert(
       TypedRecord<WorkflowInstanceRecord> value, String description) {
     return new ObjectAssert<>(value).describedAs(description);
+  }
+
+  @Override
+  protected WorkflowInstanceAssert newAbstractIterableAssert(
+      Iterable<? extends TypedRecord<WorkflowInstanceRecord>> iterable) {
+    return new WorkflowInstanceAssert(Lists.newArrayList(iterable));
   }
 
   public static WorkflowInstanceAssert assertThat(
