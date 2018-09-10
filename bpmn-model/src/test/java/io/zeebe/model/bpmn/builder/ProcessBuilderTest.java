@@ -1919,6 +1919,17 @@ public class ProcessBuilderTest {
         .serviceTask("task", b -> b.name("name"));
   }
 
+  /** or else generic types in parameters are not available and things won't compile */
+  @Test
+  public void testConnectToDoesNotReturnRawBuilder() {
+    Bpmn.createProcess()
+        .startEvent()
+        .serviceTask("goto")
+        .connectTo("goto")
+        .serviceTask("task", b -> b.name("name"))
+        .done();
+  }
+
   protected Message assertMessageEventDefinition(String elementId, String messageName) {
     final MessageEventDefinition messageEventDefinition =
         assertAndGetSingleEventDefinition(elementId, MessageEventDefinition.class);
