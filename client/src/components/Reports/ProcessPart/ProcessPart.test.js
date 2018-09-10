@@ -77,3 +77,31 @@ it('should show the bpmn diagram', () => {
 
   expect(node.find('BPMNDiagram')).toBePresent();
 });
+
+it('should show the id of the selected node if it does not have a name', () => {
+  const node = mount(<ProcessPart />);
+
+  node.setState({
+    modalOpen: true,
+    start: {id: 'startId', name: 'Start Name'},
+    end: {id: 'endId'}
+  });
+
+  expect(node.find('#modal_content')).toIncludeText('Start Name');
+  expect(node.find('#modal_content')).toIncludeText('endId');
+});
+
+it('should deselect a node when it is clicked and already selected', () => {
+  const node = mount(<ProcessPart />);
+
+  const flowNode = {id: 'nodeId', name: 'Some node'};
+
+  node.setState({
+    modalOpen: true,
+    start: flowNode
+  });
+
+  node.instance().selectNode(flowNode);
+
+  expect(node.state('start')).toBe(null);
+});

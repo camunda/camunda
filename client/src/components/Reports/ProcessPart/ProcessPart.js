@@ -67,11 +67,13 @@ export default class ProcessPart extends React.Component {
           <span>
             Only regard the process instance part between{' '}
             <ActionItem disabled={!this.state.start} onClick={() => this.setState({start: null})}>
-              {this.state.start ? this.state.start.name : 'Please select start'}
+              {this.state.start
+                ? this.state.start.name || this.state.start.id
+                : 'Please select start'}
             </ActionItem>{' '}
             and{' '}
             <ActionItem disabled={!this.state.end} onClick={() => this.setState({end: null})}>
-              {this.state.end ? this.state.end.name : 'Please select end'}
+              {this.state.end ? this.state.end.name || this.state.end.id : 'Please select end'}
             </ActionItem>
           </span>
           <div className="diagram-container">
@@ -102,10 +104,16 @@ export default class ProcessPart extends React.Component {
   };
 
   selectNode = node => {
+    if (this.state.start === node) {
+      return this.setState({start: null});
+    }
+    if (this.state.end === node) {
+      return this.setState({end: null});
+    }
     if (!this.state.start) {
-      this.setState({start: node});
+      return this.setState({start: node});
     } else {
-      this.setState({end: node});
+      return this.setState({end: node});
     }
   };
 
