@@ -192,10 +192,10 @@ public class EmbeddedBrokerRule extends ExternalResource {
     if (brokerCfg == null) {
       try (final InputStream configStream = configSupplier.get()) {
         if (configStream == null) {
-          throw new RuntimeException(
-              "Unable to read configuration. Default filename is " + DEFAULT_CONFIG_FILE);
+          brokerCfg = new BrokerCfg();
+        } else {
+          brokerCfg = TomlConfigurationReader.read(configStream);
         }
-        brokerCfg = TomlConfigurationReader.read(configStream);
         if (ENABLE_DEBUG_EXPORTER) {
           brokerCfg.getExporters().add(DebugExporter.defaultConfig(false));
         }

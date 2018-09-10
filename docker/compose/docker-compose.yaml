@@ -17,7 +17,6 @@ services:
             - ZEEBE_PARTITIONS_COUNT=3
             - ZEEBE_CLUSTER_SIZE=3
             - ZEEBE_REPLICATION_FACTOR=3
-            - BOOTSTRAP=3
         volumes:
             - broker_1:/usr/local/zeebe/data
 
@@ -32,7 +31,6 @@ services:
             - ZEEBE_CLUSTER_SIZE=3
             - ZEEBE_REPLICATION_FACTOR=3
             - ZEEBE_CONTACT_POINTS=broker-1:26502
-            - BOOTSTRAP=0
         volumes:
             - broker_2:/usr/local/zeebe/data
 
@@ -47,6 +45,5 @@ services:
             - ZEEBE_CLUSTER_SIZE=3
             - ZEEBE_REPLICATION_FACTOR=3
             - ZEEBE_CONTACT_POINTS=broker-1:26502
-            - BOOTSTRAP=0
         volumes:
             - broker_3:/usr/local/zeebe/data
