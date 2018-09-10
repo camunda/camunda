@@ -7,7 +7,7 @@ import {DROPDOWN_PLACEMENT, CONTEXTUAL_MESSAGE_TYPE} from 'modules/constants';
 import {Colors} from 'modules/theme';
 
 import Paginator from './Paginator';
-import {getMaxPage} from './service';
+import {getMaxPage, isAnyInstanceSelected} from './service';
 import * as Styled from './styled';
 
 export default class ListFooter extends React.Component {
@@ -20,7 +20,8 @@ export default class ListFooter extends React.Component {
     onAddNewSelection: PropTypes.func.isRequired,
     onAddToSpecificSelection: PropTypes.func,
     onAddToOpenSelection: PropTypes.func,
-    selections: PropTypes.array
+    selections: PropTypes.array,
+    selection: PropTypes.object
   };
 
   isPaginationRequired = (maxPage, total) => {
@@ -29,7 +30,10 @@ export default class ListFooter extends React.Component {
 
   renderButton = () => {
     return (
-      <Styled.SelectionButton onClick={this.props.onAddNewSelection}>
+      <Styled.SelectionButton
+        onClick={this.props.onAddNewSelection}
+        disabled={!isAnyInstanceSelected(this.props.selection)}
+      >
         Create Selection
       </Styled.SelectionButton>
     );
@@ -55,6 +59,7 @@ export default class ListFooter extends React.Component {
         placement={DROPDOWN_PLACEMENT.TOP}
         label="Add to Selection..."
         buttonStyles={DropdownButtonStyles}
+        disabled={!isAnyInstanceSelected(this.props.selection)}
       >
         {selections.length < 10 ? (
           <Dropdown.Option
@@ -99,6 +104,7 @@ export default class ListFooter extends React.Component {
       firstElement,
       onFirstElementChange
     } = this.props;
+
     const maxPage = getMaxPage(total, perPage);
     return (
       <Styled.Footer>

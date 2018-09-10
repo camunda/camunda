@@ -124,6 +124,7 @@ export default class ListView extends React.Component {
               total={instancesInFilter}
               perPage={this.state.entriesPerPage}
               firstElement={this.state.firstElement}
+              selection={this.props.selection}
               selections={this.props.selections}
               openSelection={this.props.openSelection}
               onAddToSpecificSelection={onAddToSpecificSelection}

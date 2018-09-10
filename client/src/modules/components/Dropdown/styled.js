@@ -17,7 +17,17 @@ export const Button = themed(styled.button`
   outline: none;
 
   /* Color */
-  color: currentColor;
+  color: ${({disabled}) =>
+    disabled
+      ? themeStyle({
+          dark: 'rgba(255, 255, 255, 0.6)',
+          light: 'rgba(98, 98, 110, 0.6);'
+        })
+      : themeStyle({
+          dark: 'rgba(255, 255, 255, 0.9)',
+          light: 'rgba(98, 98, 110, 0.9)'
+        })};
+
   background: none;
 
   /* Text */
@@ -26,7 +36,8 @@ export const Button = themed(styled.button`
   font-weight: 600;
 
   /* Other */
-  cursor: pointer;
+  cursor: ${({disabled}) => (disabled ? 'default' : 'pointer')};
+
   &:focus {
     box-shadow: ${themeStyle({
       dark: `0 0 0 1px ${Colors.focusOuter},0 0 0 4px ${Colors.darkFocusInner}`,

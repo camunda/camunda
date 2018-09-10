@@ -149,6 +149,7 @@ export default class List extends React.Component {
             <React.Fragment>
               <Styled.CheckAll>
                 <Checkbox
+                  disabled={!this.props.total}
                   isChecked={this.areAllInstancesSelected()}
                   onChange={this.handleToggleSelectAll}
                   title="Select all instances"
