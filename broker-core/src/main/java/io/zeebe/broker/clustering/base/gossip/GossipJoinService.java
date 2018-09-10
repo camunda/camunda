@@ -34,7 +34,7 @@ import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 
 /** Join / leave cluster on broker start / stop */
-public class GossipJoinService implements Service<Object> {
+public class GossipJoinService implements Service<Void> {
   private final Injector<Gossip> gossipInjector = new Injector<>();
   private final ClusterCfg clusterCfg;
   private final NodeInfo localMember;
@@ -71,7 +71,7 @@ public class GossipJoinService implements Service<Object> {
   }
 
   @Override
-  public Object get() {
+  public Void get() {
     return null;
   }
 

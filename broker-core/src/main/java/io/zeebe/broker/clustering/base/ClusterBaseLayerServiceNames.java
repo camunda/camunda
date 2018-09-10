@@ -35,16 +35,16 @@ public class ClusterBaseLayerServiceNames {
       ServiceName.newServiceName("cluster.base.managementApiRequestHandlerService", Void.class);
   public static final ServiceName<TopologyManager> TOPOLOGY_MANAGER_SERVICE =
       ServiceName.newServiceName("cluster.base.topologyManager", TopologyManager.class);
-  public static final ServiceName<Object> REMOTE_ADDRESS_MANAGER_SERVICE =
-      ServiceName.newServiceName("cluster.base.remoteAddrManager", Object.class);
+  public static final ServiceName<Void> REMOTE_ADDRESS_MANAGER_SERVICE =
+      ServiceName.newServiceName("cluster.base.remoteAddrManager", Void.class);
 
   public static final ServiceName<Gossip> GOSSIP_SERVICE =
       ServiceName.newServiceName("cluster.base.gossip", Gossip.class);
-  public static final ServiceName<Object> GOSSIP_JOIN_SERVICE =
-      ServiceName.newServiceName("cluster.base.gossip.join", Object.class);
+  public static final ServiceName<Void> GOSSIP_JOIN_SERVICE =
+      ServiceName.newServiceName("cluster.base.gossip.join", Void.class);
 
-  public static final ServiceName<Object> RAFT_BOOTSTRAP_SERVICE =
-      ServiceName.newServiceName("cluster.base.raft.bootstrap", Object.class);
+  public static final ServiceName<Void> RAFT_BOOTSTRAP_SERVICE =
+      ServiceName.newServiceName("cluster.base.raft.bootstrap", Void.class);
   public static final ServiceName<RaftPersistentConfigurationManager> RAFT_CONFIGURATION_MANAGER =
       ServiceName.newServiceName(
           "cluster.base.raft.configurationManager", RaftPersistentConfigurationManager.class);

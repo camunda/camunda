@@ -39,7 +39,7 @@ import org.agrona.collections.IntArrayList;
  * Always installed on broker startup: reads configuration of all locally available partitions and
  * starts the corresponding services (raft, logstream, partition ...)
  */
-public class BootstrapPartitions implements Service<Object> {
+public class BootstrapPartitions implements Service<Void> {
   private final Injector<RaftPersistentConfigurationManager> configurationManagerInjector =
       new Injector<>();
   private final BrokerCfg brokerCfg;
@@ -118,7 +118,7 @@ public class BootstrapPartitions implements Service<Object> {
   }
 
   @Override
-  public Object get() {
+  public Void get() {
     return null;
   }
 

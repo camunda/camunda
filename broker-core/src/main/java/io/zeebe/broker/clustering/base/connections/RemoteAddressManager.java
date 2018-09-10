@@ -31,7 +31,7 @@ import io.zeebe.transport.ClientTransport;
  * Listens to topology member changes and adds / removes the remote addresses of the member's
  * management and replication apis on the corresponding client transports.
  */
-public class RemoteAddressManager implements Service<Object>, TopologyMemberListener {
+public class RemoteAddressManager implements Service<Void>, TopologyMemberListener {
   private final Injector<TopologyManager> topologyManagerInjector = new Injector<>();
   private final Injector<ClientTransport> managementClientTransportInjector = new Injector<>();
   private final Injector<ClientTransport> replicationClientTransportInjector = new Injector<>();
@@ -58,7 +58,7 @@ public class RemoteAddressManager implements Service<Object>, TopologyMemberList
   }
 
   @Override
-  public Object get() {
+  public Void get() {
     return null;
   }
 
