@@ -23,7 +23,6 @@ import static io.zeebe.broker.transport.TransportServiceNames.clientTransport;
 
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfiguration;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
-import io.zeebe.broker.clustering.orchestration.partitions.PartitionsLeaderMatrix;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.protocol.Protocol;

@@ -17,9 +17,9 @@
  */
 package io.zeebe.broker.transport.controlmessage;
 
+import io.zeebe.broker.clustering.base.partitions.RequestPartitionsMessageHandler;
 import io.zeebe.broker.clustering.base.topology.RequestTopologyHandler;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
-import io.zeebe.broker.clustering.orchestration.partitions.RequestPartitionsMessageHandler;
 import io.zeebe.broker.event.handler.RemoveTopicSubscriptionHandler;
 import io.zeebe.broker.event.processor.TopicSubscriptionService;
 import io.zeebe.broker.job.JobSubscriptionManager;

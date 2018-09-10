@@ -15,10 +15,10 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.clustering.orchestration.partitions;
+package io.zeebe.broker.clustering.base.partitions;
 
-import static io.zeebe.broker.clustering.orchestration.partitions.PartitionsLeaderMatrix.FOLLOWER;
-import static io.zeebe.broker.clustering.orchestration.partitions.PartitionsLeaderMatrix.LEADER;
+import static io.zeebe.broker.clustering.base.partitions.PartitionsLeaderMatrix.FOLLOWER;
+import static io.zeebe.broker.clustering.base.partitions.PartitionsLeaderMatrix.LEADER;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import org.agrona.collections.IntArrayList;
