@@ -48,7 +48,7 @@ public class RequestPartitionsTest {
         apiRule
             .createControlMessageRequest()
             .messageType(ControlMessageType.REQUEST_PARTITIONS)
-            .partitionId(Protocol.SYSTEM_PARTITION)
+            .partitionId(Protocol.DEPLOYMENT_PARTITION)
             .sendAndAwait();
 
     // then

@@ -25,7 +25,6 @@ import io.zeebe.broker.clustering.base.raft.RaftPersistentConfiguration;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
-import io.zeebe.protocol.Protocol;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceName;
@@ -102,11 +101,9 @@ public class BootstrapPartitions implements Service<Void> {
     final String partitionName = Partition.getPartitionName(configuration.getPartitionId());
     final ServiceName<Void> partitionInstallServiceName =
         partitionInstallServiceName(partitionName);
-    final boolean isInternalSystemPartition =
-        configuration.getPartitionId() == Protocol.SYSTEM_PARTITION;
 
     final PartitionInstallService partitionInstallService =
-        new PartitionInstallService(brokerCfg, configuration, isInternalSystemPartition);
+        new PartitionInstallService(brokerCfg, configuration);
 
     startContext
         .createService(partitionInstallServiceName, partitionInstallService)

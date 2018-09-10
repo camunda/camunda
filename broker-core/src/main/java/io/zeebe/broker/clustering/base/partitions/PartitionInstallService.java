@@ -17,7 +17,12 @@
  */
 package io.zeebe.broker.clustering.base.partitions;
 
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.*;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.FOLLOWER_PARTITION_GROUP_NAME;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.RAFT_SERVICE_GROUP;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.followerPartitionServiceName;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.leaderPartitionServiceName;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.raftInstallServiceName;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.snapshotStorageServiceName;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.stateStorageFactoryServiceName;
 import static io.zeebe.raft.RaftServiceNames.leaderInitialEventCommittedServiceName;
@@ -37,7 +42,11 @@ import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftStateListener;
 import io.zeebe.raft.controller.MemberReplicateLogController;
 import io.zeebe.raft.state.RaftState;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.CompositeServiceBuilder;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.sched.channel.OneToOneRingBufferChannel;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -60,7 +69,6 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
   private final Injector<ClientTransport> clientTransportInjector = new Injector<>();
   private final RaftPersistentConfiguration configuration;
   private final PartitionInfo partitionInfo;
-  private final boolean isInternalSystemPartition;
 
   private ServiceStartContext startContext;
   private ServiceName<LogStream> logStreamServiceName;
@@ -69,12 +77,9 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
   private ServiceName<StateStorageFactory> stateStorageFactoryServiceName;
 
   public PartitionInstallService(
-      final BrokerCfg brokerCfg,
-      final RaftPersistentConfiguration configuration,
-      final boolean isInternalSystemPartition) {
+      final BrokerCfg brokerCfg, final RaftPersistentConfiguration configuration) {
     this.brokerCfg = brokerCfg;
     this.configuration = configuration;
-    this.isInternalSystemPartition = isInternalSystemPartition;
     this.partitionInfo =
         new PartitionInfo(configuration.getPartitionId(), configuration.getReplicationFactor());
   }
@@ -211,7 +216,7 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
     final int replicationFactor = partitionInfo.getReplicationFactor();
 
     if (!startContext.hasService(partitionServiceName)) {
-      if (isInternalSystemPartition || raftMemberSize >= replicationFactor) {
+      if (raftMemberSize >= replicationFactor) {
         LOG.debug(
             "Installing partition service for {}. Replication factor reached, got {}/{}.",
             partitionInfo,

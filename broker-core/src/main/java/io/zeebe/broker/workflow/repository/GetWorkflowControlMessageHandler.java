@@ -57,7 +57,7 @@ public class GetWorkflowControlMessageHandler extends AbstractControlMessageHand
           metadata.getRequestId(),
           ErrorCode.PARTITION_NOT_FOUND,
           "Workflow request must address the leader of the first partition %d",
-          Protocol.SYSTEM_PARTITION);
+          Protocol.DEPLOYMENT_PARTITION);
     } else {
       final GetWorkflowControlRequest controlRequest = new GetWorkflowControlRequest();
       controlRequest.wrap(buffer);

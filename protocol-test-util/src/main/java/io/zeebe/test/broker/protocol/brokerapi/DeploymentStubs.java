@@ -22,7 +22,7 @@ import java.util.function.Consumer;
 
 public class DeploymentStubs {
 
-  public static final int DEFAULT_PARTITION = Protocol.SYSTEM_PARTITION;
+  public static final int DEFAULT_PARTITION = Protocol.DEPLOYMENT_PARTITION;
   private final StubBrokerRule broker;
 
   public DeploymentStubs(final StubBrokerRule broker) {

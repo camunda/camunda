@@ -31,9 +31,6 @@ public class Protocol {
   /** The null value of an instant property which indicates that it is not set. */
   public static final long INSTANT_NULL_VALUE = Long.MIN_VALUE;
 
-  /** By convention, the partition id indicates the first partition */
-  public static final int SYSTEM_PARTITION = 0;
-
   /** By convention, the partition to deploy to */
-  public static final int DEPLOYMENT_PARTITION = SYSTEM_PARTITION;
+  public static final int DEPLOYMENT_PARTITION = 0;
 }

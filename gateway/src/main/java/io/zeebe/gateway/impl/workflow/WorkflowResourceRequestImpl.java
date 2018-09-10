@@ -35,7 +35,7 @@ public class WorkflowResourceRequestImpl extends ControlMessageRequest<WorkflowR
   public WorkflowResourceRequestImpl(RequestManager client) {
     super(client, ControlMessageType.GET_WORKFLOW, WorkflowResourceImpl.class);
 
-    setTargetPartition(Protocol.SYSTEM_PARTITION);
+    setTargetPartition(Protocol.DEPLOYMENT_PARTITION);
 
     request = new Request();
   }

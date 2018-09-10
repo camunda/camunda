@@ -96,7 +96,7 @@ public class StubBrokerRule extends ExternalResource {
     channelHandler = new StubResponseChannelHandler(msgPackHelper);
 
     final Topology topology = new Topology();
-    topology.addLeader(nodeId, socketAddress, Protocol.SYSTEM_PARTITION);
+    topology.addLeader(nodeId, socketAddress, Protocol.DEPLOYMENT_PARTITION);
 
     for (int i = TEST_PARTITION_ID; i < TEST_PARTITION_ID + partitionCount; i++) {
       topology.addLeader(nodeId, socketAddress, i);
@@ -217,7 +217,7 @@ public class StubBrokerRule extends ExternalResource {
     onControlMessageRequest(
             r ->
                 r.messageType() == ControlMessageType.REQUEST_PARTITIONS
-                    && r.partitionId() == Protocol.SYSTEM_PARTITION)
+                    && r.partitionId() == Protocol.DEPLOYMENT_PARTITION)
         .respondWith()
         .data()
         .put(

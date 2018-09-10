@@ -29,7 +29,7 @@ public class PartitionsRequestImpl extends ControlMessageRequest<Partitions>
   public PartitionsRequestImpl(final RequestManager client) {
     super(client, ControlMessageType.REQUEST_PARTITIONS, PartitionsImpl.class);
 
-    setTargetPartition(Protocol.SYSTEM_PARTITION);
+    setTargetPartition(Protocol.DEPLOYMENT_PARTITION);
   }
 
   @Override

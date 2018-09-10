@@ -270,7 +270,7 @@ public class ClientApiRule extends ExternalResource {
 
   public ControlMessageResponse requestPartitions() {
     return createControlMessageRequest()
-        .partitionId(Protocol.SYSTEM_PARTITION)
+        .partitionId(Protocol.DEPLOYMENT_PARTITION)
         .messageType(ControlMessageType.REQUEST_PARTITIONS)
         .data()
         .done()

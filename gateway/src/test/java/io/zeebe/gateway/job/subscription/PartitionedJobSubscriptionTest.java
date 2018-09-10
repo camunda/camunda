@@ -21,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.api.subscription.JobWorker;
 import io.zeebe.gateway.util.ClientRule;
-import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
@@ -58,10 +57,7 @@ public class PartitionedJobSubscriptionTest {
   @Before
   public void setUp() {
     final Topology topology =
-        new Topology()
-            .addLeader(broker1, Protocol.SYSTEM_PARTITION)
-            .addLeader(broker1, PARTITION_1)
-            .addLeader(broker2, PARTITION_2);
+        new Topology().addLeader(broker1, PARTITION_1).addLeader(broker2, PARTITION_2);
 
     broker1.setCurrentTopology(topology);
     broker2.setCurrentTopology(topology);

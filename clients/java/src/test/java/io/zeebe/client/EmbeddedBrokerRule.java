@@ -157,7 +157,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
       // this is required in the broker-test suite, because the client rule does not perform request
       // retries
       // How to make it better: https://github.com/zeebe-io/zeebe/issues/196
-      final String partitionName = "partition-" + Protocol.SYSTEM_PARTITION;
+      final String partitionName = "partition-" + Protocol.DEPLOYMENT_PARTITION;
 
       serviceContainer
           .createService(AWAIT_BROKER_SERVICE_NAME, new NoneService())

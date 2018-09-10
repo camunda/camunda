@@ -53,7 +53,7 @@ public class RequestPartitionsTest {
         .onControlMessageRequest(
             r ->
                 r.messageType() == ControlMessageType.REQUEST_PARTITIONS
-                    && r.partitionId() == Protocol.SYSTEM_PARTITION)
+                    && r.partitionId() == Protocol.DEPLOYMENT_PARTITION)
         .respondWith()
         .data()
         .put("partitions", partitions)
@@ -80,7 +80,7 @@ public class RequestPartitionsTest {
 
     assertThat(partitionRequests).hasSize(1);
     final ControlMessageRequest request = partitionRequests.get(0);
-    assertThat(request.partitionId()).isEqualTo(Protocol.SYSTEM_PARTITION);
+    assertThat(request.partitionId()).isEqualTo(Protocol.DEPLOYMENT_PARTITION);
   }
 
   public Map<String, Object> buildPartition(final int id) {
