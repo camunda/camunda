@@ -15,16 +15,12 @@
  */
 package io.zeebe.test;
 
-import static io.zeebe.test.EmbeddedBrokerRule.DEFAULT_CONFIG_SUPPLIER;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.system.configuration.SocketBindingClientApiCfg;
-import io.zeebe.gateway.ClientProperties;
 import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
 import io.zeebe.gateway.api.record.RecordType;
 import io.zeebe.gateway.api.record.ValueType;
-import java.util.Properties;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import org.junit.Before;
@@ -32,17 +28,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public class WorkflowTest {
-  @Rule
-  public final ZeebeTestRule testRule =
-      new ZeebeTestRule(
-          DEFAULT_CONFIG_SUPPLIER,
-          () -> {
-            final Properties properties = new Properties();
-            properties.setProperty(
-                ClientProperties.BROKER_CONTACTPOINT,
-                "localhost:" + (SocketBindingClientApiCfg.DEFAULT_PORT + 200));
-            return properties;
-          });
+  @Rule public final ZeebeTestRule testRule = new ZeebeTestRule();
 
   private ZeebeClient client;
 
