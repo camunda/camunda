@@ -8,21 +8,13 @@ import Dropdown from 'modules/components/Dropdown';
 import ContextualMessage from 'modules/components/ContextualMessage';
 import {DROPDOWN_PLACEMENT, CONTEXTUAL_MESSAGE_TYPE} from 'modules/constants';
 
+import {xTimes, createSelection} from 'modules/testUtils';
+
 import * as Styled from './styled.js';
 
-const maxSelections = [
-  {selectionId: 0},
-  {selectionId: 1},
-  {selectionId: 2},
-  {selectionId: 3},
-  {selectionId: 4},
-  {selectionId: 5},
-  {selectionId: 6},
-  {selectionId: 7},
-  {selectionId: 8},
-  {selectionId: 9},
-  {selectionId: 10}
-];
+const maxSelections = [];
+
+xTimes(10)(index => maxSelections.push(createSelection(index)));
 
 describe('ListFooter', () => {
   let node;
@@ -40,6 +32,7 @@ describe('ListFooter', () => {
         perPage={10}
         firstElement={0}
         total={9}
+        selection={{ids: new Set(), excludeIds: new Set()}}
         selections={[{selectionId: 0}, {selectionId: 1}]}
       />
     );
