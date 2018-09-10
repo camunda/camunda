@@ -9,6 +9,7 @@ import {EXPAND_STATE} from 'modules/constants';
 import StateIcon from 'modules/components/StateIcon';
 
 import {isEqual} from 'modules/utils';
+import {areIdsArray, areIdsSet, getModifiedIdSet} from './service';
 
 import HeaderSortIcon from './HeaderSortIcon';
 import * as Styled from './styled';
@@ -54,7 +55,18 @@ export default class List extends React.Component {
     let selectionFilters = {};
 
     Object.keys(selection).forEach(key => {
-      if (['active', 'incidents', 'completed', 'canceled'].includes(key)) {
+      if (
+        [
+          'active',
+          'incidents',
+          'completed',
+          'canceled',
+          'startDateAfter',
+          'startDateBefore',
+          'errorMessage',
+          'workflowIds'
+        ].includes(key)
+      ) {
         selectionFilters[key] = selection[key];
       }
     });
@@ -63,14 +75,13 @@ export default class List extends React.Component {
 
   areAllInstancesSelected = () => {
     const {selection, total, filter} = this.props;
-
     const selectionFilters = this.getSelectionFilters(selection);
 
     if (selection.excludeIds.size > 0) return false;
-    if (isEqual(selectionFilters, filter)) return true;
     if (
-      (Array.isArray(selection.ids) && selection.ids.length === total) ||
-      (selection.ids && selection.ids.size === total)
+      isEqual(selectionFilters, filter) ||
+      areIdsArray(selection, total) ||
+      areIdsSet(selection, total)
     )
       return true;
 
@@ -98,10 +109,6 @@ export default class List extends React.Component {
     return false;
   };
 
-  getModifiedIdSet = ({isAdded, set, id}) => {
-    return (isAdded && set.add(id)) || (set.delete(id) && set);
-  };
-
   onSelectionChange = instance => (event, isChecked) => {
     const {selection, filter} = this.props;
 
@@ -113,7 +120,7 @@ export default class List extends React.Component {
         ? {isAdded: !isChecked, set: selection.excludeIds, id: instance.id}
         : {isAdded: isChecked, set: selection.ids, id: instance.id};
 
-    const modifiedSet = this.getModifiedIdSet(IdSetChanges);
+    const modifiedSet = getModifiedIdSet(IdSetChanges);
 
     this.props.onUpdateSelection(
       changeType === 'excludeIds'
