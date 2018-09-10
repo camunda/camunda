@@ -4,7 +4,7 @@ import {shallow} from 'enzyme';
 import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
 import {Colors} from 'modules/theme';
 import * as api from 'modules/api/diagram/diagram';
-import {ACTIVITY_STATE, FLOW_NODE_STATE} from 'modules/constants';
+import {ACTIVITY_STATE, FLOW_NODE_STATE_OVERLAY_ID} from 'modules/constants';
 import incidentIcon from 'modules/components/Icon/diagram-badge-single-instance-incident.svg';
 import activeIcon from 'modules/components/Icon/diagram-badge-single-instance-active.svg';
 import completedLightIcon from 'modules/components/Icon/diagram-badge-single-instance-completed-light.svg';
@@ -289,7 +289,9 @@ describe('Diagram', () => {
       );
       expect(overlaysAddSpy.mock.calls[0][0]).toEqual(flowNodeStateOverlays[0]);
       expect(overlaysAddSpy.mock.calls[1][0]).toEqual(flowNodeStateOverlays[1]);
-      expect(overlaysRemoveSpy).toBeCalledWith({type: FLOW_NODE_STATE});
+      expect(overlaysRemoveSpy).toBeCalledWith({
+        type: FLOW_NODE_STATE_OVERLAY_ID
+      });
     });
   });
 
@@ -536,7 +538,7 @@ describe('Diagram', () => {
       // then
       const overlaysAddSpy = node.instance().Viewer.overlays.add;
       expect(overlaysAddSpy.mock.calls[0][0]).toBe('foo');
-      expect(overlaysAddSpy.mock.calls[0][1]).toBe(FLOW_NODE_STATE);
+      expect(overlaysAddSpy.mock.calls[0][1]).toBe(FLOW_NODE_STATE_OVERLAY_ID);
       expect(
         overlaysAddSpy.mock.calls[0][2].html.src.replace(
           'http://localhost/',
@@ -558,7 +560,7 @@ describe('Diagram', () => {
       // then
       const overlaysAddSpy = node.instance().Viewer.overlays.add;
       expect(overlaysAddSpy.mock.calls[0][0]).toBe('foo');
-      expect(overlaysAddSpy.mock.calls[0][1]).toBe(FLOW_NODE_STATE);
+      expect(overlaysAddSpy.mock.calls[0][1]).toBe(FLOW_NODE_STATE_OVERLAY_ID);
       expect(
         overlaysAddSpy.mock.calls[0][2].html.src.replace(
           'http://localhost/',
@@ -580,7 +582,7 @@ describe('Diagram', () => {
       // then
       const overlaysAddSpy = node.instance().Viewer.overlays.add;
       expect(overlaysAddSpy.mock.calls[0][0]).toBe('foo');
-      expect(overlaysAddSpy.mock.calls[0][1]).toBe(FLOW_NODE_STATE);
+      expect(overlaysAddSpy.mock.calls[0][1]).toBe(FLOW_NODE_STATE_OVERLAY_ID);
       expect(
         overlaysAddSpy.mock.calls[0][2].html.src.replace(
           'http://localhost/',
@@ -602,7 +604,7 @@ describe('Diagram', () => {
       // then
       const overlaysAddSpy = node.instance().Viewer.overlays.add;
       expect(overlaysAddSpy.mock.calls[0][0]).toBe('foo');
-      expect(overlaysAddSpy.mock.calls[0][1]).toBe(FLOW_NODE_STATE);
+      expect(overlaysAddSpy.mock.calls[0][1]).toBe(FLOW_NODE_STATE_OVERLAY_ID);
       expect(
         overlaysAddSpy.mock.calls[0][2].html.src.replace(
           'http://localhost/',
@@ -627,7 +629,7 @@ describe('Diagram', () => {
       // then
       const overlaysAddSpy = node.instance().Viewer.overlays.add;
       expect(overlaysAddSpy.mock.calls[0][0]).toBe('foo');
-      expect(overlaysAddSpy.mock.calls[0][1]).toBe(FLOW_NODE_STATE);
+      expect(overlaysAddSpy.mock.calls[0][1]).toBe(FLOW_NODE_STATE_OVERLAY_ID);
       expect(
         overlaysAddSpy.mock.calls[0][2].html.src.replace(
           'http://localhost/',
@@ -652,7 +654,7 @@ describe('Diagram', () => {
       // then
       const overlaysAddSpy = node.instance().Viewer.overlays.add;
       expect(overlaysAddSpy.mock.calls[0][0]).toBe('foo');
-      expect(overlaysAddSpy.mock.calls[0][1]).toBe(FLOW_NODE_STATE);
+      expect(overlaysAddSpy.mock.calls[0][1]).toBe(FLOW_NODE_STATE_OVERLAY_ID);
       expect(
         overlaysAddSpy.mock.calls[0][2].html.src.replace(
           'http://localhost/',

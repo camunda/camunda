@@ -61,7 +61,7 @@ api.fetchWorkflowInstance = mockResolvedAsyncFn(INSTANCE);
 
 const initialState = {
   instance: null,
-  activitiesDetails: null,
+  activitiesDetails: {},
   selectedActivityId: null,
   loaded: false
 };

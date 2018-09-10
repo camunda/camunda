@@ -8,6 +8,7 @@ import {fetchEvents} from 'modules/api/events';
 import InstanceLog from './InstanceLog';
 import InstanceEvents from './InstanceEvents';
 import {getGroupedEvents, getEventsBySelectedActivityId} from './service';
+import {isEmpty} from 'modules/utils';
 import * as Styled from './styled';
 
 export default class InstanceHistory extends React.Component {
@@ -32,7 +33,7 @@ export default class InstanceHistory extends React.Component {
     const {activitiesDetails} = this.props;
     const {events} = this.state;
 
-    if (!activitiesDetails || !events) {
+    if (isEmpty(activitiesDetails) || !events) {
       return;
     }
 

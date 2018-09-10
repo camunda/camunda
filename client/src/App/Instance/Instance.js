@@ -23,7 +23,7 @@ export default class Instance extends Component {
 
   state = {
     instance: null,
-    activitiesDetails: null,
+    activitiesDetails: {},
     selectedActivityId: null,
     loaded: false
   };
@@ -40,7 +40,6 @@ export default class Instance extends Component {
 
   handleFlowNodesDetailsReady = flowNodesDetails => {
     const {instance} = this.state;
-
     const activitiesDetails = instance.activities.reduce(
       (map, {id, ...activity}) => {
         return {
@@ -54,7 +53,7 @@ export default class Instance extends Component {
       {}
     );
 
-    this.setState({activitiesDetails}, this.handleActivitiesDetailsChange);
+    this.setState({activitiesDetails});
   };
 
   handleActivitySelection = selectedActivityId => {
@@ -70,9 +69,9 @@ export default class Instance extends Component {
     const selectableFlowNodes = (this.state.instance || {}).activities.map(
       ({activityId}) => activityId
     );
-    const flowNodeStateOverlays = this.state.activitiesDetails
-      ? getFlowNodeStateOverlays(this.state.activitiesDetails)
-      : null;
+    const flowNodeStateOverlays = getFlowNodeStateOverlays(
+      this.state.activitiesDetails
+    );
 
     return (
       <Fragment>

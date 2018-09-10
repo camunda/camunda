@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 import BPMNViewer from 'bpmn-js/lib/NavigatedViewer';
 
 import {themed} from 'modules/theme';
-import {ACTIVITY_STATE, FLOW_NODE_STATE} from 'modules/constants';
+import {ACTIVITY_STATE, FLOW_NODE_STATE_OVERLAY_ID} from 'modules/constants';
 import incidentIcon from 'modules/components/Icon/diagram-badge-single-instance-incident.svg';
 import activeIcon from 'modules/components/Icon/diagram-badge-single-instance-active.svg';
 import completedLightIcon from 'modules/components/Icon/diagram-badge-single-instance-completed-light.svg';
@@ -86,7 +86,7 @@ class Diagram extends React.Component {
 
     // Clear overlays of type flow-node-state and add new ones
     if (this.props.flowNodeStateOverlays) {
-      this.clearOverlaysByType(FLOW_NODE_STATE);
+      this.clearOverlaysByType(FLOW_NODE_STATE_OVERLAY_ID);
       this.props.flowNodeStateOverlays.forEach(this.addFlowNodeStateOverlay);
     }
   }
@@ -219,8 +219,8 @@ class Diagram extends React.Component {
 
     // Add the created overlay to the diagram.
     // Note that we also pass the type 'flow-node-state' to
-    // the overlay to be able to clear all overlays of such type. (c.f. c)
-    this.Viewer.get('overlays').add(id, FLOW_NODE_STATE, {
+    // the overlay to be able to clear all overlays of such type. (cf. clearOverlaysByType)
+    this.Viewer.get('overlays').add(id, FLOW_NODE_STATE_OVERLAY_ID, {
       position: {bottom: 14, left: -10},
       html: img
     });

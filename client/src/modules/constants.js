@@ -71,7 +71,7 @@ export const EXPAND_STATE = {
 
 export const UNNAMED_ACTIVITY = 'Unnamed Activity';
 
-export const FLOW_NODE_STATE = 'flow-node-state';
+export const FLOW_NODE_STATE_OVERLAY_ID = 'flow-node-state';
 
 export const FLOW_NODE_TYPE = {
   TASK: 'TASK',
