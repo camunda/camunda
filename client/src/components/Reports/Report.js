@@ -429,7 +429,7 @@ export default withErrorHandling(
 
     updateConfiguration = prop => newValue => {
       const changes = {
-        reportType: this.state.reportType,
+        reportType: {$set: this.state.reportType},
         data: {configuration: {[prop]: {$set: newValue}}}
       };
       this.setState(
