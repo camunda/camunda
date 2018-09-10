@@ -62,7 +62,7 @@
     <plugin.version.scala>3.2.1</plugin.version.scala>
     <plugin.version.shade>2.2</plugin.version.shade>
     <plugin.version.surefire>2.20</plugin.version.surefire>
-    <plugin.version.versions>2.5</plugin.version.versions>
+    <plugin.version.versions>2.7</plugin.version.versions>
 
     <!-- maven extensions -->
     <extension.version.os-maven-plugin>1.6.0</extension.version.os-maven-plugin>
