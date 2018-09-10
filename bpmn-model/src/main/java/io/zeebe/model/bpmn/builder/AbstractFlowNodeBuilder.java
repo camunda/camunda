@@ -365,8 +365,7 @@ public abstract class AbstractFlowNodeBuilder<
     }
   }
 
-  @SuppressWarnings("rawtypes")
-  public AbstractFlowNodeBuilder connectTo(String identifier) {
+  public AbstractFlowNodeBuilder<?, ?> connectTo(String identifier) {
     final ModelElementInstance target = modelInstance.getModelElementById(identifier);
     if (target == null) {
       throw new BpmnModelException(
