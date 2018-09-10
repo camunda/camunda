@@ -52,7 +52,7 @@
     <plugin.version.appassembler>2.0.0</plugin.version.appassembler>
     <plugin.version.build-helper>3.0.0</plugin.version.build-helper>
     <plugin.version.checkstyle>3.0.0</plugin.version.checkstyle>
-    <plugin.version.compiler>3.5.1</plugin.version.compiler>
+    <plugin.version.compiler>3.8.0</plugin.version.compiler>
     <plugin.version.exec>1.6.0</plugin.version.exec>
     <plugin.version.fmt>2.5.1</plugin.version.fmt>
     <plugin.version.license>3.0</plugin.version.license>
