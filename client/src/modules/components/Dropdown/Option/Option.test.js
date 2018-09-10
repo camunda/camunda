@@ -31,7 +31,7 @@ describe('Option', () => {
     expect(node.find(Child)).toExist();
   });
 
-  it('should render sub menu with props', () => {
+  it('should render child with props', () => {
     node = shallow(
       <Option
         isSubMenuOpen={true}
