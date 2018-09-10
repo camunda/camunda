@@ -1,7 +1,12 @@
 .Filter {
   display: inline;
+
+  .instanceCount {
+    white-space: nowrap;
+  }
 }
 
 .Filter__dropdown {
   margin-bottom: 24px;
+  margin-right: 1em;
 }

@@ -156,6 +156,12 @@ export default class Filter extends React.Component {
             Flow Node
           </Dropdown.Option>
         </Dropdown>
+        {this.props.instanceCount !== undefined && (
+          <span className="instanceCount">
+            {this.props.instanceCount} instance{this.props.instanceCount !== 1 && 's'} in current
+            filter
+          </span>
+        )}
         <FilterModal
           addFilter={this.addFilter}
           close={this.closeModal}

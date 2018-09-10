@@ -131,6 +131,9 @@ export default class ReportControlPanel extends React.Component {
               onChange={this.props.updateReport}
               {...this.definitionConfig()}
               xml={this.props.configuration.xml}
+              instanceCount={
+                this.props.reportResult && this.props.reportResult.processInstanceCount
+              }
             />
           </li>
           <li>
