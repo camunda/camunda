@@ -15,11 +15,11 @@
  */
 package io.zeebe.test;
 
-import static io.zeebe.test.EmbeddedBrokerRule.DEFAULT_CONFIG_SUPPLIER;
 import static io.zeebe.test.TopicEventRecorder.jobKey;
 import static io.zeebe.test.TopicEventRecorder.wfInstanceKey;
 import static org.assertj.core.api.Assertions.fail;
 
+import io.zeebe.gateway.ClientProperties;
 import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.api.events.JobEvent;
 import io.zeebe.gateway.api.events.JobState;
@@ -39,13 +39,20 @@ public class ZeebeTestRule extends ExternalResource {
   private final TopicEventRecorder topicEventRecorder;
 
   public ZeebeTestRule() {
-    this(DEFAULT_CONFIG_SUPPLIER, Properties::new);
+    this(() -> null, Properties::new);
   }
 
   public ZeebeTestRule(
       final Supplier<InputStream> configSupplier, final Supplier<Properties> propertiesProvider) {
     brokerRule = new EmbeddedBrokerRule(configSupplier);
-    clientRule = new ClientRule(propertiesProvider);
+    clientRule =
+        new ClientRule(
+            () -> {
+              final Properties properties = propertiesProvider.get();
+              properties.setProperty(
+                  ClientProperties.BROKER_CONTACTPOINT, brokerRule.getClientAddress().toString());
+              return properties;
+            });
 
     topicEventRecorder = new TopicEventRecorder(clientRule);
   }

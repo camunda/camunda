@@ -33,14 +33,14 @@ public class ClientRule extends ExternalResource {
 
   protected ZeebeClient client;
 
-  protected final Properties properties;
+  protected final Supplier<Properties> properties;
 
   public ClientRule() {
     this(Properties::new);
   }
 
   public ClientRule(final Supplier<Properties> propertiesProvider) {
-    this.properties = propertiesProvider.get();
+    this.properties = propertiesProvider;
   }
 
   public ZeebeClient getClient() {
@@ -61,7 +61,7 @@ public class ClientRule extends ExternalResource {
 
   @Override
   protected void before() {
-    client = ZeebeClient.newClientBuilder().withProperties(properties).build();
+    client = ZeebeClient.newClientBuilder().withProperties(properties.get()).build();
     determineDefaultPartition();
   }
 
