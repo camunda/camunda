@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractListAssert;
 import org.assertj.core.api.ObjectAssert;
+import org.assertj.core.util.Lists;
 
 public class LifecycleAssert
     extends AbstractListAssert<
@@ -113,6 +114,12 @@ public class LifecycleAssert
   protected ObjectAssert<WorkflowInstanceIntent> toAssert(
       WorkflowInstanceIntent value, String description) {
     return new ObjectAssert<>(value).describedAs(description);
+  }
+
+  @Override
+  protected LifecycleAssert newAbstractIterableAssert(
+      Iterable<? extends WorkflowInstanceIntent> iterable) {
+    return new LifecycleAssert(Lists.newArrayList(iterable));
   }
 
   public static LifecycleAssert assertThat(List<WorkflowInstanceIntent> trajectory) {
