@@ -8,7 +8,8 @@ export default class Foldable extends React.Component {
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
       PropTypes.node
-    ])
+    ]),
+    indentation: PropTypes.number
   };
 
   state = {
@@ -21,14 +22,18 @@ export default class Foldable extends React.Component {
   };
 
   render() {
-    const children = Children.map(this.props.children, child =>
-      cloneElement(child, {
-        isFolded: this.state.isFolded,
-        toggleFold: this.toggleFold
-      })
+    const children = Children.map(
+      this.props.children,
+      child =>
+        child &&
+        cloneElement(child, {
+          isFolded: this.state.isFolded,
+          toggleFold: this.toggleFold,
+          indentation: this.props.indentation
+        })
     );
 
-    return <Styled.Foldable>{children}</Styled.Foldable>;
+    return <React.Fragment>{children}</React.Fragment>;
   }
 }
 
@@ -36,17 +41,29 @@ Foldable.Summary = function Summary({
   toggleFold,
   isFoldable,
   isFolded,
+  indentation = 0,
+  isSelected,
+  onSelection,
   children,
   ...props
 }) {
   return (
     <Styled.Summary {...props}>
       {!isFoldable ? null : (
-        <Styled.FoldButton onClick={toggleFold}>
-          {!isFolded ? <Styled.DownIcon /> : <Styled.RightIcon />}
+        <Styled.FoldButton onClick={toggleFold} indentation={indentation}>
+          {!isFolded ? (
+            <Styled.DownIcon isSelected={isSelected} />
+          ) : (
+            <Styled.RightIcon isSelected={isSelected} />
+          )}
         </Styled.FoldButton>
       )}
-      <Styled.SummaryLabel isFoldable={isFoldable}>
+      <Styled.SummaryLabel
+        isFoldable={isFoldable}
+        indentation={indentation}
+        isSelected={isSelected}
+        onClick={onSelection}
+      >
         {children}
       </Styled.SummaryLabel>
     </Styled.Summary>
@@ -57,6 +74,9 @@ Foldable.Summary.propTypes = {
   toggleFold: PropTypes.func,
   isFoldable: PropTypes.bool,
   isFolded: PropTypes.bool,
+  indentation: PropTypes.number,
+  isSelected: PropTypes.bool,
+  onSelection: PropTypes.func,
   children: PropTypes.oneOfType([
     PropTypes.arrayOf(PropTypes.node),
     PropTypes.node

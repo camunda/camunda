@@ -3,8 +3,6 @@ import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 import {InstanceHistoryIconIncidentActive} from 'modules/components/Icon';
 
-import Foldable from './Foldable';
-
 export const InstanceEvents = themed(styled.div`
   flex: 1;
   position: relative;
@@ -19,41 +17,35 @@ export const InstanceEvents = themed(styled.div`
   border-bottom: none;
 `);
 
-export const EventsContainer = styled.div`
+export const EventsContainer = styled.ul`
   position: absolute;
   height: 100%;
   width: 100%;
-  display: flex;
-  flex-direction: column;
-  min-height: min-content;
+  margin: 0;
+  padding: 0;
 `;
 
-export const EventEntry = themed(styled.div`
-  padding-left: 15px;
+export const EventEntry = themed(styled.li`
   border-bottom: 1px solid
     ${themeStyle({
       dark: Colors.uiDark04,
       light: Colors.uiLight05
     })};
+  position: relative;
+  display: flex;
+  flex-direction: column;
 `);
 
 export const DataEntry = themed(styled.div`
   opacity: 0.9;
   color: ${themeStyle({
-    light: Colors.uiLight06
+    dark: 'rgba(255, 255, 255, 0.9)',
+    light: 'rgba(98, 98, 110, 0.9)'
   })};
   padding-top: 7px;
   padding-bottom: 7px;
+  padding-left: ${({indentation}) => `${indentation * 22 + 37}px`};
 `);
-
-export const EventFoldableSummary = styled(Foldable.Summary)`
-  ${({isOpenIncidentEvent}) =>
-    !isOpenIncidentEvent ? '' : `color: ${Colors.incidentsAndErrors};`};
-`;
-
-export const GroupFoldableSummary = styled(Foldable.Summary)`
-  font-weight: bold;
-`;
 
 export const IncidentIcon = styled(InstanceHistoryIconIncidentActive)`
   position: absolute;

@@ -24,10 +24,7 @@ export const EntriesContainer = styled.ul`
   position: absolute;
   height: 100%;
   width: 100%;
-  display: flex;
-  flex-direction: column;
   min-height: min-content;
-  list-style-type: none;
   margin: 0;
   padding: 0;
 `;

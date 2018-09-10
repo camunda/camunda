@@ -12,6 +12,15 @@ export default class InstanceEvents extends React.Component {
     groupedEvents: PropTypes.array
   };
 
+  state = {
+    selectedKey: null
+  };
+
+  handleSelection = key => {
+    const isAlreadySelected = this.state.selectedKey === key;
+    this.setState({selectedKey: isAlreadySelected ? null : key});
+  };
+
   /**
    * Filters foldable details and renders them.
    * @param {object} details: An object of key-value entries where the value can be a string | number | object | null.
@@ -22,7 +31,7 @@ export default class InstanceEvents extends React.Component {
       jobRetries: 3
    * }
    */
-  renderFoldableDetails = details => {
+  renderFoldableDetails = ({indentation, details}) => {
     return (
       Object.entries(details)
         // filter out empty primitives and objects
@@ -39,16 +48,25 @@ export default class InstanceEvents extends React.Component {
             return (
               <Styled.DataEntry
                 key={idx}
+                indentation={indentation}
               >{`${key}: ${value}`}</Styled.DataEntry>
             );
           }
 
           // if the value is of type object, render a Foldable
           return (
-            <Foldable key={idx}>
-              <Foldable.Summary>{key}</Foldable.Summary>
+            <Foldable key={idx} indentation={indentation}>
+              <Foldable.Summary
+                isSelected={idx === this.state.selectedKey}
+                onSelection={() => this.handleSelection(idx)}
+              >
+                {key}
+              </Foldable.Summary>
               <Foldable.Details>
-                {this.renderFoldableDetails(value)}
+                {this.renderFoldableDetails({
+                  details: value,
+                  indentation: indentation + 1
+                })}
               </Foldable.Details>
             </Foldable>
           );
@@ -56,42 +74,62 @@ export default class InstanceEvents extends React.Component {
     );
   };
 
-  renderEvent = ({eventType, eventSourceType, metadata}, idx) => {
+  renderEvent = ({eventType, eventSourceType, metadata, indentation}, idx) => {
     const key = `${eventType}${idx}`;
     const isOpenIncidentEvent =
       eventType === EVENT_TYPE.CREATED &&
       eventSourceType === EVENT_SOURCE_TYPE.INCIDENT;
 
     return (
-      <Foldable key={key}>
-        <Styled.EventFoldableSummary
+      <Foldable key={key} indentation={indentation}>
+        <Foldable.Summary
           isFoldable={!isEmpty(metadata)}
           isOpenIncidentEvent={isOpenIncidentEvent}
+          isSelected={key === this.state.selectedKey}
+          onSelection={() => this.handleSelection(key)}
         >
           {!isOpenIncidentEvent ? '' : <Styled.IncidentIcon />}
           {eventType}
-        </Styled.EventFoldableSummary>
-        <Foldable.Details>
-          {!!metadata && this.renderFoldableDetails(metadata)}
-        </Foldable.Details>
+        </Foldable.Summary>
+        {!!metadata && (
+          <Foldable.Details>
+            {this.renderFoldableDetails({
+              details: metadata,
+              indentation: indentation + 1
+            })}
+          </Foldable.Details>
+        )}
       </Foldable>
     );
   };
 
-  renderEventsGroup = ({name, events, state}, idx) => {
+  renderWorkflowInstanceEvent = (data, idx) => {
+    return this.renderEvent({...data, indentation: 0}, idx);
+  };
+
+  renderActivityEvent = (data, idx) => {
+    return this.renderEvent({...data, indentation: 1}, idx);
+  };
+
+  renderActivityEvents = ({name, events, state}, idx) => {
     const key = `${name}${idx}`;
 
     return (
       <Foldable key={key}>
-        <Styled.GroupFoldableSummary>
+        <Foldable.Summary
+          isSelected={key === this.state.selectedKey}
+          onSelection={() => this.handleSelection(key)}
+        >
           {name}
           {state !== ACTIVITY_STATE.INCIDENT ? (
             ''
           ) : (
             <Styled.IncidentIcon title={`${name} has an incident`} />
           )}
-        </Styled.GroupFoldableSummary>
-        <Foldable.Details>{events.map(this.renderEvent)}</Foldable.Details>
+        </Foldable.Summary>
+        <Foldable.Details>
+          {events.map(this.renderActivityEvent)}
+        </Foldable.Details>
       </Foldable>
     );
   };
@@ -100,8 +138,8 @@ export default class InstanceEvents extends React.Component {
     return (
       <Styled.EventEntry key={idx}>
         {group.events
-          ? this.renderEventsGroup(group, idx)
-          : this.renderEvent(group, idx)}
+          ? this.renderActivityEvents(group, idx)
+          : this.renderWorkflowInstanceEvent(group, idx)}
       </Styled.EventEntry>
     );
   };

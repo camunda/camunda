@@ -1,7 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`Foldable should be folded by default 1`] = `
-<Themed(styled.div)>
+<React.Fragment>
   <Summary
     isFoldable={true}
     isFolded={true}
@@ -17,11 +17,11 @@ exports[`Foldable should be folded by default 1`] = `
   >
     Foo Details
   </Details>
-</Themed(styled.div)>
+</React.Fragment>
 `;
 
 exports[`Foldable toggleFold should change folded state 1`] = `
-<Themed(styled.div)>
+<React.Fragment>
   <Summary
     isFoldable={true}
     isFolded={false}
@@ -37,5 +37,5 @@ exports[`Foldable toggleFold should change folded state 1`] = `
   >
     Foo Details
   </Details>
-</Themed(styled.div)>
+</React.Fragment>
 `;

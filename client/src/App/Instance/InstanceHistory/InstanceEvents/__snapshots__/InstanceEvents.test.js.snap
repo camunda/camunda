@@ -50,28 +50,36 @@ exports[`InstanceEvents should render grouped events 1`] = `
     ]
   }
 >
-  <styled.div>
-    <Themed(styled.div)
+  <styled.ul>
+    <Themed(styled.li)
       key="0"
     >
       <Foldable
         key="foo name0"
       >
-        <Styled(Summary)>
+        <Summary
+          isFoldable={true}
+          isSelected={false}
+          onSelection={[Function]}
+        >
           foo name
-        </Styled(Summary)>
+        </Summary>
         <Details>
           <Foldable
+            indentation={1}
             key="fooCreated0"
           >
-            <Styled(Summary)
+            <Summary
               isFoldable={true}
               isOpenIncidentEvent={false}
+              isSelected={false}
+              onSelection={[Function]}
             >
               fooCreated
-            </Styled(Summary)>
+            </Summary>
             <Details>
               <Themed(styled.div)
+                indentation={2}
                 key="0"
               >
                 a: b
@@ -79,81 +87,98 @@ exports[`InstanceEvents should render grouped events 1`] = `
             </Details>
           </Foldable>
           <Foldable
+            indentation={1}
             key="fooActiviated1"
           >
-            <Styled(Summary)
+            <Summary
               isFoldable={false}
               isOpenIncidentEvent={false}
+              isSelected={false}
+              onSelection={[Function]}
             >
               fooActiviated
-            </Styled(Summary)>
-            <Details />
+            </Summary>
           </Foldable>
         </Details>
       </Foldable>
-    </Themed(styled.div)>
-    <Themed(styled.div)
+    </Themed(styled.li)>
+    <Themed(styled.li)
       key="1"
     >
       <Foldable
         key="bar name1"
       >
-        <Styled(Summary)>
+        <Summary
+          isFoldable={true}
+          isSelected={false}
+          onSelection={[Function]}
+        >
           bar name
           <Styled(InstanceHistoryIconIncidentActive)
             title="bar name has an incident"
           />
-        </Styled(Summary)>
+        </Summary>
         <Details>
           <Foldable
+            indentation={1}
             key="CREATED0"
           >
-            <Styled(Summary)
+            <Summary
               isFoldable={false}
               isOpenIncidentEvent={true}
+              isSelected={false}
+              onSelection={[Function]}
             >
               <Styled(InstanceHistoryIconIncidentActive) />
               CREATED
-            </Styled(Summary)>
-            <Details />
+            </Summary>
           </Foldable>
           <Foldable
+            indentation={1}
             key="barActivated1"
           >
-            <Styled(Summary)
+            <Summary
               isFoldable={false}
               isOpenIncidentEvent={false}
+              isSelected={false}
+              onSelection={[Function]}
             >
               barActivated
-            </Styled(Summary)>
-            <Details />
+            </Summary>
           </Foldable>
         </Details>
       </Foldable>
-    </Themed(styled.div)>
-    <Themed(styled.div)
+    </Themed(styled.li)>
+    <Themed(styled.li)
       key="2"
     >
       <Foldable
+        indentation={0}
         key="baz2"
       >
-        <Styled(Summary)
+        <Summary
           isFoldable={true}
           isOpenIncidentEvent={false}
+          isSelected={false}
+          onSelection={[Function]}
         >
           baz
-        </Styled(Summary)>
+        </Summary>
         <Details>
           <Foldable
+            indentation={1}
             key="0"
           >
             <Summary
               isFoldable={true}
+              isSelected={false}
+              onSelection={[Function]}
             >
               c
             </Summary>
             <Details>
               <Themed(styled.div)
+                indentation={2}
                 key="0"
               >
                 d: e
@@ -162,7 +187,7 @@ exports[`InstanceEvents should render grouped events 1`] = `
           </Foldable>
         </Details>
       </Foldable>
-    </Themed(styled.div)>
-  </styled.div>
+    </Themed(styled.li)>
+  </styled.ul>
 </Themed(styled.div)>
 `;

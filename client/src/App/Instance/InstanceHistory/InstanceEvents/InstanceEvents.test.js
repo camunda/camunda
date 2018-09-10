@@ -90,7 +90,7 @@ describe('InstanceEvents', () => {
     );
 
     // Foo Summary
-    const SummaryNode = FooFoldableNode.find(Styled.GroupFoldableSummary).at(0);
+    const SummaryNode = FooFoldableNode.find(Foldable.Summary).at(0);
     expect(SummaryNode.contains(fooGroupedEvents.name)).toBe(true);
 
     // Foo Details
@@ -107,9 +107,7 @@ describe('InstanceEvents', () => {
       node => node.key() && node.key().includes('bar')
     );
     // Bar Summary
-    const BarSummaryNode = BarFoldableNode.find(Styled.GroupFoldableSummary).at(
-      0
-    );
+    const BarSummaryNode = BarFoldableNode.find(Foldable.Summary).at(0);
     expect(BarSummaryNode.contains(barGroupedEvents.name)).toBe(true);
     expect(BarSummaryNode.find(Styled.IncidentIcon)).toHaveLength(1);
 
@@ -123,7 +121,7 @@ describe('InstanceEvents', () => {
     );
     const BarIncidentEventNode = BarFoldableDetailsNode.find(Foldable).at(0);
     const BarIncidentEventSummaryNode = BarIncidentEventNode.find(
-      Styled.EventFoldableSummary
+      Foldable.Summary
     );
     expect(BarIncidentEventSummaryNode.prop('isOpenIncidentEvent')).toBe(true);
     expect(BarIncidentEventSummaryNode.find(Styled.IncidentIcon)).toHaveLength(
