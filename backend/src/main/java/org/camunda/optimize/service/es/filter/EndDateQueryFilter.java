@@ -9,10 +9,10 @@ import org.springframework.stereotype.Component;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.START_DATE;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.END_DATE;
 
 @Component
-public class StartDateQueryFilter implements QueryFilter<DateFilterDataDto> {
+public class EndDateQueryFilter implements QueryFilter<DateFilterDataDto> {
   @Autowired
   private DateTimeFormatter formatter;
 
@@ -21,6 +21,6 @@ public class StartDateQueryFilter implements QueryFilter<DateFilterDataDto> {
 
   @Override
   public void addFilters(BoolQueryBuilder query, List<DateFilterDataDto> filter) {
-    DateQueryFilter.addFilters(query, filter, formatter, configurationService, START_DATE);
+    DateQueryFilter.addFilters(query, filter, formatter, configurationService, END_DATE);
   }
 }

@@ -4,9 +4,9 @@ import org.camunda.optimize.service.es.report.command.util.ReportConstants;
 
 import java.time.OffsetDateTime;
 
-public class FixedStartDateFilterDataDto extends StartDateFilterDataDto<OffsetDateTime> {
+public class FixedDateFilterDataDto extends DateFilterDataDto<OffsetDateTime> {
 
-  public FixedStartDateFilterDataDto() {
+  public FixedDateFilterDataDto() {
     this.type = ReportConstants.FIXED_DATE_FILTER;
   }
 

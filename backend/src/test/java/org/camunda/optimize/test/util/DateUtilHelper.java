@@ -2,16 +2,19 @@ package org.camunda.optimize.test.util;
 
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.DurationFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.EndDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.FilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.StartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.DurationFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.startDate.FixedStartDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.startDate.RelativeStartDateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.startDate.RelativeStartDateFilterStartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.startDate.FixedDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.startDate.RelativeDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.startDate.RelativeDateFilterStartDto;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.START_DATE;
 
 
 public class DateUtilHelper {
@@ -23,7 +26,7 @@ public class DateUtilHelper {
 
   public static List<FilterDto> createFixedStartDateFilter(OffsetDateTime startDate, OffsetDateTime endDate) {
     StartDateFilterDto filter = new StartDateFilterDto();
-    FixedStartDateFilterDataDto filterData = new FixedStartDateFilterDataDto();
+    FixedDateFilterDataDto filterData = new FixedDateFilterDataDto();
 
     filterData.setStart(startDate);
     filterData.setEnd(endDate);
@@ -35,10 +38,40 @@ public class DateUtilHelper {
     return filters;
   }
 
-  public static List<FilterDto> createRollingDateFilter(Long value, String unit) {
+  public static List<FilterDto> createFixedEndDateFilter(OffsetDateTime startDate, OffsetDateTime endDate) {
+    EndDateFilterDto filterDto = new EndDateFilterDto();
+    FixedDateFilterDataDto filterData = new FixedDateFilterDataDto();
+
+    filterData.setStart(startDate);
+    filterData.setEnd(endDate);
+    filterDto.setData(filterData);
+
+    ArrayList<FilterDto> filters = new ArrayList<>();
+    filters.add(filterDto);
+
+    return filters;
+  }
+
+  public static List<FilterDto> createRollingStartDateFilter(Long value, String unit) {
     StartDateFilterDto filter = new StartDateFilterDto();
-    RelativeStartDateFilterDataDto filterData = new RelativeStartDateFilterDataDto();
-    RelativeStartDateFilterStartDto startDate = new RelativeStartDateFilterStartDto();
+    RelativeDateFilterDataDto filterData = new RelativeDateFilterDataDto();
+    RelativeDateFilterStartDto startDate = new RelativeDateFilterStartDto();
+
+    startDate.setUnit(unit);
+    startDate.setValue(value);
+    filterData.setStart(startDate);
+    filter.setData(filterData);
+
+    List<FilterDto> filters = new ArrayList<>();
+    filters.add(filter);
+
+    return filters;
+  }
+
+  public static List<FilterDto> createRollingEndDateFilter(Long value, String unit) {
+    EndDateFilterDto filter = new EndDateFilterDto();
+    RelativeDateFilterDataDto filterData = new RelativeDateFilterDataDto();
+    RelativeDateFilterStartDto startDate = new RelativeDateFilterStartDto();
 
     startDate.setUnit(unit);
     startDate.setValue(value);

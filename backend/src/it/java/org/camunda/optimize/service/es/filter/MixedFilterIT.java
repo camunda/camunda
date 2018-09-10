@@ -93,8 +93,8 @@ public class MixedFilterIT {
     variables.put("var", "value");
     instanceEngineDto = engineRule.startProcessInstance(processDefinition.getId(), variables);
     engineRule.finishAllUserTasks(instanceEngineDto.getId());
-    OffsetDateTime date = engineRule.getHistoricProcessInstance(instanceEngineDto.getId()).getStartTime();
-
+    OffsetDateTime start = engineRule.getHistoricProcessInstance(instanceEngineDto.getId()).getStartTime();
+    OffsetDateTime end = engineRule.getHistoricProcessInstance(instanceEngineDto.getId()).getEndTime();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -108,7 +108,8 @@ public class MixedFilterIT {
           .id(USER_TASK_ACTIVITY_ID)
           .build();
     filterList.addAll(flowNodeFilter);
-    filterList.addAll(DateUtilHelper.createFixedStartDateFilter(null , date.minusSeconds(1L)));
+    filterList.addAll(DateUtilHelper.createFixedStartDateFilter(null , start.minusSeconds(1L)));
+    filterList.addAll(DateUtilHelper.createFixedStartDateFilter(null , end.minusSeconds(1L)));
     RawDataSingleReportResultDto rawDataReportResultDto = evaluateReportWithFilter(processDefinition, filterList);
 
     // then

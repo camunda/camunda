@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.FilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.StartDateFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.ExecutedFlowNodeFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.startDate.StartDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.startDate.DateFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.ReportEvaluationException;
@@ -86,7 +86,7 @@ public class ValidationHelper {
       for (FilterDto filterDto : filters) {
         if (filterDto instanceof StartDateFilterDto) {
           StartDateFilterDto startDateFilterDto = (StartDateFilterDto) filterDto;
-          StartDateFilterDataDto startDateFilterDataDto = startDateFilterDto.getData();
+          DateFilterDataDto startDateFilterDataDto = startDateFilterDto.getData();
 
           ensureAtLeastOneNotNull("start date filter ",
               startDateFilterDataDto.getStart(), startDateFilterDataDto.getEnd()

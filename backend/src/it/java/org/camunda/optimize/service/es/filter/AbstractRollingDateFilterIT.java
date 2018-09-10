@@ -73,14 +73,26 @@ public abstract class AbstractRollingDateFilterIT {
     }
   }
 
-  protected RawDataSingleReportResultDto createAndEvaluateReport(
+  protected RawDataSingleReportResultDto createAndEvaluateReportWithRollingStartDateFilter(
       String processDefinitionKey,
       String processDefinitionVersion,
       String unit,
       boolean newToken
   ) {
     SingleReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
-    List<FilterDto> rollingDateFilter = DateUtilHelper.createRollingDateFilter(1L, unit);
+    List<FilterDto> rollingDateFilter = DateUtilHelper.createRollingStartDateFilter(1L, unit);
+    reportData.setFilter(rollingDateFilter);
+    return evaluateReport(reportData, newToken);
+  }
+
+  protected RawDataSingleReportResultDto createAndEvaluateReportWithRollingEndDateFilter(
+          String processDefinitionKey,
+          String processDefinitionVersion,
+          String unit,
+          boolean newToken
+  ) {
+    SingleReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
+    List<FilterDto> rollingDateFilter = DateUtilHelper.createRollingEndDateFilter(1L, unit);
     reportData.setFilter(rollingDateFilter);
     return evaluateReport(reportData, newToken);
   }

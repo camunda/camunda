@@ -3,7 +3,7 @@ package org.camunda.optimize.service.es.filter;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.*;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.*;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.startDate.StartDateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.startDate.DateFilterDataDto;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -16,6 +16,9 @@ public class QueryFilterEnhancer {
 
   @Autowired
   private StartDateQueryFilter startDateQueryFilter;
+
+  @Autowired
+  private EndDateQueryFilter endDateQueryFilter;
 
   @Autowired
   private VariableQueryFilter variableQueryFilter;
@@ -39,6 +42,7 @@ public class QueryFilterEnhancer {
   public void addFilterToQuery(BoolQueryBuilder query, List<FilterDto> filter) {
     if (filter != null) {
       startDateQueryFilter.addFilters(query, extractStartDateFilters(filter));
+      endDateQueryFilter.addFilters(query, extractEndDateFilters(filter));
       variableQueryFilter.addFilters(query, extractVariableFilters(filter));
       executedFlowNodeQueryFilter.addFilters(query, extractExecutedFlowNodeFilters(filter));
       durationQueryFilter.addFilters(query, extractDurationFilters(filter));
@@ -71,7 +75,7 @@ public class QueryFilterEnhancer {
       .collect(Collectors.toList());
   }
 
-  private List<StartDateFilterDataDto> extractStartDateFilters(List<FilterDto> filter) {
+  private List<DateFilterDataDto> extractStartDateFilters(List<FilterDto> filter) {
     return filter
       .stream()
       .filter(StartDateFilterDto.class::isInstance)
@@ -80,6 +84,17 @@ public class QueryFilterEnhancer {
         return dateFilterDto.getData();
       })
       .collect(Collectors.toList());
+  }
+
+  private List<DateFilterDataDto> extractEndDateFilters(List<FilterDto> filter) {
+    return filter
+            .stream()
+            .filter(EndDateFilterDto.class::isInstance)
+            .map(dateFilter -> {
+              EndDateFilterDto dateFilterDto = (EndDateFilterDto) dateFilter;
+              return dateFilterDto.getData();
+            })
+            .collect(Collectors.toList());
   }
 
   private List<VariableFilterDataDto> extractVariableFilters(List<FilterDto> filter) {

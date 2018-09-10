@@ -46,7 +46,7 @@ public class RollingDateFilterUnitsIT extends AbstractRollingDateFilterIT {
     LocalDateUtil.setCurrentTime(processInstanceStartTime);
 
     // when
-    RawDataSingleReportResultDto result = createAndEvaluateReport(
+    RawDataSingleReportResultDto result = createAndEvaluateReportWithRollingStartDateFilter(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion(),
         unit,

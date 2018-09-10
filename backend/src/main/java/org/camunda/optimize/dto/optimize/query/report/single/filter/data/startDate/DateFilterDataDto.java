@@ -16,11 +16,11 @@ import static org.camunda.optimize.service.es.report.command.util.ReportConstant
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, include = JsonTypeInfo.As.EXISTING_PROPERTY, property = "type")
 @JsonSubTypes({
-    @JsonSubTypes.Type(value = RelativeStartDateFilterDataDto.class, name = RELATIVE_DATE_FILTER),
-    @JsonSubTypes.Type(value = FixedStartDateFilterDataDto.class, name = FIXED_DATE_FILTER),
+    @JsonSubTypes.Type(value = RelativeDateFilterDataDto.class, name = RELATIVE_DATE_FILTER),
+    @JsonSubTypes.Type(value = FixedDateFilterDataDto.class, name = FIXED_DATE_FILTER),
 })
 
-public abstract class StartDateFilterDataDto<START> implements FilterDataDto {
+public abstract class DateFilterDataDto<START> implements FilterDataDto {
 
   @JsonProperty
   protected String type;

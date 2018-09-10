@@ -27,7 +27,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
 
-public class StartDateQueryFilterIT {
+public class DateQueryFilterIT {
 
   private static final String TEST_ACTIVITY = "testActivity";
   private static final long TIME_OFFSET_MILLS = 2000L;
@@ -41,7 +41,8 @@ public class StartDateQueryFilterIT {
       .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule);
 
 
-  private OffsetDateTime past;
+  private OffsetDateTime start;
+  private OffsetDateTime end;
   private String processDefinitionKey;
   private String processDefinitionVersion;
 
@@ -53,7 +54,7 @@ public class StartDateQueryFilterIT {
     //when
     SingleReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
     List<FilterDto> fixedStartDateFilter =
-        DateUtilHelper.createFixedStartDateFilter(past.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS), OffsetDateTime.now());
+        DateUtilHelper.createFixedStartDateFilter(start.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS), OffsetDateTime.now());
     reportData.setFilter(fixedStartDateFilter);
     RawDataSingleReportResultDto result = evaluateReport(reportData);
 
@@ -61,13 +62,13 @@ public class StartDateQueryFilterIT {
     assertResults(result, 0);
 
     //when
-    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(past, null));
+    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(start, null));
     result = evaluateReport(reportData);
     //then
     assertResults(result, 1);
 
     //when
-    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(past.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS), null));
+    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(start.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS), null));
     result = evaluateReport(reportData);
     //then
     assertResults(result, 1);
@@ -80,20 +81,66 @@ public class StartDateQueryFilterIT {
 
     //when
     SingleReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
-    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(null, past.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS)));
+    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(null, start.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS)));
     RawDataSingleReportResultDto result = evaluateReport(reportData);
 
     //then
     assertResults(result, 1);
 
     //when
-    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(null, past));
+    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(null, start));
     result = evaluateReport(reportData);
     //then
     assertResults(result, 1);
 
     //when
-    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(null, past.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS)));
+    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(null, start.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS)));
+    result = evaluateReport(reportData);
+    //then
+    assertResults(result, 0);
+  }
+
+  @Test
+  public void testGetHeatMapWithGteEndDateCriteria() throws Exception {
+    //given
+    startAndImportSimpleProcess();
+
+    //when
+    SingleReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
+    reportData.setFilter(DateUtilHelper.createFixedEndDateFilter(null, end.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS)));
+    RawDataSingleReportResultDto result = evaluateReport(reportData);
+
+    //then
+    assertResults(result, 1);
+
+    //when
+    reportData.setFilter(DateUtilHelper.createFixedEndDateFilter(end, null));
+    result = evaluateReport(reportData);
+    //then
+    assertResults(result, 1);
+
+    //when
+    reportData.setFilter(DateUtilHelper.createFixedEndDateFilter(end.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS), null));
+    result = evaluateReport(reportData);
+    //then
+    assertResults(result, 0);
+  }
+
+  @Test
+  public void testGetHeatMapWithLteEndDateCriteria() throws Exception {
+    //given
+    startAndImportSimpleProcess();
+
+    //when
+    SingleReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
+    reportData.setFilter(DateUtilHelper.createFixedEndDateFilter(end.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS), null));
+    RawDataSingleReportResultDto result = evaluateReport(reportData);
+
+    //then
+    assertResults(result, 1);
+
+    //when
+    reportData.setFilter(DateUtilHelper.createFixedEndDateFilter(end.plus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS), null));
     result = evaluateReport(reportData);
     //then
     assertResults(result, 0);
@@ -105,7 +152,7 @@ public class StartDateQueryFilterIT {
     startAndImportSimpleProcess();
 
     SingleReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
-    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(past.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS), null));
+    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(start.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS), null));
 
     //when
     RawDataSingleReportResultDto result = evaluateReport(reportData);
@@ -114,7 +161,16 @@ public class StartDateQueryFilterIT {
     assertResults(result, 1);
 
     //given
-    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(null, past.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS)));
+    reportData.setFilter(DateUtilHelper.createFixedEndDateFilter(end.minusSeconds(200L), null));
+
+    //when
+    result = evaluateReport(reportData);
+
+    //then
+    assertResults(result, 1);
+
+    //given
+    reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(null, start.minus(TIME_OFFSET_MILLS, ChronoUnit.MILLIS)));
 
     //when
     result = evaluateReport(reportData);
@@ -126,7 +182,8 @@ public class StartDateQueryFilterIT {
 
   private void startAndImportSimpleProcess() {
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    past = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
+    start = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
+    end = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getEndTime();
     processDefinitionKey = processInstanceDto.getProcessDefinitionKey();
     processDefinitionVersion = processInstanceDto.getProcessDefinitionVersion();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();

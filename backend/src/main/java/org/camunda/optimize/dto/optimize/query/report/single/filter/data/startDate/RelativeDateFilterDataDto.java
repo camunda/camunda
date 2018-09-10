@@ -2,10 +2,10 @@ package org.camunda.optimize.dto.optimize.query.report.single.filter.data.startD
 
 import org.camunda.optimize.service.es.report.command.util.ReportConstants;
 
-public class RelativeStartDateFilterDataDto extends StartDateFilterDataDto<RelativeStartDateFilterStartDto> {
+public class RelativeDateFilterDataDto extends DateFilterDataDto<RelativeDateFilterStartDto> {
 
 
-  public RelativeStartDateFilterDataDto() {
+  public RelativeDateFilterDataDto() {
     this.type = ReportConstants.RELATIVE_DATE_FILTER;
   }
 

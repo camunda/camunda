@@ -1,6 +1,6 @@
 package org.camunda.optimize.dto.optimize.query.report.single.filter.data.startDate;
 
-public class RelativeStartDateFilterStartDto {
+public class RelativeDateFilterStartDto {
 
   protected Long value;
   protected String unit;
