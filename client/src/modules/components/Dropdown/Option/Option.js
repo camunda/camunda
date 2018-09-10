@@ -23,18 +23,13 @@ export default class Option extends React.Component {
     }
   };
 
-  addPropsToSubMenu = child =>
-    child.type && child.type.name === 'SubMenu'
-      ? {
-          isOpen: this.props.isSubMenuOpen,
-          isFixed: this.props.isSubmenuFixed,
-          onStateChange: this.props.onStateChange
-        }
-      : {};
-
-  renderSubMenuWithProps = () =>
+  renderChildrenProps = () =>
     React.Children.map(this.props.children, (child, idx) =>
-      React.cloneElement(child, this.addPropsToSubMenu(child))
+      React.cloneElement(child, {
+        isOpen: this.props.isSubMenuOpen,
+        isFixed: this.props.isSubmenuFixed,
+        onStateChange: this.props.onStateChange
+      })
     );
 
   render() {
@@ -49,7 +44,7 @@ export default class Option extends React.Component {
         {!children ? (
           <Styled.OptionButton disabled={disabled}>{label}</Styled.OptionButton>
         ) : (
-          this.renderSubMenuWithProps()
+          this.renderChildrenProps()
         )}
       </Styled.Option>
     );
