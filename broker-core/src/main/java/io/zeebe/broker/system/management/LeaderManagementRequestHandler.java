@@ -20,7 +20,6 @@ package io.zeebe.broker.system.management;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.system.management.deployment.NotLeaderResponse;
 import io.zeebe.broker.system.management.deployment.PushDeploymentRequestHandler;
-import io.zeebe.clustering.management.FetchWorkflowRequestDecoder;
 import io.zeebe.clustering.management.MessageHeaderDecoder;
 import io.zeebe.clustering.management.PushDeploymentRequestDecoder;
 import io.zeebe.servicecontainer.Injector;
@@ -124,7 +123,7 @@ public class LeaderManagementRequestHandler extends Actor
 
     final int schemaId = messageHeaderDecoder.schemaId();
 
-    if (FetchWorkflowRequestDecoder.SCHEMA_ID == schemaId) {
+    if (PushDeploymentRequestDecoder.SCHEMA_ID == schemaId) {
       final int templateId = messageHeaderDecoder.templateId();
 
       switch (templateId) {

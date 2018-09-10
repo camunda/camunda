@@ -66,13 +66,7 @@ public class ManagementApiRequestHandlerService extends Actor implements Service
   public void start(ServiceStartContext startContext) {
     serverTransport = serverTransportInjector.getValue();
     raftPersistentConfigurationManager = raftPersistentConfigurationManagerInjector.getValue();
-    managementApiRequestHandler =
-        new ManagementApiRequestHandler(
-            raftPersistentConfigurationManager,
-            actor,
-            startContext,
-            brokerCfg,
-            trackedSnapshotPartitions);
+    managementApiRequestHandler = new ManagementApiRequestHandler(actor, trackedSnapshotPartitions);
 
     startContext.async(startContext.getScheduler().submitActor(this, true));
   }

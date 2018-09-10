@@ -36,35 +36,6 @@
 
   </types>
 
-  <sbe:message name="InvitationRequest" id="0">
-    <field name="partitionId" id="0" type="uint16"/>
-    <field name="replicationFactor" id="1" type="uint16"/>
-    <field name="term" id="2" type="uint16"/>
-    <field name="name" id="3" type="uint16"/>
-    <!-- TODO: provide more details to raft -->
-    <group name="members" id="4" dimensionType="groupSizeEncoding">
-      <field name="nodeId" id="5" type="uint16"/>
-    </group>
-  </sbe:message>
-
-  <sbe:message name="InvitationResponse" id="1">
-    <field name="term" id="1" type="uint16"/>
-  </sbe:message>
-
-  <sbe:message name="FetchWorkflowRequest" id="3">
-    <field name="workflowKey" id="0" type="uint64"/>
-    <field name="version" id="1" type="uint16"/>
-    <data name="bpmnProcessId" id="2" type="varDataEncoding"/>
-  </sbe:message>
-
-  <sbe:message name="FetchWorkflowResponse" id="4">
-    <field name="workflowKey" id="1" type="uint64"/>
-    <field name="version" id="2" type="uint16"/>
-    <field name="deploymentKey" id="3" type="uint64"/>
-    <data name="bpmnProcessId" id="4" type="varDataEncoding"/>
-    <data name="bpmnXml" id="5" type="varDataEncoding"/>
-  </sbe:message>
-
   <sbe:message name="NotLeaderResponse" id="5">
   </sbe:message>
 
