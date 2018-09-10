@@ -33,7 +33,7 @@ import org.junit.Test;
 
 public class RecordingExporterTest {
 
-  public static final ValueType VALUE_TYPE = ValueType.ID;
+  public static final ValueType VALUE_TYPE = ValueType.JOB;
 
   @Before
   public void setUp() {
