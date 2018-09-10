@@ -30,7 +30,9 @@ export const Page = themed(styled.button`
       border: 1px solid ${Colors.uiLight03};`;
       }
     }
-  }} ${({disabled, theme}) => {
+  }};
+
+  ${({disabled, theme}) => {
     if (disabled) {
       if (theme === 'dark') {
         return 'background-color: #34353a; cursor: default; color: rgba(255,255,255,0.4)';
