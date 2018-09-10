@@ -60,7 +60,6 @@ public class BrokerLeaderChangeTest {
 
     // when
     clusteringRule.restartBroker(oldLeader);
-    clusteringRule.waitForPartition(3, 3);
 
     // then
     final Optional<PartitionInfo> partitionInfo =
@@ -79,8 +78,6 @@ public class BrokerLeaderChangeTest {
   @Ignore("https://github.com/zeebe-io/zeebe/issues/844")
   public void shouldChangeLeaderAfterLeaderDies() {
     // given
-    clusteringRule.waitForPartition(3);
-
     final BrokerInfo leaderForPartition = clusteringRule.getLeaderForPartition(1);
     final String leaderAddress = leaderForPartition.getAddress();
 

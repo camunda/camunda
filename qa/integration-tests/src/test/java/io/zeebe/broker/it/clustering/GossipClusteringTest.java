@@ -50,11 +50,6 @@ public class GossipClusteringTest {
 
   @Test
   public void shouldDistributePartitionsAndLeaderInformationInCluster() {
-    // given
-
-    // when
-    clusteringRule.waitForPartition(PARTITION_COUNT);
-
     // then
     final long partitionLeaderCount = clusteringRule.getPartitionLeaderCount();
     assertThat(partitionLeaderCount).isEqualTo(PARTITION_COUNT);

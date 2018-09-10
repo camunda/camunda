@@ -53,9 +53,6 @@ public class SubscriptionClusteredTest {
 
   @Test
   public void shouldOpenSubscriptionGroup() {
-    // given
-    clusteringRule.waitForPartition(PARTITION_COUNT);
-
     // when
     final Integer[] partitionIds = clusteringRule.getPartitionIds().toArray(new Integer[3]);
 

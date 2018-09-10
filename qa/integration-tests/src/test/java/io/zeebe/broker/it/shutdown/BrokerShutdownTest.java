@@ -18,7 +18,6 @@ package io.zeebe.broker.it.shutdown;
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
-import io.zeebe.broker.system.configuration.TomlConfigurationReader;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.servicecontainer.Service;
@@ -32,7 +31,6 @@ import io.zeebe.util.FileUtil;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
@@ -89,15 +87,9 @@ public class BrokerShutdownTest {
   }
 
   private Broker startBrokerWithBlockingService(final File brokerBase) {
-    final Broker broker;
-    try (InputStream configStream =
-        EmbeddedBrokerRule.class.getResourceAsStream("/zeebe.test.cfg.toml")) {
-      final BrokerCfg brokerCfg = TomlConfigurationReader.read(configStream);
-      EmbeddedBrokerRule.assignSocketAddresses(brokerCfg);
-      broker = new Broker(brokerCfg, brokerBase.getAbsolutePath(), null);
-    } catch (final IOException e) {
-      throw new RuntimeException("Unable to open configuration", e);
-    }
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    EmbeddedBrokerRule.assignSocketAddresses(brokerCfg);
+    final Broker broker = new Broker(brokerCfg, brokerBase.getAbsolutePath(), null);
 
     final ServiceContainer serviceContainer = broker.getBrokerContext().getServiceContainer();
 

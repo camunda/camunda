@@ -15,7 +15,6 @@
  */
 package io.zeebe.broker.it.clustering;
 
-import static io.zeebe.broker.it.clustering.ClusteringRule.DEFAULT_REPLICATION_FACTOR;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.ClientRule;
@@ -56,8 +55,6 @@ public class DeploymentClusteredTest {
   @Before
   public void init() {
     client = clientRule.getClient();
-
-    clusteringRule.waitForPartition(PARTITION_COUNT);
   }
 
   @Test
@@ -146,7 +143,6 @@ public class DeploymentClusteredTest {
 
     // when
     clusteringRule.restartBroker(2);
-    clusteringRule.waitForPartitionReplicationFactor(PARTITION_COUNT, DEFAULT_REPLICATION_FACTOR);
 
     // then create wf instance on each partition
     clusteringRule
@@ -198,9 +194,6 @@ public class DeploymentClusteredTest {
 
   @Test
   public void shouldNotDeployUnparsable() {
-    // given
-    clusteringRule.waitForPartition(PARTITION_COUNT);
-
     // expect
     expectedException.expect(ClientCommandRejectedException.class);
     expectedException.expectMessage("Command (CREATE) was rejected");

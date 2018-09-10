@@ -15,6 +15,7 @@
  */
 package io.zeebe.broker.it.job;
 
+import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setPartitionCount;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -37,8 +38,7 @@ import org.junit.rules.Timeout;
 
 public class JobWorkerWithMultiplePartitionsTest {
 
-  public EmbeddedBrokerRule brokerRule =
-      new EmbeddedBrokerRule("zeebe.test.increased.partitions.cfg.toml");
+  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(setPartitionCount(3));
 
   public ClientRule clientRule = new ClientRule(brokerRule);
 

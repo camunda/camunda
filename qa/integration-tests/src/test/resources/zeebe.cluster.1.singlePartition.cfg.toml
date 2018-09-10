@@ -1,5 +1,0 @@
-# Broker 1
-[cluster]
-clusterSize = 3
-partitionsCount = 1
-replicationFactor = 3

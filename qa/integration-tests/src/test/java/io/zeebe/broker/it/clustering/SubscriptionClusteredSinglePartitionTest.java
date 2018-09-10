@@ -34,13 +34,7 @@ import org.junit.rules.Timeout;
 public class SubscriptionClusteredSinglePartitionTest {
 
   public Timeout testTimeout = Timeout.seconds(30);
-  public ClusteringRule clusteringRule =
-      new ClusteringRule(
-          new String[] {
-            "zeebe.cluster.1.singlePartition.cfg.toml",
-            "zeebe.cluster.2.singlePartition.cfg.toml",
-            "zeebe.cluster.3.singlePartition.cfg.toml"
-          });
+  public ClusteringRule clusteringRule = new ClusteringRule(1, 3, 3);
   public ClientRule clientRule = new ClientRule(clusteringRule);
 
   @Rule

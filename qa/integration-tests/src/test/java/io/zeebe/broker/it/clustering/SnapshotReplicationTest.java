@@ -24,6 +24,7 @@ import io.zeebe.broker.Broker;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.snapshots.SnapshotReplicationService;
 import io.zeebe.broker.it.ClientRule;
+import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.logstreams.snapshot.SerializableWrapper;
 import io.zeebe.logstreams.spi.ReadableSnapshot;
 import io.zeebe.logstreams.spi.SnapshotStorage;
@@ -47,14 +48,17 @@ import org.junit.rules.Timeout;
 
 @Category(UnstableTest.class)
 public class SnapshotReplicationTest {
-  private static final String BROKER_1_TOML = "zeebe.cluster.snapshotReplication.1.cfg.toml";
-  private static final String BROKER_2_TOML = "zeebe.cluster.snapshotReplication.2.cfg.toml";
-  private static final String BROKER_3_TOML = "zeebe.cluster.snapshotReplication.3.cfg.toml";
-
-  private final String[] brokerConfigs = new String[] {BROKER_1_TOML, BROKER_2_TOML, BROKER_3_TOML};
-
   public Timeout testTimeout = Timeout.seconds(90);
-  public ClusteringRule clusteringRule = new ClusteringRule(brokerConfigs);
+  public ClusteringRule clusteringRule =
+      new ClusteringRule(
+          1,
+          2,
+          3,
+          cfg -> {
+            final DataCfg data = cfg.getData();
+            data.setSnapshotPeriod("15m");
+            data.setSnapshotReplicationPeriod("5ms");
+          });
   public ClientRule clientRule = new ClientRule(clusteringRule);
 
   @Rule

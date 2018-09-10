@@ -15,16 +15,17 @@
  */
 package io.zeebe.broker.it.clustering;
 
+import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.DEBUG_EXPORTER;
+import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.TEST_RECORDER;
+import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setCluster;
+import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setInitialContactPoints;
+import static io.zeebe.broker.test.EmbeddedBrokerRule.assignSocketAddresses;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 
 import io.zeebe.broker.Broker;
-import io.zeebe.broker.exporter.DebugExporter;
 import io.zeebe.broker.it.util.TopologyClient;
 import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.broker.system.configuration.ClusterCfg;
-import io.zeebe.broker.system.configuration.TomlConfigurationReader;
-import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.api.commands.BrokerInfo;
 import io.zeebe.gateway.api.commands.PartitionInfo;
@@ -33,17 +34,17 @@ import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.ZbLogger;
 import java.io.File;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.assertj.core.util.Files;
 import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
@@ -54,39 +55,46 @@ public class ClusteringRule extends ExternalResource {
 
   public static final Logger LOG = new ZbLogger(ClusteringRule.class);
 
-  public static final int DEFAULT_REPLICATION_FACTOR = 1;
-  public static final int SYSTEM_REPLICATION_FACTOR = 3;
-
-  public static final String BROKER_1_TOML = "zeebe.cluster.1.cfg.toml";
-  public static final String BROKER_2_TOML = "zeebe.cluster.2.cfg.toml";
-  public static final String BROKER_3_TOML = "zeebe.cluster.3.cfg.toml";
-
   // internal
   private ZeebeClient zeebeClient;
   private TopologyClient topologyClient;
 
   private final List<AutoCloseable> closeables = new ArrayList<>();
 
-  private final String[] brokerConfigFiles;
+  private final int partitionCount;
+  private final int replicationFactor;
+  private final int clusterSize;
+  private final Consumer<BrokerCfg>[] configurators;
+
+  private final File[] brokerBases;
   private final BrokerCfg[] brokerCfgs;
   private final Broker[] brokers;
-  private final File[] brokerBases;
-  private List<Integer> partitionIds;
+  private final List<Integer> partitionIds;
 
   public ClusteringRule() {
-    this(new String[] {BROKER_1_TOML, BROKER_2_TOML, BROKER_3_TOML});
+    this(3, 3, 3);
   }
 
-  public ClusteringRule(final String[] brokerConfigFiles) {
-    this.brokerConfigFiles = brokerConfigFiles;
-    this.brokerCfgs = new BrokerCfg[brokerConfigFiles.length];
-    this.brokers = new Broker[brokerConfigFiles.length];
-    this.brokerBases = new File[brokerConfigFiles.length];
+  @SafeVarargs
+  public ClusteringRule(
+      final int partitionCount,
+      final int replicationFactor,
+      final int clusterSize,
+      final Consumer<BrokerCfg>... configurators) {
+    this.partitionCount = partitionCount;
+    this.replicationFactor = replicationFactor;
+    this.clusterSize = clusterSize;
+    this.configurators = configurators;
+
+    brokerBases = new File[clusterSize];
+    brokerCfgs = new BrokerCfg[clusterSize];
+    brokers = new Broker[clusterSize];
+    this.partitionIds = IntStream.range(0, partitionCount).boxed().collect(Collectors.toList());
   }
 
   @Override
   protected void before() {
-    for (int i = 0; i < brokerConfigFiles.length; i++) {
+    for (int i = 0; i < clusterSize; i++) {
       startBroker(i);
     }
 
@@ -99,17 +107,8 @@ public class ClusteringRule extends ExternalResource {
     closeables.add(zeebeClient);
     topologyClient = new TopologyClient((ZeebeClientImpl) zeebeClient);
 
-    final ClusterCfg clusterCfg = brokerCfg.getCluster();
-    waitForInternalSystemAndReplicationFactor(clusterCfg);
-
-    final Broker leaderBroker = brokers[0];
-    partitionIds = clusterCfg.getPartitionIds();
-    final int partitions = clusterCfg.getPartitionsCount();
-    final int replicationFactor = clusterCfg.getReplicationFactor();
-
-    waitForPartitionReplicationFactor(partitions, replicationFactor);
-
-    waitUntilBrokersInTopology(brokers);
+    waitForPartitionReplicationFactor();
+    waitUntilBrokersInTopology(brokerCfgs);
   }
 
   @Override
@@ -125,7 +124,9 @@ public class ClusteringRule extends ExternalResource {
       }
     }
 
-    for (int i = 0; i < brokers.length; i++) {
+    for (int i = 0; i < clusterSize; i++) {
+      brokerBases[i] = null;
+      brokerCfgs[i] = null;
       brokers[i] = null;
     }
 
@@ -134,10 +135,14 @@ public class ClusteringRule extends ExternalResource {
     }
   }
 
-  private void waitUntilBrokersInTopology(final Broker... brokers) {
+  public ZeebeClient getClient() {
+    return zeebeClient;
+  }
+
+  private void waitUntilBrokersInTopology(final BrokerCfg... brokerCfgs) {
     final Set<SocketAddress> addresses =
-        Arrays.stream(brokers)
-            .map(b -> b.getConfig().getNetwork().getClient().toSocketAddress())
+        Arrays.stream(brokerCfgs)
+            .map(b -> b.getNetwork().getClient().toSocketAddress())
             .collect(Collectors.toSet());
 
     waitForTopology(
@@ -147,11 +152,6 @@ public class ClusteringRule extends ExternalResource {
                 .map(b -> new SocketAddress(b.getHost(), b.getPort()))
                 .collect(Collectors.toSet())
                 .containsAll(addresses));
-  }
-
-  private void waitForInternalSystemAndReplicationFactor(final ClusterCfg clusterCfg) {
-    waitForPartitionReplicationFactor(
-        clusterCfg.getPartitionsCount(), clusterCfg.getReplicationFactor());
   }
 
   public List<Integer> getPartitionIds() {
@@ -232,23 +232,11 @@ public class ClusteringRule extends ExternalResource {
         .findFirst();
   }
 
-  /**
-   * Wait for a partition count in the cluster.
-   *
-   * <p>This method returns to the user, if the partitions are created and the replication factor
-   * was reached for each partition.
-   *
-   * <p>The replication factor is per default the number of current brokers in the cluster, see
-   * {@link #DEFAULT_REPLICATION_FACTOR}.
-   *
-   * @param partitionCount to number of partitions
-   */
-  public void waitForPartition(final int partitionCount) {
-    waitForPartition(partitionCount, DEFAULT_REPLICATION_FACTOR);
-  }
-
-  public void waitForPartition(final int partitionCount, final int replicationFactor) {
-    waitForPartitionReplicationFactor(partitionCount, replicationFactor);
+  /** Wait for a partition bootstrap in the cluster. */
+  public void waitForPartitionReplicationFactor() {
+    waitForTopology(
+        topology ->
+            hasPartitionsWithReplicationFactor(topology, partitionCount, replicationFactor));
   }
 
   private boolean hasPartitionsWithReplicationFactor(
@@ -272,47 +260,52 @@ public class ClusteringRule extends ExternalResource {
         && followers.get() >= partitionCount * (replicationFactor - 1);
   }
 
-  public void waitForPartitionReplicationFactor(
-      final int partitionCount, final int replicationFactor) {
-    waitForTopology(
-        topology ->
-            hasPartitionsWithReplicationFactor(topology, partitionCount, replicationFactor));
-  }
-
   private void startBroker(final int brokerId) {
-    if (brokerCfgs[brokerId] == null) {
-      brokerBases[brokerId] = Files.newTemporaryFolder();
-      closeables.add(() -> FileUtil.deleteFolder(brokerBases[brokerId].getAbsolutePath()));
-
-      final InputStream config =
-          this.getClass().getClassLoader().getResourceAsStream(brokerConfigFiles[brokerId]);
-      final BrokerCfg brokerCfg = TomlConfigurationReader.read(config);
-      if (ENABLE_DEBUG_EXPORTER) {
-        brokerCfg.getExporters().add(DebugExporter.defaultConfig(false));
-      }
-
-      EmbeddedBrokerRule.assignSocketAddresses(brokerCfg);
-
-      if (brokerId > 0) {
-        brokerCfg
-            .getCluster()
-            .setInitialContactPoints(
-                Collections.singletonList(
-                    brokerCfgs[brokerId - 1]
-                        .getNetwork()
-                        .getManagement()
-                        .toSocketAddress()
-                        .toString()));
-      }
-
-      brokerCfgs[brokerId] = brokerCfg;
+    final File brokerBase;
+    if (brokerBases[brokerId] == null) {
+      brokerBase = Files.newTemporaryFolder();
+      closeables.add(() -> FileUtil.deleteFolder(brokerBase.getAbsolutePath()));
+      brokerBases[brokerId] = brokerBase;
+    } else {
+      brokerBase = brokerBases[brokerId];
     }
 
-    final Broker broker =
-        new Broker(brokerCfgs[brokerId], brokerBases[brokerId].getAbsolutePath(), null);
+    BrokerCfg brokerCfg = brokerCfgs[brokerId];
+    if (brokerCfg == null) {
+      brokerCfg = new BrokerCfg();
+      brokerCfgs[brokerId] = brokerCfg;
+
+      configureBroker(brokerId, brokerCfg);
+    }
+
+    final Broker broker = new Broker(brokerCfg, brokerBase.getAbsolutePath(), null);
 
     brokers[brokerId] = broker;
     closeables.add(broker);
+  }
+
+  private void configureBroker(int brokerId, BrokerCfg brokerCfg) {
+    // build-in exporters
+    if (ENABLE_DEBUG_EXPORTER) {
+      DEBUG_EXPORTER.accept(brokerCfg);
+    }
+    TEST_RECORDER.accept(brokerCfg);
+
+    // configure cluster
+    setCluster(brokerId, partitionCount, replicationFactor, clusterSize).accept(brokerCfg);
+    if (brokerId > 0) {
+      setInitialContactPoints(
+              brokerCfgs[brokerId - 1].getNetwork().getManagement().toSocketAddress().toString())
+          .accept(brokerCfg);
+    }
+
+    // custom configurators
+    for (Consumer<BrokerCfg> configurator : configurators) {
+      configurator.accept(brokerCfg);
+    }
+
+    // set random port numbers
+    assignSocketAddresses(brokerCfg);
   }
 
   /**
@@ -328,11 +321,9 @@ public class ClusteringRule extends ExternalResource {
 
     startBroker(brokerId);
 
-    waitUntilBrokerIsAddedToTopology(
-        brokerCfgs[brokerId].getNetwork().getClient().toSocketAddress());
     final BrokerCfg brokerCfg = brokerCfgs[brokerId];
-    final ClusterCfg clusterCfg = brokerCfg.getCluster();
-    waitForInternalSystemAndReplicationFactor(clusterCfg);
+    waitUntilBrokerIsAddedToTopology(brokerCfg.getNetwork().getClient().toSocketAddress());
+    waitForPartitionReplicationFactor();
   }
 
   public void restartBroker(final Broker broker) {
@@ -340,13 +331,7 @@ public class ClusteringRule extends ExternalResource {
   }
 
   private int brokerId(final Broker broker) {
-    for (int i = 0; i < brokers.length; i++) {
-      if (broker.equals(brokers[i])) {
-        return i;
-      }
-    }
-
-    return -1;
+    return broker.getConfig().getCluster().getNodeId();
   }
 
   private void waitUntilBrokerIsAddedToTopology(final SocketAddress socketAddress) {

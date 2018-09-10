@@ -15,6 +15,7 @@
  */
 package io.zeebe.broker.it.subscription;
 
+import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setPartitionCount;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -49,8 +50,7 @@ public class TopicSubscriptionTest {
 
   public static final String SUBSCRIPTION_NAME = "foo";
 
-  public EmbeddedBrokerRule brokerRule =
-      new EmbeddedBrokerRule("zeebe.test.increased.partitions.cfg.toml");
+  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(setPartitionCount(3));
 
   public ClientRule clientRule = new ClientRule(brokerRule);
 

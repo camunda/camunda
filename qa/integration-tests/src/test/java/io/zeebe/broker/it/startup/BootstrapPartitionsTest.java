@@ -27,12 +27,9 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
 public class BootstrapPartitionsTest {
-  private static final String BOOTSTRAPPED_BROKER_CONFIG = "zeebe.cluster.bootstrap.1.cfg.toml";
-  private static final String OTHER_BROKER_CONFIG = "zeebe.cluster.bootstrap.2.cfg.toml";
-  private final String[] clusterConfigs = {BOOTSTRAPPED_BROKER_CONFIG, OTHER_BROKER_CONFIG};
 
   private final Timeout testTimeout = Timeout.seconds(30);
-  private final ClusteringRule clusteringRule = new ClusteringRule(clusterConfigs);
+  private final ClusteringRule clusteringRule = new ClusteringRule(2, 2, 2);
   private final ClientRule clientRule = new ClientRule(clusteringRule);
 
   @Rule
@@ -41,14 +38,11 @@ public class BootstrapPartitionsTest {
 
   @Test
   public void shouldCreateDefaultPartitionsOnBootstrappedBrokers() {
-    // given
-    clusteringRule.waitForPartitionReplicationFactor(2, 2);
-
     // when
     final List<Partition> partitions = clientRule.partitions();
 
     // then
     assertThat(partitions.size()).isEqualTo(2);
-    assertThat(partitions).extracting(p -> p.getId()).containsExactly(0, 1);
+    assertThat(partitions).extracting(Partition::getId).containsExactly(0, 1);
   }
 }

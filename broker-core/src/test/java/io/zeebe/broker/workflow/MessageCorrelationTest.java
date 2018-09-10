@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.workflow;
 
+import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setPartitionCount;
 import static io.zeebe.broker.test.MsgPackUtil.JSON_MAPPER;
 import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_MAPPER;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_ACTIVITY_ID;
@@ -58,8 +59,7 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class MessageCorrelationTest {
 
-  public EmbeddedBrokerRule brokerRule =
-      new EmbeddedBrokerRule("zeebe.test.increased.partitions.cfg.toml");
+  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(setPartitionCount(3));
 
   public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
 

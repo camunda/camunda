@@ -15,6 +15,7 @@
  */
 package io.zeebe.broker.it.workflow;
 
+import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setPartitionCount;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -48,8 +49,7 @@ public class PublishMessageTest {
           .message(c -> c.name("order canceled").zeebeCorrelationKey("$.orderId"))
           .endEvent()
           .done();
-  public EmbeddedBrokerRule brokerRule =
-      new EmbeddedBrokerRule("zeebe.test.increased.partitions.cfg.toml");
+  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(setPartitionCount(3));
   public ClientRule clientRule = new ClientRule(brokerRule);
   public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule, false);
 

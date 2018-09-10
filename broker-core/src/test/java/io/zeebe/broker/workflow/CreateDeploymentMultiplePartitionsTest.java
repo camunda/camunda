@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.workflow;
 
+import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setPartitionCount;
 import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -60,8 +61,7 @@ public class CreateDeploymentMultiplePartitionsTest {
   public static final int PARTITION_ID = DEPLOYMENT_PARTITION;
   public static final int PARTITION_COUNT = 3;
 
-  public EmbeddedBrokerRule brokerRule =
-      new EmbeddedBrokerRule("zeebe.test.increased.partitions.cfg.toml");
+  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(setPartitionCount(3));
 
   public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
 

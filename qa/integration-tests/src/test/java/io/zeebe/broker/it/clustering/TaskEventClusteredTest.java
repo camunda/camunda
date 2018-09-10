@@ -40,8 +40,6 @@ public class TaskEventClusteredTest {
     // given
     final ZeebeClient client = clientRule.getClient();
 
-    clusteringRule.waitForPartition(1);
-
     final Partitions partitions = client.newPartitionsRequest().send().join();
 
     final BrokerInfo leader =

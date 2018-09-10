@@ -1,4 +1,0 @@
-# Configuration file for unit tests
-
-[cluster]
-partitionsCount = 3
