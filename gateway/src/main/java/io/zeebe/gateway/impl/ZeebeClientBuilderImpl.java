@@ -32,7 +32,7 @@ import java.time.Duration;
 import java.util.Properties;
 
 public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientConfiguration {
-  private String brokerContactPoint = "127.0.0.1:26500";
+  private String brokerContactPoint = "127.0.0.1:26501";
   private Duration requestTimeout = Duration.ofSeconds(15);
   private Duration requestBlocktime = Duration.ofSeconds(15);
   private int sendBufferSize = 2;
