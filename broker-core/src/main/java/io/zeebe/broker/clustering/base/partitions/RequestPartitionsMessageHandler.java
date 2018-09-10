@@ -27,12 +27,12 @@ import org.agrona.DirectBuffer;
 
 public class RequestPartitionsMessageHandler extends AbstractControlMessageHandler {
 
-  private final ClusterCfg clusterCfg;
+  private final PartitionsResponse response;
 
   public RequestPartitionsMessageHandler(
       final ServerOutput serverOutput, final ClusterCfg clusterCfg) {
     super(serverOutput);
-    this.clusterCfg = clusterCfg;
+    this.response = createResponse(clusterCfg);
   }
 
   @Override
@@ -49,10 +49,10 @@ public class RequestPartitionsMessageHandler extends AbstractControlMessageHandl
 
     final int requestStreamId = metadata.getRequestStreamId();
     final long requestId = metadata.getRequestId();
-    sendResponse(actor, requestStreamId, requestId, createResponse());
+    sendResponse(actor, requestStreamId, requestId, response);
   }
 
-  private PartitionsResponse createResponse() {
+  private PartitionsResponse createResponse(ClusterCfg clusterCfg) {
     final PartitionsResponse response = new PartitionsResponse();
 
     for (int i = 0; i < clusterCfg.getPartitionsCount(); i++) {
