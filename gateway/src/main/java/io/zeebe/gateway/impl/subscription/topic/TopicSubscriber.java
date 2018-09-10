@@ -41,13 +41,13 @@ public class TopicSubscriber extends Subscriber {
       eventHandlerAdapter;
 
   public TopicSubscriber(
-      ZeebeClientImpl client,
-      TopicSubscriptionSpec subscription,
-      long subscriberKey,
-      RemoteAddress eventSource,
-      int partitionId,
-      SubscriberGroup group,
-      SubscriptionManager acquisition) {
+      final ZeebeClientImpl client,
+      final TopicSubscriptionSpec subscription,
+      final long subscriberKey,
+      final RemoteAddress eventSource,
+      final int partitionId,
+      final SubscriberGroup group,
+      final SubscriptionManager acquisition) {
     super(
         subscriberKey, partitionId, subscription.getBufferSize(), eventSource, group, acquisition);
     this.subscription = subscription;
@@ -63,18 +63,18 @@ public class TopicSubscriber extends Subscriber {
   }
 
   @Override
-  public int pollEvents(CheckedConsumer<UntypedRecordImpl> consumer) {
+  public int pollEvents(final CheckedConsumer<UntypedRecordImpl> consumer) {
     return super.pollEvents(eventHandlerAdapter.apply(consumer));
   }
 
-  protected void logExceptionAndClose(UntypedRecordImpl event, Exception e) {
+  protected void logExceptionAndClose(final UntypedRecordImpl event, final Exception e) {
     logEventHandlingError(e, event, "Closing subscription.");
     disable();
 
     acquisition.closeGroup(group, "Event handling failed");
   }
 
-  protected void logRetry(UntypedRecordImpl event, Exception e) {
+  protected void logRetry(final UntypedRecordImpl event, final Exception e) {
     logEventHandlingError(e, event, "Retrying.");
   }
 
@@ -88,7 +88,7 @@ public class TopicSubscriber extends Subscriber {
   }
 
   @Override
-  protected ActorFuture<?> requestEventSourceReplenishment(int eventsProcessed) {
+  protected ActorFuture<?> requestEventSourceReplenishment(final int eventsProcessed) {
     return acknowledgeLastProcessedEvent();
   }
 
@@ -100,8 +100,7 @@ public class TopicSubscriber extends Subscriber {
 
     if (positionToAck > lastAcknowledgedPosition) {
       final ActorFuture<TopicSubscriptionEventImpl> future =
-          new AcknowledgeSubscribedEventCommandImpl(
-                  client.getCommandManager(), subscription.getTopic(), partitionId)
+          new AcknowledgeSubscribedEventCommandImpl(client.getCommandManager(), partitionId)
               .subscriptionName(subscription.getName())
               .ackPosition(positionToAck)
               .send();
@@ -115,11 +114,12 @@ public class TopicSubscriber extends Subscriber {
     }
   }
 
-  protected void recordProcessedEvent(UntypedRecordImpl event) {
+  protected void recordProcessedEvent(final UntypedRecordImpl event) {
     this.lastProcessedEventPosition = event.getMetadata().getPosition();
   }
 
-  protected void logEventHandlingError(Exception e, UntypedRecordImpl event, String resolution) {
+  protected void logEventHandlingError(
+      final Exception e, final UntypedRecordImpl event, final String resolution) {
     LOGGER.error(
         LOG_MESSAGE_PREFIX + "Unhandled exception during handling of event {}.{}",
         this,
@@ -129,15 +129,8 @@ public class TopicSubscriber extends Subscriber {
   }
 
   @Override
-  public String getTopicName() {
-    return subscription.getTopic();
-  }
-
-  @Override
   public String toString() {
-    return "TopicSubscriber[topic="
-        + subscription.getTopic()
-        + ", partition="
+    return "TopicSubscriber[partition="
         + partitionId
         + ", name="
         + subscription.getName()

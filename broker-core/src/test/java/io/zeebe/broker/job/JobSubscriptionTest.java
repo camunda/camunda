@@ -33,7 +33,7 @@ import io.zeebe.test.broker.protocol.clientapi.ControlMessageResponse;
 import io.zeebe.test.broker.protocol.clientapi.ErrorResponse;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
-import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
+import io.zeebe.test.broker.protocol.clientapi.TestPartitionClient;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.StringUtil;
 import java.io.IOException;
@@ -56,11 +56,11 @@ public class JobSubscriptionTest {
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
-  private TestTopicClient testClient;
+  private TestPartitionClient testClient;
 
   @Before
   public void setUp() {
-    testClient = apiRule.topic();
+    testClient = apiRule.partition();
   }
 
   @Test
@@ -465,14 +465,14 @@ public class JobSubscriptionTest {
     assertThat(events.get(0).subscriberKey()).isNotEqualTo(events.get(1).subscriberKey());
   }
 
-  protected void openAndCloseConnectionTo(SocketAddress remote) {
+  protected void openAndCloseConnectionTo(final SocketAddress remote) {
     try {
       final SocketChannel media = SocketChannel.open();
       media.setOption(StandardSocketOptions.TCP_NODELAY, true);
       media.configureBlocking(true);
       media.connect(remote.toInetSocketAddress());
       media.close();
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException(e);
     }
   }

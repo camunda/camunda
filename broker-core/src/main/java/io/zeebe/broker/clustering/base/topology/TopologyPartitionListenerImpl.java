@@ -17,17 +17,13 @@
  */
 package io.zeebe.broker.clustering.base.topology;
 
-import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorControl;
-import io.zeebe.util.sched.channel.ActorConditions;
 import org.agrona.collections.Int2ObjectHashMap;
 
 public class TopologyPartitionListenerImpl implements TopologyPartitionListener {
 
   private final Int2ObjectHashMap<NodeInfo> partitionLeaders = new Int2ObjectHashMap<>();
-  private volatile Integer systemPartitionLeaderId;
   private final ActorControl actor;
-  private final ActorConditions conditions = new ActorConditions();
 
   public TopologyPartitionListenerImpl(final ActorControl actor) {
     this.actor = actor;
@@ -39,16 +35,7 @@ public class TopologyPartitionListenerImpl implements TopologyPartitionListener 
       actor.submit(
           () -> {
             updatePartitionLeader(partitionInfo, member);
-            conditions.signalConsumers();
           });
-    }
-  }
-
-  private void updateSystemPartitionLeader(final NodeInfo member) {
-    final Integer currentLeader = systemPartitionLeaderId;
-
-    if (currentLeader == null || !currentLeader.equals(member.getNodeId())) {
-      systemPartitionLeaderId = member.getNodeId();
     }
   }
 
@@ -62,17 +49,5 @@ public class TopologyPartitionListenerImpl implements TopologyPartitionListener 
 
   public Int2ObjectHashMap<NodeInfo> getPartitionLeaders() {
     return partitionLeaders;
-  }
-
-  public Integer getSystemPartitionLeaderId() {
-    return systemPartitionLeaderId;
-  }
-
-  public void addCondition(final ActorCondition condition) {
-    conditions.registerConsumer(condition);
-  }
-
-  public void removeCondition(final ActorCondition condition) {
-    conditions.removeConsumer(condition);
   }
 }

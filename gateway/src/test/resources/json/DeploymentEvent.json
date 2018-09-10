@@ -3,7 +3,6 @@
     "intent": "CREATED",
     "valueType": "DEPLOYMENT",
     "recordType": "EVENT",
-    "topicName": "internal-system",
     "partitionId": 0,
     "key": 4294968560,
     "position": 0,
@@ -26,6 +25,5 @@
       "workflowKey": 1,
       "resourceName": "workflows/one-task-process.bpmn"
     }
-  ],
-  "topicName": "default-topic"
+  ]
 }

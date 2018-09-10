@@ -49,7 +49,7 @@ public class CreateJobTest {
   @Test
   public void shouldCreateJob() {
     // given
-    final JobClient jobClient = clientRule.getClient().topicClient().jobClient();
+    final JobClient jobClient = clientRule.getClient().jobClient();
 
     // when
     final JobEvent job =
@@ -79,7 +79,7 @@ public class CreateJobTest {
   @Test
   public void shouldCompleteJobNullPayload() {
     // given
-    final JobClient jobClient = clientRule.getClient().topicClient().jobClient();
+    final JobClient jobClient = clientRule.getClient().jobClient();
 
     // when
     final JobEvent job = jobClient.newCreateCommand().jobType("foo").payload("null").send().join();
@@ -93,7 +93,7 @@ public class CreateJobTest {
   @Test
   public void shouldCreateJobWithPayload() {
     // given
-    final JobClient jobClient = clientRule.getClient().topicClient().jobClient();
+    final JobClient jobClient = clientRule.getClient().jobClient();
 
     // when
     final JobEvent job =
@@ -107,7 +107,7 @@ public class CreateJobTest {
   @Test
   public void shouldThrowExceptionOnCompleteJobWithInvalidPayload() {
     // given
-    final JobClient jobClient = clientRule.getClient().topicClient().jobClient();
+    final JobClient jobClient = clientRule.getClient().jobClient();
 
     // when
     final Throwable throwable =
@@ -124,7 +124,7 @@ public class CreateJobTest {
   @Test
   public void shouldCreateJobWithPayloadAsMap() {
     // given
-    final JobClient jobClient = clientRule.getClient().topicClient().jobClient();
+    final JobClient jobClient = clientRule.getClient().jobClient();
 
     // when
     final JobEvent job =
@@ -143,7 +143,7 @@ public class CreateJobTest {
   @Test
   public void shouldCreateJobWithPayloadAsObject() {
     // given
-    final JobClient jobClient = clientRule.getClient().topicClient().jobClient();
+    final JobClient jobClient = clientRule.getClient().jobClient();
 
     final PayloadObject payload = new PayloadObject();
     payload.foo = "bar";

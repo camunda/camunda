@@ -42,13 +42,13 @@ public class ControlMessageRequestHandler implements RequestResponseHandler {
   protected ControlMessageRequest message;
 
   public ControlMessageRequestHandler(
-      ZeebeObjectMapperImpl objectMapper, ControlMessageRequest controlMessage) {
+      final ZeebeObjectMapperImpl objectMapper, final ControlMessageRequest controlMessage) {
     this.objectMapper = objectMapper;
     this.message = controlMessage;
     serialize(controlMessage);
   }
 
-  protected void serialize(ControlMessageRequest message) {
+  protected void serialize(final ControlMessageRequest message) {
     int offset = 0;
     headerEncoder
         .wrap(serializedMessage, offset)
@@ -89,19 +89,20 @@ public class ControlMessageRequestHandler implements RequestResponseHandler {
   }
 
   @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
+  public void write(final MutableDirectBuffer buffer, final int offset) {
     buffer.putBytes(offset, serializedMessage, 0, serializedMessageLength);
   }
 
   @Override
-  public boolean handlesResponse(MessageHeaderDecoder responseHeader) {
+  public boolean handlesResponse(final MessageHeaderDecoder responseHeader) {
     return responseHeader.schemaId() == ControlMessageResponseDecoder.SCHEMA_ID
         && responseHeader.templateId() == ControlMessageResponseDecoder.TEMPLATE_ID;
   }
 
   @SuppressWarnings({"unchecked"})
   @Override
-  public Object getResult(DirectBuffer buffer, int offset, int blockLength, int version) {
+  public Object getResult(
+      final DirectBuffer buffer, final int offset, final int blockLength, final int version) {
     decoder.wrap(buffer, offset, blockLength, version);
 
     final int dataLength = decoder.dataLength();
@@ -122,22 +123,15 @@ public class ControlMessageRequestHandler implements RequestResponseHandler {
   }
 
   @Override
-  public void onSelectedPartition(int partitionId) {
+  public void onSelectedPartition(final int partitionId) {
     message.setTargetPartition(partitionId);
     encoder.partitionId(partitionId);
   }
 
   @Override
-  public String getTargetTopic() {
-    return message.getTargetTopic();
-  }
-
-  @Override
   public String describeRequest() {
     final StringBuilder sb = new StringBuilder();
-    sb.append("[ target topic = ");
-    sb.append(message.getTargetTopic());
-    sb.append(", target partition = ");
+    sb.append("[ target partition = ");
     if (message.getTargetPartition() >= 0) {
       sb.append(message.getTargetPartition());
     } else {

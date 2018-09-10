@@ -21,7 +21,6 @@ import io.zeebe.broker.clustering.base.partitions.PartitionAlreadyExistsExceptio
 import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.FileUtil;
-import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
@@ -29,7 +28,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import org.agrona.DirectBuffer;
 
 /**
  * Manages {@link RaftPersistentConfiguration} instances. When the broker is started, it loads the
@@ -87,7 +85,7 @@ public class RaftPersistentConfigurationManager extends Actor {
   }
 
   public ActorFuture<RaftPersistentConfiguration> createConfiguration(
-      DirectBuffer topicName, int partitionId, int replicationFactor, List<Integer> members) {
+      int partitionId, int replicationFactor, List<Integer> members) {
     final ActorFuture<RaftPersistentConfiguration> future = new CompletableActorFuture<>();
 
     actor.run(
@@ -98,8 +96,7 @@ public class RaftPersistentConfigurationManager extends Actor {
           if (partitionExists) {
             future.completeExceptionally(new PartitionAlreadyExistsException(partitionId));
           } else {
-            final String partitionName =
-                String.format("%s-%d", BufferUtil.bufferAsString(topicName), partitionId);
+            final String partitionName = String.format("partition-%d", partitionId);
 
             final int assignedDataDirOffset = assignDataDirectory();
             final String assignedDataDirectoryName =
@@ -125,7 +122,6 @@ public class RaftPersistentConfigurationManager extends Actor {
                       metafile, logDirectory, snapshotDirectory, statesDirectory);
 
               storage
-                  .setTopicName(topicName)
                   .setPartitionId(partitionId)
                   .setReplicationFactor(replicationFactor)
                   .setMembers(members)

@@ -18,44 +18,18 @@
 package io.zeebe.broker.clustering.management.message;
 
 import static io.zeebe.test.util.BufferWriterUtil.assertEqualFieldsAfterWriteAndRead;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.zeebe.broker.clustering.api.ErrorResponse;
 import io.zeebe.broker.clustering.api.FetchSnapshotChunkRequest;
 import io.zeebe.broker.clustering.api.FetchSnapshotChunkResponse;
-import io.zeebe.broker.clustering.api.InvitationRequest;
-import io.zeebe.broker.clustering.api.InvitationResponse;
 import io.zeebe.broker.clustering.api.ListSnapshotsRequest;
 import io.zeebe.broker.clustering.api.ListSnapshotsResponse;
 import io.zeebe.clustering.management.ErrorResponseCode;
 import io.zeebe.util.buffer.BufferUtil;
-import java.util.Arrays;
 import org.agrona.DirectBuffer;
 import org.junit.Test;
 
 public class ManagementMessageTest {
-
-  public static final DirectBuffer TOPIC_NAME = wrapString("test-topic");
-
-  @Test
-  public void testInvitationRequest() {
-    final InvitationRequest invitationRequest =
-        new InvitationRequest()
-            .topicName(TOPIC_NAME)
-            .partitionId(111)
-            .term(222)
-            .members(Arrays.asList(12, 43));
-
-    assertEqualFieldsAfterWriteAndRead(
-        invitationRequest, "topicName", "partitionId", "replicationFactor", "term", "members");
-  }
-
-  @Test
-  public void testInvitationResponse() {
-    final InvitationResponse invitationResponse = new InvitationResponse().term(111);
-
-    assertEqualFieldsAfterWriteAndRead(invitationResponse, "term");
-  }
 
   @Test
   public void testListSnapshotsRequest() {

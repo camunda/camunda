@@ -40,7 +40,7 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
-import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
+import io.zeebe.test.broker.protocol.clientapi.TestPartitionClient;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -59,7 +59,7 @@ public class IncidentTest {
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
-  private TestTopicClient testClient;
+  private TestPartitionClient testClient;
 
   private static final BpmnModelInstance WORKFLOW_INPUT_MAPPING =
       Bpmn.createExecutableProcess("process")
@@ -89,8 +89,8 @@ public class IncidentTest {
 
   @Before
   public void init() throws Exception {
-    testClient = apiRule.topic();
-    apiRule.waitForTopic(1);
+    testClient = apiRule.partition();
+    apiRule.waitForPartition(1);
   }
 
   @Test
@@ -1224,7 +1224,7 @@ public class IncidentTest {
   }
 
   private void updatePayload(
-      final long workflowInstanceKey, final long activityInstanceKey, byte[] payload) {
+      final long workflowInstanceKey, final long activityInstanceKey, final byte[] payload) {
     final ExecuteCommandResponse response =
         apiRule
             .createCmdRequest()
@@ -1241,7 +1241,9 @@ public class IncidentTest {
   }
 
   private void updatePayload(
-      long workflowInstanceKey, SubscribedRecord activityInstanceEvent, String payload)
+      final long workflowInstanceKey,
+      final SubscribedRecord activityInstanceEvent,
+      final String payload)
       throws IOException {
     updatePayload(
         workflowInstanceKey,

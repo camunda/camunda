@@ -27,7 +27,6 @@ public class GrpcBrokerInfoFactory implements TestFactory<GatewayOuterClass.Brok
         .setHost("0.0.0.0")
         .addPartitions(
             GatewayOuterClass.Partition.newBuilder()
-                .setTopicName("internal-system")
                 .setRole(PartitionBrokerRole.LEADER)
                 .setPartitionId(0))
         .build();

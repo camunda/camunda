@@ -95,12 +95,6 @@ public interface ZeebeClientBuilder {
   /** The timeout which is used when none is provided for a job worker. Default is 5 minutes. */
   ZeebeClientBuilder defaultJobTimeout(Duration timeout);
 
-  /**
-   * The name of the topic which is used for {@link ZeebeClient#topicClient()}. Default is
-   * "default-topic".
-   */
-  ZeebeClientBuilder defaultTopic(String topic);
-
   /** @return a new {@link ZeebeClient} with the provided configuration options. */
   ZeebeClient build();
 }

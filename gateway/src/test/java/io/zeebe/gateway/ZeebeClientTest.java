@@ -15,7 +15,6 @@
  */
 package io.zeebe.gateway;
 
-import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.fail;
@@ -57,7 +56,6 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.TestName;
 
 public class ZeebeClientTest {
-  private final String topic = DEFAULT_TOPIC;
   @Rule public StubBrokerRule broker = new StubBrokerRule();
   @Rule public ExpectedException exception = ExpectedException.none();
   @Rule public AutoCloseableRule closeables = new AutoCloseableRule();
@@ -114,7 +112,7 @@ public class ZeebeClientTest {
     final ClientTransport clientTransport = client.getTransport();
 
     // ensuring an open connection
-    client.newTopicsRequest().send().join();
+    client.newPartitionsRequest().send().join();
 
     final LoggingChannelListener channelListener = new LoggingChannelListener();
     clientTransport.registerChannelListener(channelListener).join();
@@ -153,15 +151,14 @@ public class ZeebeClientTest {
   public void shouldSendAsyncRequestUpToPoolCapacity() {
     // given
     broker.clearTopology();
-    broker.addSystemTopic();
-    broker.addTopic(topic, 0);
-    broker.addTopic(topic, 1);
+    broker.addPartition(0);
+    broker.addPartition(1);
 
     stubJobResponse();
 
     // when then
     for (int i = 0; i < clientMaxRequests; i++) {
-      client.topicClient().jobClient().newCreateCommand().jobType("foo").send().join();
+      client.jobClient().newCreateCommand().jobType("foo").send().join();
     }
   }
 
@@ -170,16 +167,15 @@ public class ZeebeClientTest {
     // given
 
     broker.clearTopology();
-    broker.addSystemTopic();
-    broker.addTopic(topic, 0);
-    broker.addTopic(topic, 1);
+    broker.addPartition(0);
+    broker.addPartition(1);
 
     stubJobResponse();
 
     final List<ActorFuture<JobEvent>> futures = new ArrayList<>();
     for (int i = 0; i < clientMaxRequests; i++) {
       final ActorFuture<JobEvent> future =
-          client.topicClient().jobClient().newCreateCommand().jobType("bar").send();
+          client.jobClient().newCreateCommand().jobType("bar").send();
 
       futures.add(future);
     }
@@ -192,7 +188,7 @@ public class ZeebeClientTest {
     // then
     for (int i = 0; i < clientMaxRequests; i++) {
       final ActorFuture<JobEvent> future =
-          client.topicClient().jobClient().newCreateCommand().jobType("bar").send();
+          client.jobClient().newCreateCommand().jobType("bar").send();
 
       futures.add(future);
     }
@@ -208,9 +204,7 @@ public class ZeebeClientTest {
     // given
     final List<ActorFuture<JobEvent>> futures = new ArrayList<>();
     for (int i = 0; i < clientMaxRequests; i++) {
-      final ActorFuture<JobEvent> future =
-          client.topicClient().jobClient().newCompleteCommand(baseEvent).send();
-
+      final ActorFuture<JobEvent> future = client.jobClient().newCompleteCommand(baseEvent).send();
       futures.add(future);
     }
 
@@ -226,8 +220,7 @@ public class ZeebeClientTest {
 
     // then
     for (int i = 0; i < clientMaxRequests; i++) {
-      final ActorFuture<JobEvent> future =
-          client.topicClient().jobClient().newCompleteCommand(baseEvent).send();
+      final ActorFuture<JobEvent> future = client.jobClient().newCompleteCommand(baseEvent).send();
 
       futures.add(future);
     }
@@ -237,13 +230,12 @@ public class ZeebeClientTest {
   public void shouldDistributeNewEntitiesRoundRobin() {
     // given
     broker.clearTopology();
-    broker.addSystemTopic();
-    broker.addTopic(topic, 0);
-    broker.addTopic(topic, 1);
+    broker.addPartition(0);
+    broker.addPartition(1);
 
     stubJobResponse();
 
-    final JobClient jobClient = client.topicClient().jobClient();
+    final JobClient jobClient = client.jobClient();
 
     // when
     final JobEvent job1 = jobClient.newCreateCommand().jobType("bar").send().join();
@@ -268,12 +260,10 @@ public class ZeebeClientTest {
     exception.expect(ClientException.class);
     exception.expectMessage(
         "Request timed out (PT3S). "
-            + "Request was: [ topic = "
-            + DEFAULT_TOPIC
-            + ", partition = 0, value type = JOB, command = COMPLETE ]");
+            + "Request was: [ partition = 0, value type = JOB, command = COMPLETE ]");
 
     // when
-    client.topicClient().jobClient().newCompleteCommand(baseEvent).send().join();
+    client.jobClient().newCompleteCommand(baseEvent).send().join();
   }
 
   @Test
@@ -285,7 +275,7 @@ public class ZeebeClientTest {
 
     // when
     try {
-      client.topicClient().jobClient().newCompleteCommand(baseEvent).send().join();
+      client.jobClient().newCompleteCommand(baseEvent).send().join();
 
       fail("should throw exception");
     } catch (final ClientCommandRejectedException e) {
@@ -308,7 +298,7 @@ public class ZeebeClientTest {
 
     // when
     try {
-      client.topicClient().jobClient().newCompleteCommand(baseEvent).send().join();
+      client.jobClient().newCompleteCommand(baseEvent).send().join();
 
       fail("should throw exception");
     } catch (final Exception e) {
@@ -323,11 +313,10 @@ public class ZeebeClientTest {
   }
 
   @Test
-  public void shouldThrottleTopologyRefreshRequestsWhenTopicPartitionCannotBeDetermined() {
+  public void shouldThrottleTopologyRefreshRequestsWhenPartitionCannotBeDetermined() {
     // when
     final long start = System.currentTimeMillis();
-    assertThatThrownBy(
-        () -> client.topicClient().jobClient().newCreateCommand().jobType("baz").send().join());
+    assertThatThrownBy(() -> client.jobClient().newCreateCommand().jobType("baz").send().join());
     final long requestDuration = System.currentTimeMillis() - start;
 
     // then
@@ -355,8 +344,7 @@ public class ZeebeClientTest {
 
     // when
     final long start = System.currentTimeMillis();
-    assertThatThrownBy(
-        () -> client.topicClient().jobClient().newCompleteCommand(jobEvent).send().join());
+    assertThatThrownBy(() -> client.jobClient().newCompleteCommand(jobEvent).send().join());
     final long requestDuration = System.currentTimeMillis() - start;
 
     // then
@@ -433,13 +421,7 @@ public class ZeebeClientTest {
         "Command (COMPLETE) for event with key 79 was rejected. It has an invalid value. foo");
 
     // when
-    client
-        .topicClient()
-        .jobClient()
-        .newCompleteCommand(baseEvent)
-        .payload(updatedPayload)
-        .send()
-        .join();
+    client.jobClient().newCompleteCommand(baseEvent).payload(updatedPayload).send().join();
   }
 
   @Test
@@ -457,13 +439,7 @@ public class ZeebeClientTest {
         "Command (COMPLETE) for event with key 79 was rejected. It is not applicable in the current state. foo");
 
     // when
-    client
-        .topicClient()
-        .jobClient()
-        .newCompleteCommand(baseEvent)
-        .payload(updatedPayload)
-        .send()
-        .join();
+    client.jobClient().newCompleteCommand(baseEvent).payload(updatedPayload).send().join();
   }
 
   @Test
@@ -482,23 +458,11 @@ public class ZeebeClientTest {
             + "The broker could not process it for internal reasons. foo");
 
     // when
-    client
-        .topicClient()
-        .jobClient()
-        .newCompleteCommand(baseEvent)
-        .payload(updatedPayload)
-        .send()
-        .join();
+    client.jobClient().newCompleteCommand(baseEvent).payload(updatedPayload).send().join();
   }
 
   protected TopicSubscription openSubscription() {
-    return client
-        .topicClient()
-        .newSubscription()
-        .name("foo")
-        .recordHandler(r -> {})
-        .startAtHeadOfTopic()
-        .open();
+    return client.newSubscription().name("foo").recordHandler(r -> {}).startAtHead().open();
   }
 
   protected void stubJobResponse() {

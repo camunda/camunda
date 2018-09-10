@@ -19,5 +19,5 @@ package io.zeebe.gateway.impl;
 public interface RequestDispatchStrategy {
 
   /** @return -1 if no partition can be determined */
-  int determinePartition(String topic);
+  int determinePartition();
 }

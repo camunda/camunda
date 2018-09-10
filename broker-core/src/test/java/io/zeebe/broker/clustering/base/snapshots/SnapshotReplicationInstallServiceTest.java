@@ -29,15 +29,16 @@ import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
-import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class SnapshotReplicationInstallServiceTest {
-  private ControlledActorSchedulerRule actorSchedulerRule = new ControlledActorSchedulerRule();
-  private ServiceContainerRule serviceContainerRule = new ServiceContainerRule(actorSchedulerRule);
+  private final ControlledActorSchedulerRule actorSchedulerRule =
+      new ControlledActorSchedulerRule();
+  private final ServiceContainerRule serviceContainerRule =
+      new ServiceContainerRule(actorSchedulerRule);
 
   @Rule
   public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(serviceContainerRule);
@@ -48,9 +49,9 @@ public class SnapshotReplicationInstallServiceTest {
     final BrokerCfg config = new BrokerCfg();
     final SnapshotReplicationInstallService installService =
         new SnapshotReplicationInstallService(config);
-    final PartitionInfo info = new PartitionInfo(BufferUtil.wrapString("test"), 1, 1);
+    final PartitionInfo info = new PartitionInfo(1, 1);
     final Partition partition = new Partition(info, RaftState.FOLLOWER);
-    final String partitionName = String.format("%s-%d", info.getTopicName(), info.getPartitionId());
+    final String partitionName = Partition.getPartitionName(info.getPartitionId());
     final ServiceName<SnapshotReplicationService> serviceName =
         snapshotReplicationServiceName(partition);
 

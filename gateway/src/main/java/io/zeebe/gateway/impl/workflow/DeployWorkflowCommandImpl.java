@@ -15,7 +15,6 @@
  */
 package io.zeebe.gateway.impl.workflow;
 
-import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 import static io.zeebe.util.EnsureUtil.ensureNotNull;
 
@@ -50,20 +49,16 @@ public class DeployWorkflowCommandImpl extends CommandImpl<DeploymentEvent>
 
   private final List<DeploymentResource> resources = new ArrayList<>();
 
-  public DeployWorkflowCommandImpl(final RequestManager commandManager, String topic) {
+  public DeployWorkflowCommandImpl(final RequestManager commandManager) {
     super(commandManager);
 
-    // send command always to the deployment partition of the default topic
-    this.command.setTopicName(DEFAULT_TOPIC);
+    // send command always to the deployment partition
     this.command.setPartitionId(DEPLOYMENT_PARTITION);
-
-    // set the topic to deploy to
-    this.command.setDeploymentTopic(topic);
   }
 
   @Override
   public DeployWorkflowCommandBuilderStep2 addResourceBytes(
-      final byte[] resource, String resourceName) {
+      final byte[] resource, final String resourceName) {
     final DeploymentResourceImpl deploymentResource = new DeploymentResourceImpl();
 
     deploymentResource.setResource(resource);
@@ -77,19 +72,19 @@ public class DeployWorkflowCommandImpl extends CommandImpl<DeploymentEvent>
 
   @Override
   public DeployWorkflowCommandBuilderStep2 addResourceString(
-      final String resource, Charset charset, String resourceName) {
+      final String resource, final Charset charset, final String resourceName) {
     return addResourceBytes(resource.getBytes(charset), resourceName);
   }
 
   @Override
   public DeployWorkflowCommandBuilderStep2 addResourceStringUtf8(
-      String resourceString, String resourceName) {
+      final String resourceString, final String resourceName) {
     return addResourceString(resourceString, StandardCharsets.UTF_8, resourceName);
   }
 
   @Override
   public DeployWorkflowCommandBuilderStep2 addResourceStream(
-      final InputStream resourceStream, String resourceName) {
+      final InputStream resourceStream, final String resourceName) {
     ensureNotNull("resource stream", resourceStream);
 
     try {
@@ -108,7 +103,7 @@ public class DeployWorkflowCommandImpl extends CommandImpl<DeploymentEvent>
       final String classpathResource) {
     ensureNotNull("classpath resource", classpathResource);
 
-    try (InputStream resourceStream =
+    try (final InputStream resourceStream =
         getClass().getClassLoader().getResourceAsStream(classpathResource)) {
       if (resourceStream != null) {
         return addResourceStream(resourceStream, classpathResource);
@@ -127,7 +122,7 @@ public class DeployWorkflowCommandImpl extends CommandImpl<DeploymentEvent>
   public DeployWorkflowCommandBuilderStep2 addResourceFile(final String filename) {
     ensureNotNull("filename", filename);
 
-    try (InputStream resourceStream = new FileInputStream(filename)) {
+    try (final InputStream resourceStream = new FileInputStream(filename)) {
       return addResourceStream(resourceStream, filename);
     } catch (final IOException e) {
       final String exceptionMsg =
@@ -138,7 +133,7 @@ public class DeployWorkflowCommandImpl extends CommandImpl<DeploymentEvent>
 
   @Override
   public DeployWorkflowCommandBuilderStep2 addWorkflowModel(
-      final BpmnModelInstance workflowDefinition, String resourceName) {
+      final BpmnModelInstance workflowDefinition, final String resourceName) {
     ensureNotNull("workflow model", workflowDefinition);
 
     final ByteArrayOutputStream outStream = new ByteArrayOutputStream();

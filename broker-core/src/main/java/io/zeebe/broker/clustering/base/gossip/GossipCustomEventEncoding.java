@@ -29,7 +29,6 @@ import java.nio.ByteOrder;
 import java.util.Set;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public final class GossipCustomEventEncoding {
 
@@ -127,13 +126,6 @@ public final class GossipCustomEventEncoding {
     writeBuffer.putInt(offset, partition.getReplicationFactor(), ByteOrder.LITTLE_ENDIAN);
     offset += SIZE_OF_INT;
 
-    final DirectBuffer currentTopicName = partition.getTopicNameBuffer();
-    writeBuffer.putInt(offset, currentTopicName.capacity(), ByteOrder.LITTLE_ENDIAN);
-    offset += SIZE_OF_INT;
-
-    writeBuffer.putBytes(offset, currentTopicName, 0, currentTopicName.capacity());
-    offset += currentTopicName.capacity();
-
     writeBuffer.putByte(offset, (byte) (state == RaftState.LEADER ? 1 : 0));
     offset += SIZE_OF_BYTE;
 
@@ -152,18 +144,11 @@ public final class GossipCustomEventEncoding {
       final int replicationFactor = buffer.getInt(offset, ByteOrder.LITTLE_ENDIAN);
       offset += SIZE_OF_INT;
 
-      final int topicNameLength = buffer.getInt(offset, ByteOrder.LITTLE_ENDIAN);
-      offset += SIZE_OF_INT;
-
-      final MutableDirectBuffer topicBuffer = new UnsafeBuffer(new byte[topicNameLength]);
-      buffer.getBytes(offset, topicBuffer, 0, topicNameLength);
-      offset += topicNameLength;
-
       final byte stateByte = buffer.getByte(offset);
       offset += SIZE_OF_BYTE;
       final RaftState raftState = stateByte == (byte) 1 ? RaftState.LEADER : RaftState.FOLLOWER;
 
-      topologyManager.updatePartition(partition, topicBuffer, replicationFactor, member, raftState);
+      topologyManager.updatePartition(partition, replicationFactor, member, raftState);
     }
   }
 }

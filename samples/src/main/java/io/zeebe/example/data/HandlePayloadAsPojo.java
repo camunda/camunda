@@ -24,14 +24,14 @@ import io.zeebe.gateway.api.subscription.JobHandler;
 import java.util.Scanner;
 
 public class HandlePayloadAsPojo {
-  public static void main(String[] args) {
+  public static void main(final String[] args) {
     final String broker = "127.0.0.1:26501";
 
     final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder().brokerContactPoint(broker);
 
-    try (ZeebeClient client = builder.build()) {
-      final WorkflowClient workflowClient = client.topicClient().workflowClient();
-      final JobClient jobClient = client.topicClient().jobClient();
+    try (final ZeebeClient client = builder.build()) {
+      final WorkflowClient workflowClient = client.workflowClient();
+      final JobClient jobClient = client.jobClient();
 
       final Order order = new Order();
       order.setOrderId(31243);
@@ -53,7 +53,7 @@ public class HandlePayloadAsPojo {
 
   private static class DemoJobHandler implements JobHandler {
     @Override
-    public void handle(JobClient client, JobEvent job) {
+    public void handle(final JobClient client, final JobEvent job) {
       // read the payload of the job
       final Order order = job.getPayloadAsType(Order.class);
       System.out.println("new job with orderId: " + order.getOrderId());
@@ -73,7 +73,7 @@ public class HandlePayloadAsPojo {
       return orderId;
     }
 
-    public void setOrderId(long orderId) {
+    public void setOrderId(final long orderId) {
       this.orderId = orderId;
     }
 
@@ -81,13 +81,13 @@ public class HandlePayloadAsPojo {
       return totalPrice;
     }
 
-    public void setTotalPrice(double totalPrice) {
+    public void setTotalPrice(final double totalPrice) {
       this.totalPrice = totalPrice;
     }
   }
 
   private static void waitUntilSystemInput(final String exitCode) {
-    try (Scanner scanner = new Scanner(System.in)) {
+    try (final Scanner scanner = new Scanner(System.in)) {
       while (scanner.hasNextLine()) {
         final String nextLine = scanner.nextLine();
         if (nextLine.contains(exitCode)) {

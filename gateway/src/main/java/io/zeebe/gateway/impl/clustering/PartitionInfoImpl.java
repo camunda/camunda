@@ -19,14 +19,8 @@ import io.zeebe.gateway.api.commands.PartitionBrokerRole;
 import io.zeebe.gateway.api.commands.PartitionInfo;
 
 public class PartitionInfoImpl implements PartitionInfo {
-  private String topicName;
   private int partitionId;
   private PartitionBrokerRole role;
-
-  public PartitionInfoImpl setTopicName(final String topicName) {
-    this.topicName = topicName;
-    return this;
-  }
 
   public PartitionInfoImpl setPartitionId(final int partitionId) {
     this.partitionId = partitionId;
@@ -38,12 +32,7 @@ public class PartitionInfoImpl implements PartitionInfo {
     return partitionId;
   }
 
-  @Override
-  public String getTopicName() {
-    return topicName;
-  }
-
-  public PartitionInfoImpl setState(String state) {
+  public PartitionInfoImpl setState(final String state) {
     this.role = PartitionBrokerRole.valueOf(state);
     return this;
   }
@@ -61,9 +50,7 @@ public class PartitionInfoImpl implements PartitionInfo {
   @Override
   public String toString() {
     final StringBuilder builder = new StringBuilder();
-    builder.append("PartitionInfo [topicName=");
-    builder.append(topicName);
-    builder.append(", partitionId=");
+    builder.append("PartitionInfo [partitionId=");
     builder.append(partitionId);
     builder.append(", role=");
     builder.append(role);

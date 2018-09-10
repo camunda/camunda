@@ -29,7 +29,7 @@ import java.util.Scanner;
 public class StandaloneBroker {
   private static String tempFolder;
 
-  public static void main(String[] args) {
+  public static void main(final String[] args) {
     final Broker broker;
 
     if (args.length == 1) {
@@ -53,7 +53,7 @@ public class StandaloneBroker {
               }
             });
 
-    try (Scanner scanner = new Scanner(System.in)) {
+    try (final Scanner scanner = new Scanner(System.in)) {
       while (scanner.hasNextLine()) {
         final String nextLine = scanner.nextLine();
         if (nextLine.contains("exit")
@@ -68,7 +68,7 @@ public class StandaloneBroker {
     }
   }
 
-  private static Broker startBrokerFromConfiguration(String[] args) {
+  private static Broker startBrokerFromConfiguration(final String[] args) {
     String basePath = System.getProperty("basedir");
 
     if (basePath == null) {
@@ -83,12 +83,9 @@ public class StandaloneBroker {
 
     try {
       tempFolder = Files.createTempDirectory("zeebe").toAbsolutePath().normalize().toString();
-
       final BrokerCfg cfg = new BrokerCfg();
-      cfg.setBootstrap(1);
-
       return new Broker(cfg, tempFolder, null);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       throw new RuntimeException("Could not start broker", e);
     }
   }
@@ -97,7 +94,7 @@ public class StandaloneBroker {
     if (tempFolder != null) {
       try {
         FileUtil.deleteFolder(tempFolder);
-      } catch (IOException e) {
+      } catch (final IOException e) {
         e.printStackTrace();
       }
     }

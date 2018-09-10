@@ -25,15 +25,15 @@ import java.time.Duration;
 import java.util.Scanner;
 
 public class JobWorkerCreator {
-  public static void main(String[] args) {
+  public static void main(final String[] args) {
     final String broker = "127.0.0.1:26501";
 
     final String jobType = "foo";
 
     final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder().brokerContactPoint(broker);
 
-    try (ZeebeClient client = builder.build()) {
-      final JobClient jobClient = client.topicClient().jobClient();
+    try (final ZeebeClient client = builder.build()) {
+      final JobClient jobClient = client.jobClient();
 
       System.out.println("Opening job worker.");
 
@@ -56,7 +56,7 @@ public class JobWorkerCreator {
 
   private static class ExampleJobHandler implements JobHandler {
     @Override
-    public void handle(JobClient client, JobEvent job) {
+    public void handle(final JobClient client, final JobEvent job) {
       // here: business logic that is executed with every job
       System.out.println(
           String.format(
@@ -72,7 +72,7 @@ public class JobWorkerCreator {
   }
 
   private static void waitUntilSystemInput(final String exitCode) {
-    try (Scanner scanner = new Scanner(System.in)) {
+    try (final Scanner scanner = new Scanner(System.in)) {
       while (scanner.hasNextLine()) {
         final String nextLine = scanner.nextLine();
         if (nextLine.contains(exitCode)) {

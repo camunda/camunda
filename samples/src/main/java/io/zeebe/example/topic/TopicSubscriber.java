@@ -17,25 +17,22 @@ package io.zeebe.example.topic;
 
 import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.ZeebeClientBuilder;
-import io.zeebe.gateway.api.clients.TopicClient;
 import io.zeebe.gateway.api.record.RecordMetadata;
 import io.zeebe.gateway.api.subscription.TopicSubscription;
 import java.util.Scanner;
 
 public class TopicSubscriber {
 
-  public static void main(String[] args) {
+  public static void main(final String[] args) {
     final String broker = "127.0.0.1:26501";
 
     final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder().brokerContactPoint(broker);
 
-    try (ZeebeClient client = builder.build()) {
-      final TopicClient topicClient = client.topicClient();
-
+    try (final ZeebeClient client = builder.build()) {
       System.out.println("Opening topic subscription.");
 
       final TopicSubscription subscription =
-          topicClient
+          client
               .newSubscription()
               .name("record-logger")
               .recordHandler(
@@ -51,7 +48,7 @@ public class TopicSubscriber {
                             metadata.getIntent(),
                             record.toJson()));
                   })
-              .startAtHeadOfTopic()
+              .startAtHead()
               .forcedStart()
               .open();
 
@@ -65,7 +62,7 @@ public class TopicSubscriber {
   }
 
   private static void waitUntilSystemInput(final String exitCode) {
-    try (Scanner scanner = new Scanner(System.in)) {
+    try (final Scanner scanner = new Scanner(System.in)) {
       while (scanner.hasNextLine()) {
         final String nextLine = scanner.nextLine();
         if (nextLine.contains(exitCode)) {

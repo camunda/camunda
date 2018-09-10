@@ -22,5 +22,5 @@ public interface ClusterState {
 
   int getRandomBroker();
 
-  List<Integer> getPartitionsOfTopic(String topic);
+  List<Integer> getPartitions();
 }

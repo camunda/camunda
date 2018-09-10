@@ -18,7 +18,7 @@
 package io.zeebe.broker.subscription.message;
 
 import static io.zeebe.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.intent;
+import static io.zeebe.test.broker.protocol.clientapi.TestPartitionClient.intent;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
@@ -34,7 +34,7 @@ import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandRequestBuilder;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
-import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
+import io.zeebe.test.broker.protocol.clientapi.TestPartitionClient;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -72,7 +72,7 @@ public class PublishMessageTest {
 
     final SubscribedRecord publishedEvent =
         apiRule
-            .topic()
+            .partition()
             .receiveEvents()
             .filter(intent(MessageIntent.PUBLISHED))
             .findFirst()
@@ -242,7 +242,7 @@ public class PublishMessageTest {
 
     final SubscribedRecord rejection =
         apiRule
-            .topic()
+            .partition()
             .receiveRejections()
             .filter(intent(MessageIntent.PUBLISH))
             .findFirst()
@@ -270,7 +270,7 @@ public class PublishMessageTest {
             .sendAndAwait();
 
     // when
-    final TestTopicClient testClient = apiRule.topic();
+    final TestPartitionClient testClient = apiRule.partition();
 
     brokerRule
         .getClock()
@@ -309,7 +309,7 @@ public class PublishMessageTest {
             .sendAndAwait();
 
     // when
-    final TestTopicClient testClient = apiRule.topic();
+    final TestPartitionClient testClient = apiRule.partition();
 
     brokerRule.getClock().addTime(MessageStreamProcessor.MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL);
 
@@ -380,7 +380,7 @@ public class PublishMessageTest {
   }
 
   private ExecuteCommandResponse publishMessage(
-      String name, String correlationKey, String messageId) {
+      final String name, final String correlationKey, final String messageId) {
 
     return apiRule
         .createCmdRequest()

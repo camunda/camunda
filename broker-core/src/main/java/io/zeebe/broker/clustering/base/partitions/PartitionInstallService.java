@@ -48,12 +48,10 @@ import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.transport.ClientTransport;
-import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.channel.OneToOneRingBufferChannel;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.Collection;
-import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 import org.slf4j.Logger;
@@ -71,7 +69,6 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
   private final Injector<ClientTransport> clientTransportInjector = new Injector<>();
   private final RaftPersistentConfiguration configuration;
   private final PartitionInfo partitionInfo;
-  private final boolean isInternalSystemPartition;
 
   private ServiceStartContext startContext;
   private ServiceName<LogStream> logStreamServiceName;
@@ -80,17 +77,11 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
   private ServiceName<StateStorageFactory> stateStorageFactoryServiceName;
 
   public PartitionInstallService(
-      final BrokerCfg brokerCfg,
-      final RaftPersistentConfiguration configuration,
-      final boolean isInternalSystemPartition) {
+      final BrokerCfg brokerCfg, final RaftPersistentConfiguration configuration) {
     this.brokerCfg = brokerCfg;
     this.configuration = configuration;
-    this.isInternalSystemPartition = isInternalSystemPartition;
     this.partitionInfo =
-        new PartitionInfo(
-            configuration.getTopicName(),
-            configuration.getPartitionId(),
-            configuration.getReplicationFactor());
+        new PartitionInfo(configuration.getPartitionId(), configuration.getReplicationFactor());
   }
 
   @Override
@@ -104,13 +95,10 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
 
     final ClientTransport clientTransport = clientTransportInjector.getValue();
 
-    final DirectBuffer topicName = configuration.getTopicName();
-    final String topicNameString = BufferUtil.bufferAsString(topicName);
     final int partitionId = configuration.getPartitionId();
-    final String logName = String.format("%s-%d", topicNameString, partitionId);
+    final String logName = String.format("partition-%d", partitionId);
 
-    final ServiceName<Void> raftInstallServiceName =
-        raftInstallServiceName(topicNameString, partitionId);
+    final ServiceName<Void> raftInstallServiceName = raftInstallServiceName(partitionId);
     final ServiceName<Raft> raftServiceName = raftServiceName(logName);
 
     final CompositeServiceBuilder partitionInstall =
@@ -119,7 +107,7 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
     final String snapshotPath = configuration.getSnapshotsDirectory().getAbsolutePath();
 
     logStreamServiceName =
-        LogStreams.createFsLogStream(topicName, partitionId)
+        LogStreams.createFsLogStream(partitionId)
             .logDirectory(configuration.getLogDirectory().getAbsolutePath())
             .logSegmentSize((int) configuration.getLogSegmentSize())
             .logName(logName)
@@ -228,7 +216,7 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
     final int replicationFactor = partitionInfo.getReplicationFactor();
 
     if (!startContext.hasService(partitionServiceName)) {
-      if (isInternalSystemPartition || raftMemberSize >= replicationFactor) {
+      if (raftMemberSize >= replicationFactor) {
         LOG.debug(
             "Installing partition service for {}. Replication factor reached, got {}/{}.",
             partitionInfo,

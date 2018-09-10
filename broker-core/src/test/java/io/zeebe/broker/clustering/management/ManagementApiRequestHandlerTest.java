@@ -51,7 +51,6 @@ import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.impl.RemoteAddressImpl;
-import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorControl;
@@ -461,15 +460,13 @@ public class ManagementApiRequestHandlerTest {
         new RaftPersistentConfigurationManager(brokerConfiguration.getData());
 
     return new ManagementApiRequestHandler(
-        raftConfigurationManager,
         actor.getActorControl(),
-        null, // fragile
-        brokerConfiguration,
+        // fragile
         trackedSnapshotPartitions);
   }
 
   private Partition createAndTrackPartition(final int id, final SnapshotStorage storage) {
-    final PartitionInfo info = new PartitionInfo(BufferUtil.wrapString("test"), id, 1);
+    final PartitionInfo info = new PartitionInfo(id, 1);
     final Partition partition =
         new Partition(info, RaftState.LEADER) {
           @Override

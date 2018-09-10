@@ -19,9 +19,6 @@ import java.time.Instant;
 
 /** The metadata of a record. */
 public interface RecordMetadata {
-  /** @return the name of the topic this record is published on */
-  String getTopicName();
-
   /** @return the id of the partition this record is published on */
   int getPartitionId();
 
@@ -41,8 +38,7 @@ public interface RecordMetadata {
 
   /**
    * @return the key of the record. Multiple records can have the same key if they belongs to the
-   *     same logical entity. Keys are unique for the combination of topic, partition and record
-   *     type.
+   *     same logical entity. Keys are unique for the combination of partition and record type.
    */
   long getKey();
 

@@ -17,27 +17,23 @@ package io.zeebe.gateway.impl;
 
 import io.zeebe.gateway.impl.clustering.ClientTopologyManager;
 import io.zeebe.gateway.impl.clustering.ClusterStateImpl;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class RoundRobinDispatchStrategy implements RequestDispatchStrategy {
 
   protected final ClientTopologyManager topologyManager;
-  protected Map<String, AtomicInteger> topicOffsets = new ConcurrentHashMap<>();
+  protected AtomicInteger partitions = new AtomicInteger(0);
 
-  public RoundRobinDispatchStrategy(ClientTopologyManager topologyManager) {
+  public RoundRobinDispatchStrategy(final ClientTopologyManager topologyManager) {
     this.topologyManager = topologyManager;
   }
 
   @Override
-  public int determinePartition(String topic) {
+  public int determinePartition() {
     final ClusterStateImpl topology = topologyManager.getTopology();
 
-    final AtomicInteger offsetCounter =
-        topicOffsets.computeIfAbsent(topic, t -> new AtomicInteger(0));
-    final int offset = offsetCounter.getAndIncrement();
+    final int offset = partitions.getAndIncrement();
 
-    return topology.getPartition(topic, offset);
+    return topology.getPartition(offset);
   }
 }

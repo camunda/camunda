@@ -72,7 +72,6 @@ public class RaftRule extends ExternalResource implements RaftStateListener {
   protected final RaftConfiguration configuration;
   protected final SocketAddress socketAddress;
   protected final int nodeId;
-  protected final String topicName;
   protected final int partition;
   protected final RaftConfigurationEvent configurationEvent = new RaftConfigurationEvent();
   protected final LogStreamWriterImpl writer = new LogStreamWriterImpl();
@@ -96,7 +95,6 @@ public class RaftRule extends ExternalResource implements RaftStateListener {
   public RaftRule(
       final ServiceContainerRule serviceContainerRule,
       final int nodeId,
-      final String topicName,
       final int partition,
       final RaftRule... members) {
     this.actorScheduler = serviceContainerRule.getActorScheduler();
@@ -105,14 +103,13 @@ public class RaftRule extends ExternalResource implements RaftStateListener {
     this.nodeId = nodeId;
     this.socketAddress = SocketUtil.getNextAddress();
 
-    this.topicName = topicName;
     this.partition = partition;
     this.members = members != null ? Arrays.asList(members) : Collections.emptyList();
   }
 
   @Override
   protected void before() throws Throwable {
-    final String logName = String.format("%s-%d-%d", topicName, partition, nodeId);
+    final String logName = String.format("%d-%d", partition, nodeId);
 
     final RaftApiMessageHandler raftApiMessageHandler = new RaftApiMessageHandler();
 
@@ -126,7 +123,7 @@ public class RaftRule extends ExternalResource implements RaftStateListener {
         Transports.newClientTransport("raft-" + nodeId).scheduler(actorScheduler).build();
 
     logStream =
-        LogStreams.createFsLogStream(wrapString(topicName), partition)
+        LogStreams.createFsLogStream(partition)
             .logName(logName)
             .deleteOnClose(true)
             .logDirectory(Files.createTempDirectory("raft-test-" + nodeId + "-").toString())
@@ -175,7 +172,7 @@ public class RaftRule extends ExternalResource implements RaftStateListener {
 
     try {
       logStream.closeAsync().get(30, TimeUnit.SECONDS);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       e.printStackTrace();
     }
 
@@ -225,13 +222,11 @@ public class RaftRule extends ExternalResource implements RaftStateListener {
   }
 
   @Override
-  public void onStateChange(Raft raft, RaftState raftState) {
+  public void onStateChange(final Raft raft, final RaftState raftState) {
     final int partitionId = raft.getPartitionId();
-    final DirectBuffer topicName = raft.getTopicName();
     final int nodeId = raft.getNodeId();
 
     assertThat(partitionId).isEqualTo(this.logStream.getPartitionId());
-    assertThat(topicName).isEqualByComparingTo(this.logStream.getTopicName());
     assertThat(nodeId).isEqualTo(this.nodeId);
 
     raftStateChanges.add(raftState);
@@ -400,12 +395,12 @@ public class RaftRule extends ExternalResource implements RaftStateListener {
     return raft.toString();
   }
 
-  public void interruptConnectionTo(RaftRule other) {
+  public void interruptConnectionTo(final RaftRule other) {
     clientTransport.deactivateEndpoint(other.getNodeId());
     other.clientTransport.deactivateEndpoint(this.getNodeId());
   }
 
-  public void reconnectTo(RaftRule other) {
+  public void reconnectTo(final RaftRule other) {
     clientTransport.registerEndpoint(other.getNodeId(), other.socketAddress);
     other.clientTransport.registerEndpoint(this.getNodeId(), this.socketAddress);
   }

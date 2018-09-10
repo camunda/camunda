@@ -17,25 +17,20 @@
  */
 package io.zeebe.broker.workflow.processor;
 
-import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.metrics.Metric;
 import io.zeebe.util.metrics.MetricsManager;
-import org.agrona.DirectBuffer;
 
 public class WorkflowInstanceMetrics implements AutoCloseable {
-  private Metric workflowInstanceEventCanceled;
-  private Metric workflowInstanceEventCompleted;
+  private final Metric workflowInstanceEventCanceled;
+  private final Metric workflowInstanceEventCompleted;
 
-  public WorkflowInstanceMetrics(
-      MetricsManager metricsManager, DirectBuffer topicName, int partitionId) {
-    final String topicNameString = BufferUtil.bufferAsString(topicName);
+  public WorkflowInstanceMetrics(final MetricsManager metricsManager, final int partitionId) {
     final String partitionIdString = Integer.toString(partitionId);
 
     workflowInstanceEventCanceled =
         metricsManager
             .newMetric("workflow_instance_events_count")
             .type("counter")
-            .label("topic", topicNameString)
             .label("partition", partitionIdString)
             .label("type", "canceled")
             .create();
@@ -44,7 +39,6 @@ public class WorkflowInstanceMetrics implements AutoCloseable {
         metricsManager
             .newMetric("workflow_instance_events_count")
             .type("counter")
-            .label("topic", topicNameString)
             .label("partition", partitionIdString)
             .label("type", "completed")
             .create();

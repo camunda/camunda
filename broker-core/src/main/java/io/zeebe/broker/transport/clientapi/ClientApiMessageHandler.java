@@ -18,7 +18,6 @@
 package io.zeebe.broker.transport.clientapi;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
-import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
 import io.zeebe.broker.event.processor.TopicSubscriberEvent;
 import io.zeebe.broker.event.processor.TopicSubscriptionEvent;
 import io.zeebe.broker.job.data.JobRecord;
@@ -83,7 +82,6 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
     recordsByType.put(ValueType.WORKFLOW_INSTANCE, new WorkflowInstanceRecord());
     recordsByType.put(ValueType.SUBSCRIBER, new TopicSubscriberEvent());
     recordsByType.put(ValueType.SUBSCRIPTION, new TopicSubscriptionEvent());
-    recordsByType.put(ValueType.TOPIC, new TopicRecord());
     recordsByType.put(ValueType.MESSAGE, new MessageRecord());
   }
 
@@ -133,7 +131,7 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
     try {
       // verify that the event / command is valid
       event.wrap(buffer, eventOffset, eventLength);
-    } catch (Throwable t) {
+    } catch (final Throwable t) {
       return errorResponseWriter
           .errorCode(ErrorCode.INVALID_MESSAGE)
           .errorMessage("Cannot deserialize command: '%s'.", concatErrorMessages(t))
@@ -225,12 +223,12 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
 
   @Override
   public boolean onRequest(
-      ServerOutput output,
-      RemoteAddress remoteAddress,
-      DirectBuffer buffer,
-      int offset,
-      int length,
-      long requestId) {
+      final ServerOutput output,
+      final RemoteAddress remoteAddress,
+      final DirectBuffer buffer,
+      final int offset,
+      final int length,
+      final long requestId) {
     drainCommandQueue();
 
     messageHeaderDecoder.wrap(buffer, offset);
@@ -279,11 +277,11 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
 
   @Override
   public boolean onMessage(
-      ServerOutput output,
-      RemoteAddress remoteAddress,
-      DirectBuffer buffer,
-      int offset,
-      int length) {
+      final ServerOutput output,
+      final RemoteAddress remoteAddress,
+      final DirectBuffer buffer,
+      final int offset,
+      final int length) {
     // ignore; currently no incoming single-message client interactions
     return true;
   }

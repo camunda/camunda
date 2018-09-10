@@ -22,7 +22,7 @@ import io.zeebe.gateway.api.events.MessageEvent;
 import io.zeebe.gateway.cmd.ClientException;
 import io.zeebe.gateway.impl.CommandImpl;
 import io.zeebe.gateway.impl.PartitionManager;
-import io.zeebe.gateway.impl.TopicClientImpl;
+import io.zeebe.gateway.impl.ZeebeClientImpl;
 import io.zeebe.gateway.impl.command.MessageCommandImpl;
 import io.zeebe.gateway.impl.record.RecordImpl;
 import io.zeebe.protocol.impl.SubscriptionUtil;
@@ -37,13 +37,11 @@ public class PublishMessageCommandImpl extends CommandImpl<MessageEvent>
 
   private final MessageCommandImpl command;
   private final PartitionManager partitionManager;
-  private final String topicName;
 
-  public PublishMessageCommandImpl(TopicClientImpl client) {
+  public PublishMessageCommandImpl(final ZeebeClientImpl client) {
     super(client.getCommandManager());
 
     this.command = new MessageCommandImpl(client.getObjectMapper(), MessageIntent.PUBLISH);
-    this.topicName = client.getTopic();
     this.partitionManager = client.getPartitionManager();
 
     // apply defaults from configuration
@@ -64,46 +62,46 @@ public class PublishMessageCommandImpl extends CommandImpl<MessageEvent>
   }
 
   @Override
-  public PublishMessageCommandStep3 payload(Map<String, Object> payload) {
+  public PublishMessageCommandStep3 payload(final Map<String, Object> payload) {
     this.command.setPayload(payload);
     return this;
   }
 
   @Override
-  public PublishMessageCommandStep3 payload(Object payload) {
+  public PublishMessageCommandStep3 payload(final Object payload) {
     this.command.setPayload(payload);
     return this;
   }
 
   @Override
-  public PublishMessageCommandStep3 messageId(String messageId) {
+  public PublishMessageCommandStep3 messageId(final String messageId) {
     command.setMessageId(messageId);
     return this;
   }
 
   @Override
-  public PublishMessageCommandStep3 timeToLive(Duration timeToLive) {
+  public PublishMessageCommandStep3 timeToLive(final Duration timeToLive) {
     command.setTimeToLive(timeToLive);
     return this;
   }
 
   @Override
-  public PublishMessageCommandStep3 correlationKey(String correlationKey) {
+  public PublishMessageCommandStep3 correlationKey(final String correlationKey) {
     command.setCorrelationKey(correlationKey);
     return this;
   }
 
   @Override
-  public PublishMessageCommandStep2 messageName(String messageName) {
+  public PublishMessageCommandStep2 messageName(final String messageName) {
     command.setName(messageName);
     return this;
   }
 
   @Override
   public RecordImpl getCommand() {
-    final List<Integer> partitionIds = partitionManager.getPartitionIds(topicName);
+    final List<Integer> partitionIds = partitionManager.getPartitionIds();
     if (partitionIds == null || partitionIds.isEmpty()) {
-      throw new ClientException(String.format("No topic found with name '%s'", topicName));
+      throw new ClientException(String.format("No partitions found."));
     }
 
     final int hashCode = SubscriptionUtil.getSubscriptionHashCode(command.getCorrelationKey());

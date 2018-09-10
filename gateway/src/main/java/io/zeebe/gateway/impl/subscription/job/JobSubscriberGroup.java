@@ -28,11 +28,11 @@ public class JobSubscriberGroup extends SubscriberGroup<JobSubscriber> implement
   private final JobSubscriptionSpec subscription;
 
   public JobSubscriberGroup(
-      ActorControl actor,
-      ZeebeClientImpl client,
-      SubscriptionManager acquisition,
-      JobSubscriptionSpec subscription) {
-    super(actor, client, acquisition, subscription.getTopic());
+      final ActorControl actor,
+      final ZeebeClientImpl client,
+      final SubscriptionManager acquisition,
+      final JobSubscriptionSpec subscription) {
+    super(actor, client, acquisition);
     this.subscription = subscription;
   }
 
@@ -41,9 +41,9 @@ public class JobSubscriberGroup extends SubscriberGroup<JobSubscriber> implement
     return poll(subscription.getJobHandler());
   }
 
-  public int poll(JobHandler jobHandler) {
+  public int poll(final JobHandler jobHandler) {
     int workCount = 0;
-    for (JobSubscriber subscriber : subscribersList) {
+    for (final JobSubscriber subscriber : subscribersList) {
       workCount += subscriber.pollEvents(jobHandler);
     }
 
@@ -52,7 +52,7 @@ public class JobSubscriberGroup extends SubscriberGroup<JobSubscriber> implement
 
   @Override
   protected ActorFuture<? extends EventSubscriptionCreationResult> requestNewSubscriber(
-      int partitionId) {
+      final int partitionId) {
     return new CreateJobSubscriptionCommandImpl(client.getCommandManager(), partitionId)
         .jobType(subscription.getJobType())
         .timeout(subscription.getTimeout())
@@ -62,7 +62,7 @@ public class JobSubscriberGroup extends SubscriberGroup<JobSubscriber> implement
   }
 
   @Override
-  protected JobSubscriber buildSubscriber(EventSubscriptionCreationResult result) {
+  protected JobSubscriber buildSubscriber(final EventSubscriptionCreationResult result) {
     return new JobSubscriber(
         client,
         subscription,

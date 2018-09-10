@@ -19,7 +19,6 @@ import io.zeebe.gateway.api.subscription.JobHandler;
 
 public class JobSubscriptionSpec {
 
-  protected final String topic;
   protected final JobHandler jobHandler;
   protected final String jobType;
   protected final long timeout;
@@ -27,22 +26,16 @@ public class JobSubscriptionSpec {
   protected final int capacity;
 
   public JobSubscriptionSpec(
-      String topic,
-      JobHandler jobHandler,
-      String taskType,
-      long timeout,
-      String worker,
-      int capacity) {
-    this.topic = topic;
+      final JobHandler jobHandler,
+      final String taskType,
+      final long timeout,
+      final String worker,
+      final int capacity) {
     this.jobHandler = jobHandler;
     this.jobType = taskType;
     this.timeout = timeout;
     this.worker = worker;
     this.capacity = capacity;
-  }
-
-  public String getTopic() {
-    return topic;
   }
 
   public JobHandler getJobHandler() {
@@ -68,9 +61,7 @@ public class JobSubscriptionSpec {
   @Override
   public String toString() {
     final StringBuilder builder = new StringBuilder();
-    builder.append("[topic=");
-    builder.append(topic);
-    builder.append(", jobHandler=");
+    builder.append("[jobHandler=");
     builder.append(jobHandler);
     builder.append(", jobType=");
     builder.append(jobType);

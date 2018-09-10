@@ -35,20 +35,20 @@ public class JobSubscriber extends Subscriber {
   private final JobSubscriptionSpec subscription;
 
   public JobSubscriber(
-      ZeebeClientImpl client,
-      JobSubscriptionSpec subscription,
-      long subscriberKey,
-      RemoteAddress eventSource,
-      int partition,
-      SubscriberGroup<JobSubscriber> group,
-      SubscriptionManager acquisition) {
+      final ZeebeClientImpl client,
+      final JobSubscriptionSpec subscription,
+      final long subscriberKey,
+      final RemoteAddress eventSource,
+      final int partition,
+      final SubscriberGroup<JobSubscriber> group,
+      final SubscriptionManager acquisition) {
     super(subscriberKey, partition, subscription.getCapacity(), eventSource, group, acquisition);
     this.client = client;
-    this.jobClient = client.topicClient().jobClient();
+    this.jobClient = client.jobClient();
     this.subscription = subscription;
   }
 
-  public int pollEvents(JobHandler jobHandler) {
+  public int pollEvents(final JobHandler jobHandler) {
     final int polledEvents =
         pollEvents(
             (e) -> {
@@ -57,7 +57,7 @@ public class JobSubscriber extends Subscriber {
 
               try {
                 jobHandler.handle(jobClient, jobEvent);
-              } catch (Exception handlingException) {
+              } catch (final Exception handlingException) {
                 LOGGER.info(
                     "An error occurred when handling job "
                         + jobEvent.getMetadata().getKey()
@@ -65,7 +65,7 @@ public class JobSubscriber extends Subscriber {
                     handlingException);
                 try {
                   jobClient.newFailCommand(jobEvent).retries(jobEvent.getRetries() - 1).send();
-                } catch (Exception failureException) {
+                } catch (final Exception failureException) {
                   LOGGER.info(
                       "Could not report failure of job "
                           + jobEvent.getMetadata().getKey()
@@ -79,7 +79,7 @@ public class JobSubscriber extends Subscriber {
   }
 
   @Override
-  protected ActorFuture<?> requestEventSourceReplenishment(int eventsProcessed) {
+  protected ActorFuture<?> requestEventSourceReplenishment(final int eventsProcessed) {
     return new IncreaseJobSubscriptionCreditsCmdImpl(client.getCommandManager(), partitionId)
         .subscriberKey(subscriberKey)
         .credits(eventsProcessed)
@@ -95,19 +95,12 @@ public class JobSubscriber extends Subscriber {
 
   @Override
   public String toString() {
-    return "JobSubscriber[topic="
-        + subscription.getTopic()
-        + ", partition="
+    return "JobSubscriber[partition="
         + partitionId
         + ", jobType="
         + subscription.getJobType()
         + ", subscriberKey="
         + subscriberKey
         + "]";
-  }
-
-  @Override
-  public String getTopicName() {
-    return subscription.getTopic();
   }
 }

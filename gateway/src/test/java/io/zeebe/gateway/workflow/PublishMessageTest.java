@@ -57,7 +57,7 @@ public class PublishMessageTest {
   @Before
   public void setUp() {
     brokerRule.workflowInstances().registerPublishMessageCommand();
-    workflowClient = clientRule.getClient().topicClient().workflowClient();
+    workflowClient = clientRule.getClient().workflowClient();
     defaultTimeToLive = clientRule.getClient().getConfiguration().getDefaultMessageTimeToLive();
   }
 

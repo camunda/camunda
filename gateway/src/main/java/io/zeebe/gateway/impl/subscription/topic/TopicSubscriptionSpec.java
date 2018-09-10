@@ -31,7 +31,6 @@ public class TopicSubscriptionSpec {
 
   private static final Logger LOGGER = Loggers.SUBSCRIPTION_LOGGER;
 
-  protected final String topic;
   protected final boolean forceStart;
   protected final String name;
   protected final int bufferSize;
@@ -43,15 +42,13 @@ public class TopicSubscriptionSpec {
   protected final RecordHandler defaultHandler;
 
   public TopicSubscriptionSpec(
-      String topic,
-      long defaultStartPosition,
-      Long2LongHashMap startPositions,
-      boolean forceStart,
-      String name,
-      int bufferSize,
-      BiEnumMap<RecordType, ValueType, CheckedConsumer<RecordImpl>> handlers,
-      RecordHandler defaultHandler) {
-    this.topic = topic;
+      final long defaultStartPosition,
+      final Long2LongHashMap startPositions,
+      final boolean forceStart,
+      final String name,
+      final int bufferSize,
+      final BiEnumMap<RecordType, ValueType, CheckedConsumer<RecordImpl>> handlers,
+      final RecordHandler defaultHandler) {
     this.defaultStartPosition = defaultStartPosition;
     this.startPositions = startPositions;
     this.forceStart = forceStart;
@@ -65,7 +62,8 @@ public class TopicSubscriptionSpec {
   }
 
   @SuppressWarnings("unchecked")
-  protected <T extends RecordImpl> void dispatchRecord(UntypedRecordImpl record) throws Exception {
+  protected <T extends RecordImpl> void dispatchRecord(final UntypedRecordImpl record)
+      throws Exception {
     final RecordMetadataImpl metadata = record.getMetadata();
     final ValueType valueType = metadata.getValueType();
     final RecordType recordType = metadata.getRecordType();
@@ -90,15 +88,11 @@ public class TopicSubscriptionSpec {
     }
   }
 
-  public String getTopic() {
-    return topic;
-  }
-
   public CheckedConsumer<UntypedRecordImpl> getHandler() {
     return handler;
   }
 
-  public long getStartPosition(int partitionId) {
+  public long getStartPosition(final int partitionId) {
     if (startPositions.containsKey(partitionId)) {
       return startPositions.get(partitionId);
     } else {
@@ -121,9 +115,7 @@ public class TopicSubscriptionSpec {
   @Override
   public String toString() {
     final StringBuilder builder = new StringBuilder();
-    builder.append("[topic=");
-    builder.append(topic);
-    builder.append(", handler=");
+    builder.append("[handler=");
     builder.append(handler);
     builder.append(", defaultStartPosition=");
     builder.append(defaultStartPosition);

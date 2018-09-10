@@ -106,7 +106,6 @@ public class CreateJobTest {
     assertThat(job.getKey()).isEqualTo(123L);
 
     final RecordMetadata metadata = job.getMetadata();
-    assertThat(metadata.getTopicName()).isEqualTo(StubBrokerRule.TEST_TOPIC_NAME);
     assertThat(metadata.getPartitionId()).isEqualTo(StubBrokerRule.TEST_PARTITION_ID);
     assertThat(metadata.getPosition()).isEqualTo(456);
     assertThat(metadata.getTimestamp()).isEqualTo(now);

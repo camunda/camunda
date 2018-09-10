@@ -15,7 +15,6 @@
  */
 package io.zeebe.gateway;
 
-import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.gateway.api.events.JobEvent;
@@ -58,12 +57,10 @@ public class ZeebeClientTopologyTimeoutTest {
     exception.expect(ClientException.class);
     exception.expectMessage(
         "Request timed out (PT1S). "
-            + "Request was: [ topic = "
-            + DEFAULT_TOPIC
-            + ", partition = 0, value type = JOB, command = COMPLETE ]");
+            + "Request was: [ partition = 0, value type = JOB, command = COMPLETE ]");
 
     // when
-    client.topicClient().jobClient().newCompleteCommand(baseEvent).send().join();
+    client.jobClient().newCompleteCommand(baseEvent).send().join();
   }
 
   @Test
@@ -94,8 +91,7 @@ public class ZeebeClientTopologyTimeoutTest {
         .addTime(Duration.ofSeconds(topologyTimeoutSeconds + 1)); // let request time out
 
     // when making a new request
-    final JobEvent jobEvent =
-        client.topicClient().jobClient().newCompleteCommand(baseEvent).send().join();
+    final JobEvent jobEvent = client.jobClient().newCompleteCommand(baseEvent).send().join();
 
     // then the topology has been refreshed and the request succeeded
     assertThat(jobEvent.getState()).isEqualTo(JobState.COMPLETED);

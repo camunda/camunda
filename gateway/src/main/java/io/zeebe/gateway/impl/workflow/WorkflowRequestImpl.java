@@ -29,7 +29,7 @@ public class WorkflowRequestImpl extends ControlMessageRequest<Workflows>
   public WorkflowRequestImpl(RequestManager client) {
     super(client, ControlMessageType.LIST_WORKFLOWS, WorkflowsImpl.class);
 
-    setTargetPartition(Protocol.SYSTEM_PARTITION);
+    setTargetPartition(Protocol.DEPLOYMENT_PARTITION);
 
     request = new Request();
   }

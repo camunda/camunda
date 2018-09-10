@@ -35,11 +35,10 @@ public class CreateWorkflowInstanceCommandImpl extends CommandImpl<WorkflowInsta
   private final WorkflowInstanceCommandImpl command;
 
   public CreateWorkflowInstanceCommandImpl(
-      final RequestManager commandManager, ZeebeObjectMapperImpl objectMapper, String topic) {
+      final RequestManager commandManager, final ZeebeObjectMapperImpl objectMapper) {
     super(commandManager);
 
     command = new WorkflowInstanceCommandImpl(objectMapper, WorkflowInstanceIntent.CREATE);
-    command.setTopicName(topic);
   }
 
   @Override
@@ -55,13 +54,13 @@ public class CreateWorkflowInstanceCommandImpl extends CommandImpl<WorkflowInsta
   }
 
   @Override
-  public CreateWorkflowInstanceCommandStep3 payload(Map<String, Object> payload) {
+  public CreateWorkflowInstanceCommandStep3 payload(final Map<String, Object> payload) {
     this.command.setPayload(payload);
     return this;
   }
 
   @Override
-  public CreateWorkflowInstanceCommandStep3 payload(Object payload) {
+  public CreateWorkflowInstanceCommandStep3 payload(final Object payload) {
     this.command.setPayload(payload);
     return this;
   }
@@ -89,7 +88,7 @@ public class CreateWorkflowInstanceCommandImpl extends CommandImpl<WorkflowInsta
   }
 
   @Override
-  public CreateWorkflowInstanceCommandStep3 workflowKey(long workflowKey) {
+  public CreateWorkflowInstanceCommandStep3 workflowKey(final long workflowKey) {
     this.command.setWorkflowKey(workflowKey);
     return this;
   }

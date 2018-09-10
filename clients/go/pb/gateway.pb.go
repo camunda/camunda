@@ -78,7 +78,6 @@ var xxx_messageInfo_HealthRequest proto.InternalMessageInfo
 
 type Partition struct {
 	PartitionId          int32                         `protobuf:"varint,1,opt,name=partitionId,proto3" json:"partitionId,omitempty"`
-	TopicName            string                        `protobuf:"bytes,2,opt,name=topicName,proto3" json:"topicName,omitempty"`
 	Role                 Partition_PartitionBrokerRole `protobuf:"varint,3,opt,name=role,proto3,enum=gateway_protocol.Partition_PartitionBrokerRole" json:"role,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}                      `json:"-"`
 	XXX_unrecognized     []byte                        `json:"-"`
@@ -114,13 +113,6 @@ func (m *Partition) GetPartitionId() int32 {
 		return m.PartitionId
 	}
 	return 0
-}
-
-func (m *Partition) GetTopicName() string {
-	if m != nil {
-		return m.TopicName
-	}
-	return ""
 }
 
 func (m *Partition) GetRole() Partition_PartitionBrokerRole {

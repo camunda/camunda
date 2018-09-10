@@ -23,7 +23,6 @@ import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
-import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -47,7 +46,7 @@ public class FilledLogStreamAndReaderSupplier {
   ServiceContainerImpl serviceContainer;
   BufferedLogStreamReader reader = new BufferedLogStreamReader();
 
-  private long[] writeEvents(int count, DirectBuffer eventValue) {
+  private long[] writeEvents(final int count, final DirectBuffer eventValue) {
     final long[] positions = new long[count];
 
     for (int i = 0; i < count; i++) {
@@ -56,7 +55,7 @@ public class FilledLogStreamAndReaderSupplier {
     return positions;
   }
 
-  private long writeEvent(long key, DirectBuffer eventValue) {
+  private long writeEvent(final long key, final DirectBuffer eventValue) {
     long position = -1;
     while (position <= 0) {
       position = writer.key(key).value(eventValue).tryWrite();
@@ -75,7 +74,7 @@ public class FilledLogStreamAndReaderSupplier {
     serviceContainer.start();
 
     logStream =
-        LogStreams.createFsLogStream(BufferUtil.wrapString("topic"), 0)
+        LogStreams.createFsLogStream(0)
             .logName("foo")
             .logDirectory(tempDirectory.toString())
             .serviceContainer(serviceContainer)

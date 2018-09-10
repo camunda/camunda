@@ -22,7 +22,6 @@ import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.future.ActorFuture;
-import org.agrona.DirectBuffer;
 
 /**
  * Represents a stream of events from a log storage.
@@ -43,16 +42,11 @@ import org.agrona.DirectBuffer;
 public interface LogStream extends AutoCloseable {
   int DEFAULT_MAX_APPEND_BLOCK_SIZE = 1024 * 1024 * 4;
 
-  int MAX_TOPIC_NAME_LENGTH = 128;
-
-  /** @return the topic name of the log stream */
-  DirectBuffer getTopicName();
-
   /** @return the partition id of the log stream */
   int getPartitionId();
 
   /**
-   * Returns the name of the log stream. Composed from topic name and partition id.
+   * Returns the name of the log stream.
    *
    * @return the log stream name
    */

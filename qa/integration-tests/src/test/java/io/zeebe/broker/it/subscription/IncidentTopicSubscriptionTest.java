@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.gateway.api.clients.TopicClient;
+import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.api.events.IncidentEvent;
 import io.zeebe.gateway.api.events.IncidentState;
 import io.zeebe.gateway.api.events.JobEvent;
@@ -45,11 +45,11 @@ public class IncidentTopicSubscriptionTest {
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
-  protected TopicClient client;
+  protected ZeebeClient client;
 
   @Before
   public void setUp() {
-    this.client = clientRule.getClient().topicClient();
+    this.client = clientRule.getClient();
 
     final BpmnModelInstance workflow =
         Bpmn.createExecutableProcess("process")
@@ -81,7 +81,7 @@ public class IncidentTopicSubscriptionTest {
     final RecordingIncidentEventHandler handler = new RecordingIncidentEventHandler();
 
     // when
-    client.newSubscription().name("test").incidentEventHandler(handler).startAtHeadOfTopic().open();
+    client.newSubscription().name("test").incidentEventHandler(handler).startAtHead().open();
 
     // then
     TestUtil.waitUntil(() -> handler.numRecordedEvents() >= 1);
@@ -117,7 +117,7 @@ public class IncidentTopicSubscriptionTest {
     final RecordingIncidentEventHandler handler = new RecordingIncidentEventHandler();
 
     // when
-    client.newSubscription().name("test").incidentEventHandler(handler).startAtHeadOfTopic().open();
+    client.newSubscription().name("test").incidentEventHandler(handler).startAtHead().open();
 
     // then
     TestUtil.waitUntil(() -> handler.numRecordedEvents() >= 1);
@@ -147,7 +147,7 @@ public class IncidentTopicSubscriptionTest {
     final RecordingEventHandler handler = new RecordingEventHandler();
 
     // when no POJO handler is registered
-    client.newSubscription().name("sub-2").recordHandler(handler).startAtHeadOfTopic().open();
+    client.newSubscription().name("sub-2").recordHandler(handler).startAtHead().open();
 
     // then
     TestUtil.waitUntil(() -> handler.numRecordsOfType(ValueType.INCIDENT) >= 2);
@@ -157,11 +157,11 @@ public class IncidentTopicSubscriptionTest {
     protected List<IncidentEvent> events = new ArrayList<>();
 
     @Override
-    public void onIncidentEvent(IncidentEvent event) throws Exception {
+    public void onIncidentEvent(final IncidentEvent event) throws Exception {
       this.events.add(event);
     }
 
-    public IncidentEvent getEvent(int index) {
+    public IncidentEvent getEvent(final int index) {
       return events.get(index);
     }
 

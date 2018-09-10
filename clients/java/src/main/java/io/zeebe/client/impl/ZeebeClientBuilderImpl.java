@@ -36,7 +36,6 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   private ActorClock actorClock;
   private String defaultJobWorkerName = "default";
   private Duration defaultJobTimeout = Duration.ofMinutes(5);
-  private String defaultTopic = "default-topic";
 
   @Override
   public String getBrokerContactPoint() {
@@ -169,17 +168,6 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
-  public ZeebeClientBuilder defaultTopic(final String topic) {
-    this.defaultTopic = topic;
-    return this;
-  }
-
-  @Override
-  public String getDefaultTopic() {
-    return defaultTopic;
-  }
-
-  @Override
   public ZeebeClient build() {
     return new ZeebeClientImpl(this);
   }
@@ -233,9 +221,6 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
           Duration.ofMillis(
               Integer.parseInt(properties.getProperty(ClientProperties.DEFAULT_JOB_TIMEOUT))));
     }
-    if (properties.containsKey(ClientProperties.DEFAULT_TOPIC)) {
-      defaultTopic(properties.getProperty(ClientProperties.DEFAULT_TOPIC));
-    }
 
     return this;
   }
@@ -255,7 +240,6 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
     appendProperty(sb, "tcpChannelKeepAlivePeriod", tcpChannelKeepAlivePeriod);
     appendProperty(sb, "defaultJobWorkerName", defaultJobWorkerName);
     appendProperty(sb, "defaultJobTimeout", defaultJobTimeout);
-    appendProperty(sb, "defaultTopic", defaultTopic);
 
     return sb.toString();
   }

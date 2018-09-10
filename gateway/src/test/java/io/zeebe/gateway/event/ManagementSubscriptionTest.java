@@ -15,7 +15,6 @@
  */
 package io.zeebe.gateway.event;
 
-import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -119,13 +118,13 @@ public class ManagementSubscriptionTest {
   }
 
   @Test
-  public void shouldOpenSubscriptionAtHeadOfTopic() {
+  public void shouldOpenSubscriptionAtHead() {
     // when
     client
         .newManagementSubscription()
         .name(SUBSCRIPTION_NAME)
         .recordHandler(DO_NOTHING)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     // then
@@ -143,13 +142,13 @@ public class ManagementSubscriptionTest {
   }
 
   @Test
-  public void shouldOpenSubscriptionAtTailOfTopic() {
+  public void shouldOpenSubscriptionAtTail() {
     // when
     client
         .newManagementSubscription()
         .name(SUBSCRIPTION_NAME)
         .recordHandler(DO_NOTHING)
-        .startAtTailOfTopic()
+        .startAtTail()
         .open();
 
     // then
@@ -236,7 +235,7 @@ public class ManagementSubscriptionTest {
         .newManagementSubscription()
         .name(SUBSCRIPTION_NAME)
         .recordHandler(DO_NOTHING)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     // then
@@ -263,7 +262,7 @@ public class ManagementSubscriptionTest {
         .newManagementSubscription()
         .name(SUBSCRIPTION_NAME)
         .recordHandler(DO_NOTHING)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .bufferSize(bufferSize)
         .open();
 
@@ -290,7 +289,7 @@ public class ManagementSubscriptionTest {
         .newManagementSubscription()
         .name(SUBSCRIPTION_NAME)
         .recordHandler(records::add)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
@@ -344,7 +343,7 @@ public class ManagementSubscriptionTest {
         .newManagementSubscription()
         .name(SUBSCRIPTION_NAME)
         .deploymentEventHandler(records::add)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
@@ -400,16 +399,16 @@ public class ManagementSubscriptionTest {
         .deploymentCommandHandler(
             new DeploymentCommandHandler() {
               @Override
-              public void onDeploymentCommand(DeploymentCommand deploymentCommand) {
+              public void onDeploymentCommand(final DeploymentCommand deploymentCommand) {
                 records.add(deploymentCommand);
               }
 
               @Override
-              public void onDeploymentCommandRejection(DeploymentCommand deploymentCommand) {
+              public void onDeploymentCommandRejection(final DeploymentCommand deploymentCommand) {
                 records.add(deploymentCommand);
               }
             })
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
@@ -463,7 +462,7 @@ public class ManagementSubscriptionTest {
         .newManagementSubscription()
         .name(SUBSCRIPTION_NAME)
         .raftEventHandler(records::add)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
@@ -519,7 +518,7 @@ public class ManagementSubscriptionTest {
         .name(SUBSCRIPTION_NAME)
         .deploymentEventHandler(deploymentEvents::add)
         .recordHandler(records::add)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
@@ -569,13 +568,13 @@ public class ManagementSubscriptionTest {
   }
 
   private void assertMetadata(
-      Record actualRecord,
-      long expectedKey,
-      long expectedPosition,
-      Instant expectedTimestamp,
-      RecordType expectedRecordType,
-      ValueType expectedValueType,
-      String expectedIntent) {
+      final Record actualRecord,
+      final long expectedKey,
+      final long expectedPosition,
+      final Instant expectedTimestamp,
+      final RecordType expectedRecordType,
+      final ValueType expectedValueType,
+      final String expectedIntent) {
 
     final io.zeebe.gateway.api.record.RecordType clientRecordType =
         io.zeebe.gateway.api.record.RecordType.valueOf(expectedRecordType.name());
@@ -587,20 +586,19 @@ public class ManagementSubscriptionTest {
     assertThat(metadata.getPosition()).isEqualTo(expectedPosition);
     assertThat(metadata.getTimestamp()).isEqualTo(expectedTimestamp);
     assertThat(metadata.getValueType()).isEqualTo(clientValueType);
-    assertThat(metadata.getTopicName()).isEqualTo(DEFAULT_TOPIC);
     assertThat(metadata.getPartitionId()).isEqualTo(DEPLOYMENT_PARTITION);
     assertThat(metadata.getRecordType()).isEqualTo(clientRecordType);
     assertThat(metadata.getIntent()).isEqualTo(expectedIntent);
   }
 
   private void pushRecord(
-      RemoteAddress remote,
-      long key,
-      long position,
-      Instant timestamp,
-      RecordType recordType,
-      ValueType valueType,
-      Intent intent) {
+      final RemoteAddress remote,
+      final long key,
+      final long position,
+      final Instant timestamp,
+      final RecordType recordType,
+      final ValueType valueType,
+      final Intent intent) {
     final RemoteAddress clientAddress = broker.getReceivedCommandRequests().get(0).getSource();
 
     broker

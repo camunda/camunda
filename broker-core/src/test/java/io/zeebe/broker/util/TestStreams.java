@@ -19,8 +19,6 @@ package io.zeebe.broker.util;
 
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 
-import io.zeebe.broker.clustering.orchestration.id.IdRecord;
-import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
 import io.zeebe.broker.exporter.stream.ExporterRecord;
 import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.job.data.JobRecord;
@@ -62,7 +60,6 @@ import io.zeebe.raft.event.RaftConfigurationEvent;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.LangUtil;
-import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.ActorScheduler;
@@ -83,13 +80,11 @@ public class TestStreams {
     VALUE_TYPES.put(DeploymentRecord.class, ValueType.DEPLOYMENT);
     VALUE_TYPES.put(IncidentRecord.class, ValueType.INCIDENT);
     VALUE_TYPES.put(JobRecord.class, ValueType.JOB);
-    VALUE_TYPES.put(TopicRecord.class, ValueType.TOPIC);
     VALUE_TYPES.put(WorkflowInstanceRecord.class, ValueType.WORKFLOW_INSTANCE);
     VALUE_TYPES.put(MessageRecord.class, ValueType.MESSAGE);
     VALUE_TYPES.put(MessageSubscriptionRecord.class, ValueType.MESSAGE_SUBSCRIPTION);
     VALUE_TYPES.put(
         WorkflowInstanceSubscriptionRecord.class, ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
-    VALUE_TYPES.put(IdRecord.class, ValueType.ID);
     VALUE_TYPES.put(ExporterRecord.class, ValueType.EXPORTER);
     VALUE_TYPES.put(RaftConfigurationEvent.class, ValueType.RAFT);
 
@@ -111,24 +106,24 @@ public class TestStreams {
   protected StateStorage stateStorage;
 
   public TestStreams(
-      File storageDirectory,
-      AutoCloseableRule closeables,
-      ServiceContainer serviceContainer,
-      ActorScheduler actorScheduler) {
+      final File storageDirectory,
+      final AutoCloseableRule closeables,
+      final ServiceContainer serviceContainer,
+      final ActorScheduler actorScheduler) {
     this.storageDirectory = storageDirectory;
     this.closeables = closeables;
     this.serviceContainer = serviceContainer;
     this.actorScheduler = actorScheduler;
   }
 
-  public LogStream createLogStream(String name) {
+  public LogStream createLogStream(final String name) {
     return createLogStream(name, 0);
   }
 
-  public LogStream createLogStream(String name, int partitionId) {
+  public LogStream createLogStream(final String name, final int partitionId) {
     final String rootPath = storageDirectory.getAbsolutePath();
     final LogStream logStream =
-        LogStreams.createFsLogStream(BufferUtil.wrapString(name), partitionId)
+        LogStreams.createFsLogStream(partitionId)
             .logRootPath(rootPath)
             .serviceContainer(serviceContainer)
             .logName(name)
@@ -157,7 +152,7 @@ public class TestStreams {
     return logStream;
   }
 
-  public LogStream getLogStream(String name) {
+  public LogStream getLogStream(final String name) {
     return managedLogs.get(name);
   }
 
@@ -167,9 +162,9 @@ public class TestStreams {
    *
    * @param position exclusive (unlike {@link LogStream#truncate(long)}!)
    */
-  public void truncate(String stream, long position) {
+  public void truncate(final String stream, final long position) {
     final LogStream logStream = getLogStream(stream);
-    try (LogStreamReader reader = new BufferedLogStreamReader(logStream)) {
+    try (final LogStreamReader reader = new BufferedLogStreamReader(logStream)) {
       logStream.closeAppender().get();
 
       reader.seek(position + 1);
@@ -181,12 +176,12 @@ public class TestStreams {
       logStream.setCommitPosition(Long.MAX_VALUE);
 
       logStream.openAppender().get();
-    } catch (Exception e) {
+    } catch (final Exception e) {
       throw new RuntimeException("Could not truncate log stream " + stream, e);
     }
   }
 
-  public Stream<LoggedEvent> events(String logName) {
+  public Stream<LoggedEvent> events(final String logName) {
     final LogStream logStream = managedLogs.get(logName);
 
     final LogStreamReader reader = new BufferedLogStreamReader(logStream);
@@ -199,7 +194,7 @@ public class TestStreams {
     return StreamSupport.stream(iterable.spliterator(), false);
   }
 
-  public FluentLogWriter newRecord(String logName) {
+  public FluentLogWriter newRecord(final String logName) {
     final LogStream logStream = getLogStream(logName);
     return new FluentLogWriter(logStream);
   }
@@ -225,12 +220,13 @@ public class TestStreams {
     return stateStorageFactory;
   }
 
-  public StreamProcessorControl initStreamProcessor(String log, StreamProcessor streamProcessor) {
+  public StreamProcessorControl initStreamProcessor(
+      final String log, final StreamProcessor streamProcessor) {
     return initStreamProcessor(log, 0, () -> streamProcessor);
   }
 
   public StreamProcessorControl initStreamProcessor(
-      String log, int streamProcessorId, Supplier<StreamProcessor> factory) {
+      final String log, final int streamProcessorId, final Supplier<StreamProcessor> factory) {
     final LogStream stream = getLogStream(log);
 
     final StreamProcessorControlImpl control =
@@ -253,7 +249,9 @@ public class TestStreams {
     protected SnapshotController currentSnapshotController;
 
     public StreamProcessorControlImpl(
-        LogStream stream, Supplier<StreamProcessor> factory, int streamProcessorId) {
+        final LogStream stream,
+        final Supplier<StreamProcessor> factory,
+        final int streamProcessorId) {
       this.stream = stream;
       this.factory = factory;
       this.streamProcessorId = streamProcessorId;
@@ -263,7 +261,7 @@ public class TestStreams {
     public void purgeSnapshot() {
       try {
         currentSnapshotController.purgeAll();
-      } catch (Exception e) {
+      } catch (final Exception e) {
         LangUtil.rethrowUnchecked(e);
       }
     }
@@ -279,13 +277,13 @@ public class TestStreams {
     }
 
     @Override
-    public void blockAfterEvent(Predicate<LoggedEvent> test) {
+    public void blockAfterEvent(final Predicate<LoggedEvent> test) {
       ensureStreamProcessorBuilt();
       currentStreamProcessor.blockAfterEvent(test);
     }
 
     @Override
-    public void blockAfterJobEvent(Predicate<TypedRecord<JobRecord>> test) {
+    public void blockAfterJobEvent(final Predicate<TypedRecord<JobRecord>> test) {
       blockAfterEvent(
           e ->
               Records.isJobRecord(e)
@@ -293,7 +291,7 @@ public class TestStreams {
     }
 
     @Override
-    public void blockAfterDeploymentEvent(Predicate<TypedRecord<DeploymentRecord>> test) {
+    public void blockAfterDeploymentEvent(final Predicate<TypedRecord<DeploymentRecord>> test) {
       blockAfterEvent(
           e ->
               Records.isDeploymentRecord(e)
@@ -302,7 +300,7 @@ public class TestStreams {
 
     @Override
     public void blockAfterWorkflowInstanceRecord(
-        Predicate<TypedRecord<WorkflowInstanceRecord>> test) {
+        final Predicate<TypedRecord<WorkflowInstanceRecord>> test) {
       blockAfterEvent(
           e ->
               Records.isWorkflowInstanceRecord(e)
@@ -310,15 +308,7 @@ public class TestStreams {
     }
 
     @Override
-    public void blockAfterTopicEvent(Predicate<TypedRecord<TopicRecord>> test) {
-      blockAfterEvent(
-          e ->
-              Records.isTopicRecord(e)
-                  && test.test(CopiedTypedEvent.toTypedEvent(e, TopicRecord.class)));
-    }
-
-    @Override
-    public void blockAfterIncidentEvent(Predicate<TypedRecord<IncidentRecord>> test) {
+    public void blockAfterIncidentEvent(final Predicate<TypedRecord<IncidentRecord>> test) {
       blockAfterEvent(
           e ->
               Records.isIncidentRecord(e)
@@ -326,7 +316,7 @@ public class TestStreams {
     }
 
     @Override
-    public void blockAfterMessageEvent(Predicate<TypedRecord<MessageRecord>> test) {
+    public void blockAfterMessageEvent(final Predicate<TypedRecord<MessageRecord>> test) {
       blockAfterEvent(
           e ->
               Records.isMessageRecord(e)
@@ -335,7 +325,7 @@ public class TestStreams {
 
     @Override
     public void blockAfterMessageSubscriptionEvent(
-        Predicate<TypedRecord<MessageSubscriptionRecord>> test) {
+        final Predicate<TypedRecord<MessageSubscriptionRecord>> test) {
       blockAfterEvent(
           e ->
               Records.isMessageSubscriptionRecord(e)
@@ -344,7 +334,7 @@ public class TestStreams {
 
     @Override
     public void blockAfterWorkflowInstanceSubscriptionEvent(
-        Predicate<TypedRecord<WorkflowInstanceSubscriptionRecord>> test) {
+        final Predicate<TypedRecord<WorkflowInstanceSubscriptionRecord>> test) {
       blockAfterEvent(
           e ->
               Records.isWorkflowInstanceSubscriptionRecord(e)
@@ -419,7 +409,7 @@ public class TestStreams {
     protected boolean blockAfterCurrentEvent;
     private StreamProcessorContext context;
 
-    public SuspendableStreamProcessor(StreamProcessor wrappedProcessor) {
+    public SuspendableStreamProcessor(final StreamProcessor wrappedProcessor) {
       this.wrappedProcessor = wrappedProcessor;
     }
 
@@ -442,12 +432,12 @@ public class TestStreams {
               });
     }
 
-    public void blockAfterEvent(Predicate<LoggedEvent> test) {
+    public void blockAfterEvent(final Predicate<LoggedEvent> test) {
       this.blockAfterCondition.set(test);
     }
 
     @Override
-    public EventProcessor onEvent(LoggedEvent event) {
+    public EventProcessor onEvent(final LoggedEvent event) {
       final Predicate<LoggedEvent> suspensionCondition = this.blockAfterCondition.get();
       blockAfterCurrentEvent = suspensionCondition != null && suspensionCondition.test(event);
 
@@ -468,7 +458,7 @@ public class TestStreams {
         }
 
         @Override
-        public long writeEvent(LogStreamRecordWriter writer) {
+        public long writeEvent(final LogStreamRecordWriter writer) {
           return actualProcessor != null ? actualProcessor.writeEvent(writer) : 0;
         }
 
@@ -487,7 +477,7 @@ public class TestStreams {
     }
 
     @Override
-    public void onOpen(StreamProcessorContext context) {
+    public void onOpen(final StreamProcessorContext context) {
       this.context = context;
       wrappedProcessor.onOpen(this.context);
     }
@@ -510,33 +500,33 @@ public class TestStreams {
     protected LogStream logStream;
     protected long key = -1;
 
-    public FluentLogWriter(LogStream logStream) {
+    public FluentLogWriter(final LogStream logStream) {
       this.logStream = logStream;
 
       metadata.protocolVersion(Protocol.PROTOCOL_VERSION);
     }
 
-    public FluentLogWriter metadata(Consumer<RecordMetadata> metadata) {
+    public FluentLogWriter metadata(final Consumer<RecordMetadata> metadata) {
       metadata.accept(this.metadata);
       return this;
     }
 
-    public FluentLogWriter intent(Intent intent) {
+    public FluentLogWriter intent(final Intent intent) {
       this.metadata.intent(intent);
       return this;
     }
 
-    public FluentLogWriter recordType(RecordType recordType) {
+    public FluentLogWriter recordType(final RecordType recordType) {
       this.metadata.recordType(recordType);
       return this;
     }
 
-    public TestStreams.FluentLogWriter key(long key) {
+    public TestStreams.FluentLogWriter key(final long key) {
       this.key = key;
       return this;
     }
 
-    public TestStreams.FluentLogWriter event(UnpackedObject event) {
+    public TestStreams.FluentLogWriter event(final UnpackedObject event) {
       final ValueType eventType = VALUE_TYPES.get(event.getClass());
       if (eventType == null) {
         throw new RuntimeException("No event type registered for value " + event.getClass());

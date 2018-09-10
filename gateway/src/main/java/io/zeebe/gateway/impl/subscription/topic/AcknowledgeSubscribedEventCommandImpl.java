@@ -27,19 +27,18 @@ public class AcknowledgeSubscribedEventCommandImpl extends CommandImpl<TopicSubs
       new TopicSubscriptionCommandImpl(SubscriptionIntent.ACKNOWLEDGE);
 
   public AcknowledgeSubscribedEventCommandImpl(
-      final RequestManager commandManager, String topicName, int partitionId) {
+      final RequestManager commandManager, final int partitionId) {
     super(commandManager);
 
-    command.setTopicName(topicName);
     command.setPartitionId(partitionId);
   }
 
-  public AcknowledgeSubscribedEventCommandImpl subscriptionName(String subscriptionName) {
+  public AcknowledgeSubscribedEventCommandImpl subscriptionName(final String subscriptionName) {
     command.setName(subscriptionName);
     return this;
   }
 
-  public AcknowledgeSubscribedEventCommandImpl ackPosition(long position) {
+  public AcknowledgeSubscribedEventCommandImpl ackPosition(final long position) {
     this.command.setAckPosition(position);
     return this;
   }

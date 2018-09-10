@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.topic;
 
-import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
 import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
@@ -42,8 +41,6 @@ public interface StreamProcessorControl {
   void blockAfterWorkflowInstanceRecord(Predicate<TypedRecord<WorkflowInstanceRecord>> test);
 
   void blockAfterIncidentEvent(Predicate<TypedRecord<IncidentRecord>> test);
-
-  void blockAfterTopicEvent(Predicate<TypedRecord<TopicRecord>> test);
 
   void blockAfterMessageEvent(Predicate<TypedRecord<MessageRecord>> test);
 

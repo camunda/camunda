@@ -15,8 +15,6 @@
  */
 package io.zeebe.gateway.factories;
 
-import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
-
 import io.zeebe.gateway.api.commands.BrokerInfo;
 import io.zeebe.gateway.api.commands.PartitionInfo;
 import io.zeebe.gateway.api.commands.Topology;
@@ -37,7 +35,6 @@ public class TopologyFactory implements TestFactory<Topology> {
       for (int j = 0; j < 3; j++) {
         final PartitionInfoImpl partition = new PartitionInfoImpl();
         partition.setState("LEADER");
-        partition.setTopicName(DEFAULT_TOPIC);
         partition.setPartitionId(j);
         partitions.add(partition);
       }

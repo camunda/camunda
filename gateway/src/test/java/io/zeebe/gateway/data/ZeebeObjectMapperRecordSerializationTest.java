@@ -22,13 +22,11 @@ import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.api.commands.DeploymentCommand;
 import io.zeebe.gateway.api.commands.IncidentCommand;
 import io.zeebe.gateway.api.commands.JobCommand;
-import io.zeebe.gateway.api.commands.TopicCommand;
 import io.zeebe.gateway.api.commands.WorkflowInstanceCommand;
 import io.zeebe.gateway.api.events.DeploymentEvent;
 import io.zeebe.gateway.api.events.IncidentEvent;
 import io.zeebe.gateway.api.events.JobEvent;
 import io.zeebe.gateway.api.events.RaftEvent;
-import io.zeebe.gateway.api.events.TopicEvent;
 import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
 import io.zeebe.gateway.api.record.Record;
 import io.zeebe.gateway.api.record.ZeebeObjectMapper;
@@ -66,8 +64,6 @@ public class ZeebeObjectMapperRecordSerializationTest {
           {"DeploymentCommandRejection.json", DeploymentCommand.class},
           {"IncidentEvent.json", IncidentEvent.class},
           {"IncidentCommand.json", IncidentCommand.class},
-          {"TopicEvent.json", TopicEvent.class},
-          {"TopicCommand.json", TopicCommand.class},
           {"RaftEvent.json", RaftEvent.class}
         });
   }
@@ -81,7 +77,7 @@ public class ZeebeObjectMapperRecordSerializationTest {
   @Rule public AutoCloseableRule closeables = new AutoCloseableRule();
 
   private ZeebeObjectMapper objectMapper;
-  private ObjectMapper testObjectMapper = new ObjectMapper();
+  private final ObjectMapper testObjectMapper = new ObjectMapper();
 
   @Before
   public void init() {
@@ -101,19 +97,19 @@ public class ZeebeObjectMapperRecordSerializationTest {
     assertThat(readAsMap(serializedRecord)).containsOnly(asEntries(readAsMap(json)));
   }
 
-  private String readFileContent(String file) throws IOException, URISyntaxException {
+  private String readFileContent(final String file) throws IOException, URISyntaxException {
     final Path path = Paths.get(getClass().getResource(file).toURI());
     final byte[] bytes = Files.readAllBytes(path);
     return new String(bytes);
   }
 
   @SuppressWarnings("unchecked")
-  private Map<String, Object> readAsMap(String json) throws Exception {
+  private Map<String, Object> readAsMap(final String json) throws Exception {
     return testObjectMapper.readValue(json, Map.class);
   }
 
   @SuppressWarnings("unchecked")
-  private Map.Entry<String, Object>[] asEntries(Map<String, Object> map) {
+  private Map.Entry<String, Object>[] asEntries(final Map<String, Object> map) {
     return map.entrySet().toArray(new Map.Entry[map.size()]);
   }
 }

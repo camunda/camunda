@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.gateway.api.clients.TopicClient;
+import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.api.commands.JobCommand;
 import io.zeebe.gateway.api.events.JobEvent;
 import io.zeebe.gateway.api.record.JobRecord;
@@ -49,11 +49,11 @@ public class JobTopicSubscriptionTest {
 
   @Rule public Timeout timeout = Timeout.seconds(20);
 
-  protected TopicClient client;
+  protected ZeebeClient client;
 
   @Before
   public void setUp() {
-    this.client = clientRule.getClient().topicClient();
+    this.client = clientRule.getClient();
   }
 
   @Test
@@ -77,7 +77,7 @@ public class JobTopicSubscriptionTest {
         .name("sub-1")
         .jobEventHandler(handler)
         .jobCommandHandler(handler)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     // then
@@ -113,7 +113,7 @@ public class JobTopicSubscriptionTest {
     final RecordingEventHandler handler = new RecordingEventHandler();
 
     // when no POJO handler is registered
-    client.newSubscription().name("sub-2").recordHandler(handler).startAtHeadOfTopic().open();
+    client.newSubscription().name("sub-2").recordHandler(handler).startAtHead().open();
 
     // then
     TestUtil.waitUntil(() -> handler.numJobRecords() == 2);
@@ -128,21 +128,21 @@ public class JobTopicSubscriptionTest {
     protected List<JobRecord> records = new ArrayList<>();
 
     @Override
-    public void onJobEvent(JobEvent event) {
+    public void onJobEvent(final JobEvent event) {
       this.records.add(event);
     }
 
     @Override
-    public void onJobCommand(JobCommand jobCommand) {
+    public void onJobCommand(final JobCommand jobCommand) {
       this.records.add(jobCommand);
     }
 
     @Override
-    public void onJobCommandRejection(JobCommand jobCommand) {
+    public void onJobCommandRejection(final JobCommand jobCommand) {
       this.records.add(jobCommand);
     }
 
-    public JobRecord getRecord(int index) {
+    public JobRecord getRecord(final int index) {
       return records.get(index);
     }
 

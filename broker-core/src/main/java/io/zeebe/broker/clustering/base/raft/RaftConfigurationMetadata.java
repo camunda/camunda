@@ -17,15 +17,12 @@
  */
 package io.zeebe.broker.clustering.base.raft;
 
-import static io.zeebe.util.EnsureUtil.ensureGreaterThan;
-
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.zeebe.util.ByteValue;
 import java.util.ArrayList;
 import java.util.List;
 
 public class RaftConfigurationMetadata {
-  private String topicName;
   private int partitionId;
   private int replicationFactor;
   private int term;
@@ -37,22 +34,12 @@ public class RaftConfigurationMetadata {
   private List<Integer> members;
 
   public RaftConfigurationMetadata() {
-    topicName = "";
     partitionId = -1;
     replicationFactor = -1;
     logSegmentSize = ByteValue.ofMegabytes(512).toBytes();
     term = 0;
     votedFor = null;
     members = new ArrayList<>();
-  }
-
-  public String getTopicName() {
-    return topicName;
-  }
-
-  public void setTopicName(final String topicName) {
-    ensureGreaterThan("Topic name length", topicName.length(), 0);
-    this.topicName = topicName;
   }
 
   public int getPartitionId() {
@@ -109,7 +96,6 @@ public class RaftConfigurationMetadata {
     setPartitionId(source.getPartitionId());
     setReplicationFactor(source.getReplicationFactor());
     setTerm(source.getTerm());
-    setTopicName(source.getTopicName());
     setMembers(source.getMembers());
     setVotedFor(source.getVotedFor());
   }

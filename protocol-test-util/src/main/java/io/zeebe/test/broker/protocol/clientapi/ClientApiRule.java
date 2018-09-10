@@ -15,7 +15,6 @@
  */
 package io.zeebe.test.broker.protocol.clientapi;
 
-import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 
@@ -54,18 +53,19 @@ public class ClientApiRule extends ExternalResource {
   protected MsgPackHelper msgPackHelper;
   protected RawMessageCollector incomingMessageCollector;
 
-  private Int2ObjectHashMap<TestTopicClient> testTopicClients = new Int2ObjectHashMap<>();
-  private ControlledActorClock controlledActorClock = new ControlledActorClock();
+  private final Int2ObjectHashMap<TestPartitionClient> testPartitionClients =
+      new Int2ObjectHashMap<>();
+  private final ControlledActorClock controlledActorClock = new ControlledActorClock();
   private ActorScheduler scheduler;
 
   protected int defaultPartitionId = -1;
 
-  public ClientApiRule(Supplier<SocketAddress> brokerAddressSupplier) {
+  public ClientApiRule(final Supplier<SocketAddress> brokerAddressSupplier) {
     this.nodeId = 0;
     this.brokerAddressSupplier = brokerAddressSupplier;
   }
 
-  public ClientApiRule(int nodeId, Supplier<SocketAddress> brokerAddressSupplier) {
+  public ClientApiRule(final int nodeId, final Supplier<SocketAddress> brokerAddressSupplier) {
     this.nodeId = nodeId;
     this.brokerAddressSupplier = brokerAddressSupplier;
   }
@@ -129,15 +129,15 @@ public class ClientApiRule extends ExternalResource {
     return (int) incomingMessageCollector.getNumMessagesFulfilling(this::isSubscribedEvent);
   }
 
-  public TestTopicClient topic() {
-    return topic(defaultPartitionId);
+  public TestPartitionClient partition() {
+    return partition(defaultPartitionId);
   }
 
-  public TestTopicClient topic(final int partitionId) {
-    if (!testTopicClients.containsKey(partitionId)) {
-      testTopicClients.put(partitionId, new TestTopicClient(this, partitionId));
+  public TestPartitionClient partition(final int partitionId) {
+    if (!testPartitionClients.containsKey(partitionId)) {
+      testPartitionClients.put(partitionId, new TestPartitionClient(this, partitionId));
     }
-    return testTopicClients.get(partitionId);
+    return testPartitionClients.get(partitionId);
   }
 
   public ExecuteCommandRequest openTopicSubscription(final String name, final long startPosition) {
@@ -157,11 +157,10 @@ public class ClientApiRule extends ExternalResource {
         .send();
   }
 
-  public ControlMessageRequest closeTopicSubscription(long subscriberKey) {
+  public ControlMessageRequest closeTopicSubscription(final long subscriberKey) {
     return createControlMessageRequest()
         .messageType(ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
         .data()
-        .put("topicName", DEFAULT_TOPIC)
         .put("partitionId", defaultPartitionId)
         .put("subscriberKey", subscriberKey)
         .done()
@@ -172,7 +171,7 @@ public class ClientApiRule extends ExternalResource {
     return openJobSubscription(defaultPartitionId, type, DEFAULT_LOCK_DURATION);
   }
 
-  public ControlMessageRequest closeJobSubscription(long subscriberKey) {
+  public ControlMessageRequest closeJobSubscription(final long subscriberKey) {
     return createControlMessageRequest()
         .messageType(ControlMessageType.REMOVE_JOB_SUBSCRIPTION)
         .data()
@@ -182,7 +181,7 @@ public class ClientApiRule extends ExternalResource {
   }
 
   public ControlMessageRequest openJobSubscription(
-      final int partitionId, final String type, long lockDuration, int credits) {
+      final int partitionId, final String type, final long lockDuration, final int credits) {
     return createControlMessageRequest()
         .messageType(ControlMessageType.ADD_JOB_SUBSCRIPTION)
         .partitionId(partitionId)
@@ -196,7 +195,7 @@ public class ClientApiRule extends ExternalResource {
   }
 
   public ControlMessageRequest openJobSubscription(
-      final int partitionId, final String type, long lockDuration) {
+      final int partitionId, final String type, final long lockDuration) {
     return openJobSubscription(partitionId, type, lockDuration, 10);
   }
 
@@ -224,31 +223,30 @@ public class ClientApiRule extends ExternalResource {
     return brokerAddressSupplier.get();
   }
 
-  protected SubscribedRecord asSubscribedEvent(RawMessage message) {
+  protected SubscribedRecord asSubscribedEvent(final RawMessage message) {
     final SubscribedRecord event = new SubscribedRecord(message);
     event.wrap(message.getMessage(), 0, message.getMessage().capacity());
     return event;
   }
 
-  protected boolean isCommandResponse(RawMessage message) {
+  protected boolean isCommandResponse(final RawMessage message) {
     return message.isResponse()
         && isMessageOfType(message.getMessage(), ExecuteCommandResponseDecoder.TEMPLATE_ID);
   }
 
-  protected boolean isSubscribedEvent(RawMessage message) {
+  protected boolean isSubscribedEvent(final RawMessage message) {
     return message.isMessage()
         && isMessageOfType(message.getMessage(), SubscribedRecordDecoder.TEMPLATE_ID);
   }
 
-  protected boolean isMessageOfType(DirectBuffer message, int type) {
+  protected boolean isMessageOfType(final DirectBuffer message, final int type) {
     final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
     headerDecoder.wrap(message, 0);
 
     return headerDecoder.templateId() == type;
   }
 
-  public void waitForTopic(int partitions) {
-
+  public void waitForPartition(final int partitions) {
     waitUntil(() -> getPartitionIds().size() >= partitions);
   }
 
@@ -263,17 +261,16 @@ public class ClientApiRule extends ExternalResource {
 
       return partitions
           .stream()
-          .filter(p -> DEFAULT_TOPIC.equals(p.get("topic")))
           .map(p -> ((Number) p.get("id")).intValue())
           .collect(Collectors.toList());
-    } catch (Exception e) {
+    } catch (final Exception e) {
       return Collections.EMPTY_LIST;
     }
   }
 
   public ControlMessageResponse requestPartitions() {
     return createControlMessageRequest()
-        .partitionId(Protocol.SYSTEM_PARTITION)
+        .partitionId(Protocol.DEPLOYMENT_PARTITION)
         .messageType(ControlMessageType.REQUEST_PARTITIONS)
         .data()
         .done()

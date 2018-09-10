@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.workflow;
 
+import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setPartitionCount;
 import static io.zeebe.broker.test.MsgPackUtil.JSON_MAPPER;
 import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_MAPPER;
 import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_PAYLOAD;
@@ -26,10 +27,10 @@ import static io.zeebe.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
 import static io.zeebe.msgpack.spec.MsgPackHelper.NIL;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.CREATE;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.CREATED;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_INSTANCE_KEY;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_KEY;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_PAYLOAD;
-import static io.zeebe.test.broker.protocol.clientapi.TestTopicClient.PROP_WORKFLOW_VERSION;
+import static io.zeebe.test.broker.protocol.clientapi.TestPartitionClient.PROP_WORKFLOW_INSTANCE_KEY;
+import static io.zeebe.test.broker.protocol.clientapi.TestPartitionClient.PROP_WORKFLOW_KEY;
+import static io.zeebe.test.broker.protocol.clientapi.TestPartitionClient.PROP_WORKFLOW_PAYLOAD;
+import static io.zeebe.test.broker.protocol.clientapi.TestPartitionClient.PROP_WORKFLOW_VERSION;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
@@ -47,7 +48,7 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
-import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
+import io.zeebe.test.broker.protocol.clientapi.TestPartitionClient;
 import io.zeebe.util.StreamUtil;
 import java.io.IOException;
 import java.io.InputStream;
@@ -62,15 +63,14 @@ import org.junit.rules.RuleChain;
 
 public class CreateWorkflowInstanceTest {
 
-  public EmbeddedBrokerRule brokerRule =
-      new EmbeddedBrokerRule("zeebe.test.increased.partitions.cfg.toml");
+  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(setPartitionCount(3));
 
   public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
-  private TestTopicClient testClient;
+  private TestPartitionClient testClient;
 
   @Before
   public void init() {
-    testClient = apiRule.topic();
+    testClient = apiRule.partition();
   }
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
@@ -476,7 +476,7 @@ public class CreateWorkflowInstanceTest {
         getClass().getResourceAsStream("/workflows/simple-workflow.yaml");
 
     apiRule
-        .topic()
+        .partition()
         .deployWithResponse(
             StreamUtil.read(resourceAsStream),
             ResourceType.YAML_WORKFLOW.name(),
@@ -505,17 +505,17 @@ public class CreateWorkflowInstanceTest {
         Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
 
     // when
-    final long deploymentKey = apiRule.topic().deploy(definition);
+    final long deploymentKey = apiRule.partition().deploy(definition);
 
     // then
     final List<Long> workflowInstanceKeys = new ArrayList<>();
     partitionIds.forEach(
         partitionId -> {
           apiRule
-              .topic(partitionId)
+              .partition(partitionId)
               .receiveFirstDeploymentEvent(DeploymentIntent.CREATED, deploymentKey);
           final long workflowInstanceKey =
-              apiRule.topic(partitionId).createWorkflowInstance("process");
+              apiRule.partition(partitionId).createWorkflowInstance("process");
 
           workflowInstanceKeys.add(workflowInstanceKey);
         });
@@ -529,7 +529,7 @@ public class CreateWorkflowInstanceTest {
         getClass().getResourceAsStream("/workflows/collaboration.bpmn");
 
     apiRule
-        .topic()
+        .partition()
         .deployWithResponse(
             StreamUtil.read(resourceAsStream), ResourceType.BPMN_XML.name(), "collaboration.bpmn");
 

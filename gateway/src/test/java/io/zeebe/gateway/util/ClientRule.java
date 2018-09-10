@@ -18,7 +18,6 @@ package io.zeebe.gateway.util;
 import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.ZeebeClientBuilder;
 import io.zeebe.gateway.api.clients.JobClient;
-import io.zeebe.gateway.api.clients.TopicClient;
 import io.zeebe.gateway.api.clients.WorkflowClient;
 import io.zeebe.gateway.impl.ZeebeClientBuilderImpl;
 import io.zeebe.gateway.impl.ZeebeClientImpl;
@@ -75,19 +74,11 @@ public class ClientRule extends ExternalResource {
   }
 
   public WorkflowClient workflowClient() {
-    return client.topicClient().workflowClient();
+    return client.workflowClient();
   }
 
   public JobClient jobClient() {
-    return client.topicClient().jobClient();
-  }
-
-  public TopicClient topicClient() {
-    return client.topicClient();
-  }
-
-  public String getDefaultTopicName() {
-    return StubBrokerRule.TEST_TOPIC_NAME;
+    return client.jobClient();
   }
 
   public int getDefaultPartitionId() {

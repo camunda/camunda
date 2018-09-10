@@ -90,7 +90,6 @@ public class CompleteJobTest {
             entry("payload", MSGPACK_PAYLOAD));
 
     assertThat(jobEvent.getMetadata().getKey()).isEqualTo(baseEvent.getKey());
-    assertThat(jobEvent.getMetadata().getTopicName()).isEqualTo(StubBrokerRule.TEST_TOPIC_NAME);
     assertThat(jobEvent.getMetadata().getPartitionId()).isEqualTo(StubBrokerRule.TEST_PARTITION_ID);
     assertThat(jobEvent.getMetadata().getSourceRecordPosition()).isEqualTo(2L);
 

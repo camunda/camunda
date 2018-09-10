@@ -26,35 +26,32 @@ import java.util.function.Function;
 
 public class FsLogStorageService implements Service<LogStorage> {
   private final FsLogStorageConfiguration config;
-  private final String topicName;
   private final int partitionId;
   private final Function<FsLogStorage, FsLogStorage> logStorageStubber; // for testing only
 
   private FsLogStorage logStorage;
 
   public FsLogStorageService(
-      FsLogStorageConfiguration config,
-      String topicName,
-      int partitionId,
-      Function<FsLogStorage, FsLogStorage> logStorageStubber) {
+      final FsLogStorageConfiguration config,
+      final int partitionId,
+      final Function<FsLogStorage, FsLogStorage> logStorageStubber) {
     this.config = config;
-    this.topicName = topicName;
     this.partitionId = partitionId;
     this.logStorageStubber = logStorageStubber;
   }
 
   @Override
-  public void start(ServiceStartContext startContext) {
+  public void start(final ServiceStartContext startContext) {
     final ActorScheduler scheduler = startContext.getScheduler();
     logStorage =
         logStorageStubber.apply(
-            new FsLogStorage(config, scheduler.getMetricsManager(), topicName, partitionId));
+            new FsLogStorage(config, scheduler.getMetricsManager(), partitionId));
 
     startContext.run(logStorage::open);
   }
 
   @Override
-  public void stop(ServiceStopContext stopContext) {
+  public void stop(final ServiceStopContext stopContext) {
     stopContext.run(logStorage::close);
   }
 

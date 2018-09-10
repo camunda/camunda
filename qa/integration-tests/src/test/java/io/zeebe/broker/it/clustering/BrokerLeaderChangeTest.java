@@ -60,7 +60,6 @@ public class BrokerLeaderChangeTest {
 
     // when
     clusteringRule.restartBroker(oldLeader);
-    clusteringRule.waitForTopic(3, 3);
 
     // then
     final Optional<PartitionInfo> partitionInfo =
@@ -79,8 +78,6 @@ public class BrokerLeaderChangeTest {
   @Ignore("https://github.com/zeebe-io/zeebe/issues/844")
   public void shouldChangeLeaderAfterLeaderDies() {
     // given
-    clusteringRule.waitForTopic(3);
-
     final BrokerInfo leaderForPartition = clusteringRule.getLeaderForPartition(1);
     final String leaderAddress = leaderForPartition.getAddress();
 
@@ -126,7 +123,7 @@ public class BrokerLeaderChangeTest {
           doRepeatedly(
                   () ->
                       clientRule
-                          .getTopicClient()
+                          .getClient()
                           .newSubscription()
                           .name("jobObserver")
                           .jobEventHandler(
@@ -136,7 +133,7 @@ public class BrokerLeaderChangeTest {
                                   isJobCompleted.set(true);
                                 }
                               })
-                          .startAtHeadOfTopic()
+                          .startAtHead()
                           .forcedStart()
                           .open())
               .until(Objects::nonNull, "Failed to open topic subscription for job completion");

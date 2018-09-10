@@ -55,7 +55,6 @@ public class BrokerInfoImplTest {
             received -> {
               final Partition expected = expectedPartitions.pop();
 
-              assertThat(received.getTopicName()).isEqualTo(expected.getTopicName());
               assertThat(received.getPartitionId()).isEqualTo(expected.getPartitionId());
 
               assertThat(received.getRole() == PartitionBrokerRole.LEADER)

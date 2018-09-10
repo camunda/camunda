@@ -15,11 +15,13 @@
  */
 package io.zeebe.gateway;
 
-import io.zeebe.gateway.api.clients.TopicClient;
-import io.zeebe.gateway.api.commands.TopicsRequestStep1;
+import io.zeebe.gateway.api.clients.JobClient;
+import io.zeebe.gateway.api.clients.WorkflowClient;
+import io.zeebe.gateway.api.commands.PartitionsRequestStep1;
 import io.zeebe.gateway.api.commands.TopologyRequestStep1;
 import io.zeebe.gateway.api.record.ZeebeObjectMapper;
 import io.zeebe.gateway.api.subscription.ManagementSubscriptionBuilderStep1;
+import io.zeebe.gateway.api.subscription.TopicSubscriptionBuilderStep1;
 import io.zeebe.gateway.impl.ZeebeClientBuilderImpl;
 import io.zeebe.gateway.impl.ZeebeClientImpl;
 
@@ -27,19 +29,58 @@ import io.zeebe.gateway.impl.ZeebeClientImpl;
 public interface ZeebeClient extends AutoCloseable {
 
   /**
-   * A client to operate on workflows, jobs and subscriptions.
+   * A client to
+   * <li>deploy a workflow
+   * <li>create a workflow instance
+   * <li>cancel a workflow instance
+   * <li>update the payload of a workflow instance
+   * <li>request a workflow resource
+   * <li>request all deployed workflows
+   *
+   * @return a client with access to all workflow-related operations.
+   */
+  WorkflowClient workflowClient();
+
+  /**
+   * A client to
+   * <li>create a (standalone) job
+   * <li>complete a job
+   * <li>mark a job as failed
+   * <li>update the retries of a job
+   *
+   * @return a client with access to all job-related operations.
+   */
+  JobClient jobClient();
+
+  /**
+   * Open a new subscription to receive all records (events and commands).
+   *
+   * <p>While the subscription is open, the broker continuously publishes records to the client. The
+   * client delegates the events/commands to the provided handlers. The client periodically
+   * acknowledges that records have been received and handled. When a subscription with the same
+   * name is (re-)opened, then the broker resumes the subscription from the last acknowledged record
+   * and starts publishing at the next event/command.
    *
    * <pre>
-   * zeebeClient
-   *  .topicClient()
-   *  .workflowClient()
-   *  .newCreateInstanceCommand()
-   *  ...
+   * TopicSubscription subscription = zeebeClient
+   *
+   *  .newSubscription()
+   *  .name("my-app")
+   *  .workflowInstanceEventHandler(wfEventHandler)
+   *  .open();
+   *
+   * ...
+   * subscription.close();
    * </pre>
    *
-   * @return a client with access to all operations on the configured default topic.
+   * Per partition it is guaranteed that handlers are called per record in the order of occurrence.
+   * For example: for a given workflow instance, a handler will always receive the CREATED event
+   * before the COMPLETED event. Records from different partitions are handled sequentially, but in
+   * arbitrary order.
+   *
+   * @return a builder for the subscription
    */
-  TopicClient topicClient();
+  TopicSubscriptionBuilderStep1 newSubscription();
 
   /**
    * An object to (de-)serialize records from/to JSON.
@@ -55,21 +96,20 @@ public interface ZeebeClient extends AutoCloseable {
   ZeebeObjectMapper objectMapper();
 
   /**
-   * Request all topics. Can be used to inspect which topics and partitions have been created.
+   * Request all partitions. Can be used to inspect which partitions have been created.
    *
    * <pre>
-   * List&#60;Topic&#62; topics = zeebeClient
-   *  .newTopicsRequest()
+   * List&#60;Partition&#62; partitions = zeebeClient
+   *  .newPartitionsRequest()
    *  .send()
    *  .join()
-   *  .getTopics();
+   *  .getPartitions();
    *
-   *  String topicName = topic.getName();
    * </pre>
    *
    * @return the request where you must call {@code send()}
    */
-  TopicsRequestStep1 newTopicsRequest();
+  PartitionsRequestStep1 newPartitionsRequest();
 
   /**
    * Request the current cluster topology. Can be used to inspect which brokers are available at
@@ -92,8 +132,8 @@ public interface ZeebeClient extends AutoCloseable {
   TopologyRequestStep1 newTopologyRequest();
 
   /**
-   * Open a new subscription to receive all records (events and commands) of the management topic
-   * (aka. the system topic). Can be used to get the deployed workflows or created topics.
+   * Open a new subscription to receive all records (events and commands). Can be used to get the
+   * deployed workflows.
    *
    * <p>While the subscription is open, the broker continuously publishes records to the client. The
    * client delegates the events/commands to the provided handlers. The client periodically
@@ -132,7 +172,7 @@ public interface ZeebeClient extends AutoCloseable {
   }
 
   /** @return a new {@link ZeebeClient} using the provided configuration. */
-  static ZeebeClient newClient(ZeebeClientConfiguration configuration) {
+  static ZeebeClient newClient(final ZeebeClientConfiguration configuration) {
     return new ZeebeClientImpl(configuration);
   }
 

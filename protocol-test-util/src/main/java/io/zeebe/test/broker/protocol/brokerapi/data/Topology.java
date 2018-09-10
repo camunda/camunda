@@ -30,11 +30,11 @@ public class Topology {
 
   public Topology() {}
 
-  public Topology(Topology other) {
+  public Topology(final Topology other) {
     this.brokers = new HashMap<>(other.brokers);
   }
 
-  private TopologyBroker getBroker(int nodeId, SocketAddress brokerAddress) {
+  private TopologyBroker getBroker(final int nodeId, final SocketAddress brokerAddress) {
     TopologyBroker topologyBroker = brokers.get(nodeId);
     if (topologyBroker == null) {
       topologyBroker = new TopologyBroker(nodeId, brokerAddress.host(), brokerAddress.port());
@@ -43,13 +43,12 @@ public class Topology {
     return topologyBroker;
   }
 
-  public Topology addLeader(StubBrokerRule brokerRule, String topic, int partition) {
-    return addLeader(brokerRule.getNodeId(), brokerRule.getSocketAddress(), topic, partition);
+  public Topology addLeader(final StubBrokerRule brokerRule, final int partition) {
+    return addLeader(brokerRule.getNodeId(), brokerRule.getSocketAddress(), partition);
   }
 
-  public Topology addLeader(int nodeId, SocketAddress address, String topic, int partition) {
-    getBroker(nodeId, address)
-        .addPartition(new BrokerPartitionState(LEADER_STATE, topic, partition));
+  public Topology addLeader(final int nodeId, final SocketAddress address, final int partition) {
+    getBroker(nodeId, address).addPartition(new BrokerPartitionState(LEADER_STATE, partition));
     return this;
   }
 

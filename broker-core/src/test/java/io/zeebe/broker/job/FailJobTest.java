@@ -33,7 +33,7 @@ import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ControlMessageResponse;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
-import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
+import io.zeebe.test.broker.protocol.clientapi.TestPartitionClient;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.List;
@@ -52,11 +52,11 @@ public class FailJobTest {
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
-  private TestTopicClient client;
+  private TestPartitionClient client;
 
   @Before
   public void setup() {
-    client = apiRule.topic();
+    client = apiRule.partition();
   }
 
   @Test
@@ -73,7 +73,7 @@ public class FailJobTest {
         client.failJob(subscribedEvent.position(), subscribedEvent.key(), subscribedEvent.value());
 
     // then
-    final SubscribedRecord failCommand = apiRule.topic().receiveFirstJobCommand(JobIntent.FAIL);
+    final SubscribedRecord failCommand = apiRule.partition().receiveFirstJobCommand(JobIntent.FAIL);
 
     assertThat(response.sourceRecordPosition()).isEqualTo(failCommand.position());
     assertThat(response.recordType()).isEqualTo(RecordType.EVENT);

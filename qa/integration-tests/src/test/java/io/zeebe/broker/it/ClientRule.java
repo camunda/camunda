@@ -23,12 +23,10 @@ import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.ZeebeClientBuilder;
 import io.zeebe.gateway.api.clients.JobClient;
-import io.zeebe.gateway.api.clients.TopicClient;
 import io.zeebe.gateway.api.clients.WorkflowClient;
 import io.zeebe.gateway.api.commands.Partition;
 import io.zeebe.gateway.api.commands.PartitionInfo;
-import io.zeebe.gateway.api.commands.Topic;
-import io.zeebe.gateway.api.commands.Topics;
+import io.zeebe.gateway.api.commands.Partitions;
 import io.zeebe.gateway.api.commands.Topology;
 import io.zeebe.gateway.api.record.ValueType;
 import io.zeebe.gateway.impl.ZeebeClientBuilderImpl;
@@ -37,9 +35,7 @@ import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.sched.clock.ControlledActorClock;
-import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -95,18 +91,10 @@ public class ClientRule extends ExternalResource {
     transport.interruptAllChannels();
   }
 
-  public void waitUntilTopicsExists(final String... topicNames) {
-    final List<String> expectedTopicNames = Arrays.asList(topicNames);
-
-    doRepeatedly(this::topicsByName)
-        .until(t -> t != null && t.keySet().containsAll(expectedTopicNames));
-  }
-
   public void waitUntilDeploymentIsDone(final long key) {
     final AtomicBoolean deploymentFound = new AtomicBoolean(false);
 
     client
-        .topicClient()
         .newSubscription()
         .name("deployment-await")
         .recordHandler(
@@ -131,25 +119,18 @@ public class ClientRule extends ExternalResource {
         .until((v) -> deploymentFound.get());
   }
 
-  public Map<String, List<Partition>> topicsByName() {
-    final Topics topics = client.newTopicsRequest().send().join();
-    return topics
-        .getTopics()
-        .stream()
-        .collect(Collectors.toMap(Topic::getName, Topic::getPartitions));
-  }
-
-  public String getDefaultTopic() {
-    return client.getConfiguration().getDefaultTopic();
+  public List<Partition> partitions() {
+    final Partitions partitions = client.newPartitionsRequest().send().join();
+    return partitions.getPartitions();
   }
 
   public int getDefaultPartition() {
     final List<Integer> defaultPartitions =
-        doRepeatedly(() -> getPartitions(getDefaultTopic())).until(p -> !p.isEmpty());
+        doRepeatedly(() -> getPartitions()).until(p -> !p.isEmpty());
     return defaultPartitions.get(0);
   }
 
-  private List<Integer> getPartitions(final String topic) {
+  private List<Integer> getPartitions() {
     final Topology topology = client.newTopologyRequest().send().join();
 
     return topology
@@ -157,7 +138,6 @@ public class ClientRule extends ExternalResource {
         .stream()
         .flatMap(i -> i.getPartitions().stream())
         .filter(PartitionInfo::isLeader)
-        .filter(p -> p.getTopicName().equals(topic))
         .map(PartitionInfo::getPartitionId)
         .collect(Collectors.toList());
   }
@@ -167,14 +147,10 @@ public class ClientRule extends ExternalResource {
   }
 
   public WorkflowClient getWorkflowClient() {
-    return getClient().topicClient().workflowClient();
+    return getClient().workflowClient();
   }
 
   public JobClient getJobClient() {
-    return getClient().topicClient().jobClient();
-  }
-
-  public TopicClient getTopicClient() {
-    return getClient().topicClient();
+    return getClient().jobClient();
   }
 }

@@ -60,8 +60,8 @@ public class IncidentTest {
 
   @Before
   public void setUp() {
-    workflowClient = clientRule.getClient().topicClient().workflowClient();
-    jobClient = clientRule.getClient().topicClient().jobClient();
+    workflowClient = clientRule.getClient().workflowClient();
+    jobClient = clientRule.getClient().jobClient();
   }
 
   @Test
@@ -163,7 +163,7 @@ public class IncidentTest {
     JobEvent job;
 
     @Override
-    public void handle(JobClient client, JobEvent job) {
+    public void handle(final JobClient client, final JobEvent job) {
       this.job = job;
 
       if (failJob) {

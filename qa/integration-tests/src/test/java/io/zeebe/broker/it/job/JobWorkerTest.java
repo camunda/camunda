@@ -31,7 +31,6 @@ import io.zeebe.gateway.api.commands.JobCommandName;
 import io.zeebe.gateway.api.events.JobEvent;
 import io.zeebe.gateway.api.events.JobState;
 import io.zeebe.gateway.api.subscription.JobWorker;
-import io.zeebe.gateway.impl.job.CreateJobCommandImpl;
 import io.zeebe.test.util.TestUtil;
 import java.time.Duration;
 import java.time.Instant;
@@ -64,10 +63,7 @@ public class JobWorkerTest {
 
   @Before
   public void setUp() {
-    jobClient = clientRule.getClient().topicClient().jobClient();
-
-    final String defaultTopic = clientRule.getClient().getConfiguration().getDefaultTopic();
-    clientRule.waitUntilTopicsExists(defaultTopic);
+    jobClient = clientRule.getClient().jobClient();
   }
 
   @Test
@@ -451,16 +447,7 @@ public class JobWorkerTest {
     TestUtil.waitUntil(() -> jobHandler.getHandledJobs().size() > subscriptionCapacity);
   }
 
-  private JobEvent createJobOfType(String type) {
+  private JobEvent createJobOfType(final String type) {
     return jobClient.newCreateCommand().jobType(type).send().join();
-  }
-
-  private JobEvent createJobOfTypeOnPartition(String type, int partition) {
-    final CreateJobCommandImpl createCommand =
-        (CreateJobCommandImpl) jobClient.newCreateCommand().jobType(type);
-
-    createCommand.getCommand().setPartitionId(partition);
-
-    return createCommand.send().join();
   }
 }

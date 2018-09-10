@@ -57,8 +57,7 @@ public class ExporterManagerTest {
   @Test
   public void shouldRunExporterForEveryPartition() throws InterruptedException {
     // given
-    IntStream.range(0, PARTITIONS) // shift after internal system topic
-        .forEach(this::createJob);
+    IntStream.range(0, PARTITIONS).forEach(this::createJob);
 
     // then
     assertThat(TestExporter.configureLatch.await(5, TimeUnit.SECONDS)).isTrue();

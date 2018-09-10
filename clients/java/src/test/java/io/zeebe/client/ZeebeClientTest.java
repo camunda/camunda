@@ -58,7 +58,6 @@ public class ZeebeClientTest {
                   .forEach(
                       partition -> {
                         assertThat(partition.getPartitionId()).isEqualTo(0);
-                        assertThat(partition.getTopicName()).isEqualTo("internal-system");
                         assertThat(partition.getRole()).isEqualTo(PartitionBrokerRole.LEADER);
                       });
             });

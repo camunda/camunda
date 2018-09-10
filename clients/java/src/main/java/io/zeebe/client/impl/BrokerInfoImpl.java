@@ -27,7 +27,6 @@ public class BrokerInfoImpl implements BrokerInfo {
   class PartitionInfoImpl implements PartitionInfo {
 
     private int partitionId;
-    private String topicName;
     private PartitionBrokerRole role;
 
     PartitionInfoImpl(final GatewayOuterClass.Partition partition) {
@@ -36,7 +35,6 @@ public class BrokerInfoImpl implements BrokerInfo {
 
     private void serialize(final GatewayOuterClass.Partition partition) throws RuntimeException {
       this.partitionId = partition.getPartitionId();
-      this.topicName = partition.getTopicName();
 
       if (partition.getRole() == GatewayOuterClass.Partition.PartitionBrokerRole.LEADER) {
         this.role = PartitionBrokerRole.LEADER;
@@ -50,11 +48,6 @@ public class BrokerInfoImpl implements BrokerInfo {
     @Override
     public int getPartitionId() {
       return this.partitionId;
-    }
-
-    @Override
-    public String getTopicName() {
-      return this.topicName;
     }
 
     @Override

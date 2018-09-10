@@ -42,7 +42,7 @@ import org.junit.rules.RuleChain;
 
 public class SystemTopicSubscriptionTest {
 
-  public static final int DEFAULT_PARTITION = Protocol.SYSTEM_PARTITION;
+  public static final int DEFAULT_PARTITION = Protocol.DEPLOYMENT_PARTITION;
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
   public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
 
@@ -57,7 +57,7 @@ public class SystemTopicSubscriptionTest {
   public void shouldOpenSubscription() {
     // when
     final ExecuteCommandResponse subscriptionResponse =
-        apiRule.openTopicSubscription(Protocol.SYSTEM_PARTITION, "foo", 0).await();
+        apiRule.openTopicSubscription(Protocol.DEPLOYMENT_PARTITION, "foo", 0).await();
 
     // then
     assertThat(subscriptionResponse.key()).isGreaterThanOrEqualTo(0);
@@ -67,7 +67,7 @@ public class SystemTopicSubscriptionTest {
   public void shouldCloseSubscription() {
     // given
     final ExecuteCommandResponse addResponse =
-        apiRule.openTopicSubscription(Protocol.SYSTEM_PARTITION, "foo", 0).await();
+        apiRule.openTopicSubscription(Protocol.DEPLOYMENT_PARTITION, "foo", 0).await();
 
     final long subscriberKey = addResponse.key();
 
@@ -76,7 +76,7 @@ public class SystemTopicSubscriptionTest {
         apiRule
             .createControlMessageRequest()
             .messageType(ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
-            .partitionId(Protocol.SYSTEM_PARTITION)
+            .partitionId(Protocol.DEPLOYMENT_PARTITION)
             .data()
             .put("subscriberKey", subscriberKey)
             .done()
@@ -90,7 +90,7 @@ public class SystemTopicSubscriptionTest {
   public void shouldPushDeploymentEvents() {
     // given
     final long deploymentKey =
-        apiRule.topic().deploy(Bpmn.createExecutableProcess("wf").startEvent().done());
+        apiRule.partition().deploy(Bpmn.createExecutableProcess("wf").startEvent().done());
 
     // when
     final ExecuteCommandResponse addResponse =

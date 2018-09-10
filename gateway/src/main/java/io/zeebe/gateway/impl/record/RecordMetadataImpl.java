@@ -27,7 +27,6 @@ import io.zeebe.protocol.intent.Intent;
 import java.time.Instant;
 
 public class RecordMetadataImpl implements RecordMetadata {
-  private String topicName;
   private int partitionId = ExecuteCommandRequestEncoder.partitionIdNullValue();
   private long key = ExecuteCommandRequestEncoder.keyNullValue();
   private long position = ExecuteCommandRequestEncoder.positionNullValue();
@@ -46,10 +45,11 @@ public class RecordMetadataImpl implements RecordMetadata {
 
   @JsonCreator
   public RecordMetadataImpl(
-      @JsonProperty("intent") String intent,
-      @JsonProperty("valueType") io.zeebe.protocol.clientapi.ValueType valueType,
-      @JsonProperty("recordType") io.zeebe.protocol.clientapi.RecordType recordType,
-      @JsonProperty("rejectionType") io.zeebe.protocol.clientapi.RejectionType rejectionType) {
+      @JsonProperty("intent") final String intent,
+      @JsonProperty("valueType") final io.zeebe.protocol.clientapi.ValueType valueType,
+      @JsonProperty("recordType") final io.zeebe.protocol.clientapi.RecordType recordType,
+      @JsonProperty("rejectionType")
+          final io.zeebe.protocol.clientapi.RejectionType rejectionType) {
     // is used by Jackson to de-serialize a JSON String
     // resolve the intent from the given String and the value type
     this.valueType = valueType;
@@ -63,20 +63,11 @@ public class RecordMetadataImpl implements RecordMetadata {
   }
 
   @Override
-  public String getTopicName() {
-    return topicName;
-  }
-
-  public void setTopicName(String topicName) {
-    this.topicName = topicName;
-  }
-
-  @Override
   public int getPartitionId() {
     return partitionId;
   }
 
-  public void setPartitionId(int partitionId) {
+  public void setPartitionId(final int partitionId) {
     this.partitionId = partitionId;
   }
 
@@ -89,7 +80,7 @@ public class RecordMetadataImpl implements RecordMetadata {
     return position;
   }
 
-  public void setPosition(long position) {
+  public void setPosition(final long position) {
     this.position = position;
   }
 
@@ -98,7 +89,7 @@ public class RecordMetadataImpl implements RecordMetadata {
     return sourceRecordPosition;
   }
 
-  public void setSourceRecordPosition(long sourceRecordPosition) {
+  public void setSourceRecordPosition(final long sourceRecordPosition) {
     this.sourceRecordPosition = sourceRecordPosition;
   }
 
@@ -107,7 +98,7 @@ public class RecordMetadataImpl implements RecordMetadata {
     return key;
   }
 
-  public void setKey(long key) {
+  public void setKey(final long key) {
     this.key = key;
   }
 
@@ -116,7 +107,7 @@ public class RecordMetadataImpl implements RecordMetadata {
     return timestamp;
   }
 
-  public void setTimestamp(Instant timestamp) {
+  public void setTimestamp(final Instant timestamp) {
     this.timestamp = timestamp;
   }
 
@@ -130,7 +121,7 @@ public class RecordMetadataImpl implements RecordMetadata {
     return recordType;
   }
 
-  public void setRecordType(io.zeebe.protocol.clientapi.RecordType recordType) {
+  public void setRecordType(final io.zeebe.protocol.clientapi.RecordType recordType) {
     this.recordType = recordType;
   }
 
@@ -144,7 +135,7 @@ public class RecordMetadataImpl implements RecordMetadata {
     return valueType;
   }
 
-  public void setValueType(io.zeebe.protocol.clientapi.ValueType valueType) {
+  public void setValueType(final io.zeebe.protocol.clientapi.ValueType valueType) {
     this.valueType = valueType;
   }
 
@@ -158,7 +149,7 @@ public class RecordMetadataImpl implements RecordMetadata {
     return intent;
   }
 
-  public void setIntent(Intent intent) {
+  public void setIntent(final Intent intent) {
     this.intent = intent;
   }
 
@@ -181,11 +172,11 @@ public class RecordMetadataImpl implements RecordMetadata {
     return rejectionReason;
   }
 
-  public void setRejectionReason(String rejectionReason) {
+  public void setRejectionReason(final String rejectionReason) {
     this.rejectionReason = rejectionReason;
   }
 
-  public void setRejectionType(io.zeebe.protocol.clientapi.RejectionType rejectionType) {
+  public void setRejectionType(final io.zeebe.protocol.clientapi.RejectionType rejectionType) {
     this.rejectionType = rejectionType;
   }
 
@@ -198,8 +189,6 @@ public class RecordMetadataImpl implements RecordMetadata {
     builder.append(valueType);
     builder.append(", intent=");
     builder.append(intent);
-    builder.append(", topicName=");
-    builder.append(topicName);
     builder.append(", partitionId=");
     builder.append(partitionId);
     builder.append(", position=");

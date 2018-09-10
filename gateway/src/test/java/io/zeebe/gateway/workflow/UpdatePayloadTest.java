@@ -50,11 +50,11 @@ public class UpdatePayloadTest {
 
   @Rule public ExpectedException thrown = ExpectedException.none();
 
-  private WorkflowClient workflowTopicClient;
+  private WorkflowClient workflowClient;
 
   @Before
   public void setUp() {
-    this.workflowTopicClient = clientRule.getClient().topicClient().workflowClient();
+    this.workflowClient = clientRule.getClient().workflowClient();
 
     brokerRule.workflowInstances().registerUpdatedPayloadCommand();
   }
@@ -72,7 +72,7 @@ public class UpdatePayloadTest {
 
     // when
     final WorkflowInstanceEvent workflowInstanceEvent =
-        workflowTopicClient.newUpdatePayloadCommand(baseEvent).payload(PAYLOAD).send().join();
+        workflowClient.newUpdatePayloadCommand(baseEvent).payload(PAYLOAD).send().join();
 
     // then
     assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
@@ -105,7 +105,7 @@ public class UpdatePayloadTest {
     final WorkflowInstanceEventImpl baseEvent = Events.exampleWorfklowInstance();
 
     // when
-    workflowTopicClient
+    workflowClient
         .newUpdatePayloadCommand(baseEvent)
         .payload(Collections.singletonMap("foo", "bar"))
         .send()
@@ -127,7 +127,7 @@ public class UpdatePayloadTest {
     payload.foo = "bar";
 
     // when
-    workflowTopicClient.newUpdatePayloadCommand(baseEvent).payload(payload).send().join();
+    workflowClient.newUpdatePayloadCommand(baseEvent).payload(payload).send().join();
 
     // then
     assertThat(brokerRule.getReceivedCommandRequests()).hasSize(1);
@@ -150,7 +150,7 @@ public class UpdatePayloadTest {
     thrown.expectMessage("Command (UPDATE_PAYLOAD) for event with key 2 was rejected");
 
     // when
-    workflowTopicClient.newUpdatePayloadCommand(event).payload(PAYLOAD).send().join();
+    workflowClient.newUpdatePayloadCommand(event).payload(PAYLOAD).send().join();
   }
 
   @Test
@@ -160,7 +160,7 @@ public class UpdatePayloadTest {
     thrown.expectMessage("base event must not be null");
 
     // when
-    workflowTopicClient.newUpdatePayloadCommand(null).payload(PAYLOAD).send();
+    workflowClient.newUpdatePayloadCommand(null).payload(PAYLOAD).send();
   }
 
   @Test
@@ -175,11 +175,7 @@ public class UpdatePayloadTest {
     thrown.expectMessage("Failed to serialize object");
 
     // when
-    workflowTopicClient
-        .newUpdatePayloadCommand(baseEvent)
-        .payload(new NotSerializable())
-        .send()
-        .join();
+    workflowClient.newUpdatePayloadCommand(baseEvent).payload(new NotSerializable()).send().join();
   }
 
   public static class PayloadObject {

@@ -33,31 +33,32 @@ import io.zeebe.gateway.impl.workflow.WorkflowRequestImpl;
 import io.zeebe.gateway.impl.workflow.WorkflowResourceRequestImpl;
 
 public class WorkflowsClientImpl implements WorkflowClient {
-  private final TopicClientImpl client;
+  private final ZeebeClientImpl client;
 
-  public WorkflowsClientImpl(final TopicClientImpl client) {
+  public WorkflowsClientImpl(final ZeebeClientImpl client) {
     this.client = client;
   }
 
   @Override
   public DeployWorkflowCommandStep1 newDeployCommand() {
-    return new DeployWorkflowCommandImpl(client.getCommandManager(), client.getTopic());
+    return new DeployWorkflowCommandImpl(client.getCommandManager());
   }
 
   @Override
   public CreateWorkflowInstanceCommandStep1 newCreateInstanceCommand() {
     return new CreateWorkflowInstanceCommandImpl(
-        client.getCommandManager(), client.getObjectMapper(), client.getTopic());
+        client.getCommandManager(), client.getObjectMapper());
   }
 
   @Override
-  public CancelWorkflowInstanceCommandStep1 newCancelInstanceCommand(WorkflowInstanceEvent event) {
+  public CancelWorkflowInstanceCommandStep1 newCancelInstanceCommand(
+      final WorkflowInstanceEvent event) {
     return new CancelWorkflowInstanceCommandImpl(client.getCommandManager(), event);
   }
 
   @Override
   public UpdatePayloadWorkflowInstanceCommandStep1 newUpdatePayloadCommand(
-      WorkflowInstanceEvent event) {
+      final WorkflowInstanceEvent event) {
     return new UpdatePayloadCommandImpl(client.getCommandManager(), event);
   }
 

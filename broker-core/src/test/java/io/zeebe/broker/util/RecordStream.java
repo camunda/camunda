@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.util;
 
-import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
 import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
@@ -35,20 +34,20 @@ import org.agrona.DirectBuffer;
 
 public class RecordStream extends StreamWrapper<LoggedEvent, RecordStream> {
 
-  public RecordStream(Stream<LoggedEvent> stream) {
+  public RecordStream(final Stream<LoggedEvent> stream) {
     super(stream);
   }
 
   @Override
-  protected RecordStream supply(Stream<LoggedEvent> wrappedStream) {
+  protected RecordStream supply(final Stream<LoggedEvent> wrappedStream) {
     return new RecordStream(wrappedStream);
   }
 
-  public RecordStream withIntent(Intent intent) {
+  public RecordStream withIntent(final Intent intent) {
     return new RecordStream(filter(r -> Records.hasIntent(r, intent)));
   }
 
-  public LoggedEvent withPosition(long position) {
+  public LoggedEvent withPosition(final long position) {
     return filter(e -> e.getPosition() == position)
         .findFirst()
         .orElseThrow(() -> new AssertionError("No event found with position " + position));
@@ -90,17 +89,11 @@ public class RecordStream extends StreamWrapper<LoggedEvent, RecordStream> {
             .map(e -> CopiedTypedEvent.toTypedEvent(e, WorkflowInstanceSubscriptionRecord.class)));
   }
 
-  public TypedRecordStream<TopicRecord> onlyTopicRecords() {
-    return new TypedRecordStream<>(
-        filter(Records::isTopicRecord)
-            .map(e -> CopiedTypedEvent.toTypedEvent(e, TopicRecord.class)));
-  }
-
   /**
    * This method makes only sense when the stream contains only entries of one workflow instance and
    * the element is only instantiated once within that instance.
    */
-  public Stream<WorkflowInstanceIntent> onlyStatesOf(String elementId) {
+  public Stream<WorkflowInstanceIntent> onlyStatesOf(final String elementId) {
     final DirectBuffer elementIdBuffer = BufferUtil.wrapString(elementId);
 
     return onlyWorkflowInstanceRecords()

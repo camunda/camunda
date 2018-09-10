@@ -22,14 +22,14 @@ import io.zeebe.gateway.api.events.DeploymentEvent;
 
 public class WorkflowDeployer {
 
-  public static void main(String[] args) {
+  public static void main(final String[] args) {
     final String broker = "localhost:26501";
 
     final ZeebeClientBuilder clientBuilder =
         ZeebeClient.newClientBuilder().brokerContactPoint(broker);
 
-    try (ZeebeClient client = clientBuilder.build()) {
-      final WorkflowClient workflowClient = client.topicClient().workflowClient();
+    try (final ZeebeClient client = clientBuilder.build()) {
+      final WorkflowClient workflowClient = client.workflowClient();
 
       final DeploymentEvent deploymentEvent =
           workflowClient

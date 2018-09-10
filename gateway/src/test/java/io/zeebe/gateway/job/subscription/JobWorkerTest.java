@@ -212,7 +212,6 @@ public class JobWorkerTest {
 
     // when
     configuredClient
-        .topicClient()
         .jobClient()
         .newWorker()
         .jobType("bar")
@@ -835,7 +834,7 @@ public class JobWorkerTest {
     assertThat(creditRequests.size()).isGreaterThanOrEqualTo(1);
 
     int totalReplenishedCredits = 0;
-    for (ControlMessageRequest request : creditRequests) {
+    for (final ControlMessageRequest request : creditRequests) {
       final long replenishedCredits = (long) request.getData().get("credits");
       assertThat(replenishedCredits).isGreaterThan(0);
       totalReplenishedCredits += replenishedCredits;
@@ -898,7 +897,7 @@ public class JobWorkerTest {
     protected boolean shouldWait = true;
 
     @Override
-    public void handle(JobClient client, JobEvent workItemEvent) {
+    public void handle(final JobClient client, final JobEvent workItemEvent) {
       try {
         if (shouldWait) {
           synchronized (monitor) {
@@ -909,7 +908,7 @@ public class JobWorkerTest {
         }
 
         numHandledEvents.incrementAndGet();
-      } catch (InterruptedException e) {
+      } catch (final InterruptedException e) {
         throw new RuntimeException(e);
       }
     }

@@ -55,7 +55,6 @@ public class ResponseMapper {
       for (final PartitionInfo p : el.getPartitions()) {
         final Partition.Builder partitionBuilder = Partition.newBuilder();
         partitionBuilder.setPartitionId(p.getPartitionId());
-        partitionBuilder.setTopicName(p.getTopicName());
         partitionBuilder.setRole(remapPartitionBrokerRoleEnum(el, p));
         brokerInfo.addPartitions(partitionBuilder);
       }

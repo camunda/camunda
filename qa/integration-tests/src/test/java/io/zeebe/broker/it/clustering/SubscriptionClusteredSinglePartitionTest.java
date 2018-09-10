@@ -34,13 +34,7 @@ import org.junit.rules.Timeout;
 public class SubscriptionClusteredSinglePartitionTest {
 
   public Timeout testTimeout = Timeout.seconds(30);
-  public ClusteringRule clusteringRule =
-      new ClusteringRule(
-          new String[] {
-            "zeebe.cluster.1.singlePartition.cfg.toml",
-            "zeebe.cluster.2.singlePartition.cfg.toml",
-            "zeebe.cluster.3.singlePartition.cfg.toml"
-          });
+  public ClusteringRule clusteringRule = new ClusteringRule(1, 3, 3);
   public ClientRule clientRule = new ClientRule(clusteringRule);
 
   @Rule
@@ -64,11 +58,10 @@ public class SubscriptionClusteredSinglePartitionTest {
     // when
     final List<RaftEvent> raftEvents = new ArrayList<>();
     client
-        .topicClient()
         .newSubscription()
         .name("test-subscription")
         .raftEventHandler(raftEvents::add)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     // then we should receive two raft add member events
@@ -86,7 +79,7 @@ public class SubscriptionClusteredSinglePartitionTest {
   }
 
   @Test
-  public void shouldReceiveRaftEventsFromSystemTopic() {
+  public void shouldReceiveRaftEventsFromSystem() {
     // given
     clusteringRule.restartBroker(clusteringRule.getFollowerOnly());
 
@@ -96,7 +89,7 @@ public class SubscriptionClusteredSinglePartitionTest {
         .newManagementSubscription()
         .name("test-subscription")
         .raftEventHandler(raftEvents::add)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     // then we should receive two raft add member events

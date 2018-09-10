@@ -18,13 +18,11 @@ package io.zeebe.gateway.impl.record;
 import io.zeebe.gateway.api.commands.DeploymentCommand;
 import io.zeebe.gateway.api.commands.IncidentCommand;
 import io.zeebe.gateway.api.commands.JobCommand;
-import io.zeebe.gateway.api.commands.TopicCommand;
 import io.zeebe.gateway.api.commands.WorkflowInstanceCommand;
 import io.zeebe.gateway.api.events.DeploymentEvent;
 import io.zeebe.gateway.api.events.IncidentEvent;
 import io.zeebe.gateway.api.events.JobEvent;
 import io.zeebe.gateway.api.events.RaftEvent;
-import io.zeebe.gateway.api.events.TopicEvent;
 import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
 import io.zeebe.gateway.api.record.Record;
 import io.zeebe.gateway.api.record.RecordType;
@@ -32,13 +30,11 @@ import io.zeebe.gateway.api.record.ValueType;
 import io.zeebe.gateway.impl.command.DeploymentCommandImpl;
 import io.zeebe.gateway.impl.command.IncidentCommandImpl;
 import io.zeebe.gateway.impl.command.JobCommandImpl;
-import io.zeebe.gateway.impl.command.TopicCommandImpl;
 import io.zeebe.gateway.impl.command.WorkflowInstanceCommandImpl;
 import io.zeebe.gateway.impl.event.DeploymentEventImpl;
 import io.zeebe.gateway.impl.event.IncidentEventImpl;
 import io.zeebe.gateway.impl.event.JobEventImpl;
 import io.zeebe.gateway.impl.event.RaftEventImpl;
-import io.zeebe.gateway.impl.event.TopicEventImpl;
 import io.zeebe.gateway.impl.event.WorkflowInstanceEventImpl;
 import io.zeebe.gateway.impl.subscription.topic.BiEnumMap;
 import java.util.HashMap;
@@ -58,9 +54,6 @@ public class RecordClassMapping {
 
     RECORD_CLASSES.put(RecordType.EVENT, ValueType.RAFT, RaftEventImpl.class);
 
-    RECORD_CLASSES.put(RecordType.COMMAND, ValueType.TOPIC, TopicCommandImpl.class);
-    RECORD_CLASSES.put(RecordType.EVENT, ValueType.TOPIC, TopicEventImpl.class);
-
     RECORD_CLASSES.put(
         RecordType.COMMAND, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceCommandImpl.class);
     RECORD_CLASSES.put(
@@ -69,10 +62,7 @@ public class RecordClassMapping {
     RECORD_CLASSES.put(RecordType.COMMAND, ValueType.DEPLOYMENT, DeploymentCommandImpl.class);
     RECORD_CLASSES.put(RecordType.EVENT, ValueType.DEPLOYMENT, DeploymentEventImpl.class);
 
-    RECORD_CLASSES.put(RecordType.COMMAND, ValueType.TOPIC, TopicCommandImpl.class);
-    RECORD_CLASSES.put(RecordType.EVENT, ValueType.TOPIC, TopicEventImpl.class);
-
-    for (ValueType valueType : ValueType.values()) {
+    for (final ValueType valueType : ValueType.values()) {
       final Class<? extends RecordImpl> commandClass =
           RECORD_CLASSES.get(RecordType.COMMAND, valueType);
       RECORD_CLASSES.put(RecordType.COMMAND_REJECTION, valueType, commandClass);
@@ -93,23 +83,21 @@ public class RecordClassMapping {
     RECORD_IMPL_CLASS_MAPPING.put(RaftEvent.class, RaftEventImpl.class);
     RECORD_IMPL_CLASS_MAPPING.put(DeploymentEvent.class, DeploymentEventImpl.class);
     RECORD_IMPL_CLASS_MAPPING.put(DeploymentCommand.class, DeploymentCommandImpl.class);
-    RECORD_IMPL_CLASS_MAPPING.put(TopicEvent.class, TopicEventImpl.class);
-    RECORD_IMPL_CLASS_MAPPING.put(TopicCommand.class, TopicCommandImpl.class);
   }
 
   @SuppressWarnings("unchecked")
   public static <T extends RecordImpl> Class<T> getRecordImplClass(
-      RecordType recordType, ValueType valueType) {
+      final RecordType recordType, final ValueType valueType) {
     return (Class<T>) RECORD_CLASSES.get(recordType, valueType);
   }
 
   @SuppressWarnings("unchecked")
-  public static <T extends Record> Class<T> getRecordImplClass(Class<T> recordClass) {
+  public static <T extends Record> Class<T> getRecordImplClass(final Class<T> recordClass) {
     return (Class<T>) RECORD_IMPL_CLASS_MAPPING.get(recordClass);
   }
 
   @SuppressWarnings("unchecked")
-  public static <T extends Record> Class<T> getRecordOfImplClass(Class<T> implClass) {
+  public static <T extends Record> Class<T> getRecordOfImplClass(final Class<T> implClass) {
     return RECORD_IMPL_CLASS_MAPPING
         .entrySet()
         .stream()

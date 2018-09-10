@@ -17,13 +17,11 @@
  */
 package io.zeebe.broker.topic;
 
-import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.broker.clustering.orchestration.topic.PartitionsResponse;
-import io.zeebe.util.buffer.BufferUtil;
+import io.zeebe.broker.clustering.base.partitions.PartitionsResponse;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.io.DirectBufferInputStream;
 import org.junit.Test;
@@ -36,9 +34,9 @@ public class PartitionsResponseTest {
     // given
     final PartitionsResponse response = new PartitionsResponse();
 
-    response.addPartition(1, BufferUtil.wrapString(DEFAULT_TOPIC));
-    response.addPartition(2, BufferUtil.wrapString("foo"));
-    response.addPartition(3, BufferUtil.wrapString("foo"));
+    response.addPartition(1);
+    response.addPartition(2);
+    response.addPartition(3);
 
     // when
     final UnsafeBuffer buf = new UnsafeBuffer(new byte[response.getLength()]);
@@ -57,17 +55,14 @@ public class PartitionsResponseTest {
 
     final JsonNode partition3 = partitions.get(0);
     assertThat(partition3.isObject()).isTrue();
-    assertThat(partition3.get("topic").textValue()).isEqualTo(DEFAULT_TOPIC);
     assertThat(partition3.get("id").numberValue()).isEqualTo(1);
 
     final JsonNode partition1 = partitions.get(1);
     assertThat(partition1.isObject()).isTrue();
-    assertThat(partition1.get("topic").textValue()).isEqualTo("foo");
     assertThat(partition1.get("id").numberValue()).isEqualTo(2);
 
     final JsonNode partition2 = partitions.get(2);
     assertThat(partition2.isObject()).isTrue();
-    assertThat(partition2.get("topic").textValue()).isEqualTo("foo");
     assertThat(partition2.get("id").numberValue()).isEqualTo(3);
   }
 }

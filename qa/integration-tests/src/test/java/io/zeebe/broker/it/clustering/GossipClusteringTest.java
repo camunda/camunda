@@ -15,7 +15,6 @@
  */
 package io.zeebe.broker.it.clustering;
 
-import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.ClientRule;
@@ -51,13 +50,8 @@ public class GossipClusteringTest {
 
   @Test
   public void shouldDistributePartitionsAndLeaderInformationInCluster() {
-    // given
-
-    // when
-    clusteringRule.waitForTopic(PARTITION_COUNT);
-
     // then
-    final long partitionLeaderCount = clusteringRule.getPartitionLeaderCountForTopic(DEFAULT_TOPIC);
+    final long partitionLeaderCount = clusteringRule.getPartitionLeaderCount();
     assertThat(partitionLeaderCount).isEqualTo(PARTITION_COUNT);
   }
 

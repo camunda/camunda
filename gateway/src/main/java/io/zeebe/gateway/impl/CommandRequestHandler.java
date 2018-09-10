@@ -49,7 +49,8 @@ public class CommandRequestHandler implements RequestResponseHandler {
   protected int serializedCommandLength = 0;
 
   @SuppressWarnings("rawtypes")
-  public CommandRequestHandler(ZeebeObjectMapperImpl objectMapper, CommandImpl command) {
+  public CommandRequestHandler(
+      final ZeebeObjectMapperImpl objectMapper, final CommandImpl command) {
     this.objectMapper = objectMapper;
     this.command = command.getCommand();
     serialize();
@@ -109,18 +110,19 @@ public class CommandRequestHandler implements RequestResponseHandler {
   }
 
   @Override
-  public void write(MutableDirectBuffer buffer, int offset) {
+  public void write(final MutableDirectBuffer buffer, final int offset) {
     buffer.putBytes(offset, serializedCommand, 0, serializedCommandLength);
   }
 
   @Override
-  public boolean handlesResponse(MessageHeaderDecoder responseHeader) {
+  public boolean handlesResponse(final MessageHeaderDecoder responseHeader) {
     return responseHeader.schemaId() == ExecuteCommandResponseDecoder.SCHEMA_ID
         && responseHeader.templateId() == ExecuteCommandResponseDecoder.TEMPLATE_ID;
   }
 
   @Override
-  public RecordImpl getResult(DirectBuffer buffer, int offset, int blockLength, int version) {
+  public RecordImpl getResult(
+      final DirectBuffer buffer, final int offset, final int blockLength, final int version) {
     decoder.wrap(buffer, offset, blockLength, version);
 
     final int partitionId = decoder.partitionId();
@@ -162,7 +164,6 @@ public class CommandRequestHandler implements RequestResponseHandler {
     final RecordMetadataImpl metadata = result.getMetadata();
     metadata.setKey(key);
     metadata.setPartitionId(partitionId);
-    metadata.setTopicName(command.getMetadata().getTopicName());
     metadata.setPosition(position);
     metadata.setSourceRecordPosition(decoder.sourceRecordPosition());
     metadata.setRecordType(recordType);
@@ -174,7 +175,7 @@ public class CommandRequestHandler implements RequestResponseHandler {
   }
 
   private String buildRejectionMessage(
-      RecordImpl command, RejectionType rejectionType, String rejectionReason) {
+      final RecordImpl command, final RejectionType rejectionType, final String rejectionReason) {
     final long key = command.getMetadata().getKey();
     final StringBuilder sb = new StringBuilder();
     sb.append("Command (");
@@ -195,7 +196,7 @@ public class CommandRequestHandler implements RequestResponseHandler {
     return sb.toString();
   }
 
-  private String describeRejectionType(RejectionType rejectionType) {
+  private String describeRejectionType(final RejectionType rejectionType) {
     switch (rejectionType) {
       case BAD_VALUE:
         return "It has an invalid value.";
@@ -210,12 +211,6 @@ public class CommandRequestHandler implements RequestResponseHandler {
   }
 
   @Override
-  public String getTargetTopic() {
-    final RecordMetadata metadata = command.getMetadata();
-    return metadata.getTopicName();
-  }
-
-  @Override
   public int getTargetPartition() {
     if (command.hasValidPartitionId()) {
       return command.getMetadata().getPartitionId();
@@ -225,7 +220,7 @@ public class CommandRequestHandler implements RequestResponseHandler {
   }
 
   @Override
-  public void onSelectedPartition(int partitionId) {
+  public void onSelectedPartition(final int partitionId) {
     command.setPartitionId(partitionId);
     encoder.partitionId(partitionId);
   }
@@ -233,9 +228,7 @@ public class CommandRequestHandler implements RequestResponseHandler {
   @Override
   public String describeRequest() {
     final RecordMetadata metadata = command.getMetadata();
-    return "[ topic = "
-        + metadata.getTopicName()
-        + ", partition = "
+    return "[ partition = "
         + (command.hasValidPartitionId() ? metadata.getPartitionId() : "any")
         + ", value type = "
         + metadata.getValueType()

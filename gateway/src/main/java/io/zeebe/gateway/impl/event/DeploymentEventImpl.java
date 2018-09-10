@@ -56,8 +56,6 @@ public class DeploymentEventImpl extends DeploymentRecordImpl implements Deploym
     final StringBuilder builder = new StringBuilder();
     builder.append("DeploymentEvent [state=");
     builder.append(getState());
-    builder.append(", topic=");
-    builder.append(getDeploymentTopic());
     builder.append(", resource=");
     builder.append(getResources());
     builder.append(", workflows=");

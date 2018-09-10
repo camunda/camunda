@@ -18,25 +18,21 @@ package io.zeebe.test.util.record;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.RecordValue;
 import io.zeebe.exporter.record.value.DeploymentRecordValue;
-import io.zeebe.exporter.record.value.IdRecordValue;
 import io.zeebe.exporter.record.value.IncidentRecordValue;
 import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.exporter.record.value.MessageRecordValue;
 import io.zeebe.exporter.record.value.MessageSubscriptionRecordValue;
 import io.zeebe.exporter.record.value.RaftRecordValue;
-import io.zeebe.exporter.record.value.TopicRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.exporter.spi.Exporter;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.DeploymentIntent;
-import io.zeebe.protocol.intent.IdIntent;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.intent.RaftIntent;
-import io.zeebe.protocol.intent.TopicIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.test.util.stream.StreamWrapperException;
@@ -93,22 +89,6 @@ public class RecordingExporter implements Exporter {
   public static MessageSubscriptionRecordStream messageSubscriptionRecords(
       final MessageSubscriptionIntent intent) {
     return messageSubscriptionRecords().withIntent(intent);
-  }
-
-  public static TopicRecordStream topicRecords() {
-    return new TopicRecordStream(records(ValueType.TOPIC, TopicRecordValue.class));
-  }
-
-  public static TopicRecordStream topicRecords(final TopicIntent intent) {
-    return topicRecords().withIntent(intent);
-  }
-
-  public static IdRecordStream idRecords() {
-    return new IdRecordStream(records(ValueType.ID, IdRecordValue.class));
-  }
-
-  public static IdRecordStream idRecords(final IdIntent intent) {
-    return idRecords().withIntent(intent);
   }
 
   public static DeploymentRecordStream deploymentRecords() {

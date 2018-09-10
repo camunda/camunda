@@ -15,7 +15,6 @@
  */
 package io.zeebe.gateway.config;
 
-import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.gateway.ClientProperties;
@@ -119,13 +118,12 @@ public class ClientConfigurationTest {
 
     assertThat(configuration.getDefaultJobWorkerName()).isEqualTo("default");
     assertThat(configuration.getDefaultJobTimeout()).isEqualTo(Duration.ofMinutes(5));
-    assertThat(configuration.getDefaultTopic()).isEqualTo(DEFAULT_TOPIC);
     assertThat(configuration.getDefaultTopicSubscriptionBufferSize()).isEqualTo(1024);
     assertThat(configuration.getDefaultJobSubscriptionBufferSize()).isEqualTo(32);
     assertThat(configuration.getDefaultMessageTimeToLive()).isEqualTo(Duration.ofHours(1));
   }
 
-  private ZeebeClient buildClient(Properties config) {
+  private ZeebeClient buildClient(final Properties config) {
     final ZeebeClient client =
         ZeebeClient.newClientBuilder()
             .withProperties(config)

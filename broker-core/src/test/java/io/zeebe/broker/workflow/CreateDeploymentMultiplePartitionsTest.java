@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.protocol.Protocol.DEFAULT_TOPIC;
+import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setPartitionCount;
 import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -61,8 +61,7 @@ public class CreateDeploymentMultiplePartitionsTest {
   public static final int PARTITION_ID = DEPLOYMENT_PARTITION;
   public static final int PARTITION_COUNT = 3;
 
-  public EmbeddedBrokerRule brokerRule =
-      new EmbeddedBrokerRule("zeebe.test.increased.partitions.cfg.toml");
+  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(setPartitionCount(3));
 
   public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
 
@@ -77,7 +76,6 @@ public class CreateDeploymentMultiplePartitionsTest {
             .partitionId(Protocol.DEPLOYMENT_PARTITION)
             .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
             .command()
-            .put("topicName", DEFAULT_TOPIC)
             .put(
                 "resources",
                 Collections.singletonList(deploymentResource(bpmnXml(WORKFLOW), "process.bpmn")))
@@ -107,7 +105,7 @@ public class CreateDeploymentMultiplePartitionsTest {
     // when
     final ExecuteCommandResponse resp =
         apiRule
-            .topic()
+            .partition()
             .deployWithResponse(
                 yamlWorkflow, ResourceType.YAML_WORKFLOW.name(), "simple-workflow.yaml");
 
@@ -159,7 +157,6 @@ public class CreateDeploymentMultiplePartitionsTest {
             .partitionId(DEPLOYMENT_PARTITION)
             .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
             .command()
-            .put("topicName", DEFAULT_TOPIC)
             .put("resources", resources)
             .done()
             .sendAndAwait();
@@ -189,8 +186,8 @@ public class CreateDeploymentMultiplePartitionsTest {
     // given
 
     // when
-    final ExecuteCommandResponse d1 = apiRule.topic().deployWithResponse(WORKFLOW);
-    final ExecuteCommandResponse d2 = apiRule.topic().deployWithResponse(WORKFLOW);
+    final ExecuteCommandResponse d1 = apiRule.partition().deployWithResponse(WORKFLOW);
+    final ExecuteCommandResponse d2 = apiRule.partition().deployWithResponse(WORKFLOW);
 
     // then
     final Map<String, Object> workflow1 = getDeployedWorkflow(d1, 0);
@@ -226,7 +223,6 @@ public class CreateDeploymentMultiplePartitionsTest {
         .partitionId(Protocol.DEPLOYMENT_PARTITION)
         .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
         .command()
-        .put("topicName", DEFAULT_TOPIC)
         .put(
             "resources",
             Collections.singletonList(deploymentResource(bpmnXml(WORKFLOW), "process.bpmn")))
@@ -323,7 +319,7 @@ public class CreateDeploymentMultiplePartitionsTest {
       final Consumer<SubscribedRecord> deploymentAssert) {
     final SubscribedRecord deploymentCreatedEvent =
         apiRule
-            .topic(expectedPartition)
+            .partition(expectedPartition)
             .receiveRecords()
             .skipUntil(r -> r.valueType() == ValueType.DEPLOYMENT)
             .filter(
@@ -344,7 +340,7 @@ public class CreateDeploymentMultiplePartitionsTest {
       final int expectedPartition, final long expectedKey) {
     final SubscribedRecord deploymentCreateCommandRejection =
         apiRule
-            .topic(expectedPartition)
+            .partition(expectedPartition)
             .receiveRecords()
             .filter(
                 r ->
@@ -363,7 +359,7 @@ public class CreateDeploymentMultiplePartitionsTest {
       final int expectedPartition, final Consumer<SubscribedRecord> deploymentAssert) {
     final SubscribedRecord deploymentCreatedEvent =
         apiRule
-            .topic(expectedPartition)
+            .partition(expectedPartition)
             .receiveRecords()
             .skipUntil(r -> r.valueType() == ValueType.DEPLOYMENT)
             .filter(

@@ -31,17 +31,17 @@ public class KeyGenerator extends UnpackedObject {
   private static final int JOB_OFFSET = 2;
   private static final int INCIDENT_OFFSET = 3;
   private static final int DEPLOYMENT_OFFSET = 4;
-  private static final int TOPIC_OFFSET = 5;
 
   private final LongProperty nextKey;
   private final int stepSize;
   private final KeyStateController keyStateController;
 
-  public KeyGenerator(long initialValue, int stepSize) {
+  public KeyGenerator(final long initialValue, final int stepSize) {
     this(initialValue, stepSize, null);
   }
 
-  public KeyGenerator(long initialValue, int stepSize, KeyStateController keyStateController) {
+  public KeyGenerator(
+      final long initialValue, final int stepSize, final KeyStateController keyStateController) {
     nextKey = new LongProperty("nextKey", initialValue);
     this.stepSize = stepSize;
     declareProperty(nextKey);
@@ -68,13 +68,13 @@ public class KeyGenerator extends UnpackedObject {
     return key;
   }
 
-  public void setKey(long key) {
+  public void setKey(final long key) {
     final long nextKey = key + stepSize;
     this.nextKey.setValue(nextKey);
     putLatestKeyIntoController(key);
   }
 
-  private void putLatestKeyIntoController(long key) {
+  private void putLatestKeyIntoController(final long key) {
     if (keyStateController != null) {
       keyStateController.putLatestKey(key);
     }
@@ -84,7 +84,7 @@ public class KeyGenerator extends UnpackedObject {
     return new KeyGenerator(WF_OFFSET, STEP_SIZE);
   }
 
-  public static KeyGenerator createJobKeyGenerator(KeyStateController keyStateController) {
+  public static KeyGenerator createJobKeyGenerator(final KeyStateController keyStateController) {
     return new KeyGenerator(JOB_OFFSET, STEP_SIZE, keyStateController);
   }
 
@@ -92,11 +92,8 @@ public class KeyGenerator extends UnpackedObject {
     return new KeyGenerator(INCIDENT_OFFSET, STEP_SIZE);
   }
 
-  public static KeyGenerator createDeploymentKeyGenerator(KeyStateController keyStateController) {
+  public static KeyGenerator createDeploymentKeyGenerator(
+      final KeyStateController keyStateController) {
     return new KeyGenerator(DEPLOYMENT_OFFSET, STEP_SIZE, keyStateController);
-  }
-
-  public static KeyGenerator createTopicKeyGenerator() {
-    return new KeyGenerator(TOPIC_OFFSET, STEP_SIZE);
   }
 }

@@ -18,11 +18,7 @@
 package io.zeebe.broker.clustering.base.snapshots;
 
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.clustering.api.ErrorResponse;
-import io.zeebe.broker.clustering.api.FetchSnapshotChunkRequest;
-import io.zeebe.broker.clustering.api.FetchSnapshotChunkResponse;
-import io.zeebe.broker.clustering.api.ListSnapshotsRequest;
-import io.zeebe.broker.clustering.api.ListSnapshotsResponse;
+import io.zeebe.broker.clustering.api.*;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.ReadableTopology;
@@ -102,10 +98,7 @@ public class SnapshotReplicationService extends Actor
     partition = partitionInjector.getValue();
     topologyManager = topologyManagerInjector.getValue();
     listSnapshotsRequest.setPartitionId(partition.getInfo().getPartitionId());
-    actorName =
-        String.format(
-            "%s-%d-snap-repl",
-            partition.getInfo().getTopicName(), partition.getInfo().getPartitionId());
+    actorName = String.format("partition-%d-snap-repl", partition.getInfo().getPartitionId());
 
     LOG.debug("Starting replication for partition {}", partition.getInfo());
     startContext.async(startContext.getScheduler().submitActor(this), true);

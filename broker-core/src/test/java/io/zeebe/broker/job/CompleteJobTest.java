@@ -33,7 +33,7 @@ import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
-import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
+import io.zeebe.test.broker.protocol.clientapi.TestPartitionClient;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
@@ -48,13 +48,13 @@ public class CompleteJobTest {
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
   public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
 
-  private TestTopicClient testClient;
+  private TestPartitionClient testClient;
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
   @Before
   public void setUp() {
-    testClient = apiRule.topic();
+    testClient = apiRule.partition();
   }
 
   @Test
@@ -271,7 +271,7 @@ public class CompleteJobTest {
     assertThat(response.intent()).isEqualTo(JobIntent.COMPLETED);
   }
 
-  private ExecuteCommandResponse createJob(String type) {
+  private ExecuteCommandResponse createJob(final String type) {
     return apiRule
         .createCmdRequest()
         .type(ValueType.JOB, JobIntent.CREATE)
@@ -282,7 +282,7 @@ public class CompleteJobTest {
         .sendAndAwait();
   }
 
-  private ExecuteCommandResponse completeJob(long key, Map<String, Object> event) {
+  private ExecuteCommandResponse completeJob(final long key, final Map<String, Object> event) {
     return apiRule
         .createCmdRequest()
         .type(ValueType.JOB, JobIntent.COMPLETE)

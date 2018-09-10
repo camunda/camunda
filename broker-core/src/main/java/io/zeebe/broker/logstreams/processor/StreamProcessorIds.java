@@ -39,19 +39,13 @@ public class StreamProcessorIds {
 
   public static final int MESSAGE_PROCESSOR_ID = 90;
 
-  public static final int SYSTEM_CREATE_TOPIC_PROCESSOR_ID = 1000;
-  public static final int SYSTEM_COLLECT_PARTITION_PROCESSOR_ID = 1001;
-  public static final int SYSTEM_ID_PROCESSOR_ID = 1002;
-
   public static final int EXPORTER_PROCESSOR_ID = 1003;
-
-  public static final int CLUSTER_TOPIC_STATE = 2000;
 
   // BEWARE: everything above 3000 is reserved for job activation processors
   // via https://github.com/zeebe-io/zeebe/issues/927
   public static final int JOB_ACTIVATE_STREAM_PROCESSOR_BASE_ID = 3000;
 
-  public static int generateJobActivationStreamProcessorId(DirectBuffer type) {
+  public static int generateJobActivationStreamProcessorId(final DirectBuffer type) {
     final int typeHash = BufferUtil.bufferContentsHash(type);
     final int idRange = Integer.MAX_VALUE - JOB_ACTIVATE_STREAM_PROCESSOR_BASE_ID;
 
