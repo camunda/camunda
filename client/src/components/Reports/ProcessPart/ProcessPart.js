@@ -1,6 +1,8 @@
 import React from 'react';
 import {Button, Modal, BPMNDiagram, ClickBehavior, ActionItem} from 'components';
 
+import PartHighlight from './PartHighlight';
+
 import './ProcessPart.css';
 
 export default class ProcessPart extends React.Component {
@@ -54,6 +56,7 @@ export default class ProcessPart extends React.Component {
   }
 
   renderModal() {
+    const selection = [this.state.start, this.state.end].filter(v => v);
     return (
       <Modal
         open={this.state.modalOpen}
@@ -81,8 +84,9 @@ export default class ProcessPart extends React.Component {
               <ClickBehavior
                 setSelectedNodes={this.setSelectedNodes}
                 onClick={this.selectNode}
-                selectedNodes={[this.state.start, this.state.end].filter(v => v)}
+                selectedNodes={selection}
               />
+              <PartHighlight nodes={selection} />
             </BPMNDiagram>
           </div>
         </Modal.Content>
