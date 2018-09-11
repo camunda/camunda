@@ -212,17 +212,6 @@ public class ZeebeValidationTest {
       {
         "no-start-event-sub-process.bpmn",
         Arrays.asList(expect("subProcess", "Must have exactly one start event"))
-      },
-      {
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .parallelGateway("fork")
-            .parallelGateway("join")
-            .moveToNode("fork")
-            .connectTo("join")
-            .endEvent()
-            .done(),
-        Arrays.asList(expect("join", "Must not have more than one incoming sequence flow"))
       }
     };
   }

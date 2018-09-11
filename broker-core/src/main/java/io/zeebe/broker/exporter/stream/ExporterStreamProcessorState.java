@@ -95,7 +95,7 @@ public class ExporterStreamProcessorState extends StateController {
   public ExporterRecord newExporterRecord() {
     final ExporterRecord record = new ExporterRecord();
 
-    try (final RocksIterator iterator = getDb().newIterator()) {
+    try (RocksIterator iterator = getDb().newIterator()) {
       for (iterator.seekToFirst(); iterator.isValid(); iterator.next()) {
         final ExporterPosition position = record.getPositions().add();
         final long value = toLong(ByteBuffer.wrap(iterator.value()));

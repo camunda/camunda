@@ -18,24 +18,21 @@
 package io.zeebe.broker.workflow.processor;
 
 import io.zeebe.broker.logstreams.processor.TypedBatchWriter;
+import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
-import io.zeebe.broker.workflow.index.ElementInstance;
-import io.zeebe.broker.workflow.index.ElementInstanceIndex;
+import io.zeebe.broker.workflow.index.WorkflowEngineState;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
-public class ElementInstanceWriter {
+public class EventOutput {
 
-  private final ElementInstanceIndex scopeInstances;
-  private final WorkflowInstanceMetrics metrics;
+  private final WorkflowEngineState materializedState;
 
   private TypedStreamWriter streamWriter;
   private TypedBatchWriter batchWriter;
 
-  public ElementInstanceWriter(
-      ElementInstanceIndex scopeInstances, WorkflowInstanceMetrics metrics) {
-    this.scopeInstances = scopeInstances;
-    this.metrics = metrics;
+  public EventOutput(WorkflowEngineState materializedState) {
+    this.materializedState = materializedState;
   }
 
   public void setStreamWriter(TypedStreamWriter streamWriter) {
@@ -69,17 +66,7 @@ public class ElementInstanceWriter {
       key = streamWriter.writeNewEvent(state, value);
     }
 
-    // only instances that have a multi-state lifecycle are represented in the index
-    if (WorkflowInstanceLifecycle.isInitialState(state)) {
-      final long scopeInstanceKey = value.getScopeInstanceKey();
-
-      if (scopeInstanceKey >= 0) {
-        final ElementInstance flowScopeInstance = scopeInstances.getInstance(scopeInstanceKey);
-        scopeInstances.newInstance(flowScopeInstance, key, value, state);
-      } else {
-        scopeInstances.newInstance(key, value, state);
-      }
-    }
+    materializedState.onEventProduced(key, state, value);
 
     return key;
   }
@@ -92,20 +79,14 @@ public class ElementInstanceWriter {
       streamWriter.writeFollowUpEvent(key, state, value);
     }
 
-    if (WorkflowInstanceLifecycle.isFinalState(state)) {
-      scopeInstances.removeInstance(key);
-    } else {
-      final ElementInstance scopeInstance = scopeInstances.getInstance(key);
-      scopeInstance.setState(state);
-      scopeInstance.setValue(value);
-    }
+    materializedState.onEventProduced(key, state, value);
+  }
 
-    if (key == value.getWorkflowInstanceKey()) {
-      if (state == WorkflowInstanceIntent.ELEMENT_TERMINATED) {
-        metrics.countInstanceCanceled();
-      } else if (state == WorkflowInstanceIntent.ELEMENT_COMPLETED) {
-        metrics.coundInstanceCompleted();
-      }
-    }
+  public void deferEvent(final TypedRecord<WorkflowInstanceRecord> event) {
+    materializedState.deferEvent(event);
+  }
+
+  public void consumeDeferredEvent(long scopeKey, long key) {
+    materializedState.consumeDeferredEvent(scopeKey, key);
   }
 }

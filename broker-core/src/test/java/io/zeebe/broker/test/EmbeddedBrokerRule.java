@@ -188,7 +188,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
 
   public void startBroker() {
     if (brokerCfg == null) {
-      try (final InputStream configStream = configSupplier.get()) {
+      try (InputStream configStream = configSupplier.get()) {
         if (configStream == null) {
           brokerCfg = new BrokerCfg();
         } else {

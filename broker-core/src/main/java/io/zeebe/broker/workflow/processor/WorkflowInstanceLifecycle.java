@@ -58,6 +58,14 @@ public class WorkflowInstanceLifecycle {
     return state == WorkflowInstanceIntent.ELEMENT_READY;
   }
 
+  public static boolean isElementInstanceState(WorkflowInstanceIntent state) {
+    return ELEMENT_INSTANCE_STATES.contains(state);
+  }
+
+  public static boolean isTokenState(WorkflowInstanceIntent state) {
+    return !isElementInstanceState(state);
+  }
+
   public static boolean canTerminate(WorkflowInstanceIntent currentState) {
     return TERMINATABLE_STATES.contains(currentState);
   }
