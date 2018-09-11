@@ -5,6 +5,7 @@ Object {
   "queries": Array [
     Object {
       "excludeIds": Array [],
+      "finished": undefined,
       "ids": Array [],
       "incidents": true,
       "running": true,

@@ -1,5 +1,6 @@
 import {isValidJSON} from 'modules/utils';
 import {getSelectionById} from 'modules/utils/selection';
+import {parseFilterForRequest} from 'modules/utils/filter';
 
 export function parseQueryString(queryString = '') {
   var params = {};
@@ -42,8 +43,7 @@ export function getPayload({selectionId, state}) {
     // makes arrays out of 'ids' and 'excludeIds' Sets.
     queries: [
       {
-        ...filter,
-        ...getParentFilter(filter),
+        ...parseFilterForRequest(filter),
         ...selection,
         ids: [...(selection.ids || [])],
         excludeIds: [...(selection.excludeIds || [])]

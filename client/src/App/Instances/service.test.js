@@ -1,4 +1,4 @@
-import {parseQueryString, getParentFilter, getPayload} from './service';
+import {parseQueryString, getPayload} from './service';
 
 describe('Instances service', () => {
   describe('parseQueryString', () => {
@@ -35,20 +35,7 @@ describe('Instances service', () => {
 });
 
 describe('Selection services', () => {
-  let filter;
   let state;
-
-  it('should return parent filter', () => {
-    //when
-    filter = {incidents: true};
-    //then
-    expect(getParentFilter(filter)).toEqual({running: true});
-
-    //when
-    filter = {completed: true};
-    //then
-    expect(getParentFilter(filter)).toEqual({finished: true});
-  });
 
   it('should return payload for create new Selection', () => {
     //when
