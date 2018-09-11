@@ -16,8 +16,10 @@ import {ALL_VERSIONS_OPTION} from './constants';
 
 const COMPLETE_FILTER = {
   ...DEFAULT_FILTER,
-  ids: ['a', 'b', 'c'],
-  errorMessage: 'This is an error message'
+  ids: 'a, b, c',
+  errorMessage: 'This is an error message',
+  startDate: '08 October 2018',
+  endDate: '10-10-2018'
 };
 
 const groupedWorkflowsMock = [
@@ -124,8 +126,8 @@ describe('Filters', () => {
       name: ''
     });
     expect(node.state().workflowIds).toEqual('');
-    expect(node.state().startDate).toEqual('');
-    expect(node.state().endDate).toEqual('');
+    expect(node.state().filter.startDate).toEqual('');
+    expect(node.state().filter.endDate).toEqual('');
     expect(node.state().filter.ids).toEqual('');
     expect(node.state().filter.errorMessage).toEqual('');
   });
@@ -169,7 +171,7 @@ describe('Filters', () => {
       expect(field.type()).toEqual(TextInput);
       expect(field.props().name).toEqual('errorMessage');
       expect(field.props().onBlur).toEqual(node.instance().handleFieldChange);
-      expect(field.props().onChange).toEqual(node.instance().onFieldChange);
+      expect(field.props().onChange).toEqual(node.instance().handleInputChange);
     });
 
     it('should initialize the field with empty value', () => {
@@ -195,7 +197,7 @@ describe('Filters', () => {
     it('should update state when input receives text', () => {
       const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
 
-      node.instance().onFieldChange({
+      node.instance().handleInputChange({
         target: {value: 'error message', name: 'errorMessage'}
       });
 
@@ -228,7 +230,7 @@ describe('Filters', () => {
       });
 
       // then
-      expect(spy).toHaveBeenCalledWith({errorMessage: null});
+      expect(spy).toHaveBeenCalledWith({errorMessage: ''});
     });
   });
 
@@ -243,7 +245,7 @@ describe('Filters', () => {
       expect(field.type()).toEqual(Textarea);
       expect(field.props().name).toEqual('ids');
       expect(field.props().onBlur).toEqual(node.instance().handleFieldChange);
-      expect(field.props().onChange).toEqual(node.instance().onFieldChange);
+      expect(field.props().onChange).toEqual(node.instance().handleInputChange);
     });
 
     it('should initialize the field with empty value', () => {
@@ -255,11 +257,11 @@ describe('Filters', () => {
     it('should update state when input receives text', () => {
       const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
 
-      node.instance().onFieldChange({
-        target: {value: "['a', 'b', 'c']", name: 'ids'}
+      node.instance().handleInputChange({
+        target: {value: 'aa, ab, ac', name: 'ids'}
       });
 
-      expect(node.state().filter.ids).toEqual("['a', 'b', 'c']");
+      expect(node.state().filter.ids).toEqual('aa, ab, ac');
     });
 
     it('should be prefilled with the value from props.filter.ids ', async () => {
@@ -270,8 +272,8 @@ describe('Filters', () => {
       node.update();
       const field = node.find({name: 'ids'});
       // then
-      expect(node.state().filter.ids).toEqual(['a', 'b', 'c']);
-      expect(field.props().value).toEqual(['a', 'b', 'c']);
+      expect(node.state().filter.ids).toEqual('a, b, c');
+      expect(field.props().value).toEqual('a, b, c');
     });
 
     it('should call onFilterChange with the right instance ids', () => {
@@ -285,9 +287,7 @@ describe('Filters', () => {
         .handleFieldChange({target: {value: instanceIds, name: 'ids'}});
 
       // then
-      expect(spy).toHaveBeenCalledWith({
-        ids: ['4294968008', '4294972032', '4294974064', '4294976280']
-      });
+      expect(spy).toHaveBeenCalledWith({ids: instanceIds});
     });
 
     it('should call onFilterChange with an empty array', () => {
@@ -303,7 +303,7 @@ describe('Filters', () => {
 
       // then
       expect(spy).toHaveBeenCalledWith({
-        ids: []
+        ids: ''
       });
     });
   });
@@ -619,32 +619,36 @@ describe('Filters', () => {
       expect(field.props().name).toEqual('startDate');
       expect(field.props().placeholder).toEqual('Start Date');
       expect(field.props().onBlur).toEqual(node.instance().handleFieldChange);
-      expect(field.props().onChange).toEqual(
-        node.instance().handleDateFieldChange
-      );
+      expect(field.props().onChange).toEqual(node.instance().handleInputChange);
+    });
+
+    it('should be prefilled with the value from props.filter.startDate', async () => {
+      const node = shallow(<Filters {...mockProps} filter={COMPLETE_FILTER} />);
+
+      //when
+      await flushPromises();
+      node.update();
+      const field = node.find({name: 'startDate'});
+      // then
+      expect(node.state().filter.startDate).toEqual('08 October 2018');
+      expect(field.props().value).toEqual('08 October 2018');
     });
 
     it('should update the state with new value', async () => {
       const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
-      const handlerSpy = jest.spyOn(node.instance(), 'handleDateFieldChange');
 
       //when
       await flushPromises();
 
-      node.instance().handleDateFieldChange({
+      node.instance().handleInputChange({
         target: {value: '25 January 2009', name: 'startDate'}
       });
       node.update();
 
-      // then
-      expect(handlerSpy).toHaveBeenCalled();
-      expect(node.find({name: 'startDate'}).props().value).toEqual(
-        '25 January 2009'
-      );
-      expect(node.state().startDate).toEqual('25 January 2009');
+      expect(node.state().filter.startDate).toEqual('25 January 2009');
     });
 
-    it('should update the filters with startDateAfter and startDateBefore values', async () => {
+    it('should update the filters in Instances page', async () => {
       const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
 
       //when
@@ -657,12 +661,7 @@ describe('Filters', () => {
 
       // then
       expect(spy).toHaveBeenCalled();
-      expect(spy.mock.calls[0][0].startDateAfter).toContain(
-        '2009-01-25T00:00:00.000'
-      );
-      expect(spy.mock.calls[0][0].startDateBefore).toContain(
-        '2009-01-26T00:00:00.000'
-      );
+      expect(spy.mock.calls[0][0].startDate).toBe('25 January 2009');
     });
 
     it('should send null values for empty start dates', async () => {
@@ -677,25 +676,7 @@ describe('Filters', () => {
       node.update();
 
       // then
-      expect(spy).toHaveBeenCalledWith({
-        startDateAfter: null,
-        startDateBefore: null
-      });
-    });
-
-    it('should not update the filters when startDate is invalid', async () => {
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
-
-      //when
-      await flushPromises();
-
-      node.instance().handleFieldChange({
-        target: {value: 'invalid date', name: 'startDate'}
-      });
-      node.update();
-
-      // then
-      expect(spy).toHaveBeenCalledWith({});
+      expect(spy).toHaveBeenCalledWith({startDate: ''});
     });
   });
 
@@ -711,32 +692,36 @@ describe('Filters', () => {
       expect(field.props().name).toEqual('endDate');
       expect(field.props().placeholder).toEqual('End Date');
       expect(field.props().onBlur).toEqual(node.instance().handleFieldChange);
-      expect(field.props().onChange).toEqual(
-        node.instance().handleDateFieldChange
-      );
+      expect(field.props().onChange).toEqual(node.instance().handleInputChange);
+    });
+
+    it('should be prefilled with the value from props.filter.endDate', async () => {
+      const node = shallow(<Filters {...mockProps} filter={COMPLETE_FILTER} />);
+
+      //when
+      await flushPromises();
+      node.update();
+      const field = node.find({name: 'endDate'});
+      // then
+      expect(node.state().filter.endDate).toEqual('10-10-2018');
+      expect(field.props().value).toEqual('10-10-2018');
     });
 
     it('should update the state with new value', async () => {
       const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
-      const handlerSpy = jest.spyOn(node.instance(), 'handleDateFieldChange');
 
       //when
       await flushPromises();
 
-      node.instance().handleDateFieldChange({
+      node.instance().handleInputChange({
         target: {value: '25 January 2009', name: 'endDate'}
       });
       node.update();
 
-      // then
-      expect(handlerSpy).toHaveBeenCalled();
-      expect(node.find({name: 'endDate'}).props().value).toEqual(
-        '25 January 2009'
-      );
-      expect(node.state().endDate).toEqual('25 January 2009');
+      expect(node.state().filter.endDate).toEqual('25 January 2009');
     });
 
-    it('should update the filters with endDateAfter and endDateBefore values', async () => {
+    it('should update the filters in Instances page', async () => {
       const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
 
       //when
@@ -749,45 +734,7 @@ describe('Filters', () => {
 
       // then
       expect(spy).toHaveBeenCalled();
-      expect(spy.mock.calls[0][0].endDateAfter).toContain(
-        '2009-01-25T00:00:00.000'
-      );
-      expect(spy.mock.calls[0][0].endDateBefore).toContain(
-        '2009-01-26T00:00:00.000'
-      );
-    });
-
-    it('should send null values for empty or invalid endDate', async () => {
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
-
-      //when
-      await flushPromises();
-
-      node.instance().handleFieldChange({
-        target: {value: 'invalid date', name: 'endDate'}
-      });
-      node.update();
-
-      // then
-      expect(spy).toHaveBeenCalledWith({});
-    });
-
-    it('should not update the filters when endDate is invalid', async () => {
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
-
-      //when
-      await flushPromises();
-
-      node.instance().handleFieldChange({
-        target: {value: '', name: 'endDate'}
-      });
-      node.update();
-
-      // then
-      expect(spy).toHaveBeenCalledWith({
-        endDateAfter: null,
-        endDateBefore: null
-      });
+      expect(spy.mock.calls[0][0].endDate).toBe('25 January 2009');
     });
   });
 
@@ -837,19 +784,19 @@ describe('Filters', () => {
       node.update();
 
       // enter ids
-      node.instance().onFieldChange({
+      node.instance().handleInputChange({
         target: {value: "['a', 'b', 'c']", name: 'ids'}
       });
       node.update();
 
       // enter startDate
-      node.instance().handleDateFieldChange({
+      node.instance().handleInputChange({
         target: {value: '25 January 2009', name: 'startDate'}
       });
       node.update();
 
       // enter endDate
-      node.instance().handleDateFieldChange({
+      node.instance().handleInputChange({
         target: {value: '25 January 2009', name: 'endDate'}
       });
       node.update();

@@ -1,84 +1,227 @@
-import {parseFilterForRequest, getFilterQueryString} from './filter';
+import {
+  getInstanceStatePayload,
+  getFilterQueryString,
+  fieldParser,
+  parseFilterForRequest
+} from './filter';
 
 import {DEFAULT_FILTER} from 'modules/constants';
 
-describe('parseFilterForRequest', () => {
-  it('should parse empty filter selection', () => {
-    const filter = {
-      active: false,
-      incidents: false,
-      canceled: false,
-      completed: false
-    };
+describe('modules/utils/filter.js', () => {
+  describe('getInstanceStatePayload', () => {
+    it('returns false values for an empty state selection', () => {
+      const filter = {
+        active: false,
+        incidents: false,
+        canceled: false,
+        completed: false
+      };
 
-    expect(parseFilterForRequest(filter).running).toBe(false);
-    expect(parseFilterForRequest(filter).incidents).toBe(false);
-    expect(parseFilterForRequest(filter).active).toBe(false);
+      expect(getInstanceStatePayload(filter)).toEqual({
+        running: false,
+        finished: false
+      });
+    });
 
-    expect(parseFilterForRequest(filter).finished).toBe(false);
-    expect(parseFilterForRequest(filter).canceled).toBe(false);
-    expect(parseFilterForRequest(filter).completed).toBe(false);
+    it('return running true when active is selected', () => {
+      const filter = {
+        active: true,
+        incidents: false,
+        canceled: false,
+        completed: false
+      };
+
+      expect(getInstanceStatePayload(filter)).toEqual({
+        running: true,
+        finished: false
+      });
+    });
+
+    it('return running true when incidents is selected', () => {
+      const filter = {
+        active: false,
+        incidents: true,
+        canceled: false,
+        completed: false
+      };
+
+      expect(getInstanceStatePayload(filter)).toEqual({
+        running: true,
+        finished: false
+      });
+    });
+
+    it('return running true when incidents is selected', () => {
+      const filter = {
+        active: false,
+        incidents: true,
+        canceled: false,
+        completed: false
+      };
+
+      expect(getInstanceStatePayload(filter)).toEqual({
+        running: true,
+        finished: false
+      });
+    });
+
+    it('return finished true when completed is selected', () => {
+      const filter = {
+        active: false,
+        incidents: false,
+        canceled: false,
+        completed: true
+      };
+
+      expect(getInstanceStatePayload(filter)).toEqual({
+        running: false,
+        finished: true
+      });
+    });
+
+    it('return finished true when canceled is selected', () => {
+      const filter = {
+        active: false,
+        incidents: false,
+        canceled: true,
+        completed: false
+      };
+
+      expect(getInstanceStatePayload(filter)).toEqual({
+        running: false,
+        finished: true
+      });
+    });
   });
 
-  describe('Running Instances Filter', () => {
-    it('should parse both active and incidents filter selection', () => {
-      const filter = {active: true, incidents: true};
+  describe('parseFilterForRequest', () => {
+    it('should parse filters values', () => {
+      // given
+      const filter = {
+        workflowIds: ['4'],
+        ids: 'id1 , id2    id3',
+        errorMessage: ' this is an error message',
+        startDate: '08 October 2018',
+        endDate: '10-10-2018',
+        activityId: '5',
+        active: true,
+        incidents: false,
+        completed: true,
+        canceled: false
+      };
 
-      expect(parseFilterForRequest(filter).running).toBe(true);
-      expect(parseFilterForRequest(filter).incidents).toBe(true);
-      expect(parseFilterForRequest(filter).active).toBe(true);
+      // when
+      const parsedFilter = parseFilterForRequest(filter);
+
+      expect(parsedFilter.workflowIds).toEqual(['4']);
+      expect(parsedFilter.ids).toEqual(['id1', 'id2', 'id3']);
+      expect(parsedFilter.errorMessage).toEqual(' this is an error message');
+      expect(parsedFilter.startDate).toBe(undefined);
+      expect(parsedFilter.startDateBefore).toBe('2018-10-09T00:00:00.000+0200');
+      expect(parsedFilter.startDateAfter).toBe('2018-10-08T00:00:00.000+0200');
+      expect(parsedFilter.endDate).toBe(undefined);
+      expect(parsedFilter.endDateBefore).toBe('2018-10-11T00:00:00.000+0200');
+      expect(parsedFilter.endDateAfter).toBe('2018-10-10T00:00:00.000+0200');
+      expect(parsedFilter.activityId).toBe('5');
+      expect(parsedFilter.active).toBe(true);
+      expect(parsedFilter.incidents).toBe(false);
+      expect(parsedFilter.completed).toBe(true);
+      expect(parsedFilter.canceled).toBe(false);
+      expect(parsedFilter.running).toBe(true);
+      expect(parsedFilter.finished).toBe(true);
     });
-    it('should parse only active filter selection', () => {
-      const filter = {active: true, incidents: false};
+  });
 
-      expect(parseFilterForRequest(filter).running).toBe(true);
-      expect(parseFilterForRequest(filter).incidents).toBe(false);
-      expect(parseFilterForRequest(filter).active).toBe(true);
+  describe('getFilterQueryString', () => {
+    it('should return a query string', () => {
+      const queryString = '?filter={"active":true,"incidents":true}';
+
+      expect(getFilterQueryString(DEFAULT_FILTER)).toBe(queryString);
     });
-    it('should parse only incidents filter selection', () => {
-      const filter = {active: false, incidents: true};
 
-      expect(parseFilterForRequest(filter).running).toBe(true);
-      expect(parseFilterForRequest(filter).incidents).toBe(true);
-      expect(parseFilterForRequest(filter).active).toBe(false);
+    it('should remove keys with false values', () => {
+      const valueWithArray = {a: true, b: true, c: false, ids: ['a', 'b', 'c']};
+      const output = '?filter={"a":true,"b":true,"ids":["a","b","c"]}';
+
+      expect(getFilterQueryString(valueWithArray)).toBe(output);
     });
   });
 
-  describe('Completed Instances Filter', () => {
-    it('should parse both regularly completed and canceled filter selection', () => {
-      const filter = {canceled: true, completed: true};
-      expect(parseFilterForRequest(filter).finished).toBe(true);
-      expect(parseFilterForRequest(filter).canceled).toBe(true);
-      expect(parseFilterForRequest(filter).completed).toBe(true);
+  describe('fieldParser.errorMessage()', () => {
+    it('should return the value for errorMessage', () => {
+      const value = 'lorem ipsum';
+      const output = fieldParser.errorMessage('errorMessage', value);
+
+      expect(output.errorMessage).toEqual(value);
     });
 
-    it('should parse only regularly completed filter selection', () => {
-      const filter = {canceled: false, completed: true};
-      expect(parseFilterForRequest(filter).finished).toBe(true);
-      expect(parseFilterForRequest(filter).canceled).toBe(false);
-      expect(parseFilterForRequest(filter).completed).toBe(true);
-    });
+    it('should return null for empty value', () => {
+      const value = '';
+      const output = fieldParser.errorMessage('errorMessage', value);
 
-    it('should parse only canceled filter selection', () => {
-      const filter = {canceled: true, completed: false};
-      expect(parseFilterForRequest(filter).finished).toBe(true);
-      expect(parseFilterForRequest(filter).canceled).toBe(true);
-      expect(parseFilterForRequest(filter).completed).toBe(false);
+      expect(output.errorMessage).toEqual(null);
     });
   });
-});
 
-describe('getFilterQueryString', () => {
-  it('should return a query string', () => {
-    const queryString = '?filter={"active":true,"incidents":true}';
+  describe('fieldParser.ids()', () => {
+    it('should return an array for ids', () => {
+      const value = '1 2 3';
+      const output = fieldParser.ids('ids', value);
 
-    expect(getFilterQueryString(DEFAULT_FILTER)).toBe(queryString);
+      expect(output.ids).toEqual(['1', '2', '3']);
+    });
+
+    it('should separate the values by string and comma', () => {
+      const value = ' 1, 2 , 3,';
+      const output = fieldParser.ids('ids', value);
+
+      expect(output.ids).toEqual(['1', '2', '3']);
+    });
   });
 
-  it('should remove keys with false values', () => {
-    const inputWithArray = {a: true, b: true, c: false, ids: ['a', 'b', 'c']};
-    const output = '?filter={"a":true,"b":true,"ids":["a","b","c"]}';
+  describe('fieldParser.startDate()', () => {
+    it('should return object with two keys', () => {
+      const value = 'July 05 2018';
+      const output = fieldParser.startDate('startDate', value);
 
-    expect(getFilterQueryString(inputWithArray)).toBe(output);
+      expect(output.startDateAfter).toBeDefined();
+      expect(output.startDateBefore).toBeDefined();
+      expect(output.startDateAfter.length).toBe(28);
+      expect(output.startDateBefore.length).toBe(28);
+    });
+
+    it('should return the same date for startDateAfter', () => {
+      const value = 'July 05 2018';
+      const output = fieldParser.startDate('startDate', value);
+
+      // no timezone tested, it differs on environments
+      expect(output.startDateAfter).toContain('2018-07-05T00:00:00.000');
+    });
+    it('should return startDateBefore = date + 1 day, when no time is provided', () => {
+      const value = 'July 05 2018';
+      const output = fieldParser.startDate('startDate', value);
+
+      // no timezone tested, it differs on environments
+      expect(output.startDateBefore).toContain('2018-07-06T00:00:00.000');
+    });
+    it('should return startDateBefore = date + 1 minute, when time is provided', () => {
+      const value = 'July 05 2018 15:18';
+      const output = fieldParser.startDate('startDate', value);
+
+      // no timezone tested, it differs on environments
+      expect(output.startDateBefore).toContain('2018-07-05T15:19:00.000');
+    });
+  });
+
+  describe('fieldParser.endDate()', () => {
+    it('should return object with two keys', () => {
+      const value = 'July 05 2018';
+      const output = fieldParser.endDate('endDate', value);
+
+      expect(output.endDateAfter).toBeDefined();
+      expect(output.endDateBefore).toBeDefined();
+      expect(output.endDateAfter.length).toBe(28);
+      expect(output.endDateBefore.length).toBe(28);
+    });
   });
 });

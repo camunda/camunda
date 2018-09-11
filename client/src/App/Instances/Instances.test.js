@@ -34,7 +34,7 @@ const InstancesWithAllFilters = (
   <Instances
     location={{
       search:
-        '?filter={"active":false,"incidents":true,"ids":["424242", "434343"]}'
+        '?filter={"active":false,"incidents":true,"ids":"424242, 434343","errorMessage":"lorem  ipsum","startDate":"08 October 2018","endDate":"10-10-2018"}'
     }}
     getStateLocally={() => {
       return {filterCount: 0};
@@ -89,7 +89,7 @@ api.fetchWorkflowInstancesCount = mockResolvedAsyncFn(Count);
 api.fetchWorkflowInstances = mockResolvedAsyncFn([]);
 
 describe('Instances', () => {
-  describe('Filters', () => {
+  describe('rendering filters', () => {
     beforeEach(() => {
       api.fetchWorkflowInstancesCount.mockClear();
       api.fetchWorkflowInstances.mockClear();
@@ -116,9 +116,13 @@ describe('Instances', () => {
         // given
         const node = shallow(InstancesWithAllFilters);
         // then
+
         expect(node.state('filter').active).toBe(false);
         expect(node.state('filter').incidents).toBe(true);
-        expect(node.state('filter').ids).toEqual(['424242', '434343']);
+        expect(node.state('filter').ids).toEqual('424242, 434343');
+        expect(node.state('filter').errorMessage).toEqual('lorem  ipsum');
+        expect(node.state('filter').startDate).toEqual('08 October 2018');
+        expect(node.state('filter').endDate).toEqual('10-10-2018');
       });
 
       it('should read and store default filter selection if no filter query in url', () => {
@@ -186,7 +190,7 @@ describe('Instances', () => {
       });
 
       describe('rendering a diagram', () => {
-        it('should render no diagram on inital render', () => {
+        it('should render no diagram on initial render', () => {
           // given
           const node = shallow(InstancesWithRunningFilter);
 
@@ -195,6 +199,7 @@ describe('Instances', () => {
           expect(node.find(Diagram).length).toBe(0);
           expect(node.find(PanelHeader).props().children).toBe('Workflow');
         });
+
         it('should render a diagram when workflow data is available ', () => {
           const node = shallow(InstancesWithWorkflow);
 

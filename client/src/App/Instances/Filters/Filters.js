@@ -16,7 +16,6 @@ import {
   getOptionsForWorkflowName,
   getOptionsForWorkdflowIds,
   addAllVersionsOption,
-  fieldParser,
   getFilterWithDefaults
 } from './service';
 
@@ -27,8 +26,6 @@ const DEFAULT_FIELDS_STATE = {
   // field values
   workflowIds: '',
   activityId: '',
-  startDate: '',
-  endDate: '',
   // fields from filter: {} support back and fw navigation
   filter: {
     ...DEFAULT_CONTROLLED_VALUES
@@ -39,14 +36,14 @@ export default class Filters extends React.Component {
   static propTypes = {
     filter: PropTypes.shape({
       active: PropTypes.bool,
-      incidents: PropTypes.bool,
+      activityId: PropTypes.string,
       canceled: PropTypes.bool,
       completed: PropTypes.bool,
-      activityId: PropTypes.string,
+      endDate: PropTypes.string,
       errorMessage: PropTypes.string,
-      ids: PropTypes.array,
-      startDateAfter: PropTypes.string,
-      startDateBefore: PropTypes.string,
+      ids: PropTypes.string,
+      incidents: PropTypes.bool,
+      startDate: PropTypes.string,
       workflowIds: PropTypes.array
     }).isRequired,
     onFilterChange: PropTypes.func,
@@ -159,12 +156,8 @@ export default class Filters extends React.Component {
 
   handleFieldChange = event => {
     const {value, name} = event.target;
-    const parsedValue = fieldParser[name](value);
-    const filterValue =
-      name === 'startDate' || name === 'endDate'
-        ? {...parsedValue} // value is an object, nr: startDate: {startDateAfter: ..., startDateBefore: ...}
-        : {[name]: parsedValue}; // value is an string
-    this.props.onFilterChange(filterValue);
+
+    this.props.onFilterChange({[name]: value});
   };
 
   handleActivityIdChange = event => {
@@ -175,16 +168,8 @@ export default class Filters extends React.Component {
     });
   };
 
-  handleDateFieldChange = event => {
-    const {name} = event.target;
-
-    this.setState({
-      ...this.state,
-      [name]: event.target.value
-    });
-  };
-
-  onFieldChange = event => {
+  // handler for controlled inputs
+  handleInputChange = event => {
     const {name} = event.target;
 
     this.setState({
@@ -241,7 +226,7 @@ export default class Filters extends React.Component {
                 name="ids"
                 placeholder="Instance Id(s) separated by space or comma"
                 onBlur={this.handleFieldChange}
-                onChange={this.onFieldChange}
+                onChange={this.handleInputChange}
               />
             </Styled.Field>
             <Styled.Field>
@@ -250,25 +235,25 @@ export default class Filters extends React.Component {
                 name="errorMessage"
                 placeholder="Error Message"
                 onBlur={this.handleFieldChange}
-                onChange={this.onFieldChange}
+                onChange={this.handleInputChange}
               />
             </Styled.Field>
             <Styled.Field>
               <TextInput
-                value={this.state.startDate}
+                value={this.state.filter.startDate}
                 name="startDate"
                 placeholder="Start Date"
                 onBlur={this.handleFieldChange}
-                onChange={this.handleDateFieldChange}
+                onChange={this.handleInputChange}
               />
             </Styled.Field>
             <Styled.Field>
               <TextInput
-                value={this.state.endDate}
+                value={this.state.filter.endDate}
                 name="endDate"
                 placeholder="End Date"
                 onBlur={this.handleFieldChange}
-                onChange={this.handleDateFieldChange}
+                onChange={this.handleInputChange}
               />
             </Styled.Field>
             <Styled.Field>
