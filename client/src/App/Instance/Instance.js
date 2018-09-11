@@ -24,7 +24,10 @@ export default class Instance extends Component {
   state = {
     instance: null,
     activitiesDetails: {},
-    selectedActivityId: null,
+    selection: {
+      activityInstanceId: null,
+      flowNodeId: null
+    },
     loaded: false
   };
 
@@ -56,8 +59,35 @@ export default class Instance extends Component {
     this.setState({activitiesDetails});
   };
 
-  handleActivitySelection = selectedActivityId => {
-    this.setState({selectedActivityId});
+  handleActivityInstanceSelection = activityInstanceId => {
+    const flowNodeId = !activityInstanceId
+      ? null
+      : this.state.instance.activities.find(
+          activity => activity.id === activityInstanceId
+        ).activityId;
+
+    this.setState({
+      selection: {
+        activityInstanceId,
+        flowNodeId
+      }
+    });
+  };
+
+  handleFlowNodeSelection = flowNodeId => {
+    // get the first activity instance corresponding to the flowNodeId
+    const activityInstanceId = !flowNodeId
+      ? null
+      : this.state.instance.activities.find(
+          activity => activity.activityId === flowNodeId
+        ).id;
+
+    this.setState({
+      selection: {
+        activityInstanceId,
+        flowNodeId
+      }
+    });
   };
 
   render() {
@@ -89,15 +119,19 @@ export default class Instance extends Component {
                 instance={this.state.instance}
                 onFlowNodesDetailsReady={this.handleFlowNodesDetailsReady}
                 selectableFlowNodes={selectableFlowNodes}
-                selectedFlowNode={this.state.selectedActivityId}
-                onFlowNodeSelected={this.handleActivitySelection}
+                selectedFlowNode={this.state.selection.flowNodeId}
+                onFlowNodeSelected={this.handleFlowNodeSelection}
                 flowNodeStateOverlays={flowNodeStateOverlays}
               />
               <InstanceHistory
                 instance={this.state.instance}
                 activitiesDetails={this.state.activitiesDetails}
-                selectedActivityId={this.state.selectedActivityId}
-                onActivitySelected={this.handleActivitySelection}
+                selectedActivityInstanceId={
+                  this.state.selection.activityInstanceId
+                }
+                onActivityInstanceSelected={
+                  this.handleActivityInstanceSelection
+                }
               />
             </SplitPane>
           </Styled.Instance>

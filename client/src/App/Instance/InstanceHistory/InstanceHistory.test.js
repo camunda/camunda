@@ -78,8 +78,8 @@ describe('InstanceHistory', () => {
     // given
     const mockProps = {
       instance: {id: 'someInstanceId'},
-      selectedActivityId: 'fooAID',
-      onActivitySelected: jest.fn()
+      selectedActivityInstanceId: 'foo',
+      onActivityInstanceSelected: jest.fn()
     };
 
     const node = shallow(<InstanceHistory {...mockProps} />);
@@ -107,11 +107,11 @@ describe('InstanceHistory', () => {
     expect(InstanceLogNode.prop('activitiesDetails')).toEqual(
       mockActivitiesDetails
     );
-    expect(InstanceLogNode.prop('selectedActivityId')).toEqual(
-      mockProps.selectedActivityId
+    expect(InstanceLogNode.prop('selectedActivityInstanceId')).toEqual(
+      mockProps.selectedActivityInstanceId
     );
-    expect(InstanceLogNode.prop('onActivitySelected')).toEqual(
-      mockProps.onActivitySelected
+    expect(InstanceLogNode.prop('onActivityInstanceSelected')).toEqual(
+      mockProps.onActivityInstanceSelected
     );
 
     // Instance Events

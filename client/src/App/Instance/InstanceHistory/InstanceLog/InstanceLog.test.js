@@ -24,13 +24,13 @@ const mockProps = {
       activityId: 'activity2'
     }
   },
-  selectedActivityId: null,
-  onActivitySelected: jest.fn()
+  selectedActivityInstanceId: null,
+  onActivityInstanceSelected: jest.fn()
 };
 
 describe('InstanceLog', () => {
   beforeEach(() => {
-    mockProps.onActivitySelected.mockClear();
+    mockProps.onActivityInstanceSelected.mockClear();
   });
 
   it('should only render selected header if there is instance and no activitiesDetails', () => {
@@ -87,10 +87,10 @@ describe('InstanceLog', () => {
   });
 
   describe('selection', () => {
-    it('should select header ROW on prop.selectedActivityId', () => {
+    it('should select header ROW on prop.selectedActivityInstanceId', () => {
       // given
       const node = shallow(
-        <InstanceLog {...mockProps} selectedActivityId={null} />
+        <InstanceLog {...mockProps} selectedActivityInstanceId={null} />
       );
       let HeaderToggleNode = node.find(Styled.HeaderToggle);
 
@@ -101,10 +101,10 @@ describe('InstanceLog', () => {
       ).toBe(true);
     });
 
-    it('should select row based on prop.selectedActivityId', () => {
+    it('should select row based on prop.selectedActivityInstanceId', () => {
       // given
       const node = shallow(
-        <InstanceLog {...mockProps} selectedActivityId="activity1" />
+        <InstanceLog {...mockProps} selectedActivityInstanceId="1" />
       );
 
       // then
@@ -126,16 +126,14 @@ describe('InstanceLog', () => {
 
         // then
         const id = LogEntryToggleNode.prop('data-test');
-        expect(mockProps.onActivitySelected).toBeCalledWith(
-          mockProps.activitiesDetails[id].activityId
-        );
+        expect(mockProps.onActivityInstanceSelected).toBeCalledWith(id);
       });
     });
 
     it('should change selection to null when clicking on the header', () => {
       // given
       const node = shallow(
-        <InstanceLog {...mockProps} selectedActivityId="foo" />
+        <InstanceLog {...mockProps} selectedActivityInstanceId="some id" />
       );
       let HeaderToggleNode = node.find(Styled.HeaderToggle);
 
@@ -143,7 +141,7 @@ describe('InstanceLog', () => {
       HeaderToggleNode.simulate('click');
 
       // then
-      expect(mockProps.onActivitySelected).toBeCalledWith(null);
+      expect(mockProps.onActivityInstanceSelected).toBeCalledWith(null);
     });
   });
 });

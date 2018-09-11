@@ -46,12 +46,8 @@ export function getGroupedEvents({events, activitiesDetails}) {
   return groupedEvents;
 }
 
-export function getEventsBySelectedActivityId({
-  selectedActivityId,
-  groupedEvents
-}) {
-  return !selectedActivityId
-    ? groupedEvents
-    : groupedEvents.find(({activityId}) => activityId === selectedActivityId)
-        .events;
+export function getActivityInstanceEvents({events = [], activityInstanceId}) {
+  return events.filter(
+    event => event.activityInstanceId === activityInstanceId
+  );
 }

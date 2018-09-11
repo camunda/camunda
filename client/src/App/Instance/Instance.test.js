@@ -62,7 +62,10 @@ api.fetchWorkflowInstance = mockResolvedAsyncFn(INSTANCE);
 const initialState = {
   instance: null,
   activitiesDetails: {},
-  selectedActivityId: null,
+  selection: {
+    activityInstanceId: null,
+    flowNodeId: null
+  },
   loaded: false
 };
 
@@ -84,17 +87,41 @@ describe('Instance', () => {
     });
   });
 
-  describe('handleActivitySelection', () => {
-    it('should set state.selectedActivityId to provided value', () => {
+  describe('handleActivityInstanceSelection', () => {
+    it('should update the state.selection according to the value', () => {
       // given
       const node = shallow(component);
+      node.setState({instance: INSTANCE});
+      node.update();
 
       // when
-      node.instance().handleActivitySelection('foo');
+      node.instance().handleActivityInstanceSelection('4294983744');
       node.update();
 
       // then
-      expect(node.state('selectedActivityId')).toBe('foo');
+      expect(node.state('selection')).toEqual({
+        activityInstanceId: '4294983744',
+        flowNodeId: 'taskA'
+      });
+    });
+  });
+
+  describe('handleFlowNodeSelection', () => {
+    it('should update the state.selection according to the value', () => {
+      // given
+      const node = shallow(component);
+      node.setState({instance: INSTANCE});
+      node.update();
+
+      // when
+      node.instance().handleFlowNodeSelection('taskA');
+      node.update();
+
+      // then
+      expect(node.state('selection')).toEqual({
+        activityInstanceId: '4294983744',
+        flowNodeId: 'taskA'
+      });
     });
   });
 
@@ -177,7 +204,10 @@ describe('Instance', () => {
       node.setState({
         instance: INSTANCE,
         activitiesDetails: ACTIVITIES_DETAILS,
-        selectedActivityId: 'foo'
+        selection: {
+          activityInstanceId: '4294983744',
+          flowNodeId: 'foo'
+        }
       });
       await flushPromises();
       node.update();
@@ -200,7 +230,7 @@ describe('Instance', () => {
       ]);
       expect(DiagramPanelNode.prop('selectedFlowNode')).toBe('foo');
       expect(DiagramPanelNode.prop('onFlowNodeSelected')).toBe(
-        node.instance().handleActivitySelection
+        node.instance().handleFlowNodeSelection
       );
       expect(DiagramPanelNode.prop('flowNodeStateOverlays')).toEqual([
         {
@@ -220,9 +250,11 @@ describe('Instance', () => {
       expect(InstanceHistoryNode.prop('activitiesDetails')).toEqual(
         ACTIVITIES_DETAILS
       );
-      expect(InstanceHistoryNode.prop('selectedActivityId')).toBe('foo');
-      expect(InstanceHistoryNode.prop('onActivitySelected')).toBe(
-        node.instance().handleActivitySelection
+      expect(InstanceHistoryNode.prop('selectedActivityInstanceId')).toBe(
+        '4294983744'
+      );
+      expect(InstanceHistoryNode.prop('onActivityInstanceSelected')).toBe(
+        node.instance().handleActivityInstanceSelection
       );
       // snapshot
       expect(node).toMatchSnapshot();

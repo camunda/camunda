@@ -169,8 +169,8 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
               "workflowId": "1",
             }
           }
-          onActivitySelected={[Function]}
-          selectedActivityId="foo"
+          onActivityInstanceSelected={[Function]}
+          selectedActivityInstanceId="4294983744"
         />
       </SplitPane>
     </styled.div>

@@ -7,7 +7,7 @@ import {fetchEvents} from 'modules/api/events';
 
 import InstanceLog from './InstanceLog';
 import InstanceEvents from './InstanceEvents';
-import {getGroupedEvents, getEventsBySelectedActivityId} from './service';
+import {getGroupedEvents, getActivityInstanceEvents} from './service';
 import {isEmpty} from 'modules/utils';
 import * as Styled from './styled';
 
@@ -15,8 +15,8 @@ export default class InstanceHistory extends React.Component {
   static propTypes = {
     instance: PropTypes.object.isRequired,
     activitiesDetails: PropTypes.object,
-    selectedActivityId: PropTypes.string,
-    onActivitySelected: PropTypes.func
+    selectedActivityInstanceId: PropTypes.string,
+    onActivityInstanceSelected: PropTypes.func
   };
 
   state = {
@@ -43,21 +43,26 @@ export default class InstanceHistory extends React.Component {
 
     if (haveActivitiesDetailsChanged || haveEventsChanged) {
       const groupedEvents = getGroupedEvents({
-        events: this.state.events,
+        events,
         activitiesDetails
       });
-
       this.setState({groupedEvents});
     }
   }
 
   render() {
-    const filteredGroupedEvents = !this.state.groupedEvents
-      ? null
-      : getEventsBySelectedActivityId({
-          selectedActivityId: this.props.selectedActivityId,
-          groupedEvents: this.state.groupedEvents
-        });
+    const {selectedActivityInstanceId} = this.props;
+
+    let filteredGroupedEvents = this.state.groupedEvents;
+
+    // if there is a selected activity instane, only show events
+    // corresponding to it
+    if (selectedActivityInstanceId && this.state.events) {
+      filteredGroupedEvents = getActivityInstanceEvents({
+        activityInstanceId: selectedActivityInstanceId,
+        events: this.state.events
+      });
+    }
 
     return (
       <SplitPane.Pane {...this.props}>
@@ -66,8 +71,8 @@ export default class InstanceHistory extends React.Component {
           <InstanceLog
             instance={this.props.instance}
             activitiesDetails={this.props.activitiesDetails}
-            selectedActivityId={this.props.selectedActivityId}
-            onActivitySelected={this.props.onActivitySelected}
+            selectedActivityInstanceId={this.props.selectedActivityInstanceId}
+            onActivityInstanceSelected={this.props.onActivityInstanceSelected}
           />
           <InstanceEvents groupedEvents={filteredGroupedEvents} />
           <Styled.Section>C</Styled.Section>
