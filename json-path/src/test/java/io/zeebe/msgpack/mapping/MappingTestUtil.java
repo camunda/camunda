@@ -21,15 +21,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.msgpack.spec.MsgPackWriter;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.assertj.core.api.AbstractObjectAssert;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 public class MappingTestUtil {
@@ -136,5 +140,45 @@ public class MappingTestUtil {
       }
     }
     return builder.toString();
+  }
+
+  public static MsgPackAssert assertThatMsgPack(DirectBuffer msgPack) {
+    return new MsgPackAssert(msgPack);
+  }
+
+  public static class MsgPackAssert extends AbstractObjectAssert<MsgPackAssert, DirectBuffer> {
+
+    public MsgPackAssert(DirectBuffer actual) {
+      super(actual, MsgPackAssert.class);
+    }
+
+    public MsgPackAssert hasValue(String json) {
+      final byte[] actualAsArray = new byte[actual.capacity()];
+      actual.getBytes(0, actualAsArray, 0, actualAsArray.length);
+
+      final JsonNode actualTree;
+      final JsonNode expectedTree;
+
+      try {
+        actualTree = MSGPACK_MAPPER.readTree(actualAsArray);
+      } catch (IOException e) {
+        failWithMessage("Actual document is not valid msgpack: %s", e.getMessage());
+        return this;
+      }
+
+      try {
+        expectedTree = JSON_MAPPER.readTree(json);
+      } catch (IOException e) {
+        failWithMessage("Expected document is not valid json: %s", e.getMessage());
+        return this;
+      }
+
+      if (!actualTree.equals(expectedTree)) {
+        failWithMessage(
+            "Could not match documents. Expected: %s. Actual: %s", expectedTree, actualTree);
+      }
+
+      return this;
+    }
   }
 }

@@ -15,16 +15,14 @@
  */
 package io.zeebe.msgpack.mapping;
 
-import static io.zeebe.msgpack.mapping.MsgPackNodeType.EXISTING_LEAF_NODE;
-import static io.zeebe.msgpack.mapping.MsgPackNodeType.EXTRACTED_LEAF_NODE;
-
 import io.zeebe.msgpack.spec.MsgPackWriter;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.collections.Object2IntHashMap;
 
 /**
  * Represents a tree data structure, for a msg pack document.
@@ -51,39 +49,52 @@ public class MsgPackTree {
   protected final Map<String, MsgPackNodeType> nodeTypeMap; // Bytes2LongHashIndex nodeTypeMap;
   protected final Map<String, Set<String>> nodeChildsMap;
   protected final Map<String, Long> leafMap; // Bytes2LongHashIndex leafMap;
+  protected final Object2IntHashMap<String> leafDocumentSources;
 
-  protected final DirectBuffer underlyingDocument = new UnsafeBuffer(0, 0);
-  protected DirectBuffer extractDocument;
+  private DirectBuffer[] documents = new DirectBuffer[0];
 
   public MsgPackTree() {
     nodeTypeMap = new HashMap<>();
     nodeChildsMap = new HashMap<>();
     leafMap = new HashMap<>();
+    leafDocumentSources = new Object2IntHashMap<>(-1);
   }
 
   public int size() {
     return nodeTypeMap.size();
   }
 
-  public void wrap(DirectBuffer underlyingDocument) {
-    clear();
-    this.underlyingDocument.wrap(underlyingDocument);
-  }
-
   public void clear() {
-    extractDocument = null;
     nodeChildsMap.clear();
     nodeTypeMap.clear();
     leafMap.clear();
+    leafDocumentSources.clear();
+    documents = new DirectBuffer[0];
   }
 
   public Set<String> getChilds(String nodeId) {
     return nodeChildsMap.get(nodeId);
   }
 
-  public void addLeafNode(String nodeId, long position, int length) {
+  public int addDocument(DirectBuffer document) {
+    documents = Arrays.copyOf(documents, documents.length + 1);
+    documents[documents.length - 1] = document;
+    return documents.length - 1;
+  }
+
+  public void addLeafNode(String nodeId, int documentId, long position, int length) {
     leafMap.put(nodeId, (position << 32) | length);
-    nodeTypeMap.put(nodeId, extractDocument == null ? EXISTING_LEAF_NODE : EXTRACTED_LEAF_NODE);
+    leafDocumentSources.put(nodeId, documentId);
+    nodeTypeMap.put(nodeId, null);
+  }
+
+  public int getSourceDocumentPosition(String nodeId) {
+    final Long encodedLeaf = leafMap.get(nodeId);
+    if (encodedLeaf != null) {
+      return (int) (encodedLeaf >> 32);
+    } else {
+      return -1;
+    }
   }
 
   private void addParentNode(String nodeId, MsgPackNodeType nodeType) {
@@ -122,40 +133,72 @@ public class MsgPackTree {
     return msgPackNodeType != null && msgPackNodeType == MsgPackNodeType.MAP_NODE;
   }
 
-  public void setExtractDocument(DirectBuffer documentBuffer) {
-    this.extractDocument = documentBuffer;
+  public DirectBuffer getDocument(String nodeId) {
+    final int sourceDocId = leafDocumentSources.getValue(nodeId);
+
+    if (sourceDocId >= 0) {
+      return documents[sourceDocId];
+    } else {
+      return null;
+    }
   }
 
   public void writeLeafMapping(MsgPackWriter writer, String leafId) {
     final long mapping = leafMap.get(leafId);
-    final MsgPackNodeType nodeType = nodeTypeMap.get(leafId);
     final int position = (int) (mapping >> 32);
     final int length = (int) mapping;
-    DirectBuffer relatedBuffer = underlyingDocument;
-    if (nodeType == EXTRACTED_LEAF_NODE) {
-      relatedBuffer = extractDocument;
-    }
-    writer.writeRaw(relatedBuffer, position, length);
+
+    final int documentId = leafDocumentSources.getValue(leafId);
+    final DirectBuffer sourceDocument = documents[documentId];
+
+    writer.writeRaw(sourceDocument, position, length);
   }
 
-  public void merge(MsgPackTree sourceTree) {
-    extractDocument = sourceTree.underlyingDocument;
-    for (Map.Entry<String, MsgPackNodeType> leafMapEntry : sourceTree.nodeTypeMap.entrySet()) {
-      final String key = leafMapEntry.getKey();
-      MsgPackNodeType nodeType = leafMapEntry.getValue();
-      if (nodeType == EXISTING_LEAF_NODE) {
-        nodeType = EXTRACTED_LEAF_NODE;
-      }
-      nodeTypeMap.put(key, nodeType);
-    }
-    leafMap.putAll(sourceTree.leafMap);
+  /**
+   * @param mergeContainers if false, the containers (object/array) of <code>other</code> will
+   *     replace the values/containers in this. If true, they will be merged if possible.
+   */
+  public void merge(MsgPackTree other, boolean mergeContainers) {
+    /*
+     * This method is critical for the performance of document merging
+     * and extraction, so optimizations should be made here.
+     */
 
-    for (Map.Entry<String, Set<String>> nodeChildsEntry : sourceTree.nodeChildsMap.entrySet()) {
+    final int newDocumentOffset =
+        documents.length; // => so we can map other document ids to this document id
+
+    for (DirectBuffer otherDocument : other.documents) {
+      addDocument(otherDocument);
+    }
+
+    for (Map.Entry<String, MsgPackNodeType> leafMapEntry : other.nodeTypeMap.entrySet()) {
+      final String key = leafMapEntry.getKey();
+      final MsgPackNodeType nodeType = leafMapEntry.getValue();
+
+      // hack: do not convert maps in the current tree to arrays
+      // use case: map keys that are digits
+      if (!(nodeTypeMap.get(key) == MsgPackNodeType.MAP_NODE
+          && nodeType == MsgPackNodeType.ARRAY_NODE)) {
+        nodeTypeMap.put(key, nodeType);
+      }
+
+      leafMap.remove(
+          key); // => remove everything that was a leaf previously => is going to be restored by
+      // putting all leafs from the other map
+
+      final int otherDocumentSource = other.leafDocumentSources.getValue(key);
+      if (otherDocumentSource >= 0) {
+        this.leafDocumentSources.put(key, otherDocumentSource + newDocumentOffset);
+      }
+    }
+    leafMap.putAll(other.leafMap);
+
+    for (Map.Entry<String, Set<String>> nodeChildsEntry : other.nodeChildsMap.entrySet()) {
       final String key = nodeChildsEntry.getKey();
 
       // if we change the following condition to if (nodeChildsMap.containsKey(key))
       // we get a deep merge
-      if (key.equals(Mapping.JSON_ROOT_PATH)) {
+      if (mergeContainers || key.equals(Mapping.JSON_ROOT_PATH)) {
         nodeChildsMap
             .computeIfAbsent(key, (k) -> new LinkedHashSet<>())
             .addAll(nodeChildsEntry.getValue());

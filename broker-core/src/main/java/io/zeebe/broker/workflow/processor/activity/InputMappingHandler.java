@@ -25,22 +25,20 @@ import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 import io.zeebe.msgpack.mapping.Mapping;
 import io.zeebe.msgpack.mapping.MappingException;
-import io.zeebe.msgpack.mapping.MappingProcessor;
+import io.zeebe.msgpack.mapping.MsgPackMergeTool;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.DirectBuffer;
 
 public class InputMappingHandler implements BpmnStepHandler<ExecutableFlowNode> {
 
-  private final MappingProcessor payloadMappingProcessor = new MappingProcessor(4096);
-  private UnsafeBuffer wfInstancePayload = new UnsafeBuffer(0, 0);
+  private final MsgPackMergeTool payloadMergeTool = new MsgPackMergeTool(4096);
 
   @Override
   public void handle(BpmnStepContext<ExecutableFlowNode> context) {
 
     final TypedRecord<WorkflowInstanceRecord> record = context.getRecord();
     final WorkflowInstanceRecord activityEvent = context.getValue();
-    wfInstancePayload.wrap(activityEvent.getPayload());
+    final DirectBuffer sourcePayload = activityEvent.getPayload();
 
     final Mapping[] inputMappings = context.getElement().getInputMappings();
 
@@ -49,10 +47,12 @@ public class InputMappingHandler implements BpmnStepHandler<ExecutableFlowNode> 
     // only if we have no default mapping we have to use the mapping processor
     if (inputMappings.length > 0) {
       try {
-        final int resultLen =
-            payloadMappingProcessor.extract(activityEvent.getPayload(), inputMappings);
-        final MutableDirectBuffer mappedPayload = payloadMappingProcessor.getResultBuffer();
-        activityEvent.setPayload(mappedPayload, 0, resultLen);
+        payloadMergeTool.reset();
+        payloadMergeTool.mergeDocument(sourcePayload, inputMappings);
+
+        final DirectBuffer result = payloadMergeTool.writeResultToBuffer();
+        activityEvent.setPayload(result);
+
       } catch (MappingException e) {
         mappingException = e;
       }

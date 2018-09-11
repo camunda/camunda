@@ -16,7 +16,9 @@
 package io.zeebe.msgpack.mapping.merge;
 
 import io.zeebe.msgpack.mapping.MappingCtx;
+import io.zeebe.msgpack.mapping.MsgPackMergeTool;
 import java.util.concurrent.TimeUnit;
+import org.agrona.DirectBuffer;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -34,22 +36,41 @@ public class MergeBehvaiorBenchmark {
   @Benchmark
   @Threads(1)
   public int overwriteDocument(final MappingCtx mappingCtx, final MsgPackDocuments documents) {
-    return mappingCtx.processor.merge(
-        documents.sourceDocument, documents.targetDocument, mappingCtx.rootMappings);
+    final MsgPackMergeTool mergeTool = mappingCtx.processor;
+
+    mergeTool.reset();
+    mergeTool.mergeDocument(documents.targetDocument);
+    mergeTool.mergeDocument(documents.sourceDocument, mappingCtx.rootMappings);
+
+    final DirectBuffer result = mergeTool.writeResultToBuffer();
+    return result.capacity();
   }
 
   @Benchmark
   @Threads(1)
   public int topLevelMergeViaMappings(
       final MappingCtx mappingCtx, final MsgPackDocuments documents) {
-    return mappingCtx.processor.merge(
-        documents.sourceDocument, documents.targetDocument, documents.mappings);
+    final MsgPackMergeTool mergeTool = mappingCtx.processor;
+
+    mergeTool.reset();
+    mergeTool.mergeDocument(documents.targetDocument);
+    mergeTool.mergeDocument(documents.sourceDocument, documents.mappings);
+
+    final DirectBuffer result = mergeTool.writeResultToBuffer();
+    return result.capacity();
   }
 
   @Benchmark
   @Threads(1)
   public int topLevelMergeDefaultBehavior(
       final MappingCtx mappingCtx, final MsgPackDocuments documents) {
-    return mappingCtx.processor.merge(documents.sourceDocument, documents.targetDocument);
+    final MsgPackMergeTool mergeTool = mappingCtx.processor;
+
+    mergeTool.reset();
+    mergeTool.mergeDocument(documents.targetDocument);
+    mergeTool.mergeDocument(documents.sourceDocument);
+
+    final DirectBuffer result = mergeTool.writeResultToBuffer();
+    return result.capacity();
   }
 }

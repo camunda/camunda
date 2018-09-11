@@ -29,6 +29,7 @@ import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
+import io.zeebe.UnstableTest;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -50,6 +51,7 @@ import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -309,6 +311,7 @@ public class MessageCorrelationTest {
   }
 
   @Test
+  @Category(UnstableTest.class) // => https://github.com/zeebe-io/zeebe/issues/1234
   public void shouldCorrelateMessageWithZeroTTL() throws Exception {
     // given
     final long workflowInstanceKey =

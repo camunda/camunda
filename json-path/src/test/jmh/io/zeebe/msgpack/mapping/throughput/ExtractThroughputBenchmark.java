@@ -16,7 +16,9 @@
 package io.zeebe.msgpack.mapping.throughput;
 
 import io.zeebe.msgpack.mapping.MappingCtx;
+import io.zeebe.msgpack.mapping.MsgPackMergeTool;
 import java.util.concurrent.TimeUnit;
+import org.agrona.DirectBuffer;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
@@ -34,6 +36,11 @@ public class ExtractThroughputBenchmark {
   @Benchmark
   @Threads(1)
   public int extractThroughput(final MappingCtx mappingCtx, final ThroughputCtx documents) {
-    return mappingCtx.processor.extract(documents.sourceDocument, documents.mappings);
+    final MsgPackMergeTool mergeTool = mappingCtx.processor;
+
+    mergeTool.mergeDocument(documents.sourceDocument, documents.mappings);
+
+    final DirectBuffer result = mergeTool.writeResultToBuffer();
+    return result.capacity();
   }
 }
