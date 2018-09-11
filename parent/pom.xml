@@ -33,7 +33,7 @@
     <version.jmh>1.21</version.jmh>
     <version.junit>4.12</version.junit>
     <version.log4j>2.11.1</version.log4j>
-    <version.mockito>2.21.0</version.mockito>
+    <version.mockito>2.22.0</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.8.16</version.msgpack>
     <version.netty.tcnative>2.0.15.Final</version.netty.tcnative>
@@ -61,7 +61,7 @@
     <plugin.version.resources>3.1.0</plugin.version.resources>
     <plugin.version.scala>3.2.1</plugin.version.scala>
     <plugin.version.shade>3.1.1</plugin.version.shade>
-    <plugin.version.surefire>2.20</plugin.version.surefire>
+    <plugin.version.surefire>2.22.0</plugin.version.surefire>
     <plugin.version.versions>2.7</plugin.version.versions>
 
     <!-- maven extensions -->
