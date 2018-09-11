@@ -1,10 +1,14 @@
 package org.camunda.optimize.test.it.rule;
 
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.junit.runner.Description;
 import org.junit.runner.Result;
 import org.junit.runner.notification.RunListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.time.OffsetDateTime;
 
 /**
  * Starts optimize during the test execution in maven. Also
@@ -22,12 +26,16 @@ public class StartOptimizeExecutionListener extends RunListener {
     } catch (Exception e) {
       logger.error("Failed to start Optimize", e);
     }
-    waitUnitOptimizeIsStarted();
+    waitUntilOptimizeIsStarted();
   }
 
-  private void waitUnitOptimizeIsStarted() throws InterruptedException {
+  private void waitUntilOptimizeIsStarted() throws InterruptedException {
+    OffsetDateTime timeout = OffsetDateTime.now().plusMinutes(5L);
     while(!TestEmbeddedCamundaOptimize.getInstance().isStarted()) {
       Thread.sleep(100L);
+      if (OffsetDateTime.now().isAfter(timeout)) {
+        throw new OptimizeIntegrationTestException("Optimize startup shouldn't take longer than 5 minutes");
+      }
     }
   }
 
