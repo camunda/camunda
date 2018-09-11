@@ -50,7 +50,3 @@ export function getBodyRows(unitedResults, allKeys, formatter, isFrequency, proc
   });
   return rows;
 }
-
-export function isDate(date) {
-  return isNaN(date) && new Date(date) !== 'Invalid Date' && !isNaN(new Date(date));
-}

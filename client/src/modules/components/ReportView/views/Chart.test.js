@@ -22,8 +22,7 @@ jest.mock('chart.js', () =>
 jest.mock('./service', () => {
   return {
     getRelativeValue: jest.fn(),
-    uniteResults: jest.fn().mockReturnValue([{a: 123, b: 5}]),
-    isDate: jest.fn()
+    uniteResults: jest.fn().mockReturnValue([{a: 123, b: 5}])
   };
 });
 

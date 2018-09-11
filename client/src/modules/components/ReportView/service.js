@@ -19,7 +19,12 @@ export function getTableProps(reportType, result, data, processInstanceCount) {
 
 export function getChartProps(reportType, result, data, processInstanceCount) {
   if (reportType === 'combined') {
-    return Object.keys(result).reduce(
+    const groupBy = data.groupBy;
+    const isDate =
+      groupBy.type === 'startDate' ||
+      (groupBy.type === 'variable' && groupBy.value.type === 'Date');
+
+    const resultData = Object.keys(result).reduce(
       (prev, reportId) => {
         return {
           data: [...prev.data, formatResult(data, result[reportId].result)],
@@ -32,6 +37,10 @@ export function getChartProps(reportType, result, data, processInstanceCount) {
       },
       {data: [], reportsNames: [], processInstanceCount: []}
     );
+    return {
+      isDate,
+      ...resultData
+    };
   }
   return {
     data: formatResult(data, result),

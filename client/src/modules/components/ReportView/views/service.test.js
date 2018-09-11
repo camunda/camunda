@@ -1,4 +1,4 @@
-import {uniteResults, getFormattedLabels, getBodyRows, isDate} from './service';
+import {uniteResults, getFormattedLabels, getBodyRows} from './service';
 
 jest.mock('request', () => ({
   get: jest.fn()
@@ -18,9 +18,4 @@ it('should return correct table label structure', () => {
   expect(
     getFormattedLabels([['key', 'value'], ['key', 'value']], ['Report A', 'Report B'], false)
   ).toEqual([{label: 'Report A', columns: ['value']}, {label: 'Report B', columns: ['value']}]);
-});
-
-it('should check if a data is valide or not', () => {
-  expect(isDate(5)).toBeFalsy();
-  expect(isDate('25 Feb')).toBeTruthy();
 });

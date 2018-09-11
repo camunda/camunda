@@ -1,4 +1,4 @@
-import {getTableProps, formatResult, getChartProps, isDate} from './service';
+import {getTableProps, formatResult, getChartProps} from './service';
 
 const exampleDurationReport = {
   name: 'report A',
@@ -11,7 +11,7 @@ const exampleDurationReport = {
       operation: 'foo'
     },
     groupBy: {
-      type: 'processInstance',
+      type: 'startDate',
       unit: 'day'
     },
     visualization: 'table',
@@ -134,7 +134,7 @@ it('should return correct cominbed table repot data proberties', () => {
   });
 });
 
-it('should return correct cominbed chart repot data proberties for single report', () => {
+it('should return correct single chart repot data proberties', () => {
   const chartProps = getChartProps(
     exampleDurationReport.reportType,
     exampleDurationReport.result,
@@ -174,6 +174,7 @@ it('should return correct cominbed chart repot data proberties for single report
   expect(chartProps).toEqual({
     data: [{'2015-03-25': 2, '2015-03-26': 3}, {'2015-03-25': 2, '2015-03-26': 3}],
     reportsNames: ['report A', 'report A'],
+    isDate: true,
     processInstanceCount: [100, 100]
   });
 });

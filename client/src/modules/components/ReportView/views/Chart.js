@@ -2,7 +2,7 @@ import React from 'react';
 import ChartRenderer from 'chart.js';
 import ReportBlankSlate from '../ReportBlankSlate';
 
-import {getRelativeValue, uniteResults, isDate} from './service';
+import {getRelativeValue, uniteResults} from './service';
 import {formatters} from 'services';
 
 import {themed} from 'theme';
@@ -80,7 +80,7 @@ export default themed(
 
       let labels = Object.keys(Object.assign({}, ...dataArr));
 
-      if (isDate(labels[0]))
+      if (this.props.isDate)
         labels.sort((a, b) => {
           return new Date(a) - new Date(b);
         });
@@ -182,8 +182,8 @@ export default themed(
     };
 
     createBarOptions = (data, targetValue) => {
-      const targetLine = targetValue ? this.getFormattedTargetValue(targetValue) : 0;
       const isCombined = this.props.reportType === 'combined';
+      const targetLine = targetValue && !isCombined ? this.getFormattedTargetValue(targetValue) : 0;
       return {
         legend: {display: isCombined},
         scales: {
