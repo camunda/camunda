@@ -274,7 +274,7 @@ public class ReportRestServiceIT {
       .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
       .get();
 
-    // then the status code is okay
+    // then
     assertThat(response.getStatus(), is(500));
     AbstractSharingIT.assertErrorFields(response.readEntity(ReportEvaluationException.class));
   }
@@ -295,7 +295,7 @@ public class ReportRestServiceIT {
       .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
       .get();
 
-    // then the status code is okay
+    // then
     assertThat(response.getStatus(), is(500));
     AbstractSharingIT.assertErrorFields(response.readEntity(ReportEvaluationException.class));
   }
@@ -369,7 +369,7 @@ public class ReportRestServiceIT {
       .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
       .get();
 
-    // then the status code is okay
+    // then
     assertThat(response.getStatus(), is(500));
     ReportEvaluationException errorMessage = response.readEntity(ReportEvaluationException.class);
     assertThat(errorMessage.getReportDefinition(), is(notNullValue()));
@@ -387,7 +387,7 @@ public class ReportRestServiceIT {
       .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
       .post(Entity.json(combinedReport));
 
-    // then the status code is okay
+    // then
     assertThat(response.getStatus(), is(500));
     ReportEvaluationException errorMessage = response.readEntity(ReportEvaluationException.class);
     assertThat(errorMessage.getReportDefinition(), is(notNullValue()));
