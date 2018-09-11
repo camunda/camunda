@@ -375,6 +375,28 @@ public class ReportDataHelper {
     );
   }
 
+  public static SingleReportDataDto createAvgPiDurationHeatMapGroupByNoneWithProcessPart(
+      String processDefinitionKey,
+      String processDefinitionVersion,
+      String startFlowNodeId,
+      String endFlowNodeId
+  ) {
+
+    ViewDto view = createAverageProcessInstanceDurationView();
+    GroupByDto groupByDto = createGroupByNone();
+    ProcessPartDto processPartDto = createProcessPart(startFlowNodeId, endFlowNodeId);
+
+    SingleReportDataDto reportDataViewRaw = createReportDataViewRaw(
+      processDefinitionKey,
+      processDefinitionVersion,
+      HEAT_VISUALIZATION,
+      view,
+      groupByDto
+    );
+    reportDataViewRaw.setProcessPart(processPartDto);
+    return reportDataViewRaw;
+  }
+
   public static SingleReportDataDto createMinProcessInstanceDurationHeatMapGroupByNone(
       String processDefinitionKey,
       String processDefinitionVersion
@@ -390,6 +412,28 @@ public class ReportDataHelper {
         view,
         groupByDto
     );
+  }
+
+  public static SingleReportDataDto createMinPiDurationHeatMapGroupByNoneWithProcessPart(
+      String processDefinitionKey,
+      String processDefinitionVersion,
+      String startFlowNodeId,
+      String endFlowNodeId
+  ) {
+
+    ViewDto view = createMinProcessInstanceDurationView();
+    GroupByDto groupByDto = createGroupByNone();
+    ProcessPartDto processPartDto = createProcessPart(startFlowNodeId, endFlowNodeId);
+
+    SingleReportDataDto reportDataViewRaw = createReportDataViewRaw(
+      processDefinitionKey,
+      processDefinitionVersion,
+      HEAT_VISUALIZATION,
+      view,
+      groupByDto
+    );
+    reportDataViewRaw.setProcessPart(processPartDto);
+    return reportDataViewRaw;
   }
 
   public static SingleReportDataDto createMaxProcessInstanceDurationHeatMapGroupByNone(
@@ -409,6 +453,28 @@ public class ReportDataHelper {
     );
   }
 
+  public static SingleReportDataDto createMaxPiDurationHeatMapGroupByNoneWithProcessPart(
+      String processDefinitionKey,
+      String processDefinitionVersion,
+      String startFlowNodeId,
+      String endFlowNodeId
+  ) {
+
+    ViewDto view = createMaxProcessInstanceDurationView();
+    GroupByDto groupByDto = createGroupByNone();
+    ProcessPartDto processPartDto = createProcessPart(startFlowNodeId, endFlowNodeId);
+
+    SingleReportDataDto reportDataViewRaw = createReportDataViewRaw(
+      processDefinitionKey,
+      processDefinitionVersion,
+      HEAT_VISUALIZATION,
+      view,
+      groupByDto
+    );
+    reportDataViewRaw.setProcessPart(processPartDto);
+    return reportDataViewRaw;
+  }
+
   public static SingleReportDataDto createMedianProcessInstanceDurationHeatMapGroupByNone(
       String processDefinitionKey,
       String processDefinitionVersion
@@ -424,6 +490,28 @@ public class ReportDataHelper {
         view,
         groupByDto
     );
+  }
+
+  public static SingleReportDataDto createMedianPiDurationHeatMapGroupByNoneWithProcessPart(
+      String processDefinitionKey,
+      String processDefinitionVersion,
+      String startFlowNodeId,
+      String endFlowNodeId
+  ) {
+
+    ViewDto view = createMedianProcessInstanceDurationView();
+    GroupByDto groupByDto = createGroupByNone();
+    ProcessPartDto processPartDto = createProcessPart(startFlowNodeId, endFlowNodeId);
+
+    SingleReportDataDto reportDataViewRaw = createReportDataViewRaw(
+      processDefinitionKey,
+      processDefinitionVersion,
+      HEAT_VISUALIZATION,
+      view,
+      groupByDto
+    );
+    reportDataViewRaw.setProcessPart(processPartDto);
+    return reportDataViewRaw;
   }
 
   public static SingleReportDataDto createPiFrequencyCountGroupedByNone(

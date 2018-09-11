@@ -48,11 +48,6 @@ public abstract class GroupByDto<VALUE extends GroupByValueDto>{
     this.type = type;
   }
 
-  @JsonIgnore
-  public String getKey() {
-    return type;
-  }
-
   @Override
   public String toString() {
     return type;
@@ -69,5 +64,10 @@ public abstract class GroupByDto<VALUE extends GroupByValueDto>{
     GroupByDto<?> that = (GroupByDto<?>) o;
     return Objects.equals(type, that.type) &&
       Objects.equals(value, that.value);
+  }
+
+  @JsonIgnore
+  public String createCommandKey() {
+    return type;
   }
 }

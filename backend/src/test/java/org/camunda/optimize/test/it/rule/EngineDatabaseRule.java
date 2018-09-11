@@ -151,6 +151,104 @@ public class EngineDatabaseRule extends TestWatcher {
     connection.commit();
   }
 
+  public void changeActivityInstanceStartDate(String processInstanceId,
+                                              OffsetDateTime startDate) throws SQLException {
+    String sql = "UPDATE ACT_HI_ACTINST " +
+      "SET START_TIME_ = ? WHERE " +
+      "PROC_INST_ID_ = ?";
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setTimestamp(1, java.sql.Timestamp.valueOf(startDate.toLocalDateTime()));
+    statement.setString(2, processInstanceId);
+    statement.executeUpdate();
+    connection.commit();
+  }
+
+  public void changeFirstActivityInstanceStartDate(String activityInstanceId,
+                                                OffsetDateTime startDate) throws SQLException {
+    String sql = "UPDATE ACT_HI_ACTINST " +
+      "SET START_TIME_ = ? WHERE " +
+      "ID_ = (SELECT ID_ FROM ACT_HI_ACTINST WHERE ACT_ID_ = ? ORDER BY START_TIME_ LIMIT 1) ";
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setTimestamp(1, java.sql.Timestamp.valueOf(startDate.toLocalDateTime()));
+    statement.setString(2, activityInstanceId);
+    statement.executeUpdate();
+    connection.commit();
+  }
+
+  public void changeActivityInstanceStartDateForProcessDefinition(
+                                              String processDefinitionId,
+                                              OffsetDateTime startDate) throws SQLException {
+    String sql = "UPDATE ACT_HI_ACTINST " +
+      "SET START_TIME_ = ? WHERE " +
+      "PROC_DEF_ID_ = ?";
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setTimestamp(1, java.sql.Timestamp.valueOf(startDate.toLocalDateTime()));
+    statement.setString(2, processDefinitionId);
+    statement.executeUpdate();
+    connection.commit();
+  }
+
+  public void updateActivityInstanceStartDates(Map<String, OffsetDateTime> processInstanceToDates) throws SQLException {
+    String sql = "UPDATE ACT_HI_ACTINST " +
+      "SET START_TIME_ = ? WHERE PROC_INST_ID_ = ?";
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    for (Map.Entry<String, OffsetDateTime> idToStartDate : processInstanceToDates.entrySet()) {
+      statement.setTimestamp(1, java.sql.Timestamp.valueOf(idToStartDate.getValue().toLocalDateTime()));
+      statement.setString(2, idToStartDate.getKey());
+      statement.executeUpdate();
+    }
+    connection.commit();
+  }
+
+  public void changeActivityInstanceEndDate(String processInstanceId,
+                                              OffsetDateTime endDate) throws SQLException {
+    String sql = "UPDATE ACT_HI_ACTINST " +
+      "SET END_TIME_ = ? WHERE " +
+      "PROC_INST_ID_ = ?";
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setTimestamp(1, java.sql.Timestamp.valueOf(endDate.toLocalDateTime()));
+    statement.setString(2, processInstanceId);
+    statement.executeUpdate();
+    connection.commit();
+  }
+
+  public void changeFirstActivityInstanceEndDate(String activityInstanceId,
+                                                OffsetDateTime endDate) throws SQLException {
+    String sql = "UPDATE ACT_HI_ACTINST " +
+      "SET END_TIME_ = ? WHERE " +
+      "ID_ = (SELECT ID_ FROM ACT_HI_ACTINST WHERE ACT_ID_ = ? ORDER BY END_TIME_ LIMIT 1) ";
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setTimestamp(1, java.sql.Timestamp.valueOf(endDate.toLocalDateTime()));
+    statement.setString(2, activityInstanceId);
+    statement.executeUpdate();
+    connection.commit();
+  }
+
+  public void changeActivityInstanceEndDateForProcessDefinition(
+                                              String processDefinitionId,
+                                              OffsetDateTime endDate) throws SQLException {
+    String sql = "UPDATE ACT_HI_ACTINST " +
+      "SET END_TIME_ = ? WHERE " +
+      "PROC_DEF_ID_ = ?";
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    statement.setTimestamp(1, java.sql.Timestamp.valueOf(endDate.toLocalDateTime()));
+    statement.setString(2, processDefinitionId);
+    statement.executeUpdate();
+    connection.commit();
+  }
+
+  public void updateActivityInstanceEndDates(Map<String, OffsetDateTime> processInstanceToDates) throws SQLException {
+    String sql = "UPDATE ACT_HI_ACTINST " +
+      "SET END_TIME_ = ? WHERE PROC_INST_ID_ = ?";
+    PreparedStatement statement = connection.prepareStatement(handleDatabaseSyntax(sql));
+    for (Map.Entry<String, OffsetDateTime> idToActivityEndDate : processInstanceToDates.entrySet()) {
+      statement.setTimestamp(1, java.sql.Timestamp.valueOf(idToActivityEndDate.getValue().toLocalDateTime()));
+      statement.setString(2, idToActivityEndDate.getKey());
+      statement.executeUpdate();
+    }
+    connection.commit();
+  }
+
   public void changeProcessInstanceState(String processInstanceId, String newState) throws SQLException {
     String sql = "UPDATE ACT_HI_PROCINST " +
             "SET STATE_ = ? WHERE PROC_INST_ID_ = ?";

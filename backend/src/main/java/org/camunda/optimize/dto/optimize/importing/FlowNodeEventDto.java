@@ -17,8 +17,6 @@ public class FlowNodeEventDto implements Serializable,OptimizeDto {
   protected String processInstanceId;
   protected OffsetDateTime startDate;
   protected OffsetDateTime endDate;
-  protected OffsetDateTime processInstanceStartDate;
-  protected OffsetDateTime processInstanceEndDate;
   protected Long durationInMs;
   protected String activityType;
   protected String engineAlias;
@@ -94,22 +92,6 @@ public class FlowNodeEventDto implements Serializable,OptimizeDto {
 
   public void setEndDate(OffsetDateTime endDate) {
     this.endDate = endDate;
-  }
-
-  public OffsetDateTime getProcessInstanceStartDate() {
-    return processInstanceStartDate;
-  }
-
-  public void setProcessInstanceStartDate(OffsetDateTime processInstanceStartDate) {
-    this.processInstanceStartDate = processInstanceStartDate;
-  }
-
-  public OffsetDateTime getProcessInstanceEndDate() {
-    return processInstanceEndDate;
-  }
-
-  public void setProcessInstanceEndDate(OffsetDateTime processInstanceEndDate) {
-    this.processInstanceEndDate = processInstanceEndDate;
   }
 
   public Long getDurationInMs() {

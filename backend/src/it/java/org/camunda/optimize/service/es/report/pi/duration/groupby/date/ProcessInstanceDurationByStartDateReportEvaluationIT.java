@@ -15,11 +15,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.group.StartDateGrou
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapSingleReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.command.util.ReportConstants;
-import org.camunda.optimize.service.es.report.util.AvgProcessInstanceDurationByStartDateReportDataCreator;
-import org.camunda.optimize.service.es.report.util.MaxProcessInstanceDurationByStartDateReportDataCreator;
-import org.camunda.optimize.service.es.report.util.MedianProcessInstanceDurationByStartDateReportDataCreator;
-import org.camunda.optimize.service.es.report.util.MinProcessInstanceDurationByStartDateReportDataCreator;
-import org.camunda.optimize.service.es.report.util.ReportDataCreator;
+import org.camunda.optimize.service.es.report.util.creator.avg.AvgProcessInstanceDurationByStartDateReportDataCreator;
+import org.camunda.optimize.service.es.report.util.creator.max.MaxProcessInstanceDurationByStartDateReportDataCreator;
+import org.camunda.optimize.service.es.report.util.creator.median.MedianProcessInstanceDurationByStartDateReportDataCreator;
+import org.camunda.optimize.service.es.report.util.creator.min.MinProcessInstanceDurationByStartDateReportDataCreator;
+import org.camunda.optimize.service.es.report.util.creator.ReportDataCreator;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;

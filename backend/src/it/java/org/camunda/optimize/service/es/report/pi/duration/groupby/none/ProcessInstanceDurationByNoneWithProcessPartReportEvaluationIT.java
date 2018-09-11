@@ -13,10 +13,10 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.VariableFilt
 import org.camunda.optimize.dto.optimize.query.report.single.result.NumberSingleReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.command.util.ReportConstants;
-import org.camunda.optimize.service.es.report.util.creator.avg.AvgProcessInstanceDurationByNoneReportDataCreator;
-import org.camunda.optimize.service.es.report.util.creator.max.MaxProcessInstanceDurationByNoneReportDataCreator;
-import org.camunda.optimize.service.es.report.util.creator.median.MedianProcessInstanceDurationByNoneReportDataCreator;
-import org.camunda.optimize.service.es.report.util.creator.min.MinProcessInstanceDurationByNoneReportDataCreator;
+import org.camunda.optimize.service.es.report.util.creator.avg.AvgProcessInstanceDurationByNoneWithProcessPartReportDataCreator;
+import org.camunda.optimize.service.es.report.util.creator.max.MaxProcessInstanceDurationByNoneWithProcessPartReportDataCreator;
+import org.camunda.optimize.service.es.report.util.creator.median.MedianProcessInstanceDurationByNoneWithProcessPartReportDataCreator;
+import org.camunda.optimize.service.es.report.util.creator.min.MinProcessInstanceDurationByNoneWithProcessPartReportDataCreator;
 import org.camunda.optimize.service.es.report.util.creator.ReportDataCreator;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -30,6 +30,7 @@ import org.junit.runner.RunWith;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
+import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.Collections;
 import java.util.HashMap;
@@ -45,14 +46,17 @@ import static org.camunda.optimize.service.es.report.command.util.ReportConstant
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_PROCESS_INSTANCE_ENTITY;
 import static org.camunda.optimize.test.util.VariableFilterUtilHelper.createBooleanVariableFilter;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
 
 @RunWith(JUnitParamsRunner.class)
-public class ProcessInstanceDurationByNoneReportEvaluationIT {
+public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
 
-  public static final String PROCESS_DEFINITION_KEY = "123";
+  private static final String PROCESS_DEFINITION_KEY = "123";
+  private static final String END_EVENT = "endEvent";
+  private static final String START_EVENT = "startEvent";
+  private static final String START_LOOP = "mergeExclusiveGateway";
+  private static final String END_LOOP = "splittingGateway";
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -75,13 +79,21 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
     OffsetDateTime startDate = OffsetDateTime.now();
     OffsetDateTime endDate = startDate.plusSeconds(1);
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), endDate);
+    engineDatabaseRule.changeActivityInstanceStartDateForProcessDefinition(
+      processInstanceDto.getDefinitionId(),
+      startDate
+    );
+    engineDatabaseRule.changeActivityInstanceEndDateForProcessDefinition(processInstanceDto.getDefinitionId(), endDate);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    SingleReportDataDto reportData = creator.create(processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion());
+    SingleReportDataDto reportData = creator.create(
+      processInstanceDto.getProcessDefinitionKey(),
+      processInstanceDto.getProcessDefinitionVersion(),
+      START_EVENT,
+      END_EVENT
+    );
     NumberSingleReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -94,17 +106,17 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
     assertThat(resultReportDataDto.getView().getEntity(), is(VIEW_PROCESS_INSTANCE_ENTITY));
     assertThat(resultReportDataDto.getView().getProperty(), is(VIEW_DURATION_PROPERTY));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(GROUP_BY_NONE_TYPE));
-    assertThat(resultReportDataDto.getProcessPart(), is(nullValue()));
+    assertThat(resultReportDataDto.getProcessPart(), is(notNullValue()));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult(), is(1000L));
   }
 
   private Object[] parametersForReportEvaluationForOneProcess() {
     return new Object[]{
-      new Object[]{new AvgProcessInstanceDurationByNoneReportDataCreator(), VIEW_AVERAGE_OPERATION},
-      new Object[]{new MinProcessInstanceDurationByNoneReportDataCreator(), VIEW_MIN_OPERATION},
-      new Object[]{new MaxProcessInstanceDurationByNoneReportDataCreator(), VIEW_MAX_OPERATION},
-      new Object[]{new MedianProcessInstanceDurationByNoneReportDataCreator(), VIEW_MEDIAN_OPERATION}
+      new Object[]{new AvgProcessInstanceDurationByNoneWithProcessPartReportDataCreator(), VIEW_AVERAGE_OPERATION},
+      new Object[]{new MinProcessInstanceDurationByNoneWithProcessPartReportDataCreator(), VIEW_MIN_OPERATION},
+      new Object[]{new MaxProcessInstanceDurationByNoneWithProcessPartReportDataCreator(), VIEW_MAX_OPERATION},
+      new Object[]{new MedianProcessInstanceDurationByNoneWithProcessPartReportDataCreator(), VIEW_MEDIAN_OPERATION}
     };
   }
 
@@ -113,14 +125,22 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
   public void reportEvaluationById(ReportDataCreator creator, String operation) throws Exception {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
+    OffsetDateTime endDate = startDate.plusSeconds(1);
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
+    engineDatabaseRule.changeActivityInstanceStartDateForProcessDefinition(
+      processInstanceDto.getDefinitionId(),
+      startDate
+    );
+    engineDatabaseRule.changeActivityInstanceEndDateForProcessDefinition(processInstanceDto.getDefinitionId(), endDate);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     SingleReportDataDto reportDataDto =
-      creator.create(processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion());
+      creator.create(
+        processInstanceDto.getProcessDefinitionKey(),
+        processInstanceDto.getProcessDefinitionVersion(),
+        START_EVENT,
+        END_EVENT
+      );
     String reportId = createAndStoreDefaultReportDefinition(reportDataDto);
 
     // when
@@ -136,16 +156,17 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
     assertThat(resultReportDataDto.getView().getEntity(), is(VIEW_PROCESS_INSTANCE_ENTITY));
     assertThat(resultReportDataDto.getView().getProperty(), is(VIEW_DURATION_PROPERTY));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(GROUP_BY_NONE_TYPE));
+    assertThat(resultReportDataDto.getProcessPart(), is(notNullValue()));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult(), is(1000L));
   }
 
   private Object[] parametersForReportEvaluationById() {
     return new Object[]{
-      new Object[]{new AvgProcessInstanceDurationByNoneReportDataCreator(), VIEW_AVERAGE_OPERATION},
-      new Object[]{new MinProcessInstanceDurationByNoneReportDataCreator(), VIEW_MIN_OPERATION},
-      new Object[]{new MaxProcessInstanceDurationByNoneReportDataCreator(), VIEW_MAX_OPERATION},
-      new Object[]{new MedianProcessInstanceDurationByNoneReportDataCreator(), VIEW_MEDIAN_OPERATION}
+      new Object[]{new AvgProcessInstanceDurationByNoneWithProcessPartReportDataCreator(), VIEW_AVERAGE_OPERATION},
+      new Object[]{new MinProcessInstanceDurationByNoneWithProcessPartReportDataCreator(), VIEW_MIN_OPERATION},
+      new Object[]{new MaxProcessInstanceDurationByNoneWithProcessPartReportDataCreator(), VIEW_MAX_OPERATION},
+      new Object[]{new MedianProcessInstanceDurationByNoneWithProcessPartReportDataCreator(), VIEW_MEDIAN_OPERATION}
     };
   }
 
@@ -163,18 +184,22 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
     startDatesToUpdate.put(processInstanceDto.getId(), startDate);
     startDatesToUpdate.put(processInstanceDto2.getId(), startDate);
     startDatesToUpdate.put(processInstanceDto3.getId(), startDate);
-    engineDatabaseRule.updateProcessInstanceStartDates(startDatesToUpdate);
+    engineDatabaseRule.updateActivityInstanceStartDates(startDatesToUpdate);
     Map<String, OffsetDateTime> endDatesToUpdate = new HashMap<>();
     endDatesToUpdate.put(processInstanceDto.getId(), startDate.plusSeconds(1));
     endDatesToUpdate.put(processInstanceDto2.getId(), startDate.plusSeconds(2));
     endDatesToUpdate.put(processInstanceDto3.getId(), startDate.plusSeconds(9));
-    engineDatabaseRule.updateProcessInstanceEndDates(endDatesToUpdate);
+    engineDatabaseRule.updateActivityInstanceEndDates(endDatesToUpdate);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
     SingleReportDataDto reportData =
-      reportDataCreator.create(processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion());
+      reportDataCreator.create(
+        processInstanceDto.getProcessDefinitionKey(),
+        processInstanceDto.getProcessDefinitionVersion(),
+        START_EVENT,
+        END_EVENT);
     NumberSingleReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -184,11 +209,88 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
   private Object[] parametersForEvaluateReportForMultipleEvents() {
     return new Object[]{
-      new Object[]{new AvgProcessInstanceDurationByNoneReportDataCreator(), 4000L},
-      new Object[]{new MinProcessInstanceDurationByNoneReportDataCreator(), 1000L},
-      new Object[]{new MaxProcessInstanceDurationByNoneReportDataCreator(), 9000L},
-      new Object[]{new MedianProcessInstanceDurationByNoneReportDataCreator(), 2000L}
+      new Object[]{new AvgProcessInstanceDurationByNoneWithProcessPartReportDataCreator(), 4000L},
+      new Object[]{new MinProcessInstanceDurationByNoneWithProcessPartReportDataCreator(), 1000L},
+      new Object[]{new MaxProcessInstanceDurationByNoneWithProcessPartReportDataCreator(), 9000L},
+      new Object[]{new MedianProcessInstanceDurationByNoneWithProcessPartReportDataCreator(), 2000L}
     };
+  }
+
+  @Test
+  @Parameters(source = ReportDataCreatorProvider.class)
+  public void takeCorrectActivityOccurrences(ReportDataCreator reportDataCreator) throws Exception {
+    // given
+    OffsetDateTime startDate = OffsetDateTime.now().minusHours(1);
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartLoopingProcess();
+    engineDatabaseRule.changeFirstActivityInstanceStartDate(START_LOOP, startDate);
+    engineDatabaseRule.changeFirstActivityInstanceEndDate(END_LOOP, startDate.plusSeconds(2));
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    SingleReportDataDto reportData =
+      reportDataCreator.create(
+        processInstanceDto.getProcessDefinitionKey(),
+        processInstanceDto.getProcessDefinitionVersion(),
+        START_LOOP,
+        END_LOOP);
+    NumberSingleReportResultDto result = evaluateReport(reportData);
+
+    // then
+    assertThat(result.getResult(), is(notNullValue()));
+    assertThat(result.getResult(), is(2000L));
+  }
+
+  @Test
+  @Parameters(source = ReportDataCreatorProvider.class)
+  public void unknownStartReturnsZero(ReportDataCreator reportDataCreator) throws SQLException {
+    // given
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
+    engineDatabaseRule.changeActivityInstanceEndDateForProcessDefinition(
+      processInstanceDto.getDefinitionId(),
+      OffsetDateTime.now().plusHours(1)
+    );
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    SingleReportDataDto reportData =
+      reportDataCreator.create(
+        processInstanceDto.getProcessDefinitionKey(),
+        processInstanceDto.getProcessDefinitionVersion(),
+        "foo",
+        END_EVENT);
+    NumberSingleReportResultDto result = evaluateReport(reportData);
+
+    // then
+    assertThat(result.getResult(), is(notNullValue()));
+    assertThat(result.getResult(), is(0L));
+  }
+
+  @Test
+  @Parameters(source = ReportDataCreatorProvider.class)
+  public void unknownEndReturnsZero(ReportDataCreator reportDataCreator) throws SQLException {
+    // given
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
+    engineDatabaseRule.changeActivityInstanceStartDateForProcessDefinition(
+      processInstanceDto.getDefinitionId(),
+      OffsetDateTime.now().minusHours(1)
+    );
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    SingleReportDataDto reportData =
+      reportDataCreator.create(
+        processInstanceDto.getProcessDefinitionKey(),
+        processInstanceDto.getProcessDefinitionVersion(),
+        START_EVENT,
+        "FOo");
+    NumberSingleReportResultDto result = evaluateReport(reportData);
+
+    // then
+    assertThat(result.getResult(), is(notNullValue()));
+    assertThat(result.getResult(), is(0L));
   }
 
   @Test
@@ -196,7 +298,11 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
   public void noAvailableProcessInstancesReturnsZero(ReportDataCreator reportDataCreator) {
     // when
     SingleReportDataDto reportData =
-      reportDataCreator.create("fooProcessDefinition", "1");
+      reportDataCreator.create(
+        "fooProcessDefinition",
+        "1",
+        START_EVENT,
+        END_EVENT);
     NumberSingleReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -211,21 +317,23 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
 
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
+    engineDatabaseRule.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
+    engineDatabaseRule.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
     processInstanceDto = engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(9));
+    engineDatabaseRule.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
+    engineDatabaseRule.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(9));
     processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(2));
+    engineDatabaseRule.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
+    engineDatabaseRule.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(2));
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-
     // when
     SingleReportDataDto reportData = reportDataCreator.create(
-        processInstanceDto.getProcessDefinitionKey(), ReportConstants.ALL_VERSIONS
+        processInstanceDto.getProcessDefinitionKey(),
+        ReportConstants.ALL_VERSIONS,
+        START_EVENT,
+        END_EVENT
     );
     NumberSingleReportResultDto result = evaluateReport(reportData);
 
@@ -236,10 +344,10 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
   private Object[] parametersForReportAcrossAllVersions() {
     return new Object[]{
-      new Object[]{new AvgProcessInstanceDurationByNoneReportDataCreator(), 4000L},
-      new Object[]{new MinProcessInstanceDurationByNoneReportDataCreator(), 1000L},
-      new Object[]{new MaxProcessInstanceDurationByNoneReportDataCreator(), 9000L},
-      new Object[]{new MedianProcessInstanceDurationByNoneReportDataCreator(), 2000L}
+      new Object[]{new AvgProcessInstanceDurationByNoneWithProcessPartReportDataCreator(), 4000L},
+      new Object[]{new MinProcessInstanceDurationByNoneWithProcessPartReportDataCreator(), 1000L},
+      new Object[]{new MaxProcessInstanceDurationByNoneWithProcessPartReportDataCreator(), 9000L},
+      new Object[]{new MedianProcessInstanceDurationByNoneWithProcessPartReportDataCreator(), 2000L}
     };
   }
 
@@ -253,21 +361,24 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
     String processDefinitionKey = processInstanceDto.getProcessDefinitionKey();
     String processDefinitionVersion = processInstanceDto.getProcessDefinitionVersion();
 
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
+    engineDatabaseRule.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
+    engineDatabaseRule.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
     processInstanceDto = engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(9));
+    engineDatabaseRule.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
+    engineDatabaseRule.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(9));
     processInstanceDto = engineRule.startProcessInstance(processInstanceDto.getDefinitionId());
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(2));
+    engineDatabaseRule.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
+    engineDatabaseRule.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(2));
     deployAndStartSimpleServiceTaskProcess();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
     SingleReportDataDto reportData = reportDataCreator.create(
-        processDefinitionKey, processDefinitionVersion
+        processDefinitionKey,
+        processDefinitionVersion,
+        START_EVENT,
+        END_EVENT
     );
     NumberSingleReportResultDto result = evaluateReport(reportData);
 
@@ -278,10 +389,10 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
   private Object[] parametersForOtherProcessDefinitionsDoNoAffectResult() {
     return new Object[]{
-      new Object[]{new AvgProcessInstanceDurationByNoneReportDataCreator(), 4000L},
-      new Object[]{new MinProcessInstanceDurationByNoneReportDataCreator(), 1000L},
-      new Object[]{new MaxProcessInstanceDurationByNoneReportDataCreator(), 9000L},
-      new Object[]{new MedianProcessInstanceDurationByNoneReportDataCreator(), 2000L}
+      new Object[]{new AvgProcessInstanceDurationByNoneWithProcessPartReportDataCreator(), 4000L},
+      new Object[]{new MinProcessInstanceDurationByNoneWithProcessPartReportDataCreator(), 1000L},
+      new Object[]{new MaxProcessInstanceDurationByNoneWithProcessPartReportDataCreator(), 9000L},
+      new Object[]{new MedianProcessInstanceDurationByNoneWithProcessPartReportDataCreator(), 2000L}
     };
   }
 
@@ -293,8 +404,8 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
     variables.put("var", true);
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcessWithVariables(variables);
-    engineDatabaseRule.changeProcessInstanceStartDate(processInstanceDto.getId(), startDate);
-    engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
+    engineDatabaseRule.changeActivityInstanceStartDate(processInstanceDto.getId(), startDate);
+    engineDatabaseRule.changeActivityInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
     String processDefinitionId = processInstanceDto.getDefinitionId();
     engineRule.startProcessInstance(processDefinitionId);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
@@ -302,82 +413,74 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
     // when
     SingleReportDataDto reportData = reportDataCreator.create(
-        processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
+        processInstanceDto.getProcessDefinitionKey(),
+        processInstanceDto.getProcessDefinitionVersion(),
+        START_EVENT,
+        END_EVENT
     );
-    reportData.setFilter(createVariableFilter("var", "true"));
+    reportData.setFilter(createVariableFilter("true"));
     NumberSingleReportResultDto result = evaluateReport(reportData);
 
     // then
     assertThat(result.getResult(), is(1000L));
 
     // when
-    reportData.setFilter(createVariableFilter("var", "false"));
+    reportData.setFilter(createVariableFilter("false"));
     result = evaluateReport(reportData);
 
     // then
     assertThat(result.getResult(), is(0L));
   }
 
-  private List<FilterDto> createVariableFilter(String varName, String value) {
-    VariableFilterDto variableFilterDto = createBooleanVariableFilter(varName, value);
+  private List<FilterDto> createVariableFilter(String value) {
+    VariableFilterDto variableFilterDto = createBooleanVariableFilter("var", value);
     return Collections.singletonList(variableFilterDto);
   }
 
-  @Test
-  @Parameters(source = ReportDataCreatorProvider.class)
-  public void optimizeExceptionOnViewPropertyIsNull(ReportDataCreator reportDataCreator) {
-    // given
-    SingleReportDataDto dataDto = reportDataCreator.create(PROCESS_DEFINITION_KEY, "1");
-    dataDto.getView().setProperty(null);
-
-    //when
-    Response response = evaluateReportAndReturnResponse(dataDto);
-
-    // then
-    assertThat(response.getStatus(), is(500));
-  }
-
-  @Test
-  @Parameters(source = ReportDataCreatorProvider.class)
-  public void optimizeExceptionOnGroupByTypeIsNull(ReportDataCreator reportDataCreator) {
-    // given
-    SingleReportDataDto dataDto = reportDataCreator.create(PROCESS_DEFINITION_KEY, "1");
-    dataDto.getGroupBy().setType(null);
-
-    //when
-    Response response = evaluateReportAndReturnResponse(dataDto);
-
-    // then
-    assertThat(response.getStatus(), is(400));
-  }
 
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess() {
-    return deployAndStartSimpleServiceTaskProcess(TEST_ACTIVITY);
-  }
-
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(String activityId) {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
-      .startEvent()
-      .serviceTask(activityId)
-      .camundaExpression("${true}")
-      .endEvent()
+      .startEvent(START_EVENT)
+      .serviceTask()
+        .camundaExpression("${true}")
+      .endEvent(END_EVENT)
       .done();
     return engineRule.deployAndStartProcess(processModel);
   }
 
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcessWithVariables(Map<String, Object> variables) {
-    return deployAndStartSimpleServiceTaskProcessWithVariables(TEST_ACTIVITY, variables);
+  private ProcessInstanceEngineDto deployAndStartLoopingProcess() {
+    BpmnModelInstance modelInstance = Bpmn.createExecutableProcess()
+    .startEvent("startEvent")
+    .exclusiveGateway(START_LOOP)
+      .serviceTask()
+        .camundaExpression("${true}")
+      .exclusiveGateway(END_LOOP)
+        .condition("Take another round", "${!anotherRound}")
+      .endEvent("endEvent")
+    .moveToLastGateway()
+      .condition("End process", "${anotherRound}")
+      .serviceTask("serviceTask")
+        .camundaExpression("${true}")
+        .camundaInputParameter("anotherRound", "${anotherRound}")
+        .camundaOutputParameter("anotherRound", "${!anotherRound}")
+      .scriptTask("scriptTask")
+        .scriptFormat("groovy")
+        .scriptText("sleep(10)")
+      .connectTo("mergeExclusiveGateway")
+    .done();
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("anotherRound", true);
+    return engineRule.deployAndStartProcessWithVariables(modelInstance, variables);
   }
 
-  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcessWithVariables(String activityId,
-                                                                                       Map<String, Object> variables) {
+  private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcessWithVariables(Map<String, Object> variables) {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess("aProcess")
       .name("aProcessName")
-      .startEvent()
-      .serviceTask(activityId)
-      .camundaExpression("${true}")
-      .endEvent()
+      .startEvent(START_EVENT)
+      .serviceTask(TEST_ACTIVITY)
+        .camundaExpression("${true}")
+      .endEvent(END_EVENT)
       .done();
     return engineRule.deployAndStartProcessWithVariables(processModel, variables);
   }
@@ -444,10 +547,10 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
   public static class ReportDataCreatorProvider {
     public static Object[] provideReportDataCreator() {
       return new Object[]{
-        new Object[]{new AvgProcessInstanceDurationByNoneReportDataCreator()},
-        new Object[]{new MinProcessInstanceDurationByNoneReportDataCreator()},
-        new Object[]{new MaxProcessInstanceDurationByNoneReportDataCreator()},
-        new Object[]{new MedianProcessInstanceDurationByNoneReportDataCreator()}
+        new Object[]{new AvgProcessInstanceDurationByNoneWithProcessPartReportDataCreator()},
+        new Object[]{new MinProcessInstanceDurationByNoneWithProcessPartReportDataCreator()},
+        new Object[]{new MaxProcessInstanceDurationByNoneWithProcessPartReportDataCreator()},
+        new Object[]{new MedianProcessInstanceDurationByNoneWithProcessPartReportDataCreator()}
       };
     }
   }

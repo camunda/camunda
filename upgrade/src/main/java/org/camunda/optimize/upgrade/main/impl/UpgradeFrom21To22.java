@@ -2,6 +2,7 @@ package org.camunda.optimize.upgrade.main.impl;
 
 import org.camunda.optimize.service.es.schema.type.CombinedReportType;
 import org.camunda.optimize.service.es.schema.type.SingleReportType;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.main.Upgrade;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
@@ -13,6 +14,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.camunda.optimize.service.es.schema.type.SingleReportType.REPORT_TYPE;
 
@@ -23,6 +26,7 @@ public class UpgradeFrom21To22 implements Upgrade {
   private static final String TO_VERSION = "2.2.0";
 
   private Logger logger = LoggerFactory.getLogger(getClass());
+  private ConfigurationService configurationService = new ConfigurationService();
 
   @Override
   public String getInitialVersion() {
@@ -40,18 +44,45 @@ public class UpgradeFrom21To22 implements Upgrade {
 
 
       UpgradePlan upgradePlan = UpgradePlanBuilder.createUpgradePlan()
-              .fromVersion(FROM_VERSION)
-              .toVersion(TO_VERSION)
-              .addUpgradeStep(addStateFieldToProcessInstanceType())
-              .addUpgradeStep(addReportTypeFieldToReportType())
-              .addUpgradeStep(renameReportIndexToSimpleReport())
-              .addUpgradeStep(createCombinedReportIndex())
-              .build();
+        .fromVersion(FROM_VERSION)
+        .toVersion(TO_VERSION)
+        .addUpgradeStep(addStateFieldToProcessInstanceType())
+        .addUpgradeStep(addReportTypeFieldToReportType())
+        .addUpgradeStep(renameReportIndexToSimpleReport())
+        .addUpgradeStep(addActivityStartDateFieldToProcessInstanceType())
+        .addUpgradeStep(addActivityEndDateFieldToProcessInstanceType())
+        .build();
       upgradePlan.execute();
     } catch (Exception e) {
       logger.error("Error while executing upgrade", e);
       System.exit(2);
     }
+  }
+
+  private AddFieldStep addActivityStartDateFieldToProcessInstanceType() {
+    Map<String, String> dateType = new HashMap<>();
+    dateType.put("type", "date");
+    dateType.put("format", configurationService.getOptimizeDateFormat());
+    return new AddFieldStep(
+      "process-instance",
+      "$.mappings.process-instance.properties.events.properties",
+      "startDate",
+      dateType,
+      "ctx._source.startDate = null"
+    );
+  }
+
+  private AddFieldStep addActivityEndDateFieldToProcessInstanceType() {
+    Map<String, String> value = new HashMap<>();
+    value.put("type", "date");
+    value.put("format", configurationService.getOptimizeDateFormat());
+    return new AddFieldStep(
+      "process-instance",
+      "$.mappings.process-instance.properties.events.properties",
+      "endDate",
+      value,
+      "ctx._source.endDate = null"
+    );
   }
 
   private RenameIndexStep renameReportIndexToSimpleReport() {

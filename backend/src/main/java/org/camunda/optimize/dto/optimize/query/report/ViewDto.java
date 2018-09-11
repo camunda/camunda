@@ -42,12 +42,6 @@ public class ViewDto {
     this.property = property;
   }
 
-  @JsonIgnore
-  public String getKey() {
-    String separator = "_";
-    return operation + separator + entity + separator + property;
-  }
-
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -63,4 +57,9 @@ public class ViewDto {
       Objects.equals(property, viewDto.property);
   }
 
+  @JsonIgnore
+  public String createCommandKey() {
+    String separator = "-";
+    return operation + separator + entity + separator + property;
+  }
 }

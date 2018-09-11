@@ -1,5 +1,6 @@
 package org.camunda.optimize.dto.optimize.query.report.single;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.FilterDto;
@@ -83,6 +84,14 @@ public class SingleReportDataDto implements ReportDataDto {
 
   public void setProcessPart(ProcessPartDto processPart) {
     this.processPart = processPart;
+  }
+
+  @JsonIgnore
+  public String createCommandKey() {
+    String viewCommandKey = view == null ? "null" : view.createCommandKey();
+    String groupByCommandKey = groupBy == null ? "null" : groupBy.createCommandKey();
+    String processPartCommandKey = processPart == null ? "null" : processPart.createCommandKey();
+    return viewCommandKey + "_" + groupByCommandKey + "_" + processPartCommandKey;
   }
 
   @Override

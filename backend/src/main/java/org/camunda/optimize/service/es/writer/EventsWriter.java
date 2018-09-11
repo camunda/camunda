@@ -117,6 +117,8 @@ public class EventsWriter {
       simpleEventDto.setActivityId(e.getActivityId());
       simpleEventDto.setId(e.getId());
       simpleEventDto.setActivityType(e.getActivityType());
+      simpleEventDto.setStartDate(e.getStartDate());
+      simpleEventDto.setEndDate(e.getEndDate());
       simpleEvents.add(simpleEventDto);
     }
     return simpleEvents;

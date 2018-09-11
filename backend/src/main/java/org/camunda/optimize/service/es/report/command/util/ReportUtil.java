@@ -26,6 +26,7 @@ public class ReportUtil {
     reportDataDto.setView(from.getView());
     reportDataDto.setGroupBy(from.getGroupBy());
     reportDataDto.setFilter(from.getFilter());
+    reportDataDto.setProcessPart(from.getProcessPart());
     reportDataDto.setVisualization(from.getVisualization());
     reportDataDto.setConfiguration(from.getConfiguration());
     to.setData(reportDataDto);

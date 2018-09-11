@@ -12,11 +12,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinit
 import org.camunda.optimize.dto.optimize.query.report.single.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapSingleReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.es.report.util.AvgProcessInstanceDurationGroupByVariableReportDataCreator;
-import org.camunda.optimize.service.es.report.util.MaxProcessInstanceDurationGroupByVariableReportDataCreator;
-import org.camunda.optimize.service.es.report.util.MedianProcessInstanceDurationGroupByVariableReportDataCreator;
-import org.camunda.optimize.service.es.report.util.MinProcessInstanceDurationGroupByVariableReportDataCreator;
-import org.camunda.optimize.service.es.report.util.ReportDataCreator;
+import org.camunda.optimize.service.es.report.util.creator.avg.AvgProcessInstanceDurationGroupByVariableReportDataCreator;
+import org.camunda.optimize.service.es.report.util.creator.max.MaxProcessInstanceDurationGroupByVariableReportDataCreator;
+import org.camunda.optimize.service.es.report.util.creator.median.MedianProcessInstanceDurationGroupByVariableReportDataCreator;
+import org.camunda.optimize.service.es.report.util.creator.min.MinProcessInstanceDurationGroupByVariableReportDataCreator;
+import org.camunda.optimize.service.es.report.util.creator.ReportDataCreator;
 import org.camunda.optimize.service.util.VariableHelper;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;

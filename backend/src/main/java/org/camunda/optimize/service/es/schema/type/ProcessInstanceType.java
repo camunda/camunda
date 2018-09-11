@@ -23,7 +23,9 @@ public class ProcessInstanceType extends StrictTypeMappingCreator {
   public static final String EVENT_ID = "id";
   public static final String ACTIVITY_ID = "activityId";
   public static final String ACTIVITY_TYPE = "activityType";
-  public static final String EVENT_DURATION = "durationInMs";
+  public static final String ACTIVITY_DURATION = "durationInMs";
+  public static final String ACTIVITY_START_DATE = "startDate";
+  public static final String ACTIVITY_END_DATE = "endDate";
 
   public static final String STRING_VARIABLES = "stringVariables";
   public static final String INTEGER_VARIABLES = "integerVariables";
@@ -103,8 +105,16 @@ public class ProcessInstanceType extends StrictTypeMappingCreator {
       .startObject(ACTIVITY_TYPE)
         .field("type", "keyword")
       .endObject()
-      .startObject(EVENT_DURATION)
+      .startObject(ACTIVITY_DURATION)
         .field("type", "long")
+      .endObject()
+      .startObject(ACTIVITY_START_DATE)
+        .field("type", "date")
+        .field("format",configurationService.getOptimizeDateFormat())
+      .endObject()
+      .startObject(ACTIVITY_END_DATE)
+        .field("type", "date")
+        .field("format",configurationService.getOptimizeDateFormat())
       .endObject();
   }
 

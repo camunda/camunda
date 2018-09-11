@@ -35,4 +35,8 @@ public class ProcessPartDto {
     return Objects.equals(start, that.start) &&
       Objects.equals(end, that.end);
   }
+
+  public String createCommandKey() {
+    return "processPart";
+  }
 }

@@ -1,4 +1,4 @@
-package org.camunda.optimize.service.es.report.util;
+package org.camunda.optimize.service.es.report.util.creator;
 
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 

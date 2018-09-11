@@ -7,8 +7,9 @@ import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.Aggregations;
 
-public abstract class AbstractProcessInstanceDurationGroupByNoneCommand<AGG extends Aggregation>
+public abstract class AbstractProcessInstanceDurationGroupByNoneCommand
     extends ReportCommand<NumberSingleReportResultDto> {
 
 
@@ -34,19 +35,19 @@ public abstract class AbstractProcessInstanceDurationGroupByNoneCommand<AGG exte
       .setQuery(query)
       .setFetchSource(false)
       .setSize(0)
-      .addAggregation(createAggregationOperation(DURATION_AGGREGATION, ProcessInstanceType.DURATION))
+      .addAggregation(createAggregationOperation(ProcessInstanceType.DURATION))
       .get();
 
-    AGG aggregation = response.getAggregations().get(DURATION_AGGREGATION);
+    Aggregations aggregations = response.getAggregations();
 
     NumberSingleReportResultDto numberResult = new NumberSingleReportResultDto();
-    numberResult.setResult(processAggregation(aggregation));
+    numberResult.setResult(processAggregation(aggregations));
     numberResult.setProcessInstanceCount(response.getHits().getTotalHits());
     return numberResult;
   }
 
-  protected abstract long processAggregation(AGG aggregation);
+  protected abstract long processAggregation(Aggregations aggregations);
 
-  protected abstract AggregationBuilder createAggregationOperation(String aggregationName, String fieldName);
+  protected abstract AggregationBuilder createAggregationOperation(String fieldName);
 
 }
