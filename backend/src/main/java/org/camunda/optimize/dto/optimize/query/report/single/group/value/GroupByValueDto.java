@@ -1,4 +1,6 @@
 package org.camunda.optimize.dto.optimize.query.report.single.group.value;
 
-public interface GroupByValueDto {
+import org.camunda.optimize.dto.optimize.query.report.Combinable;
+
+public interface GroupByValueDto extends Combinable {
 }

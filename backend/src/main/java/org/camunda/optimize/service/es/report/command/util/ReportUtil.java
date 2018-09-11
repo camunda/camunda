@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es.report.command.util;
 
+import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
@@ -62,5 +63,17 @@ public class ReportUtil {
     to.setCreated(from.getCreated());
     to.setLastModifier(from.getLastModifier());
     to.setLastModified(from.getLastModified());
+  }
+
+  public static <O extends Combinable> boolean isCombinable(O o1, O o2) {
+    if (o1 == null && o2 == null) {
+      return true;
+    } else if (o1 == null) {
+      return false;
+    } else if (o2 == null) {
+      return false;
+    } else {
+      return o1.isCombinable(o2);
+    }
   }
 }

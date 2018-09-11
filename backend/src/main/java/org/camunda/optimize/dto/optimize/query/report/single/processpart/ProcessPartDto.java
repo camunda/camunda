@@ -1,8 +1,10 @@
 package org.camunda.optimize.dto.optimize.query.report.single.processpart;
 
+import org.camunda.optimize.dto.optimize.query.report.Combinable;
+
 import java.util.Objects;
 
-public class ProcessPartDto {
+public class ProcessPartDto implements Combinable {
 
   protected String start;
   protected String end;
@@ -24,7 +26,7 @@ public class ProcessPartDto {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean isCombinable(Object o) {
     if (this == o) {
       return true;
     }

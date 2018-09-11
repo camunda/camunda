@@ -101,7 +101,7 @@ public class ReportService {
       SingleReportDefinitionDto oldSingleReport = (SingleReportDefinitionDto) oldReportVersion;
       SingleReportDataDto oldData = oldSingleReport.getData();
       SingleReportDataDto newData = reportUpdate.getData();
-      return !newData.equals(oldData);
+      return !newData.isCombinable(oldData);
     }
     return false;
   }

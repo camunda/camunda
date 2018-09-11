@@ -24,7 +24,7 @@ public class VariableGroupByValueDto implements GroupByValueDto {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean isCombinable(Object o) {
     if (this == o) {
       return true;
     }

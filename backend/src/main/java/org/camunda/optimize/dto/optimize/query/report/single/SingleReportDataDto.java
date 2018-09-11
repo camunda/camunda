@@ -1,17 +1,19 @@
 package org.camunda.optimize.dto.optimize.query.report.single;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.camunda.optimize.dto.optimize.query.report.Combinable;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.FilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.processpart.ProcessPartDto;
+import org.camunda.optimize.service.es.report.command.util.ReportUtil;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
-public class SingleReportDataDto implements ReportDataDto {
+public class SingleReportDataDto implements ReportDataDto, Combinable {
 
   protected String processDefinitionKey;
   protected String processDefinitionVersion;
@@ -95,7 +97,7 @@ public class SingleReportDataDto implements ReportDataDto {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean isCombinable(Object o) {
     if (this == o) {
       return true;
     }
@@ -103,9 +105,9 @@ public class SingleReportDataDto implements ReportDataDto {
       return false;
     }
     SingleReportDataDto that = (SingleReportDataDto) o;
-    return Objects.equals(view, that.view) &&
-      Objects.equals(groupBy, that.groupBy) &&
+    return ReportUtil.isCombinable(view, that.view) &&
+      ReportUtil.isCombinable(groupBy, that.groupBy) &&
       Objects.equals(visualization, that.visualization) &&
-      Objects.equals(processPart, that.processPart);
+      ReportUtil.isCombinable(processPart, that.processPart);
   }
 }

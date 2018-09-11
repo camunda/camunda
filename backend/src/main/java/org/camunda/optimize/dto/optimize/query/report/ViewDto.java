@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.Objects;
 
-public class ViewDto {
+public class ViewDto implements Combinable {
 
   protected String operation;
   protected String entity;
@@ -43,7 +43,7 @@ public class ViewDto {
   }
 
   @Override
-  public boolean equals(Object o) {
+  public boolean isCombinable(Object o) {
     if (this == o) {
       return true;
     }
