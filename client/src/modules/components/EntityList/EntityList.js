@@ -1,17 +1,16 @@
 import React from 'react';
-import moment from 'moment';
-import classnames from 'classnames';
 
 import {withErrorHandling} from 'HOC';
 import {Redirect, Link} from 'react-router-dom';
 
-import {Button, Modal, Message, Icon, Input, LoadingIndicator} from 'components';
+import {Button, Message, Input, LoadingIndicator} from 'components';
 
 import {load, create, remove, duplicate, update} from './service';
 
-import {formatters} from 'services';
-
 import entityIcons from './entityIcons';
+
+import DeleteModal from './DeleteModal';
+import EntityItem from './EntityItem';
 
 import './EntityList.css';
 
@@ -62,13 +61,6 @@ class EntityList extends React.Component {
     this.closeDeleteModal();
   };
 
-  showDeleteModal = ({id, name}) => evt => {
-    this.setState({
-      deleteModalVisible: true,
-      deleteModalEntity: {id, name}
-    });
-  };
-
   duplicateEntity = id => async evt => {
     const {data, reports, name, reportType} = this.state.data.find(entity => entity.id === id);
     const copy = {
@@ -82,87 +74,10 @@ class EntityList extends React.Component {
     await this.loadData();
   };
 
-  closeDeleteModal = () => {
-    this.setState({
-      deleteModalVisible: false,
-      deleteModalEntity: {}
-    });
-  };
-
   getEntityIconName = entity => {
     if (entity.data && entity.data.visualization) return entity.data.visualization;
     return 'generic';
   };
-
-  formatData = data =>
-    data.map(entity => {
-      const {name, id, lastModified, lastModifier, shared} = entity;
-      const entry = {
-        name,
-        link: `/${this.props.api}/${id}`,
-        iconName: this.getEntityIconName(entity),
-        infos: [
-          {
-            parentClassName: 'custom',
-            content: this.props.renderCustom && this.props.renderCustom(entity)
-          },
-          {
-            parentClassName: 'dataMeta',
-            content: (
-              <React.Fragment>
-                {`Last modified ${moment(lastModified).format('lll')} by `}
-                <strong>{lastModifier}</strong>
-              </React.Fragment>
-            )
-          },
-          {
-            parentClassName: 'dataIcons',
-            content: shared && <Icon type="share" title={`This ${this.props.label} is shared`} />
-          }
-        ],
-        operations: [],
-        editData: entity
-      };
-
-      if (this.props.operations.includes('edit')) {
-        entry.operations.push({
-          content: <Icon type="edit" title={`Edit ${this.props.api}`} className="editLink" />,
-          link: `/${this.props.api}/${id}/edit`,
-          editData: entity,
-          parentClassName: 'dataTool'
-        });
-      }
-
-      if (this.props.operations.includes('duplicate')) {
-        entry.operations.push({
-          content: (
-            <Icon
-              type="copy-document"
-              title={`Duplicate ${this.props.api}`}
-              onClick={this.duplicateEntity(id)}
-              className="duplicateIcon"
-            />
-          ),
-          parentClassName: 'dataTool'
-        });
-      }
-
-      if (this.props.operations.includes('delete')) {
-        entry.operations.push({
-          content: (
-            <Icon
-              type="delete"
-              title={`Delete ${this.props.api}`}
-              onClick={this.showDeleteModal({id, name})}
-              className="deleteIcon"
-            />
-          ),
-          parentClassName: 'dataTool'
-        });
-      }
-
-      return entry;
-    });
 
   openNewContentPanel = () => {
     this.setState({
@@ -187,215 +102,148 @@ class EntityList extends React.Component {
     await this.loadData();
   };
 
-  renderModal = () => {
-    const {deleteModalVisible, deleteModalEntity} = this.state;
+  showDeleteModal = ({id, name}) => evt => {
+    this.setState({
+      deleteModalVisible: true,
+      deleteModalEntity: {id, name}
+    });
+  };
+
+  closeDeleteModal = () => {
+    this.setState({
+      deleteModalVisible: false,
+      deleteModalEntity: {}
+    });
+  };
+
+  renderHeader = () => {
+    const {operations, label, api} = this.props;
+    const HeaderIcon = entityIcons[api].header;
     return (
-      <Modal
-        open={deleteModalVisible}
-        onClose={this.closeDeleteModal}
-        onConfirm={this.deleteEntity(deleteModalEntity.id)}
-        className="deleteModal"
-      >
-        <Modal.Header>Delete {deleteModalEntity.name}</Modal.Header>
-        <Modal.Content>
-          <p>You are about to delete {deleteModalEntity.name}. Are you sure you want to proceed?</p>
-        </Modal.Content>
-        <Modal.Actions>
-          <Button className="deleteModalButton" onClick={this.closeDeleteModal}>
-            Cancel
-          </Button>
-          <Button
-            type="primary"
-            color="red"
-            className="deleteEntityModalButton"
-            onClick={this.deleteEntity(deleteModalEntity.id)}
-          >
-            Delete
-          </Button>
-        </Modal.Actions>
-      </Modal>
-    );
-  };
-
-  renderCells = data => {
-    return data.map((cell, idx) => (
-      <span key={idx} className={classnames('data', cell.parentClassName)}>
-        {this.renderCell(cell)}
-      </span>
-    ));
-  };
-
-  renderCell = cell => {
-    if (cell.link) {
-      return this.renderLink(cell);
-    }
-    return cell.content;
-  };
-
-  // if a modal is provided add onClick event otherwise use a router Link
-  renderLink = data => {
-    const {ContentPanel} = this.props;
-    const EntityLink = ContentPanel ? 'a' : Link;
-    const linkProps = {
-      to: ContentPanel ? undefined : data.link,
-      onClick: ContentPanel ? () => this.setState({editEntity: data.editData}) : undefined,
-      className: data.className
-    };
-    return (
-      <EntityLink {...linkProps}>
-        {data.title ? (
-          <React.Fragment>
-            <span className="data visualizationIcon">{data.icon}</span>
-            <div className="textInfo">
-              <span className="data dataTitle">
-                {formatters.getHighlightedText(data.title, this.state.query)}
-              </span>
-              <div className="extraInfo">{data.content}</div>
-            </div>
-          </React.Fragment>
-        ) : (
-          data.content
-        )}
-      </EntityLink>
-    );
-  };
-
-  render() {
-    let createButton = null;
-    let searchInput = null;
-    let combineButton = null;
-    if (this.props.operations.includes('create')) {
-      createButton = (
-        <Button color="green" className="createButton" onClick={this.createEntity('single')}>
-          Create New {this.props.label}
-        </Button>
-      );
-    }
-    if (this.props.operations.includes('combine')) {
-      combineButton = (
-        <Button color="green" className="combineButton" onClick={this.createEntity('combined')}>
-          Create a Combined {this.props.label}
-        </Button>
-      );
-    }
-    if (this.props.operations.includes('search')) {
-      searchInput = (
-        <Input
-          className="input"
-          onChange={({target: {value}}) => this.setState({query: value})}
-          placeholder="Filter for name"
-        />
-      );
-    }
-    const HeaderIcon = entityIcons[this.props.api].header;
-    const header = (
       <div className="header">
         {HeaderIcon && <HeaderIcon />}
-        <h1 className="heading">{this.props.label}s</h1>
+        <h1 className="heading">{label}s</h1>
         <div className="tools">
-          {combineButton}
-          {createButton}
+          {operations.includes('combine') && (
+            <Button color="green" className="combineButton" onClick={this.createEntity('combined')}>
+              Create a Combined {label}
+            </Button>
+          )}
+          {operations.includes('create') && (
+            <Button color="green" className="createButton" onClick={this.createEntity('single')}>
+              Create New {label}
+            </Button>
+          )}
         </div>
       </div>
     );
+  };
 
-    if (this.props.error) {
-      const {error} = this.props;
-      let errorMessage = 'Data could not be loaded. ';
-      errorMessage += error.errorMessage || error.statusText || '';
+  renderErrorMessage = (error, header) => {
+    let errorMessage = 'Data could not be loaded. ';
+    errorMessage += error.errorMessage || error.statusText || '';
 
-      return (
-        <section className="EntityList">
-          {header}
-          <Message type="error">{errorMessage}</Message>
-        </section>
-      );
-    }
-
-    const {redirectToEntity, loaded} = this.state;
-    const {includeViewAllLink} = this.props;
-    const {ContentPanel} = this.props;
-    const modal = this.renderModal();
-    const isListEmpty = this.state.data.length === 0;
-
-    const createLink = (
-      <a className="createLink" role="button" onClick={this.createEntity('single')}>
-        Create a new {this.props.label}…
-      </a>
+    return (
+      <section className="EntityList">
+        {header}
+        <Message type="error">{errorMessage}</Message>
+      </section>
     );
+  };
 
-    let list;
-    if (loaded) {
-      list = isListEmpty ? (
+  renderList = () => {
+    const {data} = this.state;
+
+    const list =
+      data.length === 0 ? (
         <ul className="list">
           <li className="item noEntities">
             {`There are no ${this.props.label}s configured.`}
-            {createLink}
+            <a className="createLink" role="button" onClick={this.createEntity('single')}>
+              Create a new {this.props.label}…
+            </a>
           </li>
         </ul>
       ) : (
         <React.Fragment>
-          {searchInput}
+          {this.props.operations.includes('search') && (
+            <Input
+              className="input"
+              onChange={({target: {value}}) => this.setState({query: value})}
+              placeholder="Filter for name"
+            />
+          )}
           <ul className="list">
-            {this.formatData(this.state.data)
-              .filter(row => row.name.toLowerCase().includes(this.state.query.toLowerCase()))
-              .map((row, idx) => {
-                const EntityIcon = entityIcons[this.props.api][row.iconName];
-                const EntityIconComponent = EntityIcon.label ? (
-                  <span title={EntityIcon.label}>
-                    <EntityIcon.Component />
-                  </span>
-                ) : (
-                  <EntityIcon />
-                );
-
-                return (
-                  <li key={idx} className="item">
-                    {this.renderLink({
-                      title: row.name,
-                      icon: EntityIconComponent,
-                      content: this.renderCells(row.infos),
-                      link: row.link,
-                      className: 'info',
-                      editData: row.editData
-                    })}
-                    <div className="operations">{this.renderCells(row.operations)}</div>
-                  </li>
-                );
-              })}
+            {data
+              .filter(entity => entity.name.toLowerCase().includes(this.state.query.toLowerCase()))
+              .map((itemData, idx) => (
+                <EntityItem
+                  key={idx}
+                  {...this.props}
+                  data={itemData}
+                  updateEntity={this.updateEntity}
+                  duplicateEntity={this.duplicateEntity}
+                  showDeleteModal={this.showDeleteModal}
+                  query={this.state.query}
+                />
+              ))}
           </ul>
         </React.Fragment>
       );
-    } else {
-      list = <LoadingIndicator />;
-    }
+    return list;
+  };
+
+  updateEntity = editEntity => {
+    this.setState({
+      editEntity
+    });
+  };
+
+  render() {
+    const {error, includeViewAllLink, ContentPanel} = this.props;
+    const {redirectToEntity, deleteModalVisible, deleteModalEntity, loaded} = this.state;
 
     if (redirectToEntity !== false) {
       return <Redirect to={`/${this.props.api}/${redirectToEntity}/edit?new`} />;
-    } else {
-      return (
-        <section className="EntityList">
-          {header}
-          {list}
-          {modal}
-          {this.state.editEntity && (
-            <ContentPanel
-              onConfirm={this.confirmContentPanel}
-              onClose={this.closeContentPanel}
-              entity={this.state.editEntity}
-            />
-          )}
-          {this.props.children}
-          {includeViewAllLink && !isListEmpty ? (
-            <Link to={`/${this.props.api}s`} className="small">
-              View all {`${this.props.label}`}s…
-            </Link>
-          ) : (
-            ''
-          )}
-        </section>
-      );
     }
+
+    const header = this.renderHeader();
+
+    if (error) return this.renderErrorMessage(error, header);
+
+    const list = loaded ? this.renderList() : <LoadingIndicator />;
+
+    const deleteModal = (
+      <DeleteModal
+        deleteModalVisible={deleteModalVisible}
+        deleteModalEntity={deleteModalEntity}
+        deleteEntity={this.deleteEntity}
+        closeDeleteModal={this.closeDeleteModal}
+      />
+    );
+
+    return (
+      <section className="EntityList">
+        {header}
+        {list}
+        {deleteModal}
+        {this.state.editEntity && (
+          <ContentPanel
+            onConfirm={this.confirmContentPanel}
+            onClose={this.closeContentPanel}
+            entity={this.state.editEntity}
+          />
+        )}
+        {this.props.children}
+        {includeViewAllLink && this.state.data.length ? (
+          <Link to={`/${this.props.api}s`} className="small">
+            View all {`${this.props.label}`}s…
+          </Link>
+        ) : (
+          ''
+        )}
+      </section>
+    );
   }
 }
 

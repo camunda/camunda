@@ -1,0 +1,121 @@
+.item {
+  display: flex;
+  border-bottom: 1px solid #ededed;
+
+  &:first-child {
+    border-top: 1px solid #ededed;
+  }
+
+  &:nth-child(even) {
+    background: rgba(0, 0, 0, 0.03);
+  }
+
+  &:not(.noEntities):hover {
+    background: rgba(0, 0, 0, 0.05);
+  }
+
+  &.noEntities {
+    font-style: italic;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    text-align: center;
+    padding: 12px 0;
+    height: 148px;
+
+    .createLink {
+      margin-top: 14px;
+    }
+  }
+
+  .info {
+    padding: 12px 0;
+    display: flex;
+    flex-grow: 1;
+    text-decoration: none;
+    align-items: center;
+
+    .visualizationIcon {
+      padding: 10px;
+      border-right: 1px solid #ededed;
+      margin-right: 10px;
+    }
+
+    .textInfo {
+      display: flex;
+      width: 100%;
+      margin-right: 20px;
+      justify-content: space-between;
+      flex-direction: column;
+
+      .dataTitle {
+        font-weight: bold;
+        font-size: 18px;
+        text-decoration: none;
+        color: #333333;
+        margin-bottom: 7px;
+      }
+
+      .extraInfo {
+        display: flex;
+        min-height: 30px;
+
+        .dataMeta {
+          font-size: 14px;
+          color: #333333;
+        }
+
+        .dataIcons {
+          max-width: 50px;
+        }
+
+        .custom {
+          overflow: visible;
+          color: #333333;
+          font-size: 14px;
+          flex-grow: 0;
+          flex-shrink: 0;
+          flex-basis: 60%;
+        }
+      }
+    }
+  }
+
+  .operations {
+    padding: 12px 0;
+    display: flex;
+    flex-shrink: 0;
+    align-self: center;
+
+    .dataTool {
+      > * {
+        width: 32px;
+        height: 32px;
+        border-radius: 100%;
+        margin-right: 9px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        border: 1px solid #dadee3;
+        cursor: pointer;
+        color: #6a727e;
+        &:hover {
+          background: #d6d6d6;
+        }
+      }
+
+      a {
+        color: #6a727e;
+      }
+
+      .editLink {
+        font-size: 0.875em;
+      }
+    }
+  }
+
+  .data {
+    padding: 0 4px;
+  }
+}

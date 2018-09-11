@@ -41,6 +41,10 @@ jest.mock('./entityIcons', () => {
   };
 });
 
+jest.mock('./EntityItem', () => props => (
+  <li className="entityItem">{JSON.stringify(props.data)}</li>
+));
+
 jest.mock('react-router-dom', () => {
   return {
     Link: ({children, to}) => {
@@ -48,27 +52,6 @@ jest.mock('react-router-dom', () => {
     },
     Redirect: ({to}) => {
       return <div>REDIRECT to {to}</div>;
-    }
-  };
-});
-
-jest.mock('moment', () => (...params) => {
-  const initialData = params;
-  return {
-    format: () => 'some date',
-    getInitialData: () => {
-      return initialData;
-    },
-    isBefore: date => {
-      return new Date(initialData) < new Date(date.getInitialData());
-    }
-  };
-});
-
-jest.mock('services', () => {
-  return {
-    formatters: {
-      getHighlightedText: text => text
     }
   };
 });
@@ -81,7 +64,6 @@ jest.mock('components', () => {
 
   return {
     Modal,
-    Icon: props => <span>{props.type}</span>,
     Message: props => <p>{props.children}</p>,
     Button: props => <button {...props}>{props.children}</button>,
     Input: props => <input {...props} type="text" />,
@@ -127,9 +109,6 @@ it('should display a list with the results', () => {
     data: [sampleEntity]
   });
 
-  expect(node).toIncludeText(sampleEntity.name);
-  expect(node).toIncludeText(sampleEntity.lastModifier);
-  expect(node).toIncludeText('some date');
   expect(node.find('noEntities')).not.toBePresent();
   expect(node.find('ul')).toBePresent();
 });
@@ -194,18 +173,6 @@ it('should call new entity on click on the new entity button and redirect to the
   expect(node).toIncludeText('REDIRECT to /endpoint/2/edit');
 });
 
-it('should display all operations per default', () => {
-  const node = mount(shallow(<EntityList api="endpoint" label="Dashboard" />).get(0));
-  node.setState({
-    loaded: true,
-    data: [sampleEntity]
-  });
-
-  expect(node.find('.createButton')).toBePresent();
-  expect(node.find('.deleteIcon')).toBePresent();
-  expect(node.find('.editLink')).toBePresent();
-});
-
 it('should not display any operations if none are specified', () => {
   const node = mount(
     shallow(<EntityList api="endpoint" label="Dashboard" operations={[]} />).get(0)
@@ -233,30 +200,6 @@ it('should display a create button if specified', () => {
   expect(node.find('.createButton')).toBePresent();
 });
 
-it('should display an edit link if specified', () => {
-  const node = mount(
-    shallow(<EntityList api="endpoint" label="Dashboard" operations={['edit']} />).get(0)
-  );
-  node.setState({
-    loaded: true,
-    data: [sampleEntity]
-  });
-
-  expect(node.find('.editLink')).toBePresent();
-});
-
-it('should display a delete button if specified', () => {
-  const node = mount(
-    shallow(<EntityList api="endpoint" label="Dashboard" operations={['delete']} />).get(0)
-  );
-  node.setState({
-    loaded: true,
-    data: [sampleEntity]
-  });
-
-  expect(node.find('.deleteIcon')).toBePresent();
-});
-
 it('should be able to sort by date', async () => {
   const node = mount(
     shallow(
@@ -282,7 +225,7 @@ it('should be able to sort by date', async () => {
   expect(node.state().data[0]).toEqual(sampleEntity2);
 });
 
-it('should open deletion modal on delete button click', () => {
+it('should open deletion modal on delete button click', async () => {
   const node = mount(
     shallow(<EntityList api="endpoint" label="Dashboard" operations={['delete']} />).get(0)
   );
@@ -291,49 +234,13 @@ it('should open deletion modal on delete button click', () => {
     data: [sampleEntity]
   });
 
-  node.find('.deleteIcon').simulate('click');
+  node.instance().showDeleteModal({
+    id: '1',
+    name: 'Test Entity'
+  })();
+  await node.update();
 
-  expect(node.find('.deleteModal')).toBePresent();
-});
-
-it('should display an error if error occurred', () => {
-  const error = {errorMessage: 'There was an error'};
-  const node = mount(
-    shallow(
-      <EntityList api="endpoint" label="Dashboard" error={error} operations={['delete']} />
-    ).get(0)
-  );
-
-  expect(node).toIncludeText('There was an error');
-});
-
-it('should show a share icon only if entity is shared', () => {
-  const node = mount(
-    shallow(<EntityList api="endpoint" label="Dashboard" operations={['delete', 'edit']} />).get(0)
-  );
-  node.setState({
-    loaded: true,
-    data: [{...sampleEntity, shared: true}]
-  });
-
-  expect(node).toIncludeText('share');
-
-  node.setState({
-    data: [{...sampleEntity, shared: false}]
-  });
-
-  expect(node).not.toIncludeText('share');
-});
-
-it('should display a duplicate icon button if specified', () => {
-  const node = mount(
-    shallow(<EntityList api="endpoint" label="Report" operations={['duplicate']} />).get(0)
-  );
-  node.setState({
-    loaded: true,
-    data: [sampleEntity]
-  });
-  expect(node.find('.duplicateIcon')).toBePresent();
+  expect(node.find('.deleteModal').props().open).toBeTruthy();
 });
 
 it('should invoke duplicate on click', async () => {
@@ -350,19 +257,33 @@ it('should invoke duplicate on click', async () => {
   expect(duplicate).toHaveBeenCalled();
 });
 
+it('should display an error if error occurred', () => {
+  const error = {errorMessage: 'There was an error'};
+  const node = mount(
+    shallow(
+      <EntityList api="endpoint" label="Dashboard" error={error} operations={['delete']} />
+    ).get(0)
+  );
+
+  expect(node).toIncludeText('There was an error');
+});
+
 it('should increase the elements in the list by 1 when invoking the duplicate onClick', async () => {
   const node = mount(
     shallow(<EntityList api="endpoint" label="Report" operations={['duplicate']} />).get(0)
   );
+
   node.setState({
     loaded: true,
     data: [sampleEntity]
   });
+
   load.mockReturnValue([sampleEntity, duplicateEntity]);
   await node.instance().duplicateEntity('1')();
   await node.update();
+
   expect(node.find('ul').children().length).toBe(2);
-  expect(node.find('ul')).toIncludeText('copy of "Test Entity"');
+  expect(node.find('ul')).toIncludeText('copy of');
 });
 
 it('should display a search input if specified', () => {
@@ -412,23 +333,6 @@ it('should when typing a search query filter value in case insensitive', () => {
   expect(node).toIncludeText('fOO');
 });
 
-it('should render cells content correctly', () => {
-  const node = mount(
-    shallow(<EntityList api="endpoint" label="Report" operations={['search']} />).get(0)
-  );
-  node.setState({
-    loaded: true,
-    data: [sampleEntity]
-  });
-  const data = node
-    .instance()
-    .renderCells([{content: 'test', link: 'test link', parentClassName: 'parent'}]);
-
-  expect(data).toHaveLength(1);
-  expect(data[0].type).toBe('span');
-  expect(data[0].props.children.props.to).toBe('test link');
-});
-
 it('should include an edit/add modal after reports are loaded', async () => {
   load.mockReturnValue([alertEntity]);
   const node = mount(
@@ -458,7 +362,8 @@ it('should pass an alert entity configuration to the edit/add modal', async () =
     loaded: true
   });
 
-  node.find('.info').simulate('click');
+  node.instance().updateEntity(alertEntity);
+  await node.update();
 
   expect(node.find('#ModalProps')).toIncludeText('preconfigured alert');
 });
@@ -496,33 +401,12 @@ it('should invok update when entityId is already available', async () => {
     loaded: true
   });
 
-  node.find('.info').simulate('click');
+  node.instance().updateEntity(alertEntity);
+  await node.update();
 
   node.instance().confirmContentPanel();
 
   expect(update).toHaveBeenCalled();
-});
-
-it('should return a react Link when ContentPanel is not defined', async () => {
-  load.mockReturnValue([alertEntity]);
-
-  const node = mount(
-    shallow(<EntityList api="endpoint" label="Alert" operations={['Edit']} />).get(0)
-  );
-
-  await node.instance().componentDidMount();
-  node.setState({
-    loaded: true
-  });
-
-  const Link = node.instance().renderLink({
-    link: 'testLink',
-    content: 'testContent'
-  });
-  const linkNode = shallow(Link);
-
-  expect(linkNode.props().href).toBe('testLink');
-  expect(linkNode).toIncludeText('testContent');
 });
 
 describe('getEntityIconName', () => {
@@ -566,32 +450,36 @@ it('should invok createEntity with parameter "combined" when create combined but
   const node = mount(
     shallow(<EntityList api="endpoint" label="Report" operations={['combine']} />).get(0)
   );
+  const spy = jest.spyOn(node.instance(), 'createEntity');
+
   node.setState({
     loaded: true,
     data: [sampleEntity]
   });
 
-  const spy = jest.spyOn(node.instance(), 'createEntity');
+  expect(spy).toHaveBeenCalledWith('combined');
   node.find('button.combineButton').simulate('click');
-
   await node.update();
 
-  expect(spy).toBeCalledWith('combined');
+  expect(create).toHaveBeenCalled();
 });
 
 it('should invok createEntity with parameter "single" when create new Entity is clicked', async () => {
   const node = mount(
     shallow(<EntityList api="endpoint" label="Report" operations={['create']} />).get(0)
   );
+
+  const spy = jest.spyOn(node.instance(), 'createEntity');
+
   node.setState({
     loaded: true,
     data: [sampleEntity]
   });
 
-  const spy = jest.spyOn(node.instance(), 'createEntity');
-  node.find('button.createButton').simulate('click');
+  expect(spy).toBeCalledWith('single');
 
+  node.find('button.createButton').simulate('click');
   await node.update();
 
-  expect(spy).toBeCalledWith('single');
+  expect(create).toHaveBeenCalled();
 });
