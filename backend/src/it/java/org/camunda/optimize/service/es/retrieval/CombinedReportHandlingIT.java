@@ -44,7 +44,6 @@ import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFA
 import static org.camunda.optimize.test.util.ReportDataHelper.createCombinedReport;
 import static org.camunda.optimize.test.util.ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode;
 import static org.camunda.optimize.test.util.ReportDataHelper.createPiFrequencyCountGroupedByNone;
-import static org.camunda.optimize.test.util.ReportDataHelper.createProcessPart;
 import static org.camunda.optimize.test.util.ReportDataHelper.createReportDataViewRawAsTable;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
@@ -357,43 +356,6 @@ public class CombinedReportHandlingIT {
     String combinedReportId = createNewCombinedReport(singleReportIdToUpdate, remainingSingleReportId);
     SingleReportDefinitionDto report = new SingleReportDefinitionDto();
     countFlowNodeFrequencyGroupByFlowNode.getView().setEntity(VIEW_PROCESS_INSTANCE_ENTITY);
-    report.setData(countFlowNodeFrequencyGroupByFlowNode);
-    updateReport(singleReportIdToUpdate, report);
-    List<ReportDefinitionDto> reports = getAllReports();
-
-    // then
-    Set<String> resultSet = reports.stream()
-      .map(ReportDefinitionDto::getId)
-      .collect(Collectors.toSet());
-    assertThat(resultSet.size(), is(3));
-    assertThat(resultSet.contains(combinedReportId), is(true));
-    Optional<CombinedReportDefinitionDto> combinedReport = reports.stream()
-      .filter(r -> r instanceof CombinedReportDefinitionDto)
-      .map(r -> (CombinedReportDefinitionDto)r)
-      .findFirst();
-    assertThat(combinedReport.isPresent(), is(true));
-    CombinedReportDataDto dataDto = combinedReport.get().getData();
-    assertThat(dataDto.getReportIds().size(), is(1));
-    assertThat(dataDto.getReportIds().get(0), is(remainingSingleReportId));
-  }
-
-  @Test
-  public void singleReportsAreRemovedFromCombinedReportOnReportUpdateWithProcessPartChanged() {
-    // given
-    ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
-    SingleReportDataDto countFlowNodeFrequencyGroupByFlowNode = createCountFlowNodeFrequencyGroupByFlowNode(
-      engineDto.getProcessDefinitionKey(),
-      engineDto.getProcessDefinitionVersion()
-    );
-    String singleReportIdToUpdate = createNewSingleMapReport(countFlowNodeFrequencyGroupByFlowNode);
-    String remainingSingleReportId = createNewSingleMapReport(engineDto);
-    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-
-    // when
-    String combinedReportId = createNewCombinedReport(singleReportIdToUpdate, remainingSingleReportId);
-    SingleReportDefinitionDto report = new SingleReportDefinitionDto();
-    countFlowNodeFrequencyGroupByFlowNode.setProcessPart(createProcessPart("startFlowNode123", "endFlowNodeId123"));
     report.setData(countFlowNodeFrequencyGroupByFlowNode);
     updateReport(singleReportIdToUpdate, report);
     List<ReportDefinitionDto> reports = getAllReports();

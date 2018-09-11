@@ -107,7 +107,6 @@ public class SingleReportDataDto implements ReportDataDto, Combinable {
     SingleReportDataDto that = (SingleReportDataDto) o;
     return ReportUtil.isCombinable(view, that.view) &&
       ReportUtil.isCombinable(groupBy, that.groupBy) &&
-      Objects.equals(visualization, that.visualization) &&
-      ReportUtil.isCombinable(processPart, that.processPart);
+      Objects.equals(visualization, that.visualization);
   }
 }
