@@ -13,10 +13,14 @@ import org.camunda.optimize.service.es.report.command.flownode.duration.MaxFlowN
 import org.camunda.optimize.service.es.report.command.flownode.duration.MedianFlowNodeDurationByFlowNodeCommand;
 import org.camunda.optimize.service.es.report.command.flownode.duration.MinFlowNodeDurationByFlowNodeCommand;
 import org.camunda.optimize.service.es.report.command.flownode.frequency.CountFlowNodeFrequencyByFlowNodeCommand;
-import org.camunda.optimize.service.es.report.command.pi.duration.groupby.date.AverageProcessInstanceDurationGroupedByStartDateCommand;
-import org.camunda.optimize.service.es.report.command.pi.duration.groupby.date.MaxProcessInstanceDurationGroupedByStartDateCommand;
-import org.camunda.optimize.service.es.report.command.pi.duration.groupby.date.MedianProcessInstanceDurationGroupedByStartDateCommand;
-import org.camunda.optimize.service.es.report.command.pi.duration.groupby.date.MinProcessInstanceDurationGroupedByStartDateCommand;
+import org.camunda.optimize.service.es.report.command.pi.duration.groupby.date.withoutprocesspart.AverageProcessInstanceDurationGroupByStartDateCommand;
+import org.camunda.optimize.service.es.report.command.pi.duration.groupby.date.withoutprocesspart.MaxProcessInstanceDurationGroupByStartDateCommand;
+import org.camunda.optimize.service.es.report.command.pi.duration.groupby.date.withoutprocesspart.MedianProcessInstanceDurationGroupByStartDateCommand;
+import org.camunda.optimize.service.es.report.command.pi.duration.groupby.date.withoutprocesspart.MinProcessInstanceDurationGroupByStartDateCommand;
+import org.camunda.optimize.service.es.report.command.pi.duration.groupby.date.withprocesspart.AverageProcessInstanceDurationGroupByStartDateWithProcessPartCommand;
+import org.camunda.optimize.service.es.report.command.pi.duration.groupby.date.withprocesspart.MaxProcessInstanceDurationGroupByStartDateWithProcessPartCommand;
+import org.camunda.optimize.service.es.report.command.pi.duration.groupby.date.withprocesspart.MedianProcessInstanceDurationGroupByStartDateWithProcessPartCommand;
+import org.camunda.optimize.service.es.report.command.pi.duration.groupby.date.withprocesspart.MinProcessInstanceDurationGroupByStartDateWithProcessPartCommand;
 import org.camunda.optimize.service.es.report.command.pi.duration.groupby.none.withprocesspart.AverageProcessInstanceDurationGroupByNoneWithProcessPartCommand;
 import org.camunda.optimize.service.es.report.command.pi.duration.groupby.none.withoutprocesspart.AverageProcessInstanceDurationGroupByNoneCommand;
 import org.camunda.optimize.service.es.report.command.pi.duration.groupby.none.withoutprocesspart.MaxProcessInstanceDurationGroupByNoneCommand;
@@ -47,6 +51,7 @@ import static org.camunda.optimize.service.es.report.command.util.ReportDataCrea
 import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createAverageProcessInstanceDurationGroupByNoneReport;
 import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createAverageProcessInstanceDurationGroupByNoneWithProcessPartReport;
 import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createAverageProcessInstanceDurationGroupByStartDateReport;
+import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createAverageProcessInstanceDurationGroupByStartDateWithProcessPartReport;
 import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createAverageProcessInstanceDurationGroupByVariableReport;
 import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createCountFlowNodeFrequencyGroupByFlowNodeReport;
 import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createCountProcessInstanceFrequencyGroupByNoneReport;
@@ -56,16 +61,19 @@ import static org.camunda.optimize.service.es.report.command.util.ReportDataCrea
 import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMaxProcessInstanceDurationGroupByNoneReport;
 import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMaxProcessInstanceDurationGroupByNoneWithProcessPartReport;
 import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMaxProcessInstanceDurationGroupByStartDateReport;
+import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMaxProcessInstanceDurationGroupByStartDateWithProcessPartReport;
 import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMaxProcessInstanceDurationGroupByVariableReport;
 import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMedianFlowNodeDurationGroupByFlowNodeReport;
 import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMedianProcessInstanceDurationGroupByNoneReport;
 import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMedianProcessInstanceDurationGroupByNoneWithProcessPartReport;
 import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMedianProcessInstanceDurationGroupByStartDateReport;
+import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMedianProcessInstanceDurationGroupByStartDateWithProcessPartReport;
 import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMedianProcessInstanceDurationGroupByVariableReport;
 import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMinFlowNodeDurationGroupByFlowNodeReport;
 import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMinProcessInstanceDurationGroupByNoneReport;
 import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMinProcessInstanceDurationGroupByNoneWithProcessPartReport;
 import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMinProcessInstanceDurationGroupByStartDateReport;
+import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMinProcessInstanceDurationGroupByStartDateWithProcessPartReport;
 import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createMinProcessInstanceDurationGroupByVariableReport;
 import static org.camunda.optimize.service.es.report.command.util.ReportDataCreator.createRawDataReport;
 
@@ -149,7 +157,11 @@ public class ReportEvaluator {
     );
     possibleCommands.put(
       createAverageProcessInstanceDurationGroupByStartDateReport().createCommandKey(),
-      new AverageProcessInstanceDurationGroupedByStartDateCommand()
+      new AverageProcessInstanceDurationGroupByStartDateCommand()
+    );
+    possibleCommands.put(
+      createAverageProcessInstanceDurationGroupByStartDateWithProcessPartReport().createCommandKey(),
+      new AverageProcessInstanceDurationGroupByStartDateWithProcessPartCommand()
     );
     possibleCommands.put(
       createAverageProcessInstanceDurationGroupByVariableReport().createCommandKey(),
@@ -168,7 +180,11 @@ public class ReportEvaluator {
     );
     possibleCommands.put(
       createMinProcessInstanceDurationGroupByStartDateReport().createCommandKey(),
-      new MinProcessInstanceDurationGroupedByStartDateCommand()
+      new MinProcessInstanceDurationGroupByStartDateCommand()
+    );
+    possibleCommands.put(
+      createMinProcessInstanceDurationGroupByStartDateWithProcessPartReport().createCommandKey(),
+      new MinProcessInstanceDurationGroupByStartDateWithProcessPartCommand()
     );
     possibleCommands.put(
       createMinProcessInstanceDurationGroupByVariableReport().createCommandKey(),
@@ -187,7 +203,11 @@ public class ReportEvaluator {
     );
     possibleCommands.put(
       createMaxProcessInstanceDurationGroupByStartDateReport().createCommandKey(),
-      new MaxProcessInstanceDurationGroupedByStartDateCommand()
+      new MaxProcessInstanceDurationGroupByStartDateCommand()
+    );
+    possibleCommands.put(
+      createMaxProcessInstanceDurationGroupByStartDateWithProcessPartReport().createCommandKey(),
+      new MaxProcessInstanceDurationGroupByStartDateWithProcessPartCommand()
     );
     possibleCommands.put(
       createMaxProcessInstanceDurationGroupByVariableReport().createCommandKey(),
@@ -206,7 +226,11 @@ public class ReportEvaluator {
     );
     possibleCommands.put(
       createMedianProcessInstanceDurationGroupByStartDateReport().createCommandKey(),
-      new MedianProcessInstanceDurationGroupedByStartDateCommand()
+      new MedianProcessInstanceDurationGroupByStartDateCommand()
+    );
+    possibleCommands.put(
+      createMedianProcessInstanceDurationGroupByStartDateWithProcessPartReport().createCommandKey(),
+      new MedianProcessInstanceDurationGroupByStartDateWithProcessPartCommand()
     );
     possibleCommands.put(
       createMedianProcessInstanceDurationGroupByVariableReport().createCommandKey(),

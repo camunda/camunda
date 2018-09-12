@@ -1,5 +1,7 @@
 package org.camunda.optimize.dto.engine;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.io.Serializable;
 
 public class ProcessDefinitionEngineDto implements Serializable,EngineDto {
@@ -111,5 +113,10 @@ public class ProcessDefinitionEngineDto implements Serializable,EngineDto {
 
   public void setVersionTag(String versionTag) {
     this.versionTag = versionTag;
+  }
+
+  @JsonIgnore
+  public String getVersionAsString() {
+    return String.valueOf(version);
   }
 }

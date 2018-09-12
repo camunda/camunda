@@ -63,6 +63,28 @@ public class ReportDataHelper {
     );
   }
 
+  public static SingleReportDataDto createAverageProcessInstanceDurationGroupByStartDateWithProcessPartReport(
+      String processDefinitionKey,
+      String processDefinitionVersion,
+      String dateInterval,
+      String startFlowNodeId,
+      String endFlowNodeId
+  ) {
+
+    ViewDto view = createAverageProcessInstanceDurationView();
+    GroupByDto groupByDto = createGroupByStartDateDto(dateInterval);
+    ProcessPartDto processPartDto = createProcessPart(startFlowNodeId, endFlowNodeId);
+
+    return createReportDataViewRaw(
+        processDefinitionKey,
+        processDefinitionVersion,
+        TABLE_VISUALIZATION,
+        view,
+        groupByDto,
+        processPartDto
+    );
+  }
+
   public static SingleReportDataDto createMinProcessInstanceDurationGroupByStartDateReport(
       String processDefinitionKey,
       String processDefinitionVersion,
@@ -78,6 +100,28 @@ public class ReportDataHelper {
         TABLE_VISUALIZATION,
         view,
         groupByDto
+    );
+  }
+
+  public static SingleReportDataDto createMinProcessInstanceDurationGroupByStartDateWithProcessPartReport(
+      String processDefinitionKey,
+      String processDefinitionVersion,
+      String dateInterval,
+      String startFlowNodeId,
+      String endFlowNodeId
+  ) {
+
+    ViewDto view = createMinProcessInstanceDurationView();
+    GroupByDto groupByDto = createGroupByStartDateDto(dateInterval);
+    ProcessPartDto processPartDto = createProcessPart(startFlowNodeId, endFlowNodeId);
+
+    return createReportDataViewRaw(
+        processDefinitionKey,
+        processDefinitionVersion,
+        TABLE_VISUALIZATION,
+        view,
+        groupByDto,
+        processPartDto
     );
   }
 
@@ -99,6 +143,28 @@ public class ReportDataHelper {
     );
   }
 
+  public static SingleReportDataDto createMaxProcessInstanceDurationGroupByStartDateWithProcessPartReport(
+      String processDefinitionKey,
+      String processDefinitionVersion,
+      String dateInterval,
+      String flowNodeStartId,
+      String flowNodeEndId
+  ) {
+
+    ViewDto view = createMaxProcessInstanceDurationView();
+    GroupByDto groupByDto = createGroupByStartDateDto(dateInterval);
+    ProcessPartDto processPartDto = createProcessPart(flowNodeStartId, flowNodeEndId);
+
+    return createReportDataViewRaw(
+        processDefinitionKey,
+        processDefinitionVersion,
+        TABLE_VISUALIZATION,
+        view,
+        groupByDto,
+        processPartDto
+    );
+  }
+
   public static SingleReportDataDto createMedianProcessInstanceDurationGroupByStartDateReport(
       String processDefinitionKey,
       String processDefinitionVersion,
@@ -114,6 +180,28 @@ public class ReportDataHelper {
         TABLE_VISUALIZATION,
         view,
         groupByDto
+    );
+  }
+
+  public static SingleReportDataDto createMedianProcessInstanceDurationGroupByStartDateWithProcessPartReport(
+      String processDefinitionKey,
+      String processDefinitionVersion,
+      String dateInterval,
+      String startFlowNodeId,
+      String endFlowNodeId
+  ) {
+
+    ViewDto view = createMedianProcessInstanceDurationView();
+    GroupByDto groupByDto = createGroupByStartDateDto(dateInterval);
+    ProcessPartDto processPartDto = createProcessPart(startFlowNodeId, endFlowNodeId);
+
+    return createReportDataViewRaw(
+        processDefinitionKey,
+        processDefinitionVersion,
+        TABLE_VISUALIZATION,
+        view,
+        groupByDto,
+        processPartDto
     );
   }
 
@@ -145,12 +233,31 @@ public class ReportDataHelper {
     ViewDto viewDto,
     GroupByDto groupByDto
   ) {
+    return createReportDataViewRaw(
+      processDefinitionKey,
+      processDefinitionVersion,
+      visualization,
+      viewDto,
+      groupByDto,
+      null
+    );
+  }
+
+  private static SingleReportDataDto createReportDataViewRaw(
+    String processDefinitionKey,
+    String processDefinitionVersion,
+    String visualization,
+    ViewDto viewDto,
+    GroupByDto groupByDto,
+    ProcessPartDto processPartDto
+  ) {
     SingleReportDataDto reportData = new SingleReportDataDto();
     reportData.setProcessDefinitionKey(processDefinitionKey);
     reportData.setProcessDefinitionVersion(processDefinitionVersion);
     reportData.setVisualization(visualization);
     reportData.setView(viewDto);
     reportData.setGroupBy(groupByDto);
+    reportData.setProcessPart(processPartDto);
     return reportData;
   }
 
@@ -386,15 +493,14 @@ public class ReportDataHelper {
     GroupByDto groupByDto = createGroupByNone();
     ProcessPartDto processPartDto = createProcessPart(startFlowNodeId, endFlowNodeId);
 
-    SingleReportDataDto reportDataViewRaw = createReportDataViewRaw(
+    return createReportDataViewRaw(
       processDefinitionKey,
       processDefinitionVersion,
       HEAT_VISUALIZATION,
       view,
-      groupByDto
+      groupByDto,
+      processPartDto
     );
-    reportDataViewRaw.setProcessPart(processPartDto);
-    return reportDataViewRaw;
   }
 
   public static SingleReportDataDto createMinProcessInstanceDurationHeatMapGroupByNone(
@@ -570,7 +676,7 @@ public class ReportDataHelper {
     return combinedReportDataDto;
   }
 
-  public static ProcessPartDto createProcessPart(String start, String end) {
+  private static ProcessPartDto createProcessPart(String start, String end) {
     ProcessPartDto processPartDto = new ProcessPartDto();
     processPartDto.setStart(start);
     processPartDto.setEnd(end);

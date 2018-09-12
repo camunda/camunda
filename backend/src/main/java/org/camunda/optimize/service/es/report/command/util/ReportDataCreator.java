@@ -157,6 +157,17 @@ public class ReportDataCreator {
     return reportData;
   }
 
+  public static SingleReportDataDto createAverageProcessInstanceDurationGroupByStartDateWithProcessPartReport() {
+    ViewDto view = createAverageProcessInstanceDurationView();
+    GroupByDto groupByDto = createGroupByStartDateDto();
+
+    SingleReportDataDto reportData = new SingleReportDataDto();
+    reportData.setView(view);
+    reportData.setGroupBy(groupByDto);
+    reportData.setProcessPart(new ProcessPartDto());
+    return reportData;
+  }
+
   public static SingleReportDataDto createMinProcessInstanceDurationGroupByStartDateReport() {
     ViewDto view = createMinProcessInstanceDurationView();
     GroupByDto groupByDto = createGroupByStartDateDto();
@@ -164,6 +175,17 @@ public class ReportDataCreator {
     SingleReportDataDto reportData = new SingleReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
+    return reportData;
+  }
+
+  public static SingleReportDataDto createMinProcessInstanceDurationGroupByStartDateWithProcessPartReport() {
+    ViewDto view = createMinProcessInstanceDurationView();
+    GroupByDto groupByDto = createGroupByStartDateDto();
+
+    SingleReportDataDto reportData = new SingleReportDataDto();
+    reportData.setView(view);
+    reportData.setGroupBy(groupByDto);
+    reportData.setProcessPart(new ProcessPartDto());
     return reportData;
   }
 
@@ -177,6 +199,17 @@ public class ReportDataCreator {
     return reportData;
   }
 
+  public static SingleReportDataDto createMaxProcessInstanceDurationGroupByStartDateWithProcessPartReport() {
+    ViewDto view = createMaxProcessInstanceDurationView();
+    GroupByDto groupByDto = createGroupByStartDateDto();
+
+    SingleReportDataDto reportData = new SingleReportDataDto();
+    reportData.setView(view);
+    reportData.setGroupBy(groupByDto);
+    reportData.setProcessPart(new ProcessPartDto());
+    return reportData;
+  }
+
   public static SingleReportDataDto createMedianProcessInstanceDurationGroupByStartDateReport() {
     ViewDto view = createMedianProcessInstanceDurationView();
     GroupByDto groupByDto = createGroupByStartDateDto();
@@ -184,6 +217,17 @@ public class ReportDataCreator {
     SingleReportDataDto reportData = new SingleReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
+    return reportData;
+  }
+
+  public static SingleReportDataDto createMedianProcessInstanceDurationGroupByStartDateWithProcessPartReport() {
+    ViewDto view = createMedianProcessInstanceDurationView();
+    GroupByDto groupByDto = createGroupByStartDateDto();
+
+    SingleReportDataDto reportData = new SingleReportDataDto();
+    reportData.setView(view);
+    reportData.setGroupBy(groupByDto);
+    reportData.setProcessPart(new ProcessPartDto());
     return reportData;
   }
 

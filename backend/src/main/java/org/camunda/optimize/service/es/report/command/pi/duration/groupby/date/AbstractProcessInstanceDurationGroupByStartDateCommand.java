@@ -9,7 +9,6 @@ import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -21,10 +20,10 @@ import org.joda.time.DateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public abstract class AbstractProcessInstanceDurationGroupedByStartDateCommand<AGG extends Aggregation>
+public abstract class AbstractProcessInstanceDurationGroupByStartDateCommand
     extends ReportCommand<MapSingleReportResultDto> {
 
-  private static final String DURATION_AGGREGATION = "durationAggregation";
+  protected static final String DURATION_AGGREGATION = "durationAggregation";
   private static final String DATE_HISTOGRAM_AGGREGATION = "dateIntervalGrouping";
 
   @Override
@@ -70,8 +69,7 @@ public abstract class AbstractProcessInstanceDurationGroupedByStartDateCommand<A
       DateTime key = (DateTime) entry.getKey();    // Key
       String formattedDate = key.toString(configurationService.getOptimizeDateFormat());
 
-      AGG aggregation = entry.getAggregations().get(DURATION_AGGREGATION);
-      long roundedDuration = processAggregationOperation(aggregation);
+      long roundedDuration = processAggregationOperation(entry.getAggregations());
       result.put(formattedDate, roundedDuration);
     }
     return result;
@@ -85,13 +83,13 @@ public abstract class AbstractProcessInstanceDurationGroupedByStartDateCommand<A
       .order(BucketOrder.key(false))
       .dateHistogramInterval(interval)
       .subAggregation(
-        createAggregationOperation(DURATION_AGGREGATION, ProcessInstanceType.DURATION)
+        createAggregationOperation()
       );
   }
 
-  protected abstract long processAggregationOperation(AGG aggregation);
+  protected abstract long processAggregationOperation(Aggregations aggregations);
 
-  protected abstract AggregationBuilder createAggregationOperation(String aggregationName, String fieldName);
+  protected abstract AggregationBuilder createAggregationOperation();
 
 
 }

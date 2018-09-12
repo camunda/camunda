@@ -1,19 +1,16 @@
-package org.camunda.optimize.service.es.report.command.pi.duration.groupby.none.withprocesspart;
+package org.camunda.optimize.service.es.report.command.pi.duration.groupby.date.withprocesspart;
 
 import org.camunda.optimize.dto.optimize.query.report.single.processpart.ProcessPartDto;
-import org.camunda.optimize.service.es.report.command.pi.duration.groupby.none.AbstractProcessInstanceDurationGroupByNoneCommand;
+import org.camunda.optimize.service.es.report.command.pi.duration.groupby.date.AbstractProcessInstanceDurationGroupByStartDateCommand;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
-import org.elasticsearch.search.aggregations.Aggregations;
 
 import static org.camunda.optimize.service.es.report.command.pi.duration.ProcessPartQueryUtil.addProcessPartQuery;
 import static org.camunda.optimize.service.es.report.command.pi.duration.ProcessPartQueryUtil.createProcessPartAggregation;
 
 
-public abstract class AbstractProcessInstanceDurationGroupByNoneWithProcessPartCommand
-    extends AbstractProcessInstanceDurationGroupByNoneCommand {
-
-  protected abstract long processAggregation(Aggregations aggregations);
+public abstract class AbstractProcessInstanceDurationGroupByStartDateWithProcessPartCommand
+    extends AbstractProcessInstanceDurationGroupByStartDateCommand {
 
   @Override
   protected BoolQueryBuilder setupBaseQuery(String processDefinitionKey, String processDefinitionVersion) {
@@ -22,10 +19,8 @@ public abstract class AbstractProcessInstanceDurationGroupByNoneWithProcessPartC
     return addProcessPartQuery(boolQueryBuilder, processPart.getStart(), processPart.getEnd());
   }
 
-
-
   @Override
-  protected AggregationBuilder createAggregationOperation(String fieldName) {
+  protected AggregationBuilder createAggregationOperation() {
     ProcessPartDto processPart = reportData.getProcessPart();
     return createProcessPartAggregation(processPart.getStart(), processPart.getEnd());
   }
