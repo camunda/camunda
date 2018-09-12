@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {Fragment} from 'react';
 import PropTypes from 'prop-types';
 
 import Panel from 'modules/components/Panel';
@@ -8,29 +8,18 @@ import Textarea from 'modules/components/Textarea';
 import Select from 'modules/components/Select';
 import {DEFAULT_FILTER, FILTER_TYPES, DIRECTION} from 'modules/constants';
 import {isEqual, isEmpty} from 'modules/utils';
-import * as api from 'modules/api/instances';
 
 import CheckboxGroup from './CheckboxGroup';
 import * as Styled from './styled';
 import {
   getOptionsForWorkflowName,
-  getOptionsForWorkdflowIds,
+  getOptionsForWorkflowVersion,
   addAllVersionsOption,
-  getFilterWithDefaults
+  getFilterWithDefaults,
+  getLastVersionOfWorkflow
 } from './service';
 
 import {ALL_VERSIONS_OPTION, DEFAULT_CONTROLLED_VALUES} from './constants';
-
-const DEFAULT_FIELDS_STATE = {
-  currentWorkflow: {name: '', versions: [], bpmnProcessId: ''},
-  // field values
-  workflowIds: '',
-  activityId: '',
-  // fields from filter: {} support back and fw navigation
-  filter: {
-    ...DEFAULT_CONTROLLED_VALUES
-  }
-};
 
 export default class Filters extends React.Component {
   static propTypes = {
@@ -44,36 +33,27 @@ export default class Filters extends React.Component {
       ids: PropTypes.string,
       incidents: PropTypes.bool,
       startDate: PropTypes.string,
-      workflowIds: PropTypes.array
+      version: PropTypes.string
     }).isRequired,
-    onFilterChange: PropTypes.func,
-    onFilterReset: PropTypes.func,
-    onWorkflowVersionChange: PropTypes.func,
+    onFilterChange: PropTypes.func.isRequired,
+    onFilterReset: PropTypes.func.isRequired,
     activityIds: PropTypes.arrayOf(
       PropTypes.shape({
         label: PropTypes.string,
         value: PropTypes.string
       })
-    )
+    ),
+    groupedWorkflowInstances: PropTypes.object
   };
 
   state = {
-    workflows: [],
-    ...DEFAULT_FIELDS_STATE
+    filter: {
+      ...DEFAULT_CONTROLLED_VALUES
+    }
   };
 
   componentDidMount = async () => {
-    const groupedWorkflows = await api.fetchGroupedWorkflowInstances();
-    const workflows = groupedWorkflows.reduce((obj, value) => {
-      obj[value.bpmnProcessId] = {
-        ...value
-      };
-
-      return obj;
-    }, {});
-
     this.setState({
-      workflows,
       filter: {
         ...getFilterWithDefaults(this.props.filter)
       }
@@ -87,58 +67,29 @@ export default class Filters extends React.Component {
       });
   };
 
-  updateFilterOnInstancesPage = version => {
-    let versions = [];
-
-    if (version === ALL_VERSIONS_OPTION) {
-      this.state.currentWorkflow.workflows.forEach(item => {
-        versions.push(item.id);
-      });
-    } else {
-      versions = version ? [version] : null;
-    }
+  updateByWorkflowVersion = () => {
+    const version = this.state.filter.version;
 
     this.props.onFilterChange({
-      workflowIds: versions,
-      activityId: this.state.activityId
+      workflow: this.state.filter.workflow,
+      version,
+      activityId: ''
     });
-  };
-
-  updateWorkflowOnInstancesPage = version => {
-    let workflow = null;
-
-    // we don't show a diagram when no version is available
-    // or all versions are selected
-    const isValidVersion =
-      !isEmpty(this.state.currentWorkflow) && version !== ALL_VERSIONS_OPTION;
-
-    if (isValidVersion) {
-      workflow = this.state.currentWorkflow.workflows.find(item => {
-        return item.id === version;
-      });
-    }
-
-    // update workflowId in the Instances view for diagram display
-    this.props.onWorkflowVersionChange(workflow);
-  };
-
-  updateByWorkflowVersion = () => {
-    const version = this.state.workflowIds;
-
-    this.updateWorkflowOnInstancesPage(version);
-    this.updateFilterOnInstancesPage(version);
   };
 
   handleWorkflowNameChange = event => {
     const {value} = event.target;
-    const currentWorkflow = this.state.workflows[value];
-    const version = currentWorkflow ? currentWorkflow.workflows[0].id : '';
+    const currentWorkflow = this.props.groupedWorkflowInstances[value];
+    const version = getLastVersionOfWorkflow(currentWorkflow);
 
     this.setState(
       {
-        currentWorkflow: currentWorkflow || {},
-        workflowIds: version,
-        activityId: ''
+        filter: {
+          ...this.state.filter,
+          workflow: value,
+          version,
+          activityId: ''
+        }
       },
       this.updateByWorkflowVersion
     );
@@ -146,10 +97,11 @@ export default class Filters extends React.Component {
 
   handleWorkflowVersionChange = event => {
     const {value} = event.target;
-
     value !== '' &&
       this.setState(
-        {workflowIds: value, activityId: ''},
+        {
+          filter: {...this.state.filter, version: value, activityId: ''}
+        },
         this.updateByWorkflowVersion
       );
   };
@@ -157,15 +109,16 @@ export default class Filters extends React.Component {
   handleFieldChange = event => {
     const {value, name} = event.target;
 
-    this.props.onFilterChange({[name]: value});
-  };
+    if (this.state.filter[name] !== value) {
+      this.setState({
+        filter: {
+          ...this.state.filter,
+          [name]: value
+        }
+      });
+    }
 
-  handleActivityIdChange = event => {
-    event.persist();
-    const {value} = event.target;
-    this.setState({activityId: value}, () => {
-      this.handleFieldChange(event);
-    });
+    this.props.onFilterChange({[name]: value});
   };
 
   // handler for controlled inputs
@@ -181,110 +134,128 @@ export default class Filters extends React.Component {
   };
 
   onFilterReset = () => {
-    this.setState({...this.state, ...DEFAULT_FIELDS_STATE}, () => {
-      //reset diagram info in instaces page
-      this.props.onWorkflowVersionChange(null);
-      //update url values
-      this.props.onFilterReset();
-    });
+    this.setState(
+      {
+        filter: {
+          ...DEFAULT_CONTROLLED_VALUES
+        }
+      },
+      () => {
+        //reset updates on Instances page
+        this.props.onFilterReset();
+      }
+    );
   };
 
   render() {
     const {active, incidents, canceled, completed} = this.props.filter;
-    const workflowVersions = addAllVersionsOption(
-      getOptionsForWorkdflowIds(this.state.currentWorkflow.workflows)
-    );
+    const isWorkflowsDataLoaded = !isEmpty(this.props.groupedWorkflowInstances);
+    const workflowVersions =
+      this.state.filter.workflow !== '' && isWorkflowsDataLoaded
+        ? addAllVersionsOption(
+            getOptionsForWorkflowVersion(
+              this.props.groupedWorkflowInstances[this.state.filter.workflow]
+                .workflows
+            )
+          )
+        : [];
 
     return (
       <Panel isRounded>
         <Panel.Header isRounded>Filters</Panel.Header>
         <Panel.Body>
           <Styled.Filters>
-            <Styled.Field>
-              <Select
-                value={this.state.currentWorkflow.bpmnProcessId || ''}
-                disabled={this.state.workflows.length === 0}
-                name="workflowName"
-                placeholder="Workflow"
-                options={getOptionsForWorkflowName(this.state.workflows)}
-                onChange={this.handleWorkflowNameChange}
-              />
-            </Styled.Field>
-            <Styled.Field>
-              <Select
-                value={this.state.workflowIds}
-                disabled={this.state.currentWorkflow.bpmnProcessId === ''}
-                name="workflowIds"
-                placeholder="Workflow Version"
-                options={workflowVersions}
-                onChange={this.handleWorkflowVersionChange}
-              />
-            </Styled.Field>
-            <Styled.Field>
-              <Textarea
-                value={this.state.filter.ids}
-                name="ids"
-                placeholder="Instance Id(s) separated by space or comma"
-                onBlur={this.handleFieldChange}
-                onChange={this.handleInputChange}
-              />
-            </Styled.Field>
-            <Styled.Field>
-              <TextInput
-                value={this.state.filter.errorMessage}
-                name="errorMessage"
-                placeholder="Error Message"
-                onBlur={this.handleFieldChange}
-                onChange={this.handleInputChange}
-              />
-            </Styled.Field>
-            <Styled.Field>
-              <TextInput
-                value={this.state.filter.startDate}
-                name="startDate"
-                placeholder="Start Date"
-                onBlur={this.handleFieldChange}
-                onChange={this.handleInputChange}
-              />
-            </Styled.Field>
-            <Styled.Field>
-              <TextInput
-                value={this.state.filter.endDate}
-                name="endDate"
-                placeholder="End Date"
-                onBlur={this.handleFieldChange}
-                onChange={this.handleInputChange}
-              />
-            </Styled.Field>
-            <Styled.Field>
-              <Select
-                value={this.state.activityId}
-                disabled={
-                  this.state.workflowIds === '' ||
-                  this.state.workflowIds === ALL_VERSIONS_OPTION
-                }
-                name="activityId"
-                placeholder="Flow Node"
-                options={this.props.activityIds}
-                onChange={this.handleActivityIdChange}
-              />
-            </Styled.Field>
-            <CheckboxGroup
-              type={FILTER_TYPES.RUNNING}
-              filter={{
-                active,
-                incidents
-              }}
-              onChange={this.props.onFilterChange}
-            />
-            <CheckboxGroup
-              type={FILTER_TYPES.FINISHED}
-              filter={{
-                completed,
-                canceled
-              }}
-              onChange={this.props.onFilterChange}
-            />
+            {!isWorkflowsDataLoaded ? null : (
+              <Fragment>
+                <Styled.Field>
+                  <Select
+                    value={this.state.filter.workflow}
+                    disabled={isEmpty(this.props.groupedWorkflowInstances)}
+                    name="workflow"
+                    placeholder="Workflow"
+                    options={getOptionsForWorkflowName(
+                      this.props.groupedWorkflowInstances
+                    )}
+                    onChange={this.handleWorkflowNameChange}
+                  />
+                </Styled.Field>
+                <Styled.Field>
+                  <Select
+                    value={this.state.filter.version}
+                    disabled={this.state.filter.workflow === ''}
+                    name="version"
+                    placeholder="Workflow Version"
+                    options={workflowVersions}
+                    onChange={this.handleWorkflowVersionChange}
+                  />
+                </Styled.Field>
+                <Styled.Field>
+                  <Textarea
+                    value={this.state.filter.ids}
+                    name="ids"
+                    placeholder="Instance Id(s) separated by space or comma"
+                    onBlur={this.handleFieldChange}
+                    onChange={this.handleInputChange}
+                  />
+                </Styled.Field>
+                <Styled.Field>
+                  <TextInput
+                    value={this.state.filter.errorMessage}
+                    name="errorMessage"
+                    placeholder="Error Message"
+                    onBlur={this.handleFieldChange}
+                    onChange={this.handleInputChange}
+                  />
+                </Styled.Field>
+                <Styled.Field>
+                  <TextInput
+                    value={this.state.filter.startDate}
+                    name="startDate"
+                    placeholder="Start Date"
+                    onBlur={this.handleFieldChange}
+                    onChange={this.handleInputChange}
+                  />
+                </Styled.Field>
+                <Styled.Field>
+                  <TextInput
+                    value={this.state.filter.endDate}
+                    name="endDate"
+                    placeholder="End Date"
+                    onBlur={this.handleFieldChange}
+                    onChange={this.handleInputChange}
+                  />
+                </Styled.Field>
+                <Styled.Field>
+                  <Select
+                    value={this.state.filter.activityId}
+                    disabled={
+                      this.state.filter.version === '' ||
+                      this.state.filter.version === ALL_VERSIONS_OPTION
+                    }
+                    name="activityId"
+                    placeholder="Flow Node"
+                    options={this.props.activityIds}
+                    onChange={this.handleFieldChange}
+                  />
+                </Styled.Field>
+                <CheckboxGroup
+                  type={FILTER_TYPES.RUNNING}
+                  filter={{
+                    active,
+                    incidents
+                  }}
+                  onChange={this.props.onFilterChange}
+                />
+                <CheckboxGroup
+                  type={FILTER_TYPES.FINISHED}
+                  filter={{
+                    completed,
+                    canceled
+                  }}
+                  onChange={this.props.onFilterChange}
+                />
+              </Fragment>
+            )}
           </Styled.Filters>
         </Panel.Body>
         <Styled.ExpandButton direction={DIRECTION.LEFT} isExpanded={true} />

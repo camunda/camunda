@@ -9,13 +9,20 @@ import Diagram from 'modules/components/Diagram';
 import {DEFAULT_FILTER} from 'modules/constants';
 import {
   fetchWorkflowInstanceBySelection,
-  fetchWorkflowInstancesCount
+  fetchWorkflowInstancesCount,
+  fetchGroupedWorkflowInstances
 } from 'modules/api/instances';
 
+import {fetchWorkflowXML} from 'modules/api/diagram';
+import {isEmpty} from 'modules/utils';
 import {
   parseFilterForRequest,
-  getFilterQueryString
+  getFilterQueryString,
+  getFilterWithWorkflowIds,
+  getWorkflowByVersion
 } from 'modules/utils/filter';
+
+import {getNodesFromXML} from 'modules/utils/bpmn';
 
 import {getSelectionById} from 'modules/utils/selection';
 
@@ -62,19 +69,125 @@ class Instances extends Component {
       selection: createNewSelectionFragment(),
       selectionCount: selectionCount || 0,
       selections: selections || [],
-      workflow: null
+      workflow: {}
     };
   }
 
   async componentDidMount() {
+    const groupedWorkflows = await fetchGroupedWorkflowInstances();
+    this.setGroupedWorkflowInstances(groupedWorkflows);
+
+    //we read and clean the filter values from the url
+    await this.cleanFilterByWorkflowData();
+
     this.setFilterFromUrl();
   }
 
-  componentDidUpdate(prevProps, prevState) {
+  async componentDidUpdate(prevProps, prevState) {
     if (prevProps.location.search !== this.props.location.search) {
+      //we read clean the filter values from the url
+      await this.cleanFilterByWorkflowData();
+
       this.setFilterFromUrl();
     }
   }
+
+  cleanFilterByWorkflowData = async () => {
+    let {filter} = parseQueryString(this.props.location.search);
+    const noWorkflowValues = {
+      workflow: '',
+      version: '',
+      activityId: ''
+    };
+
+    if (filter && (filter.workflow || filter.version || filter.activityId)) {
+      let isWorkflowValid =
+        filter.workflow && this.state.groupedWorkflowInstances[filter.workflow];
+      let isWorkflowIdValid = true;
+
+      if (!isWorkflowValid || (isWorkflowValid && !filter.version)) {
+        // stop filter validation process
+        // clean workflow information from the filter
+        this.setFilterInURL({
+          ...filter,
+          ...noWorkflowValues
+        });
+      }
+
+      if (isWorkflowValid) {
+        // we have to check workflow & version
+        const filterWithWorkflowIds = getFilterWithWorkflowIds(
+          filter,
+          this.state.groupedWorkflowInstances
+        );
+
+        // no valid combination of workflow + version was found
+        if (!Boolean(filterWithWorkflowIds.workflowIds)) {
+          // clean workflow information from the filter
+          this.setFilterInURL({
+            ...filter,
+            ...noWorkflowValues
+          });
+
+          isWorkflowIdValid = false;
+        }
+
+        if (isWorkflowIdValid) {
+          let activityIds = [];
+
+          if (filter.version === 'all') {
+            this.setFilterInURL({...filter, ...{activityId: ''}});
+          } else {
+            // fetch xml to check validity of activity id
+            const xml = await fetchWorkflowXML(
+              filterWithWorkflowIds.workflowIds[0]
+            );
+
+            // check activity node in xml
+            const nodes = await getNodesFromXML(xml);
+
+            if (filter.activityId) {
+              //activityId is not valid and we remove it from url
+              if (!nodes[filterWithWorkflowIds.activityId]) {
+                this.setFilterInURL({...filter, ...{activityId: ''}});
+              }
+            }
+
+            // we set this.state.activityIds
+            // this allows Filter to prefill FlowNode value
+            for (let node in nodes) {
+              if (nodes[node].$type === 'bpmn:ServiceTask') {
+                activityIds.push({
+                  value: nodes[node].id,
+                  label: nodes[node].name || 'Unnamed task'
+                });
+              }
+            }
+          }
+
+          this.setState({
+            activityIds: sortArrayByKey(activityIds, 'label'),
+            workflow: getWorkflowByVersion(
+              this.state.groupedWorkflowInstances[filter.workflow],
+              filter.version
+            )
+          });
+        }
+      }
+    }
+  };
+
+  setGroupedWorkflowInstances = workflows => {
+    const groupedWorkflowInstances = workflows.reduce((obj, value) => {
+      obj[value.bpmnProcessId] = {
+        ...value
+      };
+
+      return obj;
+    }, {});
+
+    this.setState({groupedWorkflowInstances});
+  };
 
   handleStateChange = change => {
     this.setState(change);
@@ -151,7 +264,7 @@ class Instances extends Component {
     let {filter} = parseQueryString(this.props.location.search);
 
     // filter from URL was missing or invalid
-    if (!filter) {
+    if (!filter || isEmpty(filter)) {
       // set default filter selection
       filter = DEFAULT_FILTER;
       this.setFilterInURL(filter);
@@ -164,7 +277,12 @@ class Instances extends Component {
 
   handleFilterCount = async () => {
     const filterCount = await fetchWorkflowInstancesCount(
-      parseFilterForRequest(this.state.filter)
+      parseFilterForRequest(
+        getFilterWithWorkflowIds(
+          this.state.filter,
+          this.state.groupedWorkflowInstances
+        )
+      )
     );
 
     this.setState({
@@ -183,12 +301,8 @@ class Instances extends Component {
     this.props.storeStateLocally({filter: filter});
   };
 
-  handleWorkflowChange = workflow => {
-    this.setState({workflow});
-  };
-
   setFilterInURL = filter => {
-    this.props.history.push({
+    this.props.history.replace({
       pathname: this.props.location.pathname,
       search: getFilterQueryString(filter)
     });
@@ -197,25 +311,13 @@ class Instances extends Component {
   handleFilterReset = () => {
     this.setFilterInURL(DEFAULT_FILTER);
 
+    // reset diagram
+    this.setState({
+      workflow: null
+    });
+
     // reset filter in local storage
     this.props.storeStateLocally({filter: DEFAULT_FILTER});
-  };
-
-  handleFlowNodesDetailsReady = nodes => {
-    let activityIds = [];
-    let node;
-    for (node in nodes) {
-      if (nodes[node].type === 'TASK') {
-        activityIds.push({
-          value: node,
-          label: nodes[node].name || 'Unnamed task'
-        });
-      }
-    }
-
-    this.setState({
-      activityIds: sortArrayByKey(activityIds, 'label')
-    });
   };
 
   render() {
@@ -237,23 +339,20 @@ class Instances extends Component {
                 activityIds={this.state.activityIds}
                 onFilterReset={this.handleFilterReset}
                 onFilterChange={this.handleFilterChange}
-                onWorkflowVersionChange={this.handleWorkflowChange}
+                groupedWorkflowInstances={this.state.groupedWorkflowInstances}
               />
             </Styled.Filters>
 
             <Styled.Center>
               <SplitPane.Pane isRounded>
                 <SplitPane.Pane.Header isRounded>
-                  {this.state.workflow
+                  {!isEmpty(this.state.workflow)
                     ? this.state.workflow.name || this.state.workflow.id
                     : 'Workflow'}
                 </SplitPane.Pane.Header>
                 <SplitPane.Pane.Body>
-                  {this.state.workflow && (
-                    <Diagram
-                      workflowId={this.state.workflow.id}
-                      onFlowNodesDetailsReady={this.handleFlowNodesDetailsReady}
-                    />
+                  {!isEmpty(this.state.workflow) && (
+                    <Diagram workflowId={this.state.workflow.id} />
                   )}
                 </SplitPane.Pane.Body>
               </SplitPane.Pane>
@@ -266,7 +365,10 @@ class Instances extends Component {
                 }}
                 selection={this.state.selection}
                 selections={this.state.selections}
-                filter={this.state.filter}
+                filter={getFilterWithWorkflowIds(
+                  this.state.filter,
+                  this.state.groupedWorkflowInstances
+                )}
                 errorMessage={this.state.errorMessage}
                 onAddNewSelection={this.handleAddNewSelection}
                 onAddToSpecificSelection={this.handleAddToSelectionById}
@@ -281,7 +383,10 @@ class Instances extends Component {
               rollingSelectionIndex={this.state.rollingSelectionIndex}
               selectionCount={this.state.selectionCount}
               instancesInSelectionsCount={this.state.instancesInSelectionsCount}
-              filter={this.state.filter}
+              filter={getFilterWithWorkflowIds(
+                this.state.filter,
+                this.state.groupedWorkflowInstances
+              )}
               storeStateLocally={this.props.storeStateLocally}
               onStateChange={this.handleStateChange}
             />

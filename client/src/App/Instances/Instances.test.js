@@ -1,11 +1,12 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {mockResolvedAsyncFn} from 'modules/testUtils';
+import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
 
 import WrappedInstances from './Instances';
 import {DEFAULT_FILTER} from 'modules/constants';
 import * as api from 'modules/api/instances/instances';
+import * as apiDiagram from 'modules/api/diagram/diagram';
 import Filters from './Filters';
 import ListView from './ListView';
 import Diagram from 'modules/components/Diagram';
@@ -27,7 +28,7 @@ const InstancesWithRunningFilter = (
       return {filterCount: 0};
     }}
     storeStateLocally={() => {}}
-    history={{push: () => {}}}
+    history={{replace: () => {}}}
   />
 );
 const InstancesWithAllFilters = (
@@ -40,7 +41,19 @@ const InstancesWithAllFilters = (
       return {filterCount: 0};
     }}
     storeStateLocally={() => {}}
-    history={{push: () => {}}}
+    history={{replace: () => {}}}
+  />
+);
+const InstancesWithVadlidWorkflowData = (
+  <Instances
+    location={{
+      search: '?filter={"workflow:":"demoProcess","version":"3"}'
+    }}
+    getStateLocally={() => {
+      return {filterCount: 0};
+    }}
+    storeStateLocally={() => {}}
+    history={{replace: () => {}}}
   />
 );
 
@@ -51,7 +64,7 @@ const InstancesWithInvalidRunningFilter = (
       return {filterCount: 0};
     }}
     storeStateLocally={() => {}}
-    history={{push: () => {}}}
+    history={{replace: () => {}}}
   />
 );
 
@@ -62,7 +75,7 @@ const InstancesWithoutFilter = (
       return {filterCount: 0};
     }}
     storeStateLocally={() => {}}
-    history={{push: () => {}}}
+    history={{replace: () => {}}}
   />
 );
 
@@ -73,8 +86,7 @@ const InstancesWithWorkflow = (
       return {filterCount: 0};
     }}
     storeStateLocally={() => {}}
-    history={{push: () => {}}}
-    workflow={workflowMock}
+    history={{replace: () => {}}}
   />
 );
 
@@ -84,15 +96,53 @@ function getRandomInt(max) {
 
 const Count = getRandomInt(20);
 
+const groupedWorkflowsMock = [
+  {
+    bpmnProcessId: 'demoProcess',
+    name: 'New demo process',
+    workflows: [
+      {
+        id: '6',
+        name: 'New demo process',
+        version: 3,
+        bpmnProcessId: 'demoProcess'
+      },
+      {
+        id: '4',
+        name: 'Demo process',
+        version: 2,
+        bpmnProcessId: 'demoProcess'
+      },
+      {
+        id: '1',
+        name: 'Demo process',
+        version: 1,
+        bpmnProcessId: 'demoProcess'
+      }
+    ]
+  },
+  {
+    bpmnProcessId: 'orderProcess',
+    name: 'Order',
+    workflows: []
+  }
+];
+
 // mock api
 api.fetchWorkflowInstancesCount = mockResolvedAsyncFn(Count);
 api.fetchWorkflowInstances = mockResolvedAsyncFn([]);
+api.fetchGroupedWorkflowInstances = mockResolvedAsyncFn(groupedWorkflowsMock);
+apiDiagram.fetchWorkflowXML = mockResolvedAsyncFn('');
+
+jest.mock('bpmn-js', () => ({}));
 
 describe('Instances', () => {
   describe('rendering filters', () => {
     beforeEach(() => {
       api.fetchWorkflowInstancesCount.mockClear();
       api.fetchWorkflowInstances.mockClear();
+      api.fetchGroupedWorkflowInstances.mockClear();
+      apiDiagram.fetchWorkflowXML.mockClear();
     });
 
     describe('initial render', () => {
@@ -107,16 +157,41 @@ describe('Instances', () => {
         expect(node.state.filter).toEqual({});
         expect(node.state.filterCount).toBe(count);
         expect(node.state.activityIds.length).toBe(0);
-        expect(node.state.workflow).toBe(null);
+        expect(node.state.workflow).toEqual({});
+        expect(node.state.groupedWorkflowInstances).toEqual({});
       });
+    });
+
+    describe('it should fetch groupedWorkflowInstances', async () => {
+      // given
+      const node = shallow(InstancesWithAllFilters);
+
+      //when
+      await flushPromises();
+      node.update();
+
+      expect(api.fetchGroupedWorkflowInstances).toHaveBeenCalled();
+      expect(node.state().groupedWorkflowInstances.demoProcess).not.toBe(
+        undefined
+      );
+      expect(node.state().groupedWorkflowInstances.orderProcess).not.toBe(
+        undefined
+      );
+      expect(node.find(Filters).props().groupedWorkflowInstances).toEqual(
+        node.state().groupedWorkflowInstances
+      );
     });
 
     describe('reading filters from url', () => {
       it('should read and store filters values from url', async () => {
         // given
         const node = shallow(InstancesWithAllFilters);
-        // then
 
+        //when
+        await flushPromises();
+        node.update();
+
+        // then
         expect(node.state('filter').active).toBe(false);
         expect(node.state('filter').incidents).toBe(true);
         expect(node.state('filter').ids).toEqual('424242, 434343');
@@ -125,15 +200,27 @@ describe('Instances', () => {
         expect(node.state('filter').endDate).toEqual('10-10-2018');
       });
 
-      it('should read and store default filter selection if no filter query in url', () => {
+      it('should read and store default filter selection if no filter query in url', async () => {
+        // given
         const node = shallow(InstancesWithoutFilter);
 
+        //when
+        await flushPromises();
+        node.update();
+
+        // then
         expect(node.state('filter')).toEqual(DEFAULT_FILTER);
       });
 
-      it('should read and store default filter selection for an invalid query', () => {
+      it('should read and store default filter selection for an invalid query', async () => {
+        // given
         const node = shallow(InstancesWithInvalidRunningFilter);
 
+        //when
+        await flushPromises();
+        node.update();
+
+        //then
         expect(node.state('filter')).toEqual(DEFAULT_FILTER);
       });
     });
@@ -155,10 +242,13 @@ describe('Instances', () => {
           node.instance().handleFilterReset
         );
         expect(FiltersNode.prop('activityIds')).toBe(node.state('activityIds'));
+        expect(FiltersNode.prop('groupedWorkflowInstances')).toBe(
+          node.state('groupedWorkflowInstances')
+        );
       });
 
       describe('resetFilter', () => {
-        it('should reset filter to the default value', () => {
+        it('should reset filter & diagram to the default value', () => {
           // given
           const storeStateLocallyMock = jest.fn();
           const node = shallow(
@@ -170,7 +260,7 @@ describe('Instances', () => {
               getStateLocally={() => {
                 return {filterCount: 0};
               }}
-              history={{push: () => {}}}
+              history={{replace: () => {}}}
             />
           );
           const setFilterInURLlSpy = jest.spyOn(
@@ -186,6 +276,7 @@ describe('Instances', () => {
           expect(storeStateLocallyMock).toHaveBeenCalledWith({
             filter: DEFAULT_FILTER
           });
+          expect(node.state().workflow).toEqual(null);
         });
       });
 
@@ -195,20 +286,20 @@ describe('Instances', () => {
           const node = shallow(InstancesWithRunningFilter);
 
           // then
-          expect(node.state('workflow')).toEqual(null);
+          expect(node.state('workflow')).toEqual({});
           expect(node.find(Diagram).length).toBe(0);
           expect(node.find(PanelHeader).props().children).toBe('Workflow');
         });
 
+        it('should render a diagram if a valid workflow and version are in url', () => {});
         it('should render a diagram when workflow data is available ', () => {
           const node = shallow(InstancesWithWorkflow);
 
           //when
-          node.instance().handleWorkflowChange(workflowMock);
+          node.instance().setState({workflow: workflowMock});
           node.update();
 
           // then
-          expect(node.state('workflow')).toEqual(workflowMock);
           expect(node.find(Diagram).length).toEqual(1);
           expect(node.find(Diagram).props().workflowId).toEqual(
             workflowMock.id
@@ -229,59 +320,6 @@ describe('Instances', () => {
       // then
       expect(node.find(Diagram).length).toBe(0);
       expect(node.find(PanelHeader).props().children).toBe('Workflow');
-    });
-
-    it('should pass diagram data to Filters component', () => {
-      // given
-      const node = shallow(InstancesWithRunningFilter);
-      const FiltersNode = node.find(Filters);
-
-      // here
-      expect(FiltersNode.prop('activityIds')).toEqual([]);
-      expect(FiltersNode.prop('onWorkflowVersionChange')).toBe(
-        node.instance().handleWorkflowChange
-      );
-    });
-
-    it('should render a diagram when workflow data is available ', () => {
-      // given
-      const node = shallow(InstancesWithWorkflow);
-
-      //when
-      node.instance().handleWorkflowChange(workflowMock);
-      node.update();
-
-      // then
-      expect(node.state('workflow')).toEqual(workflowMock);
-      expect(node.find(Diagram).length).toEqual(1);
-      expect(node.find(Diagram).props().workflowId).toEqual(workflowMock.id);
-      expect(node.find(Diagram).props().onFlowNodesDetailsReady).toEqual(
-        node.instance().handleFlowNodesDetailsReady
-      );
-      expect(node.find(PanelHeader).props().children).toBe(
-        workflowMock.name || workflowMock.id
-      );
-    });
-
-    it('should update the activityIds when the diagram finishes loading', () => {
-      const nodes = {
-        Task_1t0a4uy: {name: 'Check order items', type: 'TASK'},
-        Task_162x79i: {name: 'Ship Articles', type: 'TASK'}
-      };
-      const options = [
-        {value: 'Task_1t0a4uy', label: 'Check order items'},
-        {value: 'Task_162x79i', label: 'Ship Articles'}
-      ];
-
-      // given
-      const node = shallow(InstancesWithWorkflow);
-
-      // when
-      node.instance().handleFlowNodesDetailsReady(nodes);
-      node.update();
-
-      // then
-      expect(node.state().activityIds).toEqual(options);
     });
   });
 });

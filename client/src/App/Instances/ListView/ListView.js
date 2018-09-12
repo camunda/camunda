@@ -3,7 +3,8 @@ import PropTypes from 'prop-types';
 
 import SplitPane from 'modules/components/SplitPane';
 import {EXPAND_STATE, SORT_ORDER, DEFAULT_SORTING} from 'modules/constants';
-import {isEmpty, isEqual} from 'modules/utils';
+import {isEmpty} from 'modules/utils';
+import {isEqual} from 'lodash';
 import {parseFilterForRequest} from 'modules/utils/filter';
 import {fetchWorkflowInstances} from 'modules/api/instances';
 
@@ -46,7 +47,7 @@ export default class ListView extends React.Component {
       return this.setState({firstElement: 0});
     }
 
-    const hasFilterChanged = prevProps.filter !== this.props.filter;
+    const hasFilterChanged = !isEqual(prevProps.filter, this.props.filter);
     const hasFirstElementChanged =
       prevState.firstElement !== this.state.firstElement;
     const hasSortingChanged = !isEqual(prevState.sorting, this.state.sorting);
@@ -98,6 +99,7 @@ export default class ListView extends React.Component {
       onAddNewSelection,
       onAddToSpecificSelection
     } = this.props;
+
     return (
       <SplitPane.Pane {...this.props}>
         <SplitPane.Pane.Header>Instances</SplitPane.Pane.Header>

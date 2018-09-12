@@ -17,9 +17,9 @@ export const getOptionsForWorkflowName = (workflows = {}) => {
  * Creates an array of {value: String, label: String} objects
  * used to create options list for workflowIds select based on workflows list
  */
-export function getOptionsForWorkdflowIds(versions = []) {
+export function getOptionsForWorkflowVersion(versions = []) {
   return versions.map(item => ({
-    value: item.id,
+    value: `${item.version}`,
     label: `Version ${item.version}`
   }));
 }
@@ -37,10 +37,18 @@ export function addAllVersionsOption(options = []) {
  * Prevents controlled filter fields from receiving undefined values
  * Instances page passes filter prop with the active filters from url
  */
-
 export function getFilterWithDefaults(filter) {
   return {
     ...DEFAULT_CONTROLLED_VALUES,
     ...filter
   };
+}
+
+export function getLastVersionOfWorkflow(workflow = {}) {
+  let version = '';
+  if (workflow.workflows) {
+    version = `${workflow.workflows[0].version}`;
+  }
+
+  return version;
 }

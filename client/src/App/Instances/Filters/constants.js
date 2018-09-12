@@ -5,5 +5,8 @@ export const DEFAULT_CONTROLLED_VALUES = {
   ids: '',
   errorMessage: '',
   startDate: '',
-  endDate: ''
+  endDate: '',
+  activityId: '',
+  version: '',
+  workflow: ''
 };

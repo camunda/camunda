@@ -6,7 +6,7 @@ import Button from 'modules/components/Button';
 import Textarea from 'modules/components/Textarea';
 import TextInput from 'modules/components/TextInput';
 import Select from 'modules/components/Select';
-import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
+import {mockResolvedAsyncFn} from 'modules/testUtils';
 import * as api from 'modules/api/instances/instances';
 
 import Filters from './Filters';
@@ -19,7 +19,10 @@ const COMPLETE_FILTER = {
   ids: 'a, b, c',
   errorMessage: 'This is an error message',
   startDate: '08 October 2018',
-  endDate: '10-10-2018'
+  endDate: '10-10-2018',
+  workflow: 'demoProcess',
+  version: '2',
+  activityId: '4'
 };
 
 const groupedWorkflowsMock = [
@@ -91,18 +94,16 @@ api.fetchGroupedWorkflowInstances = mockResolvedAsyncFn(groupedWorkflowsMock);
 
 describe('Filters', () => {
   const spy = jest.fn();
-  const instancesSpy = jest.fn();
+  const resetSpy = jest.fn();
   const mockProps = {
     onFilterChange: spy,
-    onFilterReset: jest.fn(),
-    onWorkflowVersionChange: instancesSpy,
+    onFilterReset: resetSpy,
     activityIds: []
   };
 
   const mockPropsWithActivityIds = {
     onFilterChange: spy,
-    onFilterReset: jest.fn(),
-    onWorkflowVersionChange: instancesSpy,
+    onFilterReset: resetSpy,
     activityIds: [
       {value: 'taskA', label: 'task A'},
       {value: 'taskB', label: 'taskB'}
@@ -111,21 +112,39 @@ describe('Filters', () => {
 
   beforeEach(() => {
     spy.mockClear();
-    instancesSpy.mockClear();
+    resetSpy.mockClear();
+  });
+
+  it('should not render fields if props.groupedWorkflowInstances is empty', () => {
+    // given
+    const node = shallow(
+      <Filters
+        groupedWorkflowInstances={{}}
+        {...mockProps}
+        filter={DEFAULT_FILTER}
+      />
+    );
+    const ResetButtonNode = node.find(Button);
+
+    expect(node.find({type: 'input'}).length).toBe(0);
+    expect(node.find({type: 'select'}).length).toBe(0);
+    expect(ResetButtonNode).toHaveLength(1);
   });
 
   it('should render with the right initial state', () => {
     // given
-    const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+    const node = shallow(
+      <Filters
+        groupedWorkflowInstances={workflows}
+        {...mockProps}
+        filter={DEFAULT_FILTER}
+      />
+    );
 
     // then
-    expect(node.state().workflows).toEqual([]);
-    expect(node.state().currentWorkflow).toEqual({
-      bpmnProcessId: '',
-      versions: [],
-      name: ''
-    });
-    expect(node.state().workflowIds).toEqual('');
+    expect(node.state().filter.activityId).toEqual('');
+    expect(node.state().filter.workflow).toEqual('');
+    expect(node.state().filter.version).toEqual('');
     expect(node.state().filter.startDate).toEqual('');
     expect(node.state().filter.endDate).toEqual('');
     expect(node.state().filter.ids).toEqual('');
@@ -136,7 +155,13 @@ describe('Filters', () => {
     // given
     const {active, incidents, completed, canceled} = DEFAULT_FILTER;
 
-    const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+    const node = shallow(
+      <Filters
+        groupedWorkflowInstances={workflows}
+        {...mockProps}
+        filter={DEFAULT_FILTER}
+      />
+    );
     const FilterNodes = node.find(CheckboxGroup);
 
     // then
@@ -151,7 +176,13 @@ describe('Filters', () => {
 
   it('should render the expand button with left direction', () => {
     // given
-    const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+    const node = shallow(
+      <Filters
+        groupedWorkflowInstances={workflows}
+        {...mockProps}
+        filter={DEFAULT_FILTER}
+      />
+    );
     const ExpandButtonNode = node.find(Styled.ExpandButton);
 
     // then
@@ -163,7 +194,13 @@ describe('Filters', () => {
   describe('errorMessage filter', () => {
     it('should render an errorMessage field', () => {
       // given
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
       const field = node.find({name: 'errorMessage'});
 
       // then
@@ -175,17 +212,26 @@ describe('Filters', () => {
     });
 
     it('should initialize the field with empty value', () => {
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
 
       expect(node.state().filter.errorMessage).toEqual('');
     });
 
     it('should be prefilled with the value from props.filter.errorMessage ', async () => {
-      const node = shallow(<Filters {...mockProps} filter={COMPLETE_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={COMPLETE_FILTER}
+        />
+      );
 
-      //when
-      await flushPromises();
-      node.update();
       const field = node.find({name: 'errorMessage'});
       // then
       expect(node.state().filter.errorMessage).toEqual(
@@ -195,7 +241,13 @@ describe('Filters', () => {
     });
 
     it('should update state when input receives text', () => {
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
 
       node.instance().handleInputChange({
         target: {value: 'error message', name: 'errorMessage'}
@@ -207,7 +259,13 @@ describe('Filters', () => {
     it('should call onFilterChange with the right error message', () => {
       const errorMessage = 'lorem ipsum';
       // given
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
 
       //when
       node.instance().handleFieldChange({
@@ -222,7 +280,13 @@ describe('Filters', () => {
       // given
       // user blurs without writing
       const emptyErrorMessage = '';
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
 
       //when
       node.instance().handleFieldChange({
@@ -237,7 +301,13 @@ describe('Filters', () => {
   describe('ids filter', () => {
     it('should render an ids field', () => {
       // given
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
       const field = node.find({name: 'ids'});
 
       // then
@@ -249,13 +319,25 @@ describe('Filters', () => {
     });
 
     it('should initialize the field with empty value', () => {
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
 
       expect(node.state().filter.ids).toEqual('');
     });
 
     it('should update state when input receives text', () => {
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
 
       node.instance().handleInputChange({
         target: {value: 'aa, ab, ac', name: 'ids'}
@@ -265,11 +347,14 @@ describe('Filters', () => {
     });
 
     it('should be prefilled with the value from props.filter.ids ', async () => {
-      const node = shallow(<Filters {...mockProps} filter={COMPLETE_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={COMPLETE_FILTER}
+        />
+      );
 
-      //when
-      await flushPromises();
-      node.update();
       const field = node.find({name: 'ids'});
       // then
       expect(node.state().filter.ids).toEqual('a, b, c');
@@ -279,7 +364,13 @@ describe('Filters', () => {
     it('should call onFilterChange with the right instance ids', () => {
       const instanceIds = '4294968008,4294972032  4294974064, 4294976280, ,';
       // given
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
 
       //when
       node
@@ -294,7 +385,13 @@ describe('Filters', () => {
       // given
       // user blurs without writing
       const emptyInstanceIds = '';
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
 
       //when
       node
@@ -308,16 +405,22 @@ describe('Filters', () => {
     });
   });
 
-  describe('workflowName filter', () => {
-    it('should render an workflowName select field', () => {
+  describe('workflow filter', () => {
+    it('should render an workflow select field', () => {
       // given
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
-      const field = node.find({name: 'workflowName'});
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
+      const field = node.find({name: 'workflow'});
 
       // then
       expect(field.length).toEqual(1);
       expect(field.type()).toEqual(Select);
-      expect(field.props().name).toEqual('workflowName');
+      expect(field.props().name).toEqual('workflow');
       expect(field.props().value).toEqual('');
       expect(field.props().placeholder).toEqual('Workflow');
       expect(field.props().onChange).toEqual(
@@ -325,18 +428,31 @@ describe('Filters', () => {
       );
     });
 
-    it('should fetch grouped workflows and set state', async () => {
-      // given
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+    it('should render the value from this.props.filter.workflow', () => {
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={COMPLETE_FILTER}
+        />
+      );
 
-      //when
-      await flushPromises();
-      node.update();
-
+      const field = node.find({name: 'workflow'});
       // then
-      expect(api.fetchGroupedWorkflowInstances).toHaveBeenCalled();
-      expect(node.state().workflows).toEqual(workflows);
-      expect(node.find({name: 'workflowName'}).props().options).toEqual([
+      expect(node.state().filter.workflow).toEqual('demoProcess');
+      expect(field.props().value).toEqual('demoProcess');
+    });
+
+    it('should have values read from this.props.groupedWorkflowInstances', () => {
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={COMPLETE_FILTER}
+        />
+      );
+
+      expect(node.find({name: 'workflow'}).props().options).toEqual([
         {value: 'demoProcess', label: 'New demo process'},
         {value: 'orderProcess', label: 'Order'}
       ]);
@@ -345,28 +461,41 @@ describe('Filters', () => {
     it('should update state with selected option', async () => {
       // given
       const value = groupedWorkflowsMock[0].bpmnProcessId;
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
 
       //when
-      await flushPromises();
       node.instance().handleWorkflowNameChange({target: {value: value}});
       node.update();
 
       // then
-      expect(node.state().currentWorkflow).toEqual(groupedWorkflowsMock[0]);
+      expect(node.state().filter.workflow).toEqual(value);
     });
+
+    if (('should update filter value in instances page', () => {}));
   });
 
-  describe('workflowIds filter', () => {
+  describe('version filter', () => {
     it('should exist and be disabled by default', () => {
       // given
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
-      const field = node.find({name: 'workflowIds'});
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
+      const field = node.find({name: 'version'});
 
       // then
       expect(field.length).toEqual(1);
       expect(field.type()).toEqual(Select);
-      expect(field.props().name).toEqual('workflowIds');
+      expect(field.props().name).toEqual('version');
       expect(field.props().value).toEqual('');
       expect(field.props().placeholder).toEqual('Workflow Version');
       expect(field.props().onChange).toEqual(
@@ -374,35 +503,60 @@ describe('Filters', () => {
       );
     });
 
+    it('should render the value from this.props.filter.version', () => {
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={COMPLETE_FILTER}
+        />
+      );
+
+      const field = node.find({name: 'version'});
+      // then
+      expect(node.state().filter.version).toEqual('2');
+      expect(field.props().value).toEqual('2');
+    });
+
     it('should display the latest version of a selected workflowName', async () => {
       // given
       const value = groupedWorkflowsMock[0].bpmnProcessId;
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
 
       //when
-      await flushPromises();
       node.instance().handleWorkflowNameChange({target: {value: value}});
       node.update();
 
       // then
-      expect(node.find({name: 'workflowIds'}).props().value).toEqual(
-        groupedWorkflowsMock[0].workflows[0].id
+      expect(node.find({name: 'version'}).props().value).toEqual(
+        String(groupedWorkflowsMock[0].workflows[0].version)
       );
-      expect(instancesSpy.mock.calls[0][0]).toEqual(
-        groupedWorkflowsMock[0].workflows[0]
+      expect(spy.mock.calls[0][0].version).toEqual(
+        String(groupedWorkflowsMock[0].workflows[0].version)
       );
     });
 
     it('should display an all versions option', async () => {
       const value = groupedWorkflowsMock[0].bpmnProcessId;
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
 
       //when
-      await flushPromises();
       node.instance().handleWorkflowNameChange({target: {value: value}});
       node.update();
 
-      const options = node.find({name: 'workflowIds'}).props().options;
+      const options = node.find({name: 'version'}).props().options;
 
       // then
       expect(options[0].label).toEqual('Version 3');
@@ -414,10 +568,15 @@ describe('Filters', () => {
 
     it('should not allow the selection of the first option', async () => {
       const value = groupedWorkflowsMock[0].bpmnProcessId;
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
 
       //when
-      await flushPromises();
       // select workflowName, the version is set to the latest
       node.instance().handleWorkflowNameChange({target: {value: value}});
       node.update();
@@ -428,19 +587,24 @@ describe('Filters', () => {
 
       // then
       // should keep the last version option selected
-      expect(node.find({name: 'workflowIds'}).props().value).toEqual(
-        groupedWorkflowsMock[0].workflows[0].id
+      expect(node.find({name: 'version'}).props().value).toEqual(
+        String(groupedWorkflowsMock[0].workflows[0].version)
       );
       // should update the workflow in Instances
-      expect(instancesSpy.mock.calls.length).toEqual(1);
+      expect(spy.mock.calls.length).toEqual(1);
     });
 
     it('should reset after a the workflowName field is also reseted ', async () => {
       const value = groupedWorkflowsMock[0].bpmnProcessId;
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
 
       //when
-      await flushPromises();
       // select workflowName, the version is set to the latest
       node.instance().handleWorkflowNameChange({target: {value: value}});
       node.update();
@@ -451,32 +615,44 @@ describe('Filters', () => {
 
       // then
       // should keep the last version option selected
-      expect(node.find({name: 'workflowIds'}).props().value).toEqual('');
-      expect(node.find({name: 'workflowName'}).props().value).toEqual('');
-      // should update the instances diagrams
-      expect(instancesSpy.mock.calls[1][0]).toEqual(null);
+      expect(node.find({name: 'version'}).props().value).toEqual('');
+      expect(node.find({name: 'workflow'}).props().value).toEqual('');
     });
 
     it('should call onFilterChange when a workflow version is selected', async () => {
       const value = groupedWorkflowsMock[0].bpmnProcessId;
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
 
       //when
-      await flushPromises();
       // select workflowName, the version is set to the latest
       node.instance().handleWorkflowNameChange({target: {value: value}});
       node.update();
 
       // then
-      expect(spy).toHaveBeenCalledWith({workflowIds: ['6'], activityId: ''});
+      expect(spy).toHaveBeenCalledWith({
+        workflow: 'demoProcess',
+        version: '3',
+        activityId: ''
+      });
     });
 
     it('should call onFilterChange when all workflow versions are selected', async () => {
       const value = groupedWorkflowsMock[0].bpmnProcessId;
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
 
       //when
-      await flushPromises();
       // select workflowName, the version is set to the latest
       node.instance().handleWorkflowNameChange({target: {value: value}});
       node.update();
@@ -486,9 +662,9 @@ describe('Filters', () => {
 
       // then
       expect(spy).toHaveBeenCalled();
-      expect(spy.mock.calls[0][0].workflowIds).toEqual(['6']);
+      expect(spy.mock.calls[0][0].version).toEqual('3');
       expect(spy.mock.calls[0][0].activityId).toBe('');
-      expect(spy.mock.calls[1][0].workflowIds).toEqual(['6', '4', '1']);
+      expect(spy.mock.calls[1][0].version).toEqual('all');
       expect(spy.mock.calls[1][0].activityId).toBe('');
     });
   });
@@ -496,7 +672,13 @@ describe('Filters', () => {
   describe('activityId filter', () => {
     it('should exist and be disabled by default', () => {
       // given
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
       const field = node.find({name: 'activityId'});
 
       // then
@@ -505,19 +687,37 @@ describe('Filters', () => {
       expect(field.props().name).toEqual('activityId');
       expect(field.props().value).toEqual('');
       expect(field.props().placeholder).toEqual('Flow Node');
-      expect(field.props().onChange).toEqual(
-        node.instance().handleActivityIdChange
-      );
+      expect(field.props().onChange).toEqual(node.instance().handleFieldChange);
       expect(field.props().disabled).toBe(true);
       expect(field.props().options.length).toBe(0);
     });
 
+    it('should render the value from this.props.filter.activityId', () => {
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={COMPLETE_FILTER}
+        />
+      );
+
+      const field = node.find({name: 'activityId'});
+      // then
+      expect(node.state().filter.activityId).toEqual('4');
+      expect(field.props().value).toEqual('4');
+    });
+
     it('should be disabled if All versions is selected', async () => {
       const value = groupedWorkflowsMock[0].bpmnProcessId;
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
 
       //when
-      await flushPromises();
       // select workflowName, the version is set to the latest
       node.instance().handleWorkflowNameChange({target: {value: value}});
       node.update();
@@ -533,16 +733,21 @@ describe('Filters', () => {
 
     it('should not be disabled when a version is selected', async () => {
       const value = groupedWorkflowsMock[0].bpmnProcessId;
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
 
       //when
-      await flushPromises();
       // select workflowName, the version is set to the latest
       node.instance().handleWorkflowNameChange({target: {value: value}});
       node.update();
 
       node.instance().handleWorkflowVersionChange({
-        target: {value: groupedWorkflowsMock[0].workflows[0].id}
+        target: {value: groupedWorkflowsMock[0].workflows[0].version}
       });
       node.update();
 
@@ -551,12 +756,40 @@ describe('Filters', () => {
       expect(node.find({name: 'activityId'}).props().value).toEqual('');
     });
 
-    it('should be disabled after the workflow name is reseted', async () => {
+    it('should read the options from this.props.activityIds', () => {
       const value = groupedWorkflowsMock[0].bpmnProcessId;
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockPropsWithActivityIds}
+          filter={DEFAULT_FILTER}
+        />
+      );
 
       //when
-      await flushPromises();
+      // select workflowName, the version is set to the latest
+      node.instance().handleWorkflowNameChange({target: {value: value}});
+      node.update();
+
+      expect(node.find({name: 'activityId'}).props().options[0].value).toEqual(
+        'taskA'
+      );
+      expect(node.find({name: 'activityId'}).props().options[1].value).toEqual(
+        'taskB'
+      );
+    });
+
+    it('should be disabled after the workflow name is reseted', async () => {
+      const value = groupedWorkflowsMock[0].bpmnProcessId;
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
+
+      //when
       // select workflowName, the version is set to the latest
       node.instance().handleWorkflowNameChange({target: {value: value}});
       node.update();
@@ -572,7 +805,11 @@ describe('Filters', () => {
     it('should display a list of activity ids', async () => {
       // given
       const node = shallow(
-        <Filters {...mockPropsWithActivityIds} filter={DEFAULT_FILTER} />
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockPropsWithActivityIds}
+          filter={DEFAULT_FILTER}
+        />
       );
 
       // then
@@ -584,16 +821,19 @@ describe('Filters', () => {
       const value = groupedWorkflowsMock[0].bpmnProcessId;
       const activityId = mockPropsWithActivityIds.activityIds[0].value;
       const node = shallow(
-        <Filters {...mockPropsWithActivityIds} filter={DEFAULT_FILTER} />
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockPropsWithActivityIds}
+          filter={DEFAULT_FILTER}
+        />
       );
 
       //when
-      await flushPromises();
       // select workflowName, the version is set to the latest
       node.instance().handleWorkflowNameChange({target: {value: value}});
       node.update();
 
-      node.instance().handleActivityIdChange({
+      node.instance().handleFieldChange({
         target: {
           value: mockPropsWithActivityIds.activityIds[0].value,
           name: 'activityId'
@@ -603,14 +843,20 @@ describe('Filters', () => {
       });
 
       // then
-      expect(node.state().activityId).toEqual(activityId);
+      expect(node.state().filter.activityId).toEqual(activityId);
     });
   });
 
   describe('startDate filter', () => {
     it('should exist', () => {
       // given
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
       const field = node.find({name: 'startDate'});
 
       // then
@@ -623,10 +869,15 @@ describe('Filters', () => {
     });
 
     it('should be prefilled with the value from props.filter.startDate', async () => {
-      const node = shallow(<Filters {...mockProps} filter={COMPLETE_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={COMPLETE_FILTER}
+        />
+      );
 
       //when
-      await flushPromises();
       node.update();
       const field = node.find({name: 'startDate'});
       // then
@@ -635,11 +886,15 @@ describe('Filters', () => {
     });
 
     it('should update the state with new value', async () => {
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
 
       //when
-      await flushPromises();
-
       node.instance().handleInputChange({
         target: {value: '25 January 2009', name: 'startDate'}
       });
@@ -649,11 +904,15 @@ describe('Filters', () => {
     });
 
     it('should update the filters in Instances page', async () => {
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
 
       //when
-      await flushPromises();
-
       node.instance().handleFieldChange({
         target: {value: '25 January 2009', name: 'startDate'}
       });
@@ -665,11 +924,15 @@ describe('Filters', () => {
     });
 
     it('should send null values for empty start dates', async () => {
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
 
       //when
-      await flushPromises();
-
       node.instance().handleFieldChange({
         target: {value: '', name: 'startDate'}
       });
@@ -683,7 +946,13 @@ describe('Filters', () => {
   describe('endDate filter', () => {
     it('should exist', () => {
       // given
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
       const field = node.find({name: 'endDate'});
 
       // then
@@ -696,37 +965,52 @@ describe('Filters', () => {
     });
 
     it('should be prefilled with the value from props.filter.endDate', async () => {
-      const node = shallow(<Filters {...mockProps} filter={COMPLETE_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={COMPLETE_FILTER}
+        />
+      );
 
       //when
-      await flushPromises();
       node.update();
       const field = node.find({name: 'endDate'});
+
       // then
       expect(node.state().filter.endDate).toEqual('10-10-2018');
       expect(field.props().value).toEqual('10-10-2018');
     });
 
     it('should update the state with new value', async () => {
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
 
       //when
-      await flushPromises();
-
       node.instance().handleInputChange({
         target: {value: '25 January 2009', name: 'endDate'}
       });
       node.update();
 
+      // then
       expect(node.state().filter.endDate).toEqual('25 January 2009');
     });
 
     it('should update the filters in Instances page', async () => {
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
 
       //when
-      await flushPromises();
-
       node.instance().handleFieldChange({
         target: {value: '25 January 2009', name: 'endDate'}
       });
@@ -741,7 +1025,13 @@ describe('Filters', () => {
   describe('reset button', () => {
     it('should render the disabled reset filters button', () => {
       // given filter is different from DEFAULT_FILTER
-      const node = shallow(<Filters {...mockProps} filter={COMPLETE_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={COMPLETE_FILTER}
+        />
+      );
       const ResetButtonNode = node.find(Button);
 
       // then
@@ -754,7 +1044,13 @@ describe('Filters', () => {
 
     it('should render the disabled reset filters button', () => {
       // given
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
       const ResetButtonNode = node.find(Button);
 
       // then
@@ -764,11 +1060,16 @@ describe('Filters', () => {
 
     it('should reset all fields', async () => {
       // given
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
       const ResetButtonNode = node.find(Button);
 
       //when
-      await flushPromises();
       node.update();
 
       // enter errorMessage
@@ -777,7 +1078,7 @@ describe('Filters', () => {
       });
       node.update();
 
-      // enter workFlowName, workflowIds takes by default latest version
+      // enter workFlowName, version takes by default latest version
       node
         .instance()
         .handleWorkflowNameChange({target: {value: 'demoProcess'}});
@@ -802,7 +1103,7 @@ describe('Filters', () => {
       node.update();
 
       // select activityId
-      node.instance().handleActivityIdChange({
+      node.instance().handleFieldChange({
         target: {
           value: mockPropsWithActivityIds.activityIds[0].value,
           name: 'activityId'
@@ -817,8 +1118,8 @@ describe('Filters', () => {
       node.update();
 
       // then
-      expect(node.find({name: 'workflowName'}).props().value).toBe('');
-      expect(node.find({name: 'workflowIds'}).props().value).toBe('');
+      expect(node.find({name: 'workflow'}).props().value).toBe('');
+      expect(node.find({name: 'version'}).props().value).toBe('');
       expect(node.find({name: 'ids'}).props().value).toBe('');
       expect(node.find({name: 'errorMessage'}).props().value).toBe('');
       expect(node.find({name: 'startDate'}).props().value).toBe('');
@@ -826,14 +1127,19 @@ describe('Filters', () => {
       expect(node.find({name: 'activityId'}).props().value).toBe('');
     });
 
-    it('should reset the diagram preview from Instances Page', async () => {
+    it('should call this.props.onFilterReset', async () => {
       // given
       const value = groupedWorkflowsMock[0].bpmnProcessId;
-      const node = shallow(<Filters {...mockProps} filter={DEFAULT_FILTER} />);
+      const node = shallow(
+        <Filters
+          groupedWorkflowInstances={workflows}
+          {...mockProps}
+          filter={DEFAULT_FILTER}
+        />
+      );
       const ResetButtonNode = node.find(Button);
 
       //when
-      await flushPromises();
       // we select a workflow
       node.instance().handleWorkflowNameChange({target: {value: value}});
       node.update();
@@ -842,12 +1148,7 @@ describe('Filters', () => {
       node.update();
 
       // then
-      // first call is made with the last version of the selected workflow
-      expect(instancesSpy.mock.calls[0][0]).toEqual(
-        groupedWorkflowsMock[0].workflows[0]
-      );
-      // second call should reset the diagram, after clicking reset button
-      expect(instancesSpy.mock.calls[1][0]).toEqual(null);
+      expect(resetSpy).toHaveBeenCalled();
     });
   });
 });

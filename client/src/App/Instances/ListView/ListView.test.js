@@ -9,14 +9,14 @@ import {SORT_ORDER, DEFAULT_SORTING} from 'modules/constants';
 import ListView from './ListView';
 import List from './List';
 import ListFooter from './ListFooter';
-import {defaultFilterSelection} from './../service';
+import {DEFAULT_FILTER} from 'modules/constants';
 
 const selection = {
   list: new Set(),
   isBlacklist: false
 };
 
-const filter = {defaultFilterSelection};
+const filter = {DEFAULT_FILTER};
 const filterCount = 27;
 const selections = [];
 const successResponse = {totalCount: 123, workflowInstances: [{id: 1}]};

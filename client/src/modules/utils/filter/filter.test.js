@@ -2,10 +2,43 @@ import {
   getInstanceStatePayload,
   getFilterQueryString,
   fieldParser,
-  parseFilterForRequest
+  parseFilterForRequest,
+  getFilterWithWorkflowIds
 } from './filter';
 
 import {DEFAULT_FILTER} from 'modules/constants';
+
+const workflows = {
+  demoProcess: {
+    bpmnProcessId: 'demoProcess',
+    name: 'New demo process',
+    workflows: [
+      {
+        id: '6',
+        name: 'New demo process',
+        version: 3,
+        bpmnProcessId: 'demoProcess'
+      },
+      {
+        id: '4',
+        name: 'Demo process',
+        version: 2,
+        bpmnProcessId: 'demoProcess'
+      },
+      {
+        id: '1',
+        name: 'Demo process',
+        version: 1,
+        bpmnProcessId: 'demoProcess'
+      }
+    ]
+  },
+  orderProcess: {
+    bpmnProcessId: 'orderProcess',
+    name: 'Order',
+    workflows: []
+  }
+};
 
 describe('modules/utils/filter.js', () => {
   describe('getInstanceStatePayload', () => {
@@ -223,6 +256,52 @@ describe('modules/utils/filter.js', () => {
       expect(output.endDateBefore).toBeDefined();
       expect(output.endDateAfter.length).toBe(28);
       expect(output.endDateBefore.length).toBe(28);
+    });
+  });
+
+  describe('getFilterWithWorkflowIds', () => {
+    it('should return the same filter if no workflow or version is provided', () => {
+      const filter = {
+        active: true,
+        errorMessage: 'lorem',
+        activityId: 'lorem'
+      };
+
+      expect(getFilterWithWorkflowIds(filter, workflows)).toEqual(filter);
+    });
+
+    it('should not return worflow and version fields, only workflowIds', () => {
+      const filter = {
+        active: true,
+        errorMessage: 'lorem',
+        workflow: 'demoProcess',
+        version: '3'
+      };
+
+      expect(getFilterWithWorkflowIds(filter, workflows).workflow).toEqual(
+        undefined
+      );
+      expect(getFilterWithWorkflowIds(filter, workflows).version).toEqual(
+        undefined
+      );
+      expect(getFilterWithWorkflowIds(filter, workflows).workflowIds).toEqual([
+        '6'
+      ]);
+    });
+
+    it('should not return the right workflowIds when version is all', () => {
+      const filter = {
+        active: true,
+        errorMessage: 'lorem',
+        workflow: 'demoProcess',
+        version: 'all'
+      };
+
+      expect(getFilterWithWorkflowIds(filter, workflows).workflowIds).toEqual([
+        '6',
+        '4',
+        '1'
+      ]);
     });
   });
 });

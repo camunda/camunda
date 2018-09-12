@@ -87,6 +87,8 @@ export function getInstanceStatePayload(filter) {
 /**
  * Before fetching the instances for the ListView
  * the filter field values need to be parsed
+ * @param {Object} filter
+ * @return {Object}
  */
 export function parseFilterForRequest(filter) {
   let parsedFilter = {};
@@ -107,4 +109,45 @@ export function parseFilterForRequest(filter) {
     ...parsedFilter,
     ...getInstanceStatePayload(filter)
   };
+}
+
+export function getWorkflowByVersion(workflow, version) {
+  return workflow.workflows.find(item => {
+    return String(item.version) === String(version);
+  });
+}
+
+/**
+ * For using a filter in a request we replace filter.workflow & filter.version
+ * with the corresponding workflowIds:[..] field
+ * @param {Object} filter
+ * @param {Object} allWorkflows all the available workflows
+ */
+export function getFilterWithWorkflowIds(filter, allWorkflows = {}) {
+  const {workflow, version, ...otherFields} = filter;
+  let workflowIds = [];
+  let newFilter = {...otherFields};
+
+  if (!Boolean(workflow) && !Boolean(version)) {
+    return otherFields;
+  }
+
+  if (version === 'all') {
+    allWorkflows[workflow].workflows.forEach(item => {
+      workflowIds.push(item.id);
+    });
+    newFilter.workflowIds = workflowIds;
+  } else {
+    const workflowByVersion = getWorkflowByVersion(
+      allWorkflows[workflow],
+      version
+    );
+
+    if (Boolean(workflowByVersion)) {
+      workflowIds.push(workflowByVersion.id);
+      newFilter.workflowIds = workflowIds;
+    }
+  }
+
+  return {...newFilter};
 }
