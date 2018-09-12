@@ -58,16 +58,31 @@ const barGroupedEvents = {
   state: ACTIVITY_STATE.INCIDENT
 };
 
-const mockGroupedEvents = [
+const groupedEvents = [
   {...fooGroupedEvents},
   {...barGroupedEvents},
   ...instanceEvents
 ];
 
+const mockProps = {
+  groupedEvents,
+  onEventRowChanged: jest.fn(),
+  selectedEventRow: {
+    key: null,
+    payload: null
+  }
+};
+
 describe('InstanceEvents', () => {
+  beforeEach(() => {
+    mockProps.onEventRowChanged.mockClear();
+  });
+
   it('should render empty events container by default', () => {
     // given
-    const node = shallow(<InstanceEvents />);
+    const node = shallow(
+      <InstanceEvents onEventRowChanged={mockProps.onEventRowChanged} />
+    );
 
     // then
     const EventsContainerNode = node.find(Styled.EventsContainer);
@@ -77,7 +92,7 @@ describe('InstanceEvents', () => {
 
   it('should render grouped events', async () => {
     // given
-    const node = shallow(<InstanceEvents groupedEvents={mockGroupedEvents} />);
+    const node = shallow(<InstanceEvents {...mockProps} />);
 
     // then
     // Foldable for each event and each group
@@ -141,5 +156,20 @@ describe('InstanceEvents', () => {
     expect(InstanceFoldableNode.find(Foldable)).toHaveLength(2);
 
     expect(node).toMatchSnapshot();
+  });
+
+  describe('selection', () => {
+    it('should apply selection to the proper row', () => {
+      // given
+      const selectedEventRow = {key: 'fooCreated0', payload: {}};
+      const node = shallow(
+        <InstanceEvents {...mockProps} selectedEventRow={selectedEventRow} />
+      );
+
+      // then
+      expect(
+        node.find(`[data-test="${selectedEventRow.key}"]`).prop('isSelected')
+      ).toBe(true);
+    });
   });
 });

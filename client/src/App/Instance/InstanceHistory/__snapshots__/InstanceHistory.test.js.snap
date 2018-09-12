@@ -65,10 +65,17 @@ exports[`InstanceHistory should render a pane with InstanceLog section and Copyr
           },
         ]
       }
+      onEventRowChanged={[Function]}
+      selectedEventRow={
+        Object {
+          "key": null,
+          "payload": null,
+        }
+      }
     />
-    <Themed(styled.div)>
-      C
-    </Themed(styled.div)>
+    <InstancePayload
+      payload={null}
+    />
   </Styled(Styled(PanelBody))>
   <Styled(Styled(PanelFooter))>
     <Copyright />

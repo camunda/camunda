@@ -70,7 +70,11 @@ describe('InstanceHistory', () => {
     // then
     expect(instance.state).toEqual({
       events: null,
-      groupedEvents: null
+      groupedEvents: null,
+      selectedEventRow: {
+        key: null,
+        payload: null
+      }
     });
   });
 
@@ -127,5 +131,77 @@ describe('InstanceHistory', () => {
     expect(CopyrightNode).toHaveLength(1);
     // snapshot
     expect(node).toMatchSnapshot();
+  });
+
+  describe('handleEventRowChange', () => {
+    it('should set the payload and key of the selected event row', () => {
+      // given
+      const mockProps = {
+        instance: {}
+      };
+      const node = shallow(<InstanceHistory {...mockProps} />);
+      const expectedPayload = {a: 'b'};
+      const selectedEventRow = {
+        key: 'foo',
+        payload: JSON.stringify(expectedPayload)
+      };
+
+      // when
+      node.instance().handleEventRowChange(selectedEventRow);
+      node.update();
+
+      // then
+      expect(node.state('selectedEventRow')).toEqual({
+        key: 'foo',
+        payload: expectedPayload
+      });
+    });
+
+    it('should set the payload to null if the selected row payload is not parsable', () => {
+      // given
+      const mockProps = {
+        instance: {}
+      };
+      const node = shallow(<InstanceHistory {...mockProps} />);
+      const selectedEventRow = {
+        key: 'foo',
+        payload: '{some unparsable jstring'
+      };
+
+      // when
+      node.instance().handleEventRowChange(selectedEventRow);
+      node.update();
+
+      // then
+      expect(node.state('selectedEventRow')).toEqual({
+        key: 'foo',
+        payload: null
+      });
+    });
+
+    it("should reset the selected event row if it's selected again", () => {
+      // given
+      const mockProps = {
+        instance: {}
+      };
+      const node = shallow(<InstanceHistory {...mockProps} />);
+      const expectedPayload = {a: 'b'};
+      const selectedEventRow = {
+        key: 'foo',
+        payload: JSON.stringify(expectedPayload)
+      };
+      node.setState({selectedEventRow: {key: 'foo', payload: expectedPayload}});
+      node.update();
+
+      // when
+      node.instance().handleEventRowChange(selectedEventRow);
+      node.update();
+
+      // then
+      expect(node.state('selectedEventRow')).toEqual({
+        key: null,
+        payload: null
+      });
+    });
   });
 });

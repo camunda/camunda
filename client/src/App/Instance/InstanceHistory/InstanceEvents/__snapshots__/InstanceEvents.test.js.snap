@@ -49,6 +49,13 @@ exports[`InstanceEvents should render grouped events 1`] = `
       },
     ]
   }
+  onEventRowChanged={[Function]}
+  selectedEventRow={
+    Object {
+      "key": null,
+      "payload": null,
+    }
+  }
 >
   <styled.ul>
     <Themed(styled.li)
@@ -58,6 +65,7 @@ exports[`InstanceEvents should render grouped events 1`] = `
         key="foo name0"
       >
         <Summary
+          data-test="foo name0"
           isFoldable={true}
           isSelected={false}
           onSelection={[Function]}
@@ -70,6 +78,7 @@ exports[`InstanceEvents should render grouped events 1`] = `
             key="fooCreated0"
           >
             <Summary
+              data-test="fooCreated0"
               isFoldable={true}
               isOpenIncidentEvent={false}
               isSelected={false}
@@ -91,6 +100,7 @@ exports[`InstanceEvents should render grouped events 1`] = `
             key="fooActiviated1"
           >
             <Summary
+              data-test="fooActiviated1"
               isFoldable={false}
               isOpenIncidentEvent={false}
               isSelected={false}
@@ -109,6 +119,7 @@ exports[`InstanceEvents should render grouped events 1`] = `
         key="bar name1"
       >
         <Summary
+          data-test="bar name1"
           isFoldable={true}
           isSelected={false}
           onSelection={[Function]}
@@ -124,6 +135,7 @@ exports[`InstanceEvents should render grouped events 1`] = `
             key="CREATED0"
           >
             <Summary
+              data-test="CREATED0"
               isFoldable={false}
               isOpenIncidentEvent={true}
               isSelected={false}
@@ -138,6 +150,7 @@ exports[`InstanceEvents should render grouped events 1`] = `
             key="barActivated1"
           >
             <Summary
+              data-test="barActivated1"
               isFoldable={false}
               isOpenIncidentEvent={false}
               isSelected={false}
@@ -157,6 +170,7 @@ exports[`InstanceEvents should render grouped events 1`] = `
         key="baz2"
       >
         <Summary
+          data-test="baz2"
           isFoldable={true}
           isOpenIncidentEvent={false}
           isSelected={false}
@@ -171,8 +185,6 @@ exports[`InstanceEvents should render grouped events 1`] = `
           >
             <Summary
               isFoldable={true}
-              isSelected={false}
-              onSelection={[Function]}
             >
               c
             </Summary>

@@ -7,11 +7,14 @@ import * as Styled from './styled';
 describe('Foldable', () => {
   it('should be folded by default', () => {
     // given
+    const mockOnSelection = jest.fn();
     const fooDetailsText = 'Foo Details';
     const fooSummaryText = 'foo summary';
     const node = shallow(
       <Foldable>
-        <Foldable.Summary>{fooSummaryText}</Foldable.Summary>
+        <Foldable.Summary onSelection={mockOnSelection} isSelected={true}>
+          {fooSummaryText}
+        </Foldable.Summary>
         <Foldable.Details>{fooDetailsText}</Foldable.Details>
       </Foldable>
     );
@@ -23,6 +26,12 @@ describe('Foldable', () => {
     const SummaryNode = node.find(Foldable.Summary);
     expect(SummaryNode).toHaveLength(1);
     expect(SummaryNode.contains(fooSummaryText)).toBe(true);
+
+    // Summary Label
+    const SummaryLabelNode = SummaryNode.dive().find(Styled.SummaryLabel);
+    expect(SummaryLabelNode).toHaveLength(1);
+    expect(SummaryLabelNode.prop('onClick')).toBe(mockOnSelection);
+    expect(SummaryLabelNode.prop('isSelected')).toBe(true);
 
     // Summary Expand Button
     const FoldButtonNode = SummaryNode.dive().find(Styled.FoldButton);

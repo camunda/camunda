@@ -9,16 +9,9 @@ import * as Styled from './styled';
 
 export default class InstanceEvents extends React.Component {
   static propTypes = {
-    groupedEvents: PropTypes.array
-  };
-
-  state = {
-    selectedKey: null
-  };
-
-  handleSelection = key => {
-    const isAlreadySelected = this.state.selectedKey === key;
-    this.setState({selectedKey: isAlreadySelected ? null : key});
+    groupedEvents: PropTypes.array,
+    selectedEventRow: PropTypes.object,
+    onEventRowChanged: PropTypes.func.isRequired
   };
 
   /**
@@ -56,12 +49,7 @@ export default class InstanceEvents extends React.Component {
           // if the value is of type object, render a Foldable
           return (
             <Foldable key={idx} indentation={indentation}>
-              <Foldable.Summary
-                isSelected={idx === this.state.selectedKey}
-                onSelection={() => this.handleSelection(idx)}
-              >
-                {key}
-              </Foldable.Summary>
+              <Foldable.Summary>{key}</Foldable.Summary>
               <Foldable.Details>
                 {this.renderFoldableDetails({
                   details: value,
@@ -74,7 +62,10 @@ export default class InstanceEvents extends React.Component {
     );
   };
 
-  renderEvent = ({eventType, eventSourceType, metadata, indentation}, idx) => {
+  renderEvent = (
+    {eventType, eventSourceType, metadata, indentation, payload},
+    idx
+  ) => {
     const key = `${eventType}${idx}`;
     const isOpenIncidentEvent =
       eventType === EVENT_TYPE.CREATED &&
@@ -85,8 +76,9 @@ export default class InstanceEvents extends React.Component {
         <Foldable.Summary
           isFoldable={!isEmpty(metadata)}
           isOpenIncidentEvent={isOpenIncidentEvent}
-          isSelected={key === this.state.selectedKey}
-          onSelection={() => this.handleSelection(key)}
+          isSelected={key === this.props.selectedEventRow.key}
+          onSelection={() => this.props.onEventRowChanged({key, payload})}
+          data-test={key}
         >
           {!isOpenIncidentEvent ? '' : <Styled.IncidentIcon />}
           {eventType}
@@ -117,8 +109,9 @@ export default class InstanceEvents extends React.Component {
     return (
       <Foldable key={key}>
         <Foldable.Summary
-          isSelected={key === this.state.selectedKey}
-          onSelection={() => this.handleSelection(key)}
+          isSelected={key === this.props.selectedEventRow.key}
+          onSelection={() => this.props.onEventRowChanged({key, payload: null})}
+          data-test={key}
         >
           {name}
           {state !== ACTIVITY_STATE.INCIDENT ? (

@@ -7,6 +7,7 @@ import {fetchEvents} from 'modules/api/events';
 
 import InstanceLog from './InstanceLog';
 import InstanceEvents from './InstanceEvents';
+import InstancePayload from './InstancePayload';
 import {getGroupedEvents, getActivityInstanceEvents} from './service';
 import {isEmpty} from 'modules/utils';
 import * as Styled from './styled';
@@ -21,7 +22,11 @@ export default class InstanceHistory extends React.Component {
 
   state = {
     events: null,
-    groupedEvents: null
+    groupedEvents: null,
+    selectedEventRow: {
+      key: null,
+      payload: null
+    }
   };
 
   async componentDidMount() {
@@ -30,7 +35,7 @@ export default class InstanceHistory extends React.Component {
   }
 
   componentDidUpdate(prevProps, prevState) {
-    const {activitiesDetails} = this.props;
+    const {activitiesDetails, selectedActivityInstanceId} = this.props;
     const {events} = this.state;
 
     if (isEmpty(activitiesDetails) || !events) {
@@ -40,15 +45,45 @@ export default class InstanceHistory extends React.Component {
     const haveActivitiesDetailsChanged =
       activitiesDetails !== prevProps.activitiesDetails;
     const haveEventsChanged = events !== prevState.events;
+    const hasSelectedActivityInstanceIdChanged =
+      selectedActivityInstanceId !== prevProps.selectedActivityInstanceId;
 
     if (haveActivitiesDetailsChanged || haveEventsChanged) {
       const groupedEvents = getGroupedEvents({
         events,
         activitiesDetails
       });
-      this.setState({groupedEvents});
+      return this.setState({groupedEvents});
+    }
+
+    // reset the event row selection whenever activity changes
+    // whenever the selected activity instance id changes.
+    if (hasSelectedActivityInstanceIdChanged) {
+      this.resetEventRowChange();
     }
   }
+
+  resetEventRowChange = () => {
+    this.setState({
+      selectedEventRow: {key: null, payload: null}
+    });
+  };
+
+  handleEventRowChange = ({key, payload}) => {
+    // if we selected the same row again, reset the selected event row
+    if (key === this.state.selectedEventRow.key) {
+      return this.resetEventRowChange();
+    }
+
+    let newPayload;
+    try {
+      newPayload = JSON.parse(payload);
+    } catch (e) {
+      newPayload = null;
+    }
+
+    this.setState({selectedEventRow: {key, payload: newPayload}});
+  };
 
   render() {
     const {selectedActivityInstanceId} = this.props;
@@ -74,8 +109,12 @@ export default class InstanceHistory extends React.Component {
             selectedActivityInstanceId={this.props.selectedActivityInstanceId}
             onActivityInstanceSelected={this.props.onActivityInstanceSelected}
           />
-          <InstanceEvents groupedEvents={filteredGroupedEvents} />
-          <Styled.Section>C</Styled.Section>
+          <InstanceEvents
+            groupedEvents={filteredGroupedEvents}
+            onEventRowChanged={this.handleEventRowChange}
+            selectedEventRow={this.state.selectedEventRow}
+          />
+          <InstancePayload payload={this.state.selectedEventRow.payload} />
         </Styled.PaneBody>
         <Styled.PaneFooter>
           <Copyright />

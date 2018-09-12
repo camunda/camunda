@@ -1,0 +1,68 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`InstancePayload should render empty placeholder if there is no payload 1`] = `
+<Themed(styled.div)>
+  <styled.div>
+    <Themed(styled.span)>
+      To see the payload, selecte an activity and an event
+    </Themed(styled.span)>
+  </styled.div>
+</Themed(styled.div)>
+`;
+
+exports[`InstancePayload should render key value table based on payload 1`] = `
+<Themed(styled.div)>
+  <styled.div>
+    <Themed(styled.table)>
+      <thead>
+        <Themed(styled.tr)>
+          <Themed(styled.th)>
+            Key
+          </Themed(styled.th)>
+          <Themed(styled.th)>
+            Value
+          </Themed(styled.th)>
+        </Themed(styled.tr)>
+      </thead>
+      <tbody>
+        <Themed(styled.tr)
+          key="a"
+        >
+          <Themed(styled.td)
+            isBold={true}
+          >
+            a
+          </Themed(styled.td)>
+          <Themed(styled.td)>
+            b
+          </Themed(styled.td)>
+        </Themed(styled.tr)>
+        <Themed(styled.tr)
+          key="c"
+        >
+          <Themed(styled.td)
+            isBold={true}
+          >
+            c
+          </Themed(styled.td)>
+          <Themed(styled.td)>
+            d
+          </Themed(styled.td)>
+        </Themed(styled.tr)>
+        <Themed(styled.tr)
+          key="e"
+        >
+          <Themed(styled.td)
+            isBold={true}
+          >
+            e
+          </Themed(styled.td)>
+          <Themed(styled.td)>
+            f
+          </Themed(styled.td)>
+        </Themed(styled.tr)>
+      </tbody>
+    </Themed(styled.table)>
+  </styled.div>
+</Themed(styled.div)>
+`;

@@ -5,7 +5,9 @@ exports[`Foldable should be folded by default 1`] = `
   <Summary
     isFoldable={true}
     isFolded={true}
+    isSelected={true}
     key=".0"
+    onSelection={[Function]}
     toggleFold={[Function]}
   >
     foo summary
