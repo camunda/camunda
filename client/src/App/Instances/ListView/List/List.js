@@ -24,7 +24,7 @@ export default class List extends React.Component {
       excludeIds: PropTypes.instanceOf(Set)
       // ,ids: PropTypes.oneOfType([PropTypes.Array, PropTypes.instanceOf(Set)])
     }).isRequired,
-    total: PropTypes.number,
+    filterCount: PropTypes.number,
     filter: PropTypes.object,
     sorting: PropTypes.object,
     handleSorting: PropTypes.func,
@@ -74,14 +74,14 @@ export default class List extends React.Component {
   };
 
   areAllInstancesSelected = () => {
-    const {selection, total, filter} = this.props;
+    const {selection, filterCount, filter} = this.props;
     const selectionFilters = this.getSelectionFilters(selection);
 
     if (selection.excludeIds.size > 0) return false;
     if (
       isEqual(selectionFilters, filter) ||
-      areIdsArray(selection, total) ||
-      areIdsSet(selection, total)
+      areIdsArray(selection, filterCount) ||
+      areIdsSet(selection, filterCount)
     )
       return true;
 
@@ -149,7 +149,7 @@ export default class List extends React.Component {
             <React.Fragment>
               <Styled.CheckAll>
                 <Checkbox
-                  disabled={!this.props.total}
+                  disabled={!this.props.filterCount}
                   isChecked={this.areAllInstancesSelected()}
                   onChange={this.handleToggleSelectAll}
                   title="Select all instances"

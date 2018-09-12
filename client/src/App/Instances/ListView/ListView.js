@@ -14,7 +14,7 @@ import * as Styled from './styled';
 export default class ListView extends React.Component {
   static propTypes = {
     selection: PropTypes.object.isRequired,
-    instancesInFilter: PropTypes.number.isRequired,
+    filterCount: PropTypes.number.isRequired,
     onUpdateSelection: PropTypes.func.isRequired,
     filter: PropTypes.object.isRequired,
     openSelection: PropTypes.number,
@@ -93,7 +93,7 @@ export default class ListView extends React.Component {
       filter,
       expandState,
       onUpdateSelection,
-      instancesInFilter,
+      filterCount,
       onAddToOpenSelection,
       onAddNewSelection,
       onAddToSpecificSelection
@@ -106,7 +106,7 @@ export default class ListView extends React.Component {
             <List
               data={this.state.instances}
               selection={selection}
-              total={instancesInFilter}
+              filterCount={filterCount}
               filter={filter}
               expandState={expandState}
               sorting={this.state.sorting}
@@ -121,7 +121,7 @@ export default class ListView extends React.Component {
         <SplitPane.Pane.Footer>
           {!isEmpty(this.props.filter) && (
             <ListFooter
-              total={instancesInFilter}
+              filterCount={filterCount}
               perPage={this.state.entriesPerPage}
               firstElement={this.state.firstElement}
               selection={this.props.selection}

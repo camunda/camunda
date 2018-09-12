@@ -1,13 +1,9 @@
 const getMaxPage = (total, perPage) => Math.ceil(total / perPage);
 
 const isAnyInstanceSelected = selection => {
-  const {ids, excludeIds, ...rest} = selection;
+  const {ids, excludeIds, ...filter} = selection;
 
-  if (!!Object.keys(rest).length || !!ids.size) {
-    return true;
-  } else {
-    return false;
-  }
+  return !!Object.keys(filter).length || !!ids.size;
 };
 
 export {getMaxPage, isAnyInstanceSelected};

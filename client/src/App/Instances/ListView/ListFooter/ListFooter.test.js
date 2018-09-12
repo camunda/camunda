@@ -31,7 +31,7 @@ describe('ListFooter', () => {
         onAddToOpenSelection={jest.fn()}
         perPage={10}
         firstElement={0}
-        total={9}
+        filterCount={9}
         selection={{ids: new Set(), excludeIds: new Set()}}
         selections={[{selectionId: 0}, {selectionId: 1}]}
       />
@@ -52,7 +52,7 @@ describe('ListFooter', () => {
 
   it('should pagination only if required', () => {
     expect(node.find(Paginator).exists()).toBe(false);
-    node.setProps({total: 11});
+    node.setProps({filterCount: 11});
     expect(node.find(Paginator).exists()).toBe(true);
   });
 

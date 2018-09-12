@@ -260,7 +260,7 @@ class Instances extends Component {
 
               <ListView
                 openSelection={this.state.openSelection}
-                instancesInFilter={this.state.filterCount}
+                filterCount={this.state.filterCount}
                 onUpdateSelection={change => {
                   this.handleStateChange({selection: {...change}});
                 }}

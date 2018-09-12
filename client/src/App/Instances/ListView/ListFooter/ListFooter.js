@@ -15,7 +15,7 @@ export default class ListFooter extends React.Component {
     onFirstElementChange: PropTypes.func.isRequired,
     perPage: PropTypes.number.isRequired,
     firstElement: PropTypes.number.isRequired,
-    total: PropTypes.number.isRequired,
+    filterCount: PropTypes.number.isRequired,
     openSelection: PropTypes.number,
     onAddNewSelection: PropTypes.func.isRequired,
     onAddToSpecificSelection: PropTypes.func,
@@ -98,21 +98,21 @@ export default class ListFooter extends React.Component {
 
   render() {
     const {
-      total,
+      filterCount,
       perPage,
       selections,
       firstElement,
       onFirstElementChange
     } = this.props;
 
-    const maxPage = getMaxPage(total, perPage);
+    const maxPage = getMaxPage(filterCount, perPage);
     return (
       <Styled.Footer>
         <Styled.SelectionWrapper>
           {selections.length > 0 ? this.renderDropDown() : this.renderButton()}
         </Styled.SelectionWrapper>
         <Styled.PaginatorWrapper>
-          {this.isPaginationRequired(maxPage, total) ? (
+          {this.isPaginationRequired(maxPage, filterCount) ? (
             <Paginator
               firstElement={firstElement}
               perPage={perPage}

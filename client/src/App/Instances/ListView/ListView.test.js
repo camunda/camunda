@@ -17,7 +17,7 @@ const selection = {
 };
 
 const filter = {defaultFilterSelection};
-const total = 27;
+const filterCount = 27;
 const selections = [];
 const successResponse = {totalCount: 123, workflowInstances: [{id: 1}]};
 api.fetchWorkflowInstances = mockResolvedAsyncFn(successResponse);
@@ -41,7 +41,7 @@ describe('ListView', () => {
       <ListView
         selection={selection}
         filter={filter}
-        instancesInFilter={total}
+        filterCount={filterCount}
         selections={selections}
         openSelection={0}
         onUpdateSelection={onUpdateSelection}
@@ -88,7 +88,7 @@ describe('ListView', () => {
 
     expect(list.prop('data')).toBe(instances);
     expect(list.prop('selection')).toBe(selection);
-    expect(list.prop('total')).toBe(total);
+    expect(list.prop('filterCount')).toBe(filterCount);
     expect(list.prop('onUpdateSelection')).toBe(onUpdateSelection);
   });
 
@@ -134,7 +134,7 @@ describe('ListView', () => {
         <ListView
           selection={selection}
           filter={{}}
-          instancesInFilter={total}
+          filterCount={filterCount}
           onUpdateSelection={onUpdateSelection}
           onAddToOpenSelection={onAddToOpenSelection}
           onAddNewSelection={onAddNewSelection}
