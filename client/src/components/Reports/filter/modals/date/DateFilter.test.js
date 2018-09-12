@@ -17,6 +17,7 @@ jest.mock('components', () => {
   return {
     Modal,
     ErrorMessage: props => <div {...props}>{props.children}</div>,
+    Message: props => <div {...props}>{props.children}</div>,
     Button: props => <button {...props}>{props.children}</button>,
     ButtonGroup: props => <div {...props}>{props.children}</div>,
     Input: props => <input {...props} />,
@@ -88,4 +89,28 @@ it('should disable the add filter button when dynamic value is not valid', () =>
   node.instance().setDynamicValue({target: {value: 'asd'}});
 
   expect(node.state('validDate')).toBe(false);
+});
+
+it('shoud show a warning message if the modal is for end date filter', () => {
+  const endDateModal = mount(<DateFilter filterType="endDate" />);
+
+  expect(endDateModal.find('Message')).toBePresent();
+});
+
+it('shoud make difference between start and end date filter modals', () => {
+  const endDateModal = mount(<DateFilter filterType="endDate" />);
+
+  expect(endDateModal).toIncludeText('Add endDate Filter');
+  endDateModal.instance().setState({
+    mode: 'dynamic'
+  });
+  expect(endDateModal).toIncludeText('Only include process instances ended within the last');
+
+  const startDateModal = mount(<DateFilter filterType="startDate" />);
+
+  expect(startDateModal).toIncludeText('Add startDate Filter');
+  startDateModal.instance().setState({
+    mode: 'dynamic'
+  });
+  expect(startDateModal).toIncludeText('Only include process instances started within the last');
 });

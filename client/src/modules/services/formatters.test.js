@@ -5,7 +5,8 @@ import {
   convertDurationToSingleNumber,
   convertCamelToSpaces,
   convertToMilliseconds,
-  getHighlightedText
+  getHighlightedText,
+  camelCaseToLabel
 } from './formatters';
 const separator = '\u202F';
 const nbsp = '\u00A0';
@@ -106,6 +107,11 @@ describe('convertToMilliseconds', () => {
   expect(convertToMilliseconds(2, 'months')).toBe(5184000000);
   expect(convertToMilliseconds(3, 'hours')).toBe(10800000);
   expect(convertToMilliseconds(100, 'millis')).toBe(100);
+});
+
+describe('camelCaseToLabel', () => {
+  expect(camelCaseToLabel('fooBar')).toBe('Foo Bar');
+  expect(camelCaseToLabel('startDate')).toBe('Start Date');
 });
 
 describe('getHighlightedText', () => {

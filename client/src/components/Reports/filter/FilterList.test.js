@@ -246,6 +246,25 @@ it('should display a rolling date filter', () => {
   expect(node).toIncludeText('Start Date less than 18 hours ago');
 });
 
+it('should display an end date filter', () => {
+  const startDate = '2017-11-16T00:00:00';
+  const endDate = '2017-11-26T23:59:59';
+  const data = [
+    {
+      type: 'endDate',
+      data: {
+        type: 'fixed',
+        start: startDate,
+        end: endDate
+      }
+    }
+  ];
+
+  const node = mount(<FilterList data={data} openEditFilterModal={jest.fn()} />);
+
+  expect(node).toIncludeText('End Date is between');
+});
+
 it('should display a duration filter', () => {
   const data = [
     {

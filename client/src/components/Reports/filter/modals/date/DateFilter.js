@@ -88,10 +88,6 @@ export default class DateFilter extends React.Component {
     this.setState(newState);
   };
 
-  filterTypeToOperation = () => {
-    return this.props.filterType.match('[a-z]*') + 'ed';
-  };
-
   render() {
     const {mode, validDate, startDate, endDate, dynamicValue, dynamicUnit} = this.state;
     return (
@@ -137,7 +133,9 @@ export default class DateFilter extends React.Component {
           {mode === 'dynamic' && (
             <div className="DateFilter__inputs">
               <label className="DateFilter__input-label">
-                {`Only include process instances ${this.filterTypeToOperation()} within the last`}
+                {`Only include process instances ${
+                  this.props.filterType === 'startDate' ? 'started' : 'ended'
+                } within the last`}
               </label>
               <Input
                 value={dynamicValue}
