@@ -25,7 +25,6 @@ import io.zeebe.client.api.clients.WorkflowClient;
 import io.zeebe.client.api.commands.PartitionsRequestStep1;
 import io.zeebe.client.api.commands.TopologyRequestStep1;
 import io.zeebe.client.api.record.ZeebeObjectMapper;
-import io.zeebe.client.api.subscription.ManagementSubscriptionBuilderStep1;
 import io.zeebe.client.api.subscription.TopicSubscriptionBuilderStep1;
 import io.zeebe.gateway.protocol.GatewayGrpc;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
@@ -84,11 +83,6 @@ public class ZeebeClientImpl implements ZeebeClient {
   @Override
   public TopologyRequestStep1 newTopologyRequest() {
     return new TopologyRequestImpl(asyncStub);
-  }
-
-  @Override
-  public ManagementSubscriptionBuilderStep1 newManagementSubscription() {
-    return null;
   }
 
   @Override

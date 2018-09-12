@@ -77,32 +77,4 @@ public class SubscriptionClusteredSinglePartitionTest {
             RaftState.MEMBER_ADDED);
     assertThat(raftEvents.get(3).getMembers()).hasSize(clusteringRule.getBrokersInCluster().size());
   }
-
-  @Test
-  public void shouldReceiveRaftEventsFromSystem() {
-    // given
-    clusteringRule.restartBroker(clusteringRule.getFollowerOnly());
-
-    // when
-    final List<RaftEvent> raftEvents = new ArrayList<>();
-    client
-        .newManagementSubscription()
-        .name("test-subscription")
-        .raftEventHandler(raftEvents::add)
-        .startAtHead()
-        .open();
-
-    // then we should receive two raft add member events
-    waitUntil(() -> raftEvents.size() == 4);
-
-    assertThat(raftEvents).hasSize(4);
-    assertThat(raftEvents)
-        .extracting(RaftEvent::getState)
-        .containsOnly(
-            RaftState.MEMBER_ADDED,
-            RaftState.MEMBER_ADDED,
-            RaftState.MEMBER_REMOVED,
-            RaftState.MEMBER_ADDED);
-    assertThat(raftEvents.get(3).getMembers()).hasSize(clusteringRule.getBrokersInCluster().size());
-  }
 }
