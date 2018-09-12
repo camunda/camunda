@@ -1,28 +1,29 @@
 package zbc
 
 import (
+	"github.com/zeebe-io/zeebe/clients/go/commands"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
 	"google.golang.org/grpc"
-	"context"
-	"time"
 )
-
-const RequestTimeoutInSec = 5
 
 type ZBClientImpl struct {
 	gateway pb.GatewayClient
 	connection *grpc.ClientConn
 }
 
-func (client *ZBClientImpl) HealthCheck() (*pb.HealthResponse, error) {
-	request := &pb.HealthRequest{}
-	ctx, cancel := context.WithTimeout(context.Background(), RequestTimeoutInSec*time.Second)
-	defer cancel()
-
-	return client.gateway.Health(ctx, request)
+func (client *ZBClientImpl) NewHealthCheckCommand() *commands.HealthCheckCommand {
+	return commands.NewHealthCheckCommand(client.gateway)
 }
 
-func NewZBClient(gatewayAddress string) (*ZBClientImpl, error) {
+func (client *ZBClientImpl) NewDeployWorkflowCommand() *commands.DeployCommand {
+	return commands.NewDeployCommand(client.gateway)
+}
+
+func (client *ZBClientImpl) Close() error {
+	return client.connection.Close()
+}
+
+func NewZBClient(gatewayAddress string) (ZBClient, error) {
 	var opts []grpc.DialOption
 	opts = append(opts, grpc.WithInsecure())
 

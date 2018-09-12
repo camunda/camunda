@@ -17,12 +17,16 @@ package io.zeebe.gateway;
 
 import io.zeebe.gateway.api.commands.PartitionInfo;
 import io.zeebe.gateway.api.commands.Topology;
+import io.zeebe.gateway.api.commands.Workflow;
+import io.zeebe.gateway.api.events.DeploymentEvent;
 import io.zeebe.gateway.cmd.ClientException;
 import io.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo;
 import io.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo.Builder;
+import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
+import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowResponseObject;
 import java.util.ArrayList;
 
 public class ResponseMapper {
@@ -43,7 +47,7 @@ public class ResponseMapper {
     }
   }
 
-  public HealthResponse toResponse(final Topology brokerResponse) {
+  public HealthResponse toHealthResponse(final Topology brokerResponse) {
     final HealthResponse.Builder healthResponseBuilder = HealthResponse.newBuilder();
     final ArrayList<BrokerInfo> infos = new ArrayList<>();
 
@@ -64,5 +68,20 @@ public class ResponseMapper {
 
     healthResponseBuilder.addAllBrokers(infos);
     return healthResponseBuilder.build();
+  }
+
+  public DeployWorkflowResponse toDeployWorkflowResponse(final DeploymentEvent brokerResponse) {
+    final DeployWorkflowResponse.Builder deployWorkflowResponseBuilder =
+        DeployWorkflowResponse.newBuilder();
+
+    for (final Workflow workflow : brokerResponse.getWorkflows()) {
+      deployWorkflowResponseBuilder.addWorkflows(
+          WorkflowResponseObject.newBuilder()
+              .setBpmnProcessId(workflow.getBpmnProcessId())
+              .setVersion(workflow.getVersion())
+              .setWorkflowKey(workflow.getWorkflowKey())
+              .setResourceName(workflow.getResourceName()));
+    }
+    return deployWorkflowResponseBuilder.build();
   }
 }

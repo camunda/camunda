@@ -150,7 +150,7 @@ public class WorkflowRepositoryTest {
     final ActorFuture<WorkflowResource> future =
         clientRule.getWorkflowClient().newResourceRequest().workflowKey(123).send();
 
-    assertThatThrownBy(() -> future.join())
+    assertThatThrownBy(future::join)
         .isInstanceOf(BrokerErrorException.class)
         .hasMessageContaining("No workflow found with key '123'");
   }

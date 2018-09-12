@@ -27,7 +27,34 @@ message HealthResponse {
   repeated BrokerInfo brokers = 1;
 }
 
+message WorkflowRequestObject {
+  string name = 1;
+  enum ResourceType {
+    BPMN = 0;
+    YAML = 1;
+  }
+  ResourceType type = 2;
+  bytes definition = 3;
+}
+
+message DeployWorkflowRequest {
+  repeated WorkflowRequestObject workflows = 1;
+}
+
+message WorkflowResponseObject {
+  string bpmnProcessId = 1;
+  int32 version = 2;
+  int64 workflowKey = 3;
+  string resourceName = 4;
+}
+
+message DeployWorkflowResponse {
+  repeated WorkflowResponseObject workflows = 1;
+}
+
 service Gateway {
   rpc Health (HealthRequest) returns (HealthResponse) {
+  }
+  rpc DeployWorkflow (DeployWorkflowRequest) returns (DeployWorkflowResponse) {
   }
 }
