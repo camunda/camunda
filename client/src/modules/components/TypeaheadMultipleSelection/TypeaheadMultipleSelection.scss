@@ -17,7 +17,6 @@
 }
 
 .TypeaheadMultipleSelection__no-items {
-  align-self: flex-end;
   margin-right: 20px;
 }
 
@@ -30,7 +29,7 @@
   display: flex;
   align-items: baseline;
   width: 75%;
-  justify-content: space-between;
+  justify-content: flex-end;
 }
 
 .TypeaheadMultipleSelection__labeled-valueList {

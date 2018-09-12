@@ -12,6 +12,7 @@ jest.mock('components', () => {
     delete allowedProps.setFilter;
     delete allowedProps.availableValues;
     delete allowedProps.selectedValues;
+    delete allowedProps.format;
     return <div {...allowedProps}>{props.availableValues.concat(props.selectedValues)}</div>;
   };
 
@@ -90,7 +91,7 @@ it('should disable add filter button if no value is selected', () => {
     />
   );
 
-  node.instance().toggleValue({target: {checked: false, value: 'A'}});
+  node.instance().toggleValue('A')({target: {checked: false, value: 'A'}});
 
   expect(changeSpy).toHaveBeenCalledWith({operator: 'in', values: []});
   expect(validSpy).toHaveBeenCalledWith(false);

@@ -12,6 +12,12 @@ jest.mock('services', () => {
   };
 });
 
+jest.mock('components', () => {
+  return {
+    TypeaheadMultipleSelection: props => <ul>{JSON.stringify(props)}</ul>
+  };
+});
+
 const reportsList = [
   {
     id: '10d5cd05-6f7c-4f74-970c-f31e065f646b',
@@ -86,48 +92,6 @@ it('should have input checkbox for only single report items in the list', async 
   expect(node.find('ul').first()).not.toIncludeText('Combined Report');
 });
 
-it('should have one single report checked', async () => {
-  const node = await mount(<CombinedSelectionPanel reportResult={reportsList[1]} />);
-  await node.update();
-  expect(
-    node
-      .find('ul')
-      .find('input')
-      .props().checked
-  ).toBe(true);
-});
-
-it('should invok updateReport with an empty array', async () => {
-  const spy = jest.fn();
-  const node = await mount(
-    <CombinedSelectionPanel reportResult={reportsList[1]} updateReport={spy} />
-  );
-  await node.update();
-  node.find('ul li input').simulate('change', {target: {checked: false}});
-  await node.update();
-
-  expect(spy).toBeCalledWith({reportIds: []});
-});
-
-it('should add deselected report to the possible reports with checked false', async () => {
-  const spy = jest.fn();
-  const node = await mount(
-    <CombinedSelectionPanel reportResult={reportsList[1]} updateReport={spy} />
-  );
-  await node.update();
-  node.find('ul li input').simulate('change', {target: {checked: false}});
-  await node.update();
-
-  expect(
-    node
-      .find('ul')
-      .find('input')
-      .props().checked
-  ).toBe(false);
-  expect(node).not.toIncludeText('No compatible reports');
-  expect(node).toIncludeText('Please select at least');
-});
-
 describe('isCompatible', () => {
   let node = {};
   beforeEach(async () => {
@@ -193,25 +157,4 @@ describe('isCompatible', () => {
 
     expect(node.instance().isCompatible(reportSameOperation)).toBeFalsy();
   });
-});
-
-it('should filter reports when searching', async () => {
-  loadEntity.mockReturnValue([
-    ...reportsList,
-    {
-      ...reportsList[0],
-      name: 'TestReport',
-      id: 'TestReport',
-      data: {
-        ...reportsList[0].data
-      }
-    }
-  ]);
-  const node = await mount(
-    <CombinedSelectionPanel reportResult={{...reportsList[1], data: {reportIds: []}}} />
-  );
-  await node.update();
-  node.find('Input input').simulate('change', {target: {value: 'test'}});
-  expect(node).not.toIncludeText('Single Report');
-  expect(node).toIncludeText('TestReport');
 });

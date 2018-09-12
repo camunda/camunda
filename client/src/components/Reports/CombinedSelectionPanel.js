@@ -1,7 +1,6 @@
 import React from 'react';
 import {loadEntity} from 'services';
-import {Input} from 'components';
-import {formatters} from 'services';
+import {TypeaheadMultipleSelection} from 'components';
 
 import './CombinedSelectionPanel.css';
 
@@ -94,51 +93,27 @@ export default class CombinedSelectionPanel extends React.Component {
     return data.groupBy.type === referenceReport.groupBy.type && isSameValue;
   };
 
-  renderList = checked => report => {
-    return (
-      <li key={report.id}>
-        <label htmlFor={report.id}>
-          <input id={report.id} onChange={this.update(report)} type="checkbox" checked={checked} />
-          {!checked
-            ? formatters.getHighlightedText(report.name, this.state.searchQuery)
-            : report.name}
-        </label>
-      </li>
-    );
-  };
-
   search = (searchQuery, name) =>
     searchQuery ? name.toLowerCase().includes(searchQuery.toLowerCase()) : true;
 
   render() {
     const {reports, selectedReports, searchQuery} = this.state;
-
-    const empty = reports.length <= 0;
-    const selectedReportsList = selectedReports.map(this.renderList(true));
-    const combinableReportList = reports
-      .filter(report => this.search(searchQuery, report.name) && this.isCompatible(report))
-      .map(this.renderList(false));
+    const selectedReportsList = selectedReports;
+    const combinableReportList = reports.filter(
+      report => this.search(searchQuery, report.name) && this.isCompatible(report)
+    );
 
     return (
       <div className="PanelSelection">
-        <Input
-          className="searchInput"
-          placeholder="Search for a Report"
-          onChange={e => this.setState({searchQuery: e.target.value})}
+        <TypeaheadMultipleSelection
+          availableValues={combinableReportList}
+          selectedValues={selectedReportsList}
+          setFilter={evt => this.setState({searchQuery: evt.target.value})}
+          toggleValue={this.update}
+          label="reports"
+          loading={false}
+          format={v => v.name}
         />
-        <div className="list">
-          {selectedReports.length > 0 ? (
-            <strong>Selected Reports</strong>
-          ) : (
-            !empty && <p>Please select at least one report</p>
-          )}
-          <ul>{selectedReportsList}</ul>
-        </div>
-        <div className="list">
-          <strong>Combinable Reports</strong>
-          {!combinableReportList.length && <p>No {!empty && 'other'} combinable reports found</p>}
-          <ul>{combinableReportList}</ul>
-        </div>
       </div>
     );
   }

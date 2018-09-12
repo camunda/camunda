@@ -1,40 +1,51 @@
 .PanelSelection {
   height: 100%;
-  margin-left: 10px;
-  background: #fff;
-  border: 1px solid #f2f3f4;
-  border-radius: 3px;
   min-width: 200px;
+  border: 1px solid #f2f3f4;
+  border-radius: 8px;
 
-  .searchInput {
+  .TypeaheadMultipleSelection__labeled-input {
     width: 100%;
-    height: 40px;
+    .TypeaheadMultipleSelection__input {
+      height: 40px;
+      width: 100%;
+    }
   }
 
-  .list {
-    padding: 0 20px;
-    margin-top: 10px;
-    overflow: auto;
+  .TypeaheadMultipleSelection__valueList {
+    width: 100%;
 
-    ul {
+    .TypeaheadMultipleSelection__labeled-valueList {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
       padding: 10px 0px;
-      margin: 0px;
+      padding: 0 20px;
 
-      li {
-        list-style: none;
-        border-bottom: 1px solid #f2f3f4;
+      p {
+        width: 100%;
+        font-weight: bold;
+        text-align: left;
+      }
 
-        &:hover {
-          background: #00a8ff;
-        }
+      .TypeaheadMultipleSelection__values-sublist {
+        width: 100%;
 
-        label {
-          cursor: pointer;
-          display: block;
-        }
+        .TypeaheadMultipleSelection__valueListItem {
+          border-bottom: 1px solid #f2f3f4;
 
-        input {
-          margin: 10px 10px;
+          label {
+            width: 100%;
+            text-align: left;
+            padding: 5px 5px;
+
+            &:hover {
+              background: #00a8ff;
+            }
+
+            cursor: pointer;
+            display: block;
+          }
         }
       }
     }

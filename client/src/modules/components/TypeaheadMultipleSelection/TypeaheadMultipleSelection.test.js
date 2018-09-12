@@ -25,9 +25,10 @@ it('should still contain selected value after changing the filter', async () => 
     />
   );
 
-  toggleValue.mockImplementation(value =>
+  toggleValue.mockImplementation(value => () =>
     node.setProps({selectedValues: node.props().selectedValues.concat([value])})
   );
+
   setFilter.mockImplementation(filter =>
     node.setProps({
       availableValues: allValues.filter(value => value.slice(0, filter.length) === filter)
@@ -35,7 +36,7 @@ it('should still contain selected value after changing the filter', async () => 
   );
 
   node.props().setFilter('a');
-  node.props().toggleValue('asd');
+  node.props().toggleValue('asd')();
   node.props().setFilter('f');
   expect(node).toIncludeText('asd');
   expect(node).toIncludeText('fefwf');
@@ -54,7 +55,7 @@ it('it should not show the unselected value if it does not match the query', asy
     />
   );
 
-  toggleValue.mockImplementation(value =>
+  toggleValue.mockImplementationOnce(value => () =>
     node.setProps({
       selectedValues: node.props().selectedValues.includes(value)
         ? node.props().selectedValues.filter(v => v !== value)
@@ -76,7 +77,13 @@ it('it should not show the unselected value if it does not match the query', asy
 });
 
 it('should add a value to the list of values when the checkbox is clicked', async () => {
-  const toggleValue = jest.fn();
+  const toggleValue = value => () =>
+    node.setProps({
+      selectedValues: node.props().selectedValues.includes(value)
+        ? node.props().selectedValues.filter(v => v !== value)
+        : node.props().selectedValues.concat([value])
+    });
+
   const allValues = ['asd', 'dhdf', 'fefwf', 'aaf', 'thdfhr'];
   const node = mount(
     <TypeaheadMultipleSelection
@@ -85,19 +92,12 @@ it('should add a value to the list of values when the checkbox is clicked', asyn
       availableValues={allValues}
     />
   );
-  toggleValue.mockImplementation(({target: {checked, value}}) =>
-    node.setProps({
-      selectedValues: node.props().selectedValues.includes(value)
-        ? node.props().selectedValues.filter(v => v !== value)
-        : node.props().selectedValues.concat([value])
-    })
-  );
   node
     .find('input[type="checkbox"]')
     .at(1)
-    .simulate('change', {target: {checked: true, value: 'value2'}});
+    .simulate('change', {target: {checked: true}});
 
-  expect(node.props().selectedValues.includes('value2')).toBe(true);
+  expect(node.props().selectedValues.includes('dhdf')).toBe(true);
 });
 
 it('should request the values filtered by filter entered in the input', () => {
@@ -108,6 +108,7 @@ it('should request the values filtered by filter entered in the input', () => {
       setFilter={setFilter}
       selectedValues={[]}
       availableValues={allValues}
+      toggleValue={() => {}}
     />
   );
   setFilter.mockImplementation(({target: {value}}) =>

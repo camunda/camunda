@@ -12,7 +12,7 @@ export default class TypeaheadMultipleSelection extends React.Component {
     return (
       values.length > 0 && (
         <div className="TypeaheadMultipleSelection__labeled-valueList">
-          <p>Selected Values: </p>
+          <p>Selected {this.props.label}: </p>
           <div className="TypeaheadMultipleSelection__values-sublist">
             {values.map((value, idx) => {
               return (
@@ -22,9 +22,9 @@ export default class TypeaheadMultipleSelection extends React.Component {
                       type="checkbox"
                       checked
                       value={value}
-                      onChange={this.props.toggleValue}
+                      onChange={this.props.toggleValue(value)}
                     />
-                    {value}
+                    {this.props.format(value)}
                   </label>
                 </li>
               );
@@ -38,7 +38,7 @@ export default class TypeaheadMultipleSelection extends React.Component {
   mapAvaliableValues = (availableValues, selectedValues) => {
     return (
       <div className="TypeaheadMultipleSelection__labeled-valueList">
-        <p>Available Values: </p>
+        <p>Available {this.props.label}: </p>
         <div className="TypeaheadMultipleSelection__values-sublist">
           {availableValues.map((value, idx) => {
             if (!selectedValues.includes(value)) {
@@ -49,9 +49,12 @@ export default class TypeaheadMultipleSelection extends React.Component {
                       type="checkbox"
                       checked={selectedValues.includes(value)}
                       value={value}
-                      onChange={this.props.toggleValue}
+                      onChange={this.props.toggleValue(value)}
                     />
-                    {formatters.getHighlightedText(value, this.state.searchQuery)}
+                    {formatters.getHighlightedText(
+                      this.props.format(value),
+                      this.state.searchQuery
+                    )}
                   </label>
                 </li>
               );
@@ -67,9 +70,9 @@ export default class TypeaheadMultipleSelection extends React.Component {
     const {availableValues, selectedValues, loading} = this.props;
     const input = (
       <div className="TypeaheadMultipleSelection__labeled-input">
-        <p>Values that contain:</p>
         <Input
           className="TypeaheadMultipleSelection__input"
+          placeholder="Search for an entry"
           onChange={e => {
             this.setState({searchQuery: e.target.value});
             return this.props.setFilter(e);
@@ -85,9 +88,14 @@ export default class TypeaheadMultipleSelection extends React.Component {
           {loadingIndicator}
           <div className="TypeaheadMultipleSelection__valueList">
             {this.mapSelectedValues(selectedValues)}
-            <li className="TypeaheadMultipleSelection__no-items">
-              {loading ? '' : 'No values match the query'}
-            </li>
+          </div>
+          <div className="TypeaheadMultipleSelection__valueList">
+            <div className="TypeaheadMultipleSelection__labeled-valueList">
+              <p>Available {this.props.label}: </p>
+              <li className="TypeaheadMultipleSelection__no-items">
+                {loading ? '' : `No matching ${this.props.label} found`}
+              </li>
+            </div>
           </div>
         </div>
       );
@@ -104,3 +112,7 @@ export default class TypeaheadMultipleSelection extends React.Component {
     );
   }
 }
+
+TypeaheadMultipleSelection.defaultProps = {
+  format: v => v
+};
