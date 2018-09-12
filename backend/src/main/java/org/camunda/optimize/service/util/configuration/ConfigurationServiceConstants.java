@@ -71,7 +71,6 @@ public interface ConfigurationServiceConstants {
   String TOKEN_FILTER = "$.es.analyzer.tokenfilter";
   String IMPORT_HANDLER_INTERVAL = "$.import.handler.backoff.interval";
   String MAXIMUM_BACK_OFF = "$.import.handler.backoff.max";
-  String IS_BACK_OFF_ENABLED = "$.import.handler.backoff.isEnabled";
   String ES_REFRESH_INTERVAL = "$.es.settings.index.refresh_interval";
   String ES_NUMBER_OF_REPLICAS = "$.es.settings.index.number_of_replicas";
   String ES_NUMBER_OF_SHARDS = "$.es.settings.index.number_of_shards";

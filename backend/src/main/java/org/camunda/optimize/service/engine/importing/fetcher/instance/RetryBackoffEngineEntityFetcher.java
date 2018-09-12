@@ -3,14 +3,23 @@ package org.camunda.optimize.service.engine.importing.fetcher.instance;
 import org.camunda.optimize.dto.engine.EngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.fetcher.EngineEntityFetcher;
+import org.camunda.optimize.service.util.BackoffCalculator;
 
+import javax.annotation.PostConstruct;
 import java.util.List;
 
 public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto>
     extends EngineEntityFetcher {
 
-  private static final long STARTING_BACKOFF = 0;
-  private long backoffCounter = 0L;
+  private BackoffCalculator backoffCalculator;
+
+  @PostConstruct
+  public void init() {
+    backoffCalculator = new BackoffCalculator(
+            configurationService.getMaximumBackoff(),
+            configurationService.getImportHandlerWait()
+    );
+  }
 
   RetryBackoffEngineEntityFetcher(EngineContext engineContext) {
     super(engineContext);
@@ -23,12 +32,10 @@ public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto>
         result = fetchFunction.fetch();
       } catch (Exception exception) {
         logError(exception);
-        long timeToSleep = calculateSleepTime();
-        logDebugSleepInformation(timeToSleep);
-        sleep(timeToSleep);
+        logDebugSleepInformationAndSleep(backoffCalculator.calculateSleepTime());
       }
     }
-    resetBackoffCounter();
+    backoffCalculator.resetBackoff();
     return result;
   }
 
@@ -37,30 +44,13 @@ public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto>
     List<ENG> fetch();
   }
 
-  private void resetBackoffCounter() {
-    backoffCounter = STARTING_BACKOFF;
-  }
-
-  private void sleep(long timeToSleep) {
+  private void logDebugSleepInformationAndSleep(long timeToSleep) {
+    logger.debug("Sleeping for [{}] ms and retrying the fetching of the entities afterwards.", timeToSleep);
     try {
       Thread.sleep(timeToSleep);
     } catch (InterruptedException e) {
       logger.debug("Was interrupted from sleep. Continuing to fetch new entities.", e);
     }
-  }
-
-  private long calculateSleepTime() {
-    backoffCounter = Math.min(backoffCounter + 1, configurationService.getMaximumBackoff());
-    long interval = configurationService.getImportHandlerWait();
-    long sleepTimeInMs = interval * backoffCounter;
-    return sleepTimeInMs;
-  }
-
-  private void logDebugSleepInformation(long sleepTime) {
-    logger.debug(
-        "Sleeping for [{}] ms and retrying the fetching of the entities afterwards.",
-        sleepTime
-    );
   }
 
   private void logError(Exception e) {

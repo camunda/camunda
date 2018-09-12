@@ -10,6 +10,7 @@ public class AvgProcessInstanceDurationByNoneWithProcessPartReportDataCreator im
   @Override
   public SingleReportDataDto create(String processDefinitionKey, String processDefinitionVersion, String... eventIds) {
     return createAvgPiDurationHeatMapGroupByNoneWithProcessPart(
-        processDefinitionKey, processDefinitionVersion, eventIds[0], eventIds[1]);
+        processDefinitionKey, processDefinitionVersion, eventIds[0], eventIds[1]
+    );
   }
 }

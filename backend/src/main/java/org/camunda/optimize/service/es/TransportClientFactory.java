@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.es;
 
+import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.TransportClient;
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.DisposableBean;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import javax.annotation.PostConstruct;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.util.concurrent.TimeUnit;
@@ -22,11 +24,20 @@ public class TransportClientFactory implements FactoryBean<Client>, DisposableBe
 
   private final Logger logger = LoggerFactory.getLogger(TransportClientFactory.class);
   private SchemaInitializingClient instance;
-
   @Autowired
   private ConfigurationService configurationService;
   @Autowired
   private ElasticSearchSchemaInitializer elasticSearchSchemaInitializer;
+
+  private BackoffCalculator backoffCalculator;
+
+  @PostConstruct
+  public void init() {
+    backoffCalculator = new BackoffCalculator(
+            configurationService.getMaximumBackoff(),
+            configurationService.getImportHandlerWait()
+    );
+  }
 
   @Override
   public Client getObject() {
@@ -41,6 +52,9 @@ public class TransportClientFactory implements FactoryBean<Client>, DisposableBe
         } else {
           internalClient = createDefaultTransportClient();
         }
+
+        waitForElasticsearch(internalClient);
+
         instance = new SchemaInitializingClient(internalClient);
         elasticSearchSchemaInitializer.useClient(internalClient, configurationService);
         instance.setElasticSearchSchemaInitializer(elasticSearchSchemaInitializer);
@@ -52,6 +66,14 @@ public class TransportClientFactory implements FactoryBean<Client>, DisposableBe
       logger.info("Elasticsearch client has successfully been started");
     }
     return instance;
+  }
+
+  private void waitForElasticsearch(TransportClient internalClient) throws InterruptedException {
+    while(internalClient.connectedNodes().size() == 0) {
+      long sleepTime = backoffCalculator.calculateSleepTime();
+      Thread.sleep(sleepTime);
+      logger.info("No elasticsearch nodes available, waiting [{}] ms to retry connecting", sleepTime);
+    }
   }
 
   private TransportClient createDefaultTransportClient() throws UnknownHostException {

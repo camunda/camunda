@@ -68,7 +68,6 @@ public class ConfigurationService {
   private String optimizeDateFormat;
   private Long importHandlerWait;
   private Long maximumBackoff;
-  private Boolean backoffEnabled;
 
   // elasticsearch connection
   private String elasticSearchHost;
@@ -389,13 +388,6 @@ public class ConfigurationService {
       maximumBackoff = jsonContext.read(ConfigurationServiceConstants.MAXIMUM_BACK_OFF, Long.class);
     }
     return maximumBackoff;
-  }
-
-  public Boolean isBackoffEnabled() {
-    if (backoffEnabled == null) {
-      backoffEnabled = jsonContext.read(ConfigurationServiceConstants.IS_BACK_OFF_ENABLED, Boolean.class);
-    }
-    return backoffEnabled;
   }
 
   public int getElasticsearchJobExecutorQueueSize() {
@@ -1041,10 +1033,6 @@ public class ConfigurationService {
 
   public void setCheckMetadata(Boolean checkMetadata) {
     this.checkMetadata = checkMetadata;
-  }
-
-  public void setBackoffEnabled(Boolean backoffEnabled) {
-    this.backoffEnabled = backoffEnabled;
   }
 
   public void setAlertType(String alertType) {

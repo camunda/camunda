@@ -116,8 +116,6 @@ import:
       # start scheduling fetching tasks in increasing periods of time,
       # controlled by 'backoff' counter.
       max: 15
-      # Tells if the backoff is enabled of not.
-      isEnabled: true
   #The name of the import index type.
   indexType: import-index
   #States how often the import index should be stored to Elasticsearch.

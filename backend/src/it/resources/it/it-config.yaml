@@ -16,10 +16,6 @@ import:
       pageSize:
         max: 30
   elasticsearchJobExecutorThreadCount: 1
-  handler:
-    backoff:
-      isEnabled: true
-
 es:
   security:
     username: ''
