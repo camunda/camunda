@@ -58,8 +58,8 @@ function FlowNodeIcon({state, type, isSelected, ...props}) {
 }
 
 FlowNodeIcon.propTypes = {
-  state: PropTypes.oneOf(Object.values(ACTIVITY_STATE)),
-  type: PropTypes.oneOf(Object.values(FLOW_NODE_TYPE)),
+  state: PropTypes.oneOf(Object.values(ACTIVITY_STATE)).isRequired,
+  type: PropTypes.oneOf(Object.values(FLOW_NODE_TYPE)).isRequired,
   theme: PropTypes.string.isRequired,
   isSelected: PropTypes.bool
 };

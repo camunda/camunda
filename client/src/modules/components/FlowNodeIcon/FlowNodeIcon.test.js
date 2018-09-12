@@ -102,7 +102,7 @@ describe('FlowNodeIcon', () => {
       expect(node).toMatchSnapshot();
     });
 
-    it('should render completed dark icon', () => {
+    it('should render completed light icon', () => {
       // given
       const node = shallow(
         <FlowNodeIcon
@@ -148,7 +148,7 @@ describe('FlowNodeIcon', () => {
       expect(node).toMatchSnapshot();
     });
 
-    it('should render canceled dark icon', () => {
+    it('should render canceled light icon', () => {
       // given
       const node = shallow(
         <FlowNodeIcon
