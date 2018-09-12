@@ -46,23 +46,23 @@ class Instances extends Component {
     super(props);
     const {
       filterCount,
-      selections,
-      rollingSelectionIndex,
       instancesInSelectionsCount,
-      selectionCount
+      rollingSelectionIndex,
+      selectionCount,
+      selections
     } = props.getStateLocally();
 
     this.state = {
+      activityIds: [],
       filter: {},
       filterCount: filterCount || 0,
-      openSelection: null,
-      selection: createNewSelectionFragment(),
-      selections: selections || [],
       instancesInSelectionsCount: instancesInSelectionsCount || 0,
-      selectionCount: selectionCount || 0,
+      openSelection: null,
       rollingSelectionIndex: rollingSelectionIndex || 0,
-      workflow: null,
-      activityIds: []
+      selection: createNewSelectionFragment(),
+      selectionCount: selectionCount || 0,
+      selections: selections || [],
+      workflow: null
     };
   }
 
