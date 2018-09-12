@@ -81,7 +81,7 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-exporter</artifactId>
+      <artifactId>zb-exporter-api</artifactId>
     </dependency>
 
     <dependency>
