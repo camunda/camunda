@@ -75,7 +75,8 @@ export default class Footer extends React.Component {
             {this.renderListElement('Elasticsearch', connectedToElasticsearch, false)}
           </ul>
           <div className="Footer__colophon">
-            © Camunda Services GmbH 2017, All Rights Reserved. | {optimizeVersion}
+            © Camunda Services GmbH {new Date().getFullYear()}, All Rights Reserved. |{' '}
+            {optimizeVersion}
           </div>
         </div>
       </footer>
