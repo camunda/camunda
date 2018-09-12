@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.subscription.message.processor;
 
-import static io.zeebe.util.buffer.BufferUtil.bufferAsArray;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.zeebe.broker.logstreams.processor.SideEffectProducer;
@@ -28,10 +27,9 @@ import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.data.MessageRecord;
-import io.zeebe.broker.subscription.message.state.MessageDataStore;
-import io.zeebe.broker.subscription.message.state.MessageDataStore.Message;
-import io.zeebe.broker.subscription.message.state.MessageSubscriptionDataStore;
-import io.zeebe.broker.subscription.message.state.MessageSubscriptionDataStore.MessageSubscription;
+import io.zeebe.broker.subscription.message.state.Message;
+import io.zeebe.broker.subscription.message.state.MessageStateController;
+import io.zeebe.broker.subscription.message.state.MessageSubscription;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.util.sched.clock.ActorClock;
@@ -40,8 +38,7 @@ import java.util.function.Consumer;
 
 public class PublishMessageProcessor implements TypedRecordProcessor<MessageRecord> {
 
-  private final MessageDataStore messageStore;
-  private final MessageSubscriptionDataStore subscriptionStore;
+  private final MessageStateController messageStateController;
   private final SubscriptionCommandSender commandSender;
 
   private TypedResponseWriter responseWriter;
@@ -49,34 +46,30 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
   private List<MessageSubscription> matchingSubscriptions;
 
   public PublishMessageProcessor(
-      MessageDataStore messageStore,
-      MessageSubscriptionDataStore subscriptionStore,
-      SubscriptionCommandSender commandSender) {
-    this.messageStore = messageStore;
-    this.subscriptionStore = subscriptionStore;
+      MessageStateController messageStateController,
+      final SubscriptionCommandSender commandSender) {
+    this.messageStateController = messageStateController;
     this.commandSender = commandSender;
   }
 
   @Override
   public void processRecord(
-      TypedRecord<MessageRecord> record,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter,
-      Consumer<SideEffectProducer> sideEffect) {
+      final TypedRecord<MessageRecord> record,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter,
+      final Consumer<SideEffectProducer> sideEffect) {
     this.responseWriter = responseWriter;
-
     messageRecord = record.getValue();
-    final byte[] messagePayload = bufferAsArray(messageRecord.getPayload());
 
     final Message message =
         new Message(
-            bufferAsString(messageRecord.getName()),
-            bufferAsString(messageRecord.getCorrelationKey()),
-            messageRecord.getTimeToLive(),
-            messagePayload,
-            messageRecord.hasMessageId() ? bufferAsString(messageRecord.getMessageId()) : null);
+            messageRecord.getName(),
+            messageRecord.getCorrelationKey(),
+            messageRecord.getPayload(),
+            messageRecord.getMessageId(),
+            messageRecord.getTimeToLive());
 
-    if (messageRecord.hasMessageId() && messageStore.hasMessage(message)) {
+    if (messageRecord.hasMessageId() && messageStateController.exist(message)) {
       final String rejectionReason =
           String.format(
               "message with id '%s' is already published",
@@ -89,20 +82,19 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
       final TypedBatchWriter batchWriter = streamWriter.newBatch();
       final long key = batchWriter.addNewEvent(MessageIntent.PUBLISHED, record.getValue());
       responseWriter.writeEventOnCommand(key, MessageIntent.PUBLISHED, record);
+      message.setKey(key);
 
       matchingSubscriptions =
-          subscriptionStore.findSubscriptions(message.getName(), message.getCorrelationKey());
+          messageStateController.findSubscriptions(message.getName(), message.getCorrelationKey());
 
-      for (MessageSubscription sub : matchingSubscriptions) {
-        sub.setMessagePayload(messagePayload);
+      for (final MessageSubscription sub : matchingSubscriptions) {
+        sub.setMessagePayload(messageRecord.getPayload());
       }
 
       sideEffect.accept(this::correlateMessage);
 
       if (messageRecord.getTimeToLive() > 0L) {
-        message.setKey(key);
-        messageStore.addMessage(message);
-
+        messageStateController.put(message);
       } else {
         // don't add the message to the store to avoid that it can be correlated afterwards
         batchWriter.addFollowUpEvent(key, MessageIntent.DELETED, messageRecord);
@@ -111,7 +103,7 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
   }
 
   private boolean correlateMessage() {
-    for (MessageSubscription sub : matchingSubscriptions) {
+    for (final MessageSubscription sub : matchingSubscriptions) {
       final boolean success =
           commandSender.correlateWorkflowInstanceSubscription(
               sub.getWorkflowInstancePartitionId(),
@@ -126,6 +118,7 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
       }
 
       sub.setCommandSentTime(ActorClock.currentTimeMillis());
+      messageStateController.put(sub);
     }
 
     return responseWriter.flush();

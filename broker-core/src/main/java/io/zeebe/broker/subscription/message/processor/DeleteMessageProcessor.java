@@ -22,15 +22,18 @@ import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.message.data.MessageRecord;
-import io.zeebe.broker.subscription.message.state.MessageDataStore;
+import io.zeebe.broker.subscription.message.state.Message;
+import io.zeebe.broker.subscription.message.state.MessageStateController;
+import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.MessageIntent;
+import io.zeebe.util.sched.clock.ActorClock;
 
 public class DeleteMessageProcessor implements TypedRecordProcessor<MessageRecord> {
 
-  private final MessageDataStore messageStore;
+  private final MessageStateController messageStateController;
 
-  public DeleteMessageProcessor(MessageDataStore messageStore) {
-    this.messageStore = messageStore;
+  public DeleteMessageProcessor(MessageStateController messageStateController) {
+    this.messageStateController = messageStateController;
   }
 
   @Override
@@ -39,8 +42,18 @@ public class DeleteMessageProcessor implements TypedRecordProcessor<MessageRecor
       TypedResponseWriter responseWriter,
       TypedStreamWriter streamWriter) {
 
-    streamWriter.writeFollowUpEvent(record.getKey(), MessageIntent.DELETED, record.getValue());
+    final MessageRecord messageRecord = record.getValue();
 
-    messageStore.removeMessage(record.getKey());
+    final Message message =
+        messageStateController.findMessage(
+            messageRecord.getName(), messageRecord.getCorrelationKey());
+
+    if (message.getDeadline() < ActorClock.currentTimeMillis()) {
+      streamWriter.writeFollowUpEvent(record.getKey(), MessageIntent.DELETED, messageRecord);
+      messageStateController.remove(message);
+    } else {
+      streamWriter.writeRejection(
+          record, RejectionType.NOT_APPLICABLE, "Message was updated concurrent.");
+    }
   }
 }

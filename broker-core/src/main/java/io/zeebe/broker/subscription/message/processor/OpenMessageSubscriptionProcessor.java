@@ -17,8 +17,6 @@
  */
 package io.zeebe.broker.subscription.message.processor;
 
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
-
 import io.zeebe.broker.logstreams.processor.SideEffectProducer;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
@@ -26,10 +24,9 @@ import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
-import io.zeebe.broker.subscription.message.state.MessageDataStore;
-import io.zeebe.broker.subscription.message.state.MessageDataStore.Message;
-import io.zeebe.broker.subscription.message.state.MessageSubscriptionDataStore;
-import io.zeebe.broker.subscription.message.state.MessageSubscriptionDataStore.MessageSubscription;
+import io.zeebe.broker.subscription.message.state.Message;
+import io.zeebe.broker.subscription.message.state.MessageStateController;
+import io.zeebe.broker.subscription.message.state.MessageSubscription;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import io.zeebe.util.sched.clock.ActorClock;
@@ -40,8 +37,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 public class OpenMessageSubscriptionProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
 
-  private final MessageDataStore messageStore;
-  private final MessageSubscriptionDataStore subscriptionStore;
+  private final MessageStateController messageStateController;
   private final SubscriptionCommandSender commandSender;
 
   private final DirectBuffer messagePayload = new UnsafeBuffer(0, 0);
@@ -49,11 +45,8 @@ public class OpenMessageSubscriptionProcessor
   private MessageSubscriptionRecord subscriptionRecord;
 
   public OpenMessageSubscriptionProcessor(
-      MessageDataStore messageStore,
-      MessageSubscriptionDataStore subscriptionStore,
-      SubscriptionCommandSender commandSender) {
-    this.messageStore = messageStore;
-    this.subscriptionStore = subscriptionStore;
+      MessageStateController messageStateController, SubscriptionCommandSender commandSender) {
+    this.messageStateController = messageStateController;
     this.commandSender = commandSender;
   }
 
@@ -63,7 +56,6 @@ public class OpenMessageSubscriptionProcessor
       TypedResponseWriter responseWriter,
       TypedStreamWriter streamWriter,
       Consumer<SideEffectProducer> sideEffect) {
-
     subscriptionRecord = record.getValue();
 
     final MessageSubscription subscription =
@@ -71,11 +63,10 @@ public class OpenMessageSubscriptionProcessor
             subscriptionRecord.getWorkflowInstancePartitionId(),
             subscriptionRecord.getWorkflowInstanceKey(),
             subscriptionRecord.getActivityInstanceKey(),
-            bufferAsString(subscriptionRecord.getMessageName()),
-            bufferAsString(subscriptionRecord.getCorrelationKey()));
+            subscriptionRecord.getMessageName(),
+            subscriptionRecord.getCorrelationKey());
 
-    final boolean added = subscriptionStore.addSubscription(subscription);
-    if (!added) {
+    if (messageStateController.exist(subscription)) {
       sideEffect.accept(this::sendAcknowledgeCommand);
 
       streamWriter.writeRejection(
@@ -84,10 +75,17 @@ public class OpenMessageSubscriptionProcessor
     }
 
     // handle new subscription
+    handleNewSubscription(record, streamWriter, sideEffect, subscription);
+  }
+
+  private void handleNewSubscription(
+      TypedRecord<MessageSubscriptionRecord> record,
+      TypedStreamWriter streamWriter,
+      Consumer<SideEffectProducer> sideEffect,
+      MessageSubscription subscription) {
     final Message message =
-        messageStore.findMessage(
-            bufferAsString(subscriptionRecord.getMessageName()),
-            bufferAsString(subscriptionRecord.getCorrelationKey()));
+        messageStateController.findMessage(
+            subscriptionRecord.getMessageName(), subscriptionRecord.getCorrelationKey());
 
     if (message != null) {
       messagePayload.wrap(message.getPayload());
@@ -99,6 +97,7 @@ public class OpenMessageSubscriptionProcessor
     } else {
       sideEffect.accept(this::sendAcknowledgeCommand);
     }
+    messageStateController.put(subscription);
 
     streamWriter.writeFollowUpEvent(
         record.getKey(), MessageSubscriptionIntent.OPENED, subscriptionRecord);

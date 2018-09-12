@@ -26,12 +26,17 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.rocksdb.ColumnFamilyDescriptor;
+import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.RocksDB;
 
 public class KeyStateController extends StateController {
-  public static final byte[] LATEST_KEY_BUFFER = getBytes("latestKey");
+  private static final byte[] KEY_HANDLE_NAME = getBytes("keyColumn");
+  private static final byte[] NEXT_KEY_BUFFER = getBytes("nextKey");
+
   private final MutableDirectBuffer dbLongBuffer = new UnsafeBuffer(new byte[Long.BYTES]);
-  private AtomicReference<Runnable> onOpenCallback = new AtomicReference<>();
+  private final AtomicReference<Runnable> onOpenCallback = new AtomicReference<>();
+  private ColumnFamilyHandle keyHandle;
 
   public KeyStateController() {
     onOpenCallback.set(() -> {});
@@ -47,26 +52,48 @@ public class KeyStateController extends StateController {
   @Override
   public RocksDB open(File dbDirectory, boolean reopen) throws Exception {
     final RocksDB rocksDB = super.open(dbDirectory, reopen);
+
+    keyHandle = rocksDB.createColumnFamily(new ColumnFamilyDescriptor(KEY_HANDLE_NAME));
+
     if (isOpened()) {
       onOpenCallback.get().run();
     }
     return rocksDB;
   }
 
-  public long getLatestKey() {
-    ensureIsOpened("recoverLatestKey");
+  public long getNextKey() {
+    ensureIsOpened("getNextKey");
 
     long latestKey = Long.MIN_VALUE;
-    if (tryGet(LATEST_KEY_BUFFER, dbLongBuffer.byteArray())) {
+    final int readBytes =
+        get(
+            keyHandle,
+            NEXT_KEY_BUFFER,
+            0,
+            NEXT_KEY_BUFFER.length,
+            dbLongBuffer.byteArray(),
+            0,
+            dbLongBuffer.capacity());
+
+    if (readBytes > dbLongBuffer.capacity()) {
+      throw new IllegalStateException("Key value is larger then it should be.");
+    } else if (readBytes > 0) {
       latestKey = dbLongBuffer.getLong(0, ByteOrder.LITTLE_ENDIAN);
     }
     return latestKey;
   }
 
-  public void putLatestKey(long key) {
-    ensureIsOpened("putLatestKey");
+  public void putNextKey(long key) {
+    ensureIsOpened("putNextKey");
 
     dbLongBuffer.putLong(0, key, ByteOrder.LITTLE_ENDIAN);
-    put(LATEST_KEY_BUFFER, dbLongBuffer.byteArray());
+    put(
+        keyHandle,
+        NEXT_KEY_BUFFER,
+        0,
+        NEXT_KEY_BUFFER.length,
+        dbLongBuffer.byteArray(),
+        0,
+        dbLongBuffer.capacity());
   }
 }
