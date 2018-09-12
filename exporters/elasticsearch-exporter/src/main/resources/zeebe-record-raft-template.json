@@ -1,0 +1,24 @@
+{
+  "index_patterns": [
+    "zeebe-record-raft-*"
+  ],
+  "order": 20,
+  "mappings": {
+    "_doc": {
+      "properties": {
+        "value": {
+          "dynamic": "strict",
+          "properties": {
+            "members": {
+              "properties": {
+                "nodeId": {
+                  "type": "integer"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -19,13 +19,13 @@ import static io.zeebe.test.TopicEventRecorder.jobKey;
 import static io.zeebe.test.TopicEventRecorder.wfInstanceKey;
 import static org.assertj.core.api.Assertions.fail;
 
+import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.gateway.ClientProperties;
 import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.api.events.JobEvent;
 import io.zeebe.gateway.api.events.JobState;
 import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
 import io.zeebe.gateway.api.events.WorkflowInstanceState;
-import java.io.InputStream;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Properties;
@@ -39,12 +39,12 @@ public class ZeebeTestRule extends ExternalResource {
   private final TopicEventRecorder topicEventRecorder;
 
   public ZeebeTestRule() {
-    this(() -> null, Properties::new);
+    this(EmbeddedBrokerRule.DEFAULT_CONFIG_FILE, Properties::new);
   }
 
   public ZeebeTestRule(
-      final Supplier<InputStream> configSupplier, final Supplier<Properties> propertiesProvider) {
-    brokerRule = new EmbeddedBrokerRule(configSupplier);
+      final String configFileClasspathLocation, final Supplier<Properties> propertiesProvider) {
+    brokerRule = new EmbeddedBrokerRule(configFileClasspathLocation);
     clientRule =
         new ClientRule(
             () -> {
@@ -59,6 +59,10 @@ public class ZeebeTestRule extends ExternalResource {
 
   public ZeebeClient getClient() {
     return clientRule.getClient();
+  }
+
+  public BrokerCfg getBrokerCfg() {
+    return brokerRule.getBrokerCfg();
   }
 
   @Override

@@ -280,13 +280,32 @@
 #   logLevel = "debug"
 #   prettyPrint = false
 #
-# An example configuration for a MongoDB exporter:
+# An example configuration for the elasticsearch exporter:
 #
-# [[exporters]]
-# id = "MongoDB"
-# jarPath = "exporters/myExporter.jar"
-# className = "me.mustermann.mongodb.MongoDbExporter"
-#   [exporters.args]
-#   host = "localhost"
-#   port = 21707
+#[[exporters]]
+#id = "elasticsearch"
+#className = "io.zeebe.exporter.ElasticsearchExporter"
 #
+#  [exporters.args]
+#  url = "http://localhost:9200"
+#
+#  [exporters.args.bulk]
+#  delay = 5
+#  size = 1_000
+#
+#  [exporters.args.index]
+#  prefix = "zeebe-record"
+#  createTemplate = true
+#
+#  command = false
+#  event = true
+#  rejection = false
+#
+#  deployment = true
+#  incident = true
+#  job = true
+#  message = false
+#  messageSubscription = false
+#  raft = false
+#  workflowInstance = true
+#  workflowInstanceSubscription = false
