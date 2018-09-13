@@ -35,6 +35,10 @@ jest.mock('react-router-dom', () => {
   };
 });
 
+jest.mock('theme', () => {
+  return {themed: v => v};
+});
+
 it('should render the component if the user is logged in', () => {
   getToken.mockReturnValueOnce(true);
 
@@ -96,4 +100,17 @@ it('should remove login information when handler received unauthorized response'
   addHandler.mock.calls[0][0]({status: 401});
 
   expect(destroy).toHaveBeenCalled();
+});
+
+it('should toggle the theme if it receives unathorized and dark theme is enabled', () => {
+  const spy = jest.fn();
+  getToken.mockReturnValueOnce(true);
+  addHandler.mockClear();
+
+  mount(
+    <PrivateRoute component={TestComponent} location="/private" theme="dark" toggleTheme={spy} />
+  );
+  addHandler.mock.calls[0][0]({status: 401});
+
+  expect(spy).toHaveBeenCalled();
 });
