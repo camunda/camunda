@@ -31,11 +31,14 @@ export default class PartHighlight extends React.Component {
 
         current.outgoing &&
           current.outgoing.forEach(connection => {
-            const targetId = connection.targetRef.id;
+            const target = connection.targetRef;
+            const targetId = target.id;
 
             if (!graph[targetId]) {
               graph[targetId] = [];
-              unprocessed.push(connection.targetRef);
+              if (target !== nodes[1]) {
+                unprocessed.push(target);
+              }
             }
 
             graph[targetId].push({node: current.id, via: connection.id});
