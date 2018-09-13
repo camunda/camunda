@@ -13,15 +13,20 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.VariableFilt
 import org.camunda.optimize.dto.optimize.query.report.single.result.NumberSingleReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.command.util.ReportConstants;
+import org.camunda.optimize.service.es.report.util.creator.ReportDataCreator;
 import org.camunda.optimize.service.es.report.util.creator.avg.AvgProcessInstanceDurationByNoneWithProcessPartReportDataCreator;
 import org.camunda.optimize.service.es.report.util.creator.max.MaxProcessInstanceDurationByNoneWithProcessPartReportDataCreator;
 import org.camunda.optimize.service.es.report.util.creator.median.MedianProcessInstanceDurationByNoneWithProcessPartReportDataCreator;
 import org.camunda.optimize.service.es.report.util.creator.min.MinProcessInstanceDurationByNoneWithProcessPartReportDataCreator;
-import org.camunda.optimize.service.es.report.util.creator.ReportDataCreator;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.elasticsearch.index.reindex.UpdateByQueryAction;
+import org.elasticsearch.index.reindex.UpdateByQueryRequestBuilder;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -45,6 +50,7 @@ import static org.camunda.optimize.service.es.report.command.util.ReportConstant
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MIN_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_PROCESS_INSTANCE_ENTITY;
 import static org.camunda.optimize.test.util.VariableFilterUtilHelper.createBooleanVariableFilter;
+import static org.elasticsearch.script.Script.DEFAULT_SCRIPT_LANG;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNull.notNullValue;
@@ -239,6 +245,79 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
     // then
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult(), is(2000L));
+  }
+
+  /**
+   * When migrating from Optimize 2.1 to 2.2 then all the activity instances
+   * that were imported in 2.1 don't have a start and end date. This test
+   * ensures that Optimize can cope with that.
+   */
+  @Test
+  @Parameters(source = ReportDataCreatorProvider.class)
+  public void activityHasNullDates(ReportDataCreator reportDataCreator) {
+    // given
+    OffsetDateTime startDate = OffsetDateTime.now().minusHours(1);
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+    setActivityStartDatesToNull();
+
+    // when
+    SingleReportDataDto reportData =
+      reportDataCreator.create(
+        processInstanceDto.getProcessDefinitionKey(),
+        processInstanceDto.getProcessDefinitionVersion(),
+        START_EVENT,
+        END_EVENT);
+    NumberSingleReportResultDto result = evaluateReport(reportData);
+
+    // then
+    assertThat(result.getResult(), is(notNullValue()));
+    assertThat(result.getResult(), is(0L));
+  }
+
+  private void setActivityStartDatesToNull() {
+    UpdateByQueryRequestBuilder updateByQuery =
+      UpdateByQueryAction.INSTANCE.newRequestBuilder(elasticSearchRule.getClient());
+    ConfigurationService configurationService = embeddedOptimizeRule.getConfigurationService();
+    String processInstanceIndex = configurationService.getOptimizeIndex(configurationService.getProcessInstanceType());
+    Script setActivityStartDatesToNull = new Script(
+      ScriptType.INLINE,
+      DEFAULT_SCRIPT_LANG,
+      "for (event in ctx._source.events) { event.startDate= null }",
+      Collections.emptyMap()
+    );
+    updateByQuery.source(processInstanceIndex)
+    .abortOnVersionConflict(false)
+    .script(setActivityStartDatesToNull);
+    updateByQuery.refresh(true).get();
+  }
+
+  @Test
+  @Parameters(source = ReportDataCreatorProvider.class)
+  public void firstOccurrenceOfEndDateIsBeforeFirstOccurrenceOfStartDate(ReportDataCreator reportDataCreator) throws
+                                                                                                              Exception {
+    // given
+    OffsetDateTime startDate = OffsetDateTime.now().minusHours(1);
+    ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
+    engineDatabaseRule.changeFirstActivityInstanceStartDate(START_EVENT, startDate);
+    engineDatabaseRule.changeFirstActivityInstanceEndDate(END_EVENT, startDate.minusSeconds(2));
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    SingleReportDataDto reportData =
+      reportDataCreator.create(
+        processInstanceDto.getProcessDefinitionKey(),
+        processInstanceDto.getProcessDefinitionVersion(),
+        START_EVENT,
+        END_EVENT
+      );
+    NumberSingleReportResultDto result = evaluateReport(reportData);
+
+    // then
+    assertThat(result.getResult(), is(notNullValue()));
+    assertThat(result.getResult(), is(0L));
   }
 
   @Test
