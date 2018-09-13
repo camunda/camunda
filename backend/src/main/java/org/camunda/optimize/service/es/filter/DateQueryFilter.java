@@ -8,6 +8,7 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.RangeQueryBuilder;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -18,20 +19,26 @@ import java.util.List;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.FIXED_DATE_FILTER;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.RELATIVE_DATE_FILTER;
 
-public abstract class DateQueryFilter {
-  private static org.slf4j.Logger logger = LoggerFactory.getLogger(DateQueryFilter.class);
+public abstract class DateQueryFilter implements QueryFilter<DateFilterDataDto> {
+  private  org.slf4j.Logger logger = LoggerFactory.getLogger(getClass());
 
-  public static void addFilters(BoolQueryBuilder query, List<DateFilterDataDto> dates, DateTimeFormatter formatter, ConfigurationService configurationService, String type) {
+  @Autowired
+  private DateTimeFormatter formatter;
+
+  @Autowired
+  private ConfigurationService configurationService;
+
+  public void addFilters(BoolQueryBuilder query, List<DateFilterDataDto> dates, String dateFieldType) {
     if (dates != null) {
       List<QueryBuilder> filters = query.filter();
       for (DateFilterDataDto dateDto : dates) {
         RangeQueryBuilder queryDate = null;
         if (FIXED_DATE_FILTER.equals(dateDto.getType())) {
           FixedDateFilterDataDto fixedStartDateFilterDataDto = (FixedDateFilterDataDto) dateDto;
-          queryDate = createFixedStartDateFilter(fixedStartDateFilterDataDto, formatter, type);
+          queryDate = createFixedStartDateFilter(fixedStartDateFilterDataDto, dateFieldType);
         } else if (RELATIVE_DATE_FILTER.equals(dateDto.getType())) {
           RelativeDateFilterDataDto relativeStartDateFilterDataDto= (RelativeDateFilterDataDto) dateDto;
-          queryDate = createRelativeStartDateFilter(relativeStartDateFilterDataDto, formatter, type);
+          queryDate = createRelativeStartDateFilter(relativeStartDateFilterDataDto, dateFieldType);
         } else {
           logger.warn("Cannot execute start date filter. Unknown type [{}]", dateDto.getType());
         }
@@ -41,7 +48,7 @@ public abstract class DateQueryFilter {
     }
   }
 
-  private static RangeQueryBuilder createFixedStartDateFilter(FixedDateFilterDataDto dateDto, DateTimeFormatter formatter, String type) {
+  private RangeQueryBuilder createFixedStartDateFilter(FixedDateFilterDataDto dateDto, String type) {
     RangeQueryBuilder queryDate = QueryBuilders.rangeQuery(type);
     if (dateDto.getEnd() != null) {
       queryDate.lte(formatter.format(dateDto.getEnd()));
@@ -52,7 +59,7 @@ public abstract class DateQueryFilter {
     return queryDate;
   }
 
-  private static RangeQueryBuilder createRelativeStartDateFilter(RelativeDateFilterDataDto dateDto, DateTimeFormatter formatter, String type) {
+  private RangeQueryBuilder createRelativeStartDateFilter(RelativeDateFilterDataDto dateDto, String type) {
     RelativeDateFilterStartDto startDate = dateDto.getStart();
     RangeQueryBuilder queryDate = QueryBuilders.rangeQuery(type);
     OffsetDateTime now = LocalDateUtil.getCurrentDateTime();
@@ -64,7 +71,7 @@ public abstract class DateQueryFilter {
     return queryDate;
   }
 
-  private static TemporalUnit unitOf(String unit) {
+  private TemporalUnit unitOf(String unit) {
     return ChronoUnit.valueOf(unit.toUpperCase());
   }
 

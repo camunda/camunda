@@ -12,15 +12,16 @@ import java.time.OffsetDateTime;
 public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
 
   @Test
-  public void testRollingLogic() {
+  public void testStartDateRollingLogic() {
     // given
     embeddedOptimizeRule.reloadConfiguration();
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+
     OffsetDateTime processInstanceStartTime =
         engineRule.getHistoricProcessInstance(processInstance.getId()).getStartTime();
+
     engineRule.finishAllUserTasks(processInstance.getId());
-    OffsetDateTime processInstanceEndTime =
-            engineRule.getHistoricProcessInstance(processInstance.getId()).getEndTime();
+
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
@@ -36,9 +37,9 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     assertResults(processInstance, result, 1);
 
     //when
-    LocalDateUtil.setCurrentTime(OffsetDateTime.now().plusDays(2));
+    LocalDateUtil.setCurrentTime(OffsetDateTime.now().plusDays(2L));
 
-    //token hast to be refreshed, as the old one expired already after moving the date
+    //token has to be refreshed, as the old one expired already after moving the date
     result = createAndEvaluateReportWithRollingStartDateFilter(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion(),
@@ -47,11 +48,25 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     );
 
     assertResults(processInstance, result, 0);
+  }
+
+  @Test
+  public void testEndDateRollingLogic() {
+    embeddedOptimizeRule.reloadConfiguration();
+    ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
+
+    engineRule.finishAllUserTasks(processInstance.getId());
+
+    OffsetDateTime processInstanceEndTime =
+            engineRule.getHistoricProcessInstance(processInstance.getId()).getEndTime();
+
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     LocalDateUtil.setCurrentTime(processInstanceEndTime);
 
-    //token hast to be refreshed, as the old one expired already after moving the date
-    result = createAndEvaluateReportWithRollingEndDateFilter(
+    //token has to be refreshed, as the old one expired already after moving the date
+    RawDataSingleReportResultDto result = createAndEvaluateReportWithRollingEndDateFilter(
             processInstance.getProcessDefinitionKey(),
             processInstance.getProcessDefinitionVersion(),
             "days",
@@ -62,7 +77,7 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
 
     LocalDateUtil.setCurrentTime(processInstanceEndTime.plusDays(2L));
 
-    //token hast to be refreshed, as the old one expired already after moving the date
+    //token has to be refreshed, as the old one expired already after moving the date
     result = createAndEvaluateReportWithRollingEndDateFilter(
             processInstance.getProcessDefinitionKey(),
             processInstance.getProcessDefinitionVersion(),
@@ -71,8 +86,5 @@ public class RollingDateFilterIT extends AbstractRollingDateFilterIT {
     );
 
     assertResults(processInstance, result, 0);
-
-    embeddedOptimizeRule.reloadConfiguration();
-    embeddedOptimizeRule.getNewAuthenticationToken();
   }
 }

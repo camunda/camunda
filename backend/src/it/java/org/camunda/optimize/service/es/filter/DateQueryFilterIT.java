@@ -2,6 +2,7 @@ package org.camunda.optimize.service.es.filter;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.FilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.raw.RawDataSingleReportResultDto;
@@ -182,8 +183,9 @@ public class DateQueryFilterIT {
 
   private void startAndImportSimpleProcess() {
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
-    start = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getStartTime();
-    end = engineRule.getHistoricProcessInstance(processInstanceDto.getId()).getEndTime();
+    HistoricProcessInstanceDto processInstance = engineRule.getHistoricProcessInstance(processInstanceDto.getId());
+    start = processInstance.getStartTime();
+    end = processInstance.getEndTime();
     processDefinitionKey = processInstanceDto.getProcessDefinitionKey();
     processDefinitionVersion = processInstanceDto.getProcessDefinitionVersion();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();

@@ -12,15 +12,9 @@ import java.util.List;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.START_DATE;
 
 @Component
-public class StartDateQueryFilter implements QueryFilter<DateFilterDataDto> {
-  @Autowired
-  private DateTimeFormatter formatter;
-
-  @Autowired
-  private ConfigurationService configurationService;
-
+public class StartDateQueryFilter extends DateQueryFilter implements QueryFilter<DateFilterDataDto> {
   @Override
   public void addFilters(BoolQueryBuilder query, List<DateFilterDataDto> filter) {
-    DateQueryFilter.addFilters(query, filter, formatter, configurationService, START_DATE);
+    addFilters(query, filter, START_DATE);
   }
 }

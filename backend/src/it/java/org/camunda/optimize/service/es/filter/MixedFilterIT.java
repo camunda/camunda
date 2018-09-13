@@ -109,7 +109,7 @@ public class MixedFilterIT {
           .build();
     filterList.addAll(flowNodeFilter);
     filterList.addAll(DateUtilHelper.createFixedStartDateFilter(null , start.minusSeconds(1L)));
-    filterList.addAll(DateUtilHelper.createFixedStartDateFilter(null , end.minusSeconds(1L)));
+    filterList.addAll(DateUtilHelper.createFixedEndDateFilter(null , end.minusSeconds(1L)));
     RawDataSingleReportResultDto rawDataReportResultDto = evaluateReportWithFilter(processDefinition, filterList);
 
     // then

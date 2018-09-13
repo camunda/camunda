@@ -12,15 +12,9 @@ import java.util.List;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.END_DATE;
 
 @Component
-public class EndDateQueryFilter implements QueryFilter<DateFilterDataDto> {
-  @Autowired
-  private DateTimeFormatter formatter;
-
-  @Autowired
-  private ConfigurationService configurationService;
-
+public class EndDateQueryFilter extends DateQueryFilter {
   @Override
   public void addFilters(BoolQueryBuilder query, List<DateFilterDataDto> filter) {
-    DateQueryFilter.addFilters(query, filter, formatter, configurationService, END_DATE);
+    addFilters(query, filter, END_DATE);
   }
 }
