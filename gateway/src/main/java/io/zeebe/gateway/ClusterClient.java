@@ -18,10 +18,13 @@ package io.zeebe.gateway;
 import io.zeebe.gateway.api.commands.DeployWorkflowCommandStep1.DeployWorkflowCommandBuilderStep2;
 import io.zeebe.gateway.api.commands.Topology;
 import io.zeebe.gateway.api.events.DeploymentEvent;
+import io.zeebe.gateway.api.events.MessageEvent;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowRequestObject;
 import io.zeebe.util.sched.future.ActorFuture;
+import java.time.Duration;
 import java.util.List;
 
 public class ClusterClient {
@@ -59,5 +62,22 @@ public class ClusterClient {
     }
 
     return clusterRequestStep2.send();
+  }
+
+  public ActorFuture<MessageEvent> sendPublishMessage(final PublishMessageRequest messageRequest) {
+    String payload = messageRequest.getPayload();
+    if (payload == null || payload.trim().isEmpty()) {
+      payload = "{}";
+    }
+
+    return client
+        .workflowClient()
+        .newPublishMessageCommand()
+        .messageName(messageRequest.getName())
+        .correlationKey(messageRequest.getCorrelationKey())
+        .messageId(messageRequest.getMessageId())
+        .payload(payload)
+        .timeToLive(Duration.ofMillis(messageRequest.getTimeToLive()))
+        .send();
   }
 }

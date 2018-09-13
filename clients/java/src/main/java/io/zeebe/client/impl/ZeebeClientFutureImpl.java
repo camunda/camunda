@@ -30,8 +30,12 @@ public class ZeebeClientFutureImpl<T, R, P> extends CompletableFuture<T>
 
   private final Function<R, T> responseMapper;
 
-  private BiFunction<R, P, T> responsePayloadMapper;
-  private P payload;
+  private final BiFunction<R, P, T> responsePayloadMapper;
+  private final P payload;
+
+  public ZeebeClientFutureImpl() {
+    this(r -> null);
+  }
 
   public ZeebeClientFutureImpl(final Function<R, T> responseMapper) {
     this.responseMapper = responseMapper;

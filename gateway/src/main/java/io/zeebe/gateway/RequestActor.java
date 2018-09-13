@@ -35,13 +35,12 @@ public class RequestActor extends Actor {
                     if (t == null) {
                       final R response = responseMapper.apply(v);
                       streamObserver.onNext(response);
+                      streamObserver.onCompleted();
                     } else {
                       streamObserver.onError(t);
                     }
                   } catch (final Exception e) {
                     streamObserver.onError(e);
-                  } finally {
-                    streamObserver.onCompleted();
                   }
                 }));
   }

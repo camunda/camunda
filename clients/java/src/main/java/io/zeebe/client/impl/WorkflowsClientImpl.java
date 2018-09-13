@@ -15,23 +15,28 @@
  */
 package io.zeebe.client.impl;
 
+import io.zeebe.client.ZeebeClientConfiguration;
 import io.zeebe.client.api.clients.WorkflowClient;
 import io.zeebe.client.api.commands.CancelWorkflowInstanceCommandStep1;
 import io.zeebe.client.api.commands.CreateWorkflowInstanceCommandStep1;
 import io.zeebe.client.api.commands.DeployWorkflowCommandStep1;
+import io.zeebe.client.api.commands.PublishMessageCommandStep1;
 import io.zeebe.client.api.commands.UpdatePayloadWorkflowInstanceCommandStep1;
 import io.zeebe.client.api.commands.WorkflowRequestStep1;
 import io.zeebe.client.api.commands.WorkflowResourceRequestStep1;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.impl.workflow.DeployWorkflowCommandImpl;
+import io.zeebe.client.impl.workflow.PublishMessageCommandImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 
 public class WorkflowsClientImpl implements WorkflowClient {
 
   private final GatewayStub asyncStub;
+  private final ZeebeClientConfiguration config;
 
-  public WorkflowsClientImpl(final GatewayStub asyncStub) {
+  public WorkflowsClientImpl(final GatewayStub asyncStub, ZeebeClientConfiguration config) {
     this.asyncStub = asyncStub;
+    this.config = config;
   }
 
   @Override
@@ -54,6 +59,11 @@ public class WorkflowsClientImpl implements WorkflowClient {
   public UpdatePayloadWorkflowInstanceCommandStep1 newUpdatePayloadCommand(
       final WorkflowInstanceEvent event) {
     return null;
+  }
+
+  @Override
+  public PublishMessageCommandStep1 newPublishMessageCommand() {
+    return new PublishMessageCommandImpl(asyncStub, config);
   }
 
   @Override
