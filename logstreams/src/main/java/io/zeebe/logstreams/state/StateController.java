@@ -32,6 +32,7 @@ import org.rocksdb.BloomFilter;
 import org.rocksdb.Cache;
 import org.rocksdb.ChecksumType;
 import org.rocksdb.ClockCache;
+import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.Env;
 import org.rocksdb.Filter;
@@ -80,7 +81,7 @@ public class StateController implements AutoCloseable {
         db = openDB(options);
         isOpened = true;
 
-        collectInternalMethods();
+        this.nativeHandle_ = (long) RocksDbInternal.rocksDbNativeHandle.get(db);
       } catch (final RocksDBException ex) {
         close();
         throw ex;
@@ -92,8 +93,10 @@ public class StateController implements AutoCloseable {
     return db;
   }
 
-  private void collectInternalMethods() throws Exception {
-    this.nativeHandle_ = (long) RocksDbInternal.rocksDbNativeHandle.get(db);
+  protected ColumnFamilyHandle createColumnFamily(byte[] name) throws Exception {
+    final ColumnFamilyHandle columnFamily = db.createColumnFamily(new ColumnFamilyDescriptor(name));
+    closeables.add(columnFamily);
+    return columnFamily;
   }
 
   protected RocksDB openDB(final Options options) throws RocksDBException {

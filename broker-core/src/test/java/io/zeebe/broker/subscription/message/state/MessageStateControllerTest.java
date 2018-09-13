@@ -50,42 +50,6 @@ public class MessageStateControllerTest {
   }
 
   @Test
-  public void shouldStoreMessage() {
-    // given
-    final Message message = new Message("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1234);
-
-    // when
-    stateController.put(message);
-
-    // then no error
-  }
-
-  @Test
-  public void shouldStoreMessageWithId() {
-    // given
-    final Message message =
-        new Message("idOfMessage", "messageName", "correlationKey", "{\"foo\":\"bar\"}", 1234);
-
-    // when
-    stateController.put(message);
-
-    // then no error
-  }
-
-  @Test
-  public void shouldStoreSubscription() {
-    // given
-    final MessageSubscription subscription =
-        new MessageSubscription(
-            "messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 3, 1234);
-
-    // when
-    stateController.put(subscription);
-
-    // then no error
-  }
-
-  @Test
   public void shouldNotExistIfNotStored() {
     // given
     final Message message =

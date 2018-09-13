@@ -25,7 +25,6 @@ import java.util.List;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.RocksDB;
 
@@ -58,11 +57,10 @@ public class MessageStateController extends KeyStateController {
     keyBuffer = new ExpandableArrayBuffer();
     valueBuffer = new ExpandableArrayBuffer();
 
-    timeToLiveHandle =
-        rocksDB.createColumnFamily(new ColumnFamilyDescriptor(MSG_TIME_TO_LIVE_NAME));
-    messageIdHandle = rocksDB.createColumnFamily(new ColumnFamilyDescriptor(MSG_ID_NAME));
-    subscriptionHandle = rocksDB.createColumnFamily(new ColumnFamilyDescriptor(SUB_NAME));
-    subSendTimeHandle = rocksDB.createColumnFamily(new ColumnFamilyDescriptor(SUB_SEND_TIME_NAME));
+    timeToLiveHandle = createColumnFamily(MSG_TIME_TO_LIVE_NAME);
+    messageIdHandle = createColumnFamily(MSG_ID_NAME);
+    subscriptionHandle = createColumnFamily(SUB_NAME);
+    subSendTimeHandle = createColumnFamily(SUB_SEND_TIME_NAME);
 
     return rocksDB;
   }
@@ -73,7 +71,7 @@ public class MessageStateController extends KeyStateController {
 
     final int keyLength = message.getKeyLength();
     final int messageLength = message.getLength();
-    mapKeyWithoutTimeToValue(getDb().getDefaultColumnFamily(), keyLength, messageLength);
+    writeKeyWithoutTimeWithValue(getDb().getDefaultColumnFamily(), keyLength, messageLength);
     writeTimeAndKey(timeToLiveHandle, keyLength);
 
     final DirectBuffer messageId = message.getId();
@@ -99,11 +97,11 @@ public class MessageStateController extends KeyStateController {
 
     final int subscriptionLength = subscription.getLength();
     final int keyLength = subscription.getKeyLength();
-    mapKeyWithoutTimeToValue(subscriptionHandle, keyLength, subscriptionLength);
+    writeKeyWithoutTimeWithValue(subscriptionHandle, keyLength, subscriptionLength);
     writeTimeAndKey(subSendTimeHandle, keyLength);
   }
 
-  private void mapKeyWithoutTimeToValue(
+  private void writeKeyWithoutTimeWithValue(
       final ColumnFamilyHandle handle, final int timeWithkeyLength, final int valueLength) {
     put(
         handle,
@@ -141,9 +139,10 @@ public class MessageStateController extends KeyStateController {
       message.wrap(valueBuffer, 0, readBytes);
 
       return message;
-    }
-    if (readBytes > valueBufferSize) {
-      throw new IllegalStateException("Not enough space in value buffer");
+    } else if (readBytes > valueBufferSize) {
+      valueBuffer.checkLimit(readBytes);
+      // try again
+      return getMessage(buffer, offset, length);
     } else {
       return null;
     }
@@ -163,7 +162,9 @@ public class MessageStateController extends KeyStateController {
             valueBufferSize);
 
     if (readBytes > valueBufferSize) {
-      throw new IllegalStateException("Not enough space in value buffer");
+      valueBuffer.checkLimit(readBytes);
+      // try again
+      return getSubscription(buffer, offset, length);
     }
 
     final MessageSubscription subscription = new MessageSubscription();
