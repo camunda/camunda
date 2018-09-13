@@ -25,12 +25,6 @@ export function createNewSelectionFragment() {
   return {ids: new Set(), excludeIds: new Set()};
 }
 
-export function getParentFilter(appliedFilters) {
-  return 'incidents' in appliedFilters || 'active' in appliedFilters
-    ? {running: true}
-    : {finished: true};
-}
-
 export function getPayload({selectionId, state}) {
   const {selection, selections, filter} = state;
   let selectiondata;
