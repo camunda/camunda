@@ -117,11 +117,12 @@ describe('modules/utils/filter.js', () => {
       expect(parsedFilter.ids).toEqual(['id1', 'id2', 'id3']);
       expect(parsedFilter.errorMessage).toEqual(' this is an error message');
       expect(parsedFilter.startDate).toBe(undefined);
-      expect(parsedFilter.startDateBefore).toBe('2018-10-09T00:00:00.000+0200');
-      expect(parsedFilter.startDateAfter).toBe('2018-10-08T00:00:00.000+0200');
       expect(parsedFilter.endDate).toBe(undefined);
-      expect(parsedFilter.endDateBefore).toBe('2018-10-11T00:00:00.000+0200');
-      expect(parsedFilter.endDateAfter).toBe('2018-10-10T00:00:00.000+0200');
+      //ci has diffrent timezone, so we ommit the timezone +0200 at the end
+      expect(parsedFilter.startDateBefore).toContain('2018-10-09T00:00:00.000');
+      expect(parsedFilter.startDateAfter).toContain('2018-10-08T00:00:00.000');
+      expect(parsedFilter.endDateBefore).toContain('2018-10-11T00:00:00.000');
+      expect(parsedFilter.endDateAfter).toContain('2018-10-10T00:00:00.000');
       expect(parsedFilter.activityId).toBe('5');
       expect(parsedFilter.active).toBe(true);
       expect(parsedFilter.incidents).toBe(false);
