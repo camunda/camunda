@@ -52,7 +52,8 @@ class EntityList extends React.Component {
     });
   };
 
-  deleteEntity = id => evt => {
+  deleteEntity = evt => {
+    const id = this.state.deleteModalEntity.id;
     remove(id, this.props.api);
 
     this.setState({
@@ -153,6 +154,7 @@ class EntityList extends React.Component {
 
   renderList = () => {
     const {data} = this.state;
+    const {operations, label, api, renderCustom} = this.props;
 
     const list =
       data.length === 0 ? (
@@ -179,7 +181,10 @@ class EntityList extends React.Component {
               .map((itemData, idx) => (
                 <EntityItem
                   key={idx}
-                  {...this.props}
+                  operations={operations}
+                  label={label}
+                  api={api}
+                  renderCustom={renderCustom}
                   data={itemData}
                   updateEntity={this.updateEntity}
                   duplicateEntity={this.duplicateEntity}
@@ -212,21 +217,16 @@ class EntityList extends React.Component {
     if (error) return this.renderErrorMessage(error, header);
 
     const list = loaded ? this.renderList() : <LoadingIndicator />;
-
-    const deleteModal = (
-      <DeleteModal
-        deleteModalVisible={deleteModalVisible}
-        deleteModalEntity={deleteModalEntity}
-        deleteEntity={this.deleteEntity}
-        closeDeleteModal={this.closeDeleteModal}
-      />
-    );
-
     return (
       <section className="EntityList">
         {header}
         {list}
-        {deleteModal}
+        <DeleteModal
+          isVisible={deleteModalVisible}
+          entityName={deleteModalEntity.name}
+          onConfirm={this.deleteEntity}
+          onClose={this.closeDeleteModal}
+        />
         {this.state.editEntity && (
           <ContentPanel
             onConfirm={this.confirmContentPanel}

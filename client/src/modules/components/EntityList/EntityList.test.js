@@ -240,7 +240,7 @@ it('should open deletion modal on delete button click', async () => {
   })();
   await node.update();
 
-  expect(node.find('.deleteModal').props().open).toBeTruthy();
+  expect(node.find('Modal').props().open).toBeTruthy();
 });
 
 it('should invoke duplicate on click', async () => {

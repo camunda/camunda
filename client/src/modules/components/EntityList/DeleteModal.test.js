@@ -16,10 +16,10 @@ it('should have a closed modal when deleteModalVisible is false', () => {
 
 it('should show the name of the Entity to delete', () => {
   const props = {
-    deleteModalVisible: true,
-    deleteModalEntity: {name: 'test'},
-    deleteEntity: () => {},
-    closeDeleteModal: () => {}
+    isVisible: true,
+    entityName: 'test',
+    onConfirm: () => {},
+    onClose: () => {}
   };
   const node = mount(<DeleteModal {...props} />);
 
@@ -30,10 +30,10 @@ it('should show the name of the Entity to delete', () => {
 it('should invok closeDeleteModal when cancel button is clicked', async () => {
   const spy = jest.fn();
   const props = {
-    deleteModalVisible: true,
-    deleteModalEntity: {name: 'test'},
-    deleteEntity: () => {},
-    closeDeleteModal: spy
+    isVisible: true,
+    entityName: 'test',
+    onConfirm: () => {},
+    onClose: spy
   };
   const node = mount(<DeleteModal {...props} />);
 
@@ -47,15 +47,15 @@ it('should invok deleteEntity when confirm button is clicked', async () => {
   const spy = jest.fn();
   const testEntity = {name: 'test', id: 'testId'};
   const props = {
-    deleteModalVisible: true,
-    deleteModalEntity: testEntity,
-    deleteEntity: spy,
-    closeDeleteModal: () => {}
+    isVisible: true,
+    entityName: testEntity.name,
+    onConfirm: spy,
+    onClose: () => {}
   };
   const node = mount(<DeleteModal {...props} />);
 
   node.find('Button.deleteEntityModalButton').simulate('click');
   await node.update();
 
-  expect(spy).toHaveBeenCalledWith(testEntity.id);
+  expect(spy).toHaveBeenCalled();
 });
