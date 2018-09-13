@@ -32,7 +32,9 @@ public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto>
         result = fetchFunction.fetch();
       } catch (Exception exception) {
         logError(exception);
-        logDebugSleepInformationAndSleep(backoffCalculator.calculateSleepTime());
+        long timeToSleep = backoffCalculator.calculateSleepTime();
+        logDebugSleepInformation(timeToSleep);
+        sleep(timeToSleep);
       }
     }
     backoffCalculator.resetBackoff();
@@ -44,13 +46,19 @@ public abstract class RetryBackoffEngineEntityFetcher<ENG extends EngineDto>
     List<ENG> fetch();
   }
 
-  private void logDebugSleepInformationAndSleep(long timeToSleep) {
-    logger.debug("Sleeping for [{}] ms and retrying the fetching of the entities afterwards.", timeToSleep);
+  private void sleep(long timeToSleep) {
     try {
       Thread.sleep(timeToSleep);
     } catch (InterruptedException e) {
       logger.debug("Was interrupted from sleep. Continuing to fetch new entities.", e);
     }
+  }
+
+  private void logDebugSleepInformation(long sleepTime) {
+    logger.debug(
+            "Sleeping for [{}] ms and retrying the fetching of the entities afterwards.",
+            sleepTime
+    );
   }
 
   private void logError(Exception e) {
