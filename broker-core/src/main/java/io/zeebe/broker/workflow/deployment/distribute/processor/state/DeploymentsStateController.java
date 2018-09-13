@@ -84,8 +84,8 @@ public class DeploymentsStateController extends KeyStateController {
     return pending;
   }
 
-  public void foreach(final BiConsumer<Long, PendingDeploymentDistribution> consumer) {
-    ensureIsOpened("foreach");
+  public void foreachPending(final BiConsumer<Long, PendingDeploymentDistribution> consumer) {
+    ensureIsOpened("foreachPending");
 
     try (RocksIterator rocksIterator = getDb().newIterator()) {
       rocksIterator.seekToFirst();

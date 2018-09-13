@@ -17,13 +17,10 @@
  */
 package io.zeebe.broker.subscription.message.processor;
 
-import static io.zeebe.util.buffer.BufferUtil.wrapArray;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
-
 import io.zeebe.broker.logstreams.processor.TypedCommandWriter;
 import io.zeebe.broker.subscription.message.data.MessageRecord;
-import io.zeebe.broker.subscription.message.state.MessageDataStore;
-import io.zeebe.broker.subscription.message.state.MessageDataStore.Message;
+import io.zeebe.broker.subscription.message.state.Message;
+import io.zeebe.broker.subscription.message.state.MessageStateController;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.util.List;
@@ -31,19 +28,20 @@ import java.util.List;
 public class MessageTimeToLiveChecker implements Runnable {
 
   private final TypedCommandWriter writer;
-  private final MessageDataStore messageStore;
+  private final MessageStateController messageStateController;
 
   private final MessageRecord deleteMessageCommand = new MessageRecord();
 
-  public MessageTimeToLiveChecker(TypedCommandWriter writer, MessageDataStore messageStore) {
+  public MessageTimeToLiveChecker(
+      TypedCommandWriter writer, MessageStateController messageStateController) {
     this.writer = writer;
-    this.messageStore = messageStore;
+    this.messageStateController = messageStateController;
   }
 
   @Override
   public void run() {
     final List<Message> messages =
-        messageStore.findMessagesWithDeadlineBefore(ActorClock.currentTimeMillis());
+        messageStateController.findMessageBefore(ActorClock.currentTimeMillis());
 
     for (Message message : messages) {
       final boolean success = writeDeleteMessageCommand(message);
@@ -56,13 +54,13 @@ public class MessageTimeToLiveChecker implements Runnable {
   private boolean writeDeleteMessageCommand(Message message) {
     deleteMessageCommand.reset();
     deleteMessageCommand
-        .setName(wrapString(message.getName()))
-        .setCorrelationKey(wrapString(message.getCorrelationKey()))
+        .setName(message.getName())
+        .setCorrelationKey(message.getCorrelationKey())
         .setTimeToLive(message.getTimeToLive())
-        .setPayload(wrapArray(message.getPayload()));
+        .setPayload(message.getPayload());
 
     if (message.getId() != null) {
-      deleteMessageCommand.setMessageId(wrapString(message.getId()));
+      deleteMessageCommand.setMessageId(message.getId());
     }
 
     writer.writeFollowUpCommand(message.getKey(), MessageIntent.DELETE, deleteMessageCommand);

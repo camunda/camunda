@@ -17,28 +17,25 @@
  */
 package io.zeebe.broker.subscription.message.processor;
 
-import static io.zeebe.util.buffer.BufferUtil.wrapArray;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
-
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
-import io.zeebe.broker.subscription.message.state.MessageSubscriptionDataStore;
-import io.zeebe.broker.subscription.message.state.MessageSubscriptionDataStore.MessageSubscription;
+import io.zeebe.broker.subscription.message.state.MessageStateController;
+import io.zeebe.broker.subscription.message.state.MessageSubscription;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.util.List;
 
 public class PendingMessageSubscriptionChecker implements Runnable {
 
   private final SubscriptionCommandSender commandSender;
-  private final MessageSubscriptionDataStore subscriptionStore;
+  private final MessageStateController messageStateController;
 
   private final long subscriptionTimeout;
 
   public PendingMessageSubscriptionChecker(
       SubscriptionCommandSender commandSender,
-      MessageSubscriptionDataStore subscriptionStore,
+      MessageStateController messageStateController,
       long subscriptionTimeout) {
     this.commandSender = commandSender;
-    this.subscriptionStore = subscriptionStore;
+    this.messageStateController = messageStateController;
     this.subscriptionTimeout = subscriptionTimeout;
   }
 
@@ -46,7 +43,7 @@ public class PendingMessageSubscriptionChecker implements Runnable {
   public void run() {
 
     final List<MessageSubscription> pendingSubscriptions =
-        subscriptionStore.findPendingSubscriptionsWithSentTimeBefore(
+        messageStateController.findSubscriptionBefore(
             ActorClock.currentTimeMillis() - subscriptionTimeout);
 
     for (MessageSubscription subscription : pendingSubscriptions) {
@@ -64,7 +61,7 @@ public class PendingMessageSubscriptionChecker implements Runnable {
         subscription.getWorkflowInstancePartitionId(),
         subscription.getWorkflowInstanceKey(),
         subscription.getActivityInstanceKey(),
-        wrapString(subscription.getMessageName()),
-        wrapArray(subscription.getMessagePayload()));
+        subscription.getMessageName(),
+        subscription.getMessagePayload());
   }
 }

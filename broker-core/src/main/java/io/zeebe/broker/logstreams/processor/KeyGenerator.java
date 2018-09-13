@@ -30,7 +30,7 @@ public class KeyGenerator extends UnpackedObject {
   private static final int WF_OFFSET = 1;
   private static final int JOB_OFFSET = 2;
   private static final int INCIDENT_OFFSET = 3;
-  private static final int DEPLOYMENT_OFFSET = 4;
+  private static final int MESSAGE_OFFSET = 4;
 
   private final LongProperty nextKey;
   private final int stepSize;
@@ -46,16 +46,18 @@ public class KeyGenerator extends UnpackedObject {
     this.stepSize = stepSize;
     declareProperty(nextKey);
     this.keyStateController = keyStateController;
-    init();
+    init(initialValue);
   }
 
-  private void init() {
+  private void init(long initialValue) {
     if (keyStateController != null) {
       keyStateController.addOnOpenCallback(
           () -> {
-            final long latestKey = keyStateController.getLatestKey();
+            final long latestKey = keyStateController.getNextKey();
             if (latestKey > 0) {
               setKey(latestKey);
+            } else {
+              keyStateController.putNextKey(initialValue);
             }
           });
     }
@@ -64,19 +66,19 @@ public class KeyGenerator extends UnpackedObject {
   public long nextKey() {
     final long key = nextKey.getValue();
     nextKey.setValue(key + stepSize);
-    putLatestKeyIntoController(key);
+    putLatestKeyIntoController(key + stepSize);
     return key;
   }
 
   public void setKey(final long key) {
     final long nextKey = key + stepSize;
     this.nextKey.setValue(nextKey);
-    putLatestKeyIntoController(key);
+    putLatestKeyIntoController(nextKey);
   }
 
   private void putLatestKeyIntoController(final long key) {
     if (keyStateController != null) {
-      keyStateController.putLatestKey(key);
+      keyStateController.putNextKey(key);
     }
   }
 
@@ -92,8 +94,7 @@ public class KeyGenerator extends UnpackedObject {
     return new KeyGenerator(INCIDENT_OFFSET, STEP_SIZE);
   }
 
-  public static KeyGenerator createDeploymentKeyGenerator(
-      final KeyStateController keyStateController) {
-    return new KeyGenerator(DEPLOYMENT_OFFSET, STEP_SIZE, keyStateController);
+  public static KeyGenerator createMessageKeyGenerator(KeyStateController keyStateController) {
+    return new KeyGenerator(MESSAGE_OFFSET, STEP_SIZE, keyStateController);
   }
 }

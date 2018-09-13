@@ -23,7 +23,8 @@ import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
-import io.zeebe.broker.subscription.message.state.MessageSubscriptionDataStore;
+import io.zeebe.broker.subscription.message.state.MessageStateController;
+import io.zeebe.broker.subscription.message.state.MessageSubscription;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import java.util.function.Consumer;
@@ -31,10 +32,10 @@ import java.util.function.Consumer;
 public class CorrelateMessageSubscriptionProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
 
-  private final MessageSubscriptionDataStore subscriptionStore;
+  private final MessageStateController messageStateController;
 
-  public CorrelateMessageSubscriptionProcessor(MessageSubscriptionDataStore subscriptionStore) {
-    this.subscriptionStore = subscriptionStore;
+  public CorrelateMessageSubscriptionProcessor(MessageStateController messageStateController) {
+    this.messageStateController = messageStateController;
   }
 
   @Override
@@ -46,11 +47,19 @@ public class CorrelateMessageSubscriptionProcessor
 
     final MessageSubscriptionRecord subscriptionRecord = record.getValue();
 
-    final boolean removed = subscriptionStore.removeSubscription(subscriptionRecord);
-    if (removed) {
+    final MessageSubscription messageSubscription =
+        new MessageSubscription(
+            subscriptionRecord.getWorkflowInstancePartitionId(),
+            subscriptionRecord.getWorkflowInstanceKey(),
+            subscriptionRecord.getActivityInstanceKey(),
+            subscriptionRecord.getMessageName(),
+            subscriptionRecord.getCorrelationKey());
+
+    final boolean exist = messageStateController.exist(messageSubscription);
+    if (exist) {
+      messageStateController.remove(messageSubscription);
       streamWriter.writeFollowUpEvent(
           record.getKey(), MessageSubscriptionIntent.CORRELATED, subscriptionRecord);
-
     } else {
       streamWriter.writeRejection(
           record, RejectionType.NOT_APPLICABLE, "subscription is already correlated");

@@ -82,7 +82,7 @@ public class DeploymentDistributeProcessor implements TypedRecordProcessor<Deplo
   }
 
   private void reprocessPendingDeployments() {
-    deploymentsStateController.foreach(
+    deploymentsStateController.foreachPending(
         ((key, pendingDeploymentDistribution) -> {
           final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
           final DirectBuffer deployment = pendingDeploymentDistribution.getDeployment();

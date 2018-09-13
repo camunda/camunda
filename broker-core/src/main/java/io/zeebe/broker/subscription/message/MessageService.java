@@ -25,6 +25,8 @@ import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.processor.MessageStreamProcessor;
 import io.zeebe.broker.system.configuration.ClusterCfg;
+import io.zeebe.logstreams.state.StateSnapshotController;
+import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceGroupReference;
@@ -68,9 +70,17 @@ public class MessageService implements Service<MessageService> {
     final MessageStreamProcessor streamProcessor =
         new MessageStreamProcessor(subscriptionCommandSender, topologyManager);
 
+    final StateStorage stateStorage =
+        partition
+            .getStateStorageFactory()
+            .create(StreamProcessorIds.MESSAGE_PROCESSOR_ID, "message");
+    final StateSnapshotController stateSnapshotController =
+        streamProcessor.createStateSnapshotController(stateStorage);
+
     factory
         .createService(partition, partitionServiceName)
         .processor(streamProcessor.createStreamProcessors(env))
+        .snapshotController(stateSnapshotController)
         .processorId(StreamProcessorIds.MESSAGE_PROCESSOR_ID)
         .processorName("message")
         .build();
