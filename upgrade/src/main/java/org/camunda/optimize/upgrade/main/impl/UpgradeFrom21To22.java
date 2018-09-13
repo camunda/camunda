@@ -9,7 +9,9 @@ import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
 import org.camunda.optimize.upgrade.steps.AddFieldStep;
 import org.camunda.optimize.upgrade.steps.CreateIndexStep;
 import org.camunda.optimize.upgrade.steps.RenameIndexStep;
+import org.camunda.optimize.upgrade.steps.UpdateDataStep;
 import org.camunda.optimize.upgrade.util.SchemaUpgradeUtil;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,6 +53,8 @@ public class UpgradeFrom21To22 implements Upgrade {
         .addUpgradeStep(renameReportIndexToSimpleReport())
         .addUpgradeStep(addActivityStartDateFieldToProcessInstanceType())
         .addUpgradeStep(addActivityEndDateFieldToProcessInstanceType())
+        .addUpgradeStep(AdjustGroupByStep())
+        .addUpgradeStep(AdjustViewStep())
         .build();
       upgradePlan.execute();
     } catch (Exception e) {
@@ -97,13 +101,34 @@ public class UpgradeFrom21To22 implements Upgrade {
     );
   }
 
+  private UpdateDataStep AdjustGroupByStep() {
+    return new UpdateDataStep(
+      "single-report",
+      QueryBuilders.matchAllQuery(),
+      "if (ctx._source.data.groupBy.type == 'flowNode') {" +
+        "ctx._source.data.groupBy.type = 'flowNodes';" +
+      "}"
+    );
+  }
+
+  private UpdateDataStep AdjustViewStep() {
+    return new UpdateDataStep(
+      "single-report",
+      QueryBuilders.matchAllQuery(),
+      "if (ctx._source.data.view.operation == 'rawData') { " +
+        "ctx._source.data.view.property = null;" +
+        "ctx._source.data.view.entity = null;" +
+      "}"
+    );
+  }
+
   private AddFieldStep addReportTypeFieldToReportType() {
     return new AddFieldStep(
       "report",
       "$.mappings.report.properties",
       REPORT_TYPE,
       Collections.singletonMap("type", "keyword"),
-      "ctx._source.reportType = single"
+      "ctx._source.reportType = 'single'"
     );
   }
 
