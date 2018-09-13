@@ -26,6 +26,12 @@ jest.mock('components', () => {
   };
 });
 
+jest.mock('services', () => ({
+  formatters: {
+    removeLineBreaks: v => v
+  }
+}));
+
 it('should display a button if no process part is set', () => {
   const node = mount(<ProcessPart />);
 

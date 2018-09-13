@@ -14,7 +14,8 @@ jest.mock('services', () => {
   return {
     formatters: {
       camelCaseToLabel: text =>
-        text.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())
+        text.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase()),
+      removeLineBreaks: v => v
     }
   };
 });

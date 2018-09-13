@@ -105,3 +105,7 @@ export function getHighlightedText(text, highlight) {
 export function camelCaseToLabel(type) {
   return type.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase());
 }
+
+export function removeLineBreaks(str) {
+  return str.replace(/\r?\n|\r/g, ' ');
+}

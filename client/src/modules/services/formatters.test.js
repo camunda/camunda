@@ -6,7 +6,8 @@ import {
   convertCamelToSpaces,
   convertToMilliseconds,
   getHighlightedText,
-  camelCaseToLabel
+  camelCaseToLabel,
+  removeLineBreaks
 } from './formatters';
 const separator = '\u202F';
 const nbsp = '\u00A0';
@@ -112,6 +113,10 @@ describe('convertToMilliseconds', () => {
 describe('camelCaseToLabel', () => {
   expect(camelCaseToLabel('fooBar')).toBe('Foo Bar');
   expect(camelCaseToLabel('startDate')).toBe('Start Date');
+});
+
+describe('removeLineBreaks', () => {
+  expect(removeLineBreaks('test\nline\nbreak')).toBe('test line break');
 });
 
 describe('getHighlightedText', () => {
