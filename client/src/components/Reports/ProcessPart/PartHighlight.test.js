@@ -22,13 +22,30 @@ it('should correctly calculate flow nodes between two selected nodes', async () 
   const registry = viewer.get('elementRegistry');
   const canvas = viewer.get('canvas');
 
-  const start = registry.get('approveInvoice').businessObject;
-  const end = registry.get('prepareBankTransfer').businessObject;
+  const start = registry.get('StartEvent_2').businessObject;
+  const end = registry.get('EndEvent_2_1').businessObject;
 
   mount(<PartHighlight nodes={[start, end]} viewer={viewer} />);
 
-  expect(canvas.hasMarker('approveInvoice', 'PartHighlight')).toBe(true);
-  expect(canvas.hasMarker('prepareBankTransfer', 'PartHighlight')).toBe(true);
-  expect(canvas.hasMarker('reviewInvoice', 'PartHighlight')).toBe(true);
-  expect(canvas.hasMarker('ServiceTask_1', 'PartHighlight')).toBe(false);
+  expect(canvas.hasMarker('StartEvent_2', 'PartHighlight')).toBe(true);
+  expect(canvas.hasMarker('SubProcess_2', 'PartHighlight')).toBe(true);
+  expect(canvas.hasMarker('Gateway_2', 'PartHighlight')).toBe(true);
+  expect(canvas.hasMarker('EndEvent_2_1', 'PartHighlight')).toBe(true);
+  expect(canvas.hasMarker('SubProcess_4', 'PartHighlight')).toBe(false);
+});
+
+it('should work across subprocess boundaries', async () => {
+  const viewer = await loadXml(xml);
+  const registry = viewer.get('elementRegistry');
+  const canvas = viewer.get('canvas');
+
+  const start = registry.get('Task_3').businessObject;
+  const end = registry.get('Task_4').businessObject;
+
+  mount(<PartHighlight nodes={[start, end]} viewer={viewer} />);
+
+  expect(canvas.hasMarker('EndEvent_3', 'PartHighlight')).toBe(true);
+  expect(canvas.hasMarker('StartEvent_4', 'PartHighlight')).toBe(true);
+  expect(canvas.hasMarker('Gateway_2', 'PartHighlight')).toBe(true);
+  expect(canvas.hasMarker('StartEvent_3', 'PartHighlight')).toBe(false);
 });
