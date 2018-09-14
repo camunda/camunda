@@ -28,7 +28,7 @@ const InstancesWithRunningFilter = (
       return {filterCount: 0};
     }}
     storeStateLocally={() => {}}
-    history={{replace: () => {}}}
+    history={{push: () => {}}}
   />
 );
 const InstancesWithAllFilters = (
@@ -41,7 +41,7 @@ const InstancesWithAllFilters = (
       return {filterCount: 0};
     }}
     storeStateLocally={() => {}}
-    history={{replace: () => {}}}
+    history={{push: () => {}}}
   />
 );
 const InstancesWithVadlidWorkflowData = (
@@ -53,7 +53,7 @@ const InstancesWithVadlidWorkflowData = (
       return {filterCount: 0};
     }}
     storeStateLocally={() => {}}
-    history={{replace: () => {}}}
+    history={{push: () => {}}}
   />
 );
 
@@ -64,7 +64,7 @@ const InstancesWithInvalidRunningFilter = (
       return {filterCount: 0};
     }}
     storeStateLocally={() => {}}
-    history={{replace: () => {}}}
+    history={{push: () => {}}}
   />
 );
 
@@ -75,7 +75,7 @@ const InstancesWithoutFilter = (
       return {filterCount: 0};
     }}
     storeStateLocally={() => {}}
-    history={{replace: () => {}}}
+    history={{push: () => {}}}
   />
 );
 
@@ -86,7 +86,7 @@ const InstancesWithWorkflow = (
       return {filterCount: 0};
     }}
     storeStateLocally={() => {}}
-    history={{replace: () => {}}}
+    history={{push: () => {}}}
   />
 );
 
@@ -260,7 +260,7 @@ describe('Instances', () => {
               getStateLocally={() => {
                 return {filterCount: 0};
               }}
-              history={{replace: () => {}}}
+              history={{push: () => {}}}
             />
           );
           const setFilterInURLlSpy = jest.spyOn(
