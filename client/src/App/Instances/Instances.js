@@ -303,7 +303,7 @@ class Instances extends Component {
   };
 
   setFilterInURL = filter => {
-    this.props.history.replace({
+    this.props.history.push({
       pathname: this.props.location.pathname,
       search: getFilterQueryString(filter)
     });
