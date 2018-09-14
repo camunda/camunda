@@ -5,9 +5,9 @@ import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
 
 import Selections from './Selections';
 
-import * as api from 'modules/api/selections/selections';
+import * as api from 'modules/api/instances/instances';
 
-api.batchRetry = mockResolvedAsyncFn();
+api.retryInstances = mockResolvedAsyncFn();
 
 const MockSelections = [
   {
@@ -120,6 +120,6 @@ describe('Selections', () => {
     await flushPromises();
 
     //then
-    expect(api.batchRetry).toHaveBeenCalledWith(MockSelections[0].queries);
+    expect(api.retryInstances).toHaveBeenCalledWith(MockSelections[0].queries);
   });
 });

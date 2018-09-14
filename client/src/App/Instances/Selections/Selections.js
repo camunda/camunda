@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 
 import Panel from 'modules/components/Panel';
 
-import {batchRetry} from 'modules/api/selections';
+import {retryInstances} from 'modules/api/instances';
 import {BADGE_TYPE, DIRECTION} from 'modules/constants';
 import {getSelectionById} from 'modules/utils/selection';
 
@@ -56,7 +56,7 @@ export default class Selections extends React.Component {
     const {queries} = getSelectionById(selections, openSelectionId);
 
     try {
-      await batchRetry(queries);
+      await retryInstances(queries);
     } catch (e) {
       console.log(e);
     }
