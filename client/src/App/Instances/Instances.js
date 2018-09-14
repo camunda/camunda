@@ -69,7 +69,8 @@ class Instances extends Component {
       selection: createNewSelectionFragment(),
       selectionCount: selectionCount || 0,
       selections: selections || [],
-      workflow: {}
+      workflow: {},
+      groupedWorkflowInstances: {}
     };
   }
 
