@@ -188,8 +188,7 @@ export default class FilterList extends React.Component {
                     <span key={idx}>
                       <span className="FilterList__value">
                         {flowNodes
-                          ? formatters.removeLineBreaks(flowNodes[value.toString()]) ||
-                            value.toString()
+                          ? flowNodes[value.toString()] || value.toString()
                           : value.toString()}
                       </span>
                       {idx < values.length - 1 &&

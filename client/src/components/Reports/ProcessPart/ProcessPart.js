@@ -1,6 +1,5 @@
 import React from 'react';
 import {Button, Modal, BPMNDiagram, ClickBehavior, ActionItem} from 'components';
-import {formatters} from 'services';
 
 import PartHighlight from './PartHighlight';
 
@@ -29,9 +28,7 @@ export default class ProcessPart extends React.Component {
   }
 
   renderFlowNodeName = id => {
-    return this.props.flowNodeNames
-      ? formatters.removeLineBreaks(this.props.flowNodeNames[id]) || id
-      : id;
+    return this.props.flowNodeNames ? this.props.flowNodeNames[id] || id : id;
   };
 
   renderPart() {
