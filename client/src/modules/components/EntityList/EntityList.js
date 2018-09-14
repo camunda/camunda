@@ -154,7 +154,7 @@ class EntityList extends React.Component {
 
   renderList = () => {
     const {data} = this.state;
-    const {operations, label, api, renderCustom} = this.props;
+    const {operations, label, api, renderCustom, ContentPanel} = this.props;
 
     const list =
       data.length === 0 ? (
@@ -186,6 +186,7 @@ class EntityList extends React.Component {
                   api={api}
                   renderCustom={renderCustom}
                   data={itemData}
+                  ContentPanel={ContentPanel}
                   updateEntity={this.updateEntity}
                   duplicateEntity={this.duplicateEntity}
                   showDeleteModal={this.showDeleteModal}
@@ -224,8 +225,8 @@ class EntityList extends React.Component {
         <DeleteModal
           isVisible={deleteModalVisible}
           entityName={deleteModalEntity.name}
-          onConfirm={this.deleteEntity}
-          onClose={this.closeDeleteModal}
+          deleteEntity={this.deleteEntity}
+          closeModal={this.closeDeleteModal}
         />
         {this.state.editEntity && (
           <ContentPanel

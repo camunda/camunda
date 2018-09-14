@@ -32,8 +32,8 @@ it('should invok closeDeleteModal when cancel button is clicked', async () => {
   const props = {
     isVisible: true,
     entityName: 'test',
-    onConfirm: () => {},
-    onClose: spy
+    deleteEntity: () => {},
+    closeModal: spy
   };
   const node = mount(<DeleteModal {...props} />);
 
@@ -49,8 +49,8 @@ it('should invok deleteEntity when confirm button is clicked', async () => {
   const props = {
     isVisible: true,
     entityName: testEntity.name,
-    onConfirm: spy,
-    onClose: () => {}
+    deleteEntity: spy,
+    closeModal: () => {}
   };
   const node = mount(<DeleteModal {...props} />);
 
