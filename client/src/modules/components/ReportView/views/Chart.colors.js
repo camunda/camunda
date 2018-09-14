@@ -13,5 +13,6 @@ export const lightColors = {
   grid: 'rgba(0,0,0,0.1)',
   label: '#666',
   area: '#e5f2f8',
+  targetArea: '#F1A7AE',
   border: '#fff'
 };

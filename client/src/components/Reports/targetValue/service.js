@@ -26,8 +26,12 @@ export function isSingleNumber({processDefinitionKey, processDefinitionVersion, 
   return processDefinitionKey && processDefinitionVersion && visualization === 'number';
 }
 
-export function isBarChart({processDefinitionKey, processDefinitionVersion, visualization}) {
-  return processDefinitionKey && processDefinitionVersion && visualization === 'bar';
+export function isChart({processDefinitionKey, processDefinitionVersion, visualization}) {
+  return (
+    processDefinitionKey &&
+    processDefinitionVersion &&
+    (visualization === 'bar' || visualization === 'line')
+  );
 }
 
 export function isValidNumber(value) {

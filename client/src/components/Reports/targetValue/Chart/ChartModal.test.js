@@ -1,7 +1,7 @@
 import React from 'react';
 import {mount} from 'enzyme';
 
-import BarChartModal from './BarChartModal';
+import ChartModal from './ChartModal';
 
 jest.mock('components', () => {
   const LabeledInput = ({children, isInvalid, ...props}) => (
@@ -63,11 +63,11 @@ const validProps = {
 };
 
 it('should render without crashing', () => {
-  mount(<BarChartModal {...validProps} />);
+  mount(<ChartModal {...validProps} />);
 });
 
 it('should add is-active classname to the clicked button in the buttonGroup', () => {
-  const node = mount(<BarChartModal {...validProps} />);
+  const node = mount(<ChartModal {...validProps} />);
   node
     .find('ButtonGroup button')
     .first()
@@ -76,14 +76,14 @@ it('should add is-active classname to the clicked button in the buttonGroup', ()
 });
 
 it('should display the current target values target', () => {
-  const node = mount(<BarChartModal {...validProps} />);
+  const node = mount(<ChartModal {...validProps} />);
   node.setState({target: 10});
 
   expect(node.find('input').first()).toHaveValue(10);
 });
 
 it('should display select dateFormat dropdown when viewProberty equal duration', () => {
-  const node = mount(<BarChartModal {...validProps} />);
+  const node = mount(<ChartModal {...validProps} />);
   expect(node).toIncludeText('Milliseconds');
 });
 
@@ -108,26 +108,26 @@ it('should hide select dateFormat dropdown when viewProberty is not equal durati
       }
     }
   };
-  const node = mount(<BarChartModal {...newProps} />);
+  const node = mount(<ChartModal {...newProps} />);
   expect(node).not.toIncludeText('Milliseconds');
 });
 
 it('should show an error message when invalid target value is typed', () => {
-  const node = mount(<BarChartModal {...validProps} />);
+  const node = mount(<ChartModal {...validProps} />);
   node.setState({target: 'wrong value'});
 
   expect(node).toIncludeText('Must be a non-negative number');
 });
 
 it('should disable the confirm button when invalid value is typed into the field', () => {
-  const node = mount(<BarChartModal {...validProps} />);
+  const node = mount(<ChartModal {...validProps} />);
   node.setState({target: '-1'});
   expect(node.find('button[type="primary"]')).toBeDisabled();
 });
 
 it('should invoke the confirm prop on confirm button click', async () => {
   const spy = jest.fn();
-  const node = mount(<BarChartModal {...validProps} onConfirm={spy} />);
+  const node = mount(<ChartModal {...validProps} onConfirm={spy} />);
 
   await node.setProps({open: true});
 

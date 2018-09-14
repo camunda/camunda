@@ -22,7 +22,11 @@ jest.mock('chart.js', () =>
 jest.mock('./service', () => {
   return {
     getRelativeValue: jest.fn(),
-    uniteResults: jest.fn().mockReturnValue([{a: 123, b: 5}])
+    uniteResults: jest.fn().mockReturnValue([{a: 123, b: 5}]),
+    seperateLineTargetValues: jest
+      .fn()
+      .mockReturnValue({targetValues: [null, 5, 5], normalValues: [123, null, null]}),
+    fillLineGaps: jest.fn().mockReturnValue([123, 5, null])
   };
 });
 
@@ -189,6 +193,15 @@ it('should invoke convertToMilliSeconds when target value is set to Date Format'
   expect(convertToMilliseconds).toBeCalledWith(10, 'millis');
 });
 
+it('should create two datasets for line chart with target values', () => {
+  const data = {foo: 123, bar: 5, dar: 5};
+  const node = mount(<Chart data={data} />);
+  const targetValue = {values: {target: 10}};
+  const labels = ['a', 'b', 'c'];
+  const lineChartData = node.instance().createTargetLineChartData(targetValue, labels, data);
+  expect(lineChartData.datasets).toHaveLength(2);
+});
+
 it('should return correct chart data object for a single report', () => {
   const data = {foo: 123, bar: 5};
   const node = mount(<Chart data={data} />);
@@ -200,6 +213,7 @@ it('should return correct chart data object for a single report', () => {
     datasets: [
       {
         label: undefined,
+        lineTension: 0,
         data: [123, 5],
         borderColor: '#1991c8',
         backgroundColor: '#e5f2f8',
@@ -222,6 +236,7 @@ it('should return correct chart data object for a combined report', () => {
     datasets: [
       {
         label: 'Report A',
+        lineTension: 0,
         data: [123, 5],
         borderColor: 'hsl(0, 65%, 50%)',
         backgroundColor: 'transparent',
@@ -229,6 +244,7 @@ it('should return correct chart data object for a combined report', () => {
       },
       {
         label: 'Report B',
+        lineTension: 0,
         data: [1, 3],
         borderColor: 'hsl(180, 65%, 50%)',
         backgroundColor: 'transparent',

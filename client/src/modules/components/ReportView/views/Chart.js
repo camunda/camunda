@@ -2,7 +2,7 @@ import React from 'react';
 import ChartRenderer from 'chart.js';
 import ReportBlankSlate from '../ReportBlankSlate';
 
-import {getRelativeValue, uniteResults} from './service';
+import {getRelativeValue, uniteResults, seperateLineTargetValues, fillLineGaps} from './service';
 import {formatters} from 'services';
 
 import {themed} from 'theme';
@@ -80,6 +80,9 @@ export default themed(
 
       let labels = Object.keys(Object.assign({}, ...dataArr));
 
+      if (!isCombined && type === 'line' && targetValue && targetValue.active)
+        return this.createTargetLineChartData(targetValue, labels, data);
+
       if (this.props.isDate)
         labels.sort((a, b) => {
           return new Date(a) - new Date(b);
@@ -94,6 +97,33 @@ export default themed(
           ...this.createDatasetOptions(type, data, targetValue, colors[index], isCombined)
         };
       });
+
+      return {
+        labels,
+        datasets
+      };
+    };
+
+    createTargetLineChartData = ({values}, labels, data) => {
+      const {normalValues, targetValues} = seperateLineTargetValues(data, values);
+      const newNormalValues = fillLineGaps(normalValues, targetValues);
+
+      const datasets = [
+        {
+          data: targetValues,
+          borderColor: this.getColorFor('targetBar'),
+          backgroundColor: this.getColorFor('targetArea'),
+          borderWidth: 2,
+          lineTension: 0
+        },
+        {
+          data: newNormalValues,
+          borderColor: this.getColorFor('bar'),
+          backgroundColor: this.getColorFor('area'),
+          borderWidth: 2,
+          lineTension: 0
+        }
+      ];
 
       return {
         labels,
@@ -135,7 +165,8 @@ export default themed(
           return {
             borderColor: isCombined ? color : this.getColorFor('bar'),
             backgroundColor: isCombined ? 'transparent' : this.getColorFor('area'),
-            borderWidth: 2
+            borderWidth: 2,
+            lineTension: 0
           };
         case 'bar':
           const barColor = isCombined ? color : this.determineBarColor(targetValue, data);

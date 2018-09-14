@@ -4,9 +4,9 @@ import {Modal, Button, ButtonGroup, LabeledInput, Select, ErrorMessage} from 'co
 import classnames from 'classnames';
 
 import {isValidNumber} from '../service';
-import './BarChartModal.css';
+import './ChartModal.css';
 
-export default class BarChartModal extends React.Component {
+export default class ChartModal extends React.Component {
   state = {
     isBelow: false,
     target: 0,
@@ -46,11 +46,11 @@ export default class BarChartModal extends React.Component {
         open={this.props.open}
         onClose={this.props.onClose}
         onConfirm={isFieldValid ? this.confirmModal : undefined}
-        className="BarChartModal__modal"
+        className="ChartModal__modal"
       >
         <Modal.Header>Set Target Value</Modal.Header>
         <Modal.Content>
-          <ButtonGroup className="BarChartModal__ButtonGroup">
+          <ButtonGroup className="ChartModal__ButtonGroup">
             <Button
               onClick={() => this.setState({isBelow: false})}
               className={classnames({'is-active': !this.state.isBelow})}
@@ -65,21 +65,21 @@ export default class BarChartModal extends React.Component {
             </Button>
           </ButtonGroup>
           <LabeledInput
-            className="BarChartModal__input"
+            className="ChartModal__input"
             label="target"
             value={this.state.target}
             onChange={e => this.setState({target: e.target.value})}
             isInvalid={!isFieldValid}
           >
             {!isFieldValid && (
-              <ErrorMessage className="BarChartModal__ErrorMessage">
+              <ErrorMessage className="ChartModal__ErrorMessage">
                 Must be a non-negative number
               </ErrorMessage>
             )}
           </LabeledInput>
           {this.props.reportResult.data.view.property === 'duration' && (
             <Select
-              className="BarChartModal__select"
+              className="ChartModal__select"
               value={this.state.dateFormat}
               onChange={e => this.setState({dateFormat: e.target.value})}
             >

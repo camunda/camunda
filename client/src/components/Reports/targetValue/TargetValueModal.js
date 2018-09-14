@@ -2,9 +2,9 @@ import React from 'react';
 
 import {DurationHeatmapModal} from './DurationHeatmap';
 import {ProgressBarModal} from './ProgressBar';
-import {BarChartModal} from './BarChart';
+import {ChartModal} from './Chart';
 
-import {isSingleNumber, isDurationHeatmap, isBarChart} from './service';
+import {isSingleNumber, isDurationHeatmap, isChart} from './service';
 
 export default function TargetValueModal(props) {
   if (isSingleNumber(props.reportResult.data)) {
@@ -16,8 +16,8 @@ export default function TargetValueModal(props) {
     );
   } else if (isDurationHeatmap(props.reportResult.data)) {
     return <DurationHeatmapModal {...props} />;
-  } else if (isBarChart(props.reportResult.data)) {
-    return <BarChartModal {...props} />;
+  } else if (isChart(props.reportResult.data)) {
+    return <ChartModal {...props} />;
   }
 
   return null;
