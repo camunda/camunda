@@ -57,7 +57,8 @@ export const fieldParser = {
     return {[name]: value.length === 0 ? null : value};
   },
   ids: (name, value) => {
-    return {[name]: value.split(/[ ,]+/).filter(Boolean)};
+    // split by space, comma, tab or return key
+    return {[name]: value.split(/[ ,\t\n]+/).filter(Boolean)};
   },
   startDate: (name, value) => {
     return parseDate(value, 'startDate');

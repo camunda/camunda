@@ -211,6 +211,14 @@ describe('modules/utils/filter.js', () => {
 
       expect(output.ids).toEqual(['1', '2', '3']);
     });
+    it('should separate the values by enter and tab', () => {
+      const value = `1
+2
+3	4`;
+      const output = fieldParser.ids('ids', value);
+
+      expect(output.ids).toEqual(['1', '2', '3', '4']);
+    });
   });
 
   describe('fieldParser.startDate()', () => {
