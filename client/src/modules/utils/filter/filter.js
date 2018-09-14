@@ -92,7 +92,7 @@ export function getInstanceStatePayload(filter) {
  * @return {Object}
  */
 export function parseFilterForRequest(filter) {
-  let parsedFilter = {};
+  let parsedFilter = {...getInstanceStatePayload(filter)};
 
   for (let key in filter) {
     const value = filter[key];
@@ -107,8 +107,7 @@ export function parseFilterForRequest(filter) {
   }
 
   return {
-    ...parsedFilter,
-    ...getInstanceStatePayload(filter)
+    ...trimmFilter(parsedFilter)
   };
 }
 
@@ -116,6 +115,17 @@ export function getWorkflowByVersion(workflow, version) {
   return workflow.workflows.find(item => {
     return String(item.version) === String(version);
   });
+}
+
+function trimmFilter(filter) {
+  let newFilter = {};
+
+  for (let key in filter) {
+    const value = filter[key];
+    newFilter[key] = typeof value === 'string' ? value.trim() : value;
+  }
+
+  return newFilter;
 }
 
 /**

@@ -148,7 +148,7 @@ describe('modules/utils/filter.js', () => {
 
       expect(parsedFilter.workflowIds).toEqual(['4']);
       expect(parsedFilter.ids).toEqual(['id1', 'id2', 'id3']);
-      expect(parsedFilter.errorMessage).toEqual(' this is an error message');
+      expect(parsedFilter.errorMessage).toEqual('this is an error message');
       expect(parsedFilter.startDate).toBe(undefined);
       expect(parsedFilter.endDate).toBe(undefined);
       //ci has diffrent timezone, so we ommit the timezone +0200 at the end
@@ -163,6 +163,31 @@ describe('modules/utils/filter.js', () => {
       expect(parsedFilter.canceled).toBe(false);
       expect(parsedFilter.running).toBe(true);
       expect(parsedFilter.finished).toBe(true);
+    });
+
+    it('should trimm fileds with string values values', () => {
+      // given
+      const filter = {
+        workflowIds: ['4'],
+        ids: `
+        id1 , id2    id3
+        `,
+        errorMessage: '               this is an error message',
+        startDate: '          08 October 2018',
+        endDate: '            10-10-2018',
+        activityId: '5',
+        active: true,
+        incidents: false,
+        completed: true,
+        canceled: false
+      };
+
+      // when
+      const parsedFilter = parseFilterForRequest(filter);
+
+      expect(parsedFilter.ids).toEqual(['id1', 'id2', 'id3']);
+      expect(parsedFilter.errorMessage).toEqual('this is an error message');
+      expect(parsedFilter.active).toBe(true);
     });
   });
 
