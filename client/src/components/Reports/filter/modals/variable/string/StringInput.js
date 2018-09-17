@@ -106,7 +106,7 @@ export default class StringInput extends React.Component {
     );
   };
 
-  toggleValue = value => ({target: {checked}}) => {
+  toggleValue = (value, checked) => {
     let newValues;
     if (checked) {
       newValues = this.props.filter.values.concat(value);
@@ -149,7 +149,6 @@ export default class StringInput extends React.Component {
               setFilter={this.setValueFilter}
               toggleValue={this.toggleValue}
               loading={this.state.loading ? 1 : 0}
-              format={v => v}
               label="values"
             />
             {!this.state.valuesAreComplete && (

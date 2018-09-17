@@ -77,7 +77,7 @@ it('it should not show the unselected value if it does not match the query', asy
 });
 
 it('should add a value to the list of values when the checkbox is clicked', async () => {
-  const toggleValue = value => () =>
+  const toggleValue = value =>
     node.setProps({
       selectedValues: node.props().selectedValues.includes(value)
         ? node.props().selectedValues.filter(v => v !== value)
@@ -95,7 +95,7 @@ it('should add a value to the list of values when the checkbox is clicked', asyn
   node
     .find('input[type="checkbox"]')
     .at(1)
-    .simulate('change', {target: {checked: true}});
+    .simulate('change', {target: {checked: true, value: '1'}});
 
   expect(node.props().selectedValues.includes('dhdf')).toBe(true);
 });

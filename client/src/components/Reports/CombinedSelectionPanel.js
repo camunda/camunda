@@ -45,7 +45,7 @@ export default class CombinedSelectionPanel extends React.Component {
     });
   }
 
-  update = selectedReport => ({target: {checked}}) => {
+  update = (selectedReport, checked) => {
     const {selectedReports, reports} = this.state;
     let newReports = [];
     let newSelected = [];

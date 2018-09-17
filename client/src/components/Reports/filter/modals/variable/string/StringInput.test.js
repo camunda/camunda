@@ -91,7 +91,7 @@ it('should disable add filter button if no value is selected', () => {
     />
   );
 
-  node.instance().toggleValue('A')({target: {checked: false, value: 'A'}});
+  node.instance().toggleValue('A', false);
 
   expect(changeSpy).toHaveBeenCalledWith({operator: 'in', values: []});
   expect(validSpy).toHaveBeenCalledWith(false);

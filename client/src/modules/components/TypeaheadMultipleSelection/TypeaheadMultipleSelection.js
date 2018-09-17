@@ -18,12 +18,7 @@ export default class TypeaheadMultipleSelection extends React.Component {
               return (
                 <li key={idx} className="TypeaheadMultipleSelection__valueListItem">
                   <label>
-                    <Input
-                      type="checkbox"
-                      checked
-                      value={value}
-                      onChange={this.props.toggleValue(value)}
-                    />
+                    <Input type="checkbox" checked value={idx} onChange={this.toggleSelected} />
                     {this.props.format(value)}
                   </label>
                 </li>
@@ -34,6 +29,9 @@ export default class TypeaheadMultipleSelection extends React.Component {
       )
     );
   };
+
+  toggleSelected = ({target: {value, checked}}) =>
+    this.props.toggleValue(this.props.selectedValues[value], checked);
 
   mapAvaliableValues = (availableValues, selectedValues) => {
     return (
@@ -48,8 +46,8 @@ export default class TypeaheadMultipleSelection extends React.Component {
                     <Input
                       type="checkbox"
                       checked={selectedValues.includes(value)}
-                      value={value}
-                      onChange={this.props.toggleValue(value)}
+                      value={idx}
+                      onChange={this.toggleAvailable}
                     />
                     {formatters.getHighlightedText(
                       this.props.format(value),
@@ -66,13 +64,16 @@ export default class TypeaheadMultipleSelection extends React.Component {
     );
   };
 
+  toggleAvailable = ({target: {value, checked}}) =>
+    this.props.toggleValue(this.props.availableValues[value], checked);
+
   render() {
     const {availableValues, selectedValues, loading} = this.props;
     const input = (
       <div className="TypeaheadMultipleSelection__labeled-input">
         <Input
           className="TypeaheadMultipleSelection__input"
-          placeholder="Search for an entry"
+          placeholder={`Search for ${this.props.label}`}
           onChange={e => {
             this.setState({searchQuery: e.target.value});
             return this.props.setFilter(e);
