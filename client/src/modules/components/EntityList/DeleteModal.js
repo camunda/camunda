@@ -12,7 +12,7 @@ export default function DeleteModal(props) {
       </Modal.Content>
       <Modal.Actions>
         <Button className="deleteModalButton" onClick={closeModal}>
-          onClose
+          Close
         </Button>
         <Button
           type="primary"
