@@ -95,6 +95,9 @@ public interface ZeebeClientBuilder {
   /** The timeout which is used when none is provided for a job worker. Default is 5 minutes. */
   ZeebeClientBuilder defaultJobTimeout(Duration timeout);
 
+  /** The time-to-live which is used when none is provided for a message. Default is 1 hour. */
+  ZeebeClientBuilder defaultMessageTimeToLive(Duration timeToLive);
+
   /** @return a new {@link ZeebeClient} with the provided configuration options. */
   ZeebeClient build();
 }

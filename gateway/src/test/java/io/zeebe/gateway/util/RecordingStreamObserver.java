@@ -24,8 +24,8 @@ import java.util.List;
 public class RecordingStreamObserver<T> implements StreamObserver<T> {
 
   private int completionCount = 0;
-  private List<T> values = new ArrayList<>();
-  private List<Throwable> errors = new ArrayList<>();
+  private final List<T> values = new ArrayList<>();
+  private final List<Throwable> errors = new ArrayList<>();
 
   @Override
   public void onNext(T value) {
@@ -61,6 +61,5 @@ public class RecordingStreamObserver<T> implements StreamObserver<T> {
 
   public void assertErrors(Throwable... errors) {
     assertThat(this.errors).containsOnly(errors);
-    assertThat(completionCount).isEqualTo(1);
   }
 }

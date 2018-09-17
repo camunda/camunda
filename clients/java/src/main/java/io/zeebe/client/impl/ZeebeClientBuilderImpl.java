@@ -15,6 +15,8 @@
  */
 package io.zeebe.client.impl;
 
+import static io.zeebe.client.ClientProperties.DEFAULT_MESSAGE_TIME_TO_LIVE;
+
 import io.zeebe.client.ClientProperties;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
@@ -36,6 +38,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   private ActorClock actorClock;
   private String defaultJobWorkerName = "default";
   private Duration defaultJobTimeout = Duration.ofMinutes(5);
+  private Duration defaultMessageTimeToLive = Duration.ofHours(1);
 
   @Override
   public String getBrokerContactPoint() {
@@ -168,6 +171,17 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
+  public ZeebeClientBuilder defaultMessageTimeToLive(final Duration timeToLive) {
+    this.defaultMessageTimeToLive = timeToLive;
+    return this;
+  }
+
+  @Override
+  public Duration getDefaultMessageTimeToLive() {
+    return defaultMessageTimeToLive;
+  }
+
+  @Override
   public ZeebeClient build() {
     return new ZeebeClientImpl(this);
   }
@@ -221,6 +235,10 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
           Duration.ofMillis(
               Integer.parseInt(properties.getProperty(ClientProperties.DEFAULT_JOB_TIMEOUT))));
     }
+    if (properties.containsKey(DEFAULT_MESSAGE_TIME_TO_LIVE)) {
+      defaultMessageTimeToLive(
+          Duration.ofMillis(Long.parseLong(properties.getProperty(DEFAULT_MESSAGE_TIME_TO_LIVE))));
+    }
 
     return this;
   }
@@ -240,6 +258,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
     appendProperty(sb, "tcpChannelKeepAlivePeriod", tcpChannelKeepAlivePeriod);
     appendProperty(sb, "defaultJobWorkerName", defaultJobWorkerName);
     appendProperty(sb, "defaultJobTimeout", defaultJobTimeout);
+    appendProperty(sb, "defaultMessageTimeToLive", defaultMessageTimeToLive);
 
     return sb.toString();
   }

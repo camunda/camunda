@@ -15,6 +15,7 @@
  */
 package io.zeebe.gateway;
 
+import com.google.protobuf.Empty;
 import io.zeebe.gateway.api.commands.PartitionInfo;
 import io.zeebe.gateway.api.commands.Topology;
 import io.zeebe.gateway.api.commands.Workflow;
@@ -83,5 +84,9 @@ public class ResponseMapper {
               .setResourceName(workflow.getResourceName()));
     }
     return deployWorkflowResponseBuilder.build();
+  }
+
+  public Empty emptyResponse(final Object response) {
+    return Empty.getDefaultInstance();
   }
 }

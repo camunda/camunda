@@ -15,14 +15,17 @@
  */
 package io.zeebe.gateway;
 
+import com.google.protobuf.Empty;
 import io.grpc.stub.StreamObserver;
 import io.zeebe.gateway.api.commands.Topology;
 import io.zeebe.gateway.api.events.DeploymentEvent;
+import io.zeebe.gateway.api.events.MessageEvent;
 import io.zeebe.gateway.protocol.GatewayGrpc;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.future.ActorFuture;
 
@@ -57,5 +60,12 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
         clusterClient.sendDeployWorkflowRequest(request);
     requestActor.handleResponse(
         responseFuture, responseMapper::toDeployWorkflowResponse, responseObserver);
+  }
+
+  @Override
+  public void publishMessage(
+      PublishMessageRequest request, StreamObserver<Empty> responseObserver) {
+    final ActorFuture<MessageEvent> responseFuture = clusterClient.sendPublishMessage(request);
+    requestActor.handleResponse(responseFuture, responseMapper::emptyResponse, responseObserver);
   }
 }
