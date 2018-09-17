@@ -26,7 +26,6 @@ import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.RocksDB;
 
@@ -53,7 +52,7 @@ public class KeyStateController extends StateController {
   public RocksDB open(File dbDirectory, boolean reopen) throws Exception {
     final RocksDB rocksDB = super.open(dbDirectory, reopen);
 
-    keyHandle = rocksDB.createColumnFamily(new ColumnFamilyDescriptor(KEY_HANDLE_NAME));
+    keyHandle = createColumnFamily(KEY_HANDLE_NAME);
 
     if (isOpened()) {
       onOpenCallback.get().run();
