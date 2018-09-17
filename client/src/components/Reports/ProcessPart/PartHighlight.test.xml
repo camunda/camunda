@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" id="Definitions_1e9ey8g" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.13.0">
-  <bpmn:process id="Nested" name="Nested" isExecutable="true">
+  <bpmn:process id="Nested" name="Nested Subprocesses" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1">
       <bpmn:outgoing>SequenceFlow_1t18q0b</bpmn:outgoing>
     </bpmn:startEvent>
@@ -46,6 +46,7 @@
       </bpmn:subProcess>
       <bpmn:subProcess id="SubProcess_4">
         <bpmn:incoming>SequenceFlow_0bjpg2v</bpmn:incoming>
+        <bpmn:incoming>SequenceFlow_02k0hb0</bpmn:incoming>
         <bpmn:outgoing>SequenceFlow_0w560fw</bpmn:outgoing>
         <bpmn:startEvent id="StartEvent_5">
           <bpmn:outgoing>SequenceFlow_13elh8n</bpmn:outgoing>
@@ -75,6 +76,11 @@
         <bpmn:incoming>SequenceFlow_0w560fw</bpmn:incoming>
       </bpmn:endEvent>
       <bpmn:sequenceFlow id="SequenceFlow_0w560fw" sourceRef="SubProcess_4" targetRef="EndEvent_2_2" />
+      <bpmn:sequenceFlow id="SequenceFlow_02k0hb0" sourceRef="BoundaryEvent" targetRef="SubProcess_4" />
+      <bpmn:boundaryEvent id="BoundaryEvent" attachedToRef="SubProcess_2">
+        <bpmn:outgoing>SequenceFlow_02k0hb0</bpmn:outgoing>
+        <bpmn:messageEventDefinition messageRef="Message_1bkcyqg" />
+      </bpmn:boundaryEvent>
     </bpmn:subProcess>
     <bpmn:sequenceFlow id="SequenceFlow_1t18q0b" sourceRef="StartEvent_1" targetRef="SubProcess_1" />
     <bpmn:sequenceFlow id="SequenceFlow_1uy39by" sourceRef="SubProcess_1" targetRef="Gateway_1" />
@@ -102,6 +108,7 @@
       <bpmn:outgoing>SequenceFlow_101g07x</bpmn:outgoing>
     </bpmn:parallelGateway>
   </bpmn:process>
+  <bpmn:message id="Message_1bkcyqg" name="Message_0542mrs" />
   <bpmndi:BPMNDiagram id="BPMNDiagram_1">
     <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Nested">
       <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
@@ -345,6 +352,20 @@
           <dc:Bounds x="1212" y="318" width="90" height="12" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_02k0hb0_di" bpmnElement="SequenceFlow_02k0hb0">
+        <di:waypoint x="512" y="239" />
+        <di:waypoint x="512" y="339" />
+        <di:waypoint x="874" y="339" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="527" y="283" width="0" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="BoundaryEvent_1v648h3_di" bpmnElement="BoundaryEvent">
+        <dc:Bounds x="494" y="203" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="512" y="181" width="0" height="12" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
     </bpmndi:BPMNPlane>
   </bpmndi:BPMNDiagram>
 </bpmn:definitions>

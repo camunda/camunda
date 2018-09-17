@@ -49,3 +49,16 @@ it('should work across subprocess boundaries', async () => {
   expect(canvas.hasMarker('Gateway_2', 'PartHighlight')).toBe(true);
   expect(canvas.hasMarker('StartEvent_3', 'PartHighlight')).toBe(false);
 });
+
+it('should work with boundary events', async () => {
+  const viewer = await loadXml(xml);
+  const registry = viewer.get('elementRegistry');
+  const canvas = viewer.get('canvas');
+
+  const start = registry.get('Task_3').businessObject;
+  const end = registry.get('Task_5').businessObject;
+
+  mount(<PartHighlight nodes={[start, end]} viewer={viewer} />);
+
+  expect(canvas.hasMarker('BoundaryEvent', 'PartHighlight')).toBe(true);
+});

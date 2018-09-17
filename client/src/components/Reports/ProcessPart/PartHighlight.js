@@ -15,7 +15,14 @@ export default class PartHighlight extends React.Component {
     this.defs.appendChild(this.highlightMarker);
   }
 
+  getBoundaries = () =>
+    this.props.viewer
+      .get('elementRegistry')
+      .filter(element => element.businessObject.$instanceOf('bpmn:BoundaryEvent'))
+      .map(element => element.businessObject);
+
   getNodesBetween = (start, end) => {
+    const boundaries = this.getBoundaries();
     const reachableNodes = [];
 
     const graph = {};
@@ -24,6 +31,11 @@ export default class PartHighlight extends React.Component {
     // phase 1: construct reachability graph from start node
     while (unprocessed.length > 0) {
       const current = unprocessed.shift();
+
+      const boundary = boundaries.find(({attachedToRef}) => attachedToRef === current);
+      if (boundary) {
+        unprocessed.push(boundary);
+      }
 
       current.outgoing &&
         current.outgoing.forEach(connection => {
@@ -77,12 +89,18 @@ export default class PartHighlight extends React.Component {
     const direction = mode === 'before' ? 'incoming' : 'outgoing';
     const refType = mode === 'before' ? 'sourceRef' : 'targetRef';
 
+    const boundaries = this.getBoundaries();
     const reachableNodes = [];
     const unprocessed = [node];
 
     while (unprocessed.length > 0) {
       const current = unprocessed.shift();
       reachableNodes.push(current.id);
+
+      const boundary = boundaries.find(({attachedToRef}) => attachedToRef === current);
+      if (boundary) {
+        unprocessed.push(boundary);
+      }
 
       current[direction] &&
         current[direction].forEach(connection => {
