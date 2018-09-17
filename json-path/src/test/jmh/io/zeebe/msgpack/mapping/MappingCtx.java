@@ -32,6 +32,7 @@ public class MappingCtx {
   public void setup() {
     processor = new MsgPackMergeTool((int) ByteUnit.KILOBYTES.toBytes(16));
     final JsonPathQuery rootSourceQuery = new JsonPathQueryCompiler().compile("$");
-    rootMappings = new Mapping[] {new Mapping(rootSourceQuery, BufferUtil.wrapString("$"))};
+    rootMappings =
+        new Mapping[] {new Mapping(rootSourceQuery, BufferUtil.wrapString("$"), Mapping.Type.PUT)};
   }
 }

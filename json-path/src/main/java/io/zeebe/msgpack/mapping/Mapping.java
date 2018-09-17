@@ -32,10 +32,12 @@ public class Mapping {
 
   private final JsonPathQuery source;
   private final DirectBuffer targetQueryBuffer;
+  private final Type type;
 
-  public Mapping(JsonPathQuery source, DirectBuffer targetQueryBuffer) {
+  public Mapping(JsonPathQuery source, DirectBuffer targetQueryBuffer, Mapping.Type type) {
     this.source = source;
     this.targetQueryBuffer = targetQueryBuffer;
+    this.type = type;
   }
 
   public JsonPathQuery getSource() {
@@ -46,11 +48,20 @@ public class Mapping {
     return this.targetQueryBuffer;
   }
 
+  public Type getType() {
+    return type;
+  }
+
   @Override
   public String toString() {
     return String.format(
         MAPPING_STRING,
         new String(source.getExpression().byteArray()),
         BufferUtil.bufferAsString(targetQueryBuffer));
+  }
+
+  public enum Type {
+    PUT,
+    COLLECT
   }
 }

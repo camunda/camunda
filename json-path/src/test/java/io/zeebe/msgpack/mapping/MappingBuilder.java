@@ -27,13 +27,22 @@ class MappingBuilder {
     return createMappings().mapping(source, target).build();
   }
 
+  protected static Mapping[] createMapping(String source, String target, Mapping.Type type) {
+    return createMappings().mapping(source, target, type).build();
+  }
+
   protected static MappingBuilder createMappings() {
     return new MappingBuilder();
   }
 
   protected MappingBuilder mapping(String source, String target) {
+    return mapping(source, target, Mapping.Type.PUT);
+  }
+
+  protected MappingBuilder mapping(String source, String target, Mapping.Type type) {
     mappings.add(
-        new Mapping(new JsonPathQueryCompiler().compile(source), BufferUtil.wrapString(target)));
+        new Mapping(
+            new JsonPathQueryCompiler().compile(source), BufferUtil.wrapString(target), type));
     return this;
   }
 

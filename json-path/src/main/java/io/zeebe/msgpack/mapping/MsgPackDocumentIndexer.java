@@ -130,13 +130,11 @@ public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor {
     lastKeyLen = 1;
   }
 
-  public void wrap(DirectBuffer msgPackDocument) {
-    msgPackTree.clear();
-    documentId = msgPackTree.addDocument(msgPackDocument);
-    traverser.wrap(msgPackDocument, 0, msgPackDocument.capacity());
-  }
+  public MsgPackTree index(DirectBuffer document) {
+    clear();
+    documentId = msgPackTree.addDocument(document);
+    traverser.wrap(document, 0, document.capacity());
 
-  public MsgPackTree index() {
     traverser.traverse(this);
     return msgPackTree;
   }
@@ -305,12 +303,13 @@ public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor {
   }
 
   /** Clears the preprocessor and resets to the initial state. */
-  public void clear() {
+  private void clear() {
     lastKey[0] = '$';
     lastKeyLen = 1;
     parentsStack.clear();
     arrayValueStack.clear();
     lastTypeStack.clear();
+    msgPackTree.clear();
   }
 
   /**

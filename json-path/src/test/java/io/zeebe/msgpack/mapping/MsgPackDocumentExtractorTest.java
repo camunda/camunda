@@ -39,28 +39,30 @@ public class MsgPackDocumentExtractorTest {
   @Rule public ExpectedException expectedException = ExpectedException.none();
 
   @Test
-  public void shouldExtractHoleDocument() throws Exception {
+  public void shouldExtractEntireDocument() throws Exception {
     // given document
     final DirectBuffer document = new UnsafeBuffer(MSG_PACK_BYTES);
-    extractor.wrap(document);
     final Mapping[] mapping = createMapping("$", "$");
+    final MsgPackTree extractTree = new MsgPackTree();
 
     // when
-    final MsgPackTree extractTree = extractor.extract(mapping);
+    final MsgPackDiff diff = extractor.extract(document, mapping);
+    diff.mergeInto(extractTree);
 
     // then root is leaf
     assertThatIsLeafNode(extractTree, "$", MSG_PACK_BYTES);
   }
 
   @Test
-  public void shouldExtractHoleDocumentAndCreateNewObject() throws Exception {
+  public void shouldExtractEntireDocumentAndCreateNewObject() throws Exception {
     // given document
     final DirectBuffer document = new UnsafeBuffer(MSG_PACK_BYTES);
-    extractor.wrap(document);
     final Mapping[] mapping = createMapping("$", "$.old");
+    final MsgPackTree extractTree = new MsgPackTree();
 
     // when
-    final MsgPackTree extractTree = extractor.extract(mapping);
+    final MsgPackDiff diff = extractor.extract(document, mapping);
+    diff.mergeInto(extractTree);
 
     // then
     assertThatIsMapNode(extractTree, "$", "old");
@@ -68,14 +70,15 @@ public class MsgPackDocumentExtractorTest {
   }
 
   @Test
-  public void shouldExtractHoleDocumentAndCreateNewDeepObject() throws Exception {
+  public void shouldExtractEntireDocumentAndCreateNewDeepObject() throws Exception {
     // given document
     final DirectBuffer document = new UnsafeBuffer(MSG_PACK_BYTES);
-    extractor.wrap(document);
     final Mapping[] mapping = createMapping("$", "$.old.test");
+    final MsgPackTree extractTree = new MsgPackTree();
 
     // when
-    final MsgPackTree extractTree = extractor.extract(mapping);
+    final MsgPackDiff diff = extractor.extract(document, mapping);
+    diff.mergeInto(extractTree);
 
     // then
     assertThatIsMapNode(extractTree, "$", "old");
@@ -87,11 +90,12 @@ public class MsgPackDocumentExtractorTest {
   public void shouldCreateOrRenameObject() throws Exception {
     // given document
     final DirectBuffer document = new UnsafeBuffer(MSG_PACK_BYTES);
-    extractor.wrap(document);
     final Mapping[] mapping = createMapping("$.jsonObject", "$.testObj");
+    final MsgPackTree extractTree = new MsgPackTree();
 
     // when
-    final MsgPackTree extractTree = extractor.extract(mapping);
+    final MsgPackDiff diff = extractor.extract(document, mapping);
+    diff.mergeInto(extractTree);
 
     // then
     assertThatIsMapNode(extractTree, "$", "testObj");
@@ -107,13 +111,14 @@ public class MsgPackDocumentExtractorTest {
   public void shouldCreateObjectOnRoot() throws Exception {
     // given document
     final DirectBuffer document = new UnsafeBuffer(MSG_PACK_BYTES);
-    extractor.wrap(document);
     final Mapping[] mapping = createMapping("$.jsonObject", "$");
+    final MsgPackTree extractTree = new MsgPackTree();
 
     // when
-    final MsgPackTree extractTree = extractor.extract(mapping);
+    final MsgPackDiff diff = extractor.extract(document, mapping);
+    diff.mergeInto(extractTree);
 
-    // then tree root is leaf
+    // then extractTree root is leaf
     assertThat(extractTree.isLeaf("$")).isTrue();
 
     // and value is expected as
@@ -127,13 +132,14 @@ public class MsgPackDocumentExtractorTest {
   public void shouldCreateValueOnArrayIndex() throws Exception {
     // given document
     final DirectBuffer document = new UnsafeBuffer(MSG_PACK_BYTES);
-    extractor.wrap(document);
     final Mapping[] mapping = createMapping("$.array[1]", "$.array[0]");
+    final MsgPackTree extractTree = new MsgPackTree();
 
     // when
-    final MsgPackTree extractTree = extractor.extract(mapping);
+    final MsgPackDiff diff = extractor.extract(document, mapping);
+    diff.mergeInto(extractTree);
 
-    // then tree contains root node
+    // then extractTree contains root node
     assertThatIsMapNode(extractTree, "$", "array");
 
     // and array node
@@ -148,13 +154,14 @@ public class MsgPackDocumentExtractorTest {
   public void shouldCreateValueOnArrayIndexObject() throws Exception {
     // given document
     final DirectBuffer document = new UnsafeBuffer(MSG_PACK_BYTES);
-    extractor.wrap(document);
     final Mapping[] mapping = createMapping("$.array[1]", "$.array[0].test");
+    final MsgPackTree extractTree = new MsgPackTree();
 
     // when
-    final MsgPackTree extractTree = extractor.extract(mapping);
+    final MsgPackDiff diff = extractor.extract(document, mapping);
+    diff.mergeInto(extractTree);
 
-    // then tree contains root node
+    // then extractTree contains root node
     assertThatIsMapNode(extractTree, "$", "array");
 
     // and array node
@@ -172,16 +179,17 @@ public class MsgPackDocumentExtractorTest {
   public void shouldExtractWithMoreMappings() throws Exception {
     // given document
     final DirectBuffer document = new UnsafeBuffer(MSG_PACK_BYTES);
-    extractor.wrap(document);
     final Mapping[] mappings =
         MappingBuilder.createMappings()
             .mapping("$.boolean", "$.newBoolean")
             .mapping("$.array", "$.newArray")
             .mapping("$.jsonObject", "$.newObject")
             .build();
+    final MsgPackTree extractTree = new MsgPackTree();
 
     // when
-    final MsgPackTree extractTree = extractor.extract(mappings);
+    final MsgPackDiff diff = extractor.extract(document, mappings);
+    diff.mergeInto(extractTree);
 
     // then root is
     assertThatIsMapNode(extractTree, "$", "newBoolean", "newArray", "newObject");
@@ -207,7 +215,6 @@ public class MsgPackDocumentExtractorTest {
     final DirectBuffer document =
         new UnsafeBuffer(
             MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'foo':'bar', 'foa':'baz'}")));
-    extractor.wrap(document);
     final Mapping[] mapping = createMapping("$.*", "$");
 
     // expect
@@ -215,6 +222,6 @@ public class MsgPackDocumentExtractorTest {
     expectedException.expectMessage("JSON path mapping has more than one matching source.");
 
     // when
-    extractor.extract(mapping);
+    extractor.extract(document, mapping);
   }
 }

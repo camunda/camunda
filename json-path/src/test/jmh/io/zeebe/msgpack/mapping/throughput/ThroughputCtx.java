@@ -90,7 +90,7 @@ public class ThroughputCtx {
         final int identifier = depth > 0 ? val : i;
         final String key = builder.toString() + identifier;
         final JsonPathQuery sourceQuery = new JsonPathQueryCompiler().compile(key);
-        mappings.add(new Mapping(sourceQuery, BufferUtil.wrapString(key)));
+        mappings.add(new Mapping(sourceQuery, BufferUtil.wrapString(key), Mapping.Type.PUT));
       }
       builder.append("0");
       currentDepth++;

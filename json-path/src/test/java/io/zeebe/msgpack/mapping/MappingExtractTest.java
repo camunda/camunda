@@ -151,6 +151,25 @@ public class MappingExtractTest {
         .hasValue("{'newAtt1':'val1', 'newAtt2':'val3'}");
   }
 
+  @Test
+  public void shouldCollectMultipleValuesInArray() {
+    // given
+    final DirectBuffer document1 = asMsgPack("{'att1':'val1'}");
+    final DirectBuffer document2 = asMsgPack("{'att2':'val2'}");
+    final DirectBuffer document3 = asMsgPack("{'att3':'val3'}");
+
+    // when
+    mergeTool.mergeDocument(document1, createMapping("$.att1", "$.array", Mapping.Type.COLLECT));
+    mergeTool.mergeDocument(document2, createMapping("$.att2", "$.array", Mapping.Type.COLLECT));
+    mergeTool.mergeDocument(document3, createMapping("$.att3", "$.array", Mapping.Type.COLLECT));
+
+    // then
+    final DirectBuffer mergedDocument = mergeTool.writeResultToBuffer();
+
+    MappingTestUtil.assertThatMsgPack(mergedDocument)
+        .hasValue("{'array':['val1', 'val2', 'val3']}");
+  }
+
   private static DirectBuffer asMsgPack(String json) {
     try {
       return new UnsafeBuffer(MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree(json)));

@@ -66,7 +66,7 @@ public class MsgPackDocuments {
     for (int i = 0; i < mappingCount; i++) {
       final String key = "$.a" + i;
       final JsonPathQuery rootSourceQuery = new JsonPathQueryCompiler().compile(key);
-      mappings.add(new Mapping(rootSourceQuery, BufferUtil.wrapString(key)));
+      mappings.add(new Mapping(rootSourceQuery, BufferUtil.wrapString(key), Mapping.Type.PUT));
     }
     return mappings.toArray(new Mapping[mappingCount]);
   }

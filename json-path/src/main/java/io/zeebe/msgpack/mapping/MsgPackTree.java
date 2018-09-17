@@ -45,7 +45,7 @@ import org.agrona.collections.Object2IntHashMap;
  * extract document. For this distinction the {@link MsgPackNodeType#EXISTING_LEAF_NODE} and {@link
  * MsgPackNodeType#EXTRACTED_LEAF_NODE} are used.
  */
-public class MsgPackTree {
+public class MsgPackTree implements MsgPackDiff {
   protected final Map<String, MsgPackNodeType> nodeTypeMap; // Bytes2LongHashIndex nodeTypeMap;
   protected final Map<String, Set<String>> nodeChildsMap;
   protected final Map<String, Long> leafMap; // Bytes2LongHashIndex leafMap;
@@ -115,6 +115,11 @@ public class MsgPackTree {
     addParentNode(nodeId, MsgPackNodeType.ARRAY_NODE);
   }
 
+  public void removeContainerNode(String nodeId) {
+    nodeTypeMap.remove(nodeId);
+    nodeChildsMap.remove(nodeId);
+  }
+
   public void addChildToNode(String childName, String parentId) {
     nodeChildsMap.get(parentId).add(childName);
   }
@@ -154,56 +159,55 @@ public class MsgPackTree {
     writer.writeRaw(sourceDocument, position, length);
   }
 
-  /**
-   * @param mergeContainers if false, the containers (object/array) of <code>other</code> will
-   *     replace the values/containers in this. If true, they will be merged if possible.
-   */
-  public void merge(MsgPackTree other, boolean mergeContainers) {
+  /** Always replaces containers (object/array), unless it is the root object */
+  @Override
+  public void mergeInto(MsgPackTree other) {
     /*
      * This method is critical for the performance of document merging
      * and extraction, so optimizations should be made here.
      */
 
     final int newDocumentOffset =
-        documents.length; // => so we can map other document ids to this document id
+        other.documents.length; // => so we can map other document ids to this document id
 
-    for (DirectBuffer otherDocument : other.documents) {
-      addDocument(otherDocument);
+    for (DirectBuffer ourDocument : documents) {
+      other.addDocument(ourDocument);
     }
 
-    for (Map.Entry<String, MsgPackNodeType> leafMapEntry : other.nodeTypeMap.entrySet()) {
+    for (Map.Entry<String, MsgPackNodeType> leafMapEntry : nodeTypeMap.entrySet()) {
       final String key = leafMapEntry.getKey();
       final MsgPackNodeType nodeType = leafMapEntry.getValue();
 
       // hack: do not convert maps in the current tree to arrays
       // use case: map keys that are digits
-      if (!(nodeTypeMap.get(key) == MsgPackNodeType.MAP_NODE
+      if (!(other.nodeTypeMap.get(key) == MsgPackNodeType.MAP_NODE
           && nodeType == MsgPackNodeType.ARRAY_NODE)) {
-        nodeTypeMap.put(key, nodeType);
+        other.nodeTypeMap.put(key, nodeType);
       }
 
-      leafMap.remove(
+      other.leafMap.remove(
           key); // => remove everything that was a leaf previously => is going to be restored by
       // putting all leafs from the other map
 
-      final int otherDocumentSource = other.leafDocumentSources.getValue(key);
+      final int otherDocumentSource = leafDocumentSources.getValue(key);
       if (otherDocumentSource >= 0) {
-        this.leafDocumentSources.put(key, otherDocumentSource + newDocumentOffset);
+        other.leafDocumentSources.put(key, otherDocumentSource + newDocumentOffset);
       }
     }
-    leafMap.putAll(other.leafMap);
+    other.leafMap.putAll(leafMap);
 
-    for (Map.Entry<String, Set<String>> nodeChildsEntry : other.nodeChildsMap.entrySet()) {
+    for (Map.Entry<String, Set<String>> nodeChildsEntry : nodeChildsMap.entrySet()) {
       final String key = nodeChildsEntry.getKey();
 
       // if we change the following condition to if (nodeChildsMap.containsKey(key))
       // we get a deep merge
-      if (mergeContainers || key.equals(Mapping.JSON_ROOT_PATH)) {
-        nodeChildsMap
+      if (key.equals(Mapping.JSON_ROOT_PATH)) {
+        other
+            .nodeChildsMap
             .computeIfAbsent(key, (k) -> new LinkedHashSet<>())
             .addAll(nodeChildsEntry.getValue());
       } else {
-        nodeChildsMap.put(key, nodeChildsEntry.getValue());
+        other.nodeChildsMap.put(key, nodeChildsEntry.getValue());
       }
     }
   }

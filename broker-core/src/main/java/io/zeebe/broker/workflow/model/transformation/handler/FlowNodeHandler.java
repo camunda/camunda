@@ -98,6 +98,6 @@ public class FlowNodeHandler implements ModelElementTransformer<FlowNode> {
   private Mapping createMapping(JsonPathQueryCompiler queryCompiler, String source, String target) {
     final JsonPathQuery query = queryCompiler.compile(source);
 
-    return new Mapping(query, wrapString(target));
+    return new Mapping(query, wrapString(target), Mapping.Type.PUT);
   }
 }
