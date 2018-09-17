@@ -12,23 +12,19 @@
  */
 package org.camunda.operate.es;
 
-import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import java.util.UUID;
 import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.ActivityType;
-import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.rest.dto.ActivityStatisticsDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceQueryDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceRequestDto;
-import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateIntegrationTest;
@@ -89,7 +85,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     final List<ActivityStatisticsDto> activityStatisticsDtos = getActivityStatistics(query);
     assertThat(activityStatisticsDtos).hasSize(1);
     assertThat(activityStatisticsDtos).filteredOn(ai -> ai.getActivityId().equals("taskA")).allMatch(ai->
-      ai.getActiveCount().equals(2L) && ai.getCanceledCount().equals(0L) && ai.getFinishedCount().equals(0L) && ai.getIncidentsCount().equals(0L)
+      ai.getActive().equals(2L) && ai.getCanceled().equals(0L) && ai.getCompleted().equals(0L) && ai.getIncidents().equals(0L)
     );
   }
 
@@ -192,19 +188,19 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
     assertThat(activityStatisticsDtos).hasSize(5);
     assertThat(activityStatisticsDtos).filteredOn(ai -> ai.getActivityId().equals("taskA")).allMatch(ai->
-      ai.getActiveCount().equals(2L) && ai.getCanceledCount().equals(0L) && ai.getFinishedCount().equals(0L) && ai.getIncidentsCount().equals(0L)
+      ai.getActive().equals(2L) && ai.getCanceled().equals(0L) && ai.getCompleted().equals(0L) && ai.getIncidents().equals(0L)
     );
     assertThat(activityStatisticsDtos).filteredOn(ai -> ai.getActivityId().equals("taskC")).allMatch(ai->
-      ai.getActiveCount().equals(0L) && ai.getCanceledCount().equals(2L) && ai.getFinishedCount().equals(0L) && ai.getIncidentsCount().equals(2L)
+      ai.getActive().equals(0L) && ai.getCanceled().equals(2L) && ai.getCompleted().equals(0L) && ai.getIncidents().equals(2L)
     );
     assertThat(activityStatisticsDtos).filteredOn(ai -> ai.getActivityId().equals("taskD")).allMatch(ai->
-      ai.getActiveCount().equals(0L) && ai.getCanceledCount().equals(1L) && ai.getFinishedCount().equals(0L) && ai.getIncidentsCount().equals(0L)
+      ai.getActive().equals(0L) && ai.getCanceled().equals(1L) && ai.getCompleted().equals(0L) && ai.getIncidents().equals(0L)
     );
     assertThat(activityStatisticsDtos).filteredOn(ai -> ai.getActivityId().equals("taskE")).allMatch(ai->
-      ai.getActiveCount().equals(1L) && ai.getCanceledCount().equals(0L) && ai.getFinishedCount().equals(0L) && ai.getIncidentsCount().equals(1L)
+      ai.getActive().equals(1L) && ai.getCanceled().equals(0L) && ai.getCompleted().equals(0L) && ai.getIncidents().equals(1L)
     );
     assertThat(activityStatisticsDtos).filteredOn(ai -> ai.getActivityId().equals("end")).allMatch(ai->
-      ai.getActiveCount().equals(0L) && ai.getCanceledCount().equals(0L) && ai.getFinishedCount().equals(2L) && ai.getIncidentsCount().equals(0L)
+      ai.getActive().equals(0L) && ai.getCanceled().equals(0L) && ai.getCompleted().equals(2L) && ai.getIncidents().equals(0L)
     );
   }
 

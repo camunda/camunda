@@ -16,10 +16,10 @@ public class ActivityStatisticsDto {
 
   private String activityId;
 
-  private Long activeCount = 0L;
-  private Long canceledCount = 0L;
-  private Long incidentsCount = 0L;
-  private Long finishedCount = 0L;
+  private Long active = 0L;
+  private Long canceled = 0L;
+  private Long incidents = 0L;
+  private Long completed = 0L;
 
   public ActivityStatisticsDto() {
   }
@@ -36,36 +36,36 @@ public class ActivityStatisticsDto {
     this.activityId = activityId;
   }
 
-  public Long getActiveCount() {
-    return activeCount;
+  public Long getActive() {
+    return active;
   }
 
-  public void setActiveCount(Long activeCount) {
-    this.activeCount = activeCount;
+  public void setActive(Long active) {
+    this.active = active;
   }
 
-  public Long getCanceledCount() {
-    return canceledCount;
+  public Long getCanceled() {
+    return canceled;
   }
 
-  public void setCanceledCount(Long canceledCount) {
-    this.canceledCount = canceledCount;
+  public void setCanceled(Long canceled) {
+    this.canceled = canceled;
   }
 
-  public Long getIncidentsCount() {
-    return incidentsCount;
+  public Long getIncidents() {
+    return incidents;
   }
 
-  public void setIncidentsCount(Long incidentsCount) {
-    this.incidentsCount = incidentsCount;
+  public void setIncidents(Long incidents) {
+    this.incidents = incidents;
   }
 
-  public Long getFinishedCount() {
-    return finishedCount;
+  public Long getCompleted() {
+    return completed;
   }
 
-  public void setFinishedCount(Long finishedCount) {
-    this.finishedCount = finishedCount;
+  public void setCompleted(Long completed) {
+    this.completed = completed;
   }
 
   @Override
@@ -79,22 +79,22 @@ public class ActivityStatisticsDto {
 
     if (activityId != null ? !activityId.equals(that.activityId) : that.activityId != null)
       return false;
-    if (activeCount != null ? !activeCount.equals(that.activeCount) : that.activeCount != null)
+    if (active != null ? !active.equals(that.active) : that.active != null)
       return false;
-    if (canceledCount != null ? !canceledCount.equals(that.canceledCount) : that.canceledCount != null)
+    if (canceled != null ? !canceled.equals(that.canceled) : that.canceled != null)
       return false;
-    if (incidentsCount != null ? !incidentsCount.equals(that.incidentsCount) : that.incidentsCount != null)
+    if (incidents != null ? !incidents.equals(that.incidents) : that.incidents != null)
       return false;
-    return finishedCount != null ? finishedCount.equals(that.finishedCount) : that.finishedCount == null;
+    return completed != null ? completed.equals(that.completed) : that.completed == null;
   }
 
   @Override
   public int hashCode() {
     int result = activityId != null ? activityId.hashCode() : 0;
-    result = 31 * result + (activeCount != null ? activeCount.hashCode() : 0);
-    result = 31 * result + (canceledCount != null ? canceledCount.hashCode() : 0);
-    result = 31 * result + (incidentsCount != null ? incidentsCount.hashCode() : 0);
-    result = 31 * result + (finishedCount != null ? finishedCount.hashCode() : 0);
+    result = 31 * result + (active != null ? active.hashCode() : 0);
+    result = 31 * result + (canceled != null ? canceled.hashCode() : 0);
+    result = 31 * result + (incidents != null ? incidents.hashCode() : 0);
+    result = 31 * result + (completed != null ? completed.hashCode() : 0);
     return result;
   }
 }

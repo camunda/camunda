@@ -446,15 +446,15 @@ public class WorkflowInstanceReader {
     Map<String, ActivityStatisticsDto> statisticsMap = new HashMap<>();
 
     if (query.isActive()) {
-      getStatisticsForActivities(query, WorkflowInstanceState.ACTIVE, ActivityState.ACTIVE, ActivityStatisticsDto::setActiveCount, statisticsMap);
+      getStatisticsForActivities(query, WorkflowInstanceState.ACTIVE, ActivityState.ACTIVE, ActivityStatisticsDto::setActive, statisticsMap);
     }
     if (query.isCanceled()) {
-      getStatisticsForActivities(query, WorkflowInstanceState.CANCELED, ActivityState.TERMINATED, ActivityStatisticsDto::setCanceledCount, statisticsMap);
+      getStatisticsForActivities(query, WorkflowInstanceState.CANCELED, ActivityState.TERMINATED, ActivityStatisticsDto::setCanceled, statisticsMap);
     }
     if (query.isIncidents()) {
-      getStatisticsForActivities(query, WorkflowInstanceState.ACTIVE, ActivityState.INCIDENT, ActivityStatisticsDto::setIncidentsCount, statisticsMap);
+      getStatisticsForActivities(query, WorkflowInstanceState.ACTIVE, ActivityState.INCIDENT, ActivityStatisticsDto::setIncidents, statisticsMap);
     }
-    getStatisticsForFinishedActivities(query, ActivityStatisticsDto::setFinishedCount, statisticsMap);
+    getStatisticsForFinishedActivities(query, ActivityStatisticsDto::setCompleted, statisticsMap);
 
     return statisticsMap.values();
   }
