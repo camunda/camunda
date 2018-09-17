@@ -158,7 +158,7 @@ describe('ListView', () => {
       expect(api.fetchWorkflowInstances).not.toHaveBeenCalled();
     });
 
-    it.only('should fetch data with cleaned filter values', async () => {
+    it('should fetch data with cleaned filter values', async () => {
       // given
       const node = shallow(
         <ListView
