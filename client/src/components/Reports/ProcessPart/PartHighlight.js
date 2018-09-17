@@ -189,6 +189,8 @@ export default class PartHighlight extends React.Component {
           reachableNodes.push(...nestedInEnd);
         }
       }
+
+      this.props.setHasPath(reachableNodes.length > 0);
     }
 
     const canvas = viewer.get('canvas');

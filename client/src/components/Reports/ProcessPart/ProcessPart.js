@@ -1,5 +1,5 @@
 import React from 'react';
-import {Button, Modal, BPMNDiagram, ClickBehavior, ActionItem} from 'components';
+import {Button, Modal, BPMNDiagram, ClickBehavior, ActionItem, Message} from 'components';
 
 import PartHighlight from './PartHighlight';
 
@@ -9,7 +9,8 @@ export default class ProcessPart extends React.Component {
   state = {
     modalOpen: false,
     start: null,
-    end: null
+    end: null,
+    hasPath: true
   };
 
   render() {
@@ -55,11 +56,20 @@ export default class ProcessPart extends React.Component {
     }
   }
 
+  setHasPath = hasPath => {
+    if (this.state.hasPath !== hasPath) {
+      // this is called during render of PartHighlight. We cannot update state during a render, so we do it later
+      window.setTimeout(() => this.setState({hasPath}));
+    }
+  };
+
   renderModal() {
-    const selection = [this.state.start, this.state.end].filter(v => v);
+    const {start, end, hasPath, modalOpen} = this.state;
+
+    const selection = [start, end].filter(v => v);
     return (
       <Modal
-        open={this.state.modalOpen}
+        open={modalOpen}
         onClose={this.closeModal}
         onConfirm={this.isValid() ? this.applyPart : undefined}
         size="max"
@@ -69,16 +79,25 @@ export default class ProcessPart extends React.Component {
         <Modal.Content>
           <span>
             Only regard the process instance part between{' '}
-            <ActionItem disabled={!this.state.start} onClick={() => this.setState({start: null})}>
-              {this.state.start
-                ? this.state.start.name || this.state.start.id
-                : 'Please select start'}
+            <ActionItem
+              disabled={!start}
+              onClick={() => this.setState({start: null, hasPath: true})}
+            >
+              {start ? start.name || start.id : 'Please select start'}
             </ActionItem>{' '}
             and{' '}
-            <ActionItem disabled={!this.state.end} onClick={() => this.setState({end: null})}>
-              {this.state.end ? this.state.end.name || this.state.end.id : 'Please select end'}
+            <ActionItem disabled={!end} onClick={() => this.setState({end: null, hasPath: true})}>
+              {end ? end.name || end.id : 'Please select end'}
             </ActionItem>
           </span>
+          {start &&
+            end &&
+            !hasPath && (
+              <Message type="warning">
+                You selected two nodes, but there is no obvious connection between those nodes.
+                Report results may be empty or misleading.
+              </Message>
+            )}
           <div className="diagram-container">
             <BPMNDiagram xml={this.props.xml}>
               <ClickBehavior
@@ -86,7 +105,7 @@ export default class ProcessPart extends React.Component {
                 onClick={this.selectNode}
                 selectedNodes={selection}
               />
-              <PartHighlight nodes={selection} />
+              <PartHighlight nodes={selection} setHasPath={this.setHasPath} />
             </BPMNDiagram>
           </div>
         </Modal.Content>
@@ -101,7 +120,7 @@ export default class ProcessPart extends React.Component {
   }
 
   openModal = () => this.setState({modalOpen: true, ...this.props.processPart});
-  closeModal = () => this.setState({modalOpen: false, start: null, end: null});
+  closeModal = () => this.setState({modalOpen: false, start: null, end: null, hasPath: true});
 
   setSelectedNodes = ([start, end]) => {
     this.setState({start, end});
@@ -109,10 +128,10 @@ export default class ProcessPart extends React.Component {
 
   selectNode = node => {
     if (this.state.start === node) {
-      return this.setState({start: null});
+      return this.setState({start: null, hasPath: true});
     }
     if (this.state.end === node) {
-      return this.setState({end: null});
+      return this.setState({end: null, hasPath: true});
     }
     if (!this.state.start) {
       return this.setState({start: node});

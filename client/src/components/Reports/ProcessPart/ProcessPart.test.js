@@ -22,7 +22,8 @@ jest.mock('components', () => {
         </button>
         {children}
       </div>
-    )
+    ),
+    Message: ({children}) => <div className="message">{children}</div>
   };
 });
 
@@ -104,4 +105,19 @@ it('should deselect a node when it is clicked and already selected', () => {
   node.instance().selectNode(flowNode);
 
   expect(node.state('start')).toBe(null);
+});
+
+it('should display a warning if there is no path between start and end node', () => {
+  const node = mount(<ProcessPart />);
+
+  const flowNode = {id: 'nodeId', name: 'Some node'};
+
+  node.setState({
+    modalOpen: true,
+    start: flowNode,
+    end: {id: 'anId'},
+    hasPath: false
+  });
+
+  expect(node.find('.message')).toIncludeText('Report results may be empty or misleading.');
 });
