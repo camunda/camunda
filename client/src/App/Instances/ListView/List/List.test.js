@@ -29,6 +29,7 @@ const mockProps = {
   data: [instance],
   onUpdateSelection: jest.fn(),
   onEntriesPerPageChange: jest.fn(),
+  filter: {},
   handleSorting: jest.fn(),
   selection: {
     excludeIds: new Set(),
