@@ -29,8 +29,9 @@ export function getOptionsForWorkflowVersion(versions = []) {
  * used for workflowIds select
  */
 export function addAllVersionsOption(options = []) {
-  options.push({value: ALL_VERSIONS_OPTION, label: 'All versions'});
-  return options;
+  return options.length > 1
+    ? [...options, {value: ALL_VERSIONS_OPTION, label: 'All versions'}]
+    : [...options];
 }
 
 /**
