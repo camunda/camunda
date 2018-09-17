@@ -15,14 +15,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.job;
+package io.zeebe.broker.job.old;
 
-import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceContainer;
-import io.zeebe.servicecontainer.ServiceGroupReference;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.ServerTransport;
@@ -38,12 +36,6 @@ public class JobSubscriptionManagerService implements Service<JobSubscriptionMan
 
   protected JobSubscriptionManager service;
 
-  protected final ServiceGroupReference<Partition> leaderPartitionsGroupReference =
-      ServiceGroupReference.<Partition>create()
-          .onAdd((name, partition) -> service.addPartition(name, partition))
-          .onRemove((name, partition) -> service.removePartition(partition))
-          .build();
-
   public JobSubscriptionManagerService(ServiceContainer serviceContainer) {
     this.serviceContainer = serviceContainer;
   }
@@ -51,13 +43,9 @@ public class JobSubscriptionManagerService implements Service<JobSubscriptionMan
   @Override
   public void start(ServiceStartContext startContext) {
     final ServerTransport clientApiTransport = transportInjector.getValue();
-    final StreamProcessorServiceFactory streamProcessorServiceFactory =
-        streamProcessorServiceFactoryInjector.getValue();
 
     final ActorScheduler actorScheduler = startContext.getScheduler();
-    service =
-        new JobSubscriptionManager(
-            serviceContainer, streamProcessorServiceFactory, clientApiTransport);
+    service = new JobSubscriptionManager();
     actorScheduler.submitActor(service);
 
     final ActorFuture<Void> transportRegistration =
@@ -71,10 +59,6 @@ public class JobSubscriptionManagerService implements Service<JobSubscriptionMan
   @Override
   public JobSubscriptionManager get() {
     return service;
-  }
-
-  public ServiceGroupReference<Partition> getLeaderPartitionsGroupReference() {
-    return leaderPartitionsGroupReference;
   }
 
   public Injector<ServerTransport> getClientApiTransportInjector() {

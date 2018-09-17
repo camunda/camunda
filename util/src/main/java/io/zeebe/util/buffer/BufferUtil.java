@@ -224,6 +224,27 @@ public final class BufferUtil {
     return hashCode;
   }
 
+  /**
+   * Performs bytewise comparison of a given buffer and a prefix.
+   *
+   * @param buffer the buffer to check against
+   * @param prefix the prefix to look for
+   * @return true if buffer starts with the all bytes contained in prefix
+   */
+  public static boolean startsWith(final DirectBuffer buffer, final DirectBuffer prefix) {
+    if (buffer.capacity() < prefix.capacity()) {
+      return false;
+    }
+
+    for (int i = 0; i < prefix.capacity(); i++) {
+      if (buffer.getByte(i) != prefix.getByte(i)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   protected static byte[] intArrayToByteArray(int[] input) {
     final byte[] result = new byte[input.length];
     for (int i = 0; i < input.length; i++) {

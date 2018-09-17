@@ -167,7 +167,7 @@ public class JobUpdateRetriesTest {
     assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(response.intent()).isEqualTo(JobIntent.UPDATE_RETRIES);
     assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.rejectionReason()).isEqualTo("Job is not in state FAILED");
+    assertThat(response.rejectionReason()).isEqualTo("Job is not failed");
   }
 
   @Test
@@ -194,7 +194,7 @@ public class JobUpdateRetriesTest {
     assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(response.intent()).isEqualTo(JobIntent.UPDATE_RETRIES);
     assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.rejectionReason()).isEqualTo("Job is not in state FAILED");
+    assertThat(response.rejectionReason()).isEqualTo("Job is not failed");
   }
 
   @Test
@@ -217,7 +217,7 @@ public class JobUpdateRetriesTest {
     assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(response.intent()).isEqualTo(JobIntent.UPDATE_RETRIES);
     assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.rejectionReason()).isEqualTo("Job is not in state FAILED");
+    assertThat(response.rejectionReason()).isEqualTo("Job is not failed");
   }
 
   @Test
@@ -245,7 +245,7 @@ public class JobUpdateRetriesTest {
     assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(response.intent()).isEqualTo(JobIntent.UPDATE_RETRIES);
     assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(response.rejectionReason()).isEqualTo("Retries must be greater than 0");
+    assertThat(response.rejectionReason()).isEqualTo("Job retries must be positive");
   }
 
   @Test
@@ -273,7 +273,7 @@ public class JobUpdateRetriesTest {
     assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(response.intent()).isEqualTo(JobIntent.UPDATE_RETRIES);
     assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(response.rejectionReason()).isEqualTo("Retries must be greater than 0");
+    assertThat(response.rejectionReason()).isEqualTo("Job retries must be positive");
   }
 
   private SubscribedRecord receiveSingleSubscribedEvent() {

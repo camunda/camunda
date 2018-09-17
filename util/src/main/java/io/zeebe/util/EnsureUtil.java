@@ -140,4 +140,14 @@ public class EnsureUtil {
       throw new RuntimeException(property + " must be false");
     }
   }
+
+  public static void ensureArrayBacked(final DirectBuffer buffer) {
+    ensureNotNull("bytes array", buffer.byteArray());
+  }
+
+  public static void ensureArrayBacked(final DirectBuffer... buffers) {
+    for (final DirectBuffer buffer : buffers) {
+      ensureArrayBacked(buffer);
+    }
+  }
 }

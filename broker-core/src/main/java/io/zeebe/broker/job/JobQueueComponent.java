@@ -24,6 +24,7 @@ import static io.zeebe.broker.logstreams.LogStreamServiceNames.STREAM_PROCESSOR_
 import static io.zeebe.broker.transport.TransportServiceNames.CLIENT_API_SERVER_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.serverTransport;
 
+import io.zeebe.broker.job.old.JobSubscriptionManagerService;
 import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
 import io.zeebe.servicecontainer.ServiceContainer;
@@ -40,12 +41,6 @@ public class JobQueueComponent implements Component {
         .dependency(
             serverTransport(CLIENT_API_SERVER_NAME),
             jobSubscriptionManagerService.getClientApiTransportInjector())
-        .dependency(
-            STREAM_PROCESSOR_SERVICE_FACTORY,
-            jobSubscriptionManagerService.getStreamProcessorServiceFactoryInjector())
-        .groupReference(
-            LEADER_PARTITION_GROUP_NAME,
-            jobSubscriptionManagerService.getLeaderPartitionsGroupReference())
         .install();
 
     final JobQueueManagerService jobQueueManagerService = new JobQueueManagerService();

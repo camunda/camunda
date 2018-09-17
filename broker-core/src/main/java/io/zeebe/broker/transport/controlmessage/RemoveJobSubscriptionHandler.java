@@ -17,8 +17,8 @@
  */
 package io.zeebe.broker.transport.controlmessage;
 
-import io.zeebe.broker.job.JobSubscriptionManager;
-import io.zeebe.broker.job.processor.JobSubscriptionRequest;
+import io.zeebe.broker.job.old.JobSubscriptionManager;
+import io.zeebe.broker.job.old.JobSubscriptionRequest;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.transport.ServerOutput;

@@ -23,7 +23,7 @@ import org.agrona.DirectBuffer;
 public class StreamProcessorIds {
   // a stream processor partitionId should be unique to distinguish event producers
 
-  public static final int JOB_QUEUE_STREAM_PROCESSOR_ID = 10;
+  public static final int JOB_STREAM_PROCESSOR_ID = 10;
 
   public static final int JOB_TIME_OUT_STREAM_PROCESSOR_ID = 30;
 
