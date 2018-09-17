@@ -62,3 +62,34 @@ it('should work with boundary events', async () => {
 
   expect(canvas.hasMarker('BoundaryEvent', 'PartHighlight')).toBe(true);
 });
+
+it('should highlight nodes inside subprocesses', async () => {
+  const viewer = await loadXml(xml);
+  const registry = viewer.get('elementRegistry');
+  const canvas = viewer.get('canvas');
+
+  const start = registry.get('StartEvent_2').businessObject;
+  const end = registry.get('Gateway_2').businessObject;
+
+  mount(<PartHighlight nodes={[start, end]} viewer={viewer} />);
+
+  expect(canvas.hasMarker('StartEvent_3', 'PartHighlight')).toBe(true);
+  expect(canvas.hasMarker('Task_3', 'PartHighlight')).toBe(true);
+  expect(canvas.hasMarker('EndEvent_3', 'PartHighlight')).toBe(true);
+});
+
+it('should not highlight nodes in different subprocesses if no top level path exists', async () => {
+  const viewer = await loadXml(xml);
+  const registry = viewer.get('elementRegistry');
+  const canvas = viewer.get('canvas');
+
+  const start = registry.get('Task_4').businessObject;
+  const end = registry.get('Task_3').businessObject;
+
+  mount(<PartHighlight nodes={[start, end]} viewer={viewer} />);
+
+  expect(canvas.hasMarker('EndEvent_4', 'PartHighlight')).toBe(false);
+  expect(canvas.hasMarker('StartEvent_3', 'PartHighlight')).toBe(false);
+  expect(canvas.hasMarker('Task_4', 'PartHighlight')).toBe(false);
+  expect(canvas.hasMarker('Task_3', 'PartHighlight')).toBe(false);
+});

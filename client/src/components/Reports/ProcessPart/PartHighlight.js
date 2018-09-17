@@ -21,9 +21,21 @@ export default class PartHighlight extends React.Component {
       .filter(element => element.businessObject.$instanceOf('bpmn:BoundaryEvent'))
       .map(element => element.businessObject);
 
+  getNestedNodes = node => {
+    const nested = [];
+
+    (node.flowElements || []).forEach(nestedNode => {
+      nested.push(nestedNode.id, ...this.getNestedNodes(nestedNode));
+    });
+
+    return nested;
+  };
+
   getNodesBetween = (start, end) => {
     const boundaries = this.getBoundaries();
     const reachableNodes = [];
+
+    const registry = this.props.viewer.get('elementRegistry');
 
     const graph = {};
     const unprocessed = [start];
@@ -61,6 +73,10 @@ export default class PartHighlight extends React.Component {
         const current = unprocessed.shift();
         reachableNodes.push(current);
 
+        if (current !== start.id && current !== end.id) {
+          reachableNodes.push(...this.getNestedNodes(registry.get(current).businessObject));
+        }
+
         graph[current] &&
           graph[current].forEach(({node, via}) => {
             reachableNodes.push(via);
@@ -96,6 +112,10 @@ export default class PartHighlight extends React.Component {
     while (unprocessed.length > 0) {
       const current = unprocessed.shift();
       reachableNodes.push(current.id);
+
+      if (current !== node) {
+        reachableNodes.push(...this.getNestedNodes(current));
+      }
 
       const boundary = boundaries.find(({attachedToRef}) => attachedToRef === current);
       if (boundary) {
@@ -157,9 +177,18 @@ export default class PartHighlight extends React.Component {
         }
       }
 
-      // on lower levels, we are only interested in nodes _after_ the start node and _before_ the end node
-      startStack.forEach(node => reachableNodes.push(...this.getNodesAfter(node)));
-      endStack.forEach(node => reachableNodes.push(...this.getNodesBefore(node)));
+      // only if there is a way between the two top level nodes
+      if (reachableNodes.length) {
+        // on lower levels, we are only interested in nodes _after_ the start node and _before_ the end node
+        startStack.forEach(node => reachableNodes.push(...this.getNodesAfter(node)));
+        endStack.forEach(node => reachableNodes.push(...this.getNodesBefore(node)));
+
+        // add all nested nodes of the selected end, except if the start is inside the end
+        const nestedInEnd = this.getNestedNodes(nodes[1]);
+        if (!nestedInEnd.includes(nodes[0].id)) {
+          reachableNodes.push(...nestedInEnd);
+        }
+      }
     }
 
     const canvas = viewer.get('canvas');
