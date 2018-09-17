@@ -1,10 +1,4 @@
-import {
-  uniteResults,
-  getFormattedLabels,
-  getBodyRows,
-  seperateLineTargetValues,
-  fillLineGaps
-} from './service';
+import {uniteResults, getFormattedLabels, getBodyRows, getLineTargetValues} from './service';
 
 jest.mock('request', () => ({
   get: jest.fn()
@@ -32,15 +26,9 @@ it('should return correct table label structure', () => {
   ).toEqual([{label: 'Report A', columns: ['value']}, {label: 'Report B', columns: ['value']}]);
 });
 
-it('should seperate line chart target values from normal values', () => {
+it('should get line chart target values from normal values', () => {
   const data = {foo: 123, bar: 5, dar: 5};
   const values = {target: 10};
-  const {targetValues, normalValues} = seperateLineTargetValues(data, values);
+  const targetValues = getLineTargetValues(Object.values(data), values);
   expect(targetValues).toEqual([null, 5, 5]);
-  expect(normalValues).toEqual([123, null, null]);
-});
-
-it('should add edge points of target values to normal values to avoid having gaps in linechart', () => {
-  const newNormalValues = fillLineGaps([123, null, null], [null, 5, 5]);
-  expect(newNormalValues).toEqual([123, 5, null]);
 });

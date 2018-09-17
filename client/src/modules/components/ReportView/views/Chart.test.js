@@ -23,10 +23,7 @@ jest.mock('./service', () => {
   return {
     getRelativeValue: jest.fn(),
     uniteResults: jest.fn().mockReturnValue([{a: 123, b: 5}]),
-    seperateLineTargetValues: jest
-      .fn()
-      .mockReturnValue({targetValues: [null, 5, 5], normalValues: [123, null, null]}),
-    fillLineGaps: jest.fn().mockReturnValue([123, 5, null])
+    getLineTargetValues: jest.fn().mockReturnValue([null, 5, 5])
   };
 });
 

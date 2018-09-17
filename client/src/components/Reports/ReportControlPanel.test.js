@@ -249,3 +249,41 @@ it('should only display process part button if view is process instance duration
 
   expect(node.find('ProcessPart')).not.toBePresent();
 });
+
+it('should not update the target value when changing from line chart to barchart or the reverse', () => {
+  const spy = jest.fn();
+  const node = mount(
+    <ReportControlPanel
+      {...data}
+      visualization="bar"
+      view={{entity: 'processInstance', property: 'duration'}}
+      updateReport={spy}
+    />
+  );
+
+  node.instance().update('visualization', 'line');
+  expect(spy).toHaveBeenCalledWith({
+    configuration: {xml: 'fooXml'},
+    groupBy: null,
+    visualization: null
+  });
+});
+
+it('should reset the target value when changing from line chart or barchart to something else', () => {
+  const spy = jest.fn();
+  const node = mount(
+    <ReportControlPanel
+      {...data}
+      visualization="bar"
+      view={{entity: 'processInstance', property: 'duration'}}
+      updateReport={spy}
+    />
+  );
+
+  node.instance().update('visualization', 'something else');
+  expect(spy).toHaveBeenCalledWith({
+    configuration: {targetValue: {active: false}, xml: 'fooXml'},
+    groupBy: null,
+    visualization: null
+  });
+});

@@ -2,7 +2,7 @@ import React from 'react';
 import ChartRenderer from 'chart.js';
 import ReportBlankSlate from '../ReportBlankSlate';
 
-import {getRelativeValue, uniteResults, seperateLineTargetValues, fillLineGaps} from './service';
+import {getRelativeValue, uniteResults, getLineTargetValues} from './service';
 import {formatters} from 'services';
 
 import {themed} from 'theme';
@@ -104,9 +104,9 @@ export default themed(
       };
     };
 
-    createTargetLineChartData = ({values}, labels, data) => {
-      const {normalValues, targetValues} = seperateLineTargetValues(data, values);
-      const newNormalValues = fillLineGaps(normalValues, targetValues);
+    createTargetLineChartData = (targetValue, labels, data) => {
+      const allValues = Object.values(data);
+      const targetValues = getLineTargetValues(allValues, targetValue.values);
 
       const datasets = [
         {
@@ -117,7 +117,7 @@ export default themed(
           lineTension: 0
         },
         {
-          data: newNormalValues,
+          data: allValues,
           borderColor: this.getColorFor('bar'),
           backgroundColor: this.getColorFor('area'),
           borderWidth: 2,

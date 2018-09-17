@@ -52,42 +52,17 @@ export function getBodyRows(unitedResults, allKeys, formatter, isFrequency, proc
   return rows;
 }
 
-export function seperateLineTargetValues(data, values) {
-  const LineValue = values.dateFormat
+export function getLineTargetValues(allValues, values) {
+  const lineValue = values.dateFormat
     ? formatters.convertToMilliseconds(values.target, values.dateFormat)
     : values.target;
 
-  const targetValues = [];
-  const normalValues = [];
-  Object.values(data).forEach(height => {
-    const checkCase = values.isBelow ? height < LineValue : height >= LineValue;
+  return allValues.map(height => {
+    const checkCase = values.isBelow ? height < lineValue : height >= lineValue;
     if (checkCase) {
-      normalValues.push(height);
-      targetValues.push(null);
+      return null;
     } else {
-      normalValues.push(null);
-      targetValues.push(height);
+      return height;
     }
   });
-  return {
-    normalValues,
-    targetValues
-  };
-}
-
-export function fillLineGaps(normalValues, targetValues) {
-  let newNormalValues = [];
-  normalValues.forEach((element, i) => {
-    if (
-      element === null &&
-      typeof normalValues[i - 1] !== 'undefined' &&
-      normalValues[i - 1] !== null
-    )
-      return (newNormalValues[i] = targetValues[i]);
-    if (element !== null && normalValues[i - 1] === null)
-      newNormalValues[i - 1] = targetValues[i - 1];
-    newNormalValues.push(element);
-  });
-
-  return newNormalValues;
 }
