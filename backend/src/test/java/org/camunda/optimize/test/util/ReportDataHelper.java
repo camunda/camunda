@@ -321,6 +321,25 @@ public class ReportDataHelper {
     );
   }
 
+  public static SingleReportDataDto createAverageProcessInstanceDurationGroupByVariableWithProcessPart(
+      String processDefinitionKey,
+      String processDefinitionVersion,
+      String variableName,
+      String variableType,
+      String startFlowNodeId,
+      String endFlowNodeId
+  ) {
+    SingleReportDataDto reportData =
+      createAverageProcessInstanceDurationGroupByVariable(
+      processDefinitionKey,
+      processDefinitionVersion,
+      variableName,
+      variableType
+    );
+    reportData.setProcessPart(createProcessPart(startFlowNodeId, endFlowNodeId));
+    return reportData;
+  }
+
   public static SingleReportDataDto createMinProcessInstanceDurationGroupByVariable(
       String processDefinitionKey,
       String processDefinitionVersion,
@@ -338,6 +357,25 @@ public class ReportDataHelper {
         view,
         groupByDto
     );
+  }
+
+  public static SingleReportDataDto createMinProcessInstanceDurationGroupByVariableWithProcessPart (
+      String processDefinitionKey,
+      String processDefinitionVersion,
+      String variableName,
+      String variableType,
+      String startFlowNodeId,
+      String endFlowNodeId
+  ) {
+
+    SingleReportDataDto reportData = createMinProcessInstanceDurationGroupByVariable(
+      processDefinitionKey,
+      processDefinitionVersion,
+      variableName,
+      variableType
+    );
+    reportData.setProcessPart(createProcessPart(startFlowNodeId, endFlowNodeId));
+    return reportData;
   }
 
   public static SingleReportDataDto createMaxProcessInstanceDurationGroupByVariable(
@@ -359,6 +397,25 @@ public class ReportDataHelper {
     );
   }
 
+  public static SingleReportDataDto createMaxProcessInstanceDurationGroupByVariableWithProcessPart (
+      String processDefinitionKey,
+      String processDefinitionVersion,
+      String variableName,
+      String variableType,
+      String startFlowNodeId,
+      String endFlowNodeId
+  ) {
+
+    SingleReportDataDto reportData = createMaxProcessInstanceDurationGroupByVariable(
+      processDefinitionKey,
+      processDefinitionVersion,
+      variableName,
+      variableType
+    );
+    reportData.setProcessPart(createProcessPart(startFlowNodeId, endFlowNodeId));
+    return reportData;
+  }
+
   public static SingleReportDataDto createMedianProcessInstanceDurationGroupByVariable(
       String processDefinitionKey,
       String processDefinitionVersion,
@@ -376,6 +433,26 @@ public class ReportDataHelper {
         view,
         groupByDto
     );
+  }
+
+  public static SingleReportDataDto createMedianProcessInstanceDurationGroupByVariableWithProcessPart (
+      String processDefinitionKey,
+      String processDefinitionVersion,
+      String variableName,
+      String variableType,
+      String startFlowNodeId,
+      String endFlowNodeId
+  ) {
+
+    SingleReportDataDto reportData =
+      createMedianProcessInstanceDurationGroupByVariable(
+      processDefinitionKey,
+      processDefinitionVersion,
+      variableName,
+      variableType
+    );
+    reportData.setProcessPart(createProcessPart(startFlowNodeId, endFlowNodeId));
+    return reportData;
   }
 
   public static SingleReportDataDto createCountFlowNodeFrequencyGroupByFlowNodeNumber(

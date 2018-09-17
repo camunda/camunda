@@ -6,17 +6,17 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.VariableGroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapSingleReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.es.report.util.creator.ReportDataCreator;
 import org.camunda.optimize.service.es.report.util.creator.avg.AvgProcessInstanceDurationGroupByVariableReportDataCreator;
 import org.camunda.optimize.service.es.report.util.creator.max.MaxProcessInstanceDurationGroupByVariableReportDataCreator;
 import org.camunda.optimize.service.es.report.util.creator.median.MedianProcessInstanceDurationGroupByVariableReportDataCreator;
 import org.camunda.optimize.service.es.report.util.creator.min.MinProcessInstanceDurationGroupByVariableReportDataCreator;
-import org.camunda.optimize.service.es.report.util.creator.ReportDataCreator;
 import org.camunda.optimize.service.util.VariableHelper;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -82,7 +82,7 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
 
     // when
     SingleReportDataDto reportData = reportDataCreator.create(
-        processInstanceDto.getProcessDefinitionKey(),
+      processInstanceDto.getProcessDefinitionKey(),
       processInstanceDto.getProcessDefinitionVersion(),
       "foo",
       "String"
@@ -595,12 +595,12 @@ public class ProcessInstanceDurationByVariableReportEvaluationIT {
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleServiceTaskProcess(Map<String, Object> variables) {
-    return deployAndStartSimpleProcesses(1, variables).get(0);
+    return deployAndStartSimpleProcesses(variables).get(0);
   }
 
-  private List<ProcessInstanceEngineDto> deployAndStartSimpleProcesses(int number, Map<String, Object> variables) {
+  private List<ProcessInstanceEngineDto> deployAndStartSimpleProcesses(Map<String, Object> variables) {
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess();
-    return IntStream.range(0, number)
+    return IntStream.range(0, 1)
       .mapToObj( i -> {
         ProcessInstanceEngineDto processInstanceEngineDto =
           engineRule.startProcessInstance(processDefinition.getId(), variables);

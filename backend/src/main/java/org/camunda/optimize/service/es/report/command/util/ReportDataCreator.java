@@ -241,6 +241,12 @@ public class ReportDataCreator {
     return reportData;
   }
 
+  public static SingleReportDataDto createAverageProcessInstanceDurationGroupByVariableWithProcessPartReport() {
+    SingleReportDataDto reportData = createAverageProcessInstanceDurationGroupByVariableReport();
+    reportData.setProcessPart(new ProcessPartDto());
+    return reportData;
+  }
+
   public static SingleReportDataDto createMinProcessInstanceDurationGroupByVariableReport() {
     ViewDto view = createMinProcessInstanceDurationView();
     GroupByDto groupByDto = createGroupByVariable();
@@ -248,6 +254,12 @@ public class ReportDataCreator {
     SingleReportDataDto reportData = new SingleReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
+    return reportData;
+  }
+
+  public static SingleReportDataDto createMinProcessInstanceDurationGroupByVariableWithProcessPartReport() {
+    SingleReportDataDto reportData = createMinProcessInstanceDurationGroupByVariableReport();
+    reportData.setProcessPart(new ProcessPartDto());
     return reportData;
   }
 
@@ -261,6 +273,12 @@ public class ReportDataCreator {
     return reportData;
   }
 
+  public static SingleReportDataDto createMaxProcessInstanceDurationGroupByVariableWithProcessPartReport() {
+    SingleReportDataDto reportData = createMaxProcessInstanceDurationGroupByVariableReport();
+    reportData.setProcessPart(new ProcessPartDto());
+    return reportData;
+  }
+
   public static SingleReportDataDto createMedianProcessInstanceDurationGroupByVariableReport() {
     ViewDto view = createMedianProcessInstanceDurationView();
     GroupByDto groupByDto = createGroupByVariable();
@@ -268,6 +286,12 @@ public class ReportDataCreator {
     SingleReportDataDto reportData = new SingleReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
+    return reportData;
+  }
+
+  public static SingleReportDataDto createMedianProcessInstanceDurationGroupByVariableWithProcessPartReport() {
+    SingleReportDataDto reportData = createMedianProcessInstanceDurationGroupByVariableReport();
+    reportData.setProcessPart(new ProcessPartDto());
     return reportData;
   }
 

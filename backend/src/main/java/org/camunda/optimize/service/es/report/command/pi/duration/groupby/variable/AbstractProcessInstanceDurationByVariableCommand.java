@@ -29,14 +29,13 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 
-public abstract class AbstractProcessInstanceDurationByVariableCommand<AGG extends Aggregation>
-    extends ReportCommand<MapSingleReportResultDto> {
+public abstract class AbstractProcessInstanceDurationByVariableCommand extends ReportCommand<MapSingleReportResultDto> {
 
-  public static final String NESTED_AGGREGATION = "nested";
-  public static final String VARIABLES_AGGREGATION = "variables";
-  public static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
+  private static final String NESTED_AGGREGATION = "nested";
+  private static final String VARIABLES_AGGREGATION = "variables";
+  private static final String FILTERED_VARIABLES_AGGREGATION = "filteredVariables";
   public static final String DURATION_AGGREGATION = "aggregatedDuration";
-  public static final String REVERSE_NESTED_AGGREGATION = "reverseNested";
+  private static final String REVERSE_NESTED_AGGREGATION = "reverseNested";
 
   @Override
   protected MapSingleReportResultDto evaluate() {
@@ -95,7 +94,7 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand<AGG exten
               .subAggregation(
                  AggregationBuilders.reverseNested(REVERSE_NESTED_AGGREGATION)
                   .subAggregation(
-                    createAggregationOperation(DURATION_AGGREGATION, DURATION)
+                    createAggregationOperation()
                   )
               )
           )
@@ -109,15 +108,14 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand<AGG exten
     Map<String, Long> result = new HashMap<>();
     for (Terms.Bucket b : variableTerms.getBuckets()) {
       ReverseNested reverseNested = b.getAggregations().get(REVERSE_NESTED_AGGREGATION);
-      AGG durationAggregation = reverseNested.getAggregations().get(DURATION_AGGREGATION);
-      long roundedDuration = processAggregationOperation(durationAggregation);
+      long roundedDuration = processAggregationOperation(reverseNested.getAggregations());
       result.put(b.getKeyAsString(), roundedDuration);
     }
     return result;
   }
 
-  protected abstract long processAggregationOperation(AGG aggregation);
+  protected abstract long processAggregationOperation(Aggregations aggs);
 
-  protected abstract AggregationBuilder createAggregationOperation(String aggregationName, String fieldName);
+  protected abstract AggregationBuilder createAggregationOperation();
 
 }
