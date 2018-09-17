@@ -9,7 +9,12 @@ import {EXPAND_STATE} from 'modules/constants';
 import StateIcon from 'modules/components/StateIcon';
 
 import {isEqual} from 'modules/utils';
-import {areIdsArray, areIdsSet, getModifiedIdSet} from './service';
+import {
+  areIdsArray,
+  areIdsSet,
+  getModifiedIdSet,
+  createIdArrayFromFilterString
+} from './service';
 
 import HeaderSortIcon from './HeaderSortIcon';
 import * as Styled from './styled';
@@ -51,22 +56,12 @@ export default class List extends React.Component {
     }
   }
 
-  getSelectionFilters = selection => {
+  getSelectionFilters = (selection, filter) => {
     let selectionFilters = {};
 
+    // checks if selection filters are also available in the passed filters.
     Object.keys(selection).forEach(key => {
-      if (
-        [
-          'active',
-          'incidents',
-          'completed',
-          'canceled',
-          'startDateAfter',
-          'startDateBefore',
-          'errorMessage',
-          'workflowIds'
-        ].includes(key)
-      ) {
+      if (filter.hasOwnProperty(key)) {
         selectionFilters[key] = selection[key];
       }
     });
@@ -75,9 +70,13 @@ export default class List extends React.Component {
 
   areAllInstancesSelected = () => {
     const {selection, filterCount, filter} = this.props;
-    const selectionFilters = this.getSelectionFilters(selection);
+    const selectionFilters = this.getSelectionFilters(selection, filter);
 
     if (selection.excludeIds.size > 0) return false;
+
+    if (typeof selection.ids === 'string') {
+      selection.ids = createIdArrayFromFilterString(selection.ids);
+    }
     if (
       isEqual(selectionFilters, filter) ||
       areIdsArray(selection, filterCount) ||
@@ -94,16 +93,16 @@ export default class List extends React.Component {
   };
 
   isSelected = id => {
+    const {filter} = this.props;
     const selection = this.props.selection;
     let {excludeIds, ids} = selection;
-    const selectionFilters = this.getSelectionFilters(selection);
+    const selectionFilters = this.getSelectionFilters(selection, filter);
 
     if (excludeIds.has(id)) return false;
     if (isEqual(selectionFilters, this.props.filter)) return true;
 
-    // when a instance ids filter is active
     if (typeof ids === 'string') {
-      ids = ids.split(/[ ,\t\n]+/).filter(Boolean);
+      ids = createIdArrayFromFilterString(ids);
     }
 
     if (
@@ -118,7 +117,7 @@ export default class List extends React.Component {
   onSelectionChange = instance => (event, isChecked) => {
     const {selection, filter} = this.props;
 
-    const selectionFilters = this.getSelectionFilters(selection);
+    const selectionFilters = this.getSelectionFilters(selection, filter);
     const changeType = isEqual(selectionFilters, filter) ? 'excludeIds' : 'Ids';
 
     const IdSetChanges =
