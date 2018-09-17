@@ -2,7 +2,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import * as api from 'modules/api/instances/instances';
-import {mockResolvedAsyncFn} from 'modules/testUtils';
+import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
 import {parseFilterForRequest} from 'modules/utils/filter';
 import {SORT_ORDER, DEFAULT_SORTING} from 'modules/constants';
 
@@ -16,7 +16,19 @@ const selection = {
   isBlacklist: false
 };
 
-const filter = {DEFAULT_FILTER};
+const defaultFilter = {DEFAULT_FILTER};
+const filter = {
+  active: true,
+  completed: true,
+  workflowIds: ['6'],
+  errorMessage: '     lorem ipsum   ',
+  ids: `1
+  2
+  3`,
+  startDate: '08.10.2018',
+  endDate: '-',
+  activityId: '4'
+};
 const filterCount = 27;
 const selections = [];
 const successResponse = {totalCount: 123, workflowInstances: [{id: 1}]};
@@ -40,7 +52,7 @@ describe('ListView', () => {
     node = shallow(
       <ListView
         selection={selection}
-        filter={filter}
+        filter={defaultFilter}
         filterCount={filterCount}
         selections={selections}
         openSelection={0}
@@ -144,6 +156,47 @@ describe('ListView', () => {
 
       // then
       expect(api.fetchWorkflowInstances).not.toHaveBeenCalled();
+    });
+
+    it.only('should fetch data with cleaned filter values', async () => {
+      // given
+      const node = shallow(
+        <ListView
+          selection={selection}
+          filter={filter}
+          filterCount={filterCount}
+          onUpdateSelection={onUpdateSelection}
+          onAddToOpenSelection={onAddToOpenSelection}
+          onAddNewSelection={onAddNewSelection}
+          onAddToSpecificSelection={onAddToSpecificSelection}
+        />
+      );
+
+      // when
+      await flushPromises();
+      node.update();
+
+      // then
+      const queries = api.fetchWorkflowInstances.mock.calls[0][0].queries[0];
+
+      expect(api.fetchWorkflowInstances).toHaveBeenCalledTimes(1);
+      expect(queries.running).toBe(true);
+      expect(queries.active).toBe(true);
+      expect(queries.finished).toBe(true);
+      expect(queries.completed).toBe(true);
+      expect(queries.workflowIds).toEqual(['6']);
+      expect(queries.errorMessage).toEqual('lorem ipsum');
+      expect(queries.ids).toEqual(['1', '2', '3']);
+      expect(queries.startDateBefore).toContain('2018-08-11T00:00:00.000');
+      expect(queries.startDateAfter).toContain('2018-08-10T00:00:00.000');
+      expect(queries.startDate).not.toBeDefined();
+      expect(queries.endDate).not.toBeDefined();
+      expect(queries.endDateBefore).not.toBeDefined();
+      expect(queries.endDateAfter).not.toBeDefined();
+      // we never pass workflow and version, only activityId to ListView
+      expect(queries.workflow).not.toBeDefined();
+      expect(queries.version).not.toBeDefined();
+      expect(queries.activityId).toContain('4');
     });
 
     it('should load data if the filter changed', () => {
