@@ -87,6 +87,7 @@ public class WorkflowInstanceReader {
   private static final String INCIDENT_STATE_TERM = String.format("%s.%s", INCIDENTS, STATE);
   private static final String INCIDENT_ERRORMSG_TERM = String.format("%s.%s", INCIDENTS, ERROR_MSG);
   private static final String ACTIVE_ACTIVITY = ActivityState.ACTIVE.toString();
+  private static final String ACTIVITY_WITH_INCIDENT = ActivityState.INCIDENT.toString();
   private static final String ACTIVITY_STATE_TERM = String.format("%s.%s", ACTIVITIES, STATE);
   private static final String ACTIVITY_TYPE_TERM = String.format("%s.%s", ACTIVITIES, WorkflowInstanceType.TYPE);
   private static final String ACTIVITY_ACTIVITYID_TERM = String.format("%s.%s", ACTIVITIES, ACTIVITY_ID);
@@ -274,8 +275,9 @@ public class WorkflowInstanceReader {
 
   private QueryBuilder createActivityIdQuery(String activityId) {
     final QueryBuilder activeActivitiesQuery = termQuery(ACTIVITY_STATE_TERM, ACTIVE_ACTIVITY);
+    final QueryBuilder activeActivitiesWithIncidentsQuery = termQuery(ACTIVITY_STATE_TERM, ACTIVITY_WITH_INCIDENT);
     final QueryBuilder activityIdQuery = termQuery(ACTIVITY_ACTIVITYID_TERM, activityId);
-    return nestedQuery(ACTIVITIES, joinWithAnd(activeActivitiesQuery, activityIdQuery), None);
+    return nestedQuery(ACTIVITIES, joinWithAnd(joinWithOr(activeActivitiesQuery, activeActivitiesWithIncidentsQuery), activityIdQuery), None);
   }
 
   private QueryBuilder createErrorMessageQuery(String errorMessage) {
