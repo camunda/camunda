@@ -95,11 +95,17 @@ export default class List extends React.Component {
 
   isSelected = id => {
     const selection = this.props.selection;
-    const {excludeIds, ids} = selection;
+    let {excludeIds, ids} = selection;
     const selectionFilters = this.getSelectionFilters(selection);
 
     if (excludeIds.has(id)) return false;
     if (isEqual(selectionFilters, this.props.filter)) return true;
+
+    // when a instance ids filter is active
+    if (typeof ids === 'string') {
+      ids = ids.split(/[ ,\t\n]+/).filter(Boolean);
+    }
+
     if (
       (ids && !Array.isArray(ids) && ids.has(id)) ||
       (ids && Array.isArray(ids))
