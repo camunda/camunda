@@ -9,7 +9,7 @@ const iconsMap = {
 };
 
 export default function ActionItems(props) {
-  return <Styled.Ul>{props.children}</Styled.Ul>;
+  return <Styled.Ul {...props} />;
 }
 
 ActionItems.propTypes = {
@@ -33,6 +33,6 @@ ActionItems.Item = function Item(props) {
 };
 
 ActionItems.Item.propTypes = {
-  type: PropTypes.oneOf([ACTION_TYPE.RETRY]).isRequired,
+  type: PropTypes.oneOf(Object.keys(ACTION_TYPE)).isRequired,
   onClick: PropTypes.func.isRequired
 };

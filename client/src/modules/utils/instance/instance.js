@@ -1,4 +1,4 @@
-import {INSTANCE_STATE, ACTION_TYPE} from 'modules/constants';
+import {INSTANCE_STATE} from 'modules/constants';
 
 export const getActiveIncident = (incidents = []) => {
   let activeIncident = null;
