@@ -1,3 +1,5 @@
+import {formatDate} from 'modules/utils/date';
+
 function getEventLabel({eventSourceType, eventType}) {
   return eventType.includes('_')
     ? eventType
@@ -24,9 +26,16 @@ export function getGroupedEvents({events, activitiesDetails}) {
   let activitiesEvents = JSON.parse(JSON.stringify(activitiesDetails));
 
   let groupedEvents = [];
-  events.forEach(event => {
-    // add label to event
-    event.label = getEventLabel(event);
+  events.forEach(originalEvent => {
+    // add label and tiestamp to the event
+    const event = {
+      ...originalEvent,
+      label: getEventLabel(originalEvent),
+      metadata: {
+        ...originalEvent.metadata,
+        timestamp: formatDate(originalEvent.dateTime)
+      }
+    };
 
     // if it doesn't have an activityInstanceId it doesn't belong to an activity events group
     if (!event.activityInstanceId) {

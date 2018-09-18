@@ -16,6 +16,7 @@ const fooActivityEvents = [
     eventType: 'fooCreated',
     eventSourceType: 'JOB',
     activityInstanceId: 'foo',
+    dateTime: '18 Sep 2018 09:05:32',
     metadata: {
       a: 'b'
     }
@@ -23,7 +24,8 @@ const fooActivityEvents = [
   {
     eventSourceType: 'JOB',
     eventType: 'fooActiviated',
-    activityInstanceId: 'foo'
+    activityInstanceId: 'foo',
+    dateTime: '18 Sep 2018 09:05:32'
   }
 ];
 
@@ -31,12 +33,14 @@ const barActivityEvents = [
   {
     eventType: 'barCreated',
     eventSourceType: 'INCIDENT',
-    activityInstanceId: 'bar'
+    activityInstanceId: 'bar',
+    dateTime: '18 Sep 2018 09:05:32'
   },
   {
     eventSourceType: 'JOB',
     eventType: 'BAR_ACTIVATED',
-    activityInstanceId: 'bar'
+    activityInstanceId: 'bar',
+    dateTime: '18 Sep 2018 09:05:32'
   }
 ];
 
@@ -44,6 +48,7 @@ const instanceEvents = [
   {
     eventSourceType: 'WORKFLOW_INSTANCE',
     eventType: 'baz',
+    dateTime: '18 Sep 2018 09:05:32',
     metadata: {
       c: {
         d: 'e',
@@ -131,9 +136,11 @@ describe('InstanceHistory', () => {
     // Pane Footer
     const PaneFooterNode = node.find(Styled.PaneFooter);
     expect(PaneFooterNode).toHaveLength(1);
+
     // Copyright
     const CopyrightNode = PaneFooterNode.find(Copyright);
     expect(CopyrightNode).toHaveLength(1);
+
     // snapshot
     expect(node).toMatchSnapshot();
   });
