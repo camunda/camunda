@@ -1,3 +1,9 @@
+function getEventLabel({eventSourceType, eventType}) {
+  return eventType.includes('_')
+    ? eventType
+    : `${eventSourceType} ${eventType}`;
+}
+
 /**
  * @returns {Array} of both:
  *  (1) events that don't have any activityInstanceId
@@ -19,6 +25,9 @@ export function getGroupedEvents({events, activitiesDetails}) {
 
   let groupedEvents = [];
   events.forEach(event => {
+    // add label to event
+    event.label = getEventLabel(event);
+
     // if it doesn't have an activityInstanceId it doesn't belong to an activity events group
     if (!event.activityInstanceId) {
       return groupedEvents.push(event);

@@ -9,6 +9,7 @@ exports[`InstanceEvents should render grouped events 1`] = `
           Object {
             "activityInstanceId": "foo",
             "eventType": "fooCreated",
+            "label": "JOB fooCreated",
             "metadata": Object {
               "a": "b",
             },
@@ -16,6 +17,7 @@ exports[`InstanceEvents should render grouped events 1`] = `
           Object {
             "activityInstanceId": "foo",
             "eventType": "fooActiviated",
+            "label": "JOB fooActiviated",
           },
         ],
         "id": "foo",
@@ -27,10 +29,12 @@ exports[`InstanceEvents should render grouped events 1`] = `
             "activityInstanceId": "bar",
             "eventSourceType": "INCIDENT",
             "eventType": "CREATED",
+            "label": "JOB CREATED",
           },
           Object {
             "activityInstanceId": "bar",
-            "eventType": "barActivated",
+            "eventType": "BAR_ACTIVATED",
+            "label": "BAR_ACTIVATED",
           },
         ],
         "id": "foo",
@@ -39,6 +43,7 @@ exports[`InstanceEvents should render grouped events 1`] = `
       },
       Object {
         "eventType": "baz",
+        "label": "WORKFLOW_INSTANCE baz",
         "metadata": Object {
           "c": Object {
             "d": "e",
@@ -84,7 +89,7 @@ exports[`InstanceEvents should render grouped events 1`] = `
               isSelected={false}
               onSelection={[Function]}
             >
-              fooCreated
+              JOB fooCreated
             </Summary>
             <Details>
               <Themed(styled.div)
@@ -106,7 +111,7 @@ exports[`InstanceEvents should render grouped events 1`] = `
               isSelected={false}
               onSelection={[Function]}
             >
-              fooActiviated
+              JOB fooActiviated
             </Summary>
           </Foldable>
         </Details>
@@ -142,21 +147,21 @@ exports[`InstanceEvents should render grouped events 1`] = `
               onSelection={[Function]}
             >
               <Styled(InstanceHistoryIconIncidentActive) />
-              CREATED
+              JOB CREATED
             </Summary>
           </Foldable>
           <Foldable
             indentation={1}
-            key="barActivated1"
+            key="BAR_ACTIVATED1"
           >
             <Summary
-              data-test="barActivated1"
+              data-test="BAR_ACTIVATED1"
               isFoldable={false}
               isOpenIncidentEvent={false}
               isSelected={false}
               onSelection={[Function]}
             >
-              barActivated
+              BAR_ACTIVATED
             </Summary>
           </Foldable>
         </Details>
@@ -176,7 +181,7 @@ exports[`InstanceEvents should render grouped events 1`] = `
           isSelected={false}
           onSelection={[Function]}
         >
-          baz
+          WORKFLOW_INSTANCE baz
         </Summary>
         <Details>
           <Foldable

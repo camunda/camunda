@@ -54,14 +54,18 @@ exports[`InstanceHistory should render a pane with InstanceLog section and Copyr
         Array [
           Object {
             "activityInstanceId": "foo",
+            "eventSourceType": "JOB",
             "eventType": "fooCreated",
+            "label": "JOB fooCreated",
             "metadata": Object {
               "a": "b",
             },
           },
           Object {
             "activityInstanceId": "foo",
+            "eventSourceType": "JOB",
             "eventType": "fooActiviated",
+            "label": "JOB fooActiviated",
           },
         ]
       }

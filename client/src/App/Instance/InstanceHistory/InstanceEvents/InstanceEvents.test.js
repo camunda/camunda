@@ -9,6 +9,7 @@ import Foldable from './Foldable';
 
 const fooActivityEvents = [
   {
+    label: 'JOB fooCreated',
     eventType: 'fooCreated',
     activityInstanceId: 'foo',
     metadata: {
@@ -16,6 +17,7 @@ const fooActivityEvents = [
     }
   },
   {
+    label: 'JOB fooActiviated',
     eventType: 'fooActiviated',
     activityInstanceId: 'foo'
   }
@@ -23,18 +25,21 @@ const fooActivityEvents = [
 
 const barActivityEvents = [
   {
+    label: `JOB ${EVENT_TYPE.CREATED}`,
     eventType: EVENT_TYPE.CREATED,
     eventSourceType: EVENT_SOURCE_TYPE.INCIDENT,
     activityInstanceId: 'bar'
   },
   {
-    eventType: 'barActivated',
+    label: 'BAR_ACTIVATED',
+    eventType: 'BAR_ACTIVATED',
     activityInstanceId: 'bar'
   }
 ];
 
 const instanceEvents = [
   {
+    label: 'WORKFLOW_INSTANCE baz',
     eventType: 'baz',
     metadata: {
       c: {
@@ -153,7 +158,7 @@ describe('InstanceEvents', () => {
       Foldable.Summary
     ).at(0);
     expect(InstanceEventSummaryNode.prop('bold')).not.toBe(true);
-    expect(InstanceEventSummaryNode.contains(instanceEvents[0].eventType));
+    expect(InstanceEventSummaryNode.contains(instanceEvents[0].label));
 
     // Instance Events Foldables
     expect(InstanceFoldableNode.find(Foldable)).toHaveLength(2);

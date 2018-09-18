@@ -14,12 +14,14 @@ import * as Styled from './styled';
 const fooActivityEvents = [
   {
     eventType: 'fooCreated',
+    eventSourceType: 'JOB',
     activityInstanceId: 'foo',
     metadata: {
       a: 'b'
     }
   },
   {
+    eventSourceType: 'JOB',
     eventType: 'fooActiviated',
     activityInstanceId: 'foo'
   }
@@ -28,16 +30,19 @@ const fooActivityEvents = [
 const barActivityEvents = [
   {
     eventType: 'barCreated',
+    eventSourceType: 'INCIDENT',
     activityInstanceId: 'bar'
   },
   {
-    eventType: 'barActivated',
+    eventSourceType: 'JOB',
+    eventType: 'BAR_ACTIVATED',
     activityInstanceId: 'bar'
   }
 ];
 
 const instanceEvents = [
   {
+    eventSourceType: 'WORKFLOW_INSTANCE',
     eventType: 'baz',
     metadata: {
       c: {

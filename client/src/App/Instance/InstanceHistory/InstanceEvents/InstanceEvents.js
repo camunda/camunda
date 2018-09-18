@@ -63,7 +63,7 @@ export default class InstanceEvents extends React.Component {
   };
 
   renderEvent = (
-    {eventType, eventSourceType, metadata, indentation, payload},
+    {label, eventType, eventSourceType, metadata, indentation, payload},
     idx
   ) => {
     const key = `${eventType}${idx}`;
@@ -81,7 +81,7 @@ export default class InstanceEvents extends React.Component {
           data-test={key}
         >
           {!isOpenIncidentEvent ? '' : <Styled.IncidentIcon />}
-          {eventType}
+          {label}
         </Foldable.Summary>
         {!!metadata && (
           <Foldable.Details>
