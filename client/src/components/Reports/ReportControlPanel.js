@@ -354,15 +354,15 @@ export default class ReportControlPanel extends React.Component {
 
   update = (type, data) => {
     const update = {
-      [type]: data,
-      configuration: {
-        ...this.props.configuration
-      }
+      [type]: data
     };
 
     if (!(type === 'visualization' && isBarOrLine(this.props.visualization, data))) {
       // reset the target value
-      update.configuration['targetValue'] = {active: false};
+      update.configuration = {
+        ...this.props.configuration,
+        targetValue: {active: false}
+      };
     }
 
     const config = {
@@ -389,6 +389,7 @@ export default class ReportControlPanel extends React.Component {
     } else if (!isAllowed(config.view, config.groupBy, config.visualization)) {
       update.visualization = null;
     }
+
     this.props.updateReport(update);
   };
 }

@@ -263,7 +263,6 @@ it('should not update the target value when changing from line chart to barchart
 
   node.instance().update('visualization', 'line');
   expect(spy).toHaveBeenCalledWith({
-    configuration: {xml: 'fooXml'},
     groupBy: null,
     visualization: null
   });
