@@ -25,7 +25,7 @@ import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.workflow.deployment.data.DeploymentRecord;
 import io.zeebe.broker.workflow.deployment.transform.DeploymentTransformer;
 import io.zeebe.broker.workflow.map.WorkflowCache;
-import io.zeebe.broker.workflow.state.WorkflowRepositoryIndex;
+import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import java.util.function.Consumer;
@@ -37,9 +37,9 @@ public class TransformingDeploymentCreateProcessor
   private final WorkflowCache workflowCache;
 
   public TransformingDeploymentCreateProcessor(
-      final WorkflowCache cache, final WorkflowRepositoryIndex workflowRepositoryIndex) {
+      final WorkflowCache cache, final WorkflowState workflowState) {
     workflowCache = cache;
-    this.deploymentTransformer = new DeploymentTransformer(workflowRepositoryIndex);
+    this.deploymentTransformer = new DeploymentTransformer(workflowState);
   }
 
   @Override

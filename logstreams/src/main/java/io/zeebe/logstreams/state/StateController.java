@@ -96,7 +96,7 @@ public class StateController implements AutoCloseable {
     return db;
   }
 
-  protected ColumnFamilyHandle createColumnFamily(byte[] name) throws Exception {
+  public ColumnFamilyHandle createColumnFamily(byte[] name) throws Exception {
     final ColumnFamilyOptions columnFamilyOptions = new ColumnFamilyOptions();
     closeables.add(0, columnFamilyOptions);
 

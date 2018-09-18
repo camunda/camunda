@@ -30,7 +30,7 @@ import io.zeebe.broker.workflow.deployment.data.DeploymentRecord;
 import io.zeebe.broker.workflow.deployment.data.ResourceType;
 import io.zeebe.broker.workflow.deployment.transform.DeploymentTransformer;
 import io.zeebe.broker.workflow.map.WorkflowCache;
-import io.zeebe.broker.workflow.state.WorkflowRepositoryIndex;
+import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
@@ -41,10 +41,13 @@ import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.TemporaryFolder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 public class TransformingDeploymentCreateProcessorTest {
+
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   @Rule public StreamProcessorRule rule = new StreamProcessorRule(Protocol.DEPLOYMENT_PARTITION);
 
@@ -54,14 +57,15 @@ public class TransformingDeploymentCreateProcessorTest {
   private StreamProcessorControl streamProcessor;
   private WorkflowInstanceStreamProcessor workflowInstanceStreamProcessor;
   private WorkflowCache workflowCache;
-  private WorkflowRepositoryIndex workflowRepositoryIndex;
+  private WorkflowState workflowState;
 
   @Before
-  public void setUp() {
+  public void setUp() throws Exception {
     MockitoAnnotations.initMocks(this);
 
     workflowCache = new WorkflowCache();
-    workflowRepositoryIndex = new WorkflowRepositoryIndex();
+    workflowState = new WorkflowState();
+    workflowState.open(folder.newFolder("rocksdb"), false);
     workflowInstanceStreamProcessor =
         new WorkflowInstanceStreamProcessor(
             workflowCache, mockSubscriptionCommandSender, topologyManager);
@@ -119,8 +123,7 @@ public class TransformingDeploymentCreateProcessorTest {
         .setResource(wrapString(Bpmn.convertToString(modelInstance)))
         .setResourceType(ResourceType.BPMN_XML);
 
-    final DeploymentTransformer deploymentTransformer =
-        new DeploymentTransformer(workflowRepositoryIndex);
+    final DeploymentTransformer deploymentTransformer = new DeploymentTransformer(workflowState);
 
     deploymentTransformer.transform(deploymentRecord);
 

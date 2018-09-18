@@ -23,7 +23,7 @@ import io.zeebe.broker.workflow.deployment.data.DeploymentRecord;
 import io.zeebe.broker.workflow.deployment.data.DeploymentResource;
 import io.zeebe.broker.workflow.deployment.data.ResourceType;
 import io.zeebe.broker.workflow.model.yaml.BpmnYamlParser;
-import io.zeebe.broker.workflow.state.WorkflowRepositoryIndex;
+import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.Process;
@@ -41,14 +41,14 @@ public class DeploymentTransformer {
 
   private final BpmnValidator validator = new BpmnValidator();
   private final BpmnYamlParser yamlParser = new BpmnYamlParser();
-  private final WorkflowRepositoryIndex repositoryIndex;
+  private final WorkflowState workflowState;
 
   // internal changes during processing
   private RejectionType rejectionType;
   private String rejectionReason;
 
-  public DeploymentTransformer(final WorkflowRepositoryIndex repositoryIndex) {
-    this.repositoryIndex = repositoryIndex;
+  public DeploymentTransformer(final WorkflowState workflowState) {
+    this.workflowState = workflowState;
   }
 
   public boolean transform(final DeploymentRecord deploymentEvent) {
@@ -113,8 +113,8 @@ public class DeploymentTransformer {
       if (workflow.isExecutable()) {
         final String bpmnProcessId = workflow.getId();
 
-        final long key = repositoryIndex.getNextKey();
-        final int version = repositoryIndex.getNextVersion(bpmnProcessId);
+        final long key = workflowState.getNextWorkflowKey();
+        final int version = workflowState.getNextWorkflowVersion(bpmnProcessId);
 
         deploymentEvent
             .workflows()

@@ -51,6 +51,7 @@ import io.zeebe.transport.ServerTransport;
 /** Tracks leader partitions and installs the workflow instance stream processors */
 public class WorkflowManagerService implements Service<WorkflowManagerService> {
 
+  public static final String WORKFLOW_INSTANCE_PROCESSOR_NAME = "workflow-instance";
   private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
   private final Injector<ClientTransport> managementApiClientInjector = new Injector<>();
   private final Injector<ClientTransport> subscriptionApiClientInjector = new Injector<>();
@@ -152,11 +153,19 @@ public class WorkflowManagerService implements Service<WorkflowManagerService> {
     final TypedStreamEnvironment env =
         new TypedStreamEnvironment(partition.getLogStream(), transport.getOutput());
 
+    final StateStorage stateStorage =
+        partition
+            .getStateStorageFactory()
+            .create(WORKFLOW_INSTANCE_PROCESSOR_ID, WORKFLOW_INSTANCE_PROCESSOR_NAME);
+    final StateSnapshotController snapshotController =
+        streamProcessor.createSnapshotController(stateStorage);
+
     streamProcessorServiceFactory
         .createService(partition, partitionServiceName)
         .processor(streamProcessor.createStreamProcessor(env))
+        .snapshotController(snapshotController)
         .processorId(WORKFLOW_INSTANCE_PROCESSOR_ID)
-        .processorName("workflow-instance")
+        .processorName(WORKFLOW_INSTANCE_PROCESSOR_NAME)
         .build();
   }
 

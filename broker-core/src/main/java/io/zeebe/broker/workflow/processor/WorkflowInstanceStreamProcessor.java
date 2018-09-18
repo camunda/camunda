@@ -42,8 +42,10 @@ import io.zeebe.broker.workflow.processor.instance.WorkflowInstanceRejectedEvent
 import io.zeebe.broker.workflow.processor.job.JobCompletedEventProcessor;
 import io.zeebe.broker.workflow.processor.job.JobCreatedProcessor;
 import io.zeebe.broker.workflow.processor.message.CorrelateWorkflowInstanceSubscription;
-import io.zeebe.broker.workflow.state.WorkflowRepositoryIndex;
+import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.logstreams.state.StateSnapshotController;
+import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
@@ -58,7 +60,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
   private TypedStreamReader streamReader;
   private final WorkflowInstanceSubscriptionDataStore subscriptionStore =
       new WorkflowInstanceSubscriptionDataStore();
-  private final WorkflowRepositoryIndex repositoryIndex = new WorkflowRepositoryIndex();
+  private final WorkflowState workflowState = new WorkflowState();
 
   private final TopologyManager topologyManager;
   private final WorkflowCache workflowCache;
@@ -108,7 +110,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         // this is pretty ugly, but goes away when we switch to rocksdb
         .withStateResource(snapshotSupport)
         .withStateResource(subscriptionStore)
-        .withStateResource(repositoryIndex)
+        .withStateController(workflowState)
         .withListener(this)
         .withListener(
             new StreamProcessorLifecycleAware() {
@@ -120,12 +122,16 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         .build();
   }
 
+  public StateSnapshotController createSnapshotController(final StateStorage storage) {
+    return new StateSnapshotController(workflowState, storage);
+  }
+
   private void addDeploymentStreamProcessors(
       final TypedEventStreamProcessorBuilder streamProcessorBuilder, final int partitionId) {
 
     final TypedRecordProcessor<?> processor =
         Protocol.DEPLOYMENT_PARTITION == partitionId
-            ? new TransformingDeploymentCreateProcessor(this.workflowCache, repositoryIndex)
+            ? new TransformingDeploymentCreateProcessor(this.workflowCache, workflowState)
             : new DeploymentCreateProcessor(this.workflowCache);
 
     streamProcessorBuilder.onCommand(ValueType.DEPLOYMENT, CREATE, processor);
