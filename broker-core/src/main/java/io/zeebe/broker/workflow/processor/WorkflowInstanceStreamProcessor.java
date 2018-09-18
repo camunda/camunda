@@ -31,7 +31,6 @@ import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.processor.OpenWorkflowInstanceSubscriptionProcessor;
 import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionDataStore;
 import io.zeebe.broker.workflow.index.ElementInstanceIndex;
-import io.zeebe.broker.workflow.map.WorkflowCache;
 import io.zeebe.broker.workflow.processor.deployment.DeploymentCreateProcessor;
 import io.zeebe.broker.workflow.processor.deployment.TransformingDeploymentCreateProcessor;
 import io.zeebe.broker.workflow.processor.instance.CancelWorkflowInstanceProcessor;
@@ -60,30 +59,29 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
   private TypedStreamReader streamReader;
   private final WorkflowInstanceSubscriptionDataStore subscriptionStore =
       new WorkflowInstanceSubscriptionDataStore();
-  private final WorkflowState workflowState = new WorkflowState();
 
   private final TopologyManager topologyManager;
-  private final WorkflowCache workflowCache;
+  private final WorkflowState workflowState;
   private final SubscriptionCommandSender subscriptionCommandSender;
   private final Consumer<StreamProcessorContext> onRecoveredCallback;
   private final Runnable onClosedCallback;
 
   public WorkflowInstanceStreamProcessor(
-      final WorkflowCache workflowCache,
+      final WorkflowState workflowState,
       final SubscriptionCommandSender subscriptionCommandSender,
       final TopologyManager topologyManager) {
-    this((ctx) -> {}, () -> {}, workflowCache, subscriptionCommandSender, topologyManager);
+    this((ctx) -> {}, () -> {}, workflowState, subscriptionCommandSender, topologyManager);
   }
 
   public WorkflowInstanceStreamProcessor(
       final Consumer<StreamProcessorContext> onRecoveredCallback,
       final Runnable onClosedCallback,
-      final WorkflowCache workflowCache,
+      final WorkflowState workflowState,
       final SubscriptionCommandSender subscriptionCommandSender,
       final TopologyManager topologyManager) {
     this.onRecoveredCallback = onRecoveredCallback;
     this.onClosedCallback = onClosedCallback;
-    this.workflowCache = workflowCache;
+    this.workflowState = workflowState;
     this.subscriptionCommandSender = subscriptionCommandSender;
     this.topologyManager = topologyManager;
   }
@@ -131,8 +129,8 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
     final TypedRecordProcessor<?> processor =
         Protocol.DEPLOYMENT_PARTITION == partitionId
-            ? new TransformingDeploymentCreateProcessor(this.workflowCache, workflowState)
-            : new DeploymentCreateProcessor(this.workflowCache);
+            ? new TransformingDeploymentCreateProcessor(this.workflowState)
+            : new DeploymentCreateProcessor(this.workflowState);
 
     streamProcessorBuilder.onCommand(ValueType.DEPLOYMENT, CREATE, processor);
   }
@@ -143,7 +141,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         .onCommand(
             ValueType.WORKFLOW_INSTANCE,
             WorkflowInstanceIntent.CREATE,
-            new CreateWorkflowInstanceEventProcessor(workflowCache))
+            new CreateWorkflowInstanceEventProcessor(workflowState))
         .onEvent(
             ValueType.WORKFLOW_INSTANCE,
             WorkflowInstanceIntent.CREATED,
@@ -165,7 +163,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
   private void addBpmnStepProcessor(final TypedEventStreamProcessorBuilder streamProcessorBuilder) {
     final BpmnStepProcessor bpmnStepProcessor =
         new BpmnStepProcessor(
-            scopeInstances, workflowCache, subscriptionCommandSender, subscriptionStore);
+            scopeInstances, workflowState, subscriptionCommandSender, subscriptionStore);
 
     streamProcessorBuilder
         .onEvent(
@@ -222,7 +220,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
                 scopeInstances,
                 subscriptionStore,
                 topologyManager,
-                workflowCache,
+                workflowState,
                 subscriptionCommandSender));
   }
 

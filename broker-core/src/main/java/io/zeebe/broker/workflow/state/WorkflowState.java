@@ -17,9 +17,11 @@
  */
 package io.zeebe.broker.workflow.state;
 
+import io.zeebe.broker.workflow.deployment.data.DeploymentRecord;
 import io.zeebe.logstreams.state.StateController;
 import java.io.File;
-import org.agrona.ExpandableArrayBuffer;
+import java.util.Collection;
+import org.agrona.DirectBuffer;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.RocksDB;
 
@@ -29,23 +31,20 @@ public class WorkflowState extends StateController {
 
   private static final byte[] LATEST_WORKFLOW_KEY = "latestWorkflowKey".getBytes();
 
-  private ExpandableArrayBuffer keyBuffer;
-  private ExpandableArrayBuffer valueBuffer;
-
   private ColumnFamilyHandle workflowKeyHandle;
   private ColumnFamilyHandle workflowVersionHandle;
   private NextValueManager nextValueManager;
+  private WorkflowPersistenceCache workflowPersistenceCache;
 
   @Override
   public RocksDB open(final File dbDirectory, final boolean reopen) throws Exception {
     final RocksDB rocksDB = super.open(dbDirectory, reopen);
-    keyBuffer = new ExpandableArrayBuffer();
-    valueBuffer = new ExpandableArrayBuffer();
 
     workflowKeyHandle = this.createColumnFamily(WORKFLOW_KEY_FAMILY_NAME);
     workflowVersionHandle = this.createColumnFamily(WORKFLOW_VERSION_FAMILY_NAME);
 
     nextValueManager = new NextValueManager(this);
+    workflowPersistenceCache = new WorkflowPersistenceCache(this);
 
     return rocksDB;
   }
@@ -56,5 +55,30 @@ public class WorkflowState extends StateController {
 
   public int getNextWorkflowVersion(String bpmnProcessId) {
     return (int) nextValueManager.getNextValue(workflowVersionHandle, bpmnProcessId.getBytes());
+  }
+
+  public boolean putDeployment(long deploymentKey, DeploymentRecord deploymentRecord) {
+    return workflowPersistenceCache.putDeployment(deploymentKey, deploymentRecord);
+  }
+
+  public DeployedWorkflow getWorkflowByProcessIdAndVersion(
+      DirectBuffer bpmnProcessId, int version) {
+    return workflowPersistenceCache.getWorkflowByProcessIdAndVersion(bpmnProcessId, version);
+  }
+
+  public DeployedWorkflow getWorkflowByKey(long workflowKey) {
+    return workflowPersistenceCache.getWorkflowByKey(workflowKey);
+  }
+
+  public DeployedWorkflow getLatestWorkflowVersionByProcessId(DirectBuffer bpmnProcessId) {
+    return workflowPersistenceCache.getLatestWorkflowVersionByProcessId(bpmnProcessId);
+  }
+
+  public Collection<DeployedWorkflow> getWorkflows() {
+    return workflowPersistenceCache.getWorkflows();
+  }
+
+  public Collection<DeployedWorkflow> getWorkflowsByBpmnProcessId(DirectBuffer processId) {
+    return workflowPersistenceCache.getWorkflowsByBpmnProcessId(processId);
   }
 }

@@ -17,8 +17,8 @@
  */
 package io.zeebe.broker.workflow.repository;
 
-import io.zeebe.broker.workflow.map.DeployedWorkflow;
-import io.zeebe.broker.workflow.map.WorkflowCache;
+import io.zeebe.broker.workflow.state.DeployedWorkflow;
+import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -29,11 +29,11 @@ import org.agrona.DirectBuffer;
 
 public class WorkflowRepositoryService implements Service<WorkflowRepositoryService> {
   private final ActorControl actor;
-  private final WorkflowCache workflowCache;
+  private final WorkflowState workflowState;
 
-  public WorkflowRepositoryService(final ActorControl actor, final WorkflowCache workflowCache) {
+  public WorkflowRepositoryService(final ActorControl actor, final WorkflowState workflowState) {
     this.actor = actor;
-    this.workflowCache = workflowCache;
+    this.workflowState = workflowState;
   }
 
   @Override
@@ -44,7 +44,7 @@ public class WorkflowRepositoryService implements Service<WorkflowRepositoryServ
   public ActorFuture<WorkflowMetadataAndResource> getWorkflowByKey(final long key) {
     return actor.call(
         () -> {
-          final DeployedWorkflow deployedWorkflow = workflowCache.getWorkflowByKey(key);
+          final DeployedWorkflow deployedWorkflow = workflowState.getWorkflowByKey(key);
 
           if (deployedWorkflow == null) {
             return null;
@@ -59,7 +59,7 @@ public class WorkflowRepositoryService implements Service<WorkflowRepositoryServ
     return actor.call(
         () -> {
           final DeployedWorkflow deployedWorkflow =
-              workflowCache.getLatestWorkflowVersionByProcessId(bpmnProcessId);
+              workflowState.getLatestWorkflowVersionByProcessId(bpmnProcessId);
           if (deployedWorkflow == null) {
             return null;
           }
@@ -73,7 +73,7 @@ public class WorkflowRepositoryService implements Service<WorkflowRepositoryServ
     return actor.call(
         () -> {
           final DeployedWorkflow deployedWorkflow =
-              workflowCache.getWorkflowByProcessIdAndVersion(bpmnProcessId, version);
+              workflowState.getWorkflowByProcessIdAndVersion(bpmnProcessId, version);
           if (deployedWorkflow == null) {
             return null;
           }
@@ -85,7 +85,7 @@ public class WorkflowRepositoryService implements Service<WorkflowRepositoryServ
   public ActorFuture<List<WorkflowMetadata>> getWorkflows() {
     return actor.call(
         () -> {
-          final Collection<DeployedWorkflow> workflows = workflowCache.getWorkflows();
+          final Collection<DeployedWorkflow> workflows = workflowState.getWorkflows();
 
           if (workflows == null || workflows.isEmpty()) {
             return null;
@@ -100,7 +100,7 @@ public class WorkflowRepositoryService implements Service<WorkflowRepositoryServ
     return actor.call(
         () -> {
           final Collection<DeployedWorkflow> workflows =
-              workflowCache.getWorkflowsByBpmnProcessId(bpmnProcessId);
+              workflowState.getWorkflowsByBpmnProcessId(bpmnProcessId);
 
           if (workflows == null || workflows.isEmpty()) {
             return null;

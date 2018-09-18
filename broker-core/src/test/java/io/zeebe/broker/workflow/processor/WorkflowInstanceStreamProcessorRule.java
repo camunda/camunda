@@ -35,7 +35,7 @@ import io.zeebe.broker.util.StreamProcessorRule;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.broker.workflow.deployment.data.DeploymentRecord;
 import io.zeebe.broker.workflow.deployment.data.ResourceType;
-import io.zeebe.broker.workflow.map.WorkflowCache;
+import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.Process;
@@ -46,17 +46,20 @@ import io.zeebe.util.buffer.BufferUtil;
 import java.io.ByteArrayOutputStream;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.Rule;
 import org.junit.rules.ExternalResource;
+import org.junit.rules.TemporaryFolder;
 
 public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
 
+  @Rule public TemporaryFolder folder = new TemporaryFolder();
   private final StreamProcessorRule environmentRule;
 
   private SubscriptionCommandSender mockSubscriptionCommandSender;
   private TopologyManager mockTopologyManager;
 
   private StreamProcessorControl streamProcessor;
-  private WorkflowCache workflowCache;
+  private WorkflowState workflowState;
 
   public WorkflowInstanceStreamProcessorRule(StreamProcessorRule streamProcessorRule) {
     this.environmentRule = streamProcessorRule;
@@ -70,7 +73,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
   protected void before() throws Throwable {
     mockSubscriptionCommandSender = mock(SubscriptionCommandSender.class);
     mockTopologyManager = mock(TopologyManager.class);
-    workflowCache = new WorkflowCache();
+    workflowState = new WorkflowState();
 
     when(mockSubscriptionCommandSender.hasPartitionIds()).thenReturn(true);
     when(mockSubscriptionCommandSender.openMessageSubscription(anyLong(), anyLong(), any(), any()))
@@ -84,7 +87,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
             env -> {
               final WorkflowInstanceStreamProcessor streamProcessor =
                   new WorkflowInstanceStreamProcessor(
-                      workflowCache, mockSubscriptionCommandSender, mockTopologyManager);
+                      workflowState, mockSubscriptionCommandSender, mockTopologyManager);
 
               return streamProcessor.createStreamProcessor(env);
             });
@@ -125,7 +128,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
         .setBpmnProcessId(BufferUtil.wrapString(process.getId()))
         .setVersion(1);
 
-    workflowCache.addWorkflow(1, record);
+    workflowState.putDeployment(1, record);
   }
 
   public TypedRecord<WorkflowInstanceRecord> createWorkflowInstance(final String processId) {

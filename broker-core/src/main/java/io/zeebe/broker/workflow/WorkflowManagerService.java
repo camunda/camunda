@@ -32,11 +32,11 @@ import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.transport.controlmessage.ControlMessageHandlerManager;
 import io.zeebe.broker.workflow.deployment.distribute.processor.DistributionStreamProcessor;
-import io.zeebe.broker.workflow.map.WorkflowCache;
 import io.zeebe.broker.workflow.processor.WorkflowInstanceStreamProcessor;
 import io.zeebe.broker.workflow.repository.GetWorkflowControlMessageHandler;
 import io.zeebe.broker.workflow.repository.ListWorkflowsControlMessageHandler;
 import io.zeebe.broker.workflow.repository.WorkflowRepositoryService;
+import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.protocol.Protocol;
@@ -142,14 +142,14 @@ public class WorkflowManagerService implements Service<WorkflowManagerService> {
       final Partition partition, final ServiceName<Partition> partitionServiceName) {
     final ServerTransport transport = clientApiTransportInjector.getValue();
 
-    final WorkflowCache workflowCache = new WorkflowCache();
+    final WorkflowState workflowState = new WorkflowState();
 
     final SubscriptionCommandSender subscriptionCommandSender =
         new SubscriptionCommandSender(clusterCfg, subscriptionApiClientInjector.getValue());
 
     final WorkflowInstanceStreamProcessor streamProcessor =
         createWorkflowStreamProcessor(
-            partition, partitionServiceName, workflowCache, subscriptionCommandSender);
+            partition, partitionServiceName, workflowState, subscriptionCommandSender);
     final TypedStreamEnvironment env =
         new TypedStreamEnvironment(partition.getLogStream(), transport.getOutput());
 
@@ -172,7 +172,7 @@ public class WorkflowManagerService implements Service<WorkflowManagerService> {
   private WorkflowInstanceStreamProcessor createWorkflowStreamProcessor(
       final Partition partition,
       final ServiceName<Partition> partitionServiceName,
-      final WorkflowCache workflowCache,
+      final WorkflowState workflowState,
       final SubscriptionCommandSender subscriptionCommandSender) {
     final WorkflowInstanceStreamProcessor streamProcessor;
     if (Protocol.DEPLOYMENT_PARTITION == partition.getInfo().getPartitionId()) {
@@ -180,7 +180,7 @@ public class WorkflowManagerService implements Service<WorkflowManagerService> {
           new WorkflowInstanceStreamProcessor(
               ctx -> {
                 final WorkflowRepositoryService workflowRepositoryService =
-                    new WorkflowRepositoryService(ctx.getActorControl(), workflowCache);
+                    new WorkflowRepositoryService(ctx.getActorControl(), workflowState);
 
                 startContext
                     .createService(WORKFLOW_REPOSITORY_SERVICE, workflowRepositoryService)
@@ -196,13 +196,13 @@ public class WorkflowManagerService implements Service<WorkflowManagerService> {
                 getWorkflowMessageHandler.setWorkflowRepositoryService(null);
                 listWorkflowsControlMessageHandler.setWorkflowRepositoryService(null);
               },
-              workflowCache,
+              workflowState,
               subscriptionCommandSender,
               topologyManager);
     } else {
       streamProcessor =
           new WorkflowInstanceStreamProcessor(
-              workflowCache, subscriptionCommandSender, topologyManager);
+              workflowState, subscriptionCommandSender, topologyManager);
     }
     return streamProcessor;
   }

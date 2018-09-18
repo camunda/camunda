@@ -29,7 +29,6 @@ import io.zeebe.broker.util.StreamProcessorRule;
 import io.zeebe.broker.workflow.deployment.data.DeploymentRecord;
 import io.zeebe.broker.workflow.deployment.data.ResourceType;
 import io.zeebe.broker.workflow.deployment.transform.DeploymentTransformer;
-import io.zeebe.broker.workflow.map.WorkflowCache;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -41,13 +40,10 @@ import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 public class DeploymentCreateProcessorTest {
-  @Rule public TemporaryFolder folder = new TemporaryFolder();
-
   @Rule
   public StreamProcessorRule rule = new StreamProcessorRule(Protocol.DEPLOYMENT_PARTITION + 1);
 
@@ -56,19 +52,16 @@ public class DeploymentCreateProcessorTest {
 
   private StreamProcessorControl streamProcessor;
   private WorkflowInstanceStreamProcessor workflowInstanceStreamProcessor;
-  private WorkflowCache workflowCache;
   private WorkflowState workflowState;
 
   @Before
   public void setUp() throws Exception {
     MockitoAnnotations.initMocks(this);
 
-    workflowCache = new WorkflowCache();
     workflowState = new WorkflowState();
-    workflowState.open(folder.newFolder("rocksdb"), false);
     workflowInstanceStreamProcessor =
         new WorkflowInstanceStreamProcessor(
-            workflowCache, mockSubscriptionCommandSender, topologyManager);
+            workflowState, mockSubscriptionCommandSender, topologyManager);
 
     streamProcessor =
         rule.initStreamProcessor(env -> workflowInstanceStreamProcessor.createStreamProcessor(env));
@@ -147,8 +140,14 @@ public class DeploymentCreateProcessorTest {
   }
 
   private void creatingDeployment(final long key) {
+    final DeploymentRecord deploymentRecord = creatingDeploymentRecord(workflowState);
+
+    rule.writeCommand(key, DeploymentIntent.CREATE, deploymentRecord);
+  }
+
+  public static DeploymentRecord creatingDeploymentRecord(WorkflowState workflowState) {
     final BpmnModelInstance modelInstance =
-        Bpmn.createExecutableProcess()
+        Bpmn.createExecutableProcess("processId")
             .startEvent()
             .serviceTask(
                 "test",
@@ -169,7 +168,6 @@ public class DeploymentCreateProcessorTest {
     final DeploymentTransformer deploymentTransformer = new DeploymentTransformer(workflowState);
 
     deploymentTransformer.transform(deploymentRecord);
-
-    rule.writeCommand(key, DeploymentIntent.CREATE, deploymentRecord);
+    return deploymentRecord;
   }
 }
