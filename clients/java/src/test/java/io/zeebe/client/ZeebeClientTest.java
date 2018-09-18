@@ -18,11 +18,11 @@ package io.zeebe.client;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertTrue;
 
-import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.commands.BrokerInfo;
 import io.zeebe.client.api.commands.PartitionBrokerRole;
 import io.zeebe.client.api.events.DeploymentEvent;
+import io.zeebe.client.util.TestEnvironmentRule;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
@@ -33,16 +33,13 @@ import org.junit.Test;
 
 public class ZeebeClientTest {
 
-  @Rule public EmbeddedBrokerRule rule = new EmbeddedBrokerRule();
+  @Rule public TestEnvironmentRule rule = new TestEnvironmentRule();
 
   private ZeebeClient client;
 
   @Before
   public void setUp() {
-    client =
-        ZeebeClient.newClientBuilder()
-            .brokerContactPoint(rule.getGatewayAddress().toString())
-            .build();
+    client = rule.getClient();
   }
 
   @Test
@@ -121,5 +118,11 @@ public class ZeebeClientTest {
               assertThat(workflow.getVersion()).isEqualTo(1);
               assertTrue(workflowKeys.contains(workflow.getWorkflowKey()));
             });
+  }
+
+  @Test
+  public void shouldNotFailIfClosedTwice() {
+    client.close();
+    client.close();
   }
 }

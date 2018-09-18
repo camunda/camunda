@@ -20,8 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.util.TestEnvironmentRule;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.MessageRecordValue;
 import io.zeebe.protocol.intent.MessageIntent;
@@ -35,16 +35,13 @@ import org.junit.Rule;
 import org.junit.Test;
 
 public class PublishMessageTest {
-  @Rule public EmbeddedBrokerRule rule = new EmbeddedBrokerRule();
+  @Rule public TestEnvironmentRule rule = new TestEnvironmentRule();
 
   private ZeebeClient client;
 
   @Before
   public void setUp() {
-    client =
-        ZeebeClient.newClientBuilder()
-            .brokerContactPoint(rule.getGatewayAddress().toString())
-            .build();
+    client = rule.getClient();
   }
 
   @Test
