@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import {PLACEHOLDER} from './constants';
+import {EMPTY_PLACEHOLDER} from './constants';
 import * as Styled from './styled';
 
 export default class InstancePayload extends React.Component {
@@ -14,7 +14,7 @@ export default class InstancePayload extends React.Component {
       <Styled.InstancePayload>
         <Styled.PayloadContent>
           {!this.props.payload ? (
-            <Styled.Placeholder>{PLACEHOLDER}</Styled.Placeholder>
+            <Styled.Placeholder>{EMPTY_PLACEHOLDER}</Styled.Placeholder>
           ) : (
             <Styled.Table>
               <thead>

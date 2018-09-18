@@ -81,7 +81,10 @@ describe('InstanceEvents', () => {
   it('should render empty events container by default', () => {
     // given
     const node = shallow(
-      <InstanceEvents onEventRowChanged={mockProps.onEventRowChanged} />
+      <InstanceEvents
+        groupedEvents={[]}
+        onEventRowChanged={mockProps.onEventRowChanged}
+      />
     );
 
     // then

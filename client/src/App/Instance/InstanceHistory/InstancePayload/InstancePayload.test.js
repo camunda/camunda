@@ -2,7 +2,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import InstancePayload from './InstancePayload';
-import {PLACEHOLDER} from './constants';
+import {EMPTY_PLACEHOLDER} from './constants';
 import * as Styled from './styled';
 
 const PAYLOAD = {
@@ -17,7 +17,7 @@ describe('InstancePayload', () => {
     const node = shallow(<InstancePayload payload={null} />);
 
     // then
-    expect(node.contains(PLACEHOLDER)).toBe(true);
+    expect(node.contains(EMPTY_PLACEHOLDER)).toBe(true);
     expect(node).toMatchSnapshot();
   });
 
@@ -26,7 +26,7 @@ describe('InstancePayload', () => {
     const node = shallow(<InstancePayload payload={PAYLOAD} />);
 
     // then
-    expect(node.contains(PLACEHOLDER)).toBe(false);
+    expect(node.contains(EMPTY_PLACEHOLDER)).toBe(false);
 
     // TH nodes
     const THNodes = node.find(Styled.TH);

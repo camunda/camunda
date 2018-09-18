@@ -21,8 +21,8 @@ export default class InstanceHistory extends React.Component {
   };
 
   state = {
-    events: null,
-    groupedEvents: null,
+    events: [],
+    groupedEvents: [],
     selectedEventRow: {
       key: null,
       payload: null
@@ -38,7 +38,7 @@ export default class InstanceHistory extends React.Component {
     const {activitiesDetails, selectedActivityInstanceId} = this.props;
     const {events} = this.state;
 
-    if (isEmpty(activitiesDetails) || !events) {
+    if (isEmpty(activitiesDetails) || !events.length) {
       return;
     }
 

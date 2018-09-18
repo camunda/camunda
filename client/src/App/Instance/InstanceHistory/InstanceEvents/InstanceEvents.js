@@ -9,9 +9,9 @@ import * as Styled from './styled';
 
 export default class InstanceEvents extends React.Component {
   static propTypes = {
-    groupedEvents: PropTypes.array,
-    selectedEventRow: PropTypes.object,
-    onEventRowChanged: PropTypes.func.isRequired
+    groupedEvents: PropTypes.array.isRequired,
+    onEventRowChanged: PropTypes.func.isRequired,
+    selectedEventRow: PropTypes.object
   };
 
   /**
@@ -141,9 +141,7 @@ export default class InstanceEvents extends React.Component {
     return (
       <Styled.InstanceEvents {...this.props}>
         <Styled.EventsContainer>
-          {this.props.groupedEvents
-            ? this.props.groupedEvents.map(this.renderGroup)
-            : null}
+          {this.props.groupedEvents.map(this.renderGroup)}
         </Styled.EventsContainer>
       </Styled.InstanceEvents>
     );

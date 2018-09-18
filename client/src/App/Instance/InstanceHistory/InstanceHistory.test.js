@@ -69,8 +69,8 @@ describe('InstanceHistory', () => {
 
     // then
     expect(instance.state).toEqual({
-      events: null,
-      groupedEvents: null,
+      events: [],
+      groupedEvents: [],
       selectedEventRow: {
         key: null,
         payload: null
