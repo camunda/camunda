@@ -21,7 +21,9 @@ public class MsgPackTreeNodeIdConstructor {
   public static final String JSON_PATH_SEPARATOR_END = "]";
 
   public static String construct(String parentId, String nodeName) {
-    return parentId + JSON_PATH_SEPARATOR + nodeName + JSON_PATH_SEPARATOR_END;
+    return parentId.isEmpty()
+        ? nodeName
+        : parentId + JSON_PATH_SEPARATOR + nodeName + JSON_PATH_SEPARATOR_END;
   }
 
   public static String getLastParentId(String nodeId) {

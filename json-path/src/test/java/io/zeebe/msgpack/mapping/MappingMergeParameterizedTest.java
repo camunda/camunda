@@ -848,6 +848,36 @@ public class MappingMergeParameterizedTest {
             // expected result
             "{'array':[1]}"
           },
+          {
+            // source
+            "{'in':1}",
+            // target
+            "{'array':'bar'}",
+            // mapping
+            createMapping("$.in", "$.array", Mapping.Type.COLLECT),
+            // expected result
+            "{'array':[1]}"
+          },
+          {
+            // source
+            "{'key':'newVal'}",
+            // target
+            "{'arr':[], 'key':'val'}",
+            // mapping
+            createMapping("$.key", "$.key"),
+            // expected result
+            "{'arr':[], 'key':'newVal'}"
+          },
+          {
+            // source
+            "{'key':'newVal'}",
+            // target
+            "{'obj':{}, 'key':'val'}",
+            // mapping
+            createMapping("$.key", "$.key"),
+            // expected result
+            "{'obj':{}, 'key':'newVal'}"
+          },
         });
   }
 

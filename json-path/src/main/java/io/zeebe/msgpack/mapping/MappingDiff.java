@@ -17,15 +17,11 @@ package io.zeebe.msgpack.mapping;
 
 import static io.zeebe.msgpack.mapping.MsgPackTreeNodeIdConstructor.construct;
 
-import io.zeebe.msgpack.jsonpath.JsonPathToken;
-import io.zeebe.msgpack.jsonpath.JsonPathTokenVisitor;
-import io.zeebe.msgpack.jsonpath.JsonPathTokenizer;
-import java.util.Set;
 import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 
-public class MappingDiff implements MsgPackDiff, JsonPathTokenVisitor {
+public class MappingDiff implements MsgPackDiff {
 
   private static final int RESULT_ENTRY_LENGTH = 2 * BitUtil.SIZE_OF_INT;
 
@@ -33,13 +29,9 @@ public class MappingDiff implements MsgPackDiff, JsonPathTokenVisitor {
   private DirectBuffer document;
   private final ExpandableArrayBuffer mappingResults = new ExpandableArrayBuffer();
 
-  private final JsonPathTokenizer tokenizer = new JsonPathTokenizer();
-
   public void init(Mapping[] mappings, DirectBuffer document) {
     this.mappings = mappings;
     this.document = document;
-    this.parentId = "";
-    this.nodeId = "";
   }
 
   public int getResultOffset(int mappingIndex) {
@@ -62,60 +54,6 @@ public class MappingDiff implements MsgPackDiff, JsonPathTokenVisitor {
     mappingResults.putInt(mapToResultIndex(mappingIndex) + BitUtil.SIZE_OF_INT, length);
   }
 
-  private String nodeId;
-  private String parentId;
-  private int ourDocumentId;
-  private MsgPackTree treeToMergeInto;
-
-  @Override
-  public void visit(
-      JsonPathToken type, DirectBuffer valueBuffer, int valueOffset, int valueLength) {
-
-    if (type == JsonPathToken.LITERAL || type == JsonPathToken.ROOT_OBJECT) {
-      final String nodeName = valueBuffer.getStringWithoutLengthUtf8(valueOffset, valueLength);
-      nodeId = createParentRelation(treeToMergeInto, parentId, nodeName);
-      parentId = nodeId;
-    }
-  }
-
-  /**
-   * Creates the parent relation for the given node.
-   *
-   * <p>If the nodeName is an integer, this indicates that the parent node is an array, the nodeName
-   * is in this case the index in the array. For that the a array parent node will be created and
-   * the node will be added as child.
-   *
-   * <p>Is the nodeName not a integer this means the parent is a map (or if the parent is empty the
-   * current node is root which has no parent). A map parent node is added and the current node will
-   * added to the map node.
-   *
-   * <p>Returns the constructed new node id for the current node.
-   *
-   * @param parentId the id of the parent
-   * @param nodeName the name of the current node
-   * @return the new node id consist of the parent id and the node name
-   */
-  private String createParentRelation(MsgPackTree tree, String parentId, String nodeName) {
-    final String nodeId;
-
-    if (parentId.isEmpty()) {
-      nodeId = nodeName;
-    } else {
-      final boolean isIndex = isIndex(nodeName);
-
-      if (isIndex) {
-        if (!tree.isMapNode(parentId)) {
-          tree.addArrayNode(parentId);
-        }
-      } else {
-        tree.addMapNode(parentId);
-      }
-      nodeId = construct(parentId, nodeName);
-      tree.addChildToNode(nodeName, parentId);
-    }
-    return nodeId;
-  }
-
   private boolean isIndex(String nodeName) {
     final int len = nodeName.length();
     for (int i = 0; i < len; i++) {
@@ -129,46 +67,73 @@ public class MappingDiff implements MsgPackDiff, JsonPathTokenVisitor {
 
   @Override
   public void mergeInto(MsgPackTree document) {
-    ourDocumentId = document.addDocument(this.document);
-    this.treeToMergeInto = document;
+    final int ourDocumentId = document.addDocument(this.document);
 
     for (int i = 0; i < mappings.length; i++) {
       final Mapping mapping = mappings[i];
-      final DirectBuffer targetQueryString = mapping.getTargetQueryBuffer();
+      final String[] targetPathElements = mapping.getTargetPointer().getPathElements();
 
-      // TODO: not great
-      parentId = "";
-      nodeId = "";
+      String parentId = "";
 
-      /*
-       * Optimization idea: Tokenization of the target query should be done only
-       *   once when the mapping is created
-       */
+      for (int j = 0; j < targetPathElements.length; j++) {
+        final String nodeName = targetPathElements[j];
 
-      // creates the structure for intermediary nodes
-      tokenizer.tokenize(targetQueryString, 0, targetQueryString.capacity(), this);
+        if (j == targetPathElements.length - 1) {
+          final int valueOffset = getResultOffset(i);
+          final int valueLength = getResultLength(i);
 
-      switch (mapping.getType()) {
-        case COLLECT:
-          // TODO: ugly, need more high-level methods on MsgPackTree
-          parentId = nodeId;
+          mergeValueInto(
+              document,
+              parentId,
+              nodeName,
+              mapping.getType(),
+              ourDocumentId,
+              valueOffset,
+              valueLength);
 
-          if (document.isMapNode(parentId)) {
-            document.removeContainerNode(parentId);
-          }
-          document.addArrayNode(parentId);
-
-          final Set<String> numChildren = document.getChilds(nodeId);
-          final String nodeName = Integer.toString(numChildren.size());
-          nodeId = construct(parentId, nodeName);
-          document.addChildToNode(nodeName, parentId);
-          document.addLeafNode(nodeId, ourDocumentId, getResultOffset(i), getResultLength(i));
-          break;
-        case PUT:
-        default:
-          document.addLeafNode(nodeId, ourDocumentId, getResultOffset(i), getResultLength(i));
-          break;
+        } else {
+          parentId = mergeContainerInto(document, parentId, nodeName, targetPathElements[j + 1]);
+        }
       }
+    }
+  }
+
+  private String mergeContainerInto(
+      MsgPackTree document, String parentId, String nodeName, String nextPathElement) {
+
+    final String nodeId = construct(parentId, nodeName);
+
+    if (document.hasNode(nodeId)) {
+      if (!isIndex(nextPathElement)) {
+        document.convertToMapNode(nodeId);
+      }
+
+      return nodeId;
+    } else {
+      if (isIndex(nextPathElement)) {
+        return document.addArrayNode(parentId, nodeName);
+      } else {
+        return document.addMapNode(parentId, nodeName);
+      }
+    }
+  }
+
+  private void mergeValueInto(
+      MsgPackTree document,
+      String parentId,
+      String nodeName,
+      Mapping.Type mappingType,
+      int documentId,
+      int valueOffset,
+      int valueLength) {
+    switch (mappingType) {
+      case COLLECT:
+        document.appendToArray(parentId, nodeName, documentId, valueOffset, valueLength);
+        break;
+      case PUT:
+      default:
+        document.addValueNode(parentId, nodeName, documentId, valueOffset, valueLength);
+        break;
     }
   }
 }

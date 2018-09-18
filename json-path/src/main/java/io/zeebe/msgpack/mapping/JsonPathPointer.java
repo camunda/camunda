@@ -15,19 +15,22 @@
  */
 package io.zeebe.msgpack.mapping;
 
-import io.zeebe.util.ByteUnit;
-import org.openjdk.jmh.annotations.Scope;
-import org.openjdk.jmh.annotations.Setup;
-import org.openjdk.jmh.annotations.State;
+import java.util.Arrays;
 
-@State(Scope.Thread)
-public class MappingCtx {
-  public MsgPackMergeTool processor;
-  public Mapping[] rootMappings;
+public class JsonPathPointer {
 
-  @Setup
-  public void setup() {
-    processor = new MsgPackMergeTool((int) ByteUnit.KILOBYTES.toBytes(16));
-    rootMappings = MappingBuilder.createMapping("$", "$");
+  private final String[] pathElements;
+
+  public JsonPathPointer(String[] pathElements) {
+    this.pathElements = pathElements;
+  }
+
+  public String[] getPathElements() {
+    return pathElements;
+  }
+
+  @Override
+  public String toString() {
+    return Arrays.toString(pathElements);
   }
 }

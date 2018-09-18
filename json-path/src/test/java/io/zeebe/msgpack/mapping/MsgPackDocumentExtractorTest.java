@@ -119,7 +119,7 @@ public class MsgPackDocumentExtractorTest {
     diff.mergeInto(extractTree);
 
     // then extractTree root is leaf
-    assertThat(extractTree.isLeaf("$")).isTrue();
+    assertThat(extractTree.isValueNode("$")).isTrue();
 
     // and value is expected as
     final Map<String, Object> json = new HashMap<>();

@@ -20,6 +20,7 @@ package io.zeebe.msgpack.mapping;
  * MsgPackTree}.
  */
 public enum MsgPackNodeType {
-  MAP_NODE,
-  ARRAY_NODE,
+  MAP,
+  ARRAY,
+  VALUE;
 }

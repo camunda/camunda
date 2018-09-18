@@ -112,7 +112,7 @@ public class MappingTestUtil {
 
   private static void assertChildNodes(
       MsgPackTree msgPackTree, String nodeId, int childCount, String[] childs) {
-    final Set<String> arrayValues = msgPackTree.getChilds(nodeId);
+    final Set<String> arrayValues = msgPackTree.getChildren(nodeId);
     assertThat(arrayValues.size()).isEqualTo(childCount);
     for (String child : childs) {
       assertThat(arrayValues.contains(child)).isTrue();
@@ -121,10 +121,10 @@ public class MappingTestUtil {
 
   public static void assertThatIsLeafNode(
       MsgPackTree msgPackTree, String leafId, byte[] expectedBytes) {
-    assertThat(msgPackTree.isLeaf(leafId)).isTrue();
+    assertThat(msgPackTree.isValueNode(leafId)).isTrue();
 
     WRITER.wrap(WRITE_BUFFER, 0);
-    msgPackTree.writeLeafMapping(WRITER, leafId);
+    msgPackTree.writeValueNode(WRITER, leafId);
 
     assertThat(WRITER.getOffset()).isEqualTo(expectedBytes.length);
     assertThat(WRITE_BUFFER.byteArray()).startsWith(expectedBytes);
