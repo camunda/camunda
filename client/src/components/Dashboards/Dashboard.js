@@ -74,6 +74,12 @@ export default themed(
         await this.renderDashboard();
       };
 
+      componentWillUnmount = () => {
+        if (this.props.theme === 'dark') {
+          this.props.toggleTheme();
+        }
+      };
+
       renderDashboard = async () => {
         await this.props.mightFail(
           loadDashboard(this.id),

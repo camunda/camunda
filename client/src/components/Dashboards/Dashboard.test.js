@@ -277,6 +277,20 @@ it('should return to light mode when exiting fullscreen mode', () => {
   expect(spy).toHaveBeenCalled();
 });
 
+it('should return to light mode when the component is unmounted', async () => {
+  const spy = jest.fn();
+  const node = mount(shallow(<Dashboard {...props} />).get(0));
+
+  await node.instance().componentDidMount();
+
+  node.setState({loaded: true, fullScreenActive: true});
+  node.setProps({toggleTheme: spy, theme: 'dark'});
+
+  node.unmount();
+
+  expect(spy).toHaveBeenCalled();
+});
+
 describe('edit mode', async () => {
   it('should provide a link to view mode', () => {
     props.match.params.viewMode = 'edit';
