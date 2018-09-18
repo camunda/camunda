@@ -22,6 +22,7 @@ import io.zeebe.util.buffer.BufferWriter;
 import java.io.File;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.function.BiConsumer;
 import org.agrona.CloseHelper;
@@ -34,6 +35,7 @@ import org.rocksdb.ChecksumType;
 import org.rocksdb.ClockCache;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
+import org.rocksdb.ColumnFamilyOptions;
 import org.rocksdb.Env;
 import org.rocksdb.Filter;
 import org.rocksdb.MemTableConfig;
@@ -79,6 +81,7 @@ public class StateController implements AutoCloseable {
             createOptions().setErrorIfExists(!reopen).setCreateIfMissing(!reopen);
         closeables.add(options);
         db = openDB(options);
+        closeables.add(db);
         isOpened = true;
 
         this.nativeHandle_ = (long) RocksDbInternal.rocksDbNativeHandle.get(db);
@@ -94,7 +97,12 @@ public class StateController implements AutoCloseable {
   }
 
   protected ColumnFamilyHandle createColumnFamily(byte[] name) throws Exception {
-    final ColumnFamilyHandle columnFamily = db.createColumnFamily(new ColumnFamilyDescriptor(name));
+    final ColumnFamilyOptions columnFamilyOptions = new ColumnFamilyOptions();
+    closeables.add(0, columnFamilyOptions);
+
+    final ColumnFamilyDescriptor columnFamilyDescriptor =
+        new ColumnFamilyDescriptor(name, columnFamilyOptions);
+    final ColumnFamilyHandle columnFamily = db.createColumnFamily(columnFamilyDescriptor);
     closeables.add(columnFamily);
     return columnFamily;
   }
@@ -146,25 +154,20 @@ public class StateController implements AutoCloseable {
   }
 
   public void delete(final File dbDirectory) throws Exception {
-    if (isOpened && this.dbDirectory == dbDirectory) {
+    final boolean shouldWeClose = isOpened && this.dbDirectory.equals(dbDirectory);
+    if (shouldWeClose) {
       close();
     }
 
-    try (final Options options = createOptions()) {
+    try (Options options = createOptions()) {
       RocksDB.destroyDB(dbDirectory.toString(), options);
-    } finally {
-      closeables.forEach(CloseHelper::quietClose);
     }
   }
 
   @Override
   public void close() {
-    if (db != null) {
-      db.close();
-      db = null;
-    }
-
-    closeables.forEach(CloseHelper::quietClose);
+    Collections.reverse(closeables);
+    closeables.forEach(CloseHelper::close);
     closeables.clear();
 
     LOG.trace("Closed RocksDB {}", dbDirectory);
@@ -420,7 +423,7 @@ public class StateController implements AutoCloseable {
 
   public void foreach(
       final ColumnFamilyHandle handle, final BiConsumer<byte[], byte[]> keyValueConsumer) {
-    try (final RocksIterator rocksIterator = getDb().newIterator(handle)) {
+    try (RocksIterator rocksIterator = getDb().newIterator(handle)) {
       rocksIterator.seekToFirst();
       while (rocksIterator.isValid()) {
         keyValueConsumer.accept(rocksIterator.key(), rocksIterator.value());
@@ -430,7 +433,7 @@ public class StateController implements AutoCloseable {
   }
 
   public void foreach(final byte[] startAt, final BiConsumer<byte[], byte[]> keyValueConsumer) {
-    try (final RocksIterator rocksIterator = getDb().newIterator()) {
+    try (RocksIterator rocksIterator = getDb().newIterator()) {
       rocksIterator.seek(startAt);
       while (rocksIterator.isValid()) {
         keyValueConsumer.accept(rocksIterator.key(), rocksIterator.value());
@@ -440,7 +443,7 @@ public class StateController implements AutoCloseable {
   }
 
   public void foreach(final BiConsumer<byte[], byte[]> keyValueConsumer) {
-    try (final RocksIterator rocksIterator = getDb().newIterator()) {
+    try (RocksIterator rocksIterator = getDb().newIterator()) {
       rocksIterator.seekToFirst();
       while (rocksIterator.isValid()) {
         keyValueConsumer.accept(rocksIterator.key(), rocksIterator.value());
