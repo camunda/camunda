@@ -31,23 +31,19 @@ export default class PartHighlight extends React.Component {
     return nested;
   };
 
-  getNodesBetween = (start, end) => {
+  constructReachabilityGraphFrom = (start, end) => {
     const boundaries = this.getBoundaries();
-    const reachableNodes = [];
-
-    const registry = this.props.viewer.get('elementRegistry');
-
-    const graph = {};
     const unprocessed = [start];
+    const graph = {};
 
-    // phase 1: construct reachability graph from start node
     while (unprocessed.length > 0) {
       const current = unprocessed.shift();
 
-      const boundary = boundaries.find(({attachedToRef}) => attachedToRef === current);
-      if (boundary) {
+      const boundariesOnCurrent = boundaries.filter(({attachedToRef}) => attachedToRef === current);
+      boundariesOnCurrent.forEach(boundary => {
         unprocessed.push(boundary);
-      }
+        graph[boundary.id] = [{node: current.id}];
+      });
 
       current.outgoing &&
         current.outgoing.forEach(connection => {
@@ -65,7 +61,17 @@ export default class PartHighlight extends React.Component {
         });
     }
 
-    // phase 2: use backlinks from end node to find nodes between start and end
+    return graph;
+  };
+
+  getNodesBetween = (start, end) => {
+    const reachableNodes = [];
+
+    const registry = this.props.viewer.get('elementRegistry');
+
+    const graph = this.constructReachabilityGraphFrom(start, end);
+
+    // use backlinks from end node to find nodes between start and end
     if (graph[end.id]) {
       const unprocessed = [end.id];
 
@@ -117,9 +123,17 @@ export default class PartHighlight extends React.Component {
         reachableNodes.push(...this.getNestedNodes(current));
       }
 
-      const boundary = boundaries.find(({attachedToRef}) => attachedToRef === current);
-      if (boundary) {
-        unprocessed.push(boundary);
+      if (mode === 'after') {
+        const boundariesOnCurrent = boundaries.filter(
+          ({attachedToRef}) => attachedToRef === current
+        );
+        boundariesOnCurrent.forEach(boundary => {
+          unprocessed.push(boundary);
+        });
+      }
+
+      if (current.$instanceOf('bpmn:BoundaryEvent') && mode === 'before') {
+        unprocessed.push(current.attachedToRef);
       }
 
       current[direction] &&
@@ -187,6 +201,12 @@ export default class PartHighlight extends React.Component {
         const nestedInEnd = this.getNestedNodes(nodes[1]);
         if (!nestedInEnd.includes(nodes[0].id)) {
           reachableNodes.push(...nestedInEnd);
+        }
+
+        // add all nested nodes of the selected start, except if the end is inside the start
+        const nestedInStart = this.getNestedNodes(nodes[0]);
+        if (!nestedInStart.includes(nodes[1].id)) {
+          reachableNodes.push(...nestedInStart);
         }
       }
 

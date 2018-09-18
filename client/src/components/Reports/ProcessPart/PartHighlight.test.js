@@ -106,3 +106,18 @@ it('should pass the info about existing paths to the parent', async () => {
 
   expect(spy).toHaveBeenCalledWith(false);
 });
+
+it('should work correctly if a boundary event is set as end node', async () => {
+  const viewer = await loadXml(xml);
+  const registry = viewer.get('elementRegistry');
+  const canvas = viewer.get('canvas');
+
+  const start = registry.get('StartEvent_2').businessObject;
+  const end = registry.get('BoundaryEvent').businessObject;
+
+  mount(<PartHighlight nodes={[start, end]} viewer={viewer} setHasPath={jest.fn()} />);
+
+  expect(canvas.hasMarker('StartEvent_2', 'PartHighlight')).toBe(true);
+  expect(canvas.hasMarker('SubProcess_2', 'PartHighlight')).toBe(true);
+  expect(canvas.hasMarker('BoundaryEvent', 'PartHighlight')).toBe(true);
+});
