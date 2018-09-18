@@ -17,9 +17,12 @@ package io.zeebe.gateway.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.grpc.Status;
 import io.grpc.stub.StreamObserver;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class RecordingStreamObserver<T> implements StreamObserver<T> {
 
@@ -60,6 +63,16 @@ public class RecordingStreamObserver<T> implements StreamObserver<T> {
   }
 
   public void assertErrors(Throwable... errors) {
-    assertThat(this.errors).containsOnly(errors);
+    final List<String> statusErrors =
+        Arrays.stream(errors)
+            .map(
+                e ->
+                    Status.INTERNAL
+                        .augmentDescription(e.getMessage())
+                        .asRuntimeException()
+                        .getMessage())
+            .collect(Collectors.toList());
+
+    assertThat(this.errors).extracting(Throwable::getMessage).containsOnlyElementsOf(statusErrors);
   }
 }

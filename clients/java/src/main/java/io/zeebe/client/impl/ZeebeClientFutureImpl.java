@@ -16,50 +16,50 @@
 
 package io.zeebe.client.impl;
 
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import io.zeebe.client.api.ZeebeFuture;
+import io.zeebe.client.cmd.ClientException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.BiFunction;
 import java.util.function.Function;
 
-public class ZeebeClientFutureImpl<T, R, P> extends CompletableFuture<T>
-    implements ZeebeFuture<T>, StreamObserver<R> {
+public class ZeebeClientFutureImpl<ClientResponse, BrokerResponse>
+    extends CompletableFuture<ClientResponse>
+    implements ZeebeFuture<ClientResponse>, StreamObserver<BrokerResponse> {
 
-  private final Function<R, T> responseMapper;
-
-  private final BiFunction<R, P, T> responsePayloadMapper;
-  private final P payload;
+  private final Function<BrokerResponse, ClientResponse> responseMapper;
 
   public ZeebeClientFutureImpl() {
-    this(r -> null);
+    this(brokerResponse -> null);
   }
 
-  public ZeebeClientFutureImpl(final Function<R, T> responseMapper) {
+  public ZeebeClientFutureImpl(final Function<BrokerResponse, ClientResponse> responseMapper) {
     this.responseMapper = responseMapper;
-    this.responsePayloadMapper = null;
-    this.payload = null;
-  }
-
-  public ZeebeClientFutureImpl(final BiFunction<R, P, T> responsePayloadMapper, P payload) {
-    this.responseMapper = null;
-    this.responsePayloadMapper = responsePayloadMapper;
-    this.payload = payload;
   }
 
   @Override
-  public T join() {
+  public ClientResponse join() {
     try {
       return get();
-    } catch (final InterruptedException | ExecutionException e) {
-      throw new RuntimeException(e);
+    } catch (final ExecutionException e) {
+      final Throwable cause = e.getCause();
+      if (cause instanceof StatusRuntimeException) {
+        final Status status = ((StatusRuntimeException) cause).getStatus();
+        throw new ClientException(status.getDescription());
+      } else {
+        throw new ClientException(cause.getMessage(), cause);
+      }
+    } catch (final InterruptedException e) {
+      throw new ClientException("Failed to receive response", e);
     }
   }
 
   @Override
-  public T join(final long timeout, final TimeUnit unit) {
+  public ClientResponse join(final long timeout, final TimeUnit unit) {
     try {
       return get(timeout, unit);
     } catch (final InterruptedException | ExecutionException | TimeoutException e) {
@@ -68,14 +68,9 @@ public class ZeebeClientFutureImpl<T, R, P> extends CompletableFuture<T>
   }
 
   @Override
-  public void onNext(final R r) {
+  public void onNext(final BrokerResponse brokerResponse) {
     try {
-      if (this.responseMapper != null) {
-        complete(responseMapper.apply(r));
-      } else {
-        complete(responsePayloadMapper.apply(r, payload));
-      }
-
+      complete(responseMapper.apply(brokerResponse));
     } catch (final Exception e) {
       completeExceptionally(e);
     }
