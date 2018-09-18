@@ -18,7 +18,10 @@ package io.zeebe.gateway;
 import io.zeebe.gateway.api.commands.DeployWorkflowCommandStep1.DeployWorkflowCommandBuilderStep2;
 import io.zeebe.gateway.api.commands.Topology;
 import io.zeebe.gateway.api.events.DeploymentEvent;
+import io.zeebe.gateway.api.events.JobEvent;
 import io.zeebe.gateway.api.events.MessageEvent;
+import io.zeebe.gateway.impl.data.ZeebeObjectMapperImpl;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
@@ -26,8 +29,11 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowRequestObject;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 
 public class ClusterClient {
+
+  private static final String EMPTY_OBJECT = "{}";
 
   private final ZeebeClient client;
 
@@ -65,10 +71,7 @@ public class ClusterClient {
   }
 
   public ActorFuture<MessageEvent> sendPublishMessage(final PublishMessageRequest messageRequest) {
-    String payload = messageRequest.getPayload();
-    if (payload == null || payload.trim().isEmpty()) {
-      payload = "{}";
-    }
+    final String payload = ensureJsonSet(messageRequest.getPayload());
 
     return client
         .workflowClient()
@@ -79,5 +82,31 @@ public class ClusterClient {
         .payload(payload)
         .timeToLive(Duration.ofMillis(messageRequest.getTimeToLive()))
         .send();
+  }
+
+  public ActorFuture<JobEvent> sendCreateJob(CreateJobRequest request) {
+    final String payload = ensureJsonSet(request.getPayload());
+    final String customHeaders = ensureJsonSet(request.getCustomHeaders());
+
+    return client
+        .jobClient()
+        .newCreateCommand()
+        .jobType(request.getJobType())
+        .retries(request.getRetries())
+        .payload(payload)
+        .addCustomHeaders(jsonToMap(customHeaders))
+        .send();
+  }
+
+  private String ensureJsonSet(final String value) {
+    if (value == null || value.trim().isEmpty()) {
+      return EMPTY_OBJECT;
+    } else {
+      return value;
+    }
+  }
+
+  private Map<String, Object> jsonToMap(final String json) {
+    return ((ZeebeObjectMapperImpl) client.objectMapper()).fromJsonAsMap(json);
   }
 }

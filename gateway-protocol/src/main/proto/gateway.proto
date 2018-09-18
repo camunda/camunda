@@ -61,11 +61,25 @@ message PublishMessageRequest {
   string payload = 5;
 }
 
+message CreateJobRequest {
+  string jobType = 1;
+  int32 retries = 2;
+  string customHeaders = 3;
+  string payload = 4;
+}
+
+message CreateJobResponse {
+  int32 partitionId = 1;
+  int64 key = 2;
+}
+
 service Gateway {
   rpc Health (HealthRequest) returns (HealthResponse) {
   }
   rpc DeployWorkflow (DeployWorkflowRequest) returns (DeployWorkflowResponse) {
   }
   rpc PublishMessage (PublishMessageRequest) returns (google.protobuf.Empty) {
+  }
+  rpc CreateJob (CreateJobRequest) returns (CreateJobResponse) {
   }
 }

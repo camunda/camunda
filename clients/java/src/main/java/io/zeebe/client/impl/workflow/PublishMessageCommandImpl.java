@@ -15,71 +15,34 @@
  */
 package io.zeebe.client.impl.workflow;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.protobuf.Empty;
 import io.zeebe.client.ZeebeClientConfiguration;
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.commands.PublishMessageCommandStep1;
 import io.zeebe.client.api.commands.PublishMessageCommandStep1.PublishMessageCommandStep2;
 import io.zeebe.client.api.commands.PublishMessageCommandStep1.PublishMessageCommandStep3;
+import io.zeebe.client.impl.CommandWithPayload;
 import io.zeebe.client.impl.ZeebeClientFutureImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
-import java.io.InputStream;
 import java.time.Duration;
-import java.util.Map;
 
-public class PublishMessageCommandImpl
+public class PublishMessageCommandImpl extends CommandWithPayload<PublishMessageCommandImpl>
     implements PublishMessageCommandStep1, PublishMessageCommandStep2, PublishMessageCommandStep3 {
 
   private final GatewayStub asyncStub;
   private final PublishMessageRequest.Builder builder;
-  private final ObjectMapper jsonObjectMapper;
 
   public PublishMessageCommandImpl(
       final GatewayStub asyncStub, final ZeebeClientConfiguration configuration) {
     this.asyncStub = asyncStub;
-    this.jsonObjectMapper = new ObjectMapper();
     this.builder = PublishMessageRequest.newBuilder();
     builder.setTimeToLive(configuration.getDefaultMessageTimeToLive().toMillis());
   }
 
   @Override
-  public PublishMessageCommandStep3 payload(final InputStream payload) {
-    try {
-      final String payloadString = jsonObjectMapper.readTree(payload).toString();
-      builder.setPayload(payloadString);
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
-
-    return this;
-  }
-
-  @Override
-  public PublishMessageCommandStep3 payload(final String payload) {
-    try {
-      final String payloadString = jsonObjectMapper.readTree(payload).toString();
-      builder.setPayload(payloadString);
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
-    return this;
-  }
-
-  @Override
-  public PublishMessageCommandStep3 payload(final Map<String, Object> payload) {
-    return payload((Object) payload);
-  }
-
-  @Override
-  public PublishMessageCommandStep3 payload(final Object payload) {
-    try {
-      final String payloadString = jsonObjectMapper.writeValueAsString(payload);
-      builder.setPayload(payloadString);
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
+  protected PublishMessageCommandImpl setPayloadInternal(String payload) {
+    builder.setPayload(payload);
     return this;
   }
 

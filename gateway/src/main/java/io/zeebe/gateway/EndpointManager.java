@@ -19,8 +19,11 @@ import com.google.protobuf.Empty;
 import io.grpc.stub.StreamObserver;
 import io.zeebe.gateway.api.commands.Topology;
 import io.zeebe.gateway.api.events.DeploymentEvent;
+import io.zeebe.gateway.api.events.JobEvent;
 import io.zeebe.gateway.api.events.MessageEvent;
 import io.zeebe.gateway.protocol.GatewayGrpc;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthRequest;
@@ -67,5 +70,13 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
       PublishMessageRequest request, StreamObserver<Empty> responseObserver) {
     final ActorFuture<MessageEvent> responseFuture = clusterClient.sendPublishMessage(request);
     requestActor.handleResponse(responseFuture, responseMapper::emptyResponse, responseObserver);
+  }
+
+  @Override
+  public void createJob(
+      CreateJobRequest request, StreamObserver<CreateJobResponse> responseObserver) {
+    final ActorFuture<JobEvent> responseFuture = clusterClient.sendCreateJob(request);
+    requestActor.handleResponse(
+        responseFuture, responseMapper::toCreateJobResponse, responseObserver);
   }
 }

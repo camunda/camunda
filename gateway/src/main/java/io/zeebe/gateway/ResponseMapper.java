@@ -20,9 +20,11 @@ import io.zeebe.gateway.api.commands.PartitionInfo;
 import io.zeebe.gateway.api.commands.Topology;
 import io.zeebe.gateway.api.commands.Workflow;
 import io.zeebe.gateway.api.events.DeploymentEvent;
+import io.zeebe.gateway.api.events.JobEvent;
 import io.zeebe.gateway.cmd.ClientException;
 import io.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo;
 import io.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo.Builder;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
@@ -88,5 +90,12 @@ public class ResponseMapper {
 
   public Empty emptyResponse(final Object response) {
     return Empty.getDefaultInstance();
+  }
+
+  public CreateJobResponse toCreateJobResponse(final JobEvent jobEvent) {
+    return CreateJobResponse.newBuilder()
+        .setKey(jobEvent.getKey())
+        .setPartitionId(jobEvent.getMetadata().getPartitionId())
+        .build();
   }
 }
