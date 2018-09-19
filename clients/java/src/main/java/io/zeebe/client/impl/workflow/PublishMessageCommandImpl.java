@@ -109,7 +109,7 @@ public class PublishMessageCommandImpl
 
   @Override
   public ZeebeFuture<Void> send() {
-    final ZeebeClientFutureImpl<Void, Empty, Void> future = new ZeebeClientFutureImpl<>();
+    final ZeebeClientFutureImpl<Void, Empty> future = new ZeebeClientFutureImpl<>();
 
     asyncStub.publishMessage(builder.build(), future);
     return future;

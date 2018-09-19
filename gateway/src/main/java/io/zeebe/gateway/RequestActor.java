@@ -15,9 +15,12 @@
  */
 package io.zeebe.gateway;
 
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
 public class RequestActor extends Actor {
@@ -31,17 +34,29 @@ public class RequestActor extends Actor {
             actor.runOnCompletion(
                 responseFuture,
                 (v, t) -> {
-                  try {
-                    if (t == null) {
+                  if (t == null) {
+                    try {
                       final R response = responseMapper.apply(v);
                       streamObserver.onNext(response);
                       streamObserver.onCompleted();
-                    } else {
-                      streamObserver.onError(t);
+                    } catch (Exception e) {
+                      streamObserver.onError(convertThrowable(e));
                     }
-                  } catch (final Exception e) {
-                    streamObserver.onError(e);
+                  } else {
+                    streamObserver.onError(convertThrowable(t));
                   }
                 }));
+  }
+
+  private StatusRuntimeException convertThrowable(final Throwable cause) {
+    final String description;
+
+    if (cause instanceof ExecutionException) {
+      description = cause.getCause().getMessage();
+    } else {
+      description = cause.getMessage();
+    }
+
+    return Status.INTERNAL.augmentDescription(description).asRuntimeException();
   }
 }

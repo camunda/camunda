@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.util.TestEnvironmentRule;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.MessageRecordValue;
@@ -161,15 +162,17 @@ public class PublishMessageTest {
   @Test
   public void shouldNotPublishMessageWithNoJsonObjectAsPayload() {
     assertThatThrownBy(
-        () ->
-            client
-                .workflowClient()
-                .newPublishMessageCommand()
-                .messageName("name")
-                .correlationKey("key")
-                .payload("[]")
-                .send()
-                .join());
+            () ->
+                client
+                    .workflowClient()
+                    .newPublishMessageCommand()
+                    .messageName("name")
+                    .correlationKey("key")
+                    .payload("[]")
+                    .send()
+                    .join())
+        .isInstanceOf(ClientException.class)
+        .hasMessageContaining("Could not read property 'payload'");
   }
 
   public static class Payload {

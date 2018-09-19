@@ -35,7 +35,7 @@ public class TopologyRequestImpl implements TopologyRequestStep1 {
   public ZeebeFuture<Topology> send() {
     final HealthRequest request = HealthRequest.getDefaultInstance();
 
-    final ZeebeClientFutureImpl<Topology, HealthResponse, ?> future =
+    final ZeebeClientFutureImpl<Topology, HealthResponse> future =
         new ZeebeClientFutureImpl<>(TopologyImpl::new);
 
     asyncStub.health(request, future);

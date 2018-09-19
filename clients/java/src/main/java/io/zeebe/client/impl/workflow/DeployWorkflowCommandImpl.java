@@ -96,7 +96,7 @@ public class DeployWorkflowCommandImpl
       final String classpathResource) {
     ensureNotNull("classpath resource", classpathResource);
 
-    try (final InputStream resourceStream =
+    try (InputStream resourceStream =
         getClass().getClassLoader().getResourceAsStream(classpathResource)) {
       if (resourceStream != null) {
         return addResourceStream(resourceStream, classpathResource);
@@ -149,7 +149,7 @@ public class DeployWorkflowCommandImpl
 
   @Override
   public ZeebeFuture<DeploymentEvent> send() {
-    final ZeebeClientFutureImpl<DeploymentEvent, DeployWorkflowResponse, Void> future =
+    final ZeebeClientFutureImpl<DeploymentEvent, DeployWorkflowResponse> future =
         new ZeebeClientFutureImpl<>(DeploymentEventImpl::new);
 
     asyncStub.deployWorkflow(request.build(), future);
