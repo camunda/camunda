@@ -3,10 +3,10 @@ package org.camunda.optimize.upgrade.plan;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
-import org.apache.http.HttpHost;
 import org.camunda.optimize.service.es.schema.type.MetadataType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
+import org.camunda.optimize.upgrade.es.ElasticsearchRestClientBuilder;
 import org.camunda.optimize.upgrade.main.UpgradeMain;
 import org.camunda.optimize.upgrade.service.ValidationService;
 import org.camunda.optimize.upgrade.steps.UpgradeStep;
@@ -29,8 +29,6 @@ import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 public class UpgradeExecutionPlan implements UpgradePlan {
 
-  public static final String HTTP = "http";
-
   private Logger logger = LoggerFactory.getLogger(getClass());
 
   private RestClient client;
@@ -46,8 +44,7 @@ public class UpgradeExecutionPlan implements UpgradePlan {
     configurationService = new ConfigurationService();
     validationService = new ValidationService(configurationService);
     validationService.validateExecutionPath();
-    client = initClient();
-
+    client = ElasticsearchRestClientBuilder.build(configurationService);
   }
 
   private void addEnvironmentFolderToClasspath() throws Exception {
@@ -128,16 +125,6 @@ public class UpgradeExecutionPlan implements UpgradePlan {
     return null;
   }
 
-  private RestClient initClient() {
-    return RestClient.builder(
-      new HttpHost(
-        configurationService.getElasticSearchHost(),
-        configurationService.getElasticSearchHttpPort(),
-        HTTP
-      )
-    ).build();
-  }
-
   @Override
   public void execute() {
     validationService.validateVersions(client, fromVersion, toVersion);
@@ -150,7 +137,7 @@ public class UpgradeExecutionPlan implements UpgradePlan {
     updateOptimizeVersion(ESIndexAdjuster);
   }
 
-  public void updateOptimizeVersion(ESIndexAdjuster ESIndexAdjuster) {
+  private void updateOptimizeVersion(ESIndexAdjuster ESIndexAdjuster) {
     logger.info("Updating Elasticsearch data structure version tag from {} to {}.", fromVersion, toVersion);
     ESIndexAdjuster.updateData(
       configurationService.getMetaDataType(),

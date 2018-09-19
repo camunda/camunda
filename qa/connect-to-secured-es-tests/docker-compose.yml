@@ -15,6 +15,7 @@ services:
       - xpack.ssl.key=/usr/share/elasticsearch/config/certs/optimize/optimize.key
       - xpack.security.transport.ssl.verification_mode=certificate
       - xpack.security.transport.ssl.enabled=true
+      - xpack.security.http.ssl.enabled=true
     ulimits:
       memlock:
         soft: -1
@@ -31,7 +32,7 @@ services:
     cpu_count: 2
     mem_limit: 2g
     healthcheck:
-      test: ["CMD-SHELL", "curl -f -u elastic:optimize http://localhost:9200/_cat/health | grep -q -E 'yellow|green'"]
+      test: ["CMD-SHELL", "curl --cacert /usr/share/elasticsearch/config/certs/ca/ca.crt --user elastic:optimize -f -s https://localhost:9200/_cat/health | grep -q -E 'yellow|green'"]
       interval: 10s
       timeout: 5s
       retries: 6

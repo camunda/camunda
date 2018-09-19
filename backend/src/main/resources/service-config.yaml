@@ -172,8 +172,8 @@ es:
       # See the elasticsearch security setting 'xpack.security.transport.ssl.verification_mode'
       # for more information about the values.
       verification_mode: 'certificate'
-      # used to enable or disable TLS/SSL and also decides if a secured connection is
-      # build up at all.
+      # used to enable or disable TLS/SSL for both the transport and http layer.
+      # Also decides if a secured connection is build up at all.
       enabled: false
 
   #An index name used to create all Camunda Optimize types, shards, etc.
