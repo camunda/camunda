@@ -1,0 +1,209 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.zeebe.exporter;
+
+import static io.zeebe.test.util.record.RecordingExporter.workflowInstanceRecords;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.zeebe.broker.system.configuration.ExporterCfg;
+import io.zeebe.exporter.record.Record;
+import io.zeebe.gateway.ZeebeClient;
+import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.test.ZeebeTestRule;
+import io.zeebe.test.util.TestUtil;
+import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.util.ZbLogger;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
+import org.elasticsearch.action.get.GetRequest;
+import org.elasticsearch.action.get.GetResponse;
+import org.elasticsearch.client.RequestOptions;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.slf4j.Logger;
+
+public class ElasticsearchExporterIT {
+
+  private static final ObjectMapper MAPPER = new ObjectMapper();
+
+  @Rule public ZeebeTestRule testRule = new ZeebeTestRule();
+
+  public static final BpmnModelInstance WORKFLOW =
+      Bpmn.createExecutableProcess("testProcess")
+          .startEvent()
+          .intermediateCatchEvent(
+              "message", e -> e.message(m -> m.name("catch").zeebeCorrelationKey("$.orderId")))
+          .serviceTask("task", t -> t.zeebeTaskType("work").zeebeTaskHeader("foo", "bar"))
+          .endEvent()
+          .done();
+
+  public static final BpmnModelInstance SECOND_WORKFLOW =
+      Bpmn.createExecutableProcess("secondProcess").startEvent().endEvent().done();
+
+  private ZeebeClient zeebeClient;
+  private ElasticsearchTestClient esClient;
+
+  @Before
+  public void setUp() {
+    zeebeClient = testRule.getClient();
+    esClient = createElasticsearchClient();
+  }
+
+  @Test
+  public void shouldExportRecords() {
+    final String orderId = "foo-bar-123";
+
+    // deploy workflow
+    zeebeClient
+        .workflowClient()
+        .newDeployCommand()
+        .addWorkflowModel(WORKFLOW, "workflow.bpmn")
+        .addWorkflowModel(SECOND_WORKFLOW, "secondWorkflow.bpmn")
+        .send();
+
+    // start instance
+    zeebeClient
+        .workflowClient()
+        .newCreateInstanceCommand()
+        .bpmnProcessId("testProcess")
+        .latestVersion()
+        .payload(Collections.singletonMap("orderId", orderId))
+        .send();
+
+    // create job worker which fails on first try and sets retries to 0 to create an incident
+    final AtomicBoolean fail = new AtomicBoolean(true);
+
+    zeebeClient
+        .jobClient()
+        .newWorker()
+        .jobType("work")
+        .handler(
+            (client, job) -> {
+              if (fail.getAndSet(false)) {
+                // fail job
+                client.newFailCommand(job).retries(0).send().join();
+                // update retries to resolve incident
+                client.newUpdateRetriesCommand(job).retries(3).send();
+              } else {
+                client.newCompleteCommand(job).send();
+              }
+            })
+        .open();
+
+    // publish message to trigger message catch event
+    zeebeClient
+        .workflowClient()
+        .newPublishMessageCommand()
+        .messageName("catch")
+        .correlationKey(orderId)
+        .send();
+
+    // wait until workflow instance is completed
+    TestUtil.waitUntil(
+        () ->
+            workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+                .filter(r -> r.getKey() == r.getValue().getWorkflowInstanceKey())
+                .exists());
+
+    // assert all records which where recorded during the tests where exported
+    assertRecordsExported();
+  }
+
+  private void assertRecordsExported() {
+    RecordingExporter.getRecords().forEach(this::assertRecordExported);
+  }
+
+  private void assertRecordExported(Record<?> record) {
+    final Map<String, Object> source = esClient.get(record);
+    assertThat(source)
+        .withFailMessage("Failed to fetch record %s from elasticsearch", record)
+        .isNotNull();
+
+    assertThat(source).isEqualTo(recordToMap(record));
+  }
+
+  protected ElasticsearchTestClient createElasticsearchClient() {
+    return new ElasticsearchTestClient(
+        getConfiguration(), new ZbLogger("io.zeebe.exporter.elasticsearch"));
+  }
+
+  private ElasticsearchExporterConfiguration getConfiguration() {
+    final ExporterCfg cfg = getExporterCfg();
+    if (cfg.getArgs() != null) {
+      return deserialize(cfg.getArgs(), ElasticsearchExporterConfiguration.class);
+    } else {
+      return new ElasticsearchExporterConfiguration();
+    }
+  }
+
+  private ExporterCfg getExporterCfg() {
+    return testRule
+        .getBrokerCfg()
+        .getExporters()
+        .stream()
+        .filter(cfg -> cfg.getId().equals("elasticsearch"))
+        .findFirst()
+        .orElseThrow(
+            () ->
+                new AssertionError("Failed to find configuration for exporter " + "elasticsearch"));
+  }
+
+  private <T> T deserialize(final Map<String, Object> value, final Class<T> valueClass) {
+    return MAPPER.convertValue(value, valueClass);
+  }
+
+  @SuppressWarnings("unchecked")
+  private Map<String, Object> recordToMap(final Record<?> record) {
+    final JsonNode jsonNode;
+    try {
+      jsonNode = MAPPER.readTree(record.toJson());
+    } catch (IOException e) {
+      throw new AssertionError("Failed to deserialize json of record " + record.toJson(), e);
+    }
+
+    return MAPPER.convertValue(jsonNode, Map.class);
+  }
+
+  public static class ElasticsearchTestClient extends ElasticsearchClient {
+
+    public ElasticsearchTestClient(ElasticsearchExporterConfiguration configuration, Logger log) {
+      super(configuration, log);
+    }
+
+    // used in tests
+    protected Map<String, Object> get(Record<?> record) {
+      final GetRequest request = new GetRequest(indexFor(record), typeFor(record), idFor(record));
+      try {
+        final GetResponse response = client.get(request, RequestOptions.DEFAULT);
+        if (response.isExists()) {
+          return response.getSourceAsMap();
+        } else {
+          return null;
+        }
+      } catch (IOException e) {
+        throw new ElasticsearchExporterException(
+            "Failed to get record " + idFor(record) + " from index " + indexFor(record));
+      }
+    }
+  }
+}

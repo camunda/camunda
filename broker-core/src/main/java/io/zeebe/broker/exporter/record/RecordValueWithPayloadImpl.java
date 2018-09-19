@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.exporter.record;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import io.zeebe.exporter.record.RecordValueWithPayload;
 import io.zeebe.gateway.impl.data.ZeebeObjectMapperImpl;
 import java.util.Map;
@@ -38,6 +39,7 @@ public abstract class RecordValueWithPayloadImpl extends RecordValueImpl
   }
 
   @Override
+  @JsonIgnore
   public Map<String, Object> getPayloadAsMap() {
     return objectMapper.fromJsonAsMap(payload);
   }

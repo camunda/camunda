@@ -55,6 +55,7 @@ import io.zeebe.exporter.record.value.deployment.ResourceType;
 import io.zeebe.exporter.record.value.raft.RaftMember;
 import io.zeebe.gateway.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.raft.event.RaftConfigurationEvent;
 import io.zeebe.raft.event.RaftConfigurationEventMember;
 import io.zeebe.util.buffer.BufferUtil;
@@ -153,12 +154,19 @@ public class ExporterRecordMapper {
             jobHeaders.getWorkflowKey(),
             jobHeaders.getWorkflowDefinitionVersion());
 
+    final Instant deadline;
+    if (record.getDeadline() != Protocol.INSTANT_NULL_VALUE) {
+      deadline = Instant.ofEpochMilli(record.getDeadline());
+    } else {
+      deadline = null;
+    }
+
     return new JobRecordValueImpl(
         objectMapper,
         asJson(record.getPayload()),
         asString(record.getType()),
         asString(record.getWorker()),
-        Instant.ofEpochMilli(record.getDeadline()),
+        deadline,
         headers,
         asMsgPackMap(record.getCustomHeaders()),
         record.getRetries());

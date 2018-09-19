@@ -172,7 +172,9 @@ public class ExporterStreamProcessor implements StreamProcessor {
     public void updateLastExportedRecordPosition(final long position) {
       actorControl.run(
           () -> {
-            state.setPosition(getId(), position);
+            if (state.isOpened()) {
+              state.setPosition(getId(), position);
+            }
             this.position = position;
           });
     }

@@ -17,7 +17,7 @@
   <dependencies>
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-exporter</artifactId>
+      <artifactId>zb-exporter-api</artifactId>
     </dependency>
 
     <dependency>
@@ -82,7 +82,7 @@
           </replacements>
         </configuration>
       </plugin>
-      
+
       <!-- this is only needed to make working in Eclipse more pleasant:
           The assertj plugin already adds the generated files as a source directory, but eclipse
           is not able to update the project based on that plugin, so we explicitly declare it a second time -->

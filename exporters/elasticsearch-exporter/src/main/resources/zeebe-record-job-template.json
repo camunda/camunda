@@ -1,0 +1,58 @@
+{
+  "index_patterns": [
+    "zeebe-record-job-*"
+  ],
+  "order": 20,
+  "mappings": {
+    "_doc": {
+      "properties": {
+        "value": {
+          "dynamic": "strict",
+          "properties": {
+            "type": {
+              "type": "keyword"
+            },
+            "headers": {
+              "properties": {
+                "activityId": {
+                  "type": "keyword"
+                },
+                "activityInstanceKey": {
+                  "type": "long"
+                },
+                "bpmnProcessId": {
+                  "type": "keyword"
+                },
+                "workflowDefinitionVersion": {
+                  "type": "integer"
+                },
+                "workflowInstanceKey": {
+                  "type": "long"
+                },
+                "workflowKey": {
+                  "type": "long"
+                }
+              }
+            },
+            "customHeaders": {
+              "dynamic": true,
+              "type": "object"
+            },
+            "worker": {
+              "type": "keyword"
+            },
+            "retries": {
+              "type": "long"
+            },
+            "deadline": {
+              "type": "date"
+            },
+            "payload": {
+              "type": "text"
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "index_patterns": [
+    "zeebe-record-incident-*"
+  ],
+  "order": 20,
+  "mappings": {
+    "_doc": {
+      "properties": {
+        "value": {
+          "dynamic": "strict",
+          "properties": {
+            "errorType": {
+              "type": "keyword"
+            },
+            "errorMessage": {
+              "type": "text"
+            },
+            "bpmnProcessId": {
+              "type": "keyword"
+            },
+            "workflowInstanceKey": {
+              "type": "long"
+            },
+            "activityId": {
+              "type": "keyword"
+            },
+            "activityInstanceKey": {
+              "type": "long"
+            },
+            "jobKey": {
+              "type": "long"
+            },
+            "payload": {
+              "type": "text"
+            }
+          }
+        }
+      }
+    }
+  }
+}

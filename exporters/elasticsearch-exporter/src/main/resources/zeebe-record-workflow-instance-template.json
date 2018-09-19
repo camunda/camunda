@@ -1,0 +1,38 @@
+{
+  "index_patterns": [
+    "zeebe-record-workflow-instance-*"
+  ],
+  "order": 20,
+  "mappings": {
+    "_doc": {
+      "properties": {
+        "value": {
+          "dynamic": "strict",
+          "properties": {
+            "bpmnProcessId": {
+              "type": "keyword"
+            },
+            "version": {
+              "type": "integer"
+            },
+            "workflowKey": {
+              "type": "long"
+            },
+            "workflowInstanceKey": {
+              "type": "long"
+            },
+            "activityId": {
+              "type": "keyword"
+            },
+            "scopeInstanceKey": {
+              "type": "long"
+            },
+            "payload": {
+              "type": "text"
+            }
+          }
+        }
+      }
+    }
+  }
+}

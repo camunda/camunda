@@ -164,7 +164,13 @@
 
       <dependency>
         <groupId>io.zeebe</groupId>
-        <artifactId>zb-exporter</artifactId>
+        <artifactId>zb-exporter-api</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.zeebe</groupId>
+        <artifactId>zb-elasticsearch-exporter</artifactId>
         <version>${project.version}</version>
       </dependency>
 

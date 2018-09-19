@@ -1,0 +1,26 @@
+{
+  "index_patterns": [
+    "zeebe-record-workflow-instance-subscription-*"
+  ],
+  "order": 30,
+  "mappings": {
+    "_doc": {
+      "properties": {
+        "value": {
+          "dynamic": "strict",
+          "properties": {
+            "workflowInstanceKey": {
+              "type": "long"
+            },
+            "activityInstanceKey": {
+              "type": "long"
+            },
+            "messageName": {
+              "type": "keyword"
+            }
+          }
+        }
+      }
+    }
+  }
+}
