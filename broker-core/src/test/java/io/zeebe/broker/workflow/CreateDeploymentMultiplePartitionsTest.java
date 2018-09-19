@@ -23,6 +23,7 @@ import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.data.MapEntry.entry;
 
+import io.zeebe.UnstableTest;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.broker.workflow.deployment.data.ResourceType;
@@ -48,6 +49,7 @@ import java.util.Map;
 import java.util.function.Consumer;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.experimental.categories.Category;
 import org.junit.rules.RuleChain;
 
 public class CreateDeploymentMultiplePartitionsTest {
@@ -182,6 +184,7 @@ public class CreateDeploymentMultiplePartitionsTest {
   }
 
   @Test
+  @Category(UnstableTest.class) // => https://github.com/zeebe-io/zeebe/issues/1250
   public void shouldIncrementWorkflowVersions() {
     // given
 
@@ -216,6 +219,7 @@ public class CreateDeploymentMultiplePartitionsTest {
   }
 
   @Test
+  @Category(UnstableTest.class) // => https://github.com/zeebe-io/zeebe/issues/1250
   public void shouldCreateDeploymentOnAllPartitionsWithRestartBroker() throws Exception {
     // given
     apiRule

@@ -27,7 +27,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -833,11 +832,13 @@ public class MappingMergeParameterizedTest {
   @Parameter(3)
   public String expectedPayload;
 
-  private MappingProcessor processor = new MappingProcessor(1024);
+  private MsgPackMergeTool mergeTool = new MsgPackMergeTool(1024);
 
   @Test
   public void shouldExtractNothingFromEmptyObject() throws Throwable {
     // given payload
+    mergeTool.reset();
+
     final byte[] sourceBytes =
         MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree(sourcePayload));
     final DirectBuffer sourceDocument = new UnsafeBuffer(sourceBytes);
@@ -847,11 +848,12 @@ public class MappingMergeParameterizedTest {
     final DirectBuffer targetDocument = new UnsafeBuffer(targetBytes);
 
     // when
-    final int resultLength = processor.merge(sourceDocument, targetDocument, mappings);
+    mergeTool.mergeDocument(targetDocument);
+    mergeTool.mergeDocument(sourceDocument, mappings);
 
-    final MutableDirectBuffer resultBuffer = processor.getResultBuffer();
-    final byte result[] = new byte[resultLength];
-    resultBuffer.getBytes(0, result, 0, resultLength);
+    final DirectBuffer resultBuffer = mergeTool.writeResultToBuffer();
+    final byte result[] = new byte[resultBuffer.capacity()];
+    resultBuffer.getBytes(0, result, 0, result.length);
 
     // then result is expected as
     assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree(expectedPayload));

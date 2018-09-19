@@ -85,50 +85,33 @@ public final class MsgPackDocumentExtractor {
       "JSON path mapping has more than one matching source.";
 
   /**
-   * Holds the reference of the msg pack document tree, on which the extracted values are stored.
-   * Could either hold a reference of a wrapped message pack document tree or of the {@link
-   * #extractDocumentTree}, which is used if a new document tree should be created from an
-   * extraction of an document.
-   */
-  private MsgPackTree documentTreeReference;
-
-  /**
    * This message pack document tree will be used if only a messag pack document is wrapped and
    * parts of the document should be extracted.
    */
-  private final MsgPackTree extractDocumentTree = new MsgPackTree();
+  private final MsgPackTree tree = new MsgPackTree();
+
+  private DirectBuffer document;
 
   private final MsgPackTraverser traverser = new MsgPackTraverser();
   private final MsgPackQueryExecutor queryExecutor = new MsgPackQueryExecutor();
   private final JsonPathTokenizer tokenizer = new JsonPathTokenizer();
   private final TargetPathVisitor targetPathVisitor = new TargetPathVisitor();
 
-  /**
-   * Wraps a existing message pack document tree and a message pack document, on which the
-   * extracting should be executed.
-   *
-   * @param existingDocumentTree the tree on which the extracted parts are stored
-   * @param extractDocument the document on which parts should be extracted
-   */
-  public void wrap(MsgPackTree existingDocumentTree, DirectBuffer extractDocument) {
-    documentTreeReference = existingDocumentTree;
-    documentTreeReference.setExtractDocument(extractDocument);
-    traverser.wrap(extractDocument, 0, extractDocument.capacity());
-  }
-
   public void wrap(DirectBuffer document) {
-    documentTreeReference = extractDocumentTree;
-    documentTreeReference.setExtractDocument(document);
-    traverser.wrap(document, 0, document.capacity());
+    this.document = document;
+    clear();
   }
 
   public MsgPackTree extract(Mapping... mappings) {
+    final int documentId = tree.addDocument(document);
+    traverser.wrap(document, 0, document.capacity());
+
     for (Mapping mapping : mappings) {
-      targetPathVisitor.reset(mapping);
+      targetPathVisitor.reset(mapping, documentId);
       final DirectBuffer targetQueryString = mapping.getTargetQueryBuffer();
       tokenizer.tokenize(targetQueryString, 0, targetQueryString.capacity(), targetPathVisitor);
     }
-    return documentTreeReference;
+    return tree;
   }
 
   /**
@@ -157,14 +140,14 @@ public final class MsgPackDocumentExtractor {
       final boolean isIndex = isIndex(nodeName);
 
       if (isIndex) {
-        if (!documentTreeReference.isMapNode(parentId)) {
-          documentTreeReference.addArrayNode(parentId);
+        if (!tree.isMapNode(parentId)) {
+          tree.addArrayNode(parentId);
         }
       } else {
-        documentTreeReference.addMapNode(parentId);
+        tree.addMapNode(parentId);
       }
       nodeId = construct(parentId, nodeName);
-      documentTreeReference.addChildToNode(nodeName, parentId);
+      tree.addChildToNode(nodeName, parentId);
     }
     return nodeId;
   }
@@ -208,11 +191,13 @@ public final class MsgPackDocumentExtractor {
     private String nodeId;
     private String parentId;
     private Mapping mapping;
+    private int documentId;
 
-    void reset(Mapping mapping) {
+    void reset(Mapping mapping, int documentId) {
       nodeId = "";
       parentId = "";
       this.mapping = mapping;
+      this.documentId = documentId;
     }
 
     @Override
@@ -224,15 +209,18 @@ public final class MsgPackDocumentExtractor {
         parentId = nodeId;
       } else if (type == JsonPathToken.END_INPUT) {
         executeLeafMapping(mapping.getSource());
-        documentTreeReference.addLeafNode(
-            nodeId, queryExecutor.currentResultPosition(), queryExecutor.currentResultLength());
+        tree.addLeafNode(
+            nodeId,
+            documentId,
+            queryExecutor.currentResultPosition(),
+            queryExecutor.currentResultLength());
       }
     }
   }
 
   public void clear() {
-    if (documentTreeReference != null) {
-      this.documentTreeReference.clear();
+    if (tree != null) {
+      this.tree.clear();
     }
     this.traverser.reset();
   }

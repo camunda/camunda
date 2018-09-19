@@ -25,12 +25,12 @@ import org.openjdk.jmh.annotations.State;
 
 @State(Scope.Thread)
 public class MappingCtx {
-  public MappingProcessor processor;
+  public MsgPackMergeTool processor;
   public Mapping[] rootMappings;
 
   @Setup
   public void setup() {
-    processor = new MappingProcessor((int) ByteUnit.KILOBYTES.toBytes(16));
+    processor = new MsgPackMergeTool((int) ByteUnit.KILOBYTES.toBytes(16));
     final JsonPathQuery rootSourceQuery = new JsonPathQueryCompiler().compile("$");
     rootMappings = new Mapping[] {new Mapping(rootSourceQuery, BufferUtil.wrapString("$"))};
   }

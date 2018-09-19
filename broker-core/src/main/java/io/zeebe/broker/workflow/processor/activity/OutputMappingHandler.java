@@ -17,8 +17,6 @@
  */
 package io.zeebe.broker.workflow.processor.activity;
 
-import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.EMPTY_PAYLOAD;
-
 import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
@@ -29,14 +27,13 @@ import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
 import io.zeebe.msgpack.mapping.Mapping;
 import io.zeebe.msgpack.mapping.MappingException;
-import io.zeebe.msgpack.mapping.MappingProcessor;
+import io.zeebe.msgpack.mapping.MsgPackMergeTool;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
 
 public class OutputMappingHandler implements BpmnStepHandler<ExecutableFlowNode> {
 
-  private final MappingProcessor payloadMappingProcessor = new MappingProcessor(4096);
+  private final MsgPackMergeTool payloadMergeTool = new MsgPackMergeTool(4096);
 
   @Override
   public void handle(BpmnStepContext<ExecutableFlowNode> context) {
@@ -47,7 +44,7 @@ public class OutputMappingHandler implements BpmnStepHandler<ExecutableFlowNode>
 
     final ElementInstance flowScopeInstance = context.getFlowScopeInstance();
 
-    DirectBuffer scopeInstancePayload = flowScopeInstance.getValue().getPayload();
+    final DirectBuffer scopeInstancePayload = flowScopeInstance.getValue().getPayload();
 
     final ZeebeOutputBehavior outputBehavior = element.getOutputBehavior();
 
@@ -56,20 +53,20 @@ public class OutputMappingHandler implements BpmnStepHandler<ExecutableFlowNode>
     if (outputBehavior == ZeebeOutputBehavior.none) {
       activityEvent.setPayload(scopeInstancePayload);
     } else {
-      if (outputBehavior == ZeebeOutputBehavior.overwrite) {
-        scopeInstancePayload = EMPTY_PAYLOAD;
+      payloadMergeTool.reset();
+      if (outputBehavior != ZeebeOutputBehavior.overwrite) {
+        payloadMergeTool.mergeDocument(scopeInstancePayload);
       }
 
       final Mapping[] outputMappings = element.getOutputMappings();
       final DirectBuffer jobPayload = activityEvent.getPayload();
 
       try {
-        final int resultLen =
-            payloadMappingProcessor.merge(jobPayload, scopeInstancePayload, outputMappings);
-        final MutableDirectBuffer mergedPayload = payloadMappingProcessor.getResultBuffer();
-        activityEvent.setPayload(mergedPayload, 0, resultLen);
+        payloadMergeTool.mergeDocument(jobPayload, outputMappings);
+        final DirectBuffer result = payloadMergeTool.writeResultToBuffer();
 
-        flowScopeInstance.getValue().setPayload(mergedPayload, 0, resultLen);
+        activityEvent.setPayload(result);
+        flowScopeInstance.getValue().setPayload(result);
 
       } catch (MappingException e) {
         mappingException = e;

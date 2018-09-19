@@ -102,8 +102,12 @@ public class BufferUtilTest {
     }
   }
 
+  /**
+   * Returning the wrapped array is an inconsistency in the API, because we cannot safely modify the
+   * returned array.
+   */
   @Test
-  public void shouldReturnWrappedArray() {
+  public void shouldNotReturnWrappedArrayIfBufferOffsetIsZero() {
     // given
     final DirectBuffer buffer = new UnsafeBuffer(BYTES1);
 
@@ -112,7 +116,7 @@ public class BufferUtilTest {
 
     // then
     assertThat(buffer.byteArray()).isEqualTo(BYTES1);
-    assertThat(bytes).isSameAs(BYTES1);
+    assertThat(bytes).isNotSameAs(BYTES1);
   }
 
   public DirectBuffer asBuffer(byte[] bytes) {

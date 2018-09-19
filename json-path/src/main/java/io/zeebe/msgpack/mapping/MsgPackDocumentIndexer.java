@@ -98,7 +98,7 @@ public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor {
   private MsgPackTree msgPackTree;
 
   /** The last key for the node, since the node is divided in separate MsgPackTokens. */
-  private final byte lastKey[] = new byte[MappingProcessor.MAX_JSON_KEY_LEN];
+  private final byte lastKey[] = new byte[MsgPackMergeTool.MAX_JSON_KEY_LEN];
 
   /** The length of the last key. */
   private int lastKeyLen;
@@ -122,6 +122,8 @@ public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor {
   /** The traverser which is used to index the message pack document. */
   private final MsgPackTraverser traverser = new MsgPackTraverser();
 
+  private int documentId;
+
   public MsgPackDocumentIndexer() {
     msgPackTree = new MsgPackTree();
     lastKey[0] = '$';
@@ -129,7 +131,8 @@ public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor {
   }
 
   public void wrap(DirectBuffer msgPackDocument) {
-    msgPackTree.wrap(msgPackDocument);
+    msgPackTree.clear();
+    documentId = msgPackTree.addDocument(msgPackDocument);
     traverser.wrap(msgPackDocument, 0, msgPackDocument.capacity());
   }
 
@@ -279,7 +282,7 @@ public final class MsgPackDocumentIndexer implements MsgPackTokenVisitor {
     }
 
     msgPackTree.addChildToNode(nodeName, parentId);
-    msgPackTree.addLeafNode(nodeId, position, currentValue.getTotalLength());
+    msgPackTree.addLeafNode(nodeId, documentId, position, currentValue.getTotalLength());
   }
 
   /**
