@@ -49,11 +49,26 @@
       flex-direction: column;
 
       .dataTitle {
-        font-weight: bold;
-        font-size: 18px;
-        text-decoration: none;
-        color: #333333;
         margin-bottom: 7px;
+
+        h3 {
+          color: #333333;
+          font-size: 18px;
+          font-weight: bold;
+          display: inline-block;
+        }
+
+        span {
+          font-size: 12px;
+          border-radius: 10px;
+          width: 75px;
+          height: 20px;
+          font-weight: lighter;
+          background: #e5f6ff;
+          color: #008fe6;
+          padding: 3px 10px;
+          margin-left: 5px;
+        }
       }
 
       .extraInfo {

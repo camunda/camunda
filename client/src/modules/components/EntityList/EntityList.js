@@ -191,12 +191,18 @@ class EntityList extends React.Component {
                   duplicateEntity={this.duplicateEntity}
                   showDeleteModal={this.showDeleteModal}
                   query={this.state.query}
+                  getReportVis={this.getReportVis}
                 />
               ))}
           </ul>
         </React.Fragment>
       );
     return list;
+  };
+
+  getReportVis = reportId => {
+    const report = this.state.data.find(report => report.id === reportId);
+    return report.data.visualization;
   };
 
   updateEntity = editEntity => {

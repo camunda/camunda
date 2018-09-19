@@ -483,3 +483,16 @@ it('should invok createEntity with parameter "single" when create new Entity is 
 
   expect(create).toHaveBeenCalled();
 });
+
+it('should return the visualization type of the given report id', () => {
+  const node = mount(
+    shallow(<EntityList api="endpoint" label="Report" operations={['create']} />).get(0)
+  );
+
+  node.setState({
+    loaded: true,
+    data: [{...sampleEntity, data: {visualization: 'bar'}}]
+  });
+
+  expect(node.instance().getReportVis('1')).toBe('bar');
+});

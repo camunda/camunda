@@ -11,8 +11,20 @@ import './EntityItem.css';
 
 export default class EntityItem extends React.Component {
   getEntityIconName = entity => {
+    if (this.isNotEmptyCombined(entity)) {
+      return `${this.props.getReportVis(entity.data.reportIds[0])}-combined`;
+    }
     if (entity.data && entity.data.visualization) return entity.data.visualization;
     return 'generic';
+  };
+
+  isNotEmptyCombined = entity => {
+    return (
+      entity.reportType &&
+      entity.reportType === 'combined' &&
+      entity.data.reportIds &&
+      entity.data.reportIds.length
+    );
   };
 
   formatData = entity => {
@@ -102,10 +114,11 @@ export default class EntityItem extends React.Component {
   // if a modal is provided add onClick event otherwise use a router Link
   renderLink = data => {
     const {ContentPanel} = this.props;
+    const allEntityData = data.editData;
     const EntityLink = ContentPanel ? 'a' : Link;
     const linkProps = {
       to: ContentPanel ? undefined : data.link,
-      onClick: ContentPanel ? () => this.props.updateEntity(data.editData) : undefined,
+      onClick: ContentPanel ? () => this.props.updateEntity(allEntityData) : undefined,
       className: data.className
     };
     return (
@@ -114,9 +127,14 @@ export default class EntityItem extends React.Component {
           <React.Fragment>
             <span className="data visualizationIcon">{data.icon}</span>
             <div className="textInfo">
-              <span className="data dataTitle">
-                {formatters.getHighlightedText(data.title, this.props.query)}
-              </span>
+              <div className="data dataTitle">
+                <h3>{formatters.getHighlightedText(data.title, this.props.query)}</h3>
+                {allEntityData.reportType && allEntityData.reportType === 'combined' ? (
+                  <span>Combined</span>
+                ) : (
+                  ''
+                )}
+              </div>
               <div className="extraInfo">{data.content}</div>
             </div>
           </React.Fragment>

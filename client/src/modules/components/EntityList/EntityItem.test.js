@@ -15,7 +15,8 @@ jest.mock('./entityIcons', () => {
     endpoint: {
       header: props => <svg {...props} />,
       generic: props => <svg {...props} />,
-      heat: props => <svg {...props} />
+      heat: props => <svg {...props} />,
+      combinedline: props => <svg {...props} />
     }
   };
 });
@@ -209,4 +210,28 @@ it('should invok showDeleteModal when a delete button is clicked', async () => {
   await node.update();
 
   expect(spy).toHaveBeenCalledWith({id: sampleEntity.id, name: sampleEntity.name});
+});
+
+it('should return false if the entity is not combined or is combined but does not have any reportIds', () => {
+  const node = mount(
+    <EntityItem api="endpoint" showDeleteModal={() => {}} label="Report" data={sampleEntity} />
+  );
+
+  const isNotEmptyCombined = node
+    .instance()
+    .isNotEmptyCombined({reportType: 'combined', data: {reportIds: null}});
+
+  expect(!!isNotEmptyCombined).toBe(false);
+});
+
+it('should add label combined if the report is combined', () => {
+  const node = mount(
+    <EntityItem
+      api="endpoint"
+      showDeleteModal={() => {}}
+      label="Report"
+      data={{...sampleEntity, reportType: 'combined', data: {reportIds: null}}}
+    />
+  );
+  expect(node).toIncludeText('Combined');
 });

@@ -10,9 +10,21 @@ export default function Reports() {
       sortBy={'lastModified'}
       operations={['create', 'edit', 'delete', 'duplicate', 'search', 'combine']}
       renderCustom={report => {
-        if (report.reportType === 'combined') return 'Combined Report';
-        if (report.data && report.data.configuration.xml)
-          return extractProcessDefinitionName(report.data.configuration.xml);
+        if (report.data) {
+          // if not empty combined
+          if (
+            report.reportType === 'combined' &&
+            report.data.reportIds &&
+            report.data.reportIds.length
+          ) {
+            const reportsCount = report.data.reportIds.length;
+            return `${reportsCount} report${reportsCount !== 1 ? 's' : ''} `;
+          }
+          // if normal report
+          if (report.data.configuration.xml) {
+            return extractProcessDefinitionName(report.data.configuration.xml);
+          }
+        }
         return '';
       }}
     />
