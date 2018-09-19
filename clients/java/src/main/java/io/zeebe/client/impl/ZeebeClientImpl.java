@@ -26,15 +26,18 @@ import io.zeebe.client.api.commands.PartitionsRequestStep1;
 import io.zeebe.client.api.commands.TopologyRequestStep1;
 import io.zeebe.client.api.record.ZeebeObjectMapper;
 import io.zeebe.client.api.subscription.TopicSubscriptionBuilderStep1;
+import io.zeebe.client.cmd.ClientException;
 import io.zeebe.gateway.protocol.GatewayGrpc;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.concurrent.TimeUnit;
 
 public class ZeebeClientImpl implements ZeebeClient {
 
   private final ZeebeClientConfiguration config;
   private final GatewayStub asyncStub;
+  private final ManagedChannel channel;
 
   public ZeebeClientImpl(final ZeebeClientConfiguration configuration) {
     this.config = configuration;
@@ -47,7 +50,7 @@ public class ZeebeClientImpl implements ZeebeClient {
     }
 
     // TODO: Issue #1134 - https://github.com/zeebe-io/zeebe/issues/1134
-    final ManagedChannel channel =
+    channel =
         ManagedChannelBuilder.forAddress(address.getHost(), address.getPort())
             .usePlaintext()
             .build();
@@ -91,5 +94,15 @@ public class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
-  public void close() {}
+  public void close() {
+    channel.shutdown();
+
+    try {
+      if (!channel.awaitTermination(15, TimeUnit.SECONDS)) {
+        throw new ClientException("Failed to await termination of in-flight requests");
+      }
+    } catch (InterruptedException e) {
+      throw new ClientException("Failed to await termination of in-flight requests", e);
+    }
+  }
 }
