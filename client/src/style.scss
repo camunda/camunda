@@ -53,6 +53,11 @@ a:visited {
   color: $cam-blue;
 }
 
+/* BPMNjs viewer */
+.djs-container svg {
+  position: absolute; // Safari fix
+}
+
 /* TYPOGRAPHY */
 /* TEMP Heading styles -> use global CSS reset?
 Use classes when more design work has been done */
