@@ -70,7 +70,7 @@ public class ZeebeClientImpl implements ZeebeClient {
 
   @Override
   public JobClient jobClient() {
-    return null;
+    return new JobClientImpl(asyncStub);
   }
 
   @Override
