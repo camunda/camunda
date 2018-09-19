@@ -139,13 +139,21 @@ export default class Analysis extends React.Component {
           config.processDefinitionVersion
         ),
         gateway: null,
-        endEvent: null
+        endEvent: null,
+        config: {
+          ...config,
+          filter: []
+        }
       });
     } else if (!config.processDefinitionKey || !config.processDefinitionVersion) {
       this.setState({
         xml: null,
         gateway: null,
-        endEvent: null
+        endEvent: null,
+        config: {
+          ...config,
+          filter: []
+        }
       });
     }
   };

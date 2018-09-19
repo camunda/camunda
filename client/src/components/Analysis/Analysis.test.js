@@ -2,7 +2,6 @@ import React from 'react';
 import {mount} from 'enzyme';
 
 import {loadProcessDefinitionXml, loadFrequencyData} from './service';
-import {loadProcessDefinitions} from 'services';
 
 import Analysis from './Analysis';
 
@@ -109,6 +108,7 @@ it('should clear the selection when another process definition is selected', asy
 
   expect(node).toHaveState('gateway', null);
   expect(node).toHaveState('endEvent', null);
+  expect(node.state().config.filter).toEqual([]);
 });
 
 it("should pre-select the only available procDef and it's latest version", async () => {
