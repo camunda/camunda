@@ -2,7 +2,7 @@ import classnames from 'classnames';
 import React from 'react';
 import {ActionItem, Popover, ProcessDefinitionSelection} from 'components';
 
-import {extractProcessDefinitionName} from 'services';
+import {extractProcessDefinitionName, getFlowNodeNames} from 'services';
 
 import {Filter} from '../Reports';
 
@@ -13,12 +13,14 @@ export default class AnalysisControlPanel extends React.Component {
     super(props);
 
     this.state = {
-      processDefinitionName: this.props.processDefinitionKey
+      processDefinitionName: this.props.processDefinitionKey,
+      flowNodeNames: null
     };
   }
 
   componentDidMount() {
     this.loadProcessDefinitionName();
+    this.loadFlowNodeNames();
   }
 
   loadProcessDefinitionName = () => {
@@ -31,12 +33,27 @@ export default class AnalysisControlPanel extends React.Component {
     }
   };
 
-  componentDidUpdate({xml}) {
+  loadFlowNodeNames = async () => {
+    this.setState({
+      flowNodeNames: await getFlowNodeNames(
+        this.props.processDefinitionKey,
+        this.props.processDefinitionVersion
+      )
+    });
+  };
+
+  componentDidUpdate({xml, processDefinitionKey, processDefinitionVersion}) {
     if (this.props.xml !== xml) {
       this.loadProcessDefinitionName();
     }
-  }
 
+    if (
+      this.props.processDefinitionKey !== processDefinitionKey ||
+      this.props.processDefinitionVersion !== processDefinitionVersion
+    ) {
+      this.loadFlowNodeNames();
+    }
+  }
   getDefinitionConfig = () => {
     return {
       processDefinitionKey: this.props.processDefinitionKey,
@@ -121,6 +138,7 @@ export default class AnalysisControlPanel extends React.Component {
           <li className="AnalysisControlPanel__item AnalysisControlPanel__item--filter">
             <Filter
               data={this.props.filter}
+              flowNodeNames={this.state.flowNodeNames}
               onChange={this.props.onChange}
               xml={this.props.xml}
               {...this.getDefinitionConfig()}

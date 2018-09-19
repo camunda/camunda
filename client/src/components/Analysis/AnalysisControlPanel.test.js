@@ -1,7 +1,7 @@
 import React from 'react';
 import {mount} from 'enzyme';
 
-import {extractProcessDefinitionName} from 'services';
+import {extractProcessDefinitionName, getFlowNodeNames} from 'services';
 
 import AnalysisControlPanel from './AnalysisControlPanel';
 
@@ -29,9 +29,15 @@ jest.mock('components', () => {
 
 jest.mock('services', () => {
   return {
-    extractProcessDefinitionName: jest.fn()
+    extractProcessDefinitionName: jest.fn(),
+    getFlowNodeNames: jest.fn().mockReturnValue({
+      a: 'foo',
+      b: 'bar'
+    })
   };
 });
+
+const flushPromises = () => new Promise(resolve => setImmediate(resolve));
 
 const data = {
   processDefinitionKey: 'aKey',
@@ -127,4 +133,13 @@ it('should pass the xml to the Filter component', async () => {
   const node = await mount(<AnalysisControlPanel {...data} />);
   const filter = node.find('Filter');
   expect(filter.find('[xml="aFooXml"]')).toBePresent();
+});
+
+it('should load the flownode names and hand them to the filter and process part', async () => {
+  const node = mount(<AnalysisControlPanel {...data} />);
+
+  await flushPromises();
+  node.update();
+
+  expect(node.find('Filter').prop('flowNodeNames')).toEqual(getFlowNodeNames());
 });
