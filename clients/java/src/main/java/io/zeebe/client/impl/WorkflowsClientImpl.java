@@ -25,6 +25,7 @@ import io.zeebe.client.api.commands.UpdatePayloadWorkflowInstanceCommandStep1;
 import io.zeebe.client.api.commands.WorkflowRequestStep1;
 import io.zeebe.client.api.commands.WorkflowResourceRequestStep1;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.impl.workflow.CreateWorkflowInstanceCommandImpl;
 import io.zeebe.client.impl.workflow.DeployWorkflowCommandImpl;
 import io.zeebe.client.impl.workflow.PublishMessageCommandImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
@@ -46,7 +47,7 @@ public class WorkflowsClientImpl implements WorkflowClient {
 
   @Override
   public CreateWorkflowInstanceCommandStep1 newCreateInstanceCommand() {
-    return null;
+    return new CreateWorkflowInstanceCommandImpl(asyncStub);
   }
 
   @Override

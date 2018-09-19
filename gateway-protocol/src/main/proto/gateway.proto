@@ -58,19 +58,39 @@ message PublishMessageRequest {
   string correlationKey = 2;
   int64 timeToLive = 3;
   string messageId = 4;
+  /* payload has to be a valid json object as string */
   string payload = 5;
 }
 
 message CreateJobRequest {
   string jobType = 1;
   int32 retries = 2;
+  /* custom headers has to be a valid json object as string */
   string customHeaders = 3;
+  /* payload has to be a valid json object as string */
   string payload = 4;
 }
 
 message CreateJobResponse {
   int32 partitionId = 1;
   int64 key = 2;
+}
+
+message CreateWorkflowInstanceRequest {
+  int64 workflowKey = 1;
+  string bpmnProcessId = 2;
+  /* if bpmnProcessId is set version = -1 indicates to use the latest version */
+  int32 version = 3;
+  /* payload has to be a valid json object as string */
+  string payload = 4;
+}
+
+message CreateWorkflowInstanceResponse {
+  int64 workflowKey = 1;
+  string bpmnProcessId = 2;
+  int32 version = 3;
+  int32 partitionId = 4;
+  int64 workflowInstanceKey = 5;
 }
 
 service Gateway {
@@ -81,5 +101,8 @@ service Gateway {
   rpc PublishMessage (PublishMessageRequest) returns (google.protobuf.Empty) {
   }
   rpc CreateJob (CreateJobRequest) returns (CreateJobResponse) {
+  }
+  rpc CreateWorkflowInstance (CreateWorkflowInstanceRequest) returns (CreateWorkflowInstanceResponse) {
+
   }
 }

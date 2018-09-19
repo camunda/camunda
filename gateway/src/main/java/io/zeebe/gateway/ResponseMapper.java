@@ -21,10 +21,12 @@ import io.zeebe.gateway.api.commands.Topology;
 import io.zeebe.gateway.api.commands.Workflow;
 import io.zeebe.gateway.api.events.DeploymentEvent;
 import io.zeebe.gateway.api.events.JobEvent;
+import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
 import io.zeebe.gateway.cmd.ClientException;
 import io.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo;
 import io.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo.Builder;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
@@ -96,6 +98,17 @@ public class ResponseMapper {
     return CreateJobResponse.newBuilder()
         .setKey(jobEvent.getKey())
         .setPartitionId(jobEvent.getMetadata().getPartitionId())
+        .build();
+  }
+
+  public CreateWorkflowInstanceResponse toCreateWorkflowInstanceResponse(
+      final WorkflowInstanceEvent workflowInstanceEvent) {
+    return CreateWorkflowInstanceResponse.newBuilder()
+        .setWorkflowKey(workflowInstanceEvent.getWorkflowKey())
+        .setBpmnProcessId(workflowInstanceEvent.getBpmnProcessId())
+        .setVersion(workflowInstanceEvent.getVersion())
+        .setPartitionId(workflowInstanceEvent.getMetadata().getPartitionId())
+        .setWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
         .build();
   }
 }
