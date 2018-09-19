@@ -54,8 +54,15 @@ a:visited {
 }
 
 /* BPMNjs viewer */
-.djs-container svg {
-  position: absolute; // Safari fix
+.djs-container {
+  svg {
+    position: absolute; // Safari fix
+    z-index: 1;
+  }
+
+  .djs-overlay-container {
+    z-index: 2;
+  }
 }
 
 /* TYPOGRAPHY */
