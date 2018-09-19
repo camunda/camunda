@@ -34,6 +34,7 @@
     flex-grow: 1;
     text-decoration: none;
     align-items: center;
+    overflow: hidden;
 
     .visualizationIcon {
       padding: 10px;
@@ -43,10 +44,11 @@
 
     .textInfo {
       display: flex;
-      width: 100%;
       margin-right: 20px;
+      flex-grow: 1;
       justify-content: space-between;
       flex-direction: column;
+      overflow: hidden;
 
       .dataTitle {
         margin-bottom: 7px;
@@ -56,6 +58,10 @@
           font-size: 18px;
           font-weight: bold;
           display: inline-block;
+          vertical-align: middle;
+          text-overflow: ellipsis;
+          max-width: 80%;
+          overflow: hidden;
         }
 
         span {
