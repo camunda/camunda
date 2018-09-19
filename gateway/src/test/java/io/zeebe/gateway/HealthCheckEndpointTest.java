@@ -70,7 +70,7 @@ public class HealthCheckEndpointTest {
   public void healthCheckShouldCheckCorrectInvocation() {
     // given
     final ActorFuture<Topology> responseFuture = CompletableActorFuture.completed(null);
-    when(clusterClient.sendHealthRequest(any())).thenReturn(responseFuture);
+    when(clusterClient.sendHealthRequest()).thenReturn(responseFuture);
 
     // when
     sendRequest();
@@ -83,7 +83,7 @@ public class HealthCheckEndpointTest {
   public void healthCheckShouldProduceException() {
     // given
     final RuntimeException exception = new RuntimeException("test");
-    when(clusterClient.sendHealthRequest(any()))
+    when(clusterClient.sendHealthRequest())
         .thenReturn(CompletableActorFuture.completedExceptionally(exception));
 
     // when

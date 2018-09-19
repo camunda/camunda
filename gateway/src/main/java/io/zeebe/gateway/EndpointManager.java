@@ -21,9 +21,12 @@ import io.zeebe.gateway.api.commands.Topology;
 import io.zeebe.gateway.api.events.DeploymentEvent;
 import io.zeebe.gateway.api.events.JobEvent;
 import io.zeebe.gateway.api.events.MessageEvent;
+import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
 import io.zeebe.gateway.protocol.GatewayGrpc;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthRequest;
@@ -51,7 +54,7 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
   @Override
   public void health(
       final HealthRequest request, final StreamObserver<HealthResponse> responseObserver) {
-    final ActorFuture<Topology> responseFuture = clusterClient.sendHealthRequest(request);
+    final ActorFuture<Topology> responseFuture = clusterClient.sendHealthRequest();
     requestActor.handleResponse(responseFuture, responseMapper::toHealthResponse, responseObserver);
   }
 
@@ -78,5 +81,15 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
     final ActorFuture<JobEvent> responseFuture = clusterClient.sendCreateJob(request);
     requestActor.handleResponse(
         responseFuture, responseMapper::toCreateJobResponse, responseObserver);
+  }
+
+  @Override
+  public void createWorkflowInstance(
+      CreateWorkflowInstanceRequest request,
+      StreamObserver<CreateWorkflowInstanceResponse> responseObserver) {
+    final ActorFuture<WorkflowInstanceEvent> responseFuture =
+        clusterClient.sendCreateWorkflowInstance(request);
+    requestActor.handleResponse(
+        responseFuture, responseMapper::toCreateWorkflowInstanceResponse, responseObserver);
   }
 }

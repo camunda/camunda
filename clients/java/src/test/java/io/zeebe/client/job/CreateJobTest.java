@@ -156,7 +156,7 @@ public class CreateJobTest {
   }
 
   @Test
-  public void shouldNotPublishMessageWithNoJsonObjectAsPayload() {
+  public void shouldNotCreateJobWithNoJsonObjectAsPayload() {
     assertThatThrownBy(
             () ->
                 client

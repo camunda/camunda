@@ -20,10 +20,11 @@ import io.zeebe.gateway.api.commands.Topology;
 import io.zeebe.gateway.api.events.DeploymentEvent;
 import io.zeebe.gateway.api.events.JobEvent;
 import io.zeebe.gateway.api.events.MessageEvent;
+import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
 import io.zeebe.gateway.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.HealthRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowRequestObject;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -41,7 +42,7 @@ public class ClusterClient {
     this.client = client;
   }
 
-  public ActorFuture<Topology> sendHealthRequest(final HealthRequest healthRequest) {
+  public ActorFuture<Topology> sendHealthRequest() {
     return client.newTopologyRequest().send();
   }
 
@@ -96,6 +97,28 @@ public class ClusterClient {
         .payload(payload)
         .addCustomHeaders(jsonToMap(customHeaders))
         .send();
+  }
+
+  public ActorFuture<WorkflowInstanceEvent> sendCreateWorkflowInstance(
+      CreateWorkflowInstanceRequest request) {
+    final String payload = ensureJsonSet(request.getPayload());
+
+    if (request.getWorkflowKey() > 0) {
+      return client
+          .workflowClient()
+          .newCreateInstanceCommand()
+          .workflowKey(request.getWorkflowKey())
+          .payload(payload)
+          .send();
+    } else {
+      return client
+          .workflowClient()
+          .newCreateInstanceCommand()
+          .bpmnProcessId(request.getBpmnProcessId())
+          .version(request.getVersion())
+          .payload(payload)
+          .send();
+    }
   }
 
   private String ensureJsonSet(final String value) {
