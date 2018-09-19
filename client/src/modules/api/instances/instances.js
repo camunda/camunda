@@ -36,6 +36,12 @@ export async function fetchWorkflowInstanceBySelection(payload) {
   return await response.json();
 }
 
+export async function fetchWorkflowInstancesStatistics(payload) {
+  const url = `${URL}/statistics`;
+  const response = await post(url, {queries: [...payload.queries]});
+  return await response.json();
+}
+
 /**
  * @param {*} operationType constants specifying the operation to be applied.
  * @param {*} queries object with query params.

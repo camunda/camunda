@@ -47,7 +47,11 @@ const Colors = {
   // Focus Colors
   focusOuter: '#8CB7FF',
   lightFocusInner: '#C8E1FF',
-  darkFocusInner: '#2B7BFF'
+  darkFocusInner: '#2B7BFF',
+
+  // Badge Colors
+  badge01: '#88888d',
+  badge02: '#d7d7d9'
 };
 
 export default Colors;

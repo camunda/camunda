@@ -10,7 +10,8 @@ import {DEFAULT_FILTER} from 'modules/constants';
 import {
   fetchWorkflowInstanceBySelection,
   fetchWorkflowInstancesCount,
-  fetchGroupedWorkflowInstances
+  fetchGroupedWorkflowInstances,
+  fetchWorkflowInstancesStatistics
 } from 'modules/api/instances';
 
 import {fetchWorkflowXML} from 'modules/api/diagram';
@@ -70,7 +71,8 @@ class Instances extends Component {
       selectionCount: selectionCount || 0,
       selections: selections || [],
       workflow: {},
-      groupedWorkflowInstances: {}
+      groupedWorkflowInstances: {},
+      statistics: []
     };
   }
 
@@ -90,8 +92,36 @@ class Instances extends Component {
       await this.cleanFilterByWorkflowData();
 
       this.setFilterFromUrl();
+
+      if (
+        prevState.filter.active !== this.state.filter.active ||
+        prevState.filter.incidents !== this.state.filter.incidents ||
+        prevState.filter.completed !== this.state.filter.completed ||
+        prevState.filter.canceled !== this.state.filter.canceled
+      ) {
+        this.fetchDiagramStatistics();
+      }
     }
   }
+
+  fetchDiagramStatistics = async () => {
+    let filter = Object.assign({}, this.state.filter);
+
+    if (isEmpty(filter) || !filter.workflow) {
+      return;
+    }
+
+    const filterWithWorkflowIds = getFilterWithWorkflowIds(
+      filter,
+      this.state.groupedWorkflowInstances
+    );
+
+    const statistics = await fetchWorkflowInstancesStatistics({
+      queries: [parseFilterForRequest(filterWithWorkflowIds)]
+    });
+
+    this.setState({statistics});
+  };
 
   cleanFilterByWorkflowData = async () => {
     let {filter} = parseQueryString(this.props.location.search);
@@ -353,7 +383,11 @@ class Instances extends Component {
                 </SplitPane.Pane.Header>
                 <SplitPane.Pane.Body>
                   {!isEmpty(this.state.workflow) && (
-                    <Diagram workflowId={this.state.workflow.id} />
+                    <Diagram
+                      workflowId={this.state.workflow.id}
+                      onFlowNodesDetailsReady={this.fetchDiagramStatistics}
+                      flowNodesStatisticsOverlay={this.state.statistics}
+                    />
                   )}
                 </SplitPane.Pane.Body>
               </SplitPane.Pane>

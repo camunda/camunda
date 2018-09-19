@@ -1,9 +1,16 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import BPMNViewer from 'bpmn-js/lib/NavigatedViewer';
-
+import {isEqual} from 'lodash';
 import {themed} from 'modules/theme';
-import {ACTIVITY_STATE, FLOW_NODE_STATE_OVERLAY_ID} from 'modules/constants';
+import {
+  ACTIVITY_STATE,
+  FLOW_NODE_STATE_OVERLAY_ID,
+  ACTIVE_STATISTICS_OVERLAY_ID,
+  INCIDENTS_STATISTICS_OVERLAY_ID,
+  CANCELED_STATISTICS_OVERLAY_ID,
+  COMPLETED_STATISTICS_OVERLAY_ID
+} from 'modules/constants';
 import incidentIcon from 'modules/components/Icon/diagram-badge-single-instance-incident.svg';
 import activeIcon from 'modules/components/Icon/diagram-badge-single-instance-active.svg';
 import completedLightIcon from 'modules/components/Icon/diagram-badge-single-instance-completed-light.svg';
@@ -14,7 +21,11 @@ import canceledDarkIcon from 'modules/components/Icon/diagram-badge-single-insta
 import * as Styled from './styled';
 import DiagramControls from './DiagramControls';
 import * as api from 'modules/api/diagram';
-import {getDiagramColors, getFlowNodesDetails} from './service';
+import {
+  getDiagramColors,
+  getFlowNodesDetails,
+  getOverlaysByState
+} from './service';
 
 const iconMap = {
   [ACTIVITY_STATE.INCIDENT]: {light: incidentIcon, dark: incidentIcon},
@@ -44,6 +55,15 @@ class Diagram extends React.Component {
         id: PropTypes.string.isRequired,
         state: PropTypes.oneOf(Object.keys(ACTIVITY_STATE)).isRequired
       })
+    ),
+    flowNodesStatisticsOverlay: PropTypes.arrayOf(
+      PropTypes.shape({
+        activityId: PropTypes.string.isRequired,
+        active: PropTypes.number,
+        incidents: PropTypes.number,
+        completed: PropTypes.number,
+        canceled: PropTypes.number
+      })
     )
   };
 
@@ -62,12 +82,19 @@ class Diagram extends React.Component {
   async componentDidUpdate({
     theme: prevTheme,
     workflowId: prevWorkflowId,
-    selectedFlowNode
+    selectedFlowNode,
+    flowNodesStatisticsOverlay: prevflowNodesStatisticsOverlay
   }) {
     const hasNewTheme = this.props.theme !== prevTheme;
     const hasNewWorkflowId = this.props.workflowId !== prevWorkflowId;
     const hasSelectedFlowNodeChanged =
       this.props.selectedFlowNode !== selectedFlowNode;
+    console.log(
+      this.props.theme,
+      prevTheme,
+      this.props.flowNodesStatisticsOverlay,
+      Boolean(this.props.flowNodesStatisticsOverlay.length)
+    );
 
     if (hasNewTheme || hasNewWorkflowId) {
       hasNewWorkflowId && (await this.fetchAndSetWorkflowXML());
@@ -89,6 +116,26 @@ class Diagram extends React.Component {
       this.clearOverlaysByType(FLOW_NODE_STATE_OVERLAY_ID);
       this.props.flowNodeStateOverlays.forEach(this.addFlowNodeStateOverlay);
     }
+
+    // Clear overlays for statistics
+    if (
+      (hasNewTheme &&
+        this.props.flowNodesStatisticsOverlay &&
+        Boolean(this.props.flowNodesStatisticsOverlay.length)) ||
+      !isEqual(
+        prevflowNodesStatisticsOverlay,
+        this.props.flowNodesStatisticsOverlay
+      )
+    ) {
+      this.clearOverlaysByType(ACTIVE_STATISTICS_OVERLAY_ID);
+      this.clearOverlaysByType(INCIDENTS_STATISTICS_OVERLAY_ID);
+      this.clearOverlaysByType(COMPLETED_STATISTICS_OVERLAY_ID);
+      this.clearOverlaysByType(CANCELED_STATISTICS_OVERLAY_ID);
+
+      this.addFlowNodesStatisticsOverlays(
+        this.props.flowNodesStatisticsOverlay
+      );
+    }
   }
 
   async fetchAndSetWorkflowXML() {
@@ -99,6 +146,7 @@ class Diagram extends React.Component {
     if (e) {
       return console.log('Error rendering diagram:', e);
     }
+
     this.handleZoomReset();
 
     // in case onFlowNodesDetailsReady callback function is provided
@@ -224,6 +272,73 @@ class Diagram extends React.Component {
       position: {bottom: 14, left: -10},
       html: img
     });
+  };
+
+  addStatisticsOverlayByState = (id, state, count, overlayId) => {
+    const positions = {
+      active: {bottom: 9, left: 0},
+      incidents: {bottom: 7, right: 0},
+      canceled: {top: -15, left: 0},
+      completed: {bottom: 9, left: 30}
+    };
+
+    const icons = {
+      active: iconMap[ACTIVITY_STATE.ACTIVE],
+      incidents: iconMap[ACTIVITY_STATE.INCIDENT],
+      canceled: iconMap[ACTIVITY_STATE.TERMINATED],
+      completed: iconMap[ACTIVITY_STATE.COMPLETED]
+    };
+
+    const img = document.createElement('img');
+    const span = document.createElement('span');
+    const div = document.createElement('div');
+
+    Object.assign(img, {
+      src: icons[state][this.props.theme],
+      width: 24,
+      height: 24
+    });
+
+    Object.assign(span, {
+      style: Styled.span
+    });
+    Object.assign(div, {
+      style: Styled.getInlineStyle(state, this.props.theme)
+    });
+
+    var newContent = document.createTextNode(count);
+    span.appendChild(newContent);
+    div.appendChild(img);
+    div.appendChild(span);
+
+    this.Viewer.get('overlays').add(id, overlayId, {
+      position: positions[state],
+      html: div
+    });
+  };
+
+  // !!! check for when filter changes and theme
+  addFlowNodesStatisticsOverlays = statistics => {
+    const overlaysByState = getOverlaysByState(statistics);
+
+    const overlayIds = {
+      active: ACTIVE_STATISTICS_OVERLAY_ID,
+      incidents: INCIDENTS_STATISTICS_OVERLAY_ID,
+      completed: COMPLETED_STATISTICS_OVERLAY_ID,
+      canceled: CANCELED_STATISTICS_OVERLAY_ID
+    };
+
+    for (let state in overlaysByState) {
+      const nodes = overlaysByState[state];
+      nodes.forEach(item => {
+        this.addStatisticsOverlayByState(
+          item.id,
+          state,
+          item.count,
+          overlayIds[state]
+        );
+      });
+    }
   };
 
   clearOverlaysByType = type => {
