@@ -56,6 +56,7 @@ public class UpgradeFrom21To22 implements Upgrade {
           .addUpgradeStep(AdjustRollingStartDateFilter())
           .addUpgradeStep(AdjustFixedStartDateFilter())
           .addUpgradeStep(AdjustVariableFilter())
+          .addUpgradeStep(AdjustEmptyReportStructure())
         .build();
       upgradePlan.execute();
     } catch (Exception e) {
@@ -73,7 +74,9 @@ public class UpgradeFrom21To22 implements Upgrade {
       "$.mappings.process-instance.properties.events.properties",
       "startDate",
       dateType,
-      "ctx._source.startDate = null"
+      "for (def e : ctx._source.events) {" +
+        "e.startDate = null" +
+      "}"
     );
   }
 
@@ -86,7 +89,9 @@ public class UpgradeFrom21To22 implements Upgrade {
       "$.mappings.process-instance.properties.events.properties",
       "endDate",
       value,
-      "ctx._source.endDate = null"
+      "for (def e : ctx._source.events) {" +
+        "e.endDate = null" +
+      "}"
     );
   }
 
@@ -113,6 +118,22 @@ public class UpgradeFrom21To22 implements Upgrade {
         "ctx._source.data.groupBy.value = ['unit': ctx._source.data.groupBy.unit];" +
       "}" +
       "ctx._source.data.groupBy.remove('unit');"
+    );
+  }
+
+  private UpdateDataStep AdjustEmptyReportStructure() {
+    return new UpdateDataStep(
+      "single-report",
+      QueryBuilders.matchAllQuery(),
+      "if (ctx._source.data.view.operation == '') {" +
+        "ctx._source.data.view = null" +
+      "}" +
+      "if (ctx._source.data.visualization == '') {" +
+        "ctx._source.data.visualization = null" +
+      "}" +
+      "if (ctx._source.data.groupBy.type == '') {" +
+        "ctx._source.data.groupBy = null" +
+      "}"
     );
   }
 
