@@ -31,6 +31,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -52,6 +53,8 @@ public class SimpleEngineClient {
     this.engineRestEndpoint = engineRestEndpoint;
     client = HttpClientBuilder.create().build();
     objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+    SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
+    objectMapper.setDateFormat(df);
   }
 
   public List<String> deployProcesses(BpmnModelInstance modelInstance, int nVersions) {

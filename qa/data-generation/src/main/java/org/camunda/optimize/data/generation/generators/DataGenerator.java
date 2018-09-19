@@ -11,15 +11,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.text.SimpleDateFormat;
-import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
 public abstract class DataGenerator implements Runnable {
@@ -101,8 +93,7 @@ public abstract class DataGenerator implements Runnable {
     variables.put("shortVar", integer.shortValue());
     variables.put("longVar", random.nextLong());
     variables.put("doubleVar", random.nextDouble());
-    SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ");
-    variables.put("dateVar", df.format(new Date(random.nextInt())));
+    variables.put("dateVar", new Date(random.nextInt()));
     return variables;
   }
 
