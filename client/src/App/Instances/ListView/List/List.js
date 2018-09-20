@@ -3,11 +3,13 @@ import PropTypes from 'prop-types';
 
 import Checkbox from 'modules/components/Checkbox';
 import Table from 'modules/components/Table';
-import {getWorkflowName} from 'modules/utils/instance';
-import {formatDate} from 'modules/utils/date';
-import {EXPAND_STATE} from 'modules/constants';
+import Actions from 'modules/components/Actions';
 import StateIcon from 'modules/components/StateIcon';
 
+import {EXPAND_STATE, INSTANCE_STATE} from 'modules/constants';
+
+import {getWorkflowName, getInstanceState} from 'modules/utils/instance';
+import {formatDate} from 'modules/utils/date';
 import {isEqual} from 'modules/utils';
 import {
   areIdsArray,
@@ -187,7 +189,7 @@ export default class List extends React.Component {
               handleSorting={this.props.handleSorting}
             />
           </TH>
-          <TH>Actions</TH>
+          <Styled.Th>Actions</Styled.Th>
         </TR>
       </THead>
     );
@@ -201,7 +203,7 @@ export default class List extends React.Component {
           .map((instance, idx) => (
             <TR key={idx} selected={this.isSelected(instance.id)}>
               <TD>
-                <Styled.Selection>
+                <Styled.Cell>
                   <Styled.SelectionStatusIndicator selected={false} />
                   <Checkbox
                     type="selection"
@@ -214,7 +216,7 @@ export default class List extends React.Component {
                   <Styled.WorkflowName>
                     {getWorkflowName(instance)}
                   </Styled.WorkflowName>
-                </Styled.Selection>
+                </Styled.Cell>
               </TD>
               <TD>
                 <Styled.InstanceAnchor
@@ -226,7 +228,11 @@ export default class List extends React.Component {
               </TD>
               <TD>{formatDate(instance.startDate)}</TD>
               <TD>{formatDate(instance.endDate)}</TD>
-              <TD />
+              <TD>
+                <Styled.Cell>
+                  <Actions instance={instance} />
+                </Styled.Cell>
+              </TD>
             </TR>
           ))}
       </TBody>

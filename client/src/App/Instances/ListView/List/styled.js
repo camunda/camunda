@@ -1,7 +1,10 @@
 import styled from 'styled-components';
 import {Link} from 'react-router-dom';
+import Table from 'modules/components/Table';
 
 import {Colors, themed, themeStyle} from 'modules/theme';
+
+const {TH} = Table;
 
 export const List = styled.div`
   flex-grow: 1;
@@ -15,6 +18,10 @@ export const TableContainer = styled.div`
   width: 100%;
   left: 0;
   top: 0;
+`;
+
+export const Th = styled(TH)`
+  width: 90px;
 `;
 
 export const SelectionStatusIndicator = themed(styled.div`
@@ -37,7 +44,7 @@ export const CheckAll = styled.div`
   margin-right: 28px;
 `;
 
-export const Selection = styled.div`
+export const Cell = styled.div`
   position: relative;
   display: flex;
   align-items: center;

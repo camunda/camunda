@@ -5,6 +5,7 @@ import {EXPAND_STATE, SORT_ORDER} from 'modules/constants';
 import Checkbox from 'modules/components/Checkbox';
 import Table from 'modules/components/Table';
 import StateIcon from 'modules/components/StateIcon';
+import Actions from 'modules/components/Actions';
 import {getWorkflowName} from 'modules/utils/instance';
 import {formatDate} from 'modules/utils/date';
 
@@ -70,7 +71,10 @@ describe('List', () => {
 
     // TH
     const THNodes = THeadNode.find(TH);
-    expect(THNodes.length).toBe(5);
+    expect(THNodes.length).toBe(4);
+
+    // Styled TH
+    expect(THeadNode.find(Styled.Th).length).toBe(1);
 
     // Workflow Definition TH
     expect(THNodes.at(0).contains('Workflow Definition')).toBe(true);
@@ -114,7 +118,7 @@ describe('List', () => {
     );
 
     // Action TH
-    expect(THNodes.at(4).contains('Actions')).toBe(true);
+    expect(THeadNode.find(Styled.Th).contains('Actions')).toBe(true);
   });
 
   it('should render table body', () => {
@@ -165,7 +169,7 @@ describe('List', () => {
       );
 
       // Actions TD
-      expect(TDNodes.at(4).children().length).toBe(0);
+      expect(TDNodes.at(4).find(Actions));
     });
   });
 
