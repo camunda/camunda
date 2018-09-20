@@ -1,10 +1,9 @@
 import styled, {css} from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
-import {Retry} from 'modules/components/Icon';
+import {Retry, Stop} from 'modules/components/Icon';
 
 export const Ul = themed(styled.ul`
-  z-index: 0;
   display: inline-flex;
   flex-direction: row;
   padding: 2px;
@@ -13,10 +12,13 @@ export const Ul = themed(styled.ul`
   list-style-type: none;
   border-radius: 12px;
 
-  background: ${themeStyle({
-    dark: Colors.uiDark01,
-    light: 'rgba(98, 98, 110, 0.15)'
-  })};
+  background: ${({children}) =>
+    // checks if children are components
+    children.reduce((sum, next) => sum || !!next, false) &&
+    themeStyle({
+      dark: Colors.uiDark01,
+      light: 'rgba(98, 98, 110, 0.15)'
+    })};
 
   /* Border between single action items */
   & > li {
@@ -31,7 +33,7 @@ export const Ul = themed(styled.ul`
 
   /* Button border radius for correct focus style shapes*/
 
-  /* when only one child exists */
+  /* only one child exists */
   & > li:first-child:last-child > button {
     border-radius: 12px;
   }
@@ -81,5 +83,9 @@ export const iconStyle = css`
 
 // import and style any Icon accordingly
 export const RetryIcon = themed(styled(Retry)`
+  ${iconStyle};
+`);
+
+export const CancelIcon = themed(styled(Stop)`
   ${iconStyle};
 `);

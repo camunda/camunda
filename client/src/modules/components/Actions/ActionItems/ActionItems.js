@@ -1,15 +1,21 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import {ACTION_TYPE} from 'modules/constants';
+import {OPERATION_TYPE} from 'modules/constants';
 import * as Styled from './styled';
 
 const iconsMap = {
-  [ACTION_TYPE.RETRY]: Styled.RetryIcon
+  [OPERATION_TYPE.UPDATE_RETRIES]: Styled.RetryIcon,
+  [OPERATION_TYPE.CANCEL]: Styled.CancelIcon
+};
+
+const ariaLabelMap = {
+  [OPERATION_TYPE.CANCEL]: 'Cancel',
+  [OPERATION_TYPE.UPDATE_RETRIES]: 'Retry'
 };
 
 export default function ActionItems(props) {
-  return <Styled.Ul {...props} />;
+  return <Styled.Ul {...props}>{props.children}</Styled.Ul>;
 }
 
 ActionItems.propTypes = {
@@ -23,7 +29,7 @@ ActionItems.Item = function Item(props) {
     <li>
       <Styled.Button
         {...props}
-        aria-label={props.type.toLowerCase()}
+        aria-label={ariaLabelMap[props.type]}
         onClick={props.onClick}
       >
         <Icon />
@@ -33,6 +39,6 @@ ActionItems.Item = function Item(props) {
 };
 
 ActionItems.Item.propTypes = {
-  type: PropTypes.oneOf(Object.keys(ACTION_TYPE)).isRequired,
+  type: PropTypes.oneOf(Object.keys(OPERATION_TYPE)).isRequired,
   onClick: PropTypes.func.isRequired
 };
