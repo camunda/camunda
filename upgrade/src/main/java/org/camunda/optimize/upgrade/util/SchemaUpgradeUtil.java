@@ -6,7 +6,7 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-
+  
 /**
  * Bunch of utility methods that might be required during upgrade
  * operation.

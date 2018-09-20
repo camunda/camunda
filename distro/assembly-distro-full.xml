@@ -61,6 +61,12 @@
       <outputDirectory></outputDirectory>
     </file>
     <file>
+      <source>
+        ${project.basedir}/../upgrade/target/upgrade-optimize-from-${project.previousVersion}-to-${project.version}.jar
+      </source>
+      <outputDirectory>upgrade</outputDirectory>
+    </file>
+    <file>
       <source>src/README.txt</source>
       <filtered>true</filtered>
       <lineEnding>crlf</lineEnding>
