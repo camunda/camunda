@@ -1,5 +1,4 @@
 import {post, get} from 'modules/request';
-import {OPERATION_TYPE} from 'modules/constants';
 
 const URL = '/api/workflow-instances';
 
@@ -37,9 +36,13 @@ export async function fetchWorkflowInstanceBySelection(payload) {
   return await response.json();
 }
 
-export async function retryInstances(queries) {
+/**
+ * @param {*} operationType constants specifying the operation to be applied.
+ * @param {*} queries object with query params.
+ */
+export async function applyOperation(operationType, queries) {
   const url = `${URL}/operation`;
-  const payload = {operationType: OPERATION_TYPE.UPDATE_RETRIES, queries};
+  const payload = {operationType, queries};
 
   await post(url, payload);
 }

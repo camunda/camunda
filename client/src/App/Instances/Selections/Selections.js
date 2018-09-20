@@ -3,8 +3,8 @@ import PropTypes from 'prop-types';
 
 import Panel from 'modules/components/Panel';
 
-import {retryInstances} from 'modules/api/instances';
-import {BADGE_TYPE, DIRECTION} from 'modules/constants';
+import {applyOperation} from 'modules/api/instances';
+import {BADGE_TYPE, DIRECTION, OPERATION_TYPE} from 'modules/constants';
 import {getSelectionById} from 'modules/utils/selection';
 
 import SelectionList from './SelectionList';
@@ -56,7 +56,7 @@ export default class Selections extends React.Component {
     const {queries} = getSelectionById(selections, openSelectionId);
 
     try {
-      await retryInstances(queries);
+      await applyOperation(OPERATION_TYPE.UPDATE_RETRIES, queries);
     } catch (e) {
       console.log(e);
     }

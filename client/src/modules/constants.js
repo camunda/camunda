@@ -98,10 +98,6 @@ export const BADGE_TYPE = {
   INSTANCES: 'instances'
 };
 
-export const ACTION_TYPE = {
-  RETRY: 'RETRY'
-};
-
 export const DROPDOWN_PLACEMENT = {
   TOP: 'top',
   BOTTOM: 'bottom'
@@ -120,5 +116,6 @@ export const EVENT_SOURCE_TYPE = {
 };
 
 export const OPERATION_TYPE = {
-  UPDATE_RETRIES: 'UPDATE_RETRIES'
+  UPDATE_RETRIES: 'UPDATE_RETRIES',
+  CANCEL: 'CANCEL'
 };

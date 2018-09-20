@@ -3,7 +3,7 @@ import * as wrappers from 'modules/request/wrappers';
 
 import {OPERATION_TYPE} from 'modules/constants';
 
-import {fetchWorkflowInstancesCount, retryInstances} from './instances';
+import {fetchWorkflowInstancesCount, applyOperation} from './instances';
 
 import {post} from 'modules/request';
 
@@ -35,7 +35,7 @@ describe('instance retry', () => {
     const queries = [{id: 1, incidents: true}];
 
     // when
-    await retryInstances(queries);
+    await applyOperation(OPERATION_TYPE.UPDATE_RETRIES, queries);
 
     // then
     expect(post.mock.calls[0][0]).toBe('/api/workflow-instances/operation');

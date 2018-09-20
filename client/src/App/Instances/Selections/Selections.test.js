@@ -3,11 +3,13 @@ import {shallow} from 'enzyme';
 
 import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
 
+import {OPERATION_TYPE} from 'modules/constants';
+
 import Selections from './Selections';
 
 import * as api from 'modules/api/instances/instances';
 
-api.retryInstances = mockResolvedAsyncFn();
+api.applyOperation = mockResolvedAsyncFn();
 
 const MockSelections = [
   {
@@ -53,6 +55,7 @@ describe('Selections', () => {
       <Selections
         openSelection={0}
         selections={MockSelections}
+        rollingSelectionIndex={1}
         selectionCount={2}
         instancesInSelectionsCount={6}
         onStateChange={mockonStateChange}
@@ -120,6 +123,9 @@ describe('Selections', () => {
     await flushPromises();
 
     //then
-    expect(api.retryInstances).toHaveBeenCalledWith(MockSelections[0].queries);
+    expect(api.applyOperation).toHaveBeenCalledWith(
+      OPERATION_TYPE.UPDATE_RETRIES,
+      MockSelections[0].queries
+    );
   });
 });
