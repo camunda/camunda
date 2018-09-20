@@ -16,9 +16,7 @@ exports[`DiagramPanel should render pane header and body 1`] = `
   }
   selectedFlowNode="foo"
 >
-  <PanelHeader
-    isRounded={false}
-  >
+  <Styled(PanelHeader)>
     <styled.table>
       <tbody>
         <tr>
@@ -45,10 +43,23 @@ exports[`DiagramPanel should render pane header and body 1`] = `
           <td>
             Invalid Date
           </td>
+          <td>
+            <Actions
+              instance={
+                Object {
+                  "endDate": "--",
+                  "id": "foo",
+                  "startDate": "Wed Jun 20 2018 08:57:20",
+                  "state": "ACTIVE",
+                  "workflowId": "bar",
+                }
+              }
+            />
+          </td>
         </tr>
       </tbody>
     </styled.table>
-  </PanelHeader>
+  </Styled(PanelHeader)>
   <Styled(PanelBody)>
     <DiagramBar
       instance={

@@ -40,7 +40,7 @@ describe('DiagramPanel', () => {
     expect(node.find(Pane)).toHaveLength(1);
 
     // Pane.Header
-    const PaneHeaderNode = node.find(Pane.Header);
+    const PaneHeaderNode = node.find(Styled.SplitPaneHeader);
     expect(PaneHeaderNode).toHaveLength(1);
     const StyledTableNode = PaneHeaderNode.find(Styled.Table);
     expect(StyledTableNode).toHaveLength(1);
@@ -62,6 +62,7 @@ describe('DiagramPanel', () => {
     const DiagramBarNode = PaneBodyNode.find(DiagramBar);
     expect(DiagramBarNode).toHaveLength(1);
     expect(DiagramBarNode.prop('instance')).toBe(mockInstance);
+
     // DiagramNode
     const DiagramNode = PaneBodyNode.find(Diagram);
     expect(DiagramNode).toHaveLength(1);
@@ -81,6 +82,7 @@ describe('DiagramPanel', () => {
     expect(DiagramNode.prop('flowNodeStateOverlays')).toBe(
       mockProps.flowNodeStateOverlays
     );
+
     expect(node).toMatchSnapshot();
   });
 });
