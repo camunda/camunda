@@ -6,9 +6,9 @@ import Table from 'modules/components/Table';
 import Actions from 'modules/components/Actions';
 import StateIcon from 'modules/components/StateIcon';
 
-import {EXPAND_STATE, INSTANCE_STATE} from 'modules/constants';
+import {EXPAND_STATE} from 'modules/constants';
 
-import {getWorkflowName, getInstanceState} from 'modules/utils/instance';
+import {getWorkflowName} from 'modules/utils/instance';
 import {formatDate} from 'modules/utils/date';
 import {isEqual} from 'modules/utils';
 import {
