@@ -19,6 +19,10 @@ func (client *ZBClientImpl) NewDeployWorkflowCommand() *commands.DeployCommand {
 	return commands.NewDeployCommand(client.gateway)
 }
 
+func (client *ZBClientImpl) NewPublishMessageCommand() commands.PublishMessageCommandStep1 {
+    return commands.NewPublishMessageCommand(client.gateway)
+}
+
 func (client *ZBClientImpl) Close() error {
 	return client.connection.Close()
 }
