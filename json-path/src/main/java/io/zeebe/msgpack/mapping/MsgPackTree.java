@@ -15,6 +15,8 @@
  */
 package io.zeebe.msgpack.mapping;
 
+import static io.zeebe.msgpack.mapping.MsgPackTreeNodeIdConstructor.construct;
+
 import io.zeebe.msgpack.spec.MsgPackWriter;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -45,7 +47,7 @@ import org.agrona.collections.Object2IntHashMap;
  * extract document. For this distinction the {@link MsgPackNodeType#EXISTING_LEAF_NODE} and {@link
  * MsgPackNodeType#EXTRACTED_LEAF_NODE} are used.
  */
-public class MsgPackTree {
+public class MsgPackTree implements MsgPackDiff {
   protected final Map<String, MsgPackNodeType> nodeTypeMap; // Bytes2LongHashIndex nodeTypeMap;
   protected final Map<String, Set<String>> nodeChildsMap;
   protected final Map<String, Long> leafMap; // Bytes2LongHashIndex leafMap;
@@ -72,7 +74,8 @@ public class MsgPackTree {
     documents = new DirectBuffer[0];
   }
 
-  public Set<String> getChilds(String nodeId) {
+  /** @return the names (not IDs) of the child nodes */
+  public Set<String> getChildren(String nodeId) {
     return nodeChildsMap.get(nodeId);
   }
 
@@ -82,129 +85,181 @@ public class MsgPackTree {
     return documents.length - 1;
   }
 
-  public void addLeafNode(String nodeId, int documentId, long position, int length) {
-    leafMap.put(nodeId, (position << 32) | length);
-    leafDocumentSources.put(nodeId, documentId);
-    nodeTypeMap.put(nodeId, null);
-  }
-
-  public int getSourceDocumentPosition(String nodeId) {
-    final Long encodedLeaf = leafMap.get(nodeId);
-    if (encodedLeaf != null) {
-      return (int) (encodedLeaf >> 32);
-    } else {
-      return -1;
-    }
-  }
-
-  private void addParentNode(String nodeId, MsgPackNodeType nodeType) {
+  private void addContainerNode(String nodeId, MsgPackNodeType nodeType) {
     nodeTypeMap.put(nodeId, nodeType);
-    if (!nodeChildsMap.containsKey(nodeId)) {
-      nodeChildsMap.put(nodeId, new LinkedHashSet<>());
+    nodeChildsMap.put(nodeId, new LinkedHashSet<>());
+  }
+
+  private void addChildToNode(String parentId, String childName) {
+    if (!parentId.isEmpty()) {
+      nodeChildsMap.get(parentId).add(childName);
     }
   }
 
-  public void addMapNode(String nodeId) {
-    if (isLeaf(nodeId)) {
-      leafMap.remove(nodeId);
-    }
-    addParentNode(nodeId, MsgPackNodeType.MAP_NODE);
-  }
-
-  public void addArrayNode(String nodeId) {
-    addParentNode(nodeId, MsgPackNodeType.ARRAY_NODE);
-  }
-
-  public void addChildToNode(String childName, String parentId) {
-    nodeChildsMap.get(parentId).add(childName);
-  }
-
-  public boolean isLeaf(String nodeId) {
-    return leafMap.containsKey(nodeId);
+  public boolean isValueNode(String nodeId) {
+    return nodeTypeMap.get(nodeId) == MsgPackNodeType.VALUE;
   }
 
   public boolean isArrayNode(String nodeId) {
-    final MsgPackNodeType msgPackNodeType = nodeTypeMap.get(nodeId);
-    return msgPackNodeType != null && msgPackNodeType == MsgPackNodeType.ARRAY_NODE;
+    return nodeTypeMap.get(nodeId) == MsgPackNodeType.ARRAY;
   }
 
   public boolean isMapNode(String nodeId) {
-    final MsgPackNodeType msgPackNodeType = nodeTypeMap.get(nodeId);
-    return msgPackNodeType != null && msgPackNodeType == MsgPackNodeType.MAP_NODE;
+    return nodeTypeMap.get(nodeId) == MsgPackNodeType.MAP;
   }
 
-  public DirectBuffer getDocument(String nodeId) {
-    final int sourceDocId = leafDocumentSources.getValue(nodeId);
-
-    if (sourceDocId >= 0) {
-      return documents[sourceDocId];
-    } else {
-      return null;
-    }
-  }
-
-  public void writeLeafMapping(MsgPackWriter writer, String leafId) {
-    final long mapping = leafMap.get(leafId);
+  public void writeValueNode(MsgPackWriter writer, String nodeId) {
+    final long mapping = leafMap.get(nodeId);
     final int position = (int) (mapping >> 32);
     final int length = (int) mapping;
 
-    final int documentId = leafDocumentSources.getValue(leafId);
+    final int documentId = leafDocumentSources.getValue(nodeId);
     final DirectBuffer sourceDocument = documents[documentId];
 
     writer.writeRaw(sourceDocument, position, length);
   }
 
-  /**
-   * @param mergeContainers if false, the containers (object/array) of <code>other</code> will
-   *     replace the values/containers in this. If true, they will be merged if possible.
-   */
-  public void merge(MsgPackTree other, boolean mergeContainers) {
+  /** Always replaces containers (object/array), unless it is the root object */
+  @Override
+  public void mergeInto(MsgPackTree other) {
     /*
      * This method is critical for the performance of document merging
      * and extraction, so optimizations should be made here.
      */
 
     final int newDocumentOffset =
-        documents.length; // => so we can map other document ids to this document id
+        other.documents.length; // => so we can map other document ids to this document id
 
-    for (DirectBuffer otherDocument : other.documents) {
-      addDocument(otherDocument);
+    for (DirectBuffer ourDocument : documents) {
+      other.addDocument(ourDocument);
     }
 
-    for (Map.Entry<String, MsgPackNodeType> leafMapEntry : other.nodeTypeMap.entrySet()) {
+    for (Map.Entry<String, MsgPackNodeType> leafMapEntry : nodeTypeMap.entrySet()) {
       final String key = leafMapEntry.getKey();
       final MsgPackNodeType nodeType = leafMapEntry.getValue();
 
       // hack: do not convert maps in the current tree to arrays
       // use case: map keys that are digits
-      if (!(nodeTypeMap.get(key) == MsgPackNodeType.MAP_NODE
-          && nodeType == MsgPackNodeType.ARRAY_NODE)) {
-        nodeTypeMap.put(key, nodeType);
+      if (!(other.nodeTypeMap.get(key) == MsgPackNodeType.MAP
+          && nodeType == MsgPackNodeType.ARRAY)) {
+        other.nodeTypeMap.put(key, nodeType);
       }
 
-      leafMap.remove(
+      other.leafMap.remove(
           key); // => remove everything that was a leaf previously => is going to be restored by
       // putting all leafs from the other map
 
-      final int otherDocumentSource = other.leafDocumentSources.getValue(key);
+      final int otherDocumentSource = leafDocumentSources.getValue(key);
       if (otherDocumentSource >= 0) {
-        this.leafDocumentSources.put(key, otherDocumentSource + newDocumentOffset);
+        other.leafDocumentSources.put(key, otherDocumentSource + newDocumentOffset);
       }
     }
-    leafMap.putAll(other.leafMap);
+    other.leafMap.putAll(leafMap);
 
-    for (Map.Entry<String, Set<String>> nodeChildsEntry : other.nodeChildsMap.entrySet()) {
+    for (Map.Entry<String, Set<String>> nodeChildsEntry : nodeChildsMap.entrySet()) {
       final String key = nodeChildsEntry.getKey();
 
       // if we change the following condition to if (nodeChildsMap.containsKey(key))
       // we get a deep merge
-      if (mergeContainers || key.equals(Mapping.JSON_ROOT_PATH)) {
-        nodeChildsMap
+      if (key.equals(Mapping.JSON_ROOT_PATH)) {
+        other
+            .nodeChildsMap
             .computeIfAbsent(key, (k) -> new LinkedHashSet<>())
             .addAll(nodeChildsEntry.getValue());
       } else {
-        nodeChildsMap.put(key, nodeChildsEntry.getValue());
+        other.nodeChildsMap.put(key, nodeChildsEntry.getValue());
       }
+    }
+  }
+
+  /** Keeps any children, e.g. when converting MAP to ARRAY */
+  public void convertToArrayNode(String nodeId) {
+    concertToContainer(nodeId, MsgPackNodeType.ARRAY);
+  }
+
+  /** Keeps any children, e.g. when converting ARRAY to MAP */
+  public void convertToMapNode(String nodeId) {
+    concertToContainer(nodeId, MsgPackNodeType.MAP);
+  }
+
+  private void concertToContainer(String nodeId, MsgPackNodeType containerType) {
+    final MsgPackNodeType priorType = nodeTypeMap.get(nodeId);
+
+    if (priorType == MsgPackNodeType.VALUE) {
+      leafMap.remove(nodeId);
+      nodeChildsMap.put(nodeId, new LinkedHashSet<>());
+    }
+
+    nodeTypeMap.put(nodeId, containerType);
+  }
+
+  /**
+   * Creates or converts the addressed node to an array and appends the value as a new element.
+   * Replaces a previously existing non-array node completely.
+   */
+  public String appendToArray(
+      String parentId, String arrayNodeName, int documentId, int elementOffset, int elementLength) {
+
+    final String arrayNodeId = construct(parentId, arrayNodeName);
+
+    if (hasNode(arrayNodeId)) {
+      if (!isArrayNode(arrayNodeId)) {
+        clearChildren(arrayNodeId);
+        convertToArrayNode(arrayNodeId);
+      }
+    } else {
+      addArrayNode(parentId, arrayNodeName);
+    }
+
+    final int currentArrayElements = nodeChildsMap.get(arrayNodeId).size();
+    final String nodeName = Integer.toString(currentArrayElements);
+
+    return addValueNode(arrayNodeId, nodeName, documentId, elementOffset, elementLength);
+  }
+
+  public String addArrayNode(String parentId, String arrayNodeName) {
+    final String nodeId = construct(parentId, arrayNodeName);
+
+    addContainerNode(nodeId, MsgPackNodeType.ARRAY);
+    addChildToNode(parentId, arrayNodeName);
+
+    return nodeId;
+  }
+
+  public String addValueNode(
+      String parentId, String nodeName, int documentId, int valueOffset, int valueLength) {
+    final String nodeId = construct(parentId, nodeName);
+
+    leafMap.put(nodeId, ((long) valueOffset << 32) | valueLength);
+    leafDocumentSources.put(nodeId, documentId);
+    nodeTypeMap.put(nodeId, MsgPackNodeType.VALUE);
+
+    addChildToNode(parentId, nodeName);
+
+    return nodeId;
+  }
+
+  public String addMapNode(String parentId, String nodeName) {
+    final String nodeId = construct(parentId, nodeName);
+
+    addContainerNode(nodeId, MsgPackNodeType.MAP);
+    addChildToNode(parentId, nodeName);
+
+    return nodeId;
+  }
+
+  private boolean isContainerNode(String nodeId) {
+    final MsgPackNodeType nodeType = nodeTypeMap.get(nodeId);
+    return nodeType == MsgPackNodeType.ARRAY || nodeType == MsgPackNodeType.MAP;
+  }
+
+  public boolean hasNode(String id) {
+    return nodeTypeMap.containsKey(id);
+  }
+
+  public void clearChildren(String nodeId) {
+    if (isContainerNode(nodeId)) {
+      nodeChildsMap.get(nodeId).clear();
     }
   }
 }

@@ -15,16 +15,12 @@
  */
 package io.zeebe.msgpack.mapping.throughput;
 
-import io.zeebe.msgpack.jsonpath.JsonPathQuery;
-import io.zeebe.msgpack.jsonpath.JsonPathQueryCompiler;
 import io.zeebe.msgpack.mapping.JsonGenerator;
 import io.zeebe.msgpack.mapping.Mapping;
+import io.zeebe.msgpack.mapping.MappingBuilder;
 import io.zeebe.msgpack.mapping.MsgPackConverter;
-import io.zeebe.util.buffer.BufferUtil;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.util.ArrayList;
-import java.util.List;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
@@ -75,27 +71,27 @@ public class ThroughputCtx {
       return new Mapping[0];
     }
 
-    final List<Mapping> mappings = new ArrayList<>();
     int currentDepth = 0;
     final StringBuilder builder = new StringBuilder("$");
     final int endDepth = (int) (depth * depthPercentage);
     final int endCount = (int) (mappingCount * countPercentage);
 
+    final MappingBuilder mappingBuilder = new MappingBuilder();
+
     do {
       builder.append(".a");
 
       for (int i = 0; i < endCount; i++) {
-
         final int val = (int) Math.pow(mappingCount, depth - currentDepth) * i;
         final int identifier = depth > 0 ? val : i;
         final String key = builder.toString() + identifier;
-        final JsonPathQuery sourceQuery = new JsonPathQueryCompiler().compile(key);
-        mappings.add(new Mapping(sourceQuery, BufferUtil.wrapString(key)));
+
+        mappingBuilder.mapping(key, key);
       }
       builder.append("0");
       currentDepth++;
     } while (currentDepth < endDepth);
 
-    return mappings.toArray(new Mapping[endCount]);
+    return mappingBuilder.build();
   }
 }

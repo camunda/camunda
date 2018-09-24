@@ -48,10 +48,9 @@ public class MsgPackDocumentIndexerTest {
   public void shouldIndexDocument() throws Exception {
     // given document
     final DirectBuffer document = new UnsafeBuffer(MSG_PACK_BYTES);
-    indexer.wrap(document);
 
     // when
-    final MsgPackTree documentTree = indexer.index();
+    final MsgPackTree documentTree = indexer.index(document);
 
     // then tree is expected as
     assertThatIsMapNode(
@@ -110,10 +109,9 @@ public class MsgPackDocumentIndexerTest {
     final byte[] msgPackBytes =
         MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree(jsonDocument));
     final DirectBuffer document = new UnsafeBuffer(msgPackBytes);
-    indexer.wrap(document);
 
     // when
-    final MsgPackTree documentTree = indexer.index();
+    final MsgPackTree documentTree = indexer.index(document);
 
     // then tree is expected as
     assertThatIsMapNode(documentTree, "$", "first");
@@ -168,10 +166,9 @@ public class MsgPackDocumentIndexerTest {
     final byte[] msgPackBytes =
         MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree(jsonDocument));
     final DirectBuffer document = new UnsafeBuffer(msgPackBytes);
-    indexer.wrap(document);
 
     // when
-    final MsgPackTree documentTree = indexer.index();
+    final MsgPackTree documentTree = indexer.index(document);
 
     // then tree is expected as
     assertThatIsMapNode(documentTree, "$", "friends");
@@ -205,10 +202,9 @@ public class MsgPackDocumentIndexerTest {
     final byte[] msgPackBytes =
         MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree(jsonDocument));
     final DirectBuffer document = new UnsafeBuffer(msgPackBytes);
-    indexer.wrap(document);
 
     // when
-    final MsgPackTree documentTree = indexer.index();
+    final MsgPackTree documentTree = indexer.index(document);
 
     // then tree is expected as
     assertThatIsMapNode(documentTree, "$", "a", "a0");

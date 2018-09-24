@@ -15,16 +15,12 @@
  */
 package io.zeebe.msgpack.mapping.merge;
 
-import io.zeebe.msgpack.jsonpath.JsonPathQuery;
-import io.zeebe.msgpack.jsonpath.JsonPathQueryCompiler;
 import io.zeebe.msgpack.mapping.JsonGenerator;
 import io.zeebe.msgpack.mapping.Mapping;
+import io.zeebe.msgpack.mapping.MappingBuilder;
 import io.zeebe.msgpack.mapping.MsgPackConverter;
-import io.zeebe.util.buffer.BufferUtil;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.util.ArrayList;
-import java.util.List;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
@@ -62,12 +58,13 @@ public class MsgPackDocuments {
   }
 
   protected static Mapping[] generateMappings(int mappingCount) {
-    final List<Mapping> mappings = new ArrayList<>();
+    final MappingBuilder builder = new MappingBuilder();
+
     for (int i = 0; i < mappingCount; i++) {
       final String key = "$.a" + i;
-      final JsonPathQuery rootSourceQuery = new JsonPathQueryCompiler().compile(key);
-      mappings.add(new Mapping(rootSourceQuery, BufferUtil.wrapString(key)));
+      builder.mapping(key, key);
     }
-    return mappings.toArray(new Mapping[mappingCount]);
+
+    return builder.build();
   }
 }

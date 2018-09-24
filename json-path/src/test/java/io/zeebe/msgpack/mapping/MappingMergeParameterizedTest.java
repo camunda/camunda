@@ -818,6 +818,66 @@ public class MappingMergeParameterizedTest {
             // expected result
             "{'array[bar]':[0, 1, 2], 'array': {'bar': 3}, 'array[bar][0]':1}"
           },
+          {
+            // source
+            "{'in':1}",
+            // target
+            "{}",
+            // mapping
+            createMapping("$.in", "$.array", Mapping.Type.COLLECT),
+            // expected result
+            "{'array':[1]}"
+          },
+          {
+            // source
+            "{'in':1}",
+            // target
+            "{'array':[0, 1, 2]}",
+            // mapping
+            createMapping("$.in", "$.array", Mapping.Type.COLLECT),
+            // expected result
+            "{'array':[0, 1, 2, 1]}"
+          },
+          {
+            // source
+            "{'in':1}",
+            // target
+            "{'array':{'foo':'bar'}}",
+            // mapping
+            createMapping("$.in", "$.array", Mapping.Type.COLLECT),
+            // expected result
+            "{'array':[1]}"
+          },
+          {
+            // source
+            "{'in':1}",
+            // target
+            "{'array':'bar'}",
+            // mapping
+            createMapping("$.in", "$.array", Mapping.Type.COLLECT),
+            // expected result
+            "{'array':[1]}"
+          },
+          {
+            // source
+            "{'key':'newVal'}",
+            // target
+            "{'arr':[], 'key':'val'}",
+            // mapping
+            createMapping("$.key", "$.key"),
+            // expected result
+            "{'arr':[], 'key':'newVal'}"
+          },
+          {
+            // source
+            "{'key':'newVal'}",
+            // target
+            "{'obj':{}, 'key':'val'}",
+            // mapping
+            createMapping("$.key", "$.key"),
+            // expected result
+            "{'obj':{}, 'key':'newVal'}"
+          },
         });
   }
 
@@ -835,7 +895,7 @@ public class MappingMergeParameterizedTest {
   private MsgPackMergeTool mergeTool = new MsgPackMergeTool(1024);
 
   @Test
-  public void shouldExtractNothingFromEmptyObject() throws Throwable {
+  public void performTest() throws Throwable {
     // given payload
     mergeTool.reset();
 

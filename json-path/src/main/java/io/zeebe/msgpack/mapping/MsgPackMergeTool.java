@@ -60,15 +60,12 @@ public class MsgPackMergeTool {
     EnsureUtil.ensureNotNull("document", document);
 
     if (mappings != null && mappings.length > 0) {
-      documentExtractor.wrap(document);
-      final MsgPackTree extractedDocument = documentExtractor.extract(mappings);
-      currentTree.merge(extractedDocument, true);
+      final MsgPackDiff diff = documentExtractor.extract(document, mappings);
+      diff.mergeInto(currentTree);
     } else {
-      documentIndexer.clear();
-      documentIndexer.wrap(document);
-      final MsgPackTree indexedDocument = documentIndexer.index();
+      final MsgPackDiff diff = documentIndexer.index(document);
 
-      currentTree.merge(indexedDocument, false);
+      diff.mergeInto(currentTree);
     }
   }
 

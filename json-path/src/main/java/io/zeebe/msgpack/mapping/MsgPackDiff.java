@@ -15,19 +15,7 @@
  */
 package io.zeebe.msgpack.mapping;
 
-import io.zeebe.util.ByteUnit;
-import org.openjdk.jmh.annotations.Scope;
-import org.openjdk.jmh.annotations.Setup;
-import org.openjdk.jmh.annotations.State;
+public interface MsgPackDiff {
 
-@State(Scope.Thread)
-public class MappingCtx {
-  public MsgPackMergeTool processor;
-  public Mapping[] rootMappings;
-
-  @Setup
-  public void setup() {
-    processor = new MsgPackMergeTool((int) ByteUnit.KILOBYTES.toBytes(16));
-    rootMappings = MappingBuilder.createMapping("$", "$");
-  }
+  void mergeInto(MsgPackTree document);
 }

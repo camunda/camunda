@@ -36,8 +36,7 @@ public class MsgPackDocumentTreeWriterTest {
     final JsonNode jsonDocument = new ObjectMapper().readTree(Files.readAllBytes(jsonDocumentPath));
     final byte[] msgpackBytes = MSGPACK_MAPPER.writeValueAsBytes(jsonDocument);
     final MutableDirectBuffer buffer = new UnsafeBuffer(msgpackBytes);
-    indexer.wrap(buffer);
-    final MsgPackTree documentTree = indexer.index();
+    final MsgPackTree documentTree = indexer.index(buffer);
 
     // when
     final int resultLength = writer.write(documentTree);
@@ -56,8 +55,7 @@ public class MsgPackDocumentTreeWriterTest {
     final byte[] msgpackBytes = MSGPACK_MAPPER.writeValueAsBytes(jsonDocument);
     assertThat(msgpackBytes.length).isGreaterThan(64);
     final MutableDirectBuffer buffer = new UnsafeBuffer(msgpackBytes);
-    indexer.wrap(buffer);
-    final MsgPackTree documentTree = indexer.index();
+    final MsgPackTree documentTree = indexer.index(buffer);
 
     // when
     final int resultLength = writer.write(documentTree);
