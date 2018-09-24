@@ -80,8 +80,8 @@ export default class InstanceEvents extends React.Component {
           onSelection={() => this.props.onEventRowChanged({key, payload})}
           data-test={key}
         >
-          {!isOpenIncidentEvent ? '' : <Styled.IncidentIcon />}
           {label}
+          {!isOpenIncidentEvent ? '' : <Styled.IncidentIcon />}
         </Foldable.Summary>
         {!!metadata && (
           <Foldable.Details>
@@ -95,13 +95,11 @@ export default class InstanceEvents extends React.Component {
     );
   };
 
-  renderWorkflowInstanceEvent = (data, idx) => {
-    return this.renderEvent({...data, indentation: 0}, idx);
-  };
+  renderWorkflowInstanceEvent = (data, idx) =>
+    this.renderEvent({...data, indentation: 0}, idx);
 
-  renderActivityEvent = (data, idx) => {
-    return this.renderEvent({...data, indentation: 1}, idx);
-  };
+  renderActivityEvent = (data, idx) =>
+    this.renderEvent({...data, indentation: 1}, idx);
 
   renderActivityEvents = ({name, events, state}, idx) => {
     const key = `${name}${idx}`;
