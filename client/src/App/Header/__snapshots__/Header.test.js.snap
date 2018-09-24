@@ -7,7 +7,7 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
   >
     <li>
       <Themed(styled.div)
-        active={true}
+        active={false}
       >
         <Link
           replace={false}
@@ -20,7 +20,9 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
         </Link>
       </Themed(styled.div)>
     </li>
-    <li>
+    <li
+      data-test="instances"
+    >
       <Themed(styled.span)
         active={false}
       >
@@ -39,7 +41,9 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
         </Link>
       </Themed(styled.span)>
     </li>
-    <li>
+    <li
+      data-test="filters"
+    >
       <Themed(styled.span)
         active={false}
       >
@@ -58,26 +62,30 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
         </Link>
       </Themed(styled.span)>
     </li>
-    <li>
+    <li
+      data-test="selections"
+    >
       <Themed(styled.span)
         active={false}
       >
         <Link
           replace={false}
-          title="0 Selections"
           to="/instances"
         >
           <span>
             Selections
           </span>
-          <Styled(Badge)
+          <Styled(Styled(Badge))
             badgeContent={0}
-            type="selections"
+            circleContent={0}
+            type="comboSelection"
           />
         </Link>
       </Themed(styled.span)>
     </li>
-    <li>
+    <li
+      data-test="incidents"
+    >
       <Themed(styled.span)
         active={false}
       >

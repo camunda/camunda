@@ -10,17 +10,10 @@ import {parseFilterForRequest} from 'modules/utils/filter';
 import {FILTER_SELECTION, INSTANCES_LABELS} from 'modules/constants';
 
 import Content from 'modules/components/Content';
-import withSharedState from 'modules/components/withSharedState';
-import PropTypes from 'prop-types';
 
 import * as Styled from './styled.js';
 
 class Dashboard extends Component {
-  static propTypes = {
-    storeStateLocally: PropTypes.func.isRequired,
-    getStateLocally: PropTypes.func.isRequired
-  };
-
   state = {
     running: 0,
     active: 0,
@@ -29,10 +22,6 @@ class Dashboard extends Component {
 
   componentDidMount = async () => {
     const counts = await this.fetchCounts();
-    this.props.storeStateLocally({
-      running: counts.running,
-      incidents: counts.incidents
-    });
     this.setState({...counts});
   };
 
@@ -51,17 +40,14 @@ class Dashboard extends Component {
   };
 
   render() {
-    const {filterCount} = this.props.getStateLocally();
     const {running, incidents} = this.state;
     const tiles = ['running', 'active', 'incidents'];
     return (
       <Fragment>
         <Header
           active="dashboard"
-          instances={running}
-          filters={filterCount || 0}
-          selections={0}
-          incidents={incidents}
+          runningInstancesCount={running}
+          incidentsCount={incidents}
         />
         <Content>
           <Styled.Dashboard>
@@ -82,4 +68,4 @@ class Dashboard extends Component {
   }
 }
 
-export default withSharedState(Dashboard);
+export default Dashboard;

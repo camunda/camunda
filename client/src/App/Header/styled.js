@@ -67,6 +67,10 @@ export const Badge = styled(BadgeComponent)`
   opacity: 0.8;
 `;
 
+export const SelectionBadge = styled(Badge)`
+  margin-left: 13px;
+`;
+
 export const Detail = themed(styled.span`
   padding-left: 20px;
   margin-left: 20px;

@@ -2,7 +2,7 @@
 
 exports[`Instance rendering should display a Header, DiagramPanel and Copyright 1`] = `
 <React.Fragment>
-  <Header
+  <HeaderSharedState
     detail={
       <InstanceDetail
         instance={
@@ -44,10 +44,6 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
         }
       />
     }
-    filters={9263}
-    incidents={328}
-    instances={14576}
-    selections={24}
   />
   <Content>
     <styled.div>

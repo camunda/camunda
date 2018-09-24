@@ -357,15 +357,13 @@ class Instances extends Component {
   };
 
   render() {
-    const {running, incidents: incidentsCount} = this.props.getStateLocally();
     return (
       <Fragment>
         <Header
           active="instances"
-          instances={running}
-          filters={this.state.filterCount}
-          selections={0} // needs a backend call because selections are complex
-          incidents={incidentsCount}
+          filterCount={this.state.filterCount}
+          instancesInSelectionsCount={this.state.instancesInSelectionsCount}
+          selectionCount={this.state.selectionCount}
         />
         <Content>
           <Styled.Instances>

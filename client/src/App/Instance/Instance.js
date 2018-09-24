@@ -105,13 +105,7 @@ export default class Instance extends Component {
 
     return (
       <Fragment>
-        <Header
-          instances={14576}
-          filters={9263}
-          selections={24}
-          incidents={328}
-          detail={<InstanceDetail instance={this.state.instance} />}
-        />
+        <Header detail={<InstanceDetail instance={this.state.instance} />} />
         <Content>
           <Styled.Instance>
             <SplitPane>
