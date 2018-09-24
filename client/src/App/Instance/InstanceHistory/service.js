@@ -65,7 +65,7 @@ export function getGroupedEvents({events, activitiesDetails}) {
 }
 
 export function getActivityInstanceEvents({events = [], activityInstanceId}) {
-  return events.filter(
-    event => event.activityInstanceId === activityInstanceId
-  );
+  return events
+    .filter(event => event.activityInstanceId === activityInstanceId)
+    .map(event => ({...event, label: getEventLabel(event)}));
 }
