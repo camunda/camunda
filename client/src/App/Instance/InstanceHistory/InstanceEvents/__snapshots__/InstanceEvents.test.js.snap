@@ -146,8 +146,8 @@ exports[`InstanceEvents should render grouped events 1`] = `
               isSelected={false}
               onSelection={[Function]}
             >
-              <Styled(InstanceHistoryIconIncidentActive) />
               JOB CREATED
+              <Styled(InstanceHistoryIconIncidentActive) />
             </Summary>
           </Foldable>
           <Foldable
