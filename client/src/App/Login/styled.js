@@ -64,10 +64,10 @@ const LoginInput = styled(TextInput)`
   font-size: 15px;
 `;
 
-export const UsernameInput = themed(LoginInput.extend`
+export const UsernameInput = themed(styled(LoginInput)`
   margin-bottom: 16px;
 `);
 
-export const PasswordInput = themed(LoginInput.extend`
+export const PasswordInput = themed(styled(LoginInput)`
   margin-bottom: 32px;
 `);
