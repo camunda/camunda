@@ -13,6 +13,7 @@
 
     <modules>
         <module>dependency-doc-creation</module>
+        <module>optimize-reimport-preparation</module>
     </modules>
 
 

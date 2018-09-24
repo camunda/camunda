@@ -15,6 +15,7 @@
     <module>distro</module>
     <module>plugin</module>
     <module>upgrade</module>
+    <module>util</module>
   </modules>
 
   <properties>

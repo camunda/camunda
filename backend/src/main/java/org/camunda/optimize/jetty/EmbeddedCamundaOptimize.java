@@ -1,11 +1,9 @@
 package org.camunda.optimize.jetty;
 
-import ch.qos.logback.classic.LoggerContext;
-import ch.qos.logback.classic.joran.JoranConfigurator;
-import ch.qos.logback.core.joran.spi.JoranException;
 import org.camunda.optimize.CamundaOptimize;
-import org.camunda.optimize.service.engine.importing.EngineImportSchedulerFactory;
+import org.camunda.optimize.jetty.util.LoggingConfigurationReader;
 import org.camunda.optimize.service.engine.importing.EngineImportScheduler;
+import org.camunda.optimize.service.engine.importing.EngineImportSchedulerFactory;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.websocket.StatusWebSocket;
@@ -73,7 +71,8 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
   }
 
   private Server setUpEmbeddedJetty(SpringAwareServletConfiguration jerseyCamundaOptimize) {
-    defineLogbackLoggingConfiguration();
+    LoggingConfigurationReader loggingConfigurationReader = new LoggingConfigurationReader();
+    loggingConfigurationReader.defineLogbackLoggingConfiguration();
     ConfigurationService configurationService = constructConfigurationService();
 
     Server jettyServer = initServer(configurationService);
@@ -89,15 +88,12 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
 
   /**
    * Add javax.websocket support
-   * @param context
    */
   private void initWebSockets(ServletContextHandler context) {
     try {
       ServerContainer container = WebSocketServerContainerInitializer.configureContext(context);
       container.addEndpoint(StatusWebSocket.class);
-    } catch (ServletException e) {
-      logger.error("can't set up web sockets");
-    } catch (DeploymentException e) {
+    } catch (ServletException | DeploymentException e) {
       logger.error("can't set up web sockets");
     }
   }
@@ -105,47 +101,6 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
   private ConfigurationService constructConfigurationService() {
     return new ConfigurationService();
   }
-
-  private void defineLogbackLoggingConfiguration() {
-    LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-    loggerContext.reset();
-    JoranConfigurator configurator = new JoranConfigurator();
-    InputStream configStream = null;
-    try {
-      configStream = getLogbackConfigurationFileStream();
-      configurator.setContext(loggerContext);
-      configurator.doConfigure(configStream); // loads logback file
-      configStream.close();
-    } catch (JoranException | IOException e) {
-      //since logging setup broke, print it in standard error stream
-      e.printStackTrace();
-    } finally {
-      if (configStream != null) {
-        try {
-          configStream.close();
-        } catch (IOException e) {
-          logger.error("error closing stream", e);
-        }
-      }
-    }
-  }
-
-  private InputStream getLogbackConfigurationFileStream() {
-    InputStream stream  = this.getClass().getClassLoader().getResourceAsStream("environment-logback.xml");
-    if(stream != null) {
-      return stream;
-    }
-    stream = this.getClass().getClassLoader().getResourceAsStream("logback-test.xml");
-    if(stream != null) {
-      return stream;
-    }
-    stream = this.getClass().getClassLoader().getResourceAsStream("logback.xml");
-    if(stream != null) {
-      return stream;
-    }
-    return null;
-  }
-
 
   private Server initServer(ConfigurationService configurationService) {
     String host = configurationService.getContainerHost();
