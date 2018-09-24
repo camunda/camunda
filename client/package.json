@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "dependencies": {
-    "bpmn-js": "^2.4.1",
+    "bpmn-js": "^2.5.2",
     "date-fns": "^1.29.0",
     "immutability-helper": "^2.7.0",
     "lodash": "^4.17.11",

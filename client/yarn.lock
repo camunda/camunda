@@ -1780,14 +1780,14 @@ bpmn-font@^0.8.0:
   version "0.8.0"
   resolved "https://registry.yarnpkg.com/bpmn-font/-/bpmn-font-0.8.0.tgz#85b18715faede345cd33c8a48f50bbe557ff76c2"
 
-bpmn-js@^2.4.1:
-  version "2.4.1"
-  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-2.4.1.tgz#7e1530f54e0848959ec84789ca11eaac672eab6f"
+bpmn-js@^2.5.2:
+  version "2.5.2"
+  resolved "https://registry.yarnpkg.com/bpmn-js/-/bpmn-js-2.5.2.tgz#11112a0d101d2170101aa732f1940b1e99c85c1d"
   dependencies:
     bpmn-font "^0.8.0"
     bpmn-moddle "^5.1.5"
     css.escape "^1.5.1"
-    diagram-js "^2.5.1"
+    diagram-js "^2.6.1"
     diagram-js-direct-editing "^1.3.0"
     ids "^0.2.0"
     inherits "^2.0.1"
@@ -3051,9 +3051,9 @@ diagram-js-direct-editing@^1.3.0:
     min-dash "^3.0.0"
     min-dom "^3.0.0"
 
-diagram-js@^2.5.1:
-  version "2.5.1"
-  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-2.5.1.tgz#51c828f132da18a04f233a686495244ce0c2f42b"
+diagram-js@^2.6.1:
+  version "2.6.1"
+  resolved "https://registry.yarnpkg.com/diagram-js/-/diagram-js-2.6.1.tgz#85d09571a0f3c01b51c2dd3e73a5776c0c47af0c"
   dependencies:
     css.escape "^1.5.1"
     didi "^4.0.0"
