@@ -66,7 +66,7 @@ public class BpmnStepHandlers {
     stepHandlers.put(BpmnStep.ACTIVATE_GATEWAY, new ActivateGatewayHandler());
     stepHandlers.put(BpmnStep.START_STATEFUL_ELEMENT, new StartStatefulElementHandler());
     stepHandlers.put(BpmnStep.TRIGGER_END_EVENT, new TriggerEndEventHandler());
-    stepHandlers.put(BpmnStep.PARALLEL_MERGE, new ParallelMergeHandler());
+    stepHandlers.put(BpmnStep.PARALLEL_MERGE, new ParallelMergeHandler(workflowState));
 
     // flow element container (process, sub process)
     stepHandlers.put(BpmnStep.TRIGGER_START_EVENT, new TriggerStartEventHandler());
@@ -78,7 +78,8 @@ public class BpmnStepHandlers {
     stepHandlers.put(BpmnStep.TERMINATE_ELEMENT, new TerminateElementHandler());
     stepHandlers.put(BpmnStep.TERMINATE_JOB_TASK, new TerminateServiceTaskHandler());
     stepHandlers.put(
-        BpmnStep.TERMINATE_CONTAINED_INSTANCES, new TerminateContainedElementsHandler());
+        BpmnStep.TERMINATE_CONTAINED_INSTANCES,
+        new TerminateContainedElementsHandler(workflowState));
     stepHandlers.put(BpmnStep.PROPAGATE_TERMINATION, new PropagateTerminationHandler());
 
     // intermediate catch event

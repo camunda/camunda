@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.function.BiFunction;
 import org.agrona.CloseHelper;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -447,6 +448,17 @@ public class StateController implements AutoCloseable {
     }
   }
 
+  public void remove(final ColumnFamilyHandle handle, long key) {
+    setKey(key);
+    try {
+      final long nativeHandle = (long) RocksDbInternal.columnFamilyHandle.get(handle);
+      RocksDbInternal.removeWithHandle.invoke(
+          db, nativeHandle_, dbLongBuffer.byteArray(), 0, dbLongBuffer.capacity(), nativeHandle);
+    } catch (final Exception ex) {
+      throw new RuntimeException(ex);
+    }
+  }
+
   public void foreach(
       final ColumnFamilyHandle handle, final BiConsumer<byte[], byte[]> keyValueConsumer) {
     try (RocksIterator rocksIterator = getDb().newIterator(handle)) {
@@ -454,6 +466,24 @@ public class StateController implements AutoCloseable {
       while (rocksIterator.isValid()) {
         keyValueConsumer.accept(rocksIterator.key(), rocksIterator.value());
         rocksIterator.next();
+      }
+    }
+  }
+
+  public void foreach(
+      final ColumnFamilyHandle handle,
+      final byte[] startAt,
+      final BiFunction<byte[], byte[], Boolean> keyValueConsumer) {
+    try (RocksIterator rocksIterator = getDb().newIterator(handle)) {
+      rocksIterator.seek(startAt);
+      while (rocksIterator.isValid()) {
+        final boolean shouldContinue =
+            keyValueConsumer.apply(rocksIterator.key(), rocksIterator.value());
+        if (shouldContinue) {
+          rocksIterator.next();
+        } else {
+          break;
+        }
       }
     }
   }

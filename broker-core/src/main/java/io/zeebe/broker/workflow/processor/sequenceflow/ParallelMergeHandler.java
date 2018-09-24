@@ -18,13 +18,14 @@
 package io.zeebe.broker.workflow.processor.sequenceflow;
 
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
-import io.zeebe.broker.workflow.index.ElementInstance;
-import io.zeebe.broker.workflow.index.IndexedRecord;
 import io.zeebe.broker.workflow.model.ExecutableFlowNode;
 import io.zeebe.broker.workflow.model.ExecutableSequenceFlow;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 import io.zeebe.broker.workflow.processor.EventOutput;
+import io.zeebe.broker.workflow.state.ElementInstance;
+import io.zeebe.broker.workflow.state.IndexedRecord;
+import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.msgpack.mapping.Mapping;
 import io.zeebe.msgpack.mapping.MsgPackMergeTool;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
@@ -34,6 +35,12 @@ import java.util.Map;
 import org.agrona.DirectBuffer;
 
 public class ParallelMergeHandler implements BpmnStepHandler<ExecutableSequenceFlow> {
+
+  private final WorkflowState workflowState;
+
+  public ParallelMergeHandler(WorkflowState workflowState) {
+    this.workflowState = workflowState;
+  }
 
   @Override
   public void handle(BpmnStepContext<ExecutableSequenceFlow> context) {
@@ -93,7 +100,8 @@ public class ParallelMergeHandler implements BpmnStepHandler<ExecutableSequenceF
     final List<ExecutableSequenceFlow> incomingFlows = parallelGateway.getIncoming();
     final Map<ExecutableSequenceFlow, IndexedRecord> mergingRecords = new HashMap<>();
 
-    final List<IndexedRecord> storedRecords = scopeInstance.getStoredRecords();
+    final List<IndexedRecord> storedRecords =
+        workflowState.getStoredRecords(scopeInstance.getKey());
 
     for (int i = 0; i < incomingFlows.size(); i++) {
       final ExecutableSequenceFlow flow = incomingFlows.get(i);

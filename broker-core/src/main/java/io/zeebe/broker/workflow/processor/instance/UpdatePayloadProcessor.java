@@ -20,17 +20,17 @@ package io.zeebe.broker.workflow.processor.instance;
 import io.zeebe.broker.logstreams.processor.CommandProcessor;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
-import io.zeebe.broker.workflow.index.ElementInstance;
-import io.zeebe.broker.workflow.index.ElementInstanceIndex;
+import io.zeebe.broker.workflow.state.ElementInstance;
+import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public final class UpdatePayloadProcessor implements CommandProcessor<WorkflowInstanceRecord> {
 
-  private final ElementInstanceIndex scopeInstances;
+  private final WorkflowState workflowState;
 
-  public UpdatePayloadProcessor(ElementInstanceIndex scopeInstances) {
-    this.scopeInstances = scopeInstances;
+  public UpdatePayloadProcessor(WorkflowState workflowState) {
+    this.workflowState = workflowState;
   }
 
   @Override
@@ -39,12 +39,14 @@ public final class UpdatePayloadProcessor implements CommandProcessor<WorkflowIn
     final WorkflowInstanceRecord commandValue = command.getValue();
 
     final ElementInstance workflowInstance =
-        scopeInstances.getInstance(commandValue.getWorkflowInstanceKey());
+        workflowState.getInstance(commandValue.getWorkflowInstanceKey());
 
     if (workflowInstance != null) {
       final WorkflowInstanceRecord workflowInstanceValue = workflowInstance.getValue();
       workflowInstanceValue.setPayload(commandValue.getPayload());
+
       workflowInstance.setValue(workflowInstance.getValue());
+
       commandControl.accept(WorkflowInstanceIntent.PAYLOAD_UPDATED);
     } else {
       commandControl.reject(RejectionType.NOT_APPLICABLE, "Workflow instance is not running");

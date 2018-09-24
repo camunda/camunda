@@ -17,10 +17,13 @@
  */
 package io.zeebe.broker.workflow.state;
 
+import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.subscription.message.state.SubscriptionState;
+import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.broker.workflow.deployment.data.DeploymentRecord;
 import io.zeebe.logstreams.state.StateController;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import java.io.File;
 import java.util.Collection;
@@ -40,6 +43,7 @@ public class WorkflowState extends StateController {
   private NextValueManager nextValueManager;
   private WorkflowPersistenceCache workflowPersistenceCache;
   private SubscriptionState<WorkflowSubscription> subscriptionState;
+  private ElementInstanceState elementInstanceState;
 
   @Override
   public RocksDB open(final File dbDirectory, final boolean reopen) throws Exception {
@@ -51,6 +55,7 @@ public class WorkflowState extends StateController {
     nextValueManager = new NextValueManager(this);
     workflowPersistenceCache = new WorkflowPersistenceCache(this);
     subscriptionState = new SubscriptionState<>(this, () -> new WorkflowSubscription());
+    elementInstanceState = new ElementInstanceState(this);
 
     return rocksDB;
   }
@@ -121,5 +126,54 @@ public class WorkflowState extends StateController {
 
   public void remove(WorkflowSubscription workflowSubscription) {
     subscriptionState.remove(workflowSubscription);
+  }
+
+  public ElementInstance newInstance(
+      long key, WorkflowInstanceRecord value, WorkflowInstanceIntent state) {
+    return elementInstanceState.newInstance(key, value, state);
+  }
+
+  public ElementInstance newInstance(
+      ElementInstance parent,
+      long key,
+      WorkflowInstanceRecord value,
+      WorkflowInstanceIntent state) {
+    return elementInstanceState.newInstance(parent, key, value, state);
+  }
+
+  public ElementInstance getInstance(long key) {
+    return elementInstanceState.getInstance(key);
+  }
+
+  public void flushElementInstanceState() {
+    elementInstanceState.flushDirtyState();
+  }
+
+  public void removeInstance(long key) {
+    elementInstanceState.removeInstance(key);
+  }
+
+  public List<ElementInstance> getChildren(long scopeKey) {
+    return elementInstanceState.getChildren(scopeKey);
+  }
+
+  public void storeRecord(long scopeKey, TypedRecord<WorkflowInstanceRecord> record) {
+    elementInstanceState.storeRecord(scopeKey, record);
+  }
+
+  public boolean removeStoredRecord(long scopeKey, long recordKey) {
+    return elementInstanceState.removeStoredRecord(scopeKey, recordKey);
+  }
+
+  public List<IndexedRecord> getStoredRecords(long scopeKey) {
+    return elementInstanceState.getStoredRecords(scopeKey);
+  }
+
+  public void consumeToken(long scopeKey) {
+    elementInstanceState.consumeToken(scopeKey);
+  }
+
+  public void spawnToken(long scopeKey) {
+    elementInstanceState.spawnToken(scopeKey);
   }
 }

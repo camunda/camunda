@@ -15,19 +15,15 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.subscription.message.state;
+package io.zeebe.broker.workflow.state;
 
-import io.zeebe.broker.workflow.state.Persistable;
-import org.agrona.DirectBuffer;
+import io.zeebe.util.buffer.BufferReader;
+import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.MutableDirectBuffer;
 
-public interface Subscription extends Persistable {
+public interface Persistable extends BufferReader, BufferWriter {
 
-  void setCommandSentTime(long millis);
+  void writeKey(MutableDirectBuffer keyBuffer, int offset);
 
-  DirectBuffer getMessageName();
-
-  DirectBuffer getCorrelationKey();
-
-  void writeCommandSentTime(MutableDirectBuffer keyBuffer, int offset);
+  int getKeyLength();
 }

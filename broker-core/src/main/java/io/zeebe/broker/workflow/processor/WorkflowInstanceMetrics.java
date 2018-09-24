@@ -48,7 +48,7 @@ public class WorkflowInstanceMetrics implements AutoCloseable {
     workflowInstanceEventCanceled.incrementOrdered();
   }
 
-  public void coundInstanceCompleted() {
+  public void countInstanceCompleted() {
     workflowInstanceEventCompleted.incrementOrdered();
   }
 

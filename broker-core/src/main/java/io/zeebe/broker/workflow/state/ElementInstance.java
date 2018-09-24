@@ -1,0 +1,211 @@
+/*
+ * Zeebe Broker Core
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package io.zeebe.broker.workflow.state;
+
+import static io.zeebe.util.buffer.BufferUtil.readIntoBuffer;
+import static io.zeebe.util.buffer.BufferUtil.writeIntoBuffer;
+
+import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
+import io.zeebe.broker.workflow.processor.WorkflowInstanceLifecycle;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import java.nio.ByteOrder;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+
+public class ElementInstance implements Persistable {
+
+  private int depth;
+  private final MutableDirectBuffer identifier;
+  private final IndexedRecord elementRecord;
+
+  private int childCount;
+  private long jobKey;
+  private int activeTokens = 0;
+
+  ElementInstance() {
+    this.elementRecord = new IndexedRecord();
+    this.identifier = new UnsafeBuffer(0, 0);
+  }
+
+  public ElementInstance(
+      long key,
+      ElementInstance parent,
+      WorkflowInstanceIntent state,
+      WorkflowInstanceRecord value) {
+    this.elementRecord = new IndexedRecord(key, state, value);
+
+    final int offset = parent.identifier.capacity();
+    final int idLength = offset + Long.BYTES;
+    this.identifier = new UnsafeBuffer(new byte[idLength]);
+    identifier.putBytes(0, parent.identifier, 0, offset);
+    depth = parent.depth + 1;
+    parent.childCount++;
+    identifier.putLong(offset, key);
+  }
+
+  public ElementInstance(long key, WorkflowInstanceIntent state, WorkflowInstanceRecord value) {
+    this.elementRecord = new IndexedRecord(key, state, value);
+
+    final int idLength = Long.BYTES;
+    this.identifier = new UnsafeBuffer(new byte[idLength]);
+    depth = 0;
+    identifier.putLong(0, key);
+  }
+
+  public long getKey() {
+    return elementRecord.getKey();
+  }
+
+  public WorkflowInstanceIntent getState() {
+    return elementRecord.getState();
+  }
+
+  public void setState(WorkflowInstanceIntent state) {
+    this.elementRecord.setState(state);
+  }
+
+  public WorkflowInstanceRecord getValue() {
+    return elementRecord.getValue();
+  }
+
+  public void setValue(WorkflowInstanceRecord value) {
+    this.elementRecord.setValue(value);
+  }
+
+  public long getJobKey() {
+    return jobKey;
+  }
+
+  public void setJobKey(long jobKey) {
+    this.jobKey = jobKey;
+  }
+
+  public void decrementChildCount() {
+    childCount--;
+  }
+
+  public boolean canTerminate() {
+    return WorkflowInstanceLifecycle.canTerminate(getState());
+  }
+
+  public void spawnToken() {
+    this.activeTokens += 1;
+  }
+
+  public void consumeToken() {
+    this.activeTokens -= 1;
+  }
+
+  public int getNumberOfActiveTokens() {
+    return activeTokens;
+  }
+
+  public int getNumberOfActiveElementInstances() {
+    return childCount;
+  }
+
+  public int getNumberOfActiveExecutionPaths() {
+    return activeTokens + getNumberOfActiveElementInstances();
+  }
+
+  @Override
+  public void wrap(DirectBuffer buffer, int offset, int length) {
+    final int startOffset = offset;
+    childCount = buffer.getInt(offset, ByteOrder.LITTLE_ENDIAN);
+    offset += Integer.BYTES;
+
+    jobKey = buffer.getLong(offset, ByteOrder.LITTLE_ENDIAN);
+    offset += Long.BYTES;
+
+    activeTokens = buffer.getInt(offset, ByteOrder.LITTLE_ENDIAN);
+    offset += Integer.BYTES;
+
+    depth = buffer.getInt(offset, ByteOrder.LITTLE_ENDIAN);
+    offset += Integer.BYTES;
+
+    offset = readIntoBuffer(buffer, offset, identifier);
+
+    final int writtenLength = offset - startOffset;
+    elementRecord.wrap(buffer, offset, length - writtenLength);
+  }
+
+  @Override
+  public int getLength() {
+    return Long.BYTES + 4 * Integer.BYTES + identifier.capacity() + elementRecord.getLength();
+  }
+
+  @Override
+  public void write(MutableDirectBuffer buffer, int offset) {
+    final int startOffset = offset;
+
+    buffer.putInt(offset, childCount, ByteOrder.LITTLE_ENDIAN);
+    offset += Integer.BYTES;
+
+    buffer.putLong(offset, jobKey, ByteOrder.LITTLE_ENDIAN);
+    offset += Long.BYTES;
+
+    buffer.putInt(offset, activeTokens, ByteOrder.LITTLE_ENDIAN);
+    offset += Integer.BYTES;
+
+    buffer.putInt(offset, depth, ByteOrder.LITTLE_ENDIAN);
+    offset += Integer.BYTES;
+
+    offset = writeIntoBuffer(buffer, offset, identifier);
+
+    final int endLength = offset - startOffset;
+    final int expectedLength = getLength() - elementRecord.getLength();
+    assert endLength == expectedLength : "End length differs with getLength()";
+
+    elementRecord.write(buffer, offset);
+  }
+
+  public void writeKey(MutableDirectBuffer keyBuffer, int offset) {
+    int keyOffset = offset;
+    final int identifierLength = identifier.capacity();
+    keyBuffer.putBytes(keyOffset, identifier.byteArray(), 0, identifierLength);
+    keyOffset += identifierLength;
+    assert (keyOffset - offset) == getKeyLength()
+        : "Offset problem: end length is not equal to expected key length";
+  }
+
+  public int getKeyLength() {
+    return identifier.capacity();
+  }
+
+  public void writeParentKey(MutableDirectBuffer keyBuffer, int offset) {
+    int keyOffset = offset;
+    final int identifierLength = identifier.capacity() - Long.BYTES;
+    keyBuffer.putBytes(keyOffset, identifier.byteArray(), 0, identifierLength);
+    keyOffset += identifierLength;
+    assert (keyOffset - offset) == getParentKeyLength()
+        : "Offset problem: end length is not equal to expected key length";
+  }
+
+  public int getParentKeyLength() {
+    return identifier.capacity() - Long.BYTES;
+  }
+
+  public DirectBuffer getIdentifier() {
+    return identifier;
+  }
+
+  public int getDepth() {
+    return depth;
+  }
+}

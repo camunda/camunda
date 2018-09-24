@@ -23,7 +23,7 @@ import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
-import io.zeebe.broker.workflow.index.ElementInstanceIndex;
+import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.metrics.Metric;
@@ -32,11 +32,11 @@ import io.zeebe.util.metrics.MetricsManager;
 public final class WorkflowInstanceCreatedEventProcessor
     implements TypedRecordProcessor<WorkflowInstanceRecord> {
 
-  private final ElementInstanceIndex scopeInstances;
+  private final WorkflowState workflowState;
   private Metric workflowInstanceEventCreate;
 
-  public WorkflowInstanceCreatedEventProcessor(final ElementInstanceIndex scopeInstances) {
-    this.scopeInstances = scopeInstances;
+  public WorkflowInstanceCreatedEventProcessor(final WorkflowState workflowState) {
+    this.workflowState = workflowState;
   }
 
   @Override
@@ -69,7 +69,7 @@ public final class WorkflowInstanceCreatedEventProcessor
     workflowInstanceEventCreate.incrementOrdered();
     responseWriter.writeEvent(record);
 
-    scopeInstances.newInstance(
+    workflowState.newInstance(
         record.getKey(), record.getValue(), WorkflowInstanceIntent.ELEMENT_READY);
   }
 }

@@ -25,12 +25,11 @@ import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
-import io.zeebe.broker.workflow.index.ElementInstance;
-import io.zeebe.broker.workflow.index.ElementInstanceIndex;
-import io.zeebe.broker.workflow.index.WorkflowEngineState;
 import io.zeebe.broker.workflow.model.ExecutableFlowElement;
 import io.zeebe.broker.workflow.model.ExecutableWorkflow;
 import io.zeebe.broker.workflow.state.DeployedWorkflow;
+import io.zeebe.broker.workflow.state.ElementInstance;
+import io.zeebe.broker.workflow.state.WorkflowEngineState;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
@@ -47,13 +46,11 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
   private BpmnStepContext context;
 
   public BpmnStepProcessor(
-      ElementInstanceIndex scopeInstances,
-      WorkflowState workflowState,
-      SubscriptionCommandSender subscriptionCommandSender) {
+      WorkflowState workflowState, SubscriptionCommandSender subscriptionCommandSender) {
     this.workflowState = workflowState;
     this.stepHandlers = new BpmnStepHandlers(subscriptionCommandSender, workflowState);
     this.stepGuards = new BpmnStepGuards();
-    this.state = new WorkflowEngineState(scopeInstances);
+    this.state = new WorkflowEngineState(workflowState);
   }
 
   @Override
@@ -78,6 +75,7 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
     if (stepGuards.shouldHandle(context)) {
       state.onEventConsumed(record);
       stepHandlers.handle(context);
+      workflowState.flushElementInstanceState();
     }
   }
 

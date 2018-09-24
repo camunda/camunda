@@ -17,10 +17,10 @@
  */
 package io.zeebe.broker.workflow.processor.activity;
 
-import io.zeebe.broker.workflow.index.ElementInstance;
 import io.zeebe.broker.workflow.model.ExecutableFlowNode;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
+import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class PropagateTerminationHandler implements BpmnStepHandler<ExecutableFlowNode> {

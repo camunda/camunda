@@ -28,9 +28,8 @@ import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
-import io.zeebe.broker.workflow.index.ElementInstance;
-import io.zeebe.broker.workflow.index.ElementInstanceIndex;
 import io.zeebe.broker.workflow.state.DeployedWorkflow;
+import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.clientapi.RejectionType;
@@ -46,7 +45,6 @@ public final class CorrelateWorkflowInstanceSubscription
   public static final Duration SUBSCRIPTION_TIMEOUT = Duration.ofSeconds(10);
   public static final Duration SUBSCRIPTION_CHECK_INTERVAL = Duration.ofSeconds(30);
 
-  private final ElementInstanceIndex scopeInstances;
   private final TopologyManager topologyManager;
   private final WorkflowState workflowState;
   private final SubscriptionCommandSender subscriptionCommandSender;
@@ -57,11 +55,9 @@ public final class CorrelateWorkflowInstanceSubscription
   private Consumer<SideEffectProducer> sideEffect;
 
   public CorrelateWorkflowInstanceSubscription(
-      ElementInstanceIndex scopeInstances,
       TopologyManager topologyManager,
       WorkflowState workflowState,
       SubscriptionCommandSender subscriptionCommandSender) {
-    this.scopeInstances = scopeInstances;
     this.topologyManager = topologyManager;
     this.workflowState = workflowState;
     this.subscriptionCommandSender = subscriptionCommandSender;
@@ -96,7 +92,7 @@ public final class CorrelateWorkflowInstanceSubscription
     this.sideEffect = sideEffect;
 
     final ElementInstance eventInstance =
-        scopeInstances.getInstance(subscription.getActivityInstanceKey());
+        workflowState.getInstance(subscription.getActivityInstanceKey());
 
     if (eventInstance == null) {
       streamWriter.writeRejection(
@@ -126,7 +122,7 @@ public final class CorrelateWorkflowInstanceSubscription
     }
 
     final ElementInstance eventInstance =
-        scopeInstances.getInstance(subscription.getActivityInstanceKey());
+        workflowState.getInstance(subscription.getActivityInstanceKey());
 
     final WorkflowInstanceRecord value = eventInstance.getValue();
     value.setPayload(subscription.getPayload());

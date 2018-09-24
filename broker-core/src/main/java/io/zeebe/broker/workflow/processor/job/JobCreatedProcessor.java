@@ -23,15 +23,15 @@ import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
-import io.zeebe.broker.workflow.index.ElementInstance;
-import io.zeebe.broker.workflow.index.ElementInstanceIndex;
+import io.zeebe.broker.workflow.state.ElementInstance;
+import io.zeebe.broker.workflow.state.WorkflowState;
 
 public final class JobCreatedProcessor implements TypedRecordProcessor<JobRecord> {
 
-  private final ElementInstanceIndex scopeInstances;
+  private final WorkflowState workflowState;
 
-  public JobCreatedProcessor(ElementInstanceIndex scopeInstances) {
-    this.scopeInstances = scopeInstances;
+  public JobCreatedProcessor(WorkflowState scopeInstances) {
+    this.workflowState = scopeInstances;
   }
 
   @Override
@@ -43,7 +43,7 @@ public final class JobCreatedProcessor implements TypedRecordProcessor<JobRecord
     final JobHeaders jobHeaders = record.getValue().headers();
     final long activityInstanceKey = jobHeaders.getActivityInstanceKey();
     if (activityInstanceKey > 0) {
-      final ElementInstance activityInstance = scopeInstances.getInstance(activityInstanceKey);
+      final ElementInstance activityInstance = workflowState.getInstance(activityInstanceKey);
 
       if (activityInstance != null) {
         activityInstance.setJobKey(record.getKey());
