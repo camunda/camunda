@@ -20,14 +20,12 @@ package io.zeebe.broker.subscription.message.state;
 import static io.zeebe.util.buffer.BufferUtil.readIntoBuffer;
 import static io.zeebe.util.buffer.BufferUtil.writeIntoBuffer;
 
-import io.zeebe.util.buffer.BufferReader;
-import io.zeebe.util.buffer.BufferWriter;
 import java.nio.ByteOrder;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class MessageSubscription implements BufferReader, BufferWriter {
+public class MessageSubscription implements Subscription {
   static final int KEY_LENGTH = 3 * Long.BYTES + Integer.BYTES;
 
   private final DirectBuffer messageName = new UnsafeBuffer();
