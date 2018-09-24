@@ -16,11 +16,13 @@
 package io.zeebe.msgpack.query;
 
 import io.zeebe.msgpack.filter.MsgPackFilter;
+import io.zeebe.msgpack.spec.MsgPackCodes;
 import io.zeebe.msgpack.spec.MsgPackToken;
 import io.zeebe.msgpack.spec.MsgPackType;
 import io.zeebe.util.allocation.HeapBufferAllocator;
 import io.zeebe.util.collection.CompactList;
 import org.agrona.BitUtil;
+import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class MsgPackQueryExecutor implements MsgPackTokenVisitor {
@@ -135,6 +137,11 @@ public class MsgPackQueryExecutor implements MsgPackTokenVisitor {
 
   public int currentResultLength() {
     return currentResultView.getInt(RESULT_LENGTH_OFFSET);
+  }
+
+  public boolean isCurrentResultAMap(DirectBuffer document) {
+    final byte headerByte = document.getByte(currentResultPosition());
+    return MsgPackCodes.isMap(headerByte);
   }
 
   protected void addResult(int position, int length) {

@@ -46,7 +46,7 @@ public class MsgPackDocumentExtractorTest {
     final MsgPackTree extractTree = new MsgPackTree();
 
     // when
-    final MsgPackDiff diff = extractor.extract(document, mapping);
+    final MsgPackDiff diff = extractor.extract(document, true, mapping);
     diff.mergeInto(extractTree);
 
     // then root is leaf
@@ -61,7 +61,7 @@ public class MsgPackDocumentExtractorTest {
     final MsgPackTree extractTree = new MsgPackTree();
 
     // when
-    final MsgPackDiff diff = extractor.extract(document, mapping);
+    final MsgPackDiff diff = extractor.extract(document, true, mapping);
     diff.mergeInto(extractTree);
 
     // then
@@ -77,7 +77,7 @@ public class MsgPackDocumentExtractorTest {
     final MsgPackTree extractTree = new MsgPackTree();
 
     // when
-    final MsgPackDiff diff = extractor.extract(document, mapping);
+    final MsgPackDiff diff = extractor.extract(document, true, mapping);
     diff.mergeInto(extractTree);
 
     // then
@@ -94,7 +94,7 @@ public class MsgPackDocumentExtractorTest {
     final MsgPackTree extractTree = new MsgPackTree();
 
     // when
-    final MsgPackDiff diff = extractor.extract(document, mapping);
+    final MsgPackDiff diff = extractor.extract(document, true, mapping);
     diff.mergeInto(extractTree);
 
     // then
@@ -115,7 +115,7 @@ public class MsgPackDocumentExtractorTest {
     final MsgPackTree extractTree = new MsgPackTree();
 
     // when
-    final MsgPackDiff diff = extractor.extract(document, mapping);
+    final MsgPackDiff diff = extractor.extract(document, true, mapping);
     diff.mergeInto(extractTree);
 
     // then extractTree root is leaf
@@ -136,7 +136,7 @@ public class MsgPackDocumentExtractorTest {
     final MsgPackTree extractTree = new MsgPackTree();
 
     // when
-    final MsgPackDiff diff = extractor.extract(document, mapping);
+    final MsgPackDiff diff = extractor.extract(document, true, mapping);
     diff.mergeInto(extractTree);
 
     // then extractTree contains root node
@@ -158,7 +158,7 @@ public class MsgPackDocumentExtractorTest {
     final MsgPackTree extractTree = new MsgPackTree();
 
     // when
-    final MsgPackDiff diff = extractor.extract(document, mapping);
+    final MsgPackDiff diff = extractor.extract(document, true, mapping);
     diff.mergeInto(extractTree);
 
     // then extractTree contains root node
@@ -188,7 +188,7 @@ public class MsgPackDocumentExtractorTest {
     final MsgPackTree extractTree = new MsgPackTree();
 
     // when
-    final MsgPackDiff diff = extractor.extract(document, mappings);
+    final MsgPackDiff diff = extractor.extract(document, true, mappings);
     diff.mergeInto(extractTree);
 
     // then root is
@@ -210,7 +210,7 @@ public class MsgPackDocumentExtractorTest {
   }
 
   @Test
-  public void shouldThrowExceptionIfMappingMatchesTwice() throws Exception {
+  public void shouldThrowExceptionIfMappingMatchesTwiceInStrictMode() throws Exception {
     // given document
     final DirectBuffer document =
         new UnsafeBuffer(
@@ -222,6 +222,6 @@ public class MsgPackDocumentExtractorTest {
     expectedException.expectMessage("JSON path mapping has more than one matching source.");
 
     // when
-    extractor.extract(document, mapping);
+    extractor.extract(document, true, mapping);
   }
 }

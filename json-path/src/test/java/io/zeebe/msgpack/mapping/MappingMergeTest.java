@@ -71,7 +71,7 @@ public class MappingMergeTest {
   }
 
   @Test
-  public void shouldThrowExceptionIfMappingDoesNotMatch() throws Throwable {
+  public void shouldThrowExceptionIfMappingDoesNotMatchInStrictMode() throws Throwable {
     // given payload
     final DirectBuffer sourceDocument = new UnsafeBuffer(EMTPY_OBJECT);
     final Mapping[] mapping = createMapping("$.foo", "$");
@@ -81,17 +81,17 @@ public class MappingMergeTest {
     expectedException.expectMessage("No data found for query $.foo.");
 
     // when
-    mergeTool.mergeDocument(sourceDocument, mapping);
+    mergeTool.mergeDocumentStrictly(sourceDocument, mapping);
   }
 
   @Test
-  public void shouldThrowExceptionIfResultDocumentIsNoObject() throws Throwable {
+  public void shouldThrowExceptionIfResultDocumentIsNoObjectInStrictMode() throws Throwable {
     // given payload
     final DirectBuffer sourceDocument =
         new UnsafeBuffer(MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'foo':'bar'}")));
     final Mapping[] mapping = createMapping("$.foo", "$");
 
-    mergeTool.mergeDocument(sourceDocument, mapping);
+    mergeTool.mergeDocumentStrictly(sourceDocument, mapping);
 
     // expect
     expectedException.expect(MappingException.class);

@@ -17,13 +17,31 @@ package io.zeebe.msgpack.mapping;
 
 import static io.zeebe.msgpack.mapping.MsgPackTreeNodeIdConstructor.construct;
 
+import io.zeebe.msgpack.spec.MsgPackWriter;
 import org.agrona.BitUtil;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
 public class MappingDiff implements MsgPackDiff {
 
-  private static final int RESULT_ENTRY_LENGTH = 2 * BitUtil.SIZE_OF_INT;
+  public static final DirectBuffer CONSTANTS_DOCUMENT;
+
+  static {
+    final UnsafeBuffer buffer = new UnsafeBuffer(new byte[2]);
+    final MsgPackWriter writer = new MsgPackWriter();
+    writer.wrap(buffer, 0);
+    writer.writeMapHeader(0);
+    writer.writeNil();
+    CONSTANTS_DOCUMENT = buffer;
+  }
+
+  /*
+   * - offset
+   * - length
+   * - sourceDocument (1) or nullDocument (0)
+   */
+  private static final int RESULT_ENTRY_LENGTH = 2 * BitUtil.SIZE_OF_INT + BitUtil.SIZE_OF_BYTE;
 
   private Mapping[] mappings;
   private DirectBuffer document;
@@ -42,16 +60,35 @@ public class MappingDiff implements MsgPackDiff {
     return mappingResults.getInt(mapToResultIndex(mappingIndex) + BitUtil.SIZE_OF_INT);
   }
 
+  public boolean isMappedFromSourceDocument(int mappingIndex) {
+    return mappingResults.getByte(mapToResultIndex(mappingIndex) + (2 * BitUtil.SIZE_OF_INT)) == 1;
+  }
+
   private static int mapToResultIndex(int mappingIndex) {
     return mappingIndex * RESULT_ENTRY_LENGTH;
   }
 
-  public void setResultOffset(int mappingIndex, int offset) {
-    mappingResults.putInt(mapToResultIndex(mappingIndex), offset);
+  public void setResult(int mappingIndex, int offset, int length) {
+    setResult(mappingIndex, offset, length, true);
   }
 
-  public void setResultLength(int mappingIndex, int length) {
-    mappingResults.putInt(mapToResultIndex(mappingIndex) + BitUtil.SIZE_OF_INT, length);
+  public void setNullResult(int mappingIndex) {
+    setResult(mappingIndex, 1, 1, false);
+  }
+
+  public void setEmptyMapResult(int mappingIndex) {
+    setResult(mappingIndex, 0, 1, false);
+  }
+
+  private void setResult(int mappingIndex, int offset, int length, boolean fromSourceDocument) {
+    int mappingResultOffset = mapToResultIndex(mappingIndex);
+    mappingResults.putInt(mappingResultOffset, offset);
+
+    mappingResultOffset += BitUtil.SIZE_OF_INT;
+    mappingResults.putInt(mappingResultOffset, length);
+
+    mappingResultOffset += BitUtil.SIZE_OF_INT;
+    mappingResults.putByte(mappingResultOffset, fromSourceDocument ? (byte) 1 : (byte) 0);
   }
 
   private boolean isIndex(String nodeName) {
@@ -67,6 +104,7 @@ public class MappingDiff implements MsgPackDiff {
 
   @Override
   public void mergeInto(MsgPackTree document) {
+    final int constantsDocumentId = document.addDocument(CONSTANTS_DOCUMENT);
     final int ourDocumentId = document.addDocument(this.document);
 
     for (int i = 0; i < mappings.length; i++) {
@@ -81,13 +119,15 @@ public class MappingDiff implements MsgPackDiff {
         if (j == targetPathElements.length - 1) {
           final int valueOffset = getResultOffset(i);
           final int valueLength = getResultLength(i);
+          final int documentId =
+              isMappedFromSourceDocument(i) ? ourDocumentId : constantsDocumentId;
 
           mergeValueInto(
               document,
               parentId,
               nodeName,
               mapping.getType(),
-              ourDocumentId,
+              documentId,
               valueOffset,
               valueLength);
 
