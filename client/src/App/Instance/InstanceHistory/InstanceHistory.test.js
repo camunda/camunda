@@ -10,6 +10,7 @@ import InstanceHistory from './InstanceHistory';
 import InstanceLog from './InstanceLog';
 import InstanceEvents from './InstanceEvents';
 import * as Styled from './styled';
+import {getEventLabel} from './service';
 
 const fooActivityEvents = [
   {
@@ -131,7 +132,11 @@ describe('InstanceHistory', () => {
     // Instance Events
     const InstanceEventsNode = PaneBodyNode.find(InstanceEvents);
     expect(InstanceEventsNode).toHaveLength(1);
-    expect(InstanceEventsNode.prop('groupedEvents')).toEqual(fooActivityEvents);
+    const expectedEvents = fooActivityEvents.map(event => ({
+      ...event,
+      label: getEventLabel(event)
+    }));
+    expect(InstanceEventsNode.prop('groupedEvents')).toEqual(expectedEvents);
 
     // Pane Footer
     const PaneFooterNode = node.find(Styled.PaneFooter);

@@ -1,6 +1,6 @@
 import {formatDate} from 'modules/utils/date';
 
-function getEventLabel({eventSourceType, eventType}) {
+export function getEventLabel({eventSourceType, eventType}) {
   return eventType.includes('_')
     ? eventType
     : `${eventSourceType} ${eventType}`;

@@ -57,6 +57,7 @@ exports[`InstanceHistory should render a pane with InstanceLog section and Copyr
             "dateTime": "18 Sep 2018 09:05:32",
             "eventSourceType": "JOB",
             "eventType": "fooCreated",
+            "label": "JOB fooCreated",
             "metadata": Object {
               "a": "b",
             },
@@ -66,6 +67,7 @@ exports[`InstanceHistory should render a pane with InstanceLog section and Copyr
             "dateTime": "18 Sep 2018 09:05:32",
             "eventSourceType": "JOB",
             "eventType": "fooActiviated",
+            "label": "JOB fooActiviated",
           },
         ]
       }
