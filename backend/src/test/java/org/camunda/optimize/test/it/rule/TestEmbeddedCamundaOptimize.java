@@ -99,6 +99,7 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
   public void start() throws Exception {
     if (!testOptimizeInstance.isOptimizeStarted()) {
       testOptimizeInstance.startOptimize();
+      storeAuthenticationToken();
       if (isThisTheFirstTimeOptimizeWasStarted()) {
         // store the default configuration to restore it later
         defaultConfiguration = new ConfigurationService();
@@ -108,7 +109,6 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
       }
       BeanUtils.copyProperties(perTestConfiguration, testOptimizeInstance.getConfigurationService());
       reloadConfiguration();
-      storeAuthenticationToken();
     }
   }
 

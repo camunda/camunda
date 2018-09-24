@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
   <parent>
@@ -24,10 +25,59 @@
         </exclusion>
       </exclusions>
     </dependency>
+
+    <dependency>
+      <groupId>org.camunda.optimize</groupId>
+      <artifactId>optimize-backend</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-all</artifactId>
+      <version>${hamcrest.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
   </dependencies>
 
   <build>
     <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <configuration>
+          <redirectTestOutputToFile>true</redirectTestOutputToFile>
+          <properties>
+            <property>
+              <name>listener</name>
+              <value>org.camunda.optimize.test.it.rule.StartOptimizeExecutionListener</value>
+            </property>
+          </properties>
+          <systemProperties>
+            <property>
+              <name>database</name>
+              <value>${database}</value>
+            </property>
+          </systemProperties>
+        </configuration>
+        <executions>
+          <execution>
+            <goals>
+              <goal>integration-test</goal>
+              <goal>verify</goal>
+            </goals>
+          </execution>
+        </executions>
+      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-shade-plugin</artifactId>
@@ -38,28 +88,70 @@
               <goal>shade</goal>
             </goals>
             <configuration>
-              <filters>
-                <filter>
-                  <artifact>org.bouncycastle:*</artifact>
-                  <excludes>
-                    <exclude>META-INF/*.SF</exclude>
-                    <exclude>META-INF/*.DSA</exclude>
-                    <exclude>META-INF/*.RSA</exclude>
-                  </excludes>
-                </filter>
-              </filters>
               <transformers>
                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                  <mainClass>org.camunda.optimize.reimport.preperation.ReimportPreparation</mainClass>
+                  <mainClass>org.camunda.optimize.reimport.preparation.ReimportPreparation</mainClass>
                 </transformer>
               </transformers>
-              <finalName>${artifactId}</finalName>
+              <finalName>${project.artifactId}</finalName>
             </configuration>
           </execution>
         </executions>
       </plugin>
+
     </plugins>
   </build>
 
+  <profiles>
+    <profile>
+      <id>it</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>docker-start</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <configuration>
+                  <skip>${skip.docker}</skip>
+                  <executable>mvn</executable>
+                  <workingDirectory>../../</workingDirectory>
+                  <arguments>
+                    <argument>-f</argument>
+                    <argument>backend/pom.xml</argument>
+                    <argument>-Pproduction,it</argument>
+                    <argument>pre-integration-test</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+              <execution>
+                <id>docker-remove</id>
+                <phase>post-integration-test</phase>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <configuration>
+                  <skip>${skip.docker}</skip>
+                  <executable>docker-compose</executable>
+                  <workingDirectory>../../</workingDirectory>
+                  <arguments>
+                    <argument>-f</argument>
+                    <argument>${docker.compose.file}</argument>
+                    <argument>rm</argument>
+                    <argument>-sfv</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
 
 </project>

@@ -1,4 +1,4 @@
-package org.camunda.optimize.reimport.preperation;
+package org.camunda.optimize.reimport.preparation;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
