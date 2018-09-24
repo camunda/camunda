@@ -367,7 +367,7 @@ describe('Instances', () => {
         expect(node.state().statistics).toEqual(statistics);
       });
 
-      it('should fetch diagram statistics when filters change', async () => {
+      it('should fetch diagram statistics when instance state in filter changes', async () => {
         // given
         const node = shallow(
           <Instances
@@ -389,6 +389,43 @@ describe('Instances', () => {
         node.setProps({
           location: {
             search: '?filter={"active":true,"incidents":true}'
+          }
+        });
+        const fetchDiagramStatistics = jest.spyOn(
+          node.instance(),
+          'fetchDiagramStatistics'
+        );
+
+        await flushPromises();
+        node.update();
+
+        // then
+        expect(fetchDiagramStatistics).toHaveBeenCalledTimes(1);
+      });
+
+      it('should fetch diagram statistics when activityId in filter changes', async () => {
+        // given
+        const node = shallow(
+          <Instances
+            storeStateLocally={() => {}}
+            location={{
+              search: '?filter={"active": false, "incidents": true}'
+            }}
+            getStateLocally={() => {
+              return {filterCount: 0};
+            }}
+            history={{push: () => {}}}
+          />
+        );
+
+        //when
+        await flushPromises();
+        node.update();
+        // chage state filters in the url
+        node.setProps({
+          location: {
+            search:
+              '?filter={"active":false,"incidents":true, "activityId": "x"}'
           }
         });
         const fetchDiagramStatistics = jest.spyOn(

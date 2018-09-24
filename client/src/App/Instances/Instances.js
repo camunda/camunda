@@ -97,7 +97,8 @@ class Instances extends Component {
         prevState.filter.active !== this.state.filter.active ||
         prevState.filter.incidents !== this.state.filter.incidents ||
         prevState.filter.completed !== this.state.filter.completed ||
-        prevState.filter.canceled !== this.state.filter.canceled
+        prevState.filter.canceled !== this.state.filter.canceled ||
+        prevState.filter.activityId !== this.state.filter.activityId
       ) {
         this.fetchDiagramStatistics();
       }
