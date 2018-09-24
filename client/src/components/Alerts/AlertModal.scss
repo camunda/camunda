@@ -20,6 +20,10 @@
 .AlertModal__input {
   width: 100%;
   flex-grow: 1;
+
+  input {
+    width: 100%;
+  }
 }
 
 .AlertModal__inputGroup {
@@ -29,6 +33,7 @@
 .AlertModal__combinedInput {
   display: flex;
   flex-grow: 1;
+  align-items: flex-end;
 }
 
 .AlertModal__topSection {

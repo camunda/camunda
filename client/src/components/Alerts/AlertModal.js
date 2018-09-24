@@ -1,7 +1,7 @@
 import React from 'react';
 import update from 'immutability-helper';
 
-import {Modal, Button, Input, Select, ErrorMessage, Typeahead} from 'components';
+import {Modal, Button, Input, LabeledInput, Select, ErrorMessage, Typeahead} from 'components';
 import {emailNotificationIsEnabled} from './service';
 
 import ThresholdInput from './ThresholdInput';
@@ -204,36 +204,35 @@ export default function AlertModal(reports) {
                     }
                   </span>
                 )}
-                <label htmlFor="name-input">
-                  <span className="AlertModal__label">Name</span>
-                </label>
-                <Input
+                <LabeledInput
                   id="name-input"
                   className="AlertModal__input"
+                  label="Name"
                   isInvalid={errorInput === 'name'}
                   value={name}
                   onChange={({target: {value}}) => this.setState({name: value})}
-                />
-                {errorInput === 'name' && (
-                  <ErrorMessage className="AlertModal__warning">Please enter a name</ErrorMessage>
-                )}
+                >
+                  {errorInput === 'name' && (
+                    <ErrorMessage className="AlertModal__warning">Please enter a name</ErrorMessage>
+                  )}
+                </LabeledInput>
               </div>
+
               <div className="AlertModal__inputGroup">
-                <label htmlFor="email-input">
-                  <span className="AlertModal__label">Send Email to</span>
-                </label>
-                <Input
+                <LabeledInput
                   id="email-input"
+                  label="Send Email to"
                   className="AlertModal__input"
                   isInvalid={errorInput === 'email'}
                   value={email}
                   onChange={({target: {value}}) => this.setState({email: value})}
-                />
-                {errorInput === 'email' && (
-                  <ErrorMessage className="AlertModal__warning">
-                    Please enter a valid Email address
-                  </ErrorMessage>
-                )}
+                >
+                  {errorInput === 'email' && (
+                    <ErrorMessage className="AlertModal__warning">
+                      Please enter a valid Email address
+                    </ErrorMessage>
+                  )}
+                </LabeledInput>
               </div>
               <div className="AlertModal__inputGroup">
                 <label htmlFor="report-select">
@@ -278,12 +277,10 @@ export default function AlertModal(reports) {
               </div>
             </div>
             <div className="AlertModal__inputGroup">
-              <label htmlFor="checkInterval-input">
-                <span className="AlertModal__label">Check Report every</span>
-              </label>
               <div className="AlertModal__combinedInput">
-                <Input
+                <LabeledInput
                   id="checkInterval-input"
+                  label="Check Report every"
                   className="AlertModal__input"
                   isInvalid={errorInput === 'checkInterval'}
                   value={checkInterval.value}
@@ -330,12 +327,10 @@ export default function AlertModal(reports) {
               <label htmlFor="reminder-checkbox">Send reminder notification</label>
               {reminder && (
                 <div className="AlertModal__inputGroup">
-                  <label htmlFor="reminder-input">
-                    <span className="AlertModal__label">every</span>
-                  </label>
                   <div className="AlertModal__combinedInput">
-                    <Input
+                    <LabeledInput
                       id="reminder-input"
+                      label="every"
                       className="AlertModal__input"
                       isInvalid={errorInput === 'reminder'}
                       value={reminder.value}

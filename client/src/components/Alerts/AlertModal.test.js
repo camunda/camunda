@@ -34,9 +34,17 @@ jest.mock('components', () => {
     ErrorMessage: props => <div {...props}>{props.children}</div>,
     Button: props => <button {...props}>{props.children}</button>,
     Input: props => {
+      return <input {...props} />;
+    },
+    LabeledInput: props => {
       const allowedProps = {...props};
       delete allowedProps.isInvalid;
-      return <input {...allowedProps} />;
+      return (
+        <div {...allowedProps}>
+          <label> {allowedProps.label}</label>
+          <input />;
+        </div>
+      );
     },
     Select,
     Typeahead
