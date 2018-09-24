@@ -4,7 +4,14 @@ import {shallow} from 'enzyme';
 import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
 import {Colors} from 'modules/theme';
 import * as api from 'modules/api/diagram/diagram';
-import {ACTIVITY_STATE, FLOW_NODE_STATE_OVERLAY_ID} from 'modules/constants';
+import {
+  ACTIVITY_STATE,
+  FLOW_NODE_STATE_OVERLAY_ID,
+  ACTIVE_STATISTICS_OVERLAY_ID,
+  INCIDENTS_STATISTICS_OVERLAY_ID,
+  CANCELED_STATISTICS_OVERLAY_ID,
+  COMPLETED_STATISTICS_OVERLAY_ID
+} from 'modules/constants';
 import incidentIcon from 'modules/components/Icon/diagram-badge-single-instance-incident.svg';
 import activeIcon from 'modules/components/Icon/diagram-badge-single-instance-active.svg';
 import completedLightIcon from 'modules/components/Icon/diagram-badge-single-instance-completed-light.svg';
@@ -293,9 +300,49 @@ describe('Diagram', () => {
         type: FLOW_NODE_STATE_OVERLAY_ID
       });
     });
-  });
 
-  describe('handleDiagramLoad', () => {});
+    it('should add statistics state overlays if provided', async () => {
+      // given
+      const flowNodesStatisticsOverlay = [
+        {
+          activityId: 'Task_162x79i',
+          active: 0,
+          canceled: 0,
+          incidents: 1,
+          completed: 0
+        },
+        {
+          activityId: 'Task_1b1r7ow',
+          active: 62,
+          canceled: 2,
+          incidents: 0,
+          completed: 0
+        }
+      ];
+      const node = shallow(<Diagram workflowId={workflowId} theme={'light'} />);
+      await flushPromises();
+      const statisticsOverlaysAddSpy = jest.spyOn(
+        node.instance(),
+        'addFlowNodesStatisticsOverlays'
+      );
+      const statisticsOverlaysRemoveSpy = jest.spyOn(
+        node.instance().Viewer.overlays,
+        'remove'
+      );
+
+      // when
+      node.setProps({flowNodesStatisticsOverlay});
+
+      // then
+      // we clear the statistics overlays
+      expect(statisticsOverlaysRemoveSpy).toHaveBeenCalledTimes(4);
+      // we add the new overlays
+      expect(statisticsOverlaysAddSpy).toHaveBeenCalledTimes(1);
+      expect(statisticsOverlaysAddSpy.mock.calls[0][0]).toEqual(
+        flowNodesStatisticsOverlay
+      );
+    });
+  });
 
   describe('containerRef', () => {
     it('should set containerNode to provided node', async () => {
@@ -661,6 +708,133 @@ describe('Diagram', () => {
           ''
         )
       ).toBe(canceledDarkIcon);
+      expect(overlaysAddSpy.mock.calls[0][2]).toMatchSnapshot();
+    });
+  });
+
+  describe('addFlowNodesStatisticsOverlays', () => {
+    it('should statistics overlays with incidents', async () => {
+      // given
+      const flowNodesStatisticsOverlay = [
+        {
+          activityId: 'ServiceTask_1un6ye3',
+          active: 0,
+          canceled: 0,
+          incidents: 7,
+          completed: 0
+        }
+      ];
+      const node = shallow(<Diagram workflowId={workflowId} theme={'light'} />);
+      await flushPromises();
+
+      // when
+      node.setProps({flowNodesStatisticsOverlay});
+
+      // then
+      const overlaysAddSpy = node.instance().Viewer.overlays.add;
+      expect(overlaysAddSpy.mock.calls[0][0]).toBe('ServiceTask_1un6ye3');
+      expect(overlaysAddSpy.mock.calls[0][1]).toBe(
+        INCIDENTS_STATISTICS_OVERLAY_ID
+      );
+
+      // position, color and content
+      expect(
+        overlaysAddSpy.mock.calls[0][2].html.style['background-color']
+      ).toBe('rgb(255, 61, 61)');
+      expect(overlaysAddSpy.mock.calls[0][2].position.top).toBe(undefined);
+      expect(overlaysAddSpy.mock.calls[0][2].position.right).toBe(0);
+      expect(overlaysAddSpy.mock.calls[0][2].html.textContent).toBe('7');
+      expect(overlaysAddSpy.mock.calls[0][2]).toMatchSnapshot();
+    });
+
+    it('should statistics overlays with active', async () => {
+      // given
+      const flowNodesStatisticsOverlay = [
+        {
+          activityId: 'ServiceTask_1un6ye3',
+          active: 7,
+          canceled: 0,
+          incidents: 0,
+          completed: 0
+        }
+      ];
+      const node = shallow(<Diagram workflowId={workflowId} theme={'light'} />);
+      await flushPromises();
+
+      // when
+      node.setProps({flowNodesStatisticsOverlay});
+
+      // then
+      const overlaysAddSpy = node.instance().Viewer.overlays.add;
+      expect(overlaysAddSpy).toHaveBeenCalledTimes(1);
+
+      expect(overlaysAddSpy.mock.calls[0][0]).toBe('ServiceTask_1un6ye3');
+      expect(overlaysAddSpy.mock.calls[0][1]).toBe(
+        ACTIVE_STATISTICS_OVERLAY_ID
+      );
+      // position and color
+      expect(
+        overlaysAddSpy.mock.calls[0][2].html.style['background-color']
+      ).toBe('rgb(16, 208, 112)');
+      expect(overlaysAddSpy.mock.calls[0][2].position.top).toBe(undefined);
+      expect(overlaysAddSpy.mock.calls[0][2].position.left).toBe(0);
+      expect(overlaysAddSpy.mock.calls[0][2].html.textContent).toBe('7');
+      expect(overlaysAddSpy.mock.calls[0][2]).toMatchSnapshot();
+    });
+
+    it('should statistics overlays with completed state', async () => {
+      // given
+      const flowNodesStatisticsOverlay = [
+        {
+          activityId: 'ServiceTask_1un6ye3',
+          active: 0,
+          canceled: 0,
+          incidents: 0,
+          completed: 7
+        }
+      ];
+      const node = shallow(<Diagram workflowId={workflowId} theme={'light'} />);
+      await flushPromises();
+
+      // when
+      node.setProps({flowNodesStatisticsOverlay});
+
+      // then
+      const overlaysAddSpy = node.instance().Viewer.overlays.add;
+      expect(overlaysAddSpy).toHaveBeenCalledTimes(1);
+      expect(overlaysAddSpy.mock.calls[0][0]).toBe('ServiceTask_1un6ye3');
+      expect(overlaysAddSpy.mock.calls[0][1]).toBe(
+        COMPLETED_STATISTICS_OVERLAY_ID
+      );
+      expect(overlaysAddSpy.mock.calls[0][2].html.textContent).toBe('7');
+      expect(overlaysAddSpy.mock.calls[0][2]).toMatchSnapshot();
+    });
+
+    it('should statistics overlays with canceled state', async () => {
+      // given
+      const flowNodesStatisticsOverlay = [
+        {
+          activityId: 'ServiceTask_1un6ye3',
+          active: 0,
+          canceled: 7,
+          incidents: 0,
+          completed: 0
+        }
+      ];
+      const node = shallow(<Diagram workflowId={workflowId} theme={'light'} />);
+      await flushPromises();
+
+      // when
+      node.setProps({flowNodesStatisticsOverlay});
+
+      // then
+      const overlaysAddSpy = node.instance().Viewer.overlays.add;
+      expect(overlaysAddSpy).toHaveBeenCalledTimes(1);
+      expect(overlaysAddSpy.mock.calls[0][0]).toBe('ServiceTask_1un6ye3');
+      expect(overlaysAddSpy.mock.calls[0][1]).toBe(
+        CANCELED_STATISTICS_OVERLAY_ID
+      );
+      expect(overlaysAddSpy.mock.calls[0][2].html.textContent).toBe('7');
       expect(overlaysAddSpy.mock.calls[0][2]).toMatchSnapshot();
     });
   });

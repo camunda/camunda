@@ -105,6 +105,10 @@ class Instances extends Component {
   }
 
   fetchDiagramStatistics = async () => {
+    this.setState({
+      statistics: []
+    });
+
     let filter = Object.assign({}, this.state.filter);
 
     if (isEmpty(filter) || !filter.workflow) {

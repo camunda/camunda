@@ -44,18 +44,6 @@ const InstancesWithAllFilters = (
     history={{push: () => {}}}
   />
 );
-const InstancesWithVadlidWorkflowData = (
-  <Instances
-    location={{
-      search: '?filter={"workflow:":"demoProcess","version":"3"}'
-    }}
-    getStateLocally={() => {
-      return {filterCount: 0};
-    }}
-    storeStateLocally={() => {}}
-    history={{push: () => {}}}
-  />
-);
 
 const InstancesWithInvalidRunningFilter = (
   <Instances
@@ -128,10 +116,21 @@ const groupedWorkflowsMock = [
   }
 ];
 
+const statistics = [
+  {
+    activityId: 'ServiceTask_1un6ye3',
+    active: 3,
+    canceled: 0,
+    incidents: 7,
+    completed: 0
+  }
+];
+
 // mock api
 api.fetchWorkflowInstancesCount = mockResolvedAsyncFn(Count);
 api.fetchWorkflowInstances = mockResolvedAsyncFn([]);
 api.fetchGroupedWorkflowInstances = mockResolvedAsyncFn(groupedWorkflowsMock);
+api.fetchWorkflowInstancesStatistics = mockResolvedAsyncFn(statistics);
 apiDiagram.fetchWorkflowXML = mockResolvedAsyncFn('');
 
 jest.mock('bpmn-js', () => ({}));
@@ -142,6 +141,7 @@ describe('Instances', () => {
       api.fetchWorkflowInstancesCount.mockClear();
       api.fetchWorkflowInstances.mockClear();
       api.fetchGroupedWorkflowInstances.mockClear();
+      api.fetchWorkflowInstancesStatistics.mockClear();
       apiDiagram.fetchWorkflowXML.mockClear();
     });
 
@@ -291,7 +291,6 @@ describe('Instances', () => {
           expect(node.find(PanelHeader).props().children).toBe('Workflow');
         });
 
-        it('should render a diagram if a valid workflow and version are in url', () => {});
         it('should render a diagram when workflow data is available ', () => {
           const node = shallow(InstancesWithWorkflow);
 
@@ -304,22 +303,105 @@ describe('Instances', () => {
           expect(node.find(Diagram).props().workflowId).toEqual(
             workflowMock.id
           );
+          expect(node.find(Diagram).props().onFlowNodesDetailsReady).toBe(
+            node.instance().fetchDiagramStatistics
+          );
+          expect(node.find(Diagram).props().flowNodesStatisticsOverlay).toBe(
+            node.state().statistics
+          );
           expect(node.find(PanelHeader).props().children).toBe(
             workflowMock.name || workflowMock.id
           );
         });
       });
     });
-  });
 
-  describe('rendering a diagram', () => {
-    it('should not render a diagram on initial render', () => {
-      // given
-      const node = shallow(InstancesWithRunningFilter);
+    describe('fetching diagram statistics', () => {
+      it('should not set state with statistics when workflow is set', async () => {
+        const node = shallow(
+          <Instances
+            storeStateLocally={() => {}}
+            location={{
+              search: '?filter={"active": false, "incidents": true}'
+            }}
+            getStateLocally={() => {
+              return {filterCount: 0};
+            }}
+            history={{push: () => {}}}
+          />
+        );
+        //when
+        await flushPromises();
+        node.update();
 
-      // then
-      expect(node.find(Diagram).length).toBe(0);
-      expect(node.find(PanelHeader).props().children).toBe('Workflow');
+        node.instance().fetchDiagramStatistics();
+        await flushPromises();
+        node.update();
+
+        expect(api.fetchWorkflowInstancesStatistics).toHaveBeenCalledTimes(0);
+      });
+
+      it('should set state with statistics when workflow is set', async () => {
+        const node = shallow(
+          <Instances
+            storeStateLocally={() => {}}
+            location={{
+              search:
+                '?filter={"active": false, "incidents": true, "workflow": "demoProcess"}'
+            }}
+            getStateLocally={() => {
+              return {filterCount: 0};
+            }}
+            history={{push: () => {}}}
+          />
+        );
+        //when
+        await flushPromises();
+        node.update();
+
+        node.instance().fetchDiagramStatistics();
+        await flushPromises();
+        node.update();
+
+        expect(api.fetchWorkflowInstancesStatistics).toHaveBeenCalledTimes(1);
+        expect(node.state().statistics).toEqual(statistics);
+      });
+
+      it('should fetch diagram statistics when filters change', async () => {
+        // given
+        const node = shallow(
+          <Instances
+            storeStateLocally={() => {}}
+            location={{
+              search: '?filter={"active": false, "incidents": true}'
+            }}
+            getStateLocally={() => {
+              return {filterCount: 0};
+            }}
+            history={{push: () => {}}}
+          />
+        );
+
+        //when
+        await flushPromises();
+        node.update();
+        // chage state filters in the url
+        node.setProps({
+          location: {
+            search: '?filter={"active":true,"incidents":true}'
+          }
+        });
+        const fetchDiagramStatistics = jest.spyOn(
+          node.instance(),
+          'fetchDiagramStatistics'
+        );
+
+        await flushPromises();
+        node.update();
+
+        // then
+        expect(fetchDiagramStatistics).toHaveBeenCalledTimes(1);
+      });
     });
   });
 });

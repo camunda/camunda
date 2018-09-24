@@ -34,7 +34,7 @@ export const DiagramCanvas = themed(styled.div`
 `);
 
 export const span = css`
-  padding: 0 11px 0 5px;
+  padding: 0 11px 0 0px;
 `;
 
 export function getInlineStyle(state, theme) {

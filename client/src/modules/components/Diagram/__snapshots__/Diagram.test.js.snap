@@ -84,6 +84,98 @@ Object {
 }
 `;
 
+exports[`Diagram addFlowNodesStatisticsOverlays should statistics overlays with active 1`] = `
+Object {
+  "html": <div
+    style="display: flex; line-height: 24px; height: 24px; font-family: IBMPlexSans; font-size: 13px; font-weight: bold; color: rgb(255, 255, 255); border-radius: 12px; background-color: rgb(16, 208, 112);"
+>
+    <img
+        src="diagram-badge-single-instance-active.svg"
+        width="24"
+        height="24"
+    />
+    <span
+        style="padding: 0px 11px 0px 0px;"
+    >
+        7
+    </span>
+</div>,
+  "position": Object {
+    "bottom": 9,
+    "left": 0,
+  },
+}
+`;
+
+exports[`Diagram addFlowNodesStatisticsOverlays should statistics overlays with canceled state 1`] = `
+Object {
+  "html": <div
+    style="display: flex; line-height: 24px; height: 24px; font-family: IBMPlexSans; font-size: 13px; font-weight: bold; color: rgb(255, 255, 255); border-radius: 12px; background-color: rgb(136, 136, 141);"
+>
+    <img
+        src="diagram-badge-single-instance-canceled-light.svg"
+        width="24"
+        height="24"
+    />
+    <span
+        style="padding: 0px 11px 0px 0px;"
+    >
+        7
+    </span>
+</div>,
+  "position": Object {
+    "left": 0,
+    "top": -16,
+  },
+}
+`;
+
+exports[`Diagram addFlowNodesStatisticsOverlays should statistics overlays with completed state 1`] = `
+Object {
+  "html": <div
+    style="display: flex; line-height: 24px; height: 24px; font-family: IBMPlexSans; font-size: 13px; font-weight: bold; color: rgb(98, 98, 110); border-radius: 12px; background-color: rgb(215, 215, 217);"
+>
+    <img
+        src="diagram-badge-single-instance-completed-light.svg"
+        width="24"
+        height="24"
+    />
+    <span
+        style="padding: 0px 11px 0px 0px;"
+    >
+        7
+    </span>
+</div>,
+  "position": Object {
+    "bottom": 1,
+    "left": 17,
+  },
+}
+`;
+
+exports[`Diagram addFlowNodesStatisticsOverlays should statistics overlays with incidents 1`] = `
+Object {
+  "html": <div
+    style="display: flex; line-height: 24px; height: 24px; font-family: IBMPlexSans; font-size: 13px; font-weight: bold; color: rgb(255, 255, 255); border-radius: 12px; background-color: rgb(255, 61, 61);"
+>
+    <img
+        src="diagram-badge-single-instance-incident.svg"
+        width="24"
+        height="24"
+    />
+    <span
+        style="padding: 0px 11px 0px 0px;"
+    >
+        7
+    </span>
+</div>,
+  "position": Object {
+    "bottom": 9,
+    "right": 0,
+  },
+}
+`;
+
 exports[`Diagram should render Diagram with controls 1`] = `
 <styled.div>
   <Themed(styled.div)

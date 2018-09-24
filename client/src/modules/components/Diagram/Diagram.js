@@ -89,12 +89,6 @@ class Diagram extends React.Component {
     const hasNewWorkflowId = this.props.workflowId !== prevWorkflowId;
     const hasSelectedFlowNodeChanged =
       this.props.selectedFlowNode !== selectedFlowNode;
-    console.log(
-      this.props.theme,
-      prevTheme,
-      this.props.flowNodesStatisticsOverlay,
-      Boolean(this.props.flowNodesStatisticsOverlay.length)
-    );
 
     if (hasNewTheme || hasNewWorkflowId) {
       hasNewWorkflowId && (await this.fetchAndSetWorkflowXML());
@@ -119,9 +113,6 @@ class Diagram extends React.Component {
 
     // Clear overlays for statistics
     if (
-      (hasNewTheme &&
-        this.props.flowNodesStatisticsOverlay &&
-        Boolean(this.props.flowNodesStatisticsOverlay.length)) ||
       !isEqual(
         prevflowNodesStatisticsOverlay,
         this.props.flowNodesStatisticsOverlay
@@ -277,9 +268,9 @@ class Diagram extends React.Component {
   addStatisticsOverlayByState = (id, state, count, overlayId) => {
     const positions = {
       active: {bottom: 9, left: 0},
-      incidents: {bottom: 7, right: 0},
-      canceled: {top: -15, left: 0},
-      completed: {bottom: 9, left: 30}
+      incidents: {bottom: 9, right: 0},
+      canceled: {top: -16, left: 0},
+      completed: {bottom: 1, left: 17}
     };
 
     const icons = {
@@ -317,7 +308,6 @@ class Diagram extends React.Component {
     });
   };
 
-  // !!! check for when filter changes and theme
   addFlowNodesStatisticsOverlays = statistics => {
     const overlaysByState = getOverlaysByState(statistics);
 
