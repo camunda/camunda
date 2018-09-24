@@ -18,6 +18,7 @@
 package io.zeebe.broker.subscription.message.state;
 
 import io.zeebe.logstreams.state.StateController;
+import io.zeebe.util.sched.clock.ActorClock;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
@@ -30,9 +31,10 @@ import org.rocksdb.ColumnFamilyHandle;
 public class SubscriptionState<T extends Subscription> {
   private static final byte[] EXISTENCE = new byte[] {1};
   private static final int TIME_OFFSET = 0;
-  private static final int KEY_OFFSET = TIME_OFFSET + Long.BYTES;
+  public static final int KEY_OFFSET = TIME_OFFSET + Long.BYTES;
+  public static final int TIME_LENGTH = Long.BYTES;
 
-  private static final byte[] SUB_NAME = "msgSubscription".getBytes();
+  private static final byte[] SUB_NAME = "subscription".getBytes();
   private static final byte[] SUB_SEND_TIME_NAME = "subSendTime".getBytes();
 
   private final StateController rocksDbWrapper;
@@ -59,33 +61,46 @@ public class SubscriptionState<T extends Subscription> {
   }
 
   public void put(final T subscription) {
-    subscription.writeKey(keyBuffer, TIME_OFFSET);
+    subscription.writeCommandSentTime(keyBuffer, TIME_OFFSET);
+    subscription.writeKey(keyBuffer, KEY_OFFSET);
     subscription.write(valueBuffer, 0);
 
     final int subscriptionLength = subscription.getLength();
     final int keyLength = subscription.getKeyLength();
-    writeKeyWithoutTimeWithValue(subscriptionHandle, keyLength, subscriptionLength);
-    writeTimeAndKey(subSendTimeHandle, keyLength);
+    final int keyLengthWithTimePrefix = TIME_LENGTH + keyLength;
+    writeKeyWithValue(subscriptionHandle, keyLength, subscriptionLength);
+    writeKeyWithTimePrefix(subSendTimeHandle, keyLengthWithTimePrefix);
   }
 
-  private void writeKeyWithoutTimeWithValue(
-      final ColumnFamilyHandle handle, final int timeWithkeyLength, final int valueLength) {
+  public void updateCommandSentTime(final T subscription) {
+    remove(subscription);
+    subscription.setCommandSentTime(ActorClock.currentTimeMillis());
+    put(subscription);
+  }
+
+  private void writeKeyWithValue(
+      final ColumnFamilyHandle handle, final int keyLength, final int valueLength) {
     rocksDbWrapper.put(
         handle,
         keyBuffer.byteArray(),
         KEY_OFFSET,
-        timeWithkeyLength - KEY_OFFSET,
+        keyLength,
         valueBuffer.byteArray(),
         0,
         valueLength);
   }
 
-  private void writeTimeAndKey(final ColumnFamilyHandle handle, final int keyLength) {
+  private void writeKeyWithTimePrefix(final ColumnFamilyHandle handle, final int keyLength) {
     rocksDbWrapper.put(
         handle, keyBuffer.byteArray(), TIME_OFFSET, keyLength, EXISTENCE, 0, EXISTENCE.length);
   }
 
-  private T getSubscription(final DirectBuffer buffer, final int offset, final int length) {
+  public T getSubscription(T subscription) {
+    subscription.writeKey(keyBuffer, KEY_OFFSET);
+    return getSubscription(keyBuffer, KEY_OFFSET, subscription.getKeyLength());
+  }
+
+  public T getSubscription(final DirectBuffer buffer, final int offset, final int length) {
     final int valueBufferSize = valueBuffer.capacity();
     final int readBytes =
         rocksDbWrapper.get(
@@ -101,12 +116,15 @@ public class SubscriptionState<T extends Subscription> {
       valueBuffer.checkLimit(readBytes);
       // try again
       return getSubscription(buffer, offset, length);
+    } else if (readBytes <= 0) {
+      return null;
+    } else {
+
+      final T subscription = subscriptionInstanceSupplier.get();
+      subscription.wrap(valueBuffer, 0, readBytes);
+
+      return subscription;
     }
-
-    final T subscription = subscriptionInstanceSupplier.get();
-    subscription.wrap(valueBuffer, 0, readBytes);
-
-    return subscription;
   }
 
   public List<T> findSubscriptions(
@@ -144,20 +162,21 @@ public class SubscriptionState<T extends Subscription> {
   }
 
   public boolean exist(final T subscription) {
-    subscription.writeKey(keyBuffer, TIME_OFFSET);
-    final int offset = subscription.getKeyLength();
+    subscription.writeKey(keyBuffer, KEY_OFFSET);
+    final int keyLength = subscription.getKeyLength();
 
-    return rocksDbWrapper.exist(
-        subscriptionHandle, keyBuffer.byteArray(), KEY_OFFSET, offset - KEY_OFFSET);
+    return rocksDbWrapper.exist(subscriptionHandle, keyBuffer.byteArray(), KEY_OFFSET, keyLength);
   }
 
   public void remove(final T subscription) {
-    subscription.writeKey(keyBuffer, TIME_OFFSET);
+    subscription.writeCommandSentTime(keyBuffer, TIME_OFFSET);
+    subscription.writeKey(keyBuffer, KEY_OFFSET);
 
-    final int keyLength = subscription.getKeyLength() - KEY_OFFSET;
+    final int keyLength = subscription.getKeyLength();
     rocksDbWrapper.remove(subscriptionHandle, keyBuffer.byteArray(), KEY_OFFSET, keyLength);
 
+    final int keyLengthWithTimePrefix = TIME_LENGTH + keyLength;
     rocksDbWrapper.remove(
-        subSendTimeHandle, keyBuffer.byteArray(), TIME_OFFSET, subscription.getKeyLength());
+        subSendTimeHandle, keyBuffer.byteArray(), TIME_OFFSET, keyLengthWithTimePrefix);
   }
 }

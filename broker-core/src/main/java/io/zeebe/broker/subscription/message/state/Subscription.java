@@ -24,11 +24,15 @@ import org.agrona.MutableDirectBuffer;
 
 public interface Subscription extends BufferReader, BufferWriter {
 
+  void setCommandSentTime(long millis);
+
   DirectBuffer getMessageName();
 
   DirectBuffer getCorrelationKey();
 
   void writeKey(MutableDirectBuffer keyBuffer, int offset);
+
+  void writeCommandSentTime(MutableDirectBuffer keyBuffer, int offset);
 
   int getKeyLength();
 }

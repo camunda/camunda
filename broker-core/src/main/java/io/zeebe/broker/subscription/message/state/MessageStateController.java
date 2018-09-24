@@ -90,6 +90,10 @@ public class MessageStateController extends KeyStateController {
     subscriptionState.put(subscription);
   }
 
+  public void updateCommandSentTime(final MessageSubscription subscription) {
+    subscriptionState.updateCommandSentTime(subscription);
+  }
+
   private void writeKeyWithoutTimeWithValue(
       final ColumnFamilyHandle handle, final int timeWithkeyLength, final int valueLength) {
     put(

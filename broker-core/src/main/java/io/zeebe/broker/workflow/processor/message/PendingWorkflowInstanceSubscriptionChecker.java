@@ -15,54 +15,52 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.subscription.message.processor;
-
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
+package io.zeebe.broker.workflow.processor.message;
 
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
-import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionDataStore;
-import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionDataStore.WorkflowInstanceSubscription;
+import io.zeebe.broker.workflow.state.WorkflowState;
+import io.zeebe.broker.workflow.state.WorkflowSubscription;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.util.List;
 
 public class PendingWorkflowInstanceSubscriptionChecker implements Runnable {
 
   private final SubscriptionCommandSender commandSender;
-  private final WorkflowInstanceSubscriptionDataStore subscriptionStore;
+  private final WorkflowState workflowState;
 
   private final long subscriptionTimeout;
 
   public PendingWorkflowInstanceSubscriptionChecker(
       SubscriptionCommandSender commandSender,
-      WorkflowInstanceSubscriptionDataStore subscriptionStore,
+      WorkflowState workflowState,
       long subscriptionTimeout) {
     this.commandSender = commandSender;
-    this.subscriptionStore = subscriptionStore;
+    this.workflowState = workflowState;
     this.subscriptionTimeout = subscriptionTimeout;
   }
 
   @Override
   public void run() {
 
-    final List<WorkflowInstanceSubscription> pendingSubscriptions =
-        subscriptionStore.findPendingSubscriptionsWithSentTimeBefore(
-            ActorClock.currentTimeMillis() - subscriptionTimeout);
+    final List<WorkflowSubscription> pendingSubscriptions =
+        workflowState.findSubscriptionsBefore(ActorClock.currentTimeMillis() - subscriptionTimeout);
 
-    for (WorkflowInstanceSubscription subscription : pendingSubscriptions) {
-      final boolean success = sendCommand(subscription);
-      if (!success) {
-        return;
+    for (WorkflowSubscription subscription : pendingSubscriptions) {
+      if (subscription.isNotOpen()) {
+        if (sendCommand(subscription)) {
+          workflowState.updateCommandSendTime(subscription);
+        } else {
+          return;
+        }
       }
     }
   }
 
-  private boolean sendCommand(WorkflowInstanceSubscription subscription) {
-    subscription.setCommandSentTime(ActorClock.currentTimeMillis());
-
+  private boolean sendCommand(WorkflowSubscription subscription) {
     return commandSender.openMessageSubscription(
         subscription.getWorkflowInstanceKey(),
         subscription.getActivityInstanceKey(),
-        wrapString(subscription.getMessageName()),
-        wrapString(subscription.getCorrelationKey()));
+        subscription.getMessageName(),
+        subscription.getCorrelationKey());
   }
 }

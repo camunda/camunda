@@ -17,10 +17,14 @@
  */
 package io.zeebe.broker.workflow.state;
 
+import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
+import io.zeebe.broker.subscription.message.state.SubscriptionState;
 import io.zeebe.broker.workflow.deployment.data.DeploymentRecord;
 import io.zeebe.logstreams.state.StateController;
+import io.zeebe.util.buffer.BufferUtil;
 import java.io.File;
 import java.util.Collection;
+import java.util.List;
 import org.agrona.DirectBuffer;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.RocksDB;
@@ -35,6 +39,7 @@ public class WorkflowState extends StateController {
   private ColumnFamilyHandle workflowVersionHandle;
   private NextValueManager nextValueManager;
   private WorkflowPersistenceCache workflowPersistenceCache;
+  private SubscriptionState<WorkflowSubscription> subscriptionState;
 
   @Override
   public RocksDB open(final File dbDirectory, final boolean reopen) throws Exception {
@@ -45,6 +50,7 @@ public class WorkflowState extends StateController {
 
     nextValueManager = new NextValueManager(this);
     workflowPersistenceCache = new WorkflowPersistenceCache(this);
+    subscriptionState = new SubscriptionState<>(this, () -> new WorkflowSubscription());
 
     return rocksDB;
   }
@@ -80,5 +86,40 @@ public class WorkflowState extends StateController {
 
   public Collection<DeployedWorkflow> getWorkflowsByBpmnProcessId(DirectBuffer processId) {
     return workflowPersistenceCache.getWorkflowsByBpmnProcessId(processId);
+  }
+
+  public void put(WorkflowSubscription workflowSubscription) {
+    subscriptionState.put(workflowSubscription);
+  }
+
+  public void updateCommandSendTime(WorkflowSubscription workflowSubscription) {
+    subscriptionState.updateCommandSentTime(workflowSubscription);
+  }
+
+  public WorkflowSubscription findSubscription(WorkflowInstanceSubscriptionRecord record) {
+    final WorkflowSubscription workflowSubscription =
+        new WorkflowSubscription(
+            record.getWorkflowInstanceKey(),
+            record.getActivityInstanceKey(),
+            BufferUtil.cloneBuffer(record.getMessageName()));
+    return subscriptionState.getSubscription(workflowSubscription);
+  }
+
+  public List<WorkflowSubscription> findSubscriptionsBefore(long time) {
+    return subscriptionState.findSubscriptionBefore(time);
+  }
+
+  public boolean remove(WorkflowInstanceSubscriptionRecord record) {
+    final WorkflowSubscription persistedSubscription = findSubscription(record);
+
+    final boolean exist = persistedSubscription != null;
+    if (exist) {
+      subscriptionState.remove(persistedSubscription);
+    }
+    return exist;
+  }
+
+  public void remove(WorkflowSubscription workflowSubscription) {
+    subscriptionState.remove(workflowSubscription);
   }
 }

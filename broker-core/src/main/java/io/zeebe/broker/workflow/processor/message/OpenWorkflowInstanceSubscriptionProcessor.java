@@ -15,26 +15,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.subscription.message.processor;
+package io.zeebe.broker.workflow.processor.message;
 
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
-import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionDataStore;
-import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionDataStore.WorkflowInstanceSubscription;
+import io.zeebe.broker.workflow.state.WorkflowState;
+import io.zeebe.broker.workflow.state.WorkflowSubscription;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 
 public class OpenWorkflowInstanceSubscriptionProcessor
     implements TypedRecordProcessor<WorkflowInstanceSubscriptionRecord> {
 
-  private final WorkflowInstanceSubscriptionDataStore subscriptionStore;
+  private final WorkflowState workflowState;
 
-  public OpenWorkflowInstanceSubscriptionProcessor(
-      WorkflowInstanceSubscriptionDataStore subscriptionStore) {
-    this.subscriptionStore = subscriptionStore;
+  public OpenWorkflowInstanceSubscriptionProcessor(WorkflowState workflowState) {
+    this.workflowState = workflowState;
   }
 
   @Override
@@ -43,10 +42,10 @@ public class OpenWorkflowInstanceSubscriptionProcessor
       TypedResponseWriter responseWriter,
       TypedStreamWriter streamWriter) {
 
-    final WorkflowInstanceSubscription subscription =
-        subscriptionStore.findSubscription(record.getValue());
-    if (subscription != null && !subscription.isOpen()) {
+    final WorkflowSubscription subscription = workflowState.findSubscription(record.getValue());
+    if (subscription != null && subscription.isNotOpen()) {
       subscription.setOpen(true);
+      workflowState.put(subscription);
 
       streamWriter.writeFollowUpEvent(
           record.getKey(), WorkflowInstanceSubscriptionIntent.OPENED, record.getValue());
