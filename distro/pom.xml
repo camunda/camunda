@@ -28,6 +28,11 @@
       <artifactId>optimize-backend</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.camunda.optimize</groupId>
+      <artifactId>upgrade-optimize</artifactId>
+      <version>${project.version}</version>
+    </dependency>
   </dependencies>
 
   <profiles>
