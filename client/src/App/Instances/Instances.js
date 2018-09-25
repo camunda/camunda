@@ -1,6 +1,8 @@
 import React, {Component, Fragment} from 'react';
 import PropTypes from 'prop-types';
 
+import {isEqual} from 'lodash';
+
 import Content from 'modules/components/Content';
 
 import withSharedState from 'modules/components/withSharedState';
@@ -93,12 +95,11 @@ class Instances extends Component {
 
       this.setFilterFromUrl();
 
+      // fetch new statistics only if filter changes for the same diagram
+      // if the workflow changes, statistics are fetched onFlowNodesDetailsReady
       if (
-        prevState.filter.active !== this.state.filter.active ||
-        prevState.filter.incidents !== this.state.filter.incidents ||
-        prevState.filter.completed !== this.state.filter.completed ||
-        prevState.filter.canceled !== this.state.filter.canceled ||
-        prevState.filter.activityId !== this.state.filter.activityId
+        !isEqual(prevState.filter, this.state.filter) &&
+        isEqual(prevState.workflow, this.state.workflow)
       ) {
         this.fetchDiagramStatistics();
       }
@@ -136,6 +137,15 @@ class Instances extends Component {
       activityId: ''
     };
 
+    // if filter has no workflow data reset all workflow related state
+    if (filter && !Boolean(filter.workflow)) {
+      this.setState({
+        workflow: {},
+        activityIds: [],
+        statistics: []
+      });
+    }
+
     if (filter && (filter.workflow || filter.version || filter.activityId)) {
       let isWorkflowValid =
         filter.workflow && this.state.groupedWorkflowInstances[filter.workflow];
@@ -172,7 +182,9 @@ class Instances extends Component {
           let activityIds = [];
 
           if (filter.version === 'all') {
-            this.setFilterInURL({...filter, ...{activityId: ''}});
+            if (filter.activityId) {
+              this.setFilterInURL({...filter, ...{activityId: ''}});
+            }
           } else {
             // fetch xml to check validity of activity id
             const xml = await fetchWorkflowXML(
