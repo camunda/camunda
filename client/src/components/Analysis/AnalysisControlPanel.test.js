@@ -135,11 +135,12 @@ it('should pass the xml to the Filter component', async () => {
   expect(filter.find('[xml="aFooXml"]')).toBePresent();
 });
 
-it('should load the flownode names and hand them to the filter and process part', async () => {
+it('should load the flownode names and hand them to the filter', async () => {
   const node = mount(<AnalysisControlPanel {...data} />);
 
   await flushPromises();
   node.update();
 
+  expect(getFlowNodeNames).toHaveBeenCalled();
   expect(node.find('Filter').prop('flowNodeNames')).toEqual(getFlowNodeNames());
 });
