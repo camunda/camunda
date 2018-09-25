@@ -70,6 +70,7 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
       >
         <Link
           replace={false}
+          title="0 0 Selections"
           to="/instances"
         >
           <span>
@@ -92,7 +93,7 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
         <Link
           replace={false}
           title="0 Incidents"
-          to="/instances"
+          to="/instances?filter={\\"incidents\\":true}"
         >
           <span>
             Incidents

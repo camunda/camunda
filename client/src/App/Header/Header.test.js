@@ -147,7 +147,8 @@ describe('Header', () => {
     const mockProps = {
       getStateLocally: () => ({})
     };
-    const node = shallow(<Header {...mockProps} />);
+
+    shallow(<Header {...mockProps} />);
 
     await flushPromises();
     expect(api.fetchUser).toHaveBeenCalled();

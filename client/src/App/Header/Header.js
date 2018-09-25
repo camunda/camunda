@@ -6,7 +6,8 @@ import Dropdown from 'modules/components/Dropdown';
 import * as api from 'modules/api/header';
 import withSharedState from 'modules/components/withSharedState';
 import {fetchWorkflowInstancesCount} from 'modules/api/instances';
-import {BADGE_TYPE} from 'modules/constants';
+import {getFilterQueryString} from 'modules/utils/filter';
+import {BADGE_TYPE, FILTER_SELECTION} from 'modules/constants';
 
 import {filtersMap, localStateKeys, apiKeys} from './constants';
 import * as Styled from './styled.js';
@@ -90,20 +91,6 @@ class Header extends React.Component {
     this.setState({[key]: countValue});
   };
 
-  createBadgeEntry = (label, count) => {
-    const type = label.toLowerCase();
-    const title = `${count} ${label}`;
-
-    return (
-      <Styled.ListLink active={this.props.active === 'instances'}>
-        <Link to="/instances" title={title}>
-          <span>{label}</span>
-          <Styled.Badge type={type} badgeContent={count} />
-        </Link>
-      </Styled.ListLink>
-    );
-  };
-
   handleLogout = async () => {
     await api.logout();
     this.setState({forceRedirect: true});
@@ -112,6 +99,10 @@ class Header extends React.Component {
   render() {
     const {active, detail} = this.props;
     const {firstname, lastname} = this.state.user || {};
+
+    // query for the incidents link
+    const incidentsQuery = getFilterQueryString(FILTER_SELECTION.incidents);
+
     return this.state.forceRedirect ? (
       <Redirect to="/login" />
     ) : (
@@ -126,17 +117,38 @@ class Header extends React.Component {
             </Styled.Dashboard>
           </li>
           <li data-test="instances">
-            {this.createBadgeEntry(
-              'Instances',
-              this.state.runningInstancesCount
-            )}
+            <Styled.ListLink active={this.props.active === 'instances'}>
+              <Link
+                to="/instances"
+                title={`${this.state.runningInstancesCount} Instances`}
+              >
+                <span>Instances</span>
+                <Styled.Badge
+                  type="instances"
+                  badgeContent={this.state.runningInstancesCount}
+                />
+              </Link>
+            </Styled.ListLink>
           </li>
           <li data-test="filters">
-            {this.createBadgeEntry('Filters', this.state.filterCount)}
+            <Styled.ListLink active={this.props.active === 'instances'}>
+              <Link to="/instances" title={`${this.state.filterCount} Filters`}>
+                <span>Filters</span>
+                <Styled.Badge
+                  type="filters"
+                  badgeContent={this.state.filterCount}
+                />
+              </Link>
+            </Styled.ListLink>
           </li>
           <li data-test="selections">
             <Styled.ListLink active={this.props.active === 'instances'}>
-              <Link to="/instances">
+              <Link
+                to="/instances"
+                title={`${this.state.instancesInSelectionsCount} ${
+                  this.state.selectionCount
+                } Selections`}
+              >
                 <span>Selections</span>
                 <Styled.SelectionBadge
                   type={BADGE_TYPE.COMBOSELECTION}
@@ -147,7 +159,18 @@ class Header extends React.Component {
             </Styled.ListLink>
           </li>
           <li data-test="incidents">
-            {this.createBadgeEntry('Incidents', this.state.incidentsCount)}
+            <Styled.ListLink active={this.props.active === 'instances'}>
+              <Link
+                to={`/instances${incidentsQuery}`}
+                title={`${this.state.incidentsCount} Incidents`}
+              >
+                <span>Incidents</span>
+                <Styled.Badge
+                  type="incidents"
+                  badgeContent={this.state.incidentsCount}
+                />
+              </Link>
+            </Styled.ListLink>
           </li>
         </Styled.Menu>
 
