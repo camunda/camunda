@@ -212,7 +212,16 @@ public class ZeebeValidationTest {
       {
         "no-start-event-sub-process.bpmn",
         Arrays.asList(expect("subProcess", "Must have exactly one start event"))
-      }
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .sequenceFlow(b -> b.id("flow").payloadMapping("$.foo", "$.bar"))
+            .endEvent()
+            .done(),
+        Arrays.asList(
+            expect("flow", "Must only have payload mappings if its target is a parallel gateway"))
+      },
     };
   }
 

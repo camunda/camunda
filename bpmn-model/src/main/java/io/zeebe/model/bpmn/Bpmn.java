@@ -212,6 +212,8 @@ import io.zeebe.model.bpmn.impl.instance.di.WaypointImpl;
 import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeHeaderImpl;
 import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeInputImpl;
 import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeIoMappingImpl;
+import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeMappingImpl;
+import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeMappingsImpl;
 import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeOutputImpl;
 import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeSubscriptionImpl;
 import io.zeebe.model.bpmn.impl.instance.zeebe.ZeebeTaskDefinitionImpl;
@@ -621,6 +623,8 @@ public class Bpmn {
     ZeebeHeaderImpl.registerType(bpmnModelBuilder);
     ZeebeInputImpl.registerType(bpmnModelBuilder);
     ZeebeIoMappingImpl.registerType(bpmnModelBuilder);
+    ZeebeMappingImpl.registerType(bpmnModelBuilder);
+    ZeebeMappingsImpl.registerType(bpmnModelBuilder);
     ZeebeOutputImpl.registerType(bpmnModelBuilder);
     ZeebeSubscriptionImpl.registerType(bpmnModelBuilder);
     ZeebeTaskDefinitionImpl.registerType(bpmnModelBuilder);

@@ -136,6 +136,13 @@ public abstract class AbstractFlowNodeBuilder<
     return myself;
   }
 
+  public B sequenceFlow(Consumer<SequenceFlowBuilder> builderConsumer) {
+    final SequenceFlowBuilder sequenceFlowBuilder = getCurrentSequenceFlowBuilder();
+    builderConsumer.accept(sequenceFlowBuilder);
+
+    return myself;
+  }
+
   private <T extends FlowNode> T createTarget(Class<T> typeClass) {
     return createTarget(typeClass, null);
   }

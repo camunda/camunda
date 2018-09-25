@@ -33,6 +33,8 @@ public class ZeebeConstants {
   public static final String ELEMENT_HEADER = "header";
   public static final String ELEMENT_INPUT = "input";
   public static final String ELEMENT_IO_MAPPING = "ioMapping";
+  public static final String ELEMENT_MAPPING = "mapping";
+  public static final String ELEMENT_PAYLOAD_MAPPINGS = "payloadMappings";
   public static final String ELEMENT_OUTPUT = "output";
   public static final String ELEMENT_SUBSCRIPTION = "subscription";
   public static final String ELEMENT_TASK_DEFINITION = "taskDefinition";
