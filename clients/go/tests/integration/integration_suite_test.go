@@ -1,8 +1,8 @@
 package integration_test
 
 import (
-    "strings"
-    "testing"
+	"strings"
+	"testing"
 
 	"log"
 	"os"
@@ -16,14 +16,13 @@ import (
 var broker *exec.Cmd = nil
 
 func Contains(a string, list []string) bool {
-    for _, b := range list {
-        if strings.Compare(a, b) == 0 {
-            return true
-        }
-    }
-    return false
+	for _, b := range list {
+		if strings.Compare(a, b) == 0 {
+			return true
+		}
+	}
+	return false
 }
-
 
 func startBroker() {
 	cmdPath := "../../../../dist/target/zeebe-broker/bin/broker"
@@ -51,8 +50,8 @@ func stopBroker() {
 	dataDirPath := "../../../../dist/target/zeebe-broker/data"
 	err := os.RemoveAll(dataDirPath)
 	if err != nil {
-	    log.Fatal(err)
-    }
+		log.Fatal(err)
+	}
 }
 
 func TestIntegration(t *testing.T) {

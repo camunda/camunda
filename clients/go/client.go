@@ -7,7 +7,7 @@ import (
 )
 
 type ZBClientImpl struct {
-	gateway pb.GatewayClient
+	gateway    pb.GatewayClient
 	connection *grpc.ClientConn
 }
 
@@ -20,7 +20,11 @@ func (client *ZBClientImpl) NewDeployWorkflowCommand() *commands.DeployCommand {
 }
 
 func (client *ZBClientImpl) NewPublishMessageCommand() commands.PublishMessageCommandStep1 {
-    return commands.NewPublishMessageCommand(client.gateway)
+	return commands.NewPublishMessageCommand(client.gateway)
+}
+
+func (client *ZBClientImpl) NewCreateInstanceCommand() commands.CreateInstanceCommandStep1 {
+	return commands.NewCreateInstanceCommand(client.gateway)
 }
 
 func (client *ZBClientImpl) Close() error {
@@ -36,7 +40,7 @@ func NewZBClient(gatewayAddress string) (ZBClient, error) {
 		return nil, err
 	}
 	return &ZBClientImpl{
-		gateway: pb.NewGatewayClient(conn),
+		gateway:    pb.NewGatewayClient(conn),
 		connection: conn,
 	}, nil
 }

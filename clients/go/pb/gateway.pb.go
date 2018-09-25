@@ -44,7 +44,7 @@ func (x Partition_PartitionBrokerRole) String() string {
 	return proto.EnumName(Partition_PartitionBrokerRole_name, int32(x))
 }
 func (Partition_PartitionBrokerRole) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_8c9438d0a0ce58a4, []int{1, 0}
+	return fileDescriptor_gateway_3016d6b5993dc0bf, []int{1, 0}
 }
 
 type WorkflowRequestObject_ResourceType int32
@@ -67,7 +67,7 @@ func (x WorkflowRequestObject_ResourceType) String() string {
 	return proto.EnumName(WorkflowRequestObject_ResourceType_name, int32(x))
 }
 func (WorkflowRequestObject_ResourceType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_8c9438d0a0ce58a4, []int{4, 0}
+	return fileDescriptor_gateway_3016d6b5993dc0bf, []int{4, 0}
 }
 
 type HealthRequest struct {
@@ -80,7 +80,7 @@ func (m *HealthRequest) Reset()         { *m = HealthRequest{} }
 func (m *HealthRequest) String() string { return proto.CompactTextString(m) }
 func (*HealthRequest) ProtoMessage()    {}
 func (*HealthRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_8c9438d0a0ce58a4, []int{0}
+	return fileDescriptor_gateway_3016d6b5993dc0bf, []int{0}
 }
 func (m *HealthRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_HealthRequest.Unmarshal(m, b)
@@ -112,7 +112,7 @@ func (m *Partition) Reset()         { *m = Partition{} }
 func (m *Partition) String() string { return proto.CompactTextString(m) }
 func (*Partition) ProtoMessage()    {}
 func (*Partition) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_8c9438d0a0ce58a4, []int{1}
+	return fileDescriptor_gateway_3016d6b5993dc0bf, []int{1}
 }
 func (m *Partition) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Partition.Unmarshal(m, b)
@@ -159,7 +159,7 @@ func (m *BrokerInfo) Reset()         { *m = BrokerInfo{} }
 func (m *BrokerInfo) String() string { return proto.CompactTextString(m) }
 func (*BrokerInfo) ProtoMessage()    {}
 func (*BrokerInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_8c9438d0a0ce58a4, []int{2}
+	return fileDescriptor_gateway_3016d6b5993dc0bf, []int{2}
 }
 func (m *BrokerInfo) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_BrokerInfo.Unmarshal(m, b)
@@ -211,7 +211,7 @@ func (m *HealthResponse) Reset()         { *m = HealthResponse{} }
 func (m *HealthResponse) String() string { return proto.CompactTextString(m) }
 func (*HealthResponse) ProtoMessage()    {}
 func (*HealthResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_8c9438d0a0ce58a4, []int{3}
+	return fileDescriptor_gateway_3016d6b5993dc0bf, []int{3}
 }
 func (m *HealthResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_HealthResponse.Unmarshal(m, b)
@@ -251,7 +251,7 @@ func (m *WorkflowRequestObject) Reset()         { *m = WorkflowRequestObject{} }
 func (m *WorkflowRequestObject) String() string { return proto.CompactTextString(m) }
 func (*WorkflowRequestObject) ProtoMessage()    {}
 func (*WorkflowRequestObject) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_8c9438d0a0ce58a4, []int{4}
+	return fileDescriptor_gateway_3016d6b5993dc0bf, []int{4}
 }
 func (m *WorkflowRequestObject) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_WorkflowRequestObject.Unmarshal(m, b)
@@ -303,7 +303,7 @@ func (m *DeployWorkflowRequest) Reset()         { *m = DeployWorkflowRequest{} }
 func (m *DeployWorkflowRequest) String() string { return proto.CompactTextString(m) }
 func (*DeployWorkflowRequest) ProtoMessage()    {}
 func (*DeployWorkflowRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_8c9438d0a0ce58a4, []int{5}
+	return fileDescriptor_gateway_3016d6b5993dc0bf, []int{5}
 }
 func (m *DeployWorkflowRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DeployWorkflowRequest.Unmarshal(m, b)
@@ -344,7 +344,7 @@ func (m *WorkflowResponseObject) Reset()         { *m = WorkflowResponseObject{}
 func (m *WorkflowResponseObject) String() string { return proto.CompactTextString(m) }
 func (*WorkflowResponseObject) ProtoMessage()    {}
 func (*WorkflowResponseObject) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_8c9438d0a0ce58a4, []int{6}
+	return fileDescriptor_gateway_3016d6b5993dc0bf, []int{6}
 }
 func (m *WorkflowResponseObject) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_WorkflowResponseObject.Unmarshal(m, b)
@@ -403,7 +403,7 @@ func (m *DeployWorkflowResponse) Reset()         { *m = DeployWorkflowResponse{}
 func (m *DeployWorkflowResponse) String() string { return proto.CompactTextString(m) }
 func (*DeployWorkflowResponse) ProtoMessage()    {}
 func (*DeployWorkflowResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_8c9438d0a0ce58a4, []int{7}
+	return fileDescriptor_gateway_3016d6b5993dc0bf, []int{7}
 }
 func (m *DeployWorkflowResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DeployWorkflowResponse.Unmarshal(m, b)
@@ -446,7 +446,7 @@ func (m *PublishMessageRequest) Reset()         { *m = PublishMessageRequest{} }
 func (m *PublishMessageRequest) String() string { return proto.CompactTextString(m) }
 func (*PublishMessageRequest) ProtoMessage()    {}
 func (*PublishMessageRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_8c9438d0a0ce58a4, []int{8}
+	return fileDescriptor_gateway_3016d6b5993dc0bf, []int{8}
 }
 func (m *PublishMessageRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_PublishMessageRequest.Unmarshal(m, b)
@@ -517,7 +517,7 @@ func (m *CreateJobRequest) Reset()         { *m = CreateJobRequest{} }
 func (m *CreateJobRequest) String() string { return proto.CompactTextString(m) }
 func (*CreateJobRequest) ProtoMessage()    {}
 func (*CreateJobRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_8c9438d0a0ce58a4, []int{9}
+	return fileDescriptor_gateway_3016d6b5993dc0bf, []int{9}
 }
 func (m *CreateJobRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CreateJobRequest.Unmarshal(m, b)
@@ -577,7 +577,7 @@ func (m *CreateJobResponse) Reset()         { *m = CreateJobResponse{} }
 func (m *CreateJobResponse) String() string { return proto.CompactTextString(m) }
 func (*CreateJobResponse) ProtoMessage()    {}
 func (*CreateJobResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_8c9438d0a0ce58a4, []int{10}
+	return fileDescriptor_gateway_3016d6b5993dc0bf, []int{10}
 }
 func (m *CreateJobResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CreateJobResponse.Unmarshal(m, b)
@@ -627,7 +627,7 @@ func (m *CreateWorkflowInstanceRequest) Reset()         { *m = CreateWorkflowIns
 func (m *CreateWorkflowInstanceRequest) String() string { return proto.CompactTextString(m) }
 func (*CreateWorkflowInstanceRequest) ProtoMessage()    {}
 func (*CreateWorkflowInstanceRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_8c9438d0a0ce58a4, []int{11}
+	return fileDescriptor_gateway_3016d6b5993dc0bf, []int{11}
 }
 func (m *CreateWorkflowInstanceRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CreateWorkflowInstanceRequest.Unmarshal(m, b)
@@ -690,7 +690,7 @@ func (m *CreateWorkflowInstanceResponse) Reset()         { *m = CreateWorkflowIn
 func (m *CreateWorkflowInstanceResponse) String() string { return proto.CompactTextString(m) }
 func (*CreateWorkflowInstanceResponse) ProtoMessage()    {}
 func (*CreateWorkflowInstanceResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_8c9438d0a0ce58a4, []int{12}
+	return fileDescriptor_gateway_3016d6b5993dc0bf, []int{12}
 }
 func (m *CreateWorkflowInstanceResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_CreateWorkflowInstanceResponse.Unmarshal(m, b)
@@ -967,9 +967,9 @@ var _Gateway_serviceDesc = grpc.ServiceDesc{
 	Metadata: "gateway.proto",
 }
 
-func init() { proto.RegisterFile("gateway.proto", fileDescriptor_gateway_8c9438d0a0ce58a4) }
+func init() { proto.RegisterFile("gateway.proto", fileDescriptor_gateway_3016d6b5993dc0bf) }
 
-var fileDescriptor_gateway_8c9438d0a0ce58a4 = []byte{
+var fileDescriptor_gateway_3016d6b5993dc0bf = []byte{
 	// 830 bytes of a gzipped FileDescriptorProto
 	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x56, 0x5f, 0x73, 0xdb, 0x44,
 	0x10, 0xb7, 0x22, 0x27, 0xc1, 0xdb, 0xc4, 0x98, 0xeb, 0x24, 0x23, 0xdc, 0x52, 0xcc, 0xc1, 0x80,
