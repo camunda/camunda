@@ -40,7 +40,7 @@ func startBroker() {
 	broker = cmd
 	log.Println("broker pid: ", broker.Process.Pid)
 	log.Println("warming up")
-	time.Sleep(time.Duration(time.Second * 5))
+	time.Sleep(time.Duration(time.Second * 10))
 }
 
 func stopBroker() {

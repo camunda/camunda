@@ -6,6 +6,7 @@ package pb
 import proto "github.com/golang/protobuf/proto"
 import fmt "fmt"
 import math "math"
+import empty "github.com/golang/protobuf/ptypes/empty"
 
 import (
 	context "golang.org/x/net/context"
@@ -43,7 +44,7 @@ func (x Partition_PartitionBrokerRole) String() string {
 	return proto.EnumName(Partition_PartitionBrokerRole_name, int32(x))
 }
 func (Partition_PartitionBrokerRole) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_551de5e543f276fa, []int{1, 0}
+	return fileDescriptor_gateway_8c9438d0a0ce58a4, []int{1, 0}
 }
 
 type WorkflowRequestObject_ResourceType int32
@@ -66,7 +67,7 @@ func (x WorkflowRequestObject_ResourceType) String() string {
 	return proto.EnumName(WorkflowRequestObject_ResourceType_name, int32(x))
 }
 func (WorkflowRequestObject_ResourceType) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_551de5e543f276fa, []int{4, 0}
+	return fileDescriptor_gateway_8c9438d0a0ce58a4, []int{4, 0}
 }
 
 type HealthRequest struct {
@@ -79,7 +80,7 @@ func (m *HealthRequest) Reset()         { *m = HealthRequest{} }
 func (m *HealthRequest) String() string { return proto.CompactTextString(m) }
 func (*HealthRequest) ProtoMessage()    {}
 func (*HealthRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_551de5e543f276fa, []int{0}
+	return fileDescriptor_gateway_8c9438d0a0ce58a4, []int{0}
 }
 func (m *HealthRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_HealthRequest.Unmarshal(m, b)
@@ -111,7 +112,7 @@ func (m *Partition) Reset()         { *m = Partition{} }
 func (m *Partition) String() string { return proto.CompactTextString(m) }
 func (*Partition) ProtoMessage()    {}
 func (*Partition) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_551de5e543f276fa, []int{1}
+	return fileDescriptor_gateway_8c9438d0a0ce58a4, []int{1}
 }
 func (m *Partition) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_Partition.Unmarshal(m, b)
@@ -158,7 +159,7 @@ func (m *BrokerInfo) Reset()         { *m = BrokerInfo{} }
 func (m *BrokerInfo) String() string { return proto.CompactTextString(m) }
 func (*BrokerInfo) ProtoMessage()    {}
 func (*BrokerInfo) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_551de5e543f276fa, []int{2}
+	return fileDescriptor_gateway_8c9438d0a0ce58a4, []int{2}
 }
 func (m *BrokerInfo) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_BrokerInfo.Unmarshal(m, b)
@@ -210,7 +211,7 @@ func (m *HealthResponse) Reset()         { *m = HealthResponse{} }
 func (m *HealthResponse) String() string { return proto.CompactTextString(m) }
 func (*HealthResponse) ProtoMessage()    {}
 func (*HealthResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_551de5e543f276fa, []int{3}
+	return fileDescriptor_gateway_8c9438d0a0ce58a4, []int{3}
 }
 func (m *HealthResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_HealthResponse.Unmarshal(m, b)
@@ -250,7 +251,7 @@ func (m *WorkflowRequestObject) Reset()         { *m = WorkflowRequestObject{} }
 func (m *WorkflowRequestObject) String() string { return proto.CompactTextString(m) }
 func (*WorkflowRequestObject) ProtoMessage()    {}
 func (*WorkflowRequestObject) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_551de5e543f276fa, []int{4}
+	return fileDescriptor_gateway_8c9438d0a0ce58a4, []int{4}
 }
 func (m *WorkflowRequestObject) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_WorkflowRequestObject.Unmarshal(m, b)
@@ -302,7 +303,7 @@ func (m *DeployWorkflowRequest) Reset()         { *m = DeployWorkflowRequest{} }
 func (m *DeployWorkflowRequest) String() string { return proto.CompactTextString(m) }
 func (*DeployWorkflowRequest) ProtoMessage()    {}
 func (*DeployWorkflowRequest) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_551de5e543f276fa, []int{5}
+	return fileDescriptor_gateway_8c9438d0a0ce58a4, []int{5}
 }
 func (m *DeployWorkflowRequest) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DeployWorkflowRequest.Unmarshal(m, b)
@@ -343,7 +344,7 @@ func (m *WorkflowResponseObject) Reset()         { *m = WorkflowResponseObject{}
 func (m *WorkflowResponseObject) String() string { return proto.CompactTextString(m) }
 func (*WorkflowResponseObject) ProtoMessage()    {}
 func (*WorkflowResponseObject) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_551de5e543f276fa, []int{6}
+	return fileDescriptor_gateway_8c9438d0a0ce58a4, []int{6}
 }
 func (m *WorkflowResponseObject) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_WorkflowResponseObject.Unmarshal(m, b)
@@ -402,7 +403,7 @@ func (m *DeployWorkflowResponse) Reset()         { *m = DeployWorkflowResponse{}
 func (m *DeployWorkflowResponse) String() string { return proto.CompactTextString(m) }
 func (*DeployWorkflowResponse) ProtoMessage()    {}
 func (*DeployWorkflowResponse) Descriptor() ([]byte, []int) {
-	return fileDescriptor_gateway_551de5e543f276fa, []int{7}
+	return fileDescriptor_gateway_8c9438d0a0ce58a4, []int{7}
 }
 func (m *DeployWorkflowResponse) XXX_Unmarshal(b []byte) error {
 	return xxx_messageInfo_DeployWorkflowResponse.Unmarshal(m, b)
@@ -429,6 +430,321 @@ func (m *DeployWorkflowResponse) GetWorkflows() []*WorkflowResponseObject {
 	return nil
 }
 
+type PublishMessageRequest struct {
+	Name           string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	CorrelationKey string `protobuf:"bytes,2,opt,name=correlationKey,proto3" json:"correlationKey,omitempty"`
+	TimeToLive     int64  `protobuf:"varint,3,opt,name=timeToLive,proto3" json:"timeToLive,omitempty"`
+	MessageId      string `protobuf:"bytes,4,opt,name=messageId,proto3" json:"messageId,omitempty"`
+	// payload has to be a valid json object as string
+	Payload              string   `protobuf:"bytes,5,opt,name=payload,proto3" json:"payload,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *PublishMessageRequest) Reset()         { *m = PublishMessageRequest{} }
+func (m *PublishMessageRequest) String() string { return proto.CompactTextString(m) }
+func (*PublishMessageRequest) ProtoMessage()    {}
+func (*PublishMessageRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_8c9438d0a0ce58a4, []int{8}
+}
+func (m *PublishMessageRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_PublishMessageRequest.Unmarshal(m, b)
+}
+func (m *PublishMessageRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_PublishMessageRequest.Marshal(b, m, deterministic)
+}
+func (dst *PublishMessageRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_PublishMessageRequest.Merge(dst, src)
+}
+func (m *PublishMessageRequest) XXX_Size() int {
+	return xxx_messageInfo_PublishMessageRequest.Size(m)
+}
+func (m *PublishMessageRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_PublishMessageRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_PublishMessageRequest proto.InternalMessageInfo
+
+func (m *PublishMessageRequest) GetName() string {
+	if m != nil {
+		return m.Name
+	}
+	return ""
+}
+
+func (m *PublishMessageRequest) GetCorrelationKey() string {
+	if m != nil {
+		return m.CorrelationKey
+	}
+	return ""
+}
+
+func (m *PublishMessageRequest) GetTimeToLive() int64 {
+	if m != nil {
+		return m.TimeToLive
+	}
+	return 0
+}
+
+func (m *PublishMessageRequest) GetMessageId() string {
+	if m != nil {
+		return m.MessageId
+	}
+	return ""
+}
+
+func (m *PublishMessageRequest) GetPayload() string {
+	if m != nil {
+		return m.Payload
+	}
+	return ""
+}
+
+type CreateJobRequest struct {
+	JobType string `protobuf:"bytes,1,opt,name=jobType,proto3" json:"jobType,omitempty"`
+	Retries int32  `protobuf:"varint,2,opt,name=retries,proto3" json:"retries,omitempty"`
+	// custom headers has to be a valid json object as string
+	CustomHeaders string `protobuf:"bytes,3,opt,name=customHeaders,proto3" json:"customHeaders,omitempty"`
+	// payload has to be a valid json object as string
+	Payload              string   `protobuf:"bytes,4,opt,name=payload,proto3" json:"payload,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *CreateJobRequest) Reset()         { *m = CreateJobRequest{} }
+func (m *CreateJobRequest) String() string { return proto.CompactTextString(m) }
+func (*CreateJobRequest) ProtoMessage()    {}
+func (*CreateJobRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_8c9438d0a0ce58a4, []int{9}
+}
+func (m *CreateJobRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CreateJobRequest.Unmarshal(m, b)
+}
+func (m *CreateJobRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CreateJobRequest.Marshal(b, m, deterministic)
+}
+func (dst *CreateJobRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateJobRequest.Merge(dst, src)
+}
+func (m *CreateJobRequest) XXX_Size() int {
+	return xxx_messageInfo_CreateJobRequest.Size(m)
+}
+func (m *CreateJobRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_CreateJobRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CreateJobRequest proto.InternalMessageInfo
+
+func (m *CreateJobRequest) GetJobType() string {
+	if m != nil {
+		return m.JobType
+	}
+	return ""
+}
+
+func (m *CreateJobRequest) GetRetries() int32 {
+	if m != nil {
+		return m.Retries
+	}
+	return 0
+}
+
+func (m *CreateJobRequest) GetCustomHeaders() string {
+	if m != nil {
+		return m.CustomHeaders
+	}
+	return ""
+}
+
+func (m *CreateJobRequest) GetPayload() string {
+	if m != nil {
+		return m.Payload
+	}
+	return ""
+}
+
+type CreateJobResponse struct {
+	PartitionId          int32    `protobuf:"varint,1,opt,name=partitionId,proto3" json:"partitionId,omitempty"`
+	Key                  int64    `protobuf:"varint,2,opt,name=key,proto3" json:"key,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *CreateJobResponse) Reset()         { *m = CreateJobResponse{} }
+func (m *CreateJobResponse) String() string { return proto.CompactTextString(m) }
+func (*CreateJobResponse) ProtoMessage()    {}
+func (*CreateJobResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_8c9438d0a0ce58a4, []int{10}
+}
+func (m *CreateJobResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CreateJobResponse.Unmarshal(m, b)
+}
+func (m *CreateJobResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CreateJobResponse.Marshal(b, m, deterministic)
+}
+func (dst *CreateJobResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateJobResponse.Merge(dst, src)
+}
+func (m *CreateJobResponse) XXX_Size() int {
+	return xxx_messageInfo_CreateJobResponse.Size(m)
+}
+func (m *CreateJobResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_CreateJobResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CreateJobResponse proto.InternalMessageInfo
+
+func (m *CreateJobResponse) GetPartitionId() int32 {
+	if m != nil {
+		return m.PartitionId
+	}
+	return 0
+}
+
+func (m *CreateJobResponse) GetKey() int64 {
+	if m != nil {
+		return m.Key
+	}
+	return 0
+}
+
+type CreateWorkflowInstanceRequest struct {
+	WorkflowKey   int64  `protobuf:"varint,1,opt,name=workflowKey,proto3" json:"workflowKey,omitempty"`
+	BpmnProcessId string `protobuf:"bytes,2,opt,name=bpmnProcessId,proto3" json:"bpmnProcessId,omitempty"`
+	// if bpmnProcessId is set version = -1 indicates to use the latest version
+	Version int32 `protobuf:"varint,3,opt,name=version,proto3" json:"version,omitempty"`
+	// payload has to be a valid json object as string
+	Payload              string   `protobuf:"bytes,4,opt,name=payload,proto3" json:"payload,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *CreateWorkflowInstanceRequest) Reset()         { *m = CreateWorkflowInstanceRequest{} }
+func (m *CreateWorkflowInstanceRequest) String() string { return proto.CompactTextString(m) }
+func (*CreateWorkflowInstanceRequest) ProtoMessage()    {}
+func (*CreateWorkflowInstanceRequest) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_8c9438d0a0ce58a4, []int{11}
+}
+func (m *CreateWorkflowInstanceRequest) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CreateWorkflowInstanceRequest.Unmarshal(m, b)
+}
+func (m *CreateWorkflowInstanceRequest) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CreateWorkflowInstanceRequest.Marshal(b, m, deterministic)
+}
+func (dst *CreateWorkflowInstanceRequest) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateWorkflowInstanceRequest.Merge(dst, src)
+}
+func (m *CreateWorkflowInstanceRequest) XXX_Size() int {
+	return xxx_messageInfo_CreateWorkflowInstanceRequest.Size(m)
+}
+func (m *CreateWorkflowInstanceRequest) XXX_DiscardUnknown() {
+	xxx_messageInfo_CreateWorkflowInstanceRequest.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CreateWorkflowInstanceRequest proto.InternalMessageInfo
+
+func (m *CreateWorkflowInstanceRequest) GetWorkflowKey() int64 {
+	if m != nil {
+		return m.WorkflowKey
+	}
+	return 0
+}
+
+func (m *CreateWorkflowInstanceRequest) GetBpmnProcessId() string {
+	if m != nil {
+		return m.BpmnProcessId
+	}
+	return ""
+}
+
+func (m *CreateWorkflowInstanceRequest) GetVersion() int32 {
+	if m != nil {
+		return m.Version
+	}
+	return 0
+}
+
+func (m *CreateWorkflowInstanceRequest) GetPayload() string {
+	if m != nil {
+		return m.Payload
+	}
+	return ""
+}
+
+type CreateWorkflowInstanceResponse struct {
+	WorkflowKey          int64    `protobuf:"varint,1,opt,name=workflowKey,proto3" json:"workflowKey,omitempty"`
+	BpmnProcessId        string   `protobuf:"bytes,2,opt,name=bpmnProcessId,proto3" json:"bpmnProcessId,omitempty"`
+	Version              int32    `protobuf:"varint,3,opt,name=version,proto3" json:"version,omitempty"`
+	PartitionId          int32    `protobuf:"varint,4,opt,name=partitionId,proto3" json:"partitionId,omitempty"`
+	WorkflowInstanceKey  int64    `protobuf:"varint,5,opt,name=workflowInstanceKey,proto3" json:"workflowInstanceKey,omitempty"`
+	XXX_NoUnkeyedLiteral struct{} `json:"-"`
+	XXX_unrecognized     []byte   `json:"-"`
+	XXX_sizecache        int32    `json:"-"`
+}
+
+func (m *CreateWorkflowInstanceResponse) Reset()         { *m = CreateWorkflowInstanceResponse{} }
+func (m *CreateWorkflowInstanceResponse) String() string { return proto.CompactTextString(m) }
+func (*CreateWorkflowInstanceResponse) ProtoMessage()    {}
+func (*CreateWorkflowInstanceResponse) Descriptor() ([]byte, []int) {
+	return fileDescriptor_gateway_8c9438d0a0ce58a4, []int{12}
+}
+func (m *CreateWorkflowInstanceResponse) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_CreateWorkflowInstanceResponse.Unmarshal(m, b)
+}
+func (m *CreateWorkflowInstanceResponse) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_CreateWorkflowInstanceResponse.Marshal(b, m, deterministic)
+}
+func (dst *CreateWorkflowInstanceResponse) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_CreateWorkflowInstanceResponse.Merge(dst, src)
+}
+func (m *CreateWorkflowInstanceResponse) XXX_Size() int {
+	return xxx_messageInfo_CreateWorkflowInstanceResponse.Size(m)
+}
+func (m *CreateWorkflowInstanceResponse) XXX_DiscardUnknown() {
+	xxx_messageInfo_CreateWorkflowInstanceResponse.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_CreateWorkflowInstanceResponse proto.InternalMessageInfo
+
+func (m *CreateWorkflowInstanceResponse) GetWorkflowKey() int64 {
+	if m != nil {
+		return m.WorkflowKey
+	}
+	return 0
+}
+
+func (m *CreateWorkflowInstanceResponse) GetBpmnProcessId() string {
+	if m != nil {
+		return m.BpmnProcessId
+	}
+	return ""
+}
+
+func (m *CreateWorkflowInstanceResponse) GetVersion() int32 {
+	if m != nil {
+		return m.Version
+	}
+	return 0
+}
+
+func (m *CreateWorkflowInstanceResponse) GetPartitionId() int32 {
+	if m != nil {
+		return m.PartitionId
+	}
+	return 0
+}
+
+func (m *CreateWorkflowInstanceResponse) GetWorkflowInstanceKey() int64 {
+	if m != nil {
+		return m.WorkflowInstanceKey
+	}
+	return 0
+}
+
 func init() {
 	proto.RegisterType((*HealthRequest)(nil), "gateway_protocol.HealthRequest")
 	proto.RegisterType((*Partition)(nil), "gateway_protocol.Partition")
@@ -438,6 +754,11 @@ func init() {
 	proto.RegisterType((*DeployWorkflowRequest)(nil), "gateway_protocol.DeployWorkflowRequest")
 	proto.RegisterType((*WorkflowResponseObject)(nil), "gateway_protocol.WorkflowResponseObject")
 	proto.RegisterType((*DeployWorkflowResponse)(nil), "gateway_protocol.DeployWorkflowResponse")
+	proto.RegisterType((*PublishMessageRequest)(nil), "gateway_protocol.PublishMessageRequest")
+	proto.RegisterType((*CreateJobRequest)(nil), "gateway_protocol.CreateJobRequest")
+	proto.RegisterType((*CreateJobResponse)(nil), "gateway_protocol.CreateJobResponse")
+	proto.RegisterType((*CreateWorkflowInstanceRequest)(nil), "gateway_protocol.CreateWorkflowInstanceRequest")
+	proto.RegisterType((*CreateWorkflowInstanceResponse)(nil), "gateway_protocol.CreateWorkflowInstanceResponse")
 	proto.RegisterEnum("gateway_protocol.Partition_PartitionBrokerRole", Partition_PartitionBrokerRole_name, Partition_PartitionBrokerRole_value)
 	proto.RegisterEnum("gateway_protocol.WorkflowRequestObject_ResourceType", WorkflowRequestObject_ResourceType_name, WorkflowRequestObject_ResourceType_value)
 }
@@ -456,6 +777,9 @@ const _ = grpc.SupportPackageIsVersion4
 type GatewayClient interface {
 	Health(ctx context.Context, in *HealthRequest, opts ...grpc.CallOption) (*HealthResponse, error)
 	DeployWorkflow(ctx context.Context, in *DeployWorkflowRequest, opts ...grpc.CallOption) (*DeployWorkflowResponse, error)
+	PublishMessage(ctx context.Context, in *PublishMessageRequest, opts ...grpc.CallOption) (*empty.Empty, error)
+	CreateJob(ctx context.Context, in *CreateJobRequest, opts ...grpc.CallOption) (*CreateJobResponse, error)
+	CreateWorkflowInstance(ctx context.Context, in *CreateWorkflowInstanceRequest, opts ...grpc.CallOption) (*CreateWorkflowInstanceResponse, error)
 }
 
 type gatewayClient struct {
@@ -484,10 +808,40 @@ func (c *gatewayClient) DeployWorkflow(ctx context.Context, in *DeployWorkflowRe
 	return out, nil
 }
 
+func (c *gatewayClient) PublishMessage(ctx context.Context, in *PublishMessageRequest, opts ...grpc.CallOption) (*empty.Empty, error) {
+	out := new(empty.Empty)
+	err := c.cc.Invoke(ctx, "/gateway_protocol.Gateway/PublishMessage", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *gatewayClient) CreateJob(ctx context.Context, in *CreateJobRequest, opts ...grpc.CallOption) (*CreateJobResponse, error) {
+	out := new(CreateJobResponse)
+	err := c.cc.Invoke(ctx, "/gateway_protocol.Gateway/CreateJob", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *gatewayClient) CreateWorkflowInstance(ctx context.Context, in *CreateWorkflowInstanceRequest, opts ...grpc.CallOption) (*CreateWorkflowInstanceResponse, error) {
+	out := new(CreateWorkflowInstanceResponse)
+	err := c.cc.Invoke(ctx, "/gateway_protocol.Gateway/CreateWorkflowInstance", in, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // GatewayServer is the server API for Gateway service.
 type GatewayServer interface {
 	Health(context.Context, *HealthRequest) (*HealthResponse, error)
 	DeployWorkflow(context.Context, *DeployWorkflowRequest) (*DeployWorkflowResponse, error)
+	PublishMessage(context.Context, *PublishMessageRequest) (*empty.Empty, error)
+	CreateJob(context.Context, *CreateJobRequest) (*CreateJobResponse, error)
+	CreateWorkflowInstance(context.Context, *CreateWorkflowInstanceRequest) (*CreateWorkflowInstanceResponse, error)
 }
 
 func RegisterGatewayServer(s *grpc.Server, srv GatewayServer) {
@@ -530,6 +884,60 @@ func _Gateway_DeployWorkflow_Handler(srv interface{}, ctx context.Context, dec f
 	return interceptor(ctx, in, info, handler)
 }
 
+func _Gateway_PublishMessage_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(PublishMessageRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GatewayServer).PublishMessage(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/gateway_protocol.Gateway/PublishMessage",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GatewayServer).PublishMessage(ctx, req.(*PublishMessageRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Gateway_CreateJob_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateJobRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GatewayServer).CreateJob(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/gateway_protocol.Gateway/CreateJob",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GatewayServer).CreateJob(ctx, req.(*CreateJobRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _Gateway_CreateWorkflowInstance_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(CreateWorkflowInstanceRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(GatewayServer).CreateWorkflowInstance(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: "/gateway_protocol.Gateway/CreateWorkflowInstance",
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(GatewayServer).CreateWorkflowInstance(ctx, req.(*CreateWorkflowInstanceRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 var _Gateway_serviceDesc = grpc.ServiceDesc{
 	ServiceName: "gateway_protocol.Gateway",
 	HandlerType: (*GatewayServer)(nil),
@@ -542,47 +950,77 @@ var _Gateway_serviceDesc = grpc.ServiceDesc{
 			MethodName: "DeployWorkflow",
 			Handler:    _Gateway_DeployWorkflow_Handler,
 		},
+		{
+			MethodName: "PublishMessage",
+			Handler:    _Gateway_PublishMessage_Handler,
+		},
+		{
+			MethodName: "CreateJob",
+			Handler:    _Gateway_CreateJob_Handler,
+		},
+		{
+			MethodName: "CreateWorkflowInstance",
+			Handler:    _Gateway_CreateWorkflowInstance_Handler,
+		},
 	},
 	Streams:  []grpc.StreamDesc{},
 	Metadata: "gateway.proto",
 }
 
-func init() { proto.RegisterFile("gateway.proto", fileDescriptor_gateway_551de5e543f276fa) }
+func init() { proto.RegisterFile("gateway.proto", fileDescriptor_gateway_8c9438d0a0ce58a4) }
 
-var fileDescriptor_gateway_551de5e543f276fa = []byte{
-	// 541 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0x8c, 0x54, 0xc1, 0x6e, 0xd3, 0x40,
-	0x10, 0xcd, 0x36, 0x69, 0x82, 0xa7, 0x49, 0x88, 0x16, 0xb5, 0x32, 0xa5, 0x02, 0xb3, 0x42, 0xc2,
-	0x17, 0x8c, 0x14, 0x10, 0x17, 0x4e, 0x0d, 0x4d, 0x49, 0x45, 0xd2, 0x44, 0x2b, 0xa4, 0x0a, 0x0e,
-	0x40, 0xec, 0x4e, 0x68, 0xa8, 0xeb, 0x75, 0xd7, 0x5b, 0xa2, 0xf0, 0x31, 0xfc, 0x07, 0xa7, 0xfe,
-	0x1a, 0xf2, 0xda, 0x6e, 0xec, 0x24, 0x94, 0xde, 0x66, 0x5e, 0x66, 0xe7, 0xbd, 0x79, 0x33, 0x31,
-	0x34, 0xbe, 0x8f, 0x15, 0xce, 0xc6, 0x73, 0x27, 0x94, 0x42, 0x09, 0xda, 0x4a, 0xd3, 0xaf, 0x3a,
-	0xf5, 0x84, 0xcf, 0xee, 0x43, 0xa3, 0x87, 0x63, 0x5f, 0x9d, 0x71, 0xbc, 0xbc, 0xc2, 0x48, 0xb1,
-	0x6b, 0x02, 0xc6, 0x68, 0x2c, 0xd5, 0x54, 0x4d, 0x45, 0x40, 0x2d, 0xd8, 0x0a, 0xb3, 0xe4, 0xe8,
-	0xd4, 0x24, 0x16, 0xb1, 0x37, 0x79, 0x1e, 0xa2, 0x7b, 0x60, 0x28, 0x11, 0x4e, 0xbd, 0xe3, 0xf1,
-	0x05, 0x9a, 0x1b, 0x16, 0xb1, 0x0d, 0xbe, 0x00, 0xe8, 0x3b, 0xa8, 0x48, 0xe1, 0xa3, 0x59, 0xb6,
-	0x88, 0xdd, 0x6c, 0xbf, 0x74, 0x96, 0xf9, 0x9d, 0x1b, 0xaa, 0x45, 0xd4, 0x91, 0xe2, 0x1c, 0x25,
-	0x17, 0x3e, 0x72, 0xfd, 0x98, 0xbd, 0x80, 0x07, 0x6b, 0x7e, 0xa4, 0x00, 0xd5, 0x7e, 0x77, 0xff,
-	0xa0, 0xcb, 0x5b, 0xa5, 0x38, 0x3e, 0x1c, 0xf6, 0xfb, 0xc3, 0x93, 0x16, 0x61, 0x97, 0x00, 0x49,
-	0xd5, 0x51, 0x30, 0x11, 0x94, 0x42, 0xe5, 0x4c, 0x44, 0x4a, 0x4b, 0x37, 0xb8, 0x8e, 0x63, 0x2c,
-	0x14, 0x52, 0x69, 0xb9, 0x9b, 0x5c, 0xc7, 0xf4, 0x2d, 0xc0, 0xcd, 0x58, 0x91, 0x59, 0xb6, 0xca,
-	0xf6, 0x56, 0xfb, 0xd1, 0x2d, 0x7a, 0x79, 0xae, 0x9c, 0xf5, 0xa0, 0x99, 0xb9, 0x18, 0x85, 0x22,
-	0x88, 0x90, 0xbe, 0x81, 0x9a, 0xab, 0x45, 0x44, 0x26, 0xd1, 0xbd, 0xf6, 0x56, 0x7b, 0x2d, 0x54,
-	0xf2, 0xac, 0x98, 0xfd, 0x21, 0xb0, 0x7d, 0x22, 0xe4, 0xf9, 0xc4, 0x17, 0xb3, 0x74, 0x25, 0x43,
-	0xf7, 0x07, 0x7a, 0x5a, 0x74, 0x10, 0x7b, 0x9c, 0x0e, 0x12, 0xc7, 0xb4, 0x07, 0x15, 0x35, 0x0f,
-	0x13, 0xdf, 0x9b, 0xed, 0xd7, 0xab, 0x14, 0x6b, 0x5b, 0x39, 0x1c, 0x23, 0x71, 0x25, 0x3d, 0xfc,
-	0x38, 0x0f, 0x91, 0xeb, 0x0e, 0xf4, 0x31, 0xc0, 0x29, 0x4e, 0xa6, 0x81, 0x1e, 0x48, 0xaf, 0xab,
-	0xce, 0x73, 0x08, 0x63, 0x50, 0xcf, 0xbf, 0xa2, 0xf7, 0xa0, 0xd2, 0x19, 0x0d, 0x8e, 0x5b, 0xa5,
-	0x38, 0xfa, 0xb4, 0x3f, 0xe8, 0xb7, 0x08, 0xfb, 0x02, 0xdb, 0x07, 0x18, 0xfa, 0x62, 0xbe, 0xc4,
-	0x4a, 0xbb, 0x60, 0xcc, 0x52, 0x28, 0xb3, 0xe3, 0xf9, 0x1d, 0xb5, 0xf2, 0xc5, 0x4b, 0xf6, 0x9b,
-	0xc0, 0xce, 0xa2, 0x28, 0x31, 0x3a, 0x35, 0xe7, 0x19, 0x34, 0xdc, 0xf0, 0x22, 0x18, 0x49, 0xe1,
-	0x61, 0x14, 0xa5, 0x97, 0x6a, 0xf0, 0x22, 0x48, 0x4d, 0xa8, 0xfd, 0x44, 0x19, 0xc5, 0x13, 0x26,
-	0xab, 0xcf, 0xd2, 0xf8, 0xce, 0x33, 0x9e, 0x0f, 0x38, 0xd7, 0xf3, 0x97, 0x79, 0x1e, 0xa2, 0x0c,
-	0xea, 0x32, 0x35, 0x40, 0x9f, 0x7a, 0x45, 0x13, 0x14, 0x30, 0xf6, 0x0d, 0x76, 0x96, 0x0d, 0x48,
-	0xcf, 0xe1, 0x70, 0xd5, 0x01, 0xfb, 0x36, 0x07, 0xf2, 0xc3, 0xe5, 0x2c, 0x68, 0x5f, 0x13, 0xa8,
-	0xbd, 0x4f, 0x9e, 0xd1, 0x01, 0x54, 0x93, 0xa3, 0xa3, 0x4f, 0x56, 0x5b, 0x15, 0xfe, 0xd4, 0xbb,
-	0xd6, 0xbf, 0x0b, 0x12, 0x26, 0x56, 0xa2, 0x08, 0xcd, 0xa2, 0x78, 0xba, 0x66, 0x47, 0x6b, 0xf7,
-	0xbb, 0x6b, 0xff, 0xbf, 0x30, 0xa3, 0xe9, 0x3c, 0x85, 0x87, 0x53, 0xe1, 0xfc, 0x42, 0x74, 0xd1,
-	0x29, 0x7c, 0x9c, 0x3c, 0xe1, 0x8f, 0x4a, 0x9f, 0x37, 0x42, 0xd7, 0xad, 0xea, 0xfc, 0xd5, 0xdf,
-	0x00, 0x00, 0x00, 0xff, 0xff, 0xe4, 0xbb, 0xec, 0x58, 0xbd, 0x04, 0x00, 0x00,
+var fileDescriptor_gateway_8c9438d0a0ce58a4 = []byte{
+	// 830 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x56, 0x5f, 0x73, 0xdb, 0x44,
+	0x10, 0xb7, 0x22, 0x27, 0xc1, 0xdb, 0xc4, 0x98, 0xeb, 0x24, 0x23, 0xdc, 0x52, 0xcc, 0xc1, 0x80,
+	0x5f, 0x50, 0x3a, 0x86, 0xe1, 0x85, 0xa7, 0xa6, 0x75, 0x6b, 0x83, 0xdd, 0x78, 0x44, 0x87, 0x0e,
+	0x3c, 0x00, 0x92, 0xbc, 0x76, 0xd4, 0xc8, 0x3a, 0xf5, 0x4e, 0xae, 0xc7, 0xcc, 0xf0, 0xca, 0x97,
+	0x60, 0x86, 0x19, 0x9e, 0xf9, 0x04, 0x7c, 0x11, 0xbe, 0x04, 0x5f, 0x82, 0xb9, 0x93, 0x64, 0xeb,
+	0x9f, 0x93, 0xbc, 0xf4, 0x6d, 0x77, 0x6f, 0xb5, 0xfb, 0xdb, 0xdf, 0xee, 0xde, 0x09, 0x8e, 0xe7,
+	0x76, 0x84, 0x2b, 0x7b, 0x6d, 0x86, 0x9c, 0x45, 0x8c, 0xb4, 0x12, 0xf5, 0x67, 0xa5, 0xba, 0xcc,
+	0x6f, 0xdf, 0x9b, 0x33, 0x36, 0xf7, 0xf1, 0x4c, 0x19, 0x9c, 0xe5, 0xec, 0x0c, 0x17, 0x61, 0x94,
+	0xb8, 0xd3, 0x77, 0xe1, 0x78, 0x80, 0xb6, 0x1f, 0x5d, 0x5a, 0xf8, 0x7a, 0x89, 0x22, 0xa2, 0x7f,
+	0x69, 0xd0, 0x98, 0xd8, 0x3c, 0xf2, 0x22, 0x8f, 0x05, 0xa4, 0x03, 0x77, 0xc2, 0x54, 0x19, 0x4e,
+	0x0d, 0xad, 0xa3, 0x75, 0xf7, 0xad, 0xac, 0x89, 0x3c, 0x86, 0x3a, 0x67, 0x3e, 0x1a, 0x7a, 0x47,
+	0xeb, 0x36, 0x7b, 0x67, 0x66, 0x31, 0xbd, 0xb9, 0x09, 0xb6, 0x95, 0xce, 0x39, 0xbb, 0x42, 0x6e,
+	0x31, 0x1f, 0x2d, 0xf5, 0x31, 0xfd, 0x1c, 0xee, 0x56, 0x1c, 0x12, 0x80, 0x83, 0x51, 0xff, 0xd1,
+	0x93, 0xbe, 0xd5, 0xaa, 0x49, 0xf9, 0xe9, 0xc5, 0x68, 0x74, 0xf1, 0xb2, 0xa5, 0xd1, 0xd7, 0x00,
+	0xb1, 0xd7, 0x30, 0x98, 0x31, 0x42, 0xa0, 0x7e, 0xc9, 0x44, 0xa4, 0xc0, 0x35, 0x2c, 0x25, 0x4b,
+	0x5b, 0xc8, 0x78, 0x64, 0xec, 0x29, 0xc0, 0x4a, 0x26, 0x5f, 0x03, 0x6c, 0x80, 0x0b, 0x43, 0xef,
+	0xe8, 0xdd, 0x3b, 0xbd, 0x7b, 0xd7, 0xe0, 0xb5, 0x32, 0xee, 0x74, 0x00, 0xcd, 0x94, 0x27, 0x11,
+	0xb2, 0x40, 0x20, 0xf9, 0x0a, 0x0e, 0x1d, 0x05, 0x42, 0x18, 0x9a, 0x8a, 0x75, 0xbf, 0x1c, 0x6b,
+	0x8b, 0xd2, 0x4a, 0x9d, 0xe9, 0x3f, 0x1a, 0x9c, 0xbc, 0x64, 0xfc, 0x6a, 0xe6, 0xb3, 0x55, 0x42,
+	0xfa, 0x85, 0xf3, 0x0a, 0x5d, 0x05, 0x3a, 0xb0, 0x17, 0x98, 0x16, 0x22, 0x65, 0x32, 0x80, 0x7a,
+	0xb4, 0x0e, 0x51, 0x15, 0xd2, 0xec, 0x7d, 0x59, 0x4e, 0x51, 0x19, 0xca, 0xb4, 0x50, 0xb0, 0x25,
+	0x77, 0xf1, 0xc5, 0x3a, 0x44, 0x4b, 0x45, 0x20, 0x0f, 0x00, 0xa6, 0x38, 0xf3, 0x02, 0x55, 0x90,
+	0x6a, 0xd7, 0x91, 0x95, 0xb1, 0x50, 0x0a, 0x47, 0xd9, 0xaf, 0xc8, 0x3b, 0x50, 0x3f, 0x9f, 0x8c,
+	0x9f, 0xb7, 0x6a, 0x52, 0xfa, 0xe1, 0xd1, 0x78, 0xd4, 0xd2, 0xe8, 0x4f, 0x70, 0xf2, 0x04, 0x43,
+	0x9f, 0xad, 0x0b, 0x59, 0x49, 0x1f, 0x1a, 0xab, 0xc4, 0x94, 0xd2, 0xf1, 0xd9, 0x2d, 0xb1, 0x5a,
+	0xdb, 0x2f, 0xe9, 0x9f, 0x1a, 0x9c, 0x6e, 0x9d, 0x62, 0xa2, 0x13, 0x72, 0x3e, 0x81, 0x63, 0x27,
+	0x5c, 0x04, 0x13, 0xce, 0x5c, 0x14, 0x22, 0x99, 0xc5, 0x86, 0x95, 0x37, 0x12, 0x03, 0x0e, 0xdf,
+	0x20, 0x17, 0xb2, 0xc2, 0xb8, 0xf5, 0xa9, 0x2a, 0x27, 0x39, 0xcd, 0xf3, 0x2d, 0xae, 0x55, 0xfd,
+	0xba, 0x95, 0x35, 0x11, 0x0a, 0x47, 0x3c, 0x21, 0xe0, 0xb9, 0x6c, 0x43, 0x5d, 0x25, 0xc8, 0xd9,
+	0xe8, 0x2f, 0x70, 0x5a, 0x24, 0x20, 0x19, 0x87, 0xa7, 0x65, 0x06, 0xba, 0xd7, 0x31, 0x90, 0x2d,
+	0x2e, 0x4b, 0xc1, 0xdf, 0x1a, 0x9c, 0x4c, 0x96, 0x8e, 0xef, 0x89, 0xcb, 0x31, 0x0a, 0x61, 0xcf,
+	0x31, 0xe5, 0xb8, 0x6a, 0x3c, 0x3e, 0x85, 0xa6, 0xcb, 0x38, 0x47, 0xdf, 0x96, 0x3d, 0x94, 0x85,
+	0xed, 0xa9, 0xd3, 0x82, 0x55, 0x36, 0x3f, 0xf2, 0x16, 0xf8, 0x82, 0x8d, 0xbc, 0x37, 0x98, 0x14,
+	0x9f, 0xb1, 0x90, 0xfb, 0xd0, 0x58, 0xc4, 0xd9, 0x86, 0xd3, 0xa4, 0xf0, 0xad, 0x41, 0xb2, 0x1a,
+	0xda, 0x6b, 0x9f, 0xd9, 0x53, 0x63, 0x5f, 0x9d, 0xa5, 0x2a, 0xfd, 0x5d, 0x83, 0xd6, 0x63, 0x8e,
+	0x76, 0x84, 0xdf, 0x30, 0x27, 0x05, 0x6a, 0xc0, 0xe1, 0x2b, 0xe6, 0xc8, 0x21, 0x4a, 0xb0, 0xa6,
+	0xaa, 0x3c, 0xe1, 0x18, 0x71, 0x0f, 0x45, 0xda, 0x9e, 0x44, 0x95, 0xed, 0x75, 0x97, 0x22, 0x62,
+	0x8b, 0x01, 0xda, 0x53, 0xb9, 0x53, 0x7a, 0xdc, 0xde, 0x9c, 0x31, 0x0b, 0xa4, 0x9e, 0x07, 0xf2,
+	0x0c, 0xde, 0xcb, 0xe0, 0x48, 0x7a, 0x72, 0xf3, 0xed, 0xd5, 0x02, 0xfd, 0x2a, 0x21, 0x4d, 0xb7,
+	0xa4, 0x48, 0xff, 0xd0, 0xe0, 0x83, 0x38, 0x52, 0xda, 0xab, 0x61, 0x20, 0x22, 0x3b, 0x70, 0x37,
+	0x7d, 0x28, 0x4c, 0x92, 0x56, 0x9e, 0xa4, 0xd2, 0xac, 0xee, 0xdd, 0x30, 0xab, 0x7a, 0x7e, 0x56,
+	0x77, 0x97, 0xf9, 0xaf, 0x06, 0x0f, 0x76, 0xa1, 0xdb, 0x16, 0xfd, 0x96, 0xe1, 0x15, 0x68, 0xad,
+	0x97, 0x69, 0x7d, 0x08, 0x77, 0x57, 0x05, 0x7c, 0x12, 0xcb, 0xbe, 0xc2, 0x52, 0x75, 0xd4, 0xfb,
+	0x4f, 0x87, 0xc3, 0x67, 0xf1, 0xb6, 0x90, 0x31, 0x1c, 0xc4, 0x77, 0x2d, 0xf9, 0xb0, 0xbc, 0x41,
+	0xb9, 0xd7, 0xaa, 0xdd, 0xd9, 0xed, 0x10, 0xd3, 0x41, 0x6b, 0x04, 0xa1, 0x99, 0xdf, 0x59, 0x52,
+	0x71, 0x35, 0x55, 0x5e, 0x6b, 0xed, 0xee, 0xcd, 0x8e, 0x9b, 0x34, 0xdf, 0x41, 0x33, 0xbf, 0xb7,
+	0x55, 0x69, 0x2a, 0x37, 0xbb, 0x7d, 0x6a, 0xc6, 0x4f, 0xb4, 0x99, 0x3e, 0xd1, 0x66, 0x5f, 0x3e,
+	0xd1, 0xb4, 0x46, 0xbe, 0x87, 0xc6, 0x66, 0xac, 0x09, 0x2d, 0xc7, 0x2b, 0xee, 0x5e, 0xfb, 0xe3,
+	0x6b, 0x7d, 0x36, 0x60, 0x7f, 0x83, 0xd3, 0xea, 0x31, 0x22, 0x67, 0xbb, 0x02, 0xec, 0x58, 0x87,
+	0xf6, 0xc3, 0xdb, 0x7f, 0x90, 0xa6, 0x3f, 0xff, 0x08, 0xde, 0xf7, 0x98, 0xf9, 0x2b, 0xa2, 0x83,
+	0x66, 0xee, 0xf7, 0xc5, 0x65, 0xfe, 0xa4, 0xf6, 0xe3, 0x5e, 0xe8, 0x38, 0x07, 0x4a, 0xff, 0xe2,
+	0xff, 0x00, 0x00, 0x00, 0xff, 0xff, 0xf3, 0x3a, 0x71, 0x51, 0xdf, 0x08, 0x00, 0x00,
 }

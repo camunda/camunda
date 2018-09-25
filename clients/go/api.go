@@ -8,5 +8,6 @@ type ZBClient interface {
 	NewHealthCheckCommand() *commands.HealthCheckCommand
 	NewDeployWorkflowCommand() *commands.DeployCommand
 
+	NewPublishMessageCommand() commands.PublishMessageCommandStep1
 	Close() error
 }
