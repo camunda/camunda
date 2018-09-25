@@ -23,6 +23,7 @@ import static io.zeebe.broker.clustering.base.gossip.GossipCustomEventEncoding.w
 import static io.zeebe.broker.clustering.base.gossip.GossipCustomEventEncoding.writePartitions;
 
 import io.zeebe.broker.Loggers;
+import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.gossip.Gossip;
 import io.zeebe.gossip.GossipCustomEventListener;
 import io.zeebe.gossip.GossipMembershipListener;
@@ -67,9 +68,10 @@ public class TopologyManagerImpl extends Actor implements TopologyManager, RaftS
   private List<TopologyMemberListener> topologyMemberListers = new ArrayList<>();
   private List<TopologyPartitionListener> topologyPartitionListers = new ArrayList<>();
 
-  public TopologyManagerImpl(Gossip gossip, NodeInfo localBroker) {
+  public TopologyManagerImpl(Gossip gossip, NodeInfo localBroker, ClusterCfg clusterCfg) {
     this.gossip = gossip;
-    this.topology = new Topology(localBroker);
+    this.topology =
+        new Topology(localBroker, clusterCfg.getClusterSize(), clusterCfg.getPartitionsCount());
   }
 
   @Override

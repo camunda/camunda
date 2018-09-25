@@ -16,11 +16,10 @@
 package io.zeebe.protocol.impl;
 
 import static io.zeebe.protocol.impl.SubscriptionUtil.getSubscriptionHashCode;
+import static io.zeebe.protocol.impl.SubscriptionUtil.getSubscriptionPartitionId;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.util.buffer.BufferUtil;
-import java.nio.charset.StandardCharsets;
-import java.util.Random;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
 
@@ -28,31 +27,22 @@ public class SubscriptionUtilTest {
 
   @Test
   public void shouldGetSubscriptionHashCode() {
-
-    assertThat(getSubscriptionHashCode("a")).isEqualTo(97);
-    assertThat(getSubscriptionHashCode("b")).isEqualTo(98);
-    assertThat(getSubscriptionHashCode("c")).isEqualTo(99);
+    assertThat(getSubscriptionHashCode(wrapString("a"))).isEqualTo(97);
+    assertThat(getSubscriptionHashCode(wrapString("b"))).isEqualTo(98);
+    assertThat(getSubscriptionHashCode(wrapString("c"))).isEqualTo(99);
+    assertThat(getSubscriptionHashCode(wrapString("foobar"))).isEqualTo(-1268878963);
   }
 
   @Test
   public void shouldGetZeroSubscriptionHashCodeIfEmpty() {
-
-    assertThat(getSubscriptionHashCode("")).isEqualTo(0);
     assertThat(getSubscriptionHashCode(new UnsafeBuffer())).isEqualTo(0);
   }
 
   @Test
-  public void shouldGetSameHashCodeForBufferAndString() {
-    final Random random = new Random();
-    for (int t = 0; t < 1_000; t++) {
-
-      final byte[] bytes = new byte[8];
-      random.nextBytes(bytes);
-      final String correlationKey = new String(bytes, StandardCharsets.UTF_8);
-
-      assertThat(getSubscriptionHashCode(correlationKey))
-          .describedAs(correlationKey)
-          .isEqualTo(getSubscriptionHashCode(BufferUtil.wrapString(correlationKey)));
-    }
+  public void shouldGetPartitionIdForCorrelationKey() {
+    assertThat(getSubscriptionPartitionId(wrapString("a"), 10)).isEqualTo(7);
+    assertThat(getSubscriptionPartitionId(wrapString("b"), 3)).isEqualTo(2);
+    assertThat(getSubscriptionPartitionId(wrapString("c"), 11)).isEqualTo(0);
+    assertThat(getSubscriptionPartitionId(wrapString("foobar"), 100)).isEqualTo(63);
   }
 }

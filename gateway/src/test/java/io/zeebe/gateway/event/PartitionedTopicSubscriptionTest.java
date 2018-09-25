@@ -53,8 +53,8 @@ public class PartitionedTopicSubscriptionTest {
   public static final int PARTITION_1 = 0;
   public static final int PARTITION_2 = 1;
 
-  public StubBrokerRule broker1 = new StubBrokerRule(0);
-  public StubBrokerRule broker2 = new StubBrokerRule(1);
+  public StubBrokerRule broker1 = new StubBrokerRule(0, 2, 2);
+  public StubBrokerRule broker2 = new StubBrokerRule(1, 2, 2);
   public ClientRule clientRule = new ClientRule(broker1);
 
   protected ZeebeClient client;
@@ -71,6 +71,8 @@ public class PartitionedTopicSubscriptionTest {
     broker2.setCurrentTopology(topology);
 
     client = clientRule.getClient();
+    // ensure update of topology
+    client.newTopologyRequest().send().join();
   }
 
   @Test
@@ -282,33 +284,6 @@ public class PartitionedTopicSubscriptionTest {
     final ExecuteCommandRequest request2 = subscribeRequestsBroker1.get(1);
     assertThat(request2.partitionId()).isEqualTo(PARTITION_1);
     assertThat(request2.getCommand().get("name")).isEqualTo(subscriptionName);
-  }
-
-  @Test
-  public void shouldNotOpenSubscriptionWhenPartitionsRequestFails() {
-    // given
-    broker1
-        .onControlMessageRequest(r -> r.messageType() == ControlMessageType.REQUEST_PARTITIONS)
-        .respondWithError()
-        .errorCode(ErrorCode.REQUEST_PROCESSING_FAILURE)
-        .errorData("foo")
-        .register();
-
-    final TopicSubscriptionBuilderStep3 builder =
-        client.newSubscription().name("hohoho").recordHandler(new RecordingHandler());
-
-    // when
-    final Throwable failure = catchThrowable(() -> builder.open());
-
-    // then
-    assertThat(failure)
-        .isInstanceOf(ClientException.class)
-        .hasMessageContaining("Could not open subscriber group");
-
-    assertThat(failure.getCause()).hasMessageContaining("Requesting partitions failed");
-
-    assertThat(getSubscribeRequests(broker1)).isEmpty();
-    assertThat(getSubscribeRequests(broker2)).isEmpty();
   }
 
   @Test

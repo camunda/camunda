@@ -46,14 +46,27 @@ public class Topology implements ReadableTopology {
   private final Int2ObjectHashMap<NodeInfo> partitionLeaders = new Int2ObjectHashMap<>();
   private final Int2ObjectHashMap<List<NodeInfo>> partitionFollowers = new Int2ObjectHashMap<>();
 
-  public Topology(NodeInfo localBroker) {
+  private final int clusterSize;
+  private final int partitionsCount;
+
+  public Topology(NodeInfo localBroker, int clusterSize, int partitionsCount) {
     this.local = localBroker;
+    this.clusterSize = clusterSize;
+    this.partitionsCount = partitionsCount;
     this.addMember(localBroker);
   }
 
   @Override
   public NodeInfo getLocal() {
     return local;
+  }
+
+  public int getClusterSize() {
+    return clusterSize;
+  }
+
+  public int getPartitionsCount() {
+    return partitionsCount;
   }
 
   public NodeInfo getMember(int nodeId) {
@@ -230,6 +243,8 @@ public class Topology implements ReadableTopology {
   @Override
   public TopologyResponseDto asDto() {
     final TopologyResponseDto dto = new TopologyResponseDto();
+    dto.setClusterSize(clusterSize);
+    dto.setPartitionsCount(partitionsCount);
 
     for (NodeInfo member : members) {
       final BrokerDto broker = dto.brokers().add();

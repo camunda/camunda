@@ -36,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
@@ -253,25 +254,21 @@ public class ClientApiRule extends ExternalResource {
   @SuppressWarnings("unchecked")
   public List<Integer> getPartitionIds() {
     try {
-      final ControlMessageResponse response = requestPartitions();
+      final ControlMessageResponse response = requestTopology();
 
       final Map<String, Object> data = response.getData();
-      final List<Map<String, Object>> partitions =
-          (List<Map<String, Object>>) data.get("partitions");
+      final int partitionsCount = ((Long) data.get("partitionsCount")).intValue();
 
-      return partitions
-          .stream()
-          .map(p -> ((Number) p.get("id")).intValue())
-          .collect(Collectors.toList());
+      return IntStream.range(0, partitionsCount).boxed().collect(Collectors.toList());
     } catch (final Exception e) {
       return Collections.EMPTY_LIST;
     }
   }
 
-  public ControlMessageResponse requestPartitions() {
+  public ControlMessageResponse requestTopology() {
     return createControlMessageRequest()
         .partitionId(Protocol.DEPLOYMENT_PARTITION)
-        .messageType(ControlMessageType.REQUEST_PARTITIONS)
+        .messageType(ControlMessageType.REQUEST_TOPOLOGY)
         .data()
         .done()
         .sendAndAwait();

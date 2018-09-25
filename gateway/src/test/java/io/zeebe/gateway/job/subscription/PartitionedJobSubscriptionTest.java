@@ -45,8 +45,8 @@ public class PartitionedJobSubscriptionTest {
 
   public static final String JOB_TYPE = "foo";
 
-  public StubBrokerRule broker1 = new StubBrokerRule(0);
-  public StubBrokerRule broker2 = new StubBrokerRule(1);
+  public StubBrokerRule broker1 = new StubBrokerRule(0, 2, 2);
+  public StubBrokerRule broker2 = new StubBrokerRule(1, 2, 2);
   public ClientRule clientRule = new ClientRule(broker1);
 
   protected ZeebeClient client;
@@ -63,6 +63,8 @@ public class PartitionedJobSubscriptionTest {
     broker2.setCurrentTopology(topology);
 
     client = clientRule.getClient();
+    // ensure update of topology
+    client.newTopologyRequest().send().join();
   }
 
   @Test

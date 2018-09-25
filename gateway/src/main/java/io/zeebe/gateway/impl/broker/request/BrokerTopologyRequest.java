@@ -13,28 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.gateway.impl.partitions;
+package io.zeebe.gateway.impl.broker.request;
 
-import io.zeebe.gateway.api.commands.Partition;
+import io.zeebe.protocol.clientapi.ControlMessageType;
+import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto;
+import io.zeebe.util.buffer.BufferWriter;
+import org.agrona.DirectBuffer;
 
-public class PartitionImpl implements Partition {
-  private int id;
+public class BrokerTopologyRequest extends BrokerControlMessage<TopologyResponseDto> {
 
-  @Override
-  public int getId() {
-    return id;
-  }
-
-  public void setId(final int id) {
-    this.id = id;
+  public BrokerTopologyRequest() {
+    super(ControlMessageType.REQUEST_TOPOLOGY);
   }
 
   @Override
-  public String toString() {
-    final StringBuilder builder = new StringBuilder();
-    builder.append("Partition [id=");
-    builder.append(id);
-    builder.append("]");
-    return builder.toString();
+  protected BufferWriter getRequestWriter() {
+    return null;
+  }
+
+  @Override
+  protected TopologyResponseDto toResponseDto(DirectBuffer buffer) {
+    final TopologyResponseDto dto = new TopologyResponseDto();
+    dto.wrap(buffer);
+    return dto;
   }
 }

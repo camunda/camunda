@@ -78,7 +78,8 @@ public class ClusterComponent implements Component {
             networkCfg.getReplication().toSocketAddress(),
             networkCfg.getSubscription().toSocketAddress());
 
-    final TopologyManagerService topologyManagerService = new TopologyManagerService(localMember);
+    final TopologyManagerService topologyManagerService =
+        new TopologyManagerService(localMember, brokerConfig.getCluster());
 
     baseLayerInstall
         .createService(TOPOLOGY_MANAGER_SERVICE, topologyManagerService)

@@ -15,9 +15,15 @@
  */
 package io.zeebe.gateway.cmd;
 
+import io.zeebe.gateway.impl.broker.response.BrokerRejection;
+
 /** A client command was rejected by the broker. */
 public class ClientCommandRejectedException extends ClientException {
   private static final long serialVersionUID = 1L;
+
+  public ClientCommandRejectedException(BrokerRejection rejection) {
+    this(rejection.getMessage());
+  }
 
   public ClientCommandRejectedException(String errorMessage) {
     super(errorMessage);

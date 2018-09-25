@@ -13,27 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.gateway.impl;
+package io.zeebe.gateway.impl.broker;
 
-import io.zeebe.gateway.impl.clustering.ClientTopologyManager;
-import io.zeebe.gateway.impl.clustering.ClusterStateImpl;
+import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
+import io.zeebe.gateway.impl.broker.cluster.BrokerClusterStateImpl;
+import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class RoundRobinDispatchStrategy implements RequestDispatchStrategy {
 
-  protected final ClientTopologyManager topologyManager;
+  protected final BrokerTopologyManager topologyManager;
   protected AtomicInteger partitions = new AtomicInteger(0);
 
-  public RoundRobinDispatchStrategy(final ClientTopologyManager topologyManager) {
+  public RoundRobinDispatchStrategy(final BrokerTopologyManager topologyManager) {
     this.topologyManager = topologyManager;
   }
 
   @Override
   public int determinePartition() {
-    final ClusterStateImpl topology = topologyManager.getTopology();
+    final BrokerClusterStateImpl topology = topologyManager.getTopology();
 
-    final int offset = partitions.getAndIncrement();
-
-    return topology.getPartition(offset);
+    if (topology != null) {
+      final int offset = partitions.getAndIncrement();
+      return topology.getPartition(offset);
+    } else {
+      return BrokerClusterState.PARTITION_ID_NULL;
+    }
   }
 }

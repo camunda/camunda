@@ -43,11 +43,14 @@ public class ControlledTopologyManager implements TopologyManager {
             new SocketAddress("0.0.0.0", 0),
             new SocketAddress("0.0.0.0", 1),
             new SocketAddress("0.0.0.0", 2),
-            new SocketAddress("0.0.0.0", 3)));
+            new SocketAddress("0.0.0.0", 3)),
+        1,
+        1);
   }
 
-  public ControlledTopologyManager(final NodeInfo localNodeInfo) {
-    this.topology = new Topology(localNodeInfo);
+  public ControlledTopologyManager(
+      final NodeInfo localNodeInfo, int clusterSize, int partitionsCount) {
+    this.topology = new Topology(localNodeInfo, clusterSize, partitionsCount);
   }
 
   public Topology getTopology() {

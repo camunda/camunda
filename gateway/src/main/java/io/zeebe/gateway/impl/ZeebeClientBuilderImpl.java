@@ -25,6 +25,7 @@ import io.zeebe.gateway.ClientProperties;
 import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.ZeebeClientBuilder;
 import io.zeebe.gateway.ZeebeClientConfiguration;
+import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.time.Duration;
 import java.util.Properties;
@@ -183,6 +184,10 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   @Override
   public Duration getDefaultMessageTimeToLive() {
     return defaultMessageTimeToLive;
+  }
+
+  public BrokerClient buildBrokerClient() {
+    return new BrokerClient(this);
   }
 
   @Override

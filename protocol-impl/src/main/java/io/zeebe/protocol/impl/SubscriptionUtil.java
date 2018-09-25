@@ -15,9 +15,7 @@
  */
 package io.zeebe.protocol.impl;
 
-import java.nio.charset.StandardCharsets;
 import org.agrona.DirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class SubscriptionUtil {
 
@@ -27,7 +25,7 @@ public class SubscriptionUtil {
    * @param correlationKey the correlation key
    * @return the hash code of the subscription
    */
-  public static int getSubscriptionHashCode(DirectBuffer correlationKey) {
+  protected static int getSubscriptionHashCode(DirectBuffer correlationKey) {
     // is equal to java.lang.String#hashCode
     int hashCode = 0;
 
@@ -38,13 +36,14 @@ public class SubscriptionUtil {
   }
 
   /**
-   * Get the hash code of the subscription based on the given correlation key.
+   * Get the partition id for message subscription based on the given correlation key.
    *
    * @param correlationKey the correlation key
-   * @return the hash code of the subscription
+   * @param partitionCount the number of partitions
+   * @return the partition id for the subscription
    */
-  public static int getSubscriptionHashCode(String correlationKey) {
-    final DirectBuffer buffer = new UnsafeBuffer(correlationKey.getBytes(StandardCharsets.UTF_8));
-    return getSubscriptionHashCode(buffer);
+  public static int getSubscriptionPartitionId(DirectBuffer correlationKey, int partitionCount) {
+    final int hashCode = getSubscriptionHashCode(correlationKey);
+    return Math.abs(hashCode % partitionCount);
   }
 }

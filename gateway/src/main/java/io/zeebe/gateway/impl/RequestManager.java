@@ -20,9 +20,11 @@ import io.zeebe.gateway.cmd.BrokerErrorException;
 import io.zeebe.gateway.cmd.ClientCommandRejectedException;
 import io.zeebe.gateway.cmd.ClientException;
 import io.zeebe.gateway.cmd.ClientOutOfMemoryException;
-import io.zeebe.gateway.impl.clustering.ClientTopologyManager;
-import io.zeebe.gateway.impl.clustering.ClusterState;
-import io.zeebe.gateway.impl.clustering.ClusterStateImpl;
+import io.zeebe.gateway.impl.broker.RequestDispatchStrategy;
+import io.zeebe.gateway.impl.broker.RoundRobinDispatchStrategy;
+import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
+import io.zeebe.gateway.impl.broker.cluster.BrokerClusterStateImpl;
+import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.gateway.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
@@ -46,7 +48,7 @@ import org.agrona.DirectBuffer;
 
 public class RequestManager extends Actor {
   protected final ClientOutput output;
-  protected final ClientTopologyManager topologyManager;
+  protected final BrokerTopologyManager topologyManager;
   protected final ZeebeObjectMapperImpl objectMapper;
   protected final Duration requestTimeout;
   protected final RequestDispatchStrategy dispatchStrategy;
@@ -54,7 +56,7 @@ public class RequestManager extends Actor {
 
   public RequestManager(
       final ClientOutput output,
-      final ClientTopologyManager topologyManager,
+      final BrokerTopologyManager topologyManager,
       final ZeebeObjectMapperImpl objectMapper,
       final Duration requestTimeout,
       final long blockTimeMillis) {
@@ -68,14 +70,6 @@ public class RequestManager extends Actor {
 
   public ActorFuture<Void> close() {
     return actor.close();
-  }
-
-  public <R extends Record> R execute(final CommandImpl<R> command) {
-    return waitAndResolve(send(command));
-  }
-
-  public <E> E execute(final ControlMessageRequest<E> controlMessage) {
-    return waitAndResolve(send(controlMessage));
   }
 
   private <R> ResponseFuture<R> executeAsync(final RequestResponseHandler requestHandler) {
@@ -153,7 +147,7 @@ public class RequestManager extends Actor {
 
   private void updateTopologyAndDeterminePartition(
       final CompletableActorFuture<Integer> future, final long timeout) {
-    final ActorFuture<ClusterState> topologyFuture = topologyManager.requestTopology();
+    final ActorFuture<BrokerClusterState> topologyFuture = topologyManager.requestTopology();
     actor.runOnCompletion(
         topologyFuture,
         (topology, throwable) -> {
@@ -235,7 +229,7 @@ public class RequestManager extends Actor {
   }
 
   private BrokerProvider providerForRandomBroker() {
-    return new BrokerProvider(ClusterStateImpl::getRandomBroker);
+    return new BrokerProvider(BrokerClusterStateImpl::getRandomBroker);
   }
 
   private BrokerProvider providerForPartition(final int partitionId) {
@@ -469,10 +463,10 @@ public class RequestManager extends Actor {
   }
 
   private class BrokerProvider implements Supplier<Integer> {
-    private final Function<ClusterStateImpl, Integer> addressStrategy;
+    private final Function<BrokerClusterStateImpl, Integer> addressStrategy;
     private int attempt = 0;
 
-    BrokerProvider(final Function<ClusterStateImpl, Integer> addressStrategy) {
+    BrokerProvider(final Function<BrokerClusterStateImpl, Integer> addressStrategy) {
       this.addressStrategy = addressStrategy;
     }
 
@@ -484,8 +478,12 @@ public class RequestManager extends Actor {
 
       attempt++;
 
-      final ClusterStateImpl topology = topologyManager.getTopology();
-      return addressStrategy.apply(topology);
+      final BrokerClusterStateImpl topology = topologyManager.getTopology();
+      if (topology != null) {
+        return addressStrategy.apply(topology);
+      } else {
+        return null;
+      }
     }
   }
 }

@@ -20,7 +20,7 @@ import org.slf4j.Logger;
 
 public class Loggers {
 
-  public static final Logger CLIENT_LOGGER = new ZbLogger("io.zeebe.client");
+  public static final Logger BROKER_CLIENT_LOGGER = new ZbLogger("io.zeebe.gateway.broker");
   public static final Logger SUBSCRIPTION_LOGGER = new ZbLogger("io.zeebe.client.subscription");
   public static final Logger TASK_SUBSCRIPTION_LOGGER =
       new ZbLogger("io.zeebe.client.subscription.task");

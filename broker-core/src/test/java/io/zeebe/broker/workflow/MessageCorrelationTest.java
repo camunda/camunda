@@ -44,6 +44,7 @@ import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
 import io.zeebe.test.broker.protocol.clientapi.TestPartitionClient;
 import io.zeebe.test.util.MsgPackUtil;
+import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
@@ -511,8 +512,7 @@ public class MessageCorrelationTest {
 
   private int getPartitionId(final String correlationKey) {
     final List<Integer> partitionIds = apiRule.getPartitionIds();
-    final int index =
-        Math.abs(SubscriptionUtil.getSubscriptionHashCode(correlationKey) % partitionIds.size());
-    return partitionIds.get(index);
+    return SubscriptionUtil.getSubscriptionPartitionId(
+        BufferUtil.wrapString(correlationKey), partitionIds.size());
   }
 }

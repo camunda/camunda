@@ -16,16 +16,11 @@
 package io.zeebe.client;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.Assert.assertTrue;
 
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.commands.BrokerInfo;
 import io.zeebe.client.api.commands.PartitionBrokerRole;
-import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.util.TestEnvironmentRule;
-import java.net.URISyntaxException;
-import java.util.Arrays;
-import java.util.List;
 import java.util.stream.Stream;
 import org.junit.Before;
 import org.junit.Rule;
@@ -62,61 +57,6 @@ public class ZeebeClientTest {
                         assertThat(partition.getPartitionId()).isEqualTo(0);
                         assertThat(partition.getRole()).isEqualTo(PartitionBrokerRole.LEADER);
                       });
-            });
-  }
-
-  @Test
-  public void shouldDeployWorkflow() throws URISyntaxException {
-    final String filePath =
-        getClass().getResource("/workflows/demo-process.bpmn").toURI().getPath();
-
-    final DeploymentEvent deploymentResponse =
-        client.workflowClient().newDeployCommand().addResourceFile(filePath).send().join();
-
-    assertThat(deploymentResponse).isNotNull();
-    assertThat(deploymentResponse.getDeployedWorkflows().size()).isEqualTo(1);
-    assertThat(deploymentResponse.getDeployedWorkflows().get(0).getBpmnProcessId())
-        .isEqualTo("demoProcess");
-    assertThat(deploymentResponse.getDeployedWorkflows().get(0).getVersion()).isEqualTo(1);
-    assertThat(deploymentResponse.getDeployedWorkflows().get(0).getWorkflowKey()).isEqualTo(1);
-    assertThat(deploymentResponse.getDeployedWorkflows().get(0).getResourceName())
-        .endsWith("demo-process.bpmn");
-  }
-
-  @Test
-  public void shouldDeployMultipleWorkflows() throws URISyntaxException {
-    final String demoProcessPath =
-        getClass().getResource("/workflows/demo-process.bpmn").toURI().getPath();
-    final String anotherDemoProcessPath =
-        getClass().getResource("/workflows/another-demo-process.bpmn").toURI().getPath();
-    final String simpleWorkflowPath =
-        getClass().getResource("/workflows/simple-workflow.yaml").toURI().getPath();
-
-    final String[] ids = {"yaml-workflow", "anotherDemoProcess", "demoProcess"};
-    final List<String> processIds = Arrays.asList(ids);
-    final Long[] keys = {1L, 2L, 3L};
-    final List<Long> workflowKeys = Arrays.asList(keys);
-
-    final DeploymentEvent deploymentResponse =
-        client
-            .workflowClient()
-            .newDeployCommand()
-            .addResourceFile(demoProcessPath)
-            .addResourceFile(anotherDemoProcessPath)
-            .addResourceFile(simpleWorkflowPath)
-            .send()
-            .join();
-
-    assertThat(deploymentResponse).isNotNull();
-    assertThat(deploymentResponse.getDeployedWorkflows().size()).isEqualTo(3);
-
-    deploymentResponse
-        .getDeployedWorkflows()
-        .forEach(
-            workflow -> {
-              assertTrue(processIds.contains(workflow.getBpmnProcessId()));
-              assertThat(workflow.getVersion()).isEqualTo(1);
-              assertTrue(workflowKeys.contains(workflow.getWorkflowKey()));
             });
   }
 

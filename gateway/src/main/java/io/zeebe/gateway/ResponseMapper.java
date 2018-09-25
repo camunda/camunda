@@ -15,13 +15,9 @@
  */
 package io.zeebe.gateway;
 
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import com.google.protobuf.Empty;
-import io.zeebe.gateway.api.commands.PartitionInfo;
-import io.zeebe.gateway.api.commands.Topology;
-import io.zeebe.gateway.api.commands.Workflow;
-import io.zeebe.gateway.api.events.DeploymentEvent;
-import io.zeebe.gateway.api.events.JobEvent;
-import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
 import io.zeebe.gateway.cmd.ClientException;
 import io.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo;
 import io.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo.Builder;
@@ -32,13 +28,19 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.HealthResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
 import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowResponseObject;
+import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto;
+import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto.BrokerDto;
+import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto.PartitionDto;
+import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import java.util.ArrayList;
 
 public class ResponseMapper {
 
-  private PartitionBrokerRole remapPartitionBrokerRoleEnum(
-      final io.zeebe.gateway.api.commands.BrokerInfo brokerInfo, final PartitionInfo partition) {
-    switch (partition.getRole()) {
+  private static PartitionBrokerRole remapPartitionBrokerRoleEnum(
+      final BrokerDto brokerDto, final PartitionDto partition) {
+    switch (partition.getState()) {
       case LEADER:
         return PartitionBrokerRole.LEADER;
       case FOLLOWER:
@@ -48,67 +50,79 @@ public class ResponseMapper {
             "Unknown broker role in response for partition "
                 + partition
                 + " on broker "
-                + brokerInfo);
+                + brokerDto);
     }
   }
 
-  public HealthResponse toHealthResponse(final Topology brokerResponse) {
+  public static HealthResponse toHealthResponse(
+      int partitionId, long key, TopologyResponseDto brokerResponse) {
     final HealthResponse.Builder healthResponseBuilder = HealthResponse.newBuilder();
     final ArrayList<BrokerInfo> infos = new ArrayList<>();
 
-    for (final io.zeebe.gateway.api.commands.BrokerInfo el : brokerResponse.getBrokers()) {
-      final Builder brokerInfo = BrokerInfo.newBuilder();
-      brokerInfo.setHost(el.getHost());
-      brokerInfo.setPort(el.getPort());
+    brokerResponse
+        .brokers()
+        .forEach(
+            broker -> {
+              final Builder brokerInfo = BrokerInfo.newBuilder();
+              brokerInfo.setHost(bufferAsString(broker.getHost()));
+              brokerInfo.setPort(broker.getPort());
 
-      for (final PartitionInfo p : el.getPartitions()) {
-        final Partition.Builder partitionBuilder = Partition.newBuilder();
-        partitionBuilder.setPartitionId(p.getPartitionId());
-        partitionBuilder.setRole(remapPartitionBrokerRoleEnum(el, p));
-        brokerInfo.addPartitions(partitionBuilder);
-      }
+              broker
+                  .partitionStates()
+                  .forEach(
+                      partition -> {
+                        final Partition.Builder partitionBuilder = Partition.newBuilder();
+                        partitionBuilder.setPartitionId(partition.getPartitionId());
+                        partitionBuilder.setRole(remapPartitionBrokerRoleEnum(broker, partition));
+                        brokerInfo.addPartitions(partitionBuilder);
+                      });
 
-      infos.add(brokerInfo.build());
-    }
+              infos.add(brokerInfo.build());
+            });
 
     healthResponseBuilder.addAllBrokers(infos);
     return healthResponseBuilder.build();
   }
 
-  public DeployWorkflowResponse toDeployWorkflowResponse(final DeploymentEvent brokerResponse) {
+  public static DeployWorkflowResponse toDeployWorkflowResponse(
+      int partitionId, long key, DeploymentRecord brokerResponse) {
     final DeployWorkflowResponse.Builder deployWorkflowResponseBuilder =
         DeployWorkflowResponse.newBuilder();
 
-    for (final Workflow workflow : brokerResponse.getWorkflows()) {
+    for (io.zeebe.protocol.impl.record.value.deployment.Workflow workflow :
+        brokerResponse.workflows()) {
       deployWorkflowResponseBuilder.addWorkflows(
           WorkflowResponseObject.newBuilder()
-              .setBpmnProcessId(workflow.getBpmnProcessId())
+              .setBpmnProcessId(bufferAsString(workflow.getBpmnProcessId()))
               .setVersion(workflow.getVersion())
-              .setWorkflowKey(workflow.getWorkflowKey())
-              .setResourceName(workflow.getResourceName()));
+              .setWorkflowKey(workflow.getKey())
+              .setResourceName(bufferAsString(workflow.getResourceName())));
     }
     return deployWorkflowResponseBuilder.build();
   }
 
-  public Empty emptyResponse(final Object response) {
+  public static Empty emptyResponse(int partitionId, long key, Object brokerResponse) {
     return Empty.getDefaultInstance();
   }
 
-  public CreateJobResponse toCreateJobResponse(final JobEvent jobEvent) {
-    return CreateJobResponse.newBuilder()
-        .setKey(jobEvent.getKey())
-        .setPartitionId(jobEvent.getMetadata().getPartitionId())
+  public static CreateJobResponse toCreateJobResponse(
+      int partitionId, long key, JobRecord brokerResponse) {
+    return CreateJobResponse.newBuilder().setKey(key).setPartitionId(partitionId).build();
+  }
+
+  public static CreateWorkflowInstanceResponse toCreateWorkflowInstanceResponse(
+      int partitionId, long key, WorkflowInstanceRecord brokerResponse) {
+    return CreateWorkflowInstanceResponse.newBuilder()
+        .setWorkflowKey(brokerResponse.getWorkflowKey())
+        .setBpmnProcessId(bufferAsString(brokerResponse.getBpmnProcessId()))
+        .setVersion(brokerResponse.getVersion())
+        .setPartitionId(partitionId)
+        .setWorkflowInstanceKey(brokerResponse.getWorkflowInstanceKey())
         .build();
   }
 
-  public CreateWorkflowInstanceResponse toCreateWorkflowInstanceResponse(
-      final WorkflowInstanceEvent workflowInstanceEvent) {
-    return CreateWorkflowInstanceResponse.newBuilder()
-        .setWorkflowKey(workflowInstanceEvent.getWorkflowKey())
-        .setBpmnProcessId(workflowInstanceEvent.getBpmnProcessId())
-        .setVersion(workflowInstanceEvent.getVersion())
-        .setPartitionId(workflowInstanceEvent.getMetadata().getPartitionId())
-        .setWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
-        .build();
+  @FunctionalInterface
+  public interface BrokerResponseMapper<BrokerResponseDto, GrpcResponse> {
+    GrpcResponse apply(int partitionId, long key, BrokerResponseDto responseDto);
   }
 }

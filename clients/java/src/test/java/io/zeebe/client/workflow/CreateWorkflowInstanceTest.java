@@ -278,7 +278,8 @@ public class CreateWorkflowInstanceTest {
                     .send()
                     .join())
         .isInstanceOf(ClientException.class)
-        .hasMessageContaining("Could not read property 'payload'");
+        .hasMessageContaining(
+            "Document has invalid format. On root level an object is only allowed.");
   }
 
   @Test

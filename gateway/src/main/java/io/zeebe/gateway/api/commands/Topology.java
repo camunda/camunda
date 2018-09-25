@@ -17,6 +17,7 @@ package io.zeebe.gateway.api.commands;
 
 import java.util.List;
 
+// TODO: remove with https://github.com/zeebe-io/zeebe/issues/1377
 public interface Topology {
   /** @return all (known) brokers of the cluster */
   List<BrokerInfo> getBrokers();

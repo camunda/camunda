@@ -90,6 +90,11 @@ public class JobRecord extends UnpackedObject {
     return typeProp.getValue();
   }
 
+  public JobRecord setType(String type) {
+    this.typeProp.setValue(type);
+    return this;
+  }
+
   public JobRecord setType(DirectBuffer buf) {
     return setType(buf, 0, buf.capacity());
   }

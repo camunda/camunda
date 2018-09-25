@@ -17,7 +17,6 @@ package io.zeebe.gateway;
 
 import io.zeebe.gateway.api.clients.JobClient;
 import io.zeebe.gateway.api.clients.WorkflowClient;
-import io.zeebe.gateway.api.commands.PartitionsRequestStep1;
 import io.zeebe.gateway.api.commands.TopologyRequestStep1;
 import io.zeebe.gateway.api.record.ZeebeObjectMapper;
 import io.zeebe.gateway.api.subscription.TopicSubscriptionBuilderStep1;
@@ -93,22 +92,6 @@ public interface ZeebeClient extends AutoCloseable {
    * @return an object that provides (de-)serialization of all records to/from JSON.
    */
   ZeebeObjectMapper objectMapper();
-
-  /**
-   * Request all partitions. Can be used to inspect which partitions have been created.
-   *
-   * <pre>
-   * List&#60;Partition&#62; partitions = zeebeClient
-   *  .newPartitionsRequest()
-   *  .send()
-   *  .join()
-   *  .getPartitions();
-   *
-   * </pre>
-   *
-   * @return the request where you must call {@code send()}
-   */
-  PartitionsRequestStep1 newPartitionsRequest();
 
   /**
    * Request the current cluster topology. Can be used to inspect which brokers are available at

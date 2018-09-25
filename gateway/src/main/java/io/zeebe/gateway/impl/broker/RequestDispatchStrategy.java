@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.gateway.impl.clustering;
+package io.zeebe.gateway.impl.broker;
 
-import java.util.List;
+import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 
-public interface ClusterState {
-  int getLeaderForPartition(int partition);
+/** Implementations must be thread-safe. */
+public interface RequestDispatchStrategy {
 
-  int getRandomBroker();
-
-  List<Integer> getPartitions();
+  /** @return {@link BrokerClusterState#PARTITION_ID_NULL} if no partition can be determined */
+  int determinePartition();
 }

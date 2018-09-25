@@ -17,11 +17,10 @@ package io.zeebe.gateway;
 
 import io.grpc.Server;
 import io.grpc.netty.NettyServerBuilder;
-import io.zeebe.gateway.impl.ZeebeClientImpl;
-import io.zeebe.util.sched.ActorScheduler;
+import io.zeebe.gateway.impl.ZeebeClientBuilderImpl;
+import io.zeebe.gateway.impl.broker.BrokerClient;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.time.Duration;
 import org.slf4j.Logger;
 
 public class Gateway {
@@ -35,8 +34,8 @@ public class Gateway {
   private final int port;
 
   private Server server;
-  private ZeebeClient zbClient;
   private String brokerContactPoint = "0.0.0.0:26501";
+  private BrokerClient brokerClient;
 
   public Gateway() {
     this(GATEWAY_DEFAULT_PORT);
@@ -79,16 +78,15 @@ public class Gateway {
   }
 
   public void start() throws IOException {
-    zbClient =
-        ZeebeClient.newClientBuilder()
-            .requestTimeout(Duration.ofMillis(1000))
-            .brokerContactPoint(brokerContactPoint)
-            .build();
-    final ClusterClient clusterClient = new ClusterClient(zbClient);
-    final ActorScheduler actorScheduler = ((ZeebeClientImpl) zbClient).getScheduler();
+    final ZeebeClientBuilderImpl brokerClientBuilder = new ZeebeClientBuilderImpl();
+
+    brokerClientBuilder.brokerContactPoint(brokerContactPoint);
+
+    brokerClient = brokerClientBuilder.buildBrokerClient();
+
     server =
         NettyServerBuilder.forAddress(new InetSocketAddress(host, port))
-            .addService(new EndpointManager(new ResponseMapper(), clusterClient, actorScheduler))
+            .addService(new EndpointManager(brokerClient))
             .build();
 
     server.start();
@@ -101,9 +99,9 @@ public class Gateway {
   }
 
   public void stop() {
-    if (zbClient != null) {
-      zbClient.close();
-      zbClient = null;
+    if (brokerClient != null) {
+      brokerClient.close();
+      brokerClient = null;
     }
 
     if (server != null && !server.isShutdown()) {

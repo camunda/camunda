@@ -110,9 +110,7 @@ public class SubscriptionCommandSender {
       throw new IllegalStateException("no partition ids available");
     }
 
-    final int hashCode = SubscriptionUtil.getSubscriptionHashCode(correlationKey);
-    final int index = Math.abs(hashCode % partitionIds.size());
-    return partitionIds.getInt(index);
+    return SubscriptionUtil.getSubscriptionPartitionId(correlationKey, partitionIds.size());
   }
 
   public boolean openWorkflowInstanceSubscription(

@@ -15,6 +15,7 @@
  */
 package io.zeebe.gateway.cmd;
 
+import io.zeebe.gateway.impl.broker.response.BrokerError;
 import io.zeebe.protocol.clientapi.ErrorCode;
 
 public class BrokerErrorException extends ClientException {
@@ -24,6 +25,10 @@ public class BrokerErrorException extends ClientException {
 
   protected final ErrorCode errorCode;
   protected final String errorMessage;
+
+  public BrokerErrorException(BrokerError brokerError) {
+    this(brokerError.getCode(), brokerError.getMessage());
+  }
 
   public BrokerErrorException(final ErrorCode errorCode, final String errorMessage) {
     this(errorCode, errorMessage, null);

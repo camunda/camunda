@@ -168,7 +168,7 @@ public class ClientCommandManagerTest {
     receivedControlMessageRequests.forEach(
         request -> {
           assertThat(request.messageType()).isEqualTo(REQUEST_TOPOLOGY);
-          assertThat(request.getData()).isEmpty();
+          assertThat(request.getData()).isNull();
         });
   }
 
@@ -180,7 +180,7 @@ public class ClientCommandManagerTest {
     receivedControlMessageRequests.forEach(
         request -> {
           assertThat(request.messageType()).isEqualTo(REQUEST_TOPOLOGY);
-          assertThat(request.getData()).isEmpty();
+          assertThat(request.getData()).isNull();
         });
   }
 

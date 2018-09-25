@@ -13,11 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.gateway.impl.clustering;
+package io.zeebe.gateway.impl.broker.cluster;
 
 import static io.zeebe.transport.ClientTransport.UNKNOWN_NODE_ID;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import io.zeebe.gateway.api.commands.Topology;
+import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto;
 import io.zeebe.transport.SocketAddress;
 import java.util.Random;
 import java.util.function.BiConsumer;
@@ -28,34 +29,32 @@ import org.agrona.collections.IntArrayList;
  * Immutable; Important because we hand this between actors. If this is supposed to become mutable,
  * make sure to make copies in the right places.
  */
-public class ClusterStateImpl implements ClusterState {
-
-  private static final int NODE_ID_NULL = UNKNOWN_NODE_ID - 1;
+public class BrokerClusterStateImpl implements BrokerClusterState {
 
   private final Int2IntHashMap partitionLeaders = new Int2IntHashMap(NODE_ID_NULL);
   private final IntArrayList brokers = new IntArrayList(5, NODE_ID_NULL);
-  private final IntArrayList partitions = new IntArrayList();
+  private final IntArrayList partitions = new IntArrayList(32, PARTITION_ID_NULL);
+  private final int clusterSize;
+  private final int partitionsCount;
 
   private final Random randomBroker = new Random();
 
-  public ClusterStateImpl(
-      final SocketAddress initialContactPoint,
+  public BrokerClusterStateImpl(
+      final TopologyResponseDto topologyDto,
       final BiConsumer<Integer, SocketAddress> endpointRegistry) {
-    endpointRegistry.accept(UNKNOWN_NODE_ID, initialContactPoint);
-    brokers.add(UNKNOWN_NODE_ID);
-  }
+    clusterSize = topologyDto.getClusterSize();
+    partitionsCount = topologyDto.getPartitionsCount();
 
-  public ClusterStateImpl(
-      final Topology topologyDto, final BiConsumer<Integer, SocketAddress> endpointRegistry) {
     topologyDto
-        .getBrokers()
+        .brokers()
         .forEach(
             b -> {
               final int nodeId = b.getNodeId();
-              endpointRegistry.accept(nodeId, new SocketAddress(b.getHost(), b.getPort()));
+              endpointRegistry.accept(
+                  nodeId, new SocketAddress(bufferAsString(b.getHost()), b.getPort()));
               brokers.add(nodeId);
 
-              b.getPartitions()
+              b.partitionStates()
                   .forEach(
                       p -> {
                         final int partitionId = p.getPartitionId();
@@ -65,6 +64,14 @@ public class ClusterStateImpl implements ClusterState {
                         }
                       });
             });
+  }
+
+  public int getClusterSize() {
+    return clusterSize;
+  }
+
+  public int getPartitionsCount() {
+    return partitionsCount;
   }
 
   @Override
@@ -78,7 +85,7 @@ public class ClusterStateImpl implements ClusterState {
       final int nextBroker = randomBroker.nextInt(brokers.size());
       return brokers.getInt(nextBroker);
     } else {
-      throw new RuntimeException("Unable to select random broker from empty list");
+      return UNKNOWN_NODE_ID;
     }
   }
 
@@ -88,23 +95,26 @@ public class ClusterStateImpl implements ClusterState {
   }
 
   public int getPartition(final int offset) {
-    final IntArrayList partitions = getPartitions();
-
-    if (partitions != null && !partitions.isEmpty()) {
+    if (!partitions.isEmpty()) {
       return partitions.getInt(offset % partitions.size());
     } else {
-      return -1;
+      return PARTITION_ID_NULL;
     }
   }
 
   @Override
   public String toString() {
-    final StringBuilder builder = new StringBuilder();
-    builder.append("ClusterState [partitionLeaders=");
-    builder.append(partitionLeaders);
-    builder.append(", brokers=");
-    builder.append(brokers);
-    builder.append("]");
-    return builder.toString();
+    return "BrokerClusterStateImpl{"
+        + "partitionLeaders="
+        + partitionLeaders
+        + ", brokers="
+        + brokers
+        + ", partitions="
+        + partitions
+        + ", clusterSize="
+        + clusterSize
+        + ", partitionsCount="
+        + partitionsCount
+        + '}';
   }
 }

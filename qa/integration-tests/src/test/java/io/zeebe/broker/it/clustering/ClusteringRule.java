@@ -105,7 +105,7 @@ public class ClusteringRule extends ExternalResource {
             .build();
 
     closeables.add(zeebeClient);
-    topologyClient = new TopologyClient((ZeebeClientImpl) zeebeClient);
+    topologyClient = new TopologyClient(((ZeebeClientImpl) zeebeClient).getTransport());
 
     waitForPartitionReplicationFactor();
     waitUntilBrokersInTopology(brokerCfgs);

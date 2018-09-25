@@ -19,30 +19,30 @@ import io.zeebe.gateway.api.commands.PublishMessageCommandStep1;
 import io.zeebe.gateway.api.commands.PublishMessageCommandStep1.PublishMessageCommandStep2;
 import io.zeebe.gateway.api.commands.PublishMessageCommandStep1.PublishMessageCommandStep3;
 import io.zeebe.gateway.api.events.MessageEvent;
-import io.zeebe.gateway.cmd.ClientException;
 import io.zeebe.gateway.impl.CommandImpl;
-import io.zeebe.gateway.impl.PartitionManager;
 import io.zeebe.gateway.impl.ZeebeClientImpl;
+import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
+import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.gateway.impl.command.MessageCommandImpl;
 import io.zeebe.gateway.impl.record.RecordImpl;
 import io.zeebe.protocol.impl.SubscriptionUtil;
 import io.zeebe.protocol.intent.MessageIntent;
+import io.zeebe.util.buffer.BufferUtil;
 import java.io.InputStream;
 import java.time.Duration;
-import java.util.List;
 import java.util.Map;
 
 public class PublishMessageCommandImpl extends CommandImpl<MessageEvent>
     implements PublishMessageCommandStep1, PublishMessageCommandStep2, PublishMessageCommandStep3 {
 
   private final MessageCommandImpl command;
-  private final PartitionManager partitionManager;
+  private final BrokerTopologyManager topologyManager;
 
   public PublishMessageCommandImpl(final ZeebeClientImpl client) {
     super(client.getCommandManager());
 
     this.command = new MessageCommandImpl(client.getObjectMapper(), MessageIntent.PUBLISH);
-    this.partitionManager = client.getPartitionManager();
+    topologyManager = client.getTopologyManager();
 
     // apply defaults from configuration
     final Duration defaultTimeToLive = client.getConfiguration().getDefaultMessageTimeToLive();
@@ -99,14 +99,16 @@ public class PublishMessageCommandImpl extends CommandImpl<MessageEvent>
 
   @Override
   public RecordImpl getCommand() {
-    final List<Integer> partitionIds = partitionManager.getPartitionIds();
-    if (partitionIds == null || partitionIds.isEmpty()) {
-      throw new ClientException(String.format("No partitions found."));
+    BrokerClusterState topology = topologyManager.getTopology();
+    if (topology == null) {
+      // blocking but will be removed in near future
+      topology = topologyManager.requestTopology().join();
     }
 
-    final int hashCode = SubscriptionUtil.getSubscriptionHashCode(command.getCorrelationKey());
-    final int index = Math.abs(hashCode % partitionIds.size());
-    final Integer partitionId = partitionIds.get(index);
+    final int partitionsCount = topology.getPartitionsCount();
+    final int partitionId =
+        SubscriptionUtil.getSubscriptionPartitionId(
+            BufferUtil.wrapString(command.getCorrelationKey()), partitionsCount);
     command.setPartitionId(partitionId);
 
     return command;

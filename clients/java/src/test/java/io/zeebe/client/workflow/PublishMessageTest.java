@@ -172,7 +172,36 @@ public class PublishMessageTest {
                     .send()
                     .join())
         .isInstanceOf(ClientException.class)
-        .hasMessageContaining("Could not read property 'payload'");
+        .hasMessageContaining(
+            "Document has invalid format. On root level an object is only allowed.");
+  }
+
+  @Test
+  public void shouldNotPublishMessageWithIdTwice() {
+    // given
+    client
+        .workflowClient()
+        .newPublishMessageCommand()
+        .messageName("name")
+        .correlationKey("key")
+        .messageId("foo")
+        .send()
+        .join();
+
+    // when
+    assertThatThrownBy(
+            () ->
+                client
+                    .workflowClient()
+                    .newPublishMessageCommand()
+                    .messageName("name")
+                    .correlationKey("key")
+                    .messageId("foo")
+                    .send()
+                    .join())
+        .isInstanceOf(ClientException.class)
+        .hasMessageContaining(
+            "Command (PUBLISH) was rejected. It has an invalid value. message with id 'foo' is already published");
   }
 
   public static class Payload {

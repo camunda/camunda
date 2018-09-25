@@ -28,13 +28,35 @@ import org.agrona.DirectBuffer;
 public class TopologyResponseDto extends UnpackedObject {
   private final ArrayProperty<BrokerDto> brokersProp =
       new ArrayProperty<>("brokers", new BrokerDto());
+  private final IntegerProperty clusterSizeProp = new IntegerProperty("clusterSize");
+  private final IntegerProperty partitionsCountProp = new IntegerProperty("partitionsCount");
 
   public TopologyResponseDto() {
-    this.declareProperty(brokersProp);
+    this.declareProperty(brokersProp)
+        .declareProperty(clusterSizeProp)
+        .declareProperty(partitionsCountProp);
   }
 
   public ArrayProperty<BrokerDto> brokers() {
     return brokersProp;
+  }
+
+  public int getClusterSize() {
+    return clusterSizeProp.getValue();
+  }
+
+  public TopologyResponseDto setClusterSize(int clusterSize) {
+    this.clusterSizeProp.setValue(clusterSize);
+    return this;
+  }
+
+  public int getPartitionsCount() {
+    return partitionsCountProp.getValue();
+  }
+
+  public TopologyResponseDto setPartitionsCount(int partitionsCount) {
+    this.partitionsCountProp.setValue(partitionsCount);
+    return this;
   }
 
   public static class BrokerDto extends UnpackedObject {

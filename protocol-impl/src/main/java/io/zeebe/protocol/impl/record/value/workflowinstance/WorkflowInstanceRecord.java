@@ -61,6 +61,11 @@ public class WorkflowInstanceRecord extends UnpackedObject {
     return bpmnProcessIdProp.getValue();
   }
 
+  public WorkflowInstanceRecord setBpmnProcessId(String bpmnProcessId) {
+    bpmnProcessIdProp.setValue(bpmnProcessId);
+    return this;
+  }
+
   public WorkflowInstanceRecord setBpmnProcessId(DirectBuffer directBuffer) {
     bpmnProcessIdProp.setValue(directBuffer);
     return this;

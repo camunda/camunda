@@ -13,11 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.gateway.impl;
+package io.zeebe.gateway.impl.broker.response;
 
-/** Implementations must be thread-safe. */
-public interface RequestDispatchStrategy {
+public class BrokerRejectionResponse<T> extends BrokerResponse<T> {
 
-  /** @return -1 if no partition can be determined */
-  int determinePartition();
+  private final BrokerRejection rejection;
+
+  public BrokerRejectionResponse(BrokerRejection rejection) {
+    super();
+    this.rejection = rejection;
+  }
+
+  @Override
+  public boolean isRejection() {
+    return true;
+  }
+
+  @Override
+  public BrokerRejection getRejection() {
+    return rejection;
+  }
+
+  @Override
+  public String toString() {
+    return "BrokerRejectionResponse{" + "rejection=" + rejection + '}';
+  }
 }
