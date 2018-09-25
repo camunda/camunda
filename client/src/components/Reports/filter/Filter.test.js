@@ -202,3 +202,30 @@ it('should show the number of process instances in the current Filter', () => {
 
   expect(node).toIncludeText('12 instances in current filter');
 });
+
+it('should remove flow node and variable filter after changing ProcDef', async () => {
+  const data = [
+    {
+      data: 'foo',
+      type: 'bar'
+    },
+    {
+      data: 'foo',
+      type: 'executedFlowNodes'
+    },
+    {
+      data: 'foo',
+      type: 'variable'
+    }
+  ];
+  const spy = jest.fn();
+  const node = mount(
+    <Filter data={data} processDefinitionKey="key" processDefinitionVersion="1" onChange={spy} />
+  );
+
+  node.setProps({
+    processDefinitionKey: 'other key'
+  });
+
+  expect(spy).toHaveBeenCalledWith({filter: [{data: 'foo', type: 'bar'}]});
+});

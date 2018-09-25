@@ -156,9 +156,6 @@ export default withErrorHandling(
         updates.processDefinitionKey || updates.processDefinitionVersion;
       if (processDefinitionWasUpdated) {
         data.configuration = {...data.configuration, excludedColumns: [], targetValue: {}};
-        data.filter = data.filter.filter(
-          ({type}) => type !== 'executedFlowNodes' && type !== 'variable'
-        );
         data.processPart = null;
 
         if (data.groupBy && data.groupBy.type === 'variable') {

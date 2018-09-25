@@ -17,6 +17,19 @@ export default class Filter extends React.Component {
     };
   }
 
+  componentDidUpdate({processDefinitionKey, processDefinitionVersion}) {
+    if (
+      this.props.processDefinitionKey !== processDefinitionKey ||
+      this.props.processDefinitionVersion !== processDefinitionVersion
+    ) {
+      this.props.onChange({
+        filter: this.props.data.filter(
+          ({type}) => type !== 'executedFlowNodes' && type !== 'variable'
+        )
+      });
+    }
+  }
+
   openNewFilterModal = type => evt => {
     this.setState({newFilterType: type});
   };

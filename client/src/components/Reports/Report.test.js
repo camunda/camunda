@@ -337,45 +337,6 @@ it('should not show a csv download button when report is not a table', () => {
 });
 
 describe('edit mode', async () => {
-  it('should remove flow node and variable filter after changing ProcDef', async () => {
-    props.match.params.viewMode = 'edit';
-    const node = await mount(shallow(<Report {...props} />).get(0));
-
-    node.setState(prevState => ({
-      loaded: true,
-      data: {
-        ...node.instance().initializeReport(),
-        filter: [
-          {
-            data: 'foo',
-            type: 'bar'
-          },
-          {
-            data: 'foo',
-            type: 'executedFlowNodes'
-          },
-          {
-            data: 'foo',
-            type: 'variable'
-          }
-        ],
-        view: {
-          operation: 'operation'
-        },
-        groupBy: {
-          type: 'type'
-        },
-        visualization: 'visualization'
-      }
-    }));
-
-    await node.instance().updateReport({processDefinitionKey: 'foo'});
-
-    expect(node.state().data.filter.length).toBe(1);
-    expect(node.state().data.filter[0].data).toBe('foo');
-    expect(node.state().data.filter[0].type).toBe('bar');
-  });
-
   it('should add isInvalid prop to the name input is name is empty', async () => {
     props.match.params.viewMode = 'edit';
     const node = await mount(shallow(<Report {...props} />).get(0));
