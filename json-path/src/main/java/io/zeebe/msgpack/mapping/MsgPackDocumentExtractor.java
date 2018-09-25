@@ -84,7 +84,7 @@ public final class MsgPackDocumentExtractor {
   private final MsgPackTraverser traverser = new MsgPackTraverser();
   private final MsgPackQueryExecutor queryExecutor = new MsgPackQueryExecutor();
 
-  public MsgPackDiff extract(DirectBuffer document, Mapping... mappings) {
+  public MsgPackDiff extract(DirectBuffer document, boolean strictMode, Mapping... mappings) {
     diff.init(mappings, document);
     traverser.wrap(document, 0, document.capacity());
 
@@ -95,9 +95,20 @@ public final class MsgPackDocumentExtractor {
     for (int i = 0; i < mappings.length; i++) {
 
       final Mapping mapping = mappings[i];
-      executeLeafMapping(mapping.getSource());
-      diff.setResultOffset(i, queryExecutor.currentResultPosition());
-      diff.setResultLength(i, queryExecutor.currentResultLength());
+      executeLeafMapping(mapping.getSource(), strictMode);
+
+      if (queryExecutor.numResults() > 0) {
+        if (mapping.mapsToRootPath()
+            && !queryExecutor.isCurrentResultAMap(document)
+            && !strictMode) {
+          diff.setEmptyMapResult(i);
+        } else {
+          diff.setResult(
+              i, queryExecutor.currentResultPosition(), queryExecutor.currentResultLength());
+        }
+      } else {
+        diff.setNullResult(i);
+      }
     }
 
     return diff;
@@ -109,7 +120,7 @@ public final class MsgPackDocumentExtractor {
    *
    * @param jsonPathQuery the query which should be executed
    */
-  private void executeLeafMapping(JsonPathQuery jsonPathQuery) {
+  private void executeLeafMapping(JsonPathQuery jsonPathQuery, boolean strictMode) {
     queryExecutor.init(jsonPathQuery.getFilters(), jsonPathQuery.getFilterInstances());
 
     traverser.reset();
@@ -119,13 +130,18 @@ public final class MsgPackDocumentExtractor {
       queryExecutor.moveToResult(0);
     } else if (queryExecutor.numResults() == 0) {
       final DirectBuffer expression = jsonPathQuery.getExpression();
-      throw new MappingException(
-          String.format(
-              EXCEPTION_MSG_MAPPING_DOES_NOT_MATCH,
-              expression.getStringWithoutLengthUtf8(0, expression.capacity())));
+      if (strictMode) {
+        throw new MappingException(
+            String.format(
+                EXCEPTION_MSG_MAPPING_DOES_NOT_MATCH,
+                expression.getStringWithoutLengthUtf8(0, expression.capacity())));
+      }
     } else {
-      throw new IllegalStateException(EXCEPTION_MSG_MAPPING_HAS_MORE_THAN_ONE_MATCHING_SOURCE);
+      if (strictMode) {
+        throw new IllegalStateException(EXCEPTION_MSG_MAPPING_HAS_MORE_THAN_ONE_MATCHING_SOURCE);
+      } else {
+        queryExecutor.moveToResult(0);
+      }
     }
-    traverser.reset();
   }
 }

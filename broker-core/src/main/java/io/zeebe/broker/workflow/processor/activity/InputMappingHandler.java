@@ -48,7 +48,7 @@ public class InputMappingHandler implements BpmnStepHandler<ExecutableFlowNode> 
     if (inputMappings.length > 0) {
       try {
         payloadMergeTool.reset();
-        payloadMergeTool.mergeDocument(sourcePayload, inputMappings);
+        payloadMergeTool.mergeDocumentStrictly(sourcePayload, inputMappings);
 
         final DirectBuffer result = payloadMergeTool.writeResultToBuffer();
         activityEvent.setPayload(result);

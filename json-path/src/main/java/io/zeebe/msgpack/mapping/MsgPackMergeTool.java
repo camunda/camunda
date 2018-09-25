@@ -56,11 +56,27 @@ public class MsgPackMergeTool {
     currentTree.clear();
   }
 
+  /**
+   * Throws no mapping exceptions. Assumes default values in case a mapping has ambiguous results.
+   */
   public void mergeDocument(DirectBuffer document, Mapping... mappings) {
+    mergeDocument(document, false, mappings);
+  }
+
+  /**
+   * Throws exceptions on ambiguous mapping results
+   *
+   * @throws MappingException in case a mapping has ambiguous results
+   */
+  public void mergeDocumentStrictly(DirectBuffer document, Mapping... mappings) {
+    mergeDocument(document, true, mappings);
+  }
+
+  private void mergeDocument(DirectBuffer document, boolean strictMode, Mapping... mappings) {
     EnsureUtil.ensureNotNull("document", document);
 
     if (mappings != null && mappings.length > 0) {
-      final MsgPackDiff diff = documentExtractor.extract(document, mappings);
+      final MsgPackDiff diff = documentExtractor.extract(document, strictMode, mappings);
       diff.mergeInto(currentTree);
     } else {
       final MsgPackDiff diff = documentIndexer.index(document);

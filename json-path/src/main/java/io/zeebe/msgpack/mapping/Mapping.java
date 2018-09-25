@@ -50,6 +50,10 @@ public class Mapping {
     return type;
   }
 
+  public boolean mapsToRootPath() {
+    return targetPointer.getPathElements().length == 1;
+  }
+
   @Override
   public String toString() {
     return String.format(

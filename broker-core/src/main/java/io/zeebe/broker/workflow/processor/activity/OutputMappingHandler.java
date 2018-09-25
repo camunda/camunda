@@ -62,7 +62,7 @@ public class OutputMappingHandler implements BpmnStepHandler<ExecutableFlowNode>
       final DirectBuffer jobPayload = activityEvent.getPayload();
 
       try {
-        payloadMergeTool.mergeDocument(jobPayload, outputMappings);
+        payloadMergeTool.mergeDocumentStrictly(jobPayload, outputMappings);
         final DirectBuffer result = payloadMergeTool.writeResultToBuffer();
 
         activityEvent.setPayload(result);
