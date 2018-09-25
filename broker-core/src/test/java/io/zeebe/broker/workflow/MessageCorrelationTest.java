@@ -18,8 +18,6 @@
 package io.zeebe.broker.workflow;
 
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setPartitionCount;
-import static io.zeebe.broker.test.MsgPackUtil.JSON_MAPPER;
-import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_MAPPER;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_ACTIVITY_ID;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_INSTANCE_KEY;
@@ -45,6 +43,7 @@ import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
 import io.zeebe.test.broker.protocol.clientapi.TestPartitionClient;
+import io.zeebe.test.util.MsgPackUtil;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
@@ -261,8 +260,7 @@ public class MessageCorrelationTest {
         .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "receive-message");
 
     final byte[] payload = (byte[]) event.value().get("payload");
-    assertThat(MSGPACK_MAPPER.readTree(payload))
-        .isEqualTo(JSON_MAPPER.readTree("{'orderId':'order-123', 'foo':'bar'}"));
+    MsgPackUtil.assertEquality(payload, "{'orderId':'order-123', 'foo':'bar'}");
   }
 
   @Test
@@ -285,8 +283,7 @@ public class MessageCorrelationTest {
         .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "receive-message");
 
     final byte[] payload = (byte[]) event.value().get("payload");
-    assertThat(MSGPACK_MAPPER.readTree(payload))
-        .isEqualTo(JSON_MAPPER.readTree("{'orderId':'order-123', 'foo':'bar'}"));
+    MsgPackUtil.assertEquality(payload, "{'orderId':'order-123', 'foo':'bar'}");
   }
 
   @Test
@@ -345,8 +342,7 @@ public class MessageCorrelationTest {
             "receive-message", WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     final byte[] payload = (byte[]) event.value().get("payload");
-    assertThat(MSGPACK_MAPPER.readTree(payload))
-        .isEqualTo(JSON_MAPPER.readTree("{'orderId':'order-123', 'nr':'second'}"));
+    MsgPackUtil.assertEquality(payload, "{'orderId':'order-123', 'nr':'second'}");
   }
 
   @Test
@@ -366,15 +362,13 @@ public class MessageCorrelationTest {
         testClient.receiveFirstWorkflowInstanceEvent(
             workflowInstanceKey1, WorkflowInstanceIntent.ELEMENT_COMPLETED);
     final byte[] payload1 = (byte[]) catchEventOccurred1.value().get("payload");
-    assertThat(MSGPACK_MAPPER.readTree(payload1))
-        .isEqualTo(JSON_MAPPER.readTree("{'orderId':'order-123', 'foo':'bar'}"));
+    MsgPackUtil.assertEquality(payload1, "{'orderId':'order-123', 'foo':'bar'}");
 
     final SubscribedRecord catchEventOccurred2 =
         testClient.receiveFirstWorkflowInstanceEvent(
             workflowInstanceKey2, WorkflowInstanceIntent.ELEMENT_COMPLETED);
     final byte[] payload2 = (byte[]) catchEventOccurred2.value().get("payload");
-    assertThat(MSGPACK_MAPPER.readTree(payload2))
-        .isEqualTo(JSON_MAPPER.readTree("{'orderId':'order-456', 'foo':'baz'}"));
+    MsgPackUtil.assertEquality(payload2, "{'orderId':'order-456', 'foo':'baz'}");
   }
 
   @Test

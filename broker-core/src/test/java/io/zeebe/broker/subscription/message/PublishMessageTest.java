@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.broker.subscription.message.processor.MessageStreamProcessor;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.broker.test.MsgPackUtil;
+import io.zeebe.broker.test.MsgPackConstants;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -98,12 +98,12 @@ public class PublishMessageTest {
             .put("name", "order canceled")
             .put("correlationKey", "order-123")
             .put("timeToLive", 1_000)
-            .put("payload", MsgPackUtil.MSGPACK_PAYLOAD)
+            .put("payload", MsgPackConstants.MSGPACK_PAYLOAD)
             .done()
             .sendAndAwait();
 
     assertThat(response.intent()).isEqualTo(MessageIntent.PUBLISHED);
-    assertThat(response.getValue()).contains(entry("payload", MsgPackUtil.MSGPACK_PAYLOAD));
+    assertThat(response.getValue()).contains(entry("payload", MsgPackConstants.MSGPACK_PAYLOAD));
   }
 
   @Test

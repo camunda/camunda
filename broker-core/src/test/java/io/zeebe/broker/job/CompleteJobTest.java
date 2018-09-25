@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.broker.test.MsgPackUtil;
+import io.zeebe.broker.test.MsgPackConstants;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.RecordType;
@@ -109,14 +109,14 @@ public class CompleteJobTest {
     final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
 
     // when
-    subscribedEvent.value().put("payload", MsgPackUtil.MSGPACK_PAYLOAD);
+    subscribedEvent.value().put("payload", MsgPackConstants.MSGPACK_PAYLOAD);
     final ExecuteCommandResponse response =
         completeJob(subscribedEvent.key(), subscribedEvent.value());
 
     // then
     assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
     assertThat(response.intent()).isEqualTo(JobIntent.COMPLETED);
-    assertThat(response.getValue()).contains(entry("payload", MsgPackUtil.MSGPACK_PAYLOAD));
+    assertThat(response.getValue()).contains(entry("payload", MsgPackConstants.MSGPACK_PAYLOAD));
   }
 
   @Test

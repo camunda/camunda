@@ -17,9 +17,7 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.broker.test.MsgPackUtil.JSON_MAPPER;
-import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_MAPPER;
-import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_PAYLOAD;
+import static io.zeebe.broker.test.MsgPackConstants.MSGPACK_PAYLOAD;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
@@ -36,6 +34,7 @@ import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
 import io.zeebe.test.broker.protocol.clientapi.TestPartitionClient;
+import io.zeebe.test.util.MsgPackUtil;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -83,7 +82,7 @@ public class UpdatePayloadTest {
             activityInstanceEvent.position(),
             workflowInstanceKey,
             activityInstanceEvent.key(),
-            MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'foo':'bar'}")));
+            MsgPackUtil.asMsgPack("{'foo':'bar'}"));
 
     // then
     assertThat(response.intent()).isEqualTo(WorkflowInstanceIntent.PAYLOAD_UPDATED);
@@ -101,7 +100,7 @@ public class UpdatePayloadTest {
 
     final byte[] payload = (byte[]) updatedEvent.value().get("payload");
 
-    assertThat(MSGPACK_MAPPER.readTree(payload)).isEqualTo(JSON_MAPPER.readTree("{'foo':'bar'}"));
+    MsgPackUtil.assertEquality(payload, "{'foo':'bar'}");
   }
 
   @Test
@@ -170,7 +169,7 @@ public class UpdatePayloadTest {
         activityInstanceEvent.position(),
         workflowInstanceKey,
         activityInstanceEvent.key(),
-        MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'b':'wf'}")));
+        MsgPackUtil.asMsgPack("{'b':'wf'}"));
 
     testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.PAYLOAD_UPDATED);
 
@@ -180,8 +179,7 @@ public class UpdatePayloadTest {
     final SubscribedRecord activityCompletedEvent = waitForActivityCompletedEvent();
 
     final byte[] payload = (byte[]) activityCompletedEvent.value().get("payload");
-    assertThat(MSGPACK_MAPPER.readTree(payload))
-        .isEqualTo(JSON_MAPPER.readTree("{'obj':{'testAttr':'test'}, 'b':'wf'}"));
+    MsgPackUtil.assertEquality(payload, "{'obj':{'testAttr':'test'}, 'b':'wf'}");
   }
 
   @Test
@@ -205,7 +203,7 @@ public class UpdatePayloadTest {
         catchEventEntered.position(),
         workflowInstanceKey,
         catchEventEntered.key(),
-        MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'id':'123', 'x': 1}")));
+        MsgPackUtil.asMsgPack("{'id':'123', 'x': 1}"));
 
     testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.PAYLOAD_UPDATED);
 
@@ -216,8 +214,7 @@ public class UpdatePayloadTest {
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     final byte[] payload = (byte[]) catchEventOccurred.value().get("payload");
-    assertThat(MSGPACK_MAPPER.readTree(payload))
-        .isEqualTo(JSON_MAPPER.readTree("{'id':'123', 'x': 1, 'y': 2}"));
+    MsgPackUtil.assertEquality(payload, "{'id':'123', 'x': 1, 'y': 2}");
   }
 
   @Test
@@ -235,7 +232,7 @@ public class UpdatePayloadTest {
                     activityInstanceEvent.position(),
                     workflowInstanceKey,
                     activityInstanceEvent.key(),
-                    MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("'foo'"))));
+                    MsgPackUtil.asMsgPack("'foo'")));
 
     // then
     assertThat(throwable).isInstanceOf(RuntimeException.class);

@@ -18,9 +18,7 @@
 package io.zeebe.broker.workflow;
 
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setPartitionCount;
-import static io.zeebe.broker.test.MsgPackUtil.JSON_MAPPER;
-import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_MAPPER;
-import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_PAYLOAD;
+import static io.zeebe.broker.test.MsgPackConstants.MSGPACK_PAYLOAD;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_ACTIVITY_ID;
 import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
 import static io.zeebe.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
@@ -49,6 +47,7 @@ import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
 import io.zeebe.test.broker.protocol.clientapi.TestPartitionClient;
+import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.util.StreamUtil;
 import java.io.IOException;
 import java.io.InputStream;
@@ -372,7 +371,7 @@ public class CreateWorkflowInstanceTest {
     testClient.deploy(Bpmn.createExecutableProcess("process").startEvent().endEvent().done());
 
     // when
-    final byte[] invalidPayload = MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("'foo'"));
+    final byte[] invalidPayload = MsgPackUtil.asMsgPack("'foo'");
 
     final Throwable throwable =
         catchThrowable(
