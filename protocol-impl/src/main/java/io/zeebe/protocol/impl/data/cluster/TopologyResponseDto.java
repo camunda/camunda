@@ -1,21 +1,19 @@
 /*
- * Zeebe Broker Core
  * Copyright © 2017 camunda services GmbH (info@camunda.com)
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-package io.zeebe.broker.clustering.base.topology;
+package io.zeebe.protocol.impl.data.cluster;
 
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.ArrayProperty;
@@ -23,15 +21,15 @@ import io.zeebe.msgpack.property.EnumProperty;
 import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import io.zeebe.msgpack.value.ValueArray;
-import io.zeebe.raft.state.RaftState;
+import io.zeebe.protocol.PartitionState;
 import org.agrona.DirectBuffer;
 
 /** Message pack formatted DTO of topology; can be requested through client api. */
-public class TopologyDto extends UnpackedObject {
+public class TopologyResponseDto extends UnpackedObject {
   private final ArrayProperty<BrokerDto> brokersProp =
       new ArrayProperty<>("brokers", new BrokerDto());
 
-  public TopologyDto() {
+  public TopologyResponseDto() {
     this.declareProperty(brokersProp);
   }
 
@@ -87,7 +85,8 @@ public class TopologyDto extends UnpackedObject {
   }
 
   public static class PartitionDto extends UnpackedObject {
-    private final EnumProperty<RaftState> stateProp = new EnumProperty<>("state", RaftState.class);
+    private final EnumProperty<PartitionState> stateProp =
+        new EnumProperty<>("state", PartitionState.class);
     private final IntegerProperty partitionIdProp = new IntegerProperty("partitionId");
     private final IntegerProperty replicationFactorProp = new IntegerProperty("replicationFactor");
 
@@ -97,17 +96,26 @@ public class TopologyDto extends UnpackedObject {
           .declareProperty(replicationFactorProp);
     }
 
-    public RaftState getState() {
+    public PartitionState getState() {
       return stateProp.getValue();
     }
 
-    public PartitionDto setState(RaftState eventType) {
-      this.stateProp.setValue(eventType);
+    public PartitionDto setState(PartitionState state) {
+      this.stateProp.setValue(state);
       return this;
+    }
+
+    public boolean isLeader() {
+      return getState() == PartitionState.LEADER;
     }
 
     public int getPartitionId() {
       return partitionIdProp.getValue();
+    }
+
+    public PartitionDto setPartitionId(final int partitionId) {
+      partitionIdProp.setValue(partitionId);
+      return this;
     }
 
     public int getReplicationFactor() {
@@ -116,11 +124,6 @@ public class TopologyDto extends UnpackedObject {
 
     public PartitionDto setReplicationFactor(int replicationFactor) {
       replicationFactorProp.setValue(replicationFactor);
-      return this;
-    }
-
-    public PartitionDto setPartitionId(final int partitionId) {
-      partitionIdProp.setValue(partitionId);
       return this;
     }
   }

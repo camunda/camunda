@@ -17,8 +17,8 @@
  */
 package io.zeebe.broker.workflow.state;
 
-import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.broker.workflow.processor.WorkflowInstanceLifecycle;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.nio.ByteOrder;
 import org.agrona.DirectBuffer;

@@ -18,7 +18,6 @@
 package io.zeebe.broker.workflow.processor.gateway;
 
 import io.zeebe.broker.incident.data.ErrorType;
-import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.broker.workflow.model.ExecutableExclusiveGateway;
 import io.zeebe.broker.workflow.model.ExecutableSequenceFlow;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
@@ -27,6 +26,7 @@ import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.msgpack.el.CompiledJsonCondition;
 import io.zeebe.msgpack.el.JsonConditionException;
 import io.zeebe.msgpack.el.JsonConditionInterpreter;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.List;
 import org.agrona.DirectBuffer;

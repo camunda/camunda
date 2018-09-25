@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.test;
 
-import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.impl.record.RecordMetadata;
 
 public class WrittenEvent<E> {
   final long key;

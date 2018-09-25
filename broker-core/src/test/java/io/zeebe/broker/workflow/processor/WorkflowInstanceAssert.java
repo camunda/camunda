@@ -18,7 +18,7 @@
 package io.zeebe.broker.workflow.processor;
 
 import io.zeebe.broker.logstreams.processor.TypedRecord;
-import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;

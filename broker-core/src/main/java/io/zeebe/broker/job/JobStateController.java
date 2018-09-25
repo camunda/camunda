@@ -19,12 +19,12 @@ package io.zeebe.broker.job;
 
 import static io.zeebe.util.StringUtil.getBytes;
 
-import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.util.KeyStateController;
 import io.zeebe.logstreams.rocksdb.ZbRocksDb;
 import io.zeebe.logstreams.rocksdb.ZbRocksDb.IteratorControl;
 import io.zeebe.logstreams.rocksdb.ZbWriteBatch;
+import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.util.buffer.BufferWriter;
 import java.io.File;
 import java.time.Instant;

@@ -18,26 +18,17 @@
 package io.zeebe.broker.exporter.stream;
 
 import io.zeebe.broker.exporter.record.RecordImpl;
-import io.zeebe.broker.exporter.record.value.DeploymentRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.IncidentRecordValueImpl;
-import io.zeebe.broker.exporter.record.value.JobRecordValueImpl;
-import io.zeebe.broker.exporter.record.value.MessageRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.MessageSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.RaftRecordValueImpl;
-import io.zeebe.broker.exporter.record.value.WorkflowInstanceRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.WorkflowInstanceSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.deployment.DeployedWorkflowImpl;
 import io.zeebe.broker.exporter.record.value.deployment.DeploymentResourceImpl;
 import io.zeebe.broker.exporter.record.value.job.HeadersImpl;
 import io.zeebe.broker.exporter.record.value.raft.RaftMemberImpl;
 import io.zeebe.broker.incident.data.IncidentRecord;
-import io.zeebe.broker.job.data.JobHeaders;
-import io.zeebe.broker.job.data.JobRecord;
-import io.zeebe.broker.subscription.message.data.MessageRecord;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
-import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
-import io.zeebe.broker.workflow.deployment.data.DeploymentRecord;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.RecordMetadata;
 import io.zeebe.exporter.record.RecordValue;
@@ -56,6 +47,12 @@ import io.zeebe.exporter.record.value.raft.RaftMember;
 import io.zeebe.gateway.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.deployment.Workflow;
+import io.zeebe.protocol.impl.record.value.job.JobHeaders;
+import io.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.raft.event.RaftConfigurationEvent;
 import io.zeebe.raft.event.RaftConfigurationEventMember;
 import io.zeebe.util.buffer.BufferUtil;
@@ -161,7 +158,7 @@ public class ExporterRecordMapper {
       deadline = null;
     }
 
-    return new JobRecordValueImpl(
+    return new io.zeebe.broker.exporter.record.value.JobRecordValueImpl(
         objectMapper,
         asJson(record.getPayload()),
         asString(record.getType()),
@@ -179,7 +176,7 @@ public class ExporterRecordMapper {
 
     event.readValue(record);
 
-    for (final io.zeebe.broker.workflow.deployment.data.Workflow workflow : record.workflows()) {
+    for (final Workflow workflow : record.workflows()) {
       deployedWorkflows.add(
           new DeployedWorkflowImpl(
               asString(workflow.getBpmnProcessId()),
@@ -188,7 +185,7 @@ public class ExporterRecordMapper {
               workflow.getVersion()));
     }
 
-    for (final io.zeebe.broker.workflow.deployment.data.DeploymentResource resource :
+    for (final io.zeebe.protocol.impl.record.value.deployment.DeploymentResource resource :
         record.resources()) {
       resources.add(
           new DeploymentResourceImpl(
@@ -197,7 +194,8 @@ public class ExporterRecordMapper {
               asString(resource.getResourceName())));
     }
 
-    return new DeploymentRecordValueImpl(objectMapper, deployedWorkflows, resources);
+    return new io.zeebe.broker.exporter.record.value.DeploymentRecordValueImpl(
+        objectMapper, deployedWorkflows, resources);
   }
 
   private IncidentRecordValue ofIncidentRecord(final LoggedEvent event) {
@@ -220,7 +218,7 @@ public class ExporterRecordMapper {
     final MessageRecord record = new MessageRecord();
     event.readValue(record);
 
-    return new MessageRecordValueImpl(
+    return new io.zeebe.broker.exporter.record.value.MessageRecordValueImpl(
         objectMapper,
         asJson(record.getPayload()),
         asString(record.getName()),
@@ -246,7 +244,7 @@ public class ExporterRecordMapper {
     final WorkflowInstanceRecord record = new WorkflowInstanceRecord();
     event.readValue(record);
 
-    return new WorkflowInstanceRecordValueImpl(
+    return new io.zeebe.broker.exporter.record.value.WorkflowInstanceRecordValueImpl(
         objectMapper,
         asJson(record.getPayload()),
         asString(record.getBpmnProcessId()),
@@ -291,7 +289,7 @@ public class ExporterRecordMapper {
   }
 
   private ResourceType asResourceType(
-      final io.zeebe.broker.workflow.deployment.data.ResourceType resourceType) {
+      final io.zeebe.protocol.impl.record.value.deployment.ResourceType resourceType) {
     switch (resourceType) {
       case BPMN_XML:
         return ResourceType.BPMN_XML;

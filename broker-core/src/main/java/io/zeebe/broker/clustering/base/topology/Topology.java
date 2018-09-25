@@ -18,7 +18,9 @@
 package io.zeebe.broker.clustering.base.topology;
 
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.clustering.base.topology.TopologyDto.BrokerDto;
+import io.zeebe.protocol.PartitionState;
+import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto;
+import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto.BrokerDto;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.transport.SocketAddress;
 import java.util.ArrayList;
@@ -226,8 +228,8 @@ public class Topology implements ReadableTopology {
   }
 
   @Override
-  public TopologyDto asDto() {
-    final TopologyDto dto = new TopologyDto();
+  public TopologyResponseDto asDto() {
+    final TopologyResponseDto dto = new TopologyResponseDto();
 
     for (NodeInfo member : members) {
       final BrokerDto broker = dto.brokers().add();
@@ -244,7 +246,7 @@ public class Topology implements ReadableTopology {
             .add()
             .setPartitionId(partition.getPartitionId())
             .setReplicationFactor(partition.getReplicationFactor())
-            .setState(RaftState.LEADER);
+            .setState(PartitionState.LEADER);
       }
 
       for (PartitionInfo partition : member.getFollowers()) {
@@ -253,7 +255,7 @@ public class Topology implements ReadableTopology {
             .add()
             .setPartitionId(partition.getPartitionId())
             .setReplicationFactor(partition.getReplicationFactor())
-            .setState(RaftState.FOLLOWER);
+            .setState(PartitionState.FOLLOWER);
       }
     }
 

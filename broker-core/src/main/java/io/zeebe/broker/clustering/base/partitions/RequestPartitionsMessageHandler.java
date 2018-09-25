@@ -20,14 +20,15 @@ package io.zeebe.broker.clustering.base.partitions;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.transport.controlmessage.AbstractControlMessageHandler;
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.impl.data.cluster.PartitionsResponseDto;
+import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.sched.ActorControl;
 import org.agrona.DirectBuffer;
 
 public class RequestPartitionsMessageHandler extends AbstractControlMessageHandler {
 
-  private final PartitionsResponse response;
+  private final PartitionsResponseDto response;
 
   public RequestPartitionsMessageHandler(
       final ServerOutput serverOutput, final ClusterCfg clusterCfg) {
@@ -52,8 +53,8 @@ public class RequestPartitionsMessageHandler extends AbstractControlMessageHandl
     sendResponse(actor, requestStreamId, requestId, response);
   }
 
-  private PartitionsResponse createResponse(ClusterCfg clusterCfg) {
-    final PartitionsResponse response = new PartitionsResponse();
+  private PartitionsResponseDto createResponse(ClusterCfg clusterCfg) {
+    final PartitionsResponseDto response = new PartitionsResponseDto();
 
     for (int i = 0; i < clusterCfg.getPartitionsCount(); i++) {
       response.addPartition(i);

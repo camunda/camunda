@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.workflow.model;
 
-import io.zeebe.broker.job.data.JobRecord;
+import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 

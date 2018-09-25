@@ -23,7 +23,6 @@ import static io.zeebe.util.EnsureUtil.ensureNotNull;
 import static io.zeebe.util.EnsureUtil.ensureNotNullOrEmpty;
 
 import io.zeebe.broker.job.JobStateController;
-import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.job.old.JobSubscriptions.SubscriptionIterator;
 import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
 import io.zeebe.broker.logstreams.processor.TypedCommandWriter;
@@ -32,6 +31,7 @@ import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.channel.ChannelSubscription;

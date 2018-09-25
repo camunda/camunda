@@ -98,6 +98,12 @@
 
       <dependency>
         <groupId>io.zeebe</groupId>
+        <artifactId>zb-protocol-impl</artifactId>
+        <version>${project.version}</version>
+      </dependency>
+
+      <dependency>
+        <groupId>io.zeebe</groupId>
         <artifactId>zb-raft</artifactId>
         <version>${project.version}</version>
       </dependency>

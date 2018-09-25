@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.clustering.base.topology;
 
+import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.util.function.Function;
 
@@ -35,7 +36,7 @@ public interface TopologyManager {
   /** Can be used to query the topology. */
   <R> ActorFuture<R> query(Function<ReadableTopology, R> query);
 
-  ActorFuture<TopologyDto> getTopologyDto();
+  ActorFuture<TopologyResponseDto> getTopologyDto();
 
   void removeTopologyMemberListener(TopologyMemberListener listener);
 

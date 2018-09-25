@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.protocol.impl;
+package io.zeebe.protocol.impl.record;
 
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;

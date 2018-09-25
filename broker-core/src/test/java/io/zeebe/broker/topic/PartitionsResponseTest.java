@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import io.zeebe.broker.clustering.base.partitions.PartitionsResponse;
+import io.zeebe.protocol.impl.data.cluster.PartitionsResponseDto;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.io.DirectBufferInputStream;
 import org.junit.Test;
@@ -32,7 +32,7 @@ public class PartitionsResponseTest {
   @Test
   public void shouldEncodePartitions() throws Exception {
     // given
-    final PartitionsResponse response = new PartitionsResponse();
+    final PartitionsResponseDto response = new PartitionsResponseDto();
 
     response.addPartition(1);
     response.addPartition(2);

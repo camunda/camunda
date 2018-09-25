@@ -1,21 +1,19 @@
 /*
- * Zeebe Broker Core
  * Copyright © 2017 camunda services GmbH (info@camunda.com)
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-package io.zeebe.broker.job.data;
+package io.zeebe.protocol.impl.record.value.job;
 
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.DocumentProperty;
@@ -32,15 +30,20 @@ import org.agrona.concurrent.UnsafeBuffer;
 public class JobRecord extends UnpackedObject {
   public static final DirectBuffer NO_HEADERS = new UnsafeBuffer(MsgPackHelper.EMTPY_OBJECT);
 
+  public static final String RETRIES = "retries";
+  public static final String TYPE = "type";
+  public static final String CUSTOM_HEADERS = "customHeaders";
+  public static final String PAYLOAD = "payload";
+
   private final LongProperty deadlineProp =
       new LongProperty("deadline", Protocol.INSTANT_NULL_VALUE);
   private final StringProperty workerProp = new StringProperty("worker", "");
-  private final IntegerProperty retriesProp = new IntegerProperty("retries", -1);
-  private final StringProperty typeProp = new StringProperty("type");
+  private final IntegerProperty retriesProp = new IntegerProperty(RETRIES, -1);
+  private final StringProperty typeProp = new StringProperty(TYPE);
   private final ObjectProperty<JobHeaders> headersProp =
       new ObjectProperty<>("headers", new JobHeaders());
-  private final PackedProperty customHeadersProp = new PackedProperty("customHeaders", NO_HEADERS);
-  private final DocumentProperty payloadProp = new DocumentProperty("payload");
+  private final PackedProperty customHeadersProp = new PackedProperty(CUSTOM_HEADERS, NO_HEADERS);
+  private final DocumentProperty payloadProp = new DocumentProperty(PAYLOAD);
 
   public JobRecord() {
     this.declareProperty(deadlineProp)

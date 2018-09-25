@@ -17,7 +17,10 @@
  */
 package io.zeebe.broker.clustering.base.topology;
 
-import static io.zeebe.broker.clustering.base.gossip.GossipCustomEventEncoding.*;
+import static io.zeebe.broker.clustering.base.gossip.GossipCustomEventEncoding.readNodeInfo;
+import static io.zeebe.broker.clustering.base.gossip.GossipCustomEventEncoding.readPartitions;
+import static io.zeebe.broker.clustering.base.gossip.GossipCustomEventEncoding.writeNodeInfo;
+import static io.zeebe.broker.clustering.base.gossip.GossipCustomEventEncoding.writePartitions;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.gossip.Gossip;
@@ -26,6 +29,7 @@ import io.zeebe.gossip.GossipMembershipListener;
 import io.zeebe.gossip.GossipSyncRequestHandler;
 import io.zeebe.gossip.dissemination.GossipSyncRequest;
 import io.zeebe.gossip.membership.Member;
+import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftStateListener;
 import io.zeebe.raft.state.RaftState;
@@ -238,7 +242,7 @@ public class TopologyManagerImpl extends Actor implements TopologyManager, RaftS
   }
 
   @Override
-  public ActorFuture<TopologyDto> getTopologyDto() {
+  public ActorFuture<TopologyResponseDto> getTopologyDto() {
     return actor.call(topology::asDto);
   }
 

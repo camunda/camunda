@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.benchmarks.msgpack;
 
-import io.zeebe.broker.job.data.JobRecord;
+import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import java.util.concurrent.TimeUnit;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;

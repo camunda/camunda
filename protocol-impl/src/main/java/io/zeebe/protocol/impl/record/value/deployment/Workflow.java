@@ -1,25 +1,23 @@
 /*
- * Zeebe Broker Core
  * Copyright © 2017 camunda services GmbH (info@camunda.com)
  *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Affero General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
  *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Affero General Public License for more details.
+ *     http://www.apache.org/licenses/LICENSE-2.0
  *
- * You should have received a copy of the GNU Affero General Public License
- * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
  */
-package io.zeebe.broker.workflow.deployment.data;
+package io.zeebe.protocol.impl.record.value.deployment;
 
-import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_KEY;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_VERSION;
+import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
+import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_KEY;
+import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_VERSION;
 
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.IntegerProperty;
@@ -45,8 +43,14 @@ public class Workflow extends UnpackedObject {
     return bpmnProcessIdProp.getValue();
   }
 
+  public Workflow setBpmnProcessId(String bpmnProcessId) {
+    this.bpmnProcessIdProp.setValue(bpmnProcessId);
+    return this;
+  }
+
   public Workflow setBpmnProcessId(DirectBuffer bpmnProcessId) {
-    return setBpmnProcessId(bpmnProcessId, 0, bpmnProcessId.capacity());
+    this.bpmnProcessIdProp.setValue(bpmnProcessId);
+    return this;
   }
 
   public Workflow setBpmnProcessId(DirectBuffer bpmnProcessId, int offset, int length) {
@@ -74,6 +78,11 @@ public class Workflow extends UnpackedObject {
 
   public DirectBuffer getResourceName() {
     return resourceNameProp.getValue();
+  }
+
+  public Workflow setResourceName(String resourceName) {
+    this.resourceNameProp.setValue(resourceName);
+    return this;
   }
 
   public Workflow setResourceName(DirectBuffer resourceName) {
