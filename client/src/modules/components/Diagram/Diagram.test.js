@@ -49,6 +49,7 @@ describe('Diagram', () => {
     expect(nodeInstance.Viewer).toBe(null);
     expect(nodeInstance.containerNode).toBe(null);
     expect(nodeInstance.workflowXML).toBe(null);
+    expect(nodeInstance.state.isViewerLoaded).toBe(false);
   });
 
   it('should render Diagram with controls', async () => {
@@ -73,6 +74,7 @@ describe('Diagram', () => {
     expect(DiagramControlsNode.prop('handleZoomReset')).toBe(
       nodeInstance.handleZoomReset
     );
+    expect(node.state().isViewerLoaded).toBe(true);
     expect(node).toMatchSnapshot();
   });
 
@@ -128,6 +130,29 @@ describe('Diagram', () => {
     expect(handleSelectedFlowNodeSpy).toBeCalledWith('bar', 'foo');
   });
 
+  it('should not call handleSelectedFlowNode if the Viewer is not loaded', async () => {
+    // given
+    const node = shallow(
+      <Diagram workflowId={workflowId} theme={'dark'} selectedFlowNode="foo" />
+    );
+    await flushPromises();
+    const handleSelectedFlowNodeSpy = jest.spyOn(
+      node.instance(),
+      'handleSelectedFlowNode'
+    );
+
+    // when
+    // the viewer is detached
+    node.instance().detachViewer();
+    node.update();
+
+    node.setProps({selectedFlowNode: 'bar'});
+    await flushPromises();
+
+    // then
+    expect(handleSelectedFlowNodeSpy).toHaveBeenCalledTimes(0);
+  });
+
   describe('componentDidMount', async () => {
     it('should get xml from api and initiate Viewer', async () => {
       // given
@@ -144,20 +169,6 @@ describe('Diagram', () => {
   });
 
   describe('initViewer', () => {
-    it('should detach Viewer if it exists', async () => {
-      // given
-      const node = shallow(<Diagram workflowId={workflowId} theme={'dark'} />);
-      const nodeInstance = node.instance();
-      await flushPromises();
-
-      // when
-      const {detach} = nodeInstance.Viewer;
-      nodeInstance.initViewer();
-
-      // then
-      expect(detach).toHaveBeenCalledTimes(1);
-    });
-
     it('should initiate dark BPMNViewer if theme is dark', async () => {
       // given
       const node = shallow(<Diagram workflowId={workflowId} theme={'dark'} />);
@@ -341,6 +352,24 @@ describe('Diagram', () => {
       expect(statisticsOverlaysAddSpy.mock.calls[0][0]).toEqual(
         flowNodesStatisticsOverlay
       );
+    });
+  });
+
+  describe('detachViewer', () => {
+    it('should detach Viewer if it exists', async () => {
+      // given
+      const node = shallow(<Diagram workflowId={workflowId} theme={'dark'} />);
+      const nodeInstance = node.instance();
+      await flushPromises();
+
+      // when
+      const {detach} = nodeInstance.Viewer;
+      nodeInstance.detachViewer();
+      node.update();
+
+      // then
+      expect(detach).toHaveBeenCalledTimes(1);
+      expect(node.state().isViewerLoaded).toBe(false);
     });
   });
 

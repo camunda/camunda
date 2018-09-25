@@ -74,6 +74,10 @@ class Diagram extends React.Component {
     this.workflowXML = null;
   }
 
+  state = {
+    isViewerLoaded: false
+  };
+
   async componentDidMount() {
     await this.fetchAndSetWorkflowXML();
     this.initViewer();
@@ -92,13 +96,13 @@ class Diagram extends React.Component {
 
     if (hasNewTheme || hasNewWorkflowId) {
       hasNewWorkflowId && (await this.fetchAndSetWorkflowXML());
-      return this.initViewer();
+      return this.resetViewer();
     }
 
     // In case only the selectedFlowNode changed.
     // This also means that the Viewer is already initiated so we can safely
     // call this.handleSelectedFlowNode.
-    if (hasSelectedFlowNodeChanged) {
+    if (this.state.isViewerLoaded && hasSelectedFlowNodeChanged) {
       this.handleSelectedFlowNode(
         this.props.selectedFlowNode,
         selectedFlowNode
@@ -137,7 +141,7 @@ class Diagram extends React.Component {
     if (e) {
       return console.log('Error rendering diagram:', e);
     }
-
+    this.setState({isViewerLoaded: true});
     this.handleZoomReset();
 
     // in case onFlowNodesDetailsReady callback function is provided
@@ -161,11 +165,6 @@ class Diagram extends React.Component {
   };
 
   initViewer = () => {
-    // detach Viewer if it exists
-    if (this.Viewer) {
-      this.Viewer.detach();
-    }
-
     // colors config for bpmnRenderer
     this.Viewer = new BPMNViewer({
       container: this.containerNode,
@@ -173,6 +172,21 @@ class Diagram extends React.Component {
     });
 
     this.Viewer.importXML(this.workflowXML, this.handleDiagramLoad);
+  };
+
+  detachViewer = () => {
+    // detach Viewer
+    if (this.Viewer) {
+      this.Viewer.detach();
+      this.setState({
+        isViewerLoaded: false
+      });
+    }
+  };
+
+  resetViewer = () => {
+    this.detachViewer();
+    this.initViewer();
   };
 
   containerRef = node => {

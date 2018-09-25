@@ -368,6 +368,10 @@ class Instances extends Component {
     this.props.storeStateLocally({filter: DEFAULT_FILTER});
   };
 
+  handleFlowNodeSelection = flowNodeId => {
+    this.handleFilterChange({activityId: flowNodeId});
+  };
+
   render() {
     return (
       <Fragment>
@@ -403,6 +407,11 @@ class Instances extends Component {
                       workflowId={this.state.workflow.id}
                       onFlowNodesDetailsReady={this.fetchDiagramStatistics}
                       flowNodesStatisticsOverlay={this.state.statistics}
+                      selectedFlowNode={this.state.filter.activityId}
+                      onFlowNodeSelected={this.handleFlowNodeSelection}
+                      selectableFlowNodes={this.state.activityIds.map(
+                        item => item.value
+                      )}
                     />
                   )}
                 </SplitPane.Pane.Body>

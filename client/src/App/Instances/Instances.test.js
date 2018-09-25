@@ -440,5 +440,47 @@ describe('Instances', () => {
         expect(fetchDiagramStatistics).toHaveBeenCalledTimes(1);
       });
     });
+
+    describe('selectable flow nodes', () => {
+      it('should pass the right activities to the diagram', () => {});
+
+      it('should change the filter when a node is selected in the diagram', async () => {
+        // given
+        const node = shallow(InstancesWithRunningFilter);
+
+        const handleFilterChange = jest.spyOn(
+          node.instance(),
+          'handleFilterChange'
+        );
+
+        node.instance().handleFlowNodeSelection('taskA');
+        node.update();
+
+        // then
+        expect(handleFilterChange).toHaveBeenCalledTimes(1);
+        expect(handleFilterChange.mock.calls[0][0].activityId).toEqual('taskA');
+      });
+
+      it('should pass the handler for node selection to the diagram', async () => {
+        // given
+        const node = shallow(InstancesWithRunningFilter);
+
+        // when
+        // set workflow so that we show the diagram
+        node.instance().setState({
+          workflow: workflowMock,
+          activityIds: [{value: 'a', label: 'a'}, {value: 'b', label: 'b'}]
+        });
+        // await flushPromises();
+        node.update();
+
+        const diagram = node.find(Diagram);
+
+        expect(diagram.props().onFlowNodeSelected).toBe(
+          node.instance().handleFlowNodeSelection
+        );
+        expect(diagram.props().selectableFlowNodes).toEqual(['a', 'b']);
+      });
+    });
   });
 });
