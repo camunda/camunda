@@ -11,7 +11,7 @@ export async function loadProcessDefinitionXml(processDefinitionKey, processDefi
 
 export async function loadFrequencyData(processDefinitionKey, processDefinitionVersion, filter) {
   const response = await post(
-    '/api/report/evaluate',
+    '/api/report/evaluate/single',
     createFlowNodeFrequencyReport(processDefinitionKey, processDefinitionVersion, filter)
   );
 
