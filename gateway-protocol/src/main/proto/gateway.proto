@@ -103,6 +103,5 @@ service Gateway {
   rpc CreateJob (CreateJobRequest) returns (CreateJobResponse) {
   }
   rpc CreateWorkflowInstance (CreateWorkflowInstanceRequest) returns (CreateWorkflowInstanceResponse) {
-
   }
 }

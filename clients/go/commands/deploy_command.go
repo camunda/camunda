@@ -3,6 +3,7 @@ package commands
 import (
 	"context"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
+	"github.com/zeebe-io/zeebe/clients/go/utils"
 	"io/ioutil"
 	"log"
 	"strings"
@@ -30,7 +31,7 @@ func (cmd *DeployCommand) AddResourceFile(path string) *DeployCommand {
 }
 
 func (cmd *DeployCommand) Send() (*pb.DeployWorkflowResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), RequestTimeoutInSec*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), utils.RequestTimeoutInSec*time.Second)
 	defer cancel()
 
 	return cmd.gateway.DeployWorkflow(ctx, cmd.request)
