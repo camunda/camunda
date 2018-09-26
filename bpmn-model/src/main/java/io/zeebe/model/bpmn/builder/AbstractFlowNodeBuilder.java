@@ -245,6 +245,12 @@ public abstract class AbstractFlowNodeBuilder<
     return createTarget(EndEvent.class, id).builder();
   }
 
+  public EndEventBuilder endEvent(Consumer<EndEventBuilder> builderConsumer) {
+    final EndEventBuilder builder = endEvent();
+    builderConsumer.accept(builder);
+    return builder;
+  }
+
   public ParallelGatewayBuilder parallelGateway() {
     return createTarget(ParallelGateway.class).builder();
   }

@@ -21,6 +21,7 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.BaseElement;
 import io.zeebe.model.bpmn.instance.BpmnModelElementInstance;
+import io.zeebe.model.bpmn.instance.EndEvent;
 import io.zeebe.model.bpmn.instance.EventDefinition;
 import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.zeebe.model.bpmn.instance.Message;
@@ -183,6 +184,34 @@ public class ZeebeBuilderTest {
     assertThat(mappings2.getMappings())
         .element(0)
         .matches(mapping("source2", "target2", ZeebeMappingType.PUT));
+  }
+
+  @Test
+  public void shouldBuildEndEventWithMapping() {
+    // when
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess()
+            .startEvent()
+            .endEvent(
+                b ->
+                    b.id("end")
+                        .payloadMapping("source1", "target1")
+                        .payloadMapping("source2", "target2", ZeebeMappingType.COLLECT))
+            .done();
+
+    // then
+    Bpmn.validateModel(modelInstance);
+
+    final EndEvent end = modelInstance.getModelElementById("end");
+    final ZeebePayloadMappings mappings = getExtensionElement(end, ZeebePayloadMappings.class);
+    assertThat(mappings.getMappings()).hasSize(2);
+    assertThat(mappings.getMappings())
+        .element(0)
+        .matches(mapping("source1", "target1", ZeebeMappingType.PUT));
+
+    assertThat(mappings.getMappings())
+        .element(1)
+        .matches(mapping("source2", "target2", ZeebeMappingType.COLLECT));
   }
 
   @SuppressWarnings("unchecked")

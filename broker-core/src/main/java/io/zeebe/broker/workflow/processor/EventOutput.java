@@ -21,6 +21,7 @@ import io.zeebe.broker.logstreams.processor.TypedBatchWriter;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
+import io.zeebe.broker.workflow.state.StoredRecord.Purpose;
 import io.zeebe.broker.workflow.state.WorkflowEngineState;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
@@ -86,7 +87,15 @@ public class EventOutput {
     materializedState.deferEvent(event);
   }
 
+  public void storeFinishedToken(final TypedRecord<WorkflowInstanceRecord> event) {
+    materializedState.storeFinishedToken(event);
+  }
+
   public void consumeDeferredEvent(long scopeKey, long key) {
-    materializedState.consumeDeferredEvent(scopeKey, key);
+    materializedState.consumeStoredRecord(scopeKey, key, Purpose.DEFERRED_TOKEN);
+  }
+
+  public void consumeFinishedToken(long scopeKey, long key) {
+    materializedState.consumeStoredRecord(scopeKey, key, Purpose.FINISHED_TOKEN);
   }
 }

@@ -21,6 +21,7 @@ import io.zeebe.broker.workflow.model.BpmnStep;
 import io.zeebe.broker.workflow.model.ExecutableFlowNode;
 import io.zeebe.broker.workflow.model.ExecutableSequenceFlow;
 import io.zeebe.broker.workflow.model.ExecutableWorkflow;
+import io.zeebe.broker.workflow.model.transformation.MappingCompiler;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.Activity;
@@ -32,12 +33,10 @@ import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.zeebe.model.bpmn.instance.ParallelGateway;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeMappingType;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebePayloadMappings;
 import io.zeebe.msgpack.el.CompiledJsonCondition;
 import io.zeebe.msgpack.el.JsonConditionFactory;
 import io.zeebe.msgpack.mapping.Mapping;
 import io.zeebe.msgpack.mapping.Mapping.Type;
-import io.zeebe.msgpack.mapping.MappingBuilder;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.EnumMap;
 
@@ -51,8 +50,6 @@ public class SequenceFlowHandler implements ModelElementTransformer<SequenceFlow
     TYPE_MAP.put(ZeebeMappingType.COLLECT, Type.COLLECT);
   }
 
-  private final MappingBuilder mappingBuilder = new MappingBuilder();
-
   @Override
   public Class<SequenceFlow> getType() {
     return SequenceFlow.class;
@@ -65,7 +62,7 @@ public class SequenceFlowHandler implements ModelElementTransformer<SequenceFlow
         workflow.getElementById(element.getId(), ExecutableSequenceFlow.class);
 
     compileCondition(element, sequenceFlow);
-    compilePayloadMappings(element, sequenceFlow);
+    compilePayloadMappings(element, sequenceFlow, context);
     connectWithFlowNodes(element, workflow, sequenceFlow);
     bindLifecycle(element, sequenceFlow);
   }
@@ -121,18 +118,10 @@ public class SequenceFlowHandler implements ModelElementTransformer<SequenceFlow
   }
 
   private void compilePayloadMappings(
-      final SequenceFlow element, final ExecutableSequenceFlow sequenceFlow) {
-    final ZeebePayloadMappings mappings =
-        element.getSingleExtensionElement(ZeebePayloadMappings.class);
+      SequenceFlow element, ExecutableSequenceFlow sequenceFlow, TransformContext context) {
 
-    if (mappings != null) {
-      mappings
-          .getMappings()
-          .forEach(
-              m -> mappingBuilder.mapping(m.getSource(), m.getTarget(), TYPE_MAP.get(m.getType())));
-
-      final Mapping[] compiledMappings = mappingBuilder.build();
-      sequenceFlow.setPayloadMappings(compiledMappings);
-    }
+    final MappingCompiler mappingCompiler = context.getMappingCompiler();
+    final Mapping[] mappings = mappingCompiler.compilePayloadMappings(element);
+    sequenceFlow.setPayloadMappings(mappings);
   }
 }

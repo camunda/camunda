@@ -19,6 +19,7 @@ package io.zeebe.broker.workflow.state;
 
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
+import io.zeebe.broker.workflow.state.StoredRecord.Purpose;
 import io.zeebe.logstreams.state.StateController;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.nio.ByteOrder;
@@ -27,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import org.agrona.BitUtil;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -52,10 +54,13 @@ public class ElementInstanceState {
   private final ExpandableArrayBuffer valueBuffer;
 
   private final UnsafeBuffer longKeyBuffer = new UnsafeBuffer(new byte[Long.BYTES]);
+  private final UnsafeBuffer longKeyPurposeBuffer =
+      new UnsafeBuffer(new byte[Long.BYTES + BitUtil.SIZE_OF_BYTE]);
   private final UnsafeBuffer iterateKeyBuffer = new UnsafeBuffer(0, 0);
 
   private final ColumnFamilyHandle elementParentChildHandle;
   private final ColumnFamilyHandle elementInstanceHandle;
+  // (scopeKey, purpose, key) => record
   private final ColumnFamilyHandle storedRecordsHandle;
 
   private final Map<Long, ElementInstance> cachedInstances = new HashMap<>();
@@ -149,6 +154,9 @@ public class ElementInstanceState {
           elementInstanceHandle, keyBuffer.byteArray(), instanceKeyOffset, instance.getKeyLength());
       cachedInstances.remove(key);
 
+      longKeyBuffer.putLong(0, key, ByteOrder.LITTLE_ENDIAN);
+      rocksDbWrapper.removeEntriesWithPrefix(storedRecordsHandle, longKeyBuffer.byteArray());
+
       final long parentKey = instance.getParentKey();
       if (parentKey > 0) {
         final ElementInstance parentInstance = getInstance(parentKey);
@@ -198,23 +206,29 @@ public class ElementInstanceState {
   }
 
   private int writeStoreRecordKeyIntoBuffer(
-      MutableDirectBuffer buffer, int offset, long scopeKey, long recordKey) {
+      MutableDirectBuffer buffer, int offset, long scopeKey, long recordKey, Purpose purpose) {
     buffer.putLong(offset, scopeKey, ByteOrder.LITTLE_ENDIAN);
     offset += Long.BYTES;
+    buffer.putByte(offset, (byte) purpose.ordinal());
+    offset += BitUtil.SIZE_OF_BYTE;
     buffer.putLong(offset, recordKey, ByteOrder.LITTLE_ENDIAN);
     offset += Long.BYTES;
     return offset;
   }
 
-  public void storeRecord(long scopeKey, TypedRecord<WorkflowInstanceRecord> record) {
+  public void storeRecord(
+      long scopeKey, TypedRecord<WorkflowInstanceRecord> record, Purpose purpose) {
     final IndexedRecord indexedRecord =
         new IndexedRecord(
             record.getKey(),
             (WorkflowInstanceIntent) record.getMetadata().getIntent(),
             record.getValue());
 
-    final int keyLength = writeStoreRecordKeyIntoBuffer(keyBuffer, 0, scopeKey, record.getKey());
-    indexedRecord.write(valueBuffer, 0);
+    final StoredRecord storedRecord = new StoredRecord(indexedRecord, purpose);
+
+    final int keyLength =
+        writeStoreRecordKeyIntoBuffer(keyBuffer, 0, scopeKey, record.getKey(), purpose);
+    storedRecord.write(valueBuffer, 0);
 
     rocksDbWrapper.put(
         storedRecordsHandle,
@@ -223,34 +237,35 @@ public class ElementInstanceState {
         keyLength,
         valueBuffer.byteArray(),
         0,
-        indexedRecord.getLength());
+        storedRecord.getLength());
   }
 
-  public boolean removeStoredRecord(long scopeKey, long recordKey) {
-    final int keyLength = writeStoreRecordKeyIntoBuffer(keyBuffer, 0, scopeKey, recordKey);
+  public void removeStoredRecord(long scopeKey, long recordKey, Purpose purpose) {
+    final int keyLength = writeStoreRecordKeyIntoBuffer(keyBuffer, 0, scopeKey, recordKey, purpose);
 
-    final IndexedRecord record =
-        helper.getValueInstance(
-            IndexedRecord.class, storedRecordsHandle, keyBuffer, 0, keyLength, valueBuffer);
-
-    final boolean exist = record != null;
-    if (exist) {
-      rocksDbWrapper.remove(storedRecordsHandle, keyBuffer.byteArray(), 0, keyLength);
-    }
-    return exist;
+    rocksDbWrapper.remove(storedRecordsHandle, keyBuffer.byteArray(), 0, keyLength);
   }
 
-  public List<IndexedRecord> getStoredRecords(long scopeKey) {
-    longKeyBuffer.putLong(0, scopeKey, ByteOrder.LITTLE_ENDIAN);
+  public List<IndexedRecord> getDeferredTokens(long scopeKey) {
+    return getStoredRecords(scopeKey, Purpose.DEFERRED_TOKEN);
+  }
+
+  public List<IndexedRecord> getFinishedTokens(long scopeKey) {
+    return getStoredRecords(scopeKey, Purpose.FINISHED_TOKEN);
+  }
+
+  private List<IndexedRecord> getStoredRecords(long scopeKey, Purpose purpose) {
+    longKeyPurposeBuffer.putLong(0, scopeKey, ByteOrder.LITTLE_ENDIAN);
+    longKeyPurposeBuffer.putByte(Long.BYTES, (byte) purpose.ordinal());
 
     final List<IndexedRecord> records = new ArrayList<>();
     rocksDbWrapper.whileEqualPrefix(
         storedRecordsHandle,
-        longKeyBuffer.byteArray(),
+        longKeyPurposeBuffer.byteArray(),
         (key, value) -> {
-          final IndexedRecord record = new IndexedRecord();
+          final StoredRecord record = new StoredRecord();
           record.wrap(new UnsafeBuffer(value), 0, value.length);
-          records.add(record);
+          records.add(record.getRecord());
         });
     return records;
   }

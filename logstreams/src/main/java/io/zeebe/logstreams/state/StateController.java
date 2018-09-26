@@ -569,6 +569,15 @@ public class StateController implements AutoCloseable {
     }
   }
 
+  public void removeEntriesWithPrefix(final ColumnFamilyHandle handle, byte[] prefix) {
+    whileEqualPrefix(
+        handle,
+        prefix,
+        (k, v) -> {
+          remove(handle, k, 0, k.length);
+        });
+  }
+
   public void whileEqualPrefix(
       final ColumnFamilyHandle handle,
       final byte[] prefix,

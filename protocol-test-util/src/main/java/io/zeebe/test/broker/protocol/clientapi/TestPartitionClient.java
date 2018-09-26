@@ -31,6 +31,7 @@ import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.protocol.intent.SubscriberIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.util.buffer.BufferUtil;
 import java.io.ByteArrayOutputStream;
 import java.time.Duration;
@@ -145,6 +146,10 @@ public class TestPartitionClient {
     return response.key();
   }
 
+  public long createWorkflowInstance(final String bpmnProcessId, final String jsonPayload) {
+    return createWorkflowInstance(bpmnProcessId, MsgPackUtil.asMsgPack(jsonPayload));
+  }
+
   public long createWorkflowInstance(final String bpmnProcessId, final DirectBuffer payload) {
     return createWorkflowInstance(bpmnProcessId, bufferAsArray(payload));
   }
@@ -188,6 +193,10 @@ public class TestPartitionClient {
 
   public void completeJobOfType(final String jobType, final byte[] payload) {
     completeJob(jobType, payload, e -> true);
+  }
+
+  public void completeJobOfType(final String jobType, final String jsonPayload) {
+    completeJob(jobType, MsgPackUtil.asMsgPack(jsonPayload), e -> true);
   }
 
   @SuppressWarnings("rawtypes")
