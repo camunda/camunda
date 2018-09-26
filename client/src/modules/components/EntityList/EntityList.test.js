@@ -409,31 +409,6 @@ it('should invok update when entityId is already available', async () => {
   expect(update).toHaveBeenCalled();
 });
 
-describe('getEntityIconName', () => {
-  let node = {};
-  beforeEach(
-    async () =>
-      (node = await mount(
-        shallow(<EntityList api="endpoint" label="report" operations={['Edit']} />).get(0)
-      ))
-  );
-
-  it('should return the endoint name if data is null', () => {
-    const name = node.instance().getEntityIconName({data: null});
-    expect(name).toBe('generic');
-  });
-
-  it('should return the endoint name if visualization is empty', () => {
-    const name = node.instance().getEntityIconName({data: {visualization: ''}});
-    expect(name).toBe('generic');
-  });
-
-  it('should return the endpoint name along with the visualization name if visualization is defined', () => {
-    const name = node.instance().getEntityIconName({data: {visualization: 'heat'}});
-    expect(name).toBe('heat');
-  });
-});
-
 it('should display a button to create combined report if specified', () => {
   const node = mount(
     shallow(<EntityList api="endpoint" label="Report" operations={['combine']} />).get(0)

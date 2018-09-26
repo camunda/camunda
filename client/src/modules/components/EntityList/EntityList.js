@@ -75,11 +75,6 @@ class EntityList extends React.Component {
     await this.loadData();
   };
 
-  getEntityIconName = entity => {
-    if (entity.data && entity.data.visualization) return entity.data.visualization;
-    return 'generic';
-  };
-
   openNewContentPanel = () => {
     this.setState({
       editEntity: {}
@@ -119,7 +114,7 @@ class EntityList extends React.Component {
 
   renderHeader = () => {
     const {operations, label, api} = this.props;
-    const HeaderIcon = entityIcons[api].header;
+    const HeaderIcon = entityIcons[api].header.Component;
     return (
       <div className="header">
         {HeaderIcon && <HeaderIcon />}

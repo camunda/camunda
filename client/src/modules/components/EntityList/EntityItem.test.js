@@ -13,10 +13,10 @@ const sampleEntity = {
 jest.mock('./entityIcons', () => {
   return {
     endpoint: {
-      header: props => <svg {...props} />,
-      generic: props => <svg {...props} />,
-      heat: props => <svg {...props} />,
-      combinedline: props => <svg {...props} />
+      header: {Component: props => <svg {...props} />},
+      generic: {Component: props => <svg {...props} />},
+      heat: {Component: props => <svg name="heat" {...props} />},
+      line: {CombinedComponent: props => <svg name="line" {...props} />}
     }
   };
 });
@@ -217,11 +217,11 @@ it('should return false if the entity is not combined or is combined but does no
     <EntityItem api="endpoint" showDeleteModal={() => {}} label="Report" data={sampleEntity} />
   );
 
-  const isNotEmptyCombined = node
+  const isValidCombinedReport = node
     .instance()
-    .isNotEmptyCombined({reportType: 'combined', data: {reportIds: null}});
+    .isValidCombinedReport({reportType: 'combined', data: {reportIds: null}});
 
-  expect(!!isNotEmptyCombined).toBe(false);
+  expect(!!isValidCombinedReport).toBe(false);
 });
 
 it('should add label combined if the report is combined', () => {
@@ -234,4 +234,68 @@ it('should add label combined if the report is combined', () => {
     />
   );
   expect(node).toIncludeText('Combined');
+});
+
+describe('getIconKey', () => {
+  let node = {};
+  const spy = jest.fn().mockReturnValue('line');
+  beforeEach(
+    async () =>
+      (node = await mount(
+        <EntityItem
+          api="endpoint"
+          showDeleteModal={() => {}}
+          label="Report"
+          data={sampleEntity}
+          getReportVis={spy}
+        />
+      ))
+  );
+
+  it('should return the endoint name if data is null', () => {
+    const name = node.instance().getIconKey({data: null}, false);
+    expect(name).toBe('generic');
+  });
+
+  it('should return the endoint name if visualization is empty', () => {
+    const name = node.instance().getIconKey({data: {visualization: ''}}, false);
+    expect(name).toBe('generic');
+  });
+
+  it('should return the endpoint name along with the visualization name if visualization is defined', () => {
+    const name = node.instance().getIconKey({data: {visualization: 'heat'}}, false);
+    expect(name).toBe('heat');
+  });
+
+  it('should return the endpoint name along with the visualization name if visualization is combined', () => {
+    const name = node.instance().getIconKey({data: {reportIds: [1]}}, true);
+    expect(spy).toHaveBeenCalledWith(1);
+    expect(name).toBe('line');
+  });
+});
+
+it('should render the correct entity Icon for single reports', () => {
+  const node = mount(
+    <EntityItem
+      api="endpoint"
+      showDeleteModal={() => {}}
+      label="Report"
+      data={{...sampleEntity, data: {visualization: 'heat'}}}
+    />
+  );
+  expect(node.find('svg').props().name).toBe('heat');
+});
+
+it('should render the correct entity Icon for combined reports', () => {
+  const spy = jest.fn().mockReturnValue('line');
+  const node = mount(
+    <EntityItem
+      api="endpoint"
+      showDeleteModal={() => {}}
+      label="Report"
+      data={{...sampleEntity, reportType: 'combined', data: {reportIds: [1]}}}
+      getReportVis={spy}
+    />
+  );
+  expect(node.find('svg').props().name).toBe('line');
 });

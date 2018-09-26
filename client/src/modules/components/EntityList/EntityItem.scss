@@ -66,11 +66,11 @@
           white-space: nowrap;
         }
 
-        span {
+        > span {
           font-size: 12px;
           border-radius: 10px;
           height: 20px;
-          font-weight: lighter;
+          font-weight: normal;
           background: #e5f6ff;
           color: #008fe6;
           padding: 3px 10px;

@@ -22,21 +22,22 @@ const icons = {
     generic: alert
   },
   report: {
-    header: reports,
-    generic: reportEmpty,
-    bar: {label: 'Bar Chart Report', Component: reportBar},
+    header: {Componet: reports},
+    generic: {Component: reportEmpty},
+    bar: {label: 'Bar Chart Report', Component: reportBar, CombinedComponent: CombinedReportBar},
     heat: {label: 'Heatmap Report', Component: reportHeat},
-    line: {label: 'Area Chart Report', Component: reportLine},
+    line: {
+      label: 'Area Chart Report',
+      Component: reportLine,
+      CombinedComponent: CombinedReportLine
+    },
     number: {label: 'Number Report', Component: reportNumber},
     pie: {label: 'Pie Chart Report', Component: reportPie},
-    table: {label: 'Table Report', Component: reportTable},
-    'bar-combined': {label: 'Combined Bar Chart Report', Component: CombinedReportBar},
-    'line-combined': {label: 'Combined Area Chart Report', Component: CombinedReportLine},
-    'table-combined': {label: 'Combined Area Chart Report', Component: CombinedReportTable}
+    table: {label: 'Table Report', Component: reportTable, CombinedComponent: CombinedReportTable}
   },
   dashboard: {
-    header: dashboards,
-    generic: dashboard
+    header: {Component: dashboards},
+    generic: {Component: dashboard}
   }
 };
 

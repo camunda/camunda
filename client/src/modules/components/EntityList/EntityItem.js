@@ -10,15 +10,41 @@ import {formatters} from 'services';
 import './EntityItem.css';
 
 export default class EntityItem extends React.Component {
-  getEntityIconName = entity => {
-    if (this.isNotEmptyCombined(entity)) {
-      return `${this.props.getReportVis(entity.data.reportIds[0])}-combined`;
+  getEntityIcon = entity => {
+    let Icon;
+    let label;
+
+    const isValidCombined = this.isValidCombinedReport(entity);
+    const iconKey = this.getIconKey(entity, isValidCombined);
+    const iconData = entityIcons[this.props.api][iconKey];
+
+    if (isValidCombined) {
+      Icon = iconData.CombinedComponent;
+      label = `Combined ${iconData.label}`;
+    } else {
+      Icon = iconData.Component;
+      label = iconData.label;
     }
+
+    const EntityIconComponent = label ? (
+      <span title={label}>
+        <Icon />
+      </span>
+    ) : (
+      <Icon />
+    );
+
+    return EntityIconComponent;
+  };
+
+  getIconKey = (entity, isValidCombined) => {
+    // if combined get the visualization type of the containing reports from the EntityList
+    if (isValidCombined) return this.props.getReportVis(entity.data.reportIds[0]);
     if (entity.data && entity.data.visualization) return entity.data.visualization;
     return 'generic';
   };
 
-  isNotEmptyCombined = entity => {
+  isValidCombinedReport = entity => {
     return (
       entity.reportType &&
       entity.reportType === 'combined' &&
@@ -32,7 +58,7 @@ export default class EntityItem extends React.Component {
     const entry = {
       name,
       link: `/${this.props.api}/${id}`,
-      iconName: this.getEntityIconName(entity),
+      icon: this.getEntityIcon(entity),
       infos: [
         {
           parentClassName: 'custom',
@@ -147,20 +173,12 @@ export default class EntityItem extends React.Component {
 
   render() {
     const row = this.formatData(this.props.data);
-    const EntityIcon = entityIcons[this.props.api][row.iconName];
-    const EntityIconComponent = EntityIcon.label ? (
-      <span title={EntityIcon.label}>
-        <EntityIcon.Component />
-      </span>
-    ) : (
-      <EntityIcon />
-    );
 
     return (
       <li className="item">
         {this.renderLink({
           title: row.name,
-          icon: EntityIconComponent,
+          icon: row.icon,
           content: this.renderCells(row.infos),
           link: row.link,
           className: 'info',
