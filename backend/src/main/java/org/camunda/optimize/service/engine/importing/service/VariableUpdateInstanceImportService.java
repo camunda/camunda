@@ -126,39 +126,39 @@ public class VariableUpdateInstanceImportService {
 
   private boolean isValidVariable(PluginVariableDto variableDto) {
     if (variableDto == null) {
-      logger.warn("Refuse to add null variable from import adapter plugin.");
+      logger.info("Refuse to add null variable from import adapter plugin.");
       return false;
     } else if (isNullOrEmpty(variableDto.getId())) {
-      logger.warn("Refuse to add variable with name [{}] from variable import adapter plugin. Variable has no id.",
+      logger.info("Refuse to add variable with name [{}] from variable import adapter plugin. Variable has no id.",
         variableDto.getName());
       return false;
     } else if (isNullOrEmpty(variableDto.getName())) {
-      logger.warn("Refuse to add variable with id [{}] from variable import adapter plugin. Variable has no name.",
+      logger.info("Refuse to add variable with id [{}] from variable import adapter plugin. Variable has no name.",
         variableDto.getId());
       return false;
     } else if (isNullOrEmpty(variableDto.getType()) || !isVariableTypeSupported(variableDto.getType())) {
-      logger.warn("Refuse to add variable [{}] from variable import adapter plugin. Variable has no type or type is not supported.",
+      logger.info("Refuse to add variable [{}] from variable import adapter plugin. Variable has no type or type is not supported.",
         variableDto.getName());
       return false;
     } else if (isNullOrEmpty(variableDto.getProcessInstanceId())) {
-      logger.warn("Refuse to add variable [{}] from variable import adapter plugin. Variable has no process instance id.",
+      logger.info("Refuse to add variable [{}] from variable import adapter plugin. Variable has no process instance id.",
         variableDto.getName());
       return false;
     } else if (isNullOrEmpty(variableDto.getProcessDefinitionId())) {
-      logger.warn("Refuse to add variable [{}] from variable import adapter plugin. Variable has no process definition id.",
+      logger.info("Refuse to add variable [{}] from variable import adapter plugin. Variable has no process definition id.",
         variableDto.getName());
       return false;
     } else if (isNullOrEmpty(variableDto.getProcessDefinitionKey())) {
-      logger.warn("Refuse to add variable [{}] from variable import adapter plugin. Variable has no process definition key.",
+      logger.info("Refuse to add variable [{}] from variable import adapter plugin. Variable has no process definition key.",
         variableDto.getName());
       return false;
     }  else if (isNullOrZero(variableDto.getVersion())) {
-      logger.warn("Refuse to add variable [{}] with version [{}] from variable import adapter plugin. Variable has no version or version is invalid.",
+      logger.info("Refuse to add variable [{}] with version [{}] from variable import adapter plugin. Variable has no version or version is invalid.",
         variableDto.getName(),
         variableDto.getVersion());
       return false;
     } else if (isNullOrEmpty(variableDto.getEngineAlias())) {
-      logger.warn("Refuse to add variable [{}] from variable import adapter plugin. Variable has no engine alias.",
+      logger.info("Refuse to add variable [{}] from variable import adapter plugin. Variable has no engine alias.",
         variableDto.getName());
       return false;
     }
