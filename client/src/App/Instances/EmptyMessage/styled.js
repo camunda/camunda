@@ -16,6 +16,6 @@ export const EmptyMessage = themed(styled.div`
   })};
 
   span {
-    display: inline-block;
+    display: block;
   }
 `);
