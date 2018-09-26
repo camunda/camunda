@@ -37,12 +37,17 @@
 .Dashboard__name-container {
   flex-grow: 1;
   padding-right: 48px;
+  overflow: hidden;
+  width: 100%;
 }
 
 .Dashboard__heading {
   font-size: 2em;
   font-weight: bold;
   margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
 }
 
 .Dashboard__metadata {
