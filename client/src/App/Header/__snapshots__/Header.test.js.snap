@@ -50,7 +50,7 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
         <Link
           replace={false}
           title="0 Filters"
-          to="/instances"
+          to="/instances?filter={}"
         >
           <span>
             Filters

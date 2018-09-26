@@ -3,6 +3,7 @@ import {FILTER_SELECTION} from 'modules/constants';
 
 // keys for values that fallback to the localState
 export const localStateKeys = [
+  'filter',
   'filterCount',
   'selectionCount',
   'instancesInSelectionsCount'

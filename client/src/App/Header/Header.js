@@ -16,6 +16,7 @@ class Header extends React.Component {
   static propTypes = {
     active: PropTypes.oneOf(['dashboard', 'instances']),
     runningInstancesCount: PropTypes.number,
+    filter: PropTypes.object,
     filterCount: PropTypes.number,
     selectionCount: PropTypes.number,
     instancesInSelectionsCount: PropTypes.number,
@@ -28,28 +29,30 @@ class Header extends React.Component {
     forceRedirect: false,
     user: {},
     runningInstancesCount: 0,
-    filterCount: 0,
     selectionCount: 0,
+    filterCount: 0,
+    filter: {},
     instancesInSelectionsCount: 0,
     incidentsCount: 0
   };
 
   componentDidMount = async () => {
     this.setUser();
-    localStateKeys.forEach(this.setCountFromPropsOrLocalState);
-    apiKeys.forEach(this.setCountFromPropsOrApi);
+    this.localState = this.props.getStateLocally();
+    localStateKeys.forEach(this.setValueFromPropsOrLocalState);
+    apiKeys.forEach(this.setValueFromPropsOrApi);
   };
 
   componentDidUpdate = prevProps => {
     localStateKeys.forEach(key => {
       if (this.props[key] !== prevProps[key]) {
-        this.setCountFromPropsOrLocalState(key);
+        this.setValueFromPropsOrLocalState(key);
       }
     });
 
     apiKeys.forEach(key => {
       if (this.props[key] !== prevProps[key]) {
-        this.setCountFromPropsOrApi(key);
+        this.setValueFromPropsOrApi(key);
       }
     });
   };
@@ -63,24 +66,22 @@ class Header extends React.Component {
    * Sets value in the state by getting it from the props or falling back to the local storage.
    * @param {string} key: key for which to set the value
    */
-  setCountFromPropsOrLocalState = key => {
-    const localState = this.props.getStateLocally();
+  setValueFromPropsOrLocalState = key => {
+    let value =
+      typeof this.props[key] === 'undefined'
+        ? this.localState[key]
+        : this.props[key];
 
-    let countValue = this.props[key];
-
-    // If the value is not provided in the props, get it from the localState.
-    if (typeof countValue === 'undefined') {
-      countValue = localState[key] || 0;
+    if (typeof value !== 'undefined') {
+      this.setState({[key]: value});
     }
-
-    this.setState({[key]: countValue});
   };
 
   /**
    * Sets value in the state by getting it from the props or falling back to the api.
    * @param {string} key: key for which to set the value
    */
-  setCountFromPropsOrApi = async key => {
+  setValueFromPropsOrApi = async key => {
     let countValue = this.props[key];
 
     // if it's not provided in props, fetch it from the api
@@ -132,7 +133,10 @@ class Header extends React.Component {
           </li>
           <li data-test="filters">
             <Styled.ListLink active={this.props.active === 'instances'}>
-              <Link to="/instances" title={`${this.state.filterCount} Filters`}>
+              <Link
+                to={`/instances${getFilterQueryString(this.state.filter)}`}
+                title={`${this.state.filterCount} Filters`}
+              >
                 <span>Filters</span>
                 <Styled.Badge
                   type="filters"

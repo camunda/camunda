@@ -318,6 +318,9 @@ class Instances extends Component {
       this.setFilterInURL(filter);
     }
 
+    // write current filter selection to local storage
+    this.props.storeStateLocally({filter: filter});
+
     this.setState({filter: {...decodeFields(filter)}}, () => {
       this.handleFilterCount();
     });
@@ -344,9 +347,6 @@ class Instances extends Component {
   handleFilterChange = async newFilter => {
     const filter = {...this.state.filter, ...newFilter};
     this.setFilterInURL(filter);
-
-    // write current filter selection to local storage
-    this.props.storeStateLocally({filter: filter});
   };
 
   setFilterInURL = filter => {
@@ -373,6 +373,7 @@ class Instances extends Component {
       <Fragment>
         <Header
           active="instances"
+          filter={this.state.filter}
           filterCount={this.state.filterCount}
           instancesInSelectionsCount={this.state.instancesInSelectionsCount}
           selectionCount={this.state.selectionCount}

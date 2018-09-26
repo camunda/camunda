@@ -29,58 +29,51 @@ describe('Header', () => {
     instancesApi.fetchWorkflowInstancesCount.mockClear();
   });
 
-  describe('localState counts', () => {
-    it("should get the count from props if it's provided", () => {
+  describe('localState values', () => {
+    const mockValues = {
+      filter: {foo: 'bar'},
+      filterCount: 1,
+      selectionCount: 2,
+      instancesInSelectionsCount: 3
+    };
+    it("should get the value from props if it's provided", () => {
       localStateKeys.forEach(key => {
         // given
-        const count = 23;
-        const mockProps = {[key]: count, getStateLocally: () => ({})};
+        const mockProps = {[key]: mockValues[key], getStateLocally: () => ({})};
         const node = shallow(<Header {...mockProps} />);
 
         // then
-        expect(node.state(key)).toBe(count);
+        expect(node.state(key)).toEqual(mockValues[key]);
       });
     });
 
-    it("should get the count from localState if it's not in the props", () => {
+    it("should get the value from localState if it's not in the props", () => {
       localStateKeys.forEach(key => {
         // given
-        const count = 23;
-        const mockLocalState = {[key]: count};
-        const mockProps = {[key]: count, getStateLocally: () => mockLocalState};
+        const mockLocalState = {[key]: mockValues[key]};
+        const mockProps = {getStateLocally: () => mockLocalState};
         const node = shallow(<Header {...mockProps} />);
 
         // then
-        expect(node.state(key)).toBe(count);
-      });
-    });
-
-    it('should set tbe count to 0 if not present in props or localState', () => {
-      localStateKeys.forEach(key => {
-        // given
-        const mockProps = {getStateLocally: () => ({})};
-        const node = shallow(<Header {...mockProps} />);
-
-        // then
-        expect(node.state(key)).toBe(0);
+        expect(node.state(key)).toEqual(mockValues[key]);
       });
     });
   });
 
-  describe('api counts', () => {
-    it("should get the count from props if it's provided", () => {
+  describe('api values', () => {
+    it("should get the value from props if it's provided", () => {
       apiKeys.forEach(key => {
         // given
-        const count = 23;
-        const mockProps = {[key]: count, getStateLocally: () => ({})};
+        const value = 23;
+        const mockProps = {[key]: value, getStateLocally: () => ({})};
         const node = shallow(<Header {...mockProps} />);
 
         // then
-        expect(node.state(key)).toBe(count);
+        expect(node.state(key)).toBe(value);
       });
     });
 
-    it("should get the count from api if it's not in the props", async () => {
+    it("should get the value from api if it's not in the props", async () => {
       // given
       const mockProps = {getStateLocally: () => ({})};
       const node = shallow(<Header {...mockProps} />);
