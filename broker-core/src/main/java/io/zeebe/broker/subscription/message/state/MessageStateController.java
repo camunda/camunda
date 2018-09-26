@@ -22,6 +22,8 @@ import java.io.File;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -38,6 +40,8 @@ public class MessageStateController extends KeyStateController {
   private static final byte[] MSG_TIME_TO_LIVE_NAME = "msgTimeToLive".getBytes();
   private static final byte[] MSG_ID_NAME = "messageId".getBytes();
 
+  public static final byte[][] COLUMN_FAMILY_NAMES = {MSG_TIME_TO_LIVE_NAME, MSG_ID_NAME};
+
   private final UnsafeBuffer iterateKeyBuffer = new UnsafeBuffer(0, 0);
 
   protected ColumnFamilyHandle timeToLiveHandle;
@@ -49,12 +53,17 @@ public class MessageStateController extends KeyStateController {
 
   @Override
   public RocksDB open(final File dbDirectory, final boolean reopen) throws Exception {
-    final RocksDB rocksDB = super.open(dbDirectory, reopen);
+    final List<byte[]> columnFamilyNames =
+        Stream.of(COLUMN_FAMILY_NAMES, SubscriptionState.COLUMN_FAMILY_NAMES)
+            .flatMap(Stream::of)
+            .collect(Collectors.toList());
+
+    final RocksDB rocksDB = super.open(dbDirectory, reopen, columnFamilyNames);
     keyBuffer = new ExpandableArrayBuffer();
     valueBuffer = new ExpandableArrayBuffer();
 
-    timeToLiveHandle = createColumnFamily(MSG_TIME_TO_LIVE_NAME);
-    messageIdHandle = createColumnFamily(MSG_ID_NAME);
+    timeToLiveHandle = getColumnFamilyHandle(MSG_TIME_TO_LIVE_NAME);
+    messageIdHandle = getColumnFamilyHandle(MSG_ID_NAME);
     subscriptionState = new SubscriptionState<>(this, () -> new MessageSubscription());
 
     return rocksDB;

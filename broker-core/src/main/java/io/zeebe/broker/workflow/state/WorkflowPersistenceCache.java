@@ -45,6 +45,10 @@ public class WorkflowPersistenceCache {
       "workflowsByIdAndVersion".getBytes();
   private static final byte[] LATEST_WORKFLOWS_FAMILY_NAME = "latestWorkflow".getBytes();
 
+  public static final byte[][] COLUMN_FAMILY_NAMES = {
+    WORKFLOWS_FAMILY_NAME, WORKFLOWS_BY_ID_AND_VERSION_FAMILY_NAME, LATEST_WORKFLOWS_FAMILY_NAME
+  };
+
   private final BpmnTransformer transformer = new BpmnTransformer();
 
   private final Map<DirectBuffer, Int2ObjectHashMap<DeployedWorkflow>>
@@ -64,10 +68,10 @@ public class WorkflowPersistenceCache {
   public WorkflowPersistenceCache(StateController rocksDbWrapper) throws Exception {
     this.rocksDbWrapper = rocksDbWrapper;
 
-    workflowsHandle = rocksDbWrapper.createColumnFamily(WORKFLOWS_FAMILY_NAME);
+    workflowsHandle = rocksDbWrapper.getColumnFamilyHandle(WORKFLOWS_FAMILY_NAME);
     workflowsByIdAndVersionHandle =
-        rocksDbWrapper.createColumnFamily(WORKFLOWS_BY_ID_AND_VERSION_FAMILY_NAME);
-    latestWorkflowsHandle = rocksDbWrapper.createColumnFamily(LATEST_WORKFLOWS_FAMILY_NAME);
+        rocksDbWrapper.getColumnFamilyHandle(WORKFLOWS_BY_ID_AND_VERSION_FAMILY_NAME);
+    latestWorkflowsHandle = rocksDbWrapper.getColumnFamilyHandle(LATEST_WORKFLOWS_FAMILY_NAME);
 
     deployments = new LongHashSet();
     workflowsByKey = new Long2ObjectHashMap<>();

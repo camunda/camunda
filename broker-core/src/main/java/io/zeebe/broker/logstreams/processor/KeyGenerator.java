@@ -82,8 +82,9 @@ public class KeyGenerator extends UnpackedObject {
     }
   }
 
-  public static KeyGenerator createWorkflowInstanceKeyGenerator() {
-    return new KeyGenerator(WF_OFFSET, STEP_SIZE);
+  public static KeyGenerator createWorkflowInstanceKeyGenerator(
+      final KeyStateController controller) {
+    return new KeyGenerator(WF_OFFSET, STEP_SIZE, controller);
   }
 
   public static KeyGenerator createJobKeyGenerator(final KeyStateController keyStateController) {

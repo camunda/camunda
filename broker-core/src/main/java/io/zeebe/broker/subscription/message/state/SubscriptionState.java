@@ -37,6 +37,8 @@ public class SubscriptionState<T extends Subscription> {
   private static final byte[] SUB_NAME = "subscription".getBytes();
   private static final byte[] SUB_SEND_TIME_NAME = "subSendTime".getBytes();
 
+  public static final byte[][] COLUMN_FAMILY_NAMES = {SUB_NAME, SUB_SEND_TIME_NAME};
+
   private final StateController rocksDbWrapper;
 
   private final ExpandableArrayBuffer keyBuffer;
@@ -56,8 +58,8 @@ public class SubscriptionState<T extends Subscription> {
     keyBuffer = new ExpandableArrayBuffer();
     valueBuffer = new ExpandableArrayBuffer();
 
-    subscriptionHandle = rocksDbWrapper.createColumnFamily(SUB_NAME);
-    subSendTimeHandle = rocksDbWrapper.createColumnFamily(SUB_SEND_TIME_NAME);
+    subscriptionHandle = rocksDbWrapper.getColumnFamilyHandle(SUB_NAME);
+    subSendTimeHandle = rocksDbWrapper.getColumnFamilyHandle(SUB_SEND_TIME_NAME);
   }
 
   public void put(final T subscription) {

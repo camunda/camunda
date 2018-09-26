@@ -39,6 +39,10 @@ public class ElementInstanceState {
   private static final byte[] ELEMENT_INSTANCE_KEY_FAMILY_NAME = "elementInstanceKey".getBytes();
   private static final byte[] STORED_RECORDS_KEY_FAMILY_NAME = "storedRecords".getBytes();
 
+  public static final byte[][] COLUMN_FAMILY_NAMES = {
+    ELEMENT_TREE_KEY_FAMILY_NAME, ELEMENT_INSTANCE_KEY_FAMILY_NAME, STORED_RECORDS_KEY_FAMILY_NAME
+  };
+
   private final StateController rocksDbWrapper;
   private final PersistenceHelper helper;
 
@@ -59,9 +63,9 @@ public class ElementInstanceState {
     this.keyBuffer = new ExpandableArrayBuffer();
     this.valueBuffer = new ExpandableArrayBuffer();
 
-    elementTreeHandle = rocksDbWrapper.createColumnFamily(ELEMENT_TREE_KEY_FAMILY_NAME);
-    elementInstanceHandle = rocksDbWrapper.createColumnFamily(ELEMENT_INSTANCE_KEY_FAMILY_NAME);
-    storedRecordsHandle = rocksDbWrapper.createColumnFamily(STORED_RECORDS_KEY_FAMILY_NAME);
+    elementTreeHandle = rocksDbWrapper.getColumnFamilyHandle(ELEMENT_TREE_KEY_FAMILY_NAME);
+    elementInstanceHandle = rocksDbWrapper.getColumnFamilyHandle(ELEMENT_INSTANCE_KEY_FAMILY_NAME);
+    storedRecordsHandle = rocksDbWrapper.getColumnFamilyHandle(STORED_RECORDS_KEY_FAMILY_NAME);
   }
 
   public ElementInstance newInstance(

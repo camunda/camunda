@@ -22,6 +22,7 @@ import io.zeebe.util.buffer.BufferWriter;
 import java.io.File;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -37,6 +38,7 @@ import org.rocksdb.ClockCache;
 import org.rocksdb.ColumnFamilyDescriptor;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.ColumnFamilyOptions;
+import org.rocksdb.DBOptions;
 import org.rocksdb.Env;
 import org.rocksdb.Filter;
 import org.rocksdb.MemTableConfig;
@@ -68,6 +70,9 @@ public class StateController implements AutoCloseable {
   protected File dbDirectory;
   protected List<AutoCloseable> closeables = new ArrayList<>();
 
+  private final List<ColumnFamilyDescriptor> columnFamilyDescriptors = new ArrayList<>();
+  private final List<ColumnFamilyHandle> columnFamilyHandles = new ArrayList<>();
+
   private long nativeHandle_;
 
   static {
@@ -79,7 +84,10 @@ public class StateController implements AutoCloseable {
       try {
         this.dbDirectory = dbDirectory;
         final Options options =
-            createOptions().setErrorIfExists(!reopen).setCreateIfMissing(!reopen);
+            createOptions()
+                .setCreateMissingColumnFamilies(true)
+                .setErrorIfExists(!reopen)
+                .setCreateIfMissing(!reopen);
         closeables.add(options);
         db = openDB(options);
         closeables.add(db);
@@ -97,15 +105,73 @@ public class StateController implements AutoCloseable {
     return db;
   }
 
-  public ColumnFamilyHandle createColumnFamily(byte[] name) throws Exception {
-    final ColumnFamilyOptions columnFamilyOptions = new ColumnFamilyOptions();
-    closeables.add(0, columnFamilyOptions);
+  public ColumnFamilyHandle getColumnFamilyHandle(byte[] name) {
+    return columnFamilyHandles
+        .stream()
+        .filter(
+            handle -> {
+              try {
+                return Arrays.equals(handle.getName(), name);
+              } catch (Exception ex) {
+                throw new RuntimeException(ex);
+              }
+            })
+        .findAny()
+        .orElse(null);
+  }
 
-    final ColumnFamilyDescriptor columnFamilyDescriptor =
-        new ColumnFamilyDescriptor(name, columnFamilyOptions);
-    final ColumnFamilyHandle columnFamily = db.createColumnFamily(columnFamilyDescriptor);
-    closeables.add(columnFamily);
-    return columnFamily;
+  protected RocksDB open(
+      final File dbDirectory, final boolean reopen, List<byte[]> columnFamilyNames)
+      throws Exception {
+    if (!isOpened) {
+      try {
+        final ColumnFamilyOptions columnFamilyOptions = createColumnFamilyOptions();
+        createFamilyDescriptors(columnFamilyNames, columnFamilyOptions);
+
+        this.dbDirectory = dbDirectory;
+
+        final DBOptions dbOptions =
+            new DBOptions()
+                .setEnv(getDbEnv())
+                .setCreateMissingColumnFamilies(!reopen)
+                .setErrorIfExists(!reopen)
+                .setCreateIfMissing(!reopen);
+
+        closeables.add(dbOptions);
+        db =
+            RocksDB.open(
+                dbOptions,
+                dbDirectory.getAbsolutePath(),
+                columnFamilyDescriptors,
+                columnFamilyHandles);
+        closeables.add(db);
+        isOpened = true;
+
+        this.nativeHandle_ = (long) RocksDbInternal.rocksDbNativeHandle.get(db);
+      } catch (final RocksDBException ex) {
+        close();
+        throw ex;
+      }
+
+      LOG.trace("Opened RocksDB {}", this.dbDirectory);
+    }
+
+    return db;
+  }
+
+  private void createFamilyDescriptors(
+      List<byte[]> columnFamilyNames, ColumnFamilyOptions columnFamilyOptions) {
+    final ColumnFamilyDescriptor defaultFamilyDescriptor =
+        new ColumnFamilyDescriptor(RocksDB.DEFAULT_COLUMN_FAMILY, createColumnFamilyOptions());
+    columnFamilyDescriptors.add(defaultFamilyDescriptor);
+
+    if (columnFamilyNames != null && columnFamilyNames.size() > 0) {
+      for (byte[] name : columnFamilyNames) {
+        final ColumnFamilyDescriptor columnFamilyDescriptor =
+            new ColumnFamilyDescriptor(name, columnFamilyOptions);
+        columnFamilyDescriptors.add(columnFamilyDescriptor);
+      }
+    }
   }
 
   protected RocksDB openDB(final Options options) throws RocksDBException {
@@ -132,6 +198,31 @@ public class StateController implements AutoCloseable {
         .setWriteBufferSize(ByteValue.ofMegabytes(64).toBytes())
         .setMemTableConfig(memTableConfig)
         .setTableFormatConfig(sstTableConfig);
+  }
+
+  protected ColumnFamilyOptions createColumnFamilyOptions() {
+    final Filter filter = new BloomFilter();
+    closeables.add(filter);
+
+    final Cache cache = new ClockCache(ByteValue.ofMegabytes(16).toBytes(), 10);
+    closeables.add(cache);
+
+    final TableFormatConfig sstTableConfig =
+        new BlockBasedTableConfig()
+            .setBlockCache(cache)
+            .setBlockSize(ByteValue.ofKilobytes(16).toBytes())
+            .setChecksumType(ChecksumType.kCRC32c)
+            .setFilter(filter);
+    final MemTableConfig memTableConfig = new SkipListMemTableConfig();
+
+    final ColumnFamilyOptions columnFamilyOptions =
+        new ColumnFamilyOptions()
+            .optimizeUniversalStyleCompaction()
+            .setWriteBufferSize(ByteValue.ofMegabytes(64).toBytes())
+            .setMemTableConfig(memTableConfig)
+            .setTableFormatConfig(sstTableConfig);
+    closeables.add(columnFamilyOptions);
+    return columnFamilyOptions;
   }
 
   protected Env getDbEnv() {
@@ -167,6 +258,10 @@ public class StateController implements AutoCloseable {
 
   @Override
   public void close() {
+    columnFamilyHandles.forEach(CloseHelper::close);
+    columnFamilyHandles.clear();
+    columnFamilyDescriptors.clear();
+
     Collections.reverse(closeables);
     closeables.forEach(CloseHelper::close);
     closeables.clear();
