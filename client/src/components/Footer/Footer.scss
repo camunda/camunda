@@ -1,13 +1,11 @@
 .Footer {
-  position: fixed;
-  bottom: 0px;
-  width: 100%;
   line-height: 24px;
   font-size: 0.875em;
   background-color: #fff;
   border-top: 1px solid #eeeeee;
   color: #777777;
   cursor: default;
+  flex-shrink: 0;
 }
 
 .Footer__content {
