@@ -32,52 +32,49 @@ const filter = {
 const filterCount = 27;
 const selections = [];
 const successResponse = {totalCount: 123, workflowInstances: [{id: 1}]};
+
 api.fetchWorkflowInstances = mockResolvedAsyncFn(successResponse);
+const onUpdateSelection = jest.fn();
+const onAddToSpecificSelection = jest.fn();
+const onAddToOpenSelection = jest.fn();
+const onAddNewSelection = jest.fn();
+const onFirstElementChange = jest.fn();
 
+const Component = (
+  <ListView
+    selection={selection}
+    filter={defaultFilter}
+    filterCount={filterCount}
+    selections={selections}
+    openSelection={0}
+    onUpdateSelection={onUpdateSelection}
+    onAddToSpecificSelection={onAddToSpecificSelection}
+    onAddToOpenSelection={onAddToOpenSelection}
+    onAddNewSelection={onAddNewSelection}
+    onFirstElementChange={onFirstElementChange}
+  />
+);
 describe('ListView', () => {
-  let node;
-  let onUpdateSelection;
-  let onAddToOpenSelection;
-  let onAddNewSelection;
-  let onAddToSpecificSelection;
-  let onFirstElementChange;
-
   beforeEach(() => {
-    onUpdateSelection = jest.fn();
-    onAddToOpenSelection = jest.fn();
-    onAddNewSelection = jest.fn();
-    onAddToSpecificSelection = jest.fn();
-    onFirstElementChange = jest.fn();
-
-    node = shallow(
-      <ListView
-        selection={selection}
-        filter={defaultFilter}
-        filterCount={filterCount}
-        selections={selections}
-        openSelection={0}
-        onUpdateSelection={onUpdateSelection}
-        onAddToSpecificSelection={onAddToSpecificSelection}
-        onAddToOpenSelection={onAddToOpenSelection}
-        onAddNewSelection={onAddNewSelection}
-        onFirstElementChange={onFirstElementChange}
-      />
-    );
     api.fetchWorkflowInstances.mockClear();
   });
 
   it('should have initially default state', () => {
     // given
-    const listView = new ListView();
+    const node = shallow(Component);
 
     // then
-    expect(listView.state.firstElement).toBe(0);
-    expect(listView.state.instances).toEqual([]);
-    expect(listView.state.entriesPerPage).toBe(0);
-    expect(listView.state.sorting).toBe(DEFAULT_SORTING);
+    expect(node.state().firstElement).toBe(0);
+    expect(node.state().instances).toEqual([]);
+    expect(node.state().entriesPerPage).toBe(0);
+    expect(node.state().sorting).toBe(DEFAULT_SORTING);
+    expect(node.state().isDataLoaded).toBe(false);
   });
 
   it('should reset the page if the filter changes', () => {
+    // given
+    const node = shallow(Component);
+
     node.setState({firstElement: 10});
     node.setProps({filter: {prop: 1}});
 
@@ -85,11 +82,16 @@ describe('ListView', () => {
   });
 
   describe('loadData', () => {
-    it('should fetch data on mount if filter is not empty', () => {
+    it('should fetch data on mount if filter is not empty', async () => {
       // given filter is not empty
-      // then
-      node.instance().componentDidMount();
+      const node = shallow(Component);
+
+      // when
+      await flushPromises();
+      node.update();
+
       expect(api.fetchWorkflowInstances).toHaveBeenCalled();
+      expect(node.state().isDataLoaded).toBe(true);
     });
 
     it('should not be called when component mounts and filter is empty', () => {
@@ -99,10 +101,10 @@ describe('ListView', () => {
           selection={selection}
           filter={{}}
           filterCount={filterCount}
-          onUpdateSelection={onUpdateSelection}
-          onAddToOpenSelection={onAddToOpenSelection}
-          onAddNewSelection={onAddNewSelection}
-          onAddToSpecificSelection={onAddToSpecificSelection}
+          onUpdateSelection={jest.fn()}
+          onAddToOpenSelection={jest.fn()}
+          onAddNewSelection={jest.fn()}
+          onAddToSpecificSelection={jest.fn()}
         />
       );
 
@@ -128,9 +130,9 @@ describe('ListView', () => {
       await flushPromises();
       node.update();
 
-      // then
       const queries = api.fetchWorkflowInstances.mock.calls[0][0].queries[0];
 
+      // then
       expect(api.fetchWorkflowInstances).toHaveBeenCalledTimes(1);
       expect(queries.running).toBe(true);
       expect(queries.active).toBe(true);
@@ -152,6 +154,9 @@ describe('ListView', () => {
     });
 
     it('should load data if the filter changed', () => {
+      // given
+      const node = shallow(Component);
+
       // when
       node.setProps({filter: {foo: 'bar'}});
 
@@ -160,17 +165,26 @@ describe('ListView', () => {
     });
 
     it('should load data if the current page changes', async () => {
-      //when
+      // given
+      const node = shallow(Component);
+
+      // when data fetched
+      await flushPromises();
+      node.update();
+
       node.setState({firstElement: 10});
 
       // then
-      expect(api.fetchWorkflowInstances).toHaveBeenCalled();
-      expect(api.fetchWorkflowInstances.mock.calls[0][0].firstResult).toBe(10);
+      expect(api.fetchWorkflowInstances).toHaveBeenCalledTimes(2);
+      expect(api.fetchWorkflowInstances.mock.calls[1][0].firstResult).toBe(10);
     });
 
-    it('should call api.fetchWorkflowInstances with right data', () => {
-      // when
-      node.instance().loadData();
+    it('should call api.fetchWorkflowInstances with right data', async () => {
+      // given
+      const node = shallow(Component);
+
+      // when data fetched
+      await flushPromises();
       node.update();
 
       // then
@@ -187,19 +201,29 @@ describe('ListView', () => {
   });
 
   describe('display instances List', () => {
-    it('should not contain a List when the list is empty', () => {
+    it('should not contain a List if the instances are not loaded', () => {
+      // given
+      const node = shallow(Component);
+
+      // then
       expect(node.find(List)).not.toExist();
-      expect(node.find('[data-test="empty-message-instances-list"]')).toExist();
       expect(
         node.find('[data-test="empty-message-instances-list"]')
-      ).toMatchSnapshot();
+      ).not.toExist();
     });
 
     it('should not contain a Footer when list is empty', () => {
+      // given
+      const node = shallow(Component);
+
+      // then
       expect(node.find(ListFooter)).not.toExist();
     });
 
     it('should display the list and footer after the data is loaded', async () => {
+      // given
+      const node = shallow(Component);
+
       // when data fetched
       await flushPromises();
       node.update();
@@ -210,12 +234,16 @@ describe('ListView', () => {
     });
 
     it('should pass properties to the Instances List', async () => {
+      // given
+      const node = shallow(Component);
+
       // when data fetched
       await flushPromises();
       node.update();
 
       const list = node.find(List);
 
+      // then
       expect(list.prop('data')).toEqual([{id: 1}]);
       expect(list.prop('selection')).toBe(selection);
       expect(list.prop('filterCount')).toBe(filterCount);
@@ -223,6 +251,9 @@ describe('ListView', () => {
     });
 
     it('should pass the onUpdateSelection prop to the instances list ', async () => {
+      // given
+      const node = shallow(Component);
+
       // when data fetched
       await flushPromises();
       node.update();
@@ -233,33 +264,47 @@ describe('ListView', () => {
       expect(onUpdateSelection).toBe(onUpdateSelection);
     });
 
-    // this
-    it('should pass a method to the footer to change the firstElement', () => {
+    it('should pass a method to the footer to change the firstElement', async () => {
+      // given
+      const node = shallow(Component);
+
+      // when data fetched
+      await flushPromises();
+      node.update();
+
       node.setState({firstElement: 8});
+
       const changeFirstElement = node
         .find(ListFooter)
         .prop('onFirstElementChange');
 
+      // then
       expect(changeFirstElement).toBeDefined();
       changeFirstElement(87);
-
       expect(node.state('firstElement')).toBe(87);
     });
 
-    // this
-    it('should pass a method to the instances list to update the entries per page', () => {
+    it('should pass a method to the instances list to update the entries per page', async () => {
+      // given
+      const node = shallow(Component);
+
+      // when data fetched
+      await flushPromises();
+      node.update();
+
       node.setState({entriesPerPage: 8});
       const changeEntriesPerPage = node
         .find(List)
         .prop('onEntriesPerPageChange');
 
+      // then
       expect(changeEntriesPerPage).toBeDefined();
       changeEntriesPerPage(87);
-
       expect(node.state('entriesPerPage')).toBe(87);
     });
 
-    it('should display a special message when filter has no state', async () => {
+    it('should display a message for empty list when filter has no state', async () => {
+      // given
       const emptyFilterNode = shallow(
         <ListView
           selection={selection}
@@ -277,16 +322,54 @@ describe('ListView', () => {
 
       // when data fetched
       await flushPromises();
-      node.update();
+      emptyFilterNode.update();
 
+      // force empty instances list
+      emptyFilterNode.setState({instances: [], isDataLoaded: true});
+      emptyFilterNode.update();
+
+      // then
       expect(
         emptyFilterNode.find('[data-test="empty-message-instances-list"]')
       ).toMatchSnapshot();
     });
+
+    it('should display a empty list message when filter has at least one state', async () => {
+      // given
+      const withStateFilterNode = shallow(
+        <ListView
+          selection={selection}
+          filter={{active: true}}
+          filterCount={filterCount}
+          selections={selections}
+          openSelection={0}
+          onUpdateSelection={onUpdateSelection}
+          onAddToSpecificSelection={onAddToSpecificSelection}
+          onAddToOpenSelection={onAddToOpenSelection}
+          onAddNewSelection={onAddNewSelection}
+          onFirstElementChange={onFirstElementChange}
+        />
+      );
+
+      // when data fetched
+      await flushPromises();
+      withStateFilterNode.update();
+
+      // force empty instances list
+      withStateFilterNode.setState({instances: []});
+      withStateFilterNode.update();
+
+      // then
+      expect(
+        withStateFilterNode.find('[data-test="empty-message-instances-list"]')
+      ).toMatchSnapshot();
+    });
   });
+
   describe('handleSorting', () => {
     it('should make state sort order asc if key is currently sorted by in desc order', () => {
       // given
+      const node = shallow(Component);
       const KEY = 'foo';
       node.setState({sorting: {sortBy: KEY, sortOrder: SORT_ORDER.DESC}});
       node.update();
@@ -302,6 +385,7 @@ describe('ListView', () => {
 
     it('should make state sort order desc if key is currently sorted by in asc order', () => {
       // given
+      const node = shallow(Component);
       const KEY = 'foo';
       node.setState({sorting: {sortBy: KEY, sortOrder: SORT_ORDER.ASC}});
       node.update();
@@ -317,6 +401,8 @@ describe('ListView', () => {
 
     it('should make state sort order desc if key is not currently sorted by', () => {
       // given
+      const node = shallow(Component);
+
       const KEY = 'foo';
       node.setState({sorting: {sortBy: 'bar', sortOrder: SORT_ORDER.DESC}});
       node.update();

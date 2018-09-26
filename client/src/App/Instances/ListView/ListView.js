@@ -32,7 +32,8 @@ export default class ListView extends React.Component {
     firstElement: 0,
     instances: [],
     entriesPerPage: 0,
-    sorting: DEFAULT_SORTING
+    sorting: DEFAULT_SORTING,
+    isDataLoaded: false
   };
 
   componentDidMount() {
@@ -70,7 +71,8 @@ export default class ListView extends React.Component {
       maxResults: 50
     });
     this.setState({
-      instances: instances.workflowInstances
+      instances: instances.workflowInstances,
+      isDataLoaded: true
     });
   };
 
@@ -119,26 +121,29 @@ export default class ListView extends React.Component {
       <SplitPane.Pane {...this.props}>
         <SplitPane.Pane.Header>Instances</SplitPane.Pane.Header>
         <Styled.PaneBody>
-          {isListEmpty ? (
-            <EmptyMessage
-              message={this.getEmptyListMessage()}
-              data-test="empty-message-instances-list"
-            />
-          ) : (
-            <List
-              data={this.state.instances}
-              selection={selection}
-              filterCount={filterCount}
-              filter={filter}
-              expandState={expandState}
-              sorting={this.state.sorting}
-              handleSorting={this.handleSorting}
-              onUpdateSelection={onUpdateSelection}
-              onEntriesPerPageChange={entriesPerPage =>
-                this.setState({entriesPerPage})
-              }
-            />
-          )}
+          {isListEmpty &&
+            this.state.isDataLoaded && (
+              <EmptyMessage
+                message={this.getEmptyListMessage()}
+                data-test="empty-message-instances-list"
+              />
+            )}
+          {!isListEmpty &&
+            this.state.isDataLoaded && (
+              <List
+                data={this.state.instances}
+                selection={selection}
+                filterCount={filterCount}
+                filter={filter}
+                expandState={expandState}
+                sorting={this.state.sorting}
+                handleSorting={this.handleSorting}
+                onUpdateSelection={onUpdateSelection}
+                onEntriesPerPageChange={entriesPerPage =>
+                  this.setState({entriesPerPage})
+                }
+              />
+            )}
         </Styled.PaneBody>
         <SplitPane.Pane.Footer>
           {!isListEmpty && (
