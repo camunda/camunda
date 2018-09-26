@@ -45,6 +45,12 @@ jest.mock('bpmn-js/lib/Viewer', () => {
   };
 });
 
+jest.mock('components', () => {
+  return {
+    LoadingIndicator: () => <div>LoadingIndicator</div>
+  };
+});
+
 const diagramXml = 'some diagram XML';
 
 it('should create a Viewer', async () => {
@@ -176,4 +182,10 @@ it('should re-use viewer instances', async () => {
   const viewer2 = node2.instance().viewer;
 
   expect(viewer1).toBe(viewer2);
+});
+
+it('should show a loading indicator while loading', () => {
+  const node = mount(shallow(<BPMNDiagram xml={diagramXml} />).get(0));
+
+  expect(node).toIncludeText('LoadingIndicator');
 });

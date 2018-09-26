@@ -7,6 +7,7 @@ import {withErrorHandling} from 'HOC';
 import {themed} from 'theme';
 
 import './BPMNDiagram.css';
+import {LoadingIndicator} from 'components';
 
 const availableViewers = [];
 
@@ -29,6 +30,7 @@ export default themed(
               React.Children.map(this.props.children, child =>
                 React.cloneElement(child, {viewer: this.viewer})
               )}
+            {!this.state.loaded && <LoadingIndicator />}
           </div>
         );
       }
