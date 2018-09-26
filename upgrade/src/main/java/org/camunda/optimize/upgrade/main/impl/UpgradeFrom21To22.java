@@ -49,6 +49,7 @@ public class UpgradeFrom21To22 implements Upgrade {
           .addUpgradeStep(addStateFieldToProcessInstanceType())
           .addUpgradeStep(addReportTypeFieldToReportType())
           .addUpgradeStep(renameReportIndexToSimpleReport())
+          .addUpgradeStep(createCombinedReportIndex())
           .addUpgradeStep(addActivityStartDateFieldToProcessInstanceType())
           .addUpgradeStep(addActivityEndDateFieldToProcessInstanceType())
           .addUpgradeStep(AdjustGroupByStep())
