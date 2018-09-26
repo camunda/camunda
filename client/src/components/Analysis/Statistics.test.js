@@ -3,6 +3,8 @@ import {mount} from 'enzyme';
 
 import {loadCorrelationData} from './service';
 
+import {getDiagramElementsBetween} from 'services';
+
 import ChartRenderer from 'chart.js';
 
 import Statistics from './Statistics';
@@ -24,7 +26,8 @@ jest.mock('services', () => {
     getFlowNodeNames: jest.fn().mockReturnValue({
       a: 'foo',
       b: 'bar'
-    })
+    }),
+    getDiagramElementsBetween: jest.fn().mockReturnValue([])
   };
 });
 
@@ -86,6 +89,8 @@ it('should create two Charts', async () => {
 });
 
 it('should invoke add Marker when called Mark Sequence flow function', async () => {
+  getDiagramElementsBetween.mockReturnValueOnce(['elementA', 'elementB']);
+
   const canvas = {
     addMarker: jest.fn()
   };
@@ -97,6 +102,8 @@ it('should invoke add Marker when called Mark Sequence flow function', async () 
   ];
 
   const node = mount(<Statistics {...props} />);
-  node.instance().markSequenceFlow(canvas, activeElements, 'testMark');
+  node.instance().markSequenceFlow(null, canvas, activeElements, 'testMark');
   expect(canvas.addMarker).toBeCalledWith(props.gateway.outgoing[0], 'testMark');
+  expect(canvas.addMarker).toBeCalledWith('elementA', 'testMark');
+  expect(canvas.addMarker).toBeCalledWith('elementB', 'testMark');
 });

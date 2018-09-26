@@ -27,6 +27,8 @@ jest.mock('components', () => {
   };
 });
 
+jest.mock('./PartHighlight', () => () => null);
+
 it('should display a button if no process part is set', () => {
   const node = mount(<ProcessPart />);
 

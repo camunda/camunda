@@ -78,7 +78,15 @@ export default themed(
         });
 
         return new Promise(resolve => {
-          viewer.importXML(xml, () => resolve(viewer));
+          viewer.importXML(xml, () => {
+            const defs = viewer._container.querySelector('defs');
+            const highlightMarker = defs.querySelector('marker').cloneNode(true);
+
+            highlightMarker.setAttribute('id', 'sequenceflow-end-highlight');
+
+            defs.appendChild(highlightMarker);
+            resolve(viewer);
+          });
         });
       };
 

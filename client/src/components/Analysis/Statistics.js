@@ -3,7 +3,7 @@ import ChartRenderer from 'chart.js';
 
 import {loadCorrelationData} from './service';
 
-import {getFlowNodeNames} from 'services';
+import {getFlowNodeNames, getDiagramElementsBetween} from 'services';
 
 import './Statistics.css';
 
@@ -150,10 +150,10 @@ export default class Statistics extends React.Component {
         hover: {
           onHover: (e, activeElements) => {
             const canvas = viewer.get('canvas');
-            const classMark = 'chart-hover';
+            const classMark = 'PartHighlight';
             if (activeElements.length > 0 && !isInside) {
               // triggered once the mouse move from outside to inside a bar box
-              this.markSequenceFlow(canvas, activeElements, classMark);
+              this.markSequenceFlow(viewer, canvas, activeElements, classMark);
               isInside = true;
             } else if (activeElements.length <= 0 && isInside) {
               // triggered once the mouse move from inside to outside the barchart box
@@ -177,8 +177,8 @@ export default class Statistics extends React.Component {
     });
   };
 
-  markSequenceFlow = (canvas, activeElements, classMark) => {
-    const {gateway} = this.props;
+  markSequenceFlow = (viewer, canvas, activeElements, classMark) => {
+    const {gateway, endEvent} = this.props;
     const hoveredElementLabel = activeElements[0]._model.label;
     const sequenceFlow = gateway.outgoing.find(
       element =>
@@ -186,6 +186,12 @@ export default class Statistics extends React.Component {
         element.targetRef.name === hoveredElementLabel ||
         element.targetRef.id === hoveredElementLabel
     );
-    if (sequenceFlow) canvas.addMarker(sequenceFlow, classMark);
+    if (sequenceFlow) {
+      canvas.addMarker(gateway, classMark);
+      canvas.addMarker(sequenceFlow, classMark);
+      const reachableNodes = getDiagramElementsBetween(sequenceFlow.targetRef, endEvent, viewer);
+
+      reachableNodes.forEach(id => canvas.addMarker(id, classMark));
+    }
   };
 }

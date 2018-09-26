@@ -9,6 +9,8 @@ export {numberParser} from './NumberParser';
 export {isDurationValue} from './isDurationValue';
 export {loadEntity} from './loadEntity';
 
+export {getDiagramElementsBetween} from './diagramServices';
+
 // unfortunately, there is no syntax like "export * as formatters from './formatters'"
 export const formatters = formattersImport;
 export const reportConfig = reportConfigImport;

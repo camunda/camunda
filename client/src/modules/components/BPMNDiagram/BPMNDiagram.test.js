@@ -22,6 +22,22 @@ jest.mock('bpmn-js/lib/NavigatedViewer', () => {
     attachTo = jest.fn();
     detach = jest.fn();
     importXML = jest.fn((xml, cb) => cb());
+    _container = {
+      querySelector: () => {
+        return {
+          querySelector: () => {
+            return {
+              cloneNode: () => {
+                return {
+                  setAttribute: jest.fn()
+                };
+              }
+            };
+          },
+          appendChild: jest.fn()
+        };
+      }
+    };
     get = () => {
       return this.canvas;
     };
@@ -39,6 +55,22 @@ jest.mock('bpmn-js/lib/Viewer', () => {
     attachTo = jest.fn();
     detach = jest.fn();
     importXML = jest.fn((xml, cb) => cb());
+    _container = {
+      querySelector: () => {
+        return {
+          querySelector: () => {
+            return {
+              cloneNode: () => {
+                return {
+                  setAttribute: jest.fn()
+                };
+              }
+            };
+          },
+          appendChild: jest.fn()
+        };
+      }
+    };
     get = () => {
       return this.canvas;
     };
