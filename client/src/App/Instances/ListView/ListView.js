@@ -7,6 +7,7 @@ import {isEmpty} from 'modules/utils';
 import {isEqual} from 'lodash';
 import {parseFilterForRequest} from 'modules/utils/filter';
 import {fetchWorkflowInstances} from 'modules/api/instances';
+import EmptyMessage from '../EmptyMessage';
 
 import List from './List';
 import ListFooter from './ListFooter';
@@ -88,6 +89,18 @@ export default class ListView extends React.Component {
     return this.setState({sorting: newSorting});
   };
 
+  getEmptyListMessage = () => {
+    const {active, incidents, complete, canceled} = this.props.filter;
+
+    let msg = 'There are no instances matching this filter set.';
+
+    if (!active && !incidents && !complete && !canceled) {
+      msg += '\n To see some results, select at least one instance state.';
+    }
+
+    return msg;
+  };
+
   render() {
     const {
       selection,
@@ -100,11 +113,18 @@ export default class ListView extends React.Component {
       onAddToSpecificSelection
     } = this.props;
 
+    const isListEmpty = !Boolean(this.state.instances.length);
+
     return (
       <SplitPane.Pane {...this.props}>
         <SplitPane.Pane.Header>Instances</SplitPane.Pane.Header>
         <Styled.PaneBody>
-          {!isEmpty(this.props.filter) && (
+          {isListEmpty ? (
+            <EmptyMessage
+              message={this.getEmptyListMessage()}
+              data-test="empty-message-instances-list"
+            />
+          ) : (
             <List
               data={this.state.instances}
               selection={selection}
@@ -121,7 +141,7 @@ export default class ListView extends React.Component {
           )}
         </Styled.PaneBody>
         <SplitPane.Pane.Footer>
-          {!isEmpty(this.props.filter) && (
+          {!isListEmpty && (
             <ListFooter
               filterCount={filterCount}
               perPage={this.state.entriesPerPage}

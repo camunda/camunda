@@ -314,7 +314,7 @@ class Instances extends Component {
     let {filter} = parseQueryString(this.props.location.search);
 
     // filter from URL was missing or invalid
-    if (!filter || isEmpty(filter)) {
+    if (!filter) {
       // set default filter selection
       filter = DEFAULT_FILTER;
       this.setFilterInURL(filter);

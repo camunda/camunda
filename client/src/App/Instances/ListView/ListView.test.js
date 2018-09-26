@@ -77,14 +77,6 @@ describe('ListView', () => {
     expect(listView.state.sorting).toBe(DEFAULT_SORTING);
   });
 
-  it('should contain a List', () => {
-    expect(node.find(List)).toExist();
-  });
-
-  it('should contain a Footer', () => {
-    expect(node.find(ListFooter)).toExist();
-  });
-
   it('should reset the page if the filter changes', () => {
     node.setState({firstElement: 10});
     node.setProps({filter: {prop: 1}});
@@ -92,48 +84,8 @@ describe('ListView', () => {
     expect(node.state().firstElement).toBe(0);
   });
 
-  it('should pass properties to the Instances List', () => {
-    const instances = [{id: 1}, {id: 2}, {id: 3}];
-    node.setState({instances});
-
-    const list = node.find(List);
-
-    expect(list.prop('data')).toBe(instances);
-    expect(list.prop('selection')).toBe(selection);
-    expect(list.prop('filterCount')).toBe(filterCount);
-    expect(list.prop('onUpdateSelection')).toBe(onUpdateSelection);
-  });
-
-  it('should pass a method to the footer to change the firstElement', () => {
-    node.setState({firstElement: 8});
-    const changeFirstElement = node
-      .find(ListFooter)
-      .prop('onFirstElementChange');
-
-    expect(changeFirstElement).toBeDefined();
-    changeFirstElement(87);
-
-    expect(node.state('firstElement')).toBe(87);
-  });
-
-  it('should pass a method to the instances list to update the entries per page', () => {
-    node.setState({entriesPerPage: 8});
-    const changeEntriesPerPage = node.find(List).prop('onEntriesPerPageChange');
-
-    expect(changeEntriesPerPage).toBeDefined();
-    changeEntriesPerPage(87);
-
-    expect(node.state('entriesPerPage')).toBe(87);
-  });
-
-  it('should pass the onUpdateSelection prop to the instances list ', () => {
-    const onUpdateSelection = node.find(List).prop('onUpdateSelection');
-
-    expect(onUpdateSelection).toBe(onUpdateSelection);
-  });
-
   describe('loadData', () => {
-    it('should be called when component mounts and filter is not empty', () => {
+    it('should fetch data on mount if filter is not empty', () => {
       // given filter is not empty
       // then
       node.instance().componentDidMount();
@@ -234,6 +186,104 @@ describe('ListView', () => {
     });
   });
 
+  describe('display instances List', () => {
+    it('should not contain a List when the list is empty', () => {
+      expect(node.find(List)).not.toExist();
+      expect(node.find('[data-test="empty-message-instances-list"]')).toExist();
+      expect(
+        node.find('[data-test="empty-message-instances-list"]')
+      ).toMatchSnapshot();
+    });
+
+    it('should not contain a Footer when list is empty', () => {
+      expect(node.find(ListFooter)).not.toExist();
+    });
+
+    it('should display the list and footer after the data is loaded', async () => {
+      // when data fetched
+      await flushPromises();
+      node.update();
+
+      // then
+      expect(node.find(List)).toExist();
+      expect(node.find(ListFooter)).toExist();
+    });
+
+    it('should pass properties to the Instances List', async () => {
+      // when data fetched
+      await flushPromises();
+      node.update();
+
+      const list = node.find(List);
+
+      expect(list.prop('data')).toEqual([{id: 1}]);
+      expect(list.prop('selection')).toBe(selection);
+      expect(list.prop('filterCount')).toBe(filterCount);
+      expect(list.prop('onUpdateSelection')).toBe(onUpdateSelection);
+    });
+
+    it('should pass the onUpdateSelection prop to the instances list ', async () => {
+      // when data fetched
+      await flushPromises();
+      node.update();
+
+      const onUpdateSelection = node.find(List).prop('onUpdateSelection');
+
+      // then
+      expect(onUpdateSelection).toBe(onUpdateSelection);
+    });
+
+    // this
+    it('should pass a method to the footer to change the firstElement', () => {
+      node.setState({firstElement: 8});
+      const changeFirstElement = node
+        .find(ListFooter)
+        .prop('onFirstElementChange');
+
+      expect(changeFirstElement).toBeDefined();
+      changeFirstElement(87);
+
+      expect(node.state('firstElement')).toBe(87);
+    });
+
+    // this
+    it('should pass a method to the instances list to update the entries per page', () => {
+      node.setState({entriesPerPage: 8});
+      const changeEntriesPerPage = node
+        .find(List)
+        .prop('onEntriesPerPageChange');
+
+      expect(changeEntriesPerPage).toBeDefined();
+      changeEntriesPerPage(87);
+
+      expect(node.state('entriesPerPage')).toBe(87);
+    });
+
+    it('should display a special message when filter has no state', async () => {
+      const emptyFilterNode = shallow(
+        <ListView
+          selection={selection}
+          filter={{}}
+          filterCount={filterCount}
+          selections={selections}
+          openSelection={0}
+          onUpdateSelection={onUpdateSelection}
+          onAddToSpecificSelection={onAddToSpecificSelection}
+          onAddToOpenSelection={onAddToOpenSelection}
+          onAddNewSelection={onAddNewSelection}
+          onFirstElementChange={onFirstElementChange}
+        />
+      );
+
+      // when data fetched
+      await flushPromises();
+      node.update();
+
+      expect(
+        emptyFilterNode.find('[data-test="empty-message-instances-list"]')
+      ).toMatchSnapshot();
+    });
+  });
   describe('handleSorting', () => {
     it('should make state sort order asc if key is currently sorted by in desc order', () => {
       // given
