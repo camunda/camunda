@@ -291,11 +291,18 @@ describe('Instances', () => {
           expect(node.find(PanelHeader).props().children).toBe('Workflow');
         });
 
-        it('should render a diagram when workflow data is available ', () => {
+        it('should render a diagram when workflow data is available ', async () => {
           const node = shallow(InstancesWithWorkflow);
 
           //when
-          node.instance().setState({workflow: workflowMock});
+          await flushPromises();
+          node.update();
+
+          //when
+          node.instance().setState({
+            workflow: workflowMock,
+            filter: {workflow: 'demoProcess'}
+          });
           node.update();
 
           // then
@@ -312,6 +319,31 @@ describe('Instances', () => {
           expect(node.find(PanelHeader).props().children).toBe(
             workflowMock.name || workflowMock.id
           );
+        });
+
+        it('should not display a diagram when all versions are selected', async () => {
+          // given
+          const node = shallow(InstancesWithRunningFilter);
+
+          //when
+          await flushPromises();
+          node.update();
+
+          // when
+          // set workflow so that we show the diagram
+          node.instance().setState({
+            workflow: {},
+            filter: {workflow: 'demoProcess', version: 'all'}
+          });
+          node.update();
+
+          const diagram = node.find(Diagram);
+          const emptyMessage = node.find(
+            '[data-test="data-test-emptyDiagram"]'
+          );
+
+          expect(diagram.length).toBe(0);
+          expect(emptyMessage.length).toBe(1);
         });
       });
     });
@@ -465,10 +497,15 @@ describe('Instances', () => {
         // given
         const node = shallow(InstancesWithRunningFilter);
 
+        //when
+        await flushPromises();
+        node.update();
+
         // when
         // set workflow so that we show the diagram
         node.instance().setState({
           workflow: workflowMock,
+          filter: {workflow: 'demoProcess'},
           activityIds: [{value: 'a', label: 'a'}, {value: 'b', label: 'b'}]
         });
         // await flushPromises();

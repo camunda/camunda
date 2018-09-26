@@ -33,6 +33,7 @@ import Header from '../Header';
 import ListView from './ListView';
 import Filters from './Filters';
 import Selections from './Selections';
+import EmptyMessage from './EmptyMessage';
 
 import sortArrayByKey from 'modules/utils/sortArrayByKey';
 
@@ -40,7 +41,8 @@ import {
   parseQueryString,
   createNewSelectionFragment,
   getPayload,
-  decodeFields
+  decodeFields,
+  getEmptyDiagramMessage
 } from './service';
 import * as Styled from './styled.js';
 
@@ -373,6 +375,13 @@ class Instances extends Component {
   };
 
   render() {
+    const currentWorkflow = this.state.groupedWorkflowInstances[
+      this.state.filter.workflow
+    ];
+    const workflowName = !isEmpty(currentWorkflow)
+      ? currentWorkflow.name || currentWorkflow.id
+      : 'Workflow';
+
     return (
       <Fragment>
         <Header
@@ -397,11 +406,15 @@ class Instances extends Component {
             <Styled.Center>
               <SplitPane.Pane isRounded>
                 <SplitPane.Pane.Header isRounded>
-                  {!isEmpty(this.state.workflow)
-                    ? this.state.workflow.name || this.state.workflow.id
-                    : 'Workflow'}
+                  {workflowName}
                 </SplitPane.Pane.Header>
                 <SplitPane.Pane.Body>
+                  {this.state.filter.version === 'all' && (
+                    <EmptyMessage
+                      message={getEmptyDiagramMessage(workflowName)}
+                      data-test="data-test-emptyDiagram"
+                    />
+                  )}
                   {!isEmpty(this.state.workflow) && (
                     <Diagram
                       workflowId={this.state.workflow.id}
