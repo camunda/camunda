@@ -24,6 +24,8 @@
 .Report__name-container {
   flex-grow: 1;
   padding-right: 48px;
+  overflow: hidden;
+  width: 100%;
 }
 
 .Report__heading {
@@ -36,6 +38,12 @@
   font-size: 14px;
   color: #666666;
   margin-top: 6px;
+}
+
+.Report__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  width: 100%;
 }
 
 .Input.Report__name-input {

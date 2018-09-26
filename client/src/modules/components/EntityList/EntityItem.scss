@@ -52,6 +52,7 @@
 
       .dataTitle {
         margin-bottom: 7px;
+        display: flex;
 
         h3 {
           color: #333333;
@@ -60,7 +61,7 @@
           display: inline-block;
           vertical-align: middle;
           text-overflow: ellipsis;
-          max-width: 80%;
+          max-width: 100%;
           overflow: hidden;
           white-space: nowrap;
         }
@@ -68,7 +69,6 @@
         span {
           font-size: 12px;
           border-radius: 10px;
-          width: 75px;
           height: 20px;
           font-weight: lighter;
           background: #e5f6ff;
