@@ -16,7 +16,11 @@ jest.mock('./DropdownOption', () => {
   };
 });
 
-jest.mock('./Submenu', () => props => <div>Submenu: {JSON.stringify(props)}</div>);
+jest.mock('./Submenu', () => props => (
+  <div tabIndex="0" className="Submenu">
+    Submenu: {JSON.stringify(props)}
+  </div>
+));
 
 it('should render without crashing', () => {
   mount(<Dropdown />);
@@ -185,7 +189,7 @@ it('should change focus after pressing an arrow key if opened', () => {
   expect(document.activeElement.textContent).toBe('bar');
 });
 
-it('should pass open, offset, setOpened, setClosed, forceOpen and closeParent properties to submenus', () => {
+it('should pass open, offset, setOpened, setClosed, forceToggle and closeParent properties to submenus', () => {
   const node = mount(
     <Dropdown>
       <Dropdown.Submenu />
@@ -197,7 +201,7 @@ it('should pass open, offset, setOpened, setClosed, forceOpen and closeParent pr
   expect(submenuNode).toHaveProp('offset');
   expect(submenuNode).toHaveProp('setOpened');
   expect(submenuNode).toHaveProp('setClosed');
-  expect(submenuNode).toHaveProp('forceOpen');
+  expect(submenuNode).toHaveProp('forceToggle');
   expect(submenuNode).toHaveProp('closeParent');
 });
 
@@ -226,4 +230,23 @@ it('should not open a submenu when it is opened, but another is forced open', ()
 
   expect(node.find(Dropdown.Submenu).at(0)).toHaveProp('open', false);
   expect(node.find(Dropdown.Submenu).at(1)).toHaveProp('open', true);
+});
+
+it('should open a submenu when pressing the right arrow on a submenu entry', () => {
+  const node = mount(
+    <Dropdown label="Click me">
+      <Dropdown.Submenu />
+    </Dropdown>
+  );
+
+  node.instance().setState({open: true});
+  node
+    .find(Dropdown.Submenu)
+    .first()
+    .getDOMNode()
+    .focus();
+
+  node.simulate('keyDown', {key: 'ArrowRight'});
+
+  expect(node.state('fixedSubmenu')).toBe(0);
 });

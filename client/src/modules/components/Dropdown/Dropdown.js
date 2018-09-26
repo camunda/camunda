@@ -35,6 +35,17 @@ export default class Dropdown extends React.Component {
   }
 
   handleKeyPress = evt => {
+    const dropdownButton = this.container.children[0];
+
+    const options = this.options.filter(option => option.getAttribute('disabled') === null);
+
+    if (options[0] !== dropdownButton) {
+      options.unshift(dropdownButton);
+    }
+
+    evt = evt || window.event;
+    let selectedOption = options.indexOf(document.activeElement);
+
     if (evt.key !== 'Tab') {
       evt.preventDefault();
     }
@@ -45,34 +56,29 @@ export default class Dropdown extends React.Component {
 
     if (evt.key === 'Escape') {
       this.close({});
-    } else if (evt.key === 'ArrowDown' || evt.key === 'ArrowUp') {
-      const dropdownButton = this.container.children[0];
+    }
 
-      const options = this.options.filter(option => {
-        return !option.disabled;
-      });
-
-      if (options[0] !== dropdownButton) {
-        options.unshift(dropdownButton);
+    if (evt.key === 'ArrowRight') {
+      if (options[selectedOption].classList.contains('Submenu')) {
+        this.setState({fixedSubmenu: this.options.indexOf(document.activeElement)}, () => {
+          const childElement = document.activeElement.querySelector('[tabindex="0"]');
+          if (childElement) {
+            childElement.focus();
+          }
+        });
       }
+    }
 
-      evt = evt || window.event;
-      let selectedOption = options.indexOf(document.activeElement);
-
-      if (evt.key === 'ArrowDown') {
-        if (!this.state.open) {
-          this.toggleOpen();
-        } else {
-          selectedOption++;
-          selectedOption = Math.min(selectedOption, options.length - 1);
-        }
+    if (evt.key === 'ArrowDown') {
+      if (!this.state.open) {
+        evt.target.click();
+      } else {
+        options[Math.min(selectedOption + 1, options.length - 1)].focus();
       }
+    }
 
-      if (evt.key === 'ArrowUp') {
-        selectedOption--;
-        selectedOption = Math.max(selectedOption, 0);
-      }
-      options[selectedOption].focus();
+    if (evt.key === 'ArrowUp') {
+      options[Math.max(selectedOption - 1, 0)].focus();
     }
   };
 
@@ -121,7 +127,7 @@ export default class Dropdown extends React.Component {
                       setClosed: () => {
                         this.setState({openSubmenu: null});
                       },
-                      forceOpen: evt => {
+                      forceToggle: evt => {
                         evt.stopPropagation();
                         this.setState(({fixedSubmenu}) => {
                           return {fixedSubmenu: fixedSubmenu === idx ? null : idx};

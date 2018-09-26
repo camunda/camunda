@@ -9,6 +9,7 @@ export default function DropdownOption({active, ...props}) {
       {...props}
       onClick={evt => !props.disabled && props.onClick && props.onClick(evt)}
       className={classnames('DropdownOption', props.className, {'is-active': active})}
+      tabIndex={props.disabled ? '-1' : '0'}
     >
       {props.checked && <Icon className="checkMark" type="check-small" size="10px" />}
       {props.children}

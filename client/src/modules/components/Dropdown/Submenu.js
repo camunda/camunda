@@ -19,7 +19,7 @@ export default class Submenu extends React.Component {
     if (this.props.onOpen) {
       this.props.onOpen(evt);
     }
-    this.props.forceOpen(evt);
+    this.props.forceToggle(evt);
   };
 
   onMouseOver = evt => {
@@ -35,6 +35,36 @@ export default class Submenu extends React.Component {
 
   onMouseLeave = evt => {
     this.props.setClosed(evt);
+  };
+
+  onKeyDown = evt => {
+    evt.stopPropagation();
+    if (evt.key !== 'Tab') {
+      evt.preventDefault();
+    }
+
+    if (evt.key === 'Enter') {
+      evt.target.click();
+    }
+
+    if (evt.key === 'Escape' || evt.key === 'ArrowLeft') {
+      document.activeElement.parentNode.closest('.DropdownOption').focus();
+      this.props.forceToggle(evt);
+    }
+
+    if (evt.key === 'ArrowDown') {
+      const next = document.activeElement.nextElementSibling;
+      if (next) {
+        next.focus();
+      }
+    }
+
+    if (evt.key === 'ArrowUp') {
+      const previous = document.activeElement.previousElementSibling;
+      if (previous) {
+        previous.focus();
+      }
+    }
   };
 
   render() {
@@ -54,6 +84,7 @@ export default class Submenu extends React.Component {
         {this.props.open && (
           <div
             onClick={this.props.closeParent}
+            onKeyDown={this.onKeyDown}
             className="childrenContainer"
             style={{left: this.props.offset - 1 + 'px'}}
           >
