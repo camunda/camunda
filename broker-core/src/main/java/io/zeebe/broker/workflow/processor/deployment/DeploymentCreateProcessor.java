@@ -22,16 +22,16 @@ import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.workflow.deployment.data.DeploymentRecord;
-import io.zeebe.broker.workflow.map.WorkflowCache;
+import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 
 public class DeploymentCreateProcessor implements TypedRecordProcessor<DeploymentRecord> {
 
-  private final WorkflowCache workflowCache;
+  private final WorkflowState workflowState;
 
-  public DeploymentCreateProcessor(final WorkflowCache cache) {
-    workflowCache = cache;
+  public DeploymentCreateProcessor(final WorkflowState workflowState) {
+    this.workflowState = workflowState;
   }
 
   @Override
@@ -41,7 +41,7 @@ public class DeploymentCreateProcessor implements TypedRecordProcessor<Deploymen
       final TypedStreamWriter streamWriter) {
 
     final DeploymentRecord deploymentEvent = event.getValue();
-    if (workflowCache.addWorkflow(event.getKey(), deploymentEvent)) {
+    if (workflowState.putDeployment(event.getKey(), deploymentEvent)) {
       streamWriter.writeFollowUpEvent(event.getKey(), DeploymentIntent.CREATED, deploymentEvent);
     } else {
       streamWriter.writeRejection(event, RejectionType.NOT_APPLICABLE, "Deployment already exist");

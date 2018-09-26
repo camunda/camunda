@@ -32,8 +32,8 @@ import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionDa
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.broker.workflow.index.ElementInstance;
 import io.zeebe.broker.workflow.index.ElementInstanceIndex;
-import io.zeebe.broker.workflow.map.DeployedWorkflow;
-import io.zeebe.broker.workflow.map.WorkflowCache;
+import io.zeebe.broker.workflow.state.DeployedWorkflow;
+import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
@@ -51,7 +51,7 @@ public final class CorrelateWorkflowInstanceSubscription
   private final ElementInstanceIndex scopeInstances;
   private final WorkflowInstanceSubscriptionDataStore subscriptionStore;
   private final TopologyManager topologyManager;
-  private final WorkflowCache workflowCache;
+  private final WorkflowState workflowState;
   private final SubscriptionCommandSender subscriptionCommandSender;
 
   private TypedRecord<WorkflowInstanceSubscriptionRecord> record;
@@ -63,12 +63,12 @@ public final class CorrelateWorkflowInstanceSubscription
       ElementInstanceIndex scopeInstances,
       WorkflowInstanceSubscriptionDataStore subscriptionStore,
       TopologyManager topologyManager,
-      WorkflowCache workflowCache,
+      WorkflowState workflowState,
       SubscriptionCommandSender subscriptionCommandSender) {
     this.scopeInstances = scopeInstances;
     this.subscriptionStore = subscriptionStore;
     this.topologyManager = topologyManager;
-    this.workflowCache = workflowCache;
+    this.workflowState = workflowState;
     this.subscriptionCommandSender = subscriptionCommandSender;
   }
 
@@ -109,7 +109,7 @@ public final class CorrelateWorkflowInstanceSubscription
 
     } else {
       final long workflowKey = eventInstance.getValue().getWorkflowKey();
-      final DeployedWorkflow workflow = workflowCache.getWorkflowByKey(workflowKey);
+      final DeployedWorkflow workflow = workflowState.getWorkflowByKey(workflowKey);
       if (workflow != null) {
         onWorkflowAvailable();
       } else {

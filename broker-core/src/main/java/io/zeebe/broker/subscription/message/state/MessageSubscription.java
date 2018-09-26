@@ -17,6 +17,9 @@
  */
 package io.zeebe.broker.subscription.message.state;
 
+import static io.zeebe.util.buffer.BufferUtil.readIntoBuffer;
+import static io.zeebe.util.buffer.BufferUtil.writeIntoBuffer;
+
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferWriter;
 import java.nio.ByteOrder;
@@ -121,9 +124,9 @@ public class MessageSubscription implements BufferReader, BufferWriter {
     this.commandSentTime = buffer.getLong(offset, ByteOrder.LITTLE_ENDIAN);
     offset += Long.BYTES;
 
-    offset = Message.readIntoBuffer(buffer, offset, messageName);
-    offset = Message.readIntoBuffer(buffer, offset, correlationKey);
-    Message.readIntoBuffer(buffer, offset, messagePayload);
+    offset = readIntoBuffer(buffer, offset, messageName);
+    offset = readIntoBuffer(buffer, offset, correlationKey);
+    readIntoBuffer(buffer, offset, messagePayload);
   }
 
   @Override
@@ -149,9 +152,9 @@ public class MessageSubscription implements BufferReader, BufferWriter {
     buffer.putLong(offset, commandSentTime, ByteOrder.LITTLE_ENDIAN);
     offset += Long.BYTES;
 
-    offset = Message.writeIntoBuffer(buffer, offset, messageName);
-    offset = Message.writeIntoBuffer(buffer, offset, correlationKey);
-    offset = Message.writeIntoBuffer(buffer, offset, messagePayload);
+    offset = writeIntoBuffer(buffer, offset, messageName);
+    offset = writeIntoBuffer(buffer, offset, correlationKey);
+    offset = writeIntoBuffer(buffer, offset, messagePayload);
     assert offset == getLength() : "End offset differs with getLength()";
   }
 

@@ -15,36 +15,22 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.map;
+package io.zeebe.broker.workflow.state;
 
 import io.zeebe.broker.workflow.model.ExecutableWorkflow;
 import org.agrona.DirectBuffer;
 
 public class DeployedWorkflow {
   private final ExecutableWorkflow workflow;
-  private final long key;
-  private final int version;
-  private final DirectBuffer resource;
-  private final DirectBuffer resourceName;
-  private final DirectBuffer bpmnProcessId;
+  private final PersistedWorkflow persistedWorkflow;
 
-  public DeployedWorkflow(
-      final ExecutableWorkflow workflow,
-      final long key,
-      final int version,
-      final DirectBuffer resource,
-      final DirectBuffer resourceName,
-      final DirectBuffer bpmnProcessId) {
+  public DeployedWorkflow(final ExecutableWorkflow workflow, PersistedWorkflow persistedWorkflow) {
     this.workflow = workflow;
-    this.key = key;
-    this.version = version;
-    this.resource = resource;
-    this.resourceName = resourceName;
-    this.bpmnProcessId = bpmnProcessId;
+    this.persistedWorkflow = persistedWorkflow;
   }
 
   public DirectBuffer getResourceName() {
-    return resourceName;
+    return persistedWorkflow.getResourceName();
   }
 
   public ExecutableWorkflow getWorkflow() {
@@ -52,18 +38,28 @@ public class DeployedWorkflow {
   }
 
   public int getVersion() {
-    return version;
+    return persistedWorkflow.getVersion();
   }
 
   public long getKey() {
-    return key;
+    return persistedWorkflow.getKey();
   }
 
   public DirectBuffer getResource() {
-    return resource;
+    return persistedWorkflow.getResource();
   }
 
   public DirectBuffer getBpmnProcessId() {
-    return bpmnProcessId;
+    return persistedWorkflow.getBpmnProcessId();
+  }
+
+  @Override
+  public String toString() {
+    return "DeployedWorkflow{"
+        + "workflow="
+        + workflow
+        + ", persistedWorkflow="
+        + persistedWorkflow
+        + '}';
   }
 }

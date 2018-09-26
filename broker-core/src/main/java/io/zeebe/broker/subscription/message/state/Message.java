@@ -17,6 +17,9 @@
  */
 package io.zeebe.broker.subscription.message.state;
 
+import static io.zeebe.util.buffer.BufferUtil.readIntoBuffer;
+import static io.zeebe.util.buffer.BufferUtil.writeIntoBuffer;
+
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.clock.ActorClock;
@@ -122,28 +125,6 @@ public final class Message implements BufferWriter, BufferReader {
     key = buffer.getLong(offset, ByteOrder.LITTLE_ENDIAN);
   }
 
-  static int readIntoBuffer(final DirectBuffer buffer, int offset, final DirectBuffer valueBuffer) {
-    final int length = buffer.getInt(offset, ByteOrder.LITTLE_ENDIAN);
-    offset += Integer.BYTES;
-
-    final byte[] bytes = new byte[length];
-    valueBuffer.wrap(bytes);
-    buffer.getBytes(offset, bytes, 0, length);
-    offset += length;
-    return offset;
-  }
-
-  static int writeIntoBuffer(
-      final MutableDirectBuffer writeBuffer, int offset, final DirectBuffer valueBuffer) {
-    final int valueLength = valueBuffer.capacity();
-    writeBuffer.putInt(offset, valueLength, ByteOrder.LITTLE_ENDIAN);
-    offset += Integer.BYTES;
-
-    writeBuffer.putBytes(offset, valueBuffer, 0, valueLength);
-    offset += valueLength;
-    return offset;
-  }
-
   @Override
   public int getLength() {
     return name.capacity()
@@ -156,25 +137,28 @@ public final class Message implements BufferWriter, BufferReader {
 
   @Override
   public void write(final MutableDirectBuffer buffer, int offset) {
-    offset = writeIntoBuffer(buffer, offset, name);
-    offset = writeIntoBuffer(buffer, offset, correlationKey);
-    offset = writeIntoBuffer(buffer, offset, payload);
-    offset = writeIntoBuffer(buffer, offset, id);
+    int valueOffset = offset;
+    valueOffset = writeIntoBuffer(buffer, valueOffset, name);
+    valueOffset = writeIntoBuffer(buffer, valueOffset, correlationKey);
+    valueOffset = writeIntoBuffer(buffer, valueOffset, payload);
+    valueOffset = writeIntoBuffer(buffer, valueOffset, id);
 
-    buffer.putLong(offset, timeToLive, ByteOrder.LITTLE_ENDIAN);
-    offset += Long.BYTES;
-    buffer.putLong(offset, deadline, ByteOrder.LITTLE_ENDIAN);
-    offset += Long.BYTES;
-    buffer.putLong(offset, key, ByteOrder.LITTLE_ENDIAN);
-    offset += Long.BYTES;
-    assert offset == getLength() : "End offset differs with getLength()";
+    buffer.putLong(valueOffset, timeToLive, ByteOrder.LITTLE_ENDIAN);
+    valueOffset += Long.BYTES;
+    buffer.putLong(valueOffset, deadline, ByteOrder.LITTLE_ENDIAN);
+    valueOffset += Long.BYTES;
+    buffer.putLong(valueOffset, key, ByteOrder.LITTLE_ENDIAN);
+    valueOffset += Long.BYTES;
+    assert (valueOffset - offset) == getLength() : "End offset differs with getLength()";
   }
 
   public void writeKey(MutableDirectBuffer keyBuffer, int offset) {
-    keyBuffer.putLong(offset, deadline, ByteOrder.LITTLE_ENDIAN);
-    offset += Long.BYTES;
-    offset = writeMessageKeyToBuffer(keyBuffer, offset, name, correlationKey);
-    assert offset == getKeyLength() : "Offset problem: offset is not equal to expected key length";
+    int keyOffset = offset;
+    keyBuffer.putLong(keyOffset, deadline, ByteOrder.LITTLE_ENDIAN);
+    keyOffset += Long.BYTES;
+    keyOffset = writeMessageKeyToBuffer(keyBuffer, keyOffset, name, correlationKey);
+    assert (keyOffset - offset) == getKeyLength()
+        : "Offset problem: offset is not equal to expected key length";
   }
 
   public static int writeMessageKeyToBuffer(

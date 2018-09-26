@@ -31,7 +31,6 @@ import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.processor.OpenWorkflowInstanceSubscriptionProcessor;
 import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionDataStore;
 import io.zeebe.broker.workflow.index.ElementInstanceIndex;
-import io.zeebe.broker.workflow.map.WorkflowCache;
 import io.zeebe.broker.workflow.processor.deployment.DeploymentCreateProcessor;
 import io.zeebe.broker.workflow.processor.deployment.TransformingDeploymentCreateProcessor;
 import io.zeebe.broker.workflow.processor.instance.CancelWorkflowInstanceProcessor;
@@ -42,8 +41,10 @@ import io.zeebe.broker.workflow.processor.instance.WorkflowInstanceRejectedEvent
 import io.zeebe.broker.workflow.processor.job.JobCompletedEventProcessor;
 import io.zeebe.broker.workflow.processor.job.JobCreatedProcessor;
 import io.zeebe.broker.workflow.processor.message.CorrelateWorkflowInstanceSubscription;
-import io.zeebe.broker.workflow.state.WorkflowRepositoryIndex;
+import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.logstreams.state.StateSnapshotController;
+import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
@@ -58,30 +59,29 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
   private TypedStreamReader streamReader;
   private final WorkflowInstanceSubscriptionDataStore subscriptionStore =
       new WorkflowInstanceSubscriptionDataStore();
-  private final WorkflowRepositoryIndex repositoryIndex = new WorkflowRepositoryIndex();
 
   private final TopologyManager topologyManager;
-  private final WorkflowCache workflowCache;
+  private final WorkflowState workflowState;
   private final SubscriptionCommandSender subscriptionCommandSender;
   private final Consumer<StreamProcessorContext> onRecoveredCallback;
   private final Runnable onClosedCallback;
 
   public WorkflowInstanceStreamProcessor(
-      final WorkflowCache workflowCache,
+      final WorkflowState workflowState,
       final SubscriptionCommandSender subscriptionCommandSender,
       final TopologyManager topologyManager) {
-    this((ctx) -> {}, () -> {}, workflowCache, subscriptionCommandSender, topologyManager);
+    this((ctx) -> {}, () -> {}, workflowState, subscriptionCommandSender, topologyManager);
   }
 
   public WorkflowInstanceStreamProcessor(
       final Consumer<StreamProcessorContext> onRecoveredCallback,
       final Runnable onClosedCallback,
-      final WorkflowCache workflowCache,
+      final WorkflowState workflowState,
       final SubscriptionCommandSender subscriptionCommandSender,
       final TopologyManager topologyManager) {
     this.onRecoveredCallback = onRecoveredCallback;
     this.onClosedCallback = onClosedCallback;
-    this.workflowCache = workflowCache;
+    this.workflowState = workflowState;
     this.subscriptionCommandSender = subscriptionCommandSender;
     this.topologyManager = topologyManager;
   }
@@ -108,7 +108,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         // this is pretty ugly, but goes away when we switch to rocksdb
         .withStateResource(snapshotSupport)
         .withStateResource(subscriptionStore)
-        .withStateResource(repositoryIndex)
+        .withStateController(workflowState)
         .withListener(this)
         .withListener(
             new StreamProcessorLifecycleAware() {
@@ -120,13 +120,17 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         .build();
   }
 
+  public StateSnapshotController createSnapshotController(final StateStorage storage) {
+    return new StateSnapshotController(workflowState, storage);
+  }
+
   private void addDeploymentStreamProcessors(
       final TypedEventStreamProcessorBuilder streamProcessorBuilder, final int partitionId) {
 
     final TypedRecordProcessor<?> processor =
         Protocol.DEPLOYMENT_PARTITION == partitionId
-            ? new TransformingDeploymentCreateProcessor(this.workflowCache, repositoryIndex)
-            : new DeploymentCreateProcessor(this.workflowCache);
+            ? new TransformingDeploymentCreateProcessor(this.workflowState)
+            : new DeploymentCreateProcessor(this.workflowState);
 
     streamProcessorBuilder.onCommand(ValueType.DEPLOYMENT, CREATE, processor);
   }
@@ -137,7 +141,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         .onCommand(
             ValueType.WORKFLOW_INSTANCE,
             WorkflowInstanceIntent.CREATE,
-            new CreateWorkflowInstanceEventProcessor(workflowCache))
+            new CreateWorkflowInstanceEventProcessor(workflowState))
         .onEvent(
             ValueType.WORKFLOW_INSTANCE,
             WorkflowInstanceIntent.CREATED,
@@ -159,7 +163,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
   private void addBpmnStepProcessor(final TypedEventStreamProcessorBuilder streamProcessorBuilder) {
     final BpmnStepProcessor bpmnStepProcessor =
         new BpmnStepProcessor(
-            scopeInstances, workflowCache, subscriptionCommandSender, subscriptionStore);
+            scopeInstances, workflowState, subscriptionCommandSender, subscriptionStore);
 
     streamProcessorBuilder
         .onEvent(
@@ -216,7 +220,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
                 scopeInstances,
                 subscriptionStore,
                 topologyManager,
-                workflowCache,
+                workflowState,
                 subscriptionCommandSender));
   }
 

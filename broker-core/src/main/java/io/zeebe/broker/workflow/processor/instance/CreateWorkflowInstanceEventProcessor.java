@@ -24,8 +24,8 @@ import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
-import io.zeebe.broker.workflow.map.DeployedWorkflow;
-import io.zeebe.broker.workflow.map.WorkflowCache;
+import io.zeebe.broker.workflow.state.DeployedWorkflow;
+import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
@@ -34,10 +34,10 @@ import org.agrona.DirectBuffer;
 public final class CreateWorkflowInstanceEventProcessor
     implements TypedRecordProcessor<WorkflowInstanceRecord> {
 
-  private final WorkflowCache workflowCache;
+  private final WorkflowState workflowState;
 
-  public CreateWorkflowInstanceEventProcessor(WorkflowCache workflowCache) {
-    this.workflowCache = workflowCache;
+  public CreateWorkflowInstanceEventProcessor(WorkflowState workflowState) {
+    this.workflowState = workflowState;
   }
 
   private long requestId;
@@ -78,12 +78,12 @@ public final class CreateWorkflowInstanceEventProcessor
     final DeployedWorkflow workflowDefinition;
     if (workflowKey <= 0) {
       if (version > 0) {
-        workflowDefinition = workflowCache.getWorkflowByProcessIdAndVersion(bpmnProcessId, version);
+        workflowDefinition = workflowState.getWorkflowByProcessIdAndVersion(bpmnProcessId, version);
       } else {
-        workflowDefinition = workflowCache.getLatestWorkflowVersionByProcessId(bpmnProcessId);
+        workflowDefinition = workflowState.getLatestWorkflowVersionByProcessId(bpmnProcessId);
       }
     } else {
-      workflowDefinition = workflowCache.getWorkflowByKey(workflowKey);
+      workflowDefinition = workflowState.getWorkflowByKey(workflowKey);
     }
 
     if (workflowDefinition != null) {

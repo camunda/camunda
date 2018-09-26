@@ -24,8 +24,7 @@ import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.workflow.deployment.data.DeploymentRecord;
 import io.zeebe.broker.workflow.deployment.transform.DeploymentTransformer;
-import io.zeebe.broker.workflow.map.WorkflowCache;
-import io.zeebe.broker.workflow.state.WorkflowRepositoryIndex;
+import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import java.util.function.Consumer;
@@ -34,12 +33,11 @@ public class TransformingDeploymentCreateProcessor
     implements TypedRecordProcessor<DeploymentRecord> {
 
   private final DeploymentTransformer deploymentTransformer;
-  private final WorkflowCache workflowCache;
+  private final WorkflowState workflowState;
 
-  public TransformingDeploymentCreateProcessor(
-      final WorkflowCache cache, final WorkflowRepositoryIndex workflowRepositoryIndex) {
-    workflowCache = cache;
-    this.deploymentTransformer = new DeploymentTransformer(workflowRepositoryIndex);
+  public TransformingDeploymentCreateProcessor(final WorkflowState workflowState) {
+    this.workflowState = workflowState;
+    this.deploymentTransformer = new DeploymentTransformer(workflowState);
   }
 
   @Override
@@ -53,7 +51,7 @@ public class TransformingDeploymentCreateProcessor
     final boolean accepted = deploymentTransformer.transform(deploymentEvent);
     if (accepted) {
       final long key = streamWriter.getKeyGenerator().nextKey();
-      if (workflowCache.addWorkflow(key, deploymentEvent)) {
+      if (workflowState.putDeployment(key, deploymentEvent)) {
         responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, event);
         streamWriter.writeFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
       } else {

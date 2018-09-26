@@ -29,10 +29,10 @@ import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.broker.workflow.index.ElementInstance;
 import io.zeebe.broker.workflow.index.ElementInstanceIndex;
 import io.zeebe.broker.workflow.index.WorkflowEngineState;
-import io.zeebe.broker.workflow.map.DeployedWorkflow;
-import io.zeebe.broker.workflow.map.WorkflowCache;
 import io.zeebe.broker.workflow.model.ExecutableFlowElement;
 import io.zeebe.broker.workflow.model.ExecutableWorkflow;
+import io.zeebe.broker.workflow.state.DeployedWorkflow;
+import io.zeebe.broker.workflow.state.WorkflowState;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 
@@ -43,17 +43,16 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
   private final BpmnStepHandlers stepHandlers;
   private final BpmnStepGuards stepGuards;
 
-  private final WorkflowCache workflowCache;
+  private final WorkflowState workflowState;
 
   private BpmnStepContext context;
 
   public BpmnStepProcessor(
       ElementInstanceIndex scopeInstances,
-      WorkflowCache workflowCache,
+      WorkflowState workflowState,
       SubscriptionCommandSender subscriptionCommandSender,
       WorkflowInstanceSubscriptionDataStore subscriptionStore) {
-
-    this.workflowCache = workflowCache;
+    this.workflowState = workflowState;
     this.stepHandlers = new BpmnStepHandlers(subscriptionCommandSender, subscriptionStore);
     this.stepGuards = new BpmnStepGuards();
     this.state = new WorkflowEngineState(scopeInstances);
@@ -94,7 +93,7 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
     context.setSideEffect(sideEffect);
 
     final long workflowKey = record.getValue().getWorkflowKey();
-    final DeployedWorkflow deployedWorkflow = workflowCache.getWorkflowByKey(workflowKey);
+    final DeployedWorkflow deployedWorkflow = workflowState.getWorkflowByKey(workflowKey);
 
     if (deployedWorkflow == null) {
       throw new IllegalStateException(
