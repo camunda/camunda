@@ -47,16 +47,15 @@ public class PendingMessageSubscriptionChecker implements Runnable {
             ActorClock.currentTimeMillis() - subscriptionTimeout);
 
     for (MessageSubscription subscription : pendingSubscriptions) {
-      final boolean success = sendCommand(subscription);
-      if (!success) {
+      if (sendCommand(subscription)) {
+        messageStateController.updateCommandSentTime(subscription);
+      } else {
         return;
       }
     }
   }
 
   private boolean sendCommand(MessageSubscription subscription) {
-    subscription.setCommandSentTime(ActorClock.currentTimeMillis());
-
     return commandSender.correlateWorkflowInstanceSubscription(
         subscription.getWorkflowInstancePartitionId(),
         subscription.getWorkflowInstanceKey(),

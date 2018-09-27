@@ -24,7 +24,6 @@ import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
-import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionDataStore;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.broker.workflow.index.ElementInstance;
 import io.zeebe.broker.workflow.index.ElementInstanceIndex;
@@ -50,10 +49,9 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
   public BpmnStepProcessor(
       ElementInstanceIndex scopeInstances,
       WorkflowState workflowState,
-      SubscriptionCommandSender subscriptionCommandSender,
-      WorkflowInstanceSubscriptionDataStore subscriptionStore) {
+      SubscriptionCommandSender subscriptionCommandSender) {
     this.workflowState = workflowState;
-    this.stepHandlers = new BpmnStepHandlers(subscriptionCommandSender, subscriptionStore);
+    this.stepHandlers = new BpmnStepHandlers(subscriptionCommandSender, workflowState);
     this.stepGuards = new BpmnStepGuards();
     this.state = new WorkflowEngineState(scopeInstances);
   }

@@ -20,6 +20,7 @@ package io.zeebe.broker.workflow.state;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.workflow.deployment.data.DeploymentRecord;
 import io.zeebe.broker.workflow.deployment.data.ResourceType;
 import io.zeebe.broker.workflow.deployment.transform.DeploymentTransformer;
@@ -28,6 +29,7 @@ import io.zeebe.broker.workflow.model.ExecutableWorkflow;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.Collection;
+import java.util.List;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -396,6 +398,185 @@ public class WorkflowStateTest {
         .containsOnly(wrapString("otherId"));
     assertThat(workflows).extracting(DeployedWorkflow::getVersion).containsOnly(1);
     assertThat(workflows).extracting(DeployedWorkflow::getKey).containsOnly(2L);
+  }
+
+  @Test
+  public void shouldPutAndFindWorkflowSubscription() {
+    // given
+    final WorkflowSubscription workflowSubscription =
+        new WorkflowSubscription("message", "correlation", 1, 2, 100);
+    workflowSubscription.setOpen(true);
+
+    // when
+    workflowState.put(workflowSubscription);
+
+    // then
+    final WorkflowInstanceSubscriptionRecord workflowInstanceSubscriptionRecord =
+        new WorkflowInstanceSubscriptionRecord();
+    workflowInstanceSubscriptionRecord.setMessageName(wrapString("message"));
+    workflowInstanceSubscriptionRecord.setWorkflowInstanceKey(1);
+    workflowInstanceSubscriptionRecord.setActivityInstanceKey(2);
+
+    final WorkflowSubscription subscription =
+        workflowState.findSubscription(workflowInstanceSubscriptionRecord);
+
+    assertThat(subscription).isNotNull();
+
+    assertThat(subscription.getMessageName()).isEqualTo(wrapString("message"));
+    assertThat(subscription.getCorrelationKey()).isEqualTo(wrapString("correlation"));
+    assertThat(subscription.getWorkflowInstanceKey()).isEqualTo(1);
+    assertThat(subscription.getActivityInstanceKey()).isEqualTo(2);
+    assertThat(subscription.getCommandSentTime()).isEqualTo(100);
+    assertThat(subscription.isNotOpen()).isFalse();
+  }
+
+  @Test
+  public void shouldFindOneWorkflowSubscription() {
+    // given
+    workflowState.put(new WorkflowSubscription("message", "correlation", 1, 2, 100));
+    workflowState.put(new WorkflowSubscription("msg1", "correlation", 2, 3, 100));
+    workflowState.put(new WorkflowSubscription("msg2", "correlation", 3, 4, 100));
+
+    // when
+    final WorkflowInstanceSubscriptionRecord workflowInstanceSubscriptionRecord =
+        new WorkflowInstanceSubscriptionRecord();
+    workflowInstanceSubscriptionRecord.setMessageName(wrapString("message"));
+    workflowInstanceSubscriptionRecord.setWorkflowInstanceKey(1);
+    workflowInstanceSubscriptionRecord.setActivityInstanceKey(2);
+
+    final WorkflowSubscription subscription =
+        workflowState.findSubscription(workflowInstanceSubscriptionRecord);
+
+    // then
+    assertThat(subscription).isNotNull();
+
+    assertThat(subscription.getMessageName()).isEqualTo(wrapString("message"));
+    assertThat(subscription.getCorrelationKey()).isEqualTo(wrapString("correlation"));
+    assertThat(subscription.getWorkflowInstanceKey()).isEqualTo(1);
+    assertThat(subscription.getActivityInstanceKey()).isEqualTo(2);
+    assertThat(subscription.getCommandSentTime()).isEqualTo(100);
+  }
+
+  @Test
+  public void shouldNotFindWorkflowSubscriptionBefore() {
+    // given
+    final WorkflowSubscription workflowSubscription =
+        new WorkflowSubscription("message", "correlation", 1, 2, 100);
+    workflowState.put(workflowSubscription);
+
+    // when
+    final List<WorkflowSubscription> workflowSubscriptions =
+        workflowState.findSubscriptionsBefore(50L);
+
+    // then
+    assertThat(workflowSubscriptions).isEmpty();
+  }
+
+  @Test
+  public void shouldFindWorkflowSubscriptionBefore() {
+    // given
+    workflowState.put(new WorkflowSubscription("message", "correlation", 1, 2, 100));
+    workflowState.put(new WorkflowSubscription("msg", "correlation", 3, 4, 150));
+
+    // when
+    final List<WorkflowSubscription> workflowSubscriptions =
+        workflowState.findSubscriptionsBefore(101L);
+
+    // then
+    assertThat(workflowSubscriptions).hasSize(1);
+
+    assertThat(workflowSubscriptions)
+        .extracting(w -> w.getMessageName())
+        .containsExactly(wrapString("message"));
+    assertThat(workflowSubscriptions)
+        .extracting(w -> w.getWorkflowInstanceKey())
+        .containsExactly(1L);
+    assertThat(workflowSubscriptions)
+        .extracting(w -> w.getActivityInstanceKey())
+        .containsExactly(2L);
+    assertThat(workflowSubscriptions).extracting(w -> w.getCommandSentTime()).containsExactly(100L);
+  }
+
+  @Test
+  public void shouldFindAllWorkflowSubscriptionBefore() {
+    // given
+    workflowState.put(new WorkflowSubscription("message", "correlation", 1, 2, 100));
+    workflowState.put(new WorkflowSubscription("msg", "correlation", 3, 4, 150));
+
+    // when
+    final List<WorkflowSubscription> workflowSubscriptions =
+        workflowState.findSubscriptionsBefore(151L);
+
+    // then
+    assertThat(workflowSubscriptions).hasSize(2);
+
+    assertThat(workflowSubscriptions)
+        .extracting(w -> w.getMessageName())
+        .containsExactlyInAnyOrder(wrapString("message"), wrapString("msg"));
+    assertThat(workflowSubscriptions)
+        .extracting(w -> w.getWorkflowInstanceKey())
+        .containsExactlyInAnyOrder(1L, 3L);
+    assertThat(workflowSubscriptions)
+        .extracting(w -> w.getActivityInstanceKey())
+        .containsExactlyInAnyOrder(2L, 4L);
+    assertThat(workflowSubscriptions)
+        .extracting(w -> w.getCommandSentTime())
+        .containsExactlyInAnyOrder(100L, 150L);
+  }
+
+  @Test
+  public void shouldRemoveWorkflowSubscription() {
+    // given
+    final WorkflowSubscription workflowSubscription =
+        new WorkflowSubscription("message", "correlation", 1, 2, 100);
+    workflowState.put(workflowSubscription);
+
+    // when
+    workflowState.remove(workflowSubscription);
+
+    // then
+    final WorkflowInstanceSubscriptionRecord workflowInstanceSubscriptionRecord =
+        new WorkflowInstanceSubscriptionRecord();
+    workflowInstanceSubscriptionRecord.setMessageName(wrapString("message"));
+    workflowInstanceSubscriptionRecord.setWorkflowInstanceKey(1);
+    workflowInstanceSubscriptionRecord.setActivityInstanceKey(2);
+
+    final WorkflowSubscription subscription =
+        workflowState.findSubscription(workflowInstanceSubscriptionRecord);
+
+    assertThat(subscription).isNull();
+
+    // and
+    final List<WorkflowSubscription> workflowSubscriptions =
+        workflowState.findSubscriptionsBefore(150L);
+    assertThat(workflowSubscriptions).isEmpty();
+  }
+
+  @Test
+  public void shouldRemoveWorkflowSubscriptionWithRecord() {
+    // given
+    final WorkflowSubscription workflowSubscription =
+        new WorkflowSubscription("message", "correlation", 1, 2, 100);
+    workflowState.put(workflowSubscription);
+
+    // when
+    final WorkflowInstanceSubscriptionRecord workflowInstanceSubscriptionRecord =
+        new WorkflowInstanceSubscriptionRecord();
+    workflowInstanceSubscriptionRecord.setMessageName(wrapString("message"));
+    workflowInstanceSubscriptionRecord.setWorkflowInstanceKey(1);
+    workflowInstanceSubscriptionRecord.setActivityInstanceKey(2);
+    workflowState.remove(workflowInstanceSubscriptionRecord);
+
+    // then
+    final WorkflowSubscription subscription =
+        workflowState.findSubscription(workflowInstanceSubscriptionRecord);
+
+    assertThat(subscription).isNull();
+
+    // and
+    final List<WorkflowSubscription> workflowSubscriptions =
+        workflowState.findSubscriptionsBefore(150L);
+    assertThat(workflowSubscriptions).isEmpty();
   }
 
   public static DeploymentRecord creatingDeploymentRecord(WorkflowState workflowState) {

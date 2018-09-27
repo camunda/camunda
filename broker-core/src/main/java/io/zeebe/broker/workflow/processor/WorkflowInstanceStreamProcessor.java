@@ -28,8 +28,6 @@ import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamReader;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
-import io.zeebe.broker.subscription.message.processor.OpenWorkflowInstanceSubscriptionProcessor;
-import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionDataStore;
 import io.zeebe.broker.workflow.index.ElementInstanceIndex;
 import io.zeebe.broker.workflow.processor.deployment.DeploymentCreateProcessor;
 import io.zeebe.broker.workflow.processor.deployment.TransformingDeploymentCreateProcessor;
@@ -41,6 +39,7 @@ import io.zeebe.broker.workflow.processor.instance.WorkflowInstanceRejectedEvent
 import io.zeebe.broker.workflow.processor.job.JobCompletedEventProcessor;
 import io.zeebe.broker.workflow.processor.job.JobCreatedProcessor;
 import io.zeebe.broker.workflow.processor.message.CorrelateWorkflowInstanceSubscription;
+import io.zeebe.broker.workflow.processor.message.OpenWorkflowInstanceSubscriptionProcessor;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.logstreams.state.StateSnapshotController;
@@ -57,8 +56,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
   private final ElementInstanceIndex scopeInstances = new ElementInstanceIndex();
 
   private TypedStreamReader streamReader;
-  private final WorkflowInstanceSubscriptionDataStore subscriptionStore =
-      new WorkflowInstanceSubscriptionDataStore();
 
   private final TopologyManager topologyManager;
   private final WorkflowState workflowState;
@@ -107,7 +104,6 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
     return streamProcessorBuilder
         // this is pretty ugly, but goes away when we switch to rocksdb
         .withStateResource(snapshotSupport)
-        .withStateResource(subscriptionStore)
         .withStateController(workflowState)
         .withListener(this)
         .withListener(
@@ -162,8 +158,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
   private void addBpmnStepProcessor(final TypedEventStreamProcessorBuilder streamProcessorBuilder) {
     final BpmnStepProcessor bpmnStepProcessor =
-        new BpmnStepProcessor(
-            scopeInstances, workflowState, subscriptionCommandSender, subscriptionStore);
+        new BpmnStepProcessor(scopeInstances, workflowState, subscriptionCommandSender);
 
     streamProcessorBuilder
         .onEvent(
@@ -212,16 +207,12 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         .onCommand(
             ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION,
             WorkflowInstanceSubscriptionIntent.OPEN,
-            new OpenWorkflowInstanceSubscriptionProcessor(subscriptionStore))
+            new OpenWorkflowInstanceSubscriptionProcessor(workflowState))
         .onCommand(
             ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION,
             WorkflowInstanceSubscriptionIntent.CORRELATE,
             new CorrelateWorkflowInstanceSubscription(
-                scopeInstances,
-                subscriptionStore,
-                topologyManager,
-                workflowState,
-                subscriptionCommandSender));
+                scopeInstances, topologyManager, workflowState, subscriptionCommandSender));
   }
 
   private void addJobStreamProcessors(

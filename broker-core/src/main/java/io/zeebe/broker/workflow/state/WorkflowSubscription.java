@@ -15,37 +15,43 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.subscription.message.state;
+package io.zeebe.broker.workflow.state;
 
 import static io.zeebe.util.buffer.BufferUtil.readIntoBuffer;
 import static io.zeebe.util.buffer.BufferUtil.writeIntoBuffer;
 
+import io.zeebe.broker.subscription.message.state.Subscription;
 import java.nio.ByteOrder;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class MessageSubscription implements Subscription {
-  static final int KEY_LENGTH = 2 * Long.BYTES + Integer.BYTES;
+public class WorkflowSubscription implements Subscription {
 
   private final DirectBuffer messageName = new UnsafeBuffer();
   private final DirectBuffer correlationKey = new UnsafeBuffer();
-  private final DirectBuffer messagePayload = new UnsafeBuffer();
 
-  private int workflowInstancePartitionId;
   private long workflowInstanceKey;
   private long activityInstanceKey;
   private long commandSentTime;
 
-  public MessageSubscription() {}
+  private boolean isOpen;
 
-  public MessageSubscription(
-      int workflowInstancePartitionId,
+  public WorkflowSubscription() {}
+
+  public WorkflowSubscription(
+      long workflowInstanceKey, long activityInstanceKey, DirectBuffer messageName) {
+    this.workflowInstanceKey = workflowInstanceKey;
+    this.activityInstanceKey = activityInstanceKey;
+
+    this.messageName.wrap(messageName);
+  }
+
+  public WorkflowSubscription(
       long workflowInstanceKey,
       long activityInstanceKey,
       DirectBuffer messageName,
       DirectBuffer correlationKey) {
-    this.workflowInstancePartitionId = workflowInstancePartitionId;
     this.workflowInstanceKey = workflowInstanceKey;
     this.activityInstanceKey = activityInstanceKey;
 
@@ -53,23 +59,19 @@ public class MessageSubscription implements Subscription {
     this.correlationKey.wrap(correlationKey);
   }
 
-  MessageSubscription(
+  WorkflowSubscription(
       final String messageName,
       final String correlationKey,
-      final String messagePayload,
-      final int partitionId,
       final long workflowInstanceKey,
       final long activityInstanceKey,
       final long commandSentTime) {
     this(
-        partitionId,
         workflowInstanceKey,
         activityInstanceKey,
         new UnsafeBuffer(messageName.getBytes()),
         new UnsafeBuffer(correlationKey.getBytes()));
 
     setCommandSentTime(commandSentTime);
-    setMessagePayload(new UnsafeBuffer(messagePayload.getBytes()));
   }
 
   public DirectBuffer getMessageName() {
@@ -78,14 +80,6 @@ public class MessageSubscription implements Subscription {
 
   public DirectBuffer getCorrelationKey() {
     return correlationKey;
-  }
-
-  public DirectBuffer getMessagePayload() {
-    return messagePayload;
-  }
-
-  public int getWorkflowInstancePartitionId() {
-    return workflowInstancePartitionId;
   }
 
   public long getWorkflowInstanceKey() {
@@ -104,15 +98,16 @@ public class MessageSubscription implements Subscription {
     this.commandSentTime = commandSentTime;
   }
 
-  public void setPayload(DirectBuffer payload) {
-    this.messagePayload.wrap(payload);
+  public boolean isNotOpen() {
+    return !isOpen;
+  }
+
+  public void setOpen(boolean open) {
+    isOpen = open;
   }
 
   @Override
   public void wrap(final DirectBuffer buffer, int offset, final int length) {
-    this.workflowInstancePartitionId = buffer.getInt(offset, ByteOrder.LITTLE_ENDIAN);
-    offset += Integer.BYTES;
-
     this.workflowInstanceKey = buffer.getLong(offset, ByteOrder.LITTLE_ENDIAN);
     offset += Long.BYTES;
 
@@ -122,25 +117,24 @@ public class MessageSubscription implements Subscription {
     this.commandSentTime = buffer.getLong(offset, ByteOrder.LITTLE_ENDIAN);
     offset += Long.BYTES;
 
+    this.isOpen = buffer.getByte(offset) == 1;
+    offset += Byte.BYTES;
+
     offset = readIntoBuffer(buffer, offset, messageName);
-    offset = readIntoBuffer(buffer, offset, correlationKey);
-    readIntoBuffer(buffer, offset, messagePayload);
+    readIntoBuffer(buffer, offset, correlationKey);
   }
 
   @Override
   public int getLength() {
     return Long.BYTES * 3
-        + Integer.BYTES * 4
+        + Byte.BYTES
+        + Integer.BYTES * 2
         + messageName.capacity()
-        + correlationKey.capacity()
-        + messagePayload.capacity();
+        + correlationKey.capacity();
   }
 
   @Override
   public void write(final MutableDirectBuffer buffer, int offset) {
-    buffer.putInt(offset, workflowInstancePartitionId, ByteOrder.LITTLE_ENDIAN);
-    offset += Integer.BYTES;
-
     buffer.putLong(offset, workflowInstanceKey, ByteOrder.LITTLE_ENDIAN);
     offset += Long.BYTES;
 
@@ -150,34 +144,35 @@ public class MessageSubscription implements Subscription {
     buffer.putLong(offset, commandSentTime, ByteOrder.LITTLE_ENDIAN);
     offset += Long.BYTES;
 
+    buffer.putByte(offset, (byte) (isOpen ? 1 : 0));
+    offset += Byte.BYTES;
+
     offset = writeIntoBuffer(buffer, offset, messageName);
     offset = writeIntoBuffer(buffer, offset, correlationKey);
-    offset = writeIntoBuffer(buffer, offset, messagePayload);
     assert offset == getLength() : "End offset differs with getLength()";
-  }
-
-  public void writeKey(MutableDirectBuffer keyBuffer, int offset) {
-    final int startOffset = offset;
-    keyBuffer.putInt(offset, getWorkflowInstancePartitionId());
-    offset += Integer.BYTES;
-    keyBuffer.putLong(offset, workflowInstanceKey);
-    offset += Long.BYTES;
-    keyBuffer.putLong(offset, activityInstanceKey);
-    offset += Long.BYTES;
-
-    assert (offset - startOffset) == KEY_LENGTH
-        : "Offset problem: offset is not equal to expected key length";
   }
 
   public void writeCommandSentTime(MutableDirectBuffer keyBuffer, int offset) {
     keyBuffer.putLong(offset, commandSentTime, ByteOrder.LITTLE_ENDIAN);
   }
 
+  @Override
   public int getKeyLength() {
-    return KEY_LENGTH;
+    return 2 * Long.BYTES + messageName.capacity();
   }
 
-  public void setMessagePayload(DirectBuffer payload) {
-    this.messagePayload.wrap(payload);
+  @Override
+  public void writeKey(MutableDirectBuffer keyBuffer, int offset) {
+    final int startOffset = offset;
+    keyBuffer.putLong(offset, workflowInstanceKey);
+    offset += Long.BYTES;
+    keyBuffer.putLong(offset, activityInstanceKey);
+    offset += Long.BYTES;
+    final int nameLength = messageName.capacity();
+    keyBuffer.putBytes(offset, messageName.byteArray(), 0, nameLength);
+    offset += nameLength;
+
+    assert (offset - startOffset) == getKeyLength()
+        : "Offset problem: offset is not equal to expected key length";
   }
 }

@@ -37,19 +37,15 @@ public class MessageStateController extends KeyStateController {
 
   private static final byte[] MSG_TIME_TO_LIVE_NAME = "msgTimeToLive".getBytes();
   private static final byte[] MSG_ID_NAME = "messageId".getBytes();
-  private static final byte[] SUB_NAME = "msgSubscription".getBytes();
-  private static final byte[] SUB_SEND_TIME_NAME = "subSendTime".getBytes();
 
   private final UnsafeBuffer iterateKeyBuffer = new UnsafeBuffer(0, 0);
 
   protected ColumnFamilyHandle timeToLiveHandle;
   private ColumnFamilyHandle messageIdHandle;
 
-  private ColumnFamilyHandle subscriptionHandle;
-  private ColumnFamilyHandle subSendTimeHandle;
-
   private ExpandableArrayBuffer keyBuffer;
   private ExpandableArrayBuffer valueBuffer;
+  private SubscriptionState<MessageSubscription> subscriptionState;
 
   @Override
   public RocksDB open(final File dbDirectory, final boolean reopen) throws Exception {
@@ -59,8 +55,7 @@ public class MessageStateController extends KeyStateController {
 
     timeToLiveHandle = createColumnFamily(MSG_TIME_TO_LIVE_NAME);
     messageIdHandle = createColumnFamily(MSG_ID_NAME);
-    subscriptionHandle = createColumnFamily(SUB_NAME);
-    subSendTimeHandle = createColumnFamily(SUB_SEND_TIME_NAME);
+    subscriptionState = new SubscriptionState<>(this, () -> new MessageSubscription());
 
     return rocksDB;
   }
@@ -92,13 +87,11 @@ public class MessageStateController extends KeyStateController {
   }
 
   public void put(final MessageSubscription subscription) {
-    subscription.writeKey(keyBuffer, TIME_OFFSET);
-    subscription.write(valueBuffer, 0);
+    subscriptionState.put(subscription);
+  }
 
-    final int subscriptionLength = subscription.getLength();
-    final int keyLength = subscription.getKeyLength();
-    writeKeyWithoutTimeWithValue(subscriptionHandle, keyLength, subscriptionLength);
-    writeTimeAndKey(subSendTimeHandle, keyLength);
+  public void updateCommandSentTime(final MessageSubscription subscription) {
+    subscriptionState.updateCommandSentTime(subscription);
   }
 
   private void writeKeyWithoutTimeWithValue(
@@ -148,46 +141,9 @@ public class MessageStateController extends KeyStateController {
     }
   }
 
-  private MessageSubscription getSubscription(
-      final DirectBuffer buffer, final int offset, final int length) {
-    final int valueBufferSize = valueBuffer.capacity();
-    final int readBytes =
-        get(
-            subscriptionHandle,
-            buffer.byteArray(),
-            offset,
-            length,
-            valueBuffer.byteArray(),
-            0,
-            valueBufferSize);
-
-    if (readBytes > valueBufferSize) {
-      valueBuffer.checkLimit(readBytes);
-      // try again
-      return getSubscription(buffer, offset, length);
-    }
-
-    final MessageSubscription subscription = new MessageSubscription();
-    subscription.wrap(valueBuffer, 0, readBytes);
-
-    return subscription;
-  }
-
   public List<MessageSubscription> findSubscriptions(
       final DirectBuffer messageName, final DirectBuffer correlationKey) {
-    final List<MessageSubscription> subscriptionsList = new ArrayList<>();
-    foreach(
-        subscriptionHandle,
-        (key, value) -> {
-          final MessageSubscription messageSubscription = new MessageSubscription();
-          messageSubscription.wrap(new UnsafeBuffer(value), 0, value.length);
-
-          if (messageName.equals(messageSubscription.getMessageName())
-              && correlationKey.equals(messageSubscription.getCorrelationKey())) {
-            subscriptionsList.add(messageSubscription);
-          }
-        });
-    return subscriptionsList;
+    return subscriptionState.findSubscriptions(messageName, correlationKey);
   }
 
   public List<Message> findMessageBefore(final long timestamp) {
@@ -207,20 +163,7 @@ public class MessageStateController extends KeyStateController {
   }
 
   public List<MessageSubscription> findSubscriptionBefore(final long deadline) {
-    final List<MessageSubscription> subscriptionsList = new ArrayList<>();
-    foreach(
-        subSendTimeHandle,
-        (key, value) -> {
-          iterateKeyBuffer.wrap(key);
-          final long time = iterateKeyBuffer.getLong(TIME_OFFSET, ByteOrder.LITTLE_ENDIAN);
-
-          if (time > 0 && time < deadline) {
-            final int keyLengthWithoutTime = key.length - KEY_OFFSET;
-            subscriptionsList.add(
-                getSubscription(iterateKeyBuffer, KEY_OFFSET, keyLengthWithoutTime));
-          }
-        });
-    return subscriptionsList;
+    return subscriptionState.findSubscriptionBefore(deadline);
   }
 
   public boolean exist(final Message message) {
@@ -234,10 +177,7 @@ public class MessageStateController extends KeyStateController {
   }
 
   public boolean exist(final MessageSubscription subscription) {
-    subscription.writeKey(keyBuffer, TIME_OFFSET);
-    final int offset = subscription.getKeyLength();
-
-    return exist(subscriptionHandle, keyBuffer.byteArray(), KEY_OFFSET, offset - KEY_OFFSET);
+    return subscriptionState.exist(subscription);
   }
 
   public void remove(final Message message) {
@@ -258,12 +198,7 @@ public class MessageStateController extends KeyStateController {
     }
   }
 
-  public void remove(final MessageSubscription subscription) {
-    subscription.writeKey(keyBuffer, TIME_OFFSET);
-
-    final int keyLength = subscription.getKeyLength() - KEY_OFFSET;
-    remove(subscriptionHandle, keyBuffer.byteArray(), KEY_OFFSET, keyLength);
-
-    remove(subSendTimeHandle, keyBuffer.byteArray(), TIME_OFFSET, subscription.getKeyLength());
+  public void remove(MessageSubscription messageSubscription) {
+    subscriptionState.remove(messageSubscription);
   }
 }

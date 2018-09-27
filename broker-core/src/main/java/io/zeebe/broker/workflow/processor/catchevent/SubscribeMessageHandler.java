@@ -17,15 +17,15 @@
  */
 package io.zeebe.broker.workflow.processor.catchevent;
 
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
-import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionDataStore;
-import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionDataStore.WorkflowInstanceSubscription;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.broker.workflow.model.ExecutableMessageCatchElement;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
+import io.zeebe.broker.workflow.state.WorkflowState;
+import io.zeebe.broker.workflow.state.WorkflowSubscription;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResult;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResults;
@@ -35,6 +35,7 @@ import org.agrona.DirectBuffer;
 public class SubscribeMessageHandler implements BpmnStepHandler<ExecutableMessageCatchElement> {
 
   private final MsgPackQueryProcessor queryProcessor = new MsgPackQueryProcessor();
+  private final WorkflowState workflowState;
 
   private WorkflowInstanceRecord workflowInstance;
   private long activityInstanceKey;
@@ -42,13 +43,12 @@ public class SubscribeMessageHandler implements BpmnStepHandler<ExecutableMessag
   private DirectBuffer extractedCorrelationKey;
 
   private final SubscriptionCommandSender subscriptionCommandSender;
-  private final WorkflowInstanceSubscriptionDataStore subscriptionStore;
 
   public SubscribeMessageHandler(
       final SubscriptionCommandSender subscriptionCommandSender,
-      final WorkflowInstanceSubscriptionDataStore subscriptionStore) {
+      final WorkflowState workflowState) {
     this.subscriptionCommandSender = subscriptionCommandSender;
-    this.subscriptionStore = subscriptionStore;
+    this.workflowState = workflowState;
   }
 
   @Override
@@ -61,14 +61,14 @@ public class SubscribeMessageHandler implements BpmnStepHandler<ExecutableMessag
     extractedCorrelationKey = extractCorrelationKey();
     context.getSideEffect().accept(this::openMessageSubscription);
 
-    final WorkflowInstanceSubscription subscription =
-        new WorkflowInstanceSubscription(
+    final WorkflowSubscription subscription =
+        new WorkflowSubscription(
             workflowInstance.getWorkflowInstanceKey(),
             activityInstanceKey,
-            bufferAsString(catchEvent.getMessageName()),
-            bufferAsString(extractedCorrelationKey));
+            cloneBuffer(catchEvent.getMessageName()),
+            cloneBuffer(extractedCorrelationKey));
     subscription.setCommandSentTime(ActorClock.currentTimeMillis());
-    subscriptionStore.addSubscription(subscription);
+    workflowState.put(subscription);
   }
 
   private boolean openMessageSubscription() {
