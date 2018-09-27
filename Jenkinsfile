@@ -2,6 +2,14 @@
 
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
 
+String storeNumOfBuilds() {
+  return env.BRANCH_NAME == 'master' ? '50' : '10'
+}
+
+String storeNumOfArtifacts() {
+  return env.BRANCH_NAME == 'master' ? '5' : '1'
+}
+
 def static PROJECT_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-optimize" }
 
 /************************ START OF PIPELINE ***********************/
@@ -24,7 +32,7 @@ pipeline {
   }
 
   options {
-    buildDiscarder(logRotator(numToKeepStr:'50', artifactNumToKeepStr: '1'))
+    buildDiscarder(logRotator(numToKeepStr: storeNumOfBuilds(), artifactNumToKeepStr: storeNumOfArtifacts()))
     timestamps()
     timeout(time: 60, unit: 'MINUTES')
   }
