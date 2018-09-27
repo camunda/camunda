@@ -87,6 +87,7 @@ class Diagram extends React.Component {
     theme: prevTheme,
     workflowId: prevWorkflowId,
     selectedFlowNode,
+    flowNodeStateOverlays: prevFlowNodeStateOverlays,
     flowNodesStatisticsOverlay: prevflowNodesStatisticsOverlay
   }) {
     const hasNewTheme = this.props.theme !== prevTheme;
@@ -110,7 +111,7 @@ class Diagram extends React.Component {
     }
 
     // Clear overlays of type flow-node-state and add new ones
-    if (this.props.flowNodeStateOverlays) {
+    if (!isEqual(this.props.flowNodeStateOverlays, prevFlowNodeStateOverlays)) {
       this.clearOverlaysByType(FLOW_NODE_STATE_OVERLAY_ID);
       this.props.flowNodeStateOverlays.forEach(this.addFlowNodeStateOverlay);
     }
@@ -161,6 +162,10 @@ class Diagram extends React.Component {
 
     if (this.props.selectableFlowNodes && this.props.onFlowNodeSelected) {
       this.addElementClickListeners();
+    }
+
+    if (this.props.flowNodeStateOverlays) {
+      this.props.flowNodeStateOverlays.forEach(this.addFlowNodeStateOverlay);
     }
   };
 
