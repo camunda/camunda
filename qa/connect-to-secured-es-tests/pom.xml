@@ -19,6 +19,13 @@
     </dependency>
 
     <dependency>
+      <groupId>org.elasticsearch.client</groupId>
+      <artifactId>x-pack-transport</artifactId>
+      <version>${elasticsearch.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.camunda.optimize</groupId>
       <artifactId>optimize-backend</artifactId>
       <version>${project.version}</version>

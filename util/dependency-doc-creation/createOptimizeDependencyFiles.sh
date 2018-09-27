@@ -3,7 +3,7 @@
 BASEDIR=$(pwd)
 cd ../../backend
 ## create back end third party
-mvn license:download-licenses -Dlicense.excludedScopes=test,system
+mvn license:download-licenses -Dlicense.excludedScopes=test,system,provided
 ## store directory of license file
 GET_BACKEND_DIR=`pwd`
 LICENSE_DIR=`find ${GET_BACKEND_DIR} -iname "licenses.xml"`
