@@ -27,6 +27,10 @@ func (client *ZBClientImpl) NewCreateInstanceCommand() commands.CreateInstanceCo
 	return commands.NewCreateInstanceCommand(client.gateway)
 }
 
+func (client *ZBClientImpl) NewCreateJobCommand() commands.CreateJobCommandStep1 {
+	return commands.NewCreateJobCommand(client.gateway)
+}
+
 func (client *ZBClientImpl) Close() error {
 	return client.connection.Close()
 }

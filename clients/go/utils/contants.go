@@ -1,3 +1,6 @@
 package utils
 
-const RequestTimeoutInSec = 5
+const (
+	DefaultRetries      = 3
+	RequestTimeoutInSec = 5
+)
