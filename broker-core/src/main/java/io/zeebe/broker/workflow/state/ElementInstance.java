@@ -17,30 +17,24 @@
  */
 package io.zeebe.broker.workflow.state;
 
-import static io.zeebe.util.buffer.BufferUtil.readIntoBuffer;
-import static io.zeebe.util.buffer.BufferUtil.writeIntoBuffer;
-
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.broker.workflow.processor.WorkflowInstanceLifecycle;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.nio.ByteOrder;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class ElementInstance implements Persistable {
 
-  private int depth;
-  private final MutableDirectBuffer identifier;
   private final IndexedRecord elementRecord;
 
+  private long parentKey = -1;
   private int childCount;
   private long jobKey;
   private int activeTokens = 0;
 
   ElementInstance() {
     this.elementRecord = new IndexedRecord();
-    this.identifier = new UnsafeBuffer(0, 0);
   }
 
   public ElementInstance(
@@ -49,23 +43,12 @@ public class ElementInstance implements Persistable {
       WorkflowInstanceIntent state,
       WorkflowInstanceRecord value) {
     this.elementRecord = new IndexedRecord(key, state, value);
-
-    final int offset = parent.identifier.capacity();
-    final int idLength = offset + Long.BYTES;
-    this.identifier = new UnsafeBuffer(new byte[idLength]);
-    identifier.putBytes(0, parent.identifier, 0, offset);
-    depth = parent.depth + 1;
+    parentKey = parent.getKey();
     parent.childCount++;
-    identifier.putLong(offset, key);
   }
 
   public ElementInstance(long key, WorkflowInstanceIntent state, WorkflowInstanceRecord value) {
     this.elementRecord = new IndexedRecord(key, state, value);
-
-    final int idLength = Long.BYTES;
-    this.identifier = new UnsafeBuffer(new byte[idLength]);
-    depth = 0;
-    identifier.putLong(0, key);
   }
 
   public long getKey() {
@@ -136,10 +119,8 @@ public class ElementInstance implements Persistable {
     activeTokens = buffer.getInt(offset, ByteOrder.LITTLE_ENDIAN);
     offset += Integer.BYTES;
 
-    depth = buffer.getInt(offset, ByteOrder.LITTLE_ENDIAN);
-    offset += Integer.BYTES;
-
-    offset = readIntoBuffer(buffer, offset, identifier);
+    parentKey = buffer.getLong(offset, ByteOrder.LITTLE_ENDIAN);
+    offset += Long.BYTES;
 
     final int writtenLength = offset - startOffset;
     elementRecord.wrap(buffer, offset, length - writtenLength);
@@ -147,7 +128,7 @@ public class ElementInstance implements Persistable {
 
   @Override
   public int getLength() {
-    return Long.BYTES + 4 * Integer.BYTES + identifier.capacity() + elementRecord.getLength();
+    return 2 * Long.BYTES + 2 * Integer.BYTES + elementRecord.getLength();
   }
 
   @Override
@@ -163,10 +144,8 @@ public class ElementInstance implements Persistable {
     buffer.putInt(offset, activeTokens, ByteOrder.LITTLE_ENDIAN);
     offset += Integer.BYTES;
 
-    buffer.putInt(offset, depth, ByteOrder.LITTLE_ENDIAN);
-    offset += Integer.BYTES;
-
-    offset = writeIntoBuffer(buffer, offset, identifier);
+    buffer.putLong(offset, parentKey, ByteOrder.LITTLE_ENDIAN);
+    offset += Long.BYTES;
 
     final int endLength = offset - startOffset;
     final int expectedLength = getLength() - elementRecord.getLength();
@@ -177,35 +156,29 @@ public class ElementInstance implements Persistable {
 
   public void writeKey(MutableDirectBuffer keyBuffer, int offset) {
     int keyOffset = offset;
-    final int identifierLength = identifier.capacity();
-    keyBuffer.putBytes(keyOffset, identifier.byteArray(), 0, identifierLength);
-    keyOffset += identifierLength;
+    keyBuffer.putLong(keyOffset, getKey());
+    keyOffset += Long.BYTES;
     assert (keyOffset - offset) == getKeyLength()
         : "Offset problem: end length is not equal to expected key length";
   }
 
   public int getKeyLength() {
-    return identifier.capacity();
+    return Long.BYTES;
   }
 
   public void writeParentKey(MutableDirectBuffer keyBuffer, int offset) {
     int keyOffset = offset;
-    final int identifierLength = identifier.capacity() - Long.BYTES;
-    keyBuffer.putBytes(keyOffset, identifier.byteArray(), 0, identifierLength);
-    keyOffset += identifierLength;
+    keyBuffer.putLong(keyOffset, parentKey);
+    keyOffset += Long.BYTES;
     assert (keyOffset - offset) == getParentKeyLength()
         : "Offset problem: end length is not equal to expected key length";
   }
 
   public int getParentKeyLength() {
-    return identifier.capacity() - Long.BYTES;
+    return Long.BYTES;
   }
 
-  public DirectBuffer getIdentifier() {
-    return identifier;
-  }
-
-  public int getDepth() {
-    return depth;
+  public long getParentKey() {
+    return parentKey;
   }
 }

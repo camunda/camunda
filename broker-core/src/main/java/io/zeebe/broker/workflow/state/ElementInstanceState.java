@@ -27,7 +27,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -35,12 +34,15 @@ import org.rocksdb.ColumnFamilyHandle;
 
 public class ElementInstanceState {
 
-  private static final byte[] ELEMENT_TREE_KEY_FAMILY_NAME = "elementTreeKey".getBytes();
+  private static final byte[] ELEMENT_PARENT_CHILD_KEY_FAMILY_NAME =
+      "elementParentChild".getBytes();
   private static final byte[] ELEMENT_INSTANCE_KEY_FAMILY_NAME = "elementInstanceKey".getBytes();
   private static final byte[] STORED_RECORDS_KEY_FAMILY_NAME = "storedRecords".getBytes();
 
   public static final byte[][] COLUMN_FAMILY_NAMES = {
-    ELEMENT_TREE_KEY_FAMILY_NAME, ELEMENT_INSTANCE_KEY_FAMILY_NAME, STORED_RECORDS_KEY_FAMILY_NAME
+    ELEMENT_PARENT_CHILD_KEY_FAMILY_NAME,
+    ELEMENT_INSTANCE_KEY_FAMILY_NAME,
+    STORED_RECORDS_KEY_FAMILY_NAME
   };
 
   private final StateController rocksDbWrapper;
@@ -52,18 +54,21 @@ public class ElementInstanceState {
   private final UnsafeBuffer longKeyBuffer = new UnsafeBuffer(new byte[Long.BYTES]);
   private final UnsafeBuffer iterateKeyBuffer = new UnsafeBuffer(0, 0);
 
-  private final ColumnFamilyHandle elementTreeHandle;
+  private final ColumnFamilyHandle elementParentChildHandle;
   private final ColumnFamilyHandle elementInstanceHandle;
   private final ColumnFamilyHandle storedRecordsHandle;
 
-  public ElementInstanceState(StateController rocksDbWrapper) throws Exception {
+  private final Map<Long, ElementInstance> cachedInstances = new HashMap<>();
+
+  public ElementInstanceState(StateController rocksDbWrapper) {
     this.rocksDbWrapper = rocksDbWrapper;
     this.helper = new PersistenceHelper(rocksDbWrapper);
 
     this.keyBuffer = new ExpandableArrayBuffer();
     this.valueBuffer = new ExpandableArrayBuffer();
 
-    elementTreeHandle = rocksDbWrapper.getColumnFamilyHandle(ELEMENT_TREE_KEY_FAMILY_NAME);
+    elementParentChildHandle =
+        rocksDbWrapper.getColumnFamilyHandle(ELEMENT_PARENT_CHILD_KEY_FAMILY_NAME);
     elementInstanceHandle = rocksDbWrapper.getColumnFamilyHandle(ELEMENT_INSTANCE_KEY_FAMILY_NAME);
     storedRecordsHandle = rocksDbWrapper.getColumnFamilyHandle(STORED_RECORDS_KEY_FAMILY_NAME);
   }
@@ -91,23 +96,32 @@ public class ElementInstanceState {
   }
 
   private void writeElementInstance(ElementInstance instance) {
-    instance.writeKey(keyBuffer, 0);
+    final int parentKeyOffset = 0;
+    instance.writeParentKey(keyBuffer, parentKeyOffset);
+    final int instanceKeyOffset = instance.getParentKeyLength();
+    instance.writeKey(keyBuffer, instanceKeyOffset);
     instance.write(valueBuffer, 0);
 
+    final int keyLength = instance.getKeyLength();
     rocksDbWrapper.put(
-        elementInstanceHandle, instance.getKey(), valueBuffer.byteArray(), 0, instance.getLength());
-
-    rocksDbWrapper.put(
-        elementTreeHandle,
+        elementInstanceHandle,
         keyBuffer.byteArray(),
-        0,
-        instance.getKeyLength(),
+        instanceKeyOffset,
+        keyLength,
         valueBuffer.byteArray(),
         0,
         instance.getLength());
-  }
 
-  private final Map<Long, ElementInstance> cachedInstances = new HashMap<>();
+    final int compositeKeyLength = keyLength + instance.getParentKeyLength();
+    rocksDbWrapper.put(
+        elementParentChildHandle,
+        keyBuffer.byteArray(),
+        parentKeyOffset,
+        compositeKeyLength,
+        PersistenceHelper.EXISTENCE,
+        0,
+        PersistenceHelper.EXISTENCE.length);
+  }
 
   public ElementInstance getInstance(long key) {
     return cachedInstances.computeIfAbsent(
@@ -115,7 +129,7 @@ public class ElementInstanceState {
         k -> {
           keyBuffer.putLong(0, key, ByteOrder.LITTLE_ENDIAN);
           return helper.getValueInstance(
-              ElementInstance.class, elementInstanceHandle, keyBuffer, Long.BYTES, valueBuffer);
+              ElementInstance.class, elementInstanceHandle, keyBuffer, 0, Long.BYTES, valueBuffer);
         });
   }
 
@@ -123,18 +137,20 @@ public class ElementInstanceState {
     final ElementInstance instance = getInstance(key);
 
     if (instance != null) {
-      instance.writeKey(keyBuffer, 0);
+      final int parentKeyOffset = 0;
+      instance.writeParentKey(keyBuffer, parentKeyOffset);
+      final int instanceKeyOffset = instance.getParentKeyLength();
+      instance.writeKey(keyBuffer, instanceKeyOffset);
+      final int compositeKeyLength = instance.getParentKeyLength() + instance.getKeyLength();
 
-      rocksDbWrapper.remove(elementTreeHandle, keyBuffer.byteArray(), 0, instance.getKeyLength());
-      rocksDbWrapper.remove(elementInstanceHandle, key);
+      rocksDbWrapper.remove(
+          elementParentChildHandle, keyBuffer.byteArray(), parentKeyOffset, compositeKeyLength);
+      rocksDbWrapper.remove(
+          elementInstanceHandle, keyBuffer.byteArray(), instanceKeyOffset, instance.getKeyLength());
       cachedInstances.remove(key);
 
-      final int treeDepth = instance.getDepth();
-      if (treeDepth > 0) {
-        instance.writeParentKey(keyBuffer, 0);
-        final int parentKeyLength = instance.getParentKeyLength();
-        final long parentKey =
-            keyBuffer.getLong(parentKeyLength - Long.BYTES, ByteOrder.LITTLE_ENDIAN);
+      final long parentKey = instance.getParentKey();
+      if (parentKey > 0) {
         final ElementInstance parentInstance = getInstance(parentKey);
         parentInstance.decrementChildCount();
       }
@@ -149,21 +165,19 @@ public class ElementInstanceState {
     final List<ElementInstance> children = new ArrayList<>();
     final ElementInstance parentInstance = getInstance(parentKey);
     if (parentInstance != null) {
-      final DirectBuffer identifier = parentInstance.getIdentifier();
+      longKeyBuffer.putLong(0, parentKey, ByteOrder.LITTLE_ENDIAN);
 
-      rocksDbWrapper.foreach(
-          elementTreeHandle,
-          identifier.byteArray(),
+      rocksDbWrapper.whileEqualPrefix(
+          elementParentChildHandle,
+          longKeyBuffer.byteArray(),
           (key, value) -> {
-            final DirectBuffer keyBuffer = new UnsafeBuffer(key, 0, identifier.capacity());
-            final boolean equalKeyPrefix = keyBuffer.equals(identifier);
-            if (equalKeyPrefix && key.length == identifier.capacity() + Long.BYTES) {
-              valueBuffer.putBytes(0, value);
-              final ElementInstance instance = new ElementInstance();
-              instance.wrap(valueBuffer, 0, value.length);
-              children.add(instance);
-            }
-            return equalKeyPrefix;
+            iterateKeyBuffer.wrap(key);
+            final long childKey =
+                iterateKeyBuffer.getLong(
+                    parentInstance.getParentKeyLength(), ByteOrder.LITTLE_ENDIAN);
+
+            final ElementInstance instance = getInstance(childKey);
+            children.add(instance);
           });
     }
     return children;
@@ -217,7 +231,7 @@ public class ElementInstanceState {
 
     final IndexedRecord record =
         helper.getValueInstance(
-            IndexedRecord.class, storedRecordsHandle, keyBuffer, keyLength, valueBuffer);
+            IndexedRecord.class, storedRecordsHandle, keyBuffer, 0, keyLength, valueBuffer);
 
     final boolean exist = record != null;
     if (exist) {
@@ -230,19 +244,13 @@ public class ElementInstanceState {
     longKeyBuffer.putLong(0, scopeKey, ByteOrder.LITTLE_ENDIAN);
 
     final List<IndexedRecord> records = new ArrayList<>();
-    rocksDbWrapper.foreach(
+    rocksDbWrapper.whileEqualPrefix(
         storedRecordsHandle,
         longKeyBuffer.byteArray(),
         (key, value) -> {
-          iterateKeyBuffer.wrap(key, 0, Long.BYTES);
-
-          final boolean hasSamePrefix = iterateKeyBuffer.equals(longKeyBuffer);
-          if (hasSamePrefix) {
-            final IndexedRecord record = new IndexedRecord();
-            record.wrap(new UnsafeBuffer(value), 0, value.length);
-            records.add(record);
-          }
-          return hasSamePrefix;
+          final IndexedRecord record = new IndexedRecord();
+          record.wrap(new UnsafeBuffer(value), 0, value.length);
+          records.add(record);
         });
     return records;
   }

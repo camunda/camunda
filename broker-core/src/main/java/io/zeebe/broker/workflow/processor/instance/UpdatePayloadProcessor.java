@@ -39,7 +39,7 @@ public final class UpdatePayloadProcessor implements CommandProcessor<WorkflowIn
     final WorkflowInstanceRecord commandValue = command.getValue();
 
     final ElementInstance workflowInstance =
-        workflowState.getInstance(commandValue.getWorkflowInstanceKey());
+        workflowState.getElementInstanceState().getInstance(commandValue.getWorkflowInstanceKey());
 
     if (workflowInstance != null) {
       final WorkflowInstanceRecord workflowInstanceValue = workflowInstance.getValue();

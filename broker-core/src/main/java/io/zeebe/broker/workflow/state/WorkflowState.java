@@ -17,13 +17,10 @@
  */
 package io.zeebe.broker.workflow.state;
 
-import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.subscription.message.state.SubscriptionState;
 import io.zeebe.broker.util.KeyStateController;
-import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.broker.workflow.deployment.data.DeploymentRecord;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import java.io.File;
 import java.util.Collection;
@@ -68,7 +65,7 @@ public class WorkflowState extends KeyStateController {
 
     nextValueManager = new NextValueManager(this);
     workflowPersistenceCache = new WorkflowPersistenceCache(this);
-    subscriptionState = new SubscriptionState<>(this, () -> new WorkflowSubscription());
+    subscriptionState = new SubscriptionState<>(this, WorkflowSubscription.class);
     elementInstanceState = new ElementInstanceState(this);
 
     return rocksDB;
@@ -142,52 +139,11 @@ public class WorkflowState extends KeyStateController {
     subscriptionState.remove(workflowSubscription);
   }
 
-  public ElementInstance newInstance(
-      long key, WorkflowInstanceRecord value, WorkflowInstanceIntent state) {
-    return elementInstanceState.newInstance(key, value, state);
-  }
-
-  public ElementInstance newInstance(
-      ElementInstance parent,
-      long key,
-      WorkflowInstanceRecord value,
-      WorkflowInstanceIntent state) {
-    return elementInstanceState.newInstance(parent, key, value, state);
-  }
-
-  public ElementInstance getInstance(long key) {
-    return elementInstanceState.getInstance(key);
-  }
-
-  public void flushElementInstanceState() {
-    elementInstanceState.flushDirtyState();
-  }
-
-  public void removeInstance(long key) {
-    elementInstanceState.removeInstance(key);
-  }
-
-  public List<ElementInstance> getChildren(long scopeKey) {
-    return elementInstanceState.getChildren(scopeKey);
-  }
-
-  public void storeRecord(long scopeKey, TypedRecord<WorkflowInstanceRecord> record) {
-    elementInstanceState.storeRecord(scopeKey, record);
-  }
-
-  public boolean removeStoredRecord(long scopeKey, long recordKey) {
-    return elementInstanceState.removeStoredRecord(scopeKey, recordKey);
-  }
-
-  public List<IndexedRecord> getStoredRecords(long scopeKey) {
-    return elementInstanceState.getStoredRecords(scopeKey);
-  }
-
-  public void consumeToken(long scopeKey) {
-    elementInstanceState.consumeToken(scopeKey);
-  }
-
-  public void spawnToken(long scopeKey) {
-    elementInstanceState.spawnToken(scopeKey);
+  /**
+   * @return only a meaningful value after {@link WorkflowState#open(File, boolean)} was called,
+   *     i.e. during the lifetime of the owning stream processor.
+   */
+  public ElementInstanceState getElementInstanceState() {
+    return elementInstanceState;
   }
 }

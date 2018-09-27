@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import org.agrona.CloseHelper;
+import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.rocksdb.BlockBasedTableConfig;
@@ -72,6 +73,9 @@ public class StateController implements AutoCloseable {
 
   private final List<ColumnFamilyDescriptor> columnFamilyDescriptors = new ArrayList<>();
   private final List<ColumnFamilyHandle> columnFamilyHandles = new ArrayList<>();
+
+  final DirectBuffer prefixBuffer = new UnsafeBuffer(0, 0);
+  final DirectBuffer prefixKeyCheckBuffer = new UnsafeBuffer(0, 0);
 
   private long nativeHandle_;
 
@@ -565,16 +569,21 @@ public class StateController implements AutoCloseable {
     }
   }
 
-  public void foreach(
+  public void whileEqualPrefix(
       final ColumnFamilyHandle handle,
-      final byte[] startAt,
-      final BiFunction<byte[], byte[], Boolean> keyValueConsumer) {
+      final byte[] prefix,
+      final BiConsumer<byte[], byte[]> keyValueConsumer) {
+    prefixBuffer.wrap(prefix);
+
     try (RocksIterator rocksIterator = getDb().newIterator(handle)) {
-      rocksIterator.seek(startAt);
+      rocksIterator.seek(prefix);
       while (rocksIterator.isValid()) {
-        final boolean shouldContinue =
-            keyValueConsumer.apply(rocksIterator.key(), rocksIterator.value());
-        if (shouldContinue) {
+
+        final byte[] key = rocksIterator.key();
+        prefixKeyCheckBuffer.wrap(key, 0, prefixBuffer.capacity());
+        final boolean equalKeyPrefix = prefixBuffer.equals(prefixKeyCheckBuffer);
+        if (equalKeyPrefix) {
+          keyValueConsumer.accept(key, rocksIterator.value());
           rocksIterator.next();
         } else {
           break;
@@ -583,22 +592,18 @@ public class StateController implements AutoCloseable {
     }
   }
 
-  public void foreach(final byte[] startAt, final BiConsumer<byte[], byte[]> keyValueConsumer) {
-    try (RocksIterator rocksIterator = getDb().newIterator()) {
-      rocksIterator.seek(startAt);
-      while (rocksIterator.isValid()) {
-        keyValueConsumer.accept(rocksIterator.key(), rocksIterator.value());
-        rocksIterator.next();
-      }
-    }
-  }
-
-  public void foreach(final BiConsumer<byte[], byte[]> keyValueConsumer) {
-    try (RocksIterator rocksIterator = getDb().newIterator()) {
+  public void whileTrue(
+      final ColumnFamilyHandle handle, final BiFunction<byte[], byte[], Boolean> keyValueConsumer) {
+    try (RocksIterator rocksIterator = getDb().newIterator(handle)) {
       rocksIterator.seekToFirst();
       while (rocksIterator.isValid()) {
-        keyValueConsumer.accept(rocksIterator.key(), rocksIterator.value());
-        rocksIterator.next();
+        final boolean shouldContinue =
+            keyValueConsumer.apply(rocksIterator.key(), rocksIterator.value());
+        if (shouldContinue) {
+          rocksIterator.next();
+        } else {
+          break;
+        }
       }
     }
   }

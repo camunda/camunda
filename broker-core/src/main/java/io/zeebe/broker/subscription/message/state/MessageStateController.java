@@ -17,6 +17,8 @@
  */
 package io.zeebe.broker.subscription.message.state;
 
+import static io.zeebe.broker.workflow.state.PersistenceHelper.EXISTENCE;
+
 import io.zeebe.broker.util.KeyStateController;
 import java.io.File;
 import java.nio.ByteOrder;
@@ -31,8 +33,6 @@ import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.RocksDB;
 
 public class MessageStateController extends KeyStateController {
-
-  private static final byte[] EXISTENCE = new byte[] {1};
 
   private static final int TIME_OFFSET = 0;
   private static final int KEY_OFFSET = TIME_OFFSET + Long.BYTES;
@@ -64,7 +64,7 @@ public class MessageStateController extends KeyStateController {
 
     timeToLiveHandle = getColumnFamilyHandle(MSG_TIME_TO_LIVE_NAME);
     messageIdHandle = getColumnFamilyHandle(MSG_ID_NAME);
-    subscriptionState = new SubscriptionState<>(this, () -> new MessageSubscription());
+    subscriptionState = new SubscriptionState<>(this, MessageSubscription.class);
 
     return rocksDB;
   }
@@ -157,16 +157,18 @@ public class MessageStateController extends KeyStateController {
 
   public List<Message> findMessageBefore(final long timestamp) {
     final List<Message> messageList = new ArrayList<>();
-    foreach(
+    whileTrue(
         timeToLiveHandle,
         (key, value) -> {
           iterateKeyBuffer.wrap(key);
           final long time = iterateKeyBuffer.getLong(TIME_OFFSET, ByteOrder.LITTLE_ENDIAN);
 
-          if (time <= timestamp) {
+          final boolean isDue = time <= timestamp;
+          if (isDue) {
             final int keyLength = key.length - KEY_OFFSET;
             messageList.add(getMessage(iterateKeyBuffer, KEY_OFFSET, keyLength));
           }
+          return isDue;
         });
     return messageList;
   }

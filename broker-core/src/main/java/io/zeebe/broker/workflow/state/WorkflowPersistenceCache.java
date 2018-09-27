@@ -26,6 +26,7 @@ import io.zeebe.logstreams.state.StateController;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.util.buffer.BufferUtil;
+import java.nio.ByteOrder;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -64,9 +65,11 @@ public class WorkflowPersistenceCache {
 
   private final LongHashSet deployments;
   private final Long2ObjectHashMap<DeployedWorkflow> workflowsByKey;
+  private final PersistenceHelper persistenceHelper;
 
   public WorkflowPersistenceCache(StateController rocksDbWrapper) throws Exception {
     this.rocksDbWrapper = rocksDbWrapper;
+    persistenceHelper = new PersistenceHelper(rocksDbWrapper);
 
     workflowsHandle = rocksDbWrapper.getColumnFamilyHandle(WORKFLOWS_FAMILY_NAME);
     workflowsByIdAndVersionHandle =
@@ -131,9 +134,7 @@ public class WorkflowPersistenceCache {
   }
 
   // is called on getters, if workflow is not in memory
-  private DeployedWorkflow updateInMemoryState(int valueLength) {
-    final PersistedWorkflow persistedWorkflow = new PersistedWorkflow();
-    persistedWorkflow.wrap(valueBuffer, 0, valueLength);
+  private DeployedWorkflow updateInMemoryState(PersistedWorkflow persistedWorkflow) {
 
     final BpmnModelInstance modelInstance =
         Bpmn.readModelFromStream(new DirectBufferInputStream(persistedWorkflow.getResource()));
@@ -176,25 +177,19 @@ public class WorkflowPersistenceCache {
 
   private DeployedWorkflow lookupPersistenceStateForLatestWorkflow(DirectBuffer processId) {
     final int keyLength = PersistedWorkflow.writeWorkflowKey(keyBuffer, 0, processId, -1);
-    final int readBytes =
-        rocksDbWrapper.get(
+    final PersistedWorkflow persistedWorkflow =
+        persistenceHelper.getValueInstance(
+            PersistedWorkflow.class,
             latestWorkflowsHandle,
-            keyBuffer.byteArray(),
+            keyBuffer,
             0,
-            keyLength - Integer.BYTES, // without version
-            valueBuffer.byteArray(),
-            0,
-            valueBuffer.capacity());
+            keyLength - Integer.BYTES,
+            valueBuffer);
 
-    if (readBytes >= valueBuffer.capacity()) {
-      valueBuffer.checkLimit(readBytes);
-      return lookupPersistenceStateForLatestWorkflow(processId);
-    } else if (readBytes > 0) {
-      final DeployedWorkflow deployedWorkflow = updateInMemoryState(readBytes);
+    if (persistedWorkflow != null) {
+      final DeployedWorkflow deployedWorkflow = updateInMemoryState(persistedWorkflow);
       return deployedWorkflow;
     }
-
-    // does not exist in persistence and in memory state
     return null;
   }
 
@@ -215,21 +210,17 @@ public class WorkflowPersistenceCache {
 
   private DeployedWorkflow lookupPersistenceState(DirectBuffer processId, int version) {
     final int keyLength = PersistedWorkflow.writeWorkflowKey(keyBuffer, 0, processId, version);
-    final int readBytes =
-        rocksDbWrapper.get(
+    final PersistedWorkflow persistedWorkflow =
+        persistenceHelper.getValueInstance(
+            PersistedWorkflow.class,
             workflowsByIdAndVersionHandle,
-            keyBuffer.byteArray(),
+            keyBuffer,
             0,
             keyLength,
-            valueBuffer.byteArray(),
-            0,
-            valueBuffer.capacity());
+            valueBuffer);
 
-    if (readBytes >= valueBuffer.capacity()) {
-      valueBuffer.checkLimit(readBytes);
-      return lookupPersistenceState(processId, version);
-    } else if (readBytes > 0) {
-      updateInMemoryState(readBytes);
+    if (persistedWorkflow != null) {
+      updateInMemoryState(persistedWorkflow);
 
       final Int2ObjectHashMap<DeployedWorkflow> newVersionMap =
           workflowsByProcessIdAndVersion.get(processId);
@@ -238,7 +229,6 @@ public class WorkflowPersistenceCache {
         return newVersionMap.get(version);
       }
     }
-
     // does not exist in persistence and in memory state
     return null;
   }
@@ -254,22 +244,19 @@ public class WorkflowPersistenceCache {
   }
 
   private DeployedWorkflow lookupPersistenceStateForWorkflowByKey(long workflowKey) {
-    final int readBytes =
-        rocksDbWrapper.get(
-            workflowsHandle, workflowKey, valueBuffer.byteArray(), 0, valueBuffer.capacity());
+    keyBuffer.putLong(0, workflowKey, ByteOrder.LITTLE_ENDIAN);
+    final PersistedWorkflow persistedWorkflow =
+        persistenceHelper.getValueInstance(
+            PersistedWorkflow.class, workflowsHandle, keyBuffer, 0, Long.BYTES, valueBuffer);
 
-    if (readBytes > valueBuffer.capacity()) {
-      valueBuffer.checkLimit(readBytes);
-      return lookupPersistenceStateForWorkflowByKey(workflowKey);
-    } else if (readBytes > 0) {
-      updateInMemoryState(readBytes);
+    if (persistedWorkflow != null) {
+      updateInMemoryState(persistedWorkflow);
 
       final DeployedWorkflow deployedWorkflow = workflowsByKey.get(workflowKey);
       if (deployedWorkflow != null) {
         return deployedWorkflow;
       }
     }
-
     // does not exist in persistence and in memory state
     return null;
   }
@@ -298,7 +285,9 @@ public class WorkflowPersistenceCache {
         workflowsHandle,
         (key, value) -> {
           valueBuffer.putBytes(0, value);
-          updateInMemoryState(value.length);
+          final PersistedWorkflow persistedWorkflow = new PersistedWorkflow();
+          persistedWorkflow.wrap(valueBuffer, 0, value.length);
+          updateInMemoryState(persistedWorkflow);
         });
   }
 }

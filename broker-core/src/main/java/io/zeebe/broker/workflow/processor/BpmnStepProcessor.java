@@ -29,6 +29,7 @@ import io.zeebe.broker.workflow.model.ExecutableFlowElement;
 import io.zeebe.broker.workflow.model.ExecutableWorkflow;
 import io.zeebe.broker.workflow.state.DeployedWorkflow;
 import io.zeebe.broker.workflow.state.ElementInstance;
+import io.zeebe.broker.workflow.state.ElementInstanceState;
 import io.zeebe.broker.workflow.state.WorkflowEngineState;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import java.util.function.Consumer;
@@ -42,6 +43,7 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
   private final BpmnStepGuards stepGuards;
 
   private final WorkflowState workflowState;
+  private ElementInstanceState elementInstanceState;
 
   private BpmnStepContext context;
 
@@ -57,6 +59,7 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
   public void onOpen(TypedStreamProcessor streamProcessor) {
     state.onOpen(streamProcessor);
     this.context = new BpmnStepContext<>(state);
+    this.elementInstanceState = workflowState.getElementInstanceState();
   }
 
   @Override
@@ -75,7 +78,7 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
     if (stepGuards.shouldHandle(context)) {
       state.onEventConsumed(record);
       stepHandlers.handle(context);
-      workflowState.flushElementInstanceState();
+      elementInstanceState.flushDirtyState();
     }
   }
 
@@ -112,8 +115,10 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
   private void populateElementInstancesInContext() {
     final WorkflowInstanceRecord value = context.getValue();
 
-    final ElementInstance elementInstance = state.getElementInstance(context.getRecord().getKey());
-    final ElementInstance flowScopeInstance = state.getElementInstance(value.getScopeInstanceKey());
+    final ElementInstance elementInstance =
+        elementInstanceState.getInstance(context.getRecord().getKey());
+    final ElementInstance flowScopeInstance =
+        elementInstanceState.getInstance(value.getScopeInstanceKey());
 
     context.setElementInstance(elementInstance);
     context.setFlowScopeInstance(flowScopeInstance);

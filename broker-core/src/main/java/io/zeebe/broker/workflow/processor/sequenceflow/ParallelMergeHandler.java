@@ -101,7 +101,7 @@ public class ParallelMergeHandler implements BpmnStepHandler<ExecutableSequenceF
     final Map<ExecutableSequenceFlow, IndexedRecord> mergingRecords = new HashMap<>();
 
     final List<IndexedRecord> storedRecords =
-        workflowState.getStoredRecords(scopeInstance.getKey());
+        workflowState.getElementInstanceState().getStoredRecords(scopeInstance.getKey());
 
     for (int i = 0; i < incomingFlows.size(); i++) {
       final ExecutableSequenceFlow flow = incomingFlows.get(i);

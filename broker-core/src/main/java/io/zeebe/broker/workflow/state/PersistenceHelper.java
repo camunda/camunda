@@ -25,6 +25,8 @@ import org.rocksdb.ColumnFamilyHandle;
 
 public class PersistenceHelper {
 
+  public static final byte[] EXISTENCE = new byte[] {1};
+
   private final StateController rocksDbWrapper;
 
   public PersistenceHelper(StateController rocksDbWrapper) {
@@ -35,16 +37,23 @@ public class PersistenceHelper {
       Class<T> clazz,
       ColumnFamilyHandle handle,
       DirectBuffer keyBuffer,
+      int keyOffset,
       int keyLength,
       DirectBuffer valueBuffer) {
     final int valueLength = valueBuffer.capacity();
     final int readBytes =
         rocksDbWrapper.get(
-            handle, keyBuffer.byteArray(), 0, keyLength, valueBuffer.byteArray(), 0, valueLength);
+            handle,
+            keyBuffer.byteArray(),
+            keyOffset,
+            keyLength,
+            valueBuffer.byteArray(),
+            0,
+            valueLength);
 
     if (readBytes >= valueLength) {
       valueBuffer.checkLimit(readBytes);
-      return getValueInstance(clazz, handle, keyBuffer, keyLength, valueBuffer);
+      return getValueInstance(clazz, handle, keyBuffer, keyOffset, keyLength, valueBuffer);
     } else if (readBytes <= 0) {
       return null;
     } else {

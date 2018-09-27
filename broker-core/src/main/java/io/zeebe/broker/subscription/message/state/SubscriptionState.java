@@ -17,19 +17,20 @@
  */
 package io.zeebe.broker.subscription.message.state;
 
+import static io.zeebe.broker.workflow.state.PersistenceHelper.EXISTENCE;
+
+import io.zeebe.broker.workflow.state.PersistenceHelper;
 import io.zeebe.logstreams.state.StateController;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.rocksdb.ColumnFamilyHandle;
 
 public class SubscriptionState<T extends Subscription> {
-  private static final byte[] EXISTENCE = new byte[] {1};
   private static final int TIME_OFFSET = 0;
   public static final int KEY_OFFSET = TIME_OFFSET + Long.BYTES;
   public static final int TIME_LENGTH = Long.BYTES;
@@ -48,12 +49,13 @@ public class SubscriptionState<T extends Subscription> {
   private final ColumnFamilyHandle subscriptionHandle;
   private final ColumnFamilyHandle subSendTimeHandle;
 
-  private final Supplier<T> subscriptionInstanceSupplier;
+  private final Class<T> clazz;
+  private final PersistenceHelper persistenceHelper;
 
-  public SubscriptionState(StateController rocksDbWrapper, Supplier<T> subscriptionInstanceSupplier)
-      throws Exception {
+  public SubscriptionState(StateController rocksDbWrapper, Class<T> clazz) {
     this.rocksDbWrapper = rocksDbWrapper;
-    this.subscriptionInstanceSupplier = subscriptionInstanceSupplier;
+    this.persistenceHelper = new PersistenceHelper(rocksDbWrapper);
+    this.clazz = clazz;
 
     keyBuffer = new ExpandableArrayBuffer();
     valueBuffer = new ExpandableArrayBuffer();
@@ -103,44 +105,29 @@ public class SubscriptionState<T extends Subscription> {
   }
 
   public T getSubscription(final DirectBuffer buffer, final int offset, final int length) {
-    final int valueBufferSize = valueBuffer.capacity();
-    final int readBytes =
-        rocksDbWrapper.get(
-            subscriptionHandle,
-            buffer.byteArray(),
-            offset,
-            length,
-            valueBuffer.byteArray(),
-            0,
-            valueBufferSize);
-
-    if (readBytes > valueBufferSize) {
-      valueBuffer.checkLimit(readBytes);
-      // try again
-      return getSubscription(buffer, offset, length);
-    } else if (readBytes <= 0) {
-      return null;
-    } else {
-
-      final T subscription = subscriptionInstanceSupplier.get();
-      subscription.wrap(valueBuffer, 0, readBytes);
-
-      return subscription;
-    }
+    return persistenceHelper.getValueInstance(
+        clazz, subscriptionHandle, buffer, offset, length, valueBuffer);
   }
 
   public List<T> findSubscriptions(
       final DirectBuffer messageName, final DirectBuffer correlationKey) {
     final List<T> subscriptionsList = new ArrayList<>();
-    rocksDbWrapper.foreach(
+    rocksDbWrapper.whileTrue(
         subscriptionHandle,
         (key, value) -> {
-          final T subscription = subscriptionInstanceSupplier.get();
-          subscription.wrap(new UnsafeBuffer(value), 0, value.length);
+          try {
+            final T subscription = clazz.newInstance();
+            subscription.wrap(new UnsafeBuffer(value), 0, value.length);
 
-          if (messageName.equals(subscription.getMessageName())
-              && correlationKey.equals(subscription.getCorrelationKey())) {
-            subscriptionsList.add(subscription);
+            final boolean isEqual =
+                messageName.equals(subscription.getMessageName())
+                    && correlationKey.equals(subscription.getCorrelationKey());
+            if (isEqual) {
+              subscriptionsList.add(subscription);
+            }
+            return isEqual;
+          } catch (Exception ex) {
+            throw new RuntimeException(ex);
           }
         });
     return subscriptionsList;
@@ -148,17 +135,19 @@ public class SubscriptionState<T extends Subscription> {
 
   public List<T> findSubscriptionBefore(final long deadline) {
     final List<T> subscriptionsList = new ArrayList<>();
-    rocksDbWrapper.foreach(
+    rocksDbWrapper.whileTrue(
         subSendTimeHandle,
         (key, value) -> {
           iterateKeyBuffer.wrap(key);
           final long time = iterateKeyBuffer.getLong(TIME_OFFSET, ByteOrder.LITTLE_ENDIAN);
 
-          if (time > 0 && time < deadline) {
+          final boolean isDue = time > 0 && time < deadline;
+          if (isDue) {
             final int keyLengthWithoutTime = key.length - KEY_OFFSET;
             subscriptionsList.add(
                 getSubscription(iterateKeyBuffer, KEY_OFFSET, keyLengthWithoutTime));
           }
+          return isDue;
         });
     return subscriptionsList;
   }

@@ -45,7 +45,8 @@ public final class CancelWorkflowInstanceProcessor
       TypedResponseWriter responseWriter,
       TypedStreamWriter streamWriter) {
 
-    final ElementInstance workflowInstance = workflowState.getInstance(command.getKey());
+    final ElementInstance workflowInstance =
+        workflowState.getElementInstanceState().getInstance(command.getKey());
 
     final boolean canCancel = workflowInstance != null && workflowInstance.canTerminate();
 

@@ -30,6 +30,7 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.Collection;
 import java.util.List;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -45,6 +46,11 @@ public class WorkflowStateTest {
   public void setUp() throws Exception {
     workflowState = new WorkflowState();
     workflowState.open(folder.newFolder("rocksdb"), false);
+  }
+
+  @After
+  public void tearDown() {
+    workflowState.close();
   }
 
   @Test

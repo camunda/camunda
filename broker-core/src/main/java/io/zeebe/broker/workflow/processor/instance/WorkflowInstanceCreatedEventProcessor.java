@@ -69,7 +69,8 @@ public final class WorkflowInstanceCreatedEventProcessor
     workflowInstanceEventCreate.incrementOrdered();
     responseWriter.writeEvent(record);
 
-    workflowState.newInstance(
-        record.getKey(), record.getValue(), WorkflowInstanceIntent.ELEMENT_READY);
+    workflowState
+        .getElementInstanceState()
+        .newInstance(record.getKey(), record.getValue(), WorkflowInstanceIntent.ELEMENT_READY);
   }
 }

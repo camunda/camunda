@@ -45,7 +45,8 @@ public final class JobCompletedEventProcessor implements TypedRecordProcessor<Jo
     final JobRecord jobEvent = record.getValue();
     final JobHeaders jobHeaders = jobEvent.headers();
     final long activityInstanceKey = jobHeaders.getActivityInstanceKey();
-    final ElementInstance activityInstance = workflowState.getInstance(activityInstanceKey);
+    final ElementInstance activityInstance =
+        workflowState.getElementInstanceState().getInstance(activityInstanceKey);
 
     if (activityInstance != null) {
 

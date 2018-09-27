@@ -92,7 +92,7 @@ public final class CorrelateWorkflowInstanceSubscription
     this.sideEffect = sideEffect;
 
     final ElementInstance eventInstance =
-        workflowState.getInstance(subscription.getActivityInstanceKey());
+        workflowState.getElementInstanceState().getInstance(subscription.getActivityInstanceKey());
 
     if (eventInstance == null) {
       streamWriter.writeRejection(
@@ -122,7 +122,7 @@ public final class CorrelateWorkflowInstanceSubscription
     }
 
     final ElementInstance eventInstance =
-        workflowState.getInstance(subscription.getActivityInstanceKey());
+        workflowState.getElementInstanceState().getInstance(subscription.getActivityInstanceKey());
 
     final WorkflowInstanceRecord value = eventInstance.getValue();
     value.setPayload(subscription.getPayload());

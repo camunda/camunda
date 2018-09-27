@@ -43,7 +43,8 @@ public final class JobCreatedProcessor implements TypedRecordProcessor<JobRecord
     final JobHeaders jobHeaders = record.getValue().headers();
     final long activityInstanceKey = jobHeaders.getActivityInstanceKey();
     if (activityInstanceKey > 0) {
-      final ElementInstance activityInstance = workflowState.getInstance(activityInstanceKey);
+      final ElementInstance activityInstance =
+          workflowState.getElementInstanceState().getInstance(activityInstanceKey);
 
       if (activityInstance != null) {
         activityInstance.setJobKey(record.getKey());

@@ -69,6 +69,7 @@ import io.zeebe.util.metrics.MetricsManager;
 public class WorkflowEngineState implements StreamProcessorLifecycleAware {
 
   private final WorkflowState workflowState;
+  private ElementInstanceState elementInstanceState;
   private WorkflowInstanceMetrics metrics;
 
   public WorkflowEngineState(WorkflowState workflowState) {
@@ -84,6 +85,7 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
     final LogStream logStream = streamProcessorContext.getLogStream();
 
     this.metrics = new WorkflowInstanceMetrics(metricsManager, logStream.getPartitionId());
+    this.elementInstanceState = workflowState.getElementInstanceState();
   }
 
   @Override
@@ -95,7 +97,7 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
 
     if (isFlowTriggeringEvent(record)) {
       final long scopeKey = record.getValue().getScopeInstanceKey();
-      workflowState.consumeToken(scopeKey);
+      workflowState.getElementInstanceState().consumeToken(scopeKey);
     }
     // else: element instances remain in the index until a final state is published
   }
@@ -119,23 +121,23 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
 
   public void deferEvent(TypedRecord<WorkflowInstanceRecord> event) {
     final long scopeKey = event.getValue().getScopeInstanceKey();
-    workflowState.storeRecord(scopeKey, event);
+    elementInstanceState.storeRecord(scopeKey, event);
 
     // currently assuming only token events are deferred
-    workflowState.spawnToken(scopeKey); // the token remains active
+    elementInstanceState.spawnToken(scopeKey); // the token remains active
   }
 
   public void consumeDeferredEvent(long scopeKey, long key) {
-    final boolean eventRemoved = workflowState.removeStoredRecord(scopeKey, key);
+    final boolean eventRemoved = elementInstanceState.removeStoredRecord(scopeKey, key);
     if (eventRemoved) {
-      workflowState.consumeToken(scopeKey);
+      elementInstanceState.consumeToken(scopeKey);
     }
   }
 
   private void onTokenEventProduced(
       long key, WorkflowInstanceIntent state, WorkflowInstanceRecord value) {
     final long scopeKey = value.getScopeInstanceKey();
-    workflowState.spawnToken(scopeKey);
+    elementInstanceState.spawnToken(scopeKey);
   }
 
   private void onElementInstanceEventProduced(
@@ -145,24 +147,25 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
       final long scopeInstanceKey = value.getScopeInstanceKey();
 
       if (scopeInstanceKey >= 0) {
-        final ElementInstance flowScopeInstance = workflowState.getInstance(scopeInstanceKey);
-        workflowState.newInstance(flowScopeInstance, key, value, state);
+        final ElementInstance flowScopeInstance =
+            elementInstanceState.getInstance(scopeInstanceKey);
+        elementInstanceState.newInstance(flowScopeInstance, key, value, state);
       } else {
-        workflowState.newInstance(key, value, state);
+        elementInstanceState.newInstance(key, value, state);
       }
     } else if (WorkflowInstanceLifecycle.isFinalState(state)) {
-      workflowState.removeInstance(key);
+      elementInstanceState.removeInstance(key);
 
       final long scopeInstanceKey = value.getScopeInstanceKey();
 
       // a final state is triggers continued execution, i.e. we count a new token
       if (scopeInstanceKey >= 0) // i.e. not root scope
       {
-        workflowState.spawnToken(scopeInstanceKey);
+        elementInstanceState.spawnToken(scopeInstanceKey);
       }
 
     } else {
-      final ElementInstance scopeInstance = workflowState.getInstance(key);
+      final ElementInstance scopeInstance = elementInstanceState.getInstance(key);
       scopeInstance.setState(state);
       scopeInstance.setValue(value);
     }
@@ -174,9 +177,5 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
         metrics.countInstanceCompleted();
       }
     }
-  }
-
-  public ElementInstance getElementInstance(long key) {
-    return workflowState.getInstance(key);
   }
 }

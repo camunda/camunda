@@ -39,7 +39,8 @@ public class TerminateContainedElementsHandler
   public void handle(BpmnStepContext<ExecutableFlowElementContainer> context) {
     final ElementInstance subProcessInstance = context.getElementInstance();
 
-    final List<ElementInstance> children = workflowState.getChildren(subProcessInstance.getKey());
+    final List<ElementInstance> children =
+        workflowState.getElementInstanceState().getChildren(subProcessInstance.getKey());
     final EventOutput streamWriter = context.getOutput();
 
     if (children.isEmpty()) {
