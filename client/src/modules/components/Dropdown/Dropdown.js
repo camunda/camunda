@@ -44,7 +44,7 @@ export default class Dropdown extends React.Component {
     }
 
     evt = evt || window.event;
-    let selectedOption = options.indexOf(document.activeElement);
+    const selectedOption = options.indexOf(document.activeElement);
 
     if (evt.key !== 'Tab') {
       evt.preventDefault();
