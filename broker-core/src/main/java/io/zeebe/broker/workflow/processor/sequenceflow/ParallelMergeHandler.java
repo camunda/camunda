@@ -25,9 +25,13 @@ import io.zeebe.broker.workflow.model.ExecutableSequenceFlow;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 import io.zeebe.broker.workflow.processor.EventOutput;
+import io.zeebe.msgpack.mapping.Mapping;
+import io.zeebe.msgpack.mapping.MsgPackMergeTool;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import org.agrona.DirectBuffer;
 
 public class ParallelMergeHandler implements BpmnStepHandler<ExecutableSequenceFlow> {
 
@@ -42,24 +46,52 @@ public class ParallelMergeHandler implements BpmnStepHandler<ExecutableSequenceF
     final ExecutableSequenceFlow sequenceFlow = context.getElement();
     final ExecutableFlowNode gateway = sequenceFlow.getTarget();
 
-    final List<IndexedRecord> mergeableRecords = getMergeableRecords(gateway, scopeInstance);
+    final Map<ExecutableSequenceFlow, IndexedRecord> mergeableRecords =
+        getMergeableRecords(gateway, scopeInstance);
 
     if (mergeableRecords.size() == gateway.getIncoming().size()) {
 
-      mergeableRecords.forEach(
-          r -> eventOutput.consumeDeferredEvent(scopeInstance.getKey(), r.getKey()));
+      final DirectBuffer propagatedPayload =
+          mergePayloads(context.getMergeTool(), mergeableRecords);
+
+      mergeableRecords
+          .values()
+          .forEach(r -> eventOutput.consumeDeferredEvent(scopeInstance.getKey(), r.getKey()));
 
       final WorkflowInstanceRecord value = context.getValue();
       value.setActivityId(gateway.getId());
+      value.setPayload(propagatedPayload);
       context.getOutput().writeNewEvent(WorkflowInstanceIntent.GATEWAY_ACTIVATED, value);
     }
   }
 
+  private DirectBuffer mergePayloads(
+      MsgPackMergeTool mergeTool, Map<ExecutableSequenceFlow, IndexedRecord> records) {
+    // default merge
+    for (IndexedRecord record : records.values()) {
+      mergeTool.mergeDocument(record.getValue().getPayload());
+    }
+
+    // apply mappings
+    for (Map.Entry<ExecutableSequenceFlow, IndexedRecord> entry : records.entrySet()) {
+      final Mapping[] mappings = entry.getKey().getPayloadMappings();
+      final DirectBuffer payload = entry.getValue().getValue().getPayload();
+
+      // don't merge the document a second time
+      if (mappings.length > 0) {
+        mergeTool.mergeDocument(payload, mappings);
+      }
+    }
+
+    return mergeTool.writeResultToBuffer();
+  }
+
   /** @return the records that can be merged */
-  private List<IndexedRecord> getMergeableRecords(
+  private Map<ExecutableSequenceFlow, IndexedRecord> getMergeableRecords(
       ExecutableFlowNode parallelGateway, ElementInstance scopeInstance) {
+
     final List<ExecutableSequenceFlow> incomingFlows = parallelGateway.getIncoming();
-    final List<IndexedRecord> mergingRecords = new ArrayList<>(incomingFlows.size());
+    final Map<ExecutableSequenceFlow, IndexedRecord> mergingRecords = new HashMap<>();
 
     final List<IndexedRecord> storedRecords = scopeInstance.getStoredRecords();
 
@@ -70,7 +102,7 @@ public class ParallelMergeHandler implements BpmnStepHandler<ExecutableSequenceF
         final IndexedRecord recordToMatch = storedRecords.get(j);
 
         if (recordToMatch.getValue().getActivityId().equals(flow.getId())) {
-          mergingRecords.add(recordToMatch);
+          mergingRecords.put(flow, recordToMatch);
           break;
         }
       }

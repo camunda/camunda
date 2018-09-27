@@ -17,12 +17,8 @@
  */
 package io.zeebe.broker.incident;
 
-import static io.zeebe.broker.test.MsgPackUtil.JSON_MAPPER;
-import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_MAPPER;
-import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_PAYLOAD;
-import static io.zeebe.broker.test.MsgPackUtil.encodeMsgPack;
+import static io.zeebe.broker.test.MsgPackConstants.MSGPACK_PAYLOAD;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -41,10 +37,11 @@ import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
 import io.zeebe.test.broker.protocol.clientapi.TestPartitionClient;
+import io.zeebe.test.util.MsgPackUtil;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.agrona.MutableDirectBuffer;
+import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -76,12 +73,12 @@ public class IncidentTest {
   private static final byte[] PAYLOAD;
 
   static {
-    final MutableDirectBuffer buffer =
-        encodeMsgPack(
-            (w) -> {
-              w.writeMapHeader(1);
-              w.writeString(wrapString("foo"));
-              w.writeString(wrapString("bar"));
+    final DirectBuffer buffer =
+        MsgPackUtil.encodeMsgPack(
+            p -> {
+              p.packMapHeader(1);
+              p.packString("foo");
+              p.packString("bar");
             });
     PAYLOAD = new byte[buffer.capacity()];
     buffer.getBytes(0, PAYLOAD);
@@ -276,7 +273,7 @@ public class IncidentTest {
         testClient.receiveElementInState("service", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     final byte[] result = (byte[]) followUpEvent.value().get(PROP_PAYLOAD);
-    assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree("{'obj':'test'}"));
+    MsgPackUtil.assertEquality(result, "{'obj':'test'}");
 
     final SubscribedRecord incidentResolvedEvent =
         testClient.receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
@@ -310,8 +307,7 @@ public class IncidentTest {
     testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 
     // when
-    testClient.completeJobOfType(
-        "external", MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'testAttr':'test'}")));
+    testClient.completeJobOfType("external", MsgPackUtil.asMsgPack("{'testAttr':'test'}"));
     testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     // then incident is created
@@ -343,8 +339,7 @@ public class IncidentTest {
     final long workflowInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 
     // when
-    testClient.completeJobOfType(
-        "external", MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'testAttr':'test'}")));
+    testClient.completeJobOfType("external", MsgPackUtil.asMsgPack("{'testAttr':'test'}"));
     testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     // then incident is created
@@ -361,7 +356,7 @@ public class IncidentTest {
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     final byte[] result = (byte[]) followUpEvent.value().get(PROP_PAYLOAD);
-    assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree("{'obj':'test'}"));
+    MsgPackUtil.assertEquality(result, "{'obj':'test'}");
 
     final SubscribedRecord incidentResolvedEvent =
         testClient.receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
@@ -441,7 +436,7 @@ public class IncidentTest {
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     final byte[] result = (byte[]) followUpEvent.value().get(PROP_PAYLOAD);
-    assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree("{'obj':'test'}"));
+    MsgPackUtil.assertEquality(result, "{'obj':'test'}");
 
     final SubscribedRecord incidentResolvedEvent =
         testClient.receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
@@ -509,7 +504,7 @@ public class IncidentTest {
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     final byte[] result = (byte[]) followUpEvent.value().get(PROP_PAYLOAD);
-    assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree("{'obj':'test'}"));
+    MsgPackUtil.assertEquality(result, "{'obj':'test'}");
 
     final SubscribedRecord incidentResolvedEvent =
         testClient.receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
@@ -1245,10 +1240,7 @@ public class IncidentTest {
       final SubscribedRecord activityInstanceEvent,
       final String payload)
       throws IOException {
-    updatePayload(
-        workflowInstanceKey,
-        activityInstanceEvent.key(),
-        MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree(payload)));
+    updatePayload(workflowInstanceKey, activityInstanceEvent.key(), MsgPackUtil.asMsgPack(payload));
   }
 
   private void cancelWorkflowInstance(final long workflowInstanceKey) {

@@ -20,6 +20,9 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.ConditionExpression;
 import io.zeebe.model.bpmn.instance.FlowNode;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
+import io.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
+import io.zeebe.model.bpmn.instance.zeebe.ZeebeMappingType;
+import io.zeebe.model.bpmn.instance.zeebe.ZeebePayloadMappings;
 
 /** @author Sebastian Menski */
 public abstract class AbstractSequenceFlowBuilder<B extends AbstractSequenceFlowBuilder<B>>
@@ -62,6 +65,21 @@ public abstract class AbstractSequenceFlowBuilder<B extends AbstractSequenceFlow
    */
   public B condition(ConditionExpression conditionExpression) {
     element.setConditionExpression(conditionExpression);
+    return myself;
+  }
+
+  public B payloadMapping(String source, String target) {
+    return payloadMapping(source, target, ZeebeMappingType.PUT);
+  }
+
+  public B payloadMapping(String source, String target, ZeebeMappingType type) {
+    final ZeebePayloadMappings mappings =
+        getCreateSingleExtensionElement(ZeebePayloadMappings.class);
+    final ZeebeMapping mapping = createChild(mappings, ZeebeMapping.class);
+    mapping.setSource(source);
+    mapping.setTarget(target);
+    mapping.setType(type);
+
     return myself;
   }
 }

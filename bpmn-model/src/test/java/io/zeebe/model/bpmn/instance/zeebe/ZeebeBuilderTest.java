@@ -26,6 +26,7 @@ import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.zeebe.model.bpmn.instance.Message;
 import io.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.zeebe.model.bpmn.instance.ReceiveTask;
+import io.zeebe.model.bpmn.instance.SequenceFlow;
 import io.zeebe.model.bpmn.instance.ServiceTask;
 import java.util.Collection;
 import java.util.function.Predicate;
@@ -153,6 +154,37 @@ public class ZeebeBuilderTest {
     assertThat(subscription.getCorrelationKey()).isEqualTo("correlationKey");
   }
 
+  @Test
+  public void shouldBuildSequenceFlowWithMapping() {
+    // when
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess()
+            .startEvent()
+            .sequenceFlow(
+                b -> b.id("flow1").payloadMapping("source1", "target1", ZeebeMappingType.COLLECT))
+            .serviceTask("task")
+            .sequenceFlow(b -> b.id("flow2").payloadMapping("source2", "target2"))
+            .endEvent()
+            .done();
+
+    // then
+    Bpmn.validateModel(modelInstance);
+
+    final SequenceFlow flow1 = modelInstance.getModelElementById("flow1");
+    final ZeebePayloadMappings mappings1 = getExtensionElement(flow1, ZeebePayloadMappings.class);
+    assertThat(mappings1.getMappings()).hasSize(1);
+    assertThat(mappings1.getMappings())
+        .element(0)
+        .matches(mapping("source1", "target1", ZeebeMappingType.COLLECT));
+
+    final SequenceFlow flow2 = modelInstance.getModelElementById("flow2");
+    final ZeebePayloadMappings mappings2 = getExtensionElement(flow2, ZeebePayloadMappings.class);
+    assertThat(mappings2.getMappings()).hasSize(1);
+    assertThat(mappings2.getMappings())
+        .element(0)
+        .matches(mapping("source2", "target2", ZeebeMappingType.PUT));
+  }
+
   @SuppressWarnings("unchecked")
   private <T extends BpmnModelElementInstance> T getExtensionElement(
       BaseElement element, Class<T> typeClass) {
@@ -172,5 +204,10 @@ public class ZeebeBuilderTest {
 
   private static Predicate<ZeebeOutput> output(String source, String target) {
     return h -> source.equals(h.getSource()) && target.equals(h.getTarget());
+  }
+
+  private static Predicate<ZeebeMapping> mapping(
+      String source, String target, ZeebeMappingType type) {
+    return m -> source.equals(m.getSource()) && target.equals(m.getTarget()) && m.getType() == type;
   }
 }

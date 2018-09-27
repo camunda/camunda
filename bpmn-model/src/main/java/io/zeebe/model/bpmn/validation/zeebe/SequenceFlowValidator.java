@@ -16,7 +16,9 @@
 package io.zeebe.model.bpmn.validation.zeebe;
 
 import io.zeebe.model.bpmn.instance.ExclusiveGateway;
+import io.zeebe.model.bpmn.instance.ParallelGateway;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
+import io.zeebe.model.bpmn.instance.zeebe.ZeebePayloadMappings;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
@@ -31,12 +33,26 @@ public class SequenceFlowValidator implements ModelElementValidator<SequenceFlow
   public void validate(SequenceFlow element, ValidationResultCollector validationResultCollector) {
 
     if (element.getSource() instanceof ExclusiveGateway) {
-      final ExclusiveGateway gateway = (ExclusiveGateway) element.getSource();
-      if (gateway.getOutgoing().size() > 1
-          && gateway.getDefault() != element
-          && element.getConditionExpression() == null) {
-        validationResultCollector.addError(0, "Must have a condition or be default flow");
+      validateOutgoingFromExclusiveGateway(element, validationResultCollector);
+    }
+
+    if (!(element.getTarget() instanceof ParallelGateway)) {
+      final ZeebePayloadMappings mappings =
+          element.getSingleExtensionElement(ZeebePayloadMappings.class);
+      if (mappings != null) {
+        validationResultCollector.addError(
+            0, "Must only have payload mappings if its target is a parallel gateway");
       }
+    }
+  }
+
+  private void validateOutgoingFromExclusiveGateway(
+      SequenceFlow element, ValidationResultCollector validationResultCollector) {
+    final ExclusiveGateway gateway = (ExclusiveGateway) element.getSource();
+    if (gateway.getOutgoing().size() > 1
+        && gateway.getDefault() != element
+        && element.getConditionExpression() == null) {
+      validationResultCollector.addError(0, "Must have a condition or be default flow");
     }
   }
 }

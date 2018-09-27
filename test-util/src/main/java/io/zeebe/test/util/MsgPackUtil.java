@@ -15,8 +15,11 @@
  */
 package io.zeebe.test.util;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.test.util.collection.MapBuilder;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -27,6 +30,8 @@ import org.msgpack.core.MessagePack;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 public class MsgPackUtil {
+
+  private static final ObjectMapper MSGPACK_MAPPER = new ObjectMapper(new MessagePackFactory());
 
   public static DirectBuffer encodeMsgPack(CheckedConsumer<MessageBufferPacker> msgWriter) {
     final MessageBufferPacker packer = MessagePack.newDefaultBufferPacker();
@@ -52,7 +57,7 @@ public class MsgPackUtil {
   public static DirectBuffer asMsgPack(Consumer<MapBuilder<DirectBuffer>> consumer) {
     final DirectBuffer buffer = new UnsafeBuffer(0, 0);
     final MapBuilder<DirectBuffer> builder =
-        new MapBuilder<DirectBuffer>(buffer, map -> buffer.wrap(asMsgPack(map)));
+        new MapBuilder<>(buffer, map -> buffer.wrap(asMsgPack(map)));
     consumer.accept(builder);
     return builder.done();
   }
@@ -65,6 +70,23 @@ public class MsgPackUtil {
 
       return new UnsafeBuffer(msgPackBytes);
     } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public static void assertEquality(byte[] actualMsgPack, String expectedJson) {
+    try {
+      assertThat(MSGPACK_MAPPER.readTree(actualMsgPack))
+          .isEqualTo(JsonUtil.JSON_MAPPER.readTree(expectedJson));
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public static byte[] asMsgPack(String json) {
+    try {
+      return MSGPACK_MAPPER.writeValueAsBytes(JsonUtil.JSON_MAPPER.readTree(json));
+    } catch (IOException e) {
       throw new RuntimeException(e);
     }
   }

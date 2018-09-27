@@ -17,23 +17,26 @@
  */
 package io.zeebe.broker.workflow.model.validation;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import io.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
+import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
-public class ZeebeRuntimeValidators {
+public class ZeebeMappingValidator implements ModelElementValidator<ZeebeMapping> {
 
-  public static final Collection<ModelElementValidator<?>> VALIDATORS;
+  private final ZeebeExpressionValidator expressionValidator;
 
-  static {
-    final ZeebeExpressionValidator expressionValidator = new ZeebeExpressionValidator();
+  public ZeebeMappingValidator(ZeebeExpressionValidator expressionValidator) {
+    this.expressionValidator = expressionValidator;
+  }
 
-    VALIDATORS = new ArrayList<>();
-    VALIDATORS.add(new ZeebeInputValidator(expressionValidator));
-    VALIDATORS.add(new ZeebeOutputValidator(expressionValidator));
-    VALIDATORS.add(new SequenceFlowValidator(expressionValidator));
-    VALIDATORS.add(new ZeebeIoMappingValidator());
-    VALIDATORS.add(new ZeebeMappingValidator(expressionValidator));
-    VALIDATORS.add(new ZeebeSubscriptionValidator(expressionValidator));
+  @Override
+  public Class<ZeebeMapping> getElementType() {
+    return ZeebeMapping.class;
+  }
+
+  @Override
+  public void validate(ZeebeMapping element, ValidationResultCollector validationResultCollector) {
+    expressionValidator.validateJsonPath(element.getSource(), validationResultCollector);
+    expressionValidator.validateJsonPath(element.getTarget(), validationResultCollector);
   }
 }

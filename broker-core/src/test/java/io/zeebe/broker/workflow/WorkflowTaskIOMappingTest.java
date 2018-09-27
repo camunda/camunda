@@ -17,13 +17,11 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.broker.test.MsgPackUtil.JSON_DOCUMENT;
-import static io.zeebe.broker.test.MsgPackUtil.JSON_MAPPER;
-import static io.zeebe.broker.test.MsgPackUtil.MERGED_OTHER_WITH_JSON_DOCUMENT;
-import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_MAPPER;
-import static io.zeebe.broker.test.MsgPackUtil.MSGPACK_PAYLOAD;
-import static io.zeebe.broker.test.MsgPackUtil.OTHER_DOCUMENT;
-import static io.zeebe.broker.test.MsgPackUtil.OTHER_PAYLOAD;
+import static io.zeebe.broker.test.MsgPackConstants.JSON_DOCUMENT;
+import static io.zeebe.broker.test.MsgPackConstants.MERGED_OTHER_WITH_JSON_DOCUMENT;
+import static io.zeebe.broker.test.MsgPackConstants.MSGPACK_PAYLOAD;
+import static io.zeebe.broker.test.MsgPackConstants.OTHER_DOCUMENT;
+import static io.zeebe.broker.test.MsgPackConstants.OTHER_PAYLOAD;
 import static io.zeebe.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -38,6 +36,7 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
 import io.zeebe.test.broker.protocol.clientapi.TestPartitionClient;
+import io.zeebe.test.util.MsgPackUtil;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
@@ -84,7 +83,7 @@ public class WorkflowTaskIOMappingTest {
 
     assertThat(event.key()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
     final byte[] result = (byte[]) event.value().get(PROP_JOB_PAYLOAD);
-    assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree(JSON_DOCUMENT));
+    MsgPackUtil.assertEquality(result, JSON_DOCUMENT);
   }
 
   @Test
@@ -108,8 +107,7 @@ public class WorkflowTaskIOMappingTest {
 
     // then payload is expected as
     final byte[] result = (byte[]) event.value().get(PROP_JOB_PAYLOAD);
-    assertThat(MSGPACK_MAPPER.readTree(result))
-        .isEqualTo(JSON_MAPPER.readTree("{'newFoo':'value', 'newObj':{'testAttr':'test'}}"));
+    MsgPackUtil.assertEquality(result, "{'newFoo':'value', 'newObj':{'testAttr':'test'}}");
   }
 
   @Test
@@ -202,8 +200,7 @@ public class WorkflowTaskIOMappingTest {
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    assertThat(MSGPACK_MAPPER.readTree(result))
-        .isEqualTo(JSON_MAPPER.readTree(MERGED_OTHER_WITH_JSON_DOCUMENT));
+    MsgPackUtil.assertEquality(result, MERGED_OTHER_WITH_JSON_DOCUMENT);
   }
 
   @Test
@@ -226,7 +223,7 @@ public class WorkflowTaskIOMappingTest {
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree(OTHER_DOCUMENT));
+    MsgPackUtil.assertEquality(result, OTHER_DOCUMENT);
   }
 
   @Test
@@ -250,7 +247,7 @@ public class WorkflowTaskIOMappingTest {
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree("{'foo':'bar'}"));
+    MsgPackUtil.assertEquality(result, "{'foo':'bar'}");
   }
 
   @Test
@@ -275,7 +272,7 @@ public class WorkflowTaskIOMappingTest {
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree(JSON_DOCUMENT));
+    MsgPackUtil.assertEquality(result, JSON_DOCUMENT);
   }
 
   @Test
@@ -300,7 +297,7 @@ public class WorkflowTaskIOMappingTest {
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree(JSON_DOCUMENT));
+    MsgPackUtil.assertEquality(result, JSON_DOCUMENT);
   }
 
   @Test
@@ -325,7 +322,7 @@ public class WorkflowTaskIOMappingTest {
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree("{}"));
+    MsgPackUtil.assertEquality(result, "{}");
   }
 
   @Test
@@ -350,7 +347,7 @@ public class WorkflowTaskIOMappingTest {
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree(OTHER_DOCUMENT));
+    MsgPackUtil.assertEquality(result, OTHER_DOCUMENT);
   }
 
   @Test
@@ -379,7 +376,7 @@ public class WorkflowTaskIOMappingTest {
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree("{'foo':'bar'}"));
+    MsgPackUtil.assertEquality(result, "{'foo':'bar'}");
   }
 
   @Test
@@ -433,7 +430,7 @@ public class WorkflowTaskIOMappingTest {
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree(JSON_DOCUMENT));
+    MsgPackUtil.assertEquality(result, JSON_DOCUMENT);
   }
 
   @Test
@@ -456,7 +453,7 @@ public class WorkflowTaskIOMappingTest {
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree(OTHER_DOCUMENT));
+    MsgPackUtil.assertEquality(result, OTHER_DOCUMENT);
   }
 
   @Test
@@ -475,23 +472,21 @@ public class WorkflowTaskIOMappingTest {
     // when
     testClient.completeJobOfWorkflowInstance("external", firstWFInstanceKey, MSGPACK_PAYLOAD);
     testClient.completeJobOfWorkflowInstance(
-        "external",
-        secondWFInstanceKey,
-        MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'foo':'bar'}")));
+        "external", secondWFInstanceKey, MsgPackUtil.asMsgPack("{'foo':'bar'}"));
 
     // then first event payload is expected as
     final SubscribedRecord firstWFActivityCompletedEvent =
         testClient.receiveFirstWorkflowInstanceEvent(
             firstWFInstanceKey, WorkflowInstanceIntent.ELEMENT_COMPLETED);
     byte[] payload = (byte[]) firstWFActivityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    assertThat(MSGPACK_MAPPER.readTree(payload)).isEqualTo(JSON_MAPPER.readTree(JSON_DOCUMENT));
+    MsgPackUtil.assertEquality(payload, JSON_DOCUMENT);
 
     // and second event payload is expected as
     final SubscribedRecord secondWFActivityCompletedEvent =
         testClient.receiveFirstWorkflowInstanceEvent(
             secondWFInstanceKey, WorkflowInstanceIntent.ELEMENT_COMPLETED);
     payload = (byte[]) secondWFActivityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    assertThat(MSGPACK_MAPPER.readTree(payload)).isEqualTo(JSON_MAPPER.readTree("{'foo':'bar'}"));
+    MsgPackUtil.assertEquality(payload, "{'foo':'bar'}");
   }
 
   @Test
@@ -508,33 +503,28 @@ public class WorkflowTaskIOMappingTest {
     final long firstWFInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
     final long secondWFInstanceKey =
         testClient.createWorkflowInstance(
-            "process",
-            MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'otherPayload':'value'}")));
+            "process", MsgPackUtil.asMsgPack("{'otherPayload':'value'}"));
 
     // when
     testClient.completeJobOfWorkflowInstance("external", firstWFInstanceKey, MSGPACK_PAYLOAD);
     testClient.completeJobOfWorkflowInstance(
-        "external",
-        secondWFInstanceKey,
-        MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'foo':'bar'}")));
+        "external", secondWFInstanceKey, MsgPackUtil.asMsgPack("{'foo':'bar'}"));
 
     // then first event payload is expected as
     final SubscribedRecord firstWFActivityCompletedEvent =
         testClient.receiveFirstWorkflowInstanceEvent(
             firstWFInstanceKey, WorkflowInstanceIntent.ELEMENT_COMPLETED);
     byte[] payload = (byte[]) firstWFActivityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    assertThat(MSGPACK_MAPPER.readTree(payload))
-        .isEqualTo(
-            JSON_MAPPER.readTree(
-                "{'string':'value', 'jsonObject':{'testAttr':'test'},'taskPayload':{'string':'value', 'jsonObject':{'testAttr':'test'}}}"));
+    MsgPackUtil.assertEquality(
+        payload,
+        "{'string':'value', 'jsonObject':{'testAttr':'test'},'taskPayload':{'string':'value', 'jsonObject':{'testAttr':'test'}}}");
 
     // and second event payload is expected as
     final SubscribedRecord secondWFActivityCompletedEvent =
         testClient.receiveFirstWorkflowInstanceEvent(
             secondWFInstanceKey, WorkflowInstanceIntent.ELEMENT_COMPLETED);
     payload = (byte[]) secondWFActivityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    assertThat(MSGPACK_MAPPER.readTree(payload))
-        .isEqualTo(JSON_MAPPER.readTree("{'otherPayload':'value','taskPayload':{'foo':'bar'}}"));
+    MsgPackUtil.assertEquality(payload, "{'otherPayload':'value','taskPayload':{'foo':'bar'}}");
   }
 
   @Test
@@ -561,8 +551,7 @@ public class WorkflowTaskIOMappingTest {
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    assertThat(MSGPACK_MAPPER.readTree(result))
-        .isEqualTo(JSON_MAPPER.readTree(MERGED_OTHER_WITH_JSON_DOCUMENT));
+    MsgPackUtil.assertEquality(result, MERGED_OTHER_WITH_JSON_DOCUMENT);
   }
 
   @Test
@@ -612,11 +601,10 @@ public class WorkflowTaskIOMappingTest {
 
     // then payload contains old objects
     final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    assertThat(MSGPACK_MAPPER.readTree(result))
-        .isEqualTo(
-            JSON_MAPPER.readTree(
-                "{'newFoo':'value', 'newObj':{'testAttr':'test'},"
-                    + " 'string':'value', 'jsonObject':{'testAttr':'test'}}"));
+    MsgPackUtil.assertEquality(
+        result,
+        "{'newFoo':'value', 'newObj':{'testAttr':'test'},"
+            + " 'string':'value', 'jsonObject':{'testAttr':'test'}}");
   }
 
   @Test
@@ -668,21 +656,17 @@ public class WorkflowTaskIOMappingTest {
 
     // then payload is expected as
     byte[] result = (byte[]) event.value().get(PROP_JOB_PAYLOAD);
-    assertThat(MSGPACK_MAPPER.readTree(result))
-        .isEqualTo(JSON_MAPPER.readTree("{'testAttr':'test'}"));
+    MsgPackUtil.assertEquality(result, "{'testAttr':'test'}");
 
     // when
-    testClient.completeJobOfType(
-        "external", MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'testAttr':123}")));
+    testClient.completeJobOfType("external", MsgPackUtil.asMsgPack("{'testAttr':123}"));
 
     // then
     final SubscribedRecord activityCompletedEvent =
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    assertThat(MSGPACK_MAPPER.readTree(result))
-        .isEqualTo(
-            JSON_MAPPER.readTree(
-                "{'string':'value', 'jsonObject':{'testAttr':'test'}, 'result':123}"));
+    MsgPackUtil.assertEquality(
+        result, "{'string':'value', 'jsonObject':{'testAttr':'test'}, 'result':123}");
   }
 }

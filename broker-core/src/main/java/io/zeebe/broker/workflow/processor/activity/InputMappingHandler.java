@@ -31,11 +31,10 @@ import org.agrona.DirectBuffer;
 
 public class InputMappingHandler implements BpmnStepHandler<ExecutableFlowNode> {
 
-  private final MsgPackMergeTool payloadMergeTool = new MsgPackMergeTool(4096);
-
   @Override
   public void handle(BpmnStepContext<ExecutableFlowNode> context) {
 
+    final MsgPackMergeTool payloadMergeTool = context.getMergeTool();
     final TypedRecord<WorkflowInstanceRecord> record = context.getRecord();
     final WorkflowInstanceRecord activityEvent = context.getValue();
     final DirectBuffer sourcePayload = activityEvent.getPayload();
