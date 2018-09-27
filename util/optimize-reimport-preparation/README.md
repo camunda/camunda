@@ -11,7 +11,7 @@ Apache Maven 3 and Java JDK 8 are prerequisites for building the jar.
 Once you have setup Java and Maven, run
 
 ```
-mvn clean install -Dskip.docker
+mvn clean install -DskipTests -Dskip.docker
 ```
 
 In the ``/target`` folder you can then find a file named
