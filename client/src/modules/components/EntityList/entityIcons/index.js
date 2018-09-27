@@ -18,11 +18,11 @@ import reportEmpty from '-!svg-react-loader!./report-empty.svg';
 
 const icons = {
   alert: {
-    header: alerts,
-    generic: alert
+    header: {Component: alerts},
+    generic: {Component: alert}
   },
   report: {
-    header: {Componet: reports},
+    header: {Component: reports},
     generic: {Component: reportEmpty},
     bar: {label: 'Bar Chart Report', Component: reportBar, CombinedComponent: CombinedReportBar},
     heat: {label: 'Heatmap Report', Component: reportHeat},
