@@ -6,5 +6,5 @@ export default function extractProcessDefinitionName(processDefinitionXml) {
     xmlDoc.getElementsByTagName('bpmn:process')[0] ||
     xmlDoc.getElementsByTagName('bpmn2:process')[0] ||
     xmlDoc.getElementsByTagName('process')[0];
-  return procesNode.getAttribute('name') || '';
+  return procesNode ? procesNode.getAttribute('name') : '' || '';
 }
