@@ -105,21 +105,21 @@ describe('Header', () => {
 
     // then
     // instances node
-    const instancesNode = node.find('[data-test="instances"]');
+    const instancesNode = node.find('[data-test="header-link-instances"]');
     expect(instancesNode.contains('Instances')).toBe(true);
     expect(instancesNode.find(Styled.Badge).prop('badgeContent')).toBe(
       mockProps.runningInstancesCount
     );
 
     // filters node
-    const filtersNode = node.find('[data-test="filters"]');
+    const filtersNode = node.find('[data-test="header-link-filters"]');
     expect(filtersNode.contains('Filters')).toBe(true);
     expect(filtersNode.find(Styled.Badge).prop('badgeContent')).toBe(
       mockProps.filterCount
     );
 
     // selections node
-    const selectionsNode = node.find('[data-test="selections"]');
+    const selectionsNode = node.find('[data-test="header-link-selections"]');
     expect(selectionsNode.contains('Selections')).toBe(true);
     expect(
       selectionsNode.find(Styled.SelectionBadge).prop('badgeContent')
@@ -129,7 +129,7 @@ describe('Header', () => {
     ).toBe(mockProps.selectionCount);
 
     // incidents node
-    const incidentsNode = node.find('[data-test="incidents"]');
+    const incidentsNode = node.find('[data-test="header-link-incidents"]');
     expect(incidentsNode.contains('Incidents')).toBe(true);
     expect(incidentsNode.find(Styled.Badge).prop('badgeContent')).toBe(
       mockProps.incidentsCount

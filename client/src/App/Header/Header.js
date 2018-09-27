@@ -103,6 +103,7 @@ class Header extends React.Component {
 
     // query for the incidents link
     const incidentsQuery = getFilterQueryString(FILTER_SELECTION.incidents);
+    const isInstancesPage = active === 'instances';
 
     return this.state.forceRedirect ? (
       <Redirect to="/login" />
@@ -117,8 +118,8 @@ class Header extends React.Component {
               </Link>
             </Styled.Dashboard>
           </li>
-          <li data-test="instances">
-            <Styled.ListLink active={this.props.active === 'instances'}>
+          <li data-test="header-link-instances">
+            <Styled.ListLink active={isInstancesPage}>
               <Link
                 to="/instances"
                 title={`${this.state.runningInstancesCount} Instances`}
@@ -131,8 +132,8 @@ class Header extends React.Component {
               </Link>
             </Styled.ListLink>
           </li>
-          <li data-test="filters">
-            <Styled.ListLink active={this.props.active === 'instances'}>
+          <li data-test="header-link-filters">
+            <Styled.ListLink active={isInstancesPage}>
               <Link
                 to={`/instances${getFilterQueryString(this.state.filter)}`}
                 title={`${this.state.filterCount} Filters`}
@@ -145,8 +146,8 @@ class Header extends React.Component {
               </Link>
             </Styled.ListLink>
           </li>
-          <li data-test="selections">
-            <Styled.ListLink active={this.props.active === 'instances'}>
+          <li data-test="header-link-selections">
+            <Styled.ListLink active={isInstancesPage}>
               <Link
                 to="/instances"
                 title={`${this.state.instancesInSelectionsCount} ${
@@ -162,8 +163,8 @@ class Header extends React.Component {
               </Link>
             </Styled.ListLink>
           </li>
-          <li data-test="incidents">
-            <Styled.ListLink active={this.props.active === 'instances'}>
+          <li data-test="header-link-incidents">
+            <Styled.ListLink active={isInstancesPage}>
               <Link
                 to={`/instances${incidentsQuery}`}
                 title={`${this.state.incidentsCount} Incidents`}
