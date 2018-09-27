@@ -239,6 +239,7 @@ export default function AlertModal(reports) {
                   <span className="AlertModal__label">when Report</span>
                 </label>
                 <Typeahead
+                  initialValue={reports.find(report => report.id === reportId)}
                   isInvalid={errorInput === 'report'}
                   placeholder="Please select Report"
                   values={reports}
