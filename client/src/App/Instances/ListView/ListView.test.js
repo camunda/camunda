@@ -61,14 +61,14 @@ describe('ListView', () => {
 
   it('should have initially default state', () => {
     // given
-    const node = shallow(Component);
+    const instance = new ListView();
 
     // then
-    expect(node.state().firstElement).toBe(0);
-    expect(node.state().instances).toEqual([]);
-    expect(node.state().entriesPerPage).toBe(0);
-    expect(node.state().sorting).toBe(DEFAULT_SORTING);
-    expect(node.state().isDataLoaded).toBe(false);
+    expect(instance.state.firstElement).toBe(0);
+    expect(instance.state.instances).toEqual([]);
+    expect(instance.state.entriesPerPage).toBe(0);
+    expect(instance.state.sorting).toBe(DEFAULT_SORTING);
+    expect(instance.state.isDataLoaded).toBe(true);
   });
 
   it('should reset the page if the filter changes', () => {
@@ -86,10 +86,16 @@ describe('ListView', () => {
       // given filter is not empty
       const node = shallow(Component);
 
+      // then
+      // before api call is resolved
+      expect(node.state().isDataLoaded).toBe(false);
+
       // when
       await flushPromises();
       node.update();
 
+      // then
+      // after api call is resolved
       expect(api.fetchWorkflowInstances).toHaveBeenCalled();
       expect(node.state().isDataLoaded).toBe(true);
     });

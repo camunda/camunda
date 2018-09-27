@@ -33,7 +33,7 @@ export default class ListView extends React.Component {
     instances: [],
     entriesPerPage: 0,
     sorting: DEFAULT_SORTING,
-    isDataLoaded: false
+    isDataLoaded: true
   };
 
   componentDidMount() {
@@ -60,6 +60,8 @@ export default class ListView extends React.Component {
   }
 
   loadData = async () => {
+    this.setState({isDataLoaded: false});
+
     const instances = await fetchWorkflowInstances({
       queries: [
         {
@@ -70,6 +72,7 @@ export default class ListView extends React.Component {
       firstResult: this.state.firstElement,
       maxResults: 50
     });
+
     this.setState({
       instances: instances.workflowInstances,
       isDataLoaded: true
@@ -92,11 +95,11 @@ export default class ListView extends React.Component {
   };
 
   getEmptyListMessage = () => {
-    const {active, incidents, complete, canceled} = this.props.filter;
+    const {active, incidents, completed, canceled} = this.props.filter;
 
     let msg = 'There are no instances matching this filter set.';
 
-    if (!active && !incidents && !complete && !canceled) {
+    if (!active && !incidents && !completed && !canceled) {
       msg += '\n To see some results, select at least one instance state.';
     }
 
@@ -115,7 +118,7 @@ export default class ListView extends React.Component {
       onAddToSpecificSelection
     } = this.props;
 
-    const isListEmpty = !Boolean(this.state.instances.length);
+    const isListEmpty = this.state.instances.length === 0;
 
     return (
       <SplitPane.Pane {...this.props}>
