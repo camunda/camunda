@@ -27,7 +27,7 @@ jest.mock('components', () => {
   };
   Select.Option = props => <option {...props}>{props.children}</option>;
 
-  const Typeahead = props => <div id="typeahead">Typeahead: {JSON.stringify(props)}</div>;
+  const Typeahead = props => <div>Typeahead: {JSON.stringify(props)}</div>;
 
   return {
     Modal,
@@ -244,5 +244,5 @@ it('should contain a threshold input', () => {
 it('should pass the selected report as initial value to the typeahead', () => {
   const node = mount(<AlertModal reports={reports} entity={entity} />);
 
-  expect(node.find('div#typeahead')).toIncludeText('Nice report');
+  expect(node.find('Typeahead').props().initialValue.name).toBe('Nice report');
 });
