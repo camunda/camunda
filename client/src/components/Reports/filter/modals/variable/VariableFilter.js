@@ -79,7 +79,7 @@ export default class VariableFilter extends React.Component {
       <Modal open={true} onClose={this.props.close} className="VariableFilter__modal">
         <Modal.Header>Add Variable Filter</Modal.Header>
         <Modal.Content>
-          <form>
+          <div>
             <ControlGroup layout="horizontal">
               <label htmlFor="VariableFilter__variables">Variable Name</label>
               <Typeahead
@@ -97,7 +97,7 @@ export default class VariableFilter extends React.Component {
               changeFilter={this.changeFilter}
               filter={this.state.filter}
             />
-          </form>
+          </div>
         </Modal.Content>
         <Modal.Actions>
           <Button onClick={this.props.close}>Cancel</Button>
