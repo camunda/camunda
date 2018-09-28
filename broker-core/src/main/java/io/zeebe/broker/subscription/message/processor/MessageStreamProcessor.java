@@ -54,7 +54,9 @@ public class MessageStreamProcessor implements StreamProcessorLifecycleAware {
   public TypedStreamProcessor createStreamProcessors(TypedStreamEnvironment env) {
 
     return env.newStreamProcessor()
-        .keyGenerator(KeyGenerator.createMessageKeyGenerator(messageStateController))
+        .keyGenerator(
+            KeyGenerator.createMessageKeyGenerator(
+                env.getStream().getPartitionId(), messageStateController))
         .onCommand(
             ValueType.MESSAGE,
             MessageIntent.PUBLISH,

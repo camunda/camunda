@@ -89,7 +89,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor {
   protected final TopicSubscriptionEvent subscriptionEvent = new TopicSubscriptionEvent();
   protected final TopicSubscriberEvent subscriberEvent = new TopicSubscriberEvent();
   protected LoggedEvent currentEvent;
-  private final KeyGenerator keyGenerator = new KeyGenerator(1, 1);
+  private final KeyGenerator keyGenerator;
 
   public TopicSubscriptionManagementProcessor(
       Partition partition,
@@ -101,6 +101,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor {
       StreamProcessorServiceFactory streamProcessorServiceFactory,
       ServiceContainer serviceContainer) {
     this.partition = partition;
+    keyGenerator = new KeyGenerator(partition.getInfo().getPartitionId(), 1, 1);
     this.partitionServiceName = partitionServiceName;
     this.pushProcessorEventFilter = pushProcessorEventFilter;
     this.responseWriter = responseWriter;
