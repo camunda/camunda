@@ -25,6 +25,7 @@ import static org.mockito.Mockito.when;
 
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
+import io.zeebe.broker.workflow.state.StoredRecord.Purpose;
 import io.zeebe.protocol.impl.RecordMetadata;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.AutoCloseableRule;
@@ -384,10 +385,10 @@ public class ElementInstanceStateTest {
 
     // when
     final TypedRecord<WorkflowInstanceRecord> typedRecord = mockTypedRecord();
-    elementInstanceState.storeRecord(100, typedRecord);
+    elementInstanceState.storeRecord(100, typedRecord, Purpose.DEFERRED_TOKEN);
 
     // then
-    final List<IndexedRecord> storedRecords = elementInstanceState.getStoredRecords(100);
+    final List<IndexedRecord> storedRecords = elementInstanceState.getDeferredTokens(100);
 
     assertThat(storedRecords).hasSize(1);
     final IndexedRecord indexedRecord = storedRecords.get(0);
@@ -405,18 +406,23 @@ public class ElementInstanceStateTest {
 
     // when
     final TypedRecord<WorkflowInstanceRecord> typedRecord = mockTypedRecord(123L);
-    elementInstanceState.storeRecord(100, typedRecord);
+    elementInstanceState.storeRecord(100, typedRecord, Purpose.DEFERRED_TOKEN);
     final TypedRecord<WorkflowInstanceRecord> typedRecord2 = mockTypedRecord(124L);
-    elementInstanceState.storeRecord(100, typedRecord2);
+    elementInstanceState.storeRecord(100, typedRecord2, Purpose.FINISHED_TOKEN);
 
     // then
-    final List<IndexedRecord> storedRecords = elementInstanceState.getStoredRecords(100);
+    final List<IndexedRecord> deferredTokens = elementInstanceState.getDeferredTokens(100);
+    final List<IndexedRecord> finishedTokens = elementInstanceState.getFinishedTokens(100);
 
-    assertThat(storedRecords).hasSize(2);
-    assertThat(storedRecords).extracting(r -> r.getKey()).containsExactly(123L, 124L);
-    assertThat(storedRecords)
-        .extracting(r -> r.getState())
-        .containsOnly(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+    assertThat(deferredTokens).hasSize(1);
+    final IndexedRecord deferredToken = deferredTokens.get(0);
+    assertThat(deferredToken.getKey()).isEqualTo(123L);
+    assertThat(deferredToken.getState()).isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+
+    assertThat(finishedTokens).hasSize(1);
+    final IndexedRecord finishedToken = finishedTokens.get(0);
+    assertThat(finishedToken.getKey()).isEqualTo(124L);
+    assertThat(finishedToken.getState()).isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
   }
 
   @Test
@@ -426,21 +432,40 @@ public class ElementInstanceStateTest {
     elementInstanceState.newInstance(
         100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
     final TypedRecord<WorkflowInstanceRecord> typedRecord = mockTypedRecord(123L);
-    elementInstanceState.storeRecord(100, typedRecord);
+    elementInstanceState.storeRecord(100, typedRecord, Purpose.DEFERRED_TOKEN);
     final TypedRecord<WorkflowInstanceRecord> typedRecord2 = mockTypedRecord(124L);
-    elementInstanceState.storeRecord(100, typedRecord2);
+    elementInstanceState.storeRecord(100, typedRecord2, Purpose.DEFERRED_TOKEN);
 
     // when
-    elementInstanceState.removeStoredRecord(100, 123);
+    elementInstanceState.removeStoredRecord(100, 123, Purpose.DEFERRED_TOKEN);
 
     // then
-    final List<IndexedRecord> storedRecords = elementInstanceState.getStoredRecords(100);
+    final List<IndexedRecord> storedRecords = elementInstanceState.getDeferredTokens(100);
 
     assertThat(storedRecords).hasSize(1);
     final IndexedRecord indexedRecord = storedRecords.get(0);
     assertThat(indexedRecord.getKey()).isEqualTo(124L);
     assertThat(indexedRecord.getState()).isEqualTo(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
     assertWorkflowInstanceRecord(indexedRecord.getValue());
+  }
+
+  @Test
+  public void shouldRemoveStoredRecordsOnInstanceRemoval() {
+    // given
+    final int key = 100;
+
+    final WorkflowInstanceRecord workflowInstanceRecord = createWorkflowInstanceRecord();
+    elementInstanceState.newInstance(
+        key, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+
+    final TypedRecord<WorkflowInstanceRecord> typedRecord = mockTypedRecord(123L);
+    elementInstanceState.storeRecord(key, typedRecord, Purpose.DEFERRED_TOKEN);
+
+    // when
+    elementInstanceState.removeInstance(key);
+
+    // then
+    assertThat(elementInstanceState.getDeferredTokens(key)).isEmpty();
   }
 
   private TypedRecord<WorkflowInstanceRecord> mockTypedRecord() {

@@ -23,6 +23,7 @@ import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.broker.workflow.processor.WorkflowInstanceLifecycle;
 import io.zeebe.broker.workflow.processor.WorkflowInstanceMetrics;
+import io.zeebe.broker.workflow.state.StoredRecord.Purpose;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
@@ -121,15 +122,19 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
 
   public void deferEvent(TypedRecord<WorkflowInstanceRecord> event) {
     final long scopeKey = event.getValue().getScopeInstanceKey();
-    elementInstanceState.storeRecord(scopeKey, event);
-
     // currently assuming only token events are deferred
+    elementInstanceState.storeRecord(scopeKey, event, Purpose.DEFERRED_TOKEN);
     elementInstanceState.spawnToken(scopeKey); // the token remains active
   }
 
-  public void consumeDeferredEvent(long scopeKey, long key) {
-    final boolean eventRemoved = elementInstanceState.removeStoredRecord(scopeKey, key);
-    if (eventRemoved) {
+  public void storeFinishedToken(TypedRecord<WorkflowInstanceRecord> event) {
+    final long scopeKey = event.getValue().getScopeInstanceKey();
+    elementInstanceState.storeRecord(scopeKey, event, Purpose.FINISHED_TOKEN);
+  }
+
+  public void consumeStoredRecord(long scopeKey, long key, Purpose purpose) {
+    elementInstanceState.removeStoredRecord(scopeKey, key, purpose);
+    if (purpose == Purpose.DEFERRED_TOKEN) {
       elementInstanceState.consumeToken(scopeKey);
     }
   }

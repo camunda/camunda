@@ -17,11 +17,14 @@
  */
 package io.zeebe.broker.workflow.model.transformation.handler;
 
+import io.zeebe.broker.workflow.model.ExecutableEndEvent;
 import io.zeebe.broker.workflow.model.ExecutableFlowNode;
 import io.zeebe.broker.workflow.model.ExecutableWorkflow;
+import io.zeebe.broker.workflow.model.transformation.MappingCompiler;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.EndEvent;
+import io.zeebe.msgpack.mapping.Mapping;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class EndEventHandler implements ModelElementTransformer<EndEvent> {
@@ -34,10 +37,18 @@ public class EndEventHandler implements ModelElementTransformer<EndEvent> {
   @Override
   public void transform(EndEvent element, TransformContext context) {
     final ExecutableWorkflow currentWorkflow = context.getCurrentWorkflow();
-    final ExecutableFlowNode endEvent =
-        currentWorkflow.getElementById(element.getId(), ExecutableFlowNode.class);
+    final ExecutableEndEvent endEvent =
+        currentWorkflow.getElementById(element.getId(), ExecutableEndEvent.class);
 
     bindLifecycle(context, endEvent);
+    compilePayloadMappings(element, endEvent, context);
+  }
+
+  private void compilePayloadMappings(
+      EndEvent element, ExecutableEndEvent endEvent, TransformContext context) {
+    final MappingCompiler mappingCompiler = context.getMappingCompiler();
+    final Mapping[] mappings = mappingCompiler.compilePayloadMappings(element);
+    endEvent.setPayloadMappings(mappings);
   }
 
   private void bindLifecycle(TransformContext context, ExecutableFlowNode endEvent) {

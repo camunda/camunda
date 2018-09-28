@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.workflow.model.transformation.handler;
 
+import io.zeebe.broker.workflow.model.ExecutableEndEvent;
 import io.zeebe.broker.workflow.model.ExecutableExclusiveGateway;
 import io.zeebe.broker.workflow.model.ExecutableFlowElement;
 import io.zeebe.broker.workflow.model.ExecutableFlowElementContainer;
@@ -48,7 +49,7 @@ public class FlowElementHandler implements ModelElementTransformer<FlowElement> 
   static {
     ELEMENT_FACTORIES = new HashMap<>();
 
-    ELEMENT_FACTORIES.put(EndEvent.class, ExecutableFlowNode::new);
+    ELEMENT_FACTORIES.put(EndEvent.class, ExecutableEndEvent::new);
     ELEMENT_FACTORIES.put(ExclusiveGateway.class, ExecutableExclusiveGateway::new);
     ELEMENT_FACTORIES.put(IntermediateCatchEvent.class, ExecutableMessageCatchElement::new);
     ELEMENT_FACTORIES.put(ParallelGateway.class, ExecutableFlowNode::new);

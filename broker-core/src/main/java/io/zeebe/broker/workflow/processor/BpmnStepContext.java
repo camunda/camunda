@@ -26,6 +26,7 @@ import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriterImpl;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.broker.workflow.model.ExecutableFlowElement;
+import io.zeebe.broker.workflow.model.ExecutableWorkflow;
 import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.broker.workflow.state.WorkflowEngineState;
 import io.zeebe.msgpack.mapping.MsgPackMergeTool;
@@ -36,6 +37,7 @@ import java.util.function.Consumer;
 public class BpmnStepContext<T extends ExecutableFlowElement> {
 
   private TypedRecord<WorkflowInstanceRecord> record;
+  private ExecutableWorkflow workflow;
   private ExecutableFlowElement element;
   private TypedCommandWriter commandWriter;
   private final EventOutput eventOutput;
@@ -74,6 +76,14 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
 
   public void setElement(ExecutableFlowElement element) {
     this.element = element;
+  }
+
+  public ExecutableWorkflow getWorkflow() {
+    return workflow;
+  }
+
+  public void setWorkflow(ExecutableWorkflow workflow) {
+    this.workflow = workflow;
   }
 
   public EventOutput getOutput() {
