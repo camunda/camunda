@@ -17,6 +17,8 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
+import static io.zeebe.broker.system.SystemConstants.KEYSPACE_POW_OF_2;
+
 import io.zeebe.broker.util.KeyStateController;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.LongProperty;
@@ -36,17 +38,23 @@ public class KeyGenerator extends UnpackedObject {
   private final int stepSize;
   private final KeyStateController keyStateController;
 
-  public KeyGenerator(final long initialValue, final int stepSize) {
-    this(initialValue, stepSize, null);
+  public KeyGenerator(int partitionId, final long initialValue, final int stepSize) {
+    this(partitionId, initialValue, stepSize, null);
   }
 
   public KeyGenerator(
-      final long initialValue, final int stepSize, final KeyStateController keyStateController) {
-    nextKey = new LongProperty("nextKey", initialValue);
+      int partitionId,
+      final long initialValue,
+      final int stepSize,
+      final KeyStateController keyStateController) {
+    long startValue = (long) partitionId << KEYSPACE_POW_OF_2;
+    startValue += initialValue;
+
+    nextKey = new LongProperty("nextKey", startValue);
     this.stepSize = stepSize;
     declareProperty(nextKey);
     this.keyStateController = keyStateController;
-    init(initialValue);
+    init(startValue);
   }
 
   private void init(long initialValue) {
@@ -83,19 +91,21 @@ public class KeyGenerator extends UnpackedObject {
   }
 
   public static KeyGenerator createWorkflowInstanceKeyGenerator(
-      final KeyStateController controller) {
-    return new KeyGenerator(WF_OFFSET, STEP_SIZE, controller);
+      int partitionId, final KeyStateController controller) {
+    return new KeyGenerator(partitionId, WF_OFFSET, STEP_SIZE, controller);
   }
 
-  public static KeyGenerator createJobKeyGenerator(final KeyStateController keyStateController) {
-    return new KeyGenerator(JOB_OFFSET, STEP_SIZE, keyStateController);
+  public static KeyGenerator createJobKeyGenerator(
+      int partitionId, final KeyStateController keyStateController) {
+    return new KeyGenerator(partitionId, JOB_OFFSET, STEP_SIZE, keyStateController);
   }
 
-  public static KeyGenerator createIncidentKeyGenerator() {
-    return new KeyGenerator(INCIDENT_OFFSET, STEP_SIZE);
+  public static KeyGenerator createIncidentKeyGenerator(int partitionId) {
+    return new KeyGenerator(partitionId, INCIDENT_OFFSET, STEP_SIZE);
   }
 
-  public static KeyGenerator createMessageKeyGenerator(KeyStateController keyStateController) {
-    return new KeyGenerator(MESSAGE_OFFSET, STEP_SIZE, keyStateController);
+  public static KeyGenerator createMessageKeyGenerator(
+      int partitionId, KeyStateController keyStateController) {
+    return new KeyGenerator(partitionId, MESSAGE_OFFSET, STEP_SIZE, keyStateController);
   }
 }

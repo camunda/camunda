@@ -57,7 +57,7 @@ public class IncidentStreamProcessor {
   public TypedStreamProcessor createStreamProcessor(TypedStreamEnvironment env) {
     TypedEventStreamProcessorBuilder builder =
         env.newStreamProcessor()
-            .keyGenerator(KeyGenerator.createIncidentKeyGenerator())
+            .keyGenerator(KeyGenerator.createIncidentKeyGenerator(env.getStream().getPartitionId()))
             .withStateResource(activityInstanceMap)
             .withStateResource(failedJobMap)
             .withStateResource(incidentMap.getMap())

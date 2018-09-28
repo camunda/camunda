@@ -84,7 +84,7 @@ public class TypedStreamProcessorTest {
 
     final TypedStreamProcessor streamProcessor =
         env.newStreamProcessor()
-            .keyGenerator(new KeyGenerator(0, 1))
+            .keyGenerator(new KeyGenerator(env.getStream().getPartitionId(), 0, 1))
             .onCommand(ValueType.DEPLOYMENT, DeploymentIntent.CREATE, new BatchProcessor())
             .build();
 

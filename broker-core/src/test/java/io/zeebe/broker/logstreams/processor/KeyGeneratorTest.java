@@ -19,6 +19,7 @@ package io.zeebe.broker.logstreams.processor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.broker.system.SystemConstants;
 import io.zeebe.broker.util.KeyStateController;
 import org.junit.Before;
 import org.junit.Rule;
@@ -35,7 +36,7 @@ public class KeyGeneratorTest {
   @Before
   public void setUp() {
     stateController = new KeyStateController();
-    keyGenerator = new KeyGenerator(0, 1, stateController);
+    keyGenerator = new KeyGenerator(0, 0, 1, stateController);
   }
 
   @Test
@@ -63,9 +64,24 @@ public class KeyGeneratorTest {
   }
 
   @Test
+  public void shouldHaveUniqueGlobalKeyFormat() throws Exception {
+    // given
+    final KeyGenerator keyGenerator = new KeyGenerator(1, 5, 1);
+
+    // when
+    final long nextKey = keyGenerator.nextKey();
+
+    // then
+    final int partitionId = (int) (nextKey >> SystemConstants.KEYSPACE_POW_OF_2);
+    assertThat(partitionId).isEqualTo(1);
+    final long localKey = nextKey ^ ((long) partitionId << SystemConstants.KEYSPACE_POW_OF_2);
+    assertThat(localKey).isEqualTo(5);
+  }
+
+  @Test
   public void shouldGenerateNextKetWithoutStateController() {
     // given
-    final KeyGenerator keyGenerator = new KeyGenerator(0, 1);
+    final KeyGenerator keyGenerator = new KeyGenerator(0, 0, 1);
 
     // when
     final long key = keyGenerator.nextKey();
@@ -75,9 +91,23 @@ public class KeyGeneratorTest {
   }
 
   @Test
+  public void shouldGenerateDifferentKeysOnDifferentPartitions() {
+    // given
+    final KeyGenerator firstPartitionGenerator = new KeyGenerator(0, 0, 1);
+    final KeyGenerator secondPartitionGenerator = new KeyGenerator(1, 0, 1);
+
+    // when
+    final long key = firstPartitionGenerator.nextKey();
+    final long otherKey = secondPartitionGenerator.nextKey();
+
+    // then
+    assertThat(key).isNotEqualTo(otherKey);
+  }
+
+  @Test
   public void shouldSetKey() {
     // given
-    final KeyGenerator keyGenerator = new KeyGenerator(0, 1);
+    final KeyGenerator keyGenerator = new KeyGenerator(0, 0, 1);
     keyGenerator.setKey(1L);
 
     // when

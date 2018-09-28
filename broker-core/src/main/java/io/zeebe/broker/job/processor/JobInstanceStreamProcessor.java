@@ -65,7 +65,7 @@ public class JobInstanceStreamProcessor implements StreamProcessorLifecycleAware
 
     return environment
         .newStreamProcessor()
-        .keyGenerator(KeyGenerator.createJobKeyGenerator(stateController))
+        .keyGenerator(KeyGenerator.createJobKeyGenerator(logStreamPartitionId, stateController))
         .onCommand(ValueType.JOB, JobIntent.CREATE, new CreateJobProcessor())
         .onCommand(ValueType.JOB, JobIntent.ACTIVATE, new ActivateJobProcessor())
         .onCommand(ValueType.JOB, JobIntent.COMPLETE, new CompleteJobProcessor())
@@ -96,10 +96,10 @@ public class JobInstanceStreamProcessor implements StreamProcessorLifecycleAware
 
     private int requestStreamId;
 
-    private SideEffectProducer returnCredits =
+    private final SideEffectProducer returnCredits =
         () -> jobSubscriptionManager.increaseSubscriptionCreditsAsync(creditsRequest);
 
-    private SideEffectProducer pushRecord =
+    private final SideEffectProducer pushRecord =
         () -> subscribedEventWriter.tryWriteMessage(requestStreamId);
 
     @Override

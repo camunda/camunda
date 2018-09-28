@@ -81,13 +81,12 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
   }
 
   public TypedStreamProcessor createStreamProcessor(final TypedStreamEnvironment environment) {
-
+    final int partitionId = environment.getStream().getPartitionId();
     final TypedEventStreamProcessorBuilder streamProcessorBuilder =
         environment
             .newStreamProcessor()
-            .keyGenerator(KeyGenerator.createWorkflowInstanceKeyGenerator(workflowState));
-
-    final int partitionId = environment.getStream().getPartitionId();
+            .keyGenerator(
+                KeyGenerator.createWorkflowInstanceKeyGenerator(partitionId, workflowState));
 
     addWorkflowInstanceEventStreamProcessors(streamProcessorBuilder);
     addBpmnStepProcessor(streamProcessorBuilder);
