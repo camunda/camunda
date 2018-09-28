@@ -7,13 +7,13 @@ document.querySelector('form').addEventListener('submit', function(event) {
   request.open('POST', '/api/license/validate-and-store');
   request.setRequestHeader('Content-Type', 'text/plain');
   request.addEventListener('readystatechange', function(event) {
-    if(event.target.readyState === 4) {
+    if (event.target.readyState === 4) {
       var response = JSON.parse(event.target.response);
       var alertBox = document.querySelector('.alert');
 
       alertBox.style.display = 'block';
 
-      if(response.errorMessage) {
+      if (response.errorMessage) {
         alertBox.setAttribute('class', 'alert alert-danger');
         alertBox.textContent = response.errorMessage;
       } else {
@@ -25,9 +25,9 @@ document.querySelector('form').addEventListener('submit', function(event) {
           message += ' Valid until ' + date.toUTCString() + '.';
         }
 
-        message += ' You will be redirected to login page shortly. ' +
+        message +=
+          ' You will be redirected to login page shortly. ' +
           '<a href="/">Click here to go to login page immediately</a>';
-
 
         alertBox.innerHTML = message;
         alertBox.setAttribute('class', 'alert alert-success');
@@ -45,13 +45,13 @@ document.querySelector('form').addEventListener('submit', function(event) {
 var request = new XMLHttpRequest();
 request.open('GET', '/api/license/validate');
 request.addEventListener('readystatechange', function(event) {
-  if(event.target.readyState === 4) {
+  if (event.target.readyState === 4) {
     var response = JSON.parse(event.target.response);
     var alertBox = document.querySelector('.alert');
 
     alertBox.style.display = 'block';
 
-    if(response.errorMessage) {
+    if (response.errorMessage) {
       alertBox.setAttribute('class', 'alert alert-danger');
       alertBox.textContent = response.errorMessage;
     } else {
@@ -70,3 +70,21 @@ request.addEventListener('readystatechange', function(event) {
 });
 
 request.send();
+
+function renderFooter() {
+  const versionRequest = new XMLHttpRequest();
+  versionRequest.open('GET', '/api/meta/version');
+  versionRequest.send();
+  const footerInfo = document.getElementById('footerInfo');
+
+  versionRequest.addEventListener('readystatechange', function(event) {
+    if (event.target.readyState === 4) {
+      var response = JSON.parse(event.target.response);
+      footerInfo.innerText = `© Camunda Services GmbH ${new Date().getFullYear()}, All Rights Reserved. | ${
+        response.optimizeVersion
+      }`;
+    }
+  });
+}
+
+renderFooter();
