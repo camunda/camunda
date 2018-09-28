@@ -33,7 +33,7 @@ export default class ListView extends React.Component {
     instances: [],
     entriesPerPage: 0,
     sorting: DEFAULT_SORTING,
-    isDataLoaded: true
+    isDataLoaded: false
   };
 
   componentDidMount() {
@@ -60,8 +60,6 @@ export default class ListView extends React.Component {
   }
 
   loadData = async () => {
-    this.setState({isDataLoaded: false});
-
     const instances = await fetchWorkflowInstances({
       queries: [
         {
