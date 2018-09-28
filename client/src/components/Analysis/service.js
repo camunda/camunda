@@ -1,7 +1,7 @@
 import {get, post} from 'request';
 
 export async function loadProcessDefinitionXml(processDefinitionKey, processDefinitionVersion) {
-  const response = await get('/api/process-definition/xml', {
+  const response = await get('api/process-definition/xml', {
     processDefinitionKey,
     processDefinitionVersion
   });
@@ -11,7 +11,7 @@ export async function loadProcessDefinitionXml(processDefinitionKey, processDefi
 
 export async function loadFrequencyData(processDefinitionKey, processDefinitionVersion, filter) {
   const response = await post(
-    '/api/report/evaluate/single',
+    'api/report/evaluate/single',
     createFlowNodeFrequencyReport(processDefinitionKey, processDefinitionVersion, filter)
   );
 
@@ -43,7 +43,7 @@ export async function loadCorrelationData(
   gateway,
   end
 ) {
-  const response = await post('/api/process-definition/correlation', {
+  const response = await post('api/process-definition/correlation', {
     processDefinitionKey,
     processDefinitionVersion,
     filter,

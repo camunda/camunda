@@ -1,17 +1,17 @@
 import {get, del, put, post} from 'request';
 
 export async function loadSingleReport(id) {
-  const response = await get('/api/report/' + id);
+  const response = await get('api/report/' + id);
 
   return await response.json();
 }
 
 export async function remove(id) {
-  return await del(`/api/report/${id}`);
+  return await del(`api/report/${id}`);
 }
 
 export async function loadProcessDefinitionXml(processDefinitionKey, processDefinitionVersion) {
-  const response = await get('/api/process-definition/xml', {
+  const response = await get('api/process-definition/xml', {
     processDefinitionKey,
     processDefinitionVersion
   });
@@ -20,7 +20,7 @@ export async function loadProcessDefinitionXml(processDefinitionKey, processDefi
 }
 
 export async function loadVariables(processDefinitionKey, processDefinitionVersion) {
-  const response = await get('/api/variables', {
+  const response = await get('api/variables', {
     processDefinitionKey,
     processDefinitionVersion,
     namePrefix: '',
@@ -37,10 +37,10 @@ export async function getReportData(query, reportType) {
   try {
     if (typeof query !== 'object') {
       // evaluate saved report
-      response = await get(`/api/report/${query}/evaluate`);
+      response = await get(`api/report/${query}/evaluate`);
     } else {
       // evaluate unsaved report
-      response = await post(`/api/report/evaluate/${reportType}`, query);
+      response = await post(`api/report/evaluate/${reportType}`, query);
     }
   } catch (e) {
     return null;
@@ -50,21 +50,21 @@ export async function getReportData(query, reportType) {
 }
 
 export async function saveReport(id, data) {
-  return await put(`/api/report/${id}`, data);
+  return await put(`api/report/${id}`, data);
 }
 
 export async function shareReport(reportId) {
   const body = {
     reportId
   };
-  const response = await post(`/api/share/report`, body);
+  const response = await post(`api/share/report`, body);
 
   const json = await response.json();
   return json.id;
 }
 
 export async function getSharedReport(reportId) {
-  const response = await get(`/api/share/report/${reportId}`);
+  const response = await get(`api/share/report/${reportId}`);
 
   if (response.status > 201) {
     return '';
@@ -75,7 +75,7 @@ export async function getSharedReport(reportId) {
 }
 
 export async function revokeReportSharing(id) {
-  return await del(`/api/share/report/${id}`);
+  return await del(`api/share/report/${id}`);
 }
 
 export const isRawDataReport = (report, data) => {

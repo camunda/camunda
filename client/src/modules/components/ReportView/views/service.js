@@ -2,7 +2,7 @@ import {get} from 'request';
 import {formatters} from 'services';
 
 export async function getCamundaEndpoints() {
-  const response = await get('/api/camunda');
+  const response = await get('api/camunda');
   return await response.json();
 }
 

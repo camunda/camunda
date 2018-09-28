@@ -9,7 +9,7 @@ jest.mock('react-router-dom', () => {
   const RealThing = require.requireActual('react-router-dom');
   return {
     ...RealThing,
-    BrowserRouter: ({children}) => <div>{children}</div>
+    HashRouter: ({children}) => <div>{children}</div>
   };
 });
 

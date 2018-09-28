@@ -9,7 +9,7 @@ export default withRouter(function HeaderNavItem({name, linksTo, active, locatio
 
   return (
     <li className={classnames('HeaderNav__item', {active: isActive})}>
-      <Link to={linksTo} title={name}>
+      <Link to={linksTo} title={name} replace={isActive}>
         {name}
       </Link>
     </li>

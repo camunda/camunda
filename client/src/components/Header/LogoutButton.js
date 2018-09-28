@@ -14,7 +14,7 @@ export default withErrorHandling(
 
     logout = () => {
       this.props.mightFail(
-        get('/api/authentication/logout'),
+        get('api/authentication/logout'),
         () => {
           destroy();
           this.setState({

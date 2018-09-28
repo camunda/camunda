@@ -292,7 +292,7 @@ export default withErrorHandling(
     };
 
     constructCSVDownloadLink = () =>
-      `/api/export/csv/${this.id}/${encodeURIComponent(this.state.name.replace(/\s/g, '_'))}.csv`;
+      `api/export/csv/${this.id}/${encodeURIComponent(this.state.name.replace(/\s/g, '_'))}.csv`;
 
     renderEditMode = () => {
       const {

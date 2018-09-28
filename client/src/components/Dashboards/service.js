@@ -1,22 +1,22 @@
 import {get, del, put, post} from 'request';
 
 export async function loadDashboard(id) {
-  const response = await get('/api/dashboard/' + id);
+  const response = await get('api/dashboard/' + id);
 
   return await response.json();
 }
 
 export async function remove(id) {
-  return await del(`/api/dashboard/${id}`);
+  return await del(`api/dashboard/${id}`);
 }
 
 export async function update(id, state) {
-  return await put(`/api/dashboard/${id}`, state);
+  return await put(`api/dashboard/${id}`, state);
 }
 
 export async function loadReport(report) {
   try {
-    const response = await get(`/api/report/${report.id}/evaluate`);
+    const response = await get(`api/report/${report.id}/evaluate`);
     return await response.json();
   } catch (error) {
     return await error.json();
@@ -27,14 +27,14 @@ export async function shareDashboard(dashboardId) {
   const body = {
     dashboardId
   };
-  const response = await post(`/api/share/dashboard`, body);
+  const response = await post(`api/share/dashboard`, body);
 
   const json = await response.json();
   return json.id;
 }
 
 export async function getSharedDashboard(reportId) {
-  const response = await get(`/api/share/dashboard/${reportId}`);
+  const response = await get(`api/share/dashboard/${reportId}`);
 
   if (response.status > 201) {
     return '';
@@ -45,12 +45,12 @@ export async function getSharedDashboard(reportId) {
 }
 
 export async function revokeDashboardSharing(id) {
-  return await del(`/api/share/dashboard/${id}`);
+  return await del(`api/share/dashboard/${id}`);
 }
 
 export async function isAuthorizedToShareDashboard(dashboardId) {
   try {
-    const response = await get(`/api/share/dashboard/${dashboardId}/isAuthorizedToShare`);
+    const response = await get(`api/share/dashboard/${dashboardId}/isAuthorizedToShare`);
     return response.status === 200;
   } catch (error) {
     return false;

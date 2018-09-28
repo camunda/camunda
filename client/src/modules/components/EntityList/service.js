@@ -7,7 +7,7 @@ export async function load(api, numResults, sortBy) {
 
   const idList = json.map(entry => entry.id);
 
-  const shareStatusResponse = await post(`/api/share/status`, {[apis]: idList});
+  const shareStatusResponse = await post(`api/share/status`, {[apis]: idList});
   const shareStatus = await shareStatusResponse.json();
 
   if (!shareStatus[apis]) return json;
@@ -21,7 +21,7 @@ export async function load(api, numResults, sortBy) {
 export async function create(api, data) {
   const subUrl = api === 'report' ? `/${data.reportType}` : '';
 
-  const response = await post(`/api/${api}${subUrl}`, data);
+  const response = await post(`api/${api}${subUrl}`, data);
 
   const json = await response.json();
 
@@ -31,7 +31,7 @@ export async function create(api, data) {
 export async function duplicate(api, copyData) {
   const subUrl = copyData.reportType ? `/${copyData.reportType}` : '';
 
-  const createResponse = await post(`/api/${api}${subUrl}`);
+  const createResponse = await post(`api/${api}${subUrl}`);
 
   const json = await createResponse.json();
 
@@ -39,9 +39,9 @@ export async function duplicate(api, copyData) {
 }
 
 export async function remove(id, api) {
-  return await del(`/api/${api}/${id}`);
+  return await del(`api/${api}/${id}`);
 }
 
 export async function update(api, id, data) {
-  return await put(`/api/${api}/${id}`, data);
+  return await put(`api/${api}/${id}`, data);
 }

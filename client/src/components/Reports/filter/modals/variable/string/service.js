@@ -9,7 +9,7 @@ export async function loadValues(
   numResults,
   valueFilter
 ) {
-  const response = await get(`/api/variables/values`, {
+  const response = await get(`api/variables/values`, {
     processDefinitionKey,
     processDefinitionVersion,
     name,

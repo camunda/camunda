@@ -1,7 +1,7 @@
 import {get} from 'request';
 
 export async function loadVariables(processDefinitionKey, processDefinitionVersion) {
-  const response = await get(`/api/variables`, {
+  const response = await get(`api/variables`, {
     processDefinitionKey,
     processDefinitionVersion,
     sortOrder: 'asc',
@@ -20,7 +20,7 @@ export async function loadValues(
   numResults,
   valueFilter
 ) {
-  const response = await get(`/api/variables/values`, {
+  const response = await get(`api/variables/values`, {
     processDefinitionKey,
     processDefinitionVersion,
     name,

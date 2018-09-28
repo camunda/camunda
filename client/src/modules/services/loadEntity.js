@@ -1,7 +1,7 @@
 import {get} from 'request';
 
 export async function loadEntity(api, numResults, sortBy) {
-  const url = `/api/${api}`;
+  const url = `api/${api}`;
 
   const params = {};
   if (numResults) {

@@ -4,7 +4,7 @@ export async function evaluateEntity(id, type) {
   let response;
 
   try {
-    response = await get(`/api/share/${type}/${id}/evaluate`);
+    response = await get(`api/share/${type}/${id}/evaluate`);
   } catch (e) {
     return null;
   }
@@ -16,7 +16,7 @@ export function createLoadReportCallback(dashboardShareId) {
   return async report => {
     try {
       const response = await get(
-        `/api/share/dashboard/${dashboardShareId}/report/${report.id}/evaluate`
+        `api/share/dashboard/${dashboardShareId}/report/${report.id}/evaluate`
       );
       return await response.json();
     } catch (error) {

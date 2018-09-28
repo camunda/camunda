@@ -18,8 +18,12 @@ export default class Footer extends React.Component {
   }
 
   async componentDidMount() {
+    const {protocol, host, pathname} = window.location;
     this.connection = new WebSocket(
-      `${window.location.protocol === 'https:' ? 'wss' : 'ws'}://${window.location.host}/ws/status`
+      `${protocol === 'https:' ? 'wss' : 'ws'}://${host}${pathname.substring(
+        0,
+        pathname.lastIndexOf('/')
+      )}/ws/status`
     );
 
     this.connection.addEventListener('message', ({data}) => {
