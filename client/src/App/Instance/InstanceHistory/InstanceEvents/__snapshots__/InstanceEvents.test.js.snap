@@ -84,6 +84,7 @@ exports[`InstanceEvents should render grouped events 1`] = `
           >
             <Summary
               data-test="fooCreated0"
+              isFirst={true}
               isFoldable={true}
               isOpenIncidentEvent={false}
               isSelected={false}
@@ -106,6 +107,7 @@ exports[`InstanceEvents should render grouped events 1`] = `
           >
             <Summary
               data-test="fooActiviated1"
+              isFirst={false}
               isFoldable={false}
               isOpenIncidentEvent={false}
               isSelected={false}
@@ -141,6 +143,7 @@ exports[`InstanceEvents should render grouped events 1`] = `
           >
             <Summary
               data-test="CREATED0"
+              isFirst={true}
               isFoldable={false}
               isOpenIncidentEvent={true}
               isSelected={false}
@@ -156,6 +159,7 @@ exports[`InstanceEvents should render grouped events 1`] = `
           >
             <Summary
               data-test="BAR_ACTIVATED1"
+              isFirst={false}
               isFoldable={false}
               isOpenIncidentEvent={false}
               isSelected={false}
@@ -176,6 +180,7 @@ exports[`InstanceEvents should render grouped events 1`] = `
       >
         <Summary
           data-test="baz2"
+          isFirst={false}
           isFoldable={true}
           isOpenIncidentEvent={false}
           isSelected={false}
