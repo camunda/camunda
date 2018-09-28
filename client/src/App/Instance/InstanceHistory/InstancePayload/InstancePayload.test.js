@@ -50,7 +50,8 @@ describe('InstancePayload', () => {
 
       // value td
       const SecondTDNode = TRNode.find(Styled.TD).at(1);
-      expect(SecondTDNode.contains(Object.values(PAYLOAD)[idx - 1])).toBe(true);
+      const expectedValue = JSON.stringify(Object.values(PAYLOAD)[idx - 1]);
+      expect(SecondTDNode.contains(expectedValue)).toBe(true);
       expect(SecondTDNode.prop('isBold')).not.toBe(true);
     });
     expect(node).toMatchSnapshot();

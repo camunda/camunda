@@ -27,7 +27,7 @@ export default class InstancePayload extends React.Component {
                 {Object.entries(this.props.payload).map(([key, value]) => (
                   <Styled.TR key={key}>
                     <Styled.TD isBold={true}>{key}</Styled.TD>
-                    <Styled.TD>{value}</Styled.TD>
+                    <Styled.TD>{JSON.stringify(value)}</Styled.TD>
                   </Styled.TR>
                 ))}
               </tbody>

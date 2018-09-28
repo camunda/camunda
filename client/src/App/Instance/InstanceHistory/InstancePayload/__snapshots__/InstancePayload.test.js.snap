@@ -34,7 +34,7 @@ exports[`InstancePayload should render key value table based on payload 1`] = `
             a
           </Themed(styled.td)>
           <Themed(styled.td)>
-            b
+            "b"
           </Themed(styled.td)>
         </Themed(styled.tr)>
         <Themed(styled.tr)
@@ -46,7 +46,7 @@ exports[`InstancePayload should render key value table based on payload 1`] = `
             c
           </Themed(styled.td)>
           <Themed(styled.td)>
-            d
+            "d"
           </Themed(styled.td)>
         </Themed(styled.tr)>
         <Themed(styled.tr)
@@ -58,7 +58,7 @@ exports[`InstancePayload should render key value table based on payload 1`] = `
             e
           </Themed(styled.td)>
           <Themed(styled.td)>
-            f
+            "f"
           </Themed(styled.td)>
         </Themed(styled.tr)>
       </tbody>
