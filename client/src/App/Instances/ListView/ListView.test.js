@@ -68,7 +68,7 @@ describe('ListView', () => {
     expect(instance.state.instances).toEqual([]);
     expect(instance.state.entriesPerPage).toBe(0);
     expect(instance.state.sorting).toBe(DEFAULT_SORTING);
-    expect(instance.state.isDataLoaded).toBe(true);
+    expect(instance.state.isDataLoaded).toBe(false);
   });
 
   it('should reset the page if the filter changes', () => {
