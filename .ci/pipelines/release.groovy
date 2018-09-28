@@ -58,9 +58,14 @@ void runRelease(params) {
     if [ ! -z \"\${PREVIOUS_VERSION}\" ]; then
       sed -i "s/project.previousVersion>.*</project.previousVersion>${params.RELEASE_VERSION}</g" pom.xml
       git add pom.xml
-      git commit -m \"chore(release): update previousVersion to new release version ${params.RELEASE_VERSION}\"
-      if [ \"${pushChanges}\" = \"true\" ]; then
-        git push origin ${params.BRANCH}
+      git diff --staged --quiet
+      if [ \$? -ne 0 ]; then
+        git commit -m \"chore(release): update previousVersion to new release version ${params.RELEASE_VERSION}\"
+        if [ \"${pushChanges}\" = \"true\" ]; then
+          git push origin ${params.BRANCH}
+        fi
+      else
+        echo "Release version ${params.RELEASE_VERSION} did not change. Nothing to commit."
       fi
     fi
   """)
