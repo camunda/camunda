@@ -28,7 +28,6 @@ import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamReader;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
-import io.zeebe.broker.workflow.index.ElementInstanceIndex;
 import io.zeebe.broker.workflow.processor.deployment.DeploymentCreateProcessor;
 import io.zeebe.broker.workflow.processor.deployment.TransformingDeploymentCreateProcessor;
 import io.zeebe.broker.workflow.processor.instance.CancelWorkflowInstanceProcessor;
@@ -52,8 +51,6 @@ import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import java.util.function.Consumer;
 
 public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycleAware {
-
-  private final ElementInstanceIndex scopeInstances = new ElementInstanceIndex();
 
   private TypedStreamReader streamReader;
 
@@ -85,13 +82,10 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
   public TypedStreamProcessor createStreamProcessor(final TypedStreamEnvironment environment) {
 
-    final ComposeableSerializableSnapshot<ElementInstanceIndex> snapshotSupport =
-        new ComposeableSerializableSnapshot<>(scopeInstances);
-
     final TypedEventStreamProcessorBuilder streamProcessorBuilder =
         environment
             .newStreamProcessor()
-            .keyGenerator(KeyGenerator.createWorkflowInstanceKeyGenerator());
+            .keyGenerator(KeyGenerator.createWorkflowInstanceKeyGenerator(workflowState));
 
     final int partitionId = environment.getStream().getPartitionId();
 
@@ -101,19 +95,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
     addMessageStreamProcessors(streamProcessorBuilder);
     addDeploymentStreamProcessors(streamProcessorBuilder, partitionId);
 
-    return streamProcessorBuilder
-        // this is pretty ugly, but goes away when we switch to rocksdb
-        .withStateResource(snapshotSupport)
-        .withStateController(workflowState)
-        .withListener(this)
-        .withListener(
-            new StreamProcessorLifecycleAware() {
-              @Override
-              public void onOpen(final TypedStreamProcessor streamProcessor) {
-                scopeInstances.shareState(snapshotSupport.getObject());
-              }
-            })
-        .build();
+    return streamProcessorBuilder.withStateController(workflowState).withListener(this).build();
   }
 
   public StateSnapshotController createSnapshotController(final StateStorage storage) {
@@ -141,7 +123,7 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         .onEvent(
             ValueType.WORKFLOW_INSTANCE,
             WorkflowInstanceIntent.CREATED,
-            new WorkflowInstanceCreatedEventProcessor(scopeInstances))
+            new WorkflowInstanceCreatedEventProcessor(workflowState))
         .onRejection(
             ValueType.WORKFLOW_INSTANCE,
             WorkflowInstanceIntent.CREATE,
@@ -149,16 +131,16 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
         .onCommand(
             ValueType.WORKFLOW_INSTANCE,
             WorkflowInstanceIntent.CANCEL,
-            new CancelWorkflowInstanceProcessor(scopeInstances))
+            new CancelWorkflowInstanceProcessor(workflowState))
         .onCommand(
             ValueType.WORKFLOW_INSTANCE,
             WorkflowInstanceIntent.UPDATE_PAYLOAD,
-            new UpdatePayloadProcessor(scopeInstances));
+            new UpdatePayloadProcessor(workflowState));
   }
 
   private void addBpmnStepProcessor(final TypedEventStreamProcessorBuilder streamProcessorBuilder) {
     final BpmnStepProcessor bpmnStepProcessor =
-        new BpmnStepProcessor(scopeInstances, workflowState, subscriptionCommandSender);
+        new BpmnStepProcessor(workflowState, subscriptionCommandSender);
 
     streamProcessorBuilder
         .onEvent(
@@ -212,15 +194,14 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
             ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION,
             WorkflowInstanceSubscriptionIntent.CORRELATE,
             new CorrelateWorkflowInstanceSubscription(
-                scopeInstances, topologyManager, workflowState, subscriptionCommandSender));
+                topologyManager, workflowState, subscriptionCommandSender));
   }
 
   private void addJobStreamProcessors(
       final TypedEventStreamProcessorBuilder streamProcessorBuilder) {
     streamProcessorBuilder
-        .onEvent(ValueType.JOB, JobIntent.CREATED, new JobCreatedProcessor(scopeInstances))
-        .onEvent(
-            ValueType.JOB, JobIntent.COMPLETED, new JobCompletedEventProcessor(scopeInstances));
+        .onEvent(ValueType.JOB, JobIntent.CREATED, new JobCreatedProcessor(workflowState))
+        .onEvent(ValueType.JOB, JobIntent.COMPLETED, new JobCompletedEventProcessor(workflowState));
   }
 
   @Override

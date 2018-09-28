@@ -64,17 +64,15 @@ public class BrokerReprocessingTest {
   @Parameters(name = "{index}: {1}")
   public static Object[][] reprocessingTriggers() {
     return new Object[][] {
-      // Ignore until 1219 is done
-      // TODO https://github.com/zeebe-io/zeebe/issues/1219
-      //      new Object[] {
-      //        new Consumer<BrokerReprocessingTest>() {
-      //          @Override
-      //          public void accept(final BrokerReprocessingTest t) {
-      //            t.restartBroker();
-      //          }
-      //        },
-      //        "restart"
-      //      },
+      new Object[] {
+        new Consumer<BrokerReprocessingTest>() {
+          @Override
+          public void accept(final BrokerReprocessingTest t) {
+            t.restartBroker();
+          }
+        },
+        "restart"
+      },
       new Object[] {
         new Consumer<BrokerReprocessingTest>() {
           @Override

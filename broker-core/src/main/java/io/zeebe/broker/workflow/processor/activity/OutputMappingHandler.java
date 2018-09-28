@@ -20,10 +20,10 @@ package io.zeebe.broker.workflow.processor.activity;
 import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
-import io.zeebe.broker.workflow.index.ElementInstance;
 import io.zeebe.broker.workflow.model.ExecutableFlowNode;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
+import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
 import io.zeebe.msgpack.mapping.Mapping;
 import io.zeebe.msgpack.mapping.MappingException;
@@ -66,7 +66,6 @@ public class OutputMappingHandler implements BpmnStepHandler<ExecutableFlowNode>
 
         activityEvent.setPayload(result);
         flowScopeInstance.getValue().setPayload(result);
-
       } catch (MappingException e) {
         mappingException = e;
       }

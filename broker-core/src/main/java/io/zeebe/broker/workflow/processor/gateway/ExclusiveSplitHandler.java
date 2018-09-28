@@ -23,6 +23,7 @@ import io.zeebe.broker.workflow.model.ExecutableExclusiveGateway;
 import io.zeebe.broker.workflow.model.ExecutableSequenceFlow;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
+import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.msgpack.el.CompiledJsonCondition;
 import io.zeebe.msgpack.el.JsonConditionException;
 import io.zeebe.msgpack.el.JsonConditionInterpreter;
@@ -65,7 +66,8 @@ public class ExclusiveSplitHandler implements BpmnStepHandler<ExecutableExclusiv
     // scope can complete etc.
     //     - rework incident concept via https://github.com/zeebe-io/zeebe/issues/1033; maybe this
     // will also then go away
-    context.getFlowScopeInstance().spawnToken();
+    final ElementInstance flowScopeInstance = context.getFlowScopeInstance();
+    flowScopeInstance.spawnToken();
   }
 
   private ExecutableSequenceFlow getSequenceFlowWithFulfilledCondition(

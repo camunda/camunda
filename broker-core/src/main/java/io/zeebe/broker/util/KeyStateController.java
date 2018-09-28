@@ -22,6 +22,8 @@ import static io.zeebe.util.StringUtil.getBytes;
 import io.zeebe.logstreams.state.StateController;
 import java.io.File;
 import java.nio.ByteOrder;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 import org.agrona.MutableDirectBuffer;
@@ -50,9 +52,23 @@ public class KeyStateController extends StateController {
 
   @Override
   public RocksDB open(File dbDirectory, boolean reopen) throws Exception {
-    final RocksDB rocksDB = super.open(dbDirectory, reopen);
+    final RocksDB rocksDB = super.open(dbDirectory, reopen, Arrays.asList(KEY_HANDLE_NAME));
 
-    keyHandle = createColumnFamily(KEY_HANDLE_NAME);
+    keyHandle = getColumnFamilyHandle(KEY_HANDLE_NAME);
+
+    if (isOpened()) {
+      onOpenCallback.get().run();
+    }
+    return rocksDB;
+  }
+
+  @Override
+  public RocksDB open(File dbDirectory, boolean reopen, List<byte[]> columnFamilyNames)
+      throws Exception {
+    columnFamilyNames.add(KEY_HANDLE_NAME);
+    final RocksDB rocksDB = super.open(dbDirectory, reopen, columnFamilyNames);
+
+    keyHandle = getColumnFamilyHandle(KEY_HANDLE_NAME);
 
     if (isOpened()) {
       onOpenCallback.get().run();

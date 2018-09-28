@@ -37,7 +37,7 @@ public enum WorkflowInstanceIntent implements Intent {
   UPDATE_PAYLOAD((short) 14),
   PAYLOAD_UPDATED((short) 15);
 
-  private short value;
+  private final short value;
 
   WorkflowInstanceIntent(short value) {
     this.value = value;

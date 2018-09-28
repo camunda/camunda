@@ -19,19 +19,24 @@ package io.zeebe.broker.workflow.state;
 
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.subscription.message.state.SubscriptionState;
+import io.zeebe.broker.util.KeyStateController;
 import io.zeebe.broker.workflow.deployment.data.DeploymentRecord;
-import io.zeebe.logstreams.state.StateController;
 import io.zeebe.util.buffer.BufferUtil;
 import java.io.File;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.RocksDB;
 
-public class WorkflowState extends StateController {
+public class WorkflowState extends KeyStateController {
   private static final byte[] WORKFLOW_KEY_FAMILY_NAME = "workflowKey".getBytes();
   private static final byte[] WORKFLOW_VERSION_FAMILY_NAME = "workflowVersion".getBytes();
+  public static final byte[][] COLUMN_FAMILY_NAMES = {
+    WORKFLOW_KEY_FAMILY_NAME, WORKFLOW_VERSION_FAMILY_NAME
+  };
 
   private static final byte[] LATEST_WORKFLOW_KEY = "latestWorkflowKey".getBytes();
 
@@ -40,17 +45,28 @@ public class WorkflowState extends StateController {
   private NextValueManager nextValueManager;
   private WorkflowPersistenceCache workflowPersistenceCache;
   private SubscriptionState<WorkflowSubscription> subscriptionState;
+  private ElementInstanceState elementInstanceState;
 
   @Override
   public RocksDB open(final File dbDirectory, final boolean reopen) throws Exception {
-    final RocksDB rocksDB = super.open(dbDirectory, reopen);
+    final List<byte[]> columnFamilyNames =
+        Stream.of(
+                COLUMN_FAMILY_NAMES,
+                WorkflowPersistenceCache.COLUMN_FAMILY_NAMES,
+                ElementInstanceState.COLUMN_FAMILY_NAMES,
+                SubscriptionState.COLUMN_FAMILY_NAMES)
+            .flatMap(Stream::of)
+            .collect(Collectors.toList());
 
-    workflowKeyHandle = this.createColumnFamily(WORKFLOW_KEY_FAMILY_NAME);
-    workflowVersionHandle = this.createColumnFamily(WORKFLOW_VERSION_FAMILY_NAME);
+    final RocksDB rocksDB = super.open(dbDirectory, reopen, columnFamilyNames);
+
+    workflowKeyHandle = this.getColumnFamilyHandle(WORKFLOW_KEY_FAMILY_NAME);
+    workflowVersionHandle = this.getColumnFamilyHandle(WORKFLOW_VERSION_FAMILY_NAME);
 
     nextValueManager = new NextValueManager(this);
     workflowPersistenceCache = new WorkflowPersistenceCache(this);
-    subscriptionState = new SubscriptionState<>(this, () -> new WorkflowSubscription());
+    subscriptionState = new SubscriptionState<>(this, WorkflowSubscription.class);
+    elementInstanceState = new ElementInstanceState(this);
 
     return rocksDB;
   }
@@ -121,5 +137,13 @@ public class WorkflowState extends StateController {
 
   public void remove(WorkflowSubscription workflowSubscription) {
     subscriptionState.remove(workflowSubscription);
+  }
+
+  /**
+   * @return only a meaningful value after {@link WorkflowState#open(File, boolean)} was called,
+   *     i.e. during the lifetime of the owning stream processor.
+   */
+  public ElementInstanceState getElementInstanceState() {
+    return elementInstanceState;
   }
 }

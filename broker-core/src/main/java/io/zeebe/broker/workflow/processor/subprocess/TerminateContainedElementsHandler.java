@@ -17,22 +17,30 @@
  */
 package io.zeebe.broker.workflow.processor.subprocess;
 
-import io.zeebe.broker.workflow.index.ElementInstance;
 import io.zeebe.broker.workflow.model.ExecutableFlowElementContainer;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 import io.zeebe.broker.workflow.processor.EventOutput;
+import io.zeebe.broker.workflow.state.ElementInstance;
+import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.List;
 
 public class TerminateContainedElementsHandler
     implements BpmnStepHandler<ExecutableFlowElementContainer> {
 
+  private final WorkflowState workflowState;
+
+  public TerminateContainedElementsHandler(WorkflowState workflowState) {
+    this.workflowState = workflowState;
+  }
+
   @Override
   public void handle(BpmnStepContext<ExecutableFlowElementContainer> context) {
     final ElementInstance subProcessInstance = context.getElementInstance();
 
-    final List<ElementInstance> children = subProcessInstance.getChildren();
+    final List<ElementInstance> children =
+        workflowState.getElementInstanceState().getChildren(subProcessInstance.getKey());
     final EventOutput streamWriter = context.getOutput();
 
     if (children.isEmpty()) {

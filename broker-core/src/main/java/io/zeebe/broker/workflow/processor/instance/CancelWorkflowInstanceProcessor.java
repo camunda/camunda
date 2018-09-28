@@ -25,18 +25,18 @@ import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
-import io.zeebe.broker.workflow.index.ElementInstance;
-import io.zeebe.broker.workflow.index.ElementInstanceIndex;
+import io.zeebe.broker.workflow.state.ElementInstance;
+import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public final class CancelWorkflowInstanceProcessor
     implements TypedRecordProcessor<WorkflowInstanceRecord> {
 
-  private final ElementInstanceIndex scopeInstances;
+  private final WorkflowState workflowState;
 
-  public CancelWorkflowInstanceProcessor(ElementInstanceIndex scopeInstances) {
-    this.scopeInstances = scopeInstances;
+  public CancelWorkflowInstanceProcessor(WorkflowState workflowState) {
+    this.workflowState = workflowState;
   }
 
   @Override
@@ -45,7 +45,8 @@ public final class CancelWorkflowInstanceProcessor
       TypedResponseWriter responseWriter,
       TypedStreamWriter streamWriter) {
 
-    final ElementInstance workflowInstance = scopeInstances.getInstance(command.getKey());
+    final ElementInstance workflowInstance =
+        workflowState.getElementInstanceState().getInstance(command.getKey());
 
     final boolean canCancel = workflowInstance != null && workflowInstance.canTerminate();
 

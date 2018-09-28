@@ -24,16 +24,16 @@ import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
-import io.zeebe.broker.workflow.index.ElementInstance;
-import io.zeebe.broker.workflow.index.ElementInstanceIndex;
+import io.zeebe.broker.workflow.state.ElementInstance;
+import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public final class JobCompletedEventProcessor implements TypedRecordProcessor<JobRecord> {
 
-  private final ElementInstanceIndex scopeInstances;
+  private final WorkflowState workflowState;
 
-  public JobCompletedEventProcessor(ElementInstanceIndex scopeInstances) {
-    this.scopeInstances = scopeInstances;
+  public JobCompletedEventProcessor(WorkflowState workflowState) {
+    this.workflowState = workflowState;
   }
 
   @Override
@@ -45,7 +45,8 @@ public final class JobCompletedEventProcessor implements TypedRecordProcessor<Jo
     final JobRecord jobEvent = record.getValue();
     final JobHeaders jobHeaders = jobEvent.headers();
     final long activityInstanceKey = jobHeaders.getActivityInstanceKey();
-    final ElementInstance activityInstance = scopeInstances.getInstance(activityInstanceKey);
+    final ElementInstance activityInstance =
+        workflowState.getElementInstanceState().getInstance(activityInstanceKey);
 
     if (activityInstance != null) {
 

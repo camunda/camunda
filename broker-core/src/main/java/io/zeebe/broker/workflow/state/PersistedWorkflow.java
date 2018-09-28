@@ -22,14 +22,12 @@ import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 import static io.zeebe.util.buffer.BufferUtil.readIntoBuffer;
 import static io.zeebe.util.buffer.BufferUtil.writeIntoBuffer;
 
-import io.zeebe.util.buffer.BufferReader;
-import io.zeebe.util.buffer.BufferWriter;
 import java.nio.ByteOrder;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class PersistedWorkflow implements BufferWriter, BufferReader {
+public class PersistedWorkflow implements Persistable {
   int version = -1;
   long key = -1;
   final UnsafeBuffer bpmnProcessId = new UnsafeBuffer(0, 0);
@@ -111,6 +109,11 @@ public class PersistedWorkflow implements BufferWriter, BufferReader {
     final int keyOffset = writeWorkflowKey(buffer, offset, bpmnProcessId, version);
     assert (keyOffset - offset) == getKeyLength() : "End offset differs with getKeyLength()";
     return keyOffset;
+  }
+
+  @Override
+  public void writeKey(MutableDirectBuffer keyBuffer, int offset) {
+    writeKeyToBuffer(keyBuffer, offset);
   }
 
   public static int writeWorkflowKey(

@@ -21,7 +21,7 @@ import io.zeebe.broker.logstreams.processor.TypedBatchWriter;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
-import io.zeebe.broker.workflow.index.WorkflowEngineState;
+import io.zeebe.broker.workflow.state.WorkflowEngineState;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class EventOutput {

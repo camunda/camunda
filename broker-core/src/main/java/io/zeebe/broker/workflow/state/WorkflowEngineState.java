@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.index;
+package io.zeebe.broker.workflow.state;
 
 import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
@@ -68,11 +68,12 @@ import io.zeebe.util.metrics.MetricsManager;
  */
 public class WorkflowEngineState implements StreamProcessorLifecycleAware {
 
-  private final ElementInstanceIndex index;
+  private final WorkflowState workflowState;
+  private ElementInstanceState elementInstanceState;
   private WorkflowInstanceMetrics metrics;
 
-  public WorkflowEngineState(ElementInstanceIndex index) {
-    this.index = index;
+  public WorkflowEngineState(WorkflowState workflowState) {
+    this.workflowState = workflowState;
   }
 
   @Override
@@ -84,6 +85,7 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
     final LogStream logStream = streamProcessorContext.getLogStream();
 
     this.metrics = new WorkflowInstanceMetrics(metricsManager, logStream.getPartitionId());
+    this.elementInstanceState = workflowState.getElementInstanceState();
   }
 
   @Override
@@ -95,8 +97,7 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
 
     if (isFlowTriggeringEvent(record)) {
       final long scopeKey = record.getValue().getScopeInstanceKey();
-      final ElementInstance scopeInstance = index.getInstance(scopeKey);
-      scopeInstance.consumeToken();
+      workflowState.getElementInstanceState().consumeToken(scopeKey);
     }
     // else: element instances remain in the index until a final state is published
   }
@@ -120,27 +121,23 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
 
   public void deferEvent(TypedRecord<WorkflowInstanceRecord> event) {
     final long scopeKey = event.getValue().getScopeInstanceKey();
-    final ElementInstance scopeInstance = index.getInstance(scopeKey);
-    scopeInstance.storeRecord(event);
+    elementInstanceState.storeRecord(scopeKey, event);
 
     // currently assuming only token events are deferred
-    scopeInstance.spawnToken(); // the token remains active
+    elementInstanceState.spawnToken(scopeKey); // the token remains active
   }
 
   public void consumeDeferredEvent(long scopeKey, long key) {
-    final ElementInstance scopeInstance = index.getInstance(scopeKey);
-    final boolean eventRemoved = scopeInstance.removeStoredRecords(key);
+    final boolean eventRemoved = elementInstanceState.removeStoredRecord(scopeKey, key);
     if (eventRemoved) {
-      scopeInstance.consumeToken();
+      elementInstanceState.consumeToken(scopeKey);
     }
   }
 
   private void onTokenEventProduced(
       long key, WorkflowInstanceIntent state, WorkflowInstanceRecord value) {
     final long scopeKey = value.getScopeInstanceKey();
-    final ElementInstance scopeInstance = index.getInstance(scopeKey);
-
-    scopeInstance.spawnToken();
+    elementInstanceState.spawnToken(scopeKey);
   }
 
   private void onElementInstanceEventProduced(
@@ -150,25 +147,25 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
       final long scopeInstanceKey = value.getScopeInstanceKey();
 
       if (scopeInstanceKey >= 0) {
-        final ElementInstance flowScopeInstance = index.getInstance(scopeInstanceKey);
-        index.newInstance(flowScopeInstance, key, value, state);
+        final ElementInstance flowScopeInstance =
+            elementInstanceState.getInstance(scopeInstanceKey);
+        elementInstanceState.newInstance(flowScopeInstance, key, value, state);
       } else {
-        index.newInstance(key, value, state);
+        elementInstanceState.newInstance(key, value, state);
       }
     } else if (WorkflowInstanceLifecycle.isFinalState(state)) {
-      index.removeInstance(key);
+      elementInstanceState.removeInstance(key);
 
       final long scopeInstanceKey = value.getScopeInstanceKey();
 
       // a final state is triggers continued execution, i.e. we count a new token
       if (scopeInstanceKey >= 0) // i.e. not root scope
       {
-        final ElementInstance scopeInstance = index.getInstance(scopeInstanceKey);
-        scopeInstance.spawnToken();
+        elementInstanceState.spawnToken(scopeInstanceKey);
       }
 
     } else {
-      final ElementInstance scopeInstance = index.getInstance(key);
+      final ElementInstance scopeInstance = elementInstanceState.getInstance(key);
       scopeInstance.setState(state);
       scopeInstance.setValue(value);
     }
@@ -177,12 +174,8 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
       if (state == WorkflowInstanceIntent.ELEMENT_TERMINATED) {
         metrics.countInstanceCanceled();
       } else if (state == WorkflowInstanceIntent.ELEMENT_COMPLETED) {
-        metrics.coundInstanceCompleted();
+        metrics.countInstanceCompleted();
       }
     }
-  }
-
-  public ElementInstance getElementInstance(long key) {
-    return index.getInstance(key);
   }
 }
