@@ -3,7 +3,7 @@
 // https://github.com/jenkinsci/pipeline-model-definition-plugin/wiki/Getting-Started
 
 String storeNumOfBuilds() {
-  return env.BRANCH_NAME == 'master' ? '50' : '10'
+  return env.BRANCH_NAME == 'master' ? '30' : '10'
 }
 
 String storeNumOfArtifacts() {
