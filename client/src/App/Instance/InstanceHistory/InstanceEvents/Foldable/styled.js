@@ -41,7 +41,7 @@ export const RightIcon = themed(styled(
 
 export const Summary = themed(styled.div`
   position: relative;
-  height: 31px;
+  height: 32px;
   flex: 1;
 `);
 
