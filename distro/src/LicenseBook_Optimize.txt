@@ -1,4 +1,4 @@
-Licensing Information for Camunda Optimize extension 2.1.0
+Licensing Information for Camunda Optimize extension 2.2.0
 
 
 
@@ -26,22 +26,27 @@ Final
 Ulrike Liss
 Optimize 2.1.0
 Final
+3.0
+2018-09-28
+Ulrike Liss
+Optimize 2.2.0
+Final
 
-This is a license book. It contains Camunda Optimize extension product license and other licensing information, including licensing information for third-party libraries which may be included in this release of Camunda Optimize extension 2.1.0
-(Document generated on: 2018-06-25)
+This is a license book. It contains Camunda Optimize extension product license and other licensing information, including licensing information for third-party libraries which may be included in this release of Camunda Optimize extension 2.2.0
+(Document generated on: 2018-09-28)
 
 Introduction
-This Licensing Information document is a part of the program documentation and is intended to help you understand the special license rights for the Camunda Optimize extension and separately licensed third-party library terms associated with the Camunda Optimize extension 2.1.0
+This Licensing Information document is a part of the program documentation and is intended to help you understand the special license rights for the Camunda Optimize extension and separately licensed third-party library terms associated with the Camunda Optimize extension 2.2.0
 
 
 Licensing Information
 
-Product License � Camunda Optimize extension 2.1.0
-This is a distribution of Camunda Optimize extension 2.1.0 (visit http://docs.camunda.org/). The
+Product License � Camunda Optimize extension 2.2.0
+This is a distribution of Camunda Optimize extension 2.2.0 (visit http://docs.camunda.org/). The
  software is released under a commercial license agreement (Enterprise Platform). If you have a commercial license agreement, this software is containing restrictions on use and disclosure and is protected by intellectual property laws. Except as expressly permitted in your license agreement or allowed by law, you may not use, copy, reproduce, translate, broadcast, modify, license, transmit, distribute, exhibit, perform, publish, or display any part, in any form, or by any means. Reverse engineering, disassembly, or decompilation of this software, unless required by law for interoperability, is prohibited.�
 
 Licenses for Third-Party Libraries
-The following sections contain licensing information for libraries that we have included with the Camunda Optimize extension source. In square brackets we provide information on the specific Camunda Component to which a third-party library is linked to. For practicability, the license text is only referenced once, and each third-party library entry is linked to the specific license text.
+The following sections contain licensing information for libraries that we have included with the Camunda Optimize extension source. In square brackets we provide information on the specific Camunda Component to which a third-party library is linked to. For practicability, the license text is only referenced once, and each third-party library entry is linked to the specific license text. 
 
 We are thankful to all individuals that have created these.
 
@@ -101,13 +106,13 @@ A number of small but very helpful changes have been contributed by Adrien Grand
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
-Jackson-annotations: 2.9.0 (https://github.com/cowtowncoder/java-uuid-generator)
-Copyright: various authors
+Jackson-annotations: 2.9.6 (https://github.com/cowtowncoder/java-uuid-generator)
+Copyright: various authors 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 jetty-util: 9.2.1 (https://github.com/eclipse/jetty.project/tree/jetty-9.4.x/jetty-util)
-Copyright: 1995-2017 Mort Bay Consulting Pty Ltd.
+Copyright: 1995-2017 Mort Bay Consulting Pty Ltd. 
 Licensed under Apache 2.0 or Eclipse
 ===========================================================================================
 [Backend / optimize]
@@ -117,17 +122,17 @@ Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 jetty-security: 9.2.21 (https://github.com/eclipse/jetty.project/tree/jetty-9.4.x/jetty-security)
-Copyright: 1995-2017 Mort Bay Consulting Pty Ltd.
+Copyright: 1995-2017 Mort Bay Consulting Pty Ltd. 
 Licensed under Apache 2.0 or Eclipse
 ===========================================================================================
 [Backend / Optimize]
 jetty-http: 9.2.21 (https://github.com/eclipse/jetty.project)
-Copyright: 1995-2017 Mort Bay Consulting Pty Ltd.
+Copyright: 1995-2017 Mort Bay Consulting Pty Ltd. 
 Licensed under Apache 2.0 or Eclipse
 ===========================================================================================
 [Backend / Optimize]
 accessors-smart: 1.2 (https://github.com/netplex/json-smart-v2/tree/master/accessors-smart)
-Copyright:
+Copyright: 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
@@ -137,7 +142,7 @@ Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 transport-netty4-client:6.0.0 (https://github.com/elastic/elasticsearch/tree/master/modules/transport-netty4)
-Copyright: 2011 The Netty Project
+Copyright: 2011 The Netty Project 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
@@ -147,17 +152,17 @@ Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 validation-api:1.1.0 ()
-Copyright:
+Copyright: 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 lucene-core:7.0.1 (https://github.com/apache/lucene-solr/tree/master/lucene/core)
-Copyright: 2001-2018 The Apache Software Foundation
+Copyright: 2001-2018 The Apache Software Foundation 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 lucene-spatial:7.0.1 (https://github.com/apache/lucene-solr/tree/master/lucene/spatial)
-Copyright: 2001-2018 The Apache Software Foundation
+Copyright: 2001-2018 The Apache Software Foundation 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
@@ -166,13 +171,13 @@ Copyright: 2014 The Netty Project (http://netty.io/)
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
-jackson-datatype-jsr310:2.9.0 (https://github.com/FasterXML/jackson-datatype-jsr310)
+jackson-datatype-jsr310:2.9.6 (https://github.com/FasterXML/jackson-datatype-jsr310)
 Copyright: various authors (https://github.com/FasterXML/jackson-datatype-jsr310/blob/master/release-notes/CREDITS)
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 joda-time:2.9.5 (https://github.com/JodaOrg/joda-time)
-Copyright: Joda.org (http://www.joda.org/).
+Copyright: Joda.org (http://www.joda.org/). 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
@@ -187,16 +192,16 @@ Licensed under Apache 2.0 or LGPL
 ===========================================================================================
 [Backend / Optimize]
 httpcore-nio: 4.4.5 and 4.4.4 (https://github.com/wso2/wso2-httpcore-nio
-Copyright:
+Copyright: 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 classmate: 1.1.0 (https://github.com/FasterXML/java-classmate)
-Copyright:
+Copyright: 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
-jackson-core: 2.9.0 (https://github.com/FasterXML/jackson-core)
+jackson-core: 2.9.6 (https://github.com/FasterXML/jackson-core)
 Copyright: various authors (https://github.com/FasterXML/jackson-core/blob/master/README.md)
 Licensed under Apache 2.0
 ===========================================================================================
@@ -207,7 +212,7 @@ Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 lucene-grouping: 7.0.1 (https://github.com/apache/lucene-solr/tree/master/lucene/grouping)
-Copyright: 2001-2018 The Apache Software Foundation
+Copyright: 2001-2018 The Apache Software Foundation 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
@@ -217,22 +222,22 @@ Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 lucene-sandbox:7.0.1 (https://github.com/apache/lucene-solr/tree/master/lucene/sandbox)
-Copyright: 2001-2018 The Apache Software Foundation
+Copyright: 2001-2018 The Apache Software Foundation 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 jetty-continuation: 9.2.21 (https://github.com/eclipse/jetty.project/tree/jetty-9.4.x/jetty-continuation)
-Copyright: 1995-2017 Mort Bay Consulting Pty Ltd.
+Copyright: 1995-2017 Mort Bay Consulting Pty Ltd. 
 Licensed under Apache 2.0 or Eclipse
 ===========================================================================================
 [Backend / Optimize]
 jetty-servlet: 9.2.21 (https://github.com/eclipse/jetty.project/tree/jetty-9.4.x/jetty-servlet)
-Copyright: 1995-2017 Mort Bay Consulting Pty Ltd.
+Copyright: 1995-2017 Mort Bay Consulting Pty Ltd. 
 Licensed under Apache 2.0 or Eclipse
 ===========================================================================================
 [Backend / Optimize]
 lucene-queryparser: 7.0.1 (https://github.com/apache/lucene-solr/tree/master/lucene/queryparser)
-Copyright: 2001-2018 The Apache Software Foundation
+Copyright: 2001-2018 The Apache Software Foundation 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
@@ -242,7 +247,7 @@ Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 javax.inject:1.0 (https://github.com/spring-projects/spring-framework/tree/master/spring-jdbc)
-Copyright: various authors (https://github.com/javax-inject/javax-inject/blob/master/README.md)
+Copyright: various authors (https://github.com/javax-inject/javax-inject/blob/master/README.md) 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
@@ -252,11 +257,11 @@ Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 reindex-client: 6.0.0 (https://github.com/elastic/elasticsearch)
-Copyright: 2009-2017 Elasticsearch
+Copyright: 2009-2017 Elasticsearch 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
-jackson-jaxrs-base: 2.9.0 (https://github.com/FasterXML/jackson-jaxrs-providers/tree/master/base)
+jackson-jaxrs-base: 2.9.6 (https://github.com/FasterXML/jackson-jaxrs-providers/tree/master/base)
 Copyright: various authors (https://github.com/FasterXML/jackson-jaxrs-providers/blob/master/release-notes/CREDITS)
 Licensed under Apache 2.0
 ===========================================================================================
@@ -282,17 +287,17 @@ Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 spring-web: 4.3.4 (https://github.com/spring-projects/spring-framework/tree/master/spring-web)
-Copyright: 2002-2018 the original author or authors
+Copyright: 2002-2018 the original author or authors 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 lucene-queries: 7.0.1 (https://github.com/apache/lucene-solr/tree/master/lucene/queries)
-Copyright: 2001-2018 The Apache Software Foundation
+Copyright: 2001-2018 The Apache Software Foundation 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 lucene-spatial-extras: 7.0.1 (https://github.com/apache/lucene-solr/tree/master/lucene/spatial-extras)
-Copyright: 2001-2018 The Apache Software Foundation
+Copyright: 2001-2018 The Apache Software Foundation 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
@@ -317,32 +322,32 @@ Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 lucene-spatial3d: 7.0.1 (https://github.com/apache/lucene-solr/tree/master/lucene/spatial3d)
-Copyright: 2001-2018 The Apache Software Foundation
+Copyright: 2001-2018 The Apache Software Foundation 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
-jackson-dataformat-yaml: 2.9.0 (https://github.com/FasterXML/jackson-dataformat-yaml)
+jackson-dataformat-yaml: 2.9.6 (https://github.com/FasterXML/jackson-dataformat-yaml) 
 Copyright: various authors (https://github.com/FasterXML/jackson-dataformat-yaml/blob/master/release-notes/CREDITS)
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 spring-context-support: 4.3.4 (https://github.com/spring-projects/spring-framework/tree/master/spring-context-support)
-Copyright: 2002-2017 the original author or authors.
+Copyright: 2002-2017 the original author or authors. 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 lucene-join: 7.0.1 (https://github.com/apache/lucene-solr/tree/master/lucene/join)
-Copyright: 2001-2018 The Apache Software Foundation
+Copyright: 2001-2018 The Apache Software Foundation 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 lucene-memory: 7.0.1 (https://github.com/apache/lucene-solr/tree/master/lucene/memory)
-Copyright: 2001-2018 The Apache Software Foundation
+Copyright: 2001-2018 The Apache Software Foundation 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 spring-core: 4.3.4 (https://github.com/spring-projects/spring-framework/tree/master/spring-core)
-Copyright: 2002-2017 the original author or authors.
+Copyright: 2002-2017 the original author or authors. 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
@@ -357,51 +362,51 @@ Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 lucene-suggest: 7.0.1 (https://github.com/apache/lucene-solr/tree/master/lucene/suggest)
-Copyright: 2001-2018 The Apache Software Foundation
+Copyright: 2001-2018 The Apache Software Foundation 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 Quartz: 2.3.0 (https://github.com/quartz-scheduler/quartz)
-Copyright: 003-2016 Software AG, Darmstadt, Germany and/or Software AG USA Inc., Reston, VA, USA, and/or its subsidiaries and/or its affiliates and/or their licensors
+Copyright: 003-2016 Software AG, Darmstadt, Germany and/or Software AG USA Inc., Reston, VA, USA, and/or its subsidiaries and/or its affiliates and/or their licensors 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 httpasyncclient: 4.1.2 (https://github.com/apache/httpasyncclient)
-Copyright:
+Copyright: 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 spring-aop: 4.3.4 (https://github.com/spring-projects/spring-framework/tree/master/spring-aop)
-Copyright: 2002-2017 the original author or authors.
+Copyright: 2002-2017 the original author or authors. 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
-spring-context: 4.3.4 (https://github.com/spring-projects/spring-framework/tree/master/spring-context) Copyright: 2002-2017 the original author or authors.
+spring-context: 4.3.4 (https://github.com/spring-projects/spring-framework/tree/master/spring-context) Copyright: 2002-2017 the original author or authors. 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 jetty-io: 9.2.21 (https://github.com/eclipse/jetty.project/tree/jetty-9.4.x/jetty-io)
-Copyright: 1995-2017 Mort Bay Consulting Pty Ltd.
+Copyright: 1995-2017 Mort Bay Consulting Pty Ltd. 
 Licensed under Apache 2.0 or Eclipse
 ===========================================================================================
 [Backend / Optimize]
 lucene-backward-codecs: 7.0.1 (https://github.com/apache/lucene-solr/tree/master/lucene/backward-codecs)
-Copyright: 2001-2018 The Apache Software Foundation
+Copyright: 2001-2018 The Apache Software Foundation 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 lucene-analyzers-common: 7.0.1 (https://github.com/apache/lucene-solr/tree/master/lucene/analysis/common)
-Copyright: 2001-2018 The Apache Software Foundation
+Copyright: 2001-2018 The Apache Software Foundation 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 spring-expression: 4.3.4 (https://github.com/spring-projects/spring-framework/tree/master/spring-expression)
-Copyright: 2002-2017 the original author or authors.
+Copyright: 2002-2017 the original author or authors. 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
-jackson-jaxrs-json-provider: 2.9.0 (https://github.com/FasterXML/jackson-jaxrs-providers)
-Copyright: various authors
+jackson-jaxrs-json-provider: 2.9.6 (https://github.com/FasterXML/jackson-jaxrs-providers)
+Copyright: various authors 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
@@ -410,12 +415,12 @@ Copyright: various authors (https://github.com/hibernate/hibernate-validator/blo
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
-jackson-databind: 2.9.0 (https://github.com/FasterXML/jackson-databind)
-Copyright: various authors
+jackson-databind: 2.9.6 (https://github.com/FasterXML/jackson-databind)
+Copyright: various authors 
 Licensed under Apache 2.0 ===========================================================================================
 [Backend / Optimize]
 parent-join-client: 6.0.0 (https://github.com/elastic/elasticsearch)
-Copyright: 2009-2017 Elasticsearch
+Copyright: 2009-2017 Elasticsearch 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
@@ -424,16 +429,16 @@ Copyright: 2003-2016 The Apache Software Foundation
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
-jackson-dataformat-cbor: 2.9.0 (https://github.com/FasterXML/jackson-dataformat-cbor)
-Copyright: various authors
+jackson-dataformat-cbor: 2.9.6 (https://github.com/FasterXML/jackson-dataformat-cbor)
+Copyright: various authors 
 Licensed under Apache 2.0 ===========================================================================================
 [Backend / Optimize]
-jackson-dataformat-smile: 2.9.0 (https://github.com/FasterXML/jackson-dataformat-smile)
-Copyright: various authors
+jackson-dataformat-smile: 2.9.6 (https://github.com/FasterXML/jackson-dataformat-smile)
+Copyright: various authors 
 Licensed under Apache 2.0 ===========================================================================================
 [Backend / Optimize]
 jetty-server: 9.2.21 (https://github.com/eclipse/jetty.project/tree/jetty-9.4.x/jetty-server)
-Copyright: 1995-2017 Mort Bay Consulting Pty Ltd.
+Copyright: 1995-2017 Mort Bay Consulting Pty Ltd. 
 Licensed under Apache 2.0 or Eclipse
 ===========================================================================================
 [Backend / Optimize]
@@ -448,16 +453,16 @@ Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 jetty-servlets: 9.2.21 (https://github.com/eclipse/jetty.project/tree/jetty-9.4.x/jetty-servlets)
-Copyright: 1995-2017 Mort Bay Consulting Pty Ltd.
+Copyright: 1995-2017 Mort Bay Consulting Pty Ltd. 
 Licensed under Apache 2.0 or Eclipse
 ===========================================================================================
 [Backend / Optimize]
 spring-beans: 4.3.4 (https://github.com/spring-projects/spring-framework/tree/master/spring-beans)
-Copyright: 2002-2017 the original author or authors.
+Copyright: 2002-2017 the original author or authors. 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
-Snakeyaml: 1.17 (https://github.com/alexarchambault/snakeyaml/tree/master/src/main/java/org/yaml/snakeyaml)
+Snakeyaml: 1.18 (https://github.com/alexarchambault/snakeyaml/tree/master/src/main/java/org/yaml/snakeyaml)
 Copyright: 2008, http://www.snakeyaml.org
 Licensed under Apache 2.0
 ===========================================================================================
@@ -468,12 +473,12 @@ Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 lucene-misc: 7.0.1 (https://github.com/apache/lucene-solr/tree/master/lucene/misc)
-Copyright: 2001-2018 The Apache Software Foundation
+Copyright: 2001-2018 The Apache Software Foundation 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 lucene-highlighter: 7.0.1 (https://github.com/apache/lucene-solr/tree/master/lucene/highlighter)
-Copyright: 2001-2018 The Apache Software Foundation
+Copyright: 2001-2018 The Apache Software Foundation 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
@@ -503,7 +508,7 @@ Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 websocket-common: 9.2.21 (https://github.com/fukamachi/websocket-driver)
-Copyright: � 2014, Eitaro Fukamachi
+Copyright: � 2014, Eitaro Fukamachi 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
@@ -518,7 +523,7 @@ Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 javax-websocket-server-impl: 9.2.21 (https://github.com/TooTallNate/Java-WebSocket)
-Copyright: � 2010-2018 Nathan Rajlich
+Copyright: � 2010-2018 Nathan Rajlich 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
@@ -538,7 +543,7 @@ Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
 spring-websocket: 4.3.4 (https://github.com/spring-projects/spring-framework/tree/master/spring-websocket)
-Copyright: � 2002-2017 the original author or authors.
+Copyright: � 2002-2017 the original author or authors. 
 Licensed under Apache 2.0
 ===========================================================================================
 [Backend / Optimize]
@@ -548,6 +553,11 @@ Copyright: � https://github.com/eclipse/jetty.project/blob/jetty-9.4.x/LICENSE
 [Backend / Optimize]
 jetty-webapp: 9.2.21 (https://github.com/eclipse/jetty.project)
 Copyright: � https://github.com/eclipse/jetty.project/blob/jetty-9.4.x/LICENSE-CONTRIBUTOR/ccla-exist.pdf Licensed under Apache 2.0
+===========================================================================================
+[Backend / Optimize]
+jackson-module-jaxb-annotations: 2.9.6 (https://github.com/FasterXML/jackson-modules-base/tree/d4c58848e9450fc1bd196a37ef31b88d8dbd5cce)
+Copyright: � Tatu Saloranta and Georgios Andrianakis
+Licensed under Apache 2.0
 ===========================================================================================
 
 BSD-3-Clause
@@ -565,7 +575,7 @@ The following third-party libraries are licensed under the BSD-3-Clause license:
 ===========================================================================================
 [Backend / Optimize]
 Asm: 5.0.4 (https://gitlab.ow2.org/asm/asmdex)
-Copyright: 2012 France T�l�com
+Copyright: 2012 France T�l�com 
 Licensed under BSD-3-Clause
 ===========================================================================================
 [Frontend/ Optimize]
@@ -747,7 +757,7 @@ Licensed under CDDL 1.0 (+GPLv2 with classpath exception)
 ===========================================================================================
 [Backend / Optimize]
 jersey-container-servlet-core: 2.26 (https://github.com/jersey/jersey/tree/master/containers/jersey-servlet-core/src)
-Copyright: (c) 2012-2017 Oracle and/or its affiliates. All rights reserved.
+Copyright: (c) 2012-2017 Oracle and/or its affiliates. All rights reserved. 
 Licensed under CDDL 1.0 (+GPLv2 with classpath exception)
 ===========================================================================================
 [Backend / Optimize]
@@ -806,8 +816,8 @@ Copyright: (c) 2013-2015 Oracle and/or its affiliates. All rights reserved.
 Licensed under CDDL 1.0 (+GPLv2 with classpath exception)
 ===========================================================================================
 [Backend / Optimize]
-javax.servlet-api: 3.1.0 (https://github.com/dragome/dragome/blob/master/maven/javax/servlet/javax.servlet-api/3.1.0/javax.servlet-api-3.1.0.pom)
-Copyright: (c) 1997-2013 Oracle and/or its affiliates. All rights reserved.
+javax.servlet-api: 3.1.0 (https://github.com/dragome/dragome/blob/master/maven/javax/servlet/javax.servlet-api/3.1.0/javax.servlet-api-3.1.0.pom) 
+Copyright: (c) 1997-2013 Oracle and/or its affiliates. All rights reserved. 
 Licensed under CDDL 1.0 (+GPLv2 with classpath exception) or GPL
 ===========================================================================================
 [Backend / Optimize]
@@ -837,7 +847,7 @@ Licensed under CDDL 1.0 (+GPLv2 with classpath exception)
 ===========================================================================================
 [Backend / Optimize]
 hk2-utils: 2.5.0 (https://github.com/javaee/hk2/tree/master/hk2-utils)
-Copyright: � 2010-2017 Oracle and/or its affiliates. All rights reserved.
+Copyright: � 2010-2017 Oracle and/or its affiliates. All rights reserved. 
 Licensed under CDDL 1.0 (+GPLv2 with classpath exception)
 ===========================================================================================
 [Backend / Optimize]
@@ -847,7 +857,7 @@ Licensed under CDDL 1.0 (+GPLv2 with classpath exception)
 ===========================================================================================
 [Backend / Optimize]
 jersey-client: 2.26 (https://github.com/jersey/jersey/tree/master/core-client/src/main/java/org/glassfish/jersey/client)
-Copyright: � 2012-2017 Oracle and/or its affiliates. All rights reserved.
+Copyright: � 2012-2017 Oracle and/or its affiliates. All rights reserved. 
 Licensed under CDDL 1.0 (+GPLv2 with classpath exception)
 ===========================================================================================
 [Backend / Optimize]
@@ -857,7 +867,12 @@ Licensed under CDDL 1.0 (+GPLv2 with classpath exception)
 ===========================================================================================
 [Backend / Optimize]
 javax.websocket-api: 1.0  (https://github.com/javaee/websocket-spec)
-Copyright: � �2017 Oracle and/or its affiliates. All rights reserved.
+Copyright: ��2017 Oracle and/or its affiliates. All rights reserved. 
+Licensed under the CDDL 1.0 (+GPLv2 with classpath exception)
+===========================================================================================
+[Backend / Optimize]
+activation: 1.1.1 (https://glassfish.dev.java.net/public/CDDLv1.0.htm)
+Copyright: � several authors 
 Licensed under the CDDL 1.0 (+GPLv2 with classpath exception)
 ===========================================================================================
 
@@ -884,7 +899,7 @@ Licensed under MIT
 ===========================================================================================
 [Backend / Optimize]
 slf4j-api: 1.7.25 (https://github.com/qos-ch/slf4j/tree/master/slf4j-api)
-Copyright: (c) 2004-2007 QOS.ch
+Copyright: (c) 2004-2007 QOS.ch 
 Licensed under MIT
 ===========================================================================================
 [Backend / Optimize]
@@ -919,7 +934,7 @@ Licensed under MIT
 ===========================================================================================
 [Frontend / Optimize]
 chart.js: 2.7.1 (https://github.com/chartjs/Chart.js)
-Copyright: (c) 2018 Chart.js Contributors
+Copyright: (c) 2018 Chart.js Contributors 
 Licensed under MIT
 ===========================================================================================
 [Frontend / Optimize]
@@ -949,7 +964,7 @@ Licensed under MIT
 ===========================================================================================
 [Frontend / Optimize]
 component-closest: 0.1.4 / 1.0.1 (https://www.npmjs.com/package/component-closest)
-Copyright: �2013 Jonathan Ong
+Copyright: �2013 Jonathan Ong 
 Licensed under MIT
 ===========================================================================================
 [Frontend / Optimize]
@@ -964,7 +979,7 @@ Licensed under MIT
 ===========================================================================================
 [Frontend / Optimize]
 component-indexof: 0.0.3 (https://github.com/component/indexof)
-Copyright: 2012 TJ Holowaychuk
+Copyright: 2012 TJ Holowaychuk 
 Licensed under MIT
 ===========================================================================================
 [Frontend / Optimize]
@@ -984,7 +999,7 @@ Licensed under MIT
 ===========================================================================================
 [Frontend / Optimize]
 define-properties: 1.1.2 (https://github.com/ljharb/define-properties)
-Copyright: � 2015 Jordan Harband
+Copyright: � 2015 Jordan Harband 
 Licensed under MIT
 ===========================================================================================
 [Frontend / Optimize]
@@ -999,17 +1014,17 @@ Licensed under MIT
 ===========================================================================================
 [Frontend / Optimize]
 encoding: 0.1.12 (https://github.com/ENCODE-DCC/encoded)
-Copyright: (c) 2016 Stanford University
+Copyright: (c) 2016 Stanford University 
 Licensed under MIT
 ===========================================================================================
 [Frontend / Optimize]
 es-abstract: 1.9.0 (https://github.com/ljharb/es-abstract)
-Copyright: (c) 2015 Jordan Harband
+Copyright: (c) 2015 Jordan Harband 
 Licensed under MIT
 ===========================================================================================
 [Frontend / Optimize]
 es-to-primitive: 1.1.1 (https://github.com/ljharb/es-to-primitive)
-Copyright: (c) 2015 Jordan Harband
+Copyright: (c) 2015 Jordan Harband 
 Licensed under MIT
 ===========================================================================================
 [Frontend / Optimize]
@@ -1039,7 +1054,7 @@ Licensed under MIT
 ===========================================================================================
 [Frontend / Optimize]
 heatmap.js: 2.0.5 (https://github.com/pa7/heatmap.js/)
-Copyright: (c) 2015 Patrick Wied
+Copyright: (c) 2015 Patrick Wied 
 Licensed under MIT
 ===========================================================================================
 [Frontend / Optimize]
@@ -1054,7 +1069,7 @@ Licensed under MIT
 ===========================================================================================
  [Frontend / Optimize]
 heatmap.js: 2.0.5 (https://github.com/pa7/heatmap.js/)
-Copyright: (c) 2015 Patrick Wied
+Copyright: (c) 2015 Patrick Wied 
 Licensed under MIT
 ===========================================================================================
 [Frontend / Optimize]
@@ -1079,7 +1094,7 @@ Licensed under MIT
 ===========================================================================================
 [Frontend / Optimize]
 is-regex: 1.0.4 (https://github.com/ljharb/is-regex)
-Copyright: (c) 2014 Jordan Harband
+Copyright: (c) 2014 Jordan Harband 
 Licensed under MIT
 ===========================================================================================
 [Frontend / Optimize]
@@ -1118,7 +1133,7 @@ Copyright: (c) 2015 Andres Suarez <zertosh@gmail.com>
 Licensed under MIT
 ===========================================================================================
 [Frontend / Optimize]
-min-dom: 0.2.0 (https://github.com/ljharb/is-date-object)
+min-dom: 3.1.1 (https://github.com/ljharb/is-date-object)
 Copyright: (c) 2014 Nico Rehwaldt & 2015-present camunda Services GmbH
 Licensed under MIT
 ===========================================================================================
@@ -1143,7 +1158,7 @@ Copyright: (c) 2013 Jordan Harband
 Licensed under MIT
 ===========================================================================================
 [Frontend / Optimize]
-object-refs: 0.1.1 (https://github.com/bpmn-io/object-refs)
+object-refs: 0.3.0 (https://github.com/bpmn-io/object-refs) 
 Copyright: (c) 2014 camunda Services GmbH
 Licensed under MIT
 ===========================================================================================
@@ -1154,7 +1169,7 @@ Licensed under MIT
 ===========================================================================================
 [Frontend / Optimize]
 path-to-regexp: 1.7.0 (https://github.com/pillarjs/path-to-regexp)
-Copyright: (c) 2014 Blake Embrey (hello@blakeembrey.com)
+Copyright: (c) 2014 Blake Embrey (hello@blakeembrey.com) 
 Licensed under MIT
 ===========================================================================================
  [Frontend / Optimize]
@@ -1194,16 +1209,16 @@ Licensed under MIT
 ===========================================================================================
 [Frontend / Optimize]
 setimmediate: 1.0.5 (https://github.com/YuzuJS/setImmediate)
-Copyright: (c) 2012 Barnesandnoble.com, llc, Donavon West, and Domenic Denicola
+Copyright: (c) 2012 Barnesandnoble.com, llc, Donavon West, and Domenic Denicola 
 Licensed under MIT
 ===========================================================================================
 [Frontend / Optimize]
 string.prototype.includes: 1.0.0 (https://github.com/mathiasbynens/String.prototype.includes)
-Copyright: (c) Mathias Bynens <https://mathiasbynens.be/>
+Copyright: (c) Mathias Bynens <https://mathiasbynens.be/> 
 Licensed under MIT
 ===========================================================================================
 [Frontend / Optimize]
-tiny-svg: 0.1.3 (https://github.com/bpmn-io/tiny-svg)
+tiny-svg: 2.1.2 (https://github.com/bpmn-io/tiny-svg)
 Copyright: (c) 2014 Nico Rehwaldt
 Licensed under MIT
 ===========================================================================================
@@ -1258,12 +1273,12 @@ Copyright: (c) 2013 Thiago de Arruda
 Licensed under MIT
 ===========================================================================================
 [Frontend / Optimize]
-Moddle-xml: 1.1.1 (https://github.com/bpmn-io/moddle-xml)
+Moddle-xml: 7.2.3 (https://github.com/bpmn-io/moddle-xml)
 Copyright: (c) 2014 camunda Services GmbH
 Licensed under MIT
 ===========================================================================================
 [Frontend / Optimize]
-moddle: 1.0.0 (https://github.com/bpmn-io/moddle)
+moddle: 4.1.0 (https://github.com/bpmn-io/moddle)
 Copyright: (c) 2014 camunda Services GmbH
 Licensed under MIT
 ===========================================================================================
@@ -1297,7 +1312,26 @@ debounce: 1.1.0 (https://github.com/component/debounce)
 Copyright: (c) ?
 Licensed under MIT
 ===========================================================================================
-
+[Frontend / Optimize]
+matches-selector: 0.0.1 (https://github.com/component/debounce)
+Copyright: (c) 2013 Forbes Lindesay
+Licensed under MIT
+===========================================================================================
+[Frontend / Optimize]
+matches-selector: 1.2.0 (https://github.com/component/debounce)
+Copyright: (c) 2013 Forbes Lindesay
+Licensed under MIT
+===========================================================================================
+[Frontend / Optimize]
+min-dash: 3.1.0 (https://github.com/component/debounce)
+Copyright: (c) 2017 camunda Services GmbH
+Licensed under MIT
+===========================================================================================
+[Frontend / Optimize]
+Saxen: 8.0.0 (https://github.com/nikku/saxen)
+Copyright: (c) 2012 Vopilovskii Konstantin and 2017-present Nico Rehwaldt
+Licensed under MIT
+===========================================================================================
 
 LGPL 2.1
 The following license text for the LGPL 2.1 is cited only once. All libraries licenses under the LGPL 2.1 will be listed after the license text together with copyright notice and link to this license text.
@@ -1431,7 +1465,7 @@ Licensed under LGPL 2.1 or EPL 1.0
 [Backend / Optimize]
 websocket-client: 9.2.21 (https://github.com/websocket-client/websocket-client)
 Copyright: ?
-Licensed under LGPL 2.1
+Licensed under LGPL 2.1 
 ===========================================================================================
 
 BSD-2-Clause
@@ -1464,7 +1498,7 @@ The following third-party libraries are licensed under the BSD-3-Clause license:
 
 ===========================================================================================
 [Frontend / Optimize]
-tiny-stack: 0.1.0 (https://github.com/avoidwork/tiny-stack)
+tiny-stack: 1.1.0 (https://github.com/avoidwork/tiny-stack)
 Copyright: (c) 2014, Jason Mulligan
 Licensed under BSD 3
 ===========================================================================================
