@@ -30,11 +30,11 @@ public class StartOptimizeExecutionListener extends RunListener {
   }
 
   private void waitUntilOptimizeIsStarted() throws InterruptedException {
-    OffsetDateTime timeout = OffsetDateTime.now().plusMinutes(5L);
+    OffsetDateTime timeout = OffsetDateTime.now().plusMinutes(8L);
     while(!TestEmbeddedCamundaOptimize.getInstance().isStarted()) {
       Thread.sleep(100L);
       if (OffsetDateTime.now().isAfter(timeout)) {
-        throw new OptimizeIntegrationTestException("Optimize startup shouldn't take longer than 5 minutes");
+        throw new OptimizeIntegrationTestException("Optimize startup shouldn't take longer than 8 minutes");
       }
     }
   }
