@@ -32,8 +32,7 @@ export const EventEntry = themed(styled.li`
       light: Colors.uiLight05
     })};
   position: relative;
-  display: flex;
-  flex-direction: column;
+  display: block;
 `);
 
 export const DataEntry = themed(styled.div`
