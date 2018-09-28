@@ -6,24 +6,6 @@ import {PANE_ID, EXPAND_STATE, DIRECTION} from 'modules/constants';
 
 import * as Styled from './styled';
 
-const paneExpandButton = {
-  [PANE_ID.TOP]: {
-    ExpandButton: Styled.TopExpandButton,
-    directions: {
-      EXPANDED: DIRECTION.UP,
-      COLLAPSED: DIRECTION.DOWN,
-      DEFAULT: DIRECTION.DOWN
-    }
-  },
-  [PANE_ID.BOTTOM]: {
-    ExpandButton: Styled.BottomExpandButton,
-    directions: {
-      EXPANDED: DIRECTION.DOWN,
-      COLLAPSED: DIRECTION.UP,
-      DEFAULT: DIRECTION.UP
-    }
-  }
-};
 export default class Pane extends React.Component {
   static propTypes = {
     handleExpand: PropTypes.func,
@@ -35,28 +17,78 @@ export default class Pane extends React.Component {
     ])
   };
 
-  handleExpand = () => {
-    this.props.handleExpand(this.props.paneId);
+  handleTopExpand = () => {
+    this.props.handleExpand(PANE_ID.TOP);
   };
 
-  render() {
-    const {expandState, paneId} = this.props;
+  handleBottomExpand = () => {
+    this.props.handleExpand(PANE_ID.BOTTOM);
+  };
+
+  renderTopPane = () => {
+    const {expandState} = this.props;
 
     const children = Children.map(this.props.children, child =>
       cloneElement(child, {expandState})
     );
 
-    const {
-      ExpandButton,
-      directions: {[expandState]: direction}
-    } = paneExpandButton[paneId];
+    return (
+      <Styled.Pane {...this.props} expandState={expandState}>
+        {children}
+      </Styled.Pane>
+    );
+  };
+
+  renderBottomPane = () => {
+    const {expandState} = this.props;
+
+    const children = Children.map(this.props.children, child =>
+      cloneElement(child, {expandState})
+    );
+
+    const expandBottomButton = (
+      <Styled.PaneExpandButton
+        onClick={this.handleBottomExpand}
+        direction={DIRECTION.UP}
+      />
+    );
+    const expandTopButton = (
+      <Styled.PaneExpandButton
+        onClick={this.handleTopExpand}
+        direction={DIRECTION.DOWN}
+      />
+    );
+
+    let buttons;
+
+    switch (expandState) {
+      case EXPAND_STATE.EXPANDED:
+        buttons = expandTopButton;
+        break;
+      case EXPAND_STATE.COLLAPSED:
+        buttons = expandBottomButton;
+        break;
+      default:
+        buttons = (
+          <React.Fragment>
+            {expandTopButton}
+            {expandBottomButton}
+          </React.Fragment>
+        );
+    }
 
     return (
       <Styled.Pane {...this.props} expandState={expandState}>
         {children}
-        <ExpandButton onClick={this.handleExpand} direction={direction} />
+        <Styled.ButtonsContainer>{buttons}</Styled.ButtonsContainer>
       </Styled.Pane>
     );
+  };
+
+  render() {
+    return this.props.paneId === PANE_ID.TOP
+      ? this.renderTopPane()
+      : this.renderBottomPane();
   }
 }
 

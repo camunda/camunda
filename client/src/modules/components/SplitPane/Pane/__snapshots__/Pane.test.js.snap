@@ -1,6 +1,31 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Pane should render BottomExpandButton with DOWN icon if pane is BOTTOM and it's expanded 1`] = `
+exports[`Pane bottom pane 'should render both ExpandButtons by default 1`] = `
+<Styled(Panel)
+  expandState="DEFAULT"
+  handleExpand={[Function]}
+  paneId="BOTTOM"
+>
+  <Foo
+    expandState="DEFAULT"
+    key=".0"
+  />
+  <styled.div>
+    <React.Fragment>
+      <Styled(ExpandButton)
+        direction="DOWN"
+        onClick={[Function]}
+      />
+      <Styled(ExpandButton)
+        direction="UP"
+        onClick={[Function]}
+      />
+    </React.Fragment>
+  </styled.div>
+</Styled(Panel)>
+`;
+
+exports[`Pane bottom pane should render ExpandButton with DOWN icon if pane is expanded' 1`] = `
 <Styled(Panel)
   expandState="EXPANDED"
   handleExpand={[Function]}
@@ -10,14 +35,16 @@ exports[`Pane should render BottomExpandButton with DOWN icon if pane is BOTTOM 
     expandState="EXPANDED"
     key=".0"
   />
-  <Styled(ExpandButton)
-    direction="DOWN"
-    onClick={[Function]}
-  />
+  <styled.div>
+    <Styled(ExpandButton)
+      direction="DOWN"
+      onClick={[Function]}
+    />
+  </styled.div>
 </Styled(Panel)>
 `;
 
-exports[`Pane should render BottomExpandButton with UP icon if pane is BOTTOM and it's not expanded 1`] = `
+exports[`Pane bottom pane should render ExpandButton with UP icon if pane is collapsed 1`] = `
 <Styled(Panel)
   expandState="COLLAPSED"
   handleExpand={[Function]}
@@ -27,44 +54,12 @@ exports[`Pane should render BottomExpandButton with UP icon if pane is BOTTOM an
     expandState="COLLAPSED"
     key=".0"
   />
-  <Styled(ExpandButton)
-    direction="UP"
-    onClick={[Function]}
-  />
-</Styled(Panel)>
-`;
-
-exports[`Pane should render TopExpandButton with DOWN icon if pane is TOP and it's not expanded 1`] = `
-<Styled(Panel)
-  expandState="DEFAULT"
-  handleExpand={[Function]}
-  paneId="TOP"
->
-  <Foo
-    expandState="DEFAULT"
-    key=".0"
-  />
-  <Styled(ExpandButton)
-    direction="DOWN"
-    onClick={[Function]}
-  />
-</Styled(Panel)>
-`;
-
-exports[`Pane should render TopExpandButton with UP icon if pane is TOP and it's expanded 1`] = `
-<Styled(Panel)
-  expandState="EXPANDED"
-  handleExpand={[Function]}
-  paneId="TOP"
->
-  <Foo
-    expandState="EXPANDED"
-    key=".0"
-  />
-  <Styled(ExpandButton)
-    direction="UP"
-    onClick={[Function]}
-  />
+  <styled.div>
+    <Styled(ExpandButton)
+      direction="UP"
+      onClick={[Function]}
+    />
+  </styled.div>
 </Styled(Panel)>
 `;
 
@@ -78,9 +73,18 @@ exports[`Pane should render children with expandState 1`] = `
     expandState="EXPANDED"
     key=".0"
   />
-  <Styled(ExpandButton)
-    direction="UP"
-    onClick={[Function]}
+</Styled(Panel)>
+`;
+
+exports[`Pane top pane should not render expand buttons 1`] = `
+<Styled(Panel)
+  expandState="COLLAPSED"
+  handleExpand={[Function]}
+  paneId="TOP"
+>
+  <Foo
+    expandState="COLLAPSED"
+    key=".0"
   />
 </Styled(Panel)>
 `;

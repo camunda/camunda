@@ -3,7 +3,7 @@ import styled, {css} from 'styled-components';
 import {themed, themeStyle, Colors} from 'modules/theme';
 import {UpBar, DownBar, LeftBar, RightBar} from 'modules/components/Icon';
 
-export const ExpandButton = themed(styled.a`
+export const ExpandButton = themed(styled.button`
   cursor: pointer;
 
   padding-left: 11.5px;
@@ -12,6 +12,8 @@ export const ExpandButton = themed(styled.a`
   padding-bottom: 13px;
   width: 39px;
   height: 38px;
+
+  background: transparent;
 
   border: solid 1px
     ${themeStyle({

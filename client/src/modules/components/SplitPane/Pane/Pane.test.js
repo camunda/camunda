@@ -31,80 +31,84 @@ describe('Pane', () => {
     expect(node).toMatchSnapshot();
   });
 
-  it("should render TopExpandButton with UP icon if pane is TOP and it's expanded", () => {
-    // given
-    const node = shallow(
-      <Pane
-        {...mockProps}
-        paneId={PANE_ID.TOP}
-        expandState={EXPAND_STATE.EXPANDED}
-      >
-        <Foo />
-      </Pane>
-    );
+  describe('top pane', () => {
+    it('should not render expand buttons', () => {
+      // given
+      const node = shallow(
+        <Pane
+          {...mockProps}
+          paneId={PANE_ID.TOP}
+          expandState={EXPAND_STATE.COLLAPSED}
+        >
+          <Foo />
+        </Pane>
+      );
 
-    // then
-    const TopExpandButtonNode = node.find(Styled.TopExpandButton);
-    expect(TopExpandButtonNode).toHaveLength(1);
-    expect(TopExpandButtonNode.prop('direction')).toBe(DIRECTION.UP);
-    expect(node).toMatchSnapshot();
+      // then
+      const ExpandButtonNode = node.find(Styled.PaneExpandButton);
+      expect(ExpandButtonNode).toHaveLength(0);
+      expect(node).toMatchSnapshot();
+    });
   });
 
-  it("should render TopExpandButton with DOWN icon if pane is TOP and it's not expanded", () => {
-    // given
-    const node = shallow(
-      <Pane
-        {...mockProps}
-        paneId={PANE_ID.TOP}
-        expandState={EXPAND_STATE.DEFAULT}
-      >
-        <Foo />
-      </Pane>
-    );
+  describe('bottom pane', () => {
+    it('should render ExpandButton with UP icon if pane is collapsed', () => {
+      // given
+      const node = shallow(
+        <Pane
+          {...mockProps}
+          paneId={PANE_ID.BOTTOM}
+          expandState={EXPAND_STATE.COLLAPSED}
+        >
+          <Foo />
+        </Pane>
+      );
 
-    // then
-    const TopExpandButtonNode = node.find(Styled.TopExpandButton);
-    expect(TopExpandButtonNode).toHaveLength(1);
-    expect(TopExpandButtonNode.prop('direction')).toBe(DIRECTION.DOWN);
-    expect(node).toMatchSnapshot();
-  });
+      // then
+      const ExpandButtonNode = node.find(Styled.PaneExpandButton);
+      expect(ExpandButtonNode).toHaveLength(1);
+      expect(ExpandButtonNode.prop('direction')).toBe(DIRECTION.UP);
+      expect(node).toMatchSnapshot();
+    });
 
-  it("should render BottomExpandButton with DOWN icon if pane is BOTTOM and it's expanded", () => {
-    // given
-    const node = shallow(
-      <Pane
-        {...mockProps}
-        paneId={PANE_ID.BOTTOM}
-        expandState={EXPAND_STATE.EXPANDED}
-      >
-        <Foo />
-      </Pane>
-    );
+    it("'should render both ExpandButtons by default", () => {
+      // given
+      const node = shallow(
+        <Pane
+          {...mockProps}
+          paneId={PANE_ID.BOTTOM}
+          expandState={EXPAND_STATE.DEFAULT}
+        >
+          <Foo />
+        </Pane>
+      );
 
-    // then
-    const BottomExpandButtonNode = node.find(Styled.BottomExpandButton);
-    expect(BottomExpandButtonNode).toHaveLength(1);
-    expect(BottomExpandButtonNode.prop('direction')).toBe(DIRECTION.DOWN);
-    expect(node).toMatchSnapshot();
-  });
+      // then
+      const ExpandButtonNodes = node.find(Styled.PaneExpandButton);
+      expect(ExpandButtonNodes).toHaveLength(2);
+      expect(ExpandButtonNodes.at(0).prop('direction')).toBe(DIRECTION.DOWN);
+      expect(ExpandButtonNodes.at(1).prop('direction')).toBe(DIRECTION.UP);
+      expect(node).toMatchSnapshot();
+    });
 
-  it("should render BottomExpandButton with UP icon if pane is BOTTOM and it's not expanded", () => {
-    // given
-    const node = shallow(
-      <Pane
-        {...mockProps}
-        paneId={PANE_ID.BOTTOM}
-        expandState={EXPAND_STATE.COLLAPSED}
-      >
-        <Foo />
-      </Pane>
-    );
+    it("should render ExpandButton with DOWN icon if pane is expanded'", () => {
+      // given
+      const node = shallow(
+        <Pane
+          {...mockProps}
+          paneId={PANE_ID.BOTTOM}
+          expandState={EXPAND_STATE.EXPANDED}
+        >
+          <Foo />
+        </Pane>
+      );
 
-    // then
-    const BottomExpandButtonNode = node.find(Styled.BottomExpandButton);
-    expect(BottomExpandButtonNode).toHaveLength(1);
-    expect(BottomExpandButtonNode.prop('direction')).toBe(DIRECTION.UP);
-    expect(node).toMatchSnapshot();
+      // then
+      const ExpandButtonNode = node.find(Styled.PaneExpandButton);
+      expect(ExpandButtonNode).toHaveLength(1);
+      expect(ExpandButtonNode.prop('direction')).toBe(DIRECTION.DOWN);
+      expect(node).toMatchSnapshot();
+    });
   });
 
   describe('handleExpand', () => {
@@ -119,15 +123,30 @@ describe('Pane', () => {
       mockProps.resetExpanded.mockClear();
     });
 
-    it('should call handleExpand with paneId', () => {
-      // given
-      const node = shallow(<Pane {...mockProps} />);
+    describe('handleTopExpand', () => {
+      it('should call handleExpand with PANE_ID.TOP', () => {
+        // given
+        const node = shallow(<Pane {...mockProps} />);
 
-      // when
-      expect(node.instance().handleExpand());
+        // when
+        expect(node.instance().handleTopExpand());
 
-      // then
-      expect(mockProps.handleExpand).toHaveBeenCalledWith(mockProps.paneId);
+        // then
+        expect(mockProps.handleExpand).toHaveBeenCalledWith(PANE_ID.TOP);
+      });
+    });
+
+    describe('handleBottomExpand', () => {
+      it('should call handleExpand with PANE_ID.BOTTOM', () => {
+        // given
+        const node = shallow(<Pane {...mockProps} />);
+
+        // when
+        expect(node.instance().handleBottomExpand());
+
+        // then
+        expect(mockProps.handleExpand).toHaveBeenCalledWith(PANE_ID.BOTTOM);
+      });
     });
   });
 });

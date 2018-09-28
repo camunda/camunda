@@ -20,6 +20,5 @@ export const Section = themed(styled.div`
 `);
 
 export const PaneFooter = styled(SplitPane.Pane.Footer)`
-  display: flex;
-  justify-content: flex-end;
+  text-align: right;
 `;
