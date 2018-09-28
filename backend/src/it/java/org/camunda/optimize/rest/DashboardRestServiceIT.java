@@ -1,5 +1,6 @@
 package org.camunda.optimize.rest;
 
+import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -8,9 +9,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.util.List;
 
@@ -30,10 +28,11 @@ public class DashboardRestServiceIT {
   @Test
   public void createNewDashboardWithoutAuthentication() {
     // when
-    Response response =
-      embeddedOptimizeRule.target("dashboard")
-        .request()
-        .post(Entity.json(""));
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .withoutAuthentication()
+            .buildCreateDashboardRequest()
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(401));
@@ -41,28 +40,24 @@ public class DashboardRestServiceIT {
 
   @Test
   public void createNewDashboard() {
-
     // when
-    Response response =
-      embeddedOptimizeRule.target("dashboard")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .post(Entity.json(""));
+    IdDto idDto = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCreateDashboardRequest()
+            .execute(IdDto.class, 200);
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(200));
-    IdDto idDto =
-      response.readEntity(IdDto.class);
     assertThat(idDto, is(notNullValue()));
   }
 
   @Test
   public void updateDashboardWithoutAuthentication() {
     // when
-    Response response =
-      embeddedOptimizeRule.target("dashboard/1")
-        .request()
-        .put(Entity.json(""));
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .withoutAuthentication()
+            .buildUpdateDashboardRequest("1", null)
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(401));
@@ -70,17 +65,14 @@ public class DashboardRestServiceIT {
 
   @Test
   public void updateDashboard() {
-
     //given
     String id = addEmptyDashboardToOptimize();
 
     // when
-    DashboardDefinitionDto dashboardDefinitionDto = new DashboardDefinitionDto();
-    Response response =
-      embeddedOptimizeRule.target("dashboard/" + id)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .put(Entity.json(dashboardDefinitionDto));
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildUpdateDashboardRequest(id, new DashboardDefinitionDto())
+            .execute();
 
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
@@ -89,10 +81,11 @@ public class DashboardRestServiceIT {
   @Test
   public void getStoredDashboardsWithoutAuthentication() {
     // when
-    Response response =
-      embeddedOptimizeRule.target("dashboard")
-        .request()
-        .get();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .withoutAuthentication()
+            .buildGetAllDashboardsRequest()
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(401));
@@ -100,8 +93,14 @@ public class DashboardRestServiceIT {
 
   @Test
   public void getStoredDashboards() {
+    OptimizeRequestExecutor requestExecutor = embeddedOptimizeRule
+            .getRequestExecutor();
+
     //given
-    String id = addEmptyDashboardToOptimize();
+    String id = requestExecutor
+            .buildCreateDashboardRequest()
+            .execute(IdDto.class, 200)
+            .getId();
 
     // when
     List<DashboardDefinitionDto> dashboards = getAllDashboards();
@@ -110,14 +109,14 @@ public class DashboardRestServiceIT {
     assertThat(dashboards.size(), is(1));
     assertThat(dashboards.get(0).getId(), is(id));
   }
-
   @Test
   public void getDashboardWithoutAuthentication() {
     // when
-    Response response =
-      embeddedOptimizeRule.target("dashboard/asdf")
-        .request()
-        .get();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .withoutAuthentication()
+            .buildGetDashboardRequest("asdf")
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(401));
@@ -129,16 +128,12 @@ public class DashboardRestServiceIT {
     String id = addEmptyDashboardToOptimize();
 
     // when
-    Response response =
-      embeddedOptimizeRule.target("dashboard/" + id)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .get();
+    DashboardDefinitionDto dashboard = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetDashboardRequest(id)
+            .execute(DashboardDefinitionDto.class, 200);
 
-    // then the status code is okay
-    assertThat(response.getStatus(), is(200));
-    DashboardDefinitionDto dashboard =
-      response.readEntity(DashboardDefinitionDto.class);
+    // then
     assertThat(dashboard, is(notNullValue()));
     assertThat(dashboard.getId(), is(id));
   }
@@ -146,24 +141,23 @@ public class DashboardRestServiceIT {
   @Test
   public void getDashboardForNonExistingIdThrowsError() {
     // when
-    Response response =
-      embeddedOptimizeRule.target("dashboard/FooId")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .get();
+    String response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetDashboardRequest("fooid")
+            .execute(String.class, 404);
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(404));
-    assertThat(response.readEntity(String.class).contains("Dashboard does not exist!"), is(true));
+    assertThat(response.contains("Dashboard does not exist!"), is(true));
   }
 
   @Test
   public void deleteDashboardWithoutAuthentication() {
     // when
-    Response response =
-        embeddedOptimizeRule.target("dashboard/1124")
-            .request()
-            .delete();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .withoutAuthentication()
+            .buildDeleteDashboardRequest("1124")
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(401));
@@ -175,11 +169,10 @@ public class DashboardRestServiceIT {
     String id = addEmptyDashboardToOptimize();
 
     // when
-    Response response =
-        embeddedOptimizeRule.target("dashboard/" + id)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .delete();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildDeleteDashboardRequest(id)
+            .execute();
 
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
@@ -187,24 +180,17 @@ public class DashboardRestServiceIT {
   }
 
   private String addEmptyDashboardToOptimize() {
-    Response response =
-      embeddedOptimizeRule.target("dashboard")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .post(Entity.json(""));
-
-    return response.readEntity(IdDto.class).getId();
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCreateDashboardRequest()
+            .execute(IdDto.class, 200)
+            .getId();
   }
 
   private List<DashboardDefinitionDto> getAllDashboards() {
-    Response response =
-      embeddedOptimizeRule.target("dashboard")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .get();
-
-    assertThat(response.getStatus(), is(200));
-    return response.readEntity(new GenericType<List<DashboardDefinitionDto>>() {
-    });
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetAllDashboardsRequest()
+            .executeAndReturnList(DashboardDefinitionDto.class, 200);
   }
 }

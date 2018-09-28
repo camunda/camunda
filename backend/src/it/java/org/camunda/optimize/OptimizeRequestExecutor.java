@@ -1,0 +1,249 @@
+package org.camunda.optimize;
+
+import com.fasterxml.jackson.databind.JavaType;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.type.TypeFactory;
+import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
+import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
+import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
+
+import javax.ws.rs.client.Entity;
+import javax.ws.rs.client.Invocation;
+import javax.ws.rs.client.WebTarget;
+import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.Response;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+
+import static org.camunda.optimize.AbstractAlertIT.ALERT;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
+
+public class OptimizeRequestExecutor {
+  private static final String PUT = "put";
+  private static final String GET = "get";
+  private static final String POST = "post";
+  private static final String DELETE = "delete";
+  private WebTarget client;
+  private String defaultAuthHeader;
+  private String authHeader;
+  private String path;
+  private String requestType;
+  private Entity body;
+
+  private ObjectMapper objectMapper;
+
+  public OptimizeRequestExecutor(WebTarget client, String defaultAuthToken, ObjectMapper objectMapper) {
+    this.client = client;
+    this.authHeader = defaultAuthToken;
+    this.defaultAuthHeader = defaultAuthToken;
+    this.objectMapper = objectMapper;
+  }
+
+
+  public OptimizeRequestExecutor withUserAuthentication(String username, String password) {
+    this.authHeader = authenticateUserRequest(username, password);
+    return this;
+  }
+
+  public OptimizeRequestExecutor withoutAuthentication() {
+    this.authHeader = null;
+    return this;
+  }
+
+
+
+  public Response execute() {
+    Invocation.Builder builder = client.path(this.path)
+            .request();
+
+    if (authHeader != null) {
+      builder.header(HttpHeaders.AUTHORIZATION, this.authHeader);
+    }
+
+    Response response = null;
+    switch (this.requestType) {
+      case GET:
+        response = builder.get();
+        break;
+      case POST:
+        response = builder.post(body);
+        break;
+      case PUT:
+        response = builder.put(body);
+        break;
+      case DELETE:
+        response = builder.delete();
+        break;
+    }
+
+    resetBuilder();
+    return response;
+  }
+
+  public <T> T execute(Class<T> clazz, int responseCode) {
+    Response response = execute();
+    assertThat(response.getStatus(), is(responseCode));
+    return response.readEntity(clazz);
+  }
+
+  public <T> List<T> executeAndReturnList(Class<T> clazz, int responseCode) {
+    Response response = execute();
+    assertThat(response.getStatus(), is(responseCode));
+    String jsonString = response.readEntity(String.class);
+    try {
+      TypeFactory factory = objectMapper.getTypeFactory();
+      JavaType listOfT = factory.constructCollectionType(List.class, clazz);
+      return objectMapper.readValue(jsonString, listOfT);
+    } catch (IOException e) {
+      e.printStackTrace();
+    }
+    return null;
+  }
+
+  private void resetBuilder() {
+    this.authHeader = defaultAuthHeader;
+    this.body = null;
+    this.path = null;
+    this.requestType = null;
+  }
+
+  public OptimizeRequestExecutor buildCreateAlertRequest(AlertCreationDto alert) {
+    this.body = Entity.json(alert);
+    this.path = ALERT;
+    this.requestType = POST;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildUpdateAlertRequest(String id, AlertCreationDto alert) {
+    this.body = Entity.json(alert);
+    this.path = ALERT + "/" + id;
+    this.requestType = PUT;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetAllAlertsRequest() {
+    this.path = ALERT;
+    this.requestType = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildDeleteAlertRequest(String id) {
+    this.path = ALERT + "/" + id;
+    this.requestType = DELETE;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildEmailNotificationIsEnabledRequest() {
+    this.path = "alert/email/isEnabled";
+    this.requestType = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildUpdateReportRequest(String id, ReportDefinitionDto entity) {
+    this.path = "report" + "/" + id;
+    this.body = entity == null ? Entity.json("") : Entity.json(entity);
+    this.requestType = PUT;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildCreateSingleReportRequest() {
+    this.path = "report/single";
+    this.requestType = POST;
+    this.body = Entity.json("");
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildCreateCombinedReportRequest() {
+    this.path = "report/combined";
+    this.requestType = POST;
+    this.body = Entity.json("");
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetReportRequest(String id) {
+    this.path = "report/" + id;
+    this.requestType = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildDeleteReportRequest(String id) {
+    this.path = "report/" + id;
+    this.requestType = DELETE;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetAllReportsRequest() {
+    this.requestType = GET;
+    this.path = "/report";
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildEvaluateSavedReportRequest(String id) {
+    this.path = "/report/" + id + "/evaluate";
+    this.requestType = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildEvaluateSingleUnsavedReportRequest(SingleReportDataDto entity) {
+    this.path = "report/evaluate/single";
+    this.body = Entity.json(entity);
+    this.requestType = POST;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildEvaluateCombinedUnsavedReportRequest(CombinedReportDataDto entity) {
+    this.path = "report/evaluate/combined";
+    this.requestType = POST;
+    this.body = Entity.json(entity);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildCreateDashboardRequest() {
+    this.requestType = POST;
+    this.body = Entity.json("");
+    this.path = "dashboard";
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildUpdateDashboardRequest(String id, DashboardDefinitionDto entity) {
+    this.path = "dashboard/" + id;
+    this.requestType = PUT;
+    this.body = entity == null ? Entity.json("") : Entity.json(entity);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetDashboardRequest(String id) {
+    this.path = "dashboard/" + id;
+    this.requestType = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetAllDashboardsRequest() {
+    this.path = "dashboard/";
+    this.requestType = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildDeleteDashboardRequest(String id) {
+    this.path = "dashboard/" + id;
+    this.requestType = DELETE;
+    return this;
+  }
+
+  private String authenticateUserRequest(String username, String password) {
+    CredentialsDto entity = new CredentialsDto();
+    entity.setUsername(username);
+    entity.setPassword(password);
+
+    Response response = client.path("authentication")
+            .request()
+            .post(Entity.json(entity));
+    return "Bearer " + response.readEntity(String.class);
+  }
+
+}

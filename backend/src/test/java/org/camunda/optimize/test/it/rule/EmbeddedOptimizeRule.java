@@ -1,8 +1,11 @@
 package org.camunda.optimize.test.it.rule;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
+import org.camunda.optimize.rest.providers.OptimizeObjectMapperProvider;
 import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.engine.importing.EngineImportScheduler;
 import org.camunda.optimize.service.engine.importing.EngineImportSchedulerFactory;
@@ -42,6 +45,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   private String context = null;
   private Logger logger = LoggerFactory.getLogger(EmbeddedOptimizeRule.class);
+  private OptimizeRequestExecutor requestExecutor;
 
   /**
    * 1. Reset import start indexes
@@ -154,12 +158,22 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     getOptimize().initializeSchema();
   }
 
+  public OptimizeRequestExecutor getRequestExecutor() {
+    return requestExecutor;
+  }
+  
   protected void starting(Description description) {
     try {
       startOptimize();
+      requestExecutor =
+        new OptimizeRequestExecutor(
+              getOptimize().target(),
+              getAuthorizationHeader(),
+              getApplicationContext().getBean(ObjectMapper.class)
+        );
       resetImportStartIndexes();
     } catch (Exception e) {
-      //nothing to do
+      //nothing to do here
     }
   }
 

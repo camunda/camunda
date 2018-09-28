@@ -22,8 +22,6 @@ import org.camunda.optimize.test.util.ReportDataHelper;
 import org.quartz.JobKey;
 import org.quartz.SchedulerException;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.sql.SQLException;
@@ -35,9 +33,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.*;
 import static org.camunda.optimize.test.util.ReportDataHelper.createAvgPiDurationAsNumberGroupByNone;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -53,12 +49,11 @@ public abstract class AbstractAlertIT {
   public EngineDatabaseRule engineDatabaseRule = new EngineDatabaseRule();
 
   protected String createAlert(AlertCreationDto simpleAlert) {
-    Response response =
-        embeddedOptimizeRule.target(ALERT)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .post(Entity.json(simpleAlert));
-    return response.readEntity(IdDto.class).getId();
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCreateAlertRequest(simpleAlert)
+            .execute(IdDto.class, 204)
+            .getId();
   }
 
   protected void triggerAndCompleteCheckJob(String id) throws SchedulerException, InterruptedException {
@@ -172,15 +167,12 @@ public abstract class AbstractAlertIT {
     return alertCreationDto;
   }
 
-  protected String createNewReportHelper() {
-    Response response =
-        embeddedOptimizeRule.target("report/single")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .post(Entity.json(""));
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(IdDto.class).getId();
+  private String createNewReportHelper() {
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCreateSingleReportRequest()
+            .execute(IdDto.class, 200)
+            .getId();
   }
 
 
@@ -212,11 +204,10 @@ public abstract class AbstractAlertIT {
   }
 
   protected void updateReport(String id, ReportDefinitionDto updatedReport) {
-    Response response =
-        embeddedOptimizeRule.target("report/" + id)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .put(Entity.json(updatedReport));
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildUpdateReportRequest(id, updatedReport)
+            .execute();
     assertThat(response.getStatus(), is(204));
   }
 
@@ -224,7 +215,7 @@ public abstract class AbstractAlertIT {
     return deploySimpleServiceTaskProcess("aProcess");
   }
 
-  protected ProcessDefinitionEngineDto deploySimpleServiceTaskProcess(String definitionKey) throws IOException {
+  private ProcessDefinitionEngineDto deploySimpleServiceTaskProcess(String definitionKey) throws IOException {
     BpmnModelInstance processModel = Bpmn.createExecutableProcess(definitionKey)
       .name("aProcessName")
         .startEvent()
@@ -239,7 +230,7 @@ public abstract class AbstractAlertIT {
     return createAndStoreDurationNumberReport(instanceEngineDto.getProcessDefinitionKey(), instanceEngineDto.getProcessDefinitionVersion());
   }
 
-  protected String createAndStoreDurationNumberReport(String processDefinitionKey, String processDefinitionVersion) {
+  private String createAndStoreDurationNumberReport(String processDefinitionKey, String processDefinitionVersion) {
     String id = createNewReportHelper();
     ReportDefinitionDto report =
       getDurationReportDefinitionDto(processDefinitionKey, processDefinitionVersion);
@@ -247,7 +238,7 @@ public abstract class AbstractAlertIT {
     return id;
   }
 
-  protected ReportDefinitionDto getDurationReportDefinitionDto(String processDefinitionKey, String processDefinitionVersion) {
+  private ReportDefinitionDto getDurationReportDefinitionDto(String processDefinitionKey, String processDefinitionVersion) {
     SingleReportDataDto reportData =
       createAvgPiDurationAsNumberGroupByNone(processDefinitionKey, processDefinitionVersion);
     SingleReportDefinitionDto report = new SingleReportDefinitionDto();

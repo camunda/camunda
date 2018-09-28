@@ -5,14 +5,10 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
-import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.util.List;
 
@@ -24,10 +20,9 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class AlertRestServiceIT extends AbstractAlertIT{
 
-  private static final String ALERT = "alert";
   private static final String TEST = "test";
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
-  public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
+
   @Rule
   public RuleChain chain = RuleChain
       .outerRule(elasticSearchRule).around(embeddedOptimizeRule);
@@ -35,10 +30,11 @@ public class AlertRestServiceIT extends AbstractAlertIT{
   @Test
   public void createNewAlertWithoutAuthentication() {
     // when
-    Response response =
-        embeddedOptimizeRule.target(ALERT)
-            .request()
-            .post(Entity.json(""));
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .withoutAuthentication()
+            .buildCreateAlertRequest(null)
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(401));
@@ -46,15 +42,11 @@ public class AlertRestServiceIT extends AbstractAlertIT{
 
   @Test
   public void cantCreateWithoutReport() {
-    //given
-
     // when
-    AlertCreationDto creationDto = new AlertCreationDto();
-    Response response =
-      embeddedOptimizeRule.target(ALERT)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .post(Entity.json(creationDto));
+    Response response = embeddedOptimizeRule
+    .getRequestExecutor()
+    .buildCreateAlertRequest(new AlertCreationDto())
+    .execute();
 
     // then
     assertThat(response.getStatus(), is(500));
@@ -68,11 +60,10 @@ public class AlertRestServiceIT extends AbstractAlertIT{
     creationDto.setReportId(TEST);
 
     // when
-    Response response =
-      embeddedOptimizeRule.target("alert/" + id)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .put(Entity.json(creationDto));
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildUpdateAlertRequest(id, creationDto)
+            .execute();
 
     // then
     assertThat(response.getStatus(), is(500));
@@ -84,16 +75,12 @@ public class AlertRestServiceIT extends AbstractAlertIT{
     AlertCreationDto creationDto = setupBasicAlert();
 
     // when
-    Response response =
-        embeddedOptimizeRule.target(ALERT)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .post(Entity.json(creationDto));
+    String id = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCreateAlertRequest(creationDto)
+            .execute(String.class, 200);
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(200));
-    String id =
-        response.readEntity(String.class);
     assertThat(id, is(notNullValue()));
   }
 
@@ -104,26 +91,23 @@ public class AlertRestServiceIT extends AbstractAlertIT{
     creationDto.setThreshold(Integer.MAX_VALUE + 1);
 
     // when
-    Response response =
-      embeddedOptimizeRule.target(ALERT)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .post(Entity.json(creationDto));
+    String id = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCreateAlertRequest(creationDto)
+            .execute(String.class, 200);
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(200));
-    String id =
-      response.readEntity(String.class);
     assertThat(id, is(notNullValue()));
   }
 
   @Test
   public void updateAlertWithoutAuthentication() {
     // when
-    Response response =
-        embeddedOptimizeRule.target("alert/1")
-            .request()
-            .put(Entity.json(new AlertCreationDto()));
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .withoutAuthentication()
+            .buildUpdateAlertRequest("1", new AlertCreationDto())
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(401));
@@ -131,7 +115,6 @@ public class AlertRestServiceIT extends AbstractAlertIT{
 
   @Test
   public void updateAlert() throws Exception {
-
     //given
     AlertCreationDto creationDto = setupBasicAlert();
     String id = addAlertToOptimize(creationDto);
@@ -139,11 +122,10 @@ public class AlertRestServiceIT extends AbstractAlertIT{
 
 
     // when
-    Response response =
-        embeddedOptimizeRule.target("alert/" + id)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .put(Entity.json(creationDto));
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildUpdateAlertRequest(id, creationDto)
+            .execute();
 
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
@@ -152,10 +134,11 @@ public class AlertRestServiceIT extends AbstractAlertIT{
   @Test
   public void getStoredAlertsWithoutAuthentication() {
     // when
-    Response response =
-        embeddedOptimizeRule.target(ALERT)
-            .request()
-            .get();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .withoutAuthentication()
+            .buildGetAllAlertsRequest()
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(401));
@@ -187,15 +170,12 @@ public class AlertRestServiceIT extends AbstractAlertIT{
     grantSingleDefinitionAuthorizationsForUser("kermit", "processDefinition1");
 
     // when
-    Response response =
-      embeddedOptimizeRule.target(ALERT)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthenticationHeaderForUser("kermit", "kermit"))
-        .get();
 
-    assertThat(response.getStatus(), is(200));
-    List<AlertDefinitionDto> allAlerts = response.readEntity(new GenericType<List<AlertDefinitionDto>>() {
-    });
+    List<AlertDefinitionDto> allAlerts = embeddedOptimizeRule
+            .getRequestExecutor()
+            .withUserAuthentication("kermit", "kermit")
+            .buildGetAllAlertsRequest()
+            .executeAndReturnList(AlertDefinitionDto.class, 200);
 
     // then
     assertThat(allAlerts.size(), is(1));
@@ -204,10 +184,11 @@ public class AlertRestServiceIT extends AbstractAlertIT{
   @Test
   public void deleteAlertWithoutAuthentication() {
     // when
-    Response response =
-        embeddedOptimizeRule.target("alert/1124")
-            .request()
-            .delete();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .withoutAuthentication()
+            .buildDeleteAlertRequest("1124")
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(401));
@@ -220,11 +201,10 @@ public class AlertRestServiceIT extends AbstractAlertIT{
     String id = addAlertToOptimize(creationDto);
 
     // when
-    Response response =
-        embeddedOptimizeRule.target("alert/" + id)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .delete();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildDeleteAlertRequest(id)
+            .execute();
 
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
@@ -234,10 +214,11 @@ public class AlertRestServiceIT extends AbstractAlertIT{
   @Test
   public void emailNotificationIsEnabledCheckWithoutAuthentication() {
     // when
-    Response response =
-        embeddedOptimizeRule.target( "alert/email/isEnabled")
-            .request()
-            .get();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .withoutAuthentication()
+            .buildEmailNotificationIsEnabledRequest()
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(401));
@@ -246,36 +227,27 @@ public class AlertRestServiceIT extends AbstractAlertIT{
   @Test
   public void emailNotificationIsEnabledCheckWithAuthentication() {
     // when
-    Response response =
-        embeddedOptimizeRule.target("alert/email/isEnabled")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .get();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildEmailNotificationIsEnabledRequest()
+            .execute();
 
     // then the status code is authorized
     assertThat(response.getStatus(), is(200));
   }
 
   private String addAlertToOptimize(AlertCreationDto creationDto) {
-    Response response =
-        embeddedOptimizeRule.target(ALERT)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .post(Entity.json(creationDto));
-
-    String id = response.readEntity(IdDto.class).getId();
-    return id;
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCreateAlertRequest(creationDto)
+            .execute(IdDto.class, 200)
+            .getId();
   }
 
   private List<AlertDefinitionDto> getAllAlerts() {
-    Response response =
-        embeddedOptimizeRule.target(ALERT)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .get();
-
-    assertThat(response.getStatus(), is(200));
-    return response.readEntity(new GenericType<List<AlertDefinitionDto>>() {
-    });
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetAllAlertsRequest()
+            .executeAndReturnList(AlertDefinitionDto.class, 200);
   }
 }
