@@ -29,6 +29,11 @@ export default class Typeahead extends React.Component {
         lastCommittedValue: value
       });
     }
+    if (this.props.disabled !== prevProps.disabled)
+      this.setState({
+        query: this.props.disabled ? this.props.placeholder : '',
+        lastCommittedValue: ''
+      });
   }
 
   componentWillUnmount() {
@@ -224,6 +229,7 @@ export default class Typeahead extends React.Component {
           onBlur={this.resetToLastCommitted}
           placeholder={this.props.placeholder}
           ref={this.inputRef}
+          disabled={this.props.disabled}
         />
         {optionsVisible &&
           values.length > 0 && (
@@ -242,7 +248,7 @@ export default class Typeahead extends React.Component {
                     style={valueStyle}
                     onMouseDown={evt => evt.preventDefault()}
                     onClick={this.selectValue(value)}
-                    key={formatter(value)}
+                    key={value && value.id ? value.id : index}
                   >
                     {formatters.getHighlightedText(formatter(value), this.state.query)}
                   </Dropdown.Option>

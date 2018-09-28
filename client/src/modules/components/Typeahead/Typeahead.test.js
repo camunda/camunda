@@ -90,3 +90,9 @@ it('should reset the query to the latest committed state when the input field bl
 
   expect(node).toHaveState('query', 'foo');
 });
+
+it('should disable the input field when disabled prop is set to true', () => {
+  const node = mount(<Typeahead values={['foo', 'bar']} disabled={true} />);
+
+  expect(node.find(Input)).toHaveProp('disabled', true);
+});

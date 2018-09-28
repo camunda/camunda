@@ -1,6 +1,15 @@
 import React from 'react';
 
-import {Modal, Button, Select, ControlGroup, Input, ErrorMessage} from 'components';
+import {
+  Modal,
+  Button,
+  Select,
+  ControlGroup,
+  Input,
+  ErrorMessage,
+  Typeahead,
+  LoadingIndicator
+} from 'components';
 
 import {loadEntity} from 'services';
 
@@ -11,7 +20,8 @@ export default class ReportModal extends React.Component {
     availableReports: null,
     selectedReportId: '',
     external: false,
-    externalUrl: ''
+    externalUrl: '',
+    error: false
   };
 
   componentDidMount = async () => {
@@ -22,9 +32,9 @@ export default class ReportModal extends React.Component {
     });
   };
 
-  selectReport = ({target: {value}}) => {
+  selectReport = ({id}) => {
     this.setState({
-      selectedReportId: value
+      selectedReportId: id
     });
   };
 
@@ -69,31 +79,23 @@ export default class ReportModal extends React.Component {
         <Modal.Header>Add a Report</Modal.Header>
         <Modal.Content>
           <ControlGroup layout="centered">
-            <label htmlFor="ReportModal__selectReports">Select a Report…</label>
-            <Select
-              disabled={noReports || loading || external}
-              value={selectedReportId}
-              onChange={this.selectReport}
-              name="ReportModal__selectReports"
-              className="ReportModal__selectReports"
-            >
-              {this.renderPleaseSelectOption(!noReports)}
-              {!loading &&
-                availableReports.map(report => {
-                  return (
-                    <Select.Option key={report.id} value={report.id}>
-                      {this.truncate(report.name, 50)}
-                    </Select.Option>
-                  );
-                })}
-              {loading ? (
-                <Select.Option>loading...</Select.Option>
-              ) : noReports ? (
-                <Select.Option>No reports created yet</Select.Option>
-              ) : (
-                ''
+            {!loading &&
+              !noReports && (
+                <Typeahead
+                  disabled={noReports || loading || external}
+                  placeholder="Please select Report"
+                  values={availableReports}
+                  onSelect={this.selectReport}
+                  formatter={({name}) => this.truncate(name, 90)}
+                />
               )}
-            </Select>
+            {loading ? (
+              <LoadingIndicator />
+            ) : noReports ? (
+              <p className="muted">No reports created yet</p>
+            ) : (
+              ''
+            )}
           </ControlGroup>
           <p className="ReportModal__externalSourceLink" onClick={this.toggleExternal}>
             {external ? '- Add Optimize Report' : '+ Add External Source'}

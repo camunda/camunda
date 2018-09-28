@@ -17,6 +17,9 @@ textarea {
   &[disabled],
   &[disabled='disabled'] {
     cursor: not-allowed;
+    color: graytext;
+    background-color: #f8f8f8;
+    border-color: #bbb;
   }
 
   &.isInvalid {

@@ -10,16 +10,21 @@ jest.mock('components', () => {
   Modal.Content = props => <div id="modal_content">{props.children}</div>;
   Modal.Actions = props => <div id="modal_actions">{props.children}</div>;
 
-  const Select = props => <select {...props}>{props.children}</select>;
-  Select.Option = props => <option {...props}>{props.children}</option>;
+  const Typeahead = props => (
+    <div>
+      {props.values.map((val, i) => <li key={i}>{props.formatter(val)}</li>)}
+      <div>{JSON.stringify(props)}</div>
+    </div>
+  );
 
   return {
     Modal,
-    Select,
     Button: props => <button {...props}>{props.children}</button>,
     ControlGroup: props => <div>{props.children}</div>,
     Input: ({isInvalid, ...props}) => <input {...props} />,
-    ErrorMessage: props => <div {...props} />
+    ErrorMessage: props => <div {...props} />,
+    LoadingIndicator: () => <div className="sk-circle">Loading...</div>,
+    Typeahead
   };
 });
 
@@ -35,7 +40,7 @@ it('should load the available reports', () => {
   expect(loadEntity).toHaveBeenCalled();
 });
 
-it('should render a select element with the available reports as options', () => {
+it('should render a Typeahead element with the available reports as options', () => {
   const node = mount(<ReportModal />);
 
   node.setState({
@@ -51,10 +56,10 @@ it('should render a select element with the available reports as options', () =>
     ]
   });
 
-  expect(node.find('select')).toBePresent();
-  expect(node.find('select')).toIncludeText('Please select...');
-  expect(node.find('select')).toIncludeText('Report A');
-  expect(node.find('select')).toIncludeText('Report B');
+  expect(node.find('Typeahead')).toBePresent();
+  expect(node.find('Typeahead')).toIncludeText('Please select Report');
+  expect(node.find('Typeahead')).toIncludeText('Report A');
+  expect(node.find('Typeahead')).toIncludeText('Report B');
 });
 
 it('should call the callback when adding a report', () => {
@@ -85,31 +90,32 @@ it('should call the callback when adding a report', () => {
 it('should show only "No reports created yet" option if no reports are available', async () => {
   const node = await mount(<ReportModal />);
 
-  expect(node.find('select')).toIncludeText('No reports created yet');
-  expect(node.find('select')).not.toIncludeText('Please select...');
+  expect(node).toIncludeText('No reports created yet');
+  expect(node).not.toIncludeText('Please select Report');
 });
 
 it('should show a loading message while loading available reports', () => {
   const node = mount(<ReportModal />);
 
-  expect(node.find('select')).toIncludeText('loading...');
-  expect(node.find('select')).not.toIncludeText('Please select...');
-  expect(node.find('select')).not.toIncludeText('No reports created yet');
+  expect(node.find('.sk-circle')).toBePresent();
+  expect(node).not.toIncludeText('Please select Report');
+  expect(node).not.toIncludeText('No reports created yet');
 });
 
-it("should truncate report name if it's longer than 50 signs", () => {
+it("should truncate report name if it's longer than 90 signs", () => {
   const node = mount(<ReportModal />);
 
   node.setState({
     availableReports: [
       {
         id: 'anId',
-        name: 'a super long name that should be definitely longer than 50 signs.'
+        name:
+          'a super long name that should be definitely longer longer longer longer longer longer than 90 signs.'
       }
     ]
   });
 
-  expect(node.find('option[value="anId"]').text().length).toBeLessThanOrEqual(50);
+  expect(node.find('Typeahead li').text().length).toBeLessThanOrEqual(90);
 });
 
 it('should contain an Add External Source field', () => {
@@ -135,10 +141,10 @@ it('should show an error and disable the submit button if the url does not start
   expect(node).toIncludeText('URL has to start with http:// or https://');
 });
 
-it('should disable the dropdown when external mode is enabled', () => {
+it('should disable the typeahead when external mode is enabled', () => {
   const node = mount(<ReportModal />);
 
-  node.setState({external: true});
+  node.setState({external: true, availableReports: [{name: 'test name'}]});
 
-  expect(node.find('select')).toBeDisabled();
+  expect(node.find('Typeahead')).toBeDisabled();
 });
