@@ -25,6 +25,7 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
@@ -47,6 +48,7 @@ public class TypedStreamEnvironment {
     EVENT_REGISTRY.put(
         ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION, WorkflowInstanceSubscriptionRecord.class);
     EVENT_REGISTRY.put(ValueType.EXPORTER, ExporterRecord.class);
+    EVENT_REGISTRY.put(ValueType.JOB_BATCH, JobBatchRecord.class);
   }
 
   private TypedStreamReader reader;

@@ -104,15 +104,19 @@ public class JobStateController extends KeyStateController {
   }
 
   public void activate(final TypedRecord<JobRecord> record) {
-    final DirectBuffer type = record.getValue().getType();
-    final long key = record.getKey(), deadline = record.getValue().getDeadline();
+    activate(record.getKey(), record.getValue());
+  }
+
+  public void activate(final long key, final JobRecord record) {
+    final DirectBuffer type = record.getType();
+    final long deadline = record.getDeadline();
     final DirectBuffer valueBuffer;
     DirectBuffer keyBuffer;
 
     try (final WriteOptions options = new WriteOptions().setSync(true);
         final ZbWriteBatch batch = new ZbWriteBatch()) {
       keyBuffer = getDefaultKey(key);
-      valueBuffer = writeValue(record.getValue());
+      valueBuffer = writeValue(record);
       batch.put(defaultColumnFamily, keyBuffer, valueBuffer);
 
       keyBuffer = getStatesKey(key, type, State.ACTIVATABLE);
@@ -302,7 +306,7 @@ public class JobStateController extends KeyStateController {
   }
 
   private UnsafeBuffer getStatesKey(final long key, final DirectBuffer type, final State state) {
-    final UnsafeBuffer prefix = getStatesPrefix(type, state);
+    final DirectBuffer prefix = getStatesPrefix(type, state);
     keyBuffer.putLong(prefix.capacity(), key);
 
     return new UnsafeBuffer(keyBuffer, prefix.wrapAdjustment(), prefix.capacity() + Long.BYTES);

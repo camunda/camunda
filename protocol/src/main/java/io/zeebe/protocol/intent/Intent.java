@@ -77,6 +77,8 @@ public interface Intent {
         return WorkflowInstanceSubscriptionIntent.from(intent);
       case EXPORTER:
         return ExporterIntent.from(intent);
+      case JOB_BATCH:
+        return JobBatchIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
@@ -109,6 +111,10 @@ public interface Intent {
         return MessageSubscriptionIntent.valueOf(intent);
       case WORKFLOW_INSTANCE_SUBSCRIPTION:
         return WorkflowInstanceSubscriptionIntent.valueOf(intent);
+      case EXPORTER:
+        return ExporterIntent.valueOf(intent);
+      case JOB_BATCH:
+        return JobBatchIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;

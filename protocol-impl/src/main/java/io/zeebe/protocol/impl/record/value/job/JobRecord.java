@@ -122,8 +122,9 @@ public class JobRecord extends UnpackedObject {
     customHeadersProp.setValue(buffer, offset, length);
   }
 
-  public void setCustomHeaders(DirectBuffer buffer) {
+  public JobRecord setCustomHeaders(DirectBuffer buffer) {
     customHeadersProp.setValue(buffer, 0, buffer.capacity());
+    return this;
   }
 
   public DirectBuffer getCustomHeaders() {
