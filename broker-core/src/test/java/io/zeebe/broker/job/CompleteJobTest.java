@@ -96,7 +96,7 @@ public class CompleteJobTest {
     assertThat(response.intent()).isEqualTo(JobIntent.COMPLETE);
     assertThat(response.sourceRecordPosition()).isEqualTo(completeEvent.position());
     assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.rejectionReason()).isEqualTo("Job is not in state: ACTIVATED, TIMED_OUT");
+    assertThat(response.rejectionReason()).isEqualTo("Job does not exist");
   }
 
   @Test
@@ -218,22 +218,27 @@ public class CompleteJobTest {
     // then
     assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.rejectionReason()).isEqualTo("Job is not in state: ACTIVATED, TIMED_OUT");
+    assertThat(response.rejectionReason()).isEqualTo("Job does not exist");
     assertThat(response.intent()).isEqualTo(JobIntent.COMPLETE);
   }
 
   @Test
-  public void shouldRejectCompletionIfJobNotActivated() {
+  public void shouldRejectCompletionIfJobIsFailed() {
     // given
     final ExecuteCommandResponse job = createJob(JOB_TYPE);
+    assertThat(job.recordType()).isEqualTo(RecordType.EVENT);
 
     // when
-    final ExecuteCommandResponse response = completeJob(job.key(), job.getValue());
+    apiRule.openJobSubscription(JOB_TYPE).await();
+    final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
+    failJob(subscribedEvent.key(), subscribedEvent.value());
+    final ExecuteCommandResponse response =
+        completeJob(subscribedEvent.key(), subscribedEvent.value());
 
     // then
     assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.rejectionReason()).isEqualTo("Job is not in state: ACTIVATED, TIMED_OUT");
+    assertThat(response.rejectionReason()).isEqualTo("Job is failed and must be resolved first");
     assertThat(response.intent()).isEqualTo(JobIntent.COMPLETE);
   }
 
@@ -289,6 +294,18 @@ public class CompleteJobTest {
         .key(key)
         .command()
         .putAll(event)
+        .done()
+        .sendAndAwait();
+  }
+
+  private void failJob(final long key, final Map<String, Object> event) {
+    apiRule
+        .createCmdRequest()
+        .type(ValueType.JOB, JobIntent.FAIL)
+        .key(key)
+        .command()
+        .putAll(event)
+        .put("retries", 0)
         .done()
         .sendAndAwait();
   }

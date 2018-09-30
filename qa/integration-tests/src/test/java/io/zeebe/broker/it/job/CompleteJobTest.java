@@ -150,6 +150,7 @@ public class CompleteJobTest {
     final JobClient jobClient = clientRule.getClient().jobClient();
 
     final JobEvent job = jobClient.newCreateCommand().jobType("bar").send().join();
+    jobClient.newCompleteCommand(job).send().join();
 
     // then
     thrown.expect(ClientCommandRejectedException.class);
@@ -157,7 +158,7 @@ public class CompleteJobTest {
         "Command (COMPLETE) for event with key "
             + job.getKey()
             + " was rejected. It is not applicable in the current state. "
-            + "Job is not in state: ACTIVATED, TIMED_OUT");
+            + "Job does not exist");
 
     // when
     jobClient.newCompleteCommand(job).send().join();

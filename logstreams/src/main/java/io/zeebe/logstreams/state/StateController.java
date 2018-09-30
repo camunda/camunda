@@ -71,8 +71,8 @@ public class StateController implements AutoCloseable {
   protected File dbDirectory;
   protected List<AutoCloseable> closeables = new ArrayList<>();
 
-  private final List<ColumnFamilyDescriptor> columnFamilyDescriptors = new ArrayList<>();
-  private final List<ColumnFamilyHandle> columnFamilyHandles = new ArrayList<>();
+  protected final List<ColumnFamilyDescriptor> columnFamilyDescriptors = new ArrayList<>();
+  protected final List<ColumnFamilyHandle> columnFamilyHandles = new ArrayList<>();
 
   final DirectBuffer prefixBuffer = new UnsafeBuffer(0, 0);
   final DirectBuffer prefixKeyCheckBuffer = new UnsafeBuffer(0, 0);
@@ -93,7 +93,7 @@ public class StateController implements AutoCloseable {
                 .setErrorIfExists(!reopen)
                 .setCreateIfMissing(!reopen);
         closeables.add(options);
-        db = openDB(options);
+        db = openDb(options);
         closeables.add(db);
         isOpened = true;
 
@@ -109,19 +109,8 @@ public class StateController implements AutoCloseable {
     return db;
   }
 
-  public ColumnFamilyHandle getColumnFamilyHandle(byte[] name) {
-    return columnFamilyHandles
-        .stream()
-        .filter(
-            handle -> {
-              try {
-                return Arrays.equals(handle.getName(), name);
-              } catch (Exception ex) {
-                throw new RuntimeException(ex);
-              }
-            })
-        .findAny()
-        .orElse(null);
+  protected RocksDB openDb(final Options options) throws RocksDBException {
+    return RocksDB.open(options, dbDirectory.getAbsolutePath());
   }
 
   protected RocksDB open(
@@ -142,12 +131,7 @@ public class StateController implements AutoCloseable {
                 .setCreateIfMissing(!reopen);
 
         closeables.add(dbOptions);
-        db =
-            RocksDB.open(
-                dbOptions,
-                dbDirectory.getAbsolutePath(),
-                columnFamilyDescriptors,
-                columnFamilyHandles);
+        db = openDb(dbOptions);
         closeables.add(db);
         isOpened = true;
 
@@ -163,6 +147,26 @@ public class StateController implements AutoCloseable {
     return db;
   }
 
+  protected RocksDB openDb(DBOptions dbOptions) throws RocksDBException {
+    return RocksDB.open(
+        dbOptions, dbDirectory.getAbsolutePath(), columnFamilyDescriptors, columnFamilyHandles);
+  }
+
+  public ColumnFamilyHandle getColumnFamilyHandle(byte[] name) {
+    return columnFamilyHandles
+        .stream()
+        .filter(
+            handle -> {
+              try {
+                return Arrays.equals(handle.getName(), name);
+              } catch (Exception ex) {
+                throw new RuntimeException(ex);
+              }
+            })
+        .findAny()
+        .orElse(null);
+  }
+
   private void createFamilyDescriptors(
       List<byte[]> columnFamilyNames, ColumnFamilyOptions columnFamilyOptions) {
     final ColumnFamilyDescriptor defaultFamilyDescriptor =
@@ -176,10 +180,6 @@ public class StateController implements AutoCloseable {
         columnFamilyDescriptors.add(columnFamilyDescriptor);
       }
     }
-  }
-
-  protected RocksDB openDB(final Options options) throws RocksDBException {
-    return RocksDB.open(options, dbDirectory.getAbsolutePath());
   }
 
   protected Options createOptions() {

@@ -1173,7 +1173,7 @@ public class IncidentTest {
             .type(ValueType.JOB, JobIntent.FAIL)
             .command()
             .put("retries", 0)
-            .put("type", "failingTask")
+            .put("type", "test")
             .put("worker", jobEvent.value().get("worker"))
             .put("headers", jobEvent.value().get("headers"))
             .done()

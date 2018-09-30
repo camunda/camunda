@@ -15,20 +15,27 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.job.processor;
+package io.zeebe.broker.job.old;
 
 import java.util.Iterator;
+import org.agrona.DirectBuffer;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.Long2LongHashMap;
 
 public class JobSubscriptions implements Iterable<JobSubscription> {
-
   protected JobSubscription[] subscriptions;
   protected Long2LongHashMap lookupTable = new Long2LongHashMap(-1);
   protected int totalCredits = 0;
+  protected DirectBuffer type;
+  private final SubscriptionIterator iterator = new SubscriptionIterator();
 
-  public JobSubscriptions(int initialCapacity) {
+  public JobSubscriptions(final DirectBuffer type, int initialCapacity) {
+    this.type = type;
     this.subscriptions = new JobSubscription[initialCapacity];
+  }
+
+  public DirectBuffer getType() {
+    return type;
   }
 
   public void addSubscription(JobSubscription subscription) {
@@ -73,7 +80,7 @@ public class JobSubscriptions implements Iterable<JobSubscription> {
 
   @Override
   public SubscriptionIterator iterator() {
-    return new SubscriptionIterator();
+    return iterator;
   }
 
   public void addCredits(long subscriberKey, int credits) {

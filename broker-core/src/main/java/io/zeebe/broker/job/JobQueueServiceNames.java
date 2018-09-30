@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.job;
 
+import io.zeebe.broker.job.old.JobSubscriptionManager;
 import io.zeebe.servicecontainer.ServiceName;
 
 public class JobQueueServiceNames {

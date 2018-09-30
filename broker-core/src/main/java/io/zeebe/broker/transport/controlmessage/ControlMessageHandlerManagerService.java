@@ -22,7 +22,7 @@ import io.zeebe.broker.clustering.base.topology.RequestTopologyHandler;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.event.handler.RemoveTopicSubscriptionHandler;
 import io.zeebe.broker.event.processor.TopicSubscriptionService;
-import io.zeebe.broker.job.JobSubscriptionManager;
+import io.zeebe.broker.job.old.JobSubscriptionManager;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.servicecontainer.Injector;

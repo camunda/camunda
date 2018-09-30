@@ -15,14 +15,13 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.job.processor;
+package io.zeebe.broker.job;
 
 import static io.zeebe.protocol.intent.JobIntent.ACTIVATE;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.job.JobQueueManagerService;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
@@ -132,7 +131,7 @@ public class JobTimeOutTest {
     // when expired
     doRepeatedly(
             () -> {
-              brokerRule.getClock().addTime(JobQueueManagerService.TIME_OUT_INTERVAL);
+              brokerRule.getClock().addTime(JobStreamProcessor.TIME_OUT_POLLING_INTERVAL);
             })
         .until(v -> apiRule.numSubscribedEventsAvailable() == 1);
 
@@ -169,7 +168,7 @@ public class JobTimeOutTest {
     // when expired
     doRepeatedly(
             () -> {
-              brokerRule.getClock().addTime(JobQueueManagerService.TIME_OUT_INTERVAL);
+              brokerRule.getClock().addTime(JobStreamProcessor.TIME_OUT_POLLING_INTERVAL);
             })
         .until(v -> apiRule.numSubscribedEventsAvailable() == 1);
 
@@ -209,7 +208,7 @@ public class JobTimeOutTest {
     // when
     doRepeatedly(
             () -> {
-              brokerRule.getClock().addTime(JobQueueManagerService.TIME_OUT_INTERVAL);
+              brokerRule.getClock().addTime(JobStreamProcessor.TIME_OUT_POLLING_INTERVAL);
             })
         .until(v -> apiRule.numSubscribedEventsAvailable() == 2);
 
@@ -221,7 +220,7 @@ public class JobTimeOutTest {
         .filteredOn(e -> e.intent() == JobIntent.ACTIVATED)
         .hasSize(4)
         .extracting(e -> e.key())
-        .containsExactly(jobKey1, jobKey2, jobKey1, jobKey2);
+        .containsExactlyInAnyOrder(jobKey1, jobKey2, jobKey1, jobKey2);
 
     assertThat(expiredEvents)
         .filteredOn(e -> e.intent() == JobIntent.TIMED_OUT)
