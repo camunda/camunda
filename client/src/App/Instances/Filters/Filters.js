@@ -110,12 +110,7 @@ export default class Filters extends React.Component {
     const {value, name} = event.target;
 
     if (this.state.filter[name] !== value) {
-      this.setState({
-        filter: {
-          ...this.state.filter,
-          [name]: value
-        }
-      });
+      this.handleInputChange(event);
     }
 
     this.props.onFilterChange({[name]: value});
@@ -123,12 +118,12 @@ export default class Filters extends React.Component {
 
   // handler for controlled inputs
   handleInputChange = event => {
-    const {name} = event.target;
+    const {value, name} = event.target;
 
     this.setState({
       filter: {
         ...this.state.filter,
-        [name]: event.target.value
+        [name]: value
       }
     });
   };
