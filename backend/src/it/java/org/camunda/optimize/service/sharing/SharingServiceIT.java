@@ -527,10 +527,10 @@ public class SharingServiceIT extends AbstractSharingIT {
     this.addShareForReport(reportId);
 
     // when
-    embeddedOptimizeRule.target("report/" + reportId)
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-      .delete();
+    embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildDeleteReportRequest(reportId)
+            .execute();
 
     //then
     ReportShareDto share = getShareForReport(reportId);

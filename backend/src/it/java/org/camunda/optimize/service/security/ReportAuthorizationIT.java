@@ -56,10 +56,11 @@ public class ReportAuthorizationIT {
     String reportId = createReportForDefinition("aprocess");
 
     // when
-    Response response = embeddedOptimizeRule.target("report/" + reportId + "/evaluate")
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, createAuthenticationHeaderForKermit())
-      .get();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .withUserAuthentication("kermit", "kermit")
+            .buildEvaluateSavedReportRequest(reportId)
+            .execute();
 
     // then
     assertThat(response.getStatus(), is(403));
@@ -75,10 +76,11 @@ public class ReportAuthorizationIT {
     String reportId = createReportForDefinition("aprocess");
 
     // when
-    Response response = embeddedOptimizeRule.target("report/" + reportId)
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, createAuthenticationHeaderForKermit())
-      .delete();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .withUserAuthentication("kermit", "kermit")
+            .buildDeleteReportRequest(reportId)
+            .execute();
 
     // then
     assertThat(response.getStatus(), is(403));
@@ -93,11 +95,12 @@ public class ReportAuthorizationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    ReportDefinitionDto definition = constructReportWithDefinition("aprocess");
-    Response response = embeddedOptimizeRule.target("report/evaluate/single")
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, createAuthenticationHeaderForKermit())
-      .post(Entity.json(definition.getData()));
+    SingleReportDefinitionDto definition = constructReportWithDefinition("aprocess");
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .withUserAuthentication("kermit", "kermit")
+            .buildEvaluateSingleUnsavedReportRequest(definition.getData())
+            .execute();
 
     // then
     assertThat(response.getStatus(), is(403));
@@ -114,10 +117,11 @@ public class ReportAuthorizationIT {
     ReportDefinitionDto updatedReport = createReportUpdate();
 
     // when
-    Response response = embeddedOptimizeRule.target("report/" + reportId)
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, createAuthenticationHeaderForKermit())
-      .put(Entity.json(updatedReport));
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .withUserAuthentication("kermit", "kermit")
+            .buildUpdateReportRequest(reportId, updatedReport)
+            .execute();
 
     // then
     assertThat(response.getStatus(), is(403));
@@ -133,10 +137,11 @@ public class ReportAuthorizationIT {
     String reportId = createReportForDefinition("aprocess");
 
     // when
-    Response response = embeddedOptimizeRule.target("report/" + reportId)
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, createAuthenticationHeaderForKermit())
-      .get();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .withUserAuthentication("kermit", "kermit")
+            .buildGetReportRequest(reportId)
+            .execute();
 
     // then
     assertThat(response.getStatus(), is(403));
@@ -173,23 +178,22 @@ public class ReportAuthorizationIT {
     String reportId = createNewReport();
 
     // when
-    Response response = embeddedOptimizeRule.target("report/" + reportId)
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, createAuthenticationHeaderForKermit())
-      .get();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetReportRequest(reportId)
+            .execute();
 
     // then
     assertThat(response.getStatus(), is(200));
 
     // when
-    response = embeddedOptimizeRule.target("report/")
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, createAuthenticationHeaderForKermit())
-      .get();
+    List<ReportDefinitionDto> reports = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetReportRequest(reportId)
+            .withUserAuthentication("kermit", "kermit")
+            .executeAndReturnList(ReportDefinitionDto.class, 200);
 
     // then
-    assertThat(response.getStatus(), is(200));
-    List<ReportDefinitionDto> reports = response.readEntity(new GenericType<List<ReportDefinitionDto>>(){});
     assertThat(reports.size(), is(1));
   }
 
@@ -208,14 +212,14 @@ public class ReportAuthorizationIT {
 
     // when
     CombinedReportDataDto combinedReport = createCombinedReport(authorizedReportId, notAuthorizedReportId);
-    Response response = embeddedOptimizeRule.target("report/evaluate/combined")
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, createAuthenticationHeaderForKermit())
-      .post(Entity.json(combinedReport));
+
+    CombinedMapReportResultDto result = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildEvaluateCombinedUnsavedReportRequest(combinedReport)
+            .withUserAuthentication("kermit", "kermit")
+            .execute(CombinedMapReportResultDto.class, 200);
 
     // then
-    assertThat(response.getStatus(), is(200));
-    CombinedMapReportResultDto result = response.readEntity(CombinedMapReportResultDto.class);
     Map<String, MapSingleReportResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(1));
     assertThat(resultMap.containsKey(notAuthorizedReportId), is(false));
@@ -233,16 +237,6 @@ public class ReportAuthorizationIT {
     engineRule.createAuthorization(authorizationDto);
   }
 
-  private String createNewCombinedReport() {
-    Response response =
-      embeddedOptimizeRule.target("report/combined")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .post(Entity.json(""));
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(IdDto.class).getId();
-  }
 
   private String createNewSingleMapReport(String processDefinitionKey) {
     String singleReportId = createNewReport();
@@ -282,13 +276,11 @@ public class ReportAuthorizationIT {
   }
 
   public String createNewReport() {
-    Response response =
-      embeddedOptimizeRule.target("report/single")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .post(Entity.json(""));
-    assertThat(response.getStatus(), is(200));
-    return response.readEntity(IdDto.class).getId();
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCreateSingleReportRequest()
+            .execute(IdDto.class, 200)
+            .getId();
   }
 
   private void updateReport(String id, ReportDefinitionDto updatedReport) {
@@ -296,7 +288,7 @@ public class ReportAuthorizationIT {
     assertThat(response.getStatus(), is(204));
   }
 
-  private ReportDefinitionDto constructReportWithDefinition(String processDefinitionKey) {
+  private SingleReportDefinitionDto constructReportWithDefinition(String processDefinitionKey) {
     SingleReportDefinitionDto reportDefinitionDto = new SingleReportDefinitionDto();
     SingleReportDataDto data = createReportDataViewRawAsTable(processDefinitionKey, "1");
     reportDefinitionDto.setData(data);
@@ -304,10 +296,10 @@ public class ReportAuthorizationIT {
   }
 
   private Response getUpdateReportResponse(String id, ReportDefinitionDto updatedReport) {
-    return embeddedOptimizeRule.target("report/" + id)
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-      .put(Entity.json(updatedReport));
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildUpdateReportRequest(id, updatedReport)
+            .execute();
   }
 
   private String createAuthenticationHeaderForKermit() {

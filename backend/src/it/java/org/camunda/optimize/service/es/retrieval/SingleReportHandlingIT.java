@@ -482,14 +482,11 @@ public class SingleReportHandlingIT {
   }
 
   private String createNewReport() {
-    Response response =
-      embeddedOptimizeRule.target("report/single")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .post(Entity.json(""));
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(IdDto.class).getId();
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCreateSingleReportRequest()
+            .execute(IdDto.class, 200)
+            .getId();
   }
 
   private void updateReport(String id, ReportDefinitionDto updatedReport) {
@@ -498,20 +495,17 @@ public class SingleReportHandlingIT {
   }
 
   private Response getUpdateReportResponse(String id, ReportDefinitionDto updatedReport) {
-    return embeddedOptimizeRule.target("report/" + id)
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-      .put(Entity.json(updatedReport));
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildUpdateReportRequest(id, updatedReport)
+            .execute();
   }
 
   private RawDataSingleReportResultDto evaluateRawDataReportById(String reportId) {
-    Response response = embeddedOptimizeRule.target("report/" + reportId + "/evaluate")
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-      .get();
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(RawDataSingleReportResultDto.class);
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildEvaluateSavedReportRequest(reportId)
+            .execute(RawDataSingleReportResultDto.class, 200);
   }
 
   private List<SingleReportDefinitionDto> getAllReports() {
@@ -519,19 +513,10 @@ public class SingleReportHandlingIT {
   }
 
   private List<SingleReportDefinitionDto> getAllReportsWithQueryParam(Map<String, Object> queryParams) {
-    WebTarget webTarget = embeddedOptimizeRule.target("report");
-    for (Map.Entry<String, Object> queryParam : queryParams.entrySet()) {
-      webTarget = webTarget.queryParam(queryParam.getKey(), queryParam.getValue());
-    }
-
-    Response response =
-      webTarget
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .get();
-
-    assertThat(response.getStatus(), is(200));
-    return response.readEntity(new GenericType<List<SingleReportDefinitionDto>>() {
-    });
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetAllReportsRequest()
+            .addQueryParams(queryParams)
+            .executeAndReturnList(SingleReportDefinitionDto.class, 200);
   }
 }

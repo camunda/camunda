@@ -52,10 +52,10 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     triggerAndCompleteCheckJob(id);
 
     //when
-    embeddedOptimizeRule.target("alert/" + id)
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-      .delete();
+    embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildDeleteAlertRequest(id)
+            .execute();
 
     //then
     assertThat(
@@ -72,11 +72,10 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     triggerAndCompleteCheckJob(id);
 
     //when
-    embeddedOptimizeRule.target("report/" + simpleAlert.getReportId())
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-      .delete();
-
+    embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildDeleteReportRequest(simpleAlert.getReportId())
+            .execute();
     //then
     assertThat(
       embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
@@ -101,15 +100,10 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
 
 
   private List<AlertDefinitionDto> getAllAlerts() {
-    Response response =
-            embeddedOptimizeRule.target(ALERT)
-                    .request()
-                    .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-                    .get();
-
-    assertThat(response.getStatus(), is(200));
-    return response.readEntity(new GenericType<List<AlertDefinitionDto>>() {
-    });
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetAllAlertsRequest()
+            .executeAndReturnList(AlertDefinitionDto.class, 200);
   }
 
   @Test
@@ -208,10 +202,10 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     //when
     simpleAlert.getCheckInterval().setValue(30);
 
-    embeddedOptimizeRule.target("alert/" + id)
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-      .put(Entity.json(simpleAlert));
+    embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildUpdateAlertRequest(id, simpleAlert)
+            .execute();
 
     //then
     assertThat(
@@ -235,17 +229,15 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     AlertCreationDto simpleAlert = createBasicAlertWithReminder();
 
     // when
-    Response response =
-      embeddedOptimizeRule.target(ALERT)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .post(Entity.json(simpleAlert));
-    String id = response.readEntity(IdDto.class).getId();
+    String id = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCreateAlertRequest(simpleAlert)
+            .execute(IdDto.class, 200)
+            .getId();
 
     triggerAndCompleteCheckJob(id);
 
     // then
-    assertThat(response.getStatus(), is(200));
     assertThat(
       embeddedOptimizeRule.getAlertService().getScheduler().getJobGroupNames().size(),
       is(2)
@@ -262,13 +254,12 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     simpleAlert.setCheckInterval(checkInterval);
 
     // when
-    Response response =
-      embeddedOptimizeRule.target(ALERT)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .post(Entity.json(simpleAlert));
-    assertThat(response.getStatus(), is(200));
-    String id = response.readEntity(IdDto.class).getId();
+    String id = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCreateAlertRequest(simpleAlert)
+            .execute(IdDto.class, 200)
+            .getId();
+
     triggerAndCompleteCheckJob(id);
 
     // then

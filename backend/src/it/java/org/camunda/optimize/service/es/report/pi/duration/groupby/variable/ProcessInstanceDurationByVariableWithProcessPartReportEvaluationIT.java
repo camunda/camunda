@@ -705,13 +705,6 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     return response.readEntity(MapSingleReportResultDto.class);
   }
 
-  private Response evaluateReportAndReturnResponse(SingleReportDataDto reportData) {
-    return embeddedOptimizeRule.target("report/evaluate/single")
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-      .post(Entity.json(reportData));
-  }
-
   private String createAndStoreDefaultReportDefinition(SingleReportDataDto reportData) {
     String id = createNewReport();
 
@@ -727,34 +720,35 @@ public class ProcessInstanceDurationByVariableWithProcessPartReportEvaluationIT 
     return id;
   }
 
+  private Response evaluateReportAndReturnResponse(SingleReportDataDto reportData) {
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildEvaluateSingleUnsavedReportRequest(reportData)
+            .execute();
+  }
+
   private void updateReport(String id, ReportDefinitionDto updatedReport) {
-    Response response =
-      embeddedOptimizeRule.target("report/" + id)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .put(Entity.json(updatedReport));
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildUpdateReportRequest(id, updatedReport)
+            .execute();
+
     assertThat(response.getStatus(), is(204));
   }
 
   private String createNewReport() {
-    Response response =
-      embeddedOptimizeRule.target("report/single")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .post(Entity.json(""));
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(IdDto.class).getId();
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCreateSingleReportRequest()
+            .execute(IdDto.class, 200)
+            .getId();
   }
 
   private MapSingleReportResultDto evaluateReportById(String reportId) {
-    Response response = embeddedOptimizeRule.target("report/" + reportId + "/evaluate")
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-      .get();
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(MapSingleReportResultDto.class);
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildEvaluateSavedReportRequest(reportId)
+            .execute(MapSingleReportResultDto.class, 200);
   }
 
   public static class ReportDataCreatorProvider {

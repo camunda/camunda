@@ -66,10 +66,10 @@ public class VariableQueryFilterIT {
   }
 
   private Response evaluateReportAndReturnResponse(SingleReportDataDto reportData) {
-    return embeddedOptimizeRule.target("report/evaluate/single")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .post(Entity.json(reportData));
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildEvaluateSingleUnsavedReportRequest(reportData)
+            .execute();
   }
 
   private RawDataSingleReportResultDto evaluateReportWithFilter(ProcessDefinitionEngineDto processDefinition,

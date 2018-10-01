@@ -89,23 +89,19 @@ public abstract class AbstractSharingIT {
   }
 
   protected void updateReport(String id, ReportDefinitionDto updatedReport) {
-    Response response =
-      embeddedOptimizeRule.target("report/" + id)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .put(Entity.json(updatedReport));
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildUpdateReportRequest(id, updatedReport)
+            .execute();
     assertThat(response.getStatus(), is(204));
   }
 
   protected String createNewReport() {
-    Response response =
-        embeddedOptimizeRule.target("report/single")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .post(Entity.json(""));
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(IdDto.class).getId();
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCreateSingleReportRequest()
+            .execute(IdDto.class, 200)
+            .getId();
   }
 
   protected String createDashboardWithReport(String reportId) {
@@ -140,22 +136,18 @@ public abstract class AbstractSharingIT {
   }
 
   protected String addEmptyDashboardToOptimize() {
-    Response response =
-        embeddedOptimizeRule.target("dashboard")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .post(Entity.json(""));
-
-    return response.readEntity(IdDto.class).getId();
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCreateDashboardRequest()
+            .execute(IdDto.class, 200)
+            .getId();
   }
 
   void updateDashboard(String id, DashboardDefinitionDto updatedDashboard) {
-    Response response =
-        embeddedOptimizeRule.target("dashboard/" + id)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .put(Entity.json(updatedDashboard));
-    assertThat(response.getStatus(), is(204));
+    embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildUpdateDashboardRequest(id, updatedDashboard)
+            .execute();
   }
 
   protected String addShareForDashboard(String dashboardId) {

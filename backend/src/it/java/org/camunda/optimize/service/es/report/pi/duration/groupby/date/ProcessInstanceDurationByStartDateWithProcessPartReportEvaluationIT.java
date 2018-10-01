@@ -12,6 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinit
 import org.camunda.optimize.dto.optimize.query.report.single.filter.FilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.VariableFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapSingleReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.NumberSingleReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.command.util.ReportConstants;
 import org.camunda.optimize.service.es.report.util.creator.ReportDataCreator;
@@ -967,10 +968,10 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
   }
 
   private Response evaluateReportAndReturnResponse(SingleReportDataDto reportData) {
-    return embeddedOptimizeRule.target("report/evaluate/single")
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-      .post(Entity.json(reportData));
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildEvaluateSingleUnsavedReportRequest(reportData)
+            .execute();
   }
 
   private String createAndStoreDefaultReportDefinition(SingleReportDataDto reportData) {
@@ -989,33 +990,27 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
   }
 
   private void updateReport(String id, ReportDefinitionDto updatedReport) {
-    Response response =
-      embeddedOptimizeRule.target("report/" + id)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .put(Entity.json(updatedReport));
-    assertThat(response.getStatus(), is(204));
-  }
+    Response response = embeddedOptimizeRule
+          .getRequestExecutor()
+          .buildUpdateReportRequest(id, updatedReport)
+          .execute();
+
+  assertThat(response.getStatus(), is(204));
+}
 
   private String createNewReport() {
-    Response response =
-      embeddedOptimizeRule.target("report/single")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .post(Entity.json(""));
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(IdDto.class).getId();
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCreateSingleReportRequest()
+            .execute(IdDto.class, 200)
+            .getId();
   }
 
   private MapSingleReportResultDto evaluateReportById(String reportId) {
-    Response response = embeddedOptimizeRule.target("report/" + reportId + "/evaluate")
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-      .get();
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(MapSingleReportResultDto.class);
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildEvaluateSavedReportRequest(reportId)
+            .execute(MapSingleReportResultDto.class, 200);
   }
 
   public static class ReportDataCreatorProvider {

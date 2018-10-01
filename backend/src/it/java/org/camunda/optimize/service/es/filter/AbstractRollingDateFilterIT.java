@@ -110,18 +110,19 @@ public abstract class AbstractRollingDateFilterIT {
   }
 
   protected Response evaluateReportAndReturnResponse(SingleReportDataDto reportData) {
-    return embeddedOptimizeRule.target("report/evaluate/single")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .post(Entity.json(reportData));
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildEvaluateSingleUnsavedReportRequest(reportData)
+            .execute();
   }
 
   protected Response evaluateReportAndReturnResponseWithNewToken(SingleReportDataDto reportData) {
-    String token = embeddedOptimizeRule.getNewAuthenticationToken();
-    return embeddedOptimizeRule.target("report/evaluate/single")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-        .post(Entity.json(reportData));
+    String header = "Bearer " + embeddedOptimizeRule.getNewAuthenticationToken();
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .withAuthHeader(header)
+            .buildEvaluateSingleUnsavedReportRequest(reportData)
+            .execute();
   }
 
 }

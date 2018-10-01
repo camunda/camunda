@@ -535,36 +535,29 @@ public class CombinedReportHandlingIT {
 
 
   private void deleteReport(String reportId) {
-    Response response =
-      embeddedOptimizeRule.target("report/" + reportId)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .delete();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildDeleteReportRequest(reportId)
+            .execute();
 
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
   }
 
   private String createNewCombinedReport() {
-    Response response =
-      embeddedOptimizeRule.target("report/combined")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .post(Entity.json(""));
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(IdDto.class).getId();
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCreateCombinedReportRequest()
+            .execute(IdDto.class, 200)
+            .getId();
   }
 
   private String createNewSingleReport() {
-    Response response =
-      embeddedOptimizeRule.target("report/single")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .post(Entity.json(""));
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(IdDto.class).getId();
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCreateSingleReportRequest()
+            .execute(IdDto.class, 200)
+            .getId();
   }
 
   private void updateReport(String id, ReportDefinitionDto updatedReport) {
@@ -573,20 +566,17 @@ public class CombinedReportHandlingIT {
   }
 
   private Response getUpdateReportResponse(String id, ReportDefinitionDto updatedReport) {
-    return embeddedOptimizeRule.target("report/" + id)
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-      .put(Entity.json(updatedReport));
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildUpdateReportRequest(id, updatedReport)
+            .execute();
   }
 
   private CombinedMapReportResultDto evaluateCombinedReportById(String reportId) {
-    Response response = embeddedOptimizeRule.target("report/" + reportId + "/evaluate")
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-      .get();
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(CombinedMapReportResultDto.class);
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildEvaluateSavedReportRequest(reportId)
+            .execute(CombinedMapReportResultDto.class, 200);
   }
 
   private CombinedMapReportResultDto evaluateUnsavedCombined(CombinedReportDataDto reportDataDto) {
@@ -598,10 +588,10 @@ public class CombinedReportHandlingIT {
   }
 
   private Response evaluateUnsavedCombinedReportAndReturnResponse(CombinedReportDataDto reportDataDto) {
-    return embeddedOptimizeRule.target("report/evaluate/combined")
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-      .post(Entity.json(reportDataDto));
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildEvaluateCombinedUnsavedReportRequest(reportDataDto)
+            .execute();
   }
 
   private List<ReportDefinitionDto> getAllReports() {
@@ -609,19 +599,10 @@ public class CombinedReportHandlingIT {
   }
 
   private List<ReportDefinitionDto> getAllReportsWithQueryParam(Map<String, Object> queryParams) {
-    WebTarget webTarget = embeddedOptimizeRule.target("report");
-    for (Map.Entry<String, Object> queryParam : queryParams.entrySet()) {
-      webTarget = webTarget.queryParam(queryParam.getKey(), queryParam.getValue());
-    }
-
-    Response response =
-      webTarget
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .get();
-
-    assertThat(response.getStatus(), is(200));
-    return response.readEntity(new GenericType<List<ReportDefinitionDto>>() {
-    });
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .addQueryParams(queryParams)
+            .buildGetAllReportsRequest()
+            .executeAndReturnList(ReportDefinitionDto.class, 200);
   }
 }

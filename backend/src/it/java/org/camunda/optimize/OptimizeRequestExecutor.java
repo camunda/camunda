@@ -16,8 +16,8 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import static org.camunda.optimize.AbstractAlertIT.ALERT;
 import static org.hamcrest.CoreMatchers.is;
@@ -34,6 +34,7 @@ public class OptimizeRequestExecutor {
   private String path;
   private String requestType;
   private Entity body;
+  private Map<String, Object> queryParams;
 
   private ObjectMapper objectMapper;
 
@@ -44,6 +45,10 @@ public class OptimizeRequestExecutor {
     this.objectMapper = objectMapper;
   }
 
+  public OptimizeRequestExecutor addQueryParams(Map<String, Object> queryParams) {
+    this.queryParams = queryParams;
+    return this;
+  }
 
   public OptimizeRequestExecutor withUserAuthentication(String username, String password) {
     this.authHeader = authenticateUserRequest(username, password);
@@ -55,11 +60,23 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor withAuthHeader(String header) {
+    this.authHeader = header;
+    return this;
+  }
+
 
 
   public Response execute() {
-    Invocation.Builder builder = client.path(this.path)
-            .request();
+    WebTarget webTarget = client.path(this.path);
+
+    if(queryParams != null) {
+      for (Map.Entry<String, Object> queryParam : queryParams.entrySet()) {
+        webTarget = webTarget.queryParam(queryParam.getKey(), queryParam.getValue());
+      }
+    }
+
+    Invocation.Builder builder = webTarget.request();
 
     if (authHeader != null) {
       builder.header(HttpHeaders.AUTHORIZATION, this.authHeader);
@@ -110,6 +127,7 @@ public class OptimizeRequestExecutor {
     this.body = null;
     this.path = null;
     this.requestType = null;
+    this.queryParams = null;
   }
 
   public OptimizeRequestExecutor buildCreateAlertRequest(AlertCreationDto alert) {

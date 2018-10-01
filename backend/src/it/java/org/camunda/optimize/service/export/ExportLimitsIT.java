@@ -175,26 +175,22 @@ public class ExportLimitsIT {
   }
 
   private void updateReport(String id, ReportDefinitionDto updatedReport) {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     Response response =
-        embeddedOptimizeRule.target("report/" + id)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .put(Entity.json(updatedReport));
+        embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildUpdateReportRequest(id, updatedReport)
+            .execute();
+
     assertThat(response.getStatus(), is(204));
   }
 
 
   protected String createNewReportHelper() {
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-    Response response =
-        embeddedOptimizeRule.target("report/single")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .post(Entity.json(""));
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(IdDto.class).getId();
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCreateSingleReportRequest()
+            .execute(IdDto.class, 200)
+            .getId();
   }
 
   private ProcessInstanceEngineDto deployAndStartSimpleProcess() {

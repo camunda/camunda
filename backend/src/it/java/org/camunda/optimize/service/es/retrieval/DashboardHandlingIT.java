@@ -291,22 +291,18 @@ public class DashboardHandlingIT {
   }
 
   private String createNewDashboard() {
-    Response response =
-      embeddedOptimizeRule.target("dashboard")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .post(Entity.json(""));
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(IdDto.class).getId();
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCreateDashboardRequest()
+            .execute(IdDto.class, 200)
+            .getId();
   }
 
   private void updateDashboard(String id, DashboardDefinitionDto updatedDashboard) {
-    Response response =
-      embeddedOptimizeRule.target("dashboard/" + id)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .put(Entity.json(updatedDashboard));
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildUpdateDashboardRequest(id, updatedDashboard)
+            .execute();
     assertThat(response.getStatus(), is(204));
   }
 
@@ -316,19 +312,10 @@ public class DashboardHandlingIT {
   }
 
   private List<DashboardDefinitionDto> getAllDashboardsWithQueryParam(Map<String, Object> queryParams) {
-    WebTarget webTarget = embeddedOptimizeRule.target("dashboard");
-
-    for (Map.Entry<String, Object> queryParam : queryParams.entrySet()) {
-      webTarget = webTarget.queryParam(queryParam.getKey(), queryParam.getValue());
-    }
-    Response response =
-      webTarget
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .get();
-
-    assertThat(response.getStatus(), is(200));
-    return response.readEntity(new GenericType<List<DashboardDefinitionDto>>() {
-    });
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetAllDashboardsRequest()
+            .addQueryParams(queryParams)
+            .executeAndReturnList(DashboardDefinitionDto.class, 200);
   }
 }

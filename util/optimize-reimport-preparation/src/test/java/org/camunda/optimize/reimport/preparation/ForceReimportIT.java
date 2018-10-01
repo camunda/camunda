@@ -65,8 +65,12 @@ public class ForceReimportIT {
     ProcessDefinitionEngineDto processDefinitionEngineDto = deployAndStartSimpleServiceTask();
     String reportId = createAndStoreNumberReport(processDefinitionEngineDto);
     AlertCreationDto alert = setupBasicAlert(reportId);
-    addAlertToOptimize(alert);
-    createNewDashboard();
+    embeddedOptimizeRule
+            .getRequestExecutor().buildCreateAlertRequest(alert).execute();
+    embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCreateDashboardRequest()
+            .execute(IdDto.class, 200);
     addLicense();
 
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
@@ -134,15 +138,10 @@ public class ForceReimportIT {
   }
 
   private List<AlertDefinitionDto> getAllAlerts() {
-    Response response =
-      embeddedOptimizeRule.target("alert")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .get();
-
-    assertThat(response.getStatus(), is(200));
-    return response.readEntity(new GenericType<List<AlertDefinitionDto>>() {
-    });
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetAllAlertsRequest()
+            .executeAndReturnList(AlertDefinitionDto.class, 200);
   }
 
   private String readFileToString() throws IOException, URISyntaxException {
@@ -157,7 +156,6 @@ public class ForceReimportIT {
     Entity<String> entity = Entity.entity(license, MediaType.TEXT_PLAIN);
 
     // when
-    Response response =
       embeddedOptimizeRule.target("license/validate-and-store")
         .request()
         .post(entity);
@@ -171,14 +169,11 @@ public class ForceReimportIT {
   }
 
   private String createNewReportHelper() {
-    Response response =
-      embeddedOptimizeRule.target("report/single")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .post(Entity.json(""));
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(IdDto.class).getId();
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCreateSingleReportRequest()
+            .execute(IdDto.class, 200)
+            .getId();
   }
 
   private String createAndStoreNumberReport(ProcessDefinitionEngineDto processDefinition) {
@@ -192,11 +187,10 @@ public class ForceReimportIT {
   }
 
   private void updateReport(String id, ReportDefinitionDto updatedReport) {
-    Response response =
-      embeddedOptimizeRule.target("report/" + id)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .put(Entity.json(updatedReport));
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildUpdateReportRequest(id, updatedReport)
+            .execute();
     assertThat(response.getStatus(), is(204));
   }
 
@@ -221,16 +215,6 @@ public class ForceReimportIT {
     return report;
   }
 
-  private void addAlertToOptimize(AlertCreationDto creationDto) {
-    Response response =
-        embeddedOptimizeRule.target("alert")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .post(Entity.json(creationDto));
-
-    String id = response.readEntity(IdDto.class).getId();
-  }
-
   private AlertCreationDto createSimpleAlert(String reportId) {
     AlertCreationDto alertCreationDto = new AlertCreationDto();
 
@@ -252,32 +236,13 @@ public class ForceReimportIT {
   }
 
   private List<DashboardDefinitionDto> getAllDashboardsWithQueryParam(Map<String, Object> queryParams) {
-    WebTarget webTarget = embeddedOptimizeRule.target("dashboard");
-
-    for (Map.Entry<String, Object> queryParam : queryParams.entrySet()) {
-      webTarget = webTarget.queryParam(queryParam.getKey(), queryParam.getValue());
-    }
-    Response response =
-      webTarget
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .get();
-
-    assertThat(response.getStatus(), is(200));
-    return response.readEntity(new GenericType<List<DashboardDefinitionDto>>() {
-    });
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .addQueryParams(queryParams)
+            .buildGetAllDashboardsRequest()
+            .executeAndReturnList(DashboardDefinitionDto.class, 200);
   }
 
-  private void createNewDashboard() {
-    Response response =
-      embeddedOptimizeRule.target("dashboard")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .post(Entity.json(""));
-    assertThat(response.getStatus(), is(200));
-
-    response.readEntity(IdDto.class);
-  }
 
   private void forceReimportOfEngineData() throws IOException {
     ReimportPreparation.main(new String[]{});
@@ -288,20 +253,11 @@ public class ForceReimportIT {
   }
 
   private List<SingleReportDefinitionDto> getAllReportsWithQueryParam(Map<String, Object> queryParams) {
-    WebTarget webTarget = embeddedOptimizeRule.target("report");
-    for (Map.Entry<String, Object> queryParam : queryParams.entrySet()) {
-      webTarget = webTarget.queryParam(queryParam.getKey(), queryParam.getValue());
-    }
-
-    Response response =
-      webTarget
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .get();
-
-    assertThat(response.getStatus(), is(200));
-    return response.readEntity(new GenericType<List<SingleReportDefinitionDto>>() {
-    });
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetAllReportsRequest()
+            .addQueryParams(queryParams)
+            .executeAndReturnList(SingleReportDefinitionDto.class, 200);
   }
 
   private ProcessDefinitionEngineDto deployAndStartSimpleServiceTask() {

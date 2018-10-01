@@ -156,15 +156,12 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     embeddedOptimizeRule.getConfigurationService().setEmailsEnabled(true);
 
     // when
-    Response response =
-        embeddedOptimizeRule.target("alert/email/isEnabled")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .get();
+    EmailAlertEnabledDto emailEnabled = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildEmailNotificationIsEnabledRequest()
+            .execute(EmailAlertEnabledDto.class, 200);
 
     // then the status code is authorized
-    assertThat(response.getStatus(), is(200));
-    EmailAlertEnabledDto emailEnabled = response.readEntity(EmailAlertEnabledDto.class);
     assertThat(emailEnabled.isEnabled(), is(true));
   }
 
@@ -174,15 +171,12 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     embeddedOptimizeRule.getConfigurationService().setEmailsEnabled(false);
 
     // when
-    Response response =
-        embeddedOptimizeRule.target("alert/email/isEnabled")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .get();
+    EmailAlertEnabledDto emailEnabled = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildEmailNotificationIsEnabledRequest()
+            .execute(EmailAlertEnabledDto.class, 200);
 
     // then the status code is authorized
-    assertThat(response.getStatus(), is(200));
-    EmailAlertEnabledDto emailEnabled = response.readEntity(EmailAlertEnabledDto.class);
     assertThat(emailEnabled.isEnabled(), is(false));
   }
 

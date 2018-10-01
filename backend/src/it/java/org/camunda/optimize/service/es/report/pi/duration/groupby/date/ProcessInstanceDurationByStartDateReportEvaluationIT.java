@@ -695,24 +695,28 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     return engineRule.deployAndStartProcessWithVariables(processModel, variables);
   }
 
-  private String createNewReport() {
-    Response response =
-      embeddedOptimizeRule.target("report/single")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .post(Entity.json(""));
-    assertThat(response.getStatus(), is(200));
+  private void updateReport(String id, ReportDefinitionDto updatedReport) {
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildUpdateReportRequest(id, updatedReport)
+            .execute();
 
-    return response.readEntity(IdDto.class).getId();
+    assertThat(response.getStatus(), is(204));
   }
 
-  private void updateReport(String id, ReportDefinitionDto updatedReport) {
-    Response response =
-      embeddedOptimizeRule.target("report/" + id)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .put(Entity.json(updatedReport));
-    assertThat(response.getStatus(), is(204));
+  private String createNewReport() {
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCreateSingleReportRequest()
+            .execute(IdDto.class, 200)
+            .getId();
+  }
+
+  private MapSingleReportResultDto evaluateReportById(String reportId) {
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildEvaluateSavedReportRequest(reportId)
+            .execute(MapSingleReportResultDto.class, 200);
   }
 
   private String createAndStoreDefaultReportDefinition(SingleReportDataDto reportData) {
@@ -731,16 +735,6 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
     return id;
   }
 
-  private MapSingleReportResultDto evaluateReportById(String reportId) {
-    Response response = embeddedOptimizeRule.target("report/" + reportId + "/evaluate")
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-      .get();
-    assertThat(response.getStatus(), is(200));
-
-    return response.readEntity(MapSingleReportResultDto.class);
-  }
-
   private String localDateTimeToString(OffsetDateTime time) {
     return embeddedOptimizeRule.getDateTimeFormatter().format(time.withOffsetSameInstant(ZoneOffset.UTC));
   }
@@ -754,10 +748,10 @@ public class ProcessInstanceDurationByStartDateReportEvaluationIT {
   }
 
   private Response evaluateReportAndReturnResponse(SingleReportDataDto reportData) {
-    return embeddedOptimizeRule.target("report/evaluate/single")
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-      .post(Entity.json(reportData));
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildEvaluateSingleUnsavedReportRequest(reportData)
+            .execute();
   }
 
   public static class ReportDataCreatorProvider {
