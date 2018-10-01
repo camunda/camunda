@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.workflow;
 
+import static io.zeebe.exporter.record.Assertions.assertThat;
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_ACTIVITY_ID;
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_INSTANCE_KEY;
@@ -27,6 +28,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
@@ -39,6 +42,8 @@ import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
 import io.zeebe.test.broker.protocol.clientapi.TestPartitionClient;
+import io.zeebe.test.util.MsgPackUtil;
+import io.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -375,6 +380,31 @@ public class CancelWorkflowInstanceTest {
     assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
     assertThat(response.rejectionReason()).isEqualTo("Workflow instance is not running");
+  }
+
+  @Test
+  public void shouldWriteEntireEventOnCancel() {
+    // given
+    testClient.deploy(WORKFLOW);
+    final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
+    final Record<WorkflowInstanceRecordValue> activatedEvent =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .withActivityId(PROCESS_ID)
+            .getFirst();
+
+    // when
+    final ExecuteCommandResponse response = cancelWorkflowInstance(workflowInstanceKey);
+
+    // then
+    MsgPackUtil.assertEqualityExcluding(
+        response.getRawValue(), activatedEvent.getValue().toJson(), "payload");
+
+    final Record<WorkflowInstanceRecordValue> cancelingEvent =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.CANCELING)
+            .withActivityId(PROCESS_ID)
+            .getFirst();
+
+    assertThat(cancelingEvent.getValue()).isEqualTo(activatedEvent.getValue());
   }
 
   private ExecuteCommandResponse cancelWorkflowInstance(final long workflowInstanceKey) {

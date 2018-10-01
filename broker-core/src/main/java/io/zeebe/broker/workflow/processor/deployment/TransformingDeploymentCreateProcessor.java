@@ -42,32 +42,32 @@ public class TransformingDeploymentCreateProcessor
 
   @Override
   public void processRecord(
-      final TypedRecord<DeploymentRecord> event,
+      final TypedRecord<DeploymentRecord> command,
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
-    final DeploymentRecord deploymentEvent = event.getValue();
+    final DeploymentRecord deploymentEvent = command.getValue();
 
     final boolean accepted = deploymentTransformer.transform(deploymentEvent);
     if (accepted) {
       final long key = streamWriter.getKeyGenerator().nextKey();
       if (workflowState.putDeployment(key, deploymentEvent)) {
-        responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, event);
+        responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
         streamWriter.writeFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
       } else {
         // should not be possible
         responseWriter.writeRejectionOnCommand(
-            event, RejectionType.NOT_APPLICABLE, "Deployment already exist");
+            command, RejectionType.NOT_APPLICABLE, "Deployment already exist");
         streamWriter.writeRejection(
-            event, RejectionType.NOT_APPLICABLE, "Deployment already exist");
+            command, RejectionType.NOT_APPLICABLE, "Deployment already exist");
       }
     } else {
       responseWriter.writeRejectionOnCommand(
-          event,
+          command,
           deploymentTransformer.getRejectionType(),
           deploymentTransformer.getRejectionReason());
       streamWriter.writeRejection(
-          event,
+          command,
           deploymentTransformer.getRejectionType(),
           deploymentTransformer.getRejectionReason());
     }

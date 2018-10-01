@@ -17,9 +17,12 @@ package io.zeebe.test.util;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.zeebe.test.util.collection.MapBuilder;
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Map;
 import java.util.function.Consumer;
@@ -81,6 +84,34 @@ public class MsgPackUtil {
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  public static void assertEqualityExcluding(
+      DirectBuffer actualMsgPack, String expectedJson, String... excludedProperties) {
+    final byte[] msgPackArray = new byte[actualMsgPack.capacity()];
+    actualMsgPack.getBytes(0, msgPackArray);
+    assertEqualityExcluding(msgPackArray, expectedJson, excludedProperties);
+  }
+
+  public static void assertEqualityExcluding(
+      byte[] actualMsgPack, String expectedJson, String... excludedProperties) {
+    final JsonNode msgPackNode;
+    final JsonNode jsonNode;
+    try {
+      msgPackNode = MSGPACK_MAPPER.readTree(actualMsgPack);
+      jsonNode = JsonUtil.JSON_MAPPER.readTree(expectedJson);
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
+
+    if (!msgPackNode.isObject() || !jsonNode.isObject()) {
+      throw new RuntimeException("both documents must be JSON objects");
+    }
+
+    ((ObjectNode) msgPackNode).remove(Arrays.asList(excludedProperties));
+    ((ObjectNode) jsonNode).remove(Arrays.asList(excludedProperties));
+
+    assertThat(msgPackNode).isEqualTo(jsonNode);
   }
 
   public static byte[] asMsgPack(String json) {

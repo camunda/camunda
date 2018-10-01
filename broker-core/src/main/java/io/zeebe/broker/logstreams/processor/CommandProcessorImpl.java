@@ -48,23 +48,23 @@ public class CommandProcessorImpl<T extends UnpackedObject>
 
   @Override
   public void processRecord(
-      TypedRecord<T> record, TypedResponseWriter responseWriter, TypedStreamWriter streamWriter) {
+      TypedRecord<T> command, TypedResponseWriter responseWriter, TypedStreamWriter streamWriter) {
 
-    entityKey = record.getKey();
+    entityKey = command.getKey();
 
-    wrappedProcessor.onCommand(record, this);
+    wrappedProcessor.onCommand(command, this);
 
-    final boolean respond = record.getMetadata().hasRequestMetadata();
+    final boolean respond = command.getMetadata().hasRequestMetadata();
 
     if (isAccepted) {
-      streamWriter.writeFollowUpEvent(entityKey, newState, record.getValue());
+      streamWriter.writeFollowUpEvent(entityKey, newState, command.getValue());
       if (respond) {
-        responseWriter.writeEventOnCommand(entityKey, newState, record);
+        responseWriter.writeEventOnCommand(entityKey, newState, command.getValue(), command);
       }
     } else {
-      streamWriter.writeRejection(record, rejectionType, rejectionReason);
+      streamWriter.writeRejection(command, rejectionType, rejectionReason);
       if (respond) {
-        responseWriter.writeRejectionOnCommand(record, rejectionType, rejectionReason);
+        responseWriter.writeRejectionOnCommand(command, rejectionType, rejectionReason);
       }
     }
   }

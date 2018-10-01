@@ -53,12 +53,12 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
 
   @Override
   public void processRecord(
-      final TypedRecord<MessageRecord> record,
+      final TypedRecord<MessageRecord> command,
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
     this.responseWriter = responseWriter;
-    messageRecord = record.getValue();
+    messageRecord = command.getValue();
 
     final Message message =
         new Message(
@@ -74,13 +74,13 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
               "message with id '%s' is already published",
               bufferAsString(messageRecord.getMessageId()));
 
-      streamWriter.writeRejection(record, RejectionType.BAD_VALUE, rejectionReason);
-      responseWriter.writeRejectionOnCommand(record, RejectionType.BAD_VALUE, rejectionReason);
+      streamWriter.writeRejection(command, RejectionType.BAD_VALUE, rejectionReason);
+      responseWriter.writeRejectionOnCommand(command, RejectionType.BAD_VALUE, rejectionReason);
 
     } else {
       final TypedBatchWriter batchWriter = streamWriter.newBatch();
-      final long key = batchWriter.addNewEvent(MessageIntent.PUBLISHED, record.getValue());
-      responseWriter.writeEventOnCommand(key, MessageIntent.PUBLISHED, record);
+      final long key = batchWriter.addNewEvent(MessageIntent.PUBLISHED, command.getValue());
+      responseWriter.writeEventOnCommand(key, MessageIntent.PUBLISHED, command.getValue(), command);
       message.setKey(key);
 
       matchingSubscriptions =
