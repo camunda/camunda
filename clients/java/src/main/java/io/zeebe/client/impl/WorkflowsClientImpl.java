@@ -25,6 +25,7 @@ import io.zeebe.client.api.commands.UpdatePayloadWorkflowInstanceCommandStep1;
 import io.zeebe.client.api.commands.WorkflowRequestStep1;
 import io.zeebe.client.api.commands.WorkflowResourceRequestStep1;
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.impl.workflow.CancelWorkflowInstanceCommandImpl;
 import io.zeebe.client.impl.workflow.CreateWorkflowInstanceCommandImpl;
 import io.zeebe.client.impl.workflow.DeployWorkflowCommandImpl;
 import io.zeebe.client.impl.workflow.PublishMessageCommandImpl;
@@ -52,8 +53,8 @@ public class WorkflowsClientImpl implements WorkflowClient {
 
   @Override
   public CancelWorkflowInstanceCommandStep1 newCancelInstanceCommand(
-      final WorkflowInstanceEvent event) {
-    return null;
+      final long workflowInstanceKey) {
+    return new CancelWorkflowInstanceCommandImpl(asyncStub, workflowInstanceKey);
   }
 
   @Override

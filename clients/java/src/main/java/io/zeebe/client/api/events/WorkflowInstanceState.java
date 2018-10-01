@@ -18,6 +18,7 @@ package io.zeebe.client.api.events;
 public enum WorkflowInstanceState {
   CREATED,
   COMPLETED,
+  CANCELING,
   CANCELED,
 
   PAYLOAD_UPDATED,

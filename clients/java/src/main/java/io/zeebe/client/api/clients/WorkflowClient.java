@@ -82,7 +82,7 @@ public interface WorkflowClient {
    * @param event the latest workflow instance event
    * @return a builder for the command
    */
-  CancelWorkflowInstanceCommandStep1 newCancelInstanceCommand(WorkflowInstanceEvent event);
+  CancelWorkflowInstanceCommandStep1 newCancelInstanceCommand(long workflowInstanceKey);
 
   /**
    * Command to update the payload of a workflow instance.
