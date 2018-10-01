@@ -27,7 +27,6 @@ import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.zeebe.UnstableTest;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -50,7 +49,6 @@ import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.experimental.categories.Category;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -165,7 +163,7 @@ public class MessageCorrelationTest {
             "receive-message", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     final SubscribedRecord messageSubscription =
-        findMessageSubscription(testClient, MessageSubscriptionIntent.OPENED);
+        findMessageSubscription(MessageSubscriptionIntent.OPENED);
     assertThat(messageSubscription.valueType()).isEqualTo(ValueType.MESSAGE_SUBSCRIPTION);
     assertThat(messageSubscription.recordType()).isEqualTo(RecordType.EVENT);
     assertThat(messageSubscription.value())
@@ -244,7 +242,7 @@ public class MessageCorrelationTest {
     final long workflowInstanceKey =
         testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
 
-    testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+    findMessageSubscription(MessageSubscriptionIntent.OPENED);
 
     // when
     testClient.publishMessage("order canceled", "order-123", asMsgPack("foo", "bar"));
@@ -308,13 +306,12 @@ public class MessageCorrelationTest {
   }
 
   @Test
-  @Category(UnstableTest.class) // => https://github.com/zeebe-io/zeebe/issues/1234
   public void shouldCorrelateMessageWithZeroTTL() throws Exception {
     // given
     final long workflowInstanceKey =
         testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
 
-    testClient.receiveElementInState("receive-message", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+    findMessageSubscription(MessageSubscriptionIntent.OPENED);
 
     // when
     testClient.publishMessage("order canceled", "order-123", asMsgPack("foo", "bar"), 0);
@@ -499,10 +496,9 @@ public class MessageCorrelationTest {
         .containsEntry("activityInstanceKey", catchEventEntered.key());
   }
 
-  private SubscribedRecord findMessageSubscription(
-      final TestPartitionClient client, final MessageSubscriptionIntent intent)
+  private SubscribedRecord findMessageSubscription(final MessageSubscriptionIntent intent)
       throws AssertionError {
-    return client
+    return testClient
         .receiveEvents()
         .filter(intent(intent))
         .findFirst()
