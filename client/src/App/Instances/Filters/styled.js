@@ -2,7 +2,9 @@ import styled from 'styled-components';
 
 import Panel from 'modules/components/Panel';
 import BasicExpandButton from 'modules/components/ExpandButton';
-import {themed, themeStyle} from 'modules/theme';
+import VerticalExpandButton from 'modules/components/VerticalExpandButton';
+import Badge from 'modules/components/Badge';
+import {Colors, themed, themeStyle} from 'modules/theme';
 
 export const ExpandButton = styled(BasicExpandButton)`
   position: absolute;
@@ -11,6 +13,7 @@ export const ExpandButton = styled(BasicExpandButton)`
   border-top: none;
   border-bottom: none;
   border-right: none;
+  z-index: 2;
 `;
 
 export const ResetButtonContainer = themed(styled(Panel.Footer)`
@@ -36,3 +39,28 @@ export const Field = styled.div`
     padding-top: 0;
   }
 `;
+
+export const VerticalButton = styled(VerticalExpandButton)`
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+`;
+
+const backgroundStyle = ({isDefault}) => {
+  return !isDefault
+    ? ''
+    : themeStyle({
+        light: Colors.uiLight05,
+        dark: Colors.uiDark06
+      });
+};
+
+export const FiltersBadge = themed(styled(Badge)`
+  padding: 0;
+  height: 15px;
+  width: 15px;
+  border-radius: 50%;
+  background: ${backgroundStyle};
+`);

@@ -1,7 +1,7 @@
 import React, {Fragment} from 'react';
 import PropTypes from 'prop-types';
 
-import Panel from 'modules/components/Panel';
+import CollapsablePanel from 'modules/components/CollapsablePanel';
 import Button from 'modules/components/Button';
 import TextInput from 'modules/components/TextInput';
 import Textarea from 'modules/components/Textarea';
@@ -156,9 +156,28 @@ export default class Filters extends React.Component {
         : [];
 
     return (
-      <Panel isRounded>
-        <Panel.Header isRounded>Filters</Panel.Header>
-        <Panel.Body>
+      <CollapsablePanel
+        maxWidth={320}
+        expandButton={
+          <Styled.VerticalButton label="Filters">
+            <Styled.FiltersBadge
+              type="filters"
+              isDefault={isEqual(this.props.filter, DEFAULT_FILTER)}
+            />
+          </Styled.VerticalButton>
+        }
+        collapseButton={
+          <Styled.ExpandButton
+            direction={DIRECTION.LEFT}
+            isExpanded={true}
+            onClick={this.handleCollapse}
+            title="Collapse Filters"
+          />
+        }
+        isRounded
+      >
+        <CollapsablePanel.Header isRounded>Filters</CollapsablePanel.Header>
+        <CollapsablePanel.Body>
           <Styled.Filters>
             {!isWorkflowsDataLoaded ? null : (
               <Fragment>
@@ -252,8 +271,7 @@ export default class Filters extends React.Component {
               </Fragment>
             )}
           </Styled.Filters>
-        </Panel.Body>
-        <Styled.ExpandButton direction={DIRECTION.LEFT} isExpanded={true} />
+        </CollapsablePanel.Body>
         <Styled.ResetButtonContainer>
           <Button
             title="Reset filters"
@@ -263,8 +281,8 @@ export default class Filters extends React.Component {
             Reset Filters
           </Button>
         </Styled.ResetButtonContainer>
-        <Panel.Footer />
-      </Panel>
+        <CollapsablePanel.Footer />
+      </CollapsablePanel>
     );
   }
 }

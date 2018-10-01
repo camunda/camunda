@@ -1,7 +1,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {DEFAULT_FILTER, FILTER_TYPES, DIRECTION} from 'modules/constants';
+import {DEFAULT_FILTER, FILTER_TYPES} from 'modules/constants';
 import Button from 'modules/components/Button';
 import Textarea from 'modules/components/Textarea';
 import TextInput from 'modules/components/TextInput';
@@ -172,23 +172,6 @@ describe('Filters', () => {
     expect(FilterNodes.at(1).prop('type')).toBe(FILTER_TYPES.FINISHED);
     expect(FilterNodes.at(1).prop('filter')).toEqual({completed, canceled});
     expect(FilterNodes.at(1).prop('onChange')).toBe(mockProps.onFilterChange);
-  });
-
-  it('should render the expand button with left direction', () => {
-    // given
-    const node = shallow(
-      <Filters
-        groupedWorkflowInstances={workflows}
-        {...mockProps}
-        filter={DEFAULT_FILTER}
-      />
-    );
-    const ExpandButtonNode = node.find(Styled.ExpandButton);
-
-    // then
-    expect(ExpandButtonNode).toHaveLength(1);
-    expect(ExpandButtonNode.prop('direction')).toBe(DIRECTION.LEFT);
-    expect(ExpandButtonNode.prop('isExpanded')).toBe(true);
   });
 
   describe('errorMessage filter', () => {

@@ -24,6 +24,6 @@ Badge.propTypes = {
     'incidents',
     'instances'
   ]),
-  badgeContent: PropTypes.number.isRequired,
+  badgeContent: PropTypes.number,
   circleContent: PropTypes.number
 };
