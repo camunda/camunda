@@ -52,7 +52,7 @@ public abstract class AbstractAlertIT {
     return embeddedOptimizeRule
             .getRequestExecutor()
             .buildCreateAlertRequest(simpleAlert)
-            .execute(IdDto.class, 204)
+            .execute(IdDto.class, 200)
             .getId();
   }
 
