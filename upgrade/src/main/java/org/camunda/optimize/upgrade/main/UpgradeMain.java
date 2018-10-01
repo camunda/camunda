@@ -4,6 +4,9 @@ import org.apache.commons.text.StrSubstitutor;
 import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom21To22;
+import org.camunda.optimize.upgrade.main.impl.UpgradeFrom22To23;
+import org.camunda.optimize.upgrade.main.impl.UpgradeFrom23To24;
+import org.camunda.optimize.upgrade.main.impl.UpgradeFrom24To25;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -15,6 +18,9 @@ public class UpgradeMain {
 
   static {
     upgrades.put("2.2.0", new UpgradeFrom21To22());
+    upgrades.put("2.3.0", new UpgradeFrom22To23());
+    upgrades.put("2.4.0", new UpgradeFrom23To24());
+    upgrades.put("2.5.0", new UpgradeFrom24To25());
   }
 
   public static void main(String... args) {
