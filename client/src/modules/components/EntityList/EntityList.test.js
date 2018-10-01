@@ -237,7 +237,7 @@ it('should open deletion modal on delete button click', async () => {
   node.instance().showDeleteModal({
     id: '1',
     name: 'Test Entity'
-  })();
+  });
   await node.update();
 
   expect(node.find('Modal').props().open).toBeTruthy();
@@ -252,7 +252,7 @@ it('should invoke duplicate on click', async () => {
     data: [sampleEntity]
   });
   load.mockReturnValue([sampleEntity, duplicateEntity]);
-  await node.instance().duplicateEntity('1')();
+  await node.instance().duplicateEntity('1');
   await node.update();
   expect(duplicate).toHaveBeenCalled();
 });
@@ -279,7 +279,7 @@ it('should increase the elements in the list by 1 when invoking the duplicate on
   });
 
   load.mockReturnValue([sampleEntity, duplicateEntity]);
-  await node.instance().duplicateEntity('1')();
+  await node.instance().duplicateEntity('1');
   await node.update();
 
   expect(node.find('ul').children().length).toBe(2);

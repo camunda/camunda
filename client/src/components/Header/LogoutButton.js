@@ -30,9 +30,9 @@ export default withErrorHandling(
     render() {
       return (
         <div className="LogoutButton">
-          <a onClick={this.logout} title="Log out">
+          <button onClick={this.logout} title="Log out">
             Logout
-          </a>
+          </button>
           {this.state.redirect && (
             <Redirect
               to={{

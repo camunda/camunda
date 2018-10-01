@@ -122,9 +122,14 @@
         border: 1px solid #dadee3;
         cursor: pointer;
         color: #6a727e;
+        background: transparent;
         &:hover {
           background: #d6d6d6;
         }
+      }
+
+      span {
+        pointer-events: none;
       }
 
       a {

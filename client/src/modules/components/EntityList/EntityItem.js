@@ -94,12 +94,13 @@ export default class EntityItem extends React.Component {
     if (this.props.operations.includes('duplicate')) {
       entry.operations.push({
         content: (
-          <Icon
-            type="copy-document"
-            title={`Duplicate ${this.props.api}`}
-            onClick={this.props.duplicateEntity(id)}
-            className="duplicateIcon"
-          />
+          <button onClick={this.triggerDuplicate}>
+            <Icon
+              type="copy-document"
+              title={`Duplicate ${this.props.api}`}
+              className="duplicateIcon"
+            />
+          </button>
         ),
         parentClassName: 'dataTool'
       });
@@ -108,18 +109,25 @@ export default class EntityItem extends React.Component {
     if (this.props.operations.includes('delete')) {
       entry.operations.push({
         content: (
-          <Icon
-            type="delete"
-            title={`Delete ${this.props.api}`}
-            onClick={this.props.showDeleteModal({id, name})}
-            className="deleteIcon"
-          />
+          <button onClick={this.triggerDeleteModal}>
+            <Icon type="delete" title={`Delete ${this.props.api}`} className="deleteIcon" />
+          </button>
         ),
         parentClassName: 'dataTool'
       });
     }
 
     return entry;
+  };
+
+  triggerDuplicate = evt => {
+    evt.target.blur();
+    this.props.duplicateEntity(this.props.data.id);
+  };
+
+  triggerDeleteModal = evt => {
+    const {id, name} = this.props.data;
+    return this.props.showDeleteModal({id, name});
   };
 
   renderCells = data => {
@@ -137,7 +145,7 @@ export default class EntityItem extends React.Component {
     return cell.content;
   };
 
-  // if a modal is provided add onClick event otherwise use a router Link
+  // if a ContentPanel is provided add onClick event otherwise use a router Link
   renderLink = data => {
     const {ContentPanel} = this.props;
     const allEntityData = data.editData;

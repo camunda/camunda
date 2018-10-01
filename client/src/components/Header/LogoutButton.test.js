@@ -1,7 +1,7 @@
 import React from 'react';
 import {shallow, mount} from 'enzyme';
 import LogoutButton from './LogoutButton';
-import {getToken, destroy} from 'credentials';
+import {destroy} from 'credentials';
 import {get} from 'request';
 
 jest.mock('credentials', () => {
@@ -32,7 +32,7 @@ it('renders without crashing', () => {
 it('should clear the token and logout from server on click', () => {
   const node = mount(<LogoutButton />);
 
-  node.find('a').simulate('click');
+  node.find('button').simulate('click');
   setImmediate(() => {
     expect(destroy).toHaveBeenCalled();
     expect(get).toHaveBeenCalledWith(expect.stringContaining('logout'));

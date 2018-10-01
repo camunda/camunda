@@ -6,9 +6,13 @@
   display: none;
 }
 
-.LogoutButton a {
+.LogoutButton button {
   display: block;
   padding: 0 6px;
   color: #333;
+  border: none;
+  font-size: inherit;
+  color: #666;
   text-decoration: none;
+  cursor: pointer;
 }

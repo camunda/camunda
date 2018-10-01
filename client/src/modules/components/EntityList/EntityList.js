@@ -62,7 +62,7 @@ class EntityList extends React.Component {
     this.closeDeleteModal();
   };
 
-  duplicateEntity = id => async evt => {
+  duplicateEntity = async id => {
     const {data, reports, name, reportType} = this.state.data.find(entity => entity.id === id);
     const copy = {
       ...(data && {data}),
@@ -98,7 +98,7 @@ class EntityList extends React.Component {
     await this.loadData();
   };
 
-  showDeleteModal = ({id, name}) => evt => {
+  showDeleteModal = ({id, name}) => {
     this.setState({
       deleteModalVisible: true,
       deleteModalEntity: {id, name}
