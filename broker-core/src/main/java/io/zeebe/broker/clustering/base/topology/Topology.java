@@ -18,7 +18,9 @@
 package io.zeebe.broker.clustering.base.topology;
 
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.clustering.base.topology.TopologyDto.BrokerDto;
+import io.zeebe.protocol.PartitionState;
+import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto;
+import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto.BrokerDto;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.transport.SocketAddress;
 import java.util.ArrayList;
@@ -44,14 +46,27 @@ public class Topology implements ReadableTopology {
   private final Int2ObjectHashMap<NodeInfo> partitionLeaders = new Int2ObjectHashMap<>();
   private final Int2ObjectHashMap<List<NodeInfo>> partitionFollowers = new Int2ObjectHashMap<>();
 
-  public Topology(NodeInfo localBroker) {
+  private final int clusterSize;
+  private final int partitionsCount;
+
+  public Topology(NodeInfo localBroker, int clusterSize, int partitionsCount) {
     this.local = localBroker;
+    this.clusterSize = clusterSize;
+    this.partitionsCount = partitionsCount;
     this.addMember(localBroker);
   }
 
   @Override
   public NodeInfo getLocal() {
     return local;
+  }
+
+  public int getClusterSize() {
+    return clusterSize;
+  }
+
+  public int getPartitionsCount() {
+    return partitionsCount;
   }
 
   public NodeInfo getMember(int nodeId) {
@@ -226,8 +241,10 @@ public class Topology implements ReadableTopology {
   }
 
   @Override
-  public TopologyDto asDto() {
-    final TopologyDto dto = new TopologyDto();
+  public TopologyResponseDto asDto() {
+    final TopologyResponseDto dto = new TopologyResponseDto();
+    dto.setClusterSize(clusterSize);
+    dto.setPartitionsCount(partitionsCount);
 
     for (NodeInfo member : members) {
       final BrokerDto broker = dto.brokers().add();
@@ -244,7 +261,7 @@ public class Topology implements ReadableTopology {
             .add()
             .setPartitionId(partition.getPartitionId())
             .setReplicationFactor(partition.getReplicationFactor())
-            .setState(RaftState.LEADER);
+            .setState(PartitionState.LEADER);
       }
 
       for (PartitionInfo partition : member.getFollowers()) {
@@ -253,7 +270,7 @@ public class Topology implements ReadableTopology {
             .add()
             .setPartitionId(partition.getPartitionId())
             .setReplicationFactor(partition.getReplicationFactor())
-            .setState(RaftState.FOLLOWER);
+            .setState(PartitionState.FOLLOWER);
       }
     }
 

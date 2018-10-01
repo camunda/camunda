@@ -17,10 +17,26 @@ package io.zeebe.gateway.impl.clustering;
 
 import io.zeebe.gateway.api.commands.PartitionBrokerRole;
 import io.zeebe.gateway.api.commands.PartitionInfo;
+import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto.PartitionDto;
 
+// TODO: remove with https://github.com/zeebe-io/zeebe/issues/1377
 public class PartitionInfoImpl implements PartitionInfo {
   private int partitionId;
   private PartitionBrokerRole role;
+
+  public PartitionInfoImpl() {}
+
+  public PartitionInfoImpl(PartitionDto partition) {
+    partitionId = partition.getPartitionId();
+    switch (partition.getState()) {
+      case LEADER:
+        role = PartitionBrokerRole.LEADER;
+        break;
+      case FOLLOWER:
+        role = PartitionBrokerRole.FOLLOWER;
+        break;
+    }
+  }
 
   public PartitionInfoImpl setPartitionId(final int partitionId) {
     this.partitionId = partitionId;

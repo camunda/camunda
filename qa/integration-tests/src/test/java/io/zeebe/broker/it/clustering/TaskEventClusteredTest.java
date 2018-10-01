@@ -20,7 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.api.commands.BrokerInfo;
-import io.zeebe.gateway.api.commands.Partitions;
 import io.zeebe.gateway.api.events.JobEvent;
 import io.zeebe.gateway.api.events.JobState;
 import org.junit.Ignore;
@@ -40,10 +39,7 @@ public class TaskEventClusteredTest {
     // given
     final ZeebeClient client = clientRule.getClient();
 
-    final Partitions partitions = client.newPartitionsRequest().send().join();
-
-    final BrokerInfo leader =
-        clusteringRule.getLeaderForPartition(partitions.getPartitions().get(0).getId());
+    final BrokerInfo leader = clusteringRule.getLeaderForPartition(0);
 
     // choosing a new leader in a raft group where the previously leading broker is no longer
     // available

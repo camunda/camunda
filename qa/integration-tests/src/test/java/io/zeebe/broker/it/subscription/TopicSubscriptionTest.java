@@ -39,6 +39,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -195,7 +196,7 @@ public class TopicSubscriptionTest {
         .newSubscription()
         .name(SUBSCRIPTION_NAME)
         .recordHandler(recordingHandler)
-        .startAtPosition(clientRule.getDefaultPartition(), Long.MAX_VALUE)
+        .startAtPosition(0, Long.MAX_VALUE)
         .open();
 
     client.jobClient().newCreateCommand().jobType("foo").send().join();
@@ -439,15 +440,7 @@ public class TopicSubscriptionTest {
     final int numPartitions = 3;
 
     final Integer[] partitionIds =
-        client
-            .newPartitionsRequest()
-            .send()
-            .join()
-            .getPartitions()
-            .stream()
-            .map(p -> p.getId())
-            .collect(Collectors.toList())
-            .toArray(new Integer[3]);
+        IntStream.range(0, numPartitions).boxed().toArray(Integer[]::new);
 
     for (final int partitionId : partitionIds) {
       createTaskOnPartition(partitionId);

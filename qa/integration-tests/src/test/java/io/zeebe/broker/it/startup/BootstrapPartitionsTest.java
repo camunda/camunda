@@ -19,7 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.clustering.ClusteringRule;
-import io.zeebe.gateway.api.commands.Partition;
 import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
@@ -39,10 +38,10 @@ public class BootstrapPartitionsTest {
   @Test
   public void shouldCreateDefaultPartitionsOnBootstrappedBrokers() {
     // when
-    final List<Partition> partitions = clientRule.partitions();
+    final List<Integer> partitions = clientRule.getPartitions();
 
     // then
     assertThat(partitions.size()).isEqualTo(2);
-    assertThat(partitions).extracting(Partition::getId).containsExactly(0, 1);
+    assertThat(partitions).containsExactly(0, 1);
   }
 }

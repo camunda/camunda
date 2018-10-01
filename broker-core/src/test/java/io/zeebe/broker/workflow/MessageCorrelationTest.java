@@ -18,10 +18,10 @@
 package io.zeebe.broker.workflow;
 
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setPartitionCount;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_ACTIVITY_ID;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_INSTANCE_KEY;
-import static io.zeebe.broker.workflow.data.WorkflowInstanceRecord.PROP_WORKFLOW_VERSION;
+import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_ACTIVITY_ID;
+import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
+import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_INSTANCE_KEY;
+import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_VERSION;
 import static io.zeebe.test.broker.protocol.clientapi.TestPartitionClient.intent;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -44,6 +44,7 @@ import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
 import io.zeebe.test.broker.protocol.clientapi.TestPartitionClient;
 import io.zeebe.test.util.MsgPackUtil;
+import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
@@ -511,8 +512,7 @@ public class MessageCorrelationTest {
 
   private int getPartitionId(final String correlationKey) {
     final List<Integer> partitionIds = apiRule.getPartitionIds();
-    final int index =
-        Math.abs(SubscriptionUtil.getSubscriptionHashCode(correlationKey) % partitionIds.size());
-    return partitionIds.get(index);
+    return SubscriptionUtil.getSubscriptionPartitionId(
+        BufferUtil.wrapString(correlationKey), partitionIds.size());
   }
 }

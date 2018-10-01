@@ -16,6 +16,7 @@
 package io.zeebe.client.impl.command;
 
 import io.zeebe.client.api.commands.Workflow;
+import java.util.Objects;
 
 public class WorkflowImpl implements Workflow {
   private String bpmnProcessId;
@@ -68,5 +69,41 @@ public class WorkflowImpl implements Workflow {
 
   public void setResourceName(final String resourceName) {
     this.resourceName = resourceName;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final WorkflowImpl workflow = (WorkflowImpl) o;
+    return version == workflow.version
+        && workflowKey == workflow.workflowKey
+        && Objects.equals(bpmnProcessId, workflow.bpmnProcessId)
+        && Objects.equals(resourceName, workflow.resourceName);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(bpmnProcessId, version, workflowKey, resourceName);
+  }
+
+  @Override
+  public String toString() {
+    return "WorkflowImpl{"
+        + "bpmnProcessId='"
+        + bpmnProcessId
+        + '\''
+        + ", version="
+        + version
+        + ", workflowKey="
+        + workflowKey
+        + ", resourceName='"
+        + resourceName
+        + '\''
+        + '}';
   }
 }

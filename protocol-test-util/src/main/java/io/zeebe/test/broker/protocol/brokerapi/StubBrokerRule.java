@@ -27,9 +27,7 @@ import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.SubscriberIntent;
 import io.zeebe.protocol.intent.SubscriptionIntent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.test.broker.protocol.brokerapi.data.BrokerPartitionState;
 import io.zeebe.test.broker.protocol.brokerapi.data.Topology;
-import io.zeebe.test.broker.protocol.brokerapi.data.TopologyBroker;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.SocketAddress;
@@ -38,10 +36,8 @@ import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -57,6 +53,7 @@ public class StubBrokerRule extends ExternalResource {
 
   protected final int nodeId;
   protected final SocketAddress socketAddress;
+  private final int clusterSize;
   private final int partitionCount;
 
   protected ServerTransport transport;
@@ -71,12 +68,13 @@ public class StubBrokerRule extends ExternalResource {
   }
 
   public StubBrokerRule(final int nodeId) {
-    this(nodeId, 1);
+    this(nodeId, 1, 1);
   }
 
-  public StubBrokerRule(final int nodeId, final int partitionCount) {
+  public StubBrokerRule(final int nodeId, final int clusterSize, final int partitionCount) {
     this.nodeId = nodeId;
     this.socketAddress = SocketUtil.getNextAddress();
+    this.clusterSize = clusterSize;
     this.partitionCount = partitionCount;
   }
 
@@ -210,30 +208,8 @@ public class StubBrokerRule extends ExternalResource {
         .respondWith()
         .data()
         .put("brokers", r -> currentTopology.get().getBrokers())
-        .done()
-        .register();
-
-    // assuming that topology and partitions request are consistent
-    onControlMessageRequest(
-            r ->
-                r.messageType() == ControlMessageType.REQUEST_PARTITIONS
-                    && r.partitionId() == Protocol.DEPLOYMENT_PARTITION)
-        .respondWith()
-        .data()
-        .put(
-            "partitions",
-            r -> {
-              final Topology topology = currentTopology.get();
-              final List<Map<String, Object>> partitions = new ArrayList<>();
-              for (TopologyBroker broker : topology.getBrokers()) {
-                for (BrokerPartitionState brokerPartitionState : broker.getPartitions()) {
-                  final Map<String, Object> partition = new HashMap<>();
-                  partition.put("id", brokerPartitionState.getPartitionId());
-                  partitions.add(partition);
-                }
-              }
-              return partitions;
-            })
+        .put("clusterSize", clusterSize)
+        .put("partitionsCount", partitionCount)
         .done()
         .register();
   }

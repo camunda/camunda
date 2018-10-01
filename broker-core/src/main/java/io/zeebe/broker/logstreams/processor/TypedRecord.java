@@ -18,7 +18,7 @@
 package io.zeebe.broker.logstreams.processor;
 
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.impl.record.RecordMetadata;
 
 public interface TypedRecord<T extends UnpackedObject> {
   long getPosition();

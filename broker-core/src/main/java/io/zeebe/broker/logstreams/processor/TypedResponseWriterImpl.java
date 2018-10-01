@@ -20,7 +20,7 @@ package io.zeebe.broker.logstreams.processor;
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
-import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.transport.ServerOutput;
 import java.nio.charset.StandardCharsets;

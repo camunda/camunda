@@ -16,61 +16,43 @@
 package io.zeebe.broker.it.util;
 
 import io.zeebe.gateway.api.commands.BrokerInfo;
-import io.zeebe.gateway.impl.ControlMessageRequestHandler;
-import io.zeebe.gateway.impl.ZeebeClientImpl;
+import io.zeebe.gateway.impl.broker.request.BrokerTopologyRequest;
+import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.gateway.impl.clustering.TopologyImpl;
-import io.zeebe.gateway.impl.clustering.TopologyRequestImpl;
-import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
+import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto;
 import io.zeebe.transport.ClientResponse;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.SocketAddress;
 import java.time.Duration;
 import java.util.Collections;
 import java.util.List;
-import org.agrona.DirectBuffer;
 
 public class TopologyClient {
 
-  private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
   private final ClientTransport transport;
-  private final ControlMessageRequestHandler requestHandler;
+  private final BrokerTopologyRequest topologyRequest = new BrokerTopologyRequest();
 
-  public TopologyClient(final ZeebeClientImpl zeebeClient) {
-    transport = zeebeClient.getTransport();
-    requestHandler =
-        new ControlMessageRequestHandler(
-            zeebeClient.getObjectMapper(), new TopologyRequestImpl(null, null));
+  public TopologyClient(final ClientTransport transport) {
+    this.transport = transport;
   }
 
   public List<BrokerInfo> requestTopologyFromBroker(
       final int nodeId, final SocketAddress socketAddress) {
     transport.registerEndpointAndAwaitChannel(nodeId, socketAddress);
-    final ClientResponse response =
+    final ClientResponse clientResponse =
         transport
             .getOutput()
-            .sendRequestWithRetry(() -> nodeId, b -> false, requestHandler, Duration.ofSeconds(5))
+            .sendRequestWithRetry(() -> nodeId, b -> false, topologyRequest, Duration.ofSeconds(5))
             .join();
-    final DirectBuffer responseBuffer = response.getResponseBuffer();
 
-    messageHeaderDecoder.wrap(responseBuffer, 0);
+    final BrokerResponse<TopologyResponseDto> response =
+        topologyRequest.getResponse(clientResponse);
 
-    final int blockLength = messageHeaderDecoder.blockLength();
-    final int version = messageHeaderDecoder.version();
-
-    final int responseMessageOffset = messageHeaderDecoder.encodedLength();
-
-    if (requestHandler.handlesResponse(messageHeaderDecoder)) {
-      try {
-        final TopologyImpl topology =
-            (TopologyImpl)
-                requestHandler.getResult(
-                    responseBuffer, responseMessageOffset, blockLength, version);
-        return topology.getBrokers();
-      } catch (final Exception e) {
-        // ignore
-      }
+    if (response.isResponse()) {
+      final TopologyImpl topology = new TopologyImpl(response.getResponse());
+      return topology.getBrokers();
+    } else {
+      return Collections.emptyList();
     }
-
-    return Collections.emptyList();
   }
 }

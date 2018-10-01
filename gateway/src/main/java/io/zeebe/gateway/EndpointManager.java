@@ -16,12 +16,16 @@
 package io.zeebe.gateway;
 
 import com.google.protobuf.Empty;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
-import io.zeebe.gateway.api.commands.Topology;
-import io.zeebe.gateway.api.events.DeploymentEvent;
-import io.zeebe.gateway.api.events.JobEvent;
-import io.zeebe.gateway.api.events.MessageEvent;
-import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
+import io.zeebe.gateway.ResponseMapper.BrokerResponseMapper;
+import io.zeebe.gateway.cmd.BrokerErrorException;
+import io.zeebe.gateway.cmd.ClientCommandRejectedException;
+import io.zeebe.gateway.cmd.ClientException;
+import io.zeebe.gateway.impl.broker.BrokerClient;
+import io.zeebe.gateway.impl.broker.request.BrokerRequest;
+import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.gateway.protocol.GatewayGrpc;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobResponse;
@@ -32,64 +36,132 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
-import io.zeebe.util.sched.ActorScheduler;
-import io.zeebe.util.sched.future.ActorFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 
 public class EndpointManager extends GatewayGrpc.GatewayImplBase {
 
-  private final ResponseMapper responseMapper;
-  private final ClusterClient clusterClient;
-  private final RequestActor requestActor;
+  private final BrokerClient brokerClient;
 
-  public EndpointManager(
-      final ResponseMapper mapper,
-      final ClusterClient clusterClient,
-      final ActorScheduler actorScheduler) {
-    this.responseMapper = mapper;
-    this.clusterClient = clusterClient;
-    this.requestActor = new RequestActor();
-    actorScheduler.submitActor(requestActor);
+  public EndpointManager(final BrokerClient brokerClient) {
+    this.brokerClient = brokerClient;
   }
 
   @Override
   public void health(
       final HealthRequest request, final StreamObserver<HealthResponse> responseObserver) {
-    final ActorFuture<Topology> responseFuture = clusterClient.sendHealthRequest();
-    requestActor.handleResponse(responseFuture, responseMapper::toHealthResponse, responseObserver);
+    sendRequest(
+        request,
+        RequestMapper::toTopologyRequest,
+        ResponseMapper::toHealthResponse,
+        responseObserver);
   }
 
   @Override
   public void deployWorkflow(
       final DeployWorkflowRequest request,
-      final io.grpc.stub.StreamObserver<DeployWorkflowResponse> responseObserver) {
-    final ActorFuture<DeploymentEvent> responseFuture =
-        clusterClient.sendDeployWorkflowRequest(request);
-    requestActor.handleResponse(
-        responseFuture, responseMapper::toDeployWorkflowResponse, responseObserver);
+      final StreamObserver<DeployWorkflowResponse> responseObserver) {
+
+    sendRequest(
+        request,
+        RequestMapper::toDeployWorkflowRequest,
+        ResponseMapper::toDeployWorkflowResponse,
+        responseObserver);
   }
 
   @Override
   public void publishMessage(
       PublishMessageRequest request, StreamObserver<Empty> responseObserver) {
-    final ActorFuture<MessageEvent> responseFuture = clusterClient.sendPublishMessage(request);
-    requestActor.handleResponse(responseFuture, responseMapper::emptyResponse, responseObserver);
+
+    sendRequest(
+        request,
+        RequestMapper::toPublishMessageRequest,
+        ResponseMapper::emptyResponse,
+        responseObserver);
   }
 
   @Override
   public void createJob(
       CreateJobRequest request, StreamObserver<CreateJobResponse> responseObserver) {
-    final ActorFuture<JobEvent> responseFuture = clusterClient.sendCreateJob(request);
-    requestActor.handleResponse(
-        responseFuture, responseMapper::toCreateJobResponse, responseObserver);
+    sendRequest(
+        request,
+        RequestMapper::toCreateJobRequest,
+        ResponseMapper::toCreateJobResponse,
+        responseObserver);
   }
 
   @Override
   public void createWorkflowInstance(
       CreateWorkflowInstanceRequest request,
       StreamObserver<CreateWorkflowInstanceResponse> responseObserver) {
-    final ActorFuture<WorkflowInstanceEvent> responseFuture =
-        clusterClient.sendCreateWorkflowInstance(request);
-    requestActor.handleResponse(
-        responseFuture, responseMapper::toCreateWorkflowInstanceResponse, responseObserver);
+    sendRequest(
+        request,
+        RequestMapper::toCreateWorkflowInstanceRequest,
+        ResponseMapper::toCreateWorkflowInstanceResponse,
+        responseObserver);
+  }
+
+  private <GrpcRequestT, BrokerResponseT, GrpcResponseT> void sendRequest(
+      final GrpcRequestT grpcRequest,
+      final Function<GrpcRequestT, BrokerRequest<BrokerResponseT>> requestMapper,
+      final BrokerResponseMapper<BrokerResponseT, GrpcResponseT> responseMapper,
+      final StreamObserver<GrpcResponseT> streamObserver) {
+
+    final BrokerRequest<BrokerResponseT> brokerRequest;
+    try {
+      brokerRequest = requestMapper.apply(grpcRequest);
+    } catch (Exception e) {
+      streamObserver.onError(convertThrowable(e));
+      return;
+    }
+
+    brokerClient.sendRequest(
+        brokerRequest,
+        (response, error) -> {
+          try {
+            if (error == null) {
+              handleResponse(responseMapper, streamObserver, response);
+            } else {
+              streamObserver.onError(convertThrowable(error));
+            }
+          } catch (Exception e) {
+            streamObserver.onError(
+                convertThrowable(new ClientException("Unknown exception: " + e.getMessage())));
+          }
+        });
+  }
+
+  private <BrokerResponseT, GrpcResponseT> void handleResponse(
+      BrokerResponseMapper<BrokerResponseT, GrpcResponseT> responseMapper,
+      StreamObserver<GrpcResponseT> streamObserver,
+      BrokerResponse<BrokerResponseT> response) {
+    if (response.isResponse()) {
+      final GrpcResponseT grpcResponse =
+          responseMapper.apply(
+              response.getPartitionId(), response.getKey(), response.getResponse());
+      streamObserver.onNext(grpcResponse);
+      streamObserver.onCompleted();
+    } else if (response.isRejection()) {
+      final Throwable exception = new ClientCommandRejectedException(response.getRejection());
+      streamObserver.onError(convertThrowable(exception));
+    } else if (response.isError()) {
+      final Throwable exception = new BrokerErrorException(response.getError());
+      streamObserver.onError(convertThrowable(exception));
+    } else {
+      streamObserver.onError(
+          convertThrowable(new ClientException("Unknown exception for response: " + response)));
+    }
+  }
+
+  private static StatusRuntimeException convertThrowable(final Throwable cause) {
+    final String description;
+
+    if (cause instanceof ExecutionException) {
+      description = cause.getCause().getMessage();
+    } else {
+      description = cause.getMessage();
+    }
+
+    return Status.INTERNAL.augmentDescription(description).asRuntimeException();
   }
 }

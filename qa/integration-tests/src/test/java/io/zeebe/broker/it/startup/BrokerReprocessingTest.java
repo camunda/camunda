@@ -478,8 +478,7 @@ public class BrokerReprocessingTest {
     final int testTerm = 8;
 
     final ServiceName<Raft> serviceName =
-        RaftServiceNames.raftServiceName(
-            Partition.getPartitionName(clientRule.getDefaultPartition()));
+        RaftServiceNames.raftServiceName(Partition.getPartitionName(0));
 
     final Raft raft = brokerRule.getService(serviceName);
     waitUntil(() -> raft.getState() == RaftState.LEADER);

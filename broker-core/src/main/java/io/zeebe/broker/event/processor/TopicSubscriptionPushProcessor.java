@@ -29,7 +29,7 @@ import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.protocol.clientapi.SubscriptionType;
-import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.util.collection.LongRingBuffer;
 import org.agrona.DirectBuffer;
 

@@ -20,12 +20,12 @@ package io.zeebe.broker.workflow.state;
 import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
-import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.broker.workflow.processor.WorkflowInstanceLifecycle;
 import io.zeebe.broker.workflow.processor.WorkflowInstanceMetrics;
 import io.zeebe.broker.workflow.state.StoredRecord.Purpose;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.metrics.MetricsManager;
 

@@ -19,7 +19,7 @@ package io.zeebe.broker.logstreams.processor;
 
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RejectionType;
-import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.intent.Intent;
 import java.util.function.Consumer;
 

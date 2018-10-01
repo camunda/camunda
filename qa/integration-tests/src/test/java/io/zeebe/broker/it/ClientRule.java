@@ -24,9 +24,7 @@ import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.ZeebeClientBuilder;
 import io.zeebe.gateway.api.clients.JobClient;
 import io.zeebe.gateway.api.clients.WorkflowClient;
-import io.zeebe.gateway.api.commands.Partition;
 import io.zeebe.gateway.api.commands.PartitionInfo;
-import io.zeebe.gateway.api.commands.Partitions;
 import io.zeebe.gateway.api.commands.Topology;
 import io.zeebe.gateway.api.record.ValueType;
 import io.zeebe.gateway.impl.ZeebeClientBuilderImpl;
@@ -119,18 +117,7 @@ public class ClientRule extends ExternalResource {
         .until((v) -> deploymentFound.get());
   }
 
-  public List<Partition> partitions() {
-    final Partitions partitions = client.newPartitionsRequest().send().join();
-    return partitions.getPartitions();
-  }
-
-  public int getDefaultPartition() {
-    final List<Integer> defaultPartitions =
-        doRepeatedly(() -> getPartitions()).until(p -> !p.isEmpty());
-    return defaultPartitions.get(0);
-  }
-
-  private List<Integer> getPartitions() {
+  public List<Integer> getPartitions() {
     final Topology topology = client.newTopologyRequest().send().join();
 
     return topology

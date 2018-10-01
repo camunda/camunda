@@ -28,7 +28,6 @@ import static org.mockito.Mockito.when;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
-import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.transport.controlmessage.ControlMessageRequestHeaderDescriptor;
 import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.dispatcher.Dispatcher;
@@ -44,7 +43,8 @@ import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
 import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.MessageIntent;

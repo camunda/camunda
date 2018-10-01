@@ -24,13 +24,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 
-import io.zeebe.broker.exporter.record.value.DeploymentRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.IncidentRecordValueImpl;
-import io.zeebe.broker.exporter.record.value.JobRecordValueImpl;
-import io.zeebe.broker.exporter.record.value.MessageRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.MessageSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.RaftRecordValueImpl;
-import io.zeebe.broker.exporter.record.value.WorkflowInstanceRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.WorkflowInstanceSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.deployment.DeployedWorkflowImpl;
 import io.zeebe.broker.exporter.record.value.deployment.DeploymentResourceImpl;
@@ -43,15 +39,10 @@ import io.zeebe.broker.exporter.util.PojoConfigurationExporter;
 import io.zeebe.broker.exporter.util.PojoConfigurationExporter.PojoExporterConfiguration;
 import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.incident.data.IncidentRecord;
-import io.zeebe.broker.job.data.JobRecord;
-import io.zeebe.broker.subscription.message.data.MessageRecord;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.topic.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
-import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
-import io.zeebe.broker.workflow.deployment.data.DeploymentRecord;
-import io.zeebe.broker.workflow.deployment.data.ResourceType;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.RecordValue;
 import io.zeebe.exporter.record.value.DeploymentRecordValue;
@@ -65,6 +56,12 @@ import io.zeebe.exporter.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.gateway.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.UnpackedObject;
+import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.deployment.ResourceType;
+import io.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.ExporterIntent;
 import io.zeebe.protocol.intent.IncidentIntent;
@@ -375,7 +372,7 @@ public class ExporterStreamProcessorTest {
         .setVersion(workflowVersion);
 
     final DeploymentRecordValue expectedRecordValue =
-        new DeploymentRecordValueImpl(
+        new io.zeebe.broker.exporter.record.value.DeploymentRecordValueImpl(
             OBJECT_MAPPER,
             Collections.singletonList(
                 new DeployedWorkflowImpl(
@@ -464,7 +461,7 @@ public class ExporterStreamProcessorTest {
     record.setCustomHeaders(CUSTOM_HEADERS_MSGPACK);
 
     final JobRecordValue recordValue =
-        new JobRecordValueImpl(
+        new io.zeebe.broker.exporter.record.value.JobRecordValueImpl(
             OBJECT_MAPPER,
             PAYLOAD_JSON,
             type,
@@ -501,7 +498,7 @@ public class ExporterStreamProcessorTest {
             .setMessageId(wrapString(messageId));
 
     final MessageRecordValue recordValue =
-        new MessageRecordValueImpl(
+        new io.zeebe.broker.exporter.record.value.MessageRecordValueImpl(
             OBJECT_MAPPER, PAYLOAD_JSON, messageName, messageId, correlationKey, timeToLive);
 
     // then
@@ -575,7 +572,7 @@ public class ExporterStreamProcessorTest {
             .setScopeInstanceKey(scopeInstanceKey);
 
     final WorkflowInstanceRecordValue recordValue =
-        new WorkflowInstanceRecordValueImpl(
+        new io.zeebe.broker.exporter.record.value.WorkflowInstanceRecordValueImpl(
             OBJECT_MAPPER,
             PAYLOAD_JSON,
             bpmnProcessId,
@@ -687,8 +684,7 @@ public class ExporterStreamProcessorTest {
 
     final Record actualRecord = exportedRecords.get(0);
     final LoggedEvent loggedEvent = rule.events().withPosition(position);
-    final io.zeebe.protocol.impl.RecordMetadata metadata =
-        new io.zeebe.protocol.impl.RecordMetadata();
+    final RecordMetadata metadata = new RecordMetadata();
 
     assertThat(actualRecord)
         .hasPosition(loggedEvent.getPosition())

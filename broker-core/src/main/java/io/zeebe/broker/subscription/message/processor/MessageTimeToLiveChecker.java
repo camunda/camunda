@@ -18,9 +18,9 @@
 package io.zeebe.broker.subscription.message.processor;
 
 import io.zeebe.broker.logstreams.processor.TypedCommandWriter;
-import io.zeebe.broker.subscription.message.data.MessageRecord;
 import io.zeebe.broker.subscription.message.state.Message;
 import io.zeebe.broker.subscription.message.state.MessageStateController;
+import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.util.List;

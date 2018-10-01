@@ -28,7 +28,7 @@ import io.zeebe.gateway.api.clients.JobClient;
 import io.zeebe.gateway.api.events.JobEvent;
 import io.zeebe.gateway.impl.job.CreateJobCommandImpl;
 import java.time.Duration;
-import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -38,7 +38,8 @@ import org.junit.rules.Timeout;
 
 public class JobWorkerWithMultiplePartitionsTest {
 
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(setPartitionCount(3));
+  public static final int PARTITION_COUNT = 3;
+  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(setPartitionCount(PARTITION_COUNT));
 
   public ClientRule clientRule = new ClientRule(brokerRule);
 
@@ -65,15 +66,7 @@ public class JobWorkerWithMultiplePartitionsTest {
     final ZeebeClient client = clientRule.getClient();
 
     final Integer[] partitionIds =
-        client
-            .newPartitionsRequest()
-            .send()
-            .join()
-            .getPartitions()
-            .stream()
-            .map(p -> p.getId())
-            .collect(Collectors.toList())
-            .toArray(new Integer[3]);
+        IntStream.range(0, PARTITION_COUNT).boxed().toArray(Integer[]::new);
 
     final String jobType = "foooo";
 

@@ -15,18 +15,33 @@
  */
 package io.zeebe.gateway.impl.clustering;
 
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.zeebe.gateway.api.commands.BrokerInfo;
 import io.zeebe.gateway.api.commands.PartitionInfo;
+import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto.BrokerDto;
 import java.util.ArrayList;
 import java.util.List;
 
+// TODO: remove with https://github.com/zeebe-io/zeebe/issues/1377
 public class BrokerInfoImpl implements BrokerInfo {
   private int nodeId;
   private String host;
   private int port;
 
   private List<PartitionInfo> partitions = new ArrayList<>();
+
+  public BrokerInfoImpl() {}
+
+  public BrokerInfoImpl(BrokerDto broker) {
+    nodeId = broker.getNodeId();
+    host = bufferAsString(broker.getHost());
+    port = broker.getPort();
+
+    partitions = new ArrayList<>();
+    broker.partitionStates().forEach(partition -> partitions.add(new PartitionInfoImpl(partition)));
+  }
 
   @Override
   public int getNodeId() {

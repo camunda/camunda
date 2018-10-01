@@ -19,7 +19,7 @@ import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
-import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.raft.controller.MemberReplicateLogController;
 import io.zeebe.raft.event.RaftConfigurationEvent;
 import io.zeebe.raft.state.RaftState;

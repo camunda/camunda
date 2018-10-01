@@ -18,7 +18,8 @@ package io.zeebe.gateway.impl.subscription;
 import io.zeebe.gateway.cmd.ClientException;
 import io.zeebe.gateway.impl.Loggers;
 import io.zeebe.gateway.impl.ZeebeClientImpl;
-import io.zeebe.gateway.impl.partitions.PartitionsRequestImpl;
+import io.zeebe.gateway.impl.broker.cluster.BrokerClusterStateImpl;
+import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.gateway.impl.record.UntypedRecordImpl;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.util.CheckedConsumer;
@@ -43,6 +44,7 @@ public abstract class SubscriberGroup<T extends Subscriber> {
   // thread-safe data structure for iteration by subscription executors from another thread
   protected final List<T> subscribersList = new CopyOnWriteArrayList<>();
 
+  protected final BrokerTopologyManager topologyManager;
   protected final SubscriptionManager subscriptionManager;
 
   protected CompletableActorFuture<SubscriberGroup<T>> openFuture;
@@ -63,8 +65,9 @@ public abstract class SubscriberGroup<T extends Subscriber> {
       final ZeebeClientImpl client,
       final SubscriptionManager acquisition) {
     this.actor = actor;
-    this.subscriptionManager = acquisition;
     this.client = client;
+    this.topologyManager = client.getTopologyManager();
+    this.subscriptionManager = acquisition;
   }
 
   protected void doAbort(final String reason, final Throwable cause) {
@@ -76,17 +79,26 @@ public abstract class SubscriberGroup<T extends Subscriber> {
   protected void open(final CompletableActorFuture<SubscriberGroup<T>> openFuture) {
     this.openFuture = openFuture;
 
-    final PartitionsRequestImpl partitionsRequest =
-        (PartitionsRequestImpl) client.newPartitionsRequest();
-    actor.runOnCompletion(
-        partitionsRequest.send(),
-        (partitions, failure) -> {
-          if (failure != null) {
-            doAbort("Requesting partitions failed", failure);
-          } else {
-            partitions.getPartitions().forEach(p -> openSubscriber(p.getId()));
-          }
-        });
+    final BrokerClusterStateImpl topology = topologyManager.getTopology();
+    if (topology != null) {
+      openSubscribers(topology.getPartitionsCount());
+    } else {
+      actor.runOnCompletion(
+          topologyManager.requestTopology(),
+          (t, failure) -> {
+            if (failure != null) {
+              doAbort("Requesting partitions failed", failure);
+            } else {
+              openSubscribers(t.getPartitionsCount());
+            }
+          });
+    }
+  }
+
+  protected void openSubscribers(int partitionsCount) {
+    for (int i = 0; i < partitionsCount; i++) {
+      openSubscriber(i);
+    }
   }
 
   public void listenForClose(final CompletableActorFuture<Void> future) {

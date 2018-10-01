@@ -18,7 +18,15 @@
 package io.zeebe.broker.transport;
 
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.*;
+import static io.zeebe.broker.transport.TransportServiceNames.CLIENT_API_MESSAGE_HANDLER;
+import static io.zeebe.broker.transport.TransportServiceNames.CLIENT_API_SERVER_NAME;
+import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_CLIENT_NAME;
+import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_SERVER_NAME;
+import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_CLIENT_NAME;
+import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_MESSAGE_HANDLER;
+import static io.zeebe.broker.transport.TransportServiceNames.REPLICATION_API_SERVER_NAME;
+import static io.zeebe.broker.transport.TransportServiceNames.SUBSCRIPTION_API_CLIENT_NAME;
+import static io.zeebe.broker.transport.TransportServiceNames.SUBSCRIPTION_API_SERVER_NAME;
 
 import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
 import io.zeebe.broker.clustering.base.raft.RaftApiMessageHandlerService;
@@ -38,7 +46,12 @@ import io.zeebe.dispatcher.DispatcherBuilder;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.transport.*;
+import io.zeebe.transport.BufferingServerTransport;
+import io.zeebe.transport.ClientTransport;
+import io.zeebe.transport.ServerMessageHandler;
+import io.zeebe.transport.ServerRequestHandler;
+import io.zeebe.transport.ServerTransport;
+import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.collection.IntTuple;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -162,7 +175,7 @@ public class TransportComponent implements Component {
 
     final ClusterCfg clusterCfg = context.getBrokerConfiguration().getCluster();
     final ControlMessageHandlerManagerService controlMessageHandlerManagerService =
-        new ControlMessageHandlerManagerService(clusterCfg);
+        new ControlMessageHandlerManagerService();
     serviceContainer
         .createService(
             TransportServiceNames.CONTROL_MESSAGE_HANDLER_MANAGER,

@@ -20,7 +20,7 @@ package io.zeebe.broker.workflow.state;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.subscription.message.state.SubscriptionState;
 import io.zeebe.broker.util.KeyStateController;
-import io.zeebe.broker.workflow.deployment.data.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.util.buffer.BufferUtil;
 import java.io.File;
 import java.util.Collection;

@@ -18,14 +18,14 @@
 package io.zeebe.broker.topic;
 
 import io.zeebe.broker.incident.data.IncidentRecord;
-import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
-import io.zeebe.broker.subscription.message.data.MessageRecord;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
-import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
-import io.zeebe.broker.workflow.deployment.data.DeploymentRecord;
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import java.util.function.Predicate;
 
 public interface StreamProcessorControl {

@@ -32,6 +32,16 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
+      <artifactId>zb-protocol-impl</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-msgpack-value</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
       <artifactId>zb-transport</artifactId>
     </dependency>
 
@@ -132,12 +142,6 @@
     <dependency>
       <groupId>org.openjdk.jmh</groupId>
       <artifactId>jmh-generator-annprocess</artifactId>
-      <scope>test</scope>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
-      <artifactId>zb-msgpack-value</artifactId>
       <scope>test</scope>
     </dependency>
 

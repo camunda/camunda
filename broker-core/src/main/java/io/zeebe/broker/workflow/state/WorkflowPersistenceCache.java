@@ -17,14 +17,14 @@
  */
 package io.zeebe.broker.workflow.state;
 
-import io.zeebe.broker.workflow.deployment.data.DeploymentRecord;
-import io.zeebe.broker.workflow.deployment.data.DeploymentResource;
-import io.zeebe.broker.workflow.deployment.data.Workflow;
 import io.zeebe.broker.workflow.model.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.BpmnTransformer;
 import io.zeebe.logstreams.state.StateController;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
+import io.zeebe.protocol.impl.record.value.deployment.Workflow;
 import io.zeebe.util.buffer.BufferUtil;
 import java.nio.ByteOrder;
 import java.util.Collection;

@@ -17,15 +17,20 @@
  */
 package io.zeebe.broker.clustering.base.topology;
 
-import static io.zeebe.broker.clustering.base.gossip.GossipCustomEventEncoding.*;
+import static io.zeebe.broker.clustering.base.gossip.GossipCustomEventEncoding.readNodeInfo;
+import static io.zeebe.broker.clustering.base.gossip.GossipCustomEventEncoding.readPartitions;
+import static io.zeebe.broker.clustering.base.gossip.GossipCustomEventEncoding.writeNodeInfo;
+import static io.zeebe.broker.clustering.base.gossip.GossipCustomEventEncoding.writePartitions;
 
 import io.zeebe.broker.Loggers;
+import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.gossip.Gossip;
 import io.zeebe.gossip.GossipCustomEventListener;
 import io.zeebe.gossip.GossipMembershipListener;
 import io.zeebe.gossip.GossipSyncRequestHandler;
 import io.zeebe.gossip.dissemination.GossipSyncRequest;
 import io.zeebe.gossip.membership.Member;
+import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftStateListener;
 import io.zeebe.raft.state.RaftState;
@@ -63,9 +68,10 @@ public class TopologyManagerImpl extends Actor implements TopologyManager, RaftS
   private List<TopologyMemberListener> topologyMemberListers = new ArrayList<>();
   private List<TopologyPartitionListener> topologyPartitionListers = new ArrayList<>();
 
-  public TopologyManagerImpl(Gossip gossip, NodeInfo localBroker) {
+  public TopologyManagerImpl(Gossip gossip, NodeInfo localBroker, ClusterCfg clusterCfg) {
     this.gossip = gossip;
-    this.topology = new Topology(localBroker);
+    this.topology =
+        new Topology(localBroker, clusterCfg.getClusterSize(), clusterCfg.getPartitionsCount());
   }
 
   @Override
@@ -238,7 +244,7 @@ public class TopologyManagerImpl extends Actor implements TopologyManager, RaftS
   }
 
   @Override
-  public ActorFuture<TopologyDto> getTopologyDto() {
+  public ActorFuture<TopologyResponseDto> getTopologyDto() {
     return actor.call(topology::asDto);
   }
 

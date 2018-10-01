@@ -48,7 +48,7 @@ public class Topology {
   }
 
   public Topology addLeader(final int nodeId, final SocketAddress address, final int partition) {
-    getBroker(nodeId, address).addPartition(new BrokerPartitionState(LEADER_STATE, partition));
+    getBroker(nodeId, address).addPartition(new BrokerPartitionState(LEADER_STATE, partition, 1));
     return this;
   }
 

@@ -18,7 +18,7 @@
 package io.zeebe.broker.logstreams.processor;
 
 import io.zeebe.logstreams.processor.StreamProcessor;
-import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.impl.record.RecordMetadata;
 import java.util.Objects;
 
 /**

@@ -23,6 +23,8 @@ import io.zeebe.gateway.api.events.MessageEvent;
 import io.zeebe.gateway.api.events.MessageState;
 import io.zeebe.gateway.cmd.ClientCommandRejectedException;
 import io.zeebe.gateway.cmd.ClientException;
+import io.zeebe.gateway.impl.broker.BrokerClient;
+import io.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.zeebe.gateway.impl.data.MsgPackConverter;
 import io.zeebe.gateway.util.ClientRule;
 import io.zeebe.msgpack.spec.MsgPackHelper;
@@ -31,6 +33,7 @@ import io.zeebe.protocol.impl.SubscriptionUtil;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
+import io.zeebe.util.buffer.BufferUtil;
 import java.io.ByteArrayInputStream;
 import java.time.Duration;
 import java.util.Collections;
@@ -44,7 +47,7 @@ public class PublishMessageTest {
   private static final int FIRST_PARTITION = 0;
   private static final int PARTITION_COUNT = 10;
 
-  public StubBrokerRule brokerRule = new StubBrokerRule(0, PARTITION_COUNT);
+  public StubBrokerRule brokerRule = new StubBrokerRule(0, 1, PARTITION_COUNT);
   public ClientRule clientRule = new ClientRule(brokerRule);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
@@ -287,9 +290,7 @@ public class PublishMessageTest {
   @Test
   public void shouldPublishMessageOnSubscriptionPartition() {
     // given
-    final int expectedPartition =
-        FIRST_PARTITION
-            + Math.abs(SubscriptionUtil.getSubscriptionHashCode("order-123") % PARTITION_COUNT);
+    final int expectedPartition = getSubscriptionPartitionId("order-123");
 
     // when
     final MessageEvent messageEvent =
@@ -306,12 +307,27 @@ public class PublishMessageTest {
     assertThat(messageEvent.getMetadata().getPartitionId()).isEqualTo(expectedPartition);
   }
 
+  // TODO: remove with https://github.com/zeebe-io/zeebe/issues/1377
+  @Test
+  public void shouldPublishMessageOnSubscriptionPartitionWithBrokerClient() {
+    // given
+    final int expectedPartition = getSubscriptionPartitionId("order-123");
+
+    final BrokerPublishMessageRequest request =
+        new BrokerPublishMessageRequest("order canceled", "order-123").setTimeToLive(100);
+
+    // when
+    ((BrokerClient) clientRule.getClient()).sendRequest(request).join();
+
+    // then
+    final ExecuteCommandRequest commandRequest = brokerRule.getReceivedCommandRequests().get(0);
+    assertThat(commandRequest.partitionId()).isEqualTo(expectedPartition);
+  }
+
   @Test
   public void shouldPublishMessagesOnSamePartition() {
     // given
-    final int expectedPartition =
-        FIRST_PARTITION
-            + Math.abs(SubscriptionUtil.getSubscriptionHashCode("order-123") % PARTITION_COUNT);
+    final int expectedPartition = getSubscriptionPartitionId("order-123");
 
     // when
     workflowClient
@@ -338,13 +354,9 @@ public class PublishMessageTest {
   @Test
   public void shouldPublishMessagesOnDifferentPartitions() {
     // given
-    final int expectedPartition1 =
-        FIRST_PARTITION
-            + Math.abs(SubscriptionUtil.getSubscriptionHashCode("order-123") % PARTITION_COUNT);
+    final int expectedPartition1 = getSubscriptionPartitionId("order-123");
 
-    final int expectedPartition2 =
-        FIRST_PARTITION
-            + Math.abs(SubscriptionUtil.getSubscriptionHashCode("order-456") % PARTITION_COUNT);
+    final int expectedPartition2 = getSubscriptionPartitionId("order-456");
 
     assertThat(expectedPartition1).isNotEqualTo(expectedPartition2);
 
@@ -409,5 +421,11 @@ public class PublishMessageTest {
 
   public static class PayloadObject {
     public String foo;
+  }
+
+  private int getSubscriptionPartitionId(String correlationKey) {
+    return FIRST_PARTITION
+        + SubscriptionUtil.getSubscriptionPartitionId(
+            BufferUtil.wrapString(correlationKey), PARTITION_COUNT);
   }
 }

@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.clustering.base.topology;
 
+import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto;
 import io.zeebe.transport.SocketAddress;
 import java.util.Collection;
 import java.util.List;
@@ -42,5 +43,5 @@ public interface ReadableTopology {
 
   Collection<PartitionInfo> getPartitions();
 
-  TopologyDto asDto();
+  TopologyResponseDto asDto();
 }

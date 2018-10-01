@@ -17,15 +17,15 @@
  */
 package io.zeebe.broker.workflow.processor.job;
 
-import io.zeebe.broker.job.data.JobHeaders;
-import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
-import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.broker.workflow.state.WorkflowState;
+import io.zeebe.protocol.impl.record.value.job.JobHeaders;
+import io.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public final class JobCompletedEventProcessor implements TypedRecordProcessor<JobRecord> {

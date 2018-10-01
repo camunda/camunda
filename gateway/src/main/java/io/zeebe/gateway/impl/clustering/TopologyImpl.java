@@ -18,10 +18,22 @@ package io.zeebe.gateway.impl.clustering;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.zeebe.gateway.api.commands.BrokerInfo;
 import io.zeebe.gateway.api.commands.Topology;
+import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto;
+import java.util.ArrayList;
 import java.util.List;
 
+// TODO: remove with https://github.com/zeebe-io/zeebe/issues/1377
 public class TopologyImpl implements Topology {
-  private List<BrokerInfo> brokers;
+  private List<BrokerInfo> brokers = new ArrayList<>();
+  private int clusterSize;
+  private int partitionsCount;
+
+  public TopologyImpl() {}
+
+  public TopologyImpl(TopologyResponseDto dto) {
+    this.brokers = new ArrayList<>();
+    dto.brokers().forEach(broker -> brokers.add(new BrokerInfoImpl(broker)));
+  }
 
   @Override
   public List<BrokerInfo> getBrokers() {
@@ -31,6 +43,22 @@ public class TopologyImpl implements Topology {
   @JsonDeserialize(contentAs = BrokerInfoImpl.class)
   public void setBrokers(List<BrokerInfo> brokers) {
     this.brokers = brokers;
+  }
+
+  public int getClusterSize() {
+    return clusterSize;
+  }
+
+  public void setClusterSize(int clusterSize) {
+    this.clusterSize = clusterSize;
+  }
+
+  public int getPartitionsCount() {
+    return partitionsCount;
+  }
+
+  public void setPartitionsCount(int partitionsCount) {
+    this.partitionsCount = partitionsCount;
   }
 
   @Override

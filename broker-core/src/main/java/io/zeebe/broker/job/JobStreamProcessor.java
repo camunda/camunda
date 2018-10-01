@@ -19,7 +19,6 @@ package io.zeebe.broker.job;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.job.JobStateController.State;
-import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.job.old.CreditsRequest;
 import io.zeebe.broker.job.old.JobSubscriptionManager;
 import io.zeebe.broker.job.old.JobSubscriptionProcessor;
@@ -41,6 +40,7 @@ import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.util.sched.ScheduledTimer;
 import io.zeebe.util.sched.clock.ActorClock;

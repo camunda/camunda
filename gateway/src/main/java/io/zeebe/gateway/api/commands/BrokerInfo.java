@@ -17,6 +17,7 @@ package io.zeebe.gateway.api.commands;
 
 import java.util.List;
 
+// TODO: remove with https://github.com/zeebe-io/zeebe/issues/1377
 public interface BrokerInfo {
   /** @return the unique node id of the broker */
   int getNodeId();

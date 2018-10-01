@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.clustering.base.topology;
 
+import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.gossip.Gossip;
 import io.zeebe.raft.Raft;
 import io.zeebe.servicecontainer.Injector;
@@ -37,16 +38,18 @@ public class TopologyManagerService implements Service<TopologyManager> {
           .build();
 
   private final NodeInfo localMember;
+  private final ClusterCfg clusterCfg;
 
-  public TopologyManagerService(NodeInfo localMember) {
+  public TopologyManagerService(NodeInfo localMember, ClusterCfg clusterCfg) {
     this.localMember = localMember;
+    this.clusterCfg = clusterCfg;
   }
 
   @Override
   public void start(ServiceStartContext startContext) {
     final Gossip gossip = gossipInjector.getValue();
 
-    topologyManager = new TopologyManagerImpl(gossip, localMember);
+    topologyManager = new TopologyManagerImpl(gossip, localMember, clusterCfg);
 
     startContext.async(startContext.getScheduler().submitActor(topologyManager));
   }

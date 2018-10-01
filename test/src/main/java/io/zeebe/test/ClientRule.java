@@ -19,7 +19,6 @@ import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.api.clients.JobClient;
 import io.zeebe.gateway.api.clients.WorkflowClient;
 import io.zeebe.gateway.api.commands.BrokerInfo;
-import io.zeebe.gateway.api.commands.Partition;
 import io.zeebe.gateway.api.commands.PartitionInfo;
 import io.zeebe.gateway.api.commands.Topology;
 import java.util.List;
@@ -84,10 +83,6 @@ public class ClientRule extends ExternalResource {
     if (defaultPartition < 0) {
       throw new RuntimeException("Could not detect leader for default partition");
     }
-  }
-
-  public List<Partition> partitions() {
-    return client.newPartitionsRequest().send().join().getPartitions();
   }
 
   @Override

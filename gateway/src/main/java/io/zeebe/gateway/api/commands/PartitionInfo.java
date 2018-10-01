@@ -15,6 +15,7 @@
  */
 package io.zeebe.gateway.api.commands;
 
+// TODO: remove with https://github.com/zeebe-io/zeebe/issues/1377
 public interface PartitionInfo {
   /** @return the partition's id */
   int getPartitionId();

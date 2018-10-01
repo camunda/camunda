@@ -20,7 +20,6 @@ package io.zeebe.broker.workflow.processor.catchevent;
 import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
-import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.broker.workflow.model.ExecutableMessageCatchElement;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
@@ -29,6 +28,7 @@ import io.zeebe.broker.workflow.state.WorkflowSubscription;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResult;
 import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResults;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.util.sched.clock.ActorClock;
 import org.agrona.DirectBuffer;
 

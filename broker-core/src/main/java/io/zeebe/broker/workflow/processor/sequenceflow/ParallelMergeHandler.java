@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.workflow.processor.sequenceflow;
 
-import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.broker.workflow.model.ExecutableFlowNode;
 import io.zeebe.broker.workflow.model.ExecutableSequenceFlow;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
@@ -28,6 +27,7 @@ import io.zeebe.broker.workflow.state.IndexedRecord;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.msgpack.mapping.Mapping;
 import io.zeebe.msgpack.mapping.MsgPackMergeTool;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.HashMap;
 import java.util.List;
