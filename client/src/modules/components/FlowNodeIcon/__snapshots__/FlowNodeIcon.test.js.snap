@@ -18,6 +18,15 @@ exports[`FlowNodeIcon flow node state should render active light icon 1`] = `
 </styled.span>
 `;
 
+exports[`FlowNodeIcon flow node state should render active light icon if it's selected 1`] = `
+<styled.span
+  theme="dark"
+>
+  <Styled(FlowNodeTaskDefault) />
+  <Styled(FlowNodeStateOkLight) />
+</styled.span>
+`;
+
 exports[`FlowNodeIcon flow node state should render canceled dark icon 1`] = `
 <styled.span
   theme="dark"
@@ -84,6 +93,15 @@ exports[`FlowNodeIcon flow node state should render incident dark icon 1`] = `
 exports[`FlowNodeIcon flow node state should render incident light icon 1`] = `
 <styled.span
   theme="light"
+>
+  <Styled(FlowNodeTaskDefault) />
+  <Styled(FlowNodeStateIncidentLight) />
+</styled.span>
+`;
+
+exports[`FlowNodeIcon flow node state should render incident light icon if it's selected 1`] = `
+<styled.span
+  theme="dark"
 >
   <Styled(FlowNodeTaskDefault) />
   <Styled(FlowNodeStateIncidentLight) />

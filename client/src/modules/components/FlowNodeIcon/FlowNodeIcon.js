@@ -41,12 +41,17 @@ function FlowNodeIcon({state, type, isSelected, ...props}) {
   let TargetStateIcon = stateIconsMap[state][props.theme];
 
   // terminated and completed states have a special icon if the flownode is selected
-  if (isSelected && state === ACTIVITY_STATE.TERMINATED) {
-    TargetStateIcon = Styled.CanceledSelected;
-  }
-
-  if (isSelected && state === ACTIVITY_STATE.COMPLETED) {
-    TargetStateIcon = Styled.CompletedSelected;
+  if (isSelected) {
+    switch (state) {
+      case ACTIVITY_STATE.TERMINATED:
+        TargetStateIcon = Styled.CanceledSelected;
+        break;
+      case ACTIVITY_STATE.COMPLETED:
+        TargetStateIcon = Styled.CompletedSelected;
+        break;
+      default:
+        TargetStateIcon = stateIconsMap[state].light;
+    }
   }
 
   return (

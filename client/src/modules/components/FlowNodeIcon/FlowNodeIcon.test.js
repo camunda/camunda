@@ -209,6 +209,22 @@ describe('FlowNodeIcon', () => {
       expect(node).toMatchSnapshot();
     });
 
+    it("should render active light icon if it's selected", () => {
+      // given
+      const node = shallow(
+        <FlowNodeIcon
+          type={FLOW_NODE_TYPE.TASK}
+          state={ACTIVITY_STATE.ACTIVE}
+          theme="dark"
+          isSelected={true}
+        />
+      );
+
+      // then
+      expect(node.find(Styled.OkLight)).toHaveLength(1);
+      expect(node).toMatchSnapshot();
+    });
+
     it('should render incident dark icon', () => {
       // given
       const node = shallow(
@@ -231,6 +247,22 @@ describe('FlowNodeIcon', () => {
           type={FLOW_NODE_TYPE.TASK}
           state={ACTIVITY_STATE.INCIDENT}
           theme="light"
+        />
+      );
+
+      // then
+      expect(node.find(Styled.IncidentLight)).toHaveLength(1);
+      expect(node).toMatchSnapshot();
+    });
+
+    it("should render incident light icon if it's selected", () => {
+      // given
+      const node = shallow(
+        <FlowNodeIcon
+          type={FLOW_NODE_TYPE.TASK}
+          state={ACTIVITY_STATE.INCIDENT}
+          theme="dark"
+          isSelected={true}
         />
       );
 
