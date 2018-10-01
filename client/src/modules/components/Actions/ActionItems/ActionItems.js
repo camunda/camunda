@@ -15,7 +15,9 @@ const ariaLabelMap = {
 };
 
 export default function ActionItems(props) {
-  return <Styled.Ul {...props}>{props.children}</Styled.Ul>;
+  return (
+    <Styled.Ul {...props}>{React.Children.toArray(props.children)}</Styled.Ul>
+  );
 }
 
 ActionItems.propTypes = {
