@@ -65,3 +65,8 @@ export const InstanceAnchor = themed(styled(Link)`
 export const WorkflowName = styled.span`
   margin-left: 6px;
 `;
+
+export const EmptyTR = styled(Table.TR)`
+  border: 0;
+  padding: 0;
+`;

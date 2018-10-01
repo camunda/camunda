@@ -40,6 +40,20 @@ const mockProps = {
   sorting: {sortBy: 'foo', sortOrder: SORT_ORDER.ASC}
 };
 
+const emptyList = {
+  data: [],
+  onUpdateSelection: jest.fn(),
+  onEntriesPerPageChange: jest.fn(),
+  handleSorting: jest.fn(),
+  selection: {
+    excludeIds: new Set(),
+    ids: new Set()
+  },
+  expandState: EXPAND_STATE.DEFAULT,
+  sorting: {sortBy: 'foo', sortOrder: SORT_ORDER.ASC},
+  isDataLoaded: true
+};
+
 describe('List', () => {
   it('should have by default rowsToDisplay 9', () => {
     expect(new List().state.rowsToDisplay).toBe(9);
@@ -171,6 +185,29 @@ describe('List', () => {
       // Actions TD
       expect(TDNodes.at(4).find(Actions));
     });
+  });
+
+  it('should display a message for empty list when filter has no state', async () => {
+    const node = shallow(
+      <List {...emptyList} filter={{error: 'mock error message'}} />
+    );
+
+    expect(
+      node.find('[data-test="empty-message-instances-list"]')
+    ).toMatchSnapshot();
+  });
+
+  it.only('should display a empty list message when filter has at least one state', async () => {
+    const node = shallow(
+      <List
+        {...emptyList}
+        filter={{error: 'mock error message', active: true}}
+      />
+    );
+
+    expect(
+      node.find('[data-test="empty-message-instances-list"]')
+    ).toMatchSnapshot();
   });
 
   describe('recalculateHeight', () => {

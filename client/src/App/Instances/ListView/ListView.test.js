@@ -207,17 +207,6 @@ describe('ListView', () => {
   });
 
   describe('display instances List', () => {
-    it('should not contain a List if the instances are not loaded', () => {
-      // given
-      const node = shallow(Component);
-
-      // then
-      expect(node.find(List)).not.toExist();
-      expect(
-        node.find('[data-test="empty-message-instances-list"]')
-      ).not.toExist();
-    });
-
     it('should not contain a Footer when list is empty', () => {
       // given
       const node = shallow(Component);
@@ -307,68 +296,6 @@ describe('ListView', () => {
       expect(changeEntriesPerPage).toBeDefined();
       changeEntriesPerPage(87);
       expect(node.state('entriesPerPage')).toBe(87);
-    });
-
-    it('should display a message for empty list when filter has no state', async () => {
-      // given
-      const emptyFilterNode = shallow(
-        <ListView
-          selection={selection}
-          filter={{}}
-          filterCount={filterCount}
-          selections={selections}
-          openSelection={0}
-          onUpdateSelection={onUpdateSelection}
-          onAddToSpecificSelection={onAddToSpecificSelection}
-          onAddToOpenSelection={onAddToOpenSelection}
-          onAddNewSelection={onAddNewSelection}
-          onFirstElementChange={onFirstElementChange}
-        />
-      );
-
-      // when data fetched
-      await flushPromises();
-      emptyFilterNode.update();
-
-      // force empty instances list
-      emptyFilterNode.setState({instances: [], isDataLoaded: true});
-      emptyFilterNode.update();
-
-      // then
-      expect(
-        emptyFilterNode.find('[data-test="empty-message-instances-list"]')
-      ).toMatchSnapshot();
-    });
-
-    it('should display a empty list message when filter has at least one state', async () => {
-      // given
-      const withStateFilterNode = shallow(
-        <ListView
-          selection={selection}
-          filter={{active: true}}
-          filterCount={filterCount}
-          selections={selections}
-          openSelection={0}
-          onUpdateSelection={onUpdateSelection}
-          onAddToSpecificSelection={onAddToSpecificSelection}
-          onAddToOpenSelection={onAddToOpenSelection}
-          onAddNewSelection={onAddNewSelection}
-          onFirstElementChange={onFirstElementChange}
-        />
-      );
-
-      // when data fetched
-      await flushPromises();
-      withStateFilterNode.update();
-
-      // force empty instances list
-      withStateFilterNode.setState({instances: []});
-      withStateFilterNode.update();
-
-      // then
-      expect(
-        withStateFilterNode.find('[data-test="empty-message-instances-list"]')
-      ).toMatchSnapshot();
     });
   });
 

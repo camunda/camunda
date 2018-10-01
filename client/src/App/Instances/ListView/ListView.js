@@ -7,7 +7,6 @@ import {isEmpty} from 'modules/utils';
 import {isEqual} from 'lodash';
 import {parseFilterForRequest} from 'modules/utils/filter';
 import {fetchWorkflowInstances} from 'modules/api/instances';
-import EmptyMessage from '../EmptyMessage';
 
 import List from './List';
 import ListFooter from './ListFooter';
@@ -92,18 +91,6 @@ export default class ListView extends React.Component {
     return this.setState({sorting: newSorting});
   };
 
-  getEmptyListMessage = () => {
-    const {active, incidents, completed, canceled} = this.props.filter;
-
-    let msg = 'There are no instances matching this filter set.';
-
-    if (!active && !incidents && !completed && !canceled) {
-      msg += '\n To see some results, select at least one instance state.';
-    }
-
-    return msg;
-  };
-
   render() {
     const {
       selection,
@@ -122,29 +109,20 @@ export default class ListView extends React.Component {
       <SplitPane.Pane {...this.props}>
         <SplitPane.Pane.Header>Instances</SplitPane.Pane.Header>
         <Styled.PaneBody>
-          {isListEmpty &&
-            this.state.isDataLoaded && (
-              <EmptyMessage
-                message={this.getEmptyListMessage()}
-                data-test="empty-message-instances-list"
-              />
-            )}
-          {!isListEmpty &&
-            this.state.isDataLoaded && (
-              <List
-                data={this.state.instances}
-                selection={selection}
-                filterCount={filterCount}
-                filter={filter}
-                expandState={expandState}
-                sorting={this.state.sorting}
-                handleSorting={this.handleSorting}
-                onUpdateSelection={onUpdateSelection}
-                onEntriesPerPageChange={entriesPerPage =>
-                  this.setState({entriesPerPage})
-                }
-              />
-            )}
+          <List
+            data={this.state.instances}
+            selection={selection}
+            filterCount={filterCount}
+            filter={filter}
+            expandState={expandState}
+            sorting={this.state.sorting}
+            handleSorting={this.handleSorting}
+            onUpdateSelection={onUpdateSelection}
+            onEntriesPerPageChange={entriesPerPage =>
+              this.setState({entriesPerPage})
+            }
+            isDataLoaded={this.state.isDataLoaded}
+          />
         </Styled.PaneBody>
         <SplitPane.Pane.Footer>
           {!isListEmpty && (

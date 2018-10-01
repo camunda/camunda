@@ -6,6 +6,7 @@ import Checkbox from 'modules/components/Checkbox';
 import Table from 'modules/components/Table';
 import Actions from 'modules/components/Actions';
 import StateIcon from 'modules/components/StateIcon';
+import EmptyMessage from './../../EmptyMessage';
 
 import {EXPAND_STATE} from 'modules/constants';
 
@@ -36,7 +37,8 @@ export default class List extends React.Component {
     filter: PropTypes.object,
     sorting: PropTypes.object,
     handleSorting: PropTypes.func,
-    expandState: PropTypes.oneOf(Object.values(EXPAND_STATE))
+    expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
+    isDataLoaded: PropTypes.bool
   };
 
   state = {
@@ -247,12 +249,44 @@ export default class List extends React.Component {
     );
   }
 
+  renderEmptyMessage = () => {
+    return (
+      <TBody>
+        <Styled.EmptyTR>
+          <TD colSpan={5}>
+            <EmptyMessage
+              message={this.getEmptyListMessage()}
+              data-test="empty-message-instances-list"
+            />
+          </TD>
+        </Styled.EmptyTR>
+      </TBody>
+    );
+  };
+
+  getEmptyListMessage = () => {
+    const {active, incidents, completed, canceled} = this.props.filter;
+
+    let msg = 'There are no instances matching this filter set.';
+
+    if (!active && !incidents && !completed && !canceled) {
+      msg += '\n To see some results, select at least one instance state.';
+    }
+
+    return msg;
+  };
+
   render() {
+    const isListEmpty = this.props.data.length === 0;
+
     return (
       <Styled.List>
         <Styled.TableContainer innerRef={this.containerRef}>
           <Table>
             {this.renderTableHead()}
+            {isListEmpty &&
+              this.props.isDataLoaded &&
+              this.renderEmptyMessage()}
             {this.renderTableBody()}
           </Table>
         </Styled.TableContainer>
