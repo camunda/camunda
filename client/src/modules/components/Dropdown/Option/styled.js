@@ -61,8 +61,6 @@ export const OptionButton = themed(styled.button`
 `);
 
 const interactionStyles = css`
-  cursor: pointer;
-
   &:hover {
     background: ${themeStyle({
       dark: Colors.uiDark06,

@@ -16,7 +16,6 @@ const iconStyle = css`
 `;
 
 export const FoldButton = styled.button`
-  cursor: pointer;
   background: transparent;
   border: none;
 
@@ -46,7 +45,6 @@ export const Summary = themed(styled.div`
 `);
 
 export const SummaryLabel = themed(styled.button`
-  cursor: pointer;
   padding-left: ${({indentation}) => `${indentation * 22 + 37}px`};
   font-weight: ${({isFoldable, isSelected}) =>
     isSelected || isFoldable ? 'bold' : 'normal'};

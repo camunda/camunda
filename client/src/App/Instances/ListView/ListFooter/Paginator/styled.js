@@ -9,7 +9,6 @@ export const Page = themed(styled.button`
   color: ${themeStyle({dark: '#ffffff', light: Colors.uiDark02})};
   font-family: IBMPlexSans;
   font-size: 13px;
-  cursor: pointer;
   padding: ${({withIcon}) => (withIcon ? '0' : '0 5px')};
   line-height: 18px;
   height: 18px;

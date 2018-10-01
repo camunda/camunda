@@ -45,7 +45,6 @@ export default class ListFooter extends React.Component {
     const DropdownButtonStyles = {
       fontSize: '13px',
       fontWeight: 600,
-      cursor: 'pointer',
       background: Colors.selections,
       height: '26px',
       borderRadius: '13px',

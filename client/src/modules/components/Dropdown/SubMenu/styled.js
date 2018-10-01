@@ -41,9 +41,6 @@ export const SubMenuButton = themed(styled.button`
   text-align: left;
   line-height: 36px;
 
-  /* Other */
-  cursor: pointer;
-
   &:hover {
     background: ${themeStyle({
       dark: Colors.uiDark06,

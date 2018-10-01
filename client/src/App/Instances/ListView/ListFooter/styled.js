@@ -39,7 +39,6 @@ export const SelectionButton = themed(styled.button`
   height: 26px;
   padding: 4px 11px 5px 11px;
 
-  cursor: pointer;
 
   /* Color */
   background: ${Colors.selections};

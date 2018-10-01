@@ -4,8 +4,6 @@ import {themed, themeStyle, Colors} from 'modules/theme';
 import {UpBar, DownBar, LeftBar, RightBar} from 'modules/components/Icon';
 
 export const ExpandButton = themed(styled.button`
-  cursor: pointer;
-
   padding-left: 11.5px;
   padding-right: 15px;
   padding-top: 13px;

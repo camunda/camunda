@@ -26,9 +26,6 @@ export const OptionButton = themed(styled.button`
   font-weight: 600;
   line-height: 36px;
 
-  /* Other */
-  cursor: pointer;
-
   &:hover {
     background: ${themeStyle({
       dark: Colors.uiDark06,

@@ -54,11 +54,7 @@ export const LogEntryToggle = themed(styled.button`
   padding: 5px;
   padding-left: 43px;
   text-align: left;
-
   ${colorStyle};
-
-  cursor: pointer;
-
   font-size: 14px;
   font-weight: ${({isSelected}) => (!!isSelected ? 'bold' : 'normal')};
 `);
