@@ -45,7 +45,6 @@ Foldable.Summary = function Summary({
   isSelected,
   onSelection,
   children,
-  isFirst,
   ...props
 }) {
   return (
@@ -78,7 +77,6 @@ Foldable.Summary.propTypes = {
   indentation: PropTypes.number,
   isSelected: PropTypes.bool,
   onSelection: PropTypes.func,
-  isFirst: PropTypes.bool,
   children: PropTypes.oneOfType([
     PropTypes.arrayOf(PropTypes.node),
     PropTypes.node
