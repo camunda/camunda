@@ -11,16 +11,14 @@ exports[`Pane bottom pane 'should render both ExpandButtons by default 1`] = `
     key=".0"
   />
   <styled.div>
-    <React.Fragment>
-      <Styled(ExpandButton)
-        direction="DOWN"
-        onClick={[Function]}
-      />
-      <Styled(ExpandButton)
-        direction="UP"
-        onClick={[Function]}
-      />
-    </React.Fragment>
+    <Styled(ExpandButton)
+      direction="DOWN"
+      onClick={[Function]}
+    />
+    <Styled(ExpandButton)
+      direction="UP"
+      onClick={[Function]}
+    />
   </styled.div>
 </Styled(Panel)>
 `;

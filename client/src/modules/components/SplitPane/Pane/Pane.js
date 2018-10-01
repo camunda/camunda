@@ -25,70 +25,47 @@ export default class Pane extends React.Component {
     this.props.handleExpand(PANE_ID.BOTTOM);
   };
 
-  renderTopPane = () => {
+  getChildren = () => {
     const {expandState} = this.props;
 
     const children = Children.map(this.props.children, child =>
       cloneElement(child, {expandState})
     );
 
-    return (
-      <Styled.Pane {...this.props} expandState={expandState}>
-        {children}
-      </Styled.Pane>
-    );
+    return children;
   };
 
-  renderBottomPane = () => {
+  getBottomPaneButtons = () => {
     const {expandState} = this.props;
 
-    const children = Children.map(this.props.children, child =>
-      cloneElement(child, {expandState})
-    );
-
-    const expandBottomButton = (
-      <Styled.PaneExpandButton
-        onClick={this.handleBottomExpand}
-        direction={DIRECTION.UP}
-      />
-    );
-    const expandTopButton = (
-      <Styled.PaneExpandButton
-        onClick={this.handleTopExpand}
-        direction={DIRECTION.DOWN}
-      />
-    );
-
-    let buttons;
-
-    switch (expandState) {
-      case EXPAND_STATE.EXPANDED:
-        buttons = expandTopButton;
-        break;
-      case EXPAND_STATE.COLLAPSED:
-        buttons = expandBottomButton;
-        break;
-      default:
-        buttons = (
-          <React.Fragment>
-            {expandTopButton}
-            {expandBottomButton}
-          </React.Fragment>
-        );
-    }
+    const isTopButtonVisible = expandState !== EXPAND_STATE.COLLAPSED;
+    const isBottomButtonVisible = expandState !== EXPAND_STATE.EXPANDED;
 
     return (
-      <Styled.Pane {...this.props} expandState={expandState}>
-        {children}
-        <Styled.ButtonsContainer>{buttons}</Styled.ButtonsContainer>
-      </Styled.Pane>
+      <Styled.ButtonsContainer>
+        {isTopButtonVisible && (
+          <Styled.PaneExpandButton
+            onClick={this.handleTopExpand}
+            direction={DIRECTION.DOWN}
+          />
+        )}
+        {isBottomButtonVisible && (
+          <Styled.PaneExpandButton
+            onClick={this.handleBottomExpand}
+            direction={DIRECTION.UP}
+          />
+        )}
+      </Styled.ButtonsContainer>
     );
   };
 
   render() {
-    return this.props.paneId === PANE_ID.TOP
-      ? this.renderTopPane()
-      : this.renderBottomPane();
+    return (
+      <Styled.Pane {...this.props} expandState={this.props.expandState}>
+        {this.getChildren()}
+        {this.props.paneId === PANE_ID.BOTTOM && this.getBottomPaneButtons()}
+      </Styled.Pane>
+    );
   }
 }
 
