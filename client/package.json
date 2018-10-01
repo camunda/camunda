@@ -2,6 +2,7 @@
   "name": "client",
   "version": "0.1.0",
   "private": true,
+  "homepage": ".",
   "dependencies": {
     "array-includes": "^3.0.3",
     "array.prototype.find": "^2.0.4",

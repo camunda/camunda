@@ -4,7 +4,7 @@ document.querySelector('form').addEventListener('submit', function(event) {
   var licenseKey = document.querySelector('textarea').value;
 
   var request = new XMLHttpRequest();
-  request.open('POST', '/api/license/validate-and-store');
+  request.open('POST', 'api/license/validate-and-store');
   request.setRequestHeader('Content-Type', 'text/plain');
   request.addEventListener('readystatechange', function(event) {
     if (event.target.readyState === 4) {
@@ -27,13 +27,13 @@ document.querySelector('form').addEventListener('submit', function(event) {
 
         message +=
           ' You will be redirected to login page shortly. ' +
-          '<a href="/">Click here to go to login page immediately</a>';
+          '<a href="./">Click here to go to login page immediately</a>';
 
         alertBox.innerHTML = message;
         alertBox.setAttribute('class', 'alert alert-success');
 
         window.setTimeout(function() {
-          window.location.pathname = '/';
+          window.location.href = './';
         }, 10000);
       }
     }
@@ -43,7 +43,7 @@ document.querySelector('form').addEventListener('submit', function(event) {
 });
 
 var request = new XMLHttpRequest();
-request.open('GET', '/api/license/validate');
+request.open('GET', 'api/license/validate');
 request.addEventListener('readystatechange', function(event) {
   if (event.target.readyState === 4) {
     var response = JSON.parse(event.target.response);
@@ -73,7 +73,7 @@ request.send();
 
 function renderFooter() {
   const versionRequest = new XMLHttpRequest();
-  versionRequest.open('GET', '/api/meta/version');
+  versionRequest.open('GET', 'api/meta/version');
   versionRequest.send();
   const footerInfo = document.getElementById('footerInfo');
 
