@@ -25,6 +25,14 @@ jest.mock('react-router-dom', () => {
   };
 });
 
+jest.mock('components', () => ({
+  Button: props => {
+    const alllowedProps = {...props};
+    delete alllowedProps.noStyle;
+    return <button {...alllowedProps}>{alllowedProps.children}</button>;
+  }
+}));
+
 it('renders without crashing', () => {
   shallow(<LogoutButton />);
 });

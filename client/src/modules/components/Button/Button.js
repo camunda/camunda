@@ -9,30 +9,27 @@ export default React.forwardRef(function Button(props, ref) {
   delete filteredProps.active;
   delete filteredProps.color;
   delete filteredProps.type;
+  delete filteredProps.noStyle;
+  let classNamesProp = {};
+
+  if (!props.noStyle)
+    classNamesProp = {
+      className: classnames(props.className, 'Button', {
+        ['Button--' + props.type]: props.type,
+        ['Button--' + props.color]: props.color,
+        'is-active': props.active
+      })
+    };
+
   if (props.tag === 'a') {
     return (
-      <Link
-        {...filteredProps}
-        className={classnames(props.className, 'Button', {
-          ['Button--' + props.type]: props.type,
-          ['Button--' + props.color]: props.color,
-          'is-active': props.active
-        })}
-      >
+      <Link {...filteredProps} {...classNamesProp}>
         {props.children}
       </Link>
     );
   } else {
     return (
-      <button
-        {...filteredProps}
-        className={classnames(props.className, 'Button', {
-          ['Button--' + props.type]: props.type,
-          ['Button--' + props.color]: props.color,
-          'is-active': props.active
-        })}
-        ref={ref}
-      >
+      <button {...filteredProps} {...classNamesProp} ref={ref}>
         {props.children}
       </button>
     );

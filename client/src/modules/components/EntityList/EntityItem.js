@@ -2,7 +2,7 @@ import React from 'react';
 import moment from 'moment';
 import classnames from 'classnames';
 
-import {Icon} from 'components';
+import {Icon, Button} from 'components';
 import {Link} from 'react-router-dom';
 import entityIcons from './entityIcons';
 import {formatters} from 'services';
@@ -94,13 +94,13 @@ export default class EntityItem extends React.Component {
     if (this.props.operations.includes('duplicate')) {
       entry.operations.push({
         content: (
-          <button onClick={this.triggerDuplicate}>
+          <Button onClick={this.triggerDuplicate} noStyle>
             <Icon
               type="copy-document"
               title={`Duplicate ${this.props.api}`}
               className="duplicateIcon"
             />
-          </button>
+          </Button>
         ),
         parentClassName: 'dataTool'
       });
@@ -109,9 +109,9 @@ export default class EntityItem extends React.Component {
     if (this.props.operations.includes('delete')) {
       entry.operations.push({
         content: (
-          <button onClick={this.triggerDeleteModal}>
+          <Button onClick={this.triggerDeleteModal} noStyle>
             <Icon type="delete" title={`Delete ${this.props.api}`} className="deleteIcon" />
-          </button>
+          </Button>
         ),
         parentClassName: 'dataTool'
       });

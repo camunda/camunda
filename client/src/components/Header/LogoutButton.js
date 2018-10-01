@@ -3,6 +3,7 @@ import {Redirect} from 'react-router-dom';
 import {destroy} from 'credentials';
 import {get} from 'request';
 import {withErrorHandling} from 'HOC';
+import {Button} from 'components';
 
 import './LogoutButton.css';
 
@@ -30,9 +31,9 @@ export default withErrorHandling(
     render() {
       return (
         <div className="LogoutButton">
-          <button onClick={this.logout} title="Log out">
+          <Button onClick={this.logout} title="Log out" noStyle>
             Logout
-          </button>
+          </Button>
           {this.state.redirect && (
             <Redirect
               to={{
