@@ -71,20 +71,18 @@ request.addEventListener('readystatechange', function(event) {
 
 request.send();
 
-function renderFooter() {
-  const versionRequest = new XMLHttpRequest();
-  versionRequest.open('GET', 'api/meta/version');
-  versionRequest.send();
-  const footerInfo = document.getElementById('footerInfo');
+const versionRequest = new XMLHttpRequest();
+versionRequest.open('GET', 'api/meta/version');
+versionRequest.send();
+const footerInfo = document.getElementById('footerInfo');
 
-  versionRequest.addEventListener('readystatechange', function(event) {
-    if (event.target.readyState === 4) {
-      var response = JSON.parse(event.target.response);
-      footerInfo.innerText = `© Camunda Services GmbH ${new Date().getFullYear()}, All Rights Reserved. | ${
-        response.optimizeVersion
-      }`;
-    }
-  });
-}
-
-renderFooter();
+versionRequest.addEventListener('readystatechange', function(event) {
+  if (event.target.readyState === 4) {
+    var response = JSON.parse(event.target.response);
+    footerInfo.innerText =
+      '© Camunda Services GmbH ' +
+      new Date().getFullYear() +
+      ', All Rights Reserved. | ' +
+      response.optimizeVersion;
+  }
+});
