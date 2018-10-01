@@ -1,5 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import {isEqual, isEmpty} from 'lodash';
 
 import Checkbox from 'modules/components/Checkbox';
 import Table from 'modules/components/Table';
@@ -10,7 +11,7 @@ import {EXPAND_STATE} from 'modules/constants';
 
 import {getWorkflowName} from 'modules/utils/instance';
 import {formatDate} from 'modules/utils/date';
-import {isEqual} from 'modules/utils';
+
 import {
   areIdsArray,
   areIdsSet,
@@ -80,7 +81,7 @@ export default class List extends React.Component {
       selection.ids = createIdArrayFromFilterString(selection.ids);
     }
     if (
-      isEqual(selectionFilters, filter) ||
+      (isEqual(selectionFilters, filter) && !isEmpty(filter)) ||
       areIdsArray(selection, filterCount) ||
       areIdsSet(selection, filterCount)
     )
@@ -101,7 +102,11 @@ export default class List extends React.Component {
     const selectionFilters = this.getSelectionFilters(selection, filter);
 
     if (excludeIds.has(id)) return false;
-    if (isEqual(selectionFilters, this.props.filter)) return true;
+    if (
+      isEqual(selectionFilters, this.props.filter) &&
+      !isEmpty(this.props.filter)
+    )
+      return true;
 
     if (typeof ids === 'string') {
       ids = createIdArrayFromFilterString(ids);
@@ -120,7 +125,10 @@ export default class List extends React.Component {
     const {selection, filter} = this.props;
 
     const selectionFilters = this.getSelectionFilters(selection, filter);
-    const changeType = isEqual(selectionFilters, filter) ? 'excludeIds' : 'Ids';
+    const changeType =
+      isEqual(selectionFilters, filter) && !isEmpty(filter)
+        ? 'excludeIds'
+        : 'Ids';
 
     const IdSetChanges =
       changeType === 'excludeIds'
