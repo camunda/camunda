@@ -248,7 +248,7 @@ export default class Typeahead extends React.Component {
                     style={valueStyle}
                     onMouseDown={evt => evt.preventDefault()}
                     onClick={this.selectValue(value)}
-                    key={value && value.id ? value.id : index}
+                    key={value && value.id ? value.id : formatter(value)}
                   >
                     {formatters.getHighlightedText(formatter(value), this.state.query)}
                   </Dropdown.Option>

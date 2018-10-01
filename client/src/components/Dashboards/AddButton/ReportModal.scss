@@ -5,15 +5,14 @@
   cursor: pointer;
 }
 
-.muted {
-  color: gray;
-}
-
 .ReportModal {
   label {
     text-align: center;
   }
   .externalInput {
     width: 100%;
+  }
+  .muted {
+    color: gray;
   }
 }
