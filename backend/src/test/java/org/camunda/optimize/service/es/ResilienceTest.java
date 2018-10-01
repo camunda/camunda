@@ -88,7 +88,7 @@ public class ResilienceTest {
   public void testCrashOfEsDuringRuntime () throws Exception {
     //given
     Node testNode = elasticSearchTestNode();
-    EmbeddedOptimizeRule optimize = new EmbeddedOptimizeRule("classpath:unit/applicationContext.xml");
+    EmbeddedOptimizeRule optimize = new EmbeddedOptimizeRule("classpath:unit/resilienceTestapplicationContext.xml");
     optimize.startOptimize();
 
     //then

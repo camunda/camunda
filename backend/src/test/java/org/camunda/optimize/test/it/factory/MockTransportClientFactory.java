@@ -1,14 +1,12 @@
 package org.camunda.optimize.test.it.factory;
 
-import org.camunda.optimize.service.es.TransportClientFactory;
 import org.elasticsearch.client.Client;
 import org.mockito.Mockito;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 import org.springframework.context.ApplicationContext;
 
-public class SpyTransportClientFactory implements FactoryBean<Client> {
+public class MockTransportClientFactory implements FactoryBean<Client> {
 
   private Client spyedInstance;
 
@@ -17,12 +15,7 @@ public class SpyTransportClientFactory implements FactoryBean<Client> {
 
   @Override
   public Client getObject() {
-    if (spyedInstance == null) {
-      AutowireCapableBeanFactory beanFactory = applicationContext.getAutowireCapableBeanFactory();
-      TransportClientFactory transportClientFactory = beanFactory.createBean(TransportClientFactory.class);
-      spyedInstance = Mockito.spy(transportClientFactory.getObject());
-    }
-    return spyedInstance;
+    return Mockito.mock(Client.class);
   }
 
   @Override
