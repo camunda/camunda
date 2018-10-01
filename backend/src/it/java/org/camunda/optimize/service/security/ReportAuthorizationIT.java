@@ -159,10 +159,11 @@ public class ReportAuthorizationIT {
     reportShareDto.setReportId(reportId);
 
     // when
-    Response response = embeddedOptimizeRule.target("share/report")
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, createAuthenticationHeaderForKermit())
-      .post(Entity.json(reportShareDto));
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildShareReportRequest(reportShareDto)
+            .withUserAuthentication("kermit", "kermit")
+            .execute();
 
     // then
     assertThat(response.getStatus(), is(403));

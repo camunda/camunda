@@ -19,18 +19,10 @@ import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.ReportDataHelper;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.*;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -158,17 +150,17 @@ public abstract class AbstractSharingIT {
   }
 
   protected Response createReportShareResponse(ReportShareDto share) {
-    return embeddedOptimizeRule.target(SHARE + "/" + REPORT)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .post(Entity.json(share));
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildShareReportRequest(share)
+            .execute();
   }
 
   protected Response createDashboardShareResponse(DashboardShareDto share) {
-    return embeddedOptimizeRule.target(SHARE + "/" + DASHBOARD)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .post(Entity.json(share));
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildShareDashboardRequest(share)
+            .execute();
   }
 
   ReportShareDto createReportShare() {
@@ -194,23 +186,11 @@ public abstract class AbstractSharingIT {
     return response.readEntity(IdDto.class).getId();
   }
 
-  protected String getSharedReportEvaluationPath(String shareId) {
-    return SHARE + "/"+ REPORT + "/" + shareId + "/" + EVALUATE;
-  }
-
-  protected String getSharedDashboardReportEvaluationPath(String dashboardShareId, String reportId) {
-    return SHARE + "/"+ DASHBOARD + "/" + dashboardShareId + "/"  + REPORT + "/" + reportId  + "/" + EVALUATE;
-  }
-
-  protected String getSharedDashboardEvaluationPath(String shareId) {
-    return SHARE + "/"+ DASHBOARD + "/" + shareId + "/" + EVALUATE;
-  }
-
   private Response findShareForReport(String reportId) {
-    return embeddedOptimizeRule.target(SHARE + "/report/" + reportId)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .get();
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildFindShareForReportRequest(reportId)
+            .execute();
   }
 
   protected ReportShareDto getShareForReport(String reportId) {

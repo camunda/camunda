@@ -13,8 +13,6 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import javax.mail.internet.MimeMessage;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.is;

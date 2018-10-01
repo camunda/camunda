@@ -6,7 +6,6 @@ import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.FlowNodesGroupByDto;
 import org.junit.Before;
@@ -20,9 +19,7 @@ import org.quartz.TriggerKey;
 import org.quartz.listeners.TriggerListenerSupport;
 
 import javax.mail.internet.MimeMessage;
-import javax.ws.rs.client.Entity;
 import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -34,9 +31,7 @@ import java.util.UUID;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.HEAT_VISUALIZATION;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 

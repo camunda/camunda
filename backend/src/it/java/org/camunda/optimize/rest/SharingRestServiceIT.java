@@ -8,14 +8,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.util.HashMap;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
+import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 
@@ -31,10 +27,11 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   @Test
   public void checkShareStatusWithoutAuthentication() {
     // when
-    Response response =
-      embeddedOptimizeRule.target(SHARE + "/status")
-        .request()
-        .post(Entity.json(""));
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCheckSharingStatusRequest(null)
+            .withoutAuthentication()
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(401));
@@ -44,9 +41,11 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   public void createNewReportShareWithoutAuthentication() {
     // when
     Response response =
-      embeddedOptimizeRule.target(SHARE + "/" + REPORT)
-        .request()
-        .post(Entity.json(""));
+      embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildShareReportRequest(null)
+            .withoutAuthentication()
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(401));
@@ -55,10 +54,11 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   @Test
   public void createNewDashboardShareWithoutAuthentication() {
     // when
-    Response response =
-      embeddedOptimizeRule.target(SHARE + "/" + DASHBOARD)
-        .request()
-        .post(Entity.json(""));
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildShareDashboardRequest(null)
+            .withoutAuthentication()
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(401));
@@ -101,10 +101,11 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   @Test
   public void deleteReportShareWithoutAuthentication() {
     // when
-    Response response =
-      embeddedOptimizeRule.target(SHARE + "/" + REPORT + "/1124")
-        .request()
-        .delete();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildDeleteReportShareRequest("1124")
+            .withoutAuthentication()
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(401));
@@ -113,10 +114,11 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   @Test
   public void deleteDashboardShareWithoutAuthentication() {
     // when
-    Response response =
-      embeddedOptimizeRule.target(SHARE + "/" + DASHBOARD + "/1124")
-        .request()
-        .delete();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildDeleteDashboardShareRequest("1124")
+            .withoutAuthentication()
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(401));
@@ -130,10 +132,10 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
     // when
     Response response =
-      embeddedOptimizeRule.target(SHARE + "/" + REPORT + "/" + id)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .delete();
+      embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildDeleteReportShareRequest(id)
+            .execute();
 
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
@@ -149,10 +151,10 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
     // when
     Response response =
-      embeddedOptimizeRule.target(SHARE + "/" + DASHBOARD + "/" + id)
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .delete();
+      embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildDeleteDashboardShareRequest(id)
+            .execute();
 
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
@@ -179,9 +181,11 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     addShareForFakeReport();
 
     // when
-    Response response = embeddedOptimizeRule.target(SHARE + "/report/" + FAKE_REPORT_ID)
-        .request()
-        .get();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildFindShareForReportRequest(FAKE_REPORT_ID)
+            .withoutAuthentication()
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(401));
@@ -210,11 +214,10 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     String dashboardShareId = addShareForDashboard(dashboardId);
 
     //when
-    Response response =
-      embeddedOptimizeRule.target(getSharedDashboardEvaluationPath(dashboardShareId))
-        .request()
-        .get();
-    DashboardDefinitionDto dashboardShareDto = response.readEntity(DashboardDefinitionDto.class);
+    DashboardDefinitionDto dashboardShareDto = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildEvaluateSharedDashboardRequest(dashboardShareId)
+            .execute(DashboardDefinitionDto.class, 200);
 
     //then
     assertThat(dashboardShareDto, is(notNullValue()));
@@ -224,14 +227,13 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
     // when
     String reportShareId = dashboardShareDto.getReports().get(0).getId();
-    response =
-      embeddedOptimizeRule.target(getSharedDashboardReportEvaluationPath(dashboardShareId, reportShareId))
-        .request()
-        .get();
+    HashMap evaluatedReportAsMap =
+      embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildEvaluateSharedDashboardReportRequest(dashboardShareId, reportShareId)
+            .execute(HashMap.class, 200);
 
     // then
-    assertThat(response.getStatus(), is(200));
-    HashMap evaluatedReportAsMap = response.readEntity(HashMap.class);
     assertReportData(reportId, evaluatedReportAsMap);
   }
 
@@ -243,9 +245,11 @@ public class SharingRestServiceIT extends AbstractSharingIT {
     addShareForDashboard(dashboardWithReport);
 
     //when
-    Response response = embeddedOptimizeRule.target(SHARE + "/" + DASHBOARD + "/" + dashboardWithReport)
-      .request()
-      .get();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildFindShareForDashboardRequest(dashboardWithReport)
+            .withoutAuthentication()
+            .execute();
 
     // then
     assertThat(response.getStatus(), is(401));
@@ -255,10 +259,10 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   public void evaluationOfNotExistingShareReturnsError() {
 
     //when
-    Response response =
-      embeddedOptimizeRule.target(getSharedReportEvaluationPath("123"))
-        .request()
-        .get();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildEvaluateSharedReportRequest("123")
+            .execute();
 
     //then
     assertThat(response.getStatus(), is(500));
@@ -268,9 +272,11 @@ public class SharingRestServiceIT extends AbstractSharingIT {
   public void checkSharingAuthorizationWithoutAuthentication() {
     // when
     Response response =
-      embeddedOptimizeRule.target(SHARE + "/" + DASHBOARD + "/1124/isAuthorizedToShare")
-        .request()
-        .get();
+      embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildDashboardShareAuthorizationCheck("1124")
+            .withoutAuthentication()
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(401));
@@ -284,10 +290,10 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
     // when
     Response response =
-      embeddedOptimizeRule.target(SHARE + "/" + DASHBOARD + "/" + dashboardId + "/isAuthorizedToShare")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .get();
+      embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildDashboardShareAuthorizationCheck(dashboardId)
+            .execute();
 
     // then the status code is okay
     assertThat(response.getStatus(), is(200));
@@ -303,20 +309,21 @@ public class SharingRestServiceIT extends AbstractSharingIT {
 
     // when
     Response response =
-      embeddedOptimizeRule.target(SHARE + "/" + DASHBOARD + "/" + dashboardId + "/isAuthorizedToShare")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthenticationHeaderForUser("kermit", "kermit"))
-        .get();
+      embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildDashboardShareAuthorizationCheck(dashboardId)
+            .withUserAuthentication("kermit", "kermit")
+            .execute();
 
     // then the status code is okay
     assertThat(response.getStatus(), is(403));
   }
 
   private Response findShareForDashboard(String dashboardId) {
-    return embeddedOptimizeRule.target(SHARE + "/dashboard/" + dashboardId)
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-      .get();
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildFindShareForDashboardRequest(dashboardId)
+            .execute();
   }
 
   private void addShareForFakeReport() {

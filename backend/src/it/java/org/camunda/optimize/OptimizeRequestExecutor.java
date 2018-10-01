@@ -9,6 +9,9 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
+import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
+import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchDto;
 
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
@@ -164,7 +167,7 @@ public class OptimizeRequestExecutor {
 
   public OptimizeRequestExecutor buildUpdateReportRequest(String id, ReportDefinitionDto entity) {
     this.path = "report" + "/" + id;
-    this.body = entity == null ? Entity.json("") : Entity.json(entity);
+    this.body = getBody(entity);
     this.requestType = PUT;
     return this;
   }
@@ -231,7 +234,7 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildUpdateDashboardRequest(String id, DashboardDefinitionDto entity) {
     this.path = "dashboard/" + id;
     this.requestType = PUT;
-    this.body = entity == null ? Entity.json("") : Entity.json(entity);
+    this.body = getBody(entity);
     return this;
   }
 
@@ -251,6 +254,79 @@ public class OptimizeRequestExecutor {
     this.path = "dashboard/" + id;
     this.requestType = DELETE;
     return this;
+  }
+
+  public OptimizeRequestExecutor buildFindShareForReportRequest(String id) {
+    this.path = "share/report/" + id;
+    this.requestType = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildFindShareForDashboardRequest(String id) {
+    this.path = "share/dashboard/" + id;
+    this.requestType = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildShareDashboardRequest(DashboardShareDto share) {
+    this.path = "share/dashboard";
+    this.body = getBody(share);
+    this.requestType = POST;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildShareReportRequest(ReportShareDto share) {
+    this.path = "share/report";
+    this.body = getBody(share);
+    this.requestType = POST;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildEvaluateSharedReportRequest(String shareId) {
+    this.path = "share/report/" + shareId + "/evaluate";
+    this.requestType = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildEvaluateSharedDashboardReportRequest(String dashboardShareId, String reportId) {
+    this.path = "share/dashboard/" + dashboardShareId + "/report/" + reportId  + "/evaluate";
+    this.requestType = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildEvaluateSharedDashboardRequest(String shareId) {
+    this.path = "share/dashboard/" + shareId + "/evaluate";
+    this.requestType = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildCheckSharingStatusRequest(ShareSearchDto shareSearchDto) {
+    this.path = "share/status";
+    this.requestType = POST;
+    this.body = getBody(shareSearchDto);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildDeleteReportShareRequest(String id) {
+    this.path = "share/report/" + id;
+    this.requestType = DELETE;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildDeleteDashboardShareRequest(String id) {
+    this.path = "share/dashboard/" + id;
+    this.requestType = DELETE;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildDashboardShareAuthorizationCheck(String id) {
+    this.path = "share/dashboard/" + id + "/isAuthorizedToShare";
+    this.requestType = GET;
+    return this;
+  }
+
+  private Entity getBody(Object entity) {
+    return entity == null ? Entity.json("") : Entity.json(entity);
   }
 
   private String authenticateUserRequest(String username, String password) {
