@@ -19,8 +19,8 @@ package io.zeebe.broker.logstreams.processor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.system.SystemConstants;
 import io.zeebe.broker.util.KeyStateController;
+import io.zeebe.protocol.Protocol;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -72,9 +72,9 @@ public class KeyGeneratorTest {
     final long nextKey = keyGenerator.nextKey();
 
     // then
-    final int partitionId = (int) (nextKey >> SystemConstants.KEYSPACE_POW_OF_2);
+    final int partitionId = (int) (nextKey >> Protocol.KEY_BITS);
     assertThat(partitionId).isEqualTo(1);
-    final long localKey = nextKey ^ ((long) partitionId << SystemConstants.KEYSPACE_POW_OF_2);
+    final long localKey = nextKey ^ ((long) partitionId << Protocol.KEY_BITS);
     assertThat(localKey).isEqualTo(5);
   }
 

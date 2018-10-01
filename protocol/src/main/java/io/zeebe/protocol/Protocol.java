@@ -33,4 +33,35 @@ public class Protocol {
 
   /** By convention, the partition to deploy to */
   public static final int DEPLOYMENT_PARTITION = 0;
+
+  public static final int decodePartitionId(long key) {
+    return (int) (key >> KEY_BITS);
+  }
+
+  /**
+   * The partition space is derived from the keyspace and the maximum bytes of long.
+   *
+   * <p>partitionSpace = 2^64 - KEYSPACE
+   */
+  public static final int PARTITION_BITS = 13;
+
+  public static final long MAXIMUM_PARTITIONS = 1L << PARTITION_BITS;
+
+  /**
+   * Keyspace is defined for each partition. To define the keyspace size, the maximum events, which
+   * can be written to the dispatcher implementation, has to be calculated.
+   *
+   * <p><b> If we change or replace the dispatcher implementation we should check if the current
+   * defined key space size is still valid. </b>
+   *
+   * <p>Calculation is done as follows:
+   *
+   * <p>On each segment 2^32 bytes can be written, we can have 2^32 segments. This means we can at
+   * maximum write 2*32 * 2^32 = 18446744073709551616 bytes. If we assume an avg event size of
+   * 15_000 bytes (due to payload and so on) we can calculate the maximum events which can be
+   * written to the dispatcher. `maximumEvents = maximumBytes / eventAvgSize = 1229782938247303.5`
+   * We can then calculate the min pow of 2 to reach this value like: log(2, 1229782938247303.5).
+   * This means we need a keyspace of 2^51 to have more keys then possible writable events.
+   */
+  public static final int KEY_BITS = 51;
 }

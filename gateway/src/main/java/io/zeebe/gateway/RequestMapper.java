@@ -15,12 +15,14 @@
  */
 package io.zeebe.gateway;
 
+import io.zeebe.gateway.impl.broker.request.BrokerCancelWorkflowInstanceRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerCreateJobRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerCreateWorkflowInstanceRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerDeployWorkflowRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerTopologyRequest;
 import io.zeebe.gateway.impl.data.MsgPackConverter;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
@@ -83,6 +85,16 @@ public class RequestMapper {
         .setWorkflowKey(grpcRequest.getWorkflowKey())
         .setVersion(grpcRequest.getVersion())
         .setPayload(ensureJsonSet(grpcRequest.getPayload()));
+
+    return brokerRequest;
+  }
+
+  public static BrokerCancelWorkflowInstanceRequest toCancelWorkflowInstanceRequest(
+      CancelWorkflowInstanceRequest grpcRequest) {
+    final BrokerCancelWorkflowInstanceRequest brokerRequest =
+        new BrokerCancelWorkflowInstanceRequest();
+
+    brokerRequest.setWorkflowInstanceKey(grpcRequest.getWorkflowInstanceKey());
 
     return brokerRequest;
   }

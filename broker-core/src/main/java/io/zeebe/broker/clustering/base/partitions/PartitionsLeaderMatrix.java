@@ -17,9 +17,8 @@
  */
 package io.zeebe.broker.clustering.base.partitions;
 
-import static io.zeebe.broker.system.SystemConstants.PARTITION_SPACE;
-
 import io.zeebe.broker.Loggers;
+import io.zeebe.protocol.Protocol;
 import org.agrona.collections.IntArrayList;
 import org.slf4j.Logger;
 
@@ -85,9 +84,9 @@ public class PartitionsLeaderMatrix {
     ensureLargerThen(partitionsCount, 1, "Partitions count must not be smaller then one.");
     ensureSmallerThen(
         partitionsCount,
-        PARTITION_SPACE,
+        Protocol.MAXIMUM_PARTITIONS,
         "Partitions count must be smaller then maximum partition space of "
-            + PARTITION_SPACE
+            + Protocol.MAXIMUM_PARTITIONS
             + ".");
     ensureLargerThen(clusterSize, 1, "Cluster size must not be smaller then one.");
     ensureLargerThen(replicationFactor, 1, "Replication factor must not be smaller then one.");

@@ -20,6 +20,7 @@ import static io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder.partition
 import static io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder.positionNullValue;
 import static io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder.sourceRecordPositionNullValue;
 
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ExecuteCommandRequestDecoder;
 import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
@@ -97,6 +98,8 @@ public class ExecuteCommandRequest implements BufferReader, BufferWriter {
 
   public ExecuteCommandRequest setKey(long key) {
     this.key = key;
+    this.partitionId = Protocol.decodePartitionId(key);
+
     return this;
   }
 

@@ -27,6 +27,8 @@ import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.gateway.protocol.GatewayGrpc;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest;
@@ -98,6 +100,17 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
         request,
         RequestMapper::toCreateWorkflowInstanceRequest,
         ResponseMapper::toCreateWorkflowInstanceResponse,
+        responseObserver);
+  }
+
+  @Override
+  public void cancelWorkflowInstance(
+      CancelWorkflowInstanceRequest request,
+      StreamObserver<CancelWorkflowInstanceResponse> responseObserver) {
+    sendRequest(
+        request,
+        RequestMapper::toCancelWorkflowInstanceRequest,
+        ResponseMapper::toCancelWorkflowInstanceResponse,
         responseObserver);
   }
 
