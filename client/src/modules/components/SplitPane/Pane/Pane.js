@@ -64,8 +64,8 @@ export default class Pane extends React.Component {
   render() {
     return (
       <Styled.Pane {...this.props} expandState={this.props.expandState}>
-        {this.getChildren()}
         {this.props.paneId === PANE_ID.BOTTOM && this.getBottomPaneButtons()}
+        {this.getChildren()}
       </Styled.Pane>
     );
   }

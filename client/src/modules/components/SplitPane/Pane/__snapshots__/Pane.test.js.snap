@@ -6,10 +6,6 @@ exports[`Pane bottom pane 'should render both ExpandButtons by default 1`] = `
   handleExpand={[Function]}
   paneId="BOTTOM"
 >
-  <Foo
-    expandState="DEFAULT"
-    key=".0"
-  />
   <styled.div>
     <Styled(ExpandButton)
       direction="DOWN"
@@ -22,6 +18,10 @@ exports[`Pane bottom pane 'should render both ExpandButtons by default 1`] = `
       title="expand bottom pane"
     />
   </styled.div>
+  <Foo
+    expandState="DEFAULT"
+    key=".0"
+  />
 </Styled(Panel)>
 `;
 
@@ -31,10 +31,6 @@ exports[`Pane bottom pane should render ExpandButton with DOWN icon if pane is e
   handleExpand={[Function]}
   paneId="BOTTOM"
 >
-  <Foo
-    expandState="EXPANDED"
-    key=".0"
-  />
   <styled.div>
     <Styled(ExpandButton)
       direction="DOWN"
@@ -42,6 +38,10 @@ exports[`Pane bottom pane should render ExpandButton with DOWN icon if pane is e
       title="expand top pane"
     />
   </styled.div>
+  <Foo
+    expandState="EXPANDED"
+    key=".0"
+  />
 </Styled(Panel)>
 `;
 
@@ -51,10 +51,6 @@ exports[`Pane bottom pane should render ExpandButton with UP icon if pane is col
   handleExpand={[Function]}
   paneId="BOTTOM"
 >
-  <Foo
-    expandState="COLLAPSED"
-    key=".0"
-  />
   <styled.div>
     <Styled(ExpandButton)
       direction="UP"
@@ -62,6 +58,10 @@ exports[`Pane bottom pane should render ExpandButton with UP icon if pane is col
       title="expand bottom pane"
     />
   </styled.div>
+  <Foo
+    expandState="COLLAPSED"
+    key=".0"
+  />
 </Styled(Panel)>
 `;
 
