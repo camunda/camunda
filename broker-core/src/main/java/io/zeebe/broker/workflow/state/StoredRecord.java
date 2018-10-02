@@ -75,6 +75,7 @@ public class StoredRecord implements BufferReader, BufferWriter {
   public enum Purpose {
     // Order is important, as we use the ordinal for persistence
     DEFERRED_TOKEN,
+    FAILED_TOKEN,
     FINISHED_TOKEN
   }
 }

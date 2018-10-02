@@ -39,12 +39,15 @@ public class ElementInstanceState {
   private static final byte[] ELEMENT_PARENT_CHILD_KEY_FAMILY_NAME =
       "elementParentChild".getBytes();
   private static final byte[] ELEMENT_INSTANCE_KEY_FAMILY_NAME = "elementInstanceKey".getBytes();
-  private static final byte[] STORED_RECORDS_KEY_FAMILY_NAME = "storedRecords".getBytes();
+  private static final byte[] TOKEN_EVENTS_KEY_FAMILY_NAME = "tokenEvents".getBytes();
+  private static final byte[] TOKEN_PARENT_CHILD_KEY_FAMILY_NAME = "tokenParentChild".getBytes();
+  private static final byte[] EMPTY_VALUE = new byte[1];
 
   public static final byte[][] COLUMN_FAMILY_NAMES = {
     ELEMENT_PARENT_CHILD_KEY_FAMILY_NAME,
     ELEMENT_INSTANCE_KEY_FAMILY_NAME,
-    STORED_RECORDS_KEY_FAMILY_NAME
+    TOKEN_EVENTS_KEY_FAMILY_NAME,
+    TOKEN_PARENT_CHILD_KEY_FAMILY_NAME
   };
 
   private final StateController rocksDbWrapper;
@@ -60,8 +63,10 @@ public class ElementInstanceState {
 
   private final ColumnFamilyHandle elementParentChildHandle;
   private final ColumnFamilyHandle elementInstanceHandle;
-  // (scopeKey, purpose, key) => record
-  private final ColumnFamilyHandle storedRecordsHandle;
+  // key => record
+  private final ColumnFamilyHandle tokenEventHandle;
+  // (element instance key, purpose) => token event key
+  private final ColumnFamilyHandle tokenParentChildHandle;
 
   private final Map<Long, ElementInstance> cachedInstances = new HashMap<>();
 
@@ -75,7 +80,9 @@ public class ElementInstanceState {
     elementParentChildHandle =
         rocksDbWrapper.getColumnFamilyHandle(ELEMENT_PARENT_CHILD_KEY_FAMILY_NAME);
     elementInstanceHandle = rocksDbWrapper.getColumnFamilyHandle(ELEMENT_INSTANCE_KEY_FAMILY_NAME);
-    storedRecordsHandle = rocksDbWrapper.getColumnFamilyHandle(STORED_RECORDS_KEY_FAMILY_NAME);
+    tokenEventHandle = rocksDbWrapper.getColumnFamilyHandle(TOKEN_EVENTS_KEY_FAMILY_NAME);
+    tokenParentChildHandle =
+        rocksDbWrapper.getColumnFamilyHandle(TOKEN_PARENT_CHILD_KEY_FAMILY_NAME);
   }
 
   public ElementInstance newInstance(
@@ -155,7 +162,13 @@ public class ElementInstanceState {
       cachedInstances.remove(key);
 
       longKeyBuffer.putLong(0, key, ByteOrder.LITTLE_ENDIAN);
-      rocksDbWrapper.removeEntriesWithPrefix(storedRecordsHandle, longKeyBuffer.byteArray());
+
+      rocksDbWrapper.removeEntriesWithPrefix(
+          tokenParentChildHandle,
+          longKeyBuffer.byteArray(),
+          (k, v) -> {
+            rocksDbWrapper.remove(tokenEventHandle, getLong(k, Long.BYTES + BitUtil.SIZE_OF_BYTE));
+          });
 
       final long parentKey = instance.getParentKey();
       if (parentKey > 0) {
@@ -163,6 +176,12 @@ public class ElementInstanceState {
         parentInstance.decrementChildCount();
       }
     }
+  }
+
+  public StoredRecord getTokenEvent(long key) {
+    keyBuffer.putLong(0, key, ByteOrder.LITTLE_ENDIAN);
+    return helper.getValueInstance(
+        StoredRecord.class, tokenEventHandle, keyBuffer, 0, Long.BYTES, valueBuffer);
   }
 
   void updateInstance(ElementInstance scopeInstance) {
@@ -216,7 +235,7 @@ public class ElementInstanceState {
     return offset;
   }
 
-  public void storeRecord(
+  public void storeTokenEvent(
       long scopeKey, TypedRecord<WorkflowInstanceRecord> record, Purpose purpose) {
     final IndexedRecord indexedRecord =
         new IndexedRecord(
@@ -231,43 +250,67 @@ public class ElementInstanceState {
     storedRecord.write(valueBuffer, 0);
 
     rocksDbWrapper.put(
-        storedRecordsHandle,
+        tokenEventHandle,
         keyBuffer.byteArray(),
-        0,
-        keyLength,
+        Long.BYTES + BitUtil.SIZE_OF_BYTE,
+        Long.BYTES,
         valueBuffer.byteArray(),
         0,
         storedRecord.getLength());
+
+    rocksDbWrapper.put(
+        tokenParentChildHandle,
+        keyBuffer.byteArray(),
+        0,
+        keyLength,
+        EMPTY_VALUE,
+        0,
+        EMPTY_VALUE.length);
   }
 
   public void removeStoredRecord(long scopeKey, long recordKey, Purpose purpose) {
     final int keyLength = writeStoreRecordKeyIntoBuffer(keyBuffer, 0, scopeKey, recordKey, purpose);
 
-    rocksDbWrapper.remove(storedRecordsHandle, keyBuffer.byteArray(), 0, keyLength);
+    rocksDbWrapper.remove(tokenParentChildHandle, keyBuffer.byteArray(), 0, keyLength);
+    rocksDbWrapper.remove(
+        tokenEventHandle, keyBuffer.byteArray(), Long.BYTES + BitUtil.SIZE_OF_BYTE, Long.BYTES);
   }
 
   public List<IndexedRecord> getDeferredTokens(long scopeKey) {
-    return getStoredRecords(scopeKey, Purpose.DEFERRED_TOKEN);
+    return getTokenEvents(scopeKey, Purpose.DEFERRED_TOKEN);
+  }
+
+  public IndexedRecord getFailedToken(long key) {
+    final StoredRecord tokenEvent = getTokenEvent(key);
+    if (tokenEvent != null && tokenEvent.getPurpose() == Purpose.FAILED_TOKEN) {
+      return tokenEvent.getRecord();
+    } else {
+      return null;
+    }
   }
 
   public List<IndexedRecord> getFinishedTokens(long scopeKey) {
-    return getStoredRecords(scopeKey, Purpose.FINISHED_TOKEN);
+    return getTokenEvents(scopeKey, Purpose.FINISHED_TOKEN);
   }
 
-  private List<IndexedRecord> getStoredRecords(long scopeKey, Purpose purpose) {
+  private List<IndexedRecord> getTokenEvents(long scopeKey, Purpose purpose) {
     longKeyPurposeBuffer.putLong(0, scopeKey, ByteOrder.LITTLE_ENDIAN);
     longKeyPurposeBuffer.putByte(Long.BYTES, (byte) purpose.ordinal());
 
     final List<IndexedRecord> records = new ArrayList<>();
     rocksDbWrapper.whileEqualPrefix(
-        storedRecordsHandle,
+        tokenParentChildHandle,
         longKeyPurposeBuffer.byteArray(),
         (key, value) -> {
-          final StoredRecord record = new StoredRecord();
-          record.wrap(new UnsafeBuffer(value), 0, value.length);
-          records.add(record.getRecord());
+          final StoredRecord tokenEvent =
+              getTokenEvent(getLong(key, Long.BYTES + BitUtil.SIZE_OF_BYTE));
+          records.add(tokenEvent.getRecord());
         });
     return records;
+  }
+
+  private static long getLong(byte[] array, int offset) {
+    return new UnsafeBuffer(array, offset, Long.BYTES).getLong(0, ByteOrder.LITTLE_ENDIAN);
   }
 
   public void flushDirtyState() {

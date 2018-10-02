@@ -60,10 +60,10 @@ import io.zeebe.util.metrics.MetricsManager;
  *   - tokens
  * - An element instance is an instance of a stateful BPMN element (e.g. service task, subprocess)
  * - A token is any event that is published to get from one element instance to another (e.g. sequence
- *   flow events, gateways). It is not explicitly represented as a "token event" or similar, there
- *   is no token identity.
+ *   flow events, gateways). Some of these events are stored in the index for later reference (e.g.
+ *   parallel merge), but most are not. There is no concept of token identity.
  * - Element instances are explicitly represented in the index (e.g. to be able to cancel them),
- *   tokens are only counted (e.g. if there is still "something" going on, when we would
+ *   tokens are counted (e.g. if there is still "something" going on, when we would
  *   like to complete a scope).
  * - Both things are transparently maintained in the index whenever an event is consumed or published.
  */
@@ -120,16 +120,20 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
     }
   }
 
-  public void deferEvent(TypedRecord<WorkflowInstanceRecord> event) {
+  public void deferTokenEvent(TypedRecord<WorkflowInstanceRecord> event) {
     final long scopeKey = event.getValue().getScopeInstanceKey();
-    // currently assuming only token events are deferred
-    elementInstanceState.storeRecord(scopeKey, event, Purpose.DEFERRED_TOKEN);
+    elementInstanceState.storeTokenEvent(scopeKey, event, Purpose.DEFERRED_TOKEN);
     elementInstanceState.spawnToken(scopeKey); // the token remains active
   }
 
   public void storeFinishedToken(TypedRecord<WorkflowInstanceRecord> event) {
     final long scopeKey = event.getValue().getScopeInstanceKey();
-    elementInstanceState.storeRecord(scopeKey, event, Purpose.FINISHED_TOKEN);
+    elementInstanceState.storeTokenEvent(scopeKey, event, Purpose.FINISHED_TOKEN);
+  }
+
+  public void storeFailedToken(TypedRecord<WorkflowInstanceRecord> event) {
+    final long scopeKey = event.getValue().getScopeInstanceKey();
+    elementInstanceState.storeTokenEvent(scopeKey, event, Purpose.FAILED_TOKEN);
   }
 
   public void consumeStoredRecord(long scopeKey, long key, Purpose purpose) {
