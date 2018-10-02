@@ -1,0 +1,16 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`VerticalExpandButton should render a button 1`] = `
+<Themed(styled.button)
+  title="Expand Random label"
+>
+  <styled.span>
+    <styled.span>
+      Random label
+    </styled.span>
+    <button>
+      Child content
+    </button>
+  </styled.span>
+</Themed(styled.button)>
+`;
