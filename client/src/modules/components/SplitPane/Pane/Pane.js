@@ -47,12 +47,14 @@ export default class Pane extends React.Component {
           <Styled.PaneExpandButton
             onClick={this.handleTopExpand}
             direction={DIRECTION.DOWN}
+            title="expand top pane"
           />
         )}
         {isBottomButtonVisible && (
           <Styled.PaneExpandButton
             onClick={this.handleBottomExpand}
             direction={DIRECTION.UP}
+            title="expand bottom pane"
           />
         )}
       </Styled.ButtonsContainer>
