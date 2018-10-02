@@ -30,10 +30,11 @@ public class VariableRestServiceIT {
   @Test
   public void getVariablesWithoutAuthentication() {
     // when
-    Response response =
-        embeddedOptimizeRule.target("variables")
-            .request()
-            .get();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetVariablesRequest("zhoka", "boka")
+            .withoutAuthentication()
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(401));
@@ -43,28 +44,24 @@ public class VariableRestServiceIT {
   public void getVariables() {
 
     // when
-    Response response =
-        embeddedOptimizeRule.target("variables")
-            .queryParam("processDefinitionKey", "aKey")
-            .queryParam("processDefinitionVersion", "aVersion")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .get();
+    List<VariableRetrievalDto> responseList =
+        embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetVariablesRequest("aKey", "aVersion")
+            .executeAndReturnList(VariableRetrievalDto.class, 200);
 
     // then the status code is not authorized
-    assertThat(response.getStatus(), is(200));
-    List responseList = response.readEntity(new GenericType<List<VariableRetrievalDto>>() {
-        });
     assertThat(responseList.isEmpty(), is(true));
   }
 
   @Test
   public void getVariableValuesWithoutAuthentication() {
     // when
-    Response response =
-        embeddedOptimizeRule.target("variables/values")
-            .request()
-            .get();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetVariableValuesRequest()
+            .withoutAuthentication()
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(401));
@@ -72,22 +69,17 @@ public class VariableRestServiceIT {
 
   @Test
   public void getVariableValues() {
-
     // when
-    Response response =
-        embeddedOptimizeRule.target("variables/values")
-            .queryParam("processDefinitionKey", "aKey")
-            .queryParam("processDefinitionVersion", "aVersion")
-            .queryParam("name", "bla")
-            .queryParam("type", "Boolean")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .get();
+    List responseList = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetVariableValuesRequest()
+            .addSingleQueryParam("processDefinitionKey", "aKey")
+            .addSingleQueryParam("processDefinitionVersion", "aVersion")
+            .addSingleQueryParam("name", "bla")
+            .addSingleQueryParam("type", "Boolean")
+            .executeAndReturnList(String.class, 200);
 
-    // then the status code is not authorized
-    assertThat(response.getStatus(), is(200));
-    List responseList = response.readEntity(new GenericType<List<String>>() {
-        });
+    // then
     assertThat(responseList.isEmpty(), is(true));
   }
 

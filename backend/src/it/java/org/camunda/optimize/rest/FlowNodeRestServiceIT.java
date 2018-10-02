@@ -35,11 +35,11 @@ public class FlowNodeRestServiceIT {
     flowNodeIdsToNamesRequestDto.setProcessDefinitionVersion("1");
 
     // when
-    Response response =
-        embeddedOptimizeRule.target("flow-node/flowNodeNames")
-            .request()
-            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-            .post(Entity.json(flowNodeIdsToNamesRequestDto));
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetFlowNodeNames(flowNodeIdsToNamesRequestDto)
+            .withoutAuthentication()
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(200));

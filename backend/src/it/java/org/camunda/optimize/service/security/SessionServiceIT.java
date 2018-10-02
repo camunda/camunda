@@ -285,15 +285,12 @@ public class SessionServiceIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    String token = embeddedOptimizeRule.authenticateUser("genzo", "genzo");
-    Response response =
-      embeddedOptimizeRule.target("process-definition")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, "Bearer " + token)
-        .get();
-    assertThat(response.getStatus(), is(200));
     List<ProcessDefinitionOptimizeDto> genzosDefinitions =
-      response.readEntity(new GenericType<List<ProcessDefinitionOptimizeDto>>() {});
+            embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetProcessDefinitionsRequest()
+            .withUserAuthentication("genzo", "genzo")
+            .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
 
     // then
     assertThat(genzosDefinitions.size(), is(0));
@@ -473,13 +470,11 @@ public class SessionServiceIT {
   }
 
   private List<ProcessDefinitionOptimizeDto> retrieveProcessDefinitionsAsKermitUser() {
-    Response response =
-      embeddedOptimizeRule.target("process-definition")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, createAuthenticationHeaderForKermit())
-        .get();
-    assertThat(response.getStatus(), is(200));
-    return response.readEntity(new GenericType<List<ProcessDefinitionOptimizeDto>>() {});
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetProcessDefinitionsRequest()
+            .withUserAuthentication("kermit", "kermit")
+            .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
   }
 
   private String deploySimpleProcessDefinition(String processId) throws IOException {
@@ -488,11 +483,6 @@ public class SessionServiceIT {
       .endEvent()
       .done();
     return engineRule.deployProcessAndGetId(modelInstance);
-  }
-
-  private String createAuthenticationHeaderForKermit() {
-    String token = embeddedOptimizeRule.authenticateUser("kermit", "kermit");
-    return "Bearer " + token;
   }
 
   private void createKermitGroupAndAddKermitToThatGroup() {

@@ -48,15 +48,11 @@ public class ProcessEngineImportRestServiceIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
-    Response response = embeddedOptimizeRule.target("process-definition")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION,embeddedOptimizeRule.getAuthorizationHeader())
-        .get();
-
+    List<ProcessDefinitionOptimizeDto> definitions = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetProcessDefinitionsRequest()
+            .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
     //then
-    assertThat(response.getStatus(),is(200));
-    List<ProcessDefinitionOptimizeDto> definitions =
-        response.readEntity(new GenericType<List<ProcessDefinitionOptimizeDto>>(){});
 
     assertThat(definitions,is(notNullValue()));
     assertThat(definitions.size(), is(1));

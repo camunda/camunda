@@ -625,27 +625,18 @@ public class VariableValueRetrievalIT {
   }
 
   private List<String> getVariableValues(Map<String, Object> queryParams) {
-    WebTarget webTarget = embeddedOptimizeRule.target("variables/values");
-    for (Map.Entry<String, Object> queryParam : queryParams.entrySet()) {
-      webTarget = webTarget.queryParam(queryParam.getKey(), queryParam.getValue());
-    }
-    Response response =
-      webTarget
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .get();
-    return response.readEntity(new GenericType<List<String>>() {
-    });
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetVariableValuesRequest()
+            .addQueryParams(queryParams)
+            .executeAndReturnList(String.class, 200);
   }
 
   private Response getVariableValueResponse(Map<String, Object> queryParams) {
-    WebTarget webTarget = embeddedOptimizeRule.target("variables/values");
-    for (Map.Entry<String, Object> queryParam : queryParams.entrySet()) {
-      webTarget = webTarget.queryParam(queryParam.getKey(), queryParam.getValue());
-    }
-    return webTarget
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-      .get();
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetVariableValuesRequest()
+            .addQueryParams(queryParams)
+            .execute();
   }
 }

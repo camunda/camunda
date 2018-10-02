@@ -75,13 +75,7 @@ public class VariableImportIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
-    List<VariableRetrievalDto> variablesResponseDtos =
-      embeddedOptimizeRule.target("variables")
-        .queryParam("processDefinitionKey", instanceDto.getProcessDefinitionKey())
-        .queryParam("processDefinitionVersion", instanceDto.getProcessDefinitionVersion())
-        .request()
-        .header(HttpHeaders.AUTHORIZATION,embeddedOptimizeRule.getAuthorizationHeader())
-        .get(new GenericType<List<VariableRetrievalDto>>(){});
+    List<VariableRetrievalDto> variablesResponseDtos = getVariables(instanceDto);
 
     //then
     assertThat(variablesResponseDtos.size(),is(variables.size()));
@@ -105,13 +99,7 @@ public class VariableImportIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    List<VariableRetrievalDto> variablesResponseDtos =
-      embeddedOptimizeRule.target("variables")
-        .queryParam("processDefinitionKey", instanceDto.getProcessDefinitionKey())
-        .queryParam("processDefinitionVersion", instanceDto.getProcessDefinitionVersion())
-        .request()
-        .header(HttpHeaders.AUTHORIZATION,embeddedOptimizeRule.getAuthorizationHeader())
-        .get(new GenericType<List<VariableRetrievalDto>>(){});
+    List<VariableRetrievalDto> variablesResponseDtos = getVariables(instanceDto);
 
     //then
     assertThat(variablesResponseDtos.size(),is(0));
@@ -146,17 +134,17 @@ public class VariableImportIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
-    List<VariableRetrievalDto> variablesResponseDtos =
-      embeddedOptimizeRule.target("variables")
-        .queryParam("processDefinitionKey", instanceDto.getProcessDefinitionKey())
-        .queryParam("processDefinitionVersion", instanceDto.getProcessDefinitionVersion())
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .get(new GenericType<List<VariableRetrievalDto>>() {
-        });
+    List<VariableRetrievalDto> variablesResponseDtos = getVariables(instanceDto);
 
     //then
     assertThat(variablesResponseDtos.size(), is(variables.size()));
+  }
+
+  private List<VariableRetrievalDto> getVariables(ProcessInstanceEngineDto instanceDto) {
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetVariablesRequest(instanceDto.getProcessDefinitionKey(), instanceDto.getProcessDefinitionVersion())
+            .executeAndReturnList(VariableRetrievalDto.class, 200);
   }
 
   @Test
@@ -179,14 +167,7 @@ public class VariableImportIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
-    List<VariableRetrievalDto> variablesResponseDtos =
-      embeddedOptimizeRule.target("variables")
-        .queryParam("processDefinitionKey", instanceDto.getProcessDefinitionKey())
-        .queryParam("processDefinitionVersion", instanceDto.getProcessDefinitionVersion())
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .get(new GenericType<List<VariableRetrievalDto>>() {
-        });
+    List<VariableRetrievalDto> variablesResponseDtos = getVariables(instanceDto);
 
     //then
     assertThat(variablesResponseDtos.size(), is(1));
@@ -218,15 +199,14 @@ public class VariableImportIT {
 
     //when
     List<String> variableValues =
-      embeddedOptimizeRule.target("variables/values")
-        .queryParam("processDefinitionKey", instanceDto.getProcessDefinitionKey())
-        .queryParam("processDefinitionVersion", instanceDto.getProcessDefinitionVersion())
-        .queryParam("name", "stringVar")
-        .queryParam("type", "String")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .get(new GenericType<List<String>>() {
-        });
+            embeddedOptimizeRule
+                    .getRequestExecutor()
+                    .addSingleQueryParam("name", "stringVar")
+                    .addSingleQueryParam("type", "String")
+                    .addSingleQueryParam("processDefinitionKey", instanceDto.getProcessDefinitionKey())
+                    .addSingleQueryParam("processDefinitionVersion", instanceDto.getProcessDefinitionVersion())
+                    .buildGetVariableValuesRequest()
+                    .executeAndReturnList(String.class, 200);
 
     //then
     assertThat(variableValues.size(), is(1));
@@ -256,15 +236,14 @@ public class VariableImportIT {
 
     //when
     List<String> variableValues =
-      embeddedOptimizeRule.target("variables/values")
-        .queryParam("processDefinitionKey", instanceDto.getProcessDefinitionKey())
-        .queryParam("processDefinitionVersion", instanceDto.getProcessDefinitionVersion())
-        .queryParam("name", "stringVar")
-        .queryParam("type", "String")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .get(new GenericType<List<String>>() {
-        });
+            embeddedOptimizeRule
+                    .getRequestExecutor()
+                    .addSingleQueryParam("name", "stringVar")
+                    .addSingleQueryParam("type", "String")
+                    .addSingleQueryParam("processDefinitionKey", instanceDto.getProcessDefinitionKey())
+                    .addSingleQueryParam("processDefinitionVersion", instanceDto.getProcessDefinitionVersion())
+                    .buildGetVariableValuesRequest()
+                    .executeAndReturnList(String.class, 200);
 
     //then
     assertThat(variableValues.size(), is(1));
@@ -272,15 +251,14 @@ public class VariableImportIT {
 
     // when
     variableValues =
-      embeddedOptimizeRule.target("variables/values")
-        .queryParam("processDefinitionKey", instanceDto.getProcessDefinitionKey())
-        .queryParam("processDefinitionVersion", instanceDto.getProcessDefinitionVersion())
-        .queryParam("name", "anotherVar")
-        .queryParam("type", "String")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .get(new GenericType<List<String>>() {
-        });
+            embeddedOptimizeRule
+                    .getRequestExecutor()
+                    .addSingleQueryParam("name", "anotherVar")
+                    .addSingleQueryParam("type", "String")
+                    .addSingleQueryParam("processDefinitionKey", instanceDto.getProcessDefinitionKey())
+                    .addSingleQueryParam("processDefinitionVersion", instanceDto.getProcessDefinitionVersion())
+                    .buildGetVariableValuesRequest()
+                    .executeAndReturnList(String.class, 200);
 
     //then
     assertThat(variableValues.size(), is(1));
@@ -314,15 +292,14 @@ public class VariableImportIT {
 
     //when
     List<String> variableValues =
-      embeddedOptimizeRule.target("variables/values")
-        .queryParam("processDefinitionKey", instanceDto.getProcessDefinitionKey())
-        .queryParam("processDefinitionVersion", instanceDto.getProcessDefinitionVersion())
-        .queryParam("name", "stringVar")
-        .queryParam("type", "String")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .get(new GenericType<List<String>>() {
-        });
+            embeddedOptimizeRule
+                    .getRequestExecutor()
+                    .addSingleQueryParam("name", "stringVar")
+                    .addSingleQueryParam("type", "String")
+                    .addSingleQueryParam("processDefinitionKey", instanceDto.getProcessDefinitionKey())
+                    .addSingleQueryParam("processDefinitionVersion", instanceDto.getProcessDefinitionVersion())
+                    .buildGetVariableValuesRequest()
+                    .executeAndReturnList(String.class, 200);
 
     //then
     assertThat(variableValues.size(), is(1));
@@ -348,15 +325,14 @@ public class VariableImportIT {
 
     //when
     List<String> variableValues =
-      embeddedOptimizeRule.target("variables/values")
-        .queryParam("processDefinitionKey", instanceDto.getProcessDefinitionKey())
-        .queryParam("processDefinitionVersion", instanceDto.getProcessDefinitionVersion())
-        .queryParam("name", "stringVar")
-        .queryParam("type", "String")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .get(new GenericType<List<String>>() {
-        });
+            embeddedOptimizeRule
+                    .getRequestExecutor()
+                    .addSingleQueryParam("name", "stringVar")
+                    .addSingleQueryParam("type", "String")
+                    .addSingleQueryParam("processDefinitionKey", instanceDto.getProcessDefinitionKey())
+                    .addSingleQueryParam("processDefinitionVersion", instanceDto.getProcessDefinitionVersion())
+                    .buildGetVariableValuesRequest()
+                    .executeAndReturnList(String.class, 200);
 
     //then
     assertThat(variableValues.size(), is(0));

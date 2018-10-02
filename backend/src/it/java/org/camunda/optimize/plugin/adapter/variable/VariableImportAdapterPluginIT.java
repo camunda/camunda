@@ -227,12 +227,10 @@ public class VariableImportAdapterPluginIT {
   }
 
   private List<VariableRetrievalDto> getVariables(ProcessInstanceEngineDto processDefinition) {
-    return embeddedOptimizeRule.target("variables")
-      .queryParam("processDefinitionKey", processDefinition.getProcessDefinitionKey())
-      .queryParam("processDefinitionVersion", processDefinition.getProcessDefinitionVersion())
-      .request()
-      .header(HttpHeaders.AUTHORIZATION,embeddedOptimizeRule.getAuthorizationHeader())
-      .get(new GenericType<List<VariableRetrievalDto>>(){});
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetVariablesRequest(processDefinition.getProcessDefinitionKey(), processDefinition.getProcessDefinitionVersion())
+            .executeAndReturnList(VariableRetrievalDto.class, 200);
   }
 
   private ProcessInstanceEngineDto deploySimpleServiceTaskWithVariables(Map<String, Object> variables) throws Exception {

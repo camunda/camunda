@@ -12,9 +12,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.List;
 
@@ -51,14 +48,11 @@ public class ProcessDefinitionRetrievalIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    Response response =
-        embeddedOptimizeRule.target("process-definition")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .get();
     List<ProcessDefinitionOptimizeDto> definitions =
-        response.readEntity(new GenericType<List<ProcessDefinitionOptimizeDto>>() {
-        });
+        embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetProcessDefinitionsRequest()
+            .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
 
     assertThat(definitions.size(), is(11));
   }
@@ -73,18 +67,14 @@ public class ProcessDefinitionRetrievalIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    Response response =
-        embeddedOptimizeRule.target("process-definition")
-            .queryParam("includeXml", false)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .get();
     List<ProcessDefinitionOptimizeDto> definitions =
-        response.readEntity(new GenericType<List<ProcessDefinitionOptimizeDto>>() {
-        });
+        embeddedOptimizeRule
+                .getRequestExecutor()
+                .buildGetProcessDefinitionsRequest()
+                .addSingleQueryParam("includeXml", false)
+                .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
 
     // then
-    assertThat(response.getStatus(), is(200));
     assertThat(definitions.size(), is(1));
     assertThat(definitions.get(0).getId(), is(processDefinitionId));
     assertThat(definitions.get(0).getKey(), is(processId));
@@ -107,15 +97,12 @@ public class ProcessDefinitionRetrievalIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    Response response =
-        embeddedOptimizeRule.target("process-definition")
-            .queryParam("includeXml", true)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .get();
     List<ProcessDefinitionOptimizeDto> definitions =
-        response.readEntity(new GenericType<List<ProcessDefinitionOptimizeDto>>() {
-        });
+            embeddedOptimizeRule
+                    .getRequestExecutor()
+                    .buildGetProcessDefinitionsRequest()
+                    .addSingleQueryParam("includeXml", true)
+                    .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
 
     // then
     assertThat(definitions.size(), is(1));
@@ -135,14 +122,11 @@ public class ProcessDefinitionRetrievalIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    Response response =
-        embeddedOptimizeRule.target("process-definition")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .get();
     List<ProcessDefinitionOptimizeDto> definitions =
-        response.readEntity(new GenericType<List<ProcessDefinitionOptimizeDto>>() {
-        });
+            embeddedOptimizeRule
+                    .getRequestExecutor()
+                    .buildGetProcessDefinitionsRequest()
+                    .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
 
     // then
     assertThat(definitions.size(), is(1));
@@ -166,16 +150,11 @@ public class ProcessDefinitionRetrievalIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    Response response =
-        embeddedOptimizeRule.target("process-definition/xml")
-            .queryParam("processDefinitionKey", processDefinition.getKey())
-            .queryParam("processDefinitionVersion", processDefinition.getVersion())
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .get();
-
     String actualXml =
-        response.readEntity(String.class);
+        embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetProcessDefinitionXmlRequest(processDefinition.getKey(), processDefinition.getVersion())
+            .execute(String.class, 200);
 
     // then
     assertThat(actualXml, is(Bpmn.convertToString(modelInstance)));
@@ -205,16 +184,11 @@ public class ProcessDefinitionRetrievalIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    Response response =
-        embeddedOptimizeRule.target("process-definition/xml")
-            .queryParam("processDefinitionKey", processDefinition.getKey())
-            .queryParam("processDefinitionVersion", ALL_VERSIONS)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .get();
-
     String actualXml =
-        response.readEntity(String.class);
+            embeddedOptimizeRule
+                    .getRequestExecutor()
+                    .buildGetProcessDefinitionXmlRequest(processDefinition.getKey(), ALL_VERSIONS)
+                    .execute(String.class, 200);
 
     // then
     assertThat(actualXml, is(Bpmn.convertToString(modelInstance)));

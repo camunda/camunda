@@ -218,12 +218,10 @@ public class ImportIT  {
 
     // then
     List<VariableRetrievalDto> variablesResponseDtos =
-      embeddedOptimizeRule.target("variables")
-        .queryParam("processDefinitionKey", firstProcInst.getProcessDefinitionKey())
-        .queryParam("processDefinitionVersion", firstProcInst.getProcessDefinitionVersion())
-        .request()
-        .header(HttpHeaders.AUTHORIZATION,embeddedOptimizeRule.getAuthorizationHeader())
-        .get(new GenericType<List<VariableRetrievalDto>>(){});
+      embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetVariablesRequest(firstProcInst.getProcessDefinitionKey(), firstProcInst.getProcessDefinitionVersion())
+            .executeAndReturnList(VariableRetrievalDto.class, 200);
 
     assertThat(variablesResponseDtos.size(),is(3));
   }

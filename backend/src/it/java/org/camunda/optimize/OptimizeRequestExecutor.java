@@ -3,7 +3,9 @@ package org.camunda.optimize;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
+import jdk.nashorn.internal.runtime.regexp.joni.encoding.ObjPtr;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
+import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
@@ -12,13 +14,16 @@ import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchDto;
+import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 
+import javax.ws.rs.OPTIONS;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -49,7 +54,22 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor addQueryParams(Map<String, Object> queryParams) {
-    this.queryParams = queryParams;
+    if (this.queryParams != null && queryParams.size() != 0) {
+      this.queryParams.putAll(queryParams);
+    } else {
+      this.queryParams = queryParams;
+    }
+    return this;
+  }
+
+  public OptimizeRequestExecutor addSingleQueryParam(String key, Object value) {
+    if (this.queryParams != null && queryParams.size() != 0) {
+      this.queryParams.put(key, value);
+    } else {
+      HashMap<String, Object> params = new HashMap<>();
+      params.put(key, value);
+      this.queryParams = params;
+    }
     return this;
   }
 
@@ -325,6 +345,55 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor buildGetProcessDefinitionsRequest() {
+    this.path = "process-definition";
+    this.requestType = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetProcessDefinitionsGroupedByKeyRequest() {
+    this.path = "process-definition/groupedByKey";
+    this.requestType = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetProcessDefinitionXmlRequest(String key, Object version) {
+    this.path = "process-definition/xml";
+    this.addSingleQueryParam("processDefinitionKey", key);
+    this.addSingleQueryParam("processDefinitionVersion", version);
+    this.requestType = GET;
+    return this;
+  }
+
+
+  public OptimizeRequestExecutor buildProcessDefinitionCorrelation(BranchAnalysisQueryDto entity) {
+    this.path = "process-definition/correlation";
+    this.requestType = POST;
+    this.body = getBody(entity);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetVariablesRequest(String key, Object version) {
+    this.path = "variables/";
+    this.addSingleQueryParam("processDefinitionKey", key);
+    this.addSingleQueryParam("processDefinitionVersion", version);
+    this.requestType = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetVariableValuesRequest() {
+    this.path = "variables/values";
+    this.requestType = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetFlowNodeNames(FlowNodeIdsToNamesRequestDto entity) {
+    this.path = "flow-node/flowNodeNames";
+    this.requestType = POST;
+    this.body = getBody(entity);
+    return this;
+  }
+
   private Entity getBody(Object entity) {
     return entity == null ? Entity.json("") : Entity.json(entity);
   }
@@ -339,5 +408,4 @@ public class OptimizeRequestExecutor {
             .post(Entity.json(entity));
     return "Bearer " + response.readEntity(String.class);
   }
-
 }

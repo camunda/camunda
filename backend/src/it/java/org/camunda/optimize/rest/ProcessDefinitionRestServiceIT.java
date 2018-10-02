@@ -71,10 +71,11 @@ public class ProcessDefinitionRestServiceIT {
   @Test
   public void getProcessDefinitionsWithoutAuthentication() {
     // when
-    Response response =
-        embeddedOptimizeRule.target("process-definition")
-            .request()
-            .get();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .withoutAuthentication()
+            .buildGetProcessDefinitionsRequest()
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(401));
@@ -86,17 +87,12 @@ public class ProcessDefinitionRestServiceIT {
     createProcessDefinition(ID, KEY);
 
     // when
-    Response response =
-        embeddedOptimizeRule.target("process-definition")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .get();
+    List<ProcessDefinitionOptimizeDto> definitions = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetProcessDefinitionsRequest()
+            .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
 
     // then the status code is okay
-    assertThat(response.getStatus(), is(200));
-    List<ProcessDefinitionOptimizeDto> definitions =
-        response.readEntity(new GenericType<List<ProcessDefinitionOptimizeDto>>() {
-        });
     assertThat(definitions, is(notNullValue()));
     assertThat(definitions.get(0).getId(), is(ID));
   }
@@ -108,18 +104,14 @@ public class ProcessDefinitionRestServiceIT {
     createProcessDefinition(expectedProcessDefinitionId, KEY);
 
     // when
-    Response response =
-        embeddedOptimizeRule.target("process-definition")
-            .queryParam("includeXml", true)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .get();
-
-    // then the status code is okay
-    assertThat(response.getStatus(), is(200));
     List<ProcessDefinitionOptimizeDto> definitions =
-        response.readEntity(new GenericType<List<ProcessDefinitionOptimizeDto>>() {
-        });
+      embeddedOptimizeRule
+              .getRequestExecutor()
+              .buildGetProcessDefinitionsRequest()
+              .addSingleQueryParam("includeXml", true)
+              .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
+
+    // then
     assertThat(definitions, is(notNullValue()));
     assertThat(definitions.get(0).getId(), is(expectedProcessDefinitionId));
     assertThat(definitions.get(0).getBpmn20Xml(), is("test"));
@@ -145,11 +137,11 @@ public class ProcessDefinitionRestServiceIT {
   public void getProcessDefinitionXmlWithoutAuthentication() {
     // when
     Response response =
-        embeddedOptimizeRule.target("process-definition/xml")
-            .queryParam("processDefinitionKey", "aProcDefKey")
-            .queryParam("processDefinitionVersion", "aProcDefVersion")
-            .request()
-            .get();
+        embeddedOptimizeRule
+            .getRequestExecutor()
+            .withoutAuthentication()
+            .buildGetProcessDefinitionXmlRequest("foo", "bar")
+            .execute();
 
 
     // then the status code is not authorized
@@ -167,18 +159,13 @@ public class ProcessDefinitionRestServiceIT {
     elasticSearchRule.addEntryToElasticsearch(elasticSearchRule.getProcessDefinitionType(), ID, expectedXml);
 
     // when
-    Response response =
-        embeddedOptimizeRule.target("process-definition/xml")
-            .queryParam("processDefinitionKey", "aProcDefKey")
-            .queryParam("processDefinitionVersion", "aProcDefVersion")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .get();
-
-    // then the status code is okay
-    assertThat(response.getStatus(), is(200));
     String actualXml =
-        response.readEntity(String.class);
+            embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetProcessDefinitionXmlRequest("aProcDefKey", "aProcDefVersion")
+            .execute(String.class, 200);
+
+    // then
     assertThat(actualXml, is(expectedXml.getBpmn20Xml()));
   }
 
@@ -193,18 +180,13 @@ public class ProcessDefinitionRestServiceIT {
     elasticSearchRule.addEntryToElasticsearch(configurationService.getProcessDefinitionType(), ID, expectedXml);
 
     // when
-    Response response =
-        embeddedOptimizeRule.target("process-definition/xml")
-            .queryParam("processDefinitionKey", "aProcDefKey")
-            .queryParam("processDefinitionVersion", "nonsenseVersion")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .get();
-
-    // then the status code is okay
-    assertThat(response.getStatus(), is(404));
     String message =
-        response.readEntity(String.class);
+            embeddedOptimizeRule
+                    .getRequestExecutor()
+                    .buildGetProcessDefinitionXmlRequest("aProcDefKey", "nonsenseVersion")
+                    .execute(String.class, 404);
+
+    // then
     assertThat(message.contains("Could not find xml for process definition with key"), is(true));
   }
 
@@ -219,29 +201,23 @@ public class ProcessDefinitionRestServiceIT {
     elasticSearchRule.addEntryToElasticsearch(configurationService.getProcessDefinitionType(), ID, expectedXml);
 
     // when
-    Response response =
-        embeddedOptimizeRule.target("process-definition/xml")
-            .queryParam("processDefinitionKey", "nonsenseKey")
-            .queryParam("processDefinitionVersion", "aProcDefVersion")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .get();
-
-    // then the status code is okay
-    assertThat(response.getStatus(), is(404));
     String message =
-        response.readEntity(String.class);
+            embeddedOptimizeRule
+                    .getRequestExecutor()
+                    .buildGetProcessDefinitionXmlRequest("nonsenseKey", "aProcDefVersion")
+                    .execute(String.class, 404);
+
     assertThat(message.contains("Could not find xml for process definition with key"), is(true));
   }
 
   @Test
   public void getCorrelationWithoutAuthentication() {
     // when
-    Entity<BranchAnalysisQueryDto> entity = Entity.entity(new BranchAnalysisQueryDto(), MediaType.APPLICATION_JSON);
-    Response response =
-        embeddedOptimizeRule.target("process-definition/correlation")
-            .request()
-            .post(entity);
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildProcessDefinitionCorrelation(new BranchAnalysisQueryDto())
+            .withoutAuthentication()
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(401));
@@ -259,12 +235,11 @@ public class ProcessDefinitionRestServiceIT {
     branchAnalysisQueryDto.setGateway(GATEWAY_ACTIVITY);
     branchAnalysisQueryDto.setEnd(END_ACTIVITY);
 
-    Entity<BranchAnalysisQueryDto> entity = Entity.entity(branchAnalysisQueryDto, MediaType.APPLICATION_JSON);
     Response response =
-        embeddedOptimizeRule.target("process-definition/correlation")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .post(entity);
+            embeddedOptimizeRule
+                    .getRequestExecutor()
+                    .buildProcessDefinitionCorrelation(branchAnalysisQueryDto)
+                    .execute();
 
     // then the status code is okay
     assertThat(response.getStatus(), is(200));
@@ -281,19 +256,15 @@ public class ProcessDefinitionRestServiceIT {
     createProcessDefinitionsForKey("procDefKey2", 2);
 
     // when
-    Response response =
-        embeddedOptimizeRule.target("process-definition/groupedByKey")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .get();
+    List <ProcessDefinitionGroupOptimizeDto> actual = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetProcessDefinitionsGroupedByKeyRequest()
+            .executeAndReturnList(ProcessDefinitionGroupOptimizeDto.class, 200);
 
     // then
-    assertThat(response.getStatus(), is(200));
-    List <ProcessDefinitionGroupOptimizeDto> actual =
-        response.readEntity(new GenericType<List<ProcessDefinitionGroupOptimizeDto>>() {});
     assertThat(actual, is(notNullValue()));
     assertThat(actual.size(), is(2));
-    // assert that proceDefKey1 comes first in list
+    // assert that procDefKey1 comes first in list
     actual.sort(Comparator.comparing(ProcessDefinitionGroupOptimizeDto::getVersions, Comparator.comparing(v -> v.get(0).getKey())));
     ProcessDefinitionGroupOptimizeDto procDefs1 = actual.get(0);
     assertThat(procDefs1.getKey(), is("procDefKey1"));

@@ -183,17 +183,12 @@ public class VariableRetrievalIT {
   }
 
   private List<VariableRetrievalDto> getSortedVariables(ProcessDefinitionEngineDto processDefinition, String sortOrder, String orderBy) {
-    Response response =
-        embeddedOptimizeRule.target("variables/")
-            .queryParam(PROCESS_DEFINITION_KEY, processDefinition.getKey())
-            .queryParam(PROCESS_DEFINITION_VERSION, processDefinition.getVersion())
-            .queryParam("orderBy", orderBy)
-            .queryParam("sortOrder", sortOrder)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .get();
-    return response.readEntity(new GenericType<List<VariableRetrievalDto>>() {
-    });
+        return embeddedOptimizeRule
+                .getRequestExecutor()
+                .buildGetVariablesRequest(processDefinition.getKey(), processDefinition.getVersion())
+                .addSingleQueryParam("orderBy", orderBy)
+                .addSingleQueryParam("sortOrder", sortOrder)
+                .executeAndReturnList(VariableRetrievalDto.class, 200);
   }
 
   @Test
@@ -399,15 +394,10 @@ public class VariableRetrievalIT {
   }
 
   private List<VariableRetrievalDto> getVariablesWithPrefix(String key, String version, String namePrefix) {
-    Response response =
-        embeddedOptimizeRule.target("variables/")
-            .queryParam(PROCESS_DEFINITION_KEY, key)
-            .queryParam(PROCESS_DEFINITION_VERSION, version)
-            .queryParam(NAME_PREFIX, namePrefix)
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .get();
-    return response.readEntity(new GenericType<List<VariableRetrievalDto>>() {});
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetVariablesRequest(key, version)
+            .addSingleQueryParam(NAME_PREFIX, namePrefix)
+            .executeAndReturnList(VariableRetrievalDto.class, 200);
   }
-
 }

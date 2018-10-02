@@ -726,11 +726,10 @@ public class BranchAnalysisQueryIT {
   }
 
   private Response getRawResponse(BranchAnalysisQueryDto dto) {
-    Entity<BranchAnalysisQueryDto> entity = Entity.entity(dto, MediaType.APPLICATION_JSON);
-    return embeddedOptimizeRule.target("process-definition/correlation")
-      .request()
-      .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-      .post(entity);
+    return embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildProcessDefinitionCorrelation(dto)
+            .execute();
   }
 
   private Response getResponse(BranchAnalysisQueryDto request) {

@@ -54,15 +54,13 @@ public class FlowNodeMappingIT {
     FlowNodeIdsToNamesRequestDto flowNodeIdsToNamesRequestDto = new FlowNodeIdsToNamesRequestDto();
     flowNodeIdsToNamesRequestDto.setProcessDefinitionKey(processDefinition.getKey());
     flowNodeIdsToNamesRequestDto.setProcessDefinitionVersion(String.valueOf(processDefinition.getVersion()));
-    Response response =
-        embeddedOptimizeRule.target("flow-node/flowNodeNames")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-            .post(Entity.json(flowNodeIdsToNamesRequestDto));
+    FlowNodeNamesResponseDto result =
+            embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetFlowNodeNames(flowNodeIdsToNamesRequestDto)
+            .execute(FlowNodeNamesResponseDto.class, 200);
 
     // then
-    FlowNodeNamesResponseDto result = response.readEntity(FlowNodeNamesResponseDto.class);
     assertThat(result, is(notNullValue()));
     assertThat(result.getFlowNodeNames(), is(notNullValue()));
 
@@ -102,15 +100,14 @@ public class FlowNodeMappingIT {
     List<String> ids = new ArrayList<>();
     ids.add(start.getId());
     flowNodeIdsToNamesRequestDto.setNodeIds(ids);
-    Response response =
-        embeddedOptimizeRule.target("flow-node/flowNodeNames")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .header(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON)
-            .post(Entity.json(flowNodeIdsToNamesRequestDto));
+
+    FlowNodeNamesResponseDto result =
+            embeddedOptimizeRule
+                    .getRequestExecutor()
+                    .buildGetFlowNodeNames(flowNodeIdsToNamesRequestDto)
+                    .execute(FlowNodeNamesResponseDto.class, 200);
 
     // then
-    FlowNodeNamesResponseDto result = response.readEntity(FlowNodeNamesResponseDto.class);
     assertThat(result, is(notNullValue()));
     assertThat(result.getFlowNodeNames(), is(notNullValue()));
 
