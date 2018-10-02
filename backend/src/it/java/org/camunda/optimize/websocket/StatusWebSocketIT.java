@@ -48,7 +48,7 @@ public class StatusWebSocketIT {
     container.connectToServer(socket, new URI(dest));
 
     //then
-    boolean statusCorrectlyReceived = socket.getLatch().await(100, TimeUnit.MILLISECONDS);
+    boolean statusCorrectlyReceived = socket.getLatch().await(300, TimeUnit.MILLISECONDS);
     assertThat(statusCorrectlyReceived, is(true));
   }
 

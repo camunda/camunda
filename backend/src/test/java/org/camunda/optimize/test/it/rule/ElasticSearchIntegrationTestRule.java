@@ -136,7 +136,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   public void refreshOptimizeIndexInElasticsearch() {
     try {
       esclient.admin().indices()
-          .prepareRefresh()
+          .prepareRefresh("_all")
           .get();
     } catch (IndexNotFoundException e) {
       logger.error("should not happen", e);
@@ -204,14 +204,11 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
   public void deleteOptimizeIndexes() {
     GetIndexResponse indexes = esclient.admin().indices().prepareGetIndex().get();
-    for (String indexName : indexes.getIndices()) {
-      DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)
-        .refresh(true)
-        .filter(matchAllQuery())
-        .source(indexName)
-        .execute()
-        .actionGet();
-    }
+    DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)
+      .refresh(true)
+      .filter(matchAllQuery())
+      .source("_all")
+      .get();
   }
 
   public void cleanAndVerify() {
@@ -220,21 +217,12 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   }
 
   private void cleanUpElasticSearch() {
-    GetIndexResponse indexes = esclient.admin().indices().prepareGetIndex().get();
-    for (String indexName : indexes.getIndices()) {
-      try {
-        DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)
-          .refresh(true)
-          .filter(matchAllQuery())
-          .source(indexName)
-          .execute()
-          .actionGet();
-      } catch (Exception e) {
-        //nothing to do
-        logger.error("can't clean index [{}]", indexName, e);
-      }
+    try {
+      deleteOptimizeIndexes();
+    } catch (Exception e) {
+      //nothing to do
+      logger.error("can't clean optimize indexes", e);
     }
-
   }
 
   private String getUserType() {
