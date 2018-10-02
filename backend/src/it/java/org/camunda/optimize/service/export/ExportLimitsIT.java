@@ -66,11 +66,10 @@ public class ExportLimitsIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    Response response =
-        embeddedOptimizeRule.target(CSV_EXPORT + "/" + reportId + "/my_file.csv")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .get();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCsvExportRequest(reportId, "my_file.csv")
+            .execute();
 
 
     assertThat(response.getStatus(), is(200));
@@ -103,11 +102,10 @@ public class ExportLimitsIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    Response response =
-        embeddedOptimizeRule.target(CSV_EXPORT + "/" + reportId + "/my_file.csv")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .get();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCsvExportRequest(reportId, "my_file.csv")
+            .execute();
 
 
     assertThat(response.getStatus(), is(200));
@@ -139,12 +137,10 @@ public class ExportLimitsIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    Response response =
-        embeddedOptimizeRule.target(CSV_EXPORT + "/" + reportId + "/my_file.csv")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .get();
-
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCsvExportRequest(reportId, "my_file.csv")
+            .execute();
 
     assertThat(response.getStatus(), is(200));
     ByteArrayOutputStream bos = new ByteArrayOutputStream();

@@ -40,14 +40,13 @@ public class MetadataRestServiceIT {
   @Test
   public void getOptimizeVersion() {
     // when
-    Response response =
-        embeddedOptimizeRule.target("meta/version")
-            .request()
-            .get();
+    OptimizeVersionDto optimizeVersionDto =
+        embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetOptimizeVersionRequest()
+            .execute(OptimizeVersionDto.class, 200);
 
     // then
-    assertThat(response.getStatus(), is(200));
-    OptimizeVersionDto optimizeVersionDto = response.readEntity(OptimizeVersionDto.class);
     assertThat(optimizeVersionDto.getOptimizeVersion(), is(embeddedOptimizeRule.getApplicationContext().getBean(MetadataService.class).getVersion()));
   }
 }

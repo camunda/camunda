@@ -56,10 +56,11 @@ public class CamundaRestServiceIT {
   @Test
   public void getCamundaWebappsEndpoint() {
     // when
-    Response response =
-        embeddedOptimizeRule.target("camunda")
-            .request()
-            .get();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetCamundaWebappsEndpointRequest()
+            .withoutAuthentication()
+            .execute();
 
     // then
     assertThat(response.getStatus(), is(200));
@@ -68,10 +69,11 @@ public class CamundaRestServiceIT {
   @Test
   public void getDefaultCamundaWebappsEndpoint() {
     // when
-    Response response =
-        embeddedOptimizeRule.target("camunda")
-            .request()
-            .get();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .withoutAuthentication()
+            .buildGetCamundaWebappsEndpointRequest()
+            .execute();
 
     // then
     Map<String, WebappsEndpointDto> webappsEndpoints =
@@ -89,11 +91,11 @@ public class CamundaRestServiceIT {
     setWebappsEndpoint("foo");
 
     // when
-    Response response =
-        embeddedOptimizeRule.target("camunda")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .get();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetCamundaWebappsEndpointRequest()
+            .execute();
+
 
     // then
     Map<String, WebappsEndpointDto> webappsEndpoints =
@@ -111,11 +113,11 @@ public class CamundaRestServiceIT {
     setWebappsEnabled(false);
 
     // when
-    Response response =
-      embeddedOptimizeRule.target("camunda")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-        .get();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetCamundaWebappsEndpointRequest()
+            .execute();
+
 
     // then
     Map<String, WebappsEndpointDto> webappsEndpoints =

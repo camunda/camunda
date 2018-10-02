@@ -51,10 +51,11 @@ public class ExportRestServiceIT {
   @Test
   public void exportWithoutAuthorization() {
     // when
-    Response response =
-        embeddedOptimizeRule.target(CSV_EXPORT + "/fake_id/my_file.csv")
-            .request()
-            .get();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .withoutAuthentication()
+            .buildCsvExportRequest("fake_id", "my_file.csv")
+            .execute();
 
     // then the status code is not authorized
     assertThat(response.getStatus(), is(307));
@@ -64,7 +65,6 @@ public class ExportRestServiceIT {
   @Test
   public void exportExistingReportWithoutFilename() {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     String reportId = createAndStoreDefaultReportDefinition(
         processInstance.getProcessDefinitionKey(),
@@ -72,11 +72,10 @@ public class ExportRestServiceIT {
     );
 
     // when
-    Response response =
-        embeddedOptimizeRule.target(CSV_EXPORT + "/" + reportId + "/")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .get();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCsvExportRequest(reportId, "")
+            .execute();
 
     // then
     assertThat(response.getStatus(), is(404));
@@ -93,11 +92,10 @@ public class ExportRestServiceIT {
     );
 
     // when
-    Response response =
-        embeddedOptimizeRule.target(CSV_EXPORT + "/" + reportId + "/my_file.csv")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .get();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCsvExportRequest(reportId, "my_file.csv")
+            .execute();
 
     // then
     assertThat(response.getStatus(), is(200));
@@ -117,11 +115,10 @@ public class ExportRestServiceIT {
     );
 
     // when
-    Response response =
-        embeddedOptimizeRule.target(CSV_EXPORT + "/" + reportId + "/my_file.csv")
-            .request()
-            .cookie(OPTIMIZE_AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .get();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCsvExportRequest(reportId, "my_file.csv")
+            .execute();
 
     // then
     assertThat(response.getStatus(), is(200));
@@ -133,9 +130,6 @@ public class ExportRestServiceIT {
 
   @Test
   public void exportNotExistingReport() {
-    //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
-
     // when
     Response response =
         embeddedOptimizeRule.target(CSV_EXPORT + "/fake_id/my_file.csv")

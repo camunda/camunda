@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
 import jdk.nashorn.internal.runtime.regexp.joni.encoding.ObjPtr;
+import org.camunda.optimize.dto.optimize.query.OptimizeVersionDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
@@ -391,6 +392,24 @@ public class OptimizeRequestExecutor {
     this.path = "flow-node/flowNodeNames";
     this.requestType = POST;
     this.body = getBody(entity);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildCsvExportRequest(String reportId, String fileName) {
+    this.path = "export/csv/" + reportId + "/" + fileName;
+    this.requestType = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetOptimizeVersionRequest() {
+    this.path = "meta/version";
+    this.requestType = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildGetCamundaWebappsEndpointRequest() {
+    this.path = "camunda";
+    this.requestType = GET;
     return this;
   }
 

@@ -145,11 +145,10 @@ public class ExportServiceIT {
     String reportId = createAndStoreDefaultReportDefinition(currentReport);
 
     // when
-    Response response =
-        embeddedOptimizeRule.target(CSV_EXPORT + "/" + reportId + "/my_file.csv")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .get();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCsvExportRequest(reportId, "my_file.csv")
+            .execute();
 
     // then
     assertThat(response.getStatus(), is(200));
