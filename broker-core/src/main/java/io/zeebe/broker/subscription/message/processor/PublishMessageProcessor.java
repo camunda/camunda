@@ -60,15 +60,11 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
     this.responseWriter = responseWriter;
     messageRecord = command.getValue();
 
-    final Message message =
-        new Message(
+    if (messageRecord.hasMessageId()
+        && messageStateController.exist(
             messageRecord.getName(),
             messageRecord.getCorrelationKey(),
-            messageRecord.getPayload(),
-            messageRecord.getMessageId(),
-            messageRecord.getTimeToLive());
-
-    if (messageRecord.hasMessageId() && messageStateController.exist(message)) {
+            messageRecord.getMessageId())) {
       final String rejectionReason =
           String.format(
               "message with id '%s' is already published",
@@ -81,10 +77,10 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
       final TypedBatchWriter batchWriter = streamWriter.newBatch();
       final long key = batchWriter.addNewEvent(MessageIntent.PUBLISHED, command.getValue());
       responseWriter.writeEventOnCommand(key, MessageIntent.PUBLISHED, command.getValue(), command);
-      message.setKey(key);
 
       matchingSubscriptions =
-          messageStateController.findSubscriptions(message.getName(), message.getCorrelationKey());
+          messageStateController.findSubscriptions(
+              messageRecord.getName(), messageRecord.getCorrelationKey());
 
       for (final MessageSubscription sub : matchingSubscriptions) {
         sub.setMessagePayload(messageRecord.getPayload());
@@ -93,7 +89,16 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
       sideEffect.accept(this::correlateMessage);
 
       if (messageRecord.getTimeToLive() > 0L) {
+        final Message message =
+            new Message(
+                key,
+                messageRecord.getName(),
+                messageRecord.getCorrelationKey(),
+                messageRecord.getPayload(),
+                messageRecord.getMessageId(),
+                messageRecord.getTimeToLive());
         messageStateController.put(message);
+
       } else {
         // don't add the message to the store to avoid that it can be correlated afterwards
         batchWriter.addFollowUpEvent(key, MessageIntent.DELETED, messageRecord);

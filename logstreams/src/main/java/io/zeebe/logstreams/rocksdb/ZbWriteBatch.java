@@ -18,7 +18,10 @@ package io.zeebe.logstreams.rocksdb;
 import io.zeebe.util.EnsureUtil;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.nio.ByteOrder;
 import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.WriteBatch;
 
@@ -50,6 +53,8 @@ public class ZbWriteBatch extends WriteBatch {
     }
   }
 
+  private final MutableDirectBuffer longKeyBuffer = new UnsafeBuffer(new byte[Long.BYTES]);
+
   public void put(
       ColumnFamilyHandle columnFamily, byte[] key, int keyLength, byte[] value, int valueLength) {
     try {
@@ -71,6 +76,11 @@ public class ZbWriteBatch extends WriteBatch {
     put(columnFamily, key.byteArray(), key.capacity(), value.byteArray(), value.capacity());
   }
 
+  public void put(ColumnFamilyHandle columnFamily, long key, byte[] value, int valueLength) {
+    setKey(key);
+    put(columnFamily, longKeyBuffer.byteArray(), longKeyBuffer.capacity(), value, valueLength);
+  }
+
   public void delete(ColumnFamilyHandle columnFamily, final byte[] key, final int keyLength) {
     try {
       DELETE_METHOD.invoke(
@@ -85,10 +95,19 @@ public class ZbWriteBatch extends WriteBatch {
     delete(columnFamily, key.byteArray(), key.capacity());
   }
 
+  public void delete(ColumnFamilyHandle columnFamily, long key) {
+    setKey(key);
+    delete(columnFamily, longKeyBuffer);
+  }
+
   private void assertBuffers(final DirectBuffer... buffers) {
     for (final DirectBuffer buffer : buffers) {
       EnsureUtil.ensureArrayBacked(buffer);
       assert buffer.wrapAdjustment() == 0 : "only supports reading from offset 0";
     }
+  }
+
+  private void setKey(final long key) {
+    longKeyBuffer.putLong(0, key, ByteOrder.LITTLE_ENDIAN);
   }
 }

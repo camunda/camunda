@@ -23,6 +23,7 @@ import io.zeebe.util.buffer.BufferUtil;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -47,7 +48,9 @@ import org.rocksdb.RocksObject;
 public class ZbRocksDb extends RocksDB {
   private static final Field NATIVE_HANDLE_FIELD;
   private static final Constructor<ColumnFamilyHandle> COLUMN_FAMILY_HANDLE_CONSTRUCTOR;
+
   private final MutableDirectBuffer existsBuffer = new UnsafeBuffer(new byte[1]);
+  private final MutableDirectBuffer longKeyBuffer = new UnsafeBuffer(new byte[Long.BYTES]);
 
   static {
     RocksDB.loadLibrary();
@@ -181,6 +184,11 @@ public class ZbRocksDb extends RocksDB {
     }
 
     return bytesRead;
+  }
+
+  public int get(ColumnFamilyHandle columnFamily, long key, MutableDirectBuffer value) {
+    setKey(key);
+    return get(columnFamily, longKeyBuffer, value);
   }
 
   public void delete(ColumnFamilyHandle columnFamily, byte[] key, int keyOffset, int keyLength) {
@@ -318,6 +326,10 @@ public class ZbRocksDb extends RocksDB {
     return new ZbRocksIterator(
         this,
         iteratorCF(nativeHandle_, getNativeHandle(columnFamily), getNativeHandle(readOptions)));
+  }
+
+  private void setKey(final long key) {
+    longKeyBuffer.putLong(0, key, ByteOrder.LITTLE_ENDIAN);
   }
 
   static long getNativeHandle(final RocksObject object) {

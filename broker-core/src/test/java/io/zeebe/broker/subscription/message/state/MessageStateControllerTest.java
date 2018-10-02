@@ -20,14 +20,12 @@ package io.zeebe.broker.subscription.message.state;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.util.collection.Tuple;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.util.ArrayList;
 import java.util.List;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -50,26 +48,45 @@ public class MessageStateControllerTest {
   }
 
   @Test
-  public void shouldNotExistIfNotStored() {
+  public void shouldNotExistIfNameDoesntMatch() {
     // given
-    final Message message =
-        new Message("idOfMessage", "messageName", "correlationKey", "{\"foo\":\"bar\"}", 1234);
+    final Message message = createMessage(1L, "name", "correlationKey", "{}", "id");
+    stateController.put(message);
 
     // when
-    final boolean exist = stateController.exist(message);
+    final boolean exist =
+        stateController.exist(
+            wrapString("otherName"), wrapString("correlationKey"), wrapString("id"));
 
     // then
     assertThat(exist).isFalse();
   }
 
   @Test
-  public void shouldNotExistIfNoId() {
+  public void shouldNotExistIfCorrelationKeyDoesntMatch() {
     // given
-    final Message message = new Message("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1234);
+    final Message message = createMessage(1L, "name", "correlationKey", "{}", "id");
     stateController.put(message);
 
     // when
-    final boolean exist = stateController.exist(message);
+    final boolean exist =
+        stateController.exist(
+            wrapString("name"), wrapString("otherCorrelationKey"), wrapString("id"));
+
+    // then
+    assertThat(exist).isFalse();
+  }
+
+  @Test
+  public void shouldNotExistIfMessageIdDoesntMatch() {
+    // given
+    final Message message = createMessage(1L, "name", "correlationKey", "{}", "id");
+    stateController.put(message);
+
+    // when
+    final boolean exist =
+        stateController.exist(
+            wrapString("name"), wrapString("otherCorrelationKey"), wrapString("otherId"));
 
     // then
     assertThat(exist).isFalse();
@@ -78,12 +95,12 @@ public class MessageStateControllerTest {
   @Test
   public void shouldExist() {
     // given
-    final Message message =
-        new Message("idOfMessage", "messageName", "correlationKey", "{\"foo\":\"bar\"}", 1234);
+    final Message message = createMessage(1L, "name", "correlationKey", "{}", "id");
     stateController.put(message);
 
     // when
-    final boolean exist = stateController.exist(message);
+    final boolean exist =
+        stateController.exist(wrapString("name"), wrapString("correlationKey"), wrapString("id"));
 
     // then
     assertThat(exist).isTrue();
@@ -119,31 +136,48 @@ public class MessageStateControllerTest {
   }
 
   @Test
-  public void shouldFindMessage() {
+  public void shouldFindFirstMessage() {
     // given
-    final long now = ActorClock.currentTimeMillis();
-    final Message message = new Message("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1234);
+    final Message message = createMessage(1L, "name", "correlationKey");
+    stateController.put(message);
+
+    final Message message2 = createMessage(2L, "name", "correlationKey");
+    stateController.put(message2);
+
+    // when
+    final Message readMessage =
+        stateController.findFirstMessage(wrapString("name"), wrapString("correlationKey"));
+
+    // then
+    assertThat(readMessage).isNotNull();
+    assertThat(readMessage.getKey()).isEqualTo(message.getKey());
+    assertThat(readMessage.getName()).isEqualTo(message.getName());
+    assertThat(readMessage.getCorrelationKey()).isEqualTo(message.getCorrelationKey());
+  }
+
+  @Test
+  public void shouldNotFindMessageIfNameDoesntMatch() {
+    // given
+    final Message message = createMessage(1L, "name", "correlationKey");
     stateController.put(message);
 
     // when
     final Message readMessage =
-        stateController.findMessage(wrapString("messageName"), wrapString("correlationKey"));
+        stateController.findFirstMessage(wrapString("otherName"), wrapString("correlationKey"));
 
     // then
-    assertThat(readMessage.getName()).isEqualTo(message.getName());
-    assertThat(readMessage.getCorrelationKey()).isEqualTo(message.getCorrelationKey());
-    assertThat(readMessage.getPayload()).isEqualTo(message.getPayload());
-    assertThat(readMessage.getTimeToLive()).isEqualTo(1234);
-    assertThat(readMessage.getDeadline()).isGreaterThanOrEqualTo(now + 1234);
+    assertThat(readMessage).isNull();
   }
 
   @Test
-  public void shouldNotFindMessageWhichNotExist() {
+  public void shouldNotFindMessageIfCorrelationKeyDoesntMatch() {
     // given
+    final Message message = createMessage(1L, "name", "correlationKey");
+    stateController.put(message);
 
     // when
     final Message readMessage =
-        stateController.findMessage(wrapString("messageName"), wrapString("correlationKey"));
+        stateController.findFirstMessage(wrapString("name"), wrapString("otherCorrelationKey"));
 
     // then
     assertThat(readMessage).isNull();
@@ -209,7 +243,8 @@ public class MessageStateControllerTest {
     final MessageSubscription subscription =
         new MessageSubscription(
             "messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 3, 1234);
-    final Message message = new Message("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1234);
+    final Message message = createMessage(1L, "name", "correlationKey");
+
     stateController.put(message);
     stateController.put(subscription);
 
@@ -251,9 +286,9 @@ public class MessageStateControllerTest {
     // given
     final long now = ActorClock.currentTimeMillis();
 
-    final Message message = new Message("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1234);
-    final Message message2 =
-        new Message("messageName", "correlationKey", "{\"foo\":\"bar\"}", 4567);
+    final Message message = createMessage(1L, "name", "correlationKey", "{}", "nr1", 1234);
+    final Message message2 = createMessage(2L, "name", "correlationKey", "{}", "nr2", 4567);
+
     stateController.put(message);
     stateController.put(message2);
 
@@ -261,7 +296,9 @@ public class MessageStateControllerTest {
     final long deadline = now + 1_000L;
 
     // then
-    final List<Message> readMessage = stateController.findMessageBefore(deadline);
+    final List<Message> readMessage = new ArrayList<>();
+    stateController.findMessagesWithDeadlineBefore(deadline, readMessage::add);
+
     assertThat(readMessage).isEmpty();
   }
 
@@ -274,7 +311,7 @@ public class MessageStateControllerTest {
     final MessageSubscription subscription2 =
         new MessageSubscription(
             "messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 3, 3, 4567);
-    final Message message = new Message("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1234);
+    final Message message = createMessage(1L, "name", "correlationKey", "{}", "nr1", 1234);
 
     stateController.put(message);
     stateController.put(subscription);
@@ -294,8 +331,9 @@ public class MessageStateControllerTest {
     // given
     final long now = ActorClock.currentTimeMillis();
 
-    final Message message = new Message("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1234);
-    final Message message2 = new Message("otherName", "otherKey", "{\"foo\":\"bar\"}", 4567);
+    final Message message = createMessage(1L, "name", "correlationKey", "{}", "nr1", 1234);
+    final Message message2 = createMessage(2L, "otherName", "correlationKey", "{}", "nr2", 4567);
+
     stateController.put(message);
     stateController.put(message2);
 
@@ -303,11 +341,11 @@ public class MessageStateControllerTest {
     final long deadline = now + 2_000L;
 
     // then
-    final List<Message> readMessage = stateController.findMessageBefore(deadline);
+    final List<Message> readMessage = new ArrayList<>();
+    stateController.findMessagesWithDeadlineBefore(deadline, readMessage::add);
+
     assertThat(readMessage.size()).isEqualTo(1);
-    assertThat(readMessage.get(0).getName()).isEqualTo(wrapString("messageName"));
-    assertThat(readMessage.get(0).getCorrelationKey()).isEqualTo(wrapString("correlationKey"));
-    assertThat(readMessage.get(0).getPayload()).isEqualTo(wrapString("{\"foo\":\"bar\"}"));
+    assertThat(readMessage.get(0).getKey()).isEqualTo(1L);
   }
 
   @Test
@@ -318,7 +356,7 @@ public class MessageStateControllerTest {
             "messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 3, 1234);
     final MessageSubscription subscription2 =
         new MessageSubscription("otherName", "otherKey", "{\"foo\":\"bar\"}", 1, 3, 3, 4567);
-    final Message message = new Message("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1234);
+    final Message message = createMessage(1L, "name", "correlationKey", "{}", "nr1", 1234);
 
     stateController.put(message);
     stateController.put(subscription);
@@ -341,139 +379,107 @@ public class MessageStateControllerTest {
   @Test
   public void shouldRemoveMessage() {
     // given
-    final Message message =
-        new Message("idOfMessage", "messageName", "correlationKey", "{\"foo\":\"bar\"}", 1234);
+    final Message message = createMessage(1L, "name", "correlationKey", "{}", "id", 1234);
     stateController.put(message);
 
     // when
-    stateController.remove(message);
+    stateController.remove(message.getKey());
 
     // then
-    final List<Message> readMessages = stateController.findMessageBefore(2000);
+    final List<Message> readMessages = new ArrayList<>();
+    stateController.findMessagesWithDeadlineBefore(2000, readMessages::add);
+
     assertThat(readMessages.size()).isEqualTo(0);
 
     // and
     final Message readMessage =
-        stateController.findMessage(wrapString("messageName"), wrapString("correlationKey"));
+        stateController.findFirstMessage(wrapString("messageName"), wrapString("correlationKey"));
     assertThat(readMessage).isNull();
 
     // and
-    final boolean exist = stateController.exist(message);
-    assertThat(exist).isFalse();
-  }
-
-  @Test
-  @Ignore("https://github.com/zeebe-io/zeebe/issues/1323")
-  public void shouldRemoveAllEntriesIfMessageIsRemoved() {
-    // given
-    final Message message = new Message("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1234);
-    final Message message2 =
-        new Message("messageName", "correlationKey", "{\"foo\":\"bar\"}", 4500);
-    stateController.put(message);
-    stateController.put(message2);
-
-    // when
-    stateController.remove(message2);
-
-    // then
-    final List<Message> readMessages = stateController.findMessageBefore(2000);
-    assertThat(readMessages.size()).isEqualTo(0);
-
-    // and
-    final Message readMessage =
-        stateController.findMessage(wrapString("messageName"), wrapString("correlationKey"));
-    assertThat(readMessage).isNull();
-
-    // and
-    final UnsafeBuffer keyBuffer = new UnsafeBuffer(new byte[message.getKeyLength()]);
-    message.writeKey(keyBuffer, 0);
-
-    final boolean exists =
+    final boolean exist =
         stateController.exist(
-            stateController.timeToLiveHandle, keyBuffer.byteArray(), 0, keyBuffer.capacity());
-    assertThat(exists).isFalse();
-
-    final List<Tuple<byte[], byte[]>> keyValues = new ArrayList<>();
-    stateController.foreach(
-        stateController.timeToLiveHandle,
-        (k, v) -> {
-          keyValues.add(new Tuple<>(k, v));
-        });
-    assertThat(keyValues).isEmpty();
+            wrapString("messageName"), wrapString("correlationKey"), wrapString("id"));
+    assertThat(exist).isFalse();
   }
 
   @Test
   public void shouldRemoveMessageWithoutId() {
     // given
-    final Message message = new Message("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1234);
+    final Message message = createMessage(1L, "name", "correlationKey");
+
     stateController.put(message);
 
     // when
-    stateController.remove(message);
+    stateController.remove(message.getKey());
 
     // then
-    final List<Message> readMessages = stateController.findMessageBefore(2000);
+    final List<Message> readMessages = new ArrayList<>();
+    stateController.findMessagesWithDeadlineBefore(2000, readMessages::add);
+
     assertThat(readMessages.size()).isEqualTo(0);
 
     // and
     final Message readMessage =
-        stateController.findMessage(wrapString("messageName"), wrapString("correlationKey"));
+        stateController.findFirstMessage(wrapString("name"), wrapString("correlationKey"));
     assertThat(readMessage).isNull();
-
-    // and
-    final boolean exist = stateController.exist(message);
-    assertThat(exist).isFalse();
   }
 
   @Test
   public void shouldNotFailOnRemoveMessageTwice() {
     // given
-    final Message message =
-        new Message("idOfMessage", "messageName", "correlationKey", "{\"foo\":\"bar\"}", 1234);
+    final Message message = createMessage(1L, "name", "correlationKey", "{}", "id", 1234);
+
     stateController.put(message);
 
     // when
-    stateController.remove(message);
-    stateController.remove(message);
+    stateController.remove(message.getKey());
+    stateController.remove(message.getKey());
 
     // then
-    final List<Message> readMessages = stateController.findMessageBefore(2000);
+    final List<Message> readMessages = new ArrayList<>();
+    stateController.findMessagesWithDeadlineBefore(2000, readMessages::add);
+
     assertThat(readMessages.size()).isEqualTo(0);
 
     // and
     final Message readMessage =
-        stateController.findMessage(wrapString("messageName"), wrapString("correlationKey"));
+        stateController.findFirstMessage(wrapString("messageName"), wrapString("correlationKey"));
     assertThat(readMessage).isNull();
 
     // and
-    final boolean exist = stateController.exist(message);
+    final boolean exist =
+        stateController.exist(
+            wrapString("messageName"), wrapString("correlationKey"), wrapString("id"));
     assertThat(exist).isFalse();
   }
 
   @Test
   public void shouldNotRemoveDifferenMessage() {
     // given
-    final Message message =
-        new Message("idOfMessage", "messageName", "correlationKey", "{\"foo\":\"bar\"}", 1234);
-    final Message message2 =
-        new Message("otherId", "otherName", "correlationKey", "{\"foo\":\"bar\"}", 1234);
+    final Message message = createMessage(1L, "name", "correlationKey", "{}", "id1", 1234);
+    final Message message2 = createMessage(2L, "name", "correlationKey", "{}", "id2", 4567);
+
     stateController.put(message);
 
     // when
-    stateController.remove(message2);
+    stateController.remove(message2.getKey());
 
     // then
     final long deadline = ActorClock.currentTimeMillis() + 2_000L;
-    final List<Message> readMessages = stateController.findMessageBefore(deadline);
+    final List<Message> readMessages = new ArrayList<>();
+    stateController.findMessagesWithDeadlineBefore(deadline, readMessages::add);
+
     assertThat(readMessages.size()).isEqualTo(1);
 
     // and
     final Message readMessage =
-        stateController.findMessage(wrapString("messageName"), wrapString("correlationKey"));
+        stateController.findFirstMessage(wrapString("name"), wrapString("correlationKey"));
     assertThat(readMessage).isNotNull();
 
     // and
-    final boolean exist = stateController.exist(message);
+    final boolean exist =
+        stateController.exist(wrapString("name"), wrapString("correlationKey"), wrapString("id1"));
     assertThat(exist).isTrue();
   }
 
@@ -549,5 +555,32 @@ public class MessageStateControllerTest {
     readSubscriptions =
         stateController.findSubscriptions(wrapString("messageName"), wrapString("correlationKey"));
     assertThat(readSubscriptions.size()).isEqualTo(1);
+  }
+
+  private Message createMessage(long key, String name, String correlationKey) {
+    return new Message(
+        key,
+        wrapString(name),
+        wrapString(correlationKey),
+        wrapString(""),
+        new UnsafeBuffer(0, 0),
+        0L);
+  }
+
+  private Message createMessage(
+      long key, String name, String correlationKey, String payload, String id) {
+    return new Message(
+        key, wrapString(name), wrapString(correlationKey), wrapString(payload), wrapString(id), 0L);
+  }
+
+  private Message createMessage(
+      long key, String name, String correlationKey, String payload, String id, long deadline) {
+    return new Message(
+        key,
+        wrapString(name),
+        wrapString(correlationKey),
+        wrapString(payload),
+        wrapString(id),
+        deadline);
   }
 }
