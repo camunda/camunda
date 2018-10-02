@@ -20,6 +20,8 @@ package io.zeebe.broker.workflow.processor.instance;
 import io.zeebe.broker.logstreams.processor.CommandProcessor;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.workflow.state.ElementInstance;
+import io.zeebe.broker.workflow.state.ElementInstanceState;
+import io.zeebe.broker.workflow.state.IndexedRecord;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
@@ -35,21 +37,30 @@ public final class UpdatePayloadProcessor implements CommandProcessor<WorkflowIn
 
   @Override
   public void onCommand(
-      TypedRecord<WorkflowInstanceRecord> command, CommandControl commandControl) {
+      TypedRecord<WorkflowInstanceRecord> command,
+      CommandControl<WorkflowInstanceRecord> commandControl) {
     final WorkflowInstanceRecord commandValue = command.getValue();
 
-    final ElementInstance workflowInstance =
-        workflowState.getElementInstanceState().getInstance(commandValue.getWorkflowInstanceKey());
+    final ElementInstanceState elementInstanceState = workflowState.getElementInstanceState();
+    final ElementInstance elementInstance = elementInstanceState.getInstance(command.getKey());
 
-    if (workflowInstance != null) {
-      final WorkflowInstanceRecord workflowInstanceValue = workflowInstance.getValue();
-      workflowInstanceValue.setPayload(commandValue.getPayload());
+    if (elementInstance != null) {
+      final WorkflowInstanceRecord elementInstanceValue = elementInstance.getValue();
+      elementInstanceValue.setPayload(commandValue.getPayload());
 
-      workflowInstance.setValue(workflowInstance.getValue());
+      elementInstance.setValue(elementInstanceValue);
 
-      commandControl.accept(WorkflowInstanceIntent.PAYLOAD_UPDATED);
+      commandControl.accept(WorkflowInstanceIntent.PAYLOAD_UPDATED, elementInstanceValue);
     } else {
-      commandControl.reject(RejectionType.NOT_APPLICABLE, "Workflow instance is not running");
+      final IndexedRecord failedToken = elementInstanceState.getFailedToken(command.getKey());
+
+      if (failedToken != null) {
+        final WorkflowInstanceRecord value = failedToken.getValue();
+        value.setPayload(commandValue.getPayload());
+        commandControl.accept(WorkflowInstanceIntent.PAYLOAD_UPDATED, value);
+      } else {
+        commandControl.reject(RejectionType.NOT_APPLICABLE, "Workflow instance is not running");
+      }
     }
   }
 }

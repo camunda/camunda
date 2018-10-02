@@ -128,7 +128,8 @@ public class IncidentStreamProcessor {
   private final class CreateIncidentProcessor implements CommandProcessor<IncidentRecord> {
 
     @Override
-    public void onCommand(TypedRecord<IncidentRecord> command, CommandControl commandControl) {
+    public void onCommand(
+        TypedRecord<IncidentRecord> command, CommandControl<IncidentRecord> commandControl) {
       final IncidentRecord incidentEvent = command.getValue();
 
       final boolean isJobIncident = incidentEvent.getJobKey() > 0;
@@ -139,7 +140,7 @@ public class IncidentStreamProcessor {
         return;
       }
 
-      final long incidentKey = commandControl.accept(IncidentIntent.CREATED);
+      final long incidentKey = commandControl.accept(IncidentIntent.CREATED, incidentEvent);
 
       if (isJobIncident) {
         failedJobMap.put(incidentEvent.getJobKey(), incidentKey);

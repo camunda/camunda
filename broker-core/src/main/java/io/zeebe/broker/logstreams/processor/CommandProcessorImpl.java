@@ -23,7 +23,7 @@ import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.Intent;
 
 public class CommandProcessorImpl<T extends UnpackedObject>
-    implements TypedRecordProcessor<T>, CommandControl {
+    implements TypedRecordProcessor<T>, CommandControl<T> {
 
   private final CommandProcessor<T> wrappedProcessor;
 
@@ -33,6 +33,7 @@ public class CommandProcessorImpl<T extends UnpackedObject>
   private long entityKey;
 
   private Intent newState;
+  private T updatedValue;
 
   private RejectionType rejectionType;
   private String rejectionReason;
@@ -57,9 +58,9 @@ public class CommandProcessorImpl<T extends UnpackedObject>
     final boolean respond = command.getMetadata().hasRequestMetadata();
 
     if (isAccepted) {
-      streamWriter.writeFollowUpEvent(entityKey, newState, command.getValue());
+      streamWriter.writeFollowUpEvent(entityKey, newState, updatedValue);
       if (respond) {
-        responseWriter.writeEventOnCommand(entityKey, newState, command.getValue(), command);
+        responseWriter.writeEventOnCommand(entityKey, newState, updatedValue, command);
       }
     } else {
       streamWriter.writeRejection(command, rejectionType, rejectionReason);
@@ -70,13 +71,14 @@ public class CommandProcessorImpl<T extends UnpackedObject>
   }
 
   @Override
-  public long accept(Intent newState) {
+  public long accept(Intent newState, T updatedValue) {
     if (entityKey < 0) {
       entityKey = keyGenerator.nextKey();
     }
 
     isAccepted = true;
     this.newState = newState;
+    this.updatedValue = updatedValue;
     return entityKey;
   }
 

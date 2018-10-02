@@ -27,11 +27,11 @@ import io.zeebe.protocol.intent.Intent;
  */
 public interface CommandProcessor<T extends UnpackedObject> {
 
-  void onCommand(TypedRecord<T> command, CommandControl commandControl);
+  void onCommand(TypedRecord<T> command, CommandControl<T> commandControl);
 
-  interface CommandControl {
+  interface CommandControl<T> {
     /** @return the key of the entity */
-    long accept(Intent newState);
+    long accept(Intent newState, T updatedValue);
 
     void reject(RejectionType type, String reason);
   }
