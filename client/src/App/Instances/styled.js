@@ -4,6 +4,7 @@ import BadgeComponent from 'modules/components/Badge';
 import SplitPane from 'modules/components/SplitPane';
 import Panel from 'modules/components/Panel';
 import ExpandButton from 'modules/components/ExpandButton';
+import EmptyMessage from './EmptyMessage';
 
 import {HEADER_HEIGHT} from './../Header/styled';
 
@@ -51,4 +52,17 @@ export const SelectionHeader = styled(Panel.Header)`
 export const Badge = styled(BadgeComponent)`
   top: 2px;
   margin-left: 13px;
+`;
+
+export const EmptyMessageWrapper = styled.div`
+  flex-grow: 1;
+  position: relative;
+`;
+
+export const DiagramEmptyMessage = styled(EmptyMessage)`
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  left: 0;
+  top: 0;
 `;

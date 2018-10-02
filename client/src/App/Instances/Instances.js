@@ -33,7 +33,6 @@ import Header from '../Header';
 import ListView from './ListView';
 import Filters from './Filters';
 import Selections from './Selections';
-import EmptyMessage from './EmptyMessage';
 
 import sortArrayByKey from 'modules/utils/sortArrayByKey';
 
@@ -406,10 +405,12 @@ class Instances extends Component {
                 </SplitPane.Pane.Header>
                 <SplitPane.Pane.Body>
                   {this.state.filter.version === 'all' && (
-                    <EmptyMessage
-                      message={getEmptyDiagramMessage(workflowName)}
-                      data-test="data-test-emptyDiagram"
-                    />
+                    <Styled.EmptyMessageWrapper>
+                      <Styled.DiagramEmptyMessage
+                        message={getEmptyDiagramMessage(workflowName)}
+                        data-test="data-test-emptyDiagram"
+                      />
+                    </Styled.EmptyMessageWrapper>
                   )}
                   {!isEmpty(this.state.workflow) && (
                     <Diagram
