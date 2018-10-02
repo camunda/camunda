@@ -22,7 +22,6 @@ import io.zeebe.client.api.commands.PublishMessageCommandStep1;
 import io.zeebe.client.api.commands.UpdatePayloadWorkflowInstanceCommandStep1;
 import io.zeebe.client.api.commands.WorkflowRequestStep1;
 import io.zeebe.client.api.commands.WorkflowResourceRequestStep1;
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
 
 /**
  * A client with access to all workflow-related operations:
@@ -104,7 +103,7 @@ public interface WorkflowClient {
    * @param event the latest workflow instance event
    * @return a builder for the command
    */
-  UpdatePayloadWorkflowInstanceCommandStep1 newUpdatePayloadCommand(WorkflowInstanceEvent event);
+  UpdatePayloadWorkflowInstanceCommandStep1 newUpdatePayloadCommand(long activityInstanceKey);
 
   /**
    * Command to publish a message which can be correlated to a workflow instance.

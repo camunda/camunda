@@ -24,11 +24,11 @@ import io.zeebe.client.api.commands.PublishMessageCommandStep1;
 import io.zeebe.client.api.commands.UpdatePayloadWorkflowInstanceCommandStep1;
 import io.zeebe.client.api.commands.WorkflowRequestStep1;
 import io.zeebe.client.api.commands.WorkflowResourceRequestStep1;
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.impl.workflow.CancelWorkflowInstanceCommandImpl;
 import io.zeebe.client.impl.workflow.CreateWorkflowInstanceCommandImpl;
 import io.zeebe.client.impl.workflow.DeployWorkflowCommandImpl;
 import io.zeebe.client.impl.workflow.PublishMessageCommandImpl;
+import io.zeebe.client.impl.workflow.UpdateWorkflowInstancePayloadCommandImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 
 public class WorkflowsClientImpl implements WorkflowClient {
@@ -59,8 +59,8 @@ public class WorkflowsClientImpl implements WorkflowClient {
 
   @Override
   public UpdatePayloadWorkflowInstanceCommandStep1 newUpdatePayloadCommand(
-      final WorkflowInstanceEvent event) {
-    return null;
+      final long activityInstanceKey) {
+    return new UpdateWorkflowInstancePayloadCommandImpl(asyncStub, activityInstanceKey);
   }
 
   @Override

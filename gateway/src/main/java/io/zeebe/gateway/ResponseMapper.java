@@ -28,6 +28,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
+import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowResponseObject;
 import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto;
 import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto.BrokerDto;
@@ -125,6 +126,11 @@ public class ResponseMapper {
   public static CancelWorkflowInstanceResponse toCancelWorkflowInstanceResponse(
       int partitionId, long key, WorkflowInstanceRecord brokerResponse) {
     return CancelWorkflowInstanceResponse.newBuilder().build();
+  }
+
+  public static UpdateWorkflowInstancePayloadResponse toUpdateWorkflowInstancePayloadResponse(
+      int partitionId, long key, WorkflowInstanceRecord brokerResponse) {
+    return UpdateWorkflowInstancePayloadResponse.newBuilder().build();
   }
 
   @FunctionalInterface
