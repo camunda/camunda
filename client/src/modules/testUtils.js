@@ -44,3 +44,20 @@ export const createSelection = id => {
     workflowInstances: []
   };
 };
+
+/**
+ * @returns a mocked instance Object with a unique id
+ * @param {*} id num value to create unique instance;
+ */
+export const createInstance = ({id, state}) => {
+  return {
+    activities: [],
+    businessKey: 'someKey',
+    endDate: null,
+    id: id,
+    incidents: [],
+    startDate: '2018-06-21T11:13:31.094+0000',
+    state: state,
+    workflowId: '2'
+  };
+};

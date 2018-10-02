@@ -13,12 +13,7 @@ import {EXPAND_STATE} from 'modules/constants';
 import {getWorkflowName} from 'modules/utils/instance';
 import {formatDate} from 'modules/utils/date';
 
-import {
-  areIdsArray,
-  areIdsSet,
-  getModifiedIdSet,
-  createIdArrayFromFilterString
-} from './service';
+import {createIdArrayFromFilterString} from './service';
 
 import HeaderSortIcon from './HeaderSortIcon';
 import * as Styled from './styled';
@@ -30,8 +25,8 @@ export default class List extends React.Component {
     onUpdateSelection: PropTypes.func.isRequired,
     onEntriesPerPageChange: PropTypes.func.isRequired,
     selection: PropTypes.shape({
-      excludeIds: PropTypes.instanceOf(Set)
-      // ,ids: PropTypes.oneOfType([PropTypes.Array, PropTypes.instanceOf(Set)])
+      excludeIds: PropTypes.Array,
+      ids: PropTypes.Array
     }).isRequired,
     filterCount: PropTypes.number,
     filter: PropTypes.object,
@@ -63,87 +58,91 @@ export default class List extends React.Component {
 
   getSelectionFilters = (selection, filter) => {
     let selectionFilters = {};
-
     // checks if selection filters are also available in the passed filters.
     Object.keys(selection).forEach(key => {
       if (filter.hasOwnProperty(key)) {
         selectionFilters[key] = selection[key];
       }
     });
+
     return selectionFilters;
   };
 
   areAllInstancesSelected = () => {
-    const {selection, filterCount, filter} = this.props;
+    const {selection, filter} = this.props;
     const selectionFilters = this.getSelectionFilters(selection, filter);
-
-    if (selection.excludeIds.size > 0) return false;
 
     if (typeof selection.ids === 'string') {
       selection.ids = createIdArrayFromFilterString(selection.ids);
     }
-    if (
-      (isEqual(selectionFilters, filter) && !isEmpty(filter)) ||
-      areIdsArray(selection, filterCount) ||
-      areIdsSet(selection, filterCount)
-    )
-      return true;
+
+    if (selection.excludeIds > 0) return false;
+
+    // all ids are selected
+    if (isEqual(selectionFilters, filter) && !isEmpty(filter)) return true;
 
     return false;
   };
 
   handleToggleSelectAll = (event, isChecked) => {
-    const selected = isChecked ? this.props.filter : {ids: new Set()};
-    this.props.onUpdateSelection({...selected, excludeIds: new Set()});
+    const selected = isChecked ? this.props.filter : {ids: []};
+    this.props.onUpdateSelection({...selected, excludeIds: []});
   };
 
   isSelected = id => {
-    const {filter} = this.props;
-    const selection = this.props.selection;
+    const {selection, filter} = this.props;
     let {excludeIds, ids} = selection;
     const selectionFilters = this.getSelectionFilters(selection, filter);
 
-    if (excludeIds.has(id)) return false;
-    if (
-      isEqual(selectionFilters, this.props.filter) &&
-      !isEmpty(this.props.filter)
-    )
-      return true;
-
+    //TODO: check: transfrom to array, if id filter is used
     if (typeof ids === 'string') {
       ids = createIdArrayFromFilterString(ids);
     }
 
-    if (
-      (ids && !Array.isArray(ids) && ids.has(id)) ||
-      (ids && Array.isArray(ids))
-    )
+    // id is excluded
+    if (excludeIds && !!excludeIds.find(excludedId => excludedId === id))
+      return false;
+
+    // id is included
+    if (ids && !!ids.find(includedId => includedId === id)) return true;
+
+    // all ids are selected
+    if (isEqual(selectionFilters, filter) && !isEmpty(this.props.filter))
       return true;
 
     return false;
   };
 
+  returnIdsToChange = (idsToChange, instanceId, idType, isChecked) => {
+    if (isChecked) {
+      idsToChange.push(instanceId);
+      return {[idType]: idsToChange};
+    } else {
+      idsToChange.splice(idsToChange.indexOf(instanceId), 1);
+      return {[idType]: idsToChange};
+    }
+  };
+
   onSelectionChange = instance => (event, isChecked) => {
     const {selection, filter} = this.props;
+    const {excludeIds, ids} = selection;
+    const {id} = instance;
 
     const selectionFilters = this.getSelectionFilters(selection, filter);
-    const changeType =
-      isEqual(selectionFilters, filter) && !isEmpty(filter)
-        ? 'excludeIds'
-        : 'Ids';
 
-    const IdSetChanges =
-      changeType === 'excludeIds'
-        ? {isAdded: !isChecked, set: selection.excludeIds, id: instance.id}
-        : {isAdded: isChecked, set: selection.ids, id: instance.id};
+    // exclude ids on click when all instances are selected
+    const isExcludeIdsType =
+      isEqual(selectionFilters, filter) && !isEmpty(filter);
 
-    const modifiedSet = getModifiedIdSet(IdSetChanges);
+    const basicChanges = isExcludeIdsType
+      ? {...filter, ids: []}
+      : {excludeIds: []};
 
-    this.props.onUpdateSelection(
-      changeType === 'excludeIds'
-        ? {...filter, ids: new Set(), excludeIds: modifiedSet}
-        : {ids: modifiedSet, excludeIds: new Set()}
-    );
+    const selectedIds = isExcludeIdsType
+      ? this.returnIdsToChange([...excludeIds], id, 'excludeIds', !isChecked)
+      : this.returnIdsToChange([...ids], id, 'ids', isChecked);
+
+    this.props.onUpdateSelection({...basicChanges, ...selectedIds});
   };
 
   recalculateHeight() {

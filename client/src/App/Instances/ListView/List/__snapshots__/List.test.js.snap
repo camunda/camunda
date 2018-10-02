@@ -1,13 +1,13 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`List should display a empty list message when filter has at least one state 1`] = `
+exports[`List Table should display a empty list message when filter has at least one state 1`] = `
 <EmptyMessage
   data-test="empty-message-instances-list"
   message="There are no instances matching this filter set."
 />
 `;
 
-exports[`List should display a message for empty list when filter has no state 1`] = `
+exports[`List Table should display a message for empty list when filter has no state 1`] = `
 <EmptyMessage
   data-test="empty-message-instances-list"
   message="There are no instances matching this filter set.

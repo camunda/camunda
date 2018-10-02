@@ -38,7 +38,6 @@ import sortArrayByKey from 'modules/utils/sortArrayByKey';
 
 import {
   parseQueryString,
-  createNewSelectionFragment,
   getPayload,
   decodeFields,
   getEmptyDiagramMessage
@@ -70,7 +69,7 @@ class Instances extends Component {
       instancesInSelectionsCount: instancesInSelectionsCount || 0,
       openSelection: null,
       rollingSelectionIndex: rollingSelectionIndex || 0,
-      selection: createNewSelectionFragment(),
+      selection: {ids: [], excludeIds: []},
       selectionCount: selectionCount || 0,
       selections: selections || [],
       workflow: {},
