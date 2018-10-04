@@ -21,7 +21,7 @@ import static io.zeebe.broker.clustering.base.partitions.PartitionsLeaderMatrix.
 import static io.zeebe.broker.clustering.base.partitions.PartitionsLeaderMatrix.LEADER;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.system.SystemConstants;
+import io.zeebe.protocol.Protocol;
 import org.agrona.collections.IntArrayList;
 import org.junit.Rule;
 import org.junit.Test;
@@ -180,11 +180,11 @@ public class PartitionsLeaderMatrixTest {
     expectedException.expect(IllegalArgumentException.class);
     expectedException.expectMessage(
         "Partitions count must be smaller then maximum partition space of "
-            + SystemConstants.PARTITION_SPACE
+            + Protocol.MAXIMUM_PARTITIONS
             + ".");
 
     // when
-    new PartitionsLeaderMatrix((int) SystemConstants.PARTITION_SPACE, 1, 1);
+    new PartitionsLeaderMatrix((int) Protocol.MAXIMUM_PARTITIONS, 1, 1);
   }
 
   @Test

@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
+import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.Intent;
 import org.agrona.DirectBuffer;
@@ -31,7 +32,8 @@ public interface TypedResponseWriter {
 
   void writeEvent(TypedRecord<?> event);
 
-  void writeEventOnCommand(long eventKey, Intent eventState, TypedRecord<?> command);
+  void writeEventOnCommand(
+      long eventKey, Intent eventState, UnpackedObject eventValue, TypedRecord<?> command);
 
   /**
    * Submits the response to transport.

@@ -21,6 +21,7 @@ import com.google.protobuf.Empty;
 import io.zeebe.gateway.cmd.ClientException;
 import io.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo;
 import io.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo.Builder;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
@@ -119,6 +120,11 @@ public class ResponseMapper {
         .setPartitionId(partitionId)
         .setWorkflowInstanceKey(brokerResponse.getWorkflowInstanceKey())
         .build();
+  }
+
+  public static CancelWorkflowInstanceResponse toCancelWorkflowInstanceResponse(
+      int partitionId, long key, WorkflowInstanceRecord brokerResponse) {
+    return CancelWorkflowInstanceResponse.newBuilder().build();
   }
 
   @FunctionalInterface

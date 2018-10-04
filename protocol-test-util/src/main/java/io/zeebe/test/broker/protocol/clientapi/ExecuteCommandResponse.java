@@ -29,6 +29,7 @@ import java.io.InputStream;
 import java.util.Map;
 import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.io.DirectBufferInputStream;
 
 public class ExecuteCommandResponse implements BufferReader {
@@ -39,6 +40,7 @@ public class ExecuteCommandResponse implements BufferReader {
   protected final MsgPackHelper msgPackHelper;
 
   protected Map<String, Object> value;
+  private int valueLengthOffset;
   private String rejectionReason;
 
   public ExecuteCommandResponse(MsgPackHelper msgPackHelper) {
@@ -48,6 +50,15 @@ public class ExecuteCommandResponse implements BufferReader {
 
   public Map<String, Object> getValue() {
     return value;
+  }
+
+  public DirectBuffer getRawValue() {
+    responseDecoder.limit(valueLengthOffset);
+    final int valueLength = responseDecoder.valueLength();
+    final int valueOffset = valueLengthOffset + ExecuteCommandResponseDecoder.valueHeaderLength();
+
+    final UnsafeBuffer buf = new UnsafeBuffer(responseDecoder.buffer(), valueOffset, valueLength);
+    return buf;
   }
 
   public long position() {
@@ -114,17 +125,17 @@ public class ExecuteCommandResponse implements BufferReader {
         messageHeaderDecoder.blockLength(),
         messageHeaderDecoder.version());
 
-    final int eventLength = responseDecoder.valueLength();
-    final int eventOffset =
-        responseDecoder.limit() + ExecuteCommandResponseDecoder.valueHeaderLength();
+    valueLengthOffset = responseDecoder.limit();
+    final int valueLength = responseDecoder.valueLength();
+    final int valueOffset = valueLengthOffset + ExecuteCommandResponseDecoder.valueHeaderLength();
 
-    try (InputStream is = new DirectBufferInputStream(responseBuffer, eventOffset, eventLength)) {
+    try (InputStream is = new DirectBufferInputStream(responseBuffer, valueOffset, valueLength)) {
       value = msgPackHelper.readMsgPack(is);
     } catch (IOException e) {
       LangUtil.rethrowUnchecked(e);
     }
 
-    responseDecoder.limit(eventOffset + eventLength);
+    responseDecoder.limit(valueOffset + valueLength);
     rejectionReason = responseDecoder.rejectionReason();
   }
 }

@@ -18,6 +18,7 @@
 package io.zeebe.broker.logstreams.processor;
 
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
+import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
@@ -56,7 +57,9 @@ public class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectP
         rejection.getMetadata().getRejectionReason(),
         rejection.getPosition(),
         rejection.getSourcePosition(),
-        rejection);
+        rejection.getTimestamp(),
+        rejection.getMetadata(),
+        rejection.getValue());
   }
 
   @Override
@@ -72,7 +75,9 @@ public class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectP
         stringWrapper,
         0,
         command.getPosition(),
-        command);
+        command.getTimestamp(),
+        command.getMetadata(),
+        command.getValue());
   }
 
   @Override
@@ -87,7 +92,9 @@ public class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectP
         reason,
         0,
         command.getPosition(),
-        command);
+        command.getTimestamp(),
+        command.getMetadata(),
+        command.getValue());
   }
 
   @Override
@@ -102,11 +109,14 @@ public class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectP
         stringWrapper,
         event.getPosition(),
         event.getSourcePosition(),
-        event);
+        event.getTimestamp(),
+        event.getMetadata(),
+        event.getValue());
   }
 
   @Override
-  public void writeEventOnCommand(long eventKey, Intent eventState, TypedRecord<?> command) {
+  public void writeEventOnCommand(
+      long eventKey, Intent eventState, UnpackedObject eventValue, TypedRecord<?> command) {
     stringWrapper.wrap(0, 0);
 
     stage(
@@ -118,7 +128,9 @@ public class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectP
         0, // TODO: this depends on the value of written event =>
         // https://github.com/zeebe-io/zeebe/issues/374
         command.getPosition(),
-        command);
+        command.getTimestamp(),
+        command.getMetadata(),
+        eventValue);
   }
 
   private void stage(
@@ -129,21 +141,21 @@ public class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectP
       DirectBuffer rejectionReason,
       long position,
       long sourcePosition,
-      TypedRecord<?> record) {
-    final RecordMetadata metadata = record.getMetadata();
-
+      long timestamp,
+      RecordMetadata metadata,
+      UnpackedObject value) {
     writer
         .partitionId(partitionId)
         .position(position)
         .sourcePosition(sourcePosition)
         .key(key)
-        .timestamp(record.getTimestamp())
+        .timestamp(timestamp)
         .intent(intent)
         .recordType(type)
         .valueType(metadata.getValueType())
         .rejectionType(rejectionType)
         .rejectionReason(rejectionReason)
-        .valueWriter(record.getValue());
+        .valueWriter(value);
 
     this.requestId = metadata.getRequestId();
     this.requestStreamId = metadata.getRequestStreamId();

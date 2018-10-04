@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.util.TestUtil;
@@ -51,7 +52,7 @@ public class UniqueKeyFormatTest {
 
     // then partition id is encoded in the returned key
     final long key = workflowInstanceWithResponse.key();
-    final int partitionId = (int) (key >> SystemConstants.KEYSPACE_POW_OF_2);
+    final int partitionId = Protocol.decodePartitionId(key);
     assertThat(partitionId).isEqualTo(2);
   }
 }

@@ -17,11 +17,10 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-import static io.zeebe.broker.system.SystemConstants.KEYSPACE_POW_OF_2;
-
 import io.zeebe.broker.util.KeyStateController;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.LongProperty;
+import io.zeebe.protocol.Protocol;
 
 public class KeyGenerator extends UnpackedObject {
 
@@ -47,7 +46,7 @@ public class KeyGenerator extends UnpackedObject {
       final long initialValue,
       final int stepSize,
       final KeyStateController keyStateController) {
-    long startValue = (long) partitionId << KEYSPACE_POW_OF_2;
+    long startValue = (long) partitionId << Protocol.KEY_BITS;
     startValue += initialValue;
 
     nextKey = new LongProperty("nextKey", startValue);

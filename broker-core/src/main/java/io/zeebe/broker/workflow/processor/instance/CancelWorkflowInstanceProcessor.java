@@ -78,6 +78,7 @@ public final class CancelWorkflowInstanceProcessor
 
     workflowInstance.setState(WorkflowInstanceIntent.ELEMENT_TERMINATING);
 
-    responseWriter.writeEventOnCommand(command.getKey(), WorkflowInstanceIntent.CANCELING, command);
+    responseWriter.writeEventOnCommand(
+        command.getKey(), WorkflowInstanceIntent.CANCELING, workflowInstanceEvent, command);
   }
 }

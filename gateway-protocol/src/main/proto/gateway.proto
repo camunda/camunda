@@ -93,6 +93,13 @@ message CreateWorkflowInstanceResponse {
   int64 workflowInstanceKey = 5;
 }
 
+message CancelWorkflowInstanceRequest {
+  int64 workflowInstanceKey = 1;
+}
+
+message CancelWorkflowInstanceResponse {
+}
+
 service Gateway {
   rpc Health (HealthRequest) returns (HealthResponse) {
   }
@@ -103,5 +110,7 @@ service Gateway {
   rpc CreateJob (CreateJobRequest) returns (CreateJobResponse) {
   }
   rpc CreateWorkflowInstance (CreateWorkflowInstanceRequest) returns (CreateWorkflowInstanceResponse) {
+  }
+  rpc CancelWorkflowInstance (CancelWorkflowInstanceRequest) returns (CancelWorkflowInstanceResponse) {
   }
 }
