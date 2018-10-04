@@ -21,10 +21,6 @@ export function parseQueryString(queryString = '') {
   return params;
 }
 
-export function createNewSelectionFragment() {
-  return {ids: new Set(), excludeIds: new Set()};
-}
-
 export function getPayload({selectionId, state}) {
   const {selection, selections, filter} = state;
   let selectiondata;

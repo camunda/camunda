@@ -12,7 +12,7 @@ import ListFooter from './ListFooter';
 import {DEFAULT_FILTER} from 'modules/constants';
 
 const selection = {
-  list: new Set(),
+  list: [],
   isBlacklist: false
 };
 
