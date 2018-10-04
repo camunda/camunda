@@ -15,7 +15,6 @@
  */
 package io.zeebe.client.api.commands;
 
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import java.io.InputStream;
 import java.util.Map;
 
@@ -56,8 +55,7 @@ public interface UpdatePayloadWorkflowInstanceCommandStep1 {
    */
   UpdatePayloadWorkflowInstanceCommandStep2 payload(Object payload);
 
-  interface UpdatePayloadWorkflowInstanceCommandStep2
-      extends FinalCommandStep<WorkflowInstanceEvent> {
+  interface UpdatePayloadWorkflowInstanceCommandStep2 extends FinalCommandStep<Void> {
     // the place for new optional parameters
   }
 }

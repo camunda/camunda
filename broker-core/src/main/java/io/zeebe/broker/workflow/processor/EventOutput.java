@@ -84,7 +84,11 @@ public class EventOutput {
   }
 
   public void deferEvent(final TypedRecord<WorkflowInstanceRecord> event) {
-    materializedState.deferEvent(event);
+    materializedState.deferTokenEvent(event);
+  }
+
+  public void storeFailedToken(final TypedRecord<WorkflowInstanceRecord> event) {
+    materializedState.storeFailedToken(event);
   }
 
   public void storeFinishedToken(final TypedRecord<WorkflowInstanceRecord> event) {

@@ -385,7 +385,7 @@ public class ElementInstanceStateTest {
 
     // when
     final TypedRecord<WorkflowInstanceRecord> typedRecord = mockTypedRecord();
-    elementInstanceState.storeRecord(100, typedRecord, Purpose.DEFERRED_TOKEN);
+    elementInstanceState.storeTokenEvent(100, typedRecord, Purpose.DEFERRED_TOKEN);
 
     // then
     final List<IndexedRecord> storedRecords = elementInstanceState.getDeferredTokens(100);
@@ -406,9 +406,9 @@ public class ElementInstanceStateTest {
 
     // when
     final TypedRecord<WorkflowInstanceRecord> typedRecord = mockTypedRecord(123L);
-    elementInstanceState.storeRecord(100, typedRecord, Purpose.DEFERRED_TOKEN);
+    elementInstanceState.storeTokenEvent(100, typedRecord, Purpose.DEFERRED_TOKEN);
     final TypedRecord<WorkflowInstanceRecord> typedRecord2 = mockTypedRecord(124L);
-    elementInstanceState.storeRecord(100, typedRecord2, Purpose.FINISHED_TOKEN);
+    elementInstanceState.storeTokenEvent(100, typedRecord2, Purpose.FINISHED_TOKEN);
 
     // then
     final List<IndexedRecord> deferredTokens = elementInstanceState.getDeferredTokens(100);
@@ -432,9 +432,9 @@ public class ElementInstanceStateTest {
     elementInstanceState.newInstance(
         100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
     final TypedRecord<WorkflowInstanceRecord> typedRecord = mockTypedRecord(123L);
-    elementInstanceState.storeRecord(100, typedRecord, Purpose.DEFERRED_TOKEN);
+    elementInstanceState.storeTokenEvent(100, typedRecord, Purpose.DEFERRED_TOKEN);
     final TypedRecord<WorkflowInstanceRecord> typedRecord2 = mockTypedRecord(124L);
-    elementInstanceState.storeRecord(100, typedRecord2, Purpose.DEFERRED_TOKEN);
+    elementInstanceState.storeTokenEvent(100, typedRecord2, Purpose.DEFERRED_TOKEN);
 
     // when
     elementInstanceState.removeStoredRecord(100, 123, Purpose.DEFERRED_TOKEN);
@@ -459,7 +459,7 @@ public class ElementInstanceStateTest {
         key, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     final TypedRecord<WorkflowInstanceRecord> typedRecord = mockTypedRecord(123L);
-    elementInstanceState.storeRecord(key, typedRecord, Purpose.DEFERRED_TOKEN);
+    elementInstanceState.storeTokenEvent(key, typedRecord, Purpose.DEFERRED_TOKEN);
 
     // when
     elementInstanceState.removeInstance(key);

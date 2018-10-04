@@ -21,6 +21,7 @@ import io.zeebe.gateway.impl.broker.request.BrokerCreateWorkflowInstanceRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerDeployWorkflowRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerTopologyRequest;
+import io.zeebe.gateway.impl.broker.request.BrokerUpdateWorkflowInstancePayloadRequest;
 import io.zeebe.gateway.impl.data.MsgPackConverter;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobRequest;
@@ -28,6 +29,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowRequestObject;
 import io.zeebe.msgpack.value.DocumentValue;
 import org.agrona.DirectBuffer;
@@ -95,6 +97,17 @@ public class RequestMapper {
         new BrokerCancelWorkflowInstanceRequest();
 
     brokerRequest.setWorkflowInstanceKey(grpcRequest.getWorkflowInstanceKey());
+
+    return brokerRequest;
+  }
+
+  public static BrokerUpdateWorkflowInstancePayloadRequest toUpdateWorkflowInstancePayloadRequest(
+      UpdateWorkflowInstancePayloadRequest grpcRequest) {
+    final BrokerUpdateWorkflowInstancePayloadRequest brokerRequest =
+        new BrokerUpdateWorkflowInstancePayloadRequest();
+
+    brokerRequest.setActivityInstanceKey(grpcRequest.getActivityInstanceKey());
+    brokerRequest.setPayload(ensureJsonSet(grpcRequest.getPayload()));
 
     return brokerRequest;
   }

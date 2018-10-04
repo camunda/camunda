@@ -100,6 +100,15 @@ message CancelWorkflowInstanceRequest {
 message CancelWorkflowInstanceResponse {
 }
 
+message UpdateWorkflowInstancePayloadRequest {
+  int64 activityInstanceKey = 1;
+  /* payload has to be a valid json object as string */
+  string payload = 2;
+}
+
+message UpdateWorkflowInstancePayloadResponse {
+}
+
 service Gateway {
   rpc Health (HealthRequest) returns (HealthResponse) {
   }
@@ -112,5 +121,7 @@ service Gateway {
   rpc CreateWorkflowInstance (CreateWorkflowInstanceRequest) returns (CreateWorkflowInstanceResponse) {
   }
   rpc CancelWorkflowInstance (CancelWorkflowInstanceRequest) returns (CancelWorkflowInstanceResponse) {
+  }
+  rpc UpdateWorkflowInstancePayload (UpdateWorkflowInstancePayloadRequest) returns (UpdateWorkflowInstancePayloadResponse) {
   }
 }

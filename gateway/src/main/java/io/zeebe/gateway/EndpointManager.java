@@ -38,6 +38,8 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadResponse;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
@@ -111,6 +113,17 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
         request,
         RequestMapper::toCancelWorkflowInstanceRequest,
         ResponseMapper::toCancelWorkflowInstanceResponse,
+        responseObserver);
+  }
+
+  @Override
+  public void updateWorkflowInstancePayload(
+      UpdateWorkflowInstancePayloadRequest request,
+      StreamObserver<UpdateWorkflowInstancePayloadResponse> responseObserver) {
+    sendRequest(
+        request,
+        RequestMapper::toUpdateWorkflowInstancePayloadRequest,
+        ResponseMapper::toUpdateWorkflowInstancePayloadResponse,
         responseObserver);
   }
 

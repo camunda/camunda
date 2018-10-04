@@ -131,8 +131,9 @@ public class JobStreamProcessor implements StreamProcessorLifecycleAware {
 
   private class CreateProcessor implements CommandProcessor<JobRecord> {
     @Override
-    public void onCommand(TypedRecord<JobRecord> command, CommandControl commandControl) {
-      final long key = commandControl.accept(JobIntent.CREATED);
+    public void onCommand(
+        TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
+      final long key = commandControl.accept(JobIntent.CREATED, command.getValue());
       state.create(key, command);
     }
   }
@@ -195,11 +196,12 @@ public class JobStreamProcessor implements StreamProcessorLifecycleAware {
 
   private class CompleteProcessor implements CommandProcessor<JobRecord> {
     @Override
-    public void onCommand(TypedRecord<JobRecord> command, CommandControl commandControl) {
+    public void onCommand(
+        TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
       if (state.exists(command)) {
         if (!state.exists(command, State.FAILED)) {
           state.delete(command);
-          commandControl.accept(JobIntent.COMPLETED);
+          commandControl.accept(JobIntent.COMPLETED, command.getValue());
         } else {
           commandControl.reject(
               RejectionType.NOT_APPLICABLE, "Job is failed and must be resolved first");
@@ -212,10 +214,11 @@ public class JobStreamProcessor implements StreamProcessorLifecycleAware {
 
   private class FailProcessor implements CommandProcessor<JobRecord> {
     @Override
-    public void onCommand(TypedRecord<JobRecord> command, CommandControl commandControl) {
+    public void onCommand(
+        TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
       if (state.exists(command, State.ACTIVATED)) {
         state.fail(command);
-        commandControl.accept(JobIntent.FAILED);
+        commandControl.accept(JobIntent.FAILED, command.getValue());
       } else {
         commandControl.reject(RejectionType.NOT_APPLICABLE, "Job is not currently activated");
       }
@@ -224,10 +227,11 @@ public class JobStreamProcessor implements StreamProcessorLifecycleAware {
 
   private class CancelProcessor implements CommandProcessor<JobRecord> {
     @Override
-    public void onCommand(TypedRecord<JobRecord> command, CommandControl commandControl) {
+    public void onCommand(
+        TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
       if (state.exists(command)) {
         state.delete(command);
-        commandControl.accept(JobIntent.CANCELED);
+        commandControl.accept(JobIntent.CANCELED, command.getValue());
       } else {
         commandControl.reject(RejectionType.NOT_APPLICABLE, "Job does not exist");
       }
@@ -236,10 +240,11 @@ public class JobStreamProcessor implements StreamProcessorLifecycleAware {
 
   private class TimeOutProcessor implements CommandProcessor<JobRecord> {
     @Override
-    public void onCommand(TypedRecord<JobRecord> command, CommandControl commandControl) {
+    public void onCommand(
+        TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
       if (state.exists(command, State.ACTIVATED)) {
         state.timeout(command);
-        commandControl.accept(JobIntent.TIMED_OUT);
+        commandControl.accept(JobIntent.TIMED_OUT, command.getValue());
       } else {
         commandControl.reject(RejectionType.NOT_APPLICABLE, "Job not activated");
       }
@@ -248,11 +253,12 @@ public class JobStreamProcessor implements StreamProcessorLifecycleAware {
 
   private class UpdateRetriesProcessor implements CommandProcessor<JobRecord> {
     @Override
-    public void onCommand(TypedRecord<JobRecord> command, CommandControl commandControl) {
+    public void onCommand(
+        TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
       if (state.exists(command, State.FAILED)) {
         if (command.getValue().getRetries() > 0) {
           state.resolve(command);
-          commandControl.accept(JobIntent.RETRIES_UPDATED);
+          commandControl.accept(JobIntent.RETRIES_UPDATED, command.getValue());
         } else {
           commandControl.reject(RejectionType.BAD_VALUE, "Job retries must be positive");
         }

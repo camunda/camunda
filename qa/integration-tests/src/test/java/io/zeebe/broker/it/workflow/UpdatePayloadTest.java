@@ -162,12 +162,12 @@ public class UpdatePayloadTest {
     // given
     waitUntil(
         () -> eventRecorder.hasElementInState("task-1", WorkflowInstanceState.ELEMENT_ACTIVATED));
-    final WorkflowInstanceEvent activtyInstance =
-        eventRecorder.getElementInState("task-1", WorkflowInstanceState.ELEMENT_ACTIVATED);
+    final WorkflowInstanceEvent workflowInstanceActivated =
+        eventRecorder.getElementInState("process", WorkflowInstanceState.ELEMENT_ACTIVATED);
 
     clientRule
         .getWorkflowClient()
-        .newUpdatePayloadCommand(activtyInstance)
+        .newUpdatePayloadCommand(workflowInstanceActivated)
         .payload(PAYLOAD)
         .send()
         .join();

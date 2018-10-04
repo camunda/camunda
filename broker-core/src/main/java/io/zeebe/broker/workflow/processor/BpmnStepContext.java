@@ -141,6 +141,8 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
         .setErrorType(errorType)
         .setErrorMessage(errorMessage);
 
+    eventOutput.storeFailedToken(record);
+
     if (!record.getMetadata().hasIncidentKey()) {
       commandWriter.writeNewCommand(IncidentIntent.CREATE, incidentCommand);
     } else {

@@ -1226,7 +1226,6 @@ public class IncidentTest {
             .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.UPDATE_PAYLOAD)
             .key(activityInstanceKey)
             .command()
-            .put("workflowInstanceKey", workflowInstanceKey)
             .put("payload", payload)
             .done()
             .sendAndAwait();
