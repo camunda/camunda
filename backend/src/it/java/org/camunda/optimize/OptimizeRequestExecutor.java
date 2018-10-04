@@ -150,19 +150,19 @@ public class OptimizeRequestExecutor {
     return builder;
   }
 
-  public <T> T execute(Class<T> clazz, int responseCode) {
+  public <T> T execute(Class<T> classToExtractFromResponse, int responseCode) {
     Response response = execute();
     assertThat(response.getStatus(), is(responseCode));
-    return response.readEntity(clazz);
+    return response.readEntity(classToExtractFromResponse);
   }
 
-  public <T> List<T> executeAndReturnList(Class<T> clazz, int responseCode) {
+  public <T> List<T> executeAndReturnList(Class<T> classToExtractFromResponse, int responseCode) {
     Response response = execute();
     assertThat(response.getStatus(), is(responseCode));
     String jsonString = response.readEntity(String.class);
     try {
       TypeFactory factory = objectMapper.getTypeFactory();
-      JavaType listOfT = factory.constructCollectionType(List.class, clazz);
+      JavaType listOfT = factory.constructCollectionType(List.class, classToExtractFromResponse);
       return objectMapper.readValue(jsonString, listOfT);
     } catch (IOException e) {
       e.printStackTrace();
