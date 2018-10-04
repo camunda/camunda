@@ -107,30 +107,24 @@ pipeline {
             }
           }
         }
-        // TODO: OPT-1481
-//        stage('Security') {
-//          agent {
-//            kubernetes {
-//              cloud 'optimize-ci'
-//              label "optimize-ci-build-it-security_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
-//              defaultContainer 'jnlp'
-//              yamlFile '.ci/podSpecs/mavenDindAgent.yml'
-//            }
-//          }
-//          steps {
-//            container('maven') {
-//              installDockerBinaries()
-//              dockerRegistryLogin()
-//              setupPermissionsForHostDirs('qa/connect-to-secured-es-tests')
-//              runMaven("verify -f qa/connect-to-secured-es-tests/pom.xml -Psecured-es-it")
-//            }
-//          }
-//          post {
-//            always {
-//              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
-//            }
-//          }
-//        }
+        stage('Security') {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build-it-security_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yamlFile '.ci/podSpecs/mavenDindAgent.yml'
+            }
+          }
+          steps {
+            securityTestSteps()
+          }
+          post {
+            always {
+              junit testResults: 'backend/target/failsafe-reports/**/*.xml', allowEmptyResults: true, keepLongStdio: true
+            }
+          }
+        }
         stage('IT Latest') {
           agent {
             kubernetes {
@@ -320,6 +314,19 @@ void integrationTestSteps(String engineVersion = 'latest') {
     setupPermissionsForHostDirs('backend')
 
     runMaven("install -Pproduction,it,engine-${engineVersion} -pl backend -am -T\$LIMITS_CPU")
+  }
+}
+
+void securityTestSteps() {
+  container('maven') {
+    installDockerBinaries()
+    dockerRegistryLogin()
+    setupPermissionsForHostDirs('qa/connect-to-secured-es-tests')
+
+    // build all required artifacts for migration tests
+    runMaven("install -Dskip.docker -DskipTests -Pproduction,it -pl backend,qa/connect-to-secured-es-tests -am -T\$LIMITS_CPU")
+    // run migration tests
+    runMaven("verify -f qa/connect-to-secured-es-tests/pom.xml -Psecured-es-it")
   }
 }
 
