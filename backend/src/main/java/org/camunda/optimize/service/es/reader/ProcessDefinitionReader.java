@@ -201,17 +201,19 @@ public class ProcessDefinitionReader {
 
   public FlowNodeNamesResponseDto getFlowNodeNames(FlowNodeIdsToNamesRequestDto flowNodeIdsToNamesRequestDto) {
     FlowNodeNamesResponseDto result = new FlowNodeNamesResponseDto();
-    ProcessDefinitionOptimizeDto processDefinitionXmlDto =
-      getProcessDefinitionWithXml(
+    ProcessDefinitionOptimizeDto processDefinitionXmlDto = getProcessDefinitionWithXml(
         flowNodeIdsToNamesRequestDto.getProcessDefinitionKey(),
-        flowNodeIdsToNamesRequestDto.getProcessDefinitionVersion());
-    List<String> nodeIds = flowNodeIdsToNamesRequestDto.getNodeIds();
-    if (nodeIds != null && !nodeIds.isEmpty()) {
-      for (String id : nodeIds) {
-        result.getFlowNodeNames().put(id, processDefinitionXmlDto.getFlowNodeNames().get(id));
+        flowNodeIdsToNamesRequestDto.getProcessDefinitionVersion()
+    );
+    if (processDefinitionXmlDto != null) {
+      List<String> nodeIds = flowNodeIdsToNamesRequestDto.getNodeIds();
+      if (nodeIds != null && !nodeIds.isEmpty()) {
+        for (String id : nodeIds) {
+          result.getFlowNodeNames().put(id, processDefinitionXmlDto.getFlowNodeNames().get(id));
+        }
+      } else {
+        result.setFlowNodeNames(processDefinitionXmlDto.getFlowNodeNames());
       }
-    } else {
-      result.setFlowNodeNames(processDefinitionXmlDto.getFlowNodeNames());
     }
     return result;
   }
