@@ -59,7 +59,7 @@
     <plugin.version.failsafe>2.22.0</plugin.version.failsafe>
     <plugin.version.fmt>2.5.1</plugin.version.fmt>
     <plugin.version.license>3.0</plugin.version.license>
-    <plugin.version.protobuf-maven-plugin>0.5.1</plugin.version.protobuf-maven-plugin>
+    <plugin.version.protobuf-maven-plugin>0.6.1</plugin.version.protobuf-maven-plugin>
     <plugin.version.replacer>1.5.3</plugin.version.replacer>
     <plugin.version.resources>3.1.0</plugin.version.resources>
     <plugin.version.scala>3.2.1</plugin.version.scala>
