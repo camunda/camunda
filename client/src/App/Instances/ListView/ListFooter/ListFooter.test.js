@@ -32,7 +32,7 @@ describe('ListFooter', () => {
         perPage={10}
         firstElement={0}
         filterCount={9}
-        selection={{ids: new Set(), excludeIds: new Set()}}
+        selection={{ids: [], excludeIds: []}}
         selections={[{selectionId: 0}, {selectionId: 1}]}
       />
     );
