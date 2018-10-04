@@ -68,6 +68,11 @@ public class JobRecord extends UnpackedObject {
     return workerProp.getValue();
   }
 
+  public JobRecord setWorker(String worker) {
+    this.workerProp.setValue(worker);
+    return this;
+  }
+
   public JobRecord setWorker(DirectBuffer worker) {
     return setWorker(worker, 0, worker.capacity());
   }

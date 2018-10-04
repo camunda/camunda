@@ -23,6 +23,7 @@ import io.zeebe.client.api.commands.UpdateRetriesJobCommandStep1;
 import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.subscription.JobWorkerBuilderStep1;
 import io.zeebe.client.impl.job.CreateJobCommandImpl;
+import io.zeebe.client.impl.job.JobUpdateRetriesCommandImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 
 public class JobClientImpl implements JobClient {
@@ -49,8 +50,8 @@ public class JobClientImpl implements JobClient {
   }
 
   @Override
-  public UpdateRetriesJobCommandStep1 newUpdateRetriesCommand(JobEvent event) {
-    return null;
+  public UpdateRetriesJobCommandStep1 newUpdateRetriesCommand(long jobKey) {
+    return new JobUpdateRetriesCommandImpl(asyncStub, jobKey);
   }
 
   @Override
