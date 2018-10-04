@@ -104,7 +104,7 @@ public class SubscriptionState<T extends Subscription> {
     return getSubscription(keyBuffer, KEY_OFFSET, subscription.getKeyLength());
   }
 
-  public T getSubscription(final DirectBuffer buffer, final int offset, final int length) {
+  private T getSubscription(final DirectBuffer buffer, final int offset, final int length) {
     return persistenceHelper.getValueInstance(
         clazz, subscriptionHandle, buffer, offset, length, valueBuffer);
   }
@@ -112,7 +112,8 @@ public class SubscriptionState<T extends Subscription> {
   public List<T> findSubscriptions(
       final DirectBuffer messageName, final DirectBuffer correlationKey) {
     final List<T> subscriptionsList = new ArrayList<>();
-    rocksDbWrapper.whileTrue(
+
+    rocksDbWrapper.foreach(
         subscriptionHandle,
         (key, value) -> {
           try {
@@ -125,11 +126,11 @@ public class SubscriptionState<T extends Subscription> {
             if (isEqual) {
               subscriptionsList.add(subscription);
             }
-            return isEqual;
           } catch (Exception ex) {
             throw new RuntimeException(ex);
           }
         });
+
     return subscriptionsList;
   }
 

@@ -165,6 +165,7 @@ public class SubscriptionApiCommandMessageHandler implements ServerMessageHandle
   private boolean onCorrelateMessageSubscription(DirectBuffer buffer, int offset, int length) {
     correlateMessageSubscriptionCommand.wrap(buffer, offset, length);
 
+    messageSubscriptionRecord.reset();
     messageSubscriptionRecord
         .setWorkflowInstancePartitionId(
             openMessageSubscriptionCommand.getWorkflowInstancePartitionId())

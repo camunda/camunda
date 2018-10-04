@@ -30,7 +30,7 @@ public class MessageSubscriptionRecord extends UnpackedObject {
   private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey");
   private final LongProperty activityInstanceKeyProp = new LongProperty("activityInstanceKey");
   private final StringProperty messageNameProp = new StringProperty("messageName");
-  private final StringProperty correlationKeyProp = new StringProperty("correlationKey");
+  private final StringProperty correlationKeyProp = new StringProperty("correlationKey", "");
 
   public MessageSubscriptionRecord() {
     this.declareProperty(workflowInstancePartitionIdProp)

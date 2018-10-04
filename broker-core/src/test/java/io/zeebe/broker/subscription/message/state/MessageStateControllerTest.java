@@ -178,8 +178,7 @@ public class MessageStateControllerTest {
         new MessageSubscription(
             "messageName", "correlationKey", "{\"foo\":\"bar\"}", 2, 2, 3, 1234);
     final MessageSubscription subscription3 =
-        new MessageSubscription(
-            "messageName", "correlationKey", "{\"foo\":\"bar\"}", 3, 2, 3, 1234);
+        new MessageSubscription("otherName", "correlationKey", "{\"foo\":\"bar\"}", 3, 2, 3, 1234);
     stateController.put(subscription);
     stateController.put(subscription2);
     stateController.put(subscription3);
@@ -189,14 +188,19 @@ public class MessageStateControllerTest {
         stateController.findSubscriptions(wrapString("messageName"), wrapString("correlationKey"));
 
     // then
-    assertThat(readSubscriptions.size()).isEqualTo(3);
+    assertThat(readSubscriptions.size()).isEqualTo(2);
 
     MessageSubscription readSubscription = readSubscriptions.get(0);
     assertSubscription(subscription, readSubscription, 1234, 1, 2, 3);
     readSubscription = readSubscriptions.get(1);
-    assertSubscription(subscription, readSubscription, 1234, 2, 2, 3);
-    readSubscription = readSubscriptions.get(2);
-    assertSubscription(subscription, readSubscription, 1234, 3, 2, 3);
+    assertSubscription(subscription2, readSubscription, 1234, 2, 2, 3);
+
+    // and
+    final List<MessageSubscription> otherSubscriptions =
+        stateController.findSubscriptions(wrapString("otherName"), wrapString("correlationKey"));
+
+    assertThat(otherSubscriptions.size()).isEqualTo(1);
+    assertSubscription(subscription3, otherSubscriptions.get(0), 1234, 3, 2, 3);
   }
 
   @Test
