@@ -1,33 +1,16 @@
 package org.camunda.optimize.test.util;
 
+import org.camunda.optimize.dto.optimize.query.report.ViewDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.ViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDto;
 import org.camunda.optimize.dto.optimize.query.report.single.processpart.ProcessPartDto;
 
 import java.util.Arrays;
 
-import static org.camunda.optimize.service.es.report.command.util.GroupByDtoCreator.createGroupByFlowNode;
-import static org.camunda.optimize.service.es.report.command.util.GroupByDtoCreator.createGroupByNone;
-import static org.camunda.optimize.service.es.report.command.util.GroupByDtoCreator.createGroupByStartDateDto;
-import static org.camunda.optimize.service.es.report.command.util.GroupByDtoCreator.createGroupByVariable;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.HEAT_VISUALIZATION;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.SINGLE_NUMBER_VISUALIZATION;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.TABLE_VISUALIZATION;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_COUNT_OPERATION;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FLOW_NODE_ENTITY;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FREQUENCY_PROPERTY;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_RAW_DATA_OPERATION;
-import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createAverageFlowNodeDurationView;
-import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createAverageProcessInstanceDurationView;
-import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createCountProcessInstanceFrequencyView;
-import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createMaxFlowNodeDurationView;
-import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createMaxProcessInstanceDurationView;
-import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createMedianFlowNodeDurationView;
-import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createMedianProcessInstanceDurationView;
-import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createMinFlowNodeDurationView;
-import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createMinProcessInstanceDurationView;
+import static org.camunda.optimize.service.es.report.command.util.GroupByDtoCreator.*;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.*;
+import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.*;
 
 
 public class ReportDataHelper {

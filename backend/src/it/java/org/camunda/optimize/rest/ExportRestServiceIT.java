@@ -4,7 +4,6 @@ import org.apache.commons.io.IOUtils;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.IdDto;
-import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
@@ -18,8 +17,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -34,8 +31,6 @@ import static org.hamcrest.core.IsNot.not;
 
 
 public class ExportRestServiceIT {
-  protected static final String CSV_EXPORT = "export/csv";
-
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -67,7 +62,8 @@ public class ExportRestServiceIT {
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     String reportId = createAndStoreDefaultReportDefinition(
         processInstance.getProcessDefinitionKey(),
-        processInstance.getProcessDefinitionVersion()
+        processInstance.getProcessDefinitionVersion(),
+        true
     );
 
     // when
@@ -83,11 +79,11 @@ public class ExportRestServiceIT {
   @Test
   public void exportExistingReport() throws IOException {
     //given
-    String token = embeddedOptimizeRule.getAuthenticationToken();
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     String reportId = createAndStoreDefaultReportDefinition(
         processInstance.getProcessDefinitionKey(),
-        processInstance.getProcessDefinitionVersion()
+        processInstance.getProcessDefinitionVersion(),
+        true
     );
 
     // when
@@ -105,12 +101,13 @@ public class ExportRestServiceIT {
   }
 
   @Test
-  public void exportExistingReportWithCookies() throws IOException {
+  public void exportExistingInvalidReport() throws IOException {
     //given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
     String reportId = createAndStoreDefaultReportDefinition(
-        processInstance.getProcessDefinitionKey(),
-        processInstance.getProcessDefinitionVersion()
+            processInstance.getProcessDefinitionKey(),
+            processInstance.getProcessDefinitionVersion(),
+            false
     );
 
     // when
@@ -120,29 +117,34 @@ public class ExportRestServiceIT {
             .execute();
 
     // then
-    assertThat(response.getStatus(), is(200));
-    ByteArrayOutputStream bos = new ByteArrayOutputStream();
-    IOUtils.copy(response.readEntity(InputStream.class), bos);
-    byte[] result = bos.toByteArray();
-    assertThat(result.length, is(not(0)));
+    assertThat(response.getStatus(), is(500));
   }
+
 
   @Test
   public void exportNotExistingReport() {
     // when
     Response response =
-        embeddedOptimizeRule.target(CSV_EXPORT + "/fake_id/my_file.csv")
-            .request()
-            .header(HttpHeaders.AUTHORIZATION, embeddedOptimizeRule.getAuthorizationHeader())
-            .post(Entity.json(new AlertCreationDto()));
-    // then the status code is not authorized
-    assertThat(response.getStatus(), is(500));
+        embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCsvExportRequest("UFUK", "IGDE.csv")
+            .execute();
+    // then
+    assertThat(response.getStatus(), is(404));
   }
 
   private String createAndStoreDefaultReportDefinition(String processDefinitionKey,
-                                                       String processDefinitionVersion) {
+                                                       String processDefinitionVersion,
+                                                       boolean exportableReport) {
     String id = createNewReportHelper();
-    SingleReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
+
+    SingleReportDataDto reportData;
+    if (exportableReport) {
+      reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
+    } else {
+      reportData = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNodeNumber(processDefinitionKey, processDefinitionVersion);
+    }
+
     SingleReportDefinitionDto report = new SingleReportDefinitionDto();
     report.setData(reportData);
     report.setId("something");

@@ -78,12 +78,8 @@ public class ExportService {
 
   private byte[] getCSVForReport(String userId, String reportId, Integer limit, Integer offset) {
 
-    Optional<ReportResultDto> reportResultDto = Optional.empty();
-    try {
-      reportResultDto = Optional.of(reportService.evaluateSavedReport(userId, reportId));
-    } catch (Exception e) {
-      logger.error("Can't evaluate report", e);
-    }
+    Optional<ReportResultDto> reportResultDto;
+    reportResultDto = Optional.of(reportService.evaluateSavedReport(userId, reportId));
 
     byte[] result = reportResultDto.map((reportResult) -> {
       byte[] bytes = null;
