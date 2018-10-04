@@ -21,6 +21,9 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayImplBase;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceResponse;
@@ -84,6 +87,7 @@ public class RecordingGatewayService extends GatewayImplBase {
     addRequestHandler(CompleteJobRequest.class, r -> CompleteJobResponse.getDefaultInstance());
     addRequestHandler(ListWorkflowsRequest.class, r -> ListWorkflowsResponse.getDefaultInstance());
     addRequestHandler(GetWorkflowRequest.class, r -> GetWorkflowResponse.getDefaultInstance());
+    addRequestHandler(ActivateJobsRequest.class, r -> ActivateJobsResponse.getDefaultInstance());
   }
 
   @Override
@@ -156,6 +160,12 @@ public class RecordingGatewayService extends GatewayImplBase {
   @Override
   public void getWorkflow(
       GetWorkflowRequest request, StreamObserver<GetWorkflowResponse> responseObserver) {
+    handle(request, responseObserver);
+  }
+
+  @Override
+  public void activateJobs(
+      ActivateJobsRequest request, StreamObserver<ActivateJobsResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
@@ -233,6 +243,13 @@ public class RecordingGatewayService extends GatewayImplBase {
                 .setResourceName(resourceName)
                 .setBpmnXml(bpmnXml)
                 .build());
+  }
+
+  public void onActivateJobsRequest(ActivatedJob... activatedJobs) {
+    addRequestHandler(
+        ActivateJobsRequest.class,
+        request ->
+            ActivateJobsResponse.newBuilder().addAllJobs(Arrays.asList(activatedJobs)).build());
   }
 
   public void errorOnRequest(

@@ -158,6 +158,40 @@ message GetWorkflowResponse {
   string bpmnXml = 5;
 }
 
+message ActivateJobsRequest {
+  string type = 1;
+  string worker = 2;
+  int64 timeout = 3;
+  int32 amount = 4;
+}
+
+message JobHeaders {
+  int64 workflowInstanceKey = 1;
+  string bpmnProcessId = 2;
+  int32 workflowDefinitionVersion = 3;
+  int64 workflowKey = 4;
+  string activityId = 5;
+  int64 activityInstanceKey = 6;
+}
+
+message ActivatedJob {
+  int64 key = 1;
+  string type = 2;
+  JobHeaders jobHeaders = 3;
+  // json object as string
+  string customHeaders = 4;
+  string worker = 5;
+  int32 retries = 6;
+  // epoch milliseconds
+  int64 deadline = 7;
+  /* json object as string */
+  string payload = 8;
+}
+
+message ActivateJobsResponse {
+  repeated ActivatedJob jobs = 1;
+}
+
 service Gateway {
   rpc Health (HealthRequest) returns (HealthResponse) {
   }
@@ -178,6 +212,9 @@ service Gateway {
   rpc CancelWorkflowInstance (CancelWorkflowInstanceRequest) returns (CancelWorkflowInstanceResponse) {
   }
   rpc UpdateWorkflowInstancePayload (UpdateWorkflowInstancePayloadRequest) returns (UpdateWorkflowInstancePayloadResponse) {
+
+  }
+  rpc ActivateJobs (ActivateJobsRequest) returns (stream ActivateJobsResponse) {
   }
   rpc ListWorkflows (ListWorkflowsRequest) returns (ListWorkflowsResponse) {
   }

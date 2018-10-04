@@ -13,31 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.gateway.impl.broker.cluster;
+package io.zeebe.client.api.response;
 
-import static io.zeebe.transport.ClientTransport.UNKNOWN_NODE_ID;
-
-import io.zeebe.transport.ClientTransport;
 import java.util.List;
 
-public interface BrokerClusterState {
+public interface ActivateJobsResponse {
 
-  int NODE_ID_NULL = UNKNOWN_NODE_ID - 1;
-  int PARTITION_ID_NULL = NODE_ID_NULL - 1;
-
-  int getClusterSize();
-
-  int getPartitionsCount();
-
-  int getLeaderForPartition(int partition);
-
-  /**
-   * @return the node id of a random broker or {@link ClientTransport#UNKNOWN_NODE_ID} if no brokers
-   *     are known
-   */
-  int getRandomBroker();
-
-  List<Integer> getPartitions();
-
-  int getPartition(int offset);
+  /** @return the list of activated jobs */
+  List<ActivatedJob> getJobs();
 }

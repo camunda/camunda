@@ -87,6 +87,11 @@ public class TopologyResponseDto extends UnpackedObject {
       return hostProp.getValue();
     }
 
+    public BrokerDto setHost(String host) {
+      this.hostProp.setValue(host);
+      return this;
+    }
+
     public BrokerDto setHost(final DirectBuffer host, final int offset, final int length) {
       this.hostProp.setValue(host, offset, length);
       return this;

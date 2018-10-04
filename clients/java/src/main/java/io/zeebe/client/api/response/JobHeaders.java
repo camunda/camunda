@@ -13,31 +13,26 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.gateway.impl.broker.cluster;
+package io.zeebe.client.api.response;
 
-import static io.zeebe.transport.ClientTransport.UNKNOWN_NODE_ID;
+/** Context in case the job is part of a workflow instance */
+public interface JobHeaders {
 
-import io.zeebe.transport.ClientTransport;
-import java.util.List;
+  /** @return key of the workflow instance */
+  long getWorkflowInstanceKey();
 
-public interface BrokerClusterState {
+  /** @return BPMN process id of the workflow */
+  String getBpmnProcessId();
 
-  int NODE_ID_NULL = UNKNOWN_NODE_ID - 1;
-  int PARTITION_ID_NULL = NODE_ID_NULL - 1;
+  /** @return version of the workflow */
+  int getWorkflowDefinitionVersion();
 
-  int getClusterSize();
+  /** @return key of the workflow */
+  long getWorkflowKey();
 
-  int getPartitionsCount();
+  /** @return id of the activity */
+  String getActivityId();
 
-  int getLeaderForPartition(int partition);
-
-  /**
-   * @return the node id of a random broker or {@link ClientTransport#UNKNOWN_NODE_ID} if no brokers
-   *     are known
-   */
-  int getRandomBroker();
-
-  List<Integer> getPartitions();
-
-  int getPartition(int offset);
+  /** @return key of the activity instance */
+  long getActivityInstanceKey();
 }

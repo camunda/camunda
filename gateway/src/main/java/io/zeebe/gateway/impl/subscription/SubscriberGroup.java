@@ -18,7 +18,7 @@ package io.zeebe.gateway.impl.subscription;
 import io.zeebe.gateway.cmd.ClientException;
 import io.zeebe.gateway.impl.Loggers;
 import io.zeebe.gateway.impl.ZeebeClientImpl;
-import io.zeebe.gateway.impl.broker.cluster.BrokerClusterStateImpl;
+import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.gateway.impl.record.UntypedRecordImpl;
 import io.zeebe.transport.RemoteAddress;
@@ -79,7 +79,7 @@ public abstract class SubscriberGroup<T extends Subscriber> {
   protected void open(final CompletableActorFuture<SubscriberGroup<T>> openFuture) {
     this.openFuture = openFuture;
 
-    final BrokerClusterStateImpl topology = topologyManager.getTopology();
+    final BrokerClusterState topology = topologyManager.getTopology();
     if (topology != null) {
       openSubscribers(topology.getPartitionsCount());
     } else {

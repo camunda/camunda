@@ -36,7 +36,7 @@ public class TopologyRequestImpl extends BrokerTopologyRequest implements Topolo
     final ActorFuture<Topology> future = new CompletableActorFuture<>();
     brokerClient.sendRequest(
         this,
-        (partitionId, key, response) -> future.complete(new TopologyImpl(response)),
+        (key, response) -> future.complete(new TopologyImpl(response)),
         future::completeExceptionally);
     return future;
   }

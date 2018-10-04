@@ -21,8 +21,7 @@ import io.zeebe.gateway.cmd.ClientException;
 import io.zeebe.gateway.cmd.ClientOutOfMemoryException;
 import io.zeebe.gateway.impl.ErrorResponseHandler;
 import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
-import io.zeebe.gateway.impl.broker.cluster.BrokerClusterStateImpl;
-import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
+import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
 import io.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerError;
@@ -48,12 +47,12 @@ public class BrokerRequestManager extends Actor {
 
   private final ClientOutput clientOutput;
   private final RequestDispatchStrategy dispatchStrategy;
-  private final BrokerTopologyManager topologyManager;
+  private final BrokerTopologyManagerImpl topologyManager;
   private final Duration requestTimeout;
 
   public BrokerRequestManager(
       ClientOutput clientOutput,
-      BrokerTopologyManager topologyManager,
+      BrokerTopologyManagerImpl topologyManager,
       RequestDispatchStrategy dispatchStrategy,
       Duration requestTimeout) {
     this.clientOutput = clientOutput;
@@ -80,7 +79,7 @@ public class BrokerRequestManager extends Actor {
 
   public <T> void sendRequest(
       BrokerRequest<T> request,
-      BiConsumer<Long, T> responseConsumer,
+      BrokerResponseConsumer<T> responseConsumer,
       Consumer<Throwable> throwableConsumer) {
     sendRequest(
         request,
@@ -92,7 +91,7 @@ public class BrokerRequestManager extends Actor {
 
   private <T> void sendRequest(
       BrokerRequest<T> request,
-      BiConsumer<Long, T> responseConsumer,
+      BrokerResponseConsumer<T> responseConsumer,
       Consumer<BrokerRejection> rejectionConsumer,
       Consumer<BrokerError> errorConsumer,
       Consumer<Throwable> throwableConsumer) {
@@ -125,9 +124,9 @@ public class BrokerRequestManager extends Actor {
 
     request.serializeValue();
 
-    actor.call(
+    actor.run(
         () -> {
-          final BrokerClusterStateImpl topology = topologyManager.getTopology();
+          final BrokerClusterState topology = topologyManager.getTopology();
           if (request.requiresPartitionId() && !topologyContainsPartitions(topology)) {
             // request requires a fetched topology to determine the partition id
             fetchTopologyBeforeRequest(request, responseConsumer, 3);
@@ -254,7 +253,7 @@ public class BrokerRequestManager extends Actor {
   }
 
   private void determinePartitionIdForPublishMessageRequest(BrokerPublishMessageRequest request) {
-    final BrokerClusterStateImpl topology = topologyManager.getTopology();
+    final BrokerClusterState topology = topologyManager.getTopology();
     if (topology != null) {
       final int partitionsCount = topology.getPartitionsCount();
 

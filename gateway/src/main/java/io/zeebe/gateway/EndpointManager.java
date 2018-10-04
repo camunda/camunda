@@ -21,8 +21,12 @@ import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import io.zeebe.gateway.ResponseMapper.BrokerResponseMapper;
 import io.zeebe.gateway.impl.broker.BrokerClient;
+import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.gateway.impl.broker.request.BrokerRequest;
+import io.zeebe.gateway.impl.job.ActivateJobsHandler;
 import io.zeebe.gateway.protocol.GatewayGrpc;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
@@ -52,9 +56,13 @@ import java.util.function.Function;
 public class EndpointManager extends GatewayGrpc.GatewayImplBase {
 
   private final BrokerClient brokerClient;
+  private final BrokerTopologyManager topologyManager;
+  private final ActivateJobsHandler activateJobsHandler;
 
   public EndpointManager(final BrokerClient brokerClient) {
     this.brokerClient = brokerClient;
+    this.topologyManager = brokerClient.getTopologyManager();
+    this.activateJobsHandler = new ActivateJobsHandler(brokerClient);
   }
 
   @Override
@@ -180,6 +188,15 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
         RequestMapper::toGetWorkflowRequest,
         ResponseMapper::toGetWorkflowResponse,
         responseObserver);
+  }
+
+  @Override
+  public void activateJobs(
+      ActivateJobsRequest request, StreamObserver<ActivateJobsResponse> responseObserver) {
+    topologyManager.withTopology(
+        topology ->
+            activateJobsHandler.activateJobs(
+                topology.getPartitionsCount(), request, responseObserver));
   }
 
   private <GrpcRequestT, BrokerResponseT, GrpcResponseT> void sendRequest(

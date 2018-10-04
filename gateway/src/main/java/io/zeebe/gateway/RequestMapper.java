@@ -15,6 +15,7 @@
  */
 package io.zeebe.gateway;
 
+import io.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerCancelWorkflowInstanceRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerCompleteJobRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerCreateJobRequest;
@@ -28,6 +29,7 @@ import io.zeebe.gateway.impl.broker.request.BrokerTopologyRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerUpdateJobRetriesRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerUpdateWorkflowInstancePayloadRequest;
 import io.zeebe.gateway.impl.data.MsgPackConverter;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobRequest;
@@ -46,6 +48,8 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class RequestMapper {
+
+  private static final MsgPackConverter MSG_PACK_CONVERTER = new MsgPackConverter();
 
   public static BrokerTopologyRequest toTopologyRequest(HealthRequest grpcRequest) {
     return new BrokerTopologyRequest();
@@ -148,13 +152,19 @@ public class RequestMapper {
         .setVersion(grpcRequest.getVersion());
   }
 
+  public static BrokerActivateJobsRequest toActivateJobsRequest(ActivateJobsRequest grpcRequest) {
+    return new BrokerActivateJobsRequest(grpcRequest.getType())
+        .setTimeout(grpcRequest.getTimeout())
+        .setWorker(grpcRequest.getWorker())
+        .setAmount(grpcRequest.getAmount());
+  }
+
   private static DirectBuffer ensureJsonSet(final String value) {
     if (value == null || value.trim().isEmpty()) {
       return DocumentValue.EMPTY_DOCUMENT;
     } else {
       // TODO(menski): is msgpack convert thread safe? maybe one instance per thread local?
-      final MsgPackConverter msgPackConverter = new MsgPackConverter();
-      return new UnsafeBuffer(msgPackConverter.convertToMsgPack(value));
+      return new UnsafeBuffer(MSG_PACK_CONVERTER.convertToMsgPack(value));
     }
   }
 }

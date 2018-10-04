@@ -16,22 +16,21 @@
 package io.zeebe.gateway.impl.broker;
 
 import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
-import io.zeebe.gateway.impl.broker.cluster.BrokerClusterStateImpl;
-import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
+import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class RoundRobinDispatchStrategy implements RequestDispatchStrategy {
 
-  protected final BrokerTopologyManager topologyManager;
+  protected final BrokerTopologyManagerImpl topologyManager;
   protected AtomicInteger partitions = new AtomicInteger(0);
 
-  public RoundRobinDispatchStrategy(final BrokerTopologyManager topologyManager) {
+  public RoundRobinDispatchStrategy(final BrokerTopologyManagerImpl topologyManager) {
     this.topologyManager = topologyManager;
   }
 
   @Override
   public int determinePartition() {
-    final BrokerClusterStateImpl topology = topologyManager.getTopology();
+    final BrokerClusterState topology = topologyManager.getTopology();
 
     if (topology != null) {
       final int offset = partitions.getAndIncrement();

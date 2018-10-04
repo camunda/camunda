@@ -61,12 +61,22 @@ public class JobHeaders extends UnpackedObject {
     return activityIdProp.getValue();
   }
 
+  public JobHeaders setActivityId(String activityId) {
+    this.activityIdProp.setValue(activityId);
+    return this;
+  }
+
   public JobHeaders setActivityId(DirectBuffer activityId) {
     return setActivityId(activityId, 0, activityId.capacity());
   }
 
   public JobHeaders setActivityId(DirectBuffer activityId, int offset, int length) {
     this.activityIdProp.setValue(activityId, offset, length);
+    return this;
+  }
+
+  public JobHeaders setBpmnProcessId(String bpmnProcessId) {
+    this.bpmnProcessIdProp.setValue(bpmnProcessId);
     return this;
   }
 

@@ -94,6 +94,7 @@ public class BrokerClusterStateImpl implements BrokerClusterState {
     return partitions;
   }
 
+  @Override
   public int getPartition(final int offset) {
     if (!partitions.isEmpty()) {
       return partitions.getInt(offset % partitions.size());
