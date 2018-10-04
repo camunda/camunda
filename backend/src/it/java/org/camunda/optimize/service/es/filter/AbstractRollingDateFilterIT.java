@@ -15,8 +15,6 @@ import org.camunda.optimize.test.util.ReportDataHelper;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.util.HashMap;
 import java.util.List;
@@ -120,7 +118,7 @@ public abstract class AbstractRollingDateFilterIT {
     String header = "Bearer " + embeddedOptimizeRule.getNewAuthenticationToken();
     return embeddedOptimizeRule
             .getRequestExecutor()
-            .withAuthHeader(header)
+            .withGivenAuthHeader(header)
             .buildEvaluateSingleUnsavedReportRequest(reportData)
             .execute();
   }

@@ -22,6 +22,7 @@ import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.HttpHeaders;
+import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.HashMap;
@@ -44,6 +45,7 @@ public class OptimizeRequestExecutor {
   private String requestType;
   private Entity body;
   private Map<String, Object> queryParams;
+  private Map<String, String> headers;
 
   private ObjectMapper objectMapper;
 
@@ -74,6 +76,17 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor addSingleHeader(String key, String value) {
+    if (this.headers != null && headers.size() != 0) {
+      this.headers.put(key, value);
+    } else {
+      HashMap<String, String> headers = new HashMap<>();
+      headers.put(key, value);
+      this.headers = headers;
+    }
+    return this;
+  }
+
   public OptimizeRequestExecutor withUserAuthentication(String username, String password) {
     this.authHeader = authenticateUserRequest(username, password);
     return this;
@@ -84,7 +97,7 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor withAuthHeader(String header) {
+  public OptimizeRequestExecutor withGivenAuthHeader(String header) {
     this.authHeader = header;
     return this;
   }
@@ -92,19 +105,7 @@ public class OptimizeRequestExecutor {
 
 
   public Response execute() {
-    WebTarget webTarget = client.path(this.path);
-
-    if(queryParams != null) {
-      for (Map.Entry<String, Object> queryParam : queryParams.entrySet()) {
-        webTarget = webTarget.queryParam(queryParam.getKey(), queryParam.getValue());
-      }
-    }
-
-    Invocation.Builder builder = webTarget.request();
-
-    if (authHeader != null) {
-      builder.header(HttpHeaders.AUTHORIZATION, this.authHeader);
-    }
+    Invocation.Builder builder = prepareRequest();
 
     Response response = null;
     switch (this.requestType) {
@@ -124,6 +125,29 @@ public class OptimizeRequestExecutor {
 
     resetBuilder();
     return response;
+  }
+
+  private Invocation.Builder prepareRequest() {
+    WebTarget webTarget = client.path(this.path);
+
+    if(queryParams != null && queryParams.size() != 0) {
+      for (Map.Entry<String, Object> queryParam : queryParams.entrySet()) {
+        webTarget = webTarget.queryParam(queryParam.getKey(), queryParam.getValue());
+      }
+    }
+
+    Invocation.Builder builder = webTarget.request();
+
+    if (headers != null && headers.size() != 0) {
+      for (Map.Entry<String, String> header : headers.entrySet()) {
+        builder = builder.header(header.getKey(), header.getValue());
+      }
+    }
+
+    if (authHeader != null) {
+      builder.header(HttpHeaders.AUTHORIZATION, this.authHeader);
+    }
+    return builder;
   }
 
   public <T> T execute(Class<T> clazz, int responseCode) {
@@ -152,17 +176,18 @@ public class OptimizeRequestExecutor {
     this.path = null;
     this.requestType = null;
     this.queryParams = null;
+    this.headers = null;
   }
 
   public OptimizeRequestExecutor buildCreateAlertRequest(AlertCreationDto alert) {
-    this.body = Entity.json(alert);
+    this.body = getBody(alert);
     this.path = ALERT;
     this.requestType = POST;
     return this;
   }
 
   public OptimizeRequestExecutor buildUpdateAlertRequest(String id, AlertCreationDto alert) {
-    this.body = Entity.json(alert);
+    this.body = getBody(alert);
     this.path = ALERT + "/" + id;
     this.requestType = PUT;
     return this;
@@ -233,7 +258,7 @@ public class OptimizeRequestExecutor {
 
   public OptimizeRequestExecutor buildEvaluateSingleUnsavedReportRequest(SingleReportDataDto entity) {
     this.path = "report/evaluate/single";
-    this.body = Entity.json(entity);
+    this.body = getBody(entity);
     this.requestType = POST;
     return this;
   }
@@ -241,7 +266,7 @@ public class OptimizeRequestExecutor {
   public OptimizeRequestExecutor buildEvaluateCombinedUnsavedReportRequest(CombinedReportDataDto entity) {
     this.path = "report/evaluate/combined";
     this.requestType = POST;
-    this.body = Entity.json(entity);
+    this.body = getBody(entity);
     return this;
   }
 
@@ -412,6 +437,32 @@ public class OptimizeRequestExecutor {
     this.requestType = GET;
     return this;
   }
+
+  public OptimizeRequestExecutor buildLogOutRequest() {
+    this.path = "authentication/logout";
+    this.requestType = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildAuthTestRequest() {
+    this.path = "authentication/test";
+    this.requestType = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildValidateAndStoreLicenseRequest(String license) {
+    this.path = "license/validate-and-store";
+    this.requestType = POST;
+    this.body = Entity.entity(license, MediaType.TEXT_PLAIN);
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildValidateLicenseRequest() {
+    this.path = "license/validate";
+    this.requestType = GET;
+    return this;
+  }
+
 
   private Entity getBody(Object entity) {
     return entity == null ? Entity.json("") : Entity.json(entity);

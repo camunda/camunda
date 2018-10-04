@@ -28,11 +28,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_RESOURCES_RESOURCE_ID;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_APPLICATION;
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.*;
 
 /**
  * This class is wrapper around the embedded optimize to ensure

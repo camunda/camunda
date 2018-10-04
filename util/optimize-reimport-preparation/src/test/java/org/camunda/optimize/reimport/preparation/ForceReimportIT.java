@@ -153,12 +153,10 @@ public class ForceReimportIT {
 
   private void addLicense() throws IOException, URISyntaxException {
     String license = readFileToString();
-    Entity<String> entity = Entity.entity(license, MediaType.TEXT_PLAIN);
 
-    // when
-      embeddedOptimizeRule.target("license/validate-and-store")
-        .request()
-        .post(entity);
+    embeddedOptimizeRule.getRequestExecutor()
+            .buildValidateAndStoreLicenseRequest(license)
+            .execute();
   }
 
   private AlertCreationDto setupBasicAlert(String reportId) {

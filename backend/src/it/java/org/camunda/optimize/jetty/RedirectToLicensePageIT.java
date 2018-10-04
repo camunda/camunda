@@ -5,12 +5,7 @@ import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URI;
@@ -20,9 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.nullValue;
+import static org.hamcrest.Matchers.*;
 
 
 public class RedirectToLicensePageIT {
@@ -52,12 +45,11 @@ public class RedirectToLicensePageIT {
 
   private void addLicenseToOptimize() throws IOException, URISyntaxException {
     String license = readFileToString("/license/ValidTestLicense.txt");
-    Entity<String> entity = Entity.entity(license, MediaType.TEXT_PLAIN);
 
     Response response =
-        embeddedOptimizeRule.target("license/validate-and-store")
-            .request()
-            .post(entity);
+            embeddedOptimizeRule.getRequestExecutor()
+                    .buildValidateAndStoreLicenseRequest(license)
+                    .execute();
     assertThat(response.getStatus(), is(200));
   }
 

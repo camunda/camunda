@@ -5,7 +5,6 @@ import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
-import org.camunda.optimize.rest.providers.OptimizeObjectMapperProvider;
 import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.engine.importing.EngineImportScheduler;
 import org.camunda.optimize.service.engine.importing.EngineImportSchedulerFactory;

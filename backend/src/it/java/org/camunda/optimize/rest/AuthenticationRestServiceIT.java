@@ -7,7 +7,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 
 import static org.hamcrest.CoreMatchers.is;
@@ -45,10 +44,11 @@ public class AuthenticationRestServiceIT {
     String token = authenticateAdminUser();
 
     //when
-    Response logoutResponse = embeddedOptimizeRule.target("authentication/logout")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION,"Bearer " + token)
-        .get();
+    Response logoutResponse = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildLogOutRequest()
+            .withGivenAuthHeader("Bearer " + token)
+            .execute();
 
     //then
     assertThat(logoutResponse.getStatus(),is(200));
@@ -60,10 +60,11 @@ public class AuthenticationRestServiceIT {
   public void logoutSecure() {
 
     //when
-    Response logoutResponse = embeddedOptimizeRule.target("authentication/logout")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION,"Bearer " + "randomToken")
-        .get();
+    Response logoutResponse = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildLogOutRequest()
+            .withGivenAuthHeader("Bearer randomToken")
+            .execute();
 
     //then
     assertThat(logoutResponse.getStatus(),is(401));
@@ -72,9 +73,11 @@ public class AuthenticationRestServiceIT {
   @Test
   public void testAuthenticationIfNotAuthenticated() {
     //when
-    Response logoutResponse = embeddedOptimizeRule.target("authentication/test")
-        .request()
-        .get();
+    Response logoutResponse = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildAuthTestRequest()
+            .withoutAuthentication()
+            .execute();
 
     //then
     assertThat(logoutResponse.getStatus(),is(401));
@@ -83,10 +86,10 @@ public class AuthenticationRestServiceIT {
   @Test
   public void testIfAuthenticated() {
     //when
-    Response logoutResponse = embeddedOptimizeRule.target("authentication/test")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION,embeddedOptimizeRule.getAuthorizationHeader())
-        .get();
+    Response logoutResponse = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildAuthTestRequest()
+            .execute();
 
     //then
     assertThat(logoutResponse.getStatus(),is(200));

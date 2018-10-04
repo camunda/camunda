@@ -28,7 +28,6 @@ import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.camunda.optimize.rest.util.AuthenticationUtil.OPTIMIZE_AUTHORIZATION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsNot.not;

@@ -28,10 +28,11 @@ public class ConnectToSecuredElasticsearchIT {
   @Test
   public void connectToSecuredElasticsearch() {
     // when I do a request against Optimize
-    Response response =
-      embeddedOptimizeRule.target("meta/version")
-        .request()
-        .get();
+    Response response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildGetOptimizeVersionRequest()
+            .withoutAuthentication()
+            .execute();
 
     // then Optimize should be able to perform a request against
     // Elasticsearch and return the correct result.

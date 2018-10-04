@@ -75,11 +75,14 @@ public class AuthenticationServiceIT {
     String token = authenticateAdminUser();
 
     //when
-    Response testResponse = embeddedOptimizeRule.target("authentication/test")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, "Basic ZGVtbzpkZW1v")
-        .header(AuthenticationUtil.OPTIMIZE_AUTHORIZATION, "Bearer " + token)
-        .get();
+    Response testResponse =
+            embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildAuthTestRequest()
+            .withoutAuthentication()
+            .addSingleHeader(AuthenticationUtil.OPTIMIZE_AUTHORIZATION, "Bearer " + token)
+            .addSingleHeader(HttpHeaders.AUTHORIZATION, "Basic ZGVtbzpkZW1v")
+            .execute();
 
     //then
     assertThat(testResponse.getStatus(),is(200));
@@ -98,10 +101,12 @@ public class AuthenticationServiceIT {
         .sign(algorithm);
 
     //when
-    Response logoutResponse = embeddedOptimizeRule.target("authentication/logout")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION,"Bearer " + selfGeneratedEvilToken)
-        .get();
+    Response logoutResponse =
+            embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildLogOutRequest()
+            .withGivenAuthHeader("Bearer " + selfGeneratedEvilToken)
+            .execute();
 
     //then
     assertThat(logoutResponse.getStatus(), is(401));
@@ -115,10 +120,12 @@ public class AuthenticationServiceIT {
     authenticateAdminUser();
 
     // when
-    Response logoutResponse = embeddedOptimizeRule.target("authentication/logout")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION,"Bearer " + firstToken)
-        .get();
+    Response logoutResponse =
+            embeddedOptimizeRule
+                    .getRequestExecutor()
+                    .buildLogOutRequest()
+                    .withGivenAuthHeader("Bearer " + firstToken)
+                    .execute();
 
     // then
     assertThat(logoutResponse.getStatus(), is(401));
@@ -143,20 +150,22 @@ public class AuthenticationServiceIT {
     String firstToken = embeddedOptimizeRule.authenticateUser("genzo", "genzo");
 
     // when
-    Response testAuthenticationResponse = embeddedOptimizeRule.target("authentication/test")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, "Bearer " + firstToken)
-        .get();
+    Response testAuthenticationResponse = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildAuthTestRequest()
+            .withGivenAuthHeader("Bearer " + firstToken)
+            .execute();
 
     //then
     assertThat(testAuthenticationResponse.getStatus(),is(200));
 
     // when
     LocalDateUtil.setCurrentTime(get1MinuteAfterExpiryTime(expiryTime));
-    testAuthenticationResponse = embeddedOptimizeRule.target("authentication/test")
-        .request()
-        .header(HttpHeaders.AUTHORIZATION, "Bearer " + firstToken)
-        .get();
+    testAuthenticationResponse = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildAuthTestRequest()
+            .withGivenAuthHeader("Bearer " + firstToken)
+            .execute();
 
     //then
     assertThat(testAuthenticationResponse.getStatus(),is(401));

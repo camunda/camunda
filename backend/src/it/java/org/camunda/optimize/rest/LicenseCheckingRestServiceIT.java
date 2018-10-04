@@ -55,13 +55,12 @@ public class LicenseCheckingRestServiceIT {
 
     // given
     String license = readFileToString("/license/ValidTestLicense.txt");
-    Entity<String> entity = Entity.entity(license, MediaType.TEXT_PLAIN);
 
     // when
     Response response =
-        embeddedOptimizeRule.target("license/validate-and-store")
-            .request()
-            .post(entity);
+            embeddedOptimizeRule.getRequestExecutor()
+                    .buildValidateAndStoreLicenseRequest(license)
+                    .execute();
 
     // then
     assertThat(response.getStatus(), is(200));
@@ -73,13 +72,12 @@ public class LicenseCheckingRestServiceIT {
 
     // given
     String license = readFileToString("/license/UnlimitedTestLicense.txt");
-    Entity<String> entity = Entity.entity(license, MediaType.TEXT_PLAIN);
 
     // when
     Response response =
-        embeddedOptimizeRule.target("license/validate-and-store")
-            .request()
-            .post(entity);
+            embeddedOptimizeRule.getRequestExecutor()
+                    .buildValidateAndStoreLicenseRequest(license)
+                    .execute();
 
     // then
     assertThat(response.getStatus(), is(200));
@@ -91,18 +89,17 @@ public class LicenseCheckingRestServiceIT {
 
     // given
     String license = readFileToString("/license/ValidTestLicense.txt");
-    Entity<String> entity = Entity.entity(license, MediaType.TEXT_PLAIN);
     Response response =
-        embeddedOptimizeRule.target("license/validate-and-store")
-            .request()
-            .post(entity);
+            embeddedOptimizeRule.getRequestExecutor()
+                    .buildValidateAndStoreLicenseRequest(license)
+                    .execute();
     assertThat(response.getStatus(), is(200));
 
     // when
-    response =
-        embeddedOptimizeRule.target("license/validate")
-            .request()
-            .get();
+    response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildValidateLicenseRequest()
+            .execute();
 
     // then
     assertThat(response.getStatus(), is(200));
@@ -112,17 +109,14 @@ public class LicenseCheckingRestServiceIT {
   public void invalidLicenseShouldThrowAnError() throws IOException, URISyntaxException {
     // given
     String license = readFileToString("/license/InvalidTestLicense.txt");
-    Entity<String> entity = Entity.entity(license, MediaType.TEXT_PLAIN);
 
     // when
-    Response response =
-        embeddedOptimizeRule.target("license/validate-and-store")
-            .request()
-            .post(entity);
+    String errorMessage =
+            embeddedOptimizeRule.getRequestExecutor()
+                    .buildValidateAndStoreLicenseRequest(license)
+                    .execute(String.class, 500);
 
     // then
-    assertThat(response.getStatus(), is(500));
-    String errorMessage = response.readEntity(String.class);
     assertThat(errorMessage.contains("Cannot verify signature"), is(true));
   }
 
@@ -130,31 +124,26 @@ public class LicenseCheckingRestServiceIT {
   public void expiredLicenseShouldThrowAnError() throws IOException, URISyntaxException {
     // given
     String license = readFileToString("/license/ExpiredDateTestLicense.txt");
-    Entity<String> entity = Entity.entity(license, MediaType.TEXT_PLAIN);
 
     // when
-    Response response =
-        embeddedOptimizeRule.target("license/validate-and-store")
-            .request()
-            .post(entity);
+    String errorMessage =
+            embeddedOptimizeRule.getRequestExecutor()
+                    .buildValidateAndStoreLicenseRequest(license)
+                    .execute(String.class, 500);
 
     // then
-    assertThat(response.getStatus(), is(500));
-    String errorMessage = response.readEntity(String.class);
     assertThat(errorMessage.contains("Your license has expired."), is(true));
   }
 
   @Test
   public void noLicenseAvailableShouldThrowAnError() {
     // when
-    Response response =
-        embeddedOptimizeRule.target("license/validate")
-            .request()
-            .get();
+    String errorMessage = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildValidateLicenseRequest()
+            .execute(String.class, 500);
 
     // then
-    assertThat(response.getStatus(), is(500));
-    String errorMessage = response.readEntity(String.class);
     assertThat(errorMessage.contains("No license stored in Optimize. Please provide a valid Optimize license"), is(true));
   }
 
@@ -163,13 +152,12 @@ public class LicenseCheckingRestServiceIT {
 
     // given
     String license = readFileToString("/license/ValidTestLicense.txt");
-    Entity<String> entity = Entity.entity(license, MediaType.TEXT_PLAIN);
 
     // when
     Response response =
-        embeddedOptimizeRule.target("license/validate-and-store")
-            .request()
-            .post(entity);
+        embeddedOptimizeRule.getRequestExecutor()
+            .buildValidateAndStoreLicenseRequest(license)
+            .execute();
 
     // then
     assertThat(response.getStatus(), is(200));
