@@ -35,6 +35,8 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
@@ -136,6 +138,15 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
         request,
         RequestMapper::toUpdateWorkflowInstancePayloadRequest,
         ResponseMapper::toUpdateWorkflowInstancePayloadResponse,
+        responseObserver);
+  }
+
+  @Override
+  public void failJob(FailJobRequest request, StreamObserver<FailJobResponse> responseObserver) {
+    sendRequest(
+        request,
+        RequestMapper::toFailJobRequest,
+        ResponseMapper::toFailJobResponse,
         responseObserver);
   }
 

@@ -72,23 +72,21 @@ public interface JobClient {
    * Command to mark a job as failed.
    *
    * <pre>
+   * long jobKey = ..;
+   *
    * jobClient
-   *  .newFailCommand(jobEvent)
-   *  .retries(jobEvent.getRetries() - 1)
+   *  .newFailCommand(jobKey)
+   *  .retries(3)
    *  .send();
    * </pre>
-   *
-   * The job is specified by the given event. The event must be the latest event of the job to
-   * ensure that the command is based on the latest state of the job. If it's not the latest one
-   * then the command is rejected.
    *
    * <p>If the given retries are greater than zero then this job will be picked up again by a job
    * subscription. Otherwise, an incident is created for this job.
    *
-   * @param event the latest job event
+   * @param jobKey the key of the job
    * @return a builder for the command
    */
-  FailJobCommandStep1 newFailCommand(JobEvent event);
+  FailJobCommandStep1 newFailCommand(long jobKey);
 
   /**
    * Command to update the retries of a job.
