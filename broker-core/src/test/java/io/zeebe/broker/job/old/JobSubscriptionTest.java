@@ -38,9 +38,7 @@ import io.zeebe.util.StringUtil;
 import java.io.IOException;
 import java.net.StandardSocketOptions;
 import java.nio.channels.SocketChannel;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -681,9 +679,7 @@ public class JobSubscriptionTest {
     final SubscribedRecord job = apiRule.subscribedEvents().findFirst().get();
 
     // when
-    final Map<String, Object> event = new HashMap<>(job.value());
-    event.put("retries", 0);
-    testClient.failJob(job.position(), job.key(), event);
+    testClient.failJob(job.key(), 0);
 
     // then
     Thread.sleep(500);

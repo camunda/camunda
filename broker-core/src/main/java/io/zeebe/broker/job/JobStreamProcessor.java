@@ -225,9 +225,14 @@ public class JobStreamProcessor implements StreamProcessorLifecycleAware {
     @Override
     public void onCommand(
         TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
-      if (state.isInState(command.getKey(), State.ACTIVATED)) {
-        state.fail(command);
-        commandControl.accept(JobIntent.FAILED, command.getValue());
+
+      final long key = command.getKey();
+
+      if (state.isInState(key, State.ACTIVATED)) {
+        final JobRecord failedJob = state.getJob(key);
+        failedJob.setRetries(command.getValue().getRetries());
+        state.fail(key, failedJob);
+        commandControl.accept(JobIntent.FAILED, failedJob);
       } else {
         commandControl.reject(RejectionType.NOT_APPLICABLE, "Job is not currently activated");
       }
