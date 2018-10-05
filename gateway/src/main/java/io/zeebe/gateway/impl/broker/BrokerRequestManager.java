@@ -15,6 +15,8 @@
  */
 package io.zeebe.gateway.impl.broker;
 
+import io.zeebe.gateway.cmd.BrokerErrorException;
+import io.zeebe.gateway.cmd.ClientCommandRejectedException;
 import io.zeebe.gateway.cmd.ClientException;
 import io.zeebe.gateway.cmd.ClientOutOfMemoryException;
 import io.zeebe.gateway.impl.ErrorResponseHandler;
@@ -23,6 +25,8 @@ import io.zeebe.gateway.impl.broker.cluster.BrokerClusterStateImpl;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerRequest;
+import io.zeebe.gateway.impl.broker.response.BrokerError;
+import io.zeebe.gateway.impl.broker.response.BrokerRejection;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
@@ -35,6 +39,7 @@ import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
@@ -74,6 +79,48 @@ public class BrokerRequestManager extends Actor {
   }
 
   public <T> void sendRequest(
+      BrokerRequest<T> request,
+      BiConsumer<Long, T> responseConsumer,
+      Consumer<Throwable> throwableConsumer) {
+    sendRequest(
+        request,
+        responseConsumer,
+        rejection -> throwableConsumer.accept(new ClientCommandRejectedException(rejection)),
+        error -> throwableConsumer.accept(new BrokerErrorException(error)),
+        throwableConsumer);
+  }
+
+  private <T> void sendRequest(
+      BrokerRequest<T> request,
+      BiConsumer<Long, T> responseConsumer,
+      Consumer<BrokerRejection> rejectionConsumer,
+      Consumer<BrokerError> errorConsumer,
+      Consumer<Throwable> throwableConsumer) {
+    sendRequest(
+        request,
+        (response, error) -> {
+          try {
+            if (error == null) {
+              if (response.isResponse()) {
+                responseConsumer.accept(response.getKey(), response.getResponse());
+              } else if (response.isRejection()) {
+                rejectionConsumer.accept(response.getRejection());
+              } else if (response.isError()) {
+                errorConsumer.accept(response.getError());
+              } else {
+                throwableConsumer.accept(
+                    new ClientException("Unknown response received: " + response));
+              }
+            } else {
+              throwableConsumer.accept(error);
+            }
+          } catch (Exception e) {
+            throwableConsumer.accept(new ClientException("Failed to handle response", e));
+          }
+        });
+  }
+
+  private <T> void sendRequest(
       BrokerRequest<T> request, BiConsumer<BrokerResponse<T>, Throwable> responseConsumer) {
 
     request.serializeValue();

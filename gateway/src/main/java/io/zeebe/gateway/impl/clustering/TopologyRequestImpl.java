@@ -17,8 +17,6 @@ package io.zeebe.gateway.impl.clustering;
 
 import io.zeebe.gateway.api.commands.Topology;
 import io.zeebe.gateway.api.commands.TopologyRequestStep1;
-import io.zeebe.gateway.cmd.BrokerErrorException;
-import io.zeebe.gateway.cmd.ClientCommandRejectedException;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.request.BrokerTopologyRequest;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -27,38 +25,19 @@ import io.zeebe.util.sched.future.CompletableActorFuture;
 // TODO: remove with https://github.com/zeebe-io/zeebe/issues/1377
 public class TopologyRequestImpl extends BrokerTopologyRequest implements TopologyRequestStep1 {
 
-  private final BrokerClient client;
+  private final BrokerClient brokerClient;
 
-  public TopologyRequestImpl(BrokerClient client) {
-    this.client = client;
+  public TopologyRequestImpl(BrokerClient brokerClient) {
+    this.brokerClient = brokerClient;
   }
 
   @Override
   public ActorFuture<Topology> send() {
     final ActorFuture<Topology> future = new CompletableActorFuture<>();
-    client.sendRequest(
+    brokerClient.sendRequest(
         this,
-        (response, error) -> {
-          try {
-            if (error == null) {
-              if (response.isResponse()) {
-                future.complete(new TopologyImpl(response.getResponse()));
-              } else if (response.isRejection()) {
-                final ClientCommandRejectedException exception =
-                    new ClientCommandRejectedException(response.getRejection());
-                future.completeExceptionally(exception);
-              } else if (response.isError()) {
-                final BrokerErrorException exception =
-                    new BrokerErrorException(response.getError());
-                future.completeExceptionally(exception);
-              }
-            } else {
-              future.completeExceptionally(error);
-            }
-          } catch (Exception e) {
-            future.completeExceptionally(e);
-          }
-        });
+        (partitionId, key, response) -> future.complete(new TopologyImpl(response)),
+        future::completeExceptionally);
     return future;
   }
 }

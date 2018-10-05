@@ -21,6 +21,9 @@ import io.grpc.ManagedChannel;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.zeebe.gateway.Gateway;
+import io.zeebe.gateway.cmd.BrokerErrorException;
+import io.zeebe.gateway.cmd.ClientCommandRejectedException;
+import io.zeebe.gateway.cmd.ClientException;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
@@ -32,6 +35,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class StubbedGateway extends Gateway {
@@ -79,15 +83,24 @@ public class StubbedGateway extends Gateway {
 
     @Override
     public <T> void sendRequest(
-        BrokerRequest<T> request, BiConsumer<BrokerResponse<T>, Throwable> responseConsumer) {
+        BrokerRequest<T> request,
+        BiConsumer<Long, T> responseConsumer,
+        Consumer<Throwable> throwableConsumer) {
       brokerRequests.add(request);
-      final RequestHandler requestHandler = requestHandlers.get(request.getClass());
-
       try {
-        final BrokerResponse response = requestHandler.handle(request);
-        responseConsumer.accept(response, null);
+        final RequestHandler requestHandler = requestHandlers.get(request.getClass());
+        final BrokerResponse<T> response = requestHandler.handle(request);
+        if (response.isResponse()) {
+          responseConsumer.accept(response.getKey(), response.getResponse());
+        } else if (response.isRejection()) {
+          throwableConsumer.accept(new ClientCommandRejectedException(response.getRejection()));
+        } else if (response.isError()) {
+          throwableConsumer.accept(new BrokerErrorException(response.getError()));
+        } else {
+          throwableConsumer.accept(new ClientException("Unknown response received: " + response));
+        }
       } catch (Exception e) {
-        responseConsumer.accept(null, e);
+        throwableConsumer.accept(new ClientException("Failed to handle response", e));
       }
     }
   }

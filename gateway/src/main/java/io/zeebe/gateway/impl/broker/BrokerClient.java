@@ -19,6 +19,7 @@ import io.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 public interface BrokerClient extends AutoCloseable {
 
@@ -27,5 +28,7 @@ public interface BrokerClient extends AutoCloseable {
   <T> ActorFuture<BrokerResponse<T>> sendRequest(BrokerRequest<T> request);
 
   <T> void sendRequest(
-      BrokerRequest<T> request, BiConsumer<BrokerResponse<T>, Throwable> responseConsumer);
+      BrokerRequest<T> request,
+      BiConsumer<Long, T> responseConsumer,
+      Consumer<Throwable> throwableConsumer);
 }

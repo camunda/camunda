@@ -37,6 +37,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 
 public class BrokerClientImpl implements BrokerClient {
@@ -185,13 +186,12 @@ public class BrokerClientImpl implements BrokerClient {
     return requestManager.sendRequest(request);
   }
 
-  /* (non-Javadoc)
-   * @see io.zeebe.gateway.impl.broker.BrokerClient#sendRequest(io.zeebe.gateway.impl.broker.request.BrokerRequest, java.util.function.BiConsumer)
-   */
   @Override
   public <T> void sendRequest(
-      BrokerRequest<T> request, BiConsumer<BrokerResponse<T>, Throwable> responseConsumer) {
-    requestManager.sendRequest(request, responseConsumer);
+      BrokerRequest<T> request,
+      BiConsumer<Long, T> responseConsumer,
+      Consumer<Throwable> throwableConsumer) {
+    requestManager.sendRequest(request, responseConsumer, throwableConsumer);
   }
 
   public BrokerTopologyManager getTopologyManager() {

@@ -20,12 +20,8 @@ import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
 import io.zeebe.gateway.ResponseMapper.BrokerResponseMapper;
-import io.zeebe.gateway.cmd.BrokerErrorException;
-import io.zeebe.gateway.cmd.ClientCommandRejectedException;
-import io.zeebe.gateway.cmd.ClientException;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.request.BrokerRequest;
-import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.gateway.protocol.GatewayGrpc;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceResponse;
@@ -202,39 +198,12 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
 
     brokerClient.sendRequest(
         brokerRequest,
-        (response, error) -> {
-          try {
-            if (error == null) {
-              handleResponse(responseMapper, streamObserver, response);
-            } else {
-              streamObserver.onError(convertThrowable(error));
-            }
-          } catch (Exception e) {
-            streamObserver.onError(
-                convertThrowable(new ClientException("Unknown exception: " + e.getMessage())));
-          }
-        });
-  }
-
-  private <BrokerResponseT, GrpcResponseT> void handleResponse(
-      BrokerResponseMapper<BrokerResponseT, GrpcResponseT> responseMapper,
-      StreamObserver<GrpcResponseT> streamObserver,
-      BrokerResponse<BrokerResponseT> response) {
-    if (response.isResponse()) {
-      final GrpcResponseT grpcResponse =
-          responseMapper.apply(response.getKey(), response.getResponse());
-      streamObserver.onNext(grpcResponse);
-      streamObserver.onCompleted();
-    } else if (response.isRejection()) {
-      final Throwable exception = new ClientCommandRejectedException(response.getRejection());
-      streamObserver.onError(convertThrowable(exception));
-    } else if (response.isError()) {
-      final Throwable exception = new BrokerErrorException(response.getError());
-      streamObserver.onError(convertThrowable(exception));
-    } else {
-      streamObserver.onError(
-          convertThrowable(new ClientException("Unknown exception for response: " + response)));
-    }
+        (key, response) -> {
+          final GrpcResponseT grpcResponse = responseMapper.apply(key, response);
+          streamObserver.onNext(grpcResponse);
+          streamObserver.onCompleted();
+        },
+        error -> streamObserver.onError(convertThrowable(error)));
   }
 
   private static StatusRuntimeException convertThrowable(final Throwable cause) {
