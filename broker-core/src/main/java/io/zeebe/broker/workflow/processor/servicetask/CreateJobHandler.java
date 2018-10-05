@@ -41,7 +41,7 @@ public class CreateJobHandler implements BpmnStepHandler<ExecutableServiceTask> 
         .setType(serviceTask.getType())
         .setRetries(serviceTask.getRetries())
         .setPayload(value.getPayload())
-        .headers()
+        .getHeaders()
         .setBpmnProcessId(value.getBpmnProcessId())
         .setWorkflowDefinitionVersion(value.getVersion())
         .setWorkflowKey(value.getWorkflowKey())

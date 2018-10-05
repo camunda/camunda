@@ -119,7 +119,7 @@ public class JobRecord extends UnpackedObject {
     return this;
   }
 
-  public JobHeaders headers() {
+  public JobHeaders getHeaders() {
     return headersProp.getValue();
   }
 

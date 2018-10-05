@@ -153,7 +153,7 @@ public class ExporterRecordMapper {
   }
 
   private JobRecordValue ofJobRecord(JobRecord record) {
-    final JobHeaders jobHeaders = record.headers();
+    final JobHeaders jobHeaders = record.getHeaders();
     final HeadersImpl headers =
         new HeadersImpl(
             asString(jobHeaders.getBpmnProcessId()),

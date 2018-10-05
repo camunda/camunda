@@ -43,7 +43,7 @@ public final class JobCompletedEventProcessor implements TypedRecordProcessor<Jo
       TypedStreamWriter streamWriter) {
 
     final JobRecord jobEvent = record.getValue();
-    final JobHeaders jobHeaders = jobEvent.headers();
+    final JobHeaders jobHeaders = jobEvent.getHeaders();
     final long activityInstanceKey = jobHeaders.getActivityInstanceKey();
     final ElementInstance activityInstance =
         workflowState.getElementInstanceState().getInstance(activityInstanceKey);

@@ -455,7 +455,7 @@ public class ExporterStreamProcessorTest {
             .setRetries(retries)
             .setDeadline(deadline);
     record
-        .headers()
+        .getHeaders()
         .setBpmnProcessId(wrapString(bpmnProcessId))
         .setWorkflowKey(workflowKey)
         .setWorkflowDefinitionVersion(workflowDefinitionVersion)
@@ -644,7 +644,7 @@ public class ExporterStreamProcessorTest {
         .setDeadline(1000L);
 
     jobRecord
-        .headers()
+        .getHeaders()
         .setBpmnProcessId(wrapString(bpmnProcessId))
         .setWorkflowKey(workflowKey)
         .setWorkflowDefinitionVersion(workflowDefinitionVersion)

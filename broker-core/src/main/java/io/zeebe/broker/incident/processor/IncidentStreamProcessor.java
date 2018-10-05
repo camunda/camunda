@@ -367,7 +367,7 @@ public class IncidentStreamProcessor {
       final JobRecord value = event.getValue();
 
       if (value.getRetries() <= 0) {
-        final JobHeaders jobHeaders = value.headers();
+        final JobHeaders jobHeaders = value.getHeaders();
 
         incidentEvent.reset();
         incidentEvent

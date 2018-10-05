@@ -40,7 +40,7 @@ public final class JobCreatedProcessor implements TypedRecordProcessor<JobRecord
       TypedResponseWriter responseWriter,
       TypedStreamWriter streamWriter) {
 
-    final JobHeaders jobHeaders = record.getValue().headers();
+    final JobHeaders jobHeaders = record.getValue().getHeaders();
     final long activityInstanceKey = jobHeaders.getActivityInstanceKey();
     if (activityInstanceKey > 0) {
       final ElementInstance activityInstance =
