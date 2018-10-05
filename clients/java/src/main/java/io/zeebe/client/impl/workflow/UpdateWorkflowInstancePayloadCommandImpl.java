@@ -20,6 +20,7 @@ import io.zeebe.client.api.commands.UpdatePayloadWorkflowInstanceCommandStep1;
 import io.zeebe.client.api.commands.UpdatePayloadWorkflowInstanceCommandStep1.UpdatePayloadWorkflowInstanceCommandStep2;
 import io.zeebe.client.impl.CommandWithPayload;
 import io.zeebe.client.impl.ZeebeClientFutureImpl;
+import io.zeebe.client.impl.ZeebeObjectMapper;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadRequest.Builder;
@@ -33,7 +34,9 @@ public class UpdateWorkflowInstancePayloadCommandImpl
   private final GatewayStub asyncStub;
   private final Builder builder;
 
-  public UpdateWorkflowInstancePayloadCommandImpl(GatewayStub asyncStub, long activityInstanceKey) {
+  public UpdateWorkflowInstancePayloadCommandImpl(
+      GatewayStub asyncStub, ZeebeObjectMapper objectMapper, long activityInstanceKey) {
+    super(objectMapper);
     this.asyncStub = asyncStub;
     this.builder = UpdateWorkflowInstancePayloadRequest.newBuilder();
     builder.setActivityInstanceKey(activityInstanceKey);

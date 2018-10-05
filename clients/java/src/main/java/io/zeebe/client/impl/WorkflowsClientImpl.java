@@ -37,10 +37,15 @@ public class WorkflowsClientImpl implements WorkflowClient {
 
   private final GatewayStub asyncStub;
   private final ZeebeClientConfiguration config;
+  private final ZeebeObjectMapper objectMapper;
 
-  public WorkflowsClientImpl(final GatewayStub asyncStub, ZeebeClientConfiguration config) {
+  public WorkflowsClientImpl(
+      final GatewayStub asyncStub,
+      ZeebeClientConfiguration config,
+      ZeebeObjectMapper objectMapper) {
     this.asyncStub = asyncStub;
     this.config = config;
+    this.objectMapper = objectMapper;
   }
 
   @Override
@@ -50,7 +55,7 @@ public class WorkflowsClientImpl implements WorkflowClient {
 
   @Override
   public CreateWorkflowInstanceCommandStep1 newCreateInstanceCommand() {
-    return new CreateWorkflowInstanceCommandImpl(asyncStub);
+    return new CreateWorkflowInstanceCommandImpl(asyncStub, objectMapper);
   }
 
   @Override
@@ -62,12 +67,13 @@ public class WorkflowsClientImpl implements WorkflowClient {
   @Override
   public UpdatePayloadWorkflowInstanceCommandStep1 newUpdatePayloadCommand(
       final long activityInstanceKey) {
-    return new UpdateWorkflowInstancePayloadCommandImpl(asyncStub, activityInstanceKey);
+    return new UpdateWorkflowInstancePayloadCommandImpl(
+        asyncStub, objectMapper, activityInstanceKey);
   }
 
   @Override
   public PublishMessageCommandStep1 newPublishMessageCommand() {
-    return new PublishMessageCommandImpl(asyncStub, config);
+    return new PublishMessageCommandImpl(asyncStub, config, objectMapper);
   }
 
   @Override

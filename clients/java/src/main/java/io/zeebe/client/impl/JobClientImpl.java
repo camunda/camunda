@@ -30,19 +30,21 @@ import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 public class JobClientImpl implements JobClient {
 
   private final GatewayStub asyncStub;
+  private final ZeebeObjectMapper objectMapper;
 
-  public JobClientImpl(GatewayStub asyncStub) {
+  public JobClientImpl(GatewayStub asyncStub, ZeebeObjectMapper objectMapper) {
     this.asyncStub = asyncStub;
+    this.objectMapper = objectMapper;
   }
 
   @Override
   public CreateJobCommandStep1 newCreateCommand() {
-    return new CreateJobCommandImpl(asyncStub);
+    return new CreateJobCommandImpl(asyncStub, objectMapper);
   }
 
   @Override
   public CompleteJobCommandStep1 newCompleteCommand(long jobKey) {
-    return new CompleteJobCommandImpl(asyncStub, jobKey);
+    return new CompleteJobCommandImpl(asyncStub, objectMapper, jobKey);
   }
 
   @Override

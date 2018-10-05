@@ -22,6 +22,7 @@ import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.impl.ArgumentUtil;
 import io.zeebe.client.impl.CommandWithPayload;
 import io.zeebe.client.impl.ZeebeClientFutureImpl;
+import io.zeebe.client.impl.ZeebeObjectMapper;
 import io.zeebe.client.impl.events.JobEventImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass;
@@ -37,7 +38,8 @@ public class CreateJobCommandImpl extends CommandWithPayload<CreateJobCommandSte
   private final Builder builder;
   private final Map<String, Object> customHeaders;
 
-  public CreateJobCommandImpl(GatewayStub asyncStub) {
+  public CreateJobCommandImpl(GatewayStub asyncStub, ZeebeObjectMapper objectMapper) {
+    super(objectMapper);
     this.asyncStub = asyncStub;
     builder = CreateJobRequest.newBuilder();
     customHeaders = new HashMap<>();
@@ -79,7 +81,8 @@ public class CreateJobCommandImpl extends CommandWithPayload<CreateJobCommandSte
 
   @Override
   public ZeebeFuture<JobEvent> send() {
-    final CreateJobRequest request = builder.setCustomHeaders(toJson(customHeaders)).build();
+    final String customHeadersJson = objectMapper.toJson(customHeaders);
+    final CreateJobRequest request = builder.setCustomHeaders(customHeadersJson).build();
 
     final ZeebeClientFutureImpl<JobEvent, GatewayOuterClass.CreateJobResponse> future =
         new ZeebeClientFutureImpl<>(JobEventImpl::new);

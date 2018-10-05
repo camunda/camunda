@@ -15,34 +15,23 @@
  */
 package io.zeebe.client.impl;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.InputStream;
 import java.util.Map;
 
 public abstract class CommandWithPayload<T> {
 
-  private final ObjectMapper jsonObjectMapper;
+  protected final ZeebeObjectMapper objectMapper;
 
-  public CommandWithPayload() {
-    this.jsonObjectMapper = new ObjectMapper();
+  public CommandWithPayload(ZeebeObjectMapper objectMapper) {
+    this.objectMapper = objectMapper;
   }
 
   public T payload(final InputStream payload) {
-    try {
-      final String payloadString = jsonObjectMapper.readTree(payload).toString();
-      return setPayloadInternal(payloadString);
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
+    return setPayloadInternal(objectMapper.validateJson("payload", payload));
   }
 
   public T payload(final String payload) {
-    try {
-      final String payloadString = jsonObjectMapper.readTree(payload).toString();
-      return setPayloadInternal(payloadString);
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
+    return setPayloadInternal(objectMapper.validateJson("payload", payload));
   }
 
   public T payload(final Map<String, Object> payload) {
@@ -50,19 +39,7 @@ public abstract class CommandWithPayload<T> {
   }
 
   public T payload(final Object payload) {
-    try {
-      return setPayloadInternal(toJson(payload));
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
-  }
-
-  protected String toJson(final Object object) {
-    try {
-      return jsonObjectMapper.writeValueAsString(object);
-    } catch (Exception ex) {
-      throw new RuntimeException(ex);
-    }
+    return setPayloadInternal(objectMapper.toJson(payload));
   }
 
   protected abstract T setPayloadInternal(String payload);

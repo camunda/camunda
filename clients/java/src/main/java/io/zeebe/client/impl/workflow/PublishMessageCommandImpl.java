@@ -23,6 +23,7 @@ import io.zeebe.client.api.commands.PublishMessageCommandStep1.PublishMessageCom
 import io.zeebe.client.api.commands.PublishMessageCommandStep1.PublishMessageCommandStep3;
 import io.zeebe.client.impl.CommandWithPayload;
 import io.zeebe.client.impl.ZeebeClientFutureImpl;
+import io.zeebe.client.impl.ZeebeObjectMapper;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import java.time.Duration;
@@ -34,7 +35,10 @@ public class PublishMessageCommandImpl extends CommandWithPayload<PublishMessage
   private final PublishMessageRequest.Builder builder;
 
   public PublishMessageCommandImpl(
-      final GatewayStub asyncStub, final ZeebeClientConfiguration configuration) {
+      final GatewayStub asyncStub,
+      final ZeebeClientConfiguration configuration,
+      ZeebeObjectMapper objectMapper) {
+    super(objectMapper);
     this.asyncStub = asyncStub;
     this.builder = PublishMessageRequest.newBuilder();
     builder.setTimeToLive(configuration.getDefaultMessageTimeToLive().toMillis());
