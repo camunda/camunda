@@ -46,6 +46,12 @@ jest.mock('components', () => {
         </div>
       );
     },
+    Labeled: props => (
+      <div>
+        <label id={props.id}>{props.label}</label>
+        {props.children}
+      </div>
+    ),
     Select,
     Typeahead
   };

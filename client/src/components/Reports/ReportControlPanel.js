@@ -1,5 +1,5 @@
 import React from 'react';
-import {Popover, ProcessDefinitionSelection, Button, Dropdown, Input} from 'components';
+import {Popover, ProcessDefinitionSelection, Button, Dropdown, Input, Labeled} from 'components';
 
 import {Filter} from './filter';
 import {extractProcessDefinitionName, getFlowNodeNames, reportConfig, formatters} from 'services';
@@ -101,28 +101,28 @@ export default class ReportControlPanel extends React.Component {
       <div className="ReportControlPanel">
         <ul>
           <li className="select">
-            <label>Process definition</label>
-            <Popover className="processDefinitionPopover" title={this.createTitle()}>
-              <ProcessDefinitionSelection
-                {...this.definitionConfig()}
-                xml={this.props.configuration.xml}
-                onChange={this.props.updateReport}
-                renderDiagram={true}
-                enableAllVersionSelection={true}
-              />
-            </Popover>
+            <Labeled label="Process definition">
+              <Popover className="processDefinitionPopover" title={this.createTitle()}>
+                <ProcessDefinitionSelection
+                  {...this.definitionConfig()}
+                  xml={this.props.configuration.xml}
+                  onChange={this.props.updateReport}
+                  renderDiagram={true}
+                  enableAllVersionSelection={true}
+                />
+              </Popover>
+            </Labeled>
           </li>
           <li className="select">
-            <label>View</label>
-            {this.renderDropdown('view', view)}
+            <Labeled label="view">{this.renderDropdown('view', view)}</Labeled>
           </li>
           <li className="select">
-            <label>Group by</label>
-            {this.renderDropdown('groupBy', groupBy)}
+            <Labeled label="Group by">{this.renderDropdown('groupBy', groupBy)}</Labeled>
           </li>
           <li className="select">
-            <label>Visualize as</label>
-            {this.renderDropdown('visualization', visualization)}
+            <Labeled label="Visualize as">
+              {this.renderDropdown('visualization', visualization)}
+            </Labeled>
           </li>
           <li className="filter">
             <Filter

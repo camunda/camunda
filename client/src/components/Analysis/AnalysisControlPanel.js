@@ -1,6 +1,6 @@
 import classnames from 'classnames';
 import React from 'react';
-import {ActionItem, Popover, ProcessDefinitionSelection} from 'components';
+import {ActionItem, Popover, ProcessDefinitionSelection, Labeled} from 'components';
 
 import {extractProcessDefinitionName, getFlowNodeNames} from 'services';
 
@@ -89,50 +89,42 @@ export default class AnalysisControlPanel extends React.Component {
       <div className="AnalysisControlPanel">
         <ul className="AnalysisControlPanel__list">
           <li className="AnalysisControlPanel__item AnalysisControlPanel__item--select">
-            <label
-              htmlFor="AnalysisControlPanel__process-definition"
-              className="AnalysisControlPanel__label"
-            >
-              Process definition
-            </label>
-            <Popover className="AnalysisControlPanel__popover" title={this.createTitle()}>
-              <ProcessDefinitionSelection
-                {...this.getDefinitionConfig()}
-                xml={this.props.xml}
-                onChange={this.props.onChange}
-              />
-            </Popover>
+            <Labeled label="Process definition">
+              <Popover className="AnalysisControlPanel__popover" title={this.createTitle()}>
+                <ProcessDefinitionSelection
+                  {...this.getDefinitionConfig()}
+                  xml={this.props.xml}
+                  onChange={this.props.onChange}
+                />
+              </Popover>
+            </Labeled>
           </li>
           {[
             {type: 'endEvent', label: 'End Event', bpmnKey: 'bpmn:EndEvent'},
             {type: 'gateway', label: 'Gateway', bpmnKey: 'bpmn:Gateway'}
           ].map(({type, label, bpmnKey}) => (
             <li key={type} className="AnalysisControlPanel__item">
-              <label
-                htmlFor={'AnalysisControlPanel__' + type}
-                className="AnalysisControlPanel__label"
-              >
-                {label}
-              </label>
-              <div
-                className={classnames('AnalysisControlPanel__config', {
-                  'AnalysisControlPanel__config--hover':
-                    !disableFlowNodeSelection &&
-                    (hoveredControl === type || (hoveredNode && hoveredNode.$instanceOf(bpmnKey)))
-                })}
-                name={'AnalysisControlPanel__' + type}
-                onMouseOver={this.hover(type)}
-                onMouseOut={this.hover(null)}
-              >
-                <ActionItem
-                  disabled={disableFlowNodeSelection}
-                  onClick={() => this.props.updateSelection(type, null)}
+              <Labeled id={'AnalysisControlPanel__' + type} label={label}>
+                <div
+                  className={classnames('AnalysisControlPanel__config', {
+                    'AnalysisControlPanel__config--hover':
+                      !disableFlowNodeSelection &&
+                      (hoveredControl === type || (hoveredNode && hoveredNode.$instanceOf(bpmnKey)))
+                  })}
+                  name={'AnalysisControlPanel__' + type}
+                  onMouseOver={this.hover(type)}
+                  onMouseOut={this.hover(null)}
                 >
-                  {this.props[type]
-                    ? this.props[type].name || this.props[type].id
-                    : 'Please Select ' + label}
-                </ActionItem>
-              </div>
+                  <ActionItem
+                    disabled={disableFlowNodeSelection}
+                    onClick={() => this.props.updateSelection(type, null)}
+                  >
+                    {this.props[type]
+                      ? this.props[type].name || this.props[type].id
+                      : 'Please Select ' + label}
+                  </ActionItem>
+                </div>
+              </Labeled>
             </li>
           ))}
           <li className="AnalysisControlPanel__item AnalysisControlPanel__item--filter">

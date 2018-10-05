@@ -21,12 +21,12 @@
 }
 
 .ProcessDefinitionSelection__selects-item {
-  display: flex;
   flex-grow: 1;
   position: relative;
-  padding-top: 25px;
-
   margin-bottom: 25px;
+  &:first-child {
+    margin-right: 25px;
+  }
 }
 
 .ProcessDefinitionSelection__version-select__warning {

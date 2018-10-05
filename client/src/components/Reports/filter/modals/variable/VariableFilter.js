@@ -1,5 +1,5 @@
 import React from 'react';
-import {Modal, Button, ControlGroup, Typeahead} from 'components';
+import {Modal, Button, Typeahead, Labeled} from 'components';
 
 import {BooleanInput} from './boolean';
 import {NumberInput} from './number';
@@ -79,25 +79,22 @@ export default class VariableFilter extends React.Component {
       <Modal open={true} onClose={this.props.close} className="VariableFilter__modal">
         <Modal.Header>Add Variable Filter</Modal.Header>
         <Modal.Content>
-          <div>
-            <ControlGroup layout="horizontal">
-              <label htmlFor="VariableFilter__variables">Variable Name</label>
-              <Typeahead
-                initialValue={selectedVariable}
-                values={variables}
-                onSelect={this.selectVariable}
-                formatter={this.getVariableName}
-              />
-            </ControlGroup>
-            <ValueInput
-              processDefinitionKey={this.props.processDefinitionKey}
-              processDefinitionVersion={this.props.processDefinitionVersion}
-              variable={selectedVariable}
-              setValid={this.setValid}
-              changeFilter={this.changeFilter}
-              filter={this.state.filter}
+          <Labeled className="LabeledTypeahead" label="Variable Name">
+            <Typeahead
+              initialValue={selectedVariable}
+              values={variables}
+              onSelect={this.selectVariable}
+              formatter={this.getVariableName}
             />
-          </div>
+          </Labeled>
+          <ValueInput
+            processDefinitionKey={this.props.processDefinitionKey}
+            processDefinitionVersion={this.props.processDefinitionVersion}
+            variable={selectedVariable}
+            setValid={this.setValid}
+            changeFilter={this.changeFilter}
+            filter={this.state.filter}
+          />
         </Modal.Content>
         <Modal.Actions>
           <Button onClick={this.props.close}>Cancel</Button>

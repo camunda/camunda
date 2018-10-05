@@ -23,6 +23,12 @@ jest.mock('components', () => {
         {title} {children}
       </div>
     ),
+    Labeled: props => (
+      <div>
+        <label id={props.id}>{props.label}</label>
+        {props.children}
+      </div>
+    ),
     ProcessDefinitionSelection: props => <div>ProcessDefinitionSelection</div>
   };
 });

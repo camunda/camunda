@@ -1,7 +1,16 @@
 import React from 'react';
 import update from 'immutability-helper';
 
-import {Modal, Button, Input, LabeledInput, Select, ErrorMessage, Typeahead} from 'components';
+import {
+  Modal,
+  Button,
+  Labeled,
+  Input,
+  LabeledInput,
+  Select,
+  ErrorMessage,
+  Typeahead
+} from 'components';
 import {emailNotificationIsEnabled} from './service';
 
 import ThresholdInput from './ThresholdInput';
@@ -217,7 +226,6 @@ export default function AlertModal(reports) {
                   )}
                 </LabeledInput>
               </div>
-
               <div className="AlertModal__inputGroup">
                 <LabeledInput
                   id="email-input"
@@ -235,33 +243,32 @@ export default function AlertModal(reports) {
                 </LabeledInput>
               </div>
               <div className="AlertModal__inputGroup">
-                <label htmlFor="report-select">
-                  <span className="AlertModal__label">when Report</span>
-                </label>
-                <Typeahead
-                  initialValue={reports.find(report => report.id === reportId)}
-                  isInvalid={errorInput === 'report'}
-                  placeholder="Please select Report"
-                  values={reports}
-                  onSelect={this.updateReport}
-                  formatter={({name}) => name}
-                />
+                <Labeled label="when Report">
+                  <Typeahead
+                    initialValue={reports.find(report => report.id === reportId)}
+                    isInvalid={errorInput === 'report'}
+                    placeholder="Please select Report"
+                    values={reports}
+                    onSelect={this.updateReport}
+                    formatter={({name}) => name}
+                  />
+                </Labeled>
                 <div className="AlertModal__report-selection-note">
                   Note: you can only create an alert for a report visualized as Number
                 </div>
               </div>
               <div className="AlertModal__inputGroup">
-                <label htmlFor="value-input">
-                  <span className="AlertModal__label">has a value</span>
-                </label>
                 <div className="AlertModal__combinedInput">
-                  <Select
-                    value={thresholdOperator}
-                    onChange={({target: {value}}) => this.setState({thresholdOperator: value})}
-                  >
-                    <Select.Option value=">">above</Select.Option>
-                    <Select.Option value="<">below</Select.Option>
-                  </Select>
+                  <Labeled label="has a value">
+                    <Select
+                      value={thresholdOperator}
+                      className="thresholdSelect"
+                      onChange={({target: {value}}) => this.setState({thresholdOperator: value})}
+                    >
+                      <Select.Option value=">">above</Select.Option>
+                      <Select.Option value="<">below</Select.Option>
+                    </Select>
+                  </Labeled>
                   <ThresholdInput
                     id="value-input"
                     value={threshold}

@@ -13,7 +13,6 @@
     > li {
       display: inline-block;
       position: relative;
-      padding-top: 22px;
       padding-right: 20px;
       margin-bottom: 24px;
 
@@ -27,12 +26,10 @@
         padding-top: 27px;
       }
 
-      > label {
+      .Labeled > label {
         color: #626262;
         font-size: 0.875em;
-        position: absolute;
-        top: 0;
-        left: 0;
+        margin-bottom: 5px;
       }
     }
   }

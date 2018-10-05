@@ -34,6 +34,10 @@
   display: flex;
   flex-grow: 1;
   align-items: flex-end;
+
+  .thresholdSelect {
+    width: 70px;
+  }
 }
 
 .AlertModal__topSection {

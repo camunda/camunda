@@ -1,7 +1,7 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import {Select, BPMNDiagram, LoadingIndicator} from 'components';
+import {Select, BPMNDiagram, LoadingIndicator, Labeled} from 'components';
 
 import {loadProcessDefinitions} from 'services';
 
@@ -105,13 +105,7 @@ export default class ProcessDefinitionSelection extends React.Component {
         })}
       >
         <div className="ProcessDefinitionSelection__selects">
-          <div className="ProcessDefinitionSelection__selects-item">
-            <label
-              htmlFor="ProcessDefinitionSelection__process-definition"
-              className="ProcessDefinitionSelection__label"
-            >
-              Name
-            </label>
+          <Labeled className="ProcessDefinitionSelection__selects-item" label="Name">
             <Select
               className="ProcessDefinitionSelection__name-select"
               name="ProcessDefinitionSelection__key"
@@ -131,14 +125,8 @@ export default class ProcessDefinitionSelection extends React.Component {
                 );
               })}
             </Select>
-          </div>
-          <div className="ProcessDefinitionSelection__selects-item">
-            <label
-              htmlFor="ProcessDefinitionSelection__process-definition"
-              className="ProcessDefinitionSelection__label"
-            >
-              Version
-            </label>
+          </Labeled>
+          <Labeled className="ProcessDefinitionSelection__selects-item" label="Version">
             <Select
               className="ProcessDefinitionSelection__version-select"
               name="ProcessDefinitionSelection__version"
@@ -154,7 +142,7 @@ export default class ProcessDefinitionSelection extends React.Component {
               )}
               {this.renderAllDefinitionVersions(key)}
             </Select>
-          </div>
+          </Labeled>
           {version === 'ALL' ? (
             <div className="ProcessDefinitionSelection__version-select__warning">
               Note: data from the older process versions can deviate, therefore the report data can

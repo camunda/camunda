@@ -3,18 +3,20 @@ import {mount} from 'enzyme';
 
 import LabeledInput from './LabeledInput';
 
+jest.mock('components', () => ({
+  Labeled: props => (
+    <div>
+      <label id={props.id}>{props.label}</label>
+      {props.children}
+    </div>
+  ),
+  Input: props => <input {...props} />
+}));
+
 it('should create a label with the provided id', () => {
   const node = mount(<LabeledInput id="someId" />);
 
-  expect(node.find('input')).toHaveProp('id', 'someId');
-  expect(node.find('label')).toHaveProp('htmlFor', 'someId');
-});
-
-it('should generate an id if none is provided', () => {
-  const node = mount(<LabeledInput />);
-
-  expect(node.find('input')).toHaveProp('id');
-  expect(node.find('label')).toHaveProp('htmlFor');
+  expect(node.find('Labeled')).toHaveProp('id', 'someId');
 });
 
 it('should include the child content', () => {

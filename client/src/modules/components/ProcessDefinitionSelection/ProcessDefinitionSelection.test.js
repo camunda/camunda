@@ -24,6 +24,12 @@ jest.mock('components', () => {
       <div className="sk-circle" {...props}>
         Loading...
       </div>
+    ),
+    Labeled: props => (
+      <div>
+        <label id={props.id}>{props.label}</label>
+        {props.children}
+      </div>
     )
   };
 });
