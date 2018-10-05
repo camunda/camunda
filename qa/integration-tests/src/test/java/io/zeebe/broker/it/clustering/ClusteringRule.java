@@ -30,6 +30,8 @@ import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.api.commands.BrokerInfo;
 import io.zeebe.gateway.api.commands.PartitionInfo;
 import io.zeebe.gateway.impl.ZeebeClientImpl;
+import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.ZbLogger;
@@ -47,6 +49,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import org.assertj.core.util.Files;
 import org.junit.rules.ExternalResource;
+import org.junit.runner.Description;
+import org.junit.runners.model.Statement;
 import org.slf4j.Logger;
 
 public class ClusteringRule extends ExternalResource {
@@ -54,6 +58,9 @@ public class ClusteringRule extends ExternalResource {
   private static final boolean ENABLE_DEBUG_EXPORTER = false;
 
   public static final Logger LOG = new ZbLogger(ClusteringRule.class);
+
+  protected final RecordingExporterTestWatcher recordingExporterTestWatcher =
+      new RecordingExporterTestWatcher();
 
   // internal
   private ZeebeClient zeebeClient;
@@ -94,7 +101,15 @@ public class ClusteringRule extends ExternalResource {
   }
 
   @Override
+  public Statement apply(final Statement base, final Description description) {
+    final Statement statement = recordingExporterTestWatcher.apply(base, description);
+    return super.apply(statement, description);
+  }
+
+  @Override
   protected void before() {
+    RecordingExporter.reset();
+
     for (int i = 0; i < clusterSize; i++) {
       startBroker(i);
     }
