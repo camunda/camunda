@@ -24,7 +24,6 @@ import io.zeebe.client.api.clients.JobClient;
 import io.zeebe.client.api.clients.WorkflowClient;
 import io.zeebe.client.api.commands.PartitionsRequestStep1;
 import io.zeebe.client.api.commands.TopologyRequestStep1;
-import io.zeebe.client.api.record.ZeebeObjectMapper;
 import io.zeebe.client.api.subscription.TopicSubscriptionBuilderStep1;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.gateway.protocol.GatewayGrpc;
@@ -62,11 +61,6 @@ public class ZeebeClientImpl implements ZeebeClient {
     return ManagedChannelBuilder.forAddress(address.getHost(), address.getPort())
         .usePlaintext()
         .build();
-  }
-
-  @Override
-  public ZeebeObjectMapper objectMapper() {
-    return null;
   }
 
   @Override
