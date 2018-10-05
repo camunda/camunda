@@ -173,9 +173,8 @@ public class JobStateController extends KeyStateController {
     }
   }
 
-  public void delete(final TypedRecord<JobRecord> record) {
-    final DirectBuffer type = record.getValue().getType();
-    final long key = record.getKey();
+  public void delete(long key, JobRecord value) {
+    final DirectBuffer type = value.getType();
     DirectBuffer keyBuffer;
 
     try (WriteOptions options = new WriteOptions();
@@ -188,7 +187,7 @@ public class JobStateController extends KeyStateController {
       final DirectBuffer activatableKey = getActivatableKey(key, type);
       batch.delete(activatableColumnFamily, activatableKey);
 
-      keyBuffer = getDeadlinesKey(key, record.getValue().getDeadline());
+      keyBuffer = getDeadlinesKey(key, value.getDeadline());
       batch.delete(deadlinesColumnFamily, keyBuffer);
 
       db.write(options, batch);
@@ -267,8 +266,8 @@ public class JobStateController extends KeyStateController {
         });
   }
 
-  public boolean exists(final TypedRecord<JobRecord> record) {
-    final DirectBuffer dbKey = getDefaultKey(record.getKey());
+  public boolean exists(long jobKey) {
+    final DirectBuffer dbKey = getDefaultKey(jobKey);
     return db.exists(defaultColumnFamily, dbKey);
   }
 

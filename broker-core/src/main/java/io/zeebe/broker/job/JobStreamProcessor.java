@@ -207,10 +207,16 @@ public class JobStreamProcessor implements StreamProcessorLifecycleAware {
     @Override
     public void onCommand(
         TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
-      if (state.exists(command)) {
-        if (!state.isInState(command.getKey(), State.FAILED)) {
-          state.delete(command);
-          commandControl.accept(JobIntent.COMPLETED, command.getValue());
+
+      final long jobKey = command.getKey();
+
+      if (state.exists(jobKey)) {
+        if (!state.isInState(jobKey, State.FAILED)) {
+          final JobRecord job = state.getJob(jobKey);
+          job.setPayload(command.getValue().getPayload());
+
+          state.delete(jobKey, job);
+          commandControl.accept(JobIntent.COMPLETED, job);
         } else {
           commandControl.reject(
               RejectionType.NOT_APPLICABLE, "Job is failed and must be resolved first");
@@ -243,8 +249,10 @@ public class JobStreamProcessor implements StreamProcessorLifecycleAware {
     @Override
     public void onCommand(
         TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
-      if (state.exists(command)) {
-        state.delete(command);
+      final long jobKey = command.getKey();
+
+      if (state.exists(jobKey)) {
+        state.delete(jobKey, command.getValue());
         commandControl.accept(JobIntent.CANCELED, command.getValue());
       } else {
         commandControl.reject(RejectionType.NOT_APPLICABLE, "Job does not exist");
