@@ -18,7 +18,8 @@
 package io.zeebe.broker.workflow.model.transformation;
 
 import io.zeebe.broker.workflow.model.BpmnStep;
-import io.zeebe.broker.workflow.model.ExecutableWorkflow;
+import io.zeebe.broker.workflow.model.element.ExecutableMessage;
+import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.msgpack.jsonpath.JsonPathQueryCompiler;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.ArrayList;
@@ -30,6 +31,7 @@ import org.agrona.DirectBuffer;
 public class TransformContext {
 
   private Map<DirectBuffer, ExecutableWorkflow> workflows = new HashMap<>();
+  private Map<DirectBuffer, ExecutableMessage> messages = new HashMap<>();
   private JsonPathQueryCompiler jsonPathQueryCompiler;
   private MappingCompiler mappingCompiler = new MappingCompiler();
 
@@ -61,6 +63,14 @@ public class TransformContext {
 
   public List<ExecutableWorkflow> getWorkflows() {
     return new ArrayList<>(workflows.values());
+  }
+
+  public void addMessage(ExecutableMessage message) {
+    messages.put(message.getId(), message);
+  }
+
+  public ExecutableMessage getMessage(String id) {
+    return messages.get(BufferUtil.wrapString(id));
   }
 
   public JsonPathQueryCompiler getJsonPathQueryCompiler() {

@@ -31,6 +31,7 @@ import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.topic.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
+import io.zeebe.broker.workflow.processor.timer.DueDateTimerChecker;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -57,6 +58,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
 
   private SubscriptionCommandSender mockSubscriptionCommandSender;
   private TopologyManager mockTopologyManager;
+  private DueDateTimerChecker mockTimerEventScheduler;
 
   private StreamProcessorControl streamProcessor;
   private WorkflowState workflowState;
@@ -71,9 +73,11 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
 
   @Override
   protected void before() throws Throwable {
+    workflowState = new WorkflowState();
+
     mockSubscriptionCommandSender = mock(SubscriptionCommandSender.class);
     mockTopologyManager = mock(TopologyManager.class);
-    workflowState = new WorkflowState();
+    mockTimerEventScheduler = mock(DueDateTimerChecker.class);
 
     when(mockSubscriptionCommandSender.hasPartitionIds()).thenReturn(true);
     when(mockSubscriptionCommandSender.openMessageSubscription(anyLong(), anyLong(), any(), any()))
@@ -87,7 +91,10 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
             env -> {
               final WorkflowInstanceStreamProcessor streamProcessor =
                   new WorkflowInstanceStreamProcessor(
-                      workflowState, mockSubscriptionCommandSender, mockTopologyManager);
+                      workflowState,
+                      mockSubscriptionCommandSender,
+                      mockTopologyManager,
+                      mockTimerEventScheduler);
 
               return streamProcessor.createStreamProcessor(env);
             });

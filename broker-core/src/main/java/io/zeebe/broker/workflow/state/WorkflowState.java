@@ -45,6 +45,7 @@ public class WorkflowState extends KeyStateController {
   private NextValueManager nextValueManager;
   private WorkflowPersistenceCache workflowPersistenceCache;
   private SubscriptionState<WorkflowSubscription> subscriptionState;
+  private TimerInstanceState timerInstanceState;
   private ElementInstanceState elementInstanceState;
 
   @Override
@@ -54,7 +55,8 @@ public class WorkflowState extends KeyStateController {
                 COLUMN_FAMILY_NAMES,
                 WorkflowPersistenceCache.COLUMN_FAMILY_NAMES,
                 ElementInstanceState.COLUMN_FAMILY_NAMES,
-                SubscriptionState.COLUMN_FAMILY_NAMES)
+                SubscriptionState.COLUMN_FAMILY_NAMES,
+                TimerInstanceState.COLUMN_FAMILY_NAMES)
             .flatMap(Stream::of)
             .collect(Collectors.toList());
 
@@ -66,6 +68,7 @@ public class WorkflowState extends KeyStateController {
     nextValueManager = new NextValueManager(this);
     workflowPersistenceCache = new WorkflowPersistenceCache(this);
     subscriptionState = new SubscriptionState<>(this, WorkflowSubscription.class);
+    timerInstanceState = new TimerInstanceState(this);
     elementInstanceState = new ElementInstanceState(this);
 
     return rocksDB;
@@ -137,6 +140,10 @@ public class WorkflowState extends KeyStateController {
 
   public void remove(WorkflowSubscription workflowSubscription) {
     subscriptionState.remove(workflowSubscription);
+  }
+
+  public TimerInstanceState getTimerState() {
+    return timerInstanceState;
   }
 
   /**

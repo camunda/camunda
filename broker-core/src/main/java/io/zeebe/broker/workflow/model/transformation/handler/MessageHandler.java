@@ -17,23 +17,30 @@
  */
 package io.zeebe.broker.workflow.model.transformation.handler;
 
-import io.zeebe.broker.workflow.model.BpmnStep;
-import io.zeebe.broker.workflow.model.ExecutableMessageCatchElement;
+import io.zeebe.broker.workflow.model.element.ExecutableMessage;
+import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.Message;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
 import io.zeebe.msgpack.jsonpath.JsonPathQuery;
 import io.zeebe.msgpack.jsonpath.JsonPathQueryCompiler;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;
 
-public class MessageCatchElementHandler {
+public class MessageHandler implements ModelElementTransformer<Message> {
 
-  public void transform(
-      ExecutableMessageCatchElement executableElement, Message message, TransformContext context) {
+  @Override
+  public Class<Message> getType() {
+    return Message.class;
+  }
+
+  @Override
+  public void transform(Message element, TransformContext context) {
+
+    final String id = element.getId();
+    final ExecutableMessage executableElement = new ExecutableMessage(id);
 
     final ZeebeSubscription subscription =
-        message
+        element
             .getExtensionElements()
             .getElementsQuery()
             .filterByType(ZeebeSubscription.class)
@@ -43,25 +50,8 @@ public class MessageCatchElementHandler {
     final JsonPathQuery query = queryCompiler.compile(subscription.getCorrelationKey());
 
     executableElement.setCorrelationKey(query);
-    executableElement.setMessageName(BufferUtil.wrapString(message.getName()));
+    executableElement.setMessageName(BufferUtil.wrapString(element.getName()));
 
-    bindLifecycle(context, executableElement);
-  }
-
-  private void bindLifecycle(
-      TransformContext context, final ExecutableMessageCatchElement executableElement) {
-
-    executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_READY, BpmnStep.APPLY_INPUT_MAPPING);
-    executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.SUBSCRIBE_TO_INTERMEDIATE_MESSAGE);
-    executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.APPLY_OUTPUT_MAPPING);
-    executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_COMPLETED, context.getCurrentFlowNodeOutgoingStep());
-    executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.TERMINATE_ELEMENT);
-    executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.PROPAGATE_TERMINATION);
+    context.addMessage(executableElement);
   }
 }

@@ -30,7 +30,10 @@ public interface Intent {
           WorkflowInstanceIntent.class,
           MessageIntent.class,
           MessageSubscriptionIntent.class,
-          WorkflowInstanceSubscriptionIntent.class);
+          WorkflowInstanceSubscriptionIntent.class,
+          ExporterIntent.class,
+          JobBatchIntent.class,
+          TimerIntent.class);
 
   Intent UNKNOWN =
       new Intent() {
@@ -79,6 +82,8 @@ public interface Intent {
         return ExporterIntent.from(intent);
       case JOB_BATCH:
         return JobBatchIntent.from(intent);
+      case TIMER:
+        return TimerIntent.from(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;
@@ -115,6 +120,8 @@ public interface Intent {
         return ExporterIntent.valueOf(intent);
       case JOB_BATCH:
         return JobBatchIntent.valueOf(intent);
+      case TIMER:
+        return TimerIntent.valueOf(intent);
       case NULL_VAL:
       case SBE_UNKNOWN:
         return Intent.UNKNOWN;

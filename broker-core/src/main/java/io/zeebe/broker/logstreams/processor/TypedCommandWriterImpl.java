@@ -67,6 +67,10 @@ public class TypedCommandWriterImpl implements TypedCommandWriter {
   protected void initMetadata(RecordType type, Intent intent, UnpackedObject value) {
     metadata.reset();
     final ValueType valueType = typeRegistry.get(value.getClass());
+    if (valueType == null) {
+      // usually happens when the record is not registered at the TypedStreamEnvironment
+      throw new RuntimeException("Missing value type mapping for record: " + value.getClass());
+    }
 
     metadata.recordType(type);
     metadata.valueType(valueType);
@@ -134,6 +138,7 @@ public class TypedCommandWriterImpl implements TypedCommandWriter {
     stagedWriter = null;
   }
 
+  @Override
   public long flush() {
     if (stagedWriter != null) {
       return stagedWriter.tryWrite();

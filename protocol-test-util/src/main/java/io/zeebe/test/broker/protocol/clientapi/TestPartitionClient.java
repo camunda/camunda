@@ -172,6 +172,17 @@ public class TestPartitionClient {
     return response.key();
   }
 
+  public ExecuteCommandResponse cancelWorkflowInstance(final long key) {
+    return apiRule
+        .createCmdRequest()
+        .partitionId(partitionId)
+        .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CANCEL)
+        .key(key)
+        .command()
+        .done()
+        .sendAndAwait();
+  }
+
   public ExecuteCommandResponse createJob(final String type) {
     return apiRule
         .createCmdRequest()

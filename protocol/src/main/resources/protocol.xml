@@ -44,6 +44,7 @@
       <validValue name="WORKFLOW_INSTANCE_SUBSCRIPTION">12</validValue>
       <validValue name="EXPORTER">13</validValue>
       <validValue name="JOB_BATCH">14</validValue>
+      <validValue name="TIMER">15</validValue>
     </enum>
 
     <enum name="ControlMessageType" encodingType="uint8"

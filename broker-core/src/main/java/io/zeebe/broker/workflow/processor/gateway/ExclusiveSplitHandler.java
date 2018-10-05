@@ -18,8 +18,8 @@
 package io.zeebe.broker.workflow.processor.gateway;
 
 import io.zeebe.broker.incident.data.ErrorType;
-import io.zeebe.broker.workflow.model.ExecutableExclusiveGateway;
-import io.zeebe.broker.workflow.model.ExecutableSequenceFlow;
+import io.zeebe.broker.workflow.model.element.ExecutableExclusiveGateway;
+import io.zeebe.broker.workflow.model.element.ExecutableSequenceFlow;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 import io.zeebe.broker.workflow.state.ElementInstance;

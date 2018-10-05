@@ -27,6 +27,7 @@ import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.topic.Records;
 import io.zeebe.broker.topic.StreamProcessorControl;
+import io.zeebe.broker.workflow.data.TimerRecord;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotController;
@@ -89,6 +90,7 @@ public class TestStreams {
     VALUE_TYPES.put(ExporterRecord.class, ValueType.EXPORTER);
     VALUE_TYPES.put(RaftConfigurationEvent.class, ValueType.RAFT);
     VALUE_TYPES.put(JobBatchRecord.class, ValueType.JOB_BATCH);
+    VALUE_TYPES.put(TimerRecord.class, ValueType.TIMER);
 
     VALUE_TYPES.put(UnpackedObject.class, ValueType.NOOP);
   }
@@ -342,6 +344,14 @@ public class TestStreams {
               Records.isWorkflowInstanceSubscriptionRecord(e)
                   && test.test(
                       CopiedTypedEvent.toTypedEvent(e, WorkflowInstanceSubscriptionRecord.class)));
+    }
+
+    @Override
+    public void blockAfterTimerEvent(final Predicate<TypedRecord<TimerRecord>> test) {
+      blockAfterEvent(
+          e ->
+              Records.isTimerRecord(e)
+                  && test.test(CopiedTypedEvent.toTypedEvent(e, TimerRecord.class)));
     }
 
     @Override

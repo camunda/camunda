@@ -20,7 +20,8 @@ package io.zeebe.broker.workflow.processor.catchevent;
 import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
-import io.zeebe.broker.workflow.model.ExecutableMessageCatchElement;
+import io.zeebe.broker.workflow.model.element.ExecutableMessage;
+import io.zeebe.broker.workflow.model.element.ExecutableMessageCatchElement;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 import io.zeebe.broker.workflow.state.WorkflowState;
@@ -39,7 +40,7 @@ public class SubscribeMessageHandler implements BpmnStepHandler<ExecutableMessag
 
   private WorkflowInstanceRecord workflowInstance;
   private long activityInstanceKey;
-  private ExecutableMessageCatchElement catchEvent;
+  private ExecutableMessage message;
   private DirectBuffer extractedCorrelationKey;
 
   private final SubscriptionCommandSender subscriptionCommandSender;
@@ -56,7 +57,7 @@ public class SubscribeMessageHandler implements BpmnStepHandler<ExecutableMessag
 
     this.workflowInstance = context.getValue();
     this.activityInstanceKey = context.getRecord().getKey();
-    this.catchEvent = context.getElement();
+    this.message = context.getElement().getMessage();
 
     extractedCorrelationKey = extractCorrelationKey();
     context.getSideEffect().accept(this::openMessageSubscription);
@@ -65,7 +66,7 @@ public class SubscribeMessageHandler implements BpmnStepHandler<ExecutableMessag
         new WorkflowSubscription(
             workflowInstance.getWorkflowInstanceKey(),
             activityInstanceKey,
-            cloneBuffer(catchEvent.getMessageName()),
+            cloneBuffer(message.getMessageName()),
             cloneBuffer(extractedCorrelationKey));
     subscription.setCommandSentTime(ActorClock.currentTimeMillis());
     workflowState.put(subscription);
@@ -75,13 +76,13 @@ public class SubscribeMessageHandler implements BpmnStepHandler<ExecutableMessag
     return subscriptionCommandSender.openMessageSubscription(
         workflowInstance.getWorkflowInstanceKey(),
         activityInstanceKey,
-        catchEvent.getMessageName(),
+        message.getMessageName(),
         extractedCorrelationKey);
   }
 
   private DirectBuffer extractCorrelationKey() {
     final QueryResults results =
-        queryProcessor.process(catchEvent.getCorrelationKey(), workflowInstance.getPayload());
+        queryProcessor.process(message.getCorrelationKey(), workflowInstance.getPayload());
     if (results.size() == 1) {
       final QueryResult result = results.getSingleResult();
 

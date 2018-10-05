@@ -19,7 +19,7 @@ package io.zeebe.broker.workflow.state;
 
 import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
 
-import io.zeebe.broker.workflow.model.ExecutableWorkflow;
+import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.BpmnTransformer;
 import io.zeebe.logstreams.state.StateController;
 import io.zeebe.model.bpmn.Bpmn;
