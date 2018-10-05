@@ -17,6 +17,8 @@
  */
 package io.zeebe.broker.job;
 
+import static io.zeebe.util.sched.clock.ActorClock.currentTimeMillis;
+
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.job.JobStateController.State;
 import io.zeebe.broker.job.old.CreditsRequest;
@@ -26,6 +28,7 @@ import io.zeebe.broker.logstreams.processor.CommandProcessor;
 import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.logstreams.processor.SideEffectProducer;
 import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
+import io.zeebe.broker.logstreams.processor.TypedBatchWriter;
 import io.zeebe.broker.logstreams.processor.TypedCommandWriter;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
@@ -40,13 +43,16 @@ import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.util.sched.ScheduledTimer;
-import io.zeebe.util.sched.clock.ActorClock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import org.agrona.ExpandableArrayBuffer;
 
 public class JobStreamProcessor implements StreamProcessorLifecycleAware {
   public static final Duration TIME_OUT_POLLING_INTERVAL = Duration.ofSeconds(30);
@@ -59,6 +65,7 @@ public class JobStreamProcessor implements StreamProcessorLifecycleAware {
   private ScheduledTimer timer;
   private TypedCommandWriter writer;
   private JobSubscriptionProcessor jobSubscriptionProcessor;
+  private KeyGenerator jobKeyGenerator;
 
   public JobStreamProcessor(final JobSubscriptionManager subscriptionManager) {
     this.subscriptionManager = subscriptionManager;
@@ -88,10 +95,11 @@ public class JobStreamProcessor implements StreamProcessorLifecycleAware {
     jobSubscriptionProcessor = new JobSubscriptionProcessor(state);
     this.partitionId = environment.getStream().getPartitionId();
     this.subscribedEventWriter = new SubscribedRecordWriter(environment.getOutput());
+    jobKeyGenerator = KeyGenerator.createJobKeyGenerator(this.partitionId, state);
 
     return environment
         .newStreamProcessor()
-        .keyGenerator(KeyGenerator.createJobKeyGenerator(this.partitionId, state))
+        .keyGenerator(jobKeyGenerator)
         .onCommand(ValueType.JOB, JobIntent.CREATE, new CreateProcessor())
         .onCommand(ValueType.JOB, JobIntent.ACTIVATE, new ActivateProcessor())
         .onCommand(ValueType.JOB, JobIntent.COMPLETE, new CompleteProcessor())
@@ -99,6 +107,7 @@ public class JobStreamProcessor implements StreamProcessorLifecycleAware {
         .onCommand(ValueType.JOB, JobIntent.TIME_OUT, new TimeOutProcessor())
         .onCommand(ValueType.JOB, JobIntent.UPDATE_RETRIES, new UpdateRetriesProcessor())
         .onCommand(ValueType.JOB, JobIntent.CANCEL, new CancelProcessor())
+        .onCommand(ValueType.JOB_BATCH, JobBatchIntent.ACTIVATE, new JobBatchActivateProcessor())
 
         // subscription handling
         .onEvent(ValueType.JOB, JobIntent.CREATED, jobSubscriptionProcessor)
@@ -116,7 +125,7 @@ public class JobStreamProcessor implements StreamProcessorLifecycleAware {
   }
 
   private void deactivateTimedOutJobs() {
-    final Instant now = Instant.ofEpochMilli(ActorClock.currentTimeMillis());
+    final Instant now = Instant.ofEpochMilli(currentTimeMillis());
     Loggers.SYSTEM_LOGGER.debug("Checking for jobs with deadline < {}", now.toEpochMilli());
     state.forEachTimedOutEntry(
         now,
@@ -266,5 +275,98 @@ public class JobStreamProcessor implements StreamProcessorLifecycleAware {
         commandControl.reject(RejectionType.NOT_APPLICABLE, "Job is not failed");
       }
     }
+  }
+
+  private class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchRecord> {
+
+    @Override
+    public void processRecord(
+        TypedRecord<JobBatchRecord> record,
+        TypedResponseWriter responseWriter,
+        TypedStreamWriter streamWriter) {
+      final JobBatchRecord value = record.getValue();
+      if (isValid(value)) {
+        activateJobs(record, responseWriter, streamWriter);
+      } else {
+        rejectCommand(record, responseWriter, streamWriter);
+      }
+    }
+  }
+
+  private boolean isValid(JobBatchRecord record) {
+    return record.getAmount() > 0
+        && record.getTimeout() > 0
+        && record.getType().capacity() > 0
+        && record.getWorker().capacity() > 0;
+  }
+
+  private void activateJobs(
+      TypedRecord<JobBatchRecord> record,
+      TypedResponseWriter responseWriter,
+      TypedStreamWriter streamWriter) {
+    final JobBatchRecord value = record.getValue();
+
+    final long jobBatchKey = jobKeyGenerator.nextKey();
+
+    final TypedBatchWriter batchWriter = streamWriter.newBatch();
+    final AtomicInteger amount = new AtomicInteger(value.getAmount());
+    state.activatableJobs(
+        value.getType(),
+        (key, jobRecord, control) -> {
+          final int remainingAmount = amount.decrementAndGet();
+          if (remainingAmount >= 0) {
+            final long deadline = currentTimeMillis() + value.getTimeout();
+            value.jobKeys().add().setValue(key);
+            final JobRecord job = value.jobs().add();
+
+            // clone job record to modify it
+            final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(jobRecord.getLength());
+            jobRecord.write(buffer, 0);
+            job.wrap(buffer);
+
+            // set worker properties on job
+            job.setDeadline(deadline).setWorker(value.getWorker());
+
+            // update state and write follow up event for job record
+            state.activate(key, job);
+            batchWriter.addFollowUpEvent(key, JobIntent.ACTIVATED, job);
+          }
+
+          if (remainingAmount < 1) {
+            control.stop();
+          }
+        });
+
+    batchWriter.addFollowUpEvent(jobBatchKey, JobBatchIntent.ACTIVATED, value);
+    responseWriter.writeEventOnCommand(jobBatchKey, JobBatchIntent.ACTIVATED, value, record);
+  }
+
+  private void rejectCommand(
+      TypedRecord<JobBatchRecord> record,
+      TypedResponseWriter responseWriter,
+      TypedStreamWriter streamWriter) {
+    final RejectionType rejectionType;
+    final String rejectionReason;
+
+    final JobBatchRecord value = record.getValue();
+
+    if (value.getAmount() < 1) {
+      rejectionType = RejectionType.BAD_VALUE;
+      rejectionReason = "Job batch amount must be greater than zero, got " + value.getAmount();
+    } else if (value.getTimeout() < 1) {
+      rejectionType = RejectionType.BAD_VALUE;
+      rejectionReason = "Job batch timeout must be greater than zero, got " + value.getTimeout();
+    } else if (value.getType().capacity() < 1) {
+      rejectionType = RejectionType.BAD_VALUE;
+      rejectionReason = "Job batch type must not be empty";
+    } else if (value.getWorker().capacity() < 1) {
+      rejectionType = RejectionType.BAD_VALUE;
+      rejectionReason = "Job batch worker must not be empty";
+    } else {
+      throw new IllegalStateException("Job batch command is valid and should not be rejected");
+    }
+
+    streamWriter.writeRejection(record, rejectionType, rejectionReason);
+    responseWriter.writeRejectionOnCommand(record, rejectionType, rejectionReason);
   }
 }

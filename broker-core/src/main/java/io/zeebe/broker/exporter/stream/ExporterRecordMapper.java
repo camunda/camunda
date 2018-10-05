@@ -19,6 +19,7 @@ package io.zeebe.broker.exporter.stream;
 
 import io.zeebe.broker.exporter.record.RecordImpl;
 import io.zeebe.broker.exporter.record.value.IncidentRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.JobBatchRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.MessageSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.RaftRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.WorkflowInstanceSubscriptionRecordValueImpl;
@@ -46,9 +47,11 @@ import io.zeebe.exporter.record.value.deployment.ResourceType;
 import io.zeebe.exporter.record.value.raft.RaftMember;
 import io.zeebe.gateway.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.msgpack.value.LongValue;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.Workflow;
+import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobHeaders;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
@@ -56,11 +59,14 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceReco
 import io.zeebe.raft.event.RaftConfigurationEvent;
 import io.zeebe.raft.event.RaftConfigurationEventMember;
 import io.zeebe.util.buffer.BufferUtil;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
 import org.agrona.io.DirectBufferInputStream;
 
@@ -100,6 +106,9 @@ public class ExporterRecordMapper {
       case WORKFLOW_INSTANCE_SUBSCRIPTION:
         valueSupplier = this::ofWorkflowInstanceSubscriptionRecord;
         break;
+      case JOB_BATCH:
+        valueSupplier = this::ofJobBatchRecord;
+        break;
       default:
         return null;
     }
@@ -124,7 +133,6 @@ public class ExporterRecordMapper {
   }
 
   // VALUE SUPPLIERS
-
   private RaftRecordValue ofRaftRecord(final LoggedEvent event) {
     final RaftConfigurationEvent record = new RaftConfigurationEvent();
     event.readValue(record);
@@ -141,6 +149,10 @@ public class ExporterRecordMapper {
     final JobRecord record = new JobRecord();
     event.readValue(record);
 
+    return ofJobRecord(record);
+  }
+
+  private JobRecordValue ofJobRecord(JobRecord record) {
     final JobHeaders jobHeaders = record.headers();
     final HeadersImpl headers =
         new HeadersImpl(
@@ -266,6 +278,30 @@ public class ExporterRecordMapper {
         asString(record.getMessageName()),
         record.getWorkflowInstanceKey(),
         record.getActivityInstanceKey());
+  }
+
+  private RecordValue ofJobBatchRecord(LoggedEvent event) {
+    final JobBatchRecord record = new JobBatchRecord();
+    event.readValue(record);
+
+    final List<Long> jobKeys =
+        StreamSupport.stream(record.jobKeys().spliterator(), false)
+            .map(LongValue::getValue)
+            .collect(Collectors.toList());
+
+    final List<JobRecordValue> jobs =
+        StreamSupport.stream(record.jobs().spliterator(), false)
+            .map(this::ofJobRecord)
+            .collect(Collectors.toList());
+
+    return new JobBatchRecordValueImpl(
+        objectMapper,
+        asString(record.getType()),
+        asString(record.getWorker()),
+        Duration.ofMillis(record.getTimeout()),
+        record.getAmount(),
+        jobKeys,
+        jobs);
   }
 
   // UTILS

@@ -19,6 +19,7 @@ import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.RecordValue;
 import io.zeebe.exporter.record.value.DeploymentRecordValue;
 import io.zeebe.exporter.record.value.IncidentRecordValue;
+import io.zeebe.exporter.record.value.JobBatchRecordValue;
 import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.exporter.record.value.MessageRecordValue;
 import io.zeebe.exporter.record.value.MessageSubscriptionRecordValue;
@@ -29,6 +30,7 @@ import io.zeebe.exporter.spi.Exporter;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.IncidentIntent;
+import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
@@ -109,6 +111,14 @@ public class RecordingExporter implements Exporter {
 
   public static JobRecordStream jobRecords(final JobIntent intent) {
     return jobRecords().withIntent(intent);
+  }
+
+  public static JobBatchRecordStream jobBatchRecords() {
+    return new JobBatchRecordStream(records(ValueType.JOB_BATCH, JobBatchRecordValue.class));
+  }
+
+  public static JobBatchRecordStream jobBatchRecords(final JobBatchIntent intent) {
+    return jobBatchRecords().withIntent(intent);
   }
 
   public static IncidentRecordStream incidentRecords() {

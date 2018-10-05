@@ -25,6 +25,8 @@ import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 
 import io.zeebe.broker.exporter.record.value.IncidentRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.JobBatchRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.JobRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.MessageSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.RaftRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.WorkflowInstanceSubscriptionRecordValueImpl;
@@ -59,6 +61,7 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.ResourceType;
+import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
@@ -66,6 +69,7 @@ import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.ExporterIntent;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
@@ -78,6 +82,7 @@ import io.zeebe.util.buffer.BufferUtil;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -608,6 +613,74 @@ public class ExporterStreamProcessorTest {
 
     // then
     assertRecordExported(WorkflowInstanceSubscriptionIntent.OPENED, record, recordValue);
+  }
+
+  @Test
+  public void shouldExportJobBatchRecord() {
+    // given
+    final int amount = 1;
+    final long timeout = 2L;
+    final String type = "type";
+    final String worker = "worker";
+
+    final JobBatchRecord record =
+        new JobBatchRecord().setAmount(amount).setTimeout(timeout).setType(type).setWorker(worker);
+
+    record.jobKeys().add().setValue(3L);
+    final JobRecord jobRecord = record.jobs().add();
+
+    final String bpmnProcessId = "test-process";
+    final int workflowKey = 13;
+    final int workflowDefinitionVersion = 12;
+    final int workflowInstanceKey = 1234;
+    final String activityId = "activity";
+    final int activityInstanceKey = 123;
+
+    jobRecord
+        .setWorker(wrapString(worker))
+        .setType(wrapString(type))
+        .setPayload(PAYLOAD_MSGPACK)
+        .setRetries(3)
+        .setDeadline(1000L);
+
+    jobRecord
+        .headers()
+        .setBpmnProcessId(wrapString(bpmnProcessId))
+        .setWorkflowKey(workflowKey)
+        .setWorkflowDefinitionVersion(workflowDefinitionVersion)
+        .setWorkflowInstanceKey(workflowInstanceKey)
+        .setActivityId(wrapString(activityId))
+        .setActivityInstanceKey(activityInstanceKey);
+
+    final JobRecordValueImpl jobRecordValue =
+        new JobRecordValueImpl(
+            OBJECT_MAPPER,
+            PAYLOAD_JSON,
+            type,
+            worker,
+            Instant.ofEpochMilli(1000L),
+            new HeadersImpl(
+                bpmnProcessId,
+                activityId,
+                activityInstanceKey,
+                workflowInstanceKey,
+                workflowKey,
+                workflowDefinitionVersion),
+            Collections.EMPTY_MAP,
+            3);
+
+    final JobBatchRecordValueImpl recordValue =
+        new JobBatchRecordValueImpl(
+            OBJECT_MAPPER,
+            type,
+            worker,
+            Duration.ofMillis(timeout),
+            amount,
+            Arrays.asList(3L),
+            Arrays.asList(jobRecordValue));
+
+    // then
+    assertRecordExported(JobBatchIntent.ACTIVATED, record, recordValue);
   }
 
   private ExporterStreamProcessor createStreamProcessor(final int count) {

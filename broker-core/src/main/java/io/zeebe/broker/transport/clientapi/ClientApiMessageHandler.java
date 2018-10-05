@@ -35,6 +35,7 @@ import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
@@ -83,6 +84,7 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
     recordsByType.put(ValueType.SUBSCRIBER, new TopicSubscriberEvent());
     recordsByType.put(ValueType.SUBSCRIPTION, new TopicSubscriptionEvent());
     recordsByType.put(ValueType.MESSAGE, new MessageRecord());
+    recordsByType.put(ValueType.JOB_BATCH, new JobBatchRecord());
   }
 
   private boolean handleExecuteCommandRequest(

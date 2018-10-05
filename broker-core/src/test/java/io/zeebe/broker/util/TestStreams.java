@@ -52,6 +52,7 @@ import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
@@ -87,6 +88,7 @@ public class TestStreams {
         WorkflowInstanceSubscriptionRecord.class, ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
     VALUE_TYPES.put(ExporterRecord.class, ValueType.EXPORTER);
     VALUE_TYPES.put(RaftConfigurationEvent.class, ValueType.RAFT);
+    VALUE_TYPES.put(JobBatchRecord.class, ValueType.JOB_BATCH);
 
     VALUE_TYPES.put(UnpackedObject.class, ValueType.NOOP);
   }

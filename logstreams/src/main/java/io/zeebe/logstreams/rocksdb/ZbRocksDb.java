@@ -19,6 +19,7 @@ import static io.zeebe.util.StringUtil.getBytes;
 import static io.zeebe.util.buffer.BufferUtil.startsWith;
 
 import io.zeebe.util.EnsureUtil;
+import io.zeebe.util.buffer.BufferUtil;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -257,6 +258,8 @@ public class ZbRocksDb extends RocksDB {
             new ReadOptions().setPrefixSameAsStart(true).setTotalOrderSeek(false);
         ZbRocksIterator iterator = newIterator(columnFamily, options)) {
       final IteratorControl control = new IteratorControl();
+      // clone buffer to not interfere when keyBuffer is reused inside callback
+      prefix = BufferUtil.cloneBuffer(prefix);
 
       for (iterator.seek(prefix); iterator.isValid(); iterator.next()) {
         if (startsWith(iterator.keyBuffer(), prefix)) {
