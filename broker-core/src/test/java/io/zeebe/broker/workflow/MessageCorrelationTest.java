@@ -458,7 +458,7 @@ public class MessageCorrelationTest {
             entry("workflowInstanceKey", workflowInstanceKey),
             entry("activityInstanceKey", catchEventEntered.key()),
             entry("messageName", "order canceled"),
-            entry("correlationKey", "order-123"));
+            entry("correlationKey", ""));
   }
 
   @Test
