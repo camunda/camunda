@@ -15,43 +15,30 @@
  */
 package io.zeebe.client.job;
 
-import static io.zeebe.exporter.record.Assertions.assertThat;
-import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
+import static io.zeebe.test.util.JsonUtil.fromJsonAsMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
 import com.google.common.base.Charsets;
-import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.response.CreateJobResponse;
 import io.zeebe.client.cmd.ClientException;
-import io.zeebe.client.util.TestEnvironmentRule;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.JobRecordValue;
-import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.client.util.ClientTest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobRequest;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
-public class CreateJobTest {
-
-  @Rule public TestEnvironmentRule rule = new TestEnvironmentRule();
-
-  private ZeebeClient client;
-
-  @Before
-  public void setUp() {
-    client = rule.getClient();
-  }
+public class CreateJobTest extends ClientTest {
 
   @Test
   public void shouldCreateJob() {
     // given
+    gatewayService.onCreateJobRequest(1, 123);
+
     final Map<String, Object> partialCustomHeaders = new HashMap<>();
     partialCustomHeaders.put("one", 1);
     partialCustomHeaders.put("two", "II");
@@ -70,34 +57,32 @@ public class CreateJobTest {
             .join();
 
     // then
-    final Record<JobRecordValue> jobRecord = jobRecords(JobIntent.CREATED).getFirst();
+    assertThat(response.getPartitionId()).isEqualTo(1);
+    assertThat(response.getKey()).isEqualTo(123);
 
-    assertThat(jobRecord).hasKey(response.getKey());
-    assertThat(jobRecord.getMetadata()).hasPartitionId(response.getPartitionId());
-    assertThat(jobRecord.getValue()).hasType("testJob").hasRetries(12);
-    assertThat(jobRecord.getValue().getCustomHeaders())
-        .containsAllEntriesOf(partialCustomHeaders)
-        .containsEntry("foo", "bar")
-        .containsEntry("hello", "world");
+    final CreateJobRequest request = gatewayService.getLastRequest();
+    assertThat(request.getJobType()).isEqualTo("testJob");
+    assertThat(request.getRetries()).isEqualTo(12);
+
+    assertThat(fromJsonAsMap(request.getCustomHeaders()))
+        .containsOnly(
+            entry("one", 1), entry("two", "II"), entry("foo", "bar"), entry("hello", "world"));
   }
 
   @Test
   public void shouldCreateJobWithStringPayload() {
     // when
-    final CreateJobResponse response =
-        client
-            .jobClient()
-            .newCreateCommand()
-            .jobType("testJob")
-            .payload("{\"foo\": \"bar\"}")
-            .send()
-            .join();
+    client
+        .jobClient()
+        .newCreateCommand()
+        .jobType("testJob")
+        .payload("{\"foo\": \"bar\"}")
+        .send()
+        .join();
 
     // then
-    final Record<JobRecordValue> jobRecord = jobRecords(JobIntent.CREATED).getFirst();
-
-    assertThat(jobRecord).hasKey(response.getKey());
-    assertThat(jobRecord.getValue().getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+    final CreateJobRequest request = gatewayService.getLastRequest();
+    assertThat(fromJsonAsMap(request.getPayload())).containsOnly(entry("foo", "bar"));
   }
 
   @Test
@@ -107,56 +92,46 @@ public class CreateJobTest {
     final InputStream inputStream = new ByteArrayInputStream(payload.getBytes(Charsets.UTF_8));
 
     // when
-    final CreateJobResponse response =
-        client.jobClient().newCreateCommand().jobType("testJob").payload(inputStream).send().join();
+    client.jobClient().newCreateCommand().jobType("testJob").payload(inputStream).send().join();
 
     // then
-    final Record<JobRecordValue> jobRecord = jobRecords(JobIntent.CREATED).getFirst();
-
-    assertThat(jobRecord).hasKey(response.getKey());
-    assertThat(jobRecord.getValue().getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+    final CreateJobRequest request = gatewayService.getLastRequest();
+    assertThat(fromJsonAsMap(request.getPayload())).containsOnly(entry("foo", "bar"));
   }
 
   @Test
   public void shouldCreateJobWithMapPayload() {
     // when
-    final CreateJobResponse response =
-        client
-            .jobClient()
-            .newCreateCommand()
-            .jobType("testJob")
-            .payload(Collections.singletonMap("foo", "bar"))
-            .send()
-            .join();
+    client
+        .jobClient()
+        .newCreateCommand()
+        .jobType("testJob")
+        .payload(Collections.singletonMap("foo", "bar"))
+        .send()
+        .join();
 
     // then
-    final Record<JobRecordValue> jobRecord = jobRecords(JobIntent.CREATED).getFirst();
-
-    assertThat(jobRecord).hasKey(response.getKey());
-    assertThat(jobRecord.getValue().getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+    final CreateJobRequest request = gatewayService.getLastRequest();
+    assertThat(fromJsonAsMap(request.getPayload())).containsOnly(entry("foo", "bar"));
   }
 
   @Test
   public void shouldCreateJobWithObjectPayload() {
     // when
-    final CreateJobResponse response =
-        client
-            .jobClient()
-            .newCreateCommand()
-            .jobType("testJob")
-            .payload(new Payload())
-            .send()
-            .join();
+    client.jobClient().newCreateCommand().jobType("testJob").payload(new Payload()).send().join();
 
     // then
-    final Record<JobRecordValue> jobRecord = jobRecords(JobIntent.CREATED).getFirst();
-
-    assertThat(jobRecord).hasKey(response.getKey());
-    assertThat(jobRecord.getValue().getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+    final CreateJobRequest request = gatewayService.getLastRequest();
+    assertThat(fromJsonAsMap(request.getPayload())).containsOnly(entry("foo", "bar"));
   }
 
   @Test
-  public void shouldNotCreateJobWithNoJsonObjectAsPayload() {
+  public void shouldRaiseExceptionOnError() {
+    // given
+    gatewayService.errorOnRequest(
+        CreateJobRequest.class, () -> new ClientException("Invalid request"));
+
+    // when
     assertThatThrownBy(
             () ->
                 client
@@ -167,8 +142,7 @@ public class CreateJobTest {
                     .send()
                     .join())
         .isInstanceOf(ClientException.class)
-        .hasMessageContaining(
-            "Document has invalid format. On root level an object is only allowed.");
+        .hasMessageContaining("Invalid request");
   }
 
   public static class Payload {

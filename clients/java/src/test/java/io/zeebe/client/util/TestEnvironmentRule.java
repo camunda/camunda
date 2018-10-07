@@ -15,55 +15,63 @@
  */
 package io.zeebe.client.util;
 
-import io.zeebe.broker.Broker;
-import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.grpc.ManagedChannel;
+import io.grpc.testing.GrpcServerRule;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
+import io.zeebe.client.impl.ZeebeClientBuilderImpl;
+import io.zeebe.client.impl.ZeebeClientImpl;
 import java.util.function.Consumer;
-import org.junit.rules.TestWatcher;
+import org.junit.rules.ExternalResource;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-public class TestEnvironmentRule extends TestWatcher {
+public class TestEnvironmentRule extends ExternalResource {
 
-  private final EmbeddedBrokerRule brokerRule;
-  private final ClientRule clientRule;
+  private final GrpcServerRule serverRule = new GrpcServerRule();
+  private final Consumer<ZeebeClientBuilder> clientConfigurator;
+
+  private RecordingGatewayService gatewayService;
+  private ZeebeClientImpl client;
 
   public TestEnvironmentRule() {
     this(b -> {});
   }
 
   public TestEnvironmentRule(final Consumer<ZeebeClientBuilder> clientConfigurator) {
-    this(clientConfigurator, c -> {});
-  }
-
-  public TestEnvironmentRule(
-      final Consumer<ZeebeClientBuilder> clientConfigurator,
-      final Consumer<BrokerCfg> brokerConfigurator) {
-    this.brokerRule = new EmbeddedBrokerRule(brokerConfigurator);
-    this.clientRule = new ClientRule(brokerRule, clientConfigurator);
+    this.clientConfigurator = clientConfigurator;
   }
 
   @Override
   public Statement apply(Statement base, Description description) {
-    final Statement statement = clientRule.apply(base, description);
-    return brokerRule.apply(statement, description);
+    final Statement statement = super.apply(base, description);
+    return serverRule.apply(statement, description);
   }
 
-  public ClientRule getClientRule() {
-    return clientRule;
+  @Override
+  protected void before() {
+    gatewayService = new RecordingGatewayService();
+    serverRule.getServiceRegistry().addService(gatewayService);
+
+    final ManagedChannel channel = serverRule.getChannel();
+    final ZeebeClientBuilderImpl builder = new ZeebeClientBuilderImpl();
+    clientConfigurator.accept(builder);
+    client = new ZeebeClientImpl(builder, channel);
+  }
+
+  @Override
+  protected void after() {
+    if (client != null) {
+      client.close();
+      client = null;
+    }
   }
 
   public ZeebeClient getClient() {
-    return clientRule.getClient();
+    return client;
   }
 
-  public EmbeddedBrokerRule getBrokerRule() {
-    return brokerRule;
-  }
-
-  public Broker getBroker() {
-    return brokerRule.getBroker();
+  public RecordingGatewayService getGatewayService() {
+    return gatewayService;
   }
 }

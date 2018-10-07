@@ -40,22 +40,28 @@ public class ZeebeClientImpl implements ZeebeClient {
   private final ManagedChannel channel;
 
   public ZeebeClientImpl(final ZeebeClientConfiguration configuration) {
-    this.config = configuration;
+    this(configuration, buildChannel(configuration));
+  }
+
+  public ZeebeClientImpl(ZeebeClientConfiguration config, ManagedChannel channel) {
+    this.config = config;
+    this.channel = channel;
+    this.asyncStub = GatewayGrpc.newStub(channel);
+  }
+
+  public static ManagedChannel buildChannel(ZeebeClientConfiguration config) {
     final URI address;
 
     try {
-      address = new URI("zb://" + configuration.getBrokerContactPoint());
+      address = new URI("zb://" + config.getBrokerContactPoint());
     } catch (final URISyntaxException e) {
       throw new RuntimeException("failed to parse broker contact point", e);
     }
 
     // TODO: Issue #1134 - https://github.com/zeebe-io/zeebe/issues/1134
-    channel =
-        ManagedChannelBuilder.forAddress(address.getHost(), address.getPort())
-            .usePlaintext()
-            .build();
-
-    asyncStub = GatewayGrpc.newStub(channel);
+    return ManagedChannelBuilder.forAddress(address.getHost(), address.getPort())
+        .usePlaintext()
+        .build();
   }
 
   @Override
