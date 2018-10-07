@@ -31,7 +31,9 @@ import java.util.UUID;
 
 import static junit.framework.TestCase.assertTrue;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.HEAT_VISUALIZATION;
-import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 
@@ -209,7 +211,8 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     assertThat(allAlerts.get(0).isTriggered(), is(false));
 
     trigger = embeddedOptimizeRule.getAlertService().getScheduler().getTrigger(getTriggerKey(alertId));
-    assertThatTriggerIsInRange(trigger, 30);
+    int secondsUntilItShouldFireNext = 30;
+    assertThatTriggerIsInRange(trigger, secondsUntilItShouldFireNext);
   }
 
   private void assertThatTriggerIsInRange(Trigger trigger, int secondsUntilItShouldFireNext) {
@@ -217,12 +220,12 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     // time is running while we check for the supposed next trigger time
     // and then the check might be by one second off. Thus we check if the
     // the next trigger is within +/- 1 second bound.
-    OffsetDateTime nextTimeToFire = getNextFireTime(trigger).truncatedTo(ChronoUnit.SECONDS);
+    OffsetDateTime nextTimeToFire = getNextFireTime(trigger);
     OffsetDateTime lowerBound = OffsetDateTime.now()
-      .plus(secondsUntilItShouldFireNext - 1,ChronoUnit.SECONDS)
+      .plus(secondsUntilItShouldFireNext - 1, ChronoUnit.SECONDS)
       .truncatedTo(ChronoUnit.SECONDS);
     OffsetDateTime upperBound = OffsetDateTime.now()
-      .plus(secondsUntilItShouldFireNext + 1,ChronoUnit.SECONDS)
+      .plus(secondsUntilItShouldFireNext + 1, ChronoUnit.SECONDS)
       .truncatedTo(ChronoUnit.SECONDS);
     assertTrue(lowerBound.isBefore(nextTimeToFire));
     assertTrue(upperBound.isAfter(nextTimeToFire));
@@ -261,7 +264,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     }
   }
 
-  private String startProcessAndCreateReport() throws IOException, InterruptedException {
+  private String startProcessAndCreateReport() throws IOException {
     ProcessDefinitionEngineDto processDefinition = deploySimpleServiceTaskProcess();
     engineRule.startProcessInstance(processDefinition.getId());
 
