@@ -55,7 +55,6 @@ export const Badge = styled(BadgeComponent)`
 `;
 
 export const EmptyMessageWrapper = styled.div`
-  flex-grow: 1;
   position: relative;
 `;
 
