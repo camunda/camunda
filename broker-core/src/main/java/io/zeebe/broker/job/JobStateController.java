@@ -18,17 +18,21 @@
 package io.zeebe.broker.job;
 
 import static io.zeebe.util.StringUtil.getBytes;
+import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.util.KeyStateController;
+import io.zeebe.logstreams.rocksdb.ZbIterator;
 import io.zeebe.logstreams.rocksdb.ZbRocksDb;
-import io.zeebe.logstreams.rocksdb.ZbRocksDb.IteratorControl;
+import io.zeebe.logstreams.rocksdb.ZbRocksEntry;
 import io.zeebe.logstreams.rocksdb.ZbWriteBatch;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.util.buffer.BufferWriter;
 import java.io.File;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
@@ -249,23 +253,6 @@ public class JobStateController extends KeyStateController {
     }
   }
 
-  public void forEachTimedOutEntry(final Instant upperBound, final IteratorConsumer callback) {
-
-    final long upperBoundMilli = upperBound.toEpochMilli();
-
-    db.forEach(
-        deadlinesColumnFamily,
-        (e, c) -> {
-          final long deadline = e.getKey().getLong(0);
-          if (deadline < upperBoundMilli) {
-            final DirectBuffer keyBuffer = new UnsafeBuffer(e.getKey(), Long.BYTES, Long.BYTES);
-            callback.accept(keyBuffer.getLong(0), getJob(keyBuffer), c);
-          } else {
-            c.stop();
-          }
-        });
-  }
-
   public boolean exists(long jobKey) {
     final DirectBuffer dbKey = getDefaultKey(jobKey);
     return db.exists(defaultColumnFamily, dbKey);
@@ -273,35 +260,39 @@ public class JobStateController extends KeyStateController {
 
   public boolean isInState(long key, State state) {
     final DirectBuffer keyBuffer = getDefaultKey(key);
-    final int bytesRead = db.get(statesColumnFamily, keyBuffer, valueBuffer);
-    if (bytesRead != RocksDB.NOT_FOUND) {
+    if (db.exists(statesColumnFamily, keyBuffer, valueBuffer)) {
       return valueBuffer.getByte(0) == state.value;
-    } else {
-      return false;
     }
+
+    return false;
   }
 
-  /**
-   * This currently duplicates code from ZbRocksDb#forEachPrefixed because we need to control when
-   * to stop the loop. forEach methods should typically execute once forEach as expected, without
-   * control, and an Iterator/Iterable implementation is what would be used for control over the
-   * looping process. Since it would take more time to implement non-trivial ones, this should be
-   * done later.
-   *
-   * <p>Additionally, since this method is only used to deal with subscriptions, it will be removed
-   * eventually, so performance/readability/reuse here isn't critical.
-   */
-  public void activatableJobs(final DirectBuffer type, final IteratorConsumer callback) {
-    final DirectBuffer prefix = getActivatablePrefix(type);
+  public ZbIterator activatableJobs(final DirectBuffer type) {
+    // clone buffer to not interfere when keyBuffer is reused inside callback
+    final DirectBuffer prefix = cloneBuffer(getActivatablePrefix(type));
+    return db.prefixedIterator(activatableColumnFamily, prefix);
+  }
 
-    db.forEachPrefixed(
-        activatableColumnFamily,
-        prefix,
-        (e, c) -> {
-          final DirectBuffer keyBuffer =
-              new UnsafeBuffer(e.getKey(), prefix.capacity(), Long.BYTES);
-          callback.accept(keyBuffer.getLong(0), getJob(keyBuffer), c);
-        });
+  public long getActivatableJobKey(final DirectBuffer keyBuffer) {
+    return keyBuffer.getLong(keyBuffer.capacity() - Long.BYTES);
+  }
+
+  public void forEachTimedOutJobs(final Instant upperBound, Consumer<Entry> action) {
+    Objects.requireNonNull(action);
+
+    final long upperBoundMilli = upperBound.toEpochMilli();
+    try (final ZbIterator iterator = db.iterator(deadlinesColumnFamily)) {
+      for (final ZbRocksEntry entry : iterator) {
+        final long deadline = entry.getKey().getLong(0);
+
+        if (deadline >= upperBoundMilli) {
+          break;
+        }
+
+        final DirectBuffer keyBuffer = new UnsafeBuffer(entry.getKey(), Long.BYTES, Long.BYTES);
+        action.accept(new Entry(keyBuffer.getLong(0), getJob(keyBuffer)));
+      }
+    }
   }
 
   public JobRecord getJob(final long key) {
@@ -358,6 +349,12 @@ public class JobStateController extends KeyStateController {
     return new UnsafeBuffer(valueBuffer, 0, 1);
   }
 
+  private Entry mapActivatableEntry(final ZbRocksEntry entry) {
+    final DirectBuffer keyBuffer =
+        new UnsafeBuffer(entry.getKey(), entry.getKey().capacity() - Long.BYTES, Long.BYTES);
+    return new Entry(keyBuffer.getLong(0), getJob(keyBuffer));
+  }
+
   public enum State {
     ACTIVATABLE((byte) 0),
     ACTIVATED((byte) 1),
@@ -370,8 +367,13 @@ public class JobStateController extends KeyStateController {
     }
   }
 
-  @FunctionalInterface
-  public interface IteratorConsumer {
-    void accept(final long key, final JobRecord record, final IteratorControl control);
+  public static class Entry {
+    public final long key;
+    public final JobRecord record;
+
+    public Entry(long key, JobRecord record) {
+      this.key = key;
+      this.record = record;
+    }
   }
 }

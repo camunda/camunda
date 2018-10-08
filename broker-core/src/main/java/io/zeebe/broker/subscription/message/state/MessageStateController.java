@@ -20,7 +20,9 @@ package io.zeebe.broker.subscription.message.state;
 import static io.zeebe.broker.workflow.state.PersistenceHelper.EXISTENCE;
 
 import io.zeebe.broker.util.KeyStateController;
+import io.zeebe.logstreams.rocksdb.ZbIterator;
 import io.zeebe.logstreams.rocksdb.ZbRocksDb;
+import io.zeebe.logstreams.rocksdb.ZbRocksEntry;
 import io.zeebe.logstreams.rocksdb.ZbWriteBatch;
 import java.io.File;
 import java.nio.ByteOrder;
@@ -196,17 +198,19 @@ public class MessageStateController extends KeyStateController {
 
     final AtomicBoolean found = new AtomicBoolean();
 
-    db.forEachPrefixed(
-        messageColumnFamily,
-        prefixBuffer,
-        (entry, control) -> {
-          iterateKeyBuffer.wrap(entry.getKey());
+    try (final ZbIterator iterator = db.prefixedIterator(messageColumnFamily, prefixBuffer)) {
+      // This could be replaced by:
+      // final ZbRocksEntry entry =
+      //    db.stream(messageColumnFamily).findFirst(e -> startsWith(e.getKey(), prefixBuffer));
+      for (final ZbRocksEntry entry : iterator) {
+        iterateKeyBuffer.wrap(entry.getKey());
 
-          final long messageKey = iterateKeyBuffer.getLong(prefixLength, ByteOrder.LITTLE_ENDIAN);
-          found.set(readMessage(messageKey, message));
+        final long messageKey = iterateKeyBuffer.getLong(prefixLength, ByteOrder.LITTLE_ENDIAN);
+        found.set(readMessage(messageKey, message));
 
-          control.stop();
-        });
+        break; // ???
+      }
+    }
 
     if (found.get()) {
       return message;
@@ -227,24 +231,24 @@ public class MessageStateController extends KeyStateController {
   }
 
   public void findMessagesWithDeadlineBefore(final long timestamp, IteratorConsumer consumer) {
+    try (final ZbIterator iterator = db.iterator(deadlineColumnFamily)) {
+      for (final ZbRocksEntry entry : iterator) {
+        iterateKeyBuffer.wrap(entry.getKey());
+        final long deadline = iterateKeyBuffer.getLong(0, ByteOrder.LITTLE_ENDIAN);
 
-    db.forEach(
-        deadlineColumnFamily,
-        (entry, control) -> {
-          iterateKeyBuffer.wrap(entry.getKey());
-          final long deadline = iterateKeyBuffer.getLong(0, ByteOrder.LITTLE_ENDIAN);
+        boolean consumed = false;
+        if (deadline <= timestamp) {
+          final long messageKey = iterateKeyBuffer.getLong(Long.BYTES, ByteOrder.LITTLE_ENDIAN);
 
-          boolean consumed = false;
-          if (deadline <= timestamp) {
-            final long messageKey = iterateKeyBuffer.getLong(Long.BYTES, ByteOrder.LITTLE_ENDIAN);
+          readMessage(messageKey, message);
+          consumed = consumer.accept(message);
+        }
 
-            readMessage(messageKey, message);
-            consumed = consumer.accept(message);
-          }
-          if (!consumed) {
-            control.stop();
-          }
-        });
+        if (!consumed) {
+          break;
+        }
+      }
+    }
   }
 
   public boolean exist(

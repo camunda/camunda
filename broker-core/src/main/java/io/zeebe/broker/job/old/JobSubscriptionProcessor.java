@@ -194,19 +194,15 @@ public class JobSubscriptionProcessor
     final JobSubscriptions subscriptions = typeSubscriptions.get(type);
 
     if (subscriptions != null) {
-      state.activatableJobs(
-          type,
-          (key, record, control) -> {
-            final JobSubscription subscription = getNextAvailableSubscription(subscriptions);
+      for (final JobStateController.Entry entry : state.activatableJobs(type)) {
+        final JobSubscription subscription = getNextAvailableSubscription(subscriptions);
+        if (subscription == null) {
+          break;
+        }
 
-            if (subscription == null) {
-              control.stop();
-              return;
-            }
-
-            activateJob(key, record, writer, subscriptions, subscription);
-            writer.flush();
-          });
+        activateJob(entry.getKey(), entry.getRecord(), writer, subscriptions, subscription);
+        writer.flush();
+      }
     }
   }
 

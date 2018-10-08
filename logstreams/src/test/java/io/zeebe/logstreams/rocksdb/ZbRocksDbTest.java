@@ -20,44 +20,32 @@ import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.ArrayList;
+import java.util.List;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
-import org.rocksdb.Options;
+import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.RocksDBException;
 
 public class ZbRocksDbTest {
-  private static final DirectBuffer NULL = new UnsafeBuffer(new byte[] {0});
-  @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
+  private final TemporaryFolder temporaryFolder = new TemporaryFolder();
+  private final ZbRocksDbRule dbRule = new ZbRocksDbRule(temporaryFolder);
 
-  private Options options;
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(temporaryFolder).around(dbRule);
+
   private ZbRocksDb db;
+  private ColumnFamilyHandle handle;
 
   @Before
-  public void setup() throws IOException, RocksDBException {
-    final String dbDirectory = temporaryFolder.newFolder().getAbsolutePath();
-    options = new Options().setCreateIfMissing(true);
-    db = ZbRocksDb.open(options, dbDirectory);
-  }
-
-  @After
-  public void teardown() {
-    if (db != null) {
-      db.close();
-    }
-
-    if (options != null) {
-      options.close();
-    }
+  public void setup() {
+    db = dbRule.getDb();
+    handle = db.getDefaultColumnFamily();
   }
 
   @Test
@@ -68,10 +56,10 @@ public class ZbRocksDbTest {
     final MutableDirectBuffer reader = new UnsafeBuffer(new byte[value.capacity()]);
 
     // when
-    db.put(db.getDefaultColumnFamily(), key, value);
+    db.put(handle, key, value);
 
     // then
-    assertThat(db.exists(db.getDefaultColumnFamily(), key, reader)).isTrue();
+    assertThat(db.exists(handle, key, reader)).isTrue();
     assertThat(bufferAsString(reader)).isEqualTo("value");
   }
 
@@ -79,55 +67,23 @@ public class ZbRocksDbTest {
   public void shouldIterateOverPrefixOnly() throws RocksDBException {
     // given
     final DirectBuffer prefix = new UnsafeBuffer(getBytes("1"));
-    final byte[] firstValue = new byte[] {1};
-    final byte[] secondValue = new byte[] {2};
-    final Map<DirectBuffer, DirectBuffer> recorder = new HashMap<>();
+    final ZbRocksEntry[] data =
+        new ZbRocksEntry[] {
+          new ZbRocksEntry(wrapString("0-test"), wrapString("1")),
+          new ZbRocksEntry(wrapString("1-first"), wrapString("2")),
+          new ZbRocksEntry(wrapString("1-second"), wrapString("3")),
+          new ZbRocksEntry(wrapString("2-other"), wrapString("4")),
+          new ZbRocksEntry(wrapString("random"), wrapString("5"))
+        };
+    final List<ZbRocksEntry> entries = new ArrayList<>();
 
     // when
-    db.put(getBytes("0-test"), NULL.byteArray());
-    db.put(getBytes("1-first"), firstValue);
-    db.put(getBytes("1-second"), secondValue);
-    db.put(getBytes("2-other"), NULL.byteArray());
-    db.put(getBytes("random"), NULL.byteArray());
-    db.forEachPrefixed(
-        db.getDefaultColumnFamily(),
-        prefix,
-        (entry, c) -> recorder.put(entry.getKey(), entry.getValue()));
+    dbRule.put(handle, data);
+    db.forEachPrefixed(handle, prefix, (e) -> entries.add(new ZbRocksEntry(e)));
 
     // then
-    assertThat(recorder.size()).isEqualTo(2);
-    assertThat(recorder.get(wrapString("1-first")).byteArray()).isEqualTo(firstValue);
-    assertThat(recorder.get(wrapString("1-second")).byteArray()).isEqualTo(secondValue);
-  }
-
-  @Test
-  public void shouldStopIteratingWhenControlStopIsTrue() throws RocksDBException {
-    // given
-    final byte[] firstValue = new byte[] {1};
-    final byte[] secondValue = new byte[] {2};
-    final Map<DirectBuffer, DirectBuffer> recorder = new HashMap<>();
-    final AtomicInteger i = new AtomicInteger(0);
-
-    // when
-    db.put(getBytes("0-test"), firstValue);
-    db.put(getBytes("1-first"), secondValue);
-    db.put(getBytes("1-second"), NULL.byteArray());
-    db.put(getBytes("2-other"), NULL.byteArray());
-    db.forEach(
-        db.getDefaultColumnFamily(),
-        (entry, c) -> {
-          if (i.get() == 2) {
-            c.stop();
-            return;
-          }
-
-          recorder.put(entry.getKey(), entry.getValue());
-          i.set(i.intValue() + 1);
-        });
-
-    // then
-    assertThat(recorder.size()).isEqualTo(2);
-    assertThat(recorder.get(wrapString("0-test")).byteArray()).isEqualTo(firstValue);
-    assertThat(recorder.get(wrapString("1-first")).byteArray()).isEqualTo(secondValue);
+    assertThat(entries.size()).isEqualTo(2);
+    assertThat(entries.get(0)).isEqualTo(data[1]);
+    assertThat(entries.get(1)).isEqualTo(data[2]);
   }
 }

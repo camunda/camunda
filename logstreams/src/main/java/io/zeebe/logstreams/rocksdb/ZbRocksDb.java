@@ -19,14 +19,16 @@ import static io.zeebe.util.StringUtil.getBytes;
 import static io.zeebe.util.buffer.BufferUtil.startsWith;
 
 import io.zeebe.util.EnsureUtil;
-import io.zeebe.util.buffer.BufferUtil;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.ByteOrder;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.function.BiConsumer;
+import java.util.Objects;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -45,7 +47,7 @@ import org.rocksdb.RocksObject;
  *
  * <p>Add methods as you require them.
  */
-public class ZbRocksDb extends RocksDB {
+public class ZbRocksDb extends RocksDB implements Iterable<ZbRocksEntry> {
   private static final Field NATIVE_HANDLE_FIELD;
   private static final Constructor<ColumnFamilyHandle> COLUMN_FAMILY_HANDLE_CONSTRUCTOR;
 
@@ -214,7 +216,9 @@ public class ZbRocksDb extends RocksDB {
   }
 
   /**
-   * Allows doing an exist call and getting the value back (since it has to be read anyway) if it
+   * TODO(nicolas): consider renaming this to better reflect it checks existence + reads
+   *
+   * <p>Allows doing an exist call and getting the value back (since it has to be read anyway) if it
    * does.
    *
    * <p>NOTE: creates garbage by allocating a new string builder, which will then allocate a new
@@ -247,7 +251,7 @@ public class ZbRocksDb extends RocksDB {
       return true;
     }
 
-    return get(columnFamily, key, value) > 0;
+    return get(columnFamily, key, value) != RocksDB.NOT_FOUND;
   }
 
   /**
@@ -261,54 +265,25 @@ public class ZbRocksDb extends RocksDB {
    * skip previous keys), but while iterating over subsequent keys we have to validate it.
    */
   public void forEachPrefixed(
-      ColumnFamilyHandle columnFamily, DirectBuffer prefix, IteratorCallback callback) {
+      ColumnFamilyHandle columnFamily, DirectBuffer prefix, Consumer<ZbRocksEntry> action) {
+    Objects.requireNonNull(action);
+
     try (ReadOptions options =
             new ReadOptions().setPrefixSameAsStart(true).setTotalOrderSeek(false);
-        ZbRocksIterator iterator = newIterator(columnFamily, options)) {
-      final IteratorControl control = new IteratorControl();
-      // clone buffer to not interfere when keyBuffer is reused inside callback
-      prefix = BufferUtil.cloneBuffer(prefix);
-
-      for (iterator.seek(prefix); iterator.isValid(); iterator.next()) {
-        if (startsWith(iterator.keyBuffer(), prefix)) {
-          final ZbRocksEntry entry = new ZbRocksEntry(iterator.keyBuffer(), iterator.valueBuffer());
-          callback.accept(entry, control);
-
-          if (control.shouldStop()) {
-            break;
-          }
-        }
-      }
+        ZbIterator iterator = prefixedIterator(columnFamily, options, prefix)) {
+      iterator.forEach(action);
     }
   }
 
-  public void forEach(ColumnFamilyHandle columnFamily, IteratorCallback callback) {
+  public void forEach(ColumnFamilyHandle columnFamily, Consumer<ZbRocksEntry> action) {
+    Objects.requireNonNull(action);
+
     try (ReadOptions options = new ReadOptions().setTotalOrderSeek(true);
-        ZbRocksIterator iterator = newIterator(columnFamily, options)) {
-      final IteratorControl control = new IteratorControl();
-
-      for (iterator.seekToFirst(); iterator.isValid(); iterator.next()) {
-        final ZbRocksEntry entry = new ZbRocksEntry(iterator.keyBuffer(), iterator.valueBuffer());
-        callback.accept(entry, control);
-
-        if (control.shouldStop()) {
-          break;
-        }
+        ZbIterator iterator = iterator(columnFamily, options)) {
+      for (final ZbRocksEntry entry : iterator) {
+        action.accept(entry);
       }
     }
-  }
-
-  /**
-   * NOTE: not recommended for production use, since it loads all key/values into memory, but it's
-   * very useful for debugging.
-   *
-   * @param columnFamily the column family to list all entries for
-   * @return a list of all entries in the database
-   */
-  public List<ZbRocksEntry> list(ColumnFamilyHandle columnFamily) {
-    final List<ZbRocksEntry> entries = new ArrayList<>();
-    forEach(columnFamily, (e, c) -> entries.add(e));
-    return entries;
   }
 
   @Override
@@ -332,26 +307,122 @@ public class ZbRocksDb extends RocksDB {
     longKeyBuffer.putLong(0, key, ByteOrder.LITTLE_ENDIAN);
   }
 
+  @Override
+  public ZbIterator iterator() {
+    return iterator(getDefaultColumnFamily());
+  }
+
+  public ZbIterator iterator(ColumnFamilyHandle columnFamily) {
+    final ReadOptions options = new ReadOptions();
+    final ZbIterator iterator = iterator(columnFamily, options);
+
+    iterator.addCloseable(options);
+    return iterator;
+  }
+
+  public ZbIterator iterator(ColumnFamilyHandle columnFamily, ReadOptions options) {
+    final ZbRocksIterator rocksIterator = newIterator(columnFamily, options);
+    final ZbIterator iterator = new ZbIterator(rocksIterator);
+
+    iterator.addCloseable(rocksIterator);
+    rocksIterator.seekToFirst();
+
+    return iterator;
+  }
+
+  public ZbIterator prefixedIterator(DirectBuffer prefix) {
+    return prefixedIterator(getDefaultColumnFamily(), prefix);
+  }
+
+  public ZbIterator prefixedIterator(ColumnFamilyHandle columnFamily, DirectBuffer prefix) {
+    final ReadOptions options = new ReadOptions();
+    final ZbIterator iterator = prefixedIterator(columnFamily, options, prefix);
+
+    iterator.addCloseable(options);
+    return iterator;
+  }
+
+  public ZbIterator prefixedIterator(
+      ColumnFamilyHandle columnFamily, ReadOptions options, DirectBuffer prefix) {
+    final ZbRocksIterator rocksIterator = newIterator(columnFamily, options);
+    final ZbIterator iterator = new ZbIterator(rocksIterator);
+
+    iterator.setPredicate(e -> startsWith(e.getKey(), prefix));
+    iterator.addCloseable(rocksIterator);
+    rocksIterator.seek(prefix);
+
+    return iterator;
+  }
+
+  @Override
+  public ZbSpliterator spliterator() {
+    return spliterator(getDefaultColumnFamily());
+  }
+
+  public ZbSpliterator spliterator(ColumnFamilyHandle columnFamily) {
+    final ReadOptions options = new ReadOptions();
+    final ZbSpliterator spliterator = spliterator(columnFamily, options);
+
+    spliterator.addCloseable(options);
+    return spliterator;
+  }
+
+  public ZbSpliterator spliterator(ColumnFamilyHandle columnFamily, ReadOptions options) {
+    final long estimateSize = getEstimateSize(columnFamily);
+    final ZbRocksIterator iterator = newIterator(columnFamily, options);
+
+    iterator.seekToFirst();
+    return new ZbSpliterator(iterator, estimateSize, iterator);
+  }
+
+  /**
+   * Note that streams in Java 8 do not support loop-and-short-circuit semantics (e.g.
+   * takeWhile/dropWhile) so they will always iterate over the whole database.
+   *
+   * <p>That can be simulated using a combination of peek and allMatch: db.stream() .peek(entry ->
+   * processEntry(entry)) .allMatch(entry -> entry.getKey().getLong(0) < 5);
+   *
+   * <p>Would for example call processEntry for all entries until one did not match. But the intent
+   * is clearly conveyed and is very strange, so not recommended.
+   */
+  public Stream<ZbRocksEntry> stream() {
+    return StreamSupport.stream(spliterator(), false);
+  }
+
+  public Stream<ZbRocksEntry> stream(ColumnFamilyHandle columnFamily) {
+    return StreamSupport.stream(spliterator(columnFamily), false);
+  }
+
+  public Stream<ZbRocksEntry> stream(ColumnFamilyHandle columnFamily, ReadOptions options) {
+    return StreamSupport.stream(spliterator(columnFamily, options), false);
+  }
+
+  public void takeWhile(
+      ColumnFamilyHandle columnFamily,
+      Predicate<? super ZbRocksEntry> predicate,
+      Consumer<? super ZbRocksEntry> consumer) {
+    try (final ZbIterator iterator = iterator(columnFamily)) {
+      for (final ZbRocksEntry entry : iterator) {
+        if (predicate.test(entry)) {
+          consumer.accept(entry);
+        }
+      }
+    }
+  }
+
+  private long getEstimateSize(ColumnFamilyHandle columnFamily) {
+    try {
+      return getLongProperty(columnFamily, "rocksdb.estimate-num-keys");
+    } catch (RocksDBException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
   static long getNativeHandle(final RocksObject object) {
     try {
       return (long) NATIVE_HANDLE_FIELD.get(object);
     } catch (IllegalAccessException e) {
       throw new RuntimeException(e);
-    }
-  }
-
-  @FunctionalInterface
-  public interface IteratorCallback extends BiConsumer<ZbRocksEntry, IteratorControl> {}
-
-  public static class IteratorControl {
-    boolean stop = false;
-
-    public void stop() {
-      stop = true;
-    }
-
-    public boolean shouldStop() {
-      return stop;
     }
   }
 }
