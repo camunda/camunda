@@ -60,10 +60,9 @@ public class ExportRestServiceIT {
   public void exportExistingReportWithoutFilename() {
     //given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
-    String reportId = createAndStoreDefaultReportDefinition(
+    String reportId = createAndStoreDefaultValidReportDefinition(
         processInstance.getProcessDefinitionKey(),
-        processInstance.getProcessDefinitionVersion(),
-        true
+        processInstance.getProcessDefinitionVersion()
     );
 
     // when
@@ -80,10 +79,9 @@ public class ExportRestServiceIT {
   public void exportExistingReport() throws IOException {
     //given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
-    String reportId = createAndStoreDefaultReportDefinition(
+    String reportId = createAndStoreDefaultValidReportDefinition(
         processInstance.getProcessDefinitionKey(),
-        processInstance.getProcessDefinitionVersion(),
-        true
+        processInstance.getProcessDefinitionVersion()
     );
 
     // when
@@ -104,10 +102,9 @@ public class ExportRestServiceIT {
   public void exportExistingInvalidReport() throws IOException {
     //given
     ProcessInstanceEngineDto processInstance = deployAndStartSimpleProcess();
-    String reportId = createAndStoreDefaultReportDefinition(
+    String reportId = createAndStoreDefaultInvalidReportDefinition(
             processInstance.getProcessDefinitionKey(),
-            processInstance.getProcessDefinitionVersion(),
-            false
+            processInstance.getProcessDefinitionVersion()
     );
 
     // when
@@ -133,17 +130,22 @@ public class ExportRestServiceIT {
     assertThat(response.getStatus(), is(404));
   }
 
-  private String createAndStoreDefaultReportDefinition(String processDefinitionKey,
-                                                       String processDefinitionVersion,
-                                                       boolean exportableReport) {
-    String id = createNewReportHelper();
+  private String createAndStoreDefaultValidReportDefinition(String processDefinitionKey, String processDefinitionVersion) {
+    SingleReportDataDto reportData = ReportDataHelper
+            .createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
 
-    SingleReportDataDto reportData;
-    if (exportableReport) {
-      reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
-    } else {
-      reportData = ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNodeNumber(processDefinitionKey, processDefinitionVersion);
-    }
+    return createAndStoreDefaultReportDefinition(reportData);
+  }
+
+  private String createAndStoreDefaultInvalidReportDefinition(String processDefinitionKey, String processDefinitionVersion) {
+    SingleReportDataDto reportData = ReportDataHelper
+            .createCountFlowNodeFrequencyGroupByFlowNodeNumber(processDefinitionKey, processDefinitionVersion);
+
+    return createAndStoreDefaultReportDefinition(reportData);
+  }
+
+  private String createAndStoreDefaultReportDefinition(SingleReportDataDto reportData) {
+    String id = createNewReportHelper();
 
     SingleReportDefinitionDto report = new SingleReportDefinitionDto();
     report.setData(reportData);
