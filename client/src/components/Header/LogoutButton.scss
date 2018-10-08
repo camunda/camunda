@@ -6,13 +6,20 @@
   display: none;
 }
 
-.LogoutButton button {
+.LogoutButton .Button {
   display: block;
-  padding: 0 6px;
+  padding: 0;
   border: none;
   font-size: inherit;
   color: #666;
   text-decoration: none;
   background: transparent;
   cursor: pointer;
+  font-family: inherit;
+  &:focus {
+    border: none;
+    box-shadow: none;
+    outline: 1px dotted #212121;
+    outline: 5px auto -webkit-focus-ring-color;
+  }
 }

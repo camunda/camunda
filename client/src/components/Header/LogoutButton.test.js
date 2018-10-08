@@ -27,9 +27,7 @@ jest.mock('react-router-dom', () => {
 
 jest.mock('components', () => ({
   Button: props => {
-    const alllowedProps = {...props};
-    delete alllowedProps.noStyle;
-    return <button {...alllowedProps}>{alllowedProps.children}</button>;
+    return <button {...props}>{props.children}</button>;
   }
 }));
 

@@ -25,9 +25,7 @@ jest.mock('components', () => {
   return {
     Icon: props => <span {...props}>{props.type}</span>,
     Button: props => {
-      const alllowedProps = {...props};
-      delete alllowedProps.noStyle;
-      return <button {...alllowedProps}>{alllowedProps.children}</button>;
+      return <button {...props}>{props.children}</button>;
     }
   };
 });

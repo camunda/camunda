@@ -94,7 +94,7 @@ export default class EntityItem extends React.Component {
     if (this.props.operations.includes('duplicate')) {
       entry.operations.push({
         content: (
-          <Button onClick={this.triggerDuplicate} noStyle>
+          <Button onClick={this.triggerDuplicate}>
             <Icon
               type="copy-document"
               title={`Duplicate ${this.props.api}`}
@@ -109,7 +109,7 @@ export default class EntityItem extends React.Component {
     if (this.props.operations.includes('delete')) {
       entry.operations.push({
         content: (
-          <Button onClick={this.triggerDeleteModal} noStyle>
+          <Button onClick={this.triggerDeleteModal}>
             <Icon type="delete" title={`Delete ${this.props.api}`} className="deleteIcon" />
           </Button>
         ),

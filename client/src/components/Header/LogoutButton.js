@@ -31,7 +31,7 @@ export default withErrorHandling(
     render() {
       return (
         <div className="LogoutButton">
-          <Button onClick={this.logout} title="Log out" noStyle>
+          <Button onClick={this.logout} title="Log out">
             Logout
           </Button>
           {this.state.redirect && (
