@@ -20,6 +20,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 
 public class StatusWebSocketIT {
 
+  public static final String ENGINE_ALIAS = "1";
+
   private static final String PROCESS_ID = "aProcessId";
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();

@@ -7,7 +7,7 @@ import javax.websocket.ClientEndpoint;
 import javax.websocket.OnMessage;
 import javax.websocket.Session;
 
-import static org.camunda.optimize.rest.StatusRestServiceIT.ENGINE_ALIAS;
+import static org.camunda.optimize.websocket.StatusWebSocketIT.ENGINE_ALIAS;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;

@@ -1,8 +1,6 @@
 package org.camunda.optimize.service.importing;
 
 import org.camunda.bpm.model.bpmn.Bpmn;
-import org.camunda.optimize.dto.optimize.query.status.ConnectionStatusDto;
-import org.camunda.optimize.dto.optimize.query.status.StatusWithProgressDto;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.EngineAuthenticationConfiguration;
@@ -20,13 +18,8 @@ import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
-import static org.camunda.optimize.rest.StatusRestServiceIT.ENGINE_ALIAS;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.STRING_VARIABLES;
@@ -66,72 +59,6 @@ public class MultipleEngineSupportIT {
   public void reset() {
     configurationService.getConfiguredEngines().remove(SECOND_ENGINE_ALIAS);
     embeddedOptimizeRule.reloadConfiguration();
-  }
-
-  @Test
-  public void connectionStatusCheck() {
-    // given
-    addSecondEngineToConfiguration();
-
-    // when
-    Response response = embeddedOptimizeRule.target("status/connection")
-      .request()
-      .get();
-
-    // then
-    assertThat(response.getStatus(), is(200));
-    ConnectionStatusDto actual =
-      response.readEntity(ConnectionStatusDto.class);
-    assertThat(actual, is(notNullValue()));
-    assertThat(actual.isConnectedToElasticsearch(), is(true));
-    assertThat(actual.getEngineConnections(), is(notNullValue()));
-    assertThat(actual.getEngineConnections().get(ENGINE_ALIAS), is(true));
-    assertThat(actual.getEngineConnections().get(SECOND_ENGINE_ALIAS), is(true));
-  }
-
-  @Test
-  public void connectionStatusCheckWithOneEngineDown() {
-    // given
-    addNonExistingSecondEngineToConfiguration();
-    embeddedOptimizeRule.reloadConfiguration();
-
-    // when
-    Response response = embeddedOptimizeRule.target("status/connection")
-      .request()
-      .get();
-
-    // then
-    assertThat(response.getStatus(), is(200));
-    ConnectionStatusDto actual =
-      response.readEntity(ConnectionStatusDto.class);
-    assertThat(actual, is(notNullValue()));
-    assertThat(actual.isConnectedToElasticsearch(), is(true));
-    assertThat(actual.getEngineConnections(), is(notNullValue()));
-    assertThat(actual.getEngineConnections().get(ENGINE_ALIAS), is(true));
-    assertThat(actual.getEngineConnections().get(SECOND_ENGINE_ALIAS), is(false));
-  }
-
-  @Test
-  public void getImportStatusFromMultipleEngines() {
-    // given
-    addSecondEngineToConfiguration();
-
-    // when
-    Response response = embeddedOptimizeRule.target("status")
-      .request()
-      .get();
-
-    // then
-    assertThat(response.getStatus(), is(200));
-    StatusWithProgressDto actual =
-      response.readEntity(StatusWithProgressDto.class);
-    assertThat(actual, is(notNullValue()));
-    assertThat(actual.getConnectionStatus().isConnectedToElasticsearch(), is(true));
-    assertThat(actual.getConnectionStatus().getEngineConnections(), is(notNullValue()));
-    assertThat(actual.getConnectionStatus().getEngineConnections().get(ENGINE_ALIAS), is(true));
-    assertThat(actual.getConnectionStatus().getEngineConnections().get(SECOND_ENGINE_ALIAS), is(true));
-    assertThat(actual.getIsImporting().get(ENGINE_ALIAS), is(false));
-    assertThat(actual.getIsImporting().get(SECOND_ENGINE_ALIAS), is(false));
   }
 
   @Test
