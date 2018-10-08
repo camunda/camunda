@@ -1,7 +1,7 @@
 import React, {Component, Fragment} from 'react';
 import PropTypes from 'prop-types';
 
-import {isEqual} from 'lodash';
+import {isEqual, sortBy} from 'lodash';
 
 import Content from 'modules/components/Content';
 
@@ -33,8 +33,6 @@ import Header from '../Header';
 import ListView from './ListView';
 import Filters from './Filters';
 import Selections from './Selections';
-
-import sortArrayByKey from 'modules/utils/sortArrayByKey';
 
 import {
   parseQueryString,
@@ -210,7 +208,7 @@ class Instances extends Component {
           }
 
           this.setState({
-            activityIds: sortArrayByKey(activityIds, 'label'),
+            activityIds: sortBy(activityIds, 'label'),
             workflow: getWorkflowByVersion(
               this.state.groupedWorkflowInstances[filter.workflow],
               filter.version
@@ -268,6 +266,7 @@ class Instances extends Component {
           instancesInSelectionsCount,
           selectionCount
         } = this.state;
+
         this.props.storeStateLocally({
           selections,
           rollingSelectionIndex,
@@ -284,6 +283,23 @@ class Instances extends Component {
     this.addSelectionToList({...payload, ...instancesDetails});
   };
 
+  addToSelectionbyId = (newSelections, newCount) => {
+    this.setState(
+      prevState => ({
+        selections: newSelections,
+        instancesInSelectionsCount:
+          prevState.instancesInSelectionsCount + newCount
+      }),
+      () => {
+        const {instancesInSelectionsCount, selections} = this.state;
+        this.props.storeStateLocally({
+          instancesInSelectionsCount,
+          selections
+        });
+      }
+    );
+  };
+
   handleAddToSelectionById = async selectionId => {
     const {selections} = this.state;
     const selectiondata = getSelectionById(selections, selectionId);
@@ -298,10 +314,10 @@ class Instances extends Component {
 
     selections[selectiondata.index] = newSelection;
 
-    this.setState(selections);
-    this.props.storeStateLocally({
-      selections
-    });
+    this.addIdstoSelection(
+      selections[selectiondata.index],
+      newSelection.totalCount
+    );
   };
 
   setFilterFromUrl = () => {
