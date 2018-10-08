@@ -22,7 +22,7 @@ import io.zeebe.gateway.api.clients.WorkflowClient;
 import io.zeebe.gateway.api.commands.TopologyRequestStep1;
 import io.zeebe.gateway.api.record.ZeebeObjectMapper;
 import io.zeebe.gateway.api.subscription.TopicSubscriptionBuilderStep1;
-import io.zeebe.gateway.impl.broker.BrokerClient;
+import io.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.zeebe.gateway.impl.clustering.TopologyRequestImpl;
 import io.zeebe.gateway.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.gateway.impl.subscription.SubscriptionManager;
@@ -30,7 +30,7 @@ import io.zeebe.gateway.impl.subscription.topic.TopicSubscriptionBuilderImpl;
 import io.zeebe.util.sched.clock.ActorClock;
 
 // TODO: remove with https://github.com/zeebe-io/zeebe/issues/1377
-public class ZeebeClientImpl extends BrokerClient implements ZeebeClient {
+public class ZeebeClientImpl extends BrokerClientImpl implements ZeebeClient {
 
   protected final ZeebeObjectMapperImpl objectMapper;
 

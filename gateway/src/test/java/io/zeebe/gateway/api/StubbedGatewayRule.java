@@ -13,28 +13,33 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.gateway.impl.broker.request;
+package io.zeebe.gateway.api;
 
-import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto;
-import io.zeebe.util.buffer.BufferWriter;
-import org.agrona.DirectBuffer;
+import io.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
+import org.junit.rules.ExternalResource;
 
-public class BrokerTopologyRequest extends BrokerControlMessage<TopologyResponseDto> {
+public class StubbedGatewayRule extends ExternalResource {
 
-  public BrokerTopologyRequest() {
-    super(ControlMessageType.REQUEST_TOPOLOGY);
+  protected StubbedGateway gateway;
+  protected GatewayBlockingStub client;
+
+  @Override
+  protected void before() throws Throwable {
+    gateway = new StubbedGateway();
+    gateway.start();
+    client = gateway.buildClient();
   }
 
   @Override
-  public BufferWriter getRequestWriter() {
-    return null;
+  protected void after() {
+    gateway.stop();
   }
 
-  @Override
-  protected TopologyResponseDto toResponseDto(DirectBuffer buffer) {
-    final TopologyResponseDto dto = new TopologyResponseDto();
-    dto.wrap(buffer);
-    return dto;
+  public StubbedGateway getGateway() {
+    return gateway;
+  }
+
+  public GatewayBlockingStub getClient() {
+    return client;
   }
 }

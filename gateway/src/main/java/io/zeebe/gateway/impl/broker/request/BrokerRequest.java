@@ -52,7 +52,8 @@ public abstract class BrokerRequest<T> implements BufferWriter {
 
   public abstract boolean requiresPartitionId();
 
-  protected abstract BufferWriter getRequestWriter();
+  // public so we can do assertions in tests
+  public abstract BufferWriter getRequestWriter();
 
   public void serializeValue() {
     final BufferWriter valueWriter = getRequestWriter();

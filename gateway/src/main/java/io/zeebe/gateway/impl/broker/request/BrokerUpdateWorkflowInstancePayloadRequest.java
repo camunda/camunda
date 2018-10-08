@@ -18,7 +18,6 @@ package io.zeebe.gateway.impl.broker.request;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 
 public class BrokerUpdateWorkflowInstancePayloadRequest
@@ -42,7 +41,7 @@ public class BrokerUpdateWorkflowInstancePayloadRequest
   }
 
   @Override
-  protected BufferWriter getRequestWriter() {
+  public WorkflowInstanceRecord getRequestWriter() {
     return requestDto;
   }
 
