@@ -1,12 +1,16 @@
 package org.camunda.optimize.service.util.configuration;
 
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.Objects;
 
 public class ConfigurationUtil {
+  private static final Logger logger = LoggerFactory.getLogger(ConfigurationUtil.class);
 
   public static String cutTrailingSlash(String string) {
     if (string != null && !string.isEmpty() && string.endsWith("/")) {
@@ -20,19 +24,24 @@ public class ConfigurationUtil {
    * rights to read. If the given path is relative to
    * the classpath, it is resolved to an absolute path.
    */
-  public static String resolvePath(String pathToFile) {
-    if (fileExistsAndHavePermissionsToRead(pathToFile)) {
-      return pathToFile;
+  public static URL resolvePathAsAbsoluteUrl(String pathToFile) {
+    final File file = new File(pathToFile);
+
+    if (fileExistsAndHavePermissionsToRead(file)) {
+      try {
+        return file.toURI().toURL();
+      } catch (MalformedURLException e) {
+        logger.error("Failed creating URL for file {}", pathToFile, e);
+      }
     } else if (existsInClasspath(pathToFile)) {
       return getAbsolutePathOfClasspathFile(pathToFile);
     }
-    String errorMessage =
-      String.format("Could not find or do not have permissions to read file [%s]!", pathToFile);
+
+    String errorMessage = String.format("Could not find or do not have permissions to read file [%s]!", pathToFile);
     throw new OptimizeValidationException(errorMessage);
   }
 
-  private static boolean fileExistsAndHavePermissionsToRead(String pathToFile) {
-    File file = new File(pathToFile);
+  private static boolean fileExistsAndHavePermissionsToRead(File file) {
     if (file.exists() && !file.isDirectory()) {
       return file.canRead();
     }
@@ -40,17 +49,10 @@ public class ConfigurationUtil {
   }
 
   private static boolean existsInClasspath(String classpathToFile) {
-    return ConfigurationUtil
-      .class
-      .getClassLoader()
-      .getResource(classpathToFile) != null;
+    return ConfigurationUtil.class.getClassLoader().getResource(classpathToFile) != null;
   }
 
-  private static String getAbsolutePathOfClasspathFile(String classpathToFile) {
-    URL fileUrl = Objects.requireNonNull(
-      ConfigurationUtil.class
-        .getClassLoader()
-        .getResource(classpathToFile));
-    return fileUrl.toExternalForm();
+  private static URL getAbsolutePathOfClasspathFile(String classpathToFile) {
+    return Objects.requireNonNull(ConfigurationUtil.class.getClassLoader().getResource(classpathToFile));
   }
 }

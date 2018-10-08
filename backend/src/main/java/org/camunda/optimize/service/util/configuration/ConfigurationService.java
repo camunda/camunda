@@ -30,7 +30,7 @@ import java.util.Set;
 
 import static org.camunda.optimize.service.util.ValidationHelper.ensureGreaterThanZero;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.cutTrailingSlash;
-import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.resolvePath;
+import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.resolvePathAsAbsoluteUrl;
 
 public class ConfigurationService {
 
@@ -578,6 +578,8 @@ public class ConfigurationService {
   public String getContainerKeystoreLocation() {
     if (containerKeystoreLocation == null) {
       containerKeystoreLocation = jsonContext.read(ConfigurationServiceConstants.CONTAINER_KEYSTORE_LOCATION);
+      // we need external form here for the path to work if the keystore is inside the jar (default)
+      containerKeystoreLocation = ConfigurationUtil.resolvePathAsAbsoluteUrl(containerKeystoreLocation).toExternalForm();
     }
     return containerKeystoreLocation;
   }
@@ -764,7 +766,7 @@ public class ConfigurationService {
   public String getElasticsearchSecuritySSLKey() {
     if (elasticsearchSecuritySSLKey == null) {
       elasticsearchSecuritySSLKey = jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_KEY);
-      elasticsearchSecuritySSLKey = resolvePath(elasticsearchSecuritySSLKey);
+      elasticsearchSecuritySSLKey = resolvePathAsAbsoluteUrl(elasticsearchSecuritySSLKey).getPath();
     }
     return elasticsearchSecuritySSLKey;
   }
@@ -773,7 +775,7 @@ public class ConfigurationService {
     if (elasticsearchSecuritySSLCertificate == null) {
       elasticsearchSecuritySSLCertificate =
         jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE);
-      elasticsearchSecuritySSLCertificate = resolvePath(elasticsearchSecuritySSLCertificate);
+      elasticsearchSecuritySSLCertificate = resolvePathAsAbsoluteUrl(elasticsearchSecuritySSLCertificate).getPath();
     }
     return elasticsearchSecuritySSLCertificate;
   }
@@ -782,7 +784,7 @@ public class ConfigurationService {
     if (elasticsearchSecuritySSLCertificateAuthorities == null) {
       elasticsearchSecuritySSLCertificateAuthorities =
         jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES);
-      elasticsearchSecuritySSLCertificateAuthorities = resolvePath(elasticsearchSecuritySSLCertificateAuthorities);
+      elasticsearchSecuritySSLCertificateAuthorities = resolvePathAsAbsoluteUrl(elasticsearchSecuritySSLCertificateAuthorities).getPath();
     }
     return elasticsearchSecuritySSLCertificateAuthorities;
   }
