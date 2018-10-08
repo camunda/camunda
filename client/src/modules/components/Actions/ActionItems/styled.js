@@ -61,9 +61,12 @@ export const Button = themed(styled.button`
   &:focus {
     outline: none;
     box-shadow: ${themeStyle({
-      dark: `0 0 0 1px ${Colors.focusOuter},0 0 0 4px ${Colors.darkFocusInner}`,
-      light: `0 0 0 1px ${Colors.focusOuter}, 0 0 0 4px ${
-        Colors.lightFocusInner
+      dark: `0 0 0 1px ${Colors.lightFocusInner},0 0 0 4px ${
+        Colors.focusOuter
+      }`,
+
+      light: `0 0 0 1px ${Colors.darkFocusInner}, 0 0 0 4px ${
+        Colors.focusOuter
       }`
     })};
   }
