@@ -3,6 +3,7 @@ package org.camunda.optimize.service.es;
 
 import org.camunda.optimize.dto.optimize.query.status.ConnectionStatusDto;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
+import org.camunda.optimize.websocket.AssertHasChangedStatusClientSocket;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.node.InternalSettingsPreparer;
@@ -18,9 +19,13 @@ import org.junit.runners.model.TestTimedOutException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.websocket.ContainerProvider;
+import javax.websocket.WebSocketContainer;
 import javax.ws.rs.core.Response;
 import java.io.File;
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -96,7 +101,7 @@ public class ResilienceTest {
 
     //when
     testNode.close();
-    waitUntilDisconnectionIsRecognized(optimize);
+    waitUntilDisconnectionIsRecognized();
     //then
     verifyRedirectToError(optimize);
 
@@ -108,20 +113,15 @@ public class ResilienceTest {
     stopElasticSearch(testNode);
   }
 
-  private void waitUntilDisconnectionIsRecognized(EmbeddedOptimizeRule optimize) throws TestTimedOutException {
+  private void waitUntilDisconnectionIsRecognized() throws Exception {
     ConnectionStatusDto connectionStatusDto = new ConnectionStatusDto();
     connectionStatusDto.setConnectedToElasticsearch(true);
-    long startTime, requestDuration;
-    startTime = System.currentTimeMillis();
-    while (connectionStatusDto.isConnectedToElasticsearch()){
-      connectionStatusDto = optimize.target("status/connection")
-        .request()
-        .get(ConnectionStatusDto.class);
-      requestDuration = System.currentTimeMillis() - startTime;
-      if (requestDuration > TIMEOUT_CONNECTION_STATUS) {
-        throw new TestTimedOutException(TIMEOUT_CONNECTION_STATUS, TimeUnit.MILLISECONDS);
-      }
-    }
+
+    String dest = "ws://localhost:8090/ws/status";
+    ResilienceTestWebSocketClient socket = new ResilienceTestWebSocketClient();
+    socket.setStartTime(System.currentTimeMillis());
+    WebSocketContainer container = ContainerProvider.getWebSocketContainer();
+    container.connectToServer(socket, new URI(dest));
   }
 
   private void stopElasticSearch(Node testNode) throws IOException, InterruptedException {
