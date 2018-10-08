@@ -201,6 +201,7 @@ public class ProcessDefinitionReader {
 
   public FlowNodeNamesResponseDto getFlowNodeNames(FlowNodeIdsToNamesRequestDto flowNodeIdsToNamesRequestDto) {
     FlowNodeNamesResponseDto result = new FlowNodeNamesResponseDto();
+
     ProcessDefinitionOptimizeDto processDefinitionXmlDto = getProcessDefinitionWithXml(
         flowNodeIdsToNamesRequestDto.getProcessDefinitionKey(),
         flowNodeIdsToNamesRequestDto.getProcessDefinitionVersion()
@@ -214,7 +215,14 @@ public class ProcessDefinitionReader {
       } else {
         result.setFlowNodeNames(processDefinitionXmlDto.getFlowNodeNames());
       }
+    } else {
+      logger.debug(
+          "No process definition found for key {} and version {}, returning empty result.",
+          flowNodeIdsToNamesRequestDto.getProcessDefinitionKey(),
+          flowNodeIdsToNamesRequestDto.getProcessDefinitionVersion()
+      );
     }
+
     return result;
   }
 }
