@@ -257,7 +257,8 @@ class Instances extends Component {
         rollingSelectionIndex: currentSelectionIndex,
         instancesInSelectionsCount:
           instancesInSelectionsCount + selection.totalCount,
-        selectionCount: selectionCount + 1
+        selectionCount: selectionCount + 1,
+        openSelection: currentSelectionIndex
       }),
       () => {
         const {
@@ -285,11 +286,10 @@ class Instances extends Component {
 
   addToSelectionbyId = (newSelections, newCount) => {
     this.setState(
-      prevState => ({
+      {
         selections: newSelections,
-        instancesInSelectionsCount:
-          prevState.instancesInSelectionsCount + newCount
-      }),
+        instancesInSelectionsCount: newCount
+      },
       () => {
         const {instancesInSelectionsCount, selections} = this.state;
         this.props.storeStateLocally({
