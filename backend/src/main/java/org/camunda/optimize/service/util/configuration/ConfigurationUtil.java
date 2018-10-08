@@ -51,6 +51,6 @@ public class ConfigurationUtil {
       ConfigurationUtil.class
         .getClassLoader()
         .getResource(classpathToFile));
-    return fileUrl.getPath();
+    return fileUrl.toExternalForm();
   }
 }
