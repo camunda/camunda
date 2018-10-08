@@ -314,10 +314,7 @@ class Instances extends Component {
 
     selections[selectiondata.index] = newSelection;
 
-    this.addIdstoSelection(
-      selections[selectiondata.index],
-      newSelection.totalCount
-    );
+    this.addToSelectionbyId(selections, newSelection.totalCount);
   };
 
   setFilterFromUrl = () => {
