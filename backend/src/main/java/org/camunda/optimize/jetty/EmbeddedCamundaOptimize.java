@@ -6,6 +6,7 @@ import org.camunda.optimize.service.engine.importing.EngineImportScheduler;
 import org.camunda.optimize.service.engine.importing.EngineImportSchedulerFactory;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.service.util.configuration.ConfigurationUtil;
 import org.camunda.optimize.websocket.StatusWebSocket;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
@@ -123,7 +124,7 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     https.setSendServerVersion(false);
     https.addCustomizer(new SecureRequestCustomizer());
     SslContextFactory sslContextFactory = new SslContextFactory();
-    sslContextFactory.setKeyStorePath(this.getClass().getClassLoader().getResource(keystoreLocation).toExternalForm());
+    sslContextFactory.setKeyStorePath(ConfigurationUtil.resolvePath(keystoreLocation));
     sslContextFactory.setKeyStorePassword(keystorePass);
     sslContextFactory.setKeyManagerPassword(keystorePass);
 
