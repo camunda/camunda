@@ -18,11 +18,16 @@ package io.zeebe.test.util;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
+import java.util.Map;
 
 public class JsonUtil {
+
+  static final TypeReference<Map<String, Object>> MAP_TYPE_REFERENCE =
+      new TypeReference<Map<String, Object>>() {};
 
   static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
@@ -43,6 +48,15 @@ public class JsonUtil {
       return JSON_MAPPER.readTree(json);
     } catch (IOException e) {
       throw new RuntimeException(e);
+    }
+  }
+
+  public static Map<String, Object> fromJsonAsMap(String json) {
+    try {
+      return JSON_MAPPER.readValue(json, MAP_TYPE_REFERENCE);
+    } catch (IOException e) {
+      throw new AssertionError(
+          String.format("Failed to deserialize json '%s' to 'Map<String, Object>'", json), e);
     }
   }
 }

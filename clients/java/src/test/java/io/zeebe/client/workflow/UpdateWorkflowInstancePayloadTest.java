@@ -15,188 +15,87 @@
  */
 package io.zeebe.client.workflow;
 
-import static io.zeebe.test.util.record.RecordingExporter.workflowInstanceRecords;
+import static io.zeebe.test.util.JsonUtil.fromJsonAsMap;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.entry;
 
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.commands.Workflow;
-import io.zeebe.client.util.TestEnvironmentRule;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.test.util.JsonUtil;
-import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.client.cmd.ClientException;
+import io.zeebe.client.util.ClientTest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadRequest;
 import io.zeebe.util.StringUtil;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.util.Collections;
 import java.util.Map;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
-public class UpdateWorkflowInstancePayloadTest {
-
-  public static final BpmnModelInstance TEST_WORKFLOW =
-      Bpmn.createExecutableProcess("testProcess")
-          .startEvent()
-          .serviceTask("task", b -> b.zeebeTaskType("taskType"))
-          .endEvent()
-          .done();
-
-  @Rule public TestEnvironmentRule rule = new TestEnvironmentRule();
-
-  private ZeebeClient client;
-
-  @Before
-  public void setUp() {
-    client = rule.getClient();
-  }
+public class UpdateWorkflowInstancePayloadTest extends ClientTest {
 
   @Test
   public void shouldCommandWithPayloadAsString() {
     // given
-    final Workflow workflow = deployWorkflow();
-    client
-        .workflowClient()
-        .newCreateInstanceCommand()
-        .workflowKey(workflow.getWorkflowKey())
-        .send()
-        .join()
-        .getWorkflowInstanceKey();
-
-    final Record<WorkflowInstanceRecordValue> taskActivatedEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withActivityId("task")
-            .getFirst();
-
     final String updatedPayload = "{\"key\": \"val\"}";
 
     // when
-    client
-        .workflowClient()
-        .newUpdatePayloadCommand(taskActivatedEvent.getKey())
-        .payload(updatedPayload)
-        .send()
-        .join();
+    client.workflowClient().newUpdatePayloadCommand(123).payload(updatedPayload).send().join();
 
     // then
-    final Record<WorkflowInstanceRecordValue> updatedEvent =
-        workflowInstanceRecords(WorkflowInstanceIntent.PAYLOAD_UPDATED).getFirst();
-    JsonUtil.assertEquality(updatedEvent.getValue().getPayload(), updatedPayload);
+    final UpdateWorkflowInstancePayloadRequest request = gatewayService.getLastRequest();
+    assertThat(request.getActivityInstanceKey()).isEqualTo(123);
+    assertThat(fromJsonAsMap(request.getPayload())).containsOnly(entry("key", "val"));
   }
 
   @Test
   public void shouldCommandWithPayloadAsStream() {
     // given
-    final Workflow workflow = deployWorkflow();
-    client
-        .workflowClient()
-        .newCreateInstanceCommand()
-        .workflowKey(workflow.getWorkflowKey())
-        .send()
-        .join()
-        .getWorkflowInstanceKey();
-
-    final Record<WorkflowInstanceRecordValue> taskActivatedEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withActivityId("task")
-            .getFirst();
-
     final String updatedPayload = "{\"key\": \"val\"}";
     final InputStream payloadStream = new ByteArrayInputStream(StringUtil.getBytes(updatedPayload));
 
     // when
-    client
-        .workflowClient()
-        .newUpdatePayloadCommand(taskActivatedEvent.getKey())
-        .payload(payloadStream)
-        .send()
-        .join();
+    client.workflowClient().newUpdatePayloadCommand(123).payload(payloadStream).send().join();
 
     // then
-    final Record<WorkflowInstanceRecordValue> updatedEvent =
-        workflowInstanceRecords(WorkflowInstanceIntent.PAYLOAD_UPDATED).getFirst();
-    JsonUtil.assertEquality(updatedEvent.getValue().getPayload(), updatedPayload);
+    final UpdateWorkflowInstancePayloadRequest request = gatewayService.getLastRequest();
+    assertThat(fromJsonAsMap(request.getPayload())).containsOnly(entry("key", "val"));
   }
 
   @Test
   public void shouldCommandWithPayloadAsMap() {
     // given
-    final Workflow workflow = deployWorkflow();
-    client
-        .workflowClient()
-        .newCreateInstanceCommand()
-        .workflowKey(workflow.getWorkflowKey())
-        .send()
-        .join()
-        .getWorkflowInstanceKey();
-
-    final Record<WorkflowInstanceRecordValue> taskActivatedEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withActivityId("task")
-            .getFirst();
-
-    final String updatedPayload = "{\"key\": \"val\"}";
-    final Map<String, Object> payloadMap = Collections.<String, Object>singletonMap("key", "val");
+    final Map<String, Object> payloadMap = Collections.singletonMap("key", "val");
 
     // when
-    client
-        .workflowClient()
-        .newUpdatePayloadCommand(taskActivatedEvent.getKey())
-        .payload(payloadMap)
-        .send()
-        .join();
+    client.workflowClient().newUpdatePayloadCommand(123).payload(payloadMap).send().join();
 
     // then
-    final Record<WorkflowInstanceRecordValue> updatedEvent =
-        workflowInstanceRecords(WorkflowInstanceIntent.PAYLOAD_UPDATED).getFirst();
-    JsonUtil.assertEquality(updatedEvent.getValue().getPayload(), updatedPayload);
+    final UpdateWorkflowInstancePayloadRequest request = gatewayService.getLastRequest();
+    assertThat(fromJsonAsMap(request.getPayload())).containsOnly(entry("key", "val"));
   }
 
   @Test
   public void shouldCommandWithPayloadAsObject() {
     // given
-    final Workflow workflow = deployWorkflow();
-    client
-        .workflowClient()
-        .newCreateInstanceCommand()
-        .workflowKey(workflow.getWorkflowKey())
-        .send()
-        .join()
-        .getWorkflowInstanceKey();
-
-    final Record<WorkflowInstanceRecordValue> taskActivatedEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withActivityId("task")
-            .getFirst();
-
-    final String updatedPayload = "{\"key\": \"val\"}";
-    final Map<String, Object> payloadMap = Collections.<String, Object>singletonMap("key", "val");
+    final Map<String, Object> payloadMap = Collections.singletonMap("key", "val");
 
     // when
-    client
-        .workflowClient()
-        .newUpdatePayloadCommand(taskActivatedEvent.getKey())
-        .payload((Object) payloadMap)
-        .send()
-        .join();
+    client.workflowClient().newUpdatePayloadCommand(123).payload((Object) payloadMap).send().join();
 
     // then
-    final Record<WorkflowInstanceRecordValue> updatedEvent =
-        workflowInstanceRecords(WorkflowInstanceIntent.PAYLOAD_UPDATED).getFirst();
-    JsonUtil.assertEquality(updatedEvent.getValue().getPayload(), updatedPayload);
+    final UpdateWorkflowInstancePayloadRequest request = gatewayService.getLastRequest();
+    assertThat(fromJsonAsMap(request.getPayload())).containsOnly(entry("key", "val"));
   }
 
-  private Workflow deployWorkflow() {
-    return client
-        .workflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(TEST_WORKFLOW, "testProcess.bpmn")
-        .send()
-        .join()
-        .getDeployedWorkflows()
-        .get(0);
+  @Test
+  public void shouldRaiseExceptionOnError() {
+    // given
+    gatewayService.errorOnRequest(
+        UpdateWorkflowInstancePayloadRequest.class, () -> new ClientException("Invalid request"));
+
+    // when
+    assertThatThrownBy(
+            () -> client.workflowClient().newUpdatePayloadCommand(123).payload("[]").send().join())
+        .isInstanceOf(ClientException.class)
+        .hasMessageContaining("Invalid request");
   }
 }

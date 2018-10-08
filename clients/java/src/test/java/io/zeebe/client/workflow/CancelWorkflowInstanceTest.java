@@ -15,70 +15,34 @@
  */
 package io.zeebe.client.workflow;
 
-import static io.zeebe.exporter.record.Assertions.assertThat;
-import static io.zeebe.test.util.record.RecordingExporter.workflowInstanceRecords;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.commands.Workflow;
-import io.zeebe.client.util.TestEnvironmentRule;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
-import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import org.junit.Before;
-import org.junit.Rule;
+import io.zeebe.client.cmd.ClientException;
+import io.zeebe.client.util.ClientTest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest;
 import org.junit.Test;
 
-public class CancelWorkflowInstanceTest {
-
-  public static final BpmnModelInstance TEST_WORKFLOW =
-      Bpmn.createExecutableProcess("testProcess")
-          .startEvent()
-          .serviceTask("task", b -> b.zeebeTaskType("taskType"))
-          .endEvent()
-          .done();
-
-  @Rule public TestEnvironmentRule rule = new TestEnvironmentRule();
-
-  private ZeebeClient client;
-
-  @Before
-  public void setUp() {
-    client = rule.getClient();
-  }
+public class CancelWorkflowInstanceTest extends ClientTest {
 
   @Test
   public void shouldSendCancelCommand() {
-    // given
-    final Workflow workflow = deployWorkflow();
-    final long workflowInstanceKey =
-        client
-            .workflowClient()
-            .newCreateInstanceCommand()
-            .workflowKey(workflow.getWorkflowKey())
-            .send()
-            .join()
-            .getWorkflowInstanceKey();
-
     // when
-    client.workflowClient().newCancelInstanceCommand(workflowInstanceKey).send().join();
+    client.workflowClient().newCancelInstanceCommand(123).send().join();
 
     // then
-    final Record<WorkflowInstanceRecordValue> workflowInstanceRecord =
-        workflowInstanceRecords(WorkflowInstanceIntent.CANCELING).getFirst();
-    assertThat(workflowInstanceRecord.getValue()).hasWorkflowInstanceKey(workflowInstanceKey);
+    final CancelWorkflowInstanceRequest request = gatewayService.getLastRequest();
+    assertThat(request.getWorkflowInstanceKey()).isEqualTo(123);
   }
 
-  private Workflow deployWorkflow() {
-    return client
-        .workflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(TEST_WORKFLOW, "testProcess.bpmn")
-        .send()
-        .join()
-        .getDeployedWorkflows()
-        .get(0);
+  @Test
+  public void shouldRaiseExceptionOnError() {
+    // given
+    gatewayService.errorOnRequest(
+        CancelWorkflowInstanceRequest.class, () -> new ClientException("Invalid request"));
+
+    assertThatThrownBy(() -> client.workflowClient().newCancelInstanceCommand(123).send().join())
+        .isInstanceOf(ClientException.class)
+        .hasMessageContaining("Invalid request");
   }
 }

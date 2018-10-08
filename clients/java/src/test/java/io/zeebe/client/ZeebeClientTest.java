@@ -15,50 +15,10 @@
  */
 package io.zeebe.client;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import io.zeebe.client.api.ZeebeFuture;
-import io.zeebe.client.api.commands.BrokerInfo;
-import io.zeebe.client.api.commands.PartitionBrokerRole;
-import io.zeebe.client.util.TestEnvironmentRule;
-import java.util.stream.Stream;
-import org.junit.Before;
-import org.junit.Rule;
+import io.zeebe.client.util.ClientTest;
 import org.junit.Test;
 
-public class ZeebeClientTest {
-
-  @Rule public TestEnvironmentRule rule = new TestEnvironmentRule();
-
-  private ZeebeClient client;
-
-  @Before
-  public void setUp() {
-    client = rule.getClient();
-  }
-
-  @Test
-  public void shouldGetHealthCheck() {
-    Stream.generate(() -> client.newTopologyRequest().send())
-        .limit(10)
-        .map(ZeebeFuture::join)
-        .forEach(
-            response -> {
-              assertThat(response).isNotNull();
-
-              final BrokerInfo broker = response.getBrokers().get(0);
-              assertThat(broker.getAddress()).isNotEmpty();
-              assertThat(broker.getPartitions().size()).isEqualTo(1);
-
-              broker
-                  .getPartitions()
-                  .forEach(
-                      partition -> {
-                        assertThat(partition.getPartitionId()).isEqualTo(0);
-                        assertThat(partition.getRole()).isEqualTo(PartitionBrokerRole.LEADER);
-                      });
-            });
-  }
+public class ZeebeClientTest extends ClientTest {
 
   @Test
   public void shouldNotFailIfClosedTwice() {

@@ -15,35 +15,21 @@
  */
 package io.zeebe.client.workflow;
 
-import static io.zeebe.exporter.record.Assertions.assertThat;
+import static io.zeebe.test.util.JsonUtil.fromJsonAsMap;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.cmd.ClientException;
-import io.zeebe.client.util.TestEnvironmentRule;
-import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.MessageRecordValue;
-import io.zeebe.protocol.intent.MessageIntent;
-import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.client.util.ClientTest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
 import java.io.ByteArrayInputStream;
 import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
-public class PublishMessageTest {
-  @Rule public TestEnvironmentRule rule = new TestEnvironmentRule();
-
-  private ZeebeClient client;
-
-  @Before
-  public void setUp() {
-    client = rule.getClient();
-  }
+public class PublishMessageTest extends ClientTest {
 
   @Test
   public void shouldPublishMessage() {
@@ -59,14 +45,11 @@ public class PublishMessageTest {
         .join();
 
     // then
-    final Record<MessageRecordValue> first =
-        RecordingExporter.messageRecords().withIntent(MessageIntent.PUBLISHED).getFirst();
-
-    assertThat(first.getValue())
-        .hasName("name")
-        .hasCorrelationKey("key")
-        .hasMessageId("theId")
-        .hasTimeToLive(Duration.ofDays(1).toMillis());
+    final PublishMessageRequest request = gatewayService.getLastRequest();
+    assertThat(request.getName()).isEqualTo("name");
+    assertThat(request.getCorrelationKey()).isEqualTo("key");
+    assertThat(request.getMessageId()).isEqualTo("theId");
+    assertThat(request.getTimeToLive()).isEqualTo(Duration.ofDays(1).toMillis());
   }
 
   @Test
@@ -82,11 +65,8 @@ public class PublishMessageTest {
         .join();
 
     // then
-    final Record<MessageRecordValue> first =
-        RecordingExporter.messageRecords().withIntent(MessageIntent.PUBLISHED).getFirst();
-
-    assertThat(first.getValue()).hasName("name").hasCorrelationKey("key");
-    assertThat(first.getValue().getPayloadAsMap()).contains(entry("foo", "bar"));
+    final PublishMessageRequest request = gatewayService.getLastRequest();
+    assertThat(fromJsonAsMap(request.getPayload())).contains(entry("foo", "bar"));
   }
 
   @Test
@@ -106,11 +86,8 @@ public class PublishMessageTest {
         .join();
 
     // then
-    final Record<MessageRecordValue> first =
-        RecordingExporter.messageRecords().withIntent(MessageIntent.PUBLISHED).getFirst();
-
-    assertThat(first.getValue()).hasName("name").hasCorrelationKey("key");
-    assertThat(first.getValue().getPayloadAsMap()).contains(entry("foo", "bar"));
+    final PublishMessageRequest request = gatewayService.getLastRequest();
+    assertThat(fromJsonAsMap(request.getPayload())).contains(entry("foo", "bar"));
   }
 
   @Test
@@ -130,17 +107,12 @@ public class PublishMessageTest {
         .join();
 
     // then
-    final Record<MessageRecordValue> first =
-        RecordingExporter.messageRecords().withIntent(MessageIntent.PUBLISHED).getFirst();
-
-    assertThat(first.getValue()).hasName("name").hasCorrelationKey("key");
-    assertThat(first.getValue().getPayloadAsMap()).contains(entry("foo", "bar"));
+    final PublishMessageRequest request = gatewayService.getLastRequest();
+    assertThat(fromJsonAsMap(request.getPayload())).contains(entry("foo", "bar"));
   }
 
   @Test
   public void shouldPublishMessageWithObjectPayload() {
-    // given
-
     // when
     client
         .workflowClient()
@@ -152,41 +124,15 @@ public class PublishMessageTest {
         .join();
 
     // then
-    final Record<MessageRecordValue> first =
-        RecordingExporter.messageRecords().withIntent(MessageIntent.PUBLISHED).getFirst();
-
-    assertThat(first.getValue()).hasName("name").hasCorrelationKey("key");
-    assertThat(first.getValue().getPayloadAsMap()).contains(entry("foo", "bar"));
+    final PublishMessageRequest request = gatewayService.getLastRequest();
+    assertThat(fromJsonAsMap(request.getPayload())).contains(entry("foo", "bar"));
   }
 
   @Test
-  public void shouldNotPublishMessageWithNoJsonObjectAsPayload() {
-    assertThatThrownBy(
-            () ->
-                client
-                    .workflowClient()
-                    .newPublishMessageCommand()
-                    .messageName("name")
-                    .correlationKey("key")
-                    .payload("[]")
-                    .send()
-                    .join())
-        .isInstanceOf(ClientException.class)
-        .hasMessageContaining(
-            "Document has invalid format. On root level an object is only allowed.");
-  }
-
-  @Test
-  public void shouldNotPublishMessageWithIdTwice() {
+  public void shouldRaiseExceptionOnError() {
     // given
-    client
-        .workflowClient()
-        .newPublishMessageCommand()
-        .messageName("name")
-        .correlationKey("key")
-        .messageId("foo")
-        .send()
-        .join();
+    gatewayService.errorOnRequest(
+        PublishMessageRequest.class, () -> new ClientException("Invalid request"));
 
     // when
     assertThatThrownBy(
@@ -200,8 +146,7 @@ public class PublishMessageTest {
                     .send()
                     .join())
         .isInstanceOf(ClientException.class)
-        .hasMessageContaining(
-            "Command (PUBLISH) was rejected. It has an invalid value. message with id 'foo' is already published");
+        .hasMessageContaining("Invalid request");
   }
 
   public static class Payload {

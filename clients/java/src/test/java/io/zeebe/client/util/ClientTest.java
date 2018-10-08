@@ -13,8 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.factories;
+package io.zeebe.client.util;
 
-public interface TestFactory<T> {
-  T getFixture();
+import io.zeebe.client.ZeebeClient;
+import org.junit.Before;
+import org.junit.Rule;
+
+public abstract class ClientTest {
+
+  @Rule public TestEnvironmentRule rule = new TestEnvironmentRule();
+
+  public RecordingGatewayService gatewayService;
+  public ZeebeClient client;
+
+  @Before
+  public void setUp() {
+    gatewayService = rule.getGatewayService();
+    client = rule.getClient();
+  }
 }

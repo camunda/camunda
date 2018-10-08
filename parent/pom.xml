@@ -216,6 +216,12 @@
       </dependency>
 
       <dependency>
+        <groupId>io.grpc</groupId>
+        <artifactId>grpc-testing</artifactId>
+        <version>${version.grpc}</version>
+      </dependency>
+
+      <dependency>
         <groupId>one.util</groupId>
         <artifactId>streamex</artifactId>
         <version>${version.streamex}</version>
