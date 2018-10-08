@@ -16,11 +16,13 @@
 package io.zeebe.gateway;
 
 import io.grpc.Server;
+import io.grpc.ServerBuilder;
 import io.grpc.netty.NettyServerBuilder;
 import io.zeebe.gateway.impl.ZeebeClientBuilderImpl;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.util.function.Supplier;
 import org.slf4j.Logger;
 
 public class Gateway {
@@ -30,12 +32,11 @@ public class Gateway {
   private static final int GATEWAY_DEFAULT_PORT = 26500;
   private static final String GATEWAY_DEFAULT_HOST = "0.0.0.0";
 
-  private final String host;
-  private final int port;
-
   private Server server;
   private String brokerContactPoint = "0.0.0.0:26501";
   private BrokerClient brokerClient;
+
+  private final Supplier<ServerBuilder> serverBuilderFactory;
 
   public Gateway() {
     this(GATEWAY_DEFAULT_PORT);
@@ -46,8 +47,11 @@ public class Gateway {
   }
 
   public Gateway(final String host, final int port) {
-    this.host = host;
-    this.port = port;
+    this(() -> NettyServerBuilder.forAddress(new InetSocketAddress(host, port)));
+  }
+
+  public Gateway(Supplier<ServerBuilder> serverBuilderFactory) {
+    this.serverBuilderFactory = serverBuilderFactory;
   }
 
   public static void main(final String[] args) {
@@ -78,19 +82,21 @@ public class Gateway {
   }
 
   public void start() throws IOException {
+    brokerClient = buildBrokerClient();
+
+    server = serverBuilderFactory.get().addService(new EndpointManager(brokerClient)).build();
+
+    server.start();
+
+    LOG.info("Gateway started using grpc server: {}", server);
+  }
+
+  protected BrokerClient buildBrokerClient() {
     final ZeebeClientBuilderImpl brokerClientBuilder = new ZeebeClientBuilderImpl();
 
     brokerClientBuilder.brokerContactPoint(brokerContactPoint);
 
-    brokerClient = brokerClientBuilder.buildBrokerClient();
-
-    server =
-        NettyServerBuilder.forAddress(new InetSocketAddress(host, port))
-            .addService(new EndpointManager(brokerClient))
-            .build();
-
-    server.start();
-    LOG.info("Gateway started at port: {}", port);
+    return brokerClientBuilder.buildBrokerClient();
   }
 
   public void listenAndServe() throws InterruptedException, IOException {

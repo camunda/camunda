@@ -18,7 +18,6 @@ package io.zeebe.gateway.impl.broker.request;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.intent.JobBatchIntent;
-import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 
 public class BrokerActivateJobsRequest extends BrokerExecuteCommand<JobBatchRecord> {
@@ -46,7 +45,7 @@ public class BrokerActivateJobsRequest extends BrokerExecuteCommand<JobBatchReco
   }
 
   @Override
-  protected BufferWriter getRequestWriter() {
+  public JobBatchRecord getRequestWriter() {
     return requestDto;
   }
 

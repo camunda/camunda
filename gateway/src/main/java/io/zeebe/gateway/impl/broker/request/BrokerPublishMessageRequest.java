@@ -18,7 +18,6 @@ package io.zeebe.gateway.impl.broker.request;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.intent.MessageIntent;
-import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 
 public class BrokerPublishMessageRequest extends BrokerExecuteCommand<Void> {
@@ -50,7 +49,7 @@ public class BrokerPublishMessageRequest extends BrokerExecuteCommand<Void> {
   }
 
   @Override
-  protected BufferWriter getRequestWriter() {
+  public MessageRecord getRequestWriter() {
     return requestDto;
   }
 

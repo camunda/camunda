@@ -13,19 +13,23 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.gateway.impl.broker;
+package io.zeebe.gateway.api;
 
-import io.zeebe.gateway.impl.broker.request.BrokerRequest;
-import io.zeebe.gateway.impl.broker.response.BrokerResponse;
-import io.zeebe.util.sched.future.ActorFuture;
-import java.util.function.BiConsumer;
+import io.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
+import java.io.IOException;
+import org.junit.Before;
+import org.junit.Rule;
 
-public interface BrokerClient extends AutoCloseable {
+public class GatewayTest {
 
-  void close();
+  @Rule public StubbedGatewayRule gatewayRule = new StubbedGatewayRule();
 
-  <T> ActorFuture<BrokerResponse<T>> sendRequest(BrokerRequest<T> request);
+  protected StubbedGateway gateway;
+  protected GatewayBlockingStub client;
 
-  <T> void sendRequest(
-      BrokerRequest<T> request, BiConsumer<BrokerResponse<T>, Throwable> responseConsumer);
+  @Before
+  public void setUp() throws IOException {
+    gateway = gatewayRule.getGateway();
+    client = gatewayRule.getClient();
+  }
 }

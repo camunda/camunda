@@ -26,6 +26,7 @@ import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.ZeebeClientBuilder;
 import io.zeebe.gateway.ZeebeClientConfiguration;
 import io.zeebe.gateway.impl.broker.BrokerClient;
+import io.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.time.Duration;
 import java.util.Properties;
@@ -187,7 +188,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   public BrokerClient buildBrokerClient() {
-    return new BrokerClient(this);
+    return new BrokerClientImpl(this);
   }
 
   @Override

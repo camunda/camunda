@@ -21,7 +21,6 @@ import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.intent.DeploymentIntent;
-import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 
 public class BrokerDeployWorkflowRequest extends BrokerExecuteCommand<DeploymentRecord> {
@@ -45,7 +44,7 @@ public class BrokerDeployWorkflowRequest extends BrokerExecuteCommand<Deployment
   }
 
   @Override
-  protected BufferWriter getRequestWriter() {
+  public DeploymentRecord getRequestWriter() {
     return requestDto;
   }
 
