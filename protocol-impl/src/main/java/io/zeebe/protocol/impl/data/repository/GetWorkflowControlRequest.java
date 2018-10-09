@@ -45,6 +45,11 @@ public class GetWorkflowControlRequest extends UnpackedObject {
     return bpmnProcessIdProp.getValue();
   }
 
+  public GetWorkflowControlRequest setBpmnProcessId(final String bpmnProcessId) {
+    bpmnProcessIdProp.setValue(bpmnProcessId);
+    return this;
+  }
+
   public GetWorkflowControlRequest setBpmnProcessId(final DirectBuffer directBuffer) {
     bpmnProcessIdProp.setValue(directBuffer);
     return this;

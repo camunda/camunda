@@ -27,7 +27,9 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.GetWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ListWorkflowsResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
@@ -36,6 +38,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowResponseObject;
 import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto;
 import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto.BrokerDto;
 import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto.PartitionDto;
+import io.zeebe.protocol.impl.data.repository.WorkflowMetadataAndResource;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
@@ -144,6 +147,38 @@ public class ResponseMapper {
   public static UpdateWorkflowInstancePayloadResponse toUpdateWorkflowInstancePayloadResponse(
       long key, WorkflowInstanceRecord brokerResponse) {
     return UpdateWorkflowInstancePayloadResponse.newBuilder().build();
+  }
+
+  public static ListWorkflowsResponse toListWorkflowsResponse(
+      int partitionId,
+      long key,
+      io.zeebe.protocol.impl.data.repository.ListWorkflowsResponse brokerResponse) {
+    final ListWorkflowsResponse.Builder builder = ListWorkflowsResponse.newBuilder();
+    brokerResponse
+        .getWorkflows()
+        .forEach(
+            workflowMetadata -> {
+              builder
+                  .addWorkflowsBuilder()
+                  .setBpmnProcessId(bufferAsString(workflowMetadata.getBpmnProcessId()))
+                  .setVersion(workflowMetadata.getVersion())
+                  .setWorkflowKey(workflowMetadata.getWorkflowKey())
+                  .setResourceName(bufferAsString(workflowMetadata.getResourceName()))
+                  .build();
+            });
+
+    return builder.build();
+  }
+
+  public static GetWorkflowResponse toGetWorkflowResponse(
+      int partitionId, long key, WorkflowMetadataAndResource brokerResponse) {
+    return GetWorkflowResponse.newBuilder()
+        .setBpmnProcessId(bufferAsString(brokerResponse.getBpmnProcessId()))
+        .setVersion(brokerResponse.getVersion())
+        .setWorkflowKey(brokerResponse.getWorkflowKey())
+        .setResourceName(bufferAsString(brokerResponse.getResourceName()))
+        .setBpmnXml(bufferAsString(brokerResponse.getBpmnXml()))
+        .build();
   }
 
   @FunctionalInterface

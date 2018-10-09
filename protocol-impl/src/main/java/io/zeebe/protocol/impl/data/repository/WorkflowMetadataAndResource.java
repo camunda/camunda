@@ -30,6 +30,11 @@ public class WorkflowMetadataAndResource extends WorkflowMetadata {
     return bpmnXmlProp.getValue();
   }
 
+  public WorkflowMetadataAndResource setBpmnXml(final String bpmnXml) {
+    bpmnXmlProp.setValue(bpmnXml);
+    return this;
+  }
+
   public WorkflowMetadataAndResource setBpmnXml(final DirectBuffer val) {
     bpmnXmlProp.setValue(val);
     return this;
