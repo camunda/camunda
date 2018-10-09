@@ -10,7 +10,7 @@
     * [Workflows](basics/workflows.md)
     * [Job Workers](basics/job-workers.md)
     * [Record Consumers](basics/record-consumers.md)
-    * [Topics & Partitions](basics/topics-and-logs.md)
+    * [Partitions](basics/partitions.md)
     * [Protocols](basics/apis.md)
     * [Internal Processing](basics/internal-processing.md)
     * [Performance](basics/performance.md)
