@@ -1,5 +1,6 @@
 import React from 'react';
 import {EntityList} from 'components';
+import {getCustomReportInfo, getCustomDashboardInfo} from 'services';
 
 export default function Home() {
   return [
@@ -11,6 +12,7 @@ export default function Home() {
       sortBy={'lastModified'}
       operations={['edit']}
       includeViewAllLink={true}
+      renderCustom={getCustomDashboardInfo}
     />,
     <EntityList
       key="report"
@@ -20,6 +22,7 @@ export default function Home() {
       sortBy={'lastModified'}
       operations={['edit']}
       includeViewAllLink={true}
+      renderCustom={getCustomReportInfo}
     />
   ];
 }
