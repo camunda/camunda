@@ -13,7 +13,7 @@ def dslScriptPathToMonitor = '''\
 .ci/views/.*\\.dsl
 '''
 
-def setBrokenViewAsDefault = '''\
+def setBrokenViewAsDefault = '''\g
 import jenkins.model.Jenkins
 
 def jenkins = Jenkins.instance
