@@ -15,7 +15,7 @@
  */
 package io.zeebe.client.api.commands;
 
-import io.zeebe.client.api.response.CreateWorkflowInstanceResponse;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import java.io.InputStream;
 import java.util.Map;
 
@@ -65,8 +65,7 @@ public interface CreateWorkflowInstanceCommandStep1 {
     CreateWorkflowInstanceCommandStep3 latestVersion();
   }
 
-  interface CreateWorkflowInstanceCommandStep3
-      extends FinalCommandStep<CreateWorkflowInstanceResponse> {
+  interface CreateWorkflowInstanceCommandStep3 extends FinalCommandStep<WorkflowInstanceEvent> {
     /**
      * Set the initial payload of the workflow instance.
      *

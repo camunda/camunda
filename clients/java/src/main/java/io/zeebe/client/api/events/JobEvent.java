@@ -15,9 +15,11 @@
  */
 package io.zeebe.client.api.events;
 
-import io.zeebe.client.api.record.JobRecord;
+public interface JobEvent {
 
-public interface JobEvent extends JobRecord {
-  /** @return the current state */
-  JobState getState();
+  /** Partition on which the job was created; */
+  int getPartitionId();
+
+  /** Unique key of the created job on the partition */
+  long getKey();
 }

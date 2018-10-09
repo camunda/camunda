@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
 import com.google.common.base.Charsets;
-import io.zeebe.client.api.response.CreateWorkflowInstanceResponse;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.util.ClientTest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest;
@@ -39,7 +39,7 @@ public class CreateWorkflowInstanceTest extends ClientTest {
     gatewayService.onCreateWorkflowInstanceRequest(123, "testProcess", 12, 2, 32);
 
     // when
-    final CreateWorkflowInstanceResponse response =
+    final WorkflowInstanceEvent response =
         client.workflowClient().newCreateInstanceCommand().workflowKey(123).send().join();
 
     // then

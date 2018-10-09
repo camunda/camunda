@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
 
 import com.google.common.base.Charsets;
-import io.zeebe.client.api.response.CreateJobResponse;
+import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.util.ClientTest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobRequest;
@@ -44,7 +44,7 @@ public class CreateJobTest extends ClientTest {
     partialCustomHeaders.put("two", "II");
 
     // when
-    final CreateJobResponse response =
+    final JobEvent response =
         client
             .jobClient()
             .newCreateCommand()

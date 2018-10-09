@@ -15,7 +15,7 @@
  */
 package io.zeebe.client.api.commands;
 
-import io.zeebe.client.api.response.CreateJobResponse;
+import io.zeebe.client.api.events.JobEvent;
 import java.io.InputStream;
 import java.util.Map;
 
@@ -31,7 +31,7 @@ public interface CreateJobCommandStep1 {
    */
   CreateJobCommandStep2 jobType(String type);
 
-  public interface CreateJobCommandStep2 extends FinalCommandStep<CreateJobResponse> {
+  public interface CreateJobCommandStep2 extends FinalCommandStep<JobEvent> {
     /**
      * Add the key-value-pair to the custom headers.
      *

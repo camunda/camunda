@@ -13,13 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.api.response;
+package io.zeebe.client.impl.events;
 
-public interface CreateJobResponse {
+import io.zeebe.client.api.events.JobEvent;
+import io.zeebe.gateway.protocol.GatewayOuterClass;
 
-  /** Partition on which the job was created; */
-  int getPartitionId();
+public class JobEventImpl implements JobEvent {
 
-  /** Unique key of the created job on the partition */
-  long getKey();
+  private int partitionId;
+  private long key;
+
+  public JobEventImpl(final GatewayOuterClass.CreateJobResponse response) {
+    partitionId = response.getPartitionId();
+    key = response.getKey();
+  }
+
+  public int getPartitionId() {
+    return partitionId;
+  }
+
+  public long getKey() {
+    return key;
+  }
+
+  @Override
+  public String toString() {
+    return "CreateJobResponseImpl{" + "partitionId=" + partitionId + ", key=" + key + '}';
+  }
 }

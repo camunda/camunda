@@ -15,9 +15,20 @@
  */
 package io.zeebe.client.api.events;
 
-import io.zeebe.client.api.record.WorkflowInstanceRecord;
+public interface WorkflowInstanceEvent {
 
-public interface WorkflowInstanceEvent extends WorkflowInstanceRecord {
-  /** @return the current state */
-  WorkflowInstanceState getState();
+  /** Key of the workflow which this instance was created for */
+  long getWorkflowKey();
+
+  /** BPMN process id of the workflow which this instance was created for */
+  String getBpmnProcessId();
+
+  /** Version of the workflow which this instance was created for */
+  int getVersion();
+
+  /** Partition on which the workflow instance was created; */
+  int getPartitionId();
+
+  /** Unique key of the created workflow instance on the partition */
+  long getWorkflowInstanceKey();
 }

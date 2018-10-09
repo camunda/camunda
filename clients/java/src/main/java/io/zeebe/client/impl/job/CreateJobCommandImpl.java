@@ -18,11 +18,11 @@ package io.zeebe.client.impl.job;
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.commands.CreateJobCommandStep1;
 import io.zeebe.client.api.commands.CreateJobCommandStep1.CreateJobCommandStep2;
-import io.zeebe.client.api.response.CreateJobResponse;
+import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.impl.ArgumentUtil;
 import io.zeebe.client.impl.CommandWithPayload;
 import io.zeebe.client.impl.ZeebeClientFutureImpl;
-import io.zeebe.client.impl.response.CreateJobResponseImpl;
+import io.zeebe.client.impl.events.JobEventImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobRequest;
@@ -78,11 +78,11 @@ public class CreateJobCommandImpl extends CommandWithPayload<CreateJobCommandSte
   }
 
   @Override
-  public ZeebeFuture<CreateJobResponse> send() {
+  public ZeebeFuture<JobEvent> send() {
     final CreateJobRequest request = builder.setCustomHeaders(toJson(customHeaders)).build();
 
-    final ZeebeClientFutureImpl<CreateJobResponse, GatewayOuterClass.CreateJobResponse> future =
-        new ZeebeClientFutureImpl<>(CreateJobResponseImpl::new);
+    final ZeebeClientFutureImpl<JobEvent, GatewayOuterClass.CreateJobResponse> future =
+        new ZeebeClientFutureImpl<>(JobEventImpl::new);
 
     asyncStub.createJob(request, future);
     return future;

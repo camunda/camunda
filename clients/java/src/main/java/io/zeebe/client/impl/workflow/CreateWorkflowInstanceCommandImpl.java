@@ -19,7 +19,7 @@ import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.commands.CreateWorkflowInstanceCommandStep1;
 import io.zeebe.client.api.commands.CreateWorkflowInstanceCommandStep1.CreateWorkflowInstanceCommandStep2;
 import io.zeebe.client.api.commands.CreateWorkflowInstanceCommandStep1.CreateWorkflowInstanceCommandStep3;
-import io.zeebe.client.api.response.CreateWorkflowInstanceResponse;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.impl.CommandWithPayload;
 import io.zeebe.client.impl.ZeebeClientFutureImpl;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
@@ -71,11 +71,11 @@ public class CreateWorkflowInstanceCommandImpl
   }
 
   @Override
-  public ZeebeFuture<CreateWorkflowInstanceResponse> send() {
+  public ZeebeFuture<WorkflowInstanceEvent> send() {
     final CreateWorkflowInstanceRequest request = builder.build();
 
     final ZeebeClientFutureImpl<
-            CreateWorkflowInstanceResponse, GatewayOuterClass.CreateWorkflowInstanceResponse>
+            WorkflowInstanceEvent, GatewayOuterClass.CreateWorkflowInstanceResponse>
         future = new ZeebeClientFutureImpl<>(CreateWorkflowInstanceResponseImpl::new);
 
     asyncStub.createWorkflowInstance(request, future);
