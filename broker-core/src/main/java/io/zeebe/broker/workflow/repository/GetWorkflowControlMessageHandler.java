@@ -21,6 +21,8 @@ import io.zeebe.broker.transport.controlmessage.AbstractControlMessageHandler;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
+import io.zeebe.protocol.impl.data.repository.GetWorkflowControlRequest;
+import io.zeebe.protocol.impl.data.repository.WorkflowMetadataAndResource;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.buffer.BufferUtil;

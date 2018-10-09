@@ -19,6 +19,8 @@ package io.zeebe.broker.workflow.repository;
 
 import io.zeebe.broker.workflow.state.DeployedWorkflow;
 import io.zeebe.broker.workflow.state.WorkflowState;
+import io.zeebe.protocol.impl.data.repository.WorkflowMetadata;
+import io.zeebe.protocol.impl.data.repository.WorkflowMetadataAndResource;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
