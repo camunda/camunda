@@ -2,7 +2,7 @@
 
 This section gives in-depth explanations of Zeebe usage concepts.
 
-* [Topics & Partitions](reference/topics-partitions.html)
+* [Partitions](reference/partitions.html)
 * [Job Handling](reference/job-handling.html)
 * [JSON](reference/json.html)
 * [JSONPath](reference/json-path.html)

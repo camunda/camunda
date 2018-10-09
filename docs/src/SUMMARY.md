@@ -30,7 +30,7 @@
     * [Control Flow](yaml-workflows/control-flow.md)
     * [Data Flow](yaml-workflows/data-flow.md)
 * [Reference](reference/README.md)
-    * [Topics & Partitions](reference/topics-partitions.md)
+    * [Partitions](reference/partitions.md)
     * [Job Handling](reference/job-handling.md)
     * [JSON](reference/json.md)
     * [JSONPath](reference/json-path.md)
