@@ -19,14 +19,13 @@ import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setPartitionCount;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.util.RecordingJobHandler;
-import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.broker.it.GrpcClientRule;
+import io.zeebe.broker.it.util.GrpcRecordingJobHandler;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.gateway.ZeebeClient;
-import io.zeebe.gateway.api.clients.JobClient;
-import io.zeebe.gateway.api.events.JobEvent;
-import io.zeebe.gateway.impl.job.CreateJobCommandImpl;
+import io.zeebe.client.api.clients.JobClient;
+import io.zeebe.client.api.events.JobEvent;
+import io.zeebe.client.api.response.ActivatedJob;
+import io.zeebe.protocol.Protocol;
 import java.time.Duration;
 import java.util.stream.IntStream;
 import org.junit.Before;
@@ -41,13 +40,9 @@ public class JobWorkerWithMultiplePartitionsTest {
   public static final int PARTITION_COUNT = 3;
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(setPartitionCount(PARTITION_COUNT));
 
-  public ClientRule clientRule = new ClientRule(brokerRule);
+  public GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
 
-  public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule, false);
-
-  @Rule
-  public RuleChain ruleChain =
-      RuleChain.outerRule(brokerRule).around(clientRule).around(eventRecorder);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   @Rule public ExpectedException exception = ExpectedException.none();
 
@@ -63,18 +58,16 @@ public class JobWorkerWithMultiplePartitionsTest {
   @Test
   public void shouldReceiveJobsFromMultiplePartitions() {
     // given
-    final ZeebeClient client = clientRule.getClient();
-
     final Integer[] partitionIds =
         IntStream.range(0, PARTITION_COUNT).boxed().toArray(Integer[]::new);
 
     final String jobType = "foooo";
 
-    final RecordingJobHandler handler = new RecordingJobHandler();
+    final GrpcRecordingJobHandler handler = new GrpcRecordingJobHandler();
 
-    createJobOfTypeOnPartition(jobType, partitionIds[0]);
-    createJobOfTypeOnPartition(jobType, partitionIds[1]);
-    createJobOfTypeOnPartition(jobType, partitionIds[2]);
+    createJobOfType(jobType);
+    createJobOfType(jobType);
+    createJobOfType(jobType);
 
     // when
     clientRule
@@ -94,18 +87,14 @@ public class JobWorkerWithMultiplePartitionsTest {
         handler
             .getHandledJobs()
             .stream()
-            .map(t -> t.getMetadata().getPartitionId())
+            .map(ActivatedJob::getKey)
+            .map(Protocol::decodePartitionId)
             .toArray(Integer[]::new);
 
     assertThat(receivedPartitionIds).containsExactlyInAnyOrder(partitionIds);
   }
 
-  private JobEvent createJobOfTypeOnPartition(final String type, final int partition) {
-    final CreateJobCommandImpl createCommand =
-        (CreateJobCommandImpl) jobClient.newCreateCommand().jobType(type);
-
-    createCommand.getCommand().setPartitionId(partition);
-
-    return createCommand.send().join();
+  private JobEvent createJobOfType(final String type) {
+    return jobClient.newCreateCommand().jobType(type).send().join();
   }
 }

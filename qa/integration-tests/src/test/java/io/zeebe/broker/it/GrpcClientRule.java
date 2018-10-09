@@ -29,6 +29,7 @@ import io.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.util.sched.clock.ControlledActorClock;
+import java.time.Duration;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -65,6 +66,7 @@ public class GrpcClientRule extends ExternalResource {
   @Override
   protected void before() {
     final ZeebeClientBuilderImpl builder = (ZeebeClientBuilderImpl) ZeebeClient.newClientBuilder();
+    builder.defaultJobPollInterval(Duration.ofMillis(100));
     configurator.accept(builder);
     client = builder.setActorClock(actorClock).build();
   }
