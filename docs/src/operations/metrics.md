@@ -18,10 +18,10 @@ The details of the format can be read in the [Prometheus documentation][prom-for
 **Example:**
 
 ```
-zb_storage_fs_total_bytes{cluster="zeebe",node="localhost:26500",partition="0",topic="internal-system"} 4192 1522124395234
+zb_storage_fs_total_bytes{cluster="zeebe",node="localhost:26500",partition="0"} 4192 1522124395234
 ```
 
-The record above descibes that the total size on bytes of partition `0` of topic `internal-system` on node `localhost:26500` in cluster `zeebe` is `4192`. The last number is a unix epoch timestamp.
+The record above descibes that the total size on bytes of partition `0` on node `localhost:26500` in cluster `zeebe` is `4192`. The last number is a unix epoch timestamp.
 
 ## Configuring Metrics
 
@@ -85,9 +85,8 @@ To each metric, the following labels are added:
 * `cluster`: the name of the Zeebe cluster (relevant in case you operate multiple clusters).
 * `node`: the identifier of the node which has written the metrics
 
-Many metrics also add the following labels (if the metric is scoped to a topic):
+Many metrics also add the following labels:
 
-* `topic`: cluster-unique name of the topic
 * `partition`: cluster-unique id of the partition
 
 The following components expose metrics:
@@ -96,7 +95,7 @@ The following components expose metrics:
 * `zb_buffer_*`: diagnostics, buffer metrics
 * `zb_scheduler_*`: diagnostics, utilization metrics of Zeebe's internal task scheduler
 * `zb_storage_*`: storage metrics
-* `zb_streamprocessor_*`: stream processing metrics such as events processed by topic, partition
+* `zb_streamprocessor_*`: stream processing metrics such as events processed by partition
 * `zb_transport_*`: network transport metrics such as number of open connections, bytes received, transmitted, etc ...
 * `zb_workflow_*`: worflow metrics such as number of workflow instances created, completed, ...
 
