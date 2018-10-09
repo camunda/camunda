@@ -15,11 +15,10 @@
  */
 package io.zeebe.client.api.commands;
 
-import io.zeebe.client.api.events.JobEvent;
 import java.io.InputStream;
 import java.util.Map;
 
-public interface CompleteJobCommandStep1 extends FinalCommandStep<JobEvent> {
+public interface CompleteJobCommandStep1 extends FinalCommandStep<Void> {
 
   /**
    * Set the payload to complete the job with.

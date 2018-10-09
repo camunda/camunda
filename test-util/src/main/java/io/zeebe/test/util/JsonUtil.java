@@ -18,6 +18,7 @@ package io.zeebe.test.util;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -57,6 +58,14 @@ public class JsonUtil {
     } catch (IOException e) {
       throw new AssertionError(
           String.format("Failed to deserialize json '%s' to 'Map<String, Object>'", json), e);
+    }
+  }
+
+  public static String toJson(Object o) {
+    try {
+      return JSON_MAPPER.writeValueAsString(o);
+    } catch (JsonProcessingException e) {
+      throw new RuntimeException(e);
     }
   }
 }

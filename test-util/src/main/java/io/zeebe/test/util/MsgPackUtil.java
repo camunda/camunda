@@ -86,6 +86,12 @@ public class MsgPackUtil {
     }
   }
 
+  public static void assertEquality(DirectBuffer actualMsgPack, String expectedJson) {
+    final byte[] msgPackArray = new byte[actualMsgPack.capacity()];
+    actualMsgPack.getBytes(0, msgPackArray);
+    assertEquality(msgPackArray, expectedJson);
+  }
+
   public static void assertEqualityExcluding(
       DirectBuffer actualMsgPack, String expectedJson, String... excludedProperties) {
     final byte[] msgPackArray = new byte[actualMsgPack.capacity()];

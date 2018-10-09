@@ -19,7 +19,6 @@ import io.zeebe.client.api.commands.CompleteJobCommandStep1;
 import io.zeebe.client.api.commands.CreateJobCommandStep1;
 import io.zeebe.client.api.commands.FailJobCommandStep1;
 import io.zeebe.client.api.commands.UpdateRetriesJobCommandStep1;
-import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.subscription.JobWorkerBuilderStep1;
 
 /**
@@ -50,8 +49,10 @@ public interface JobClient {
    * Command to complete a job.
    *
    * <pre>
+   * long jobKey = ..;
+   *
    * jobClient
-   *  .newCompleteCommand(jobEvent)
+   *  .newCompleteCommand(jobKey)
    *  .payload(json)
    *  .send();
    * </pre>
@@ -66,7 +67,7 @@ public interface JobClient {
    * @param event the latest job event
    * @return a builder for the command
    */
-  CompleteJobCommandStep1 newCompleteCommand(JobEvent event);
+  CompleteJobCommandStep1 newCompleteCommand(long jobKey);
 
   /**
    * Command to mark a job as failed.

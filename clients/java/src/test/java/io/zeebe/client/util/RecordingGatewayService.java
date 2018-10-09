@@ -24,6 +24,8 @@ import io.zeebe.gateway.protocol.GatewayGrpc.GatewayImplBase;
 import io.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest;
@@ -75,6 +77,7 @@ public class RecordingGatewayService extends GatewayImplBase {
     addRequestHandler(
         UpdateJobRetriesRequest.class, r -> UpdateJobRetriesResponse.getDefaultInstance());
     addRequestHandler(FailJobRequest.class, r -> FailJobResponse.getDefaultInstance());
+    addRequestHandler(CompleteJobRequest.class, r -> CompleteJobResponse.getDefaultInstance());
   }
 
   @Override
@@ -129,6 +132,12 @@ public class RecordingGatewayService extends GatewayImplBase {
 
   @Override
   public void failJob(FailJobRequest request, StreamObserver<FailJobResponse> responseObserver) {
+    handle(request, responseObserver);
+  }
+
+  @Override
+  public void completeJob(
+      CompleteJobRequest request, StreamObserver<CompleteJobResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
