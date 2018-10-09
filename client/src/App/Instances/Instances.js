@@ -258,7 +258,8 @@ class Instances extends Component {
         instancesInSelectionsCount:
           instancesInSelectionsCount + selection.totalCount,
         selectionCount: selectionCount + 1,
-        openSelection: currentSelectionIndex
+        openSelection: currentSelectionIndex,
+        selection: {ids: [], excludeIds: []}
       }),
       () => {
         const {
@@ -288,7 +289,8 @@ class Instances extends Component {
     this.setState(
       {
         selections: newSelections,
-        instancesInSelectionsCount: newCount
+        instancesInSelectionsCount: newCount,
+        selection: {ids: [], excludeIds: []}
       },
       () => {
         const {instancesInSelectionsCount, selections} = this.state;
@@ -359,6 +361,7 @@ class Instances extends Component {
   };
 
   setFilterInURL = filter => {
+    this.setState({selection: {ids: [], excludeIds: []}});
     this.props.history.push({
       pathname: this.props.location.pathname,
       search: getFilterQueryString(filter)
