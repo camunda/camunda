@@ -285,15 +285,16 @@ class Instances extends Component {
     this.addSelectionToList({...payload, ...instancesDetails});
   };
 
-  addToSelectionbyId = (newSelections, newCount) => {
+  addToSelectionbyId = (newSelections, newInstancesInSelectionsCount) => {
     this.setState(
       {
         selections: newSelections,
-        instancesInSelectionsCount: newCount,
+        instancesInSelectionsCount: newInstancesInSelectionsCount,
         selection: {ids: [], excludeIds: []}
       },
       () => {
         const {instancesInSelectionsCount, selections} = this.state;
+
         this.props.storeStateLocally({
           instancesInSelectionsCount,
           selections
@@ -303,9 +304,11 @@ class Instances extends Component {
   };
 
   handleAddToSelectionById = async selectionId => {
-    const {selections} = this.state;
+    const {selections, instancesInSelectionsCount} = this.state;
     const selectiondata = getSelectionById(selections, selectionId);
     const payload = getPayload({state: this.state, selectionId});
+    const previousTotalCount = selections[selectiondata.index].totalCount;
+
     const instancesDetails = await fetchWorkflowInstanceBySelection(payload);
 
     const newSelection = {
@@ -316,7 +319,10 @@ class Instances extends Component {
 
     selections[selectiondata.index] = newSelection;
 
-    this.addToSelectionbyId(selections, newSelection.totalCount);
+    const newInstancesInSelectionsCount =
+      instancesInSelectionsCount - previousTotalCount + newSelection.totalCount;
+
+    this.addToSelectionbyId(selections, newInstancesInSelectionsCount);
   };
 
   setFilterFromUrl = () => {
