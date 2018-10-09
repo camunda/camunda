@@ -9,7 +9,6 @@
     * [Client / Server](basics/client-server.md)
     * [Workflows](basics/workflows.md)
     * [Job Workers](basics/job-workers.md)
-    * [Record Consumers](basics/record-consumers.md)
     * [Partitions](basics/partitions.md)
     * [Protocols](basics/apis.md)
     * [Internal Processing](basics/internal-processing.md)

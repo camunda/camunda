@@ -5,7 +5,6 @@ This section provides an overview of Zeebe's core concepts. Understanding them h
 * [Client / Server](basics/client-server.html)
 * [Workflows](basics/workflows.html)
 * [Job Workers](basics/job-workers.html)
-* [Record Consumers](basics/record-consumers.html)
 * [Partitions](basics/partitions.html)
 * [Protocols](basics/apis.html)
 * [Internal Processing](basics/internal-processing.html)
