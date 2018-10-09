@@ -44,14 +44,14 @@ describe('SelectionList', () => {
   it('should render contexual message when max. number of selections is reached', () => {
     // given
     selections = [];
-    expect(node.find(ContextualMessage)).not.toExist();
+    expect(node.find(Styled.MessageWrapper)).not.toExist();
 
     // when
     xTimes(10)(index => selections.push(createSelection(index)));
     node.setProps({selections});
 
     // then
-    expect(node.find(ContextualMessage)).toExist();
+    expect(node.find(Styled.MessageWrapper)).toExist();
   });
 
   it('should render Selection when existent', () => {

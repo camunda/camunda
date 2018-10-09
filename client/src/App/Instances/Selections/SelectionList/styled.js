@@ -1,6 +1,8 @@
 import styled from 'styled-components';
 import {themed, themeStyle, Colors} from 'modules/theme';
 
+import ContextualMessage from 'modules/components/ContextualMessage';
+
 const themedWith = (dark, light) => {
   return themeStyle({
     dark,
@@ -8,20 +10,31 @@ const themedWith = (dark, light) => {
   });
 };
 
-export const SelectionList = styled.ul`
+export const Ul = styled.ul`
   padding-left: 35px;
+  margin: 0px;
   overflow: auto;
+  overflow-x: hidden;
   list-style: none;
 `;
 
 export const MessageWrapper = styled.div`
+  display: flex;
+  justify-content: flex-end;
   margin-top: 20px;
-  width: 442px;
-  padding: 0 44px;
+  padding-right: 40px;
 `;
 
 export const Li = styled.li`
-  margin: 20px 0;
+  margin: 15px 0;
+
+  &:first-child {
+    margin-top: 20px;
+  }
+`;
+
+export const SelectionMessage = styled(ContextualMessage)`
+  margin-top: 18px;
 `;
 
 export const NoSelectionWrapper = themed(styled.div`
@@ -30,7 +43,7 @@ export const NoSelectionWrapper = themed(styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
-  margin: 20px 0;
+  margin-top: 18px;
 
   color: ${themedWith('#ffffff', Colors.uiLight06)};
   opacity: ${themedWith(0.9, 1)};

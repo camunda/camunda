@@ -13,9 +13,12 @@ Object {
 `;
 
 exports[`SelectionList should render a message when no selection exists 1`] = `
-<styled.ul>
-  <Themed(styled.div)>
-    To create a new Selection, select some instances from the list and click ”Create new Selection”.
-  </Themed(styled.div)>
-</styled.ul>
+<React.Fragment>
+  <div />
+  <styled.ul>
+    <Themed(styled.div)>
+      To create a new Selection, select some instances from the list and click ”Create new Selection”.
+    </Themed(styled.div)>
+  </styled.ul>
+</React.Fragment>
 `;
