@@ -31,9 +31,6 @@ import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUser;
 public class ProcessDefinitionRestService {
 
   @Autowired
-  private BranchAnalysisReader branchAnalysisReader;
-
-  @Autowired
   private ProcessDefinitionReader processDefinitionReader;
 
   /**
@@ -83,18 +80,4 @@ public class ProcessDefinitionRestService {
       @QueryParam("processDefinitionVersion") String processDefinitionVersion) {
     return processDefinitionReader.getProcessDefinitionXml(processDefinitionKey, processDefinitionVersion);
   }
-
-  /**
-   * Get the branch analysis from the given query information.
-   *
-   * @return All information concerning the branch analysis.
-   */
-  @POST
-  @Path("/correlation")
-  @Produces(MediaType.APPLICATION_JSON)
-  @Consumes(MediaType.APPLICATION_JSON)
-  public BranchAnalysisDto getBranchAnalysis(BranchAnalysisQueryDto to) {
-    return branchAnalysisReader.branchAnalysis(to);
-  }
-
 }
