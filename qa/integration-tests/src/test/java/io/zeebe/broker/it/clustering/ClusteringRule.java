@@ -58,6 +58,7 @@ public class ClusteringRule extends ExternalResource {
   // internal
   private ZeebeClient zeebeClient;
   private TopologyClient topologyClient;
+  private io.zeebe.client.ZeebeClient grpcClient;
 
   private final List<AutoCloseable> closeables = new ArrayList<>();
 
@@ -107,6 +108,12 @@ public class ClusteringRule extends ExternalResource {
     closeables.add(zeebeClient);
     topologyClient = new TopologyClient(((ZeebeClientImpl) zeebeClient).getTransport());
 
+    grpcClient =
+        io.zeebe.client.ZeebeClient.newClientBuilder()
+            .brokerContactPoint(brokerCfg.getNetwork().getGateway().toSocketAddress().toString())
+            .build();
+    closeables.add(grpcClient);
+
     waitForPartitionReplicationFactor();
     waitUntilBrokersInTopology(brokerCfgs);
   }
@@ -137,6 +144,10 @@ public class ClusteringRule extends ExternalResource {
 
   public ZeebeClient getClient() {
     return zeebeClient;
+  }
+
+  public io.zeebe.client.ZeebeClient getGrpcClient() {
+    return grpcClient;
   }
 
   private void waitUntilBrokersInTopology(final BrokerCfg... brokerCfgs) {
