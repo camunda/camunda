@@ -10,10 +10,12 @@ describe('Option', () => {
   let node;
   let Child;
   let onClickMock;
+  let mockOnStateChange;
 
   beforeEach(() => {
     Child = () => <span>I am a label</span>;
     onClickMock = jest.fn();
+    mockOnStateChange = jest.fn();
 
     node = shallow(
       <Option onClick={onClickMock}>
@@ -36,10 +38,10 @@ describe('Option', () => {
       <Option
         isSubMenuOpen={true}
         isSubmenuFixed={false}
-        onStateChange={jest.fn()}
+        onStateChange={mockOnStateChange}
         onClick={onClickMock}
       >
-        <Dropdown.SubMenu onStateChange={jest.fn()}>
+        <Dropdown.SubMenu onStateChange={mockOnStateChange}>
           <Dropdown.SubOption>'foo'</Dropdown.SubOption>
         </Dropdown.SubMenu>
       </Option>
@@ -51,8 +53,10 @@ describe('Option', () => {
     expect(SubMenuProps.isFixed).toBe(false);
   });
 
-  it('should handle on click event', () => {
-    node = shallow(<Option onClick={onClickMock} />);
+  it('should handle click event', () => {
+    node = shallow(
+      <Option onClick={onClickMock} onStateChange={mockOnStateChange} />
+    );
 
     const clickSpy = jest.spyOn(node.instance(), 'handleOnClick');
     node.setProps({disabled: false});
@@ -60,5 +64,6 @@ describe('Option', () => {
 
     expect(clickSpy).toHaveBeenCalled();
     expect(onClickMock).toHaveBeenCalled();
+    expect(mockOnStateChange).toHaveBeenCalledWith({isOpen: false});
   });
 });

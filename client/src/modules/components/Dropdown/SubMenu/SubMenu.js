@@ -86,7 +86,9 @@ export default class SubMenu extends React.Component {
           <Styled.Ul>
             {React.Children.map(children, (child, index) => (
               <Styled.Li onMouseOver={this.handleMenuMouseOver} key={index}>
-                {child}
+                {React.cloneElement(child, {
+                  onStateChange: this.props.onStateChange
+                })}
               </Styled.Li>
             ))}
           </Styled.Ul>

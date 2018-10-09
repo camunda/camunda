@@ -20,6 +20,7 @@ export default class Option extends React.Component {
   handleOnClick = () => {
     if (!this.props.disabled && this.props.onClick) {
       this.props.onClick();
+      this.props.onStateChange({isOpen: false});
     }
   };
 

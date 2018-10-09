@@ -9,12 +9,14 @@ export default class SubOption extends React.Component {
       PropTypes.arrayOf(PropTypes.node),
       PropTypes.node
     ]),
+    onStateChange: PropTypes.func,
     onClick: PropTypes.func
   };
 
   handleOnClick = evt => {
     evt && evt.stopPropagation();
     this.props.onClick();
+    this.props.onStateChange({isOpen: false});
   };
 
   render() {

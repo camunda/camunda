@@ -4,13 +4,14 @@ import {shallow} from 'enzyme';
 import SubOption from './SubOption';
 
 const mockOnClick = jest.fn();
+const mockOnStateChange = jest.fn();
 
 describe('SubOption', () => {
   let node;
 
   beforeEach(() => {
     node = shallow(
-      <SubOption onClick={mockOnClick}>
+      <SubOption onClick={mockOnClick} onStateChange={mockOnStateChange}>
         <span>I'am a child</span>
       </SubOption>
     );
@@ -23,5 +24,10 @@ describe('SubOption', () => {
   it('should handle the button click', () => {
     node.simulate('click');
     expect(mockOnClick).toHaveBeenCalled();
+  });
+
+  it('should close the dropdown on click', () => {
+    node.simulate('click');
+    expect(mockOnStateChange).toHaveBeenCalledWith({isOpen: false});
   });
 });
