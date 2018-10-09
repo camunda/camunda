@@ -52,6 +52,9 @@ public interface ZeebeClientConfiguration {
   /** @see ZeebeClientBuilder#defaultJobTimeout(Duration) */
   Duration getDefaultJobTimeout();
 
+  /** @see ZeebeClientBuilder#defaultJobPollInterval(Duration) */
+  Duration getDefaultJobPollInterval();
+
   /** @see ZeebeClientBuilder#defaultMessageTimeToLive(Duration) */
   Duration getDefaultMessageTimeToLive();
 }
