@@ -30,6 +30,8 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
@@ -72,6 +74,7 @@ public class RecordingGatewayService extends GatewayImplBase {
         r -> UpdateWorkflowInstancePayloadResponse.getDefaultInstance());
     addRequestHandler(
         UpdateJobRetriesRequest.class, r -> UpdateJobRetriesResponse.getDefaultInstance());
+    addRequestHandler(FailJobRequest.class, r -> FailJobResponse.getDefaultInstance());
   }
 
   @Override
@@ -121,6 +124,11 @@ public class RecordingGatewayService extends GatewayImplBase {
   @Override
   public void updateJobRetries(
       UpdateJobRetriesRequest request, StreamObserver<UpdateJobRetriesResponse> responseObserver) {
+    handle(request, responseObserver);
+  }
+
+  @Override
+  public void failJob(FailJobRequest request, StreamObserver<FailJobResponse> responseObserver) {
     handle(request, responseObserver);
   }
 

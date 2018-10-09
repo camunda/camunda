@@ -197,19 +197,18 @@ public class JobStateController extends KeyStateController {
     }
   }
 
-  public void fail(final TypedRecord<JobRecord> record) {
-    final DirectBuffer type = record.getValue().getType();
-    final long key = record.getKey();
+  public void fail(long key, JobRecord updatedValue) {
+    final DirectBuffer type = updatedValue.getType();
     DirectBuffer valueBuffer;
     DirectBuffer keyBuffer;
 
     try (WriteOptions options = new WriteOptions();
         ZbWriteBatch batch = new ZbWriteBatch()) {
       keyBuffer = getDefaultKey(key);
-      valueBuffer = writeValue(record.getValue());
+      valueBuffer = writeValue(updatedValue);
       batch.put(defaultColumnFamily, keyBuffer, valueBuffer);
 
-      final State newState = record.getValue().getRetries() > 0 ? State.ACTIVATABLE : State.FAILED;
+      final State newState = updatedValue.getRetries() > 0 ? State.ACTIVATABLE : State.FAILED;
 
       valueBuffer = writeStatesValue(newState);
       batch.put(statesColumnFamily, keyBuffer, valueBuffer);
@@ -219,7 +218,7 @@ public class JobStateController extends KeyStateController {
         batch.put(activatableColumnFamily, keyBuffer, NULL);
       }
 
-      keyBuffer = getDeadlinesKey(key, record.getValue().getDeadline());
+      keyBuffer = getDeadlinesKey(key, updatedValue.getDeadline());
       batch.delete(deadlinesColumnFamily, keyBuffer);
 
       db.write(options, batch);

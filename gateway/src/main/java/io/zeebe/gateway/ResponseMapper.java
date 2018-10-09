@@ -25,6 +25,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRespons
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
@@ -116,6 +117,11 @@ public class ResponseMapper {
   public static UpdateJobRetriesResponse toUpdateJobRetriesResponse(
       int partitionId, long key, JobRecord brokerResponse) {
     return UpdateJobRetriesResponse.getDefaultInstance();
+  }
+
+  public static FailJobResponse toFailJobResponse(
+      int partitionId, long key, JobRecord brokerResponse) {
+    return FailJobResponse.getDefaultInstance();
   }
 
   public static CreateWorkflowInstanceResponse toCreateWorkflowInstanceResponse(

@@ -84,6 +84,14 @@ message UpdateJobRetriesRequest {
 message UpdateJobRetriesResponse {
 }
 
+message FailJobRequest {
+  int64 jobKey = 1;
+  int32 retries = 2;
+}
+
+message FailJobResponse {
+}
+
 message CreateWorkflowInstanceRequest {
   int64 workflowKey = 1;
   string bpmnProcessId = 2;
@@ -127,6 +135,8 @@ service Gateway {
   rpc CreateJob (CreateJobRequest) returns (CreateJobResponse) {
   }
   rpc UpdateJobRetries (UpdateJobRetriesRequest) returns (UpdateJobRetriesResponse) {
+  }
+  rpc FailJob (FailJobRequest) returns (FailJobResponse) {
   }
   rpc CreateWorkflowInstance (CreateWorkflowInstanceRequest) returns (CreateWorkflowInstanceResponse) {
   }

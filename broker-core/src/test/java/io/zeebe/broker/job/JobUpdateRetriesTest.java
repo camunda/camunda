@@ -69,9 +69,7 @@ public class JobUpdateRetriesTest {
 
     final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
 
-    final Map<String, Object> event = subscribedEvent.value();
-    event.put("retries", 0);
-    client.failJob(subscribedEvent.position(), subscribedEvent.key(), event);
+    client.failJob(subscribedEvent.key(), 0);
 
     // when
     final ExecuteCommandResponse response =
@@ -85,7 +83,7 @@ public class JobUpdateRetriesTest {
     assertThat(response.sourceRecordPosition()).isEqualTo(jobCommand.position());
     assertThat(response.intent()).isEqualTo(JobIntent.RETRIES_UPDATED);
 
-    final Map<String, Object> expectedValue = new HashMap<>(event);
+    final Map<String, Object> expectedValue = new HashMap<>(subscribedEvent.value());
     expectedValue.put("retries", (long) NEW_RETRIES);
     assertThat(response.getValue()).containsAllEntriesOf(expectedValue);
 
@@ -104,9 +102,7 @@ public class JobUpdateRetriesTest {
 
     final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
 
-    final Map<String, Object> event = subscribedEvent.value();
-    event.put("retries", 0);
-    client.failJob(subscribedEvent.position(), subscribedEvent.key(), event);
+    client.failJob(subscribedEvent.key(), 0);
 
     // when
     final ExecuteCommandResponse response =
@@ -220,9 +216,7 @@ public class JobUpdateRetriesTest {
 
     final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
 
-    final Map<String, Object> event = subscribedEvent.value();
-    event.put("retries", 0);
-    client.failJob(subscribedEvent.position(), subscribedEvent.key(), event);
+    client.failJob(subscribedEvent.key(), 0);
 
     // when
     final ExecuteCommandResponse response = client.updateJobRetries(subscribedEvent.key(), 0);
@@ -243,9 +237,7 @@ public class JobUpdateRetriesTest {
 
     final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
 
-    final Map<String, Object> event = subscribedEvent.value();
-    event.put("retries", 0);
-    client.failJob(subscribedEvent.position(), subscribedEvent.key(), event);
+    client.failJob(subscribedEvent.key(), 0);
 
     // when
     final ExecuteCommandResponse response = client.updateJobRetries(subscribedEvent.key(), -1);

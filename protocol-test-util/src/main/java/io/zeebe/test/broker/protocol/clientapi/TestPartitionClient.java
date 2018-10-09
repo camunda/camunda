@@ -250,15 +250,13 @@ public class TestPartitionClient {
         .sendAndAwait();
   }
 
-  public ExecuteCommandResponse failJob(
-      final long sourceRecordPosition, final long key, final Map<String, Object> event) {
+  public ExecuteCommandResponse failJob(long key, int retries) {
     return apiRule
         .createCmdRequest()
         .type(ValueType.JOB, JobIntent.FAIL)
-        .sourceRecordPosition(sourceRecordPosition)
         .key(key)
         .command()
-        .putAll(event)
+        .put("retries", retries)
         .done()
         .sendAndAwait();
   }

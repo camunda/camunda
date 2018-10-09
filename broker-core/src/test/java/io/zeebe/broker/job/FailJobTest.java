@@ -23,7 +23,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.protocol.clientapi.ControlMessageType;
+import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
@@ -34,7 +35,7 @@ import io.zeebe.test.broker.protocol.clientapi.ControlMessageResponse;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
 import io.zeebe.test.broker.protocol.clientapi.TestPartitionClient;
-import java.time.Duration;
+import io.zeebe.test.util.record.RecordingExporter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -67,10 +68,10 @@ public class FailJobTest {
     apiRule.openJobSubscription(JOB_TYPE).await();
 
     final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
+    final int retries = 23;
 
     // when
-    final ExecuteCommandResponse response =
-        client.failJob(subscribedEvent.position(), subscribedEvent.key(), subscribedEvent.value());
+    final ExecuteCommandResponse response = client.failJob(subscribedEvent.key(), retries);
 
     // then
     final SubscribedRecord failCommand = apiRule.partition().receiveFirstJobCommand(JobIntent.FAIL);
@@ -78,6 +79,15 @@ public class FailJobTest {
     assertThat(response.sourceRecordPosition()).isEqualTo(failCommand.position());
     assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
     assertThat(response.intent()).isEqualTo(JobIntent.FAILED);
+
+    final Map<String, Object> expectedValue = new HashMap<>(subscribedEvent.value());
+    expectedValue.put("retries", (long) retries);
+    assertThat(response.getValue()).containsAllEntriesOf(expectedValue);
+
+    final Record<JobRecordValue> loggedEvent =
+        RecordingExporter.jobRecords(JobIntent.FAILED).getFirst();
+
+    assertThat(loggedEvent.getValue().getType()).isEqualTo(JOB_TYPE);
   }
 
   @Test
@@ -90,8 +100,7 @@ public class FailJobTest {
     final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
 
     // when
-    final ExecuteCommandResponse response =
-        client.failJob(subscribedEvent.position(), subscribedEvent.key(), subscribedEvent.value());
+    final ExecuteCommandResponse response = client.failJob(subscribedEvent.key(), 3);
 
     // then
     assertThat(response.sourceRecordPosition()).isGreaterThan(0L);
@@ -137,11 +146,8 @@ public class FailJobTest {
     // given
     final int key = 123;
 
-    final Map<String, Object> event = new HashMap<>();
-    event.put("type", "foo");
-
     // when
-    final ExecuteCommandResponse response = client.failJob(0, key, event);
+    final ExecuteCommandResponse response = client.failJob(key, 3);
 
     // then
     assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
@@ -162,11 +168,10 @@ public class FailJobTest {
     final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
     apiRule.closeJobSubscription(subscriberKey).await();
 
-    client.failJob(subscribedEvent.position(), subscribedEvent.key(), subscribedEvent.value());
+    client.failJob(subscribedEvent.key(), 3);
 
     // when
-    final ExecuteCommandResponse response =
-        client.failJob(subscribedEvent.position(), subscribedEvent.key(), subscribedEvent.value());
+    final ExecuteCommandResponse response = client.failJob(subscribedEvent.key(), 3);
 
     // then
     assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
@@ -181,8 +186,7 @@ public class FailJobTest {
     final ExecuteCommandResponse createResponse = client.createJob(JOB_TYPE);
 
     // when
-    final ExecuteCommandResponse response =
-        client.failJob(createResponse.position(), createResponse.key(), createResponse.getValue());
+    final ExecuteCommandResponse response = client.failJob(createResponse.key(), 3);
 
     // then
     assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
@@ -203,46 +207,13 @@ public class FailJobTest {
     client.completeJob(subscribedEvent.position(), subscribedEvent.key(), subscribedEvent.value());
 
     // when
-    final ExecuteCommandResponse response =
-        client.failJob(subscribedEvent.position(), subscribedEvent.key(), subscribedEvent.value());
+    final ExecuteCommandResponse response = client.failJob(subscribedEvent.key(), 3);
 
     // then
     assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
     assertThat(response.rejectionReason()).isEqualTo("Job is not currently activated");
     assertThat(response.intent()).isEqualTo(JobIntent.FAIL);
-  }
-
-  @Test
-  public void shouldFailIfNotWorker() {
-    // given
-    final String worker = "peter";
-
-    client.createJob(JOB_TYPE);
-
-    apiRule
-        .createControlMessageRequest()
-        .partitionId(apiRule.getDefaultPartitionId())
-        .messageType(ControlMessageType.ADD_JOB_SUBSCRIPTION)
-        .data()
-        .put("jobType", JOB_TYPE)
-        .put("timeout", Duration.ofSeconds(30).toMillis())
-        .put("worker", worker)
-        .put("credits", 10)
-        .done()
-        .sendAndAwait();
-
-    final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
-    final Map<String, Object> event = subscribedEvent.value();
-    event.put("worker", "jan");
-
-    // when
-    final ExecuteCommandResponse response =
-        client.failJob(subscribedEvent.position(), subscribedEvent.key(), event);
-
-    // then
-    assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(response.intent()).isEqualTo(JobIntent.FAILED);
   }
 
   private SubscribedRecord receiveSingleSubscribedEvent() {
