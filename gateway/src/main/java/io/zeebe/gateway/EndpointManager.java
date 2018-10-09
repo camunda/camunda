@@ -153,7 +153,7 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
         request,
         RequestMapper::toFailJobRequest,
         ResponseMapper::toFailJobResponse,
-      responseObserver);
+        responseObserver);
   }
 
   @Override
@@ -173,7 +173,7 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
         request,
         RequestMapper::toCompleteJobRequest,
         ResponseMapper::toCompleteJobResponse,
-      responseObserver);
+        responseObserver);
   }
 
   @Override

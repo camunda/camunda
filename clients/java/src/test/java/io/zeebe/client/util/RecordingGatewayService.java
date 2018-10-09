@@ -34,8 +34,12 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.GetWorkflowRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.GetWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ListWorkflowsRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ListWorkflowsResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
@@ -43,6 +47,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowMetadata;
 import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowResponseObject;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -78,6 +83,8 @@ public class RecordingGatewayService extends GatewayImplBase {
         UpdateJobRetriesRequest.class, r -> UpdateJobRetriesResponse.getDefaultInstance());
     addRequestHandler(FailJobRequest.class, r -> FailJobResponse.getDefaultInstance());
     addRequestHandler(CompleteJobRequest.class, r -> CompleteJobResponse.getDefaultInstance());
+    addRequestHandler(ListWorkflowsRequest.class, r -> ListWorkflowsResponse.getDefaultInstance());
+    addRequestHandler(GetWorkflowRequest.class, r -> GetWorkflowResponse.getDefaultInstance());
   }
 
   @Override
@@ -141,6 +148,18 @@ public class RecordingGatewayService extends GatewayImplBase {
     handle(request, responseObserver);
   }
 
+  @Override
+  public void listWorkflows(
+      ListWorkflowsRequest request, StreamObserver<ListWorkflowsResponse> responseObserver) {
+    handle(request, responseObserver);
+  }
+
+  @Override
+  public void getWorkflow(
+      GetWorkflowRequest request, StreamObserver<GetWorkflowResponse> responseObserver) {
+    handle(request, responseObserver);
+  }
+
   public static Partition partition(int partitionId, PartitionBrokerRole role) {
     return Partition.newBuilder().setPartitionId(partitionId).setRole(role).build();
   }
@@ -193,6 +212,26 @@ public class RecordingGatewayService extends GatewayImplBase {
                 .setBpmnProcessId(bpmnProcessId)
                 .setVersion(version)
                 .setWorkflowInstanceKey(workflowInstanceKey)
+                .build());
+  }
+
+  public void onListWorkflowsRequest(WorkflowMetadata... workflows) {
+    addRequestHandler(
+        ListWorkflowsRequest.class,
+        r -> ListWorkflowsResponse.newBuilder().addAllWorkflows(Arrays.asList(workflows)).build());
+  }
+
+  public void onGetWorkflowRequest(
+      long workflowKey, String bpmnProcessId, int version, String resourceName, String bpmnXml) {
+    addRequestHandler(
+        GetWorkflowRequest.class,
+        r ->
+            GetWorkflowResponse.newBuilder()
+                .setWorkflowKey(workflowKey)
+                .setBpmnProcessId(bpmnProcessId)
+                .setVersion(version)
+                .setResourceName(resourceName)
+                .setBpmnXml(bpmnXml)
                 .build());
   }
 
