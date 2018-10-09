@@ -8,11 +8,23 @@ import org.camunda.optimize.upgrade.main.impl.UpgradeFrom22To23;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom23To24;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom24To25;
 
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.Set;
 
 public class UpgradeMain {
+
+  private static final Set<String> ANSWER_OPTIONS_YES = Collections.unmodifiableSet(
+      new HashSet<>(Arrays.asList("y", "yes"))
+  );
+
+  private static final Set<String> ANSWER_OPTIONS_NO = Collections.unmodifiableSet(
+      new HashSet<>(Arrays.asList("n", "no"))
+  );
 
   private static Map<String, Upgrade> upgrades = new HashMap<>();
 
@@ -68,10 +80,10 @@ public class UpgradeMain {
         "structure in Elasticsearch. Therefore, it is highly recommended to \n" +
         "create a backup of your data in Elasticsearch in case something goes wrong. \n" +
         "\n" +
-        "Do you want to proceed? [yes/no] \n" +
+        "Do you want to proceed? [(y)es/(n)o] \n" +
         "\n" +
-        "1. yes = I already did a backup and want to proceed. \n" +
-        "2. no = Thanks for reminding me, I want to do a backup first. \n" +
+        "1. (y)es = I already did a backup and want to proceed. \n" +
+        "2. (n)o = Thanks for reminding me, I want to do a backup first. \n" +
         "\n" +
         "Your answer (type your answer and hit enter): " ;
 
@@ -79,19 +91,20 @@ public class UpgradeMain {
     System.out.print(message);
 
     String answer = "";
-    while(!answer.equals("yes")) {
+    while(!ANSWER_OPTIONS_YES.contains(answer)) {
       Scanner console = new Scanner(System.in);
       answer = console.next().trim().toLowerCase();
       System.out.println();
-      if (answer.equals("no")) {
+      if (ANSWER_OPTIONS_NO.contains(answer)) {
         System.out.println("The Optimize upgrade was aborted.");
         System.exit(1);
-      } else if (!answer.equals("yes")) {
-        String text = "Your answer was '" + answer + "'. The only accepted answers are 'yes' or 'no'. \n" +
+      } else if (!ANSWER_OPTIONS_YES.contains(answer)) {
+        String text = "Your answer was '" + answer + "'. The only accepted answers are '(y)es' or '(n)o'. \n" +
           "\n" +
           "Your answer (type your answer and hit enter): ";
         System.out.print(text);
       }
     }
   }
+
 }
