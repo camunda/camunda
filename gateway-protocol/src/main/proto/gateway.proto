@@ -92,6 +92,15 @@ message FailJobRequest {
 message FailJobResponse {
 }
 
+message CompleteJobRequest {
+  int64 jobKey = 1;
+  /* payload has to be a valid json object as string */
+  string payload = 2;
+}
+
+message CompleteJobResponse {
+}
+
 message CreateWorkflowInstanceRequest {
   int64 workflowKey = 1;
   string bpmnProcessId = 2;
@@ -137,6 +146,8 @@ service Gateway {
   rpc UpdateJobRetries (UpdateJobRetriesRequest) returns (UpdateJobRetriesResponse) {
   }
   rpc FailJob (FailJobRequest) returns (FailJobResponse) {
+  }
+  rpc CompleteJob (CompleteJobRequest) returns (CompleteJobResponse) {
   }
   rpc CreateWorkflowInstance (CreateWorkflowInstanceRequest) returns (CreateWorkflowInstanceResponse) {
   }

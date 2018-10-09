@@ -22,6 +22,7 @@ import io.zeebe.gateway.cmd.ClientException;
 import io.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo;
 import io.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo.Builder;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
@@ -122,6 +123,11 @@ public class ResponseMapper {
   public static FailJobResponse toFailJobResponse(
       int partitionId, long key, JobRecord brokerResponse) {
     return FailJobResponse.getDefaultInstance();
+  }
+
+  public static CompleteJobResponse toCompleteJobResponse(
+      int partitionId, long key, JobRecord brokerResponse) {
+    return CompleteJobResponse.newBuilder().build();
   }
 
   public static CreateWorkflowInstanceResponse toCreateWorkflowInstanceResponse(
