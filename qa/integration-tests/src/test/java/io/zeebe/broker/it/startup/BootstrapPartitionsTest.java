@@ -42,6 +42,6 @@ public class BootstrapPartitionsTest {
 
     // then
     assertThat(partitions.size()).isEqualTo(2);
-    assertThat(partitions).containsExactly(0, 1);
+    assertThat(partitions).containsExactlyInAnyOrder(0, 1);
   }
 }
