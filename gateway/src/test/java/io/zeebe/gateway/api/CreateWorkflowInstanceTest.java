@@ -20,7 +20,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.gateway.impl.broker.request.BrokerCreateWorkflowInstanceRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceResponse;
+import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import org.junit.Test;
 
 public class CreateWorkflowInstanceTest extends GatewayTest {
@@ -44,6 +46,9 @@ public class CreateWorkflowInstanceTest extends GatewayTest {
     assertThat(response.getWorkflowInstanceKey()).isEqualTo(stub.getWorkflowInstanceKey());
 
     final BrokerCreateWorkflowInstanceRequest brokerRequest = gateway.getSingleBrokerRequest();
+    assertThat(brokerRequest.getIntent()).isEqualTo(WorkflowInstanceIntent.CREATE);
+    assertThat(brokerRequest.getValueType()).isEqualTo(ValueType.WORKFLOW_INSTANCE);
+
     final WorkflowInstanceRecord brokerRequestValue = brokerRequest.getRequestWriter();
     assertThat(brokerRequestValue.getWorkflowKey()).isEqualTo(stub.getWorkflowKey());
   }

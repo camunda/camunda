@@ -35,6 +35,8 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.HealthResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowResponseObject;
@@ -68,6 +70,8 @@ public class RecordingGatewayService extends GatewayImplBase {
     addRequestHandler(
         UpdateWorkflowInstancePayloadRequest.class,
         r -> UpdateWorkflowInstancePayloadResponse.getDefaultInstance());
+    addRequestHandler(
+        UpdateJobRetriesRequest.class, r -> UpdateJobRetriesResponse.getDefaultInstance());
   }
 
   @Override
@@ -111,6 +115,12 @@ public class RecordingGatewayService extends GatewayImplBase {
   public void updateWorkflowInstancePayload(
       UpdateWorkflowInstancePayloadRequest request,
       StreamObserver<UpdateWorkflowInstancePayloadResponse> responseObserver) {
+    handle(request, responseObserver);
+  }
+
+  @Override
+  public void updateJobRetries(
+      UpdateJobRetriesRequest request, StreamObserver<UpdateJobRetriesResponse> responseObserver) {
     handle(request, responseObserver);
   }
 

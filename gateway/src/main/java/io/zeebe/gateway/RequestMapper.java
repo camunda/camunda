@@ -21,6 +21,7 @@ import io.zeebe.gateway.impl.broker.request.BrokerCreateWorkflowInstanceRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerDeployWorkflowRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerPublishMessageRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerTopologyRequest;
+import io.zeebe.gateway.impl.broker.request.BrokerUpdateJobRetriesRequest;
 import io.zeebe.gateway.impl.broker.request.BrokerUpdateWorkflowInstancePayloadRequest;
 import io.zeebe.gateway.impl.data.MsgPackConverter;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceRequest;
@@ -29,6 +30,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowRequestObject;
 import io.zeebe.msgpack.value.DocumentValue;
@@ -75,6 +77,11 @@ public class RequestMapper {
         .setPayload(ensureJsonSet(grpcRequest.getPayload()));
 
     return brokerRequest;
+  }
+
+  public static BrokerUpdateJobRetriesRequest toUpdateJobRetriesRequest(
+      UpdateJobRetriesRequest grpcRequest) {
+    return new BrokerUpdateJobRetriesRequest(grpcRequest.getJobKey(), grpcRequest.getRetries());
   }
 
   public static BrokerCreateWorkflowInstanceRequest toCreateWorkflowInstanceRequest(

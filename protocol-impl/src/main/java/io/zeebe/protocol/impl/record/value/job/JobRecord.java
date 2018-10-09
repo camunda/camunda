@@ -39,7 +39,7 @@ public class JobRecord extends UnpackedObject {
       new LongProperty("deadline", Protocol.INSTANT_NULL_VALUE);
   private final StringProperty workerProp = new StringProperty("worker", "");
   private final IntegerProperty retriesProp = new IntegerProperty(RETRIES, -1);
-  private final StringProperty typeProp = new StringProperty(TYPE);
+  private final StringProperty typeProp = new StringProperty(TYPE, "");
   private final ObjectProperty<JobHeaders> headersProp =
       new ObjectProperty<>("headers", new JobHeaders());
   private final PackedProperty customHeadersProp = new PackedProperty(CUSTOM_HEADERS, NO_HEADERS);
@@ -66,6 +66,11 @@ public class JobRecord extends UnpackedObject {
 
   public DirectBuffer getWorker() {
     return workerProp.getValue();
+  }
+
+  public JobRecord setWorker(String worker) {
+    this.workerProp.setValue(worker);
+    return this;
   }
 
   public JobRecord setWorker(DirectBuffer worker) {

@@ -42,6 +42,18 @@ public abstract class BrokerExecuteCommand<T> extends BrokerRequest<T> {
     request.setIntent(intent);
   }
 
+  public long getKey() {
+    return request.getKey();
+  }
+
+  public Intent getIntent() {
+    return request.getIntent();
+  }
+
+  public ValueType getValueType() {
+    return request.getValueType();
+  }
+
   @Override
   public int getPartitionId() {
     return request.getPartitionId();

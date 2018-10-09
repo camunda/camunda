@@ -164,7 +164,7 @@ public class JobStreamProcessor implements StreamProcessorLifecycleAware {
         TypedResponseWriter responseWriter,
         TypedStreamWriter streamWriter,
         Consumer<SideEffectProducer> sideEffect) {
-      if (state.exists(record, State.ACTIVATABLE)) {
+      if (state.isInState(record.getKey(), State.ACTIVATABLE)) {
         state.activate(record);
         streamWriter.writeFollowUpEvent(record.getKey(), JobIntent.ACTIVATED, record.getValue());
         pushToSubscription(record, sideEffect);
@@ -208,7 +208,7 @@ public class JobStreamProcessor implements StreamProcessorLifecycleAware {
     public void onCommand(
         TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
       if (state.exists(command)) {
-        if (!state.exists(command, State.FAILED)) {
+        if (!state.isInState(command.getKey(), State.FAILED)) {
           state.delete(command);
           commandControl.accept(JobIntent.COMPLETED, command.getValue());
         } else {
@@ -225,7 +225,7 @@ public class JobStreamProcessor implements StreamProcessorLifecycleAware {
     @Override
     public void onCommand(
         TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
-      if (state.exists(command, State.ACTIVATED)) {
+      if (state.isInState(command.getKey(), State.ACTIVATED)) {
         state.fail(command);
         commandControl.accept(JobIntent.FAILED, command.getValue());
       } else {
@@ -251,7 +251,7 @@ public class JobStreamProcessor implements StreamProcessorLifecycleAware {
     @Override
     public void onCommand(
         TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
-      if (state.exists(command, State.ACTIVATED)) {
+      if (state.isInState(command.getKey(), State.ACTIVATED)) {
         state.timeout(command);
         commandControl.accept(JobIntent.TIMED_OUT, command.getValue());
       } else {
@@ -264,10 +264,15 @@ public class JobStreamProcessor implements StreamProcessorLifecycleAware {
     @Override
     public void onCommand(
         TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
-      if (state.exists(command, State.FAILED)) {
-        if (command.getValue().getRetries() > 0) {
-          state.resolve(command);
-          commandControl.accept(JobIntent.RETRIES_UPDATED, command.getValue());
+      final long key = command.getKey();
+      final int retries = command.getValue().getRetries();
+
+      if (state.isInState(command.getKey(), State.FAILED)) {
+        if (retries > 0) {
+          final JobRecord failedJob = state.getJob(command.getKey());
+          failedJob.setRetries(retries);
+          state.resolve(key, failedJob);
+          commandControl.accept(JobIntent.RETRIES_UPDATED, failedJob);
         } else {
           commandControl.reject(RejectionType.BAD_VALUE, "Job retries must be positive");
         }

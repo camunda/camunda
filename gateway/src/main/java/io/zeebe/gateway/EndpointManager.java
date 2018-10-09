@@ -38,6 +38,8 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadResponse;
 import java.util.concurrent.ExecutionException;
@@ -91,6 +93,16 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
         request,
         RequestMapper::toCreateJobRequest,
         ResponseMapper::toCreateJobResponse,
+        responseObserver);
+  }
+
+  @Override
+  public void updateJobRetries(
+      UpdateJobRetriesRequest request, StreamObserver<UpdateJobRetriesResponse> responseObserver) {
+    sendRequest(
+        request,
+        RequestMapper::toUpdateJobRetriesRequest,
+        ResponseMapper::toUpdateJobRetriesResponse,
         responseObserver);
   }
 

@@ -76,6 +76,14 @@ message CreateJobResponse {
   int64 key = 2;
 }
 
+message UpdateJobRetriesRequest {
+  int64 jobKey = 1;
+  int32 retries = 2;
+}
+
+message UpdateJobRetriesResponse {
+}
+
 message CreateWorkflowInstanceRequest {
   int64 workflowKey = 1;
   string bpmnProcessId = 2;
@@ -117,6 +125,8 @@ service Gateway {
   rpc PublishMessage (PublishMessageRequest) returns (google.protobuf.Empty) {
   }
   rpc CreateJob (CreateJobRequest) returns (CreateJobResponse) {
+  }
+  rpc UpdateJobRetries (UpdateJobRetriesRequest) returns (UpdateJobRetriesResponse) {
   }
   rpc CreateWorkflowInstance (CreateWorkflowInstanceRequest) returns (CreateWorkflowInstanceResponse) {
   }

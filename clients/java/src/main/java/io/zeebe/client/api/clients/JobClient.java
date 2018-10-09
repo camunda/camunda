@@ -94,23 +94,21 @@ public interface JobClient {
    * Command to update the retries of a job.
    *
    * <pre>
+   * long jobKey = ..;
+   *
    * jobClient
-   *  .newUpdateRetriesCommand(jobEvent)
+   *  .newUpdateRetriesCommand(jobKey)
    *  .retries(3)
    *  .send();
    * </pre>
    *
-   * The job is specified by the given event. The event must be the latest event of the job to
-   * ensure that the command is based on the latest state of the job. If it's not the latest one
-   * then the command is rejected.
-   *
    * <p>If the given retries are greater than zero then this job will be picked up again by a job
    * subscription and a related incident will be marked as resolved.
    *
-   * @param event the latest job event
+   * @param jobKey the key of the job to update
    * @return a builder for the command
    */
-  UpdateRetriesJobCommandStep1 newUpdateRetriesCommand(JobEvent event);
+  UpdateRetriesJobCommandStep1 newUpdateRetriesCommand(long jobKey);
 
   /**
    * Registers a new job worker for jobs of a given type.
