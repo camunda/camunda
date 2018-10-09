@@ -17,6 +17,7 @@ package io.zeebe.client.impl.events;
 
 import io.zeebe.client.api.commands.Workflow;
 import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowMetadata;
+import java.util.Objects;
 
 public class WorkflowImpl implements Workflow {
 
@@ -58,6 +59,26 @@ public class WorkflowImpl implements Workflow {
   @Override
   public String getResourceName() {
     return resourceName;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final WorkflowImpl workflow = (WorkflowImpl) o;
+    return workflowKey == workflow.workflowKey
+        && version == workflow.version
+        && Objects.equals(bpmnProcessId, workflow.bpmnProcessId)
+        && Objects.equals(resourceName, workflow.resourceName);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(workflowKey, bpmnProcessId, version, resourceName);
   }
 
   @Override

@@ -34,7 +34,6 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowResponseObject;
 import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto;
 import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto.BrokerDto;
 import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto.PartitionDto;
@@ -93,19 +92,21 @@ public class ResponseMapper {
 
   public static DeployWorkflowResponse toDeployWorkflowResponse(
       long key, DeploymentRecord brokerResponse) {
-    final DeployWorkflowResponse.Builder deployWorkflowResponseBuilder =
-        DeployWorkflowResponse.newBuilder();
+    final DeployWorkflowResponse.Builder responseBuilder =
+        DeployWorkflowResponse.newBuilder().setKey(key);
 
-    for (io.zeebe.protocol.impl.record.value.deployment.Workflow workflow :
-        brokerResponse.workflows()) {
-      deployWorkflowResponseBuilder.addWorkflows(
-          WorkflowResponseObject.newBuilder()
-              .setBpmnProcessId(bufferAsString(workflow.getBpmnProcessId()))
-              .setVersion(workflow.getVersion())
-              .setWorkflowKey(workflow.getKey())
-              .setResourceName(bufferAsString(workflow.getResourceName())));
-    }
-    return deployWorkflowResponseBuilder.build();
+    brokerResponse
+        .workflows()
+        .forEach(
+            workflow ->
+                responseBuilder
+                    .addWorkflowsBuilder()
+                    .setBpmnProcessId(bufferAsString(workflow.getBpmnProcessId()))
+                    .setVersion(workflow.getVersion())
+                    .setWorkflowKey(workflow.getKey())
+                    .setResourceName(bufferAsString(workflow.getResourceName())));
+
+    return responseBuilder.build();
   }
 
   public static Empty emptyResponse(long key, Object brokerResponse) {
@@ -150,9 +151,7 @@ public class ResponseMapper {
   }
 
   public static ListWorkflowsResponse toListWorkflowsResponse(
-      int partitionId,
-      long key,
-      io.zeebe.protocol.impl.data.repository.ListWorkflowsResponse brokerResponse) {
+      long key, io.zeebe.protocol.impl.data.repository.ListWorkflowsResponse brokerResponse) {
     final ListWorkflowsResponse.Builder builder = ListWorkflowsResponse.newBuilder();
     brokerResponse
         .getWorkflows()
@@ -171,7 +170,7 @@ public class ResponseMapper {
   }
 
   public static GetWorkflowResponse toGetWorkflowResponse(
-      int partitionId, long key, WorkflowMetadataAndResource brokerResponse) {
+      long key, WorkflowMetadataAndResource brokerResponse) {
     return GetWorkflowResponse.newBuilder()
         .setBpmnProcessId(bufferAsString(brokerResponse.getBpmnProcessId()))
         .setVersion(brokerResponse.getVersion())

@@ -48,7 +48,6 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowMetadata;
-import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowResponseObject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -178,9 +177,9 @@ public class RecordingGatewayService extends GatewayImplBase {
         request -> HealthResponse.newBuilder().addAllBrokers(Arrays.asList(brokers)).build());
   }
 
-  public static WorkflowResponseObject deployedWorkflow(
+  public static WorkflowMetadata deployedWorkflow(
       String bpmnProcessId, int version, long workflowKey, String resourceName) {
-    return WorkflowResponseObject.newBuilder()
+    return WorkflowMetadata.newBuilder()
         .setBpmnProcessId(bpmnProcessId)
         .setVersion(version)
         .setWorkflowKey(workflowKey)
@@ -188,11 +187,12 @@ public class RecordingGatewayService extends GatewayImplBase {
         .build();
   }
 
-  public void onDeployWorkflowRequest(WorkflowResponseObject... deployedWorkflows) {
+  public void onDeployWorkflowRequest(long key, WorkflowMetadata... deployedWorkflows) {
     addRequestHandler(
         DeployWorkflowRequest.class,
         request ->
             DeployWorkflowResponse.newBuilder()
+                .setKey(key)
                 .addAllWorkflows(Arrays.asList(deployedWorkflows))
                 .build());
   }

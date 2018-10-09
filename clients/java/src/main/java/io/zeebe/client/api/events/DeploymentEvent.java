@@ -19,6 +19,9 @@ import io.zeebe.client.api.commands.Workflow;
 import java.util.List;
 
 public interface DeploymentEvent {
+  /** @return the unique key of the deployment */
+  long getKey();
+
   /** @return the workflows which are deployed */
-  List<Workflow> getDeployedWorkflows();
+  List<Workflow> getWorkflows();
 }

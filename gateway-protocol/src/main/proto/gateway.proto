@@ -42,7 +42,7 @@ message DeployWorkflowRequest {
   repeated WorkflowRequestObject workflows = 1;
 }
 
-message WorkflowResponseObject {
+message WorkflowMetadata {
   string bpmnProcessId = 1;
   int32 version = 2;
   int64 workflowKey = 3;
@@ -50,7 +50,8 @@ message WorkflowResponseObject {
 }
 
 message DeployWorkflowResponse {
-  repeated WorkflowResponseObject workflows = 1;
+  int64 key = 1;
+  repeated WorkflowMetadata workflows = 2;
 }
 
 message PublishMessageRequest {
@@ -135,13 +136,6 @@ message UpdateWorkflowInstancePayloadResponse {
 message ListWorkflowsRequest {
   /* optional filter by BPMN process id, if empty all workflows are returned */
   string bpmnProcessId = 1;
-}
-
-message WorkflowMetadata {
-  int64 workflowKey = 1;
-  int32 version = 2;
-  string bpmnProcessId = 3;
-  string resourceName = 4;
 }
 
 message ListWorkflowsResponse {
