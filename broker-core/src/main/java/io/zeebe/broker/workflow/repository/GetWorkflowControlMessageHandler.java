@@ -71,7 +71,7 @@ public class GetWorkflowControlMessageHandler extends AbstractControlMessageHand
 
       final String errorMessage;
 
-      if (workflowKey != -1) {
+      if (workflowKey > 0) {
         future = repository.getWorkflowByKey(workflowKey);
         errorMessage = String.format("No workflow found with key '%d'", workflowKey);
       } else {

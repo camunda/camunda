@@ -18,17 +18,15 @@ package io.zeebe.broker.it.workflow;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.gateway.api.commands.Workflow;
-import io.zeebe.gateway.api.commands.WorkflowResource;
-import io.zeebe.gateway.api.events.DeploymentEvent;
-import io.zeebe.gateway.cmd.BrokerErrorException;
+import io.zeebe.client.api.ZeebeFuture;
+import io.zeebe.client.api.commands.Workflow;
+import io.zeebe.client.api.commands.WorkflowResource;
+import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.util.StreamUtil;
-import io.zeebe.util.sched.future.ActorFuture;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
@@ -48,12 +46,9 @@ public class WorkflowRepositoryTest {
   private final BpmnModelInstance workflow2 =
       Bpmn.createExecutableProcess("wf2").startEvent("start").done();
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientRule clientRule = new ClientRule(brokerRule);
-  public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
+  public GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
 
-  @Rule
-  public RuleChain ruleChain =
-      RuleChain.outerRule(brokerRule).around(clientRule).around(eventRecorder);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   @Rule public ExpectedException exception = ExpectedException.none();
 
@@ -147,17 +142,18 @@ public class WorkflowRepositoryTest {
 
   @Test
   public void shouldFailToGetResourceByWorkflowKeyIfNotExist() {
-    final ActorFuture<WorkflowResource> future =
+    final ZeebeFuture<WorkflowResource> future =
         clientRule.getWorkflowClient().newResourceRequest().workflowKey(123).send();
 
     assertThatThrownBy(future::join)
-        .isInstanceOf(BrokerErrorException.class)
+        // TODO(menski): embedded errors in grpc need for typing
+        // .isInstanceOf(BrokerErrorException.class)
         .hasMessageContaining("No workflow found with key '123'");
   }
 
   @Test
   public void shouldFailToGetResourceByBpmnProcessIdIfNotExist() {
-    final ActorFuture<WorkflowResource> future =
+    final ZeebeFuture<WorkflowResource> future =
         clientRule
             .getWorkflowClient()
             .newResourceRequest()
@@ -165,8 +161,9 @@ public class WorkflowRepositoryTest {
             .latestVersion()
             .send();
 
-    assertThatThrownBy(() -> future.join())
-        .isInstanceOf(BrokerErrorException.class)
+    assertThatThrownBy(future::join)
+        // TODO(menski): embedded errors in grpc need for typing
+        // .isInstanceOf(BrokerErrorException.class)
         .hasMessageContaining("No workflow found with BPMN process id 'foo'");
   }
 
