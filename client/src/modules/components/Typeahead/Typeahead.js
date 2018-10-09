@@ -116,6 +116,7 @@ export default class Typeahead extends React.Component {
       evt.preventDefault();
       if (optionsVisible && values[selectedValueIdx]) {
         this.selectValue(values[selectedValueIdx])();
+        evt.stopPropagation();
       }
       return;
     }
@@ -225,6 +226,7 @@ export default class Typeahead extends React.Component {
           value={query}
           onChange={this.updateQuery}
           onClick={this.showOptions}
+          onFocus={this.showOptions}
           onKeyDown={this.handleKeyPress}
           onBlur={this.resetToLastCommitted}
           placeholder={this.props.placeholder}

@@ -96,3 +96,10 @@ it('should disable the input field when disabled prop is set to true', () => {
 
   expect(node.find(Input)).toHaveProp('disabled', true);
 });
+
+it('should show the dropdown menu options on input focus', () => {
+  const node = mount(<Typeahead values={['foo', 'bar']} />);
+  node.find(Input).prop('onFocus')();
+
+  expect(node).toHaveState('optionsVisible', true);
+});
