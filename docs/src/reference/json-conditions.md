@@ -4,7 +4,7 @@ Conditions can be used for conditional flows to determine the following task.
 
 A condition is a boolean expression with a JavaScript-like syntax.
 It allows to compare properties of the workflow instance payload with other properties or literals (e.g., numbers, strings, etc.).
-The payload properties are selected using [JSON Path](http://goessner.net/articles/JsonPath/).
+The payload properties are selected using [JSON Path](reference/json-path.html).
 
 ```
 $.totalPrice > 100
