@@ -104,8 +104,8 @@ public class SimpleEngineClient {
         responseString,
         new TypeReference<List<ProcessDefinitionEngineDto>>() {}
         );
-    } catch (IOException e) {
-      e.printStackTrace();
+    } catch (Exception e) {
+      logger.error("Could not fetch all process definitions for given deployment!", e);
     } finally {
       closeResponse(response);
     }
@@ -143,16 +143,24 @@ public class SimpleEngineClient {
     return deployment;
   }
 
-  public void startProcessInstance(String procDefId, Map<String, Object> variables) throws IOException {
-    HttpPost post = new HttpPost(getStartProcessInstanceUri(procDefId));
-    post.addHeader("content-type", "application/json");
-    post.setEntity(new StringEntity(convertVariableMapToJsonString(variables)));
-    CloseableHttpResponse response = client.execute(post);
-    if (response.getStatusLine().getStatusCode() != 200) {
-      throw new RuntimeException("Could not start the process definition " + procDefId +
-      ". Reason: " + response.getStatusLine().getReasonPhrase());
+  public void startProcessInstance(String procDefId, Map<String, Object> variables) {
+    CloseableHttpResponse response = null;
+    try {
+      HttpPost post = new HttpPost(getStartProcessInstanceUri(procDefId));
+      post.addHeader("content-type", "application/json");
+      post.setEntity(new StringEntity(convertVariableMapToJsonString(variables)));
+      response = client.execute(post);
+      if (response.getStatusLine().getStatusCode() != 200) {
+        throw new RuntimeException("Could not start the process definition " + procDefId +
+        ". Reason: " + response.getStatusLine().getReasonPhrase());
+      }
+    } catch (Exception e) {
+      logger.error("Error during start of process instance!");
+    } finally {
+      closeResponse(response);
     }
-    response.close();
+
+
   }
 
   private String convertVariableMapToJsonString(Map<String, Object> plainVariables) throws JsonProcessingException {
@@ -203,9 +211,9 @@ public class SimpleEngineClient {
       post.setEntity(content);
       response = client.execute(post);
       if (response.getStatusLine().getStatusCode() != 204) {
-        System.out.println("Warning: Code for send candidate replied should be 204!");
+        throw new RuntimeException("Warning: response code for correlating message should be 204!");
       }
-    } catch (IOException e) {
+    } catch (Exception e) {
       logger.error("Error while trying to correlate message!", e);
     } finally {
       closeResponse(response);
@@ -237,7 +245,7 @@ public class SimpleEngineClient {
       for (TaskDto task : tasks) {
         claimAndCompleteUserTask(client, task);
       }
-    } catch (IOException e) {
+    } catch (Exception e) {
       logger.error("Error while trying to finish the user task!!", e);
     } finally {
       closeResponse(response);
@@ -250,24 +258,39 @@ public class SimpleEngineClient {
     return engineRestEndpoint + "/task";
   }
 
-  private void claimAndCompleteUserTask(CloseableHttpClient client, TaskDto task) throws IOException {
-    HttpPost claimPost = new HttpPost(getClaimTaskUri(task.getId()));
-    claimPost.setEntity(new StringEntity("{ \"userId\" : " + "\"demo\"" + "}"));
-    claimPost.addHeader("Content-Type", "application/json");
-    CloseableHttpResponse response = client.execute(claimPost);
-    if (response.getStatusLine().getStatusCode() != 204) {
-      logger.error("Could not claim user task!");
+  private void claimAndCompleteUserTask(CloseableHttpClient client, TaskDto task) {
+    CloseableHttpResponse response = null;
+    try {
+      HttpPost claimPost = new HttpPost(getClaimTaskUri(task.getId()));
+      claimPost.setEntity(new StringEntity("{ \"userId\" : " + "\"demo\"" + "}"));
+      claimPost.addHeader("Content-Type", "application/json");
+      response = client.execute(claimPost);
+      if (response.getStatusLine().getStatusCode() != 204) {
+        throw new RuntimeException("Wrong error code when claiming user tasks!");
+      }
+      completeUserTask(client, task);
+    } catch (Exception e) {
+      logger.error("Could not claim user task!", e);
+    } finally {
+      closeResponse(response);
     }
+  }
 
-    HttpPost completePost = new HttpPost(getCompleteTaskUri(task.getId()));
-    completePost.setEntity(new StringEntity("{}"));
-    completePost.addHeader("Content-Type", "application/json");
-    response.close();
-    response = client.execute(completePost);
-    if (response.getStatusLine().getStatusCode() != 204) {
-      logger.error("Could not complete user task!");
+  private void completeUserTask(CloseableHttpClient client, TaskDto task) {
+    CloseableHttpResponse response = null;
+    try {
+      HttpPost completePost = new HttpPost(getCompleteTaskUri(task.getId()));
+      completePost.setEntity(new StringEntity("{}"));
+      completePost.addHeader("Content-Type", "application/json");
+      response = client.execute(completePost);
+      if (response.getStatusLine().getStatusCode() != 204) {
+        throw new RuntimeException("Wrong error code when completing user tasks!");
+      }
+    } catch (Exception e) {
+      logger.error("Could not complete user task!", e);
+    } finally {
+      closeResponse(response);
     }
-    response.close();
   }
 
   private String getClaimTaskUri(String taskId) {
