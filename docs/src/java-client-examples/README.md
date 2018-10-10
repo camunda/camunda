@@ -29,7 +29,6 @@ Import the Maven project in the `samples` directory into your IDE to start hacki
 
 ## Topic
 
-* [Create a Topic](java-client-examples/topic-create.html)
 * [Subscribe to a Topic](java-client-examples/topic-subscription-open.html)
 
 ## Cluster

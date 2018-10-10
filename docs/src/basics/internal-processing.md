@@ -3,14 +3,14 @@
 Internally, Zeebe is implemented as a collection of _stream processors_ working on record streams \(partitions\). The stream processing model is used since it is a unified approach to provide:
 
 * Command Protocol \(Request-Response\),
-* Subscription Protocol \(Streaming\),
+* Record Export \(Streaming\),
 * Workflow Evaluation \(Asynchronous Background Tasks\)
 
-In addition, it solves the history problem: The record stream provides exactly the kind of exhaustive audit log that a workflow engine needs to produce.
+Record export solves the history problem: The stream provides exactly the kind of exhaustive audit log that a workflow engine needs to produce.
 
 ## State Machines
 
-Zeebe manages stateful entities: Jobs, Workflows, etc. Internally, these entities are implemented as _State Machines_ managed by a broker.
+Zeebe manages stateful entities: Jobs, Workflows, etc. Internally, these entities are implemented as _State Machines_ managed by a stream processor.
 
 The concept of the state machine pattern is simple: An instance of a state machine is always in one of several logical states. From each state, a set of transitions defines the next possible states. Transitioning into a new state may produce outputs/side effects.
 
