@@ -40,7 +40,7 @@
     <version.netty.tcnative>2.0.17.Final</version.netty.tcnative>
     <version.protobuf>3.6.1</version.protobuf>
     <version.protoc>3.6.0</version.protoc>
-    <version.rocksdbjni>5.14.2</version.rocksdbjni>
+    <version.rocksdbjni>5.15.10</version.rocksdbjni>
     <version.sbe>1.8.9</version.sbe>
     <version.scala-parser>1.0.6</version.scala-parser>
     <version.scala>2.12.2</version.scala>
