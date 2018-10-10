@@ -142,7 +142,7 @@ apiDiagram.fetchWorkflowXML = mockResolvedAsyncFn('');
 
 jest.mock('bpmn-js', () => ({}));
 
-describe.skip('Instances', () => {
+describe('Instances', () => {
   describe('rendering filters', () => {
     beforeEach(() => {
       api.fetchWorkflowInstancesCount.mockClear();
