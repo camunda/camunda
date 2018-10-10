@@ -20,13 +20,18 @@ public class RawDataSingleReportResultDtoMapperTest {
 
   @Test
   public void testMapFromSearchResponse_hitCountNotEqualTotalCount() {
-    final RawDataSingleReportResultDtoMapper mapper = new RawDataSingleReportResultDtoMapper(2L);
+    // given
+    Long rawDataLimit = 2L;
+    Long actualInstanceCount = 3L;
+    final RawDataSingleReportResultDtoMapper mapper = new RawDataSingleReportResultDtoMapper(rawDataLimit);
+    final SearchResponse searchResponse = createSearchResponseMock(rawDataLimit.intValue(), actualInstanceCount);
 
-    final SearchResponse searchResponse = createSearchResponseMock(2, 3L);
-
+    // when
     final RawDataSingleReportResultDto result = mapper.mapFrom(searchResponse, objectMapper);
-    assertThat(result.getResult().size(), is(2));
-    assertThat(result.getProcessInstanceCount(), is(3L));
+
+    // then
+    assertThat(result.getResult().size(), is(rawDataLimit.intValue()));
+    assertThat(result.getProcessInstanceCount(), is(actualInstanceCount));
   }
 
   private SearchResponse createSearchResponseMock(final Integer hitCount, final Long totalCount) {
