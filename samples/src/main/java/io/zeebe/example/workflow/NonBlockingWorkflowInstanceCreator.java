@@ -15,21 +15,21 @@
  */
 package io.zeebe.example.workflow;
 
-import io.zeebe.gateway.ZeebeClient;
-import io.zeebe.gateway.ZeebeClientBuilder;
-import io.zeebe.gateway.api.clients.WorkflowClient;
-import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
-import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.ZeebeClientBuilder;
+import io.zeebe.client.api.ZeebeFuture;
+import io.zeebe.client.api.clients.WorkflowClient;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
 
 public class NonBlockingWorkflowInstanceCreator {
   public static void main(final String[] args) {
-    final String broker = "127.0.0.1:26501";
+    final String broker = "127.0.0.1:26500";
     final int numberOfInstances = 100_000;
     final String bpmnProcessId = "demoProcess";
 
     final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder().brokerContactPoint(broker);
 
-    try (final ZeebeClient client = builder.build()) {
+    try (ZeebeClient client = builder.build()) {
       final WorkflowClient workflowClient = client.workflowClient();
 
       System.out.println("Creating " + numberOfInstances + " workflow instances");
@@ -40,7 +40,7 @@ public class NonBlockingWorkflowInstanceCreator {
 
       while (instancesCreating < numberOfInstances) {
         // this is non-blocking/async => returns a future
-        final ActorFuture<WorkflowInstanceEvent> future =
+        final ZeebeFuture<WorkflowInstanceEvent> future =
             workflowClient
                 .newCreateInstanceCommand()
                 .bpmnProcessId(bpmnProcessId)

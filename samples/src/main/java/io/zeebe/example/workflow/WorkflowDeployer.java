@@ -15,20 +15,20 @@
  */
 package io.zeebe.example.workflow;
 
-import io.zeebe.gateway.ZeebeClient;
-import io.zeebe.gateway.ZeebeClientBuilder;
-import io.zeebe.gateway.api.clients.WorkflowClient;
-import io.zeebe.gateway.api.events.DeploymentEvent;
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.ZeebeClientBuilder;
+import io.zeebe.client.api.clients.WorkflowClient;
+import io.zeebe.client.api.events.DeploymentEvent;
 
 public class WorkflowDeployer {
 
   public static void main(final String[] args) {
-    final String broker = "localhost:26501";
+    final String broker = "localhost:26500";
 
     final ZeebeClientBuilder clientBuilder =
         ZeebeClient.newClientBuilder().brokerContactPoint(broker);
 
-    try (final ZeebeClient client = clientBuilder.build()) {
+    try (ZeebeClient client = clientBuilder.build()) {
       final WorkflowClient workflowClient = client.workflowClient();
 
       final DeploymentEvent deploymentEvent =
@@ -38,7 +38,7 @@ public class WorkflowDeployer {
               .send()
               .join();
 
-      System.out.println(deploymentEvent.getState());
+      System.out.println("Deployment created with key: " + deploymentEvent.getKey());
     }
   }
 }

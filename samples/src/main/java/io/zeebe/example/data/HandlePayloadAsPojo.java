@@ -15,21 +15,21 @@
  */
 package io.zeebe.example.data;
 
-import io.zeebe.gateway.ZeebeClient;
-import io.zeebe.gateway.ZeebeClientBuilder;
-import io.zeebe.gateway.api.clients.JobClient;
-import io.zeebe.gateway.api.clients.WorkflowClient;
-import io.zeebe.gateway.api.events.JobEvent;
-import io.zeebe.gateway.api.subscription.JobHandler;
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.ZeebeClientBuilder;
+import io.zeebe.client.api.clients.JobClient;
+import io.zeebe.client.api.clients.WorkflowClient;
+import io.zeebe.client.api.response.ActivatedJob;
+import io.zeebe.client.api.subscription.JobHandler;
 import java.util.Scanner;
 
 public class HandlePayloadAsPojo {
   public static void main(final String[] args) {
-    final String broker = "127.0.0.1:26501";
+    final String broker = "127.0.0.1:26500";
 
     final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder().brokerContactPoint(broker);
 
-    try (final ZeebeClient client = builder.build()) {
+    try (ZeebeClient client = builder.build()) {
       final WorkflowClient workflowClient = client.workflowClient();
       final JobClient jobClient = client.jobClient();
 
@@ -53,7 +53,7 @@ public class HandlePayloadAsPojo {
 
   private static class DemoJobHandler implements JobHandler {
     @Override
-    public void handle(final JobClient client, final JobEvent job) {
+    public void handle(final JobClient client, final ActivatedJob job) {
       // read the payload of the job
       final Order order = job.getPayloadAsType(Order.class);
       System.out.println("new job with orderId: " + order.getOrderId());
@@ -61,7 +61,7 @@ public class HandlePayloadAsPojo {
       // update the payload and complete the job
       order.setTotalPrice(46.50);
 
-      client.newCompleteCommand(job).payload(order).send();
+      client.newCompleteCommand(job.getKey()).payload(order).send();
     }
   }
 
@@ -87,7 +87,7 @@ public class HandlePayloadAsPojo {
   }
 
   private static void waitUntilSystemInput(final String exitCode) {
-    try (final Scanner scanner = new Scanner(System.in)) {
+    try (Scanner scanner = new Scanner(System.in)) {
       while (scanner.hasNextLine()) {
         final String nextLine = scanner.nextLine();
         if (nextLine.contains(exitCode)) {

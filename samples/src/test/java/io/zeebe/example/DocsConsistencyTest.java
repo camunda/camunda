@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.jobs;
+package io.zeebe.example;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.example.cluster.TopologyViewer;
 import io.zeebe.example.data.HandlePayloadAsPojo;
 import io.zeebe.example.job.JobWorkerCreator;
-import io.zeebe.example.topic.TopicSubscriber;
 import io.zeebe.example.workflow.DeploymentViewer;
 import io.zeebe.example.workflow.NonBlockingWorkflowInstanceCreator;
 import io.zeebe.example.workflow.WorkflowDeployer;
@@ -41,7 +40,6 @@ public class DocsConsistencyTest {
         new Object[][] {
           {TopologyViewer.class, "io.zeebe.example.cluster.TopologyViewer"},
           {JobWorkerCreator.class, "io.zeebe.example.job.JobWorkerCreator"},
-          {TopicSubscriber.class, "io.zeebe.example.topic.TopicSubscriber"},
           {DeploymentViewer.class, "io.zeebe.example.workflow.DeploymentViewer"},
           {
             NonBlockingWorkflowInstanceCreator.class,

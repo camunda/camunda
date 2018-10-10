@@ -52,5 +52,4 @@
     * [Request all Workflows](java-client-examples/workflow-deployment-request.md)
     * [Open a Job Worker](java-client-examples/job-worker-open.md)
     * [Handle the payload as POJO](java-client-examples/data-pojo.md)
-    * [Subscribe to a Topic](java-client-examples/topic-subscription-open.md)
     * [Request Cluster Topology](java-client-examples/cluster-topology-request.md)
