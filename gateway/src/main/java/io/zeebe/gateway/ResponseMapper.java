@@ -59,8 +59,7 @@ public class ResponseMapper {
     }
   }
 
-  public static HealthResponse toHealthResponse(
-      int partitionId, long key, TopologyResponseDto brokerResponse) {
+  public static HealthResponse toHealthResponse(long key, TopologyResponseDto brokerResponse) {
     final HealthResponse.Builder healthResponseBuilder = HealthResponse.newBuilder();
     final ArrayList<BrokerInfo> infos = new ArrayList<>();
 
@@ -90,7 +89,7 @@ public class ResponseMapper {
   }
 
   public static DeployWorkflowResponse toDeployWorkflowResponse(
-      int partitionId, long key, DeploymentRecord brokerResponse) {
+      long key, DeploymentRecord brokerResponse) {
     final DeployWorkflowResponse.Builder deployWorkflowResponseBuilder =
         DeployWorkflowResponse.newBuilder();
 
@@ -106,53 +105,49 @@ public class ResponseMapper {
     return deployWorkflowResponseBuilder.build();
   }
 
-  public static Empty emptyResponse(int partitionId, long key, Object brokerResponse) {
+  public static Empty emptyResponse(long key, Object brokerResponse) {
     return Empty.getDefaultInstance();
   }
 
-  public static CreateJobResponse toCreateJobResponse(
-      int partitionId, long key, JobRecord brokerResponse) {
-    return CreateJobResponse.newBuilder().setKey(key).setPartitionId(partitionId).build();
+  public static CreateJobResponse toCreateJobResponse(long key, JobRecord brokerResponse) {
+    return CreateJobResponse.newBuilder().setKey(key).build();
   }
 
   public static UpdateJobRetriesResponse toUpdateJobRetriesResponse(
-      int partitionId, long key, JobRecord brokerResponse) {
+      long key, JobRecord brokerResponse) {
     return UpdateJobRetriesResponse.getDefaultInstance();
   }
 
-  public static FailJobResponse toFailJobResponse(
-      int partitionId, long key, JobRecord brokerResponse) {
+  public static FailJobResponse toFailJobResponse(long key, JobRecord brokerResponse) {
     return FailJobResponse.getDefaultInstance();
   }
 
-  public static CompleteJobResponse toCompleteJobResponse(
-      int partitionId, long key, JobRecord brokerResponse) {
+  public static CompleteJobResponse toCompleteJobResponse(long key, JobRecord brokerResponse) {
     return CompleteJobResponse.newBuilder().build();
   }
 
   public static CreateWorkflowInstanceResponse toCreateWorkflowInstanceResponse(
-      int partitionId, long key, WorkflowInstanceRecord brokerResponse) {
+      long key, WorkflowInstanceRecord brokerResponse) {
     return CreateWorkflowInstanceResponse.newBuilder()
         .setWorkflowKey(brokerResponse.getWorkflowKey())
         .setBpmnProcessId(bufferAsString(brokerResponse.getBpmnProcessId()))
         .setVersion(brokerResponse.getVersion())
-        .setPartitionId(partitionId)
         .setWorkflowInstanceKey(brokerResponse.getWorkflowInstanceKey())
         .build();
   }
 
   public static CancelWorkflowInstanceResponse toCancelWorkflowInstanceResponse(
-      int partitionId, long key, WorkflowInstanceRecord brokerResponse) {
+      long key, WorkflowInstanceRecord brokerResponse) {
     return CancelWorkflowInstanceResponse.newBuilder().build();
   }
 
   public static UpdateWorkflowInstancePayloadResponse toUpdateWorkflowInstancePayloadResponse(
-      int partitionId, long key, WorkflowInstanceRecord brokerResponse) {
+      long key, WorkflowInstanceRecord brokerResponse) {
     return UpdateWorkflowInstancePayloadResponse.newBuilder().build();
   }
 
   @FunctionalInterface
   public interface BrokerResponseMapper<BrokerResponseDto, GrpcResponse> {
-    GrpcResponse apply(int partitionId, long key, BrokerResponseDto responseDto);
+    GrpcResponse apply(long key, BrokerResponseDto responseDto);
   }
 }

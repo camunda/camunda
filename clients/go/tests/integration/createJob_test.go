@@ -52,7 +52,6 @@ var _ = Describe("CreateJob", func() {
 			Expect(response).NotTo(BeNil())
 
 			Expect(len(request.GetRequest().CustomHeaders)).To(Equal(17))
-			Expect(response.PartitionId).NotTo(Equal(0))
 			Expect(response.Key).NotTo(Equal(0))
 		})
 
@@ -76,7 +75,6 @@ var _ = Describe("CreateJob", func() {
 				Expect(response).NotTo(BeNil())
 
 				Expect(len(request.GetRequest().CustomHeaders)).To(Equal(17))
-				Expect(response.PartitionId).NotTo(Equal(0))
 				Expect(response.Key).NotTo(Equal(0))
 			}
 		})

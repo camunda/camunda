@@ -23,7 +23,6 @@ public class CreateWorkflowInstanceResponseImpl implements WorkflowInstanceEvent
   private final long workflowKey;
   private final String bpmnProcessId;
   private final int version;
-  private final int partitionId;
   private final long workflowInstanceKey;
 
   public CreateWorkflowInstanceResponseImpl(
@@ -31,7 +30,6 @@ public class CreateWorkflowInstanceResponseImpl implements WorkflowInstanceEvent
     this.workflowKey = response.getWorkflowKey();
     this.bpmnProcessId = response.getBpmnProcessId();
     this.version = response.getVersion();
-    this.partitionId = response.getPartitionId();
     this.workflowInstanceKey = response.getWorkflowInstanceKey();
   }
 
@@ -51,11 +49,6 @@ public class CreateWorkflowInstanceResponseImpl implements WorkflowInstanceEvent
   }
 
   @Override
-  public int getPartitionId() {
-    return partitionId;
-  }
-
-  @Override
   public long getWorkflowInstanceKey() {
     return workflowInstanceKey;
   }
@@ -70,8 +63,6 @@ public class CreateWorkflowInstanceResponseImpl implements WorkflowInstanceEvent
         + '\''
         + ", version="
         + version
-        + ", partitionId="
-        + partitionId
         + ", workflowInstanceKey="
         + workflowInstanceKey
         + '}';

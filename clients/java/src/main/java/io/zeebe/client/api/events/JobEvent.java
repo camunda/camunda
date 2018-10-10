@@ -16,10 +16,6 @@
 package io.zeebe.client.api.events;
 
 public interface JobEvent {
-
-  /** Partition on which the job was created; */
-  int getPartitionId();
-
   /** Unique key of the created job on the partition */
   long getKey();
 }

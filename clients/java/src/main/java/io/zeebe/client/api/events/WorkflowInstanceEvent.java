@@ -26,9 +26,6 @@ public interface WorkflowInstanceEvent {
   /** Version of the workflow which this instance was created for */
   int getVersion();
 
-  /** Partition on which the workflow instance was created; */
-  int getPartitionId();
-
   /** Unique key of the created workflow instance on the partition */
   long getWorkflowInstanceKey();
 }

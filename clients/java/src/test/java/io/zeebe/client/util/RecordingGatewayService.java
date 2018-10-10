@@ -178,18 +178,13 @@ public class RecordingGatewayService extends GatewayImplBase {
                 .build());
   }
 
-  public void onCreateJobRequest(int partitionId, long key) {
+  public void onCreateJobRequest(long key) {
     addRequestHandler(
-        CreateJobRequest.class,
-        request -> CreateJobResponse.newBuilder().setPartitionId(partitionId).setKey(key).build());
+        CreateJobRequest.class, request -> CreateJobResponse.newBuilder().setKey(key).build());
   }
 
   public void onCreateWorkflowInstanceRequest(
-      long workflowKey,
-      String bpmnProcessId,
-      int version,
-      int partitionId,
-      long workflowInstanceKey) {
+      long workflowKey, String bpmnProcessId, int version, long workflowInstanceKey) {
     addRequestHandler(
         CreateWorkflowInstanceRequest.class,
         request ->
@@ -197,7 +192,6 @@ public class RecordingGatewayService extends GatewayImplBase {
                 .setWorkflowKey(workflowKey)
                 .setBpmnProcessId(bpmnProcessId)
                 .setVersion(version)
-                .setPartitionId(partitionId)
                 .setWorkflowInstanceKey(workflowInstanceKey)
                 .build());
   }

@@ -198,8 +198,7 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
       BrokerResponse<BrokerResponseT> response) {
     if (response.isResponse()) {
       final GrpcResponseT grpcResponse =
-          responseMapper.apply(
-              response.getPartitionId(), response.getKey(), response.getResponse());
+          responseMapper.apply(response.getKey(), response.getResponse());
       streamObserver.onNext(grpcResponse);
       streamObserver.onCompleted();
     } else if (response.isRejection()) {

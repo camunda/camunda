@@ -72,8 +72,7 @@ message CreateJobRequest {
 }
 
 message CreateJobResponse {
-  int32 partitionId = 1;
-  int64 key = 2;
+  int64 key = 1;
 }
 
 message UpdateJobRetriesRequest {
@@ -114,7 +113,6 @@ message CreateWorkflowInstanceResponse {
   int64 workflowKey = 1;
   string bpmnProcessId = 2;
   int32 version = 3;
-  int32 partitionId = 4;
   int64 workflowInstanceKey = 5;
 }
 

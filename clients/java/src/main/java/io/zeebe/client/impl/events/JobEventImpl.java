@@ -20,24 +20,19 @@ import io.zeebe.gateway.protocol.GatewayOuterClass;
 
 public class JobEventImpl implements JobEvent {
 
-  private int partitionId;
   private long key;
 
   public JobEventImpl(final GatewayOuterClass.CreateJobResponse response) {
-    partitionId = response.getPartitionId();
     key = response.getKey();
   }
 
-  public int getPartitionId() {
-    return partitionId;
-  }
-
+  @Override
   public long getKey() {
     return key;
   }
 
   @Override
   public String toString() {
-    return "CreateJobResponseImpl{" + "partitionId=" + partitionId + ", key=" + key + '}';
+    return "CreateJobResponseImpl{" + "key=" + key + '}';
   }
 }

@@ -36,7 +36,7 @@ public class CreateWorkflowInstanceTest extends ClientTest {
   @Test
   public void shouldCreateWorkflowInstanceByWorkflowInstanceKey() {
     // given
-    gatewayService.onCreateWorkflowInstanceRequest(123, "testProcess", 12, 2, 32);
+    gatewayService.onCreateWorkflowInstanceRequest(123, "testProcess", 12, 32);
 
     // when
     final WorkflowInstanceEvent response =
@@ -46,7 +46,6 @@ public class CreateWorkflowInstanceTest extends ClientTest {
     assertThat(response.getWorkflowKey()).isEqualTo(123);
     assertThat(response.getBpmnProcessId()).isEqualTo("testProcess");
     assertThat(response.getVersion()).isEqualTo(12);
-    assertThat(response.getPartitionId()).isEqualTo(2);
     assertThat(response.getWorkflowInstanceKey()).isEqualTo(32);
 
     final CreateWorkflowInstanceRequest request = gatewayService.getLastRequest();
