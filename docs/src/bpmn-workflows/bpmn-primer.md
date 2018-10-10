@@ -74,6 +74,20 @@ Events can be added to the workflow in various ways. Not only can they be used t
 
 See the [Events](/bpmn-workflows/events.html) section on which types of events are currently supported and how to use them.
 
+### Sub Processes: Grouping Elements
+
+*Sub Processes* are element containers that allow to define common functionality. For example, we can attach an event to a sub process's border:
+
+<!-- TODO: replace by token sim gif -->
+
+<center>
+![payload](/bpmn-workflows/sub-process.png)
+</center>
+
+When the event is triggered, the sub process is interrupted regardless which of its elements is currently active.
+
+See the [Sub Processes](/bpmn-workflows/subprocesses.html) section on which types of sub processes are currently supported and how to use them.
+
 ## BPMN Coverage
 
 As noted in the individual sections, Zeebe currently only supports a subset of BPMN elements. It is a goal for the Zeebe project to eventually support large parts of the standard.
