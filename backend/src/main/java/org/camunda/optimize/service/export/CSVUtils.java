@@ -8,11 +8,13 @@ import java.beans.IntrospectionException;
 import java.beans.PropertyDescriptor;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 
 public class CSVUtils {
@@ -21,61 +23,92 @@ public class CSVUtils {
   private static Logger logger = LoggerFactory.getLogger(CSVUtils.class);
 
   public static List<String[]> map(List<RawDataProcessInstanceDto> rawData, Integer limit, Integer offset) {
-    List<String[]> result = new ArrayList<>();
+    return map(rawData, limit, offset, Collections.emptySet());
+  }
 
-    Set<String> variableKeys = new HashSet<>();
-    for (RawDataProcessInstanceDto pi : rawData) {
-      if (pi.getVariables() != null) {
-        variableKeys.addAll(pi.getVariables().keySet());
-      }
-    }
+  public static List<String[]> map(List<RawDataProcessInstanceDto> rawData,
+                                   Integer limit,
+                                   Integer offset,
+                                   Set<String> excludedColumns) {
+    final List<String[]> result = new ArrayList<>();
 
-    String[] headerLine = constructHeaderLine(variableKeys);
+    // column names contain prefixes that must be stripped off to get the plain keys needed for exclusion
+    final Set<String> excludedKeys = stripOffVariablePrefixes(excludedColumns);
+
+    final List<String> includedDtoFields = extractAllDtoFieldKeys(RawDataProcessInstanceDto.class);
+    includedDtoFields.removeAll(excludedKeys);
+    final List<String> includedVariableKeys = extractAllVariableKeys(rawData);
+    includedVariableKeys.removeAll(excludedKeys);
+
+    final List<String> allIncludedKeys = union(includedDtoFields, includedVariableKeys);
+    final String[] headerLine = constructHeaderLine(includedDtoFields, includedVariableKeys);
     result.add(headerLine);
 
     int currentPosition = 0;
     for (RawDataProcessInstanceDto pi : rawData) {
       boolean limitNotExceeded = isLimitNotExceeded(limit, result);
-      boolean offsetPassed = isOffsetPassed(offset, currentPosition);
-      if ((offset == null && limitNotExceeded) || (offsetPassed && limitNotExceeded)) {
-        String[] dataLine = newEmptyDataLine(variableKeys);
+      if ((offset == null && limitNotExceeded) || (isOffsetPassed(offset, currentPosition) && limitNotExceeded)) {
+        final String[] dataLine = new String[allIncludedKeys.size()];
         for (int i = 0; i < dataLine.length; i++) {
-          dataLine[i] = getDataValueForHeader(headerLine[i], pi);
+          final String currentKey = allIncludedKeys.get(i);
+          final Optional<String> optionalValue = includedVariableKeys.contains(currentKey)
+            ? getDataValueForVariableKey(currentKey, pi)
+            : getDataValueForDtoFieldKey(currentKey, pi);
+          dataLine[i] = optionalValue.orElse(null);
         }
         result.add(dataLine);
       }
       currentPosition = currentPosition + 1;
     }
 
-    for (int i = 0; i < result.get(0).length; i++) {
-      if (variableKeys.contains(result.get(0)[i])) {
-        result.get(0)[i] = VARIABLE_PREFIX + result.get(0)[i];
+    return result;
+  }
+
+  private static Set<String> stripOffVariablePrefixes(Set<String> excludedColumns) {
+    return excludedColumns.stream()
+      .map(columnName -> columnName.replace(VARIABLE_PREFIX, ""))
+      .collect(Collectors.toSet());
+  }
+
+  private static List<String> union(List<String> list1, List<String> list2) {
+    final List<String> unionList = new ArrayList<>(list1);
+    unionList.addAll(list2);
+    return unionList;
+  }
+
+  private static List<String> extractAllDtoFieldKeys(Class<RawDataProcessInstanceDto> dtoClass) {
+    final List<String> fieldKeys = new ArrayList<>();
+    for (Field f : dtoClass.getDeclaredFields()) {
+      if (!MAP.equals(f.getType().getName())) {
+        fieldKeys.add(f.getName());
       }
     }
+    return fieldKeys;
+  }
 
-    return result;
+  private static List<String> extractAllVariableKeys(List<RawDataProcessInstanceDto> rawData) {
+    Set<String> variableKeys = new HashSet<>();
+    for (RawDataProcessInstanceDto pi : rawData) {
+      if (pi.getVariables() != null) {
+        variableKeys.addAll(pi.getVariables().keySet());
+      }
+    }
+    return new ArrayList<>(variableKeys);
   }
 
   public static boolean isOffsetPassed(Integer offset, int currentPosition) {
     return offset != null && currentPosition >= offset;
   }
 
-  private static String getDataValueForHeader(String headerName, RawDataProcessInstanceDto pi) {
-    String name = headerName;
-    Optional<PropertyDescriptor> propertyDescriptor = Optional.empty();
-    try {
-      propertyDescriptor = Optional.of(new PropertyDescriptor(name, RawDataProcessInstanceDto.class));
-    } catch (IntrospectionException e) {
-      //not bad, there is no field like that, so it's a variable
-    }
+  private static Optional<String> getDataValueForVariableKey(String key, RawDataProcessInstanceDto pi) {
+    return Optional.ofNullable(pi.getVariables())
+      .map(variables -> variables.get(key))
+      .map(Object::toString);
+  }
 
-    String variableValue = null;
-    if (pi.getVariables() != null) {
-      variableValue = Optional.ofNullable(pi.getVariables().get(name))
-          .map(Object::toString)
-          .orElse(null);
-    }
-    String dataValue = propertyDescriptor
+  private static Optional<String> getDataValueForDtoFieldKey(String key, RawDataProcessInstanceDto pi) {
+    try {
+      return Optional.of(new PropertyDescriptor(key, RawDataProcessInstanceDto.class))
         .map((descriptor) -> {
           Optional<Object> piValue = Optional.empty();
           try {
@@ -83,40 +116,21 @@ public class CSVUtils {
           } catch (Exception e) {
             logger.error("can't read value of field", e);
           }
-          return piValue.map((fieldValue) -> fieldValue.toString())
-              .orElse(null);
-        })
-        .orElse(variableValue);
-
-    return dataValue;
-  }
-
-  private static String[] constructHeaderLine(Set<String> variableKeys) {
-    String[] headerLine = newEmptyHeaderLine(variableKeys);
-    int i = 0;
-    for (Field f : RawDataProcessInstanceDto.class.getDeclaredFields()) {
-      if (!MAP.equals(f.getType().getName())) {
-        headerLine[i] = f.getName();
-        i = i + 1;
-      }
+          return piValue.map(Object::toString).orElse(null);
+        });
+    } catch (IntrospectionException e) {
+      // no field like that
+      logger.error("Tried to access RawDataProcessInstanceDto field that did not exist {}", key);
+      return Optional.empty();
     }
-    for (String varName : variableKeys) {
-      headerLine[i] = varName;
-      i = i + 1;
-    }
-    return headerLine;
   }
 
-  private static String[] newEmptyHeaderLine(Set<String> variableKeys) {
-    //one less then all fields due to variables map
-    int sizeWithoutMap = RawDataProcessInstanceDto.class.getDeclaredFields().length - 1;
-    return new String[sizeWithoutMap + variableKeys.size()];
-  }
+  private static String[] constructHeaderLine(List<String> fieldKeys, List<String> variableKeys) {
+    List<String> headerLine = new ArrayList<>(fieldKeys);
 
-  private static String[] newEmptyDataLine(Set<String> variableKeys) {
-    //one less then all fields due to variables map
-    int sizeWithoutMap = RawDataProcessInstanceDto.class.getDeclaredFields().length - 1;
-    return new String[sizeWithoutMap + variableKeys.size()];
+    variableKeys.stream().map(key -> VARIABLE_PREFIX + key).forEach(headerLine::add);
+
+    return headerLine.toArray(new String[0]);
   }
 
   public static List<String[]> map(Map<String, Long> valuesMap, Integer limit, Integer offset) {
@@ -138,7 +152,7 @@ public class CSVUtils {
   }
 
   public static boolean isLimitNotExceeded(Integer limit, List<String[]> result) {
-    return limit == null || (limit != null && result.size() <= limit);
+    return limit == null || result.size() <= limit;
   }
 
   public static List<String[]> map(List<RawDataProcessInstanceDto> toMap) {

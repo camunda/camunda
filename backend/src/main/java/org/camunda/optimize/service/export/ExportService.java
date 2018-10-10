@@ -17,9 +17,11 @@ import org.springframework.stereotype.Component;
 import java.io.BufferedWriter;
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStreamWriter;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 
 @Component
@@ -34,16 +36,16 @@ public class ExportService {
   private Logger logger = LoggerFactory.getLogger(getClass());
 
   private byte[] writeRawDataToBytes(
-      Map<String, Long> result,
-      GroupByDto groupBy,
-      ViewDto view,
-      Integer limit,
-      Integer offset
+    Map<String, Long> result,
+    GroupByDto groupBy,
+    ViewDto view,
+    Integer limit,
+    Integer offset
   ) {
 
     List<String[]> csvStrings = CSVUtils.map(result, limit, offset);
 
-    String[] header = new String [2];
+    String[] header = new String[2];
     header[0] = groupBy.toString();
     header[1] = view.getOperation() + "_" + view.getEntity() + "_" + view.getProperty();
     csvStrings.add(0, header);
@@ -52,7 +54,14 @@ public class ExportService {
   }
 
   private byte[] writeRawDataToBytes(List<RawDataProcessInstanceDto> rawData, Integer limit, Integer offset) {
-    List<String[]> csvStrings = CSVUtils.map(rawData, limit, offset);
+    return writeRawDataToBytes(rawData, limit, offset, Collections.emptySet());
+  }
+
+  private byte[] writeRawDataToBytes(List<RawDataProcessInstanceDto> rawData,
+                                     Integer limit,
+                                     Integer offset,
+                                     Set<String> excludedColumns) {
+    List<String[]> csvStrings = CSVUtils.map(rawData, limit, offset, excludedColumns);
 
     return getCSVBytes(csvStrings);
   }
@@ -60,7 +69,7 @@ public class ExportService {
   private byte[] getCSVBytes(List<String[]> csvStrings) {
     ByteArrayOutputStream arrayOutputStream = new ByteArrayOutputStream();
     BufferedWriter bufferedWriter = new BufferedWriter(
-        new OutputStreamWriter(arrayOutputStream));
+      new OutputStreamWriter(arrayOutputStream));
     CSVWriter csvWriter = new CSVWriter(bufferedWriter);
     byte[] bytes = null;
     try {
@@ -76,7 +85,11 @@ public class ExportService {
     return bytes;
   }
 
-  private byte[] getCSVForReport(String userId, String reportId, Integer limit, Integer offset) {
+  private byte[] getCSVForReport(String userId,
+                                 String reportId,
+                                 Integer limit,
+                                 Integer offset,
+                                 Set<String> excludedColumns) {
 
     Optional<ReportResultDto> reportResultDto;
     reportResultDto = Optional.of(reportService.evaluateSavedReport(userId, reportId));
@@ -86,19 +99,20 @@ public class ExportService {
       if (reportResult.getClass().equals(RawDataSingleReportResultDto.class)) {
         RawDataSingleReportResultDto cast = (RawDataSingleReportResultDto) reportResult;
         bytes = this.writeRawDataToBytes(
-            cast.getResult(),
-            limit,
-            offset
+          cast.getResult(),
+          limit,
+          offset,
+          excludedColumns
         );
 
       } else if (reportResult.getClass().equals(MapSingleReportResultDto.class)) {
         MapSingleReportResultDto cast = (MapSingleReportResultDto) reportResult;
         bytes = this.writeRawDataToBytes(
-            cast.getResult(),
-            cast.getData().getGroupBy(),
-            cast.getData().getView(),
-            limit,
-            offset
+          cast.getResult(),
+          cast.getData().getGroupBy(),
+          cast.getData().getView(),
+          limit,
+          offset
         );
       }
       return bytes;
@@ -112,12 +126,13 @@ public class ExportService {
     return this.writeRawDataToBytes(toMap, null, null);
   }
 
-  public byte[] getCSVForReport(String userId, String reportId) {
+  public byte[] getCSVForReport(String userId, String reportId, Set<String> excludedColumns) {
     return this.getCSVForReport(
       userId,
       reportId,
       configurationService.getExportCsvLimit(),
-      configurationService.getExportCsvOffset()
+      configurationService.getExportCsvOffset(),
+      excludedColumns
     );
   }
 }

@@ -8,13 +8,18 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.rest.util.AuthenticationUtil.getRequestUser;
-
 
 
 @Path("/export")
@@ -26,15 +31,23 @@ public class ExportRestService {
 
   @GET
   @Path("csv/{reportId}/{fileName}")
-  public Response getCsvReport (
-      @Context ContainerRequestContext requestContext,
-      @PathParam("reportId") String reportId,
-      @PathParam("fileName") String fileName
+  public Response getCsvReport(
+    @Context ContainerRequestContext requestContext,
+    @PathParam("reportId") String reportId,
+    @PathParam("fileName") String fileName,
+    @QueryParam("excludedColumns") String excludedColumnsString
   ) {
     String userId = getRequestUser(requestContext);
     String resultFileName = fileName == null ? System.currentTimeMillis() + ".csv" : fileName;
-    return Response.ok(exportService.getCSVForReport(userId, reportId), MediaType.APPLICATION_OCTET_STREAM)
-        .header("Content-Disposition", "attachment; filename=" + resultFileName)
-        .build();
+    Set<String> excludedColumns = Optional.ofNullable(excludedColumnsString)
+      .map(strings -> Arrays.stream(strings.split(",")).collect(Collectors.toSet()))
+      .orElse(Collections.emptySet());
+
+    return Response
+      .ok(
+        exportService.getCSVForReport(userId, reportId, excludedColumns),
+        MediaType.APPLICATION_OCTET_STREAM
+      ).header("Content-Disposition", "attachment; filename=" + resultFileName)
+      .build();
   }
 }
