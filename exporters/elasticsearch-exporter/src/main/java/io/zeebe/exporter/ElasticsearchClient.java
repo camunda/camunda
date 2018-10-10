@@ -43,6 +43,7 @@ import org.slf4j.Logger;
 public class ElasticsearchClient {
 
   public static final String INDEX_TEMPLATE_FILENAME_PATTERN = "/zeebe-record-%s-template.json";
+  public static final String INDEX_DELIMITER = "_";
 
   private final ElasticsearchExporterConfiguration configuration;
   private final Logger log;
@@ -132,7 +133,10 @@ public class ElasticsearchClient {
     }
 
     // update prefix in template in case it was changed in configuration
-    template.put("index_patterns", Collections.singletonList(templateName + "-*"));
+    template.put("index_patterns", Collections.singletonList(templateName + INDEX_DELIMITER + "*"));
+
+    // update alias in template in case it was changed in configuration
+    template.put("aliases", Collections.singletonMap(templateName, Collections.EMPTY_MAP));
 
     final PutIndexTemplateRequest request =
         new PutIndexTemplateRequest(templateName).source(template);
@@ -179,7 +183,7 @@ public class ElasticsearchClient {
 
   protected String indexFor(final Record<?> record) {
     return indexPrefixForValueType(record.getMetadata().getValueType())
-        + "-"
+        + INDEX_DELIMITER
         + formatter.format(record.getTimestamp());
   }
 

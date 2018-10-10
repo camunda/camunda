@@ -1,6 +1,6 @@
 {
   "index_patterns": [
-    "zeebe-record-workflow-instance-*"
+    "zeebe-record-workflow-instance_*"
   ],
   "order": 20,
   "mappings": {
@@ -34,5 +34,8 @@
         }
       }
     }
+  },
+  "aliases": {
+    "zeebe-record-workflow-instance": {}
   }
 }

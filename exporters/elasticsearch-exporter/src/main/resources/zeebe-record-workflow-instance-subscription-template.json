@@ -1,6 +1,6 @@
 {
   "index_patterns": [
-    "zeebe-record-workflow-instance-subscription-*"
+    "zeebe-record-workflow-instance-subscription_*"
   ],
   "order": 30,
   "mappings": {
@@ -17,10 +17,16 @@
             },
             "messageName": {
               "type": "keyword"
+            },
+            "payload": {
+              "type": "text"
             }
           }
         }
       }
     }
+  },
+  "aliases": {
+    "zeebe-record-workflow-instance-subscription": {}
   }
 }

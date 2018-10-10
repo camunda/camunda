@@ -1,6 +1,6 @@
 {
   "index_patterns": [
-    "zeebe-record-message-subscription-*"
+    "zeebe-record-message-subscription_*"
   ],
   "order": 30,
   "mappings": {
@@ -28,5 +28,8 @@
         }
       }
     }
+  },
+  "aliases": {
+    "zeebe-record-message-subscription": {}
   }
 }
