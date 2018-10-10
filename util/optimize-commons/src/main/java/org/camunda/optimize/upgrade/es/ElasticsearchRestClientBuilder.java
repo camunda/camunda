@@ -6,8 +6,8 @@ import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.ssl.SSLContexts;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.elasticsearch.client.RestClient;
 import org.elasticsearch.client.RestClientBuilder;
 
@@ -78,7 +78,7 @@ public class ElasticsearchRestClientBuilder {
       return builder.build();
     } catch (Exception e) {
       String message = "Could not build ";
-      throw new UpgradeRuntimeException(message, e);
+      throw new OptimizeRuntimeException(message, e);
     }
   }
 
@@ -101,7 +101,7 @@ public class ElasticsearchRestClientBuilder {
       return trustStore;
     } catch (Exception e) {
       String message = "Could not load certificate to connect against secured Elasticsearch!";
-      throw new UpgradeRuntimeException(message, e);
+      throw new OptimizeRuntimeException(message, e);
     }
   }
 }

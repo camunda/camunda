@@ -18,7 +18,7 @@ public class ImportIndexType extends StrictTypeMappingCreator {
   }
 
   @Override
-  protected XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
+  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     return xContentBuilder
       .startObject(ENGINE)
         .field("type", "keyword")

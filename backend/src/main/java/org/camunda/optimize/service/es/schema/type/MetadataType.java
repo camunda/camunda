@@ -6,11 +6,13 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_TYPE_SCHEMA_VERSION;
+
 
 @Component
 public class MetadataType extends StrictTypeMappingCreator {
 
-  public static final String SCHEMA_VERSION = "schemaVersion";
+  public static final String SCHEMA_VERSION = METADATA_TYPE_SCHEMA_VERSION;
 
   @Override
   public String getType() {
@@ -18,7 +20,7 @@ public class MetadataType extends StrictTypeMappingCreator {
   }
 
   @Override
-  protected XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
+  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     return xContentBuilder
       .startObject(SCHEMA_VERSION)
         .field("type", "keyword")

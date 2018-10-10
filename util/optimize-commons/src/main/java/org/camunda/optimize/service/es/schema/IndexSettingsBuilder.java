@@ -1,7 +1,6 @@
 package org.camunda.optimize.service.es.schema;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentBuilder;
@@ -13,7 +12,9 @@ import java.util.Map;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 public class IndexSettingsBuilder {
+
   public static final int MAX_GRAM = 10;
+
   public static Settings build(ConfigurationService configurationService) throws IOException {
     XContentBuilder builder = jsonBuilder();
     builder

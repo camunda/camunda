@@ -20,7 +20,7 @@ public class DurationHeatmapTargetValueType extends StrictTypeMappingCreator {
   }
 
   @Override
-  protected XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
+  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     return xContentBuilder
       .startObject(TARGET_VALUE_LIST)
         .field("type", "nested")

@@ -2,7 +2,6 @@ package org.camunda.optimize.upgrade.service;
 
 import com.jayway.jsonpath.JsonPath;
 import org.apache.http.util.EntityUtils;
-import org.camunda.optimize.service.es.schema.type.MetadataType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.elasticsearch.client.Response;
@@ -15,10 +14,12 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Collections;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_TYPE_SCHEMA_VERSION;
+
 
 public class ValidationService {
   private static final String ENVIRONMENT_CONFIG_YAML_REL_PATH = "/../environment/environment-config.yaml";
-  protected Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger logger = LoggerFactory.getLogger(ValidationService.class);
 
   private ConfigurationService configurationService;
 
@@ -39,7 +40,7 @@ public class ValidationService {
         Integer readTotal = JsonPath.read(entityString, "$.hits.total");
         if (readTotal == 1) {
           String schemaVersion =
-            JsonPath.read(entityString, "$.hits.hits[0]._source." + MetadataType.SCHEMA_VERSION);
+            JsonPath.read(entityString, "$.hits.hits[0]._source." + METADATA_TYPE_SCHEMA_VERSION);
           if (fromVersion.equals(schemaVersion)) {
             schemaMatches = true;
           }

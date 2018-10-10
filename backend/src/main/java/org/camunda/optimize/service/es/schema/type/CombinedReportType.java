@@ -1,17 +1,18 @@
 package org.camunda.optimize.service.es.schema.type;
 
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
 
 @Component
 public class CombinedReportType extends AbstractReportType {
 
   public static final String REPORT_IDS = "reportIds";
   public static final String CONFIGURATION = "configuration";
-
-  public static final String COMBINED_REPORT_TYPE = "combined-report";
 
   @Override
   public String getType() {

@@ -49,7 +49,7 @@ public class ProcessInstanceType extends StrictTypeMappingCreator {
   }
 
   @Override
-  protected XContentBuilder addProperties(XContentBuilder builder) throws IOException {
+  public XContentBuilder addProperties(XContentBuilder builder) throws IOException {
     XContentBuilder newBuilder =  builder
             .startObject(PROCESS_DEFINITION_KEY)
               .field("type", "keyword")

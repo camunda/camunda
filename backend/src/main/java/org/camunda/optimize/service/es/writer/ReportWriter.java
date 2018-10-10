@@ -7,11 +7,11 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
 import org.camunda.optimize.service.es.report.command.util.ReportConstants;
 import org.camunda.optimize.service.es.schema.type.CombinedReportType;
-import org.camunda.optimize.service.es.schema.type.SingleReportType;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
@@ -61,7 +61,7 @@ public class ReportWriter {
     return createNewReportAndReturnId(
       userId,
       ReportConstants.SINGLE_REPORT_TYPE,
-      SingleReportType.SINGLE_REPORT_TYPE
+      ElasticsearchConstants.SINGLE_REPORT_TYPE
     );
   }
 
@@ -71,7 +71,7 @@ public class ReportWriter {
     return createNewReportAndReturnId(
       userId,
       ReportConstants.COMBINED_REPORT_TYPE,
-      CombinedReportType.COMBINED_REPORT_TYPE
+      ElasticsearchConstants.COMBINED_REPORT_TYPE
     );
   }
 
@@ -105,11 +105,11 @@ public class ReportWriter {
   }
 
   public void updateSingleReport(ReportDefinitionUpdateDto updatedReport) throws OptimizeException, JsonProcessingException {
-    updateReport(updatedReport, SingleReportType.SINGLE_REPORT_TYPE);
+    updateReport(updatedReport, ElasticsearchConstants.SINGLE_REPORT_TYPE);
   }
 
   public void updateCombinedReport(ReportDefinitionUpdateDto updatedReport) throws OptimizeException, JsonProcessingException {
-    updateReport(updatedReport, CombinedReportType.COMBINED_REPORT_TYPE);
+    updateReport(updatedReport, ElasticsearchConstants.COMBINED_REPORT_TYPE);
   }
 
   public void updateReport(ReportDefinitionUpdateDto updatedReport, String elasticsearchType)
@@ -143,8 +143,8 @@ public class ReportWriter {
     logger.debug("Deleting single report with id [{}]", reportId);
 
     esclient.prepareDelete(
-      configurationService.getOptimizeIndex(SingleReportType.SINGLE_REPORT_TYPE),
-      SingleReportType.SINGLE_REPORT_TYPE,
+      configurationService.getOptimizeIndex(ElasticsearchConstants.SINGLE_REPORT_TYPE),
+      ElasticsearchConstants.SINGLE_REPORT_TYPE,
       reportId
     )
     .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
@@ -162,7 +162,7 @@ public class ReportWriter {
       Collections.singletonMap("idToRemove", reportId)
     );
 
-    updateByQuery.source(configurationService.getOptimizeIndex(CombinedReportType.COMBINED_REPORT_TYPE))
+    updateByQuery.source(configurationService.getOptimizeIndex(ElasticsearchConstants.COMBINED_REPORT_TYPE))
       .abortOnVersionConflict(false)
       .setMaxRetries(configurationService.getNumberOfRetriesOnConflict())
       .filter(
@@ -184,8 +184,8 @@ public class ReportWriter {
     logger.debug("Deleting combined report with id [{}]", reportId);
 
     esclient.prepareDelete(
-      configurationService.getOptimizeIndex(CombinedReportType.COMBINED_REPORT_TYPE),
-      CombinedReportType.COMBINED_REPORT_TYPE,
+      configurationService.getOptimizeIndex(ElasticsearchConstants.COMBINED_REPORT_TYPE),
+      ElasticsearchConstants.COMBINED_REPORT_TYPE,
       reportId
     )
     .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)

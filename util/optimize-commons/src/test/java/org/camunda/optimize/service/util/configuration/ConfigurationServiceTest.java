@@ -12,7 +12,7 @@ import static org.junit.Assert.assertThat;
 public class ConfigurationServiceTest {
 
   @Test
-  public void getSecret() throws Exception {
+  public void getSecret() {
     ConfigurationService underTest = new ConfigurationService();
     assertThat(underTest.getTokenLifeTime(), is(15));
   }
@@ -47,7 +47,7 @@ public class ConfigurationServiceTest {
   }
 
   @Test
-  public void testCutTrailingSlash() throws Exception {
+  public void testCutTrailingSlash() {
     // given
     String[] locations = {"override-engine-config.yaml"};
     ConfigurationService underTest = new ConfigurationService(locations);

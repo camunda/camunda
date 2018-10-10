@@ -16,6 +16,7 @@ import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.get.GetResponse;
 import org.junit.After;
 import org.junit.Rule;
@@ -45,6 +46,7 @@ import static org.camunda.optimize.test.util.ReportDataHelper.createCombinedRepo
 import static org.camunda.optimize.test.util.ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode;
 import static org.camunda.optimize.test.util.ReportDataHelper.createPiFrequencyCountGroupedByNone;
 import static org.camunda.optimize.test.util.ReportDataHelper.createReportDataViewRawAsTable;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.*;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -83,8 +85,8 @@ public class CombinedReportHandlingIT {
     GetResponse response =
       elasticSearchRule.getClient()
         .prepareGet(
-          elasticSearchRule.getOptimizeIndex(CombinedReportType.COMBINED_REPORT_TYPE),
-          CombinedReportType.COMBINED_REPORT_TYPE,
+          elasticSearchRule.getOptimizeIndex(ElasticsearchConstants.COMBINED_REPORT_TYPE),
+          ElasticsearchConstants.COMBINED_REPORT_TYPE,
           id
         )
         .get();

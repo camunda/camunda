@@ -18,7 +18,7 @@ public abstract class AbstractReportType extends StrictTypeMappingCreator {
   public static final String DATA = "data";
 
   @Override
-  protected XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
+  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
      XContentBuilder newBuilder = xContentBuilder
       .startObject(ID)
         .field("type", "keyword")

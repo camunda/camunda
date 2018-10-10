@@ -10,12 +10,12 @@
   <modules>
     <!-- client should be built before distro -->
     <module>client</module>
+    <module>util</module>
+    <module>plugin</module>
     <module>backend</module>
     <module>qa</module>
     <module>distro</module>
-    <module>plugin</module>
     <module>upgrade</module>
-    <module>util</module>
   </modules>
 
   <properties>

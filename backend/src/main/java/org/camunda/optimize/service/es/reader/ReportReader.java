@@ -2,10 +2,10 @@ package org.camunda.optimize.service.es.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.service.es.schema.type.CombinedReportType;
 import org.camunda.optimize.service.es.schema.type.SingleReportType;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.get.MultiGetItemResponse;
 import org.elasticsearch.action.get.MultiGetResponse;
@@ -48,12 +48,12 @@ public class ReportReader {
     logger.debug("Fetching report with id [{}]", reportId);
     MultiGetResponse multiGetItemResponses = esclient.prepareMultiGet()
     .add(
-      configurationService.getOptimizeIndex(SingleReportType.SINGLE_REPORT_TYPE),
-      SingleReportType.SINGLE_REPORT_TYPE, reportId
+      configurationService.getOptimizeIndex(ElasticsearchConstants.SINGLE_REPORT_TYPE),
+      ElasticsearchConstants.SINGLE_REPORT_TYPE, reportId
     )
     .add(
-      configurationService.getOptimizeIndex(CombinedReportType.COMBINED_REPORT_TYPE),
-      CombinedReportType.COMBINED_REPORT_TYPE, reportId
+      configurationService.getOptimizeIndex(ElasticsearchConstants.COMBINED_REPORT_TYPE),
+      ElasticsearchConstants.COMBINED_REPORT_TYPE, reportId
     )
     .setRealtime(false)
     .get();
@@ -99,8 +99,8 @@ public class ReportReader {
     logger.debug("Fetching all available reports");
     SearchResponse scrollResp = esclient
       .prepareSearch(
-        configurationService.getOptimizeIndex(SingleReportType.SINGLE_REPORT_TYPE),
-        configurationService.getOptimizeIndex(CombinedReportType.COMBINED_REPORT_TYPE)
+        configurationService.getOptimizeIndex(ElasticsearchConstants.SINGLE_REPORT_TYPE),
+        configurationService.getOptimizeIndex(ElasticsearchConstants.COMBINED_REPORT_TYPE)
       )
       .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
       .setQuery(QueryBuilders.matchAllQuery())

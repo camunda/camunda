@@ -1,6 +1,6 @@
 package org.camunda.optimize.service.util.configuration;
 
-import org.camunda.optimize.service.exceptions.OptimizeValidationException;
+import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,7 +38,7 @@ public class ConfigurationUtil {
     }
 
     String errorMessage = String.format("Could not find or do not have permissions to read file [%s]!", pathToFile);
-    throw new OptimizeValidationException(errorMessage);
+    throw new OptimizeRuntimeException(errorMessage);
   }
 
   private static boolean fileExistsAndHavePermissionsToRead(File file) {
@@ -46,6 +46,18 @@ public class ConfigurationUtil {
       return file.canRead();
     }
     return false;
+  }
+
+  public static void ensureGreaterThanZero(int value) {
+    if (value <= 0) {
+      throw new OptimizeRuntimeException("Value should be greater than zero, but was " + value + "!");
+    }
+  }
+
+  public static void ensureGreaterThanZero(long value) {
+    if (value <= 0) {
+      throw new OptimizeRuntimeException("Value should be greater than zero, but was " + value + "!");
+    }
   }
 
   private static boolean existsInClasspath(String classpathToFile) {

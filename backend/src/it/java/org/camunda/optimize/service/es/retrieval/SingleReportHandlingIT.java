@@ -11,11 +11,11 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variabl
 import org.camunda.optimize.dto.optimize.query.report.single.filter.util.ExecutedFlowNodeFilterBuilder;
 import org.camunda.optimize.dto.optimize.query.report.single.processpart.ProcessPartDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.raw.RawDataSingleReportResultDto;
-import org.camunda.optimize.service.es.schema.type.SingleReportType;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.util.DateUtilHelper;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.get.GetResponse;
 import org.junit.After;
 import org.junit.Rule;
@@ -70,8 +70,8 @@ public class SingleReportHandlingIT {
     GetResponse response =
       elasticSearchRule.getClient()
         .prepareGet(
-          elasticSearchRule.getOptimizeIndex(SingleReportType.SINGLE_REPORT_TYPE),
-          SingleReportType.SINGLE_REPORT_TYPE,
+          elasticSearchRule.getOptimizeIndex(ElasticsearchConstants.SINGLE_REPORT_TYPE),
+          ElasticsearchConstants.SINGLE_REPORT_TYPE,
           id
         )
         .get();

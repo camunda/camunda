@@ -14,6 +14,7 @@
     <modules>
         <module>dependency-doc-creation</module>
         <module>optimize-reimport-preparation</module>
+        <module>optimize-commons</module>
     </modules>
 
 

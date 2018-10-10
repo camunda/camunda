@@ -9,8 +9,8 @@ import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
 import org.apache.http.util.EntityUtils;
+import org.camunda.optimize.service.es.schema.DynamicSettingsBuilder;
 import org.camunda.optimize.service.es.schema.IndexSettingsBuilder;
-import org.camunda.optimize.service.es.schema.StrictTypeMappingCreator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.wrapper.DestinationWrapper;
@@ -19,7 +19,6 @@ import org.camunda.optimize.upgrade.wrapper.ScriptWrapper;
 import org.camunda.optimize.upgrade.wrapper.SourceWrapper;
 import org.elasticsearch.client.Response;
 import org.elasticsearch.client.RestClient;
-import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -241,20 +240,9 @@ public class ESIndexAdjuster {
   }
 
   private String buildDynamicSettings() {
-    StrictTypeMappingCreator strictTypeMappingCreator = new StrictTypeMappingCreator() {
-      @Override
-      public String getType() {
-        return null;
-      }
-
-      @Override
-      protected XContentBuilder addProperties(XContentBuilder xContentBuilder) {
-        return xContentBuilder;
-      }
-    };
     String dynamicSettings = "";
     try {
-      String dynamicSettingsWithPropertyField = strictTypeMappingCreator.getSource().string();
+      String dynamicSettingsWithPropertyField = DynamicSettingsBuilder.createDynamicSettingsAsString();
       // we need to remove the properties here since they added later with
       // whole schmema information.
       dynamicSettings =

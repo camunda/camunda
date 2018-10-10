@@ -1,6 +1,7 @@
 package org.camunda.optimize.service.es.schema.type.index;
 
 import org.camunda.optimize.service.es.schema.StrictTypeMappingCreator;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.common.xcontent.XContentBuilder;
 import org.springframework.stereotype.Component;
 
@@ -13,7 +14,8 @@ public class TimestampBasedImportIndexType extends StrictTypeMappingCreator {
   public static final String ES_TYPE_INDEX_REFERS_TO = "esTypeIndexRefersTo";
   private static final String ENGINE = "engine";
 
-  public static final String TIMESTAMP_BASED_IMPORT_INDEX_TYPE = "timestamp-based-import-index";
+  public static final String TIMESTAMP_BASED_IMPORT_INDEX_TYPE =
+    ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
 
   @Override
   public String getType() {
@@ -21,7 +23,7 @@ public class TimestampBasedImportIndexType extends StrictTypeMappingCreator {
   }
 
   @Override
-  protected XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
+  public XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     return xContentBuilder
       .startObject(ENGINE)
         .field("type", "keyword")

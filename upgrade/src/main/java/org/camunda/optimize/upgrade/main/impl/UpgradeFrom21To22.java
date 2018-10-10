@@ -1,8 +1,7 @@
 package org.camunda.optimize.upgrade.main.impl;
 
-import org.camunda.optimize.service.es.schema.type.CombinedReportType;
-import org.camunda.optimize.service.es.schema.type.SingleReportType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.camunda.optimize.upgrade.main.Upgrade;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
@@ -17,7 +16,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-import static org.camunda.optimize.service.es.schema.type.SingleReportType.REPORT_TYPE;
 
 
 public class UpgradeFrom21To22 implements Upgrade {
@@ -97,13 +95,13 @@ public class UpgradeFrom21To22 implements Upgrade {
   }
 
   private RenameIndexStep renameReportIndexToSimpleReport() {
-    return new RenameIndexStep("report", SingleReportType.SINGLE_REPORT_TYPE);
+    return new RenameIndexStep("report", ElasticsearchConstants.SINGLE_REPORT_TYPE);
   }
 
   private CreateIndexStep createCombinedReportIndex() {
     String pathToMapping = "upgrade/main/UpgradeFrom21To22/new_combined_report_index_mapping.json";
     return new CreateIndexStep(
-      CombinedReportType.COMBINED_REPORT_TYPE,
+      ElasticsearchConstants.COMBINED_REPORT_TYPE,
       SchemaUpgradeUtil.readClasspathFileAsString(pathToMapping)
     );
   }
@@ -256,7 +254,7 @@ public class UpgradeFrom21To22 implements Upgrade {
     return new AddFieldStep(
       "report",
       "$.mappings.report.properties",
-      REPORT_TYPE,
+      "reportType",
       Collections.singletonMap("type", "keyword"),
       "ctx._source.reportType = 'single'"
     );

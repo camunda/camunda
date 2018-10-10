@@ -6,10 +6,10 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_REPORT_TYPE;
+
 @Component
 public class SingleReportType extends AbstractReportType {
-
-  public static final String SINGLE_REPORT_TYPE = "single-report";
 
   @Override
   public String getType() {

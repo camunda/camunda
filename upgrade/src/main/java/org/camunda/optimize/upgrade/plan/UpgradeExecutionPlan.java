@@ -3,7 +3,6 @@ package org.camunda.optimize.upgrade.plan;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
-import org.camunda.optimize.service.es.schema.type.MetadataType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
 import org.camunda.optimize.upgrade.es.ElasticsearchRestClientBuilder;
@@ -24,6 +23,7 @@ import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_TYPE_SCHEMA_VERSION;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 
@@ -141,7 +141,7 @@ public class UpgradeExecutionPlan implements UpgradePlan {
     logger.info("Updating Elasticsearch data structure version tag from {} to {}.", fromVersion, toVersion);
     ESIndexAdjuster.updateData(
       configurationService.getMetaDataType(),
-      termQuery(MetadataType.SCHEMA_VERSION, fromVersion),
+      termQuery(METADATA_TYPE_SCHEMA_VERSION, fromVersion),
       String.format("ctx._source.schemaVersion = \"%s\"", toVersion)
     );
   }

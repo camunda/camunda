@@ -15,8 +15,15 @@
 
     <dependency>
       <groupId>org.camunda.optimize</groupId>
-      <artifactId>upgrade-optimize</artifactId>
+      <artifactId>optimize-commons</artifactId>
       <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.camunda.optimize</groupId>
+      <artifactId>optimize-backend</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
       <exclusions>
         <exclusion>
           <artifactId>spring-beans</artifactId>

@@ -1,6 +1,5 @@
 package org.camunda.optimize.upgrade.main;
 
-import org.apache.commons.text.StrSubstitutor;
 import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.upgrade.exception.UpgradeRuntimeException;
 import org.camunda.optimize.upgrade.main.impl.UpgradeFrom21To22;
@@ -37,7 +36,7 @@ public class UpgradeMain {
 
   public static void main(String... args) {
 
-    String targetVersion = removeAppendixFromVersion(Version.VERSION);
+    String targetVersion = removeAppendixFromVersion();
     Upgrade upgrade = upgrades.get(targetVersion);
 
     if (upgrade == null) {
@@ -58,24 +57,20 @@ public class UpgradeMain {
     System.exit(0);
   }
 
-  private static String removeAppendixFromVersion(String versionWithAppendix) {
+  private static String removeAppendixFromVersion() {
+    String engineVersionWithAppendix = Version.VERSION;
     // The version might have an appendix like 2.2.0-SNAPSHOT
-    int indexOfMinus = versionWithAppendix.indexOf("-");
-    indexOfMinus = indexOfMinus == -1 ? versionWithAppendix.length() : indexOfMinus;
-    return versionWithAppendix.substring(0, indexOfMinus);
+    int indexOfMinus = engineVersionWithAppendix.indexOf("-");
+    indexOfMinus = indexOfMinus == -1 ? engineVersionWithAppendix.length() : indexOfMinus;
+    return engineVersionWithAppendix.substring(0, indexOfMinus);
   }
 
   private static void printWarning(String fromVersion, String toVersion) {
-    Map<String, String> valuesMap = new HashMap<>();
-    valuesMap.put("warning", "================================ WARNING! ================================");
-    valuesMap.put("fromVersion", fromVersion);
-    valuesMap.put("toVersion", toVersion);
-    StrSubstitutor sub = new StrSubstitutor(valuesMap);
     String message =
       "\n\n" +
-        "${warning}\n\n" +
+        "================================ WARNING! ================================ \n\n" +
         "Please be aware that you are about to upgrade the Optimize data \n" +
-        "schema in Elasticsearch from version ${fromVersion} to ${toVersion}. \n" +
+        "schema in Elasticsearch from version %s to %s. \n" +
         "There is no warranty that this upgrade might not break the data \n" +
         "structure in Elasticsearch. Therefore, it is highly recommended to \n" +
         "create a backup of your data in Elasticsearch in case something goes wrong. \n" +
@@ -85,9 +80,13 @@ public class UpgradeMain {
         "1. (y)es = I already did a backup and want to proceed. \n" +
         "2. (n)o = Thanks for reminding me, I want to do a backup first. \n" +
         "\n" +
-        "Your answer (type your answer and hit enter): " ;
+        "Your answer (type your answer and hit enter): ";
 
-    message = sub.replace(message);
+    message = String.format(
+      message,
+      fromVersion,
+      toVersion
+    );
     System.out.print(message);
 
     String answer = "";
@@ -106,5 +105,4 @@ public class UpgradeMain {
       }
     }
   }
-
 }
