@@ -14,7 +14,8 @@ import {
   Icon,
   ErrorMessage,
   ErrorPage,
-  LoadingIndicator
+  LoadingIndicator,
+  Message
 } from 'components';
 
 import {
@@ -291,6 +292,19 @@ export default withErrorHandling(
       return data.visualization === 'table' && result && Object.keys(result).length > 0;
     };
 
+    maxRawDataEntriesExceeded = () => {
+      if (!this.state.reportResult) return false;
+
+      const {data, result, processInstanceCount} = this.state.reportResult;
+      return (
+        result &&
+        result.length &&
+        data &&
+        data.visualization === 'table' &&
+        processInstanceCount > result.length
+      );
+    };
+
     constructCSVDownloadLink = () =>
       `api/export/csv/${this.id}/${encodeURIComponent(this.state.name.replace(/\s/g, '_'))}.csv`;
 
@@ -355,6 +369,13 @@ export default withErrorHandling(
               updateReport={this.updateReport}
             />
           )}
+
+          {this.maxRawDataEntriesExceeded() && (
+            <Message type="warning">
+              The raw data table below only shows the last 1000 process instances
+            </Message>
+          )}
+
           <div className="reportViewWrapper">
             <div className="Report__view">
               {loadingReportData ? (

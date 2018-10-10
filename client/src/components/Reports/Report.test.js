@@ -594,4 +594,21 @@ describe('edit mode', async () => {
       expect(node.instance().onlyVisualizationChanged(updates)).toBe(true);
     });
   });
+
+  it('should show a warning message when process instance count exceeds the maximum shown', async () => {
+    props.match.params.viewMode = 'edit';
+    const node = mount(shallow(<Report {...props} />).get(0));
+    await node.instance().componentDidMount();
+
+    node.setState({
+      reportResult: {
+        data: {
+          visualization: 'table'
+        },
+        processInstanceCount: 1500,
+        result: new Array(1000)
+      }
+    });
+    expect(node.find('.Message')).toBePresent();
+  });
 });
