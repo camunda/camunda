@@ -22,6 +22,7 @@ import io.zeebe.client.api.commands.CreateWorkflowInstanceCommandStep1.CreateWor
 import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.impl.CommandWithPayload;
 import io.zeebe.client.impl.ZeebeClientFutureImpl;
+import io.zeebe.client.impl.ZeebeObjectMapper;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRequest;
@@ -36,7 +37,8 @@ public class CreateWorkflowInstanceCommandImpl
   private final GatewayStub asyncStub;
   private final Builder builder;
 
-  public CreateWorkflowInstanceCommandImpl(GatewayStub asyncStub) {
+  public CreateWorkflowInstanceCommandImpl(GatewayStub asyncStub, ZeebeObjectMapper objectMapper) {
+    super(objectMapper);
     this.asyncStub = asyncStub;
     this.builder = CreateWorkflowInstanceRequest.newBuilder();
   }

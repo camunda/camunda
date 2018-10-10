@@ -25,7 +25,7 @@ import io.zeebe.gateway.api.subscription.TopicSubscription;
 import io.zeebe.gateway.cmd.ClientCommandRejectedException;
 import io.zeebe.gateway.cmd.ClientException;
 import io.zeebe.gateway.impl.ZeebeClientImpl;
-import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
+import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
 import io.zeebe.gateway.impl.event.JobEventImpl;
 import io.zeebe.gateway.util.Events;
 import io.zeebe.protocol.clientapi.ControlMessageType;
@@ -329,7 +329,7 @@ public class ZeebeClientTest {
 
     // +4 (one for the extra request when client is started)
     final long expectedMaximumTopologyRequests =
-        (requestDuration / BrokerTopologyManager.MIN_REFRESH_INTERVAL_MILLIS.toMillis()) + 4;
+        (requestDuration / BrokerTopologyManagerImpl.MIN_REFRESH_INTERVAL_MILLIS.toMillis()) + 4;
 
     assertThat(actualTopologyRequests).isLessThanOrEqualTo(expectedMaximumTopologyRequests);
   }
@@ -357,7 +357,7 @@ public class ZeebeClientTest {
 
     // +4 (one for the extra request when client is started)
     final long expectedMaximumTopologyRequests =
-        (requestDuration / BrokerTopologyManager.MIN_REFRESH_INTERVAL_MILLIS.toMillis()) + 4;
+        (requestDuration / BrokerTopologyManagerImpl.MIN_REFRESH_INTERVAL_MILLIS.toMillis()) + 4;
 
     assertThat(actualTopologyRequests).isLessThanOrEqualTo(expectedMaximumTopologyRequests);
   }

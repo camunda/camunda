@@ -23,8 +23,7 @@ import io.zeebe.gateway.cmd.ClientOutOfMemoryException;
 import io.zeebe.gateway.impl.broker.RequestDispatchStrategy;
 import io.zeebe.gateway.impl.broker.RoundRobinDispatchStrategy;
 import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
-import io.zeebe.gateway.impl.broker.cluster.BrokerClusterStateImpl;
-import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
+import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
 import io.zeebe.gateway.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
@@ -48,7 +47,7 @@ import org.agrona.DirectBuffer;
 
 public class RequestManager extends Actor {
   protected final ClientOutput output;
-  protected final BrokerTopologyManager topologyManager;
+  protected final BrokerTopologyManagerImpl topologyManager;
   protected final ZeebeObjectMapperImpl objectMapper;
   protected final Duration requestTimeout;
   protected final RequestDispatchStrategy dispatchStrategy;
@@ -56,7 +55,7 @@ public class RequestManager extends Actor {
 
   public RequestManager(
       final ClientOutput output,
-      final BrokerTopologyManager topologyManager,
+      final BrokerTopologyManagerImpl topologyManager,
       final ZeebeObjectMapperImpl objectMapper,
       final Duration requestTimeout,
       final long blockTimeMillis) {
@@ -229,7 +228,7 @@ public class RequestManager extends Actor {
   }
 
   private BrokerProvider providerForRandomBroker() {
-    return new BrokerProvider(BrokerClusterStateImpl::getRandomBroker);
+    return new BrokerProvider(BrokerClusterState::getRandomBroker);
   }
 
   private BrokerProvider providerForPartition(final int partitionId) {
@@ -463,10 +462,10 @@ public class RequestManager extends Actor {
   }
 
   private class BrokerProvider implements Supplier<Integer> {
-    private final Function<BrokerClusterStateImpl, Integer> addressStrategy;
+    private final Function<BrokerClusterState, Integer> addressStrategy;
     private int attempt = 0;
 
-    BrokerProvider(final Function<BrokerClusterStateImpl, Integer> addressStrategy) {
+    BrokerProvider(final Function<BrokerClusterState, Integer> addressStrategy) {
       this.addressStrategy = addressStrategy;
     }
 
@@ -478,7 +477,7 @@ public class RequestManager extends Actor {
 
       attempt++;
 
-      final BrokerClusterStateImpl topology = topologyManager.getTopology();
+      final BrokerClusterState topology = topologyManager.getTopology();
       if (topology != null) {
         return addressStrategy.apply(topology);
       } else {

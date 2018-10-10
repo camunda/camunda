@@ -21,17 +21,27 @@ import io.grpc.ManagedChannel;
 import io.grpc.inprocess.InProcessChannelBuilder;
 import io.grpc.inprocess.InProcessServerBuilder;
 import io.zeebe.gateway.Gateway;
+import io.zeebe.gateway.cmd.BrokerErrorException;
+import io.zeebe.gateway.cmd.ClientCommandRejectedException;
+import io.zeebe.gateway.cmd.ClientException;
 import io.zeebe.gateway.impl.broker.BrokerClient;
+import io.zeebe.gateway.impl.broker.BrokerResponseConsumer;
+import io.zeebe.gateway.impl.broker.cluster.BrokerClusterState;
+import io.zeebe.gateway.impl.broker.cluster.BrokerClusterStateImpl;
+import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.gateway.protocol.GatewayGrpc;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
+import io.zeebe.protocol.PartitionState;
+import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto;
 import io.zeebe.util.sched.future.ActorFuture;
+import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 @SuppressWarnings({"rawtypes", "unchecked"})
 public class StubbedGateway extends Gateway {
@@ -69,6 +79,8 @@ public class StubbedGateway extends Gateway {
 
   private class StubbedBrokerClient implements BrokerClient {
 
+    BrokerTopologyManager topologyManager = new StubbedTopologyManager();
+
     @Override
     public void close() {}
 
@@ -79,16 +91,74 @@ public class StubbedGateway extends Gateway {
 
     @Override
     public <T> void sendRequest(
-        BrokerRequest<T> request, BiConsumer<BrokerResponse<T>, Throwable> responseConsumer) {
+        BrokerRequest<T> request,
+        BrokerResponseConsumer<T> responseConsumer,
+        Consumer<Throwable> throwableConsumer) {
       brokerRequests.add(request);
-      final RequestHandler requestHandler = requestHandlers.get(request.getClass());
-
       try {
-        final BrokerResponse response = requestHandler.handle(request);
-        responseConsumer.accept(response, null);
+        final RequestHandler requestHandler = requestHandlers.get(request.getClass());
+        final BrokerResponse<T> response = requestHandler.handle(request);
+        if (response.isResponse()) {
+          responseConsumer.accept(response.getKey(), response.getResponse());
+        } else if (response.isRejection()) {
+          throwableConsumer.accept(new ClientCommandRejectedException(response.getRejection()));
+        } else if (response.isError()) {
+          throwableConsumer.accept(new BrokerErrorException(response.getError()));
+        } else {
+          throwableConsumer.accept(new ClientException("Unknown response received: " + response));
+        }
       } catch (Exception e) {
-        responseConsumer.accept(null, e);
+        throwableConsumer.accept(new ClientException("Failed to handle response", e));
       }
+    }
+
+    @Override
+    public BrokerTopologyManager getTopologyManager() {
+      return topologyManager;
+    }
+  }
+
+  private class StubbedTopologyManager implements BrokerTopologyManager {
+
+    private BrokerClusterState clusterState;
+
+    StubbedTopologyManager() {
+      final TopologyResponseDto defaultTopology = new TopologyResponseDto();
+      defaultTopology
+          .setPartitionsCount(1)
+          .setClusterSize(1)
+          .brokers()
+          .add()
+          .setHost("localhost")
+          .setPort(26501)
+          .setNodeId(0)
+          .partitionStates()
+          .add()
+          .setPartitionId(0)
+          .setReplicationFactor(1)
+          .setState(PartitionState.LEADER);
+
+      provideTopology(defaultTopology);
+    }
+
+    @Override
+    public BrokerClusterState getTopology() {
+      return clusterState;
+    }
+
+    @Override
+    public ActorFuture<BrokerClusterState> requestTopology() {
+      return CompletableActorFuture.completed(clusterState);
+    }
+
+    @Override
+    public void withTopology(Consumer<BrokerClusterState> topologyConsumer) {
+      topologyConsumer.accept(clusterState);
+    }
+
+    @Override
+    public void provideTopology(TopologyResponseDto topology) {
+      clusterState = new BrokerClusterStateImpl(topology, (id, addr) -> {});
     }
   }
 

@@ -15,6 +15,7 @@
  */
 package io.zeebe.client.api.clients;
 
+import io.zeebe.client.api.commands.ActivateJobsCommandStep1;
 import io.zeebe.client.api.commands.CompleteJobCommandStep1;
 import io.zeebe.client.api.commands.CreateJobCommandStep1;
 import io.zeebe.client.api.commands.FailJobCommandStep1;
@@ -150,4 +151,25 @@ public interface JobClient {
    * @return a builder for the worker registration
    */
   JobWorkerBuilderStep1 newWorker();
+
+  /**
+   * Command to activate multiple jobs of a given type.
+   *
+   * <pre>
+   * jobClient
+   *  .newActivateJobsCommand()
+   *  .jobType("payment")
+   *  .amount(10)
+   *  .workerName("paymentWorker")
+   *  .timeout(Duration.ofMinutes(10))
+   *  .send();
+   * </pre>
+   *
+   * <p>The command will try to activate maximal {@code amount} jobs of given {@code jobType}. If
+   * less then {@code amount} jobs of the {@code jobType} are available for activation the returned
+   * list will have fewer elements.
+   *
+   * @return a builder for the command
+   */
+  ActivateJobsCommandStep1 newActivateJobsCommand();
 }

@@ -19,6 +19,7 @@ import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.commands.CompleteJobCommandStep1;
 import io.zeebe.client.impl.CommandWithPayload;
 import io.zeebe.client.impl.ZeebeClientFutureImpl;
+import io.zeebe.client.impl.ZeebeObjectMapper;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CompleteJobRequest;
@@ -30,7 +31,8 @@ public class CompleteJobCommandImpl extends CommandWithPayload<CompleteJobComman
   private final GatewayStub asyncStub;
   private final Builder builder;
 
-  public CompleteJobCommandImpl(GatewayStub asyncStub, long key) {
+  public CompleteJobCommandImpl(GatewayStub asyncStub, ZeebeObjectMapper objectMapper, long key) {
+    super(objectMapper);
     this.asyncStub = asyncStub;
     builder = CompleteJobRequest.newBuilder();
     builder.setJobKey(key);

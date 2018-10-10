@@ -24,7 +24,6 @@ import io.zeebe.client.api.clients.JobClient;
 import io.zeebe.client.api.clients.WorkflowClient;
 import io.zeebe.client.api.commands.PartitionsRequestStep1;
 import io.zeebe.client.api.commands.TopologyRequestStep1;
-import io.zeebe.client.api.record.ZeebeObjectMapper;
 import io.zeebe.client.api.subscription.TopicSubscriptionBuilderStep1;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.gateway.protocol.GatewayGrpc;
@@ -36,6 +35,7 @@ import java.util.concurrent.TimeUnit;
 public class ZeebeClientImpl implements ZeebeClient {
 
   private final ZeebeClientConfiguration config;
+  private final ZeebeObjectMapper objectMapper;
   private final GatewayStub asyncStub;
   private final ManagedChannel channel;
 
@@ -45,6 +45,7 @@ public class ZeebeClientImpl implements ZeebeClient {
 
   public ZeebeClientImpl(ZeebeClientConfiguration config, ManagedChannel channel) {
     this.config = config;
+    this.objectMapper = new ZeebeObjectMapper();
     this.channel = channel;
     this.asyncStub = GatewayGrpc.newStub(channel);
   }
@@ -65,18 +66,13 @@ public class ZeebeClientImpl implements ZeebeClient {
   }
 
   @Override
-  public ZeebeObjectMapper objectMapper() {
-    return null;
-  }
-
-  @Override
   public WorkflowClient workflowClient() {
-    return new WorkflowsClientImpl(asyncStub, config);
+    return new WorkflowsClientImpl(asyncStub, config, objectMapper);
   }
 
   @Override
   public JobClient jobClient() {
-    return new JobClientImpl(asyncStub);
+    return new JobClientImpl(asyncStub, config, objectMapper);
   }
 
   @Override

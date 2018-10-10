@@ -20,6 +20,7 @@ import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.gateway.ZeebeClientConfiguration;
 import io.zeebe.gateway.impl.Loggers;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
+import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
 import io.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.transport.ClientTransport;
@@ -36,7 +37,7 @@ import io.zeebe.util.sched.future.ActorFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import org.slf4j.Logger;
 
 public class BrokerClientImpl implements BrokerClient {
@@ -55,7 +56,7 @@ public class BrokerClientImpl implements BrokerClient {
   protected final ClientTransport transport;
   private final ClientTransport internalTransport;
   private final BrokerRequestManager requestManager;
-  protected final BrokerTopologyManager topologyManager;
+  protected final BrokerTopologyManagerImpl topologyManager;
 
   protected boolean isClosed;
 
@@ -113,7 +114,7 @@ public class BrokerClientImpl implements BrokerClient {
     internalTransport = internalTransportBuilder.build();
 
     topologyManager =
-        new BrokerTopologyManager(internalTransport.getOutput(), this::registerEndpoint);
+        new BrokerTopologyManagerImpl(internalTransport.getOutput(), this::registerEndpoint);
     actorScheduler.submitActor(topologyManager);
 
     requestManager =
@@ -185,13 +186,12 @@ public class BrokerClientImpl implements BrokerClient {
     return requestManager.sendRequest(request);
   }
 
-  /* (non-Javadoc)
-   * @see io.zeebe.gateway.impl.broker.BrokerClient#sendRequest(io.zeebe.gateway.impl.broker.request.BrokerRequest, java.util.function.BiConsumer)
-   */
   @Override
   public <T> void sendRequest(
-      BrokerRequest<T> request, BiConsumer<BrokerResponse<T>, Throwable> responseConsumer) {
-    requestManager.sendRequest(request, responseConsumer);
+      BrokerRequest<T> request,
+      BrokerResponseConsumer<T> responseConsumer,
+      Consumer<Throwable> throwableConsumer) {
+    requestManager.sendRequest(request, responseConsumer, throwableConsumer);
   }
 
   public BrokerTopologyManager getTopologyManager() {

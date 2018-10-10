@@ -32,6 +32,7 @@ import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.SubscriptionUtil;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandRequest;
+import io.zeebe.test.broker.protocol.brokerapi.ExecuteCommandResponseBuilder;
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.util.buffer.BufferUtil;
 import java.io.ByteArrayInputStream;
@@ -385,7 +386,9 @@ public class PublishMessageTest {
   @Test
   public void shouldThrowExceptionOnRejection() {
     // given
-    brokerRule.workflowInstances().registerPublishMessageCommand(r -> r.rejection());
+    brokerRule
+        .workflowInstances()
+        .registerPublishMessageCommand(ExecuteCommandResponseBuilder::rejection);
 
     // expect exception
     expectedException.expect(ClientCommandRejectedException.class);

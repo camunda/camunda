@@ -46,7 +46,7 @@ public class TerminateServiceTaskHandler extends TerminateElementHandler {
       jobRecord.reset();
       jobRecord
           .setType(EMPTY_JOB_TYPE)
-          .headers()
+          .getHeaders()
           .setBpmnProcessId(activityInstanceEvent.getBpmnProcessId())
           .setWorkflowDefinitionVersion(activityInstanceEvent.getVersion())
           .setWorkflowInstanceKey(activityInstanceEvent.getWorkflowInstanceKey())

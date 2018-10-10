@@ -15,10 +15,14 @@
  */
 package io.zeebe.gateway;
 
+import static io.zeebe.util.buffer.BufferUtil.bufferAsArray;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import com.google.protobuf.Empty;
 import io.zeebe.gateway.cmd.ClientException;
+import io.zeebe.gateway.impl.data.MsgPackConverter;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ActivatedJob;
 import io.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo;
 import io.zeebe.gateway.protocol.GatewayOuterClass.BrokerInfo.Builder;
 import io.zeebe.gateway.protocol.GatewayOuterClass.CancelWorkflowInstanceResponse;
@@ -29,21 +33,28 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.GetWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.HealthResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.JobHeaders;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ListWorkflowsResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadResponse;
+import io.zeebe.msgpack.value.LongValue;
 import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto;
 import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto.BrokerDto;
 import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto.PartitionDto;
 import io.zeebe.protocol.impl.data.repository.WorkflowMetadataAndResource;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import java.util.ArrayList;
+import java.util.Iterator;
+import org.agrona.DirectBuffer;
 
 public class ResponseMapper {
+
+  private static final MsgPackConverter MSG_PACK_CONVERTER = new MsgPackConverter();
 
   private static PartitionBrokerRole remapPartitionBrokerRoleEnum(
       final BrokerDto brokerDto, final PartitionDto partition) {
@@ -178,6 +189,50 @@ public class ResponseMapper {
         .setResourceName(bufferAsString(brokerResponse.getResourceName()))
         .setBpmnXml(bufferAsString(brokerResponse.getBpmnXml()))
         .build();
+  }
+
+  public static ActivateJobsResponse toActivateJobsResponse(
+      long key, JobBatchRecord brokerResponse) {
+    final ActivateJobsResponse.Builder responseBuilder = ActivateJobsResponse.newBuilder();
+
+    final Iterator<LongValue> jobKeys = brokerResponse.jobKeys().iterator();
+    final Iterator<JobRecord> jobs = brokerResponse.jobs().iterator();
+
+    while (jobKeys.hasNext() && jobs.hasNext()) {
+      final LongValue jobKey = jobKeys.next();
+      final JobRecord job = jobs.next();
+      final ActivatedJob activatedJob =
+          ActivatedJob.newBuilder()
+              .setKey(jobKey.getValue())
+              .setType(bufferAsString(job.getType()))
+              .setJobHeaders(fromBrokerJobHeaders(job.getHeaders()))
+              .setCustomHeaders(bufferAsJson(job.getCustomHeaders()))
+              .setWorker(bufferAsString(job.getWorker()))
+              .setRetries(job.getRetries())
+              .setDeadline(job.getDeadline())
+              .setPayload(bufferAsJson(job.getPayload()))
+              .build();
+
+      responseBuilder.addJobs(activatedJob);
+    }
+
+    return responseBuilder.build();
+  }
+
+  private static JobHeaders fromBrokerJobHeaders(
+      io.zeebe.protocol.impl.record.value.job.JobHeaders headers) {
+    return JobHeaders.newBuilder()
+        .setWorkflowInstanceKey(headers.getWorkflowInstanceKey())
+        .setBpmnProcessId(bufferAsString(headers.getBpmnProcessId()))
+        .setWorkflowDefinitionVersion(headers.getWorkflowDefinitionVersion())
+        .setWorkflowKey(headers.getWorkflowKey())
+        .setActivityId(bufferAsString(headers.getActivityId()))
+        .setActivityInstanceKey(headers.getActivityInstanceKey())
+        .build();
+  }
+
+  private static String bufferAsJson(DirectBuffer customHeaders) {
+    return MSG_PACK_CONVERTER.convertToJson(bufferAsArray(customHeaders));
   }
 
   @FunctionalInterface

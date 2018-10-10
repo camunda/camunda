@@ -19,7 +19,6 @@ import io.zeebe.client.api.clients.JobClient;
 import io.zeebe.client.api.clients.WorkflowClient;
 import io.zeebe.client.api.commands.PartitionsRequestStep1;
 import io.zeebe.client.api.commands.TopologyRequestStep1;
-import io.zeebe.client.api.record.ZeebeObjectMapper;
 import io.zeebe.client.api.subscription.TopicSubscriptionBuilderStep1;
 import io.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
@@ -79,19 +78,6 @@ public interface ZeebeClient extends AutoCloseable {
    * @return a builder for the subscription
    */
   TopicSubscriptionBuilderStep1 newSubscription();
-
-  /**
-   * An object to (de-)serialize records from/to JSON.
-   *
-   * <pre>
-   * JobEvent job = zeebeClient
-   *  .objectMapper()
-   *  .fromJson(json, JobEvent.class);
-   * </pre>
-   *
-   * @return an object that provides (de-)serialization of all records to/from JSON.
-   */
-  ZeebeObjectMapper objectMapper();
 
   /**
    * Request all partitions. Can be used to inspect which partitions have been created.

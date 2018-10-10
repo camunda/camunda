@@ -15,22 +15,8 @@
  */
 package io.zeebe.gateway.impl.broker;
 
-import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
-import io.zeebe.gateway.impl.broker.request.BrokerRequest;
-import io.zeebe.gateway.impl.broker.response.BrokerResponse;
-import io.zeebe.util.sched.future.ActorFuture;
-import java.util.function.Consumer;
+@FunctionalInterface
+public interface BrokerResponseConsumer<T> {
 
-public interface BrokerClient extends AutoCloseable {
-
-  void close();
-
-  <T> ActorFuture<BrokerResponse<T>> sendRequest(BrokerRequest<T> request);
-
-  <T> void sendRequest(
-      BrokerRequest<T> request,
-      BrokerResponseConsumer<T> responseConsumer,
-      Consumer<Throwable> throwableConsumer);
-
-  BrokerTopologyManager getTopologyManager();
+  void accept(long key, T response);
 }

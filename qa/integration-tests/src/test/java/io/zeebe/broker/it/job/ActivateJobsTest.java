@@ -15,47 +15,66 @@
  */
 package io.zeebe.broker.it.job;
 
+import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
-import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.gateway.impl.broker.BrokerClient;
-import io.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
-import io.zeebe.gateway.impl.broker.response.BrokerResponse;
-import io.zeebe.msgpack.value.LongValue;
-import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
-import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.util.buffer.BufferUtil;
+import io.zeebe.broker.it.clustering.ClusteringRule;
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.response.ActivateJobsResponse;
+import io.zeebe.client.api.response.ActivatedJob;
+import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.test.util.TestUtil;
+import io.zeebe.util.collection.Tuple;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
-// TODO(menski): replace with gRPC client implementation
-// https://github.com/zeebe-io/zeebe/issues/1426
 public class ActivateJobsTest {
 
-  public static final String JOB_TYPE = "testJob";
+  private static final String JOB_TYPE = "testJob";
+  private static final Map<String, Object> CUSTOM_HEADERS = Collections.singletonMap("foo", "bar");
+  private static final Map<String, Object> PAYLOAD = Collections.singletonMap("hello", "world");
 
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-
-  public ClientRule clientRule = new ClientRule(brokerRule);
-
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
+  @Rule public ClusteringRule clusteringRule = new ClusteringRule();
 
   @Rule public Timeout timeout = Timeout.seconds(20);
 
-  private BrokerClient client;
+  private ZeebeClient client;
 
   @Before
   public void setUp() {
-    client = (BrokerClient) clientRule.getClient();
+    client =
+        // TODO(menski): replace with client rule when switch to rpc client
+        ZeebeClient.newClientBuilder()
+            .brokerContactPoint(
+                clusteringRule
+                    .getBrokers()
+                    .get(0)
+                    .getConfig()
+                    .getNetwork()
+                    .getGateway()
+                    .toSocketAddress()
+                    .toString())
+            .build();
+  }
+
+  @After
+  public void tearDown() {
+    if (client != null) {
+      client.close();
+    }
   }
 
   @Test
@@ -63,41 +82,122 @@ public class ActivateJobsTest {
     // given
     final String worker = "testWorker";
     final Duration timeout = Duration.ofMinutes(4);
-    final int amount = 5;
+    final int amount = clusteringRule.getPartitionIds().size() * 3;
 
     final List<Long> jobKeys = createJobs(amount);
-    final BrokerActivateJobsRequest request =
-        new BrokerActivateJobsRequest(JOB_TYPE)
-            .setWorker(worker)
-            .setTimeout(timeout.toMillis())
-            .setAmount(amount);
 
     // when
-    final BrokerResponse<JobBatchRecord> response = client.sendRequest(request).join();
+    final ActivateJobsResponse response =
+        client
+            .jobClient()
+            .newActivateJobsCommand()
+            .jobType(JOB_TYPE)
+            .amount(amount)
+            .workerName(worker)
+            .timeout(timeout)
+            .send()
+            .join();
+
+    TestUtil.waitUntil(() -> jobRecords(JobIntent.ACTIVATED).limit(amount).count() == amount);
 
     // then
-    assertThat(response.isResponse()).isTrue();
-    final JobBatchRecord batch = response.getResponse();
-    assertThat(batch.jobKeys()).extracting(LongValue::getValue).containsOnlyElementsOf(jobKeys);
-    assertThat(batch.jobs())
-        .extracting(JobRecord::getType)
-        .containsOnly(BufferUtil.wrapString(JOB_TYPE));
+    assertThat(response.getJobs()).extracting(ActivatedJob::getKey).containsOnlyElementsOf(jobKeys);
+    assertThat(response.getJobs())
+        .extracting(
+            ActivatedJob::getType,
+            ActivatedJob::getWorker,
+            ActivatedJob::getCustomHeaders,
+            ActivatedJob::getPayloadAsMap)
+        .containsOnly(tuple(JOB_TYPE, worker, CUSTOM_HEADERS, PAYLOAD));
+
+    final List<Instant> deadlines =
+        jobRecords(JobIntent.ACTIVATED)
+            .limit(amount)
+            .map(r -> r.getValue().getDeadline())
+            .collect(Collectors.toList());
+
+    assertThat(response.getJobs())
+        .extracting(ActivatedJob::getDeadline)
+        .containsOnlyElementsOf(deadlines);
+  }
+
+  @Test
+  public void shouldActivateJobsRespectingAmountLimit() {
+    // map from job type to tuple of available jobs and amount to activate
+    final Map<String, Tuple<Integer, Integer>> jobCounts = new HashMap<>();
+    jobCounts.put("foo", new Tuple<>(3, 7));
+    jobCounts.put("bar", new Tuple<>(7, 3));
+    jobCounts.put("baz", new Tuple<>(0, 10));
+
+    jobCounts.forEach(this::shouldActivateJobsRespectingAmountLimit);
+  }
+
+  private void shouldActivateJobsRespectingAmountLimit(
+      String jobType, Tuple<Integer, Integer> availableAmountTuple) {
+    // given
+    final int available = availableAmountTuple.getLeft();
+    final int amount = availableAmountTuple.getRight();
+    final int expectedJobsCount = Math.min(available, amount);
+
+    createJobs(jobType, available);
+
+    // when
+    final ActivateJobsResponse response =
+        client.jobClient().newActivateJobsCommand().jobType(jobType).amount(amount).send().join();
+
+    // then
+    assertThat(response.getJobs()).hasSize(expectedJobsCount);
+  }
+
+  @Test
+  public void shouldActivateJobsOnPartitionsRoundRobin() {
+    // given
+    final List<Integer> partitionIds = clusteringRule.getPartitionIds();
+    createJobs(partitionIds.size() * 3);
+
+    // when
+    final List<Integer> activatedPartitionIds =
+        IntStream.range(0, partitionIds.size())
+            .boxed()
+            .flatMap(
+                i ->
+                    client
+                        .jobClient()
+                        .newActivateJobsCommand()
+                        .jobType(JOB_TYPE)
+                        .amount(1)
+                        .workerName("worker")
+                        .timeout(1000)
+                        .send()
+                        .join()
+                        .getJobs()
+                        .stream())
+            .map(ActivatedJob::getKey)
+            .map(Protocol::decodePartitionId)
+            .collect(Collectors.toList());
+
+    // then
+    assertThat(activatedPartitionIds).containsOnlyElementsOf(partitionIds);
   }
 
   private List<Long> createJobs(int amount) {
+    return createJobs(JOB_TYPE, amount);
+  }
+
+  private List<Long> createJobs(String type, int amount) {
     return IntStream.range(0, amount)
-        .mapToLong(this::createJob)
+        .mapToLong(i -> createJob(type))
         .boxed()
         .collect(Collectors.toList());
   }
 
-  private long createJob(int index) {
-    return clientRule
-        .getJobClient()
+  private long createJob(String type) {
+    return client
+        .jobClient()
         .newCreateCommand()
-        .jobType(JOB_TYPE)
-        .addCustomHeader("index", index)
-        .payload(Collections.singletonMap("index", index))
+        .jobType(type)
+        .addCustomHeaders(CUSTOM_HEADERS)
+        .payload(PAYLOAD)
         .send()
         .join()
         .getKey();
