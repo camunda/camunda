@@ -18,7 +18,6 @@ package io.zeebe.gateway;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsArray;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
-import com.google.protobuf.Empty;
 import io.zeebe.gateway.cmd.ClientException;
 import io.zeebe.gateway.impl.data.MsgPackConverter;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsResponse;
@@ -32,11 +31,12 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.CreateWorkflowInstanceRespons
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.GetWorkflowResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.HealthResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.JobHeaders;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ListWorkflowsResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
+import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadResponse;
 import io.zeebe.msgpack.value.LongValue;
@@ -72,8 +72,8 @@ public class ResponseMapper {
     }
   }
 
-  public static HealthResponse toHealthResponse(long key, TopologyResponseDto brokerResponse) {
-    final HealthResponse.Builder healthResponseBuilder = HealthResponse.newBuilder();
+  public static TopologyResponse toTopologyResponse(long key, TopologyResponseDto brokerResponse) {
+    final TopologyResponse.Builder topologyResponseBuilder = TopologyResponse.newBuilder();
     final ArrayList<BrokerInfo> infos = new ArrayList<>();
 
     brokerResponse
@@ -97,8 +97,8 @@ public class ResponseMapper {
               infos.add(brokerInfo.build());
             });
 
-    healthResponseBuilder.addAllBrokers(infos);
-    return healthResponseBuilder.build();
+    topologyResponseBuilder.addAllBrokers(infos);
+    return topologyResponseBuilder.build();
   }
 
   public static DeployWorkflowResponse toDeployWorkflowResponse(
@@ -120,8 +120,8 @@ public class ResponseMapper {
     return responseBuilder.build();
   }
 
-  public static Empty emptyResponse(long key, Object brokerResponse) {
-    return Empty.getDefaultInstance();
+  public static PublishMessageResponse toPublishMessageResponse(long key, Object brokerResponse) {
+    return PublishMessageResponse.getDefaultInstance();
   }
 
   public static CreateJobResponse toCreateJobResponse(long key, JobRecord brokerResponse) {
@@ -138,7 +138,7 @@ public class ResponseMapper {
   }
 
   public static CompleteJobResponse toCompleteJobResponse(long key, JobRecord brokerResponse) {
-    return CompleteJobResponse.newBuilder().build();
+    return CompleteJobResponse.getDefaultInstance();
   }
 
   public static CreateWorkflowInstanceResponse toCreateWorkflowInstanceResponse(
@@ -153,12 +153,12 @@ public class ResponseMapper {
 
   public static CancelWorkflowInstanceResponse toCancelWorkflowInstanceResponse(
       long key, WorkflowInstanceRecord brokerResponse) {
-    return CancelWorkflowInstanceResponse.newBuilder().build();
+    return CancelWorkflowInstanceResponse.getDefaultInstance();
   }
 
   public static UpdateWorkflowInstancePayloadResponse toUpdateWorkflowInstancePayloadResponse(
       long key, WorkflowInstanceRecord brokerResponse) {
-    return UpdateWorkflowInstancePayloadResponse.newBuilder().build();
+    return UpdateWorkflowInstancePayloadResponse.getDefaultInstance();
   }
 
   public static ListWorkflowsResponse toListWorkflowsResponse(

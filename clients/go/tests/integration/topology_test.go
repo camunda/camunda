@@ -8,7 +8,7 @@ import (
 	"github.com/zeebe-io/zeebe/clients/go"
 )
 
-var _ = Describe("should send HealthRequest to Gateway and receive HealthResponse", func() {
+var _ = Describe("should send TopologyRequest to Gateway and receive TopologyResponse", func() {
 	var client zbc.ZBClient
 
 	BeforeEach(func() {
@@ -22,9 +22,9 @@ var _ = Describe("should send HealthRequest to Gateway and receive HealthRespons
 		client.Close()
 	})
 
-	Context("health check", func() {
+	Context("topology", func() {
 		It("request with correct response", func() {
-			response, err := client.NewHealthCheckCommand().Send()
+			response, err := client.NewTopologyCommand().Send()
 
 			Expect(len(response.Brokers)).To(Equal(1))
 			Expect(len(response.Brokers[0].Partitions)).To(Equal(1))

@@ -15,7 +15,6 @@
  */
 package io.zeebe.gateway;
 
-import com.google.protobuf.Empty;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
 import io.grpc.stub.StreamObserver;
@@ -41,11 +40,12 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.GetWorkflowRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.GetWorkflowResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.HealthRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.HealthResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ListWorkflowsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ListWorkflowsResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadRequest;
@@ -66,12 +66,12 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
   }
 
   @Override
-  public void health(
-      final HealthRequest request, final StreamObserver<HealthResponse> responseObserver) {
+  public void topology(
+      final TopologyRequest request, final StreamObserver<TopologyResponse> responseObserver) {
     sendRequest(
         request,
         RequestMapper::toTopologyRequest,
-        ResponseMapper::toHealthResponse,
+        ResponseMapper::toTopologyResponse,
         responseObserver);
   }
 
@@ -89,12 +89,12 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
 
   @Override
   public void publishMessage(
-      PublishMessageRequest request, StreamObserver<Empty> responseObserver) {
+      PublishMessageRequest request, StreamObserver<PublishMessageResponse> responseObserver) {
 
     sendRequest(
         request,
         RequestMapper::toPublishMessageRequest,
-        ResponseMapper::emptyResponse,
+        ResponseMapper::toPublishMessageResponse,
         responseObserver);
   }
 

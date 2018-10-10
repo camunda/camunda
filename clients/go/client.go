@@ -11,8 +11,8 @@ type ZBClientImpl struct {
 	connection *grpc.ClientConn
 }
 
-func (client *ZBClientImpl) NewHealthCheckCommand() *commands.HealthCheckCommand {
-	return commands.NewHealthCheckCommand(client.gateway)
+func (client *ZBClientImpl) NewTopologyCommand() *commands.TopologyCommand {
+	return commands.NewTopologyCommand(client.gateway)
 }
 
 func (client *ZBClientImpl) NewDeployWorkflowCommand() *commands.DeployCommand {

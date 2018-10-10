@@ -7,20 +7,20 @@ import (
 	"time"
 )
 
-type HealthCheckCommand struct {
+type TopologyCommand struct {
 	gateway pb.GatewayClient
 }
 
-func (cmd *HealthCheckCommand) Send() (*pb.HealthResponse, error) {
-	request := &pb.HealthRequest{}
+func (cmd *TopologyCommand) Send() (*pb.TopologyResponse, error) {
+	request := &pb.TopologyRequest{}
 	ctx, cancel := context.WithTimeout(context.Background(), utils.RequestTimeoutInSec*time.Second)
 	defer cancel()
 
-	return cmd.gateway.Health(ctx, request)
+	return cmd.gateway.Topology(ctx, request)
 }
 
-func NewHealthCheckCommand(gateway pb.GatewayClient) *HealthCheckCommand {
-	return &HealthCheckCommand{
+func NewTopologyCommand(gateway pb.GatewayClient) *TopologyCommand {
+	return &TopologyCommand{
 		gateway: gateway,
 	}
 }
