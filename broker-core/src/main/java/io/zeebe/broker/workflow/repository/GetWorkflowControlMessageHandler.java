@@ -21,6 +21,8 @@ import io.zeebe.broker.transport.controlmessage.AbstractControlMessageHandler;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
+import io.zeebe.protocol.impl.data.repository.GetWorkflowControlRequest;
+import io.zeebe.protocol.impl.data.repository.WorkflowMetadataAndResource;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.buffer.BufferUtil;
@@ -69,7 +71,7 @@ public class GetWorkflowControlMessageHandler extends AbstractControlMessageHand
 
       final String errorMessage;
 
-      if (workflowKey != -1) {
+      if (workflowKey > 0) {
         future = repository.getWorkflowByKey(workflowKey);
         errorMessage = String.format("No workflow found with key '%d'", workflowKey);
       } else {

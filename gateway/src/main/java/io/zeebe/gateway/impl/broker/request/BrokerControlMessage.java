@@ -34,6 +34,10 @@ public abstract class BrokerControlMessage<T> extends BrokerRequest<T> {
     request.setMessageType(messageType);
   }
 
+  public ControlMessageType getMessageType() {
+    return request.getMessageType();
+  }
+
   @Override
   public int getPartitionId() {
     return request.getPartitionId();

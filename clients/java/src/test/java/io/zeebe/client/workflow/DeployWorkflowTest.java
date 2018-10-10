@@ -21,8 +21,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import com.google.common.base.Charsets;
 import io.zeebe.client.api.commands.Workflow;
+import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.cmd.ClientException;
-import io.zeebe.client.impl.command.WorkflowImpl;
+import io.zeebe.client.impl.events.WorkflowImpl;
 import io.zeebe.client.util.ClientTest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowRequestObject;
@@ -49,21 +50,20 @@ public class DeployWorkflowTest extends ClientTest {
   @Test
   public void shouldDeployWorkflowFromFile() {
     // given
+    final long key = 123L;
     final String filename = DeployWorkflowTest.class.getResource(BPMN_1_FILENAME).getPath();
-    gatewayService.onDeployWorkflowRequest(deployedWorkflow(BPMN_1_PROCESS_ID, 12, 13, filename));
-    final Workflow expected = new WorkflowImpl(BPMN_1_PROCESS_ID, 12, 13, filename);
+    gatewayService.onDeployWorkflowRequest(
+        key, deployedWorkflow(BPMN_1_PROCESS_ID, 12, 423, filename));
+    final Workflow expected = new WorkflowImpl(423, BPMN_1_PROCESS_ID, 12, filename);
 
     // when
-    final List<Workflow> workflows =
-        client
-            .workflowClient()
-            .newDeployCommand()
-            .addResourceFile(filename)
-            .send()
-            .join()
-            .getDeployedWorkflows();
+    final DeploymentEvent response =
+        client.workflowClient().newDeployCommand().addResourceFile(filename).send().join();
 
     // then
+    assertThat(response.getKey()).isEqualTo(key);
+
+    final List<Workflow> workflows = response.getWorkflows();
     assertThat(workflows).containsOnly(expected);
 
     final DeployWorkflowRequest request = gatewayService.getLastRequest();
@@ -79,13 +79,7 @@ public class DeployWorkflowTest extends ClientTest {
     final String filename = BPMN_1_FILENAME.substring(1);
 
     // when
-    client
-        .workflowClient()
-        .newDeployCommand()
-        .addResourceFromClasspath(filename)
-        .send()
-        .join()
-        .getDeployedWorkflows();
+    client.workflowClient().newDeployCommand().addResourceFromClasspath(filename).send().join();
 
     // then
     final DeployWorkflowRequest request = gatewayService.getLastRequest();
@@ -107,8 +101,7 @@ public class DeployWorkflowTest extends ClientTest {
         .newDeployCommand()
         .addResourceStream(resourceAsStream, filename)
         .send()
-        .join()
-        .getDeployedWorkflows();
+        .join();
 
     // then
     final DeployWorkflowRequest request = gatewayService.getLastRequest();
@@ -125,13 +118,7 @@ public class DeployWorkflowTest extends ClientTest {
     final byte[] bytes = getBytes(filename);
 
     // when
-    client
-        .workflowClient()
-        .newDeployCommand()
-        .addResourceBytes(bytes, filename)
-        .send()
-        .join()
-        .getDeployedWorkflows();
+    client.workflowClient().newDeployCommand().addResourceBytes(bytes, filename).send().join();
 
     // then
     final DeployWorkflowRequest request = gatewayService.getLastRequest();
@@ -153,8 +140,7 @@ public class DeployWorkflowTest extends ClientTest {
         .newDeployCommand()
         .addResourceString(xml, Charsets.UTF_8, filename)
         .send()
-        .join()
-        .getDeployedWorkflows();
+        .join();
 
     // then
     final DeployWorkflowRequest request = gatewayService.getLastRequest();
@@ -171,13 +157,7 @@ public class DeployWorkflowTest extends ClientTest {
     final String xml = new String(getBytes(filename), Charsets.UTF_8);
 
     // when
-    client
-        .workflowClient()
-        .newDeployCommand()
-        .addResourceStringUtf8(xml, filename)
-        .send()
-        .join()
-        .getDeployedWorkflows();
+    client.workflowClient().newDeployCommand().addResourceStringUtf8(xml, filename).send().join();
 
     // then
     final DeployWorkflowRequest request = gatewayService.getLastRequest();
@@ -204,8 +184,7 @@ public class DeployWorkflowTest extends ClientTest {
         .newDeployCommand()
         .addWorkflowModel(workflowModel, filename)
         .send()
-        .join()
-        .getDeployedWorkflows();
+        .join();
 
     // then
     final DeployWorkflowRequest request = gatewayService.getLastRequest();
@@ -218,21 +197,24 @@ public class DeployWorkflowTest extends ClientTest {
   @Test
   public void shouldDeployMultipleWorkflows() {
     // given
+    final long key = 345L;
+
     final String filename1 = BPMN_1_FILENAME.substring(1);
     final String filename2 = BPMN_2_FILENAME.substring(1);
     final String filename3 = YAML_FILENAME.substring(1);
 
-    final Workflow expected1 = new WorkflowImpl(BPMN_1_PROCESS_ID, 1, 1, filename1);
-    final Workflow expected2 = new WorkflowImpl(BPMN_2_PROCESS_ID, 1, 2, filename2);
-    final Workflow expected3 = new WorkflowImpl(YAML_PROCESS_ID, 1, 3, filename3);
+    final Workflow expected1 = new WorkflowImpl(1, BPMN_1_PROCESS_ID, 1, filename1);
+    final Workflow expected2 = new WorkflowImpl(2, BPMN_2_PROCESS_ID, 1, filename2);
+    final Workflow expected3 = new WorkflowImpl(3, YAML_PROCESS_ID, 1, filename3);
 
     gatewayService.onDeployWorkflowRequest(
+        key,
         deployedWorkflow(BPMN_1_PROCESS_ID, 1, 1, filename1),
         deployedWorkflow(BPMN_2_PROCESS_ID, 1, 2, filename2),
         deployedWorkflow(YAML_PROCESS_ID, 1, 3, filename3));
 
     // when
-    final List<Workflow> workflows =
+    final DeploymentEvent response =
         client
             .workflowClient()
             .newDeployCommand()
@@ -240,10 +222,12 @@ public class DeployWorkflowTest extends ClientTest {
             .addResourceFromClasspath(filename2)
             .addResourceFromClasspath(filename3)
             .send()
-            .join()
-            .getDeployedWorkflows();
+            .join();
 
     // then
+    assertThat(response.getKey()).isEqualTo(key);
+
+    final List<Workflow> workflows = response.getWorkflows();
     assertThat(workflows).containsOnly(expected1, expected2, expected3);
 
     final DeployWorkflowRequest request = gatewayService.getLastRequest();

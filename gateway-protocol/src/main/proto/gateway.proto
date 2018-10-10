@@ -42,7 +42,7 @@ message DeployWorkflowRequest {
   repeated WorkflowRequestObject workflows = 1;
 }
 
-message WorkflowResponseObject {
+message WorkflowMetadata {
   string bpmnProcessId = 1;
   int32 version = 2;
   int64 workflowKey = 3;
@@ -50,7 +50,8 @@ message WorkflowResponseObject {
 }
 
 message DeployWorkflowResponse {
-  repeated WorkflowResponseObject workflows = 1;
+  int64 key = 1;
+  repeated WorkflowMetadata workflows = 2;
 }
 
 message PublishMessageRequest {
@@ -132,6 +133,31 @@ message UpdateWorkflowInstancePayloadRequest {
 message UpdateWorkflowInstancePayloadResponse {
 }
 
+message ListWorkflowsRequest {
+  /* optional filter by BPMN process id, if empty all workflows are returned */
+  string bpmnProcessId = 1;
+}
+
+message ListWorkflowsResponse {
+  repeated WorkflowMetadata workflows = 1;
+}
+
+/* either workflow key or bpmn process id and version has to be specified*/
+message GetWorkflowRequest {
+  int64 workflowKey = 1;
+  /* if bpmnProcessId is set version = -1 indicates to use the latest version */
+  int32 version = 2;
+  string bpmnProcessId = 3;
+}
+
+message GetWorkflowResponse {
+  int64 workflowKey = 1;
+  int32 version = 2;
+  string bpmnProcessId = 3;
+  string resourceName = 4;
+  string bpmnXml = 5;
+}
+
 service Gateway {
   rpc Health (HealthRequest) returns (HealthResponse) {
   }
@@ -152,5 +178,9 @@ service Gateway {
   rpc CancelWorkflowInstance (CancelWorkflowInstanceRequest) returns (CancelWorkflowInstanceResponse) {
   }
   rpc UpdateWorkflowInstancePayload (UpdateWorkflowInstancePayloadRequest) returns (UpdateWorkflowInstancePayloadResponse) {
+  }
+  rpc ListWorkflows (ListWorkflowsRequest) returns (ListWorkflowsResponse) {
+  }
+  rpc GetWorkflow (GetWorkflowRequest) returns (GetWorkflowResponse) {
   }
 }

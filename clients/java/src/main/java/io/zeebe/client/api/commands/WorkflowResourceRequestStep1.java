@@ -16,6 +16,9 @@
 package io.zeebe.client.api.commands;
 
 public interface WorkflowResourceRequestStep1 {
+  /** Use the latest version of the workflow */
+  int LATEST_VERSION = -1;
+
   /**
    * Set the BPMN process id of the workflow to get the resource of. This is the static id of the
    * process in the BPMN XML (i.e. "&#60;bpmn:process id='my-workflow'&#62;").

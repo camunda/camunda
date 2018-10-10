@@ -17,29 +17,33 @@ package io.zeebe.client.impl.events;
 
 import io.zeebe.client.api.commands.Workflow;
 import io.zeebe.client.api.events.DeploymentEvent;
-import io.zeebe.client.impl.command.WorkflowImpl;
 import io.zeebe.gateway.protocol.GatewayOuterClass.DeployWorkflowResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowResponseObject;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class DeploymentEventImpl implements DeploymentEvent {
 
-  private final List<Workflow> deployedWorkflows = new ArrayList<>();
+  private final long key;
+  private final List<Workflow> workflows;
 
   public DeploymentEventImpl(final DeployWorkflowResponse response) {
-    for (final WorkflowResponseObject workflow : response.getWorkflowsList()) {
-      deployedWorkflows.add(
-          new WorkflowImpl(
-              workflow.getBpmnProcessId(),
-              workflow.getVersion(),
-              workflow.getWorkflowKey(),
-              workflow.getResourceName()));
-    }
+    key = response.getKey();
+    workflows =
+        response.getWorkflowsList().stream().map(WorkflowImpl::new).collect(Collectors.toList());
   }
 
   @Override
-  public List<Workflow> getDeployedWorkflows() {
-    return deployedWorkflows;
+  public long getKey() {
+    return key;
+  }
+
+  @Override
+  public List<Workflow> getWorkflows() {
+    return workflows;
+  }
+
+  @Override
+  public String toString() {
+    return "DeploymentEventImpl{" + "key=" + key + ", workflows=" + workflows + '}';
   }
 }

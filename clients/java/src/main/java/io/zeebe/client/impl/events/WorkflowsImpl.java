@@ -13,15 +13,30 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.api.events;
+package io.zeebe.client.impl.events;
 
 import io.zeebe.client.api.commands.Workflow;
+import io.zeebe.client.api.commands.Workflows;
+import io.zeebe.gateway.protocol.GatewayOuterClass.ListWorkflowsResponse;
 import java.util.List;
+import java.util.stream.Collectors;
 
-public interface DeploymentEvent {
-  /** @return the unique key of the deployment */
-  long getKey();
+public class WorkflowsImpl implements Workflows {
 
-  /** @return the workflows which are deployed */
-  List<Workflow> getWorkflows();
+  private final List<Workflow> workflows;
+
+  public WorkflowsImpl(ListWorkflowsResponse response) {
+    workflows =
+        response.getWorkflowsList().stream().map(WorkflowImpl::new).collect(Collectors.toList());
+  }
+
+  @Override
+  public List<Workflow> getWorkflows() {
+    return workflows;
+  }
+
+  @Override
+  public String toString() {
+    return "WorkflowsImpl{" + "workflows=" + workflows + '}';
+  }
 }

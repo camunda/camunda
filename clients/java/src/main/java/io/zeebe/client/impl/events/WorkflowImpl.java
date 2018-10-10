@@ -13,44 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.impl.command;
+package io.zeebe.client.impl.events;
 
 import io.zeebe.client.api.commands.Workflow;
+import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowMetadata;
 import java.util.Objects;
 
 public class WorkflowImpl implements Workflow {
-  private String bpmnProcessId;
-  private int version;
-  private long workflowKey;
-  private String resourceName;
 
-  public WorkflowImpl(
-      final String bpmnProcessId,
-      final int version,
-      final long workflowKey,
-      final String resourceName) {
-    this.bpmnProcessId = bpmnProcessId;
-    this.version = version;
+  protected final long workflowKey;
+  protected final String bpmnProcessId;
+  protected final int version;
+  protected final String resourceName;
+
+  public WorkflowImpl(WorkflowMetadata workflow) {
+    this(
+        workflow.getWorkflowKey(),
+        workflow.getBpmnProcessId(),
+        workflow.getVersion(),
+        workflow.getResourceName());
+  }
+
+  public WorkflowImpl(long workflowKey, String bpmnProcessId, int version, String resourceName) {
     this.workflowKey = workflowKey;
-    this.resourceName = resourceName;
-  }
-
-  @Override
-  public String getBpmnProcessId() {
-    return bpmnProcessId;
-  }
-
-  public void setBpmnProcessId(final String bpmnProcessId) {
     this.bpmnProcessId = bpmnProcessId;
-  }
-
-  @Override
-  public int getVersion() {
-    return version;
-  }
-
-  public void setVersion(final int version) {
     this.version = version;
+    this.resourceName = resourceName;
   }
 
   @Override
@@ -58,17 +46,19 @@ public class WorkflowImpl implements Workflow {
     return workflowKey;
   }
 
-  public void setWorkflowKey(final long workflowKey) {
-    this.workflowKey = workflowKey;
+  @Override
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
+  }
+
+  @Override
+  public int getVersion() {
+    return version;
   }
 
   @Override
   public String getResourceName() {
     return resourceName;
-  }
-
-  public void setResourceName(final String resourceName) {
-    this.resourceName = resourceName;
   }
 
   @Override
@@ -80,27 +70,27 @@ public class WorkflowImpl implements Workflow {
       return false;
     }
     final WorkflowImpl workflow = (WorkflowImpl) o;
-    return version == workflow.version
-        && workflowKey == workflow.workflowKey
+    return workflowKey == workflow.workflowKey
+        && version == workflow.version
         && Objects.equals(bpmnProcessId, workflow.bpmnProcessId)
         && Objects.equals(resourceName, workflow.resourceName);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(bpmnProcessId, version, workflowKey, resourceName);
+    return Objects.hash(workflowKey, bpmnProcessId, version, resourceName);
   }
 
   @Override
   public String toString() {
     return "WorkflowImpl{"
-        + "bpmnProcessId='"
+        + "workflowKey="
+        + workflowKey
+        + ", bpmnProcessId='"
         + bpmnProcessId
         + '\''
         + ", version="
         + version
-        + ", workflowKey="
-        + workflowKey
         + ", resourceName='"
         + resourceName
         + '\''
