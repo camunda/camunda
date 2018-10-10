@@ -323,7 +323,7 @@ void securityTestSteps() {
     dockerRegistryLogin()
     setupPermissionsForHostDirs('qa/connect-to-secured-es-tests')
 
-    // build all required artifacts for migration tests
+    // build all required artifacts for security tests
     runMaven("install -Dskip.docker -DskipTests -Pproduction,it -pl backend,qa/connect-to-secured-es-tests -am -T\$LIMITS_CPU")
     // run migration tests
     runMaven("verify -f qa/connect-to-secured-es-tests/pom.xml -Psecured-es-it")
