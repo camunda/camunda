@@ -34,13 +34,14 @@ public final class Message implements BufferWriter, BufferReader {
   private final DirectBuffer correlationKey = new UnsafeBuffer();
   private final DirectBuffer payload = new UnsafeBuffer();
   private final DirectBuffer id = new UnsafeBuffer();
+  private long key;
   private long timeToLive;
   private long deadline;
-  private long key;
 
   public Message() {}
 
   public Message(
+      long key,
       DirectBuffer name,
       DirectBuffer correlationKey,
       DirectBuffer payload,
@@ -51,32 +52,9 @@ public final class Message implements BufferWriter, BufferReader {
     this.payload.wrap(payload);
     this.id.wrap(id);
 
+    this.key = key;
     this.timeToLive = timeToLive;
     this.deadline = ActorClock.currentTimeMillis() + timeToLive;
-  }
-
-  Message(
-      final String name, final String correlationKey, final String payload, final long timeToLive) {
-    this(
-        new UnsafeBuffer(name.getBytes()),
-        new UnsafeBuffer(correlationKey.getBytes()),
-        new UnsafeBuffer(payload.getBytes()),
-        new UnsafeBuffer(new byte[0]),
-        timeToLive);
-  }
-
-  Message(
-      final String id,
-      final String name,
-      final String correlationKey,
-      final String payload,
-      final long timeToLive) {
-    this(
-        new UnsafeBuffer(name.getBytes()),
-        new UnsafeBuffer(correlationKey.getBytes()),
-        new UnsafeBuffer(payload.getBytes()),
-        new UnsafeBuffer(id.getBytes()),
-        timeToLive);
   }
 
   public DirectBuffer getName() {
@@ -105,10 +83,6 @@ public final class Message implements BufferWriter, BufferReader {
 
   public long getKey() {
     return key;
-  }
-
-  public void setKey(long key) {
-    this.key = key;
   }
 
   @Override
@@ -150,30 +124,5 @@ public final class Message implements BufferWriter, BufferReader {
     buffer.putLong(valueOffset, key, ByteOrder.LITTLE_ENDIAN);
     valueOffset += Long.BYTES;
     assert (valueOffset - offset) == getLength() : "End offset differs with getLength()";
-  }
-
-  public void writeKey(MutableDirectBuffer keyBuffer, int offset) {
-    int keyOffset = offset;
-    keyBuffer.putLong(keyOffset, deadline, ByteOrder.LITTLE_ENDIAN);
-    keyOffset += Long.BYTES;
-    keyOffset = writeMessageKeyToBuffer(keyBuffer, keyOffset, name, correlationKey);
-    assert (keyOffset - offset) == getKeyLength()
-        : "Offset problem: offset is not equal to expected key length";
-  }
-
-  public static int writeMessageKeyToBuffer(
-      MutableDirectBuffer keyBuffer, int offset, DirectBuffer name, DirectBuffer correlationKey) {
-    final int nameLength = name.capacity();
-    keyBuffer.putBytes(offset, name, 0, nameLength);
-    offset += nameLength;
-
-    final int correlationKeyLength = correlationKey.capacity();
-    keyBuffer.putBytes(offset, correlationKey, 0, correlationKeyLength);
-    offset += correlationKeyLength;
-    return offset;
-  }
-
-  public int getKeyLength() {
-    return Long.BYTES + name.capacity() + correlationKey.capacity();
   }
 }

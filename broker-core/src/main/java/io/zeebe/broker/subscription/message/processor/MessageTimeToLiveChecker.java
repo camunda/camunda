@@ -23,7 +23,6 @@ import io.zeebe.broker.subscription.message.state.MessageStateController;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.util.sched.clock.ActorClock;
-import java.util.List;
 
 public class MessageTimeToLiveChecker implements Runnable {
 
@@ -40,15 +39,8 @@ public class MessageTimeToLiveChecker implements Runnable {
 
   @Override
   public void run() {
-    final List<Message> messages =
-        messageStateController.findMessageBefore(ActorClock.currentTimeMillis());
-
-    for (Message message : messages) {
-      final boolean success = writeDeleteMessageCommand(message);
-      if (!success) {
-        return;
-      }
-    }
+    messageStateController.findMessagesWithDeadlineBefore(
+        ActorClock.currentTimeMillis(), this::writeDeleteMessageCommand);
   }
 
   private boolean writeDeleteMessageCommand(Message message) {

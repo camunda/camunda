@@ -84,7 +84,7 @@ public class OpenMessageSubscriptionProcessor
       Consumer<SideEffectProducer> sideEffect,
       MessageSubscription subscription) {
     final Message message =
-        messageStateController.findMessage(
+        messageStateController.findFirstMessage(
             subscriptionRecord.getMessageName(), subscriptionRecord.getCorrelationKey());
 
     if (message != null) {

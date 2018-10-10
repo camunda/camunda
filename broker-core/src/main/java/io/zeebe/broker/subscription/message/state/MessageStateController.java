@@ -20,36 +20,64 @@ package io.zeebe.broker.subscription.message.state;
 import static io.zeebe.broker.workflow.state.PersistenceHelper.EXISTENCE;
 
 import io.zeebe.broker.util.KeyStateController;
+import io.zeebe.logstreams.rocksdb.ZbRocksDb;
+import io.zeebe.logstreams.rocksdb.ZbWriteBatch;
 import java.io.File;
 import java.nio.ByteOrder;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.rocksdb.ColumnFamilyHandle;
+import org.rocksdb.DBOptions;
 import org.rocksdb.RocksDB;
+import org.rocksdb.RocksDBException;
+import org.rocksdb.WriteOptions;
 
 public class MessageStateController extends KeyStateController {
 
-  private static final int TIME_OFFSET = 0;
-  private static final int KEY_OFFSET = TIME_OFFSET + Long.BYTES;
+  private static final byte[] MESSAGE_COLUMN_FAMILY_NAME = "messages".getBytes();
+  private static final byte[] DEADLINE_COLUMN_FAMILY_NAME = "deadlines".getBytes();
+  private static final byte[] MESSAGE_ID_COLUMN_FAMILY_NAME = "messageIds".getBytes();
 
-  private static final byte[] MSG_TIME_TO_LIVE_NAME = "msgTimeToLive".getBytes();
-  private static final byte[] MSG_ID_NAME = "messageId".getBytes();
+  public static final byte[][] COLUMN_FAMILY_NAMES = {
+    MESSAGE_COLUMN_FAMILY_NAME, DEADLINE_COLUMN_FAMILY_NAME, MESSAGE_ID_COLUMN_FAMILY_NAME
+  };
 
-  public static final byte[][] COLUMN_FAMILY_NAMES = {MSG_TIME_TO_LIVE_NAME, MSG_ID_NAME};
-
+  private final ExpandableArrayBuffer keyBuffer = new ExpandableArrayBuffer();
+  private final ExpandableArrayBuffer valueBuffer = new ExpandableArrayBuffer();
   private final UnsafeBuffer iterateKeyBuffer = new UnsafeBuffer(0, 0);
 
-  protected ColumnFamilyHandle timeToLiveHandle;
-  private ColumnFamilyHandle messageIdHandle;
+  private final Message message = new Message();
 
-  private ExpandableArrayBuffer keyBuffer;
-  private ExpandableArrayBuffer valueBuffer;
+  /**
+   * <pre>message key -> message
+   */
+  private ColumnFamilyHandle defaultColumnFamily;
+  /**
+   * <pre>name | correlation key | key -> []
+   *
+   * find message by name and correlation key - the message key ensures the queue ordering
+   */
+  private ColumnFamilyHandle messageColumnFamily;
+  /**
+   * <pre>deadline | key -> []
+   *
+   * find messages which are before a given timestamp */
+  private ColumnFamilyHandle deadlineColumnFamily;
+  /**
+   * <pre>name | correlation key | message id -> []
+   *
+   * exist a message for a given message name, correlation key and message id */
+  private ColumnFamilyHandle messageIdColumnFamily;
+
   private SubscriptionState<MessageSubscription> subscriptionState;
+
+  private ZbRocksDb db;
 
   @Override
   public RocksDB open(final File dbDirectory, final boolean reopen) throws Exception {
@@ -59,39 +87,199 @@ public class MessageStateController extends KeyStateController {
             .collect(Collectors.toList());
 
     final RocksDB rocksDB = super.open(dbDirectory, reopen, columnFamilyNames);
-    keyBuffer = new ExpandableArrayBuffer();
-    valueBuffer = new ExpandableArrayBuffer();
 
-    timeToLiveHandle = getColumnFamilyHandle(MSG_TIME_TO_LIVE_NAME);
-    messageIdHandle = getColumnFamilyHandle(MSG_ID_NAME);
+    defaultColumnFamily = rocksDB.getDefaultColumnFamily();
+    messageColumnFamily = getColumnFamilyHandle(MESSAGE_COLUMN_FAMILY_NAME);
+    deadlineColumnFamily = getColumnFamilyHandle(DEADLINE_COLUMN_FAMILY_NAME);
+    messageIdColumnFamily = getColumnFamilyHandle(MESSAGE_ID_COLUMN_FAMILY_NAME);
+
     subscriptionState = new SubscriptionState<>(this, MessageSubscription.class);
 
     return rocksDB;
   }
 
+  @Override
+  protected RocksDB openDb(DBOptions dbOptions) throws RocksDBException {
+    db =
+        ZbRocksDb.open(
+            dbOptions, dbDirectory.getAbsolutePath(), columnFamilyDescriptors, columnFamilyHandles);
+    return db;
+  }
+
   public void put(final Message message) {
-    message.writeKey(keyBuffer, TIME_OFFSET);
-    message.write(valueBuffer, 0);
+    try (final WriteOptions options = new WriteOptions();
+        final ZbWriteBatch batch = new ZbWriteBatch()) {
 
-    final int keyLength = message.getKeyLength();
-    final int messageLength = message.getLength();
-    writeKeyWithoutTimeWithValue(getDb().getDefaultColumnFamily(), keyLength, messageLength);
-    writeTimeAndKey(timeToLiveHandle, keyLength);
+      message.write(valueBuffer, 0);
+      batch.put(
+          defaultColumnFamily, message.getKey(), valueBuffer.byteArray(), message.getLength());
 
-    final DirectBuffer messageId = message.getId();
-    final int messageIdLength = messageId.capacity();
-    if (messageIdLength > 0) {
-      int offset = keyLength;
-      keyBuffer.putBytes(offset, messageId, 0, messageIdLength);
-      offset += messageIdLength;
-      put(
-          messageIdHandle,
-          keyBuffer.byteArray(),
-          KEY_OFFSET,
-          offset - KEY_OFFSET,
-          EXISTENCE,
-          0,
-          EXISTENCE.length);
+      int length = writeMessageKey(keyBuffer, message);
+      batch.put(messageColumnFamily, keyBuffer.byteArray(), length, EXISTENCE, EXISTENCE.length);
+
+      length = writeDeadlineKey(keyBuffer, message);
+      batch.put(deadlineColumnFamily, keyBuffer.byteArray(), length, EXISTENCE, EXISTENCE.length);
+
+      if (message.getId().capacity() > 0) {
+        length =
+            writeMessageIdKey(
+                keyBuffer, message.getName(), message.getCorrelationKey(), message.getId());
+        batch.put(
+            messageIdColumnFamily, keyBuffer.byteArray(), length, EXISTENCE, EXISTENCE.length);
+      }
+
+      db.write(options, batch);
+    } catch (RocksDBException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private int writeMessageKey(MutableDirectBuffer buffer, final Message message) {
+    int offset = 0;
+
+    final DirectBuffer name = message.getName();
+    buffer.putBytes(offset, name, 0, name.capacity());
+    offset += name.capacity();
+
+    final DirectBuffer correlationKey = message.getCorrelationKey();
+    buffer.putBytes(offset, correlationKey, 0, correlationKey.capacity());
+    offset += correlationKey.capacity();
+
+    buffer.putLong(offset, message.getKey(), ByteOrder.LITTLE_ENDIAN);
+    offset += Long.BYTES;
+
+    assert (name.capacity() + correlationKey.capacity() + Long.BYTES) == offset
+        : "Offset problem: offset is not equal to expected key length";
+    return offset;
+  }
+
+  private int writeDeadlineKey(MutableDirectBuffer buffer, final Message message) {
+    int offset = 0;
+
+    buffer.putLong(0, message.getDeadline(), ByteOrder.LITTLE_ENDIAN);
+    offset += Long.BYTES;
+
+    buffer.putLong(offset, message.getKey(), ByteOrder.LITTLE_ENDIAN);
+    offset += Long.BYTES;
+
+    assert (2 * Long.BYTES) == offset
+        : "Offset problem: offset is not equal to expected key length";
+    return offset;
+  }
+
+  private int writeMessageIdKey(
+      MutableDirectBuffer buffer,
+      final DirectBuffer name,
+      final DirectBuffer correlationKey,
+      final DirectBuffer messageId) {
+    int offset = 0;
+
+    buffer.putBytes(offset, name, 0, name.capacity());
+    offset += name.capacity();
+    buffer.putBytes(offset, correlationKey, 0, correlationKey.capacity());
+    offset += correlationKey.capacity();
+
+    buffer.putBytes(offset, messageId, 0, messageId.capacity());
+    offset += messageId.capacity();
+    return offset;
+  }
+
+  public Message findFirstMessage(final DirectBuffer name, final DirectBuffer correlationKey) {
+    int offset = 0;
+    final int prefixLength = name.capacity() + correlationKey.capacity();
+    final MutableDirectBuffer prefixBuffer = new UnsafeBuffer(new byte[prefixLength]);
+
+    prefixBuffer.putBytes(offset, name, 0, name.capacity());
+    offset += name.capacity();
+
+    prefixBuffer.putBytes(offset, correlationKey, 0, correlationKey.capacity());
+
+    final AtomicBoolean found = new AtomicBoolean();
+
+    db.forEachPrefixed(
+        messageColumnFamily,
+        prefixBuffer,
+        (entry, control) -> {
+          iterateKeyBuffer.wrap(entry.getKey());
+
+          final long messageKey = iterateKeyBuffer.getLong(prefixLength, ByteOrder.LITTLE_ENDIAN);
+          found.set(readMessage(messageKey, message));
+
+          control.stop();
+        });
+
+    if (found.get()) {
+      return message;
+    } else {
+      return null;
+    }
+  }
+
+  private boolean readMessage(long key, Message message) {
+    final int readBytes = db.get(defaultColumnFamily, key, valueBuffer);
+
+    if (readBytes > 0) {
+      message.wrap(valueBuffer, 0, readBytes);
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  public void findMessagesWithDeadlineBefore(final long timestamp, IteratorConsumer consumer) {
+
+    db.forEach(
+        deadlineColumnFamily,
+        (entry, control) -> {
+          iterateKeyBuffer.wrap(entry.getKey());
+          final long deadline = iterateKeyBuffer.getLong(0, ByteOrder.LITTLE_ENDIAN);
+
+          boolean consumed = false;
+          if (deadline <= timestamp) {
+            final long messageKey = iterateKeyBuffer.getLong(Long.BYTES, ByteOrder.LITTLE_ENDIAN);
+
+            readMessage(messageKey, message);
+            consumed = consumer.accept(message);
+          }
+          if (!consumed) {
+            control.stop();
+          }
+        });
+  }
+
+  public boolean exist(
+      final DirectBuffer name, final DirectBuffer correlationKey, final DirectBuffer messageId) {
+    final int length = writeMessageIdKey(keyBuffer, name, correlationKey, messageId);
+
+    return db.exists(messageIdColumnFamily, keyBuffer.byteArray(), 0, length);
+  }
+
+  public void remove(final long key) {
+    final boolean exist = readMessage(key, message);
+    if (!exist) {
+      return;
+    }
+
+    try (final WriteOptions options = new WriteOptions();
+        final ZbWriteBatch batch = new ZbWriteBatch()) {
+
+      batch.delete(defaultColumnFamily, key);
+
+      int length = writeMessageKey(keyBuffer, message);
+      batch.delete(messageColumnFamily, keyBuffer.byteArray(), length);
+
+      length = writeDeadlineKey(keyBuffer, message);
+      batch.delete(deadlineColumnFamily, keyBuffer.byteArray(), length);
+
+      if (message.getId().capacity() > 0) {
+        length =
+            writeMessageIdKey(
+                keyBuffer, message.getName(), message.getCorrelationKey(), message.getId());
+        batch.delete(messageIdColumnFamily, keyBuffer.byteArray(), length);
+      }
+      db.write(options, batch);
+    } catch (RocksDBException e) {
+      throw new RuntimeException(e);
     }
   }
 
@@ -103,113 +291,25 @@ public class MessageStateController extends KeyStateController {
     subscriptionState.updateCommandSentTime(subscription);
   }
 
-  private void writeKeyWithoutTimeWithValue(
-      final ColumnFamilyHandle handle, final int timeWithkeyLength, final int valueLength) {
-    put(
-        handle,
-        keyBuffer.byteArray(),
-        KEY_OFFSET,
-        timeWithkeyLength - KEY_OFFSET,
-        valueBuffer.byteArray(),
-        0,
-        valueLength);
-  }
-
-  /**
-   * The time + name + correlation key acts as key and maps to name and correlation key. This is to
-   * sort and find keys which are before and given timestamp.
-   *
-   * @param keyLength
-   */
-  private void writeTimeAndKey(final ColumnFamilyHandle handle, final int keyLength) {
-    put(handle, keyBuffer.byteArray(), TIME_OFFSET, keyLength, EXISTENCE, 0, EXISTENCE.length);
-  }
-
-  public Message findMessage(final DirectBuffer name, final DirectBuffer correlationKey) {
-    final int offset =
-        Message.writeMessageKeyToBuffer(keyBuffer, TIME_OFFSET, name, correlationKey);
-    return getMessage(keyBuffer, TIME_OFFSET, offset);
-  }
-
-  private Message getMessage(final DirectBuffer buffer, final int offset, final int length) {
-    final int valueBufferSize = valueBuffer.capacity();
-    final int readBytes =
-        get(buffer.byteArray(), offset, length, valueBuffer.byteArray(), 0, valueBufferSize);
-
-    if (readBytes > 0) {
-      final Message message = new Message();
-      message.wrap(valueBuffer, 0, readBytes);
-
-      return message;
-    } else if (readBytes > valueBufferSize) {
-      valueBuffer.checkLimit(readBytes);
-      // try again
-      return getMessage(buffer, offset, length);
-    } else {
-      return null;
-    }
-  }
-
   public List<MessageSubscription> findSubscriptions(
       final DirectBuffer messageName, final DirectBuffer correlationKey) {
     return subscriptionState.findSubscriptions(messageName, correlationKey);
-  }
-
-  public List<Message> findMessageBefore(final long timestamp) {
-    final List<Message> messageList = new ArrayList<>();
-    whileTrue(
-        timeToLiveHandle,
-        (key, value) -> {
-          iterateKeyBuffer.wrap(key);
-          final long time = iterateKeyBuffer.getLong(TIME_OFFSET, ByteOrder.LITTLE_ENDIAN);
-
-          final boolean isDue = time <= timestamp;
-          if (isDue) {
-            final int keyLength = key.length - KEY_OFFSET;
-            messageList.add(getMessage(iterateKeyBuffer, KEY_OFFSET, keyLength));
-          }
-          return isDue;
-        });
-    return messageList;
   }
 
   public List<MessageSubscription> findSubscriptionBefore(final long deadline) {
     return subscriptionState.findSubscriptionBefore(deadline);
   }
 
-  public boolean exist(final Message message) {
-    message.writeKey(keyBuffer, TIME_OFFSET);
-    int offset = message.getKeyLength();
-    final int idLength = message.getId().capacity();
-    keyBuffer.putBytes(offset, message.getId(), 0, idLength);
-    offset += idLength;
-
-    return exist(messageIdHandle, keyBuffer.byteArray(), KEY_OFFSET, offset - KEY_OFFSET);
-  }
-
   public boolean exist(final MessageSubscription subscription) {
     return subscriptionState.exist(subscription);
   }
 
-  public void remove(final Message message) {
-    message.writeKey(keyBuffer, TIME_OFFSET);
-
-    final int keyLength = message.getKeyLength() - KEY_OFFSET;
-    remove(keyBuffer.byteArray(), KEY_OFFSET, keyLength);
-    remove(timeToLiveHandle, keyBuffer.byteArray(), 0, message.getKeyLength());
-
-    final DirectBuffer messageId = message.getId();
-    final int messageIdLength = messageId.capacity();
-    if (messageIdLength > 0) {
-      int offset = message.getKeyLength();
-      keyBuffer.putBytes(offset, messageId, 0, messageIdLength);
-      offset += messageIdLength;
-
-      remove(messageIdHandle, keyBuffer.byteArray(), KEY_OFFSET, offset - KEY_OFFSET);
-    }
-  }
-
   public void remove(MessageSubscription messageSubscription) {
     subscriptionState.remove(messageSubscription);
+  }
+
+  @FunctionalInterface
+  public interface IteratorConsumer {
+    boolean accept(final Message message);
   }
 }

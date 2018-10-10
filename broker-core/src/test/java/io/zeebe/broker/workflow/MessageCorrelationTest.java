@@ -286,6 +286,24 @@ public class MessageCorrelationTest {
   }
 
   @Test
+  public void shouldCorrelateFirstPublishedMessage() throws Exception {
+    // given
+    testClient.publishMessage("order canceled", "order-123", asMsgPack("nr", "first"));
+
+    testClient.publishMessage("order canceled", "order-123", asMsgPack("nr", "second"));
+
+    // when
+    testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
+
+    // then
+    final SubscribedRecord event =
+        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
+
+    final byte[] payload = (byte[]) event.value().get("payload");
+    MsgPackUtil.assertEquality(payload, "{'orderId':'order-123', 'nr':'first'}");
+  }
+
+  @Test
   public void shouldContinueInstanceAfteMessageIsCorrelated() {
     // given
     final long workflowInstanceKey =
