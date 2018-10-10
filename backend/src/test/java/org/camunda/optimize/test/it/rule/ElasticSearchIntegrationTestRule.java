@@ -203,7 +203,6 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   }
 
   public void deleteOptimizeIndexes() {
-    GetIndexResponse indexes = esclient.admin().indices().prepareGetIndex().get();
     DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)
       .refresh(true)
       .filter(matchAllQuery())
