@@ -20,6 +20,7 @@ package io.zeebe.broker.subscription.message.state;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.util.ArrayList;
 import java.util.List;
@@ -496,6 +497,37 @@ public class MessageStateControllerTest {
     stateController.remove(subscription);
 
     // then
+    List<MessageSubscription> readSubscriptions = stateController.findSubscriptionBefore(2000);
+    assertThat(readSubscriptions.size()).isEqualTo(0);
+
+    // and
+    readSubscriptions =
+        stateController.findSubscriptions(wrapString("messageName"), wrapString("correlationKey"));
+    assertThat(readSubscriptions.size()).isEqualTo(0);
+
+    // and
+    final boolean exist = stateController.exist(subscription);
+    assertThat(exist).isFalse();
+  }
+
+  @Test
+  public void shouldRemoveSubscriptionWithRecord() {
+    // given
+    final MessageSubscription subscription =
+        new MessageSubscription(
+            "messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 3, 1234);
+
+    stateController.put(subscription);
+
+    // when
+    final MessageSubscriptionRecord messageSubscriptionRecord = new MessageSubscriptionRecord();
+    messageSubscriptionRecord.setWorkflowInstancePartitionId(1);
+    messageSubscriptionRecord.setWorkflowInstanceKey(2);
+    messageSubscriptionRecord.setActivityInstanceKey(3);
+    final boolean removed = stateController.remove(messageSubscriptionRecord);
+
+    // then
+    assertThat(removed).isTrue();
     List<MessageSubscription> readSubscriptions = stateController.findSubscriptionBefore(2000);
     assertThat(readSubscriptions.size()).isEqualTo(0);
 

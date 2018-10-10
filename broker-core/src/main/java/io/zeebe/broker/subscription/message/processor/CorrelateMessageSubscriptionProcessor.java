@@ -24,7 +24,6 @@ import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.state.MessageStateController;
-import io.zeebe.broker.subscription.message.state.MessageSubscription;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import java.util.function.Consumer;
@@ -47,17 +46,7 @@ public class CorrelateMessageSubscriptionProcessor
 
     final MessageSubscriptionRecord subscriptionRecord = record.getValue();
 
-    final MessageSubscription messageSubscription =
-        new MessageSubscription(
-            subscriptionRecord.getWorkflowInstancePartitionId(),
-            subscriptionRecord.getWorkflowInstanceKey(),
-            subscriptionRecord.getActivityInstanceKey(),
-            subscriptionRecord.getMessageName(),
-            subscriptionRecord.getCorrelationKey());
-
-    final boolean exist = messageStateController.exist(messageSubscription);
-    if (exist) {
-      messageStateController.remove(messageSubscription);
+    if (messageStateController.remove(subscriptionRecord)) {
       streamWriter.writeFollowUpEvent(
           record.getKey(), MessageSubscriptionIntent.CORRELATED, subscriptionRecord);
     } else {

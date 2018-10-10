@@ -40,6 +40,13 @@ public class MessageSubscription implements Subscription {
   public MessageSubscription() {}
 
   public MessageSubscription(
+      int workflowInstancePartitionId, long workflowInstanceKey, long activityInstanceKey) {
+    this.workflowInstancePartitionId = workflowInstancePartitionId;
+    this.workflowInstanceKey = workflowInstanceKey;
+    this.activityInstanceKey = activityInstanceKey;
+  }
+
+  public MessageSubscription(
       int workflowInstancePartitionId,
       long workflowInstanceKey,
       long activityInstanceKey,
