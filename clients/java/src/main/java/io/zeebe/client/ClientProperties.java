@@ -15,6 +15,8 @@
  */
 package io.zeebe.client;
 
+import java.time.Duration;
+
 public class ClientProperties {
   /** @see ZeebeClientBuilder#brokerContactPoint(String) */
   public static final String BROKER_CONTACTPOINT = "zeebe.client.broker.contactPoint";
@@ -49,6 +51,9 @@ public class ClientProperties {
 
   /** @see ZeebeClientBuilder#defaultJobTimeout(java.time.Duration) */
   public static final String DEFAULT_JOB_TIMEOUT = "zeebe.client.job.timeout";
+
+  /** @see ZeebeClientBuilder#defaultJobPollInterval(Duration) */
+  public static final String DEFAULT_JOB_POLL_INTERVAL = "zeebe.client.job.pollinterval";
 
   /** @see ZeebeClientBuilder#defaultMessageTimeToLive(java.time.Duration) */
   public static final String DEFAULT_MESSAGE_TIME_TO_LIVE = "zeebe.client.message.timeToLive";

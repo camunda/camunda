@@ -15,25 +15,25 @@
  */
 package io.zeebe.broker.it.job;
 
-import static io.zeebe.broker.it.util.TopicEventRecorder.jobCommand;
-import static io.zeebe.broker.it.util.TopicEventRecorder.jobRetries;
-import static io.zeebe.broker.it.util.TopicEventRecorder.state;
+import static io.zeebe.exporter.record.Assertions.assertThat;
 import static io.zeebe.test.util.TestUtil.waitUntil;
+import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.util.RecordingJobHandler;
-import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.broker.it.GrpcClientRule;
+import io.zeebe.broker.it.util.GrpcRecordingJobHandler;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.gateway.api.clients.JobClient;
-import io.zeebe.gateway.api.commands.JobCommand;
-import io.zeebe.gateway.api.commands.JobCommandName;
-import io.zeebe.gateway.api.events.JobEvent;
-import io.zeebe.gateway.api.events.JobState;
-import io.zeebe.gateway.api.subscription.JobWorker;
+import io.zeebe.client.api.clients.JobClient;
+import io.zeebe.client.api.events.JobEvent;
+import io.zeebe.client.api.response.ActivatedJob;
+import io.zeebe.client.api.subscription.JobWorker;
+import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.value.JobRecordValue;
+import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.util.TestUtil;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Collections;
 import java.util.List;
 import org.junit.Before;
 import org.junit.Rule;
@@ -43,17 +43,11 @@ import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
 public class JobWorkerTest {
-  public static final String NULL_PAYLOAD = null;
-
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
-  public ClientRule clientRule = new ClientRule(brokerRule);
+  public GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
 
-  public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule, false);
-
-  @Rule
-  public RuleChain ruleChain =
-      RuleChain.outerRule(brokerRule).around(clientRule).around(eventRecorder);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   @Rule public ExpectedException exception = ExpectedException.none();
 
@@ -72,7 +66,7 @@ public class JobWorkerTest {
     final JobEvent job = createJobOfType("foo");
 
     // when
-    final RecordingJobHandler jobHandler = new RecordingJobHandler();
+    final GrpcRecordingJobHandler jobHandler = new GrpcRecordingJobHandler();
 
     jobClient
         .newWorker()
@@ -85,19 +79,17 @@ public class JobWorkerTest {
     // then
     waitUntil(() -> !jobHandler.getHandledJobs().isEmpty());
 
-    final List<JobEvent> jobs = jobHandler.getHandledJobs();
+    final List<ActivatedJob> jobs = jobHandler.getHandledJobs();
     assertThat(jobs).hasSize(1);
-    assertThat(jobs.get(0).getMetadata().getKey()).isEqualTo(job.getKey());
+    assertThat(jobs.get(0).getKey()).isEqualTo(job.getKey());
   }
 
   @Test
   public void shouldCompleteJob() throws InterruptedException {
     // given
-    eventRecorder.startRecordingEvents();
+    createJobOfType("foo");
 
-    final JobEvent job = createJobOfType("foo");
-
-    final RecordingJobHandler jobHandler = new RecordingJobHandler();
+    final GrpcRecordingJobHandler jobHandler = new GrpcRecordingJobHandler();
 
     jobClient
         .newWorker()
@@ -108,33 +100,28 @@ public class JobWorkerTest {
         .open();
 
     waitUntil(() -> !jobHandler.getHandledJobs().isEmpty());
-    final JobEvent lockedJob = jobHandler.getHandledJobs().get(0);
+    final ActivatedJob lockedJob = jobHandler.getHandledJobs().get(0);
 
     // when
-    final JobEvent result = jobClient.newCompleteCommand(lockedJob).send().join();
+    jobClient.newCompleteCommand(lockedJob.getKey()).send().join();
 
     // then
-    assertThat(result.getKey()).isEqualTo(job.getKey());
-    waitUntil(() -> eventRecorder.hasJobEvent(state(JobState.COMPLETED)));
+    waitUntil(() -> jobRecords(JobIntent.COMPLETED).exists());
 
-    final JobCommand createCommand =
-        eventRecorder.getJobCommands(jobCommand(JobCommandName.CREATE)).get(0);
-    assertThat(createCommand.getDeadline()).isNull();
-    assertThat(createCommand.getWorker()).isNull();
+    final Record<JobRecordValue> createRecord = jobRecords(JobIntent.CREATE).getFirst();
+    assertThat(createRecord.getValue()).hasDeadline(null).hasWorker("");
 
-    final JobEvent createdEvent = eventRecorder.getJobEvents(JobState.CREATED).get(0);
-    assertThat(createdEvent.getDeadline()).isNull();
+    final Record<JobRecordValue> createdRecord = jobRecords(JobIntent.CREATED).getFirst();
+    assertThat(createdRecord.getValue()).hasDeadline(null);
 
-    final JobEvent lockedEvent = eventRecorder.getJobEvents(JobState.ACTIVATED).get(0);
-    assertThat(lockedEvent.getDeadline()).isNotNull();
-    assertThat(lockedEvent.getWorker()).isEqualTo("test");
+    final Record<JobRecordValue> activatedRecord = jobRecords(JobIntent.ACTIVATED).getFirst();
+    assertThat(activatedRecord.getValue().getDeadline()).isNotNull();
+    assertThat(activatedRecord.getValue()).hasWorker("test");
   }
 
   @Test
   public void shouldCompleteJobInHandler() throws InterruptedException {
     // given
-    eventRecorder.startRecordingEvents();
-
     final JobEvent createdEvent =
         jobClient
             .newCreateCommand()
@@ -145,8 +132,9 @@ public class JobWorkerTest {
             .join();
 
     // when
-    final RecordingJobHandler jobHandler =
-        new RecordingJobHandler((c, t) -> c.newCompleteCommand(t).payload("{\"a\":3}").send());
+    final GrpcRecordingJobHandler jobHandler =
+        new GrpcRecordingJobHandler(
+            (c, t) -> c.newCompleteCommand(t.getKey()).payload("{\"a\":3}").send());
 
     jobClient
         .newWorker()
@@ -161,24 +149,22 @@ public class JobWorkerTest {
 
     assertThat(jobHandler.getHandledJobs()).hasSize(1);
 
-    final JobEvent subscribedJob = jobHandler.getHandledJobs().get(0);
-    assertThat(subscribedJob.getMetadata().getKey()).isEqualTo(createdEvent.getKey());
+    final ActivatedJob subscribedJob = jobHandler.getHandledJobs().get(0);
+    assertThat(subscribedJob.getKey()).isEqualTo(createdEvent.getKey());
     assertThat(subscribedJob.getType()).isEqualTo("foo");
     assertThat(subscribedJob.getDeadline()).isAfter(Instant.now());
 
-    waitUntil(() -> eventRecorder.hasJobEvent(state(JobState.COMPLETED)));
+    waitUntil(() -> jobRecords(JobIntent.COMPLETED).exists());
 
-    final JobEvent completedEvent = eventRecorder.getJobEvents(JobState.COMPLETED).get(0);
-    assertThat(completedEvent.getPayload()).isEqualTo("{\"a\":3}");
-    assertThat(completedEvent.getCustomHeaders()).containsEntry("b", "2");
+    final Record<JobRecordValue> completedRecord = jobRecords(JobIntent.COMPLETED).getFirst();
+    assertThat(completedRecord.getValue().getPayload()).isEqualTo("{\"a\":3}");
+    assertThat(completedRecord.getValue()).hasCustomHeaders(Collections.singletonMap("b", "2"));
   }
 
   @Test
   public void shouldCloseSubscription() throws InterruptedException {
     // given
-    eventRecorder.startRecordingEvents();
-
-    final RecordingJobHandler jobHandler = new RecordingJobHandler();
+    final GrpcRecordingJobHandler jobHandler = new GrpcRecordingJobHandler();
 
     final JobWorker subscription =
         jobClient
@@ -197,10 +183,10 @@ public class JobWorkerTest {
 
     createJobOfType("foo");
 
-    waitUntil(() -> eventRecorder.hasJobEvent(JobState.CREATED));
+    waitUntil(() -> jobRecords(JobIntent.CREATED).exists());
 
     assertThat(jobHandler.getHandledJobs()).isEmpty();
-    assertThat(eventRecorder.hasJobCommand(c -> c.getName() == JobCommandName.ACTIVATE)).isFalse();
+    assertThat(jobRecords(JobIntent.ACTIVATE).exists()).isFalse();
   }
 
   @Test
@@ -211,10 +197,10 @@ public class JobWorkerTest {
       createJobOfType("foo");
     }
 
-    final RecordingJobHandler handler =
-        new RecordingJobHandler(
+    final GrpcRecordingJobHandler handler =
+        new GrpcRecordingJobHandler(
             (c, j) -> {
-              c.newCompleteCommand(j).send().join();
+              c.newCompleteCommand(j.getKey()).send().join();
             });
 
     jobClient
@@ -236,16 +222,14 @@ public class JobWorkerTest {
   @Test
   public void shouldMarkJobAsFailedAndRetryIfHandlerThrowsException() {
     // given
-    eventRecorder.startRecordingEvents();
-
     final JobEvent job = createJobOfType("foo");
 
-    final RecordingJobHandler jobHandler =
-        new RecordingJobHandler(
+    final GrpcRecordingJobHandler jobHandler =
+        new GrpcRecordingJobHandler(
             (c, j) -> {
               throw new RuntimeException("expected failure");
             },
-            (c, j) -> c.newCompleteCommand(j).payload(NULL_PAYLOAD).send().join());
+            (c, j) -> c.newCompleteCommand(j.getKey()).send().join());
 
     // when
     jobClient
@@ -261,21 +245,19 @@ public class JobWorkerTest {
 
     final long jobKey = job.getKey();
     assertThat(jobHandler.getHandledJobs())
-        .extracting("metadata.key")
+        .extracting(ActivatedJob::getKey)
         .containsExactly(jobKey, jobKey);
-    assertThat(eventRecorder.hasJobEvent(state(JobState.FAILED))).isTrue();
-    waitUntil(() -> eventRecorder.hasJobEvent(state(JobState.COMPLETED)));
+    assertThat(jobRecords(JobIntent.FAILED).exists()).isTrue();
+    waitUntil(() -> jobRecords(JobIntent.COMPLETED).exists());
   }
 
   @Test
   public void shouldNotLockJobIfRetriesAreExhausted() {
     // given
-    eventRecorder.startRecordingEvents();
-
     jobClient.newCreateCommand().jobType("foo").retries(1).send().join();
 
-    final RecordingJobHandler jobHandler =
-        new RecordingJobHandler(
+    final GrpcRecordingJobHandler jobHandler =
+        new GrpcRecordingJobHandler(
             (c, t) -> {
               throw new RuntimeException("expected failure");
             });
@@ -289,7 +271,7 @@ public class JobWorkerTest {
         .name("test")
         .open();
 
-    waitUntil(() -> eventRecorder.hasJobEvent(state(JobState.FAILED).and(jobRetries(0))));
+    waitUntil(() -> jobRecords(JobIntent.FAILED).withRetries(0).exists());
 
     assertThat(jobHandler.getHandledJobs()).hasSize(1);
   }
@@ -297,16 +279,14 @@ public class JobWorkerTest {
   @Test
   public void shouldUpdateJobRetries() {
     // given
-    eventRecorder.startRecordingEvents();
-
     final JobEvent job = jobClient.newCreateCommand().jobType("foo").retries(1).send().join();
 
-    final RecordingJobHandler jobHandler =
-        new RecordingJobHandler(
+    final GrpcRecordingJobHandler jobHandler =
+        new GrpcRecordingJobHandler(
             (c, j) -> {
               throw new RuntimeException("expected failure");
             },
-            (c, j) -> c.newCompleteCommand(j).payload(NULL_PAYLOAD).send().join());
+            (c, j) -> c.newCompleteCommand(j.getKey()).send().join());
 
     jobClient
         .newWorker()
@@ -317,27 +297,23 @@ public class JobWorkerTest {
         .open();
 
     waitUntil(() -> jobHandler.getHandledJobs().size() == 1);
-    waitUntil(() -> eventRecorder.hasJobEvent(state(JobState.FAILED).and(jobRetries(0))));
+    waitUntil(() -> jobRecords(JobIntent.FAILED).withRetries(0).exists());
 
     // when
-    final JobEvent updatedJob = jobClient.newUpdateRetriesCommand(job).retries(2).send().join();
+    jobClient.newUpdateRetriesCommand(job.getKey()).retries(2).send().join();
 
     // then
-    assertThat(updatedJob.getKey()).isEqualTo(job.getKey());
-
     waitUntil(() -> jobHandler.getHandledJobs().size() == 2);
-    waitUntil(() -> eventRecorder.hasJobEvent(state(JobState.COMPLETED)));
+    waitUntil(() -> jobRecords(JobIntent.COMPLETED).exists());
   }
 
   @Test
   public void shouldExpireJobLock() {
     // given
-    eventRecorder.startRecordingEvents();
-
     final JobEvent job = createJobOfType("foo");
 
-    final RecordingJobHandler jobHandler =
-        new RecordingJobHandler(
+    final GrpcRecordingJobHandler jobHandler =
+        new GrpcRecordingJobHandler(
             (c, t) -> {
               // don't complete the job - just wait for lock expiration
             });
@@ -359,18 +335,17 @@ public class JobWorkerTest {
     final long jobKey = job.getKey();
     assertThat(jobHandler.getHandledJobs())
         .hasSize(2)
-        .extracting("metadata.key")
+        .extracting(ActivatedJob::getKey)
         .containsExactly(jobKey, jobKey);
 
-    assertThat(eventRecorder.hasJobEvent(state(JobState.TIMED_OUT))).isTrue();
+    assertThat(jobRecords(JobIntent.TIMED_OUT).exists()).isTrue();
   }
 
   @Test
   public void shouldGiveJobToSingleSubscription() {
     // given
-    final RecordingJobHandler jobHandler =
-        new RecordingJobHandler(
-            (c, t) -> c.newCompleteCommand(t).payload(NULL_PAYLOAD).send().join());
+    final GrpcRecordingJobHandler jobHandler =
+        new GrpcRecordingJobHandler((c, t) -> c.newCompleteCommand(t.getKey()).send().join());
 
     jobClient
         .newWorker()
@@ -403,7 +378,7 @@ public class JobWorkerTest {
     createJobOfType("foo");
     createJobOfType("bar");
 
-    final RecordingJobHandler jobHandler = new RecordingJobHandler();
+    final GrpcRecordingJobHandler jobHandler = new GrpcRecordingJobHandler();
 
     jobClient
         .newWorker()
@@ -432,7 +407,7 @@ public class JobWorkerTest {
     for (int i = 0; i < subscriptionCapacity + 1; i++) {
       createJobOfType("foo");
     }
-    final RecordingJobHandler jobHandler = new RecordingJobHandler();
+    final GrpcRecordingJobHandler jobHandler = new GrpcRecordingJobHandler();
 
     // when
     jobClient

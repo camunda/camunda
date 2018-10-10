@@ -28,8 +28,13 @@ import io.zeebe.client.api.subscription.TopicSubscriptionBuilderStep1;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.gateway.protocol.GatewayGrpc;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
+import io.zeebe.util.CloseableSilently;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 public class ZeebeClientImpl implements ZeebeClient {
@@ -38,16 +43,26 @@ public class ZeebeClientImpl implements ZeebeClient {
   private final ZeebeObjectMapper objectMapper;
   private final GatewayStub asyncStub;
   private final ManagedChannel channel;
+  private final ScheduledExecutorService executorService;
+  private final List<CloseableSilently> closeables = new CopyOnWriteArrayList<>();
 
   public ZeebeClientImpl(final ZeebeClientConfiguration configuration) {
     this(configuration, buildChannel(configuration));
   }
 
-  public ZeebeClientImpl(ZeebeClientConfiguration config, ManagedChannel channel) {
+  public ZeebeClientImpl(final ZeebeClientConfiguration configuration, ManagedChannel channel) {
+    this(configuration, channel, buildExecutorService(configuration));
+  }
+
+  public ZeebeClientImpl(
+      ZeebeClientConfiguration config,
+      ManagedChannel channel,
+      ScheduledExecutorService executorService) {
     this.config = config;
     this.objectMapper = new ZeebeObjectMapper();
     this.channel = channel;
     this.asyncStub = GatewayGrpc.newStub(channel);
+    this.executorService = executorService;
   }
 
   public static ManagedChannel buildChannel(ZeebeClientConfiguration config) {
@@ -65,6 +80,12 @@ public class ZeebeClientImpl implements ZeebeClient {
         .build();
   }
 
+  private static ScheduledExecutorService buildExecutorService(
+      ZeebeClientConfiguration configuration) {
+    final int threadCount = configuration.getNumSubscriptionExecutionThreads();
+    return Executors.newScheduledThreadPool(threadCount);
+  }
+
   @Override
   public WorkflowClient workflowClient() {
     return new WorkflowsClientImpl(asyncStub, config, objectMapper);
@@ -72,7 +93,7 @@ public class ZeebeClientImpl implements ZeebeClient {
 
   @Override
   public JobClient jobClient() {
-    return new JobClientImpl(asyncStub, config, objectMapper);
+    return new JobClientImpl(asyncStub, config, objectMapper, executorService, closeables);
   }
 
   @Override
@@ -97,6 +118,18 @@ public class ZeebeClientImpl implements ZeebeClient {
 
   @Override
   public void close() {
+    closeables.forEach(CloseableSilently::close);
+
+    executorService.shutdown();
+
+    try {
+      if (!executorService.awaitTermination(15, TimeUnit.SECONDS)) {
+        throw new ClientException("Failed to await termination of job worker executor");
+      }
+    } catch (InterruptedException e) {
+      throw new ClientException("Failed to await termination of job worker exectuor", e);
+    }
+
     channel.shutdown();
 
     try {

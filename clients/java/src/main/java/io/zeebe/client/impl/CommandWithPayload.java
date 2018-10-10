@@ -27,18 +27,22 @@ public abstract class CommandWithPayload<T> {
   }
 
   public T payload(final InputStream payload) {
+    ArgumentUtil.ensureNotNull("payload", payload);
     return setPayloadInternal(objectMapper.validateJson("payload", payload));
   }
 
   public T payload(final String payload) {
+    ArgumentUtil.ensureNotNull("payload", payload);
     return setPayloadInternal(objectMapper.validateJson("payload", payload));
   }
 
   public T payload(final Map<String, Object> payload) {
+    ArgumentUtil.ensureNotNull("payload", payload);
     return payload((Object) payload);
   }
 
   public T payload(final Object payload) {
+    ArgumentUtil.ensureNotNull("payload", payload);
     return setPayloadInternal(objectMapper.toJson(payload));
   }
 

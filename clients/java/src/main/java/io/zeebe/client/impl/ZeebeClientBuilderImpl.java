@@ -38,6 +38,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   private ActorClock actorClock;
   private String defaultJobWorkerName = "default";
   private Duration defaultJobTimeout = Duration.ofMinutes(5);
+  private Duration defaultJobPollInterval = Duration.ofSeconds(5);
   private Duration defaultMessageTimeToLive = Duration.ofHours(1);
 
   @Override
@@ -159,6 +160,11 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
+  public Duration getDefaultJobPollInterval() {
+    return defaultJobPollInterval;
+  }
+
+  @Override
   public ZeebeClientBuilder defaultJobWorkerName(final String workerName) {
     this.defaultJobWorkerName = workerName;
     return this;
@@ -167,6 +173,12 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   @Override
   public ZeebeClientBuilder defaultJobTimeout(final Duration timeout) {
     this.defaultJobTimeout = timeout;
+    return this;
+  }
+
+  @Override
+  public ZeebeClientBuilder defaultJobPollInterval(Duration pollInterval) {
+    defaultJobPollInterval = pollInterval;
     return this;
   }
 
@@ -235,6 +247,12 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
           Duration.ofMillis(
               Integer.parseInt(properties.getProperty(ClientProperties.DEFAULT_JOB_TIMEOUT))));
     }
+    if (properties.containsKey(ClientProperties.DEFAULT_JOB_POLL_INTERVAL)) {
+      defaultJobTimeout(
+          Duration.ofMillis(
+              Integer.parseInt(
+                  properties.getProperty(ClientProperties.DEFAULT_JOB_POLL_INTERVAL))));
+    }
     if (properties.containsKey(DEFAULT_MESSAGE_TIME_TO_LIVE)) {
       defaultMessageTimeToLive(
           Duration.ofMillis(Long.parseLong(properties.getProperty(DEFAULT_MESSAGE_TIME_TO_LIVE))));
@@ -258,6 +276,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
     appendProperty(sb, "tcpChannelKeepAlivePeriod", tcpChannelKeepAlivePeriod);
     appendProperty(sb, "defaultJobWorkerName", defaultJobWorkerName);
     appendProperty(sb, "defaultJobTimeout", defaultJobTimeout);
+    appendProperty(sb, "defaultJobPollInterval", defaultJobPollInterval);
     appendProperty(sb, "defaultMessageTimeToLive", defaultMessageTimeToLive);
 
     return sb.toString();

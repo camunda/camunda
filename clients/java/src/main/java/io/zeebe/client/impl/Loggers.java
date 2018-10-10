@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.client.api.subscription;
+package io.zeebe.client.impl;
 
-import io.zeebe.client.api.clients.JobClient;
-import io.zeebe.client.api.response.ActivatedJob;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-/** Implementations MUST be thread-safe. */
-@FunctionalInterface
-public interface JobHandler {
+public class Loggers {
 
-  /** Handles a job. Implements the work to be done whenever a job of a certain type is received. */
-  void handle(JobClient client, ActivatedJob job);
+  public static final Logger JOB_POLLER_LOGGER =
+      LoggerFactory.getLogger("io.zeebe.client.job.poller");
+  public static final Logger JOB_WORKER_LOGGER =
+      LoggerFactory.getLogger("io.zeebe.client.job.worker");
 }

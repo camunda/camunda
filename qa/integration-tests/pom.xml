@@ -67,6 +67,12 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-exporter-asserts</artifactId>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
 

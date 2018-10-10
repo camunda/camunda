@@ -23,7 +23,7 @@ public interface JobWorkerBuilderStep1 {
    * Set the type of jobs to work on.
    *
    * @param type the type of jobs (e.g. "payment")
-   * @return the builder for this subscription
+   * @return the builder for this worker
    */
   JobWorkerBuilderStep2 jobType(String type);
 
@@ -52,64 +52,64 @@ public interface JobWorkerBuilderStep1 {
      * };
      * </pre>
      *
-     * The handler must be be thread-safe.
+     * The handler must be thread-safe.
      *
      * @param handler the handle to process the jobs
-     * @return the builder for this subscription
+     * @return the builder for this worker
      */
     JobWorkerBuilderStep3 handler(JobHandler handler);
   }
 
   interface JobWorkerBuilderStep3 {
     /**
-     * Set the time for how long a job is exclusively assigned for this subscription.
+     * Set the time for how long a job is exclusively assigned for this worker.
      *
-     * <p>In this time, the job can not be assigned by other subscriptions to ensure that only one
-     * subscription work on the job. When the time is over then the job can be assigned again by
-     * this or other subscription if it's not completed yet.
+     * <p>In this time, the job can not be assigned by other workers to ensure that only one worker
+     * work on the job. When the time is over then the job can be assigned again by this or other
+     * worker if it's not completed yet.
      *
      * <p>If no timeout is set, then the default is used from the configuration.
      *
      * @param timeout the time in milliseconds
-     * @return the builder for this subscription
+     * @return the builder for this worker
      */
     JobWorkerBuilderStep3 timeout(long timeout);
 
     /**
-     * Set the time for how long a job is exclusively assigned for this subscription.
+     * Set the time for how long a job is exclusively assigned for this worker.
      *
-     * <p>In this time, the job can not be assigned by other subscriptions to ensure that only one
-     * subscription work on the job. When the time is over then the job can be assigned again by
-     * this or other subscription if it's not completed yet.
+     * <p>In this time, the job can not be assigned by other workers to ensure that only one worker
+     * work on the job. When the time is over then the job can be assigned again by this or other
+     * worker if it's not completed yet.
      *
      * <p>If no time is set then the default is used from the configuration.
      *
      * @param timeout the time as duration (e.g. "Duration.ofMinutes(5)")
-     * @return the builder for this subscription
+     * @return the builder for this worker
      */
     JobWorkerBuilderStep3 timeout(Duration timeout);
 
     /**
-     * Set the name of the subscription owner.
+     * Set the name of the worker owner.
      *
      * <p>This name is used to identify the worker to which a job is exclusively assigned to.
      *
      * <p>If no name is set then the default is used from the configuration.
      *
      * @param workerName the name of the worker (e.g. "payment-service")
-     * @return the builder for this subscription
+     * @return the builder for this worker
      */
     JobWorkerBuilderStep3 name(String workerName);
 
     /**
-     * Set the maximum number of jobs which will be exclusively assigned to this subscription at the
-     * same time.
+     * Set the maximum number of jobs which will be exclusively assigned to this worker at the same
+     * time.
      *
-     * <p>This is used to control the backpressure of the subscription. When the number of assigned
-     * jobs is reached then the broker will stop assigning new jobs to the subscription in order to
-     * to not overwhelm the client and give other subscriptions the chance to work on the jobs. The
-     * broker will assign new jobs again when jobs are completed (or marked as failed) which were
-     * assigned to the subscription.
+     * <p>This is used to control the backpressure of the worker. When the number of assigned jobs
+     * is reached then the broker will stop assigning new jobs to the worker in order to to not
+     * overwhelm the client and give other workers the chance to work on the jobs. The broker will
+     * assign new jobs again when jobs are completed (or marked as failed) which were assigned to
+     * the worker.
      *
      * <p>If no buffer size is set then the default is used from the {@link
      * ZeebeClientConfiguration}.
@@ -118,22 +118,36 @@ public interface JobWorkerBuilderStep1 {
      *
      * <ul>
      *   <li>A greater value can avoid situations in which the client waits idle for the broker to
-     *       provide more jobs. This can improve the subscription's throughput.
-     *   <li>The memory used by the subscription is linear with respect to this value.
+     *       provide more jobs. This can improve the worker's throughput.
+     *   <li>The memory used by the worker is linear with respect to this value.
      *   <li>The job's timeout starts to run down as soon as the broker pushes the job. Keep in mind
      *       that the following must hold to ensure fluent job handling: <code>
      *       time spent in buffer + time job handler needs until job completion < job timeout</code>
      *       .
      *
      * @param numberOfJobs the number of assigned jobs
-     * @return the builder for this subscription
+     * @return the builder for this worker
      */
     JobWorkerBuilderStep3 bufferSize(int numberOfJobs);
 
     /**
-     * Open the subscription and start to work on available tasks.
+     * Set the maximal interval between polling for new jobs.
      *
-     * @return the subscription
+     * <p>A job worker will automatically try to always activate new jobs after completing jobs. If
+     * no jobs can be activated after completing the worker will periodically poll for new jobs.
+     *
+     * <p>If no poll interval is set then the default is used from the {@link
+     * ZeebeClientConfiguration}
+     *
+     * @param pollInterval the maximal interval to check for new jobs
+     * @return the builder for this worker
+     */
+    JobWorkerBuilderStep3 pollInterval(Duration pollInterval);
+
+    /**
+     * Open the worker and start to work on available tasks.
+     *
+     * @return the worker
      */
     JobWorker open();
   }

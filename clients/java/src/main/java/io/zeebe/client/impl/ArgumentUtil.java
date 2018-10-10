@@ -17,7 +17,7 @@ package io.zeebe.client.impl;
 
 public class ArgumentUtil {
 
-  public static void ensureNotNull(String property, String value) {
+  public static void ensureNotNull(String property, Object value) {
     if (value == null) {
       throw new IllegalArgumentException(property + " must not be null");
     }
