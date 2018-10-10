@@ -37,7 +37,7 @@ public class CreateJobTest extends ClientTest {
   @Test
   public void shouldCreateJob() {
     // given
-    gatewayService.onCreateJobRequest(1, 123);
+    gatewayService.onCreateJobRequest(123);
 
     final Map<String, Object> partialCustomHeaders = new HashMap<>();
     partialCustomHeaders.put("one", 1);
@@ -57,7 +57,6 @@ public class CreateJobTest extends ClientTest {
             .join();
 
     // then
-    assertThat(response.getPartitionId()).isEqualTo(1);
     assertThat(response.getKey()).isEqualTo(123);
 
     final CreateJobRequest request = gatewayService.getLastRequest();
