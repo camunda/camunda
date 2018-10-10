@@ -41,7 +41,7 @@ var _ = Describe("PublishMessage", func() {
 
 	Context("publish messages", func() {
 		It("should publish one message", func() {
-			err := client.
+			response, err := client.
 				NewPublishMessageCommand().
 				MessageName("name").
 				CorrelationKey("key").
@@ -49,11 +49,12 @@ var _ = Describe("PublishMessage", func() {
 				MessageId("theId").
 				Send()
 			Expect(err).To(BeNil())
+			Expect(response).NotTo(BeNil())
 		})
 
 		It("should publish multiple messages", func() {
 			for i := 0; i < 10; i++ {
-				err := client.
+				response, err := client.
 					NewPublishMessageCommand().
 					MessageName(fmt.Sprintf("name_%d", i)).
 					CorrelationKey(fmt.Sprintf("key_%d", i)).
@@ -61,11 +62,12 @@ var _ = Describe("PublishMessage", func() {
 					MessageId(fmt.Sprintf("theId_%d", i)).
 					Send()
 				Expect(err).To(BeNil())
+                Expect(response).NotTo(BeNil())
 			}
 		})
 
 		It("should publish messages and error out", func() {
-			err := client.
+			_, err := client.
 				NewPublishMessageCommand().
 				MessageName("name").
 				CorrelationKey("key").
@@ -84,7 +86,7 @@ var _ = Describe("PublishMessage", func() {
 				MessageId("anotherId").
 				PayloadFromString("{}")
 			Expect(err).To(BeNil())
-			Expect(cmd.Send()).To(BeNil())
+			Expect(cmd.Send()).NotTo(BeNil())
 
 		})
 
@@ -110,7 +112,7 @@ var _ = Describe("PublishMessage", func() {
 				PayloadFromString("{\"something\": \"1234\"}")
 			Expect(err).To(BeNil())
 			Expect(cmd).To(Not(BeNil()))
-			Expect(cmd.Send()).To(BeNil())
+			Expect(cmd.Send()).NotTo(BeNil())
 		})
 
 		It("should publish a message with payload from stringer and error out", func() {
@@ -141,7 +143,7 @@ var _ = Describe("PublishMessage", func() {
 
 			Expect(err).To(BeNil())
 			Expect(cmd).To(Not(BeNil()))
-			Expect(cmd.Send()).To(BeNil())
+			Expect(cmd.Send()).NotTo(BeNil())
 		})
 
 		It("should publish a message with payload from object and error out", func() {
@@ -172,7 +174,7 @@ var _ = Describe("PublishMessage", func() {
 
 			Expect(err).To(BeNil())
 			Expect(cmd).To(Not(BeNil()))
-			Expect(cmd.Send()).To(BeNil())
+			Expect(cmd.Send()).NotTo(BeNil())
 		})
 
 		It("should publish a message with payload from map and error out", func() {
@@ -205,7 +207,7 @@ var _ = Describe("PublishMessage", func() {
 
 			Expect(err).To(BeNil())
 			Expect(cmd).To(Not(BeNil()))
-			Expect(cmd.Send()).To(BeNil())
+			Expect(cmd.Send()).NotTo(BeNil())
 		})
 
 	})

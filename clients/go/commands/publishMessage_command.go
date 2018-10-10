@@ -25,7 +25,7 @@ type PublishMessageCommandStep3 interface {
 	// Expected to be valid JSON string
 	PayloadFromString(string) (PublishMessageCommandStep3, error)
 
-	// Expected to consutrct a valid JSON string
+	// Expected to construct a valid JSON string
 	PayloadFromStringer(fmt.Stringer) (PublishMessageCommandStep3, error)
 
 	// Expected that object is JSON serializable
@@ -34,7 +34,7 @@ type PublishMessageCommandStep3 interface {
 }
 
 type DispatchPublishMessageCommand interface {
-	Send() error
+	Send() (*pb.PublishMessageResponse, error)
 }
 
 type PublishMessageCommand struct {
@@ -89,12 +89,11 @@ func (cmd *PublishMessageCommand) MessageName(name string) PublishMessageCommand
 	return cmd
 }
 
-func (cmd *PublishMessageCommand) Send() error {
+func (cmd *PublishMessageCommand) Send() (*pb.PublishMessageResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), utils.RequestTimeoutInSec*time.Second)
 	defer cancel()
 
-	_, err := cmd.gateway.PublishMessage(ctx, cmd.request)
-	return err
+    return cmd.gateway.PublishMessage(ctx, cmd.request)
 }
 
 func NewPublishMessageCommand(gateway pb.GatewayClient) PublishMessageCommandStep1 {
