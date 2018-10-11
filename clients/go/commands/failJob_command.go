@@ -1,10 +1,10 @@
 package commands
 
 import (
-    "context"
-    "github.com/zeebe-io/zeebe/clients/go/pb"
-    "github.com/zeebe-io/zeebe/clients/go/utils"
-    "time"
+	"context"
+	"github.com/zeebe-io/zeebe/clients/go/pb"
+	"github.com/zeebe-io/zeebe/clients/go/utils"
+	"time"
 )
 
 type DispatchFailJobCommand interface {
@@ -16,8 +16,6 @@ type FailJobCommandStep1 interface {
 }
 
 type FailJobCommand struct {
-	utils.SerializerMixin
-
 	request *pb.FailJobRequest
 	gateway pb.GatewayClient
 }
@@ -36,7 +34,6 @@ func (cmd *FailJobCommand) Send() (*pb.FailJobResponse, error) {
 
 func NewFailJobCommand(gateway pb.GatewayClient) FailJobCommandStep1 {
 	return &FailJobCommand{
-		SerializerMixin: utils.NewJsonStringSerializer(),
 		request: &pb.FailJobRequest{},
 		gateway: gateway,
 	}

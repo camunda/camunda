@@ -1,10 +1,10 @@
 package commands
 
 import (
-    "context"
-    "github.com/zeebe-io/zeebe/clients/go/pb"
-    "github.com/zeebe-io/zeebe/clients/go/utils"
-    "time"
+	"context"
+	"github.com/zeebe-io/zeebe/clients/go/pb"
+	"github.com/zeebe-io/zeebe/clients/go/utils"
+	"time"
 )
 
 type DispatchUpdateJobRetriesCommand interface {
@@ -16,14 +16,12 @@ type UpdateJobRetriesCommandStep1 interface {
 }
 
 type UpdateJobRetriesCommandStep2 interface {
-    DispatchUpdateJobRetriesCommand
+	DispatchUpdateJobRetriesCommand
 
 	Retries(int32) DispatchUpdateJobRetriesCommand
 }
 
 type UpdateJobRetriesCommand struct {
-	utils.SerializerMixin
-
 	request *pb.UpdateJobRetriesRequest
 	gateway pb.GatewayClient
 }
@@ -33,10 +31,9 @@ func (cmd *UpdateJobRetriesCommand) GetRequest() *pb.UpdateJobRetriesRequest {
 }
 
 func (cmd *UpdateJobRetriesCommand) JobKey(jobKey int64) UpdateJobRetriesCommandStep2 {
-    cmd.request.JobKey = jobKey
-    return cmd
+	cmd.request.JobKey = jobKey
+	return cmd
 }
-
 
 func (cmd *UpdateJobRetriesCommand) Retries(retries int32) DispatchUpdateJobRetriesCommand {
 	cmd.request.Retries = retries
@@ -52,7 +49,6 @@ func (cmd *UpdateJobRetriesCommand) Send() (*pb.UpdateJobRetriesResponse, error)
 
 func NewUpdateJobRetriesCommand(gateway pb.GatewayClient) UpdateJobRetriesCommandStep1 {
 	return &UpdateJobRetriesCommand{
-		SerializerMixin: utils.NewJsonStringSerializer(),
 		request: &pb.UpdateJobRetriesRequest{
 			Retries: utils.DefaultRetries,
 		},
