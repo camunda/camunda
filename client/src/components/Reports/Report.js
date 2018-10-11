@@ -305,8 +305,19 @@ export default withErrorHandling(
       );
     };
 
-    constructCSVDownloadLink = () =>
-      `api/export/csv/${this.id}/${encodeURIComponent(this.state.name.replace(/\s/g, '_'))}.csv`;
+    constructCSVDownloadLink = () => {
+      const {excludedColumns} = this.state.data.configuration;
+
+      const queryString = excludedColumns
+        ? `?excludedColumns=${excludedColumns
+            .map(column => column.replace('var__', 'variable:'))
+            .join(',')}`
+        : '';
+
+      return `api/export/csv/${this.id}/${encodeURIComponent(
+        this.state.name.replace(/\s/g, '_')
+      )}.csv${queryString}`;
+    };
 
     renderEditMode = () => {
       const {

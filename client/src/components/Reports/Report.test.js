@@ -67,7 +67,11 @@ const sampleReport = {
   name: 'name',
   lastModifier: 'lastModifier',
   lastModified: '2017-11-11T11:11:11.1111+0200',
-  reportType: 'single'
+  reportType: 'single',
+  data: {
+    processDefinitionKey: null,
+    configuration: {}
+  }
 };
 
 const reportResult = {
@@ -320,6 +324,25 @@ it('should show a download csv button with the correct link when report is a tab
   expect(href).toContain(sampleReport.name);
 });
 
+it('should reflect excluded columns in the csv download link', () => {
+  const node = mount(shallow(<Report {...props} />).get(0));
+  node.setState({
+    loaded: true,
+    reportResult,
+    ...sampleReport,
+    data: {configuration: {excludedColumns: ['prop1', 'var__VariableName']}}
+  });
+
+  expect(node.find('.Report__csv-download-button')).toBePresent();
+
+  const href = node
+    .find('.Report__csv-download-button')
+    .getDOMNode()
+    .getAttribute('href');
+
+  expect(href).toContain('?excludedColumns=prop1,variable:VariableName');
+});
+
 it('should not show a csv download button when report is not a table', () => {
   const node = mount(shallow(<Report {...props} />).get(0));
   node.setState({
@@ -534,6 +557,9 @@ describe('edit mode', async () => {
     props.match.params.viewMode = 'edit';
 
     const node = mount(shallow(<Report {...props} />).get(0));
+
+    loadSingleReport.mockReturnValueOnce({});
+
     await node.instance().componentDidMount();
 
     expect(node.state().data.processDefinitionKey).toBe('key');
@@ -547,7 +573,8 @@ describe('edit mode', async () => {
       node.setState({
         data: {
           view: 'test view',
-          groupBy: {type: 'name'}
+          groupBy: {type: 'name'},
+          configuration: {}
         }
       });
       const updates = {
@@ -565,7 +592,8 @@ describe('edit mode', async () => {
         data: {
           visualization: 'table',
           view: 'test view',
-          groupBy: {type: 'name'}
+          groupBy: {type: 'name'},
+          configuration: {}
         }
       });
       const updates = {
@@ -583,7 +611,8 @@ describe('edit mode', async () => {
         data: {
           visualization: 'table',
           view: 'test view',
-          groupBy: {type: 'name'}
+          groupBy: {type: 'name'},
+          configuration: {}
         }
       });
       const updates = {
