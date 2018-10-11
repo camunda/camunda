@@ -19,7 +19,6 @@ package io.zeebe.broker.job;
 
 import static io.zeebe.util.sched.clock.ActorClock.currentTimeMillis;
 
-import io.zeebe.broker.Loggers;
 import io.zeebe.broker.job.JobStateController.State;
 import io.zeebe.broker.job.old.CreditsRequest;
 import io.zeebe.broker.job.old.JobSubscriptionManager;
@@ -126,7 +125,6 @@ public class JobStreamProcessor implements StreamProcessorLifecycleAware {
 
   private void deactivateTimedOutJobs() {
     final Instant now = Instant.ofEpochMilli(currentTimeMillis());
-    Loggers.SYSTEM_LOGGER.debug("Checking for jobs with deadline < {}", now.toEpochMilli());
     state.forEachTimedOutEntry(
         now,
         (key, record, control) -> {
