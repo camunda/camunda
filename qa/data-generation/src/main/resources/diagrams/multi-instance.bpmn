@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" id="Definitions_0euwerb" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.12.0">
   <bpmn:process id="multiInstanceSubprocess" name="Multi-Instance Subprocess" isExecutable="true">
-    <bpmn:startEvent id="StartEvent_1" name="Request Received">
+    <bpmn:startEvent id="StartEvent_1" name="Request Received" camunda:asyncBefore="true">
       <bpmn:outgoing>SequenceFlow_1q8jknv</bpmn:outgoing>
     </bpmn:startEvent>
     <bpmn:sequenceFlow id="SequenceFlow_1q8jknv" sourceRef="StartEvent_1" targetRef="Task_1r4q94q" />

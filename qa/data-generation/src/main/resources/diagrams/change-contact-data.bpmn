@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.8.2">
+<bpmn:definitions xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="1.12.0">
   <bpmn:collaboration id="Collaboration_KontaktdatenAendernProzess">
     <bpmn:participant id="kontaktdatenAendern" name="Kontaktdaten Aendern Prozess" processRef="kontaktdaten-aendern" />
   </bpmn:collaboration>
@@ -10,7 +10,7 @@
         <camunda:property name="bpmnerror_on_callbacktimeout" value="prozessFehler" />
       </camunda:properties>
     </bpmn:extensionElements>
-    <bpmn:startEvent id="StartEvent_KontaktdatenAendern" name="Kontaktdaten sollen&#10;geändert werden">
+    <bpmn:startEvent id="StartEvent_KontaktdatenAendern" name="Kontaktdaten sollen&#10;geändert werden" camunda:asyncBefore="true">
       <bpmn:outgoing>SequenceFlow_08ybd2o</bpmn:outgoing>
       <bpmn:messageEventDefinition messageRef="Message_5" />
     </bpmn:startEvent>
@@ -59,29 +59,29 @@ esb://arbeitsmanagement/BelegeVerarbeiten]]></bpmn:documentation>
         <dc:Bounds x="121" y="126" width="825" height="184" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_170lfhd_di" bpmnElement="SequenceFlow_170lfhd">
-        <di:waypoint xsi:type="dc:Point" x="359" y="216" />
-        <di:waypoint xsi:type="dc:Point" x="393" y="216" />
+        <di:waypoint x="359" y="216" />
+        <di:waypoint x="393" y="216" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="376" y="201" width="0" height="0" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SequenceFlow_08ybd2o_di" bpmnElement="SequenceFlow_08ybd2o">
-        <di:waypoint xsi:type="dc:Point" x="220" y="216" />
-        <di:waypoint xsi:type="dc:Point" x="259" y="216" />
+        <di:waypoint x="220" y="216" />
+        <di:waypoint x="259" y="216" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="240" y="201" width="0" height="0" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SequenceFlow_12bpgif_di" bpmnElement="SequenceFlow_12bpgif">
-        <di:waypoint xsi:type="dc:Point" x="493" y="216" />
-        <di:waypoint xsi:type="dc:Point" x="528" y="216" />
+        <di:waypoint x="493" y="216" />
+        <di:waypoint x="528" y="216" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="465.5" y="201" width="90" height="0" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       <bpmndi:BPMNEdge id="SequenceFlow_1qzsjxu_di" bpmnElement="SequenceFlow_1qzsjxu">
-        <di:waypoint xsi:type="dc:Point" x="704" y="216" />
-        <di:waypoint xsi:type="dc:Point" x="730" y="216" />
+        <di:waypoint x="704" y="216" />
+        <di:waypoint x="730" y="216" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="672" y="201" width="90" height="0" />
         </bpmndi:BPMNLabel>
@@ -108,8 +108,8 @@ esb://arbeitsmanagement/BelegeVerarbeiten]]></bpmn:documentation>
         <dc:Bounds x="604" y="176" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_1axayii_di" bpmnElement="SequenceFlow_1axayii">
-        <di:waypoint xsi:type="dc:Point" x="564" y="216" />
-        <di:waypoint xsi:type="dc:Point" x="604" y="216" />
+        <di:waypoint x="564" y="216" />
+        <di:waypoint x="604" y="216" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="539" y="201" width="90" height="0" />
         </bpmndi:BPMNLabel>
@@ -124,8 +124,8 @@ esb://arbeitsmanagement/BelegeVerarbeiten]]></bpmn:documentation>
         <dc:Bounds x="730" y="176" width="100" height="80" />
       </bpmndi:BPMNShape>
       <bpmndi:BPMNEdge id="SequenceFlow_0tntdc3_di" bpmnElement="SequenceFlow_0tntdc3">
-        <di:waypoint xsi:type="dc:Point" x="830" y="216" />
-        <di:waypoint xsi:type="dc:Point" x="875" y="216" />
+        <di:waypoint x="830" y="216" />
+        <di:waypoint x="875" y="216" />
         <bpmndi:BPMNLabel>
           <dc:Bounds x="808" y="201" width="90" height="0" />
         </bpmndi:BPMNLabel>
