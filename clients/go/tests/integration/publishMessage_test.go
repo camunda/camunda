@@ -62,7 +62,7 @@ var _ = Describe("PublishMessage", func() {
 					MessageId(fmt.Sprintf("theId_%d", i)).
 					Send()
 				Expect(err).To(BeNil())
-                Expect(response).NotTo(BeNil())
+				Expect(response).NotTo(BeNil())
 			}
 		})
 

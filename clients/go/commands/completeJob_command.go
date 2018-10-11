@@ -70,7 +70,7 @@ func (cmd *CompleteJobCommand) Send() (*pb.CompleteJobResponse, error) {
 func NewCompleteJobCommand(gateway pb.GatewayClient) CompleteJobCommandStep1 {
 	return &CompleteJobCommand{
 		SerializerMixin: utils.NewJsonStringSerializer(),
-		request: &pb.CompleteJobRequest{},
-		gateway: gateway,
+		request:         &pb.CompleteJobRequest{},
+		gateway:         gateway,
 	}
 }

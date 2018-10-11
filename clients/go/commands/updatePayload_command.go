@@ -70,7 +70,7 @@ func (cmd *UpdatePayloadCommand) Send() (*pb.UpdateWorkflowInstancePayloadRespon
 func NewUpdatePayloadCommand(gateway pb.GatewayClient) UpdatePayloadCommandStep1 {
 	return &UpdatePayloadCommand{
 		SerializerMixin: utils.NewJsonStringSerializer(),
-		request: &pb.UpdateWorkflowInstancePayloadRequest{},
-		gateway: gateway,
+		request:         &pb.UpdateWorkflowInstancePayloadRequest{},
+		gateway:         gateway,
 	}
 }

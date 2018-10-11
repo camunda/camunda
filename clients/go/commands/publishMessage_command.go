@@ -93,7 +93,7 @@ func (cmd *PublishMessageCommand) Send() (*pb.PublishMessageResponse, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), utils.RequestTimeoutInSec*time.Second)
 	defer cancel()
 
-    return cmd.gateway.PublishMessage(ctx, cmd.request)
+	return cmd.gateway.PublishMessage(ctx, cmd.request)
 }
 
 func NewPublishMessageCommand(gateway pb.GatewayClient) PublishMessageCommandStep1 {
