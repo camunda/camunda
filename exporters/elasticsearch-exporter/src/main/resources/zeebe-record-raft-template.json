@@ -1,6 +1,6 @@
 {
   "index_patterns": [
-    "zeebe-record-raft-*"
+    "zeebe-record-raft_*"
   ],
   "order": 20,
   "mappings": {
@@ -20,5 +20,8 @@
         }
       }
     }
+  },
+  "aliases": {
+    "zeebe-record-raft": {}
   }
 }

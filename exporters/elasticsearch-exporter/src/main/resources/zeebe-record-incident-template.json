@@ -1,6 +1,6 @@
 {
   "index_patterns": [
-    "zeebe-record-incident-*"
+    "zeebe-record-incident_*"
   ],
   "order": 20,
   "mappings": {
@@ -37,5 +37,8 @@
         }
       }
     }
+  },
+  "aliases": {
+    "zeebe-record-incident": {}
   }
 }

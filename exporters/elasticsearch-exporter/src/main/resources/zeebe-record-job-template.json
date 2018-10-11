@@ -1,6 +1,6 @@
 {
   "index_patterns": [
-    "zeebe-record-job-*"
+    "zeebe-record-job_*"
   ],
   "order": 20,
   "mappings": {
@@ -54,5 +54,8 @@
         }
       }
     }
+  },
+  "aliases": {
+    "zeebe-record-job": {}
   }
 }

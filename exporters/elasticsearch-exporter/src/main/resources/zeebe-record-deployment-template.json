@@ -1,6 +1,6 @@
 {
   "index_patterns": [
-    "zeebe-record-deployment-*"
+    "zeebe-record-deployment_*"
   ],
   "order": 20,
   "mappings": {
@@ -42,5 +42,8 @@
         }
       }
     }
+  },
+  "aliases": {
+    "zeebe-record-deployment": {}
   }
 }
