@@ -15,6 +15,7 @@ type ZBClient interface {
 	NewPublishMessageCommand() commands.PublishMessageCommandStep1
 
 	NewCreateJobCommand() commands.CreateJobCommandStep1
+	NewActivateJobsCommand() commands.ActivateJobsCommandStep1
 	NewCompleteJobCommand() commands.CompleteJobCommandStep1
 	NewFailJobCommand() commands.FailJobCommandStep1
 	NewUpdateJobRetriesCommand() commands.UpdateJobRetriesCommandStep1
