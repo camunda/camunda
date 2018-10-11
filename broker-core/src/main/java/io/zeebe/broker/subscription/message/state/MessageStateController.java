@@ -19,6 +19,7 @@ package io.zeebe.broker.subscription.message.state;
 
 import static io.zeebe.broker.workflow.state.PersistenceHelper.EXISTENCE;
 
+import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.util.KeyStateController;
 import io.zeebe.logstreams.rocksdb.ZbRocksDb;
 import io.zeebe.logstreams.rocksdb.ZbWriteBatch;
@@ -304,12 +305,31 @@ public class MessageStateController extends KeyStateController {
     return subscriptionState.exist(subscription);
   }
 
+  public MessageSubscription findSubscription(MessageSubscriptionRecord record) {
+    final MessageSubscription messageSubscription =
+        new MessageSubscription(
+            record.getWorkflowInstancePartitionId(),
+            record.getWorkflowInstanceKey(),
+            record.getActivityInstanceKey());
+    return subscriptionState.getSubscription(messageSubscription);
+  }
+
+  public boolean remove(MessageSubscriptionRecord messageSubscriptionRecord) {
+    final MessageSubscription persistedSubscription = findSubscription(messageSubscriptionRecord);
+
+    final boolean exist = persistedSubscription != null;
+    if (exist) {
+      subscriptionState.remove(persistedSubscription);
+    }
+    return exist;
+  }
+
   public void remove(MessageSubscription messageSubscription) {
     subscriptionState.remove(messageSubscription);
   }
 
   @FunctionalInterface
   public interface IteratorConsumer {
-    boolean accept(final Message message);
+    boolean accept(Message message);
   }
 }
