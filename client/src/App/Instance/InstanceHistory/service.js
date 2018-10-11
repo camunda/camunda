@@ -23,9 +23,9 @@ export function getEventLabel({eventSourceType, eventType}) {
  */
 export function getGroupedEvents({events, activitiesDetails}) {
   // make a deep clone of the activitiesDetails object
-  let activitiesEvents = JSON.parse(JSON.stringify(activitiesDetails));
+  const activitiesEvents = JSON.parse(JSON.stringify(activitiesDetails));
 
-  let groupedEvents = [];
+  const groupedEvents = [];
   events.forEach(originalEvent => {
     // add label and tiestamp to the event
     const event = {
@@ -50,8 +50,8 @@ export function getGroupedEvents({events, activitiesDetails}) {
     // Therefore, we add to it an events array here containing the current event and we push it to
     // the groupedEvents array.
     if (!eventActivityInstance.events) {
-      eventActivityInstance.events = [event];
-      return groupedEvents.push(eventActivityInstance);
+      eventActivityInstance.events = [];
+      groupedEvents.push(eventActivityInstance);
     }
 
     // If the eventActivityInstance has events, it means it has already been pushed to the groupedEvents.
@@ -65,7 +65,7 @@ export function getGroupedEvents({events, activitiesDetails}) {
 }
 
 export function getActivityInstanceEvents({events = [], activityInstanceId}) {
-  return events
-    .filter(event => event.activityInstanceId === activityInstanceId)
-    .map(event => ({...event, label: getEventLabel(event)}));
+  const activityInstance =
+    events.find(event => event.id === activityInstanceId) || {};
+  return activityInstance.events || [];
 }

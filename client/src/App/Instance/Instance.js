@@ -49,7 +49,8 @@ export default class Instance extends Component {
           ...map,
           [id]: {
             ...activity,
-            ...flowNodesDetails[activity.activityId]
+            ...flowNodesDetails[activity.activityId],
+            id
           }
         };
       },

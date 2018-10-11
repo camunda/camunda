@@ -11,13 +11,14 @@ import InstanceLog from './InstanceLog';
 import InstanceEvents from './InstanceEvents';
 import * as Styled from './styled';
 import {getEventLabel} from './service';
+import {formatDate} from 'modules/utils/date';
 
 const fooActivityEvents = [
   {
     eventType: 'fooCreated',
     eventSourceType: 'JOB',
     activityInstanceId: 'foo',
-    dateTime: '18 Sep 2018 09:05:32',
+    dateTime: '2018-10-11T06:00:00.000+0000',
     metadata: {
       a: 'b'
     }
@@ -26,7 +27,7 @@ const fooActivityEvents = [
     eventSourceType: 'JOB',
     eventType: 'fooActiviated',
     activityInstanceId: 'foo',
-    dateTime: '18 Sep 2018 09:05:32'
+    dateTime: '2018-10-11T06:15:00.000+0000'
   }
 ];
 
@@ -35,13 +36,13 @@ const barActivityEvents = [
     eventType: 'barCreated',
     eventSourceType: 'INCIDENT',
     activityInstanceId: 'bar',
-    dateTime: '18 Sep 2018 09:05:32'
+    dateTime: '2018-10-11T06:00:00.000+0000'
   },
   {
     eventSourceType: 'JOB',
     eventType: 'BAR_ACTIVATED',
     activityInstanceId: 'bar',
-    dateTime: '18 Sep 2018 09:05:32'
+    dateTime: '2018-10-11T06:15:00.000+0000'
   }
 ];
 
@@ -49,7 +50,7 @@ const instanceEvents = [
   {
     eventSourceType: 'WORKFLOW_INSTANCE',
     eventType: 'baz',
-    dateTime: '18 Sep 2018 09:05:32',
+    dateTime: '2018-10-11T05:00:00.000+0000',
     metadata: {
       c: {
         d: 'e',
@@ -67,8 +68,8 @@ const mockEvents = [
 ];
 
 const mockActivitiesDetails = {
-  foo: {name: 'foo name', activityId: 'fooAID'},
-  bar: {name: 'bar name', activityId: 'barAID'}
+  foo: {id: 'foo', name: 'foo name', activityId: 'fooAID'},
+  bar: {id: 'bar', name: 'bar name', activityId: 'barAID'}
 };
 
 api.fetchEvents = mockResolvedAsyncFn(mockEvents);
@@ -89,7 +90,7 @@ describe('InstanceHistory', () => {
     });
   });
 
-  it('should render a pane with InstanceLog section and Copyright', async () => {
+  it('should render a panel with InstanceLog section and Copyright', async () => {
     // given
     const mockProps = {
       instance: {id: 'someInstanceId'},
@@ -134,7 +135,11 @@ describe('InstanceHistory', () => {
     expect(InstanceEventsNode).toHaveLength(1);
     const expectedEvents = fooActivityEvents.map(event => ({
       ...event,
-      label: getEventLabel(event)
+      label: getEventLabel(event),
+      metadata: {
+        ...event.metadata,
+        timestamp: formatDate(event.dateTime)
+      }
     }));
     expect(InstanceEventsNode.prop('groupedEvents')).toEqual(expectedEvents);
 

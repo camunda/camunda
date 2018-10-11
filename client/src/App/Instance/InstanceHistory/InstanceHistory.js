@@ -88,14 +88,14 @@ export default class InstanceHistory extends React.Component {
   render() {
     const {selectedActivityInstanceId} = this.props;
 
-    let filteredGroupedEvents = this.state.groupedEvents;
+    let filteredEvents = this.state.groupedEvents;
 
     // if there is a selected activity instane, only show events
     // corresponding to it
-    if (selectedActivityInstanceId && this.state.events) {
-      filteredGroupedEvents = getActivityInstanceEvents({
+    if (selectedActivityInstanceId && filteredEvents) {
+      filteredEvents = getActivityInstanceEvents({
         activityInstanceId: selectedActivityInstanceId,
-        events: this.state.events
+        events: filteredEvents
       });
     }
 
@@ -110,7 +110,7 @@ export default class InstanceHistory extends React.Component {
             onActivityInstanceSelected={this.props.onActivityInstanceSelected}
           />
           <InstanceEvents
-            groupedEvents={filteredGroupedEvents}
+            groupedEvents={filteredEvents}
             onEventRowChanged={this.handleEventRowChange}
             selectedEventRow={this.state.selectedEventRow}
           />
