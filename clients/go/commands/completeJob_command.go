@@ -17,6 +17,8 @@ type CompleteJobCommandStep1 interface {
 }
 
 type CompleteJobCommandStep2 interface {
+	DispatchCompleteJobCommand
+
 	PayloadFromString(string) (DispatchCompleteJobCommand, error)
 	PayloadFromStringer(fmt.Stringer) (DispatchCompleteJobCommand, error)
 	PayloadFromMap(map[string]interface{}) (DispatchCompleteJobCommand, error)

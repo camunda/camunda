@@ -7,6 +7,30 @@ import (
 	"testing"
 )
 
+func TestCompleteJobCommand(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	client := mock_pb.NewMockGatewayClient(ctrl)
+
+	request := &pb.CompleteJobRequest{
+		JobKey: 123,
+	}
+	stub := &pb.CompleteJobResponse{}
+
+	client.EXPECT().CompleteJob(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+
+	response, err := NewCompleteJobCommand(client).JobKey(123).Send()
+
+	if err != nil {
+		t.Errorf("Failed to send request")
+	}
+
+	if response != stub {
+		t.Errorf("Failed to receive response")
+	}
+}
+
 func TestCompleteJobCommandWithPayloadFromString(t *testing.T) {
 	ctrl := gomock.NewController(t)
 	defer ctrl.Finish()
