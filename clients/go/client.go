@@ -35,6 +35,22 @@ func (client *ZBClientImpl) NewCreateJobCommand() commands.CreateJobCommandStep1
 	return commands.NewCreateJobCommand(client.gateway)
 }
 
+func (client *ZBClientImpl) NewCompleteJobCommand() commands.CompleteJobCommandStep1 {
+	return commands.NewCompleteJobCommand(client.gateway)
+}
+
+func (client *ZBClientImpl) NewFailJobCommand() commands.FailJobCommandStep1 {
+	return commands.NewFailJobCommand(client.gateway)
+}
+
+func (client *ZBClientImpl) NewUpdateJobRetriesCommand() commands.UpdateJobRetriesCommandStep1 {
+	return commands.NewUpdateJobRetriesCommand(client.gateway)
+}
+
+func (client *ZBClientImpl) NewUpdatePayloadCommand() commands.UpdatePayloadCommandStep1 {
+	return commands.NewUpdatePayloadCommand(client.gateway)
+}
+
 func (client *ZBClientImpl) Close() error {
 	return client.connection.Close()
 }
