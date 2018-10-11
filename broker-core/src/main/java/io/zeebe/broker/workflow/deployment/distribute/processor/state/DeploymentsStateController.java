@@ -17,9 +17,10 @@
  */
 package io.zeebe.broker.workflow.deployment.distribute.processor.state;
 
+import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
+
 import io.zeebe.broker.util.KeyStateController;
 import io.zeebe.broker.workflow.deployment.distribute.processor.PendingDeploymentDistribution;
-import java.nio.ByteOrder;
 import java.util.function.BiConsumer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.rocksdb.RocksIterator;
@@ -97,7 +98,7 @@ public class DeploymentsStateController extends KeyStateController {
         readBuffer.wrap(keyBytes);
 
         if (keyBytes.length == Long.BYTES) {
-          final long longKey = readBuffer.getLong(0, ByteOrder.LITTLE_ENDIAN);
+          final long longKey = readBuffer.getLong(0, STATE_BYTE_ORDER);
 
           final byte[] valueBytes = rocksIterator.value();
           readBuffer.wrap(valueBytes);

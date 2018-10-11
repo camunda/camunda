@@ -17,8 +17,9 @@
  */
 package io.zeebe.broker.workflow.state;
 
+import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
+
 import io.zeebe.logstreams.state.StateController;
-import java.nio.ByteOrder;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.rocksdb.ColumnFamilyHandle;
@@ -42,11 +43,11 @@ public class NextValueManager {
     long previousKey = 0;
     final boolean keyWasFound = readBytes == generateKeyBytes.length;
     if (keyWasFound) {
-      previousKey = nextValueBuffer.getLong(0, ByteOrder.LITTLE_ENDIAN);
+      previousKey = nextValueBuffer.getLong(0, STATE_BYTE_ORDER);
     }
 
     final long nextKey = previousKey + 1;
-    nextValueBuffer.putLong(0, nextKey, ByteOrder.LITTLE_ENDIAN);
+    nextValueBuffer.putLong(0, nextKey, STATE_BYTE_ORDER);
 
     rocksDbWrapper.put(
         columnFamilyHandle, key, 0, key.length, generateKeyBytes, 0, generateKeyBytes.length);

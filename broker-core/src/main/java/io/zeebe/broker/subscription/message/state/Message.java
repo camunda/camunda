@@ -17,13 +17,13 @@
  */
 package io.zeebe.broker.subscription.message.state;
 
+import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
 import static io.zeebe.util.buffer.BufferUtil.readIntoBuffer;
 import static io.zeebe.util.buffer.BufferUtil.writeIntoBuffer;
 
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.clock.ActorClock;
-import java.nio.ByteOrder;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -92,11 +92,11 @@ public final class Message implements BufferWriter, BufferReader {
     offset = readIntoBuffer(buffer, offset, payload);
     offset = readIntoBuffer(buffer, offset, id);
 
-    timeToLive = buffer.getLong(offset, ByteOrder.LITTLE_ENDIAN);
+    timeToLive = buffer.getLong(offset, STATE_BYTE_ORDER);
     offset += Long.BYTES;
-    deadline = buffer.getLong(offset, ByteOrder.LITTLE_ENDIAN);
+    deadline = buffer.getLong(offset, STATE_BYTE_ORDER);
     offset += Long.BYTES;
-    key = buffer.getLong(offset, ByteOrder.LITTLE_ENDIAN);
+    key = buffer.getLong(offset, STATE_BYTE_ORDER);
   }
 
   @Override
@@ -117,11 +117,11 @@ public final class Message implements BufferWriter, BufferReader {
     valueOffset = writeIntoBuffer(buffer, valueOffset, payload);
     valueOffset = writeIntoBuffer(buffer, valueOffset, id);
 
-    buffer.putLong(valueOffset, timeToLive, ByteOrder.LITTLE_ENDIAN);
+    buffer.putLong(valueOffset, timeToLive, STATE_BYTE_ORDER);
     valueOffset += Long.BYTES;
-    buffer.putLong(valueOffset, deadline, ByteOrder.LITTLE_ENDIAN);
+    buffer.putLong(valueOffset, deadline, STATE_BYTE_ORDER);
     valueOffset += Long.BYTES;
-    buffer.putLong(valueOffset, key, ByteOrder.LITTLE_ENDIAN);
+    buffer.putLong(valueOffset, key, STATE_BYTE_ORDER);
     valueOffset += Long.BYTES;
     assert (valueOffset - offset) == getLength() : "End offset differs with getLength()";
   }

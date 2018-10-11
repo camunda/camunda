@@ -17,6 +17,8 @@
  */
 package io.zeebe.broker.workflow.state;
 
+import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
+
 import io.zeebe.broker.workflow.model.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.BpmnTransformer;
 import io.zeebe.logstreams.state.StateController;
@@ -26,7 +28,6 @@ import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentResource;
 import io.zeebe.protocol.impl.record.value.deployment.Workflow;
 import io.zeebe.util.buffer.BufferUtil;
-import java.nio.ByteOrder;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -244,7 +245,7 @@ public class WorkflowPersistenceCache {
   }
 
   private DeployedWorkflow lookupPersistenceStateForWorkflowByKey(long workflowKey) {
-    keyBuffer.putLong(0, workflowKey, ByteOrder.LITTLE_ENDIAN);
+    keyBuffer.putLong(0, workflowKey, STATE_BYTE_ORDER);
     final PersistedWorkflow persistedWorkflow =
         persistenceHelper.getValueInstance(
             PersistedWorkflow.class, workflowsHandle, keyBuffer, 0, Long.BYTES, valueBuffer);

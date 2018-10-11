@@ -18,11 +18,11 @@
 package io.zeebe.broker.subscription.message.state;
 
 import static io.zeebe.broker.workflow.state.PersistenceHelper.EXISTENCE;
+import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
 
 import io.zeebe.broker.workflow.state.PersistenceHelper;
 import io.zeebe.logstreams.state.StateController;
 import io.zeebe.util.sched.clock.ActorClock;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 import org.agrona.DirectBuffer;
@@ -140,7 +140,7 @@ public class SubscriptionState<T extends Subscription> {
         subSendTimeHandle,
         (key, value) -> {
           iterateKeyBuffer.wrap(key);
-          final long time = iterateKeyBuffer.getLong(TIME_OFFSET, ByteOrder.LITTLE_ENDIAN);
+          final long time = iterateKeyBuffer.getLong(TIME_OFFSET, STATE_BYTE_ORDER);
 
           final boolean isDue = time > 0 && time < deadline;
           if (isDue) {

@@ -18,13 +18,13 @@
 package io.zeebe.broker.subscription.message.state;
 
 import static io.zeebe.broker.workflow.state.PersistenceHelper.EXISTENCE;
+import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
 
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.util.KeyStateController;
 import io.zeebe.logstreams.rocksdb.ZbRocksDb;
 import io.zeebe.logstreams.rocksdb.ZbWriteBatch;
 import java.io.File;
-import java.nio.ByteOrder;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
@@ -146,7 +146,7 @@ public class MessageStateController extends KeyStateController {
     buffer.putBytes(offset, correlationKey, 0, correlationKey.capacity());
     offset += correlationKey.capacity();
 
-    buffer.putLong(offset, message.getKey(), ByteOrder.LITTLE_ENDIAN);
+    buffer.putLong(offset, message.getKey(), STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
     assert (name.capacity() + correlationKey.capacity() + Long.BYTES) == offset
@@ -157,10 +157,10 @@ public class MessageStateController extends KeyStateController {
   private int writeDeadlineKey(MutableDirectBuffer buffer, final Message message) {
     int offset = 0;
 
-    buffer.putLong(0, message.getDeadline(), ByteOrder.LITTLE_ENDIAN);
+    buffer.putLong(0, message.getDeadline(), STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
-    buffer.putLong(offset, message.getKey(), ByteOrder.LITTLE_ENDIAN);
+    buffer.putLong(offset, message.getKey(), STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
     assert (2 * Long.BYTES) == offset
@@ -203,7 +203,7 @@ public class MessageStateController extends KeyStateController {
         (entry, control) -> {
           iterateKeyBuffer.wrap(entry.getKey());
 
-          final long messageKey = iterateKeyBuffer.getLong(prefixLength, ByteOrder.LITTLE_ENDIAN);
+          final long messageKey = iterateKeyBuffer.getLong(prefixLength, STATE_BYTE_ORDER);
           found.set(readMessage(messageKey, message));
 
           control.stop();
@@ -233,11 +233,11 @@ public class MessageStateController extends KeyStateController {
         deadlineColumnFamily,
         (entry, control) -> {
           iterateKeyBuffer.wrap(entry.getKey());
-          final long deadline = iterateKeyBuffer.getLong(0, ByteOrder.LITTLE_ENDIAN);
+          final long deadline = iterateKeyBuffer.getLong(0, STATE_BYTE_ORDER);
 
           boolean consumed = false;
           if (deadline <= timestamp) {
-            final long messageKey = iterateKeyBuffer.getLong(Long.BYTES, ByteOrder.LITTLE_ENDIAN);
+            final long messageKey = iterateKeyBuffer.getLong(Long.BYTES, STATE_BYTE_ORDER);
 
             readMessage(messageKey, message);
             consumed = consumer.accept(message);

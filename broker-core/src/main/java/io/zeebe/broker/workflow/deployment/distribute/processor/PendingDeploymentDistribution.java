@@ -17,12 +17,12 @@
  */
 package io.zeebe.broker.workflow.deployment.distribute.processor;
 
+import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferWriter;
-import java.nio.ByteOrder;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
@@ -32,7 +32,7 @@ public class PendingDeploymentDistribution implements BufferReader, BufferWriter
   private static final int DEPLOYMENT_LENGTH_OFFSET = SIZE_OF_LONG;
   private static final int DEPLOYMENT_OFFSET = DEPLOYMENT_LENGTH_OFFSET + SIZE_OF_INT;
 
-  private DirectBuffer deployment;
+  private final DirectBuffer deployment;
   private long sourcePosition;
   private long distributionCount;
 
@@ -59,8 +59,8 @@ public class PendingDeploymentDistribution implements BufferReader, BufferWriter
 
   @Override
   public void wrap(DirectBuffer buffer, int offset, int length) {
-    this.sourcePosition = buffer.getLong(POSITION_OFFSET, ByteOrder.LITTLE_ENDIAN);
-    final int deploymentSize = buffer.getInt(DEPLOYMENT_LENGTH_OFFSET, ByteOrder.LITTLE_ENDIAN);
+    this.sourcePosition = buffer.getLong(POSITION_OFFSET, STATE_BYTE_ORDER);
+    final int deploymentSize = buffer.getInt(DEPLOYMENT_LENGTH_OFFSET, STATE_BYTE_ORDER);
     deployment.wrap(buffer, DEPLOYMENT_OFFSET, deploymentSize);
   }
 
@@ -75,8 +75,8 @@ public class PendingDeploymentDistribution implements BufferReader, BufferWriter
   public void write(MutableDirectBuffer buffer, int offset) {
     final int deploymentSize = deployment.capacity();
 
-    buffer.putLong(offset + POSITION_OFFSET, sourcePosition, ByteOrder.LITTLE_ENDIAN);
-    buffer.putInt(offset + DEPLOYMENT_LENGTH_OFFSET, deploymentSize, ByteOrder.LITTLE_ENDIAN);
+    buffer.putLong(offset + POSITION_OFFSET, sourcePosition, STATE_BYTE_ORDER);
+    buffer.putInt(offset + DEPLOYMENT_LENGTH_OFFSET, deploymentSize, STATE_BYTE_ORDER);
     buffer.putBytes(offset + DEPLOYMENT_OFFSET, deployment, 0, deploymentSize);
   }
 }

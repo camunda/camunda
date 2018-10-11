@@ -17,12 +17,13 @@
  */
 package io.zeebe.broker.workflow.state;
 
+import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
+
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.workflow.state.StoredRecord.Purpose;
 import io.zeebe.logstreams.state.StateController;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -139,7 +140,7 @@ public class ElementInstanceState {
     return cachedInstances.computeIfAbsent(
         key,
         k -> {
-          keyBuffer.putLong(0, key, ByteOrder.LITTLE_ENDIAN);
+          keyBuffer.putLong(0, key, STATE_BYTE_ORDER);
           return helper.getValueInstance(
               ElementInstance.class, elementInstanceHandle, keyBuffer, 0, Long.BYTES, valueBuffer);
         });
@@ -161,7 +162,7 @@ public class ElementInstanceState {
           elementInstanceHandle, keyBuffer.byteArray(), instanceKeyOffset, instance.getKeyLength());
       cachedInstances.remove(key);
 
-      longKeyBuffer.putLong(0, key, ByteOrder.LITTLE_ENDIAN);
+      longKeyBuffer.putLong(0, key, STATE_BYTE_ORDER);
 
       rocksDbWrapper.removeEntriesWithPrefix(
           tokenParentChildHandle,
@@ -179,7 +180,7 @@ public class ElementInstanceState {
   }
 
   public StoredRecord getTokenEvent(long key) {
-    keyBuffer.putLong(0, key, ByteOrder.LITTLE_ENDIAN);
+    keyBuffer.putLong(0, key, STATE_BYTE_ORDER);
     return helper.getValueInstance(
         StoredRecord.class, tokenEventHandle, keyBuffer, 0, Long.BYTES, valueBuffer);
   }
@@ -192,7 +193,7 @@ public class ElementInstanceState {
     final List<ElementInstance> children = new ArrayList<>();
     final ElementInstance parentInstance = getInstance(parentKey);
     if (parentInstance != null) {
-      longKeyBuffer.putLong(0, parentKey, ByteOrder.LITTLE_ENDIAN);
+      longKeyBuffer.putLong(0, parentKey, STATE_BYTE_ORDER);
 
       rocksDbWrapper.whileEqualPrefix(
           elementParentChildHandle,
@@ -200,8 +201,7 @@ public class ElementInstanceState {
           (key, value) -> {
             iterateKeyBuffer.wrap(key);
             final long childKey =
-                iterateKeyBuffer.getLong(
-                    parentInstance.getParentKeyLength(), ByteOrder.LITTLE_ENDIAN);
+                iterateKeyBuffer.getLong(parentInstance.getParentKeyLength(), STATE_BYTE_ORDER);
 
             final ElementInstance instance = getInstance(childKey);
             children.add(instance);
@@ -226,11 +226,11 @@ public class ElementInstanceState {
 
   private int writeStoreRecordKeyIntoBuffer(
       MutableDirectBuffer buffer, int offset, long scopeKey, long recordKey, Purpose purpose) {
-    buffer.putLong(offset, scopeKey, ByteOrder.LITTLE_ENDIAN);
+    buffer.putLong(offset, scopeKey, STATE_BYTE_ORDER);
     offset += Long.BYTES;
     buffer.putByte(offset, (byte) purpose.ordinal());
     offset += BitUtil.SIZE_OF_BYTE;
-    buffer.putLong(offset, recordKey, ByteOrder.LITTLE_ENDIAN);
+    buffer.putLong(offset, recordKey, STATE_BYTE_ORDER);
     offset += Long.BYTES;
     return offset;
   }
@@ -294,7 +294,7 @@ public class ElementInstanceState {
   }
 
   private List<IndexedRecord> getTokenEvents(long scopeKey, Purpose purpose) {
-    longKeyPurposeBuffer.putLong(0, scopeKey, ByteOrder.LITTLE_ENDIAN);
+    longKeyPurposeBuffer.putLong(0, scopeKey, STATE_BYTE_ORDER);
     longKeyPurposeBuffer.putByte(Long.BYTES, (byte) purpose.ordinal());
 
     final List<IndexedRecord> records = new ArrayList<>();
@@ -310,7 +310,7 @@ public class ElementInstanceState {
   }
 
   private static long getLong(byte[] array, int offset) {
-    return new UnsafeBuffer(array, offset, Long.BYTES).getLong(0, ByteOrder.LITTLE_ENDIAN);
+    return new UnsafeBuffer(array, offset, Long.BYTES).getLong(0, STATE_BYTE_ORDER);
   }
 
   public void flushDirtyState() {

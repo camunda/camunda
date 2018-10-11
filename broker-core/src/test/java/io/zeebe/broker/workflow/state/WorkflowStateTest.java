@@ -482,7 +482,7 @@ public class WorkflowStateTest {
   public void shouldFindWorkflowSubscriptionBefore() {
     // given
     workflowState.put(new WorkflowSubscription("message", "correlation", 1, 2, 100));
-    workflowState.put(new WorkflowSubscription("msg", "correlation", 3, 4, 150));
+    workflowState.put(new WorkflowSubscription("msg", "correlation", 3, 4, 352));
 
     // when
     final List<WorkflowSubscription> workflowSubscriptions =
@@ -501,6 +501,25 @@ public class WorkflowStateTest {
         .extracting(w -> w.getActivityInstanceKey())
         .containsExactly(2L);
     assertThat(workflowSubscriptions).extracting(w -> w.getCommandSentTime()).containsExactly(100L);
+  }
+
+  @Test
+  public void shouldFindWorkflowSubscriptionBeforeInOrder() {
+    // given
+    // 100 = 00000000 00000000 00000000 01100100 (BE)
+    // 352 = 00000000 00000000 00000001 01100000 (BE)
+    workflowState.put(new WorkflowSubscription("message", "correlation", 1, 2, 100));
+    workflowState.put(new WorkflowSubscription("msg", "correlation", 3, 4, 352));
+
+    // when
+    final List<WorkflowSubscription> workflowSubscriptions =
+        workflowState.findSubscriptionsBefore(400L);
+
+    // then
+    assertThat(workflowSubscriptions).hasSize(2);
+    assertThat(workflowSubscriptions)
+        .extracting(s -> s.getWorkflowInstanceKey())
+        .containsExactly(1L, 3L);
   }
 
   @Test

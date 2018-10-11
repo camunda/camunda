@@ -17,11 +17,11 @@
  */
 package io.zeebe.broker.util;
 
+import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
 import static io.zeebe.util.StringUtil.getBytes;
 
 import io.zeebe.logstreams.state.StateController;
 import java.io.File;
-import java.nio.ByteOrder;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -93,7 +93,7 @@ public class KeyStateController extends StateController {
     if (readBytes > dbLongBuffer.capacity()) {
       throw new IllegalStateException("Key value is larger then it should be.");
     } else if (readBytes > 0) {
-      latestKey = dbLongBuffer.getLong(0, ByteOrder.LITTLE_ENDIAN);
+      latestKey = dbLongBuffer.getLong(0, STATE_BYTE_ORDER);
     }
     return latestKey;
   }
@@ -101,7 +101,7 @@ public class KeyStateController extends StateController {
   public void putNextKey(long key) {
     ensureIsOpened("putNextKey");
 
-    dbLongBuffer.putLong(0, key, ByteOrder.LITTLE_ENDIAN);
+    dbLongBuffer.putLong(0, key, STATE_BYTE_ORDER);
     put(
         keyHandle,
         NEXT_KEY_BUFFER,
