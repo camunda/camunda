@@ -15,24 +15,24 @@
  */
 package io.zeebe.example.job;
 
-import io.zeebe.gateway.ZeebeClient;
-import io.zeebe.gateway.ZeebeClientBuilder;
-import io.zeebe.gateway.api.clients.JobClient;
-import io.zeebe.gateway.api.events.JobEvent;
-import io.zeebe.gateway.api.subscription.JobHandler;
-import io.zeebe.gateway.api.subscription.JobWorker;
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.ZeebeClientBuilder;
+import io.zeebe.client.api.clients.JobClient;
+import io.zeebe.client.api.response.ActivatedJob;
+import io.zeebe.client.api.subscription.JobHandler;
+import io.zeebe.client.api.subscription.JobWorker;
 import java.time.Duration;
 import java.util.Scanner;
 
 public class JobWorkerCreator {
   public static void main(final String[] args) {
-    final String broker = "127.0.0.1:26501";
+    final String broker = "127.0.0.1:26500";
 
     final String jobType = "foo";
 
     final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder().brokerContactPoint(broker);
 
-    try (final ZeebeClient client = builder.build()) {
+    try (ZeebeClient client = builder.build()) {
       final JobClient jobClient = client.jobClient();
 
       System.out.println("Opening job worker.");
@@ -56,23 +56,23 @@ public class JobWorkerCreator {
 
   private static class ExampleJobHandler implements JobHandler {
     @Override
-    public void handle(final JobClient client, final JobEvent job) {
+    public void handle(final JobClient client, final ActivatedJob job) {
       // here: business logic that is executed with every job
       System.out.println(
           String.format(
               "[type: %s, key: %s, lockExpirationTime: %s]\n[headers: %s]\n[payload: %s]\n===",
               job.getType(),
-              job.getMetadata().getKey(),
+              job.getKey(),
               job.getDeadline().toString(),
               job.getHeaders(),
               job.getPayload()));
 
-      client.newCompleteCommand(job).payload((String) null).send().join();
+      client.newCompleteCommand(job.getKey()).send().join();
     }
   }
 
   private static void waitUntilSystemInput(final String exitCode) {
-    try (final Scanner scanner = new Scanner(System.in)) {
+    try (Scanner scanner = new Scanner(System.in)) {
       while (scanner.hasNextLine()) {
         final String nextLine = scanner.nextLine();
         if (nextLine.contains(exitCode)) {

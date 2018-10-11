@@ -15,22 +15,22 @@
  */
 package io.zeebe.example.workflow;
 
-import io.zeebe.gateway.ZeebeClient;
-import io.zeebe.gateway.ZeebeClientBuilder;
-import io.zeebe.gateway.api.clients.WorkflowClient;
-import io.zeebe.gateway.api.commands.WorkflowResource;
-import io.zeebe.gateway.api.commands.Workflows;
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.ZeebeClientBuilder;
+import io.zeebe.client.api.clients.WorkflowClient;
+import io.zeebe.client.api.commands.WorkflowResource;
+import io.zeebe.client.api.commands.Workflows;
 
 public class DeploymentViewer {
 
   public static void main(final String[] args) {
 
-    final String broker = "localhost:26501";
+    final String broker = "localhost:26500";
 
     final ZeebeClientBuilder clientBuilder =
         ZeebeClient.newClientBuilder().brokerContactPoint(broker);
 
-    try (final ZeebeClient client = clientBuilder.build()) {
+    try (ZeebeClient client = clientBuilder.build()) {
       final WorkflowClient workflowClient = client.workflowClient();
 
       final Workflows workflows = workflowClient.newWorkflowRequest().send().join();

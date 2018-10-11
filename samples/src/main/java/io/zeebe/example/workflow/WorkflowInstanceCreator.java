@@ -15,21 +15,21 @@
  */
 package io.zeebe.example.workflow;
 
-import io.zeebe.gateway.ZeebeClient;
-import io.zeebe.gateway.ZeebeClientBuilder;
-import io.zeebe.gateway.api.clients.WorkflowClient;
-import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.ZeebeClientBuilder;
+import io.zeebe.client.api.clients.WorkflowClient;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
 
 public class WorkflowInstanceCreator {
 
   public static void main(final String[] args) {
-    final String broker = "127.0.0.1:26501";
+    final String broker = "127.0.0.1:26500";
 
     final String bpmnProcessId = "demoProcess";
 
     final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder().brokerContactPoint(broker);
 
-    try (final ZeebeClient client = builder.build()) {
+    try (ZeebeClient client = builder.build()) {
       final WorkflowClient workflowClient = client.workflowClient();
 
       System.out.println("Creating workflow instance");
@@ -42,7 +42,8 @@ public class WorkflowInstanceCreator {
               .send()
               .join();
 
-      System.out.println(workflowInstanceEvent.getState());
+      System.out.println(
+          "Workflow instance created with key: " + workflowInstanceEvent.getWorkflowInstanceKey());
     }
   }
 }
