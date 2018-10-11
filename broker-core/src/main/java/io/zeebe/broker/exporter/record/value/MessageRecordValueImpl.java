@@ -17,9 +17,9 @@
  */
 package io.zeebe.broker.exporter.record.value;
 
+import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.record.RecordValueWithPayloadImpl;
 import io.zeebe.exporter.record.value.MessageRecordValue;
-import io.zeebe.gateway.impl.data.ZeebeObjectMapperImpl;
 import java.util.Objects;
 
 public class MessageRecordValueImpl extends RecordValueWithPayloadImpl
@@ -30,7 +30,7 @@ public class MessageRecordValueImpl extends RecordValueWithPayloadImpl
   private final long timeToLive;
 
   public MessageRecordValueImpl(
-      final ZeebeObjectMapperImpl objectMapper,
+      final ExporterObjectMapper objectMapper,
       final String payload,
       final String name,
       final String messageId,

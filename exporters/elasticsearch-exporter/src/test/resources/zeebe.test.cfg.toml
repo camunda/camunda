@@ -15,6 +15,7 @@ className = "io.zeebe.exporter.ElasticsearchExporter"
   deployment = true
   incident = true
   job = true
+  jobBatch = true
   message = true
   messageSubscription = true
   raft = true

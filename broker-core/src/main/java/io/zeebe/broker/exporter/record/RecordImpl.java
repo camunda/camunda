@@ -18,10 +18,10 @@
 package io.zeebe.broker.exporter.record;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.RecordMetadata;
 import io.zeebe.exporter.record.RecordValue;
-import io.zeebe.gateway.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.logstreams.log.LoggedEvent;
 import java.time.Instant;
 
@@ -36,10 +36,10 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
   private final RecordMetadata metadata;
   private final T value;
 
-  @JsonIgnore private final ZeebeObjectMapperImpl objectMapper;
+  @JsonIgnore private final ExporterObjectMapper objectMapper;
 
   public RecordImpl(
-      ZeebeObjectMapperImpl objectMapper,
+      ExporterObjectMapper objectMapper,
       long key,
       long position,
       Instant timestamp,
@@ -60,7 +60,7 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
   }
 
   public static <U extends RecordValue> RecordImpl<U> ofLoggedEvent(
-      final ZeebeObjectMapperImpl objectMapper,
+      final ExporterObjectMapper objectMapper,
       final LoggedEvent event,
       final RecordMetadataImpl metadata,
       final U value) {
@@ -116,7 +116,7 @@ public class RecordImpl<T extends RecordValue> implements Record<T> {
     return value;
   }
 
-  public ZeebeObjectMapperImpl getObjectMapper() {
+  public ExporterObjectMapper getObjectMapper() {
     return objectMapper;
   }
 

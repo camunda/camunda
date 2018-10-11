@@ -21,8 +21,8 @@ import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.broker.system.configuration.ExporterCfg;
+import io.zeebe.client.ZeebeClient;
 import io.zeebe.exporter.record.Record;
-import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
@@ -37,6 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RequestOptions;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -65,8 +66,21 @@ public class ElasticsearchExporterIT {
 
   @Before
   public void setUp() {
-    zeebeClient = testRule.getClient();
+    // TODO(menski): replace with client rule after migration to client
+    zeebeClient =
+        ZeebeClient.newClientBuilder()
+            .brokerContactPoint(
+                testRule.getBrokerCfg().getNetwork().getGateway().toSocketAddress().toString())
+            .build();
     esClient = createElasticsearchClient();
+  }
+
+  @After
+  public void tearDown() {
+    if (zeebeClient != null) {
+      zeebeClient.close();
+      zeebeClient = null;
+    }
   }
 
   @Test
@@ -79,7 +93,8 @@ public class ElasticsearchExporterIT {
         .newDeployCommand()
         .addWorkflowModel(WORKFLOW, "workflow.bpmn")
         .addWorkflowModel(SECOND_WORKFLOW, "secondWorkflow.bpmn")
-        .send();
+        .send()
+        .join();
 
     // start instance
     zeebeClient
@@ -88,7 +103,8 @@ public class ElasticsearchExporterIT {
         .bpmnProcessId("testProcess")
         .latestVersion()
         .payload(Collections.singletonMap("orderId", orderId))
-        .send();
+        .send()
+        .join();
 
     // create job worker which fails on first try and sets retries to 0 to create an incident
     final AtomicBoolean fail = new AtomicBoolean(true);
@@ -101,11 +117,11 @@ public class ElasticsearchExporterIT {
             (client, job) -> {
               if (fail.getAndSet(false)) {
                 // fail job
-                client.newFailCommand(job).retries(0).send().join();
+                client.newFailCommand(job.getKey()).retries(0).send().join();
                 // update retries to resolve incident
-                client.newUpdateRetriesCommand(job).retries(3).send();
+                client.newUpdateRetriesCommand(job.getKey()).retries(3).send().join();
               } else {
-                client.newCompleteCommand(job).send();
+                client.newCompleteCommand(job.getKey()).send().join();
               }
             })
         .open();
@@ -116,7 +132,8 @@ public class ElasticsearchExporterIT {
         .newPublishMessageCommand()
         .messageName("catch")
         .correlationKey(orderId)
-        .send();
+        .send()
+        .join();
 
     // wait until workflow instance is completed
     TestUtil.waitUntil(

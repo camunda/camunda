@@ -17,11 +17,11 @@
  */
 package io.zeebe.broker.exporter.record.value;
 
+import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.record.RecordValueWithPayloadImpl;
 import io.zeebe.broker.exporter.record.value.job.HeadersImpl;
 import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.exporter.record.value.job.Headers;
-import io.zeebe.gateway.impl.data.ZeebeObjectMapperImpl;
 import java.time.Instant;
 import java.util.Map;
 import java.util.Objects;
@@ -35,7 +35,7 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   private final int retries;
 
   public JobRecordValueImpl(
-      final ZeebeObjectMapperImpl objectMapper,
+      final ExporterObjectMapper objectMapper,
       final String payload,
       final String type,
       final String worker,

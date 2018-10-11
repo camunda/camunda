@@ -17,11 +17,11 @@
  */
 package io.zeebe.broker.exporter.record.value;
 
+import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.record.RecordValueImpl;
 import io.zeebe.exporter.record.value.DeploymentRecordValue;
 import io.zeebe.exporter.record.value.deployment.DeployedWorkflow;
 import io.zeebe.exporter.record.value.deployment.DeploymentResource;
-import io.zeebe.gateway.impl.data.ZeebeObjectMapperImpl;
 import java.util.List;
 import java.util.Objects;
 
@@ -30,7 +30,7 @@ public class DeploymentRecordValueImpl extends RecordValueImpl implements Deploy
   private List<DeploymentResource> resources;
 
   public DeploymentRecordValueImpl(
-      ZeebeObjectMapperImpl objectMapper,
+      ExporterObjectMapper objectMapper,
       List<DeployedWorkflow> deployedWorkflows,
       List<DeploymentResource> resources) {
     super(objectMapper);

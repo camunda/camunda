@@ -24,6 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.spy;
 
+import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.record.value.IncidentRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.JobBatchRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.JobRecordValueImpl;
@@ -55,7 +56,6 @@ import io.zeebe.exporter.record.value.MessageSubscriptionRecordValue;
 import io.zeebe.exporter.record.value.RaftRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceSubscriptionRecordValue;
-import io.zeebe.gateway.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;
@@ -99,7 +99,7 @@ import org.junit.Test;
 
 public class ExporterStreamProcessorTest {
   private static final int PARTITION_ID = 1;
-  private static final ZeebeObjectMapperImpl OBJECT_MAPPER = new ZeebeObjectMapperImpl();
+  private static final ExporterObjectMapper OBJECT_MAPPER = new ExporterObjectMapper();
   private static final Map<String, Object> PAYLOAD = Collections.singletonMap("foo", "bar");
   private static final String PAYLOAD_JSON = OBJECT_MAPPER.toJson(PAYLOAD);
   private static final DirectBuffer PAYLOAD_MSGPACK =
