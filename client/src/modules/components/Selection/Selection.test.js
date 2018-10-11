@@ -21,6 +21,7 @@ const demoInstance = {
 
 const mockOnClick = jest.fn();
 const mockOnRetry = jest.fn();
+const mockOnCancel = jest.fn();
 const mockOnDelete = jest.fn();
 
 describe('Selection', () => {
@@ -35,6 +36,7 @@ describe('Selection', () => {
         instanceCount={145}
         onToggle={mockOnClick}
         onRetry={mockOnRetry}
+        onCancel={mockOnCancel}
         onDelete={mockOnDelete}
       />
     );
@@ -93,7 +95,13 @@ describe('Selection', () => {
 
   it('should call the passed retry method', () => {
     node.find(Styled.DropdownTrigger).simulate('click');
-    node.find(Dropdown.Option).simulate('click');
+    node.find('[data-test="retry-dropdown-option"]').simulate('click');
     expect(mockOnRetry).toHaveBeenCalled();
+  });
+
+  it('should call the passed cancel method', () => {
+    node.find(Styled.DropdownTrigger).simulate('click');
+    node.find('[data-test="cancel-dropdown-option"]').simulate('click');
+    expect(mockOnCancel).toHaveBeenCalled();
   });
 });

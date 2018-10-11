@@ -19,6 +19,7 @@ exports[`Selections should match this snapshot 1`] = `
     </Styled(PanelHeader)>
     <PanelBody>
       <SelectionList
+        onCancelSelection={[Function]}
         onDeleteSelection={[Function]}
         onRetrySelection={[Function]}
         onToggleSelection={[Function]}

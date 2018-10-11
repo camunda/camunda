@@ -23,6 +23,17 @@ export default class Selections extends React.Component {
     filter: PropTypes.object
   };
 
+  executeBatchOperation = async (openSelectionId, operation) => {
+    const {selections} = this.props;
+    const {queries} = getSelectionById(selections, openSelectionId);
+
+    try {
+      await applyOperation(operation, queries);
+    } catch (e) {
+      console.log(e);
+    }
+  };
+
   handleToggleSelection = selectionId => {
     this.props.onStateChange({
       openSelection:
@@ -51,15 +62,12 @@ export default class Selections extends React.Component {
     });
   };
 
-  handleRetrySelection = async openSelectionId => {
-    const {selections} = this.props;
-    const {queries} = getSelectionById(selections, openSelectionId);
+  handleRetrySelection = openSelectionId => {
+    this.executeBatchOperation(openSelectionId, OPERATION_TYPE.UPDATE_RETRIES);
+  };
 
-    try {
-      await applyOperation(OPERATION_TYPE.UPDATE_RETRIES, queries);
-    } catch (e) {
-      console.log(e);
-    }
+  handleCancelSelection = openSelectionId => {
+    this.executeBatchOperation(openSelectionId, OPERATION_TYPE.CANCEL);
   };
 
   render() {
@@ -81,6 +89,7 @@ export default class Selections extends React.Component {
               onToggleSelection={this.handleToggleSelection}
               onDeleteSelection={this.handleDeleteSelection}
               onRetrySelection={this.handleRetrySelection}
+              onCancelSelection={this.handleCancelSelection}
             />
           </Panel.Body>
           <Styled.RightExpandButton

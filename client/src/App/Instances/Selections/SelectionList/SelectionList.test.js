@@ -25,6 +25,7 @@ describe('SelectionList', () => {
         onDeleteSelection={jest.fn()}
         onToggleSelection={jest.fn()}
         onRetrySelection={jest.fn()}
+        onCancelSelection={jest.fn()}
       />
     );
   });

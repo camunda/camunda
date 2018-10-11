@@ -5,6 +5,7 @@ Object {
   "instanceCount": 1,
   "instances": Array [],
   "isOpen": false,
+  "onCancel": [Function],
   "onDelete": [Function],
   "onRetry": [Function],
   "onToggle": [Function],

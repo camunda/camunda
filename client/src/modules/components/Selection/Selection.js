@@ -23,6 +23,7 @@ export default class Selection extends React.Component {
     instanceCount: PropTypes.number.isRequired,
     onToggle: PropTypes.func.isRequired,
     onRetry: PropTypes.func.isRequired,
+    onCancel: PropTypes.func.isRequired,
     onDelete: PropTypes.func.isRequired
   };
 
@@ -56,14 +57,29 @@ export default class Selection extends React.Component {
     </div>
   );
 
-  renderActions = (onRetry, onDelete) => (
+  renderCancelLabel = () => (
+    <div>
+      <Styled.CancelIcon /> Cancel
+    </div>
+  );
+
+  renderActions = (onRetry, onCancel, onDelete) => (
     <Styled.Actions>
       <Styled.DropdownTrigger onClick={this.stopClickPropagation}>
         <Dropdown
           label={<Styled.BatchIcon />}
           buttonStyles={{color: '#ffffff'}}
         >
-          <Dropdown.Option onClick={onRetry} label={this.renderRetryLabel()} />
+          <Dropdown.Option
+            data-test="cancel-dropdown-option"
+            onClick={onCancel}
+            label={this.renderCancelLabel()}
+          />
+          <Dropdown.Option
+            data-test="retry-dropdown-option"
+            onClick={onRetry}
+            label={this.renderRetryLabel()}
+          />
         </Dropdown>
       </Styled.DropdownTrigger>
       <Styled.DeleteIcon onClick={onDelete} />
@@ -75,6 +91,7 @@ export default class Selection extends React.Component {
       isOpen,
       selectionId,
       onRetry,
+      onCancel,
       onDelete,
       onToggle,
       instances,
@@ -93,7 +110,7 @@ export default class Selection extends React.Component {
             badgeContent={instanceCount}
           />
 
-          {isOpen && renderActions(onRetry, onDelete)}
+          {isOpen && renderActions(onRetry, onCancel, onDelete)}
         </Styled.Header>
         {isOpen && (
           <Fragment>

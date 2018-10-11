@@ -128,4 +128,18 @@ describe('Selections', () => {
       MockSelections[0].queries
     );
   });
+
+  it('cancel instances in a selection', async () => {
+    //when
+    node.instance().handleCancelSelection(1);
+
+    // when data fetched
+    await flushPromises();
+
+    //then
+    expect(api.applyOperation).toHaveBeenCalledWith(
+      OPERATION_TYPE.CANCEL,
+      MockSelections[0].queries
+    );
+  });
 });

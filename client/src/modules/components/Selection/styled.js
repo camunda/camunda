@@ -1,9 +1,9 @@
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 import {themed, themeStyle, Colors} from 'modules/theme';
 
 import {RemoveItem} from 'modules/components/Icon';
 
-import {Retry, Batch} from 'modules/components/Icon';
+import {Retry, Batch, Stop} from 'modules/components/Icon';
 import BadgeComponent from 'modules/components/Badge';
 
 const themedWith = (dark, light) => {
@@ -12,6 +12,12 @@ const themedWith = (dark, light) => {
     light
   });
 };
+
+export const iconStyle = css`
+  position: relative;
+  top: 1px;
+  margin-right: 10px;
+`;
 
 export const Selection = themed(styled.div`
   width: 442px;
@@ -87,9 +93,11 @@ export const Badge = styled(BadgeComponent)`
 `;
 
 export const RetryIcon = styled(Retry)`
-  position: relative;
-  top: 1px;
-  margin-right: 10px;
+  ${iconStyle};
+`;
+
+export const CancelIcon = styled(Stop)`
+  ${iconStyle};
 `;
 
 export const BatchIcon = styled(Batch)`

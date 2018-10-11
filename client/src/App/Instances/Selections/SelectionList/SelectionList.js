@@ -14,7 +14,8 @@ export default class SelectionList extends React.Component {
     openSelection: PropTypes.number,
     onToggleSelection: PropTypes.func.isRequired,
     onDeleteSelection: PropTypes.func.isRequired,
-    onRetrySelection: PropTypes.func.isRequired
+    onRetrySelection: PropTypes.func.isRequired,
+    onCancelSelection: PropTypes.func.isRequired
   };
 
   render() {
@@ -22,6 +23,7 @@ export default class SelectionList extends React.Component {
       selections,
       openSelection,
       onRetrySelection,
+      onCancelSelection,
       onToggleSelection,
       onDeleteSelection
     } = this.props;
@@ -48,6 +50,7 @@ export default class SelectionList extends React.Component {
                     instances={workflowInstances}
                     instanceCount={totalCount}
                     onRetry={() => onRetrySelection(openSelection)}
+                    onCancel={() => onCancelSelection(openSelection)}
                     onToggle={() => onToggleSelection(selectionId)}
                     onDelete={() => onDeleteSelection(selectionId)}
                   />
