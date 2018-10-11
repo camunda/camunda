@@ -88,10 +88,6 @@ When the event is triggered, the sub process is interrupted regardless which of 
 
 See the [Sub Processes](/bpmn-workflows/subprocesses.html) section on which types of sub processes are currently supported and how to use them.
 
-## BPMN Coverage
-
-As noted in the individual sections, Zeebe currently only supports a subset of BPMN elements. It is a goal for the Zeebe project to eventually support large parts of the standard.
-
 ## Additional Resources
 
 * [BPMN Specification](http://www.bpmn.org/)
