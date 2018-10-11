@@ -14,7 +14,8 @@ func TestFailJobCommand(t *testing.T) {
 	client := mock_pb.NewMockGatewayClient(ctrl)
 
 	request := &pb.FailJobRequest{
-		JobKey: 123,
+		JobKey:  123,
+		Retries: 12,
 	}
 	stub := &pb.FailJobResponse{}
 
@@ -22,7 +23,7 @@ func TestFailJobCommand(t *testing.T) {
 
 	command := NewFailJobCommand(client)
 
-	response, err := command.JobKey(123).Send()
+	response, err := command.JobKey(123).Retries(12).Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")

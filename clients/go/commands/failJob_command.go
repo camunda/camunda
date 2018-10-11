@@ -12,7 +12,11 @@ type DispatchFailJobCommand interface {
 }
 
 type FailJobCommandStep1 interface {
-	JobKey(int64) DispatchFailJobCommand
+	JobKey(int64) FailJobCommandStep2
+}
+
+type FailJobCommandStep2 interface {
+	Retries(int32) DispatchFailJobCommand
 }
 
 type FailJobCommand struct {
@@ -20,8 +24,13 @@ type FailJobCommand struct {
 	gateway pb.GatewayClient
 }
 
-func (cmd *FailJobCommand) JobKey(jobKey int64) DispatchFailJobCommand {
+func (cmd *FailJobCommand) JobKey(jobKey int64) FailJobCommandStep2 {
 	cmd.request.JobKey = jobKey
+	return cmd
+}
+
+func (cmd *FailJobCommand) Retries(retries int32) DispatchFailJobCommand {
+	cmd.request.Retries = retries
 	return cmd
 }
 
