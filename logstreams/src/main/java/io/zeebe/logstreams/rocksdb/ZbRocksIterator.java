@@ -36,21 +36,36 @@ public class ZbRocksIterator extends RocksIterator {
     }
   }
 
+  private transient DirectBuffer keyBuffer, valueBuffer;
+
   public ZbRocksIterator(final RocksDB rocksDB, final long nativeHandle) {
     super(rocksDB, nativeHandle);
   }
 
   public DirectBuffer keyBuffer() {
-    return new UnsafeBuffer(super.key());
+    if (keyBuffer == null) {
+      keyBuffer = new UnsafeBuffer(super.key());
+    }
+
+    return keyBuffer;
   }
 
   public DirectBuffer valueBuffer() {
-    return new UnsafeBuffer(super.value());
+    if (valueBuffer == null) {
+      valueBuffer = new UnsafeBuffer(super.value());
+    }
+
+    return valueBuffer;
+  }
+
+  public ZbRocksEntry entry() {
+    return new ZbRocksEntry(keyBuffer(), valueBuffer());
   }
 
   public void seek(byte[] target, int targetLength) {
     try {
       SEEK_METHOD.invoke(this, nativeHandle_, target, targetLength);
+      reset();
     } catch (IllegalAccessException | InvocationTargetException e) {
       throw new RuntimeException(e);
     }
@@ -59,6 +74,46 @@ public class ZbRocksIterator extends RocksIterator {
   public void seek(DirectBuffer target) {
     assertBuffers(target);
     seek(target.byteArray(), target.capacity());
+  }
+
+  @Override
+  public void seek(byte[] target) {
+    super.seek(target);
+    reset();
+  }
+
+  @Override
+  public void seekToFirst() {
+    super.seekToFirst();
+    reset();
+  }
+
+  @Override
+  public void seekToLast() {
+    super.seekToLast();
+    reset();
+  }
+
+  @Override
+  public void seekForPrev(byte[] target) {
+    super.seekForPrev(target);
+    reset();
+  }
+
+  @Override
+  public void next() {
+    super.next();
+    reset();
+  }
+
+  @Override
+  public void prev() {
+    super.prev();
+    reset();
+  }
+
+  private void reset() {
+    keyBuffer = valueBuffer = null;
   }
 
   private void assertBuffers(final DirectBuffer... buffers) {

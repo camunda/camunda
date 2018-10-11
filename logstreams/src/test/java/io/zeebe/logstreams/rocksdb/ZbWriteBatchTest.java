@@ -17,31 +17,35 @@ package io.zeebe.logstreams.rocksdb;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.io.IOException;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
-import org.rocksdb.Options;
+import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.WriteOptions;
 
 public class ZbWriteBatchTest {
-  @Rule public final TemporaryFolder temporaryFolder = new TemporaryFolder();
+  private final TemporaryFolder temporaryFolder = new TemporaryFolder();
+  private final ZbRocksDbRule dbRule = new ZbRocksDbRule(temporaryFolder);
 
-  private String dbDirectory;
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(temporaryFolder).around(dbRule);
+
+  private ZbRocksDb db;
+  private ColumnFamilyHandle handle;
 
   @Before
-  public void setup() throws IOException {
-    dbDirectory = temporaryFolder.newFolder().getAbsolutePath();
+  public void setup() {
+    db = dbRule.getDb();
+    handle = db.getDefaultColumnFamily();
   }
 
   @Test
   public void shouldAllowReusingTheSameBuffersAcrossBatchOperations() throws RocksDBException {
     // given
-    final ZbRocksDb db = ZbRocksDb.open(new Options().setCreateIfMissing(true), dbDirectory);
     final ZbWriteBatch batch = new ZbWriteBatch();
     final MutableDirectBuffer key = new ExpandableArrayBuffer();
     final MutableDirectBuffer value = new ExpandableArrayBuffer();
@@ -49,23 +53,23 @@ public class ZbWriteBatchTest {
     // when
     key.putInt(0, 1);
     value.putInt(0, 3);
-    batch.put(db.getDefaultColumnFamily(), key, value);
+    batch.put(handle, key, value);
 
     key.putInt(0, 2);
     value.putInt(0, 1);
-    batch.put(db.getDefaultColumnFamily(), key, value);
+    batch.put(handle, key, value);
 
     key.putInt(0, 1);
-    batch.delete(db.getDefaultColumnFamily(), key);
+    batch.delete(handle, key);
 
     db.write(new WriteOptions(), batch);
 
     // then
     key.putInt(0, 2);
-    db.get(db.getDefaultColumnFamily(), key, value);
+    db.get(handle, key, value);
     assertThat(value.getInt(0)).isEqualTo(1);
 
     key.putInt(0, 1);
-    assertThat(db.exists(db.getDefaultColumnFamily(), key)).isFalse();
+    assertThat(db.exists(handle, key)).isFalse();
   }
 }

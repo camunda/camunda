@@ -19,7 +19,6 @@ package io.zeebe.broker.job;
 
 import static io.zeebe.util.sched.clock.ActorClock.currentTimeMillis;
 
-import io.zeebe.broker.Loggers;
 import io.zeebe.broker.job.JobStateController.State;
 import io.zeebe.broker.job.old.CreditsRequest;
 import io.zeebe.broker.job.old.JobSubscriptionManager;
@@ -37,6 +36,8 @@ import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.transport.clientapi.SubscribedRecordWriter;
+import io.zeebe.logstreams.rocksdb.ZbIterator;
+import io.zeebe.logstreams.rocksdb.ZbRocksEntry;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateStorage;
 import io.zeebe.protocol.clientapi.RecordType;
@@ -48,9 +49,9 @@ import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.util.sched.ScheduledTimer;
+import io.zeebe.util.sched.clock.ActorClock;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.agrona.ExpandableArrayBuffer;
 
@@ -125,16 +126,13 @@ public class JobStreamProcessor implements StreamProcessorLifecycleAware {
   }
 
   private void deactivateTimedOutJobs() {
-    final Instant now = Instant.ofEpochMilli(currentTimeMillis());
-    Loggers.SYSTEM_LOGGER.debug("Checking for jobs with deadline < {}", now.toEpochMilli());
-    state.forEachTimedOutEntry(
+    final Instant now = Instant.ofEpochMilli(ActorClock.currentTimeMillis());
+
+    state.forEachTimedOutJobs(
         now,
-        (key, record, control) -> {
-          writer.writeFollowUpCommand(
-              key, JobIntent.TIME_OUT, record, (m) -> m.valueType(ValueType.JOB));
-          writer.flush();
-          // we don't have to check for write errors as the job will then be picked up again
-          // on the next iteration of this timer
+        (entry) -> {
+          writer.writeFollowUpCommand(entry.key, JobIntent.TIME_OUT, entry.record);
+          writer.flush(); // since the buffer is reused
         });
   }
 
@@ -327,33 +325,30 @@ public class JobStreamProcessor implements StreamProcessorLifecycleAware {
     final long jobBatchKey = jobKeyGenerator.nextKey();
 
     final TypedBatchWriter batchWriter = streamWriter.newBatch();
-    final AtomicInteger amount = new AtomicInteger(value.getAmount());
-    state.activatableJobs(
-        value.getType(),
-        (key, jobRecord, control) -> {
-          final int remainingAmount = amount.decrementAndGet();
-          if (remainingAmount >= 0) {
-            final long deadline = currentTimeMillis() + value.getTimeout();
-            value.jobKeys().add().setValue(key);
-            final JobRecord job = value.jobs().add();
+    int activatedCount = 0;
 
-            // clone job record to modify it
-            final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(jobRecord.getLength());
-            jobRecord.write(buffer, 0);
-            job.wrap(buffer);
+    try (final ZbIterator iterator = state.activatableJobs(value.getType())) {
+      for (final ZbRocksEntry entry : iterator) {
+        if (activatedCount >= value.getAmount()) {
+          break;
+        }
 
-            // set worker properties on job
-            job.setDeadline(deadline).setWorker(value.getWorker());
+        final long deadline = currentTimeMillis() + value.getTimeout();
+        final long key = state.getActivatableJobKey(entry.getKey());
+        final JobRecord job = value.jobs().add();
 
-            // update state and write follow up event for job record
-            state.activate(key, job);
-            batchWriter.addFollowUpEvent(key, JobIntent.ACTIVATED, job);
-          }
+        // clone job record to modify it
+        final JobRecord current = state.getJob(key);
+        final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(current.getLength());
+        current.write(buffer, 0);
+        job.wrap(buffer);
 
-          if (remainingAmount < 1) {
-            control.stop();
-          }
-        });
+        value.jobKeys().add().setValue(key);
+        job.setDeadline(deadline).setWorker(value.getWorker());
+        state.activate(key, job);
+        batchWriter.addFollowUpEvent(key, JobIntent.ACTIVATED, job);
+      }
+    }
 
     batchWriter.addFollowUpEvent(jobBatchKey, JobBatchIntent.ACTIVATED, value);
     responseWriter.writeEventOnCommand(jobBatchKey, JobBatchIntent.ACTIVATED, value, record);
