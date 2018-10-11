@@ -1,24 +1,12 @@
 # JSON Payload Mapping
 
-This section describes the semantics when mapping JSON payloads. Mappings map segments of JSON data from a *source* document to a *target* document. In the context of workflow execution, there are two types of mappings:
+This section provides examples for mapping JSON payloads. In the context of workflow execution, there are three types of mappings:
 
-1. *Input* mappings map workflow instance payload to task payload.
-1. *Output* mappings map task payload back into workflow instance payload.
+1. [Input mappings](reference/json-payload-mapping.html#input-mapping) map workflow instance payload to task payload.
+1. [Output mappings](reference/json-payload-mapping.html#output-mapping) map task payload back into workflow instance payload.
+1. [Merging mappings](reference/json-payload-mapping.html#merging-mapping) on end events or sequence flows that lead to parallel gateways.
 
-## Semantics
-
-Payload mapping follows these rules:
-
-* When **no mapping** is defined and **source payload** is available: **Success**. Source payload is merged on top-level into target payload.
-* When **no mapping** is defined and **no source payload** is available: **Success**. Target payload remains unchanged.
-* When a **mapping** is defined and **source payload** is available: **Success**. Mapping is used to merge source payload into target payload.
-* When a **mapping** is defined and **no source payload** is available: **Failure**. A task-related incident is raised.
-
-Note that source payload is only unavailable when a task is completed without payload.
-
-## Patterns
-
-### Input Mappings
+## Input Mapping
 
 <table>
   <tr>
@@ -26,6 +14,27 @@ Note that source payload is only unavailable when a task is completed without pa
     <th>Workflow Instance Payload</th>
     <th>Input Mapping</th>
     <th>Task Payload</th>
+  </tr>
+
+  <tr>
+    <td>
+    Default
+    </td>
+    <td><pre>
+{
+ "price": 342.99,
+ "productId": 41234
+}
+    </pre></td>
+    <td><pre>
+none
+    </pre></td>
+    <td><pre>
+{
+ "price": 342.99,
+ "productId": 41234
+}
+    </pre></td>
   </tr>
 
   <tr>
@@ -254,9 +263,10 @@ Target: $.contactNr
 
 </table>
 
-For more examples see the [extract mapping tests](https://github.com/zeebe-io/zb-msgpack-json-path/blob/0.1.0/json-path/src/test/java/io/zeebe/msgpack/mapping/MappingExtractParameterizedTest.java).
+## Output Mapping
 
-### Output Mapping
+
+All examples assume *merge* output behavior.
 
 <table>
 
@@ -557,4 +567,109 @@ Target: $.price
 
 </table>
 
-For more examples see the [merge mapping tests](https://github.com/zeebe-io/zb-msgpack-json-path/blob/0.1.0/json-path/src/test/java/io/zeebe/msgpack/mapping/MappingMergeParameterizedTest.java).
+## Merging Mapping
+
+<center>
+![workflow](/reference/merging-mapping.png)
+</center>
+
+<table>
+
+  <tr>
+    <th>Description</th>
+    <th>Sequence Flow Payload</th>
+    <th>Mapping</th>
+    <th>Result</th>
+  </tr>
+
+  <tr>
+  <td>Default Merge</td>
+  <td>
+  flow1:<pre>
+{
+ "orderId": "XY67C"
+}
+  </pre>
+  flow2:<pre>
+{
+ "total": 200.00
+}
+  </pre>
+  </td>
+
+  <td><pre> none </pre></td>
+
+  <td><pre>
+{
+ "orderId": "XY67C",
+ "total": 200.00
+}
+  </pre></td>
+  </tr>
+
+  <tr>
+  <td>PUT instruction</td>
+  <td>
+  flow1:<pre>
+{
+ "orderId": "XY67C"
+}
+  </pre>
+  flow2:<pre>
+{
+ "total": 200.00
+}
+  </pre>
+  </td>
+
+  <td>flow2:<pre>
+Source: $.total
+Target: $.sum
+Type: PUT
+  </pre></td>
+
+  <td><pre>
+{
+ "orderId": "XY67C",
+ "sum": 200.00,
+ "total": 200.00
+}
+  </pre></td>
+  </tr>
+
+  <tr>
+  <td>COLLECT instruction</td>
+  <td>
+  flow1:<pre>
+{
+ "item1Price": 130.99
+}
+  </pre>
+  flow2:<pre>
+{
+ "item2Price": 49.99
+}
+  </pre>
+  </td>
+
+  <td>flow1:<pre>
+Source: $.item1Price
+Target: $.prices
+Type: COLLECT
+  </pre>
+
+  flow2:<pre>
+Source: $.item2Price
+Target: $.prices
+Type: COLLECT
+  </pre></td>
+
+  <td><pre>
+{
+ "item1Price": 130.99,
+ "item2Price": 49.99,
+ "prices": [130.99, 49.99]
+}
+  </pre></td>
+  </tr>
+</table>

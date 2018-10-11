@@ -20,6 +20,7 @@
     * [Tasks](bpmn-workflows/tasks.md)
     * [Gateways](bpmn-workflows/gateways.md)
     * [Events](bpmn-workflows/events.md)
+    * [Sub Processes](bpmn-workflows/subprocesses.md)
 * [BPMN Modeler](bpmn-modeler/README.md)
     * [Introduction](bpmn-modeler/introduction.md)
     * [Tasks](bpmn-modeler/tasks.md)
