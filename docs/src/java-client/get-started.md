@@ -10,7 +10,6 @@ You will be guided through the following steps:
 * [Create a workflow instance](#create-a-workflow-instance)
 * [Work on a job](#work-on-a-job)
 * [Work with data](#work-with-data)
-* [Open a topic subscription](#open-a-topic-subscription)
 
 > You can find the complete source code, including the BPMN diagrams, on [GitHub](https://github.com/zeebe-io/zeebe-get-started-java-client).
 
@@ -19,33 +18,13 @@ You will be guided through the following steps:
 * Java 8
 * [Apache Maven](https://maven.apache.org/)
 * [Zeebe distribution](../introduction/install.html)
-* [Zeebe Command Line Client zbctl](https://github.com/zeebe-io/zbctl)
 * [Zeebe Modeler](https://github.com/zeebe-io/zeebe-modeler/releases)
 * [Zeebe Monitor](https://github.com/zeebe-io/zeebe-simple-monitor/releases)
 
-Now, start the Zeebe broker. This guide uses the `default-topic`, which is created
-when the broker is started.
-
-In case you want to create another topic you can use `zbctl` from the `bin` folder.
-Create the topic with zbctl by executing the following command on the command line:
-
-```
-zbctl create topic my-topic --partitions 1
-```
-
-You should see the output:
-
-```
-{
-  "Name": "my-topic",
-  "Partitions": 1,
-  "ReplicationFactor": 1
-}
-```
-
-**Note:** You can find the `zbctl` binary in the `bin/` folder of the Zeebe
-distribution. On Windows systems the executable is called `zbctl.exe` and on
-MacOS `zbctl.darwin`.
+Before you begin to setup your project please start the broker, i.e. by running the start up script 
+`bin/broker` or `bin/broker.bat` in the distribution. Per default the broker is binding to the 
+address `localhost:26500`, which is used as contact point in this guide. In case your broker is 
+available under another address please adjust the broker contact point when building the client.
 
 ## Set up a project
 
@@ -83,12 +62,9 @@ public class Application
 {
     public static void main(String[] args)
     {
-        final Properties clientProperties = new Properties();
-        // change the contact point if needed
-        clientProperties.put(ClientProperties.BROKER_CONTACTPOINT, "127.0.0.1:26500");
-
         final ZeebeClient client = ZeebeClient.newClientBuilder()
-            .withProperties(clientProperties)
+            // change the contact point if needed
+            .brokerContactPoint("127.0.0.1:26500")
             .build();
 
         System.out.println("Connected.");
@@ -145,13 +121,13 @@ public class Application
     {
         // after the client is connected
 
-        final DeploymentEvent deployment = client.topicClient().workflowClient()
+        final DeploymentEvent deployment = client.workflowClient()
             .newDeployCommand()
             .addResourceFromClasspath("order-process.bpmn")
             .send()
             .join();
 
-        final int version = deployment.getDeployedWorkflows().get(0).getVersion();
+        final int version = deployment.getWorkflows().get(0).getVersion();
         System.out.println("Workflow deployed. Version: " + version);
 
         // ...
@@ -184,7 +160,7 @@ public class Application
     {
         // after the workflow is deployed
 
-        final WorkflowInstanceEvent wfInstance = client.topicClient().workflowClient()
+        final WorkflowInstanceEvent wfInstance = client.workflowClient()
             .newCreateInstanceCommand()
             .bpmnProcessId("order-process")
             .latestVersion()
@@ -203,7 +179,7 @@ public class Application
 Run the program and verify that the workflow instance is created. You should see the output:
 
 ```
-Workflow instance created. Key: 4294974008
+Workflow instance created. Key: 6
 ```
 
 You did it! You want to see how the workflow instance is executed?
@@ -249,7 +225,7 @@ public class Application
     {
         // after the workflow instance is created
 
-        final JobWorker jobWorker = client.topicClient().jobClient()
+        final JobWorker jobWorker = client.jobClient()
             .newWorker()
             .jobType("payment-service")
             .handler((jobClient, job) ->
@@ -261,7 +237,7 @@ public class Application
 
                 // ...
 
-                jobClient.newCompleteCommand(job)
+                jobClient.newCompleteCommand(job.getKey())
                     .send()
                     .join();
             })
@@ -327,7 +303,7 @@ public class Application
         data.put("orderId", 31243);
         data.put("orderItems", Arrays.asList(435, 182, 376));
 
-        final WorkflowInstanceEvent wfInstance = client.topicClient().workflowClient()
+        final WorkflowInstanceEvent wfInstance = client.workflowClient()
             .newCreateInstanceCommand()
             .bpmnProcessId("order-process")
             .latestVersion()
@@ -337,7 +313,7 @@ public class Application
 
         // ...
 
-        final JobWorker jobWorker = client.topicClient().jobClient()
+        final JobWorker jobWorker = client.jobClient()
             .newWorker()
             .jobType("payment-service")
             .handler((jobClient, job) ->
@@ -354,7 +330,7 @@ public class Application
 
                 payload.put("totalPrice", 46.50);
 
-                jobClient.newCompleteCommand(job)
+                jobClient.newCompleteCommand(job.getKey())
                     .payload(payload)
                     .send()
                     .join();
@@ -377,127 +353,6 @@ When we have a look at the Zeebe Monitor, then we can see how the payload is mod
 
 ![zeebe-monitor-step-3](/java-client/zeebe-monitor-3.png)
 
-## Open a topic subscription
-
-The Zeebe Monitor consume the events of the broker to build the monitoring.
-You can see all received events in the log view.
-In order to build something similar for our application, we open a [topic subscription] and print all workflow instance events.
-
-When the topic subscription is open, then we receive all events which are written during execution of the workflow instance.
-The given handler is invoked for each received event.
-
-Add the following lines to the main class:
-
-```java
-package io.zeebe;
-
-import io.zeebe.client.api.subscription.TopicSubscription;
-
-public class Application
-{
-    public static void main(String[] args)
-    {
-        // after the workflow instance is created
-
-        final TopicSubscription topicSubscription = client.topicClient()
-            .newSubscription()
-            .name("app-monitoring")
-            .workflowInstanceEventHandler(e -> System.out.println(e.toJson()))
-            .startAtHeadOfTopic()
-            .open();
-
-        // waiting for the events
-
-        topicSubscription.close();
-
-        // ...
-    }
-}
-```
-
-Run the program. You should see the output:
-
-```
-{
-  "metadata": {
-    "intent": "CREATED",
-    "valueType": "WORKFLOW_INSTANCE",
-    "recordType": "EVENT",
-    "topicName": "default-topic",
-    "partitionId": 1,
-    "key": 4294967400,
-    "position": 4294967616,
-    "timestamp": "2018-05-30T11:40:40.599Z"
-  },
-  "bpmnProcessId": "order-process",
-  "version": 1,
-  "workflowKey": 1,
-  "workflowInstanceKey": 4294967400,
-  "activityId": "",
-  "payload": {
-    "orderId": 31243,
-    "orderItems": [
-      435,
-      182,
-      376
-    ]
-  }
-}
-
-{
-  "metadata": {
-    "intent": "START_EVENT_OCCURRED",
-    "valueType": "WORKFLOW_INSTANCE",
-    "recordType": "EVENT",
-    "topicName": "default-topic",
-    "partitionId": 1,
-    "key": 4294967856,
-    "position": 4294967856,
-    "timestamp": "2018-05-30T11:40:40.599Z"
-  },
-  "bpmnProcessId": "order-process",
-  "version": 1,
-  "workflowKey": 1,
-  "workflowInstanceKey": 4294967400,
-  "activityId": "order-placed",
-  "payload": {
-    "orderId": 31243,
-    "orderItems": [
-      435,
-      182,
-      376
-    ]
-  }
-}
-
-{
-  "metadata": {
-    "intent": "SEQUENCE_FLOW_TAKEN",
-    "valueType": "WORKFLOW_INSTANCE",
-    "recordType": "EVENT",
-    "topicName": "default-topic",
-    "partitionId": 1,
-    "key": 4294968128,
-    "position": 4294968128,
-    "timestamp": "2018-05-30T11:40:40.621Z"
-  },
-  "bpmnProcessId": "order-process",
-  "version": 1,
-  "workflowKey": 1,
-  "workflowInstanceKey": 4294967400,
-  "activityId": "SequenceFlow_18tqka5",
-  "payload": {
-    "orderId": 31243,
-    "orderItems": [
-      435,
-      182,
-      376
-    ]
-  }
-}
-...
-```
-
 ## What's next?
 
 Hurray! You finished this tutorial and learned the basic usage of the Java client.
@@ -507,5 +362,4 @@ Next steps:
 * Learn more about [BPMN workflows](/bpmn-workflows/README.html)
 * Take a deeper look into the [Java client](java-client/README.html)
 
-[topic subscription]: ../basics/topics-and-logs.html
 [job worker]: ../basics/job-workers.html
