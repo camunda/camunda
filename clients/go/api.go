@@ -5,7 +5,7 @@ import (
 )
 
 type ZBClient interface {
-	NewHealthCheckCommand() *commands.HealthCheckCommand
+	NewTopologyCommand() *commands.TopologyCommand
 	NewDeployWorkflowCommand() *commands.DeployCommand
 
 	NewCancelInstanceCommand() commands.CancelInstanceStep1

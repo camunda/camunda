@@ -15,7 +15,6 @@
  */
 package io.zeebe.client.impl.workflow;
 
-import com.google.protobuf.Empty;
 import io.zeebe.client.ZeebeClientConfiguration;
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.commands.PublishMessageCommandStep1;
@@ -26,6 +25,7 @@ import io.zeebe.client.impl.ZeebeClientFutureImpl;
 import io.zeebe.client.impl.ZeebeObjectMapper;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
 import java.time.Duration;
 
 public class PublishMessageCommandImpl extends CommandWithPayload<PublishMessageCommandImpl>
@@ -76,7 +76,8 @@ public class PublishMessageCommandImpl extends CommandWithPayload<PublishMessage
 
   @Override
   public ZeebeFuture<Void> send() {
-    final ZeebeClientFutureImpl<Void, Empty> future = new ZeebeClientFutureImpl<>();
+    final ZeebeClientFutureImpl<Void, PublishMessageResponse> future =
+        new ZeebeClientFutureImpl<>();
 
     asyncStub.publishMessage(builder.build(), future);
     return future;

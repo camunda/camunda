@@ -20,8 +20,8 @@ import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.commands.Topology;
 import io.zeebe.client.api.commands.TopologyRequestStep1;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
-import io.zeebe.gateway.protocol.GatewayOuterClass.HealthRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.HealthResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 
 public class TopologyRequestImpl implements TopologyRequestStep1 {
 
@@ -33,12 +33,12 @@ public class TopologyRequestImpl implements TopologyRequestStep1 {
 
   @Override
   public ZeebeFuture<Topology> send() {
-    final HealthRequest request = HealthRequest.getDefaultInstance();
+    final TopologyRequest request = TopologyRequest.getDefaultInstance();
 
-    final ZeebeClientFutureImpl<Topology, HealthResponse> future =
+    final ZeebeClientFutureImpl<Topology, TopologyResponse> future =
         new ZeebeClientFutureImpl<>(TopologyImpl::new);
 
-    asyncStub.health(request, future);
+    asyncStub.topology(request, future);
 
     return future;
   }

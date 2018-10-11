@@ -17,20 +17,17 @@ package io.zeebe.client.impl;
 
 import io.zeebe.client.api.commands.BrokerInfo;
 import io.zeebe.client.api.commands.Topology;
-import io.zeebe.gateway.protocol.GatewayOuterClass;
-import io.zeebe.gateway.protocol.GatewayOuterClass.HealthResponse;
-import java.util.ArrayList;
+import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public class TopologyImpl implements Topology {
 
   private final List<BrokerInfo> brokers;
 
-  public TopologyImpl(final HealthResponse response) {
-    brokers = new ArrayList<>();
-    for (final GatewayOuterClass.BrokerInfo broker : response.getBrokersList()) {
-      brokers.add(new BrokerInfoImpl(broker));
-    }
+  public TopologyImpl(final TopologyResponse response) {
+    brokers =
+        response.getBrokersList().stream().map(BrokerInfoImpl::new).collect(Collectors.toList());
   }
 
   @Override

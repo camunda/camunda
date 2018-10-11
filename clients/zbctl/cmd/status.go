@@ -23,7 +23,7 @@ import (
 // deployWorkflowCmd implements cobra command for cli
 var statusCmd = &cobra.Command{
 	Use:   "status",
-	Short: "Checks the current health of the cluster",
+	Short: "Checks the current status of the cluster",
 	Long:  ``,
 	PreRun: func(cmd *cobra.Command, args []string) {
 		initBroker(cmd)
@@ -32,7 +32,7 @@ var statusCmd = &cobra.Command{
 		client, err := zbc.NewZBClient(brokerAddr)
 		utils.CheckOrExit(err, utils.ExitCodeConfigurationError, defaultErrCtx)
 
-		response, err := client.NewHealthCheckCommand().Send()
+		response, err := client.NewTopologyCommand().Send()
 		utils.CheckOrExit(err, utils.ExitCodeIOError, defaultErrCtx)
 
 		out.Serialize(response).Flush()

@@ -29,16 +29,16 @@ import io.zeebe.client.api.commands.PartitionInfo;
 import io.zeebe.client.api.commands.Topology;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.client.util.ClientTest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.HealthRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
 import java.util.List;
 import org.junit.Test;
 
-public class HealthRequestTest extends ClientTest {
+public class TopologyRequestTest extends ClientTest {
 
   @Test
   public void shouldRequestTopology() {
     // given
-    gatewayService.onHealthRequest(
+    gatewayService.onTopologyRequest(
         broker("host1", 123, partition(0, LEADER), partition(1, FOLLOW)),
         broker("host2", 212, partition(0, FOLLOW), partition(1, LEADER)),
         broker("host3", 432, partition(0, FOLLOW), partition(1, FOLLOW)));
@@ -80,7 +80,7 @@ public class HealthRequestTest extends ClientTest {
   public void shouldRaiseExceptionOnError() {
     // given
     gatewayService.errorOnRequest(
-        HealthRequest.class, () -> new ClientException("Invalid request"));
+        TopologyRequest.class, () -> new ClientException("Invalid request"));
 
     // when
     assertThatThrownBy(() -> client.newTopologyRequest().send().join())

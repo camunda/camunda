@@ -15,7 +15,6 @@
  */
 package io.zeebe.client.util;
 
-import com.google.protobuf.Empty;
 import com.google.protobuf.GeneratedMessageV3;
 import io.grpc.Status;
 import io.grpc.StatusRuntimeException;
@@ -39,13 +38,14 @@ import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.FailJobResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.GetWorkflowRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.GetWorkflowResponse;
-import io.zeebe.gateway.protocol.GatewayOuterClass.HealthRequest;
-import io.zeebe.gateway.protocol.GatewayOuterClass.HealthResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ListWorkflowsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ListWorkflowsResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition;
 import io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole;
 import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.PublishMessageResponse;
+import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyRequest;
+import io.zeebe.gateway.protocol.GatewayOuterClass.TopologyResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateJobRetriesResponse;
 import io.zeebe.gateway.protocol.GatewayOuterClass.UpdateWorkflowInstancePayloadRequest;
@@ -67,10 +67,11 @@ public class RecordingGatewayService extends GatewayImplBase {
       new HashMap<>();
 
   public RecordingGatewayService() {
-    addRequestHandler(HealthRequest.class, r -> HealthResponse.getDefaultInstance());
+    addRequestHandler(TopologyRequest.class, r -> TopologyResponse.getDefaultInstance());
     addRequestHandler(
         DeployWorkflowRequest.class, r -> DeployWorkflowResponse.getDefaultInstance());
-    addRequestHandler(PublishMessageRequest.class, r -> Empty.getDefaultInstance());
+    addRequestHandler(
+        PublishMessageRequest.class, r -> PublishMessageResponse.getDefaultInstance());
     addRequestHandler(CreateJobRequest.class, r -> CreateJobResponse.getDefaultInstance());
     addRequestHandler(
         CreateWorkflowInstanceRequest.class,
@@ -91,7 +92,7 @@ public class RecordingGatewayService extends GatewayImplBase {
   }
 
   @Override
-  public void health(HealthRequest request, StreamObserver<HealthResponse> responseObserver) {
+  public void topology(TopologyRequest request, StreamObserver<TopologyResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
@@ -103,7 +104,7 @@ public class RecordingGatewayService extends GatewayImplBase {
 
   @Override
   public void publishMessage(
-      PublishMessageRequest request, StreamObserver<Empty> responseObserver) {
+      PublishMessageRequest request, StreamObserver<PublishMessageResponse> responseObserver) {
     handle(request, responseObserver);
   }
 
@@ -181,10 +182,10 @@ public class RecordingGatewayService extends GatewayImplBase {
         .build();
   }
 
-  public void onHealthRequest(BrokerInfo... brokers) {
+  public void onTopologyRequest(BrokerInfo... brokers) {
     addRequestHandler(
-        HealthRequest.class,
-        request -> HealthResponse.newBuilder().addAllBrokers(Arrays.asList(brokers)).build());
+        TopologyRequest.class,
+        request -> TopologyResponse.newBuilder().addAllBrokers(Arrays.asList(brokers)).build());
   }
 
   public static WorkflowMetadata deployedWorkflow(

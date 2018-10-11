@@ -1,12 +1,11 @@
 syntax = 'proto3';
-import "google/protobuf/empty.proto";
 package gateway_protocol;
 
 option java_multiple_files = false;
 option java_package = "io.zeebe.gateway.protocol";
 option go_package = "pb";
 
-message HealthRequest {
+message TopologyRequest {
 }
 
 message Partition {
@@ -24,7 +23,7 @@ message BrokerInfo {
   repeated Partition partitions = 3;
 }
 
-message HealthResponse {
+message TopologyResponse {
   repeated BrokerInfo brokers = 1;
 }
 
@@ -61,6 +60,9 @@ message PublishMessageRequest {
   string messageId = 4;
   /* payload has to be a valid json object as string */
   string payload = 5;
+}
+
+message PublishMessageResponse {
 }
 
 message CreateJobRequest {
@@ -193,11 +195,11 @@ message ActivateJobsResponse {
 }
 
 service Gateway {
-  rpc Health (HealthRequest) returns (HealthResponse) {
+  rpc Topology (TopologyRequest) returns (TopologyResponse) {
   }
   rpc DeployWorkflow (DeployWorkflowRequest) returns (DeployWorkflowResponse) {
   }
-  rpc PublishMessage (PublishMessageRequest) returns (google.protobuf.Empty) {
+  rpc PublishMessage (PublishMessageRequest) returns (PublishMessageResponse) {
   }
   rpc CreateJob (CreateJobRequest) returns (CreateJobResponse) {
   }
@@ -212,7 +214,6 @@ service Gateway {
   rpc CancelWorkflowInstance (CancelWorkflowInstanceRequest) returns (CancelWorkflowInstanceResponse) {
   }
   rpc UpdateWorkflowInstancePayload (UpdateWorkflowInstancePayloadRequest) returns (UpdateWorkflowInstancePayloadResponse) {
-
   }
   rpc ActivateJobs (ActivateJobsRequest) returns (stream ActivateJobsResponse) {
   }
