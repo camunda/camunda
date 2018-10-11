@@ -75,6 +75,8 @@ public class ProcessDefinitionRestService {
    * @return The process definition xml requested.
    */
   @GET
+  // xml on success, json on error
+  @Produces(value = {MediaType.APPLICATION_XML, MediaType.APPLICATION_JSON})
   @Path("/xml")
   public String getProcessDefinitionXml(
       @QueryParam("processDefinitionKey") String processDefinitionKey,

@@ -4,7 +4,6 @@ package org.camunda.optimize.rest;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.SingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.sharing.DashboardShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchDto;
@@ -121,6 +120,7 @@ public class SharingRestService {
    */
   @GET
   @Path("/dashboard/{dashboardId}/isAuthorizedToShare")
+  @Produces(MediaType.APPLICATION_JSON)
   public Response evaluateDashboard(@Context ContainerRequestContext requestContext,
                                     @PathParam("dashboardId") String dashboardId) {
     String userId = getRequestUser(requestContext);

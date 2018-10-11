@@ -8,6 +8,7 @@ import org.springframework.stereotype.Component;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
@@ -30,6 +31,8 @@ public class ExportRestService {
   private ExportService exportService;
 
   @GET
+  // octet stream on success, json on potential error
+  @Produces(value = {MediaType.APPLICATION_OCTET_STREAM, MediaType.APPLICATION_JSON})
   @Path("csv/{reportId}/{fileName}")
   public Response getCsvReport(
     @Context ContainerRequestContext requestContext,
