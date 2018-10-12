@@ -14,6 +14,8 @@
 package cmd
 
 import (
+	"fmt"
+	"github.com/zeebe-io/zeebe/clients/go/pb"
 	"github.com/zeebe-io/zeebe/clients/zbctl/utils"
 
 	"github.com/spf13/cobra"
@@ -29,10 +31,26 @@ var statusCmd = &cobra.Command{
 		response, err := client.NewTopologyCommand().Send()
 		utils.CheckOrExit(err, utils.ExitCodeIOError, defaultErrCtx)
 
-		out.Serialize(response).Flush()
+		for _, broker := range response.Brokers {
+			fmt.Println("Broker", broker.Host, ":", broker.Port)
+			for _, partition := range broker.Partitions {
+				fmt.Println("  Partition", partition.PartitionId, ":", roleToString(partition.Role))
+			}
+		}
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(statusCmd)
+}
+
+func roleToString(role pb.Partition_PartitionBrokerRole) string {
+	switch role {
+	case  pb.Partition_LEADER:
+		return "Leader"
+	case pb.Partition_FOLLOW:
+		return "Follower"
+	default:
+		return "Unknown"
+	}
 }

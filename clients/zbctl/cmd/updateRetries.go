@@ -11,31 +11,35 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package cmd
 
 import (
-	"github.com/zeebe-io/zeebe/clients/zbctl/utils"
-
 	"github.com/spf13/cobra"
+	"github.com/zeebe-io/zeebe/clients/zbctl/utils"
+	"log"
 )
 
-var cancelInstanceCmd = &cobra.Command{
-	Use:   "instance <key>",
-	Short: "Cancel workflow instance by key",
+var updateRetriesFlag int32
+
+// updateRetriesCmd represents the updateRetries command
+var updateRetriesCmd = &cobra.Command{
+	Use:   "retries <jobKey>",
+	Short: "Update retries of a job",
 	Args: cobra.ExactArgs(1),
 	PreRun: initBroker,
 	Run: func(cmd *cobra.Command, args []string) {
-		workflowInstanceKey := convertToKey(args[0], "Expect workflow instance key as only positional argument, got")
+		jobKey := convertToKey(args[0], "Expect job key as only positional argument, got")
 
-		zbCmd := client.
-			NewCancelInstanceCommand().
-		    WorkflowInstanceKey(workflowInstanceKey)
-
-        _, err := zbCmd.Send()
+		_, err := client.NewUpdateJobRetriesCommand().JobKey(jobKey).Retries(updateRetriesFlag).Send()
 		utils.CheckOrExit(err, utils.ExitCodeIOError, defaultErrCtx)
+
+		log.Println("Update the retries of job with key", jobKey, "to", updateRetriesFlag)
 	},
 }
 
 func init() {
-	cancelCmd.AddCommand(cancelInstanceCmd)
+	updateCmd.AddCommand(updateRetriesCmd)
+	updateRetriesCmd.Flags().Int32Var(&updateRetriesFlag, "retries", utils.DefaultJobRetries, "Specify retries of job")
+	updateRetriesCmd.MarkFlagRequired("retries")
 }

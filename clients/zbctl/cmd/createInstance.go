@@ -14,11 +14,7 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/zeebe-io/zeebe/clients/zbctl/utils"
-
-	"os"
 
 	"github.com/spf13/cobra"
 )
@@ -31,13 +27,9 @@ var (
 var createInstanceCmd = &cobra.Command{
 	Use:   "instance <processId>",
 	Short: "Creates new workflow instance defined by the process ID",
+	Args: cobra.ExactArgs(1),
 	PreRun: initBroker,
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 {
-			fmt.Println("You must specify process ID as positional arguments.")
-			os.Exit(utils.ExitCodeConfigurationError)
-		}
-
 		zbCmd, err := client.
 			NewCreateInstanceCommand().
 			BPMNProcessId(args[0]).

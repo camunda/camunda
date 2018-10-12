@@ -19,6 +19,7 @@ import (
 	"github.com/zeebe-io/zeebe/clients/go"
 	"github.com/zeebe-io/zeebe/clients/zbctl/utils"
 	"os"
+	"strconv"
 
 	"github.com/spf13/cobra"
 )
@@ -72,4 +73,13 @@ var initBroker = func(cmd *cobra.Command, args []string) {
 	var err error
 	client, err = zbc.NewZBClient(brokerAddr)
 	utils.CheckOrExit(err, utils.ExitCodeConfigurationError, defaultErrCtx)
+}
+
+func convertToKey(arg string, errorMsg string) int64 {
+	key, err := strconv.ParseInt(arg, 10, 64)
+	if err != nil {
+		fmt.Println(errorMsg, arg)
+		utils.CheckOrExit(err, utils.ExitCodeIOError, defaultErrCtx)
+	}
+	return key
 }
