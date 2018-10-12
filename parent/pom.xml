@@ -56,7 +56,7 @@
     <plugin.version.compiler>3.8.0</plugin.version.compiler>
     <plugin.version.elasticsearch>6.8</plugin.version.elasticsearch>
     <plugin.version.exec>1.6.0</plugin.version.exec>
-    <plugin.version.failsafe>2.22.0</plugin.version.failsafe>
+    <plugin.version.failsafe>2.22.1</plugin.version.failsafe>
     <plugin.version.fmt>2.5.1</plugin.version.fmt>
     <plugin.version.license>3.0</plugin.version.license>
     <plugin.version.protobuf-maven-plugin>0.6.1</plugin.version.protobuf-maven-plugin>
@@ -64,7 +64,7 @@
     <plugin.version.resources>3.1.0</plugin.version.resources>
     <plugin.version.scala>3.2.1</plugin.version.scala>
     <plugin.version.shade>3.2.0</plugin.version.shade>
-    <plugin.version.surefire>2.22.0</plugin.version.surefire>
+    <plugin.version.surefire>2.22.1</plugin.version.surefire>
     <plugin.version.versions>2.7</plugin.version.versions>
 
     <!-- maven extensions -->
