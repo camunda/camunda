@@ -24,7 +24,7 @@ import (
 var statusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Checks the current status of the cluster",
-	Long:  ``,
+	Args: cobra.NoArgs,
 	PreRun: func(cmd *cobra.Command, args []string) {
 		initBroker(cmd)
 	},

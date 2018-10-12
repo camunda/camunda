@@ -13,8 +13,16 @@
 // limitations under the License.
 package utils
 
+import (
+	"github.com/zeebe-io/zeebe/clients/go/commands"
+	"github.com/zeebe-io/zeebe/clients/go/utils"
+)
+
 const (
 	DefaultBrokerAddress = "127.0.0.1:26500"
+	DefaultJobRetries    = utils.DefaultRetries
+	LatestVersion        = commands.LatestVersion
+	EmptyJsonObject      = "{}"
 )
 
 // process exit codes

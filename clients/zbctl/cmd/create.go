@@ -21,7 +21,6 @@ import (
 var createCmd = &cobra.Command{
 	Use:   "create",
 	Short: "Create resources",
-	Long:  ``,
 }
 
 func init() {

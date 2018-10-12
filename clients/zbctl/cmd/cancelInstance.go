@@ -15,38 +15,27 @@ package cmd
 
 import (
 	"fmt"
-    "strconv"
+	"strconv"
 
-    "github.com/zeebe-io/zeebe/clients/zbctl/utils"
-
-	"os"
+	"github.com/zeebe-io/zeebe/clients/zbctl/utils"
 
 	"github.com/spf13/cobra"
 	"github.com/zeebe-io/zeebe/clients/go"
-	zbCommands "github.com/zeebe-io/zeebe/clients/go/commands"
 )
 
-
 var cancelInstanceCmd = &cobra.Command{
-	Use:   "instance <processId>",
-	Short: "Cancels new workflow instance defined by the process ID",
-	Long:  ``,
+	Use:   "instance <workflowInstanceKey>",
+	Short: "Cancel workflow instance by workflow instance key",
+	Args: cobra.ExactArgs(1),
 	PreRun: func(cmd *cobra.Command, args []string) {
 		initBroker(cmd)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 {
-			fmt.Println("You must specify workflow instance key as positional arguments.")
-			os.Exit(utils.ExitCodeConfigurationError)
-		}
-
         workflowInstanceKey, err := strconv.ParseInt(args[0], 10, 64)
         if err != nil {
-            fmt.Println("Invalid format for numerical workflow instance key.")
+            fmt.Println("Expect workflow instance key as only positional argument, got", args[0])
             utils.CheckOrExit(err, utils.ExitCodeIOError, defaultErrCtx)
         }
-
-        utils.CheckOrExit(err, utils.ExitCodeIOError, defaultErrCtx);
 
 		client, err := zbc.NewZBClient(brokerAddr)
 		utils.CheckOrExit(err, utils.ExitCodeConfigurationError, defaultErrCtx)
@@ -62,14 +51,5 @@ var cancelInstanceCmd = &cobra.Command{
 }
 
 func init() {
-	cancelInstanceCmd.
-		Flags().
-		StringVar(&instancePayloadFlag, "payload", "{}", "Specify payload as JSON string")
-
-	cancelInstanceCmd.
-		Flags().
-		Int32Var(&versionFlag, "version", zbCommands.LatestVersion,
-			"Specify version of process which should be executed.")
-
 	cancelCmd.AddCommand(cancelInstanceCmd)
 }

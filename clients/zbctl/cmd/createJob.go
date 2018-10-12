@@ -14,47 +14,38 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/zeebe-io/zeebe/clients/zbctl/utils"
-
-	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/zeebe-io/zeebe/clients/go"
 )
 
 var (
-	retryCountFlag int32
-	jobPayloadFlag string
-	headersFlag    string
+	createJobRetriesFlag       int32
+	createJobCustomHeadersFlag string
+	createJobPayloadFlag       string
 )
 
 // createJobCmd implements cobra command for CLI
 var createJobCmd = &cobra.Command{
 	Use:   "job <type>",
 	Short: "Creates a new job with specified type",
-	Long:  ``,
+	Args: cobra.ExactArgs(1),
 	PreRun: func(cmd *cobra.Command, args []string) {
 		initBroker(cmd)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 {
-			fmt.Println("You must specify job type name as positional argument.")
-			os.Exit(utils.ExitCodeIOError)
-		}
-
 		client, err := zbc.NewZBClient(brokerAddr)
 		utils.CheckOrExit(err, utils.ExitCodeConfigurationError, defaultErrCtx)
 
 		zbCmd, err := client.
 			NewCreateJobCommand().
 			JobType(args[0]).
-			Retries(retryCountFlag).
-			SetCustomHeadersFromString(headersFlag)
+			Retries(createJobRetriesFlag).
+			SetCustomHeadersFromString(createJobCustomHeadersFlag)
 		utils.CheckOrExit(err, utils.ExitCodeIOError, defaultErrCtx)
 
-		zbCmd, err = zbCmd.PayloadFromString(jobPayloadFlag)
+		zbCmd, err = zbCmd.PayloadFromString(createJobPayloadFlag)
 		utils.CheckOrExit(err, utils.ExitCodeIOError, defaultErrCtx)
 
 		response, err := zbCmd.Send()
@@ -65,13 +56,15 @@ var createJobCmd = &cobra.Command{
 }
 
 func init() {
-	createJobCmd.
-		Flags().
-		StringVar(&jobPayloadFlag, "payload", "{}", "Specify payload as JSON string")
-
-	createJobCmd.
-		Flags().
-		StringVar(&headersFlag, "headers", "{}", "Specify custom headers as JSON string")
-
 	createCmd.AddCommand(createJobCmd)
+
+	createJobCmd.Flags().Int32Var(&createJobRetriesFlag, "retries", utils.DefaultJobRetries, "Retries of job")
+
+	createJobCmd.
+		Flags().
+		StringVar(&createJobCustomHeadersFlag, "headers", utils.EmptyJsonObject, "Specify custom headers as JSON string")
+
+	createJobCmd.
+		Flags().
+		StringVar(&createJobPayloadFlag, "payload", utils.EmptyJsonObject, "Specify payload as JSON string")
 }

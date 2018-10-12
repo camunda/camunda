@@ -22,18 +22,16 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/zeebe-io/zeebe/clients/go"
-	zbCommands "github.com/zeebe-io/zeebe/clients/go/commands"
 )
 
 var (
-	versionFlag         int32
-	instancePayloadFlag string
+	createInstanceVersionFlag int32
+	createInstancePayloadFlag string
 )
 
 var createInstanceCmd = &cobra.Command{
 	Use:   "instance <processId>",
 	Short: "Creates new workflow instance defined by the process ID",
-	Long:  ``,
 	PreRun: func(cmd *cobra.Command, args []string) {
 		initBroker(cmd)
 	},
@@ -49,8 +47,8 @@ var createInstanceCmd = &cobra.Command{
 		zbCmd, err := client.
 			NewCreateInstanceCommand().
 			BPMNProcessId(args[0]).
-			Version(versionFlag).
-			PayloadFromString(instancePayloadFlag)
+			Version(createInstanceVersionFlag).
+			PayloadFromString(createInstancePayloadFlag)
 		utils.CheckOrExit(err, utils.ExitCodeIOError, defaultErrCtx)
 
 		response, err := zbCmd.Send()
@@ -61,14 +59,14 @@ var createInstanceCmd = &cobra.Command{
 }
 
 func init() {
-	createInstanceCmd.
-		Flags().
-		StringVar(&instancePayloadFlag, "payload", "{}", "Specify payload as JSON string")
-
-	createInstanceCmd.
-		Flags().
-		Int32Var(&versionFlag, "version", zbCommands.LatestVersion,
-			"Specify version of process which should be executed.")
-
 	createCmd.AddCommand(createInstanceCmd)
+
+	createInstanceCmd.
+		Flags().
+		StringVar(&createInstancePayloadFlag, "payload", utils.EmptyJsonObject, "Specify payload as JSON string")
+
+	createInstanceCmd.
+		Flags().
+		Int32Var(&createInstanceVersionFlag, "version", utils.LatestVersion,
+			"Specify version of workflow which should be executed.")
 }

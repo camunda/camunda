@@ -14,11 +14,7 @@
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/zeebe-io/zeebe/clients/zbctl/utils"
-
-	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/zeebe-io/zeebe/clients/go"
@@ -28,15 +24,11 @@ import (
 var deployWorkflowCmd = &cobra.Command{
 	Use:   "deploy <workflowPath>",
 	Short: "Creates new workflow defined by provided bpmn or yaml file as workflowPath",
-	Long:  ``,
+	Args: cobra.MinimumNArgs(1),
 	PreRun: func(cmd *cobra.Command, args []string) {
 		initBroker(cmd)
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		if len(args) == 0 {
-			fmt.Println("You must specify workflow paths as positional arguments.")
-			os.Exit(utils.ExitCodeIOError)
-		}
 		client, err := zbc.NewZBClient(brokerAddr)
 		utils.CheckOrExit(err, utils.ExitCodeConfigurationError, defaultErrCtx)
 
