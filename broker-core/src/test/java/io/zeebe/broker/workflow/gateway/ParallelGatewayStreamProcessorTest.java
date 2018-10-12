@@ -94,11 +94,10 @@ public class ParallelGatewayStreamProcessorTest {
         "flowToJoin", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN);
 
     // when
-    streamProcessorRule.completeFirstJob();
-
     // waiting until the end event has been reached
     streamProcessor.blockAfterWorkflowInstanceRecord(
         r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.END_EVENT_OCCURRED);
+    streamProcessorRule.completeFirstJob();
 
     waitUntil(() -> streamProcessor.isBlocked());
 
