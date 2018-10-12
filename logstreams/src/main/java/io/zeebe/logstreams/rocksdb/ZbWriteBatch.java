@@ -15,10 +15,11 @@
  */
 package io.zeebe.logstreams.rocksdb;
 
+import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
+
 import io.zeebe.util.EnsureUtil;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.nio.ByteOrder;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -108,6 +109,6 @@ public class ZbWriteBatch extends WriteBatch {
   }
 
   private void setKey(final long key) {
-    longKeyBuffer.putLong(0, key, ByteOrder.LITTLE_ENDIAN);
+    longKeyBuffer.putLong(0, key, STATE_BYTE_ORDER);
   }
 }

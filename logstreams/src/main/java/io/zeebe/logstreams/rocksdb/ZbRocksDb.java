@@ -15,6 +15,7 @@
  */
 package io.zeebe.logstreams.rocksdb;
 
+import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
 import static io.zeebe.util.StringUtil.getBytes;
 import static io.zeebe.util.buffer.BufferUtil.startsWith;
 
@@ -23,7 +24,6 @@ import io.zeebe.util.buffer.BufferUtil;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.nio.ByteOrder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -329,7 +329,7 @@ public class ZbRocksDb extends RocksDB {
   }
 
   private void setKey(final long key) {
-    longKeyBuffer.putLong(0, key, ByteOrder.LITTLE_ENDIAN);
+    longKeyBuffer.putLong(0, key, STATE_BYTE_ORDER);
   }
 
   static long getNativeHandle(final RocksObject object) {

@@ -17,10 +17,10 @@
  */
 package io.zeebe.broker.subscription.message.state;
 
+import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
 import static io.zeebe.util.buffer.BufferUtil.readIntoBuffer;
 import static io.zeebe.util.buffer.BufferUtil.writeIntoBuffer;
 
-import java.nio.ByteOrder;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -117,16 +117,16 @@ public class MessageSubscription implements Subscription {
 
   @Override
   public void wrap(final DirectBuffer buffer, int offset, final int length) {
-    this.workflowInstancePartitionId = buffer.getInt(offset, ByteOrder.LITTLE_ENDIAN);
+    this.workflowInstancePartitionId = buffer.getInt(offset, STATE_BYTE_ORDER);
     offset += Integer.BYTES;
 
-    this.workflowInstanceKey = buffer.getLong(offset, ByteOrder.LITTLE_ENDIAN);
+    this.workflowInstanceKey = buffer.getLong(offset, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
-    this.activityInstanceKey = buffer.getLong(offset, ByteOrder.LITTLE_ENDIAN);
+    this.activityInstanceKey = buffer.getLong(offset, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
-    this.commandSentTime = buffer.getLong(offset, ByteOrder.LITTLE_ENDIAN);
+    this.commandSentTime = buffer.getLong(offset, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
     offset = readIntoBuffer(buffer, offset, messageName);
@@ -145,16 +145,16 @@ public class MessageSubscription implements Subscription {
 
   @Override
   public void write(final MutableDirectBuffer buffer, int offset) {
-    buffer.putInt(offset, workflowInstancePartitionId, ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(offset, workflowInstancePartitionId, STATE_BYTE_ORDER);
     offset += Integer.BYTES;
 
-    buffer.putLong(offset, workflowInstanceKey, ByteOrder.LITTLE_ENDIAN);
+    buffer.putLong(offset, workflowInstanceKey, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
-    buffer.putLong(offset, activityInstanceKey, ByteOrder.LITTLE_ENDIAN);
+    buffer.putLong(offset, activityInstanceKey, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
-    buffer.putLong(offset, commandSentTime, ByteOrder.LITTLE_ENDIAN);
+    buffer.putLong(offset, commandSentTime, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
     offset = writeIntoBuffer(buffer, offset, messageName);
@@ -165,11 +165,11 @@ public class MessageSubscription implements Subscription {
 
   public void writeKey(MutableDirectBuffer keyBuffer, int offset) {
     final int startOffset = offset;
-    keyBuffer.putInt(offset, getWorkflowInstancePartitionId());
+    keyBuffer.putInt(offset, getWorkflowInstancePartitionId(), STATE_BYTE_ORDER);
     offset += Integer.BYTES;
-    keyBuffer.putLong(offset, workflowInstanceKey);
+    keyBuffer.putLong(offset, workflowInstanceKey, STATE_BYTE_ORDER);
     offset += Long.BYTES;
-    keyBuffer.putLong(offset, activityInstanceKey);
+    keyBuffer.putLong(offset, activityInstanceKey, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
     assert (offset - startOffset) == KEY_LENGTH
@@ -177,7 +177,7 @@ public class MessageSubscription implements Subscription {
   }
 
   public void writeCommandSentTime(MutableDirectBuffer keyBuffer, int offset) {
-    keyBuffer.putLong(offset, commandSentTime, ByteOrder.LITTLE_ENDIAN);
+    keyBuffer.putLong(offset, commandSentTime, STATE_BYTE_ORDER);
   }
 
   public int getKeyLength() {

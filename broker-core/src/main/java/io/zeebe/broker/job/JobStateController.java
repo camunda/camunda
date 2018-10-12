@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.job;
 
+import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
 import static io.zeebe.util.StringUtil.getBytes;
 
 import io.zeebe.broker.logstreams.processor.TypedRecord;
@@ -27,7 +28,6 @@ import io.zeebe.logstreams.rocksdb.ZbWriteBatch;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.util.buffer.BufferWriter;
 import java.io.File;
-import java.time.Instant;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -249,17 +249,14 @@ public class JobStateController extends KeyStateController {
     }
   }
 
-  public void forEachTimedOutEntry(final Instant upperBound, final IteratorConsumer callback) {
-
-    final long upperBoundMilli = upperBound.toEpochMilli();
-
+  public void forEachTimedOutEntry(final long upperBound, final IteratorConsumer callback) {
     db.forEach(
         deadlinesColumnFamily,
         (e, c) -> {
-          final long deadline = e.getKey().getLong(0);
-          if (deadline < upperBoundMilli) {
+          final long deadline = e.getKey().getLong(0, STATE_BYTE_ORDER);
+          if (deadline < upperBound) {
             final DirectBuffer keyBuffer = new UnsafeBuffer(e.getKey(), Long.BYTES, Long.BYTES);
-            callback.accept(keyBuffer.getLong(0), getJob(keyBuffer), c);
+            callback.accept(keyBuffer.getLong(0, STATE_BYTE_ORDER), getJob(keyBuffer), c);
           } else {
             c.stop();
           }
@@ -300,7 +297,7 @@ public class JobStateController extends KeyStateController {
         (e, c) -> {
           final DirectBuffer keyBuffer =
               new UnsafeBuffer(e.getKey(), prefix.capacity(), Long.BYTES);
-          callback.accept(keyBuffer.getLong(0), getJob(keyBuffer), c);
+          callback.accept(keyBuffer.getLong(0, STATE_BYTE_ORDER), getJob(keyBuffer), c);
         });
   }
 
@@ -322,14 +319,14 @@ public class JobStateController extends KeyStateController {
   }
 
   private UnsafeBuffer getDefaultKey(final long key) {
-    keyBuffer.putLong(0, key);
+    keyBuffer.putLong(0, key, STATE_BYTE_ORDER);
     return new UnsafeBuffer(keyBuffer, 0, Long.BYTES);
   }
 
   private UnsafeBuffer getActivatableKey(final long key, final DirectBuffer type) {
     final int typeLength = type.capacity();
     keyBuffer.putBytes(0, type, 0, typeLength);
-    keyBuffer.putLong(typeLength, key);
+    keyBuffer.putLong(typeLength, key, STATE_BYTE_ORDER);
 
     return new UnsafeBuffer(keyBuffer, 0, typeLength + Long.BYTES);
   }
@@ -342,8 +339,8 @@ public class JobStateController extends KeyStateController {
   }
 
   private UnsafeBuffer getDeadlinesKey(final long key, final long deadline) {
-    keyBuffer.putLong(0, deadline);
-    keyBuffer.putLong(Long.BYTES, key);
+    keyBuffer.putLong(0, deadline, STATE_BYTE_ORDER);
+    keyBuffer.putLong(Long.BYTES, key, STATE_BYTE_ORDER);
 
     return new UnsafeBuffer(keyBuffer, 0, Long.BYTES * 2);
   }

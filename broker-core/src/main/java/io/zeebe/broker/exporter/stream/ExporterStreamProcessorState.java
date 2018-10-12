@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.exporter.stream;
 
+import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
 import static io.zeebe.util.StringUtil.getBytes;
 
 import io.zeebe.broker.exporter.stream.ExporterRecord.ExporterPosition;
@@ -24,7 +25,6 @@ import io.zeebe.logstreams.state.StateController;
 import io.zeebe.util.LangUtil;
 import io.zeebe.util.buffer.BufferUtil;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import org.agrona.DirectBuffer;
 import org.rocksdb.Options;
 import org.rocksdb.RocksDBException;
@@ -109,12 +109,12 @@ public class ExporterStreamProcessorState extends StateController {
   }
 
   private byte[] ofLong(final ByteBuffer buffer, final long value) {
-    buffer.order(ByteOrder.LITTLE_ENDIAN).putLong(0, value);
+    buffer.order(STATE_BYTE_ORDER).putLong(0, value);
     return buffer.array();
   }
 
   private long toLong(final ByteBuffer buffer) {
-    return buffer.order(ByteOrder.LITTLE_ENDIAN).getLong(0);
+    return buffer.order(STATE_BYTE_ORDER).getLong(0);
   }
 
   @Override

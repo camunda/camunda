@@ -48,7 +48,6 @@ import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.util.sched.ScheduledTimer;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.agrona.ExpandableArrayBuffer;
@@ -124,7 +123,7 @@ public class JobStreamProcessor implements StreamProcessorLifecycleAware {
   }
 
   private void deactivateTimedOutJobs() {
-    final Instant now = Instant.ofEpochMilli(currentTimeMillis());
+    final long now = currentTimeMillis();
     state.forEachTimedOutEntry(
         now,
         (key, record, control) -> {
@@ -150,10 +149,10 @@ public class JobStreamProcessor implements StreamProcessorLifecycleAware {
 
     private int requestStreamId;
 
-    private SideEffectProducer returnCredits =
+    private final SideEffectProducer returnCredits =
         () -> subscriptionManager.increaseSubscriptionCreditsAsync(creditsRequest);
 
-    private SideEffectProducer pushRecord =
+    private final SideEffectProducer pushRecord =
         () -> subscribedEventWriter.tryWriteMessage(requestStreamId);
 
     @Override

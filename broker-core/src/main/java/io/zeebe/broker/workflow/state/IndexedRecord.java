@@ -17,12 +17,13 @@
  */
 package io.zeebe.broker.workflow.state;
 
+import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
+
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.BufferWriter;
-import java.nio.ByteOrder;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -71,10 +72,10 @@ public class IndexedRecord implements BufferWriter, BufferReader {
   @Override
   public void wrap(DirectBuffer buffer, int offset, int length) {
     final int startOffset = offset;
-    key = buffer.getLong(offset, ByteOrder.LITTLE_ENDIAN);
+    key = buffer.getLong(offset, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
-    final short stateIdx = buffer.getShort(offset, ByteOrder.LITTLE_ENDIAN);
+    final short stateIdx = buffer.getShort(offset, STATE_BYTE_ORDER);
     state = WorkflowInstanceIntent.values()[stateIdx];
     offset += Short.BYTES;
 
@@ -93,10 +94,10 @@ public class IndexedRecord implements BufferWriter, BufferReader {
   public void write(MutableDirectBuffer buffer, int offset) {
     final int startOffset = offset;
 
-    buffer.putLong(offset, key, ByteOrder.LITTLE_ENDIAN);
+    buffer.putLong(offset, key, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
-    buffer.putShort(offset, state.value(), ByteOrder.LITTLE_ENDIAN);
+    buffer.putShort(offset, state.value(), STATE_BYTE_ORDER);
     offset += Short.BYTES;
 
     assert (offset - startOffset) == getLength() - value.getLength()

@@ -333,13 +333,13 @@ public class MessageStateControllerTest {
     final long now = ActorClock.currentTimeMillis();
 
     final Message message = createMessage(1L, "name", "correlationKey", "{}", "nr1", 1234);
-    final Message message2 = createMessage(2L, "otherName", "correlationKey", "{}", "nr2", 4567);
+    final Message message2 = createMessage(2L, "otherName", "correlationKey", "{}", "nr2", 2000);
 
     stateController.put(message);
     stateController.put(message2);
 
     // when
-    final long deadline = now + 2_000L;
+    final long deadline = now + 1999L;
 
     // then
     final List<Message> readMessage = new ArrayList<>();
@@ -350,13 +350,35 @@ public class MessageStateControllerTest {
   }
 
   @Test
+  public void shouldFindMessageBeforeTimeInOrder() {
+    // given
+    final long now = ActorClock.currentTimeMillis();
+
+    final Message message = createMessage(1L, "name", "correlationKey", "{}", "nr1", 1234);
+    final Message message2 = createMessage(2L, "name", "correlationKey", "{}", "nr1", 2000);
+
+    stateController.put(message);
+    stateController.put(message2);
+
+    // when
+    final long deadline = now + 3_000L;
+
+    // then
+    final List<Long> readMessage = new ArrayList<>();
+    stateController.findMessagesWithDeadlineBefore(deadline, m -> readMessage.add(m.getKey()));
+
+    assertThat(readMessage.size()).isEqualTo(2);
+    assertThat(readMessage).containsExactly(1L, 2L);
+  }
+
+  @Test
   public void shouldFindMessageSubscriptionBeforeTime() {
     // given
     final MessageSubscription subscription =
         new MessageSubscription(
             "messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 3, 1234);
     final MessageSubscription subscription2 =
-        new MessageSubscription("otherName", "otherKey", "{\"foo\":\"bar\"}", 1, 3, 3, 4567);
+        new MessageSubscription("otherName", "otherKey", "{\"foo\":\"bar\"}", 1, 3, 3, 2000);
     final Message message = createMessage(1L, "name", "correlationKey", "{}", "nr1", 1234);
 
     stateController.put(message);
@@ -375,6 +397,32 @@ public class MessageStateControllerTest {
     assertThat(readSubscription.getCorrelationKey()).isEqualTo(wrapString("correlationKey"));
     assertThat(readSubscription.getMessagePayload()).isEqualTo(wrapString("{\"foo\":\"bar\"}"));
     assertThat(readSubscription.getCommandSentTime()).isEqualTo(1234);
+  }
+
+  @Test
+  public void shouldFindMessageSubscriptionBeforeTimeInOrder() {
+    // given
+    final MessageSubscription subscription =
+        new MessageSubscription(
+            "messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 3, 1234);
+    final MessageSubscription subscription2 =
+        new MessageSubscription("otherName", "otherKey", "{\"foo\":\"bar\"}", 1, 4, 4, 2000);
+    final Message message = createMessage(1L, "name", "correlationKey", "{}", "nr1", 1234);
+
+    stateController.put(message);
+    stateController.put(subscription);
+    stateController.put(subscription2);
+
+    // when
+    final long deadline = 3_000L;
+
+    // then
+    final List<MessageSubscription> readSubscriptions =
+        stateController.findSubscriptionBefore(deadline);
+    assertThat(readSubscriptions.size()).isEqualTo(2);
+    assertThat(readSubscriptions)
+        .extracting(s -> s.getWorkflowInstanceKey())
+        .containsExactly(2L, 4L);
   }
 
   @Test

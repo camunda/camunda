@@ -17,12 +17,12 @@
  */
 package io.zeebe.broker.workflow.state;
 
+import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 import static io.zeebe.util.buffer.BufferUtil.readIntoBuffer;
 import static io.zeebe.util.buffer.BufferUtil.writeIntoBuffer;
 
-import java.nio.ByteOrder;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -73,9 +73,9 @@ public class PersistedWorkflow implements Persistable {
   @Override
   public void wrap(DirectBuffer buffer, int offset, int length) {
     int valueOffset = offset;
-    version = buffer.getInt(offset, ByteOrder.LITTLE_ENDIAN);
+    version = buffer.getInt(offset, STATE_BYTE_ORDER);
     valueOffset += Integer.BYTES;
-    key = buffer.getLong(valueOffset, ByteOrder.LITTLE_ENDIAN);
+    key = buffer.getLong(valueOffset, STATE_BYTE_ORDER);
     valueOffset += Long.BYTES;
     valueOffset = readIntoBuffer(buffer, valueOffset, bpmnProcessId);
     valueOffset = readIntoBuffer(buffer, valueOffset, resourceName);
@@ -95,9 +95,9 @@ public class PersistedWorkflow implements Persistable {
   @Override
   public void write(MutableDirectBuffer buffer, int offset) {
     int valueOffset = offset;
-    buffer.putInt(offset, version, ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(offset, version, STATE_BYTE_ORDER);
     valueOffset += Integer.BYTES;
-    buffer.putLong(valueOffset, key, ByteOrder.LITTLE_ENDIAN);
+    buffer.putLong(valueOffset, key, STATE_BYTE_ORDER);
     valueOffset += Long.BYTES;
     valueOffset = writeIntoBuffer(buffer, valueOffset, bpmnProcessId);
     valueOffset = writeIntoBuffer(buffer, valueOffset, resourceName);
@@ -120,7 +120,7 @@ public class PersistedWorkflow implements Persistable {
       MutableDirectBuffer buffer, int offset, DirectBuffer bpmnProcessId, int version) {
     int keyOffset = offset;
     keyOffset = writeIntoBuffer(buffer, keyOffset, bpmnProcessId);
-    buffer.putInt(keyOffset, version, ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(keyOffset, version, STATE_BYTE_ORDER);
     keyOffset += Integer.BYTES;
     return keyOffset;
   }

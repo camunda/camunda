@@ -17,10 +17,11 @@
  */
 package io.zeebe.broker.workflow.state;
 
+import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
+
 import io.zeebe.broker.workflow.processor.WorkflowInstanceLifecycle;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import java.nio.ByteOrder;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 
@@ -110,16 +111,16 @@ public class ElementInstance implements Persistable {
   @Override
   public void wrap(DirectBuffer buffer, int offset, int length) {
     final int startOffset = offset;
-    childCount = buffer.getInt(offset, ByteOrder.LITTLE_ENDIAN);
+    childCount = buffer.getInt(offset, STATE_BYTE_ORDER);
     offset += Integer.BYTES;
 
-    jobKey = buffer.getLong(offset, ByteOrder.LITTLE_ENDIAN);
+    jobKey = buffer.getLong(offset, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
-    activeTokens = buffer.getInt(offset, ByteOrder.LITTLE_ENDIAN);
+    activeTokens = buffer.getInt(offset, STATE_BYTE_ORDER);
     offset += Integer.BYTES;
 
-    parentKey = buffer.getLong(offset, ByteOrder.LITTLE_ENDIAN);
+    parentKey = buffer.getLong(offset, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
     final int writtenLength = offset - startOffset;
@@ -135,16 +136,16 @@ public class ElementInstance implements Persistable {
   public void write(MutableDirectBuffer buffer, int offset) {
     final int startOffset = offset;
 
-    buffer.putInt(offset, childCount, ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(offset, childCount, STATE_BYTE_ORDER);
     offset += Integer.BYTES;
 
-    buffer.putLong(offset, jobKey, ByteOrder.LITTLE_ENDIAN);
+    buffer.putLong(offset, jobKey, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
-    buffer.putInt(offset, activeTokens, ByteOrder.LITTLE_ENDIAN);
+    buffer.putInt(offset, activeTokens, STATE_BYTE_ORDER);
     offset += Integer.BYTES;
 
-    buffer.putLong(offset, parentKey, ByteOrder.LITTLE_ENDIAN);
+    buffer.putLong(offset, parentKey, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
     final int endLength = offset - startOffset;
@@ -156,7 +157,7 @@ public class ElementInstance implements Persistable {
 
   public void writeKey(MutableDirectBuffer keyBuffer, int offset) {
     int keyOffset = offset;
-    keyBuffer.putLong(keyOffset, getKey());
+    keyBuffer.putLong(keyOffset, getKey(), STATE_BYTE_ORDER);
     keyOffset += Long.BYTES;
     assert (keyOffset - offset) == getKeyLength()
         : "Offset problem: end length is not equal to expected key length";
@@ -168,7 +169,7 @@ public class ElementInstance implements Persistable {
 
   public void writeParentKey(MutableDirectBuffer keyBuffer, int offset) {
     int keyOffset = offset;
-    keyBuffer.putLong(keyOffset, parentKey);
+    keyBuffer.putLong(keyOffset, parentKey, STATE_BYTE_ORDER);
     keyOffset += Long.BYTES;
     assert (keyOffset - offset) == getParentKeyLength()
         : "Offset problem: end length is not equal to expected key length";
