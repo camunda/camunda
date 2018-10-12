@@ -17,7 +17,6 @@ import (
 	"github.com/zeebe-io/zeebe/clients/zbctl/utils"
 
 	"github.com/spf13/cobra"
-	"github.com/zeebe-io/zeebe/clients/go"
 )
 
 // deployWorkflowCmd implements cobra command for cli
@@ -25,13 +24,8 @@ var statusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Checks the current status of the cluster",
 	Args: cobra.NoArgs,
-	PreRun: func(cmd *cobra.Command, args []string) {
-		initBroker(cmd)
-	},
+	PreRun: initBroker,
 	Run: func(cmd *cobra.Command, args []string) {
-		client, err := zbc.NewZBClient(brokerAddr)
-		utils.CheckOrExit(err, utils.ExitCodeConfigurationError, defaultErrCtx)
-
 		response, err := client.NewTopologyCommand().Send()
 		utils.CheckOrExit(err, utils.ExitCodeIOError, defaultErrCtx)
 

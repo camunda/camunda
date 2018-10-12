@@ -20,25 +20,19 @@ import (
 	"github.com/zeebe-io/zeebe/clients/zbctl/utils"
 
 	"github.com/spf13/cobra"
-	"github.com/zeebe-io/zeebe/clients/go"
 )
 
 var cancelInstanceCmd = &cobra.Command{
 	Use:   "instance <workflowInstanceKey>",
 	Short: "Cancel workflow instance by workflow instance key",
 	Args: cobra.ExactArgs(1),
-	PreRun: func(cmd *cobra.Command, args []string) {
-		initBroker(cmd)
-	},
+	PreRun: initBroker,
 	Run: func(cmd *cobra.Command, args []string) {
         workflowInstanceKey, err := strconv.ParseInt(args[0], 10, 64)
         if err != nil {
             fmt.Println("Expect workflow instance key as only positional argument, got", args[0])
             utils.CheckOrExit(err, utils.ExitCodeIOError, defaultErrCtx)
         }
-
-		client, err := zbc.NewZBClient(brokerAddr)
-		utils.CheckOrExit(err, utils.ExitCodeConfigurationError, defaultErrCtx)
 
 		zbCmd := client.
 			NewCancelInstanceCommand().

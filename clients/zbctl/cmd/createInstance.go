@@ -21,7 +21,6 @@ import (
 	"os"
 
 	"github.com/spf13/cobra"
-	"github.com/zeebe-io/zeebe/clients/go"
 )
 
 var (
@@ -32,17 +31,12 @@ var (
 var createInstanceCmd = &cobra.Command{
 	Use:   "instance <processId>",
 	Short: "Creates new workflow instance defined by the process ID",
-	PreRun: func(cmd *cobra.Command, args []string) {
-		initBroker(cmd)
-	},
+	PreRun: initBroker,
 	Run: func(cmd *cobra.Command, args []string) {
 		if len(args) == 0 {
 			fmt.Println("You must specify process ID as positional arguments.")
 			os.Exit(utils.ExitCodeConfigurationError)
 		}
-
-		client, err := zbc.NewZBClient(brokerAddr)
-		utils.CheckOrExit(err, utils.ExitCodeConfigurationError, defaultErrCtx)
 
 		zbCmd, err := client.
 			NewCreateInstanceCommand().

@@ -16,14 +16,14 @@ package cmd
 
 import (
 	"fmt"
+	"github.com/zeebe-io/zeebe/clients/go"
 	"github.com/zeebe-io/zeebe/clients/zbctl/utils"
 	"os"
 
 	"github.com/spf13/cobra"
 )
 
-var brokerAddr string
-var cfgFile string
+var client zbc.ZBClient
 
 var out *utils.OutputWriter
 var defaultErrCtx *utils.ErrorContext
@@ -33,9 +33,10 @@ var rootCmd = &cobra.Command{
 	Short: "zeebe command line interface",
 	Long: `zbctl is command line interface designed to create and read resources inside zeebe broker. 
 It is designed for regular maintenance jobs such as:
-	* deploying work flows,
+	* deploying workflows,
 	* creating jobs and workflow instances
-	* consuming jobs, completing or failing jobs
+	* activating, completing or failing jobs
+	* update payload and retries
 	* view cluster status`,
 }
 
@@ -53,24 +54,22 @@ func init() {
 	defaultErrCtx = new(utils.ErrorContext)
 }
 
-// initBroker will set broker address with the following precedence: flag, environment variable, default address
-func initBroker(cmd *cobra.Command) {
-	if cmd.Flag("broker") != nil {
-		brokerAddr = cmd.Flag("broker").Value.String()
-		defaultErrCtx.BrokerAddr = brokerAddr
-		return
-	}
+// initBroker will create a client with the broker address in the following precedence: flag, environment variable, default address
+var initBroker = func(cmd *cobra.Command, args []string) {
+	brokerAddr := utils.DefaultBrokerAddress
 
 	brokerAddrEnv := os.Getenv("ZB_BROKER_ADDR")
 	if len(brokerAddrEnv) > 0 {
 		brokerAddr = brokerAddrEnv
-		defaultErrCtx.BrokerAddr = brokerAddr
-		return
 	}
 
-	if cmd.Flag("broker") == nil {
-		brokerAddr = utils.DefaultBrokerAddress
-		defaultErrCtx.BrokerAddr = brokerAddr
-		return
+	if cmd.Flag("broker") != nil {
+		brokerAddr = cmd.Flag("broker").Value.String()
 	}
+
+	defaultErrCtx.BrokerAddr = brokerAddr
+
+	var err error
+	client, err = zbc.NewZBClient(brokerAddr)
+	utils.CheckOrExit(err, utils.ExitCodeConfigurationError, defaultErrCtx)
 }
