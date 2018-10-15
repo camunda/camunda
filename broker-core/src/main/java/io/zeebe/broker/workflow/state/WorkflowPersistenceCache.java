@@ -124,14 +124,15 @@ public class WorkflowPersistenceCache {
         valueLength);
 
     // put latest workflow
+    final int versionOffset = keyLength - Integer.BYTES;
     rocksDbWrapper.put(
         latestWorkflowsHandle,
         keyBuffer.byteArray(),
         0,
-        keyLength - Integer.BYTES, // without version
-        valueBuffer.byteArray(),
-        0,
-        valueLength);
+        versionOffset, // without version
+        keyBuffer.byteArray(),
+        versionOffset,
+        Integer.BYTES);
   }
 
   // is called on getters, if workflow is not in memory
@@ -173,18 +174,43 @@ public class WorkflowPersistenceCache {
   }
 
   public DeployedWorkflow getLatestWorkflowVersionByProcessId(final DirectBuffer processId) {
-    return lookupPersistenceStateForLatestWorkflow(processId);
-  }
+    final Int2ObjectHashMap<DeployedWorkflow> versionMap =
+        workflowsByProcessIdAndVersion.get(processId);
 
-  private DeployedWorkflow lookupPersistenceStateForLatestWorkflow(DirectBuffer processId) {
     final int keyLength = PersistedWorkflow.writeWorkflowKey(keyBuffer, 0, processId, -1);
-    final PersistedWorkflow persistedWorkflow =
+    final PersistedInt latestVersion =
         persistenceHelper.getValueInstance(
-            PersistedWorkflow.class,
+            PersistedInt.class,
             latestWorkflowsHandle,
             keyBuffer,
             0,
             keyLength - Integer.BYTES,
+            valueBuffer);
+
+    DeployedWorkflow deployedWorkflow;
+    if (versionMap == null) {
+      deployedWorkflow = lookupWorkflowByIdAndPersistedVersion(processId, latestVersion);
+    } else {
+      deployedWorkflow = versionMap.get(latestVersion.getValue());
+      if (deployedWorkflow == null) {
+        deployedWorkflow = lookupWorkflowByIdAndPersistedVersion(processId, latestVersion);
+      }
+    }
+    return deployedWorkflow;
+  }
+
+  private DeployedWorkflow lookupWorkflowByIdAndPersistedVersion(
+      DirectBuffer processId, PersistedInt version) {
+    final int latestVersion = version != null ? version.getValue() : -1;
+    final int keyLength =
+        PersistedWorkflow.writeWorkflowKey(keyBuffer, 0, processId, latestVersion);
+    final PersistedWorkflow persistedWorkflow =
+        persistenceHelper.getValueInstance(
+            PersistedWorkflow.class,
+            workflowsByIdAndVersionHandle,
+            keyBuffer,
+            0,
+            keyLength,
             valueBuffer);
 
     if (persistedWorkflow != null) {
