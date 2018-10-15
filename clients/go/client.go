@@ -51,6 +51,10 @@ func (client *ZBClientImpl) NewUpdatePayloadCommand() commands.UpdatePayloadComm
 	return commands.NewUpdatePayloadCommand(client.gateway)
 }
 
+func (client *ZBClientImpl) NewActivateJobsCommand() commands.ActivateJobsCommandStep1 {
+	return commands.NewActivateJobsCommand(client.gateway)
+}
+
 func (client *ZBClientImpl) Close() error {
 	return client.connection.Close()
 }

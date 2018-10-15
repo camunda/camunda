@@ -90,7 +90,7 @@ func (cmd *PublishMessageCommand) MessageName(name string) PublishMessageCommand
 }
 
 func (cmd *PublishMessageCommand) Send() (*pb.PublishMessageResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), utils.RequestTimeoutInSec*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), utils.StreamTimeoutInSec*time.Second)
 	defer cancel()
 
 	return cmd.gateway.PublishMessage(ctx, cmd.request)
