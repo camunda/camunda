@@ -17,9 +17,9 @@
  */
 package io.zeebe.broker.exporter.record.value;
 
+import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.record.RecordValueWithPayloadImpl;
 import io.zeebe.exporter.record.value.IncidentRecordValue;
-import io.zeebe.gateway.impl.data.ZeebeObjectMapperImpl;
 import java.util.Objects;
 
 public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl
@@ -33,7 +33,7 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl
   private final long jobKey;
 
   public IncidentRecordValueImpl(
-      final ZeebeObjectMapperImpl objectMapper,
+      final ExporterObjectMapper objectMapper,
       final String payload,
       final String errorType,
       final String errorMessage,

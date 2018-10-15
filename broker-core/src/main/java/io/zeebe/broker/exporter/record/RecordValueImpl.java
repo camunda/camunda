@@ -17,13 +17,13 @@
  */
 package io.zeebe.broker.exporter.record;
 
+import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.exporter.record.RecordValue;
-import io.zeebe.gateway.impl.data.ZeebeObjectMapperImpl;
 
 public abstract class RecordValueImpl implements RecordValue {
-  protected final ZeebeObjectMapperImpl objectMapper;
+  protected final ExporterObjectMapper objectMapper;
 
-  public RecordValueImpl(ZeebeObjectMapperImpl objectMapper) {
+  public RecordValueImpl(ExporterObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
   }
 

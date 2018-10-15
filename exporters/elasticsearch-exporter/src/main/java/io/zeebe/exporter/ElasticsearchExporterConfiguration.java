@@ -52,6 +52,7 @@ public class ElasticsearchExporterConfiguration {
     public boolean deployment = true;
     public boolean incident = true;
     public boolean job = true;
+    public boolean jobBatch = false;
     public boolean message = false;
     public boolean messageSubscription = false;
     public boolean raft = false;

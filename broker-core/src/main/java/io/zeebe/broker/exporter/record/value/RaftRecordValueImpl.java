@@ -17,10 +17,10 @@
  */
 package io.zeebe.broker.exporter.record.value;
 
+import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.record.RecordValueImpl;
 import io.zeebe.exporter.record.value.RaftRecordValue;
 import io.zeebe.exporter.record.value.raft.RaftMember;
-import io.zeebe.gateway.impl.data.ZeebeObjectMapperImpl;
 import java.util.List;
 import java.util.Objects;
 
@@ -28,7 +28,7 @@ public class RaftRecordValueImpl extends RecordValueImpl implements RaftRecordVa
   private final List<RaftMember> members;
 
   public RaftRecordValueImpl(
-      final ZeebeObjectMapperImpl objectMapper, final List<RaftMember> members) {
+      final ExporterObjectMapper objectMapper, final List<RaftMember> members) {
     super(objectMapper);
     this.members = members;
   }

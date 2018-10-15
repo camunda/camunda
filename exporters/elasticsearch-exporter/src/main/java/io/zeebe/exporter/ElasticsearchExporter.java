@@ -115,6 +115,9 @@ public class ElasticsearchExporter implements Exporter {
       if (index.job) {
         createValueIndexTemplate(ValueType.JOB);
       }
+      if (index.jobBatch) {
+        createValueIndexTemplate(ValueType.JOB_BATCH);
+      }
       if (index.message) {
         createValueIndexTemplate(ValueType.MESSAGE);
       }
@@ -133,7 +136,7 @@ public class ElasticsearchExporter implements Exporter {
     }
   }
 
-  public void createRootIndexTemplate() {
+  private void createRootIndexTemplate() {
     final String templateName = configuration.index.prefix;
     final String filename = ZEEBE_RECORD_TEMPLATE_JSON;
     if (!client.putIndexTemplate(templateName, filename)) {
@@ -141,7 +144,7 @@ public class ElasticsearchExporter implements Exporter {
     }
   }
 
-  public void createValueIndexTemplate(final ValueType valueType) {
+  private void createValueIndexTemplate(final ValueType valueType) {
     if (!client.putIndexTemplate(valueType)) {
       log.warn("Put index template for value type {} was not acknowledged", valueType);
     }
@@ -161,6 +164,8 @@ public class ElasticsearchExporter implements Exporter {
         return configuration.index.incident;
       case JOB:
         return configuration.index.job;
+      case JOB_BATCH:
+        return configuration.index.jobBatch;
       case MESSAGE:
         return configuration.index.message;
       case MESSAGE_SUBSCRIPTION:

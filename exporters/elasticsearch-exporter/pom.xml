@@ -35,7 +35,7 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zeebe-gateway</artifactId>
+      <artifactId>zeebe-client-java</artifactId>
       <scope>test</scope>
     </dependency>
 

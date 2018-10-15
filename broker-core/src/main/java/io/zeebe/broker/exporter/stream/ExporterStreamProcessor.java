@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.exporter.stream;
 
+import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.context.ExporterContext;
 import io.zeebe.broker.exporter.record.RecordMetadataImpl;
 import io.zeebe.broker.exporter.repo.ExporterDescriptor;
@@ -25,7 +26,6 @@ import io.zeebe.broker.logstreams.processor.NoopSnapshotSupport;
 import io.zeebe.exporter.context.Controller;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.spi.Exporter;
-import io.zeebe.gateway.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.logstreams.log.LogStreamReader;
 import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
@@ -205,7 +205,7 @@ public class ExporterStreamProcessor implements StreamProcessor {
   }
 
   private class RecordExporter implements EventProcessor {
-    private final ZeebeObjectMapperImpl objectMapper = new ZeebeObjectMapperImpl();
+    private final ExporterObjectMapper objectMapper = new ExporterObjectMapper();
     private ExporterRecordMapper recordMapper = new ExporterRecordMapper(objectMapper);
     private Record record;
     private boolean shouldExecuteSideEffects;

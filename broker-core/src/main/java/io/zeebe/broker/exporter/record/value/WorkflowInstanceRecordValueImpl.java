@@ -17,9 +17,9 @@
  */
 package io.zeebe.broker.exporter.record.value;
 
+import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.record.RecordValueWithPayloadImpl;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
-import io.zeebe.gateway.impl.data.ZeebeObjectMapperImpl;
 import java.util.Objects;
 
 public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
@@ -32,7 +32,7 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
   private final long scopeInstanceKey;
 
   public WorkflowInstanceRecordValueImpl(
-      final ZeebeObjectMapperImpl objectMapper,
+      final ExporterObjectMapper objectMapper,
       final String payload,
       final String bpmnProcessId,
       final String activityId,

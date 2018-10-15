@@ -18,8 +18,8 @@
 package io.zeebe.broker.exporter.record;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.exporter.record.RecordValueWithPayload;
-import io.zeebe.gateway.impl.data.ZeebeObjectMapperImpl;
 import java.util.Map;
 import java.util.Objects;
 
@@ -27,8 +27,7 @@ public abstract class RecordValueWithPayloadImpl extends RecordValueImpl
     implements RecordValueWithPayload {
   protected final String payload;
 
-  public RecordValueWithPayloadImpl(
-      final ZeebeObjectMapperImpl objectMapper, final String payload) {
+  public RecordValueWithPayloadImpl(final ExporterObjectMapper objectMapper, final String payload) {
     super(objectMapper);
     this.payload = payload;
   }

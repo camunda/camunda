@@ -17,11 +17,14 @@
  */
 package io.zeebe.broker.exporter.stream;
 
+import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.record.RecordImpl;
 import io.zeebe.broker.exporter.record.value.IncidentRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.JobBatchRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.JobRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.MessageSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.RaftRecordValueImpl;
+import io.zeebe.broker.exporter.record.value.WorkflowInstanceRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.WorkflowInstanceSubscriptionRecordValueImpl;
 import io.zeebe.broker.exporter.record.value.deployment.DeployedWorkflowImpl;
 import io.zeebe.broker.exporter.record.value.deployment.DeploymentResourceImpl;
@@ -45,7 +48,6 @@ import io.zeebe.exporter.record.value.deployment.DeployedWorkflow;
 import io.zeebe.exporter.record.value.deployment.DeploymentResource;
 import io.zeebe.exporter.record.value.deployment.ResourceType;
 import io.zeebe.exporter.record.value.raft.RaftMember;
-import io.zeebe.gateway.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.value.LongValue;
 import io.zeebe.protocol.Protocol;
@@ -72,9 +74,9 @@ import org.agrona.io.DirectBufferInputStream;
 
 public class ExporterRecordMapper {
   private final DirectBufferInputStream serderInputStream = new DirectBufferInputStream();
-  private final ZeebeObjectMapperImpl objectMapper;
+  private final ExporterObjectMapper objectMapper;
 
-  public ExporterRecordMapper(final ZeebeObjectMapperImpl objectMapper) {
+  public ExporterRecordMapper(final ExporterObjectMapper objectMapper) {
     this.objectMapper = objectMapper;
   }
 
@@ -170,7 +172,7 @@ public class ExporterRecordMapper {
       deadline = null;
     }
 
-    return new io.zeebe.broker.exporter.record.value.JobRecordValueImpl(
+    return new JobRecordValueImpl(
         objectMapper,
         asJson(record.getPayload()),
         asString(record.getType()),
@@ -256,7 +258,7 @@ public class ExporterRecordMapper {
     final WorkflowInstanceRecord record = new WorkflowInstanceRecord();
     event.readValue(record);
 
-    return new io.zeebe.broker.exporter.record.value.WorkflowInstanceRecordValueImpl(
+    return new WorkflowInstanceRecordValueImpl(
         objectMapper,
         asJson(record.getPayload()),
         asString(record.getBpmnProcessId()),

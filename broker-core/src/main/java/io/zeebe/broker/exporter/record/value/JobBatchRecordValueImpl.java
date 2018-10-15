@@ -17,10 +17,10 @@
  */
 package io.zeebe.broker.exporter.record.value;
 
+import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.record.RecordValueImpl;
 import io.zeebe.exporter.record.value.JobBatchRecordValue;
 import io.zeebe.exporter.record.value.JobRecordValue;
-import io.zeebe.gateway.impl.data.ZeebeObjectMapperImpl;
 import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
@@ -34,7 +34,7 @@ public class JobBatchRecordValueImpl extends RecordValueImpl implements JobBatch
   private final List<JobRecordValue> jobs;
 
   public JobBatchRecordValueImpl(
-      final ZeebeObjectMapperImpl objectMapper,
+      final ExporterObjectMapper objectMapper,
       final String type,
       final String worker,
       final Duration timeout,

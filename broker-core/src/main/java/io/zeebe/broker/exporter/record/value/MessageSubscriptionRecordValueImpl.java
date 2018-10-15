@@ -17,9 +17,9 @@
  */
 package io.zeebe.broker.exporter.record.value;
 
+import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.record.RecordValueImpl;
 import io.zeebe.exporter.record.value.MessageSubscriptionRecordValue;
-import io.zeebe.gateway.impl.data.ZeebeObjectMapperImpl;
 import java.util.Objects;
 
 public class MessageSubscriptionRecordValueImpl extends RecordValueImpl
@@ -31,7 +31,7 @@ public class MessageSubscriptionRecordValueImpl extends RecordValueImpl
   private final long activityInstanceKey;
 
   public MessageSubscriptionRecordValueImpl(
-      final ZeebeObjectMapperImpl objectMapper,
+      final ExporterObjectMapper objectMapper,
       final String messageName,
       final String correlationKey,
       final int workflowInstancePartitionId,

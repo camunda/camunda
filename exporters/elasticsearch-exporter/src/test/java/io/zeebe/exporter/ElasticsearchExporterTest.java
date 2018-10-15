@@ -59,6 +59,7 @@ public class ElasticsearchExporterTest {
     config.index.deployment = true;
     config.index.incident = true;
     config.index.job = true;
+    config.index.jobBatch = true;
     config.index.message = true;
     config.index.messageSubscription = true;
     config.index.raft = true;
@@ -74,6 +75,7 @@ public class ElasticsearchExporterTest {
     verify(esClient).putIndexTemplate(ValueType.DEPLOYMENT);
     verify(esClient).putIndexTemplate(ValueType.INCIDENT);
     verify(esClient).putIndexTemplate(ValueType.JOB);
+    verify(esClient).putIndexTemplate(ValueType.JOB_BATCH);
     verify(esClient).putIndexTemplate(ValueType.MESSAGE);
     verify(esClient).putIndexTemplate(ValueType.MESSAGE_SUBSCRIPTION);
     verify(esClient).putIndexTemplate(ValueType.RAFT);
@@ -88,6 +90,7 @@ public class ElasticsearchExporterTest {
     config.index.deployment = true;
     config.index.incident = true;
     config.index.job = true;
+    config.index.jobBatch = true;
     config.index.message = true;
     config.index.messageSubscription = true;
     config.index.raft = true;
@@ -101,6 +104,7 @@ public class ElasticsearchExporterTest {
           ValueType.DEPLOYMENT,
           ValueType.INCIDENT,
           ValueType.JOB,
+          ValueType.JOB_BATCH,
           ValueType.MESSAGE,
           ValueType.MESSAGE_SUBSCRIPTION,
           ValueType.RAFT,
@@ -123,6 +127,7 @@ public class ElasticsearchExporterTest {
     config.index.deployment = false;
     config.index.incident = false;
     config.index.job = false;
+    config.index.jobBatch = false;
     config.index.message = false;
     config.index.messageSubscription = false;
     config.index.raft = false;
@@ -136,6 +141,7 @@ public class ElasticsearchExporterTest {
           ValueType.DEPLOYMENT,
           ValueType.INCIDENT,
           ValueType.JOB,
+          ValueType.JOB_BATCH,
           ValueType.MESSAGE,
           ValueType.MESSAGE_SUBSCRIPTION,
           ValueType.RAFT,

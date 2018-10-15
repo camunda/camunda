@@ -21,8 +21,8 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonAutoDetect.Visibility;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.exporter.record.RecordMetadata;
-import io.zeebe.gateway.impl.data.ZeebeObjectMapperImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -31,7 +31,7 @@ import io.zeebe.protocol.intent.Intent;
 @JsonAutoDetect(fieldVisibility = Visibility.NONE, getterVisibility = Visibility.PUBLIC_ONLY)
 @JsonInclude(Include.NON_NULL)
 public class RecordMetadataImpl implements RecordMetadata {
-  private final ZeebeObjectMapperImpl objectMapper;
+  private final ExporterObjectMapper objectMapper;
   private final int partitionId;
   private final Intent intent;
   private final RecordType recordType;
@@ -40,7 +40,7 @@ public class RecordMetadataImpl implements RecordMetadata {
   private final ValueType valueType;
 
   public RecordMetadataImpl(
-      ZeebeObjectMapperImpl objectMapper,
+      ExporterObjectMapper objectMapper,
       int partitionId,
       Intent intent,
       RecordType recordType,
