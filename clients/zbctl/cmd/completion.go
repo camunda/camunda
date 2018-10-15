@@ -16,8 +16,9 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/zeebe-io/zeebe/clients/zbctl/utils"
 	"os"
+
+	"github.com/zeebe-io/zeebe/clients/zbctl/utils"
 
 	"github.com/spf13/cobra"
 )
@@ -28,9 +29,8 @@ var completionShellFlag string
 var completionCmd = &cobra.Command{
 	Use:   "completion",
 	Short: "Generate shell completion for zbctl",
-	Args: cobra.NoArgs,
+	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("completion called")
 		switch completionShellFlag {
 		case "bash":
 			rootCmd.GenBashCompletion(os.Stdout)
@@ -47,5 +47,5 @@ var completionCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(completionCmd)
-    completionCmd.Flags().StringVar(&completionShellFlag, "shell", "bash", "Shell to generate completion for")
+	completionCmd.Flags().StringVar(&completionShellFlag, "shell", "bash", "Shell to generate completion for")
 }
