@@ -140,7 +140,7 @@ public class JobStreamProcessor implements StreamProcessorLifecycleAware {
     public void onCommand(
         TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
       final long key = commandControl.accept(JobIntent.CREATED, command.getValue());
-      state.create(key, command);
+      state.create(key, command.getValue());
     }
   }
 
@@ -162,7 +162,7 @@ public class JobStreamProcessor implements StreamProcessorLifecycleAware {
         TypedStreamWriter streamWriter,
         Consumer<SideEffectProducer> sideEffect) {
       if (state.isInState(record.getKey(), State.ACTIVATABLE)) {
-        state.activate(record);
+        state.activate(record.getKey(), record.getValue());
         streamWriter.writeFollowUpEvent(record.getKey(), JobIntent.ACTIVATED, record.getValue());
         pushToSubscription(record, sideEffect);
       } else {
@@ -262,7 +262,7 @@ public class JobStreamProcessor implements StreamProcessorLifecycleAware {
     public void onCommand(
         TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
       if (state.isInState(command.getKey(), State.ACTIVATED)) {
-        state.timeout(command);
+        state.timeout(command.getKey(), command.getValue());
         commandControl.accept(JobIntent.TIMED_OUT, command.getValue());
       } else {
         commandControl.reject(RejectionType.NOT_APPLICABLE, "Job not activated");
