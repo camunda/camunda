@@ -1,3 +1,6 @@
 [book]
 title = "Zeebe Documentation"
 description = "Zeebe is an orchestration engine for distributed microservices"
+
+[output.html]
+additional-css = ["custom.css"]

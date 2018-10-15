@@ -17,6 +17,7 @@
     * [Clustering](basics/clustering.md)
 * [BPMN Workflows](bpmn-workflows/README.md)
     * [BPMN Primer](bpmn-workflows/bpmn-primer.md)
+    * [BPMN Coverage](bpmn-workflows/bpmn-coverage.md)
     * [Data Flow](bpmn-workflows/data-flow.md)
     * [Tasks](bpmn-workflows/tasks.md)
       * [Service Tasks](bpmn-workflows/service-tasks.md)
