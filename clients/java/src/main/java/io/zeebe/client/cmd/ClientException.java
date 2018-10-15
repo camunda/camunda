@@ -25,18 +25,4 @@ public class ClientException extends RuntimeException {
   public ClientException(String message, Throwable cause) {
     super(message, cause);
   }
-
-  /**
-   * Subclasses should override this.
-   *
-   * @return a new exception with:
-   *     <ul>
-   *       <li>the same properties
-   *       <li>the current callstack context
-   *       <li><code>this</code> exception as cause
-   *     </ul>
-   */
-  public ClientException newInCurrentContext() {
-    return new ClientException(getMessage(), this);
-  }
 }

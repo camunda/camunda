@@ -25,10 +25,8 @@ import io.zeebe.client.api.clients.JobClient;
 import io.zeebe.client.api.clients.WorkflowClient;
 import io.zeebe.client.api.commands.PartitionInfo;
 import io.zeebe.client.api.commands.Topology;
-import io.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.test.util.record.RecordingExporter;
-import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.time.Duration;
 import java.util.List;
 import java.util.function.Consumer;
@@ -40,7 +38,6 @@ public class GrpcClientRule extends ExternalResource {
   private final Consumer<ZeebeClientBuilder> configurator;
 
   protected ZeebeClient client;
-  private final ControlledActorClock actorClock = new ControlledActorClock();
 
   public GrpcClientRule(final EmbeddedBrokerRule brokerRule) {
     this(brokerRule, config -> {});
@@ -65,10 +62,10 @@ public class GrpcClientRule extends ExternalResource {
 
   @Override
   protected void before() {
-    final ZeebeClientBuilderImpl builder = (ZeebeClientBuilderImpl) ZeebeClient.newClientBuilder();
+    final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder();
     builder.defaultJobPollInterval(Duration.ofMillis(100));
     configurator.accept(builder);
-    client = builder.setActorClock(actorClock).build();
+    client = builder.build();
   }
 
   @Override
@@ -99,10 +96,6 @@ public class GrpcClientRule extends ExternalResource {
         .filter(PartitionInfo::isLeader)
         .map(PartitionInfo::getPartitionId)
         .collect(Collectors.toList());
-  }
-
-  public ControlledActorClock getActorClock() {
-    return actorClock;
   }
 
   public WorkflowClient getWorkflowClient() {

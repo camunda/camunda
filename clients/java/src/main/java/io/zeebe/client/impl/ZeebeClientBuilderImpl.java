@@ -21,7 +21,6 @@ import io.zeebe.client.ClientProperties;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.client.ZeebeClientConfiguration;
-import io.zeebe.util.sched.clock.ActorClock;
 import java.time.Duration;
 import java.util.Properties;
 
@@ -29,7 +28,6 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
 
   private String brokerContactPoint = "0.0.0.0:26500";
   private int jobWorkerBufferSize = 32;
-  private ActorClock actorClock;
   private int numJobWorkerExecutionThreads = 1;
   private String defaultJobWorkerName = "default";
   private Duration defaultJobTimeout = Duration.ofMinutes(5);
@@ -66,15 +64,6 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   @Override
   public ZeebeClientBuilder numJobWorkerExecutionThreads(final int numSubscriptionThreads) {
     this.numJobWorkerExecutionThreads = numSubscriptionThreads;
-    return this;
-  }
-
-  public ActorClock getActorClock() {
-    return actorClock;
-  }
-
-  public ZeebeClientBuilder setActorClock(final ActorClock actorClock) {
-    this.actorClock = actorClock;
     return this;
   }
 

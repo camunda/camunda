@@ -31,7 +31,7 @@ public interface CreateJobCommandStep1 {
    */
   CreateJobCommandStep2 jobType(String type);
 
-  public interface CreateJobCommandStep2 extends FinalCommandStep<JobEvent> {
+  interface CreateJobCommandStep2 extends FinalCommandStep<JobEvent> {
     /**
      * Add the key-value-pair to the custom headers.
      *

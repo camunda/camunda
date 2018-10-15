@@ -23,9 +23,6 @@ public interface CreateWorkflowInstanceCommandStep1 {
   /** Use the latest version of the workflow (without guarantee). */
   int LATEST_VERSION = -1;
 
-  /** Use the latest version of the workflow (with guarantee). */
-  int FORCE_LATEST_VERSION = -2;
-
   /**
    * Set the BPMN process id of the workflow to create an instance of. This is the static id of the
    * process in the BPMN XML (i.e. "&#60;bpmn:process id='my-workflow'&#62;").

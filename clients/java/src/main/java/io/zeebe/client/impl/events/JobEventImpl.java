@@ -20,7 +20,7 @@ import io.zeebe.gateway.protocol.GatewayOuterClass;
 
 public class JobEventImpl implements JobEvent {
 
-  private long key;
+  private final long key;
 
   public JobEventImpl(final GatewayOuterClass.CreateJobResponse response) {
     key = response.getKey();

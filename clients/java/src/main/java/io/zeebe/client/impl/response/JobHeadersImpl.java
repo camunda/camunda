@@ -20,12 +20,12 @@ import io.zeebe.gateway.protocol.GatewayOuterClass;
 
 public class JobHeadersImpl implements JobHeaders {
 
-  private long workflowInstanceKey;
-  private String bpmnProcessId;
-  private int workflowDefinitionVersion;
-  private long workflowKey;
-  private String activityId;
-  private long activityInstanceKey;
+  private final long workflowInstanceKey;
+  private final String bpmnProcessId;
+  private final int workflowDefinitionVersion;
+  private final long workflowKey;
+  private final String activityId;
+  private final long activityInstanceKey;
 
   public JobHeadersImpl(GatewayOuterClass.JobHeaders jobHeaders) {
     workflowInstanceKey = jobHeaders.getWorkflowInstanceKey();
