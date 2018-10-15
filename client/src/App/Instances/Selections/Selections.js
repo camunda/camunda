@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import Panel from 'modules/components/Panel';
+import CollapsablePanel from 'modules/components/CollapsablePanel';
 
 import {applyOperation} from 'modules/api/instances';
 import {BADGE_TYPE, DIRECTION, OPERATION_TYPE} from 'modules/constants';
@@ -73,7 +73,27 @@ export default class Selections extends React.Component {
   render() {
     return (
       <Styled.Selections>
-        <Panel isRounded>
+        <CollapsablePanel
+          maxWidth={479}
+          expandButton={
+            <Styled.VerticalButton label="Selections">
+              <Styled.SelectionsBadge isDefault={!this.props.selectionCount}>
+                {this.props.selectionCount > 0
+                  ? this.props.selectionCount
+                  : null}
+              </Styled.SelectionsBadge>
+            </Styled.VerticalButton>
+          }
+          collapseButton={
+            <Styled.ExpandButton
+              direction={DIRECTION.RIGHT}
+              isExpanded={true}
+              onClick={this.handleCollapse}
+              title="Collapse Selections"
+            />
+          }
+          isRounded
+        >
           <Styled.SelectionHeader isRounded>
             <span>Selections</span>
             <Styled.Badge
@@ -82,7 +102,7 @@ export default class Selections extends React.Component {
               circleContent={this.props.selectionCount}
             />
           </Styled.SelectionHeader>
-          <Panel.Body>
+          <CollapsablePanel.Body>
             <SelectionList
               selections={this.props.selections}
               openSelection={this.props.openSelection}
@@ -91,13 +111,9 @@ export default class Selections extends React.Component {
               onRetrySelection={this.handleRetrySelection}
               onCancelSelection={this.handleCancelSelection}
             />
-          </Panel.Body>
-          <Styled.RightExpandButton
-            direction={DIRECTION.RIGHT}
-            isExpanded={true}
-          />
-          <Panel.Footer />
-        </Panel>
+          </CollapsablePanel.Body>
+          <CollapsablePanel.Footer />
+        </CollapsablePanel>
       </Styled.Selections>
     );
   }

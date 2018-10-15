@@ -9,9 +9,18 @@ import EmptyMessage from './EmptyMessage';
 import {HEADER_HEIGHT} from './../Header/styled';
 
 export const Instances = styled.div`
+  height: calc(100vh - ${HEADER_HEIGHT}px);
+  position: relative;
+`;
+
+export const Content = styled.div`
   display: flex;
   flex-direction: row;
-  height: calc(100vh - ${HEADER_HEIGHT}px);
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: calc(100% - 56px);
 `;
 
 export const Filters = styled.div`

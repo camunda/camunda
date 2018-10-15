@@ -3,8 +3,6 @@ import PropTypes from 'prop-types';
 
 import {isEqual, sortBy} from 'lodash';
 
-import Content from 'modules/components/Content';
-
 import withSharedState from 'modules/components/withSharedState';
 import SplitPane from 'modules/components/SplitPane';
 import Diagram from 'modules/components/Diagram';
@@ -407,8 +405,8 @@ class Instances extends Component {
           instancesInSelectionsCount={this.state.instancesInSelectionsCount}
           selectionCount={this.state.selectionCount}
         />
-        <Content>
-          <Styled.Instances>
+        <Styled.Instances>
+          <Styled.Content>
             <Styled.Filters>
               <Filters
                 filter={this.state.filter}
@@ -468,21 +466,21 @@ class Instances extends Component {
                 }
               />
             </Styled.Center>
-            <Selections
-              openSelection={this.state.openSelection}
-              selections={this.state.selections}
-              rollingSelectionIndex={this.state.rollingSelectionIndex}
-              selectionCount={this.state.selectionCount}
-              instancesInSelectionsCount={this.state.instancesInSelectionsCount}
-              filter={getFilterWithWorkflowIds(
-                this.state.filter,
-                this.state.groupedWorkflowInstances
-              )}
-              storeStateLocally={this.props.storeStateLocally}
-              onStateChange={this.handleStateChange}
-            />
-          </Styled.Instances>
-        </Content>
+          </Styled.Content>
+          <Selections
+            openSelection={this.state.openSelection}
+            selections={this.state.selections}
+            rollingSelectionIndex={this.state.rollingSelectionIndex}
+            selectionCount={this.state.selectionCount}
+            instancesInSelectionsCount={this.state.instancesInSelectionsCount}
+            filter={getFilterWithWorkflowIds(
+              this.state.filter,
+              this.state.groupedWorkflowInstances
+            )}
+            storeStateLocally={this.props.storeStateLocally}
+            onStateChange={this.handleStateChange}
+          />
+        </Styled.Instances>
       </Fragment>
     );
   }

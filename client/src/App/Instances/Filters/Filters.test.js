@@ -162,7 +162,7 @@ describe('Filters', () => {
         filter={DEFAULT_FILTER}
       />
     );
-    const FilterNodes = node.find(CheckboxGroup);
+    const FilterNodes = node.find(Styled.CheckboxGroup);
 
     // then
     expect(FilterNodes).toHaveLength(2);
@@ -188,7 +188,7 @@ describe('Filters', () => {
 
       // then
       expect(field.length).toEqual(1);
-      expect(field.type()).toEqual(TextInput);
+      expect(field.type()).toEqual(Styled.TextInput);
       expect(field.props().name).toEqual('errorMessage');
       expect(field.props().onBlur).toEqual(node.instance().handleFieldChange);
       expect(field.props().onChange).toEqual(node.instance().handleInputChange);
@@ -295,7 +295,7 @@ describe('Filters', () => {
 
       // then
       expect(field.length).toEqual(1);
-      expect(field.type()).toEqual(Textarea);
+      expect(field.type()).toEqual(Styled.Textarea);
       expect(field.props().name).toEqual('ids');
       expect(field.props().onBlur).toEqual(node.instance().handleFieldChange);
       expect(field.props().onChange).toEqual(node.instance().handleInputChange);
@@ -402,7 +402,7 @@ describe('Filters', () => {
 
       // then
       expect(field.length).toEqual(1);
-      expect(field.type()).toEqual(Select);
+      expect(field.type()).toEqual(Styled.Select);
       expect(field.props().name).toEqual('workflow');
       expect(field.props().value).toEqual('');
       expect(field.props().placeholder).toEqual('Workflow');
@@ -477,7 +477,7 @@ describe('Filters', () => {
 
       // then
       expect(field.length).toEqual(1);
-      expect(field.type()).toEqual(Select);
+      expect(field.type()).toEqual(Styled.Select);
       expect(field.props().name).toEqual('version');
       expect(field.props().value).toEqual('');
       expect(field.props().placeholder).toEqual('Workflow Version');
@@ -666,7 +666,7 @@ describe('Filters', () => {
 
       // then
       expect(field.length).toEqual(1);
-      expect(field.type()).toEqual(Select);
+      expect(field.type()).toEqual(Styled.Select);
       expect(field.props().name).toEqual('activityId');
       expect(field.props().value).toEqual('');
       expect(field.props().placeholder).toEqual('Flow Node');
@@ -844,7 +844,7 @@ describe('Filters', () => {
 
       // then
       expect(field.length).toEqual(1);
-      expect(field.type()).toEqual(TextInput);
+      expect(field.type()).toEqual(Styled.TextInput);
       expect(field.props().name).toEqual('startDate');
       expect(field.props().placeholder).toEqual('Start Date');
       expect(field.props().onBlur).toEqual(node.instance().handleFieldChange);
@@ -940,7 +940,7 @@ describe('Filters', () => {
 
       // then
       expect(field.length).toEqual(1);
-      expect(field.type()).toEqual(TextInput);
+      expect(field.type()).toEqual(Styled.TextInput);
       expect(field.props().name).toEqual('endDate');
       expect(field.props().placeholder).toEqual('End Date');
       expect(field.props().onBlur).toEqual(node.instance().handleFieldChange);

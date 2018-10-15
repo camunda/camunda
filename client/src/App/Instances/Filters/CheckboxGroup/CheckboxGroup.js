@@ -54,9 +54,10 @@ export default class CheckboxGroup extends React.Component {
   };
 
   render() {
-    const {type, filter} = this.props;
+    const {type, filter, onChange: _, ...props} = this.props;
+
     return (
-      <Styled.CheckboxGroup>
+      <Styled.CheckboxGroup {...props}>
         <div>
           <Checkbox
             id={type}

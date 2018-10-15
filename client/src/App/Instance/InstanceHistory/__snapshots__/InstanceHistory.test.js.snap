@@ -1,15 +1,17 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`InstanceHistory should render a pane with InstanceLog section and Copyright 1`] = `
+exports[`InstanceHistory should render a panel with InstanceLog section and Copyright 1`] = `
 <Pane
   activitiesDetails={
     Object {
       "bar": Object {
         "activityId": "barAID",
+        "id": "bar",
         "name": "bar name",
       },
       "foo": Object {
         "activityId": "fooAID",
+        "id": "foo",
         "name": "foo name",
       },
     }
@@ -33,10 +35,12 @@ exports[`InstanceHistory should render a pane with InstanceLog section and Copyr
         Object {
           "bar": Object {
             "activityId": "barAID",
+            "id": "bar",
             "name": "bar name",
           },
           "foo": Object {
             "activityId": "fooAID",
+            "id": "foo",
             "name": "foo name",
           },
         }
@@ -54,20 +58,24 @@ exports[`InstanceHistory should render a pane with InstanceLog section and Copyr
         Array [
           Object {
             "activityInstanceId": "foo",
-            "dateTime": "18 Sep 2018 09:05:32",
+            "dateTime": "2018-10-11T06:00:00.000+0000",
             "eventSourceType": "JOB",
             "eventType": "fooCreated",
             "label": "JOB fooCreated",
             "metadata": Object {
               "a": "b",
+              "timestamp": "11 Oct 2018 08:00:00",
             },
           },
           Object {
             "activityInstanceId": "foo",
-            "dateTime": "18 Sep 2018 09:05:32",
+            "dateTime": "2018-10-11T06:15:00.000+0000",
             "eventSourceType": "JOB",
             "eventType": "fooActiviated",
             "label": "JOB fooActiviated",
+            "metadata": Object {
+              "timestamp": "11 Oct 2018 08:15:00",
+            },
           },
         ]
       }

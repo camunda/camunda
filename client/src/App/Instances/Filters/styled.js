@@ -1,9 +1,13 @@
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 
 import Panel from 'modules/components/Panel';
 import BasicExpandButton from 'modules/components/ExpandButton';
 import VerticalExpandButton from 'modules/components/VerticalExpandButton';
 import Badge from 'modules/components/Badge';
+import BasicTextInput from 'modules/components/TextInput';
+import BasicTextarea from 'modules/components/Textarea';
+import BasicSelect from 'modules/components/Select';
+import BasicCheckboxGroup from './CheckboxGroup';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
 export const ExpandButton = styled(BasicExpandButton)`
@@ -15,17 +19,6 @@ export const ExpandButton = styled(BasicExpandButton)`
   border-right: none;
   z-index: 2;
 `;
-
-export const ResetButtonContainer = themed(styled(Panel.Footer)`
-  display: flex;
-  justify-content: center;
-  height: 56px;
-  box-shadow: ${themeStyle({
-    dark: '0px -2px 4px 0px rgba(0,0,0,0.1)',
-    light: '0px -1px 2px 0px rgba(0,0,0,0.1)'
-  })};
-  border-radius: 0;
-`);
 
 export const Filters = styled.div`
   padding: 20px 20px 0 20px;
@@ -63,4 +56,36 @@ export const FiltersBadge = themed(styled(Badge)`
   width: 15px;
   border-radius: 50%;
   background: ${backgroundStyle};
+`);
+
+const widthStyle = css`
+  width: 280px;
+`;
+
+export const Select = styled(BasicSelect)`
+  ${widthStyle};
+`;
+
+export const Textarea = styled(BasicTextarea)`
+  ${widthStyle};
+`;
+
+export const TextInput = styled(BasicTextInput)`
+  ${widthStyle};
+`;
+
+export const CheckboxGroup = styled(BasicCheckboxGroup)`
+  ${widthStyle};
+`;
+
+export const ResetButtonContainer = themed(styled(Panel.Footer)`
+  display: flex;
+  justify-content: center;
+  height: 56px;
+  width: 320px;
+  box-shadow: ${themeStyle({
+    dark: '0px -2px 4px 0px rgba(0,0,0,0.1)',
+    light: '0px -1px 2px 0px rgba(0,0,0,0.1)'
+  })};
+  border-radius: 0;
 `);

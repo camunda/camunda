@@ -2,8 +2,28 @@
 
 exports[`Selections should match this snapshot 1`] = `
 <styled.div>
-  <Panel
+  <CollapsablePanel
+    collapseButton={
+      <Styled(ExpandButton)
+        direction="RIGHT"
+        isExpanded={true}
+        onClick={undefined}
+        title="Collapse Selections"
+      />
+    }
+    expandButton={
+      <Styled(VerticalExpandButton)
+        label="Selections"
+      >
+        <Themed(styled.span)
+          isDefault={false}
+        >
+          2
+        </Themed(styled.span)>
+      </Styled(VerticalExpandButton)>
+    }
     isRounded={true}
+    maxWidth={479}
   >
     <Styled(PanelHeader)
       isRounded={true}
@@ -78,11 +98,7 @@ exports[`Selections should match this snapshot 1`] = `
         }
       />
     </PanelBody>
-    <Styled(ExpandButton)
-      direction="RIGHT"
-      isExpanded={true}
-    />
     <PanelFooter />
-  </Panel>
+  </CollapsablePanel>
 </styled.div>
 `;

@@ -1,7 +1,6 @@
 import React, {Component, Fragment} from 'react';
 import PropTypes from 'prop-types';
 
-import Content from 'modules/components/Content';
 import SplitPane from 'modules/components/SplitPane';
 import * as api from 'modules/api/instances';
 
@@ -107,30 +106,26 @@ export default class Instance extends Component {
     return (
       <Fragment>
         <Header detail={<InstanceDetail instance={this.state.instance} />} />
-        <Content>
-          <Styled.Instance>
-            <SplitPane>
-              <DiagramPanel
-                instance={this.state.instance}
-                onFlowNodesDetailsReady={this.handleFlowNodesDetailsReady}
-                selectableFlowNodes={selectableFlowNodes}
-                selectedFlowNode={this.state.selection.flowNodeId}
-                onFlowNodeSelected={this.handleFlowNodeSelection}
-                flowNodeStateOverlays={flowNodeStateOverlays}
-              />
-              <InstanceHistory
-                instance={this.state.instance}
-                activitiesDetails={this.state.activitiesDetails}
-                selectedActivityInstanceId={
-                  this.state.selection.activityInstanceId
-                }
-                onActivityInstanceSelected={
-                  this.handleActivityInstanceSelection
-                }
-              />
-            </SplitPane>
-          </Styled.Instance>
-        </Content>
+        <Styled.Instance>
+          <SplitPane>
+            <DiagramPanel
+              instance={this.state.instance}
+              onFlowNodesDetailsReady={this.handleFlowNodesDetailsReady}
+              selectableFlowNodes={selectableFlowNodes}
+              selectedFlowNode={this.state.selection.flowNodeId}
+              onFlowNodeSelected={this.handleFlowNodeSelection}
+              flowNodeStateOverlays={flowNodeStateOverlays}
+            />
+            <InstanceHistory
+              instance={this.state.instance}
+              activitiesDetails={this.state.activitiesDetails}
+              selectedActivityInstanceId={
+                this.state.selection.activityInstanceId
+              }
+              onActivityInstanceSelected={this.handleActivityInstanceSelection}
+            />
+          </SplitPane>
+        </Styled.Instance>
       </Fragment>
     );
   }

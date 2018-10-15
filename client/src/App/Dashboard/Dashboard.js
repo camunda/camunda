@@ -9,8 +9,6 @@ import {fetchWorkflowInstancesCount} from 'modules/api/instances';
 import {parseFilterForRequest} from 'modules/utils/filter';
 import {FILTER_SELECTION, INSTANCES_LABELS} from 'modules/constants';
 
-import Content from 'modules/components/Content';
-
 import * as Styled from './styled.js';
 
 class Dashboard extends Component {
@@ -49,20 +47,18 @@ class Dashboard extends Component {
           runningInstancesCount={running}
           incidentsCount={incidents}
         />
-        <Content>
-          <Styled.Dashboard>
-            <MetricPanel>
-              {tiles.map(tile => (
-                <MetricTile
-                  key={tile}
-                  value={this.state[tile]}
-                  label={INSTANCES_LABELS[tile]}
-                  type={tile}
-                />
-              ))}
-            </MetricPanel>
-          </Styled.Dashboard>
-        </Content>
+        <Styled.Dashboard>
+          <MetricPanel>
+            {tiles.map(tile => (
+              <MetricTile
+                key={tile}
+                value={this.state[tile]}
+                label={INSTANCES_LABELS[tile]}
+                type={tile}
+              />
+            ))}
+          </MetricPanel>
+        </Styled.Dashboard>
       </Fragment>
     );
   }

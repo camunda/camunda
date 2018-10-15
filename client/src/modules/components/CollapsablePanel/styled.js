@@ -1,15 +1,21 @@
 import styled from 'styled-components';
 
+import {Colors, themed, themeStyle} from 'modules/theme';
+
 import BasicPanel from '../Panel';
 
-export const Collapsable = styled.div`
+export const Collapsable = themed(styled.div`
   overflow: hidden;
   transition: width 0.2s ease-out;
   width: ${({isCollapsed, maxWidth}) =>
     isCollapsed ? '56px' : `${maxWidth}px`};
   height: 100%;
   position: relative;
-`;
+  background-color: ${themeStyle({
+    dark: Colors.uiDark03,
+    light: Colors.uiLight02
+  })};
+`);
 
 export const Panel = styled(BasicPanel)`
   position: absolute;

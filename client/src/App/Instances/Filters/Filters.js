@@ -3,13 +3,9 @@ import PropTypes from 'prop-types';
 
 import CollapsablePanel from 'modules/components/CollapsablePanel';
 import Button from 'modules/components/Button';
-import TextInput from 'modules/components/TextInput';
-import Textarea from 'modules/components/Textarea';
-import Select from 'modules/components/Select';
 import {DEFAULT_FILTER, FILTER_TYPES, DIRECTION} from 'modules/constants';
 import {isEqual, isEmpty} from 'modules/utils';
 
-import CheckboxGroup from './CheckboxGroup';
 import * as Styled from './styled';
 import {
   getOptionsForWorkflowName,
@@ -182,7 +178,7 @@ export default class Filters extends React.Component {
             {!isWorkflowsDataLoaded ? null : (
               <Fragment>
                 <Styled.Field>
-                  <Select
+                  <Styled.Select
                     value={this.state.filter.workflow}
                     disabled={isEmpty(this.props.groupedWorkflowInstances)}
                     name="workflow"
@@ -194,7 +190,7 @@ export default class Filters extends React.Component {
                   />
                 </Styled.Field>
                 <Styled.Field>
-                  <Select
+                  <Styled.Select
                     value={this.state.filter.version}
                     disabled={this.state.filter.workflow === ''}
                     name="version"
@@ -204,7 +200,7 @@ export default class Filters extends React.Component {
                   />
                 </Styled.Field>
                 <Styled.Field>
-                  <Textarea
+                  <Styled.Textarea
                     value={this.state.filter.ids}
                     name="ids"
                     placeholder="Instance Id(s) separated by space or comma"
@@ -213,7 +209,7 @@ export default class Filters extends React.Component {
                   />
                 </Styled.Field>
                 <Styled.Field>
-                  <TextInput
+                  <Styled.TextInput
                     value={this.state.filter.errorMessage}
                     name="errorMessage"
                     placeholder="Error Message"
@@ -222,7 +218,7 @@ export default class Filters extends React.Component {
                   />
                 </Styled.Field>
                 <Styled.Field>
-                  <TextInput
+                  <Styled.TextInput
                     value={this.state.filter.startDate}
                     name="startDate"
                     placeholder="Start Date"
@@ -231,7 +227,7 @@ export default class Filters extends React.Component {
                   />
                 </Styled.Field>
                 <Styled.Field>
-                  <TextInput
+                  <Styled.TextInput
                     value={this.state.filter.endDate}
                     name="endDate"
                     placeholder="End Date"
@@ -240,7 +236,7 @@ export default class Filters extends React.Component {
                   />
                 </Styled.Field>
                 <Styled.Field>
-                  <Select
+                  <Styled.Select
                     value={this.state.filter.activityId}
                     disabled={
                       this.state.filter.version === '' ||
@@ -252,7 +248,7 @@ export default class Filters extends React.Component {
                     onChange={this.handleFieldChange}
                   />
                 </Styled.Field>
-                <CheckboxGroup
+                <Styled.CheckboxGroup
                   type={FILTER_TYPES.RUNNING}
                   filter={{
                     active,
@@ -260,7 +256,7 @@ export default class Filters extends React.Component {
                   }}
                   onChange={this.props.onFilterChange}
                 />
-                <CheckboxGroup
+                <Styled.CheckboxGroup
                   type={FILTER_TYPES.FINISHED}
                   filter={{
                     completed,
