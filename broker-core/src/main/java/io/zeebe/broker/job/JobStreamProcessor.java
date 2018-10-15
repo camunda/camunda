@@ -325,7 +325,7 @@ public class JobStreamProcessor implements StreamProcessorLifecycleAware {
 
     final TypedBatchWriter batchWriter = streamWriter.newBatch();
     final AtomicInteger amount = new AtomicInteger(value.getAmount());
-    state.activatableJobs(
+    state.forEachActivatableJobs(
         value.getType(),
         (key, jobRecord, control) -> {
           final int remainingAmount = amount.decrementAndGet();

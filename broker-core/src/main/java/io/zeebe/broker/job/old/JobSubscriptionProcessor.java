@@ -194,7 +194,7 @@ public class JobSubscriptionProcessor
     final JobSubscriptions subscriptions = typeSubscriptions.get(type);
 
     if (subscriptions != null) {
-      state.activatableJobs(
+      state.forEachActivatableJobs(
           type,
           (key, record, control) -> {
             final JobSubscription subscription = getNextAvailableSubscription(subscriptions);
