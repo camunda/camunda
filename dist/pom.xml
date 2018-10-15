@@ -5,7 +5,7 @@
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Distribution</name>
   <artifactId>zeebe-distribution</artifactId>
-  <packaging>pom</packaging>
+  <packaging>jar</packaging>
 
   <parent>
     <groupId>io.zeebe</groupId>
