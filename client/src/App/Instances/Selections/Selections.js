@@ -92,7 +92,6 @@ export default class Selections extends React.Component {
               title="Collapse Selections"
             />
           }
-          isRounded
         >
           <Styled.SelectionHeader isRounded>
             <span>Selections</span>

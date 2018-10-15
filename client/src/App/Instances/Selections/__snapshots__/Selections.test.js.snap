@@ -22,7 +22,6 @@ exports[`Selections should match this snapshot 1`] = `
         </Themed(styled.span)>
       </Styled(VerticalExpandButton)>
     }
-    isRounded={true}
     maxWidth={479}
   >
     <Styled(PanelHeader)

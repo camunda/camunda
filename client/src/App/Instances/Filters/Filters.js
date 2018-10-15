@@ -170,7 +170,6 @@ export default class Filters extends React.Component {
             title="Collapse Filters"
           />
         }
-        isRounded
       >
         <CollapsablePanel.Header isRounded>Filters</CollapsablePanel.Header>
         <CollapsablePanel.Body>

@@ -1,12 +1,13 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`CollapsablePanel should render expandButton only when panel isCollapsed 1`] = `
+exports[`CollapsablePanel should render an exapnding panel and a collapsing one 1`] = `
 <Themed(styled.div)
   isCollapsed={false}
   maxWidth={300}
 >
   <Styled(Panel)
     isCollapsed={false}
+    isRounded={true}
   >
     <button
       data-test="collapse-button"
@@ -16,28 +17,14 @@ exports[`CollapsablePanel should render expandButton only when panel isCollapsed
       data-test="children"
     />
   </Styled(Panel)>
-</Themed(styled.div)>
-`;
-
-exports[`CollapsablePanel should render expandButton only when panel isCollapsed 2`] = `
-<Themed(styled.div)
-  isCollapsed={true}
-  maxWidth={300}
->
   <Styled(Panel)
-    isCollapsed={true}
+    isCollapsed={false}
+    isRounded={true}
   >
     <button
-      data-test="collapse-button"
+      data-test="expand-button"
       onClick={[Function]}
     />
-    <div
-      data-test="children"
-    />
   </Styled(Panel)>
-  <button
-    data-test="expand-button"
-    onClick={[Function]}
-  />
 </Themed(styled.div)>
 `;
