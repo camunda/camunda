@@ -15,24 +15,32 @@
  */
 package io.zeebe.broker.it.workflow;
 
+import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertJobCompleted;
+import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertWorkflowInstanceCompleted;
+import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertWorkflowInstanceCreated;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.zeebe.broker.it.ClientRule;
+import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
-import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.gateway.api.clients.JobClient;
-import io.zeebe.gateway.api.events.DeploymentEvent;
-import io.zeebe.gateway.api.events.JobEvent;
-import io.zeebe.gateway.api.events.JobState;
-import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
-import io.zeebe.gateway.api.events.WorkflowInstanceState;
-import io.zeebe.gateway.api.subscription.JobHandler;
+import io.zeebe.client.api.clients.JobClient;
+import io.zeebe.client.api.events.DeploymentEvent;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.response.ActivatedJob;
+import io.zeebe.client.api.response.JobHeaders;
+import io.zeebe.client.api.subscription.JobHandler;
+import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.test.util.record.RecordingExporter;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.junit.Rule;
 import org.junit.Test;
@@ -42,12 +50,9 @@ import org.junit.rules.RuleChain;
 public class ServiceTaskTest {
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientRule clientRule = new ClientRule(brokerRule);
-  public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
+  public GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
 
-  @Rule
-  public RuleChain ruleChain =
-      RuleChain.outerRule(brokerRule).around(clientRule).around(eventRecorder);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   @Rule public ExpectedException exception = ExpectedException.none();
 
@@ -74,7 +79,7 @@ public class ServiceTaskTest {
 
     // then
     assertThat(workflowInstance.getWorkflowInstanceKey()).isGreaterThan(0);
-    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.CREATED));
+    assertWorkflowInstanceCreated();
   }
 
   @Test
@@ -114,19 +119,21 @@ public class ServiceTaskTest {
     waitUntil(() -> recordingJobHandler.getHandledJobs().size() >= 1);
 
     assertThat(recordingJobHandler.getHandledJobs()).hasSize(1);
+    final Record<WorkflowInstanceRecordValue> record =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .withActivityId("task")
+            .findFirst()
+            .get();
 
-    final WorkflowInstanceEvent activityInstance =
-        eventRecorder.getElementInState("task", WorkflowInstanceState.ELEMENT_ACTIVATED);
-
-    final JobEvent jobEvent = recordingJobHandler.getHandledJobs().get(0);
-    assertThat(jobEvent.getHeaders())
-        .containsOnly(
-            entry("bpmnProcessId", "process"),
-            entry("workflowDefinitionVersion", 1),
-            entry("workflowKey", (int) workflowInstance.getWorkflowKey()),
-            entry("workflowInstanceKey", (int) workflowInstance.getWorkflowInstanceKey()),
-            entry("activityId", "task"),
-            entry("activityInstanceKey", (int) activityInstance.getMetadata().getKey()));
+    final ActivatedJob jobEvent = recordingJobHandler.getHandledJobs().get(0);
+    final JobHeaders headers = jobEvent.getHeaders();
+    assertThat(headers.getBpmnProcessId()).isEqualTo("process");
+    assertThat(headers.getWorkflowDefinitionVersion()).isEqualTo(1);
+    assertThat(headers.getWorkflowKey()).isEqualTo(workflowInstance.getWorkflowKey());
+    assertThat(headers.getWorkflowInstanceKey())
+        .isEqualTo(workflowInstance.getWorkflowInstanceKey());
+    assertThat(headers.getActivityId()).isEqualTo("task");
+    assertThat(headers.getActivityInstanceKey()).isEqualTo(record.getKey());
 
     assertThat(jobEvent.getCustomHeaders()).containsOnly(entry("cust1", "a"), entry("cust2", "b"));
   }
@@ -156,13 +163,12 @@ public class ServiceTaskTest {
         .getJobClient()
         .newWorker()
         .jobType("foo")
-        .handler((client, job) -> client.newCompleteCommand(job).send())
+        .handler((client, job) -> client.newCompleteCommand(job.getKey()).send())
         .open();
 
     // then
-    waitUntil(() -> eventRecorder.hasJobEvent(JobState.COMPLETED));
-    waitUntil(
-        () -> eventRecorder.hasElementInState("process", WorkflowInstanceState.ELEMENT_COMPLETED));
+    assertJobCompleted();
+    assertWorkflowInstanceCompleted("process");
   }
 
   @Test
@@ -193,7 +199,7 @@ public class ServiceTaskTest {
     // then
     waitUntil(() -> recordingJobHandler.getHandledJobs().size() >= 1);
 
-    final JobEvent jobEvent = recordingJobHandler.getHandledJobs().get(0);
+    final ActivatedJob jobEvent = recordingJobHandler.getHandledJobs().get(0);
     assertThat(jobEvent.getPayload()).isEqualTo("{\"bar\":1}");
   }
 
@@ -221,16 +227,14 @@ public class ServiceTaskTest {
         .getJobClient()
         .newWorker()
         .jobType("foo")
-        .handler((client, job) -> client.newCompleteCommand(job).payload("{\"foo\":2}").send())
+        .handler(
+            (client, job) -> client.newCompleteCommand(job.getKey()).payload("{\"foo\":2}").send())
         .open();
 
     // then
-    waitUntil(
-        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED));
-
-    final WorkflowInstanceEvent workflowEvent =
-        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED);
-    assertThat(workflowEvent.getPayload()).isEqualTo("{\"bar\":2}");
+    assertWorkflowInstanceCompleted(
+        "process",
+        (workflowEvent) -> assertThat(workflowEvent.getPayload()).isEqualTo("{\"bar\":2}"));
   }
 
   @Test
@@ -266,17 +270,14 @@ public class ServiceTaskTest {
         .handler(
             (client, job) -> {
               final String modifiedPayload = job.getPayload().replaceAll("1", "2");
-              client.newCompleteCommand(job).payload(modifiedPayload).send();
+              client.newCompleteCommand(job.getKey()).payload(modifiedPayload).send();
             })
         .open();
 
     // then
-    waitUntil(
-        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED));
-
-    final WorkflowInstanceEvent workflowEvent =
-        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED);
-    assertThat(workflowEvent.getPayload()).isEqualTo("{\"foo\":2}");
+    assertWorkflowInstanceCompleted(
+        "process",
+        (workflowEvent) -> assertThat(workflowEvent.getPayload()).isEqualTo("{\"foo\":2}"));
   }
 
   @Test
@@ -290,22 +291,21 @@ public class ServiceTaskTest {
         .send()
         .join();
 
-    final WorkflowInstanceEvent wfEvent =
-        clientRule
-            .getWorkflowClient()
-            .newCreateInstanceCommand()
-            .bpmnProcessId("order-process")
-            .latestVersion()
-            .payload("{\"foo\":1}")
-            .send()
-            .join();
+    clientRule
+        .getWorkflowClient()
+        .newCreateInstanceCommand()
+        .bpmnProcessId("order-process")
+        .latestVersion()
+        .payload("{\"foo\":1}")
+        .send()
+        .join();
 
     // when
     final JobHandler defaultHandler =
         new JobHandler() {
           @Override
-          public void handle(JobClient client, JobEvent job) {
-            client.newCompleteCommand(job).payload("{}").send().join();
+          public void handle(JobClient client, ActivatedJob job) {
+            client.newCompleteCommand(job.getKey()).payload("{}").send().join();
           }
         };
     clientRule.getJobClient().newWorker().jobType("collect-money").handler(defaultHandler).open();
@@ -315,21 +315,15 @@ public class ServiceTaskTest {
         .jobType("fetch-items")
         .handler(
             (client, job) -> {
-              client.newCompleteCommand(job).payload("{\"foo\":\"bar\"}").send().join();
+              client.newCompleteCommand(job.getKey()).payload("{\"foo\":\"bar\"}").send().join();
             })
         .open();
     clientRule.getJobClient().newWorker().jobType("ship-parcel").handler(defaultHandler).open();
 
     // then
-    waitUntil(
-        () ->
-            eventRecorder.hasElementInState(
-                wfEvent.getActivityId(), WorkflowInstanceState.ELEMENT_COMPLETED));
-
-    final WorkflowInstanceEvent workflowEvent =
-        eventRecorder.getElementInState(
-            wfEvent.getActivityId(), WorkflowInstanceState.ELEMENT_COMPLETED);
-    assertThat(workflowEvent.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
+    assertWorkflowInstanceCompleted(
+        "order-process",
+        (workflowEvent) -> assertThat(workflowEvent.getPayload()).isEqualTo("{\"foo\":\"bar\"}"));
   }
 
   @Test
@@ -350,32 +344,38 @@ public class ServiceTaskTest {
 
     // when
     final int instances = 10;
+    final List<Long> instanceKeys = new ArrayList<>();
     for (int i = 0; i < instances; i++) {
-      clientRule
-          .getWorkflowClient()
-          .newCreateInstanceCommand()
-          .bpmnProcessId("process")
-          .latestVersion()
-          .payload("{\"foo\":1}")
-          .send()
-          .join();
+      final WorkflowInstanceEvent instanceEvent =
+          clientRule
+              .getWorkflowClient()
+              .newCreateInstanceCommand()
+              .bpmnProcessId("process")
+              .latestVersion()
+              .payload("{\"foo\":1}")
+              .send()
+              .join();
+      instanceKeys.add(instanceEvent.getWorkflowInstanceKey());
     }
 
     clientRule
         .getJobClient()
         .newWorker()
         .jobType("foo")
-        .handler((client, job) -> client.newCompleteCommand(job).payload("{\"foo\":2}").send())
+        .handler(
+            (client, job) -> client.newCompleteCommand(job.getKey()).payload("{\"foo\":2}").send())
         .open();
 
     // then
-    waitUntil(() -> eventRecorder.getJobEvents(JobState.COMPLETED).size() == instances);
-    waitUntil(
-        () ->
-            eventRecorder
-                    .getElementsInState("process", WorkflowInstanceState.ELEMENT_COMPLETED)
-                    .size()
-                == instances);
+
+    for (int i = 0; i < instances; i++) {
+      assertWorkflowInstanceCompleted("process", instanceKeys.get(i));
+    }
+
+    // since we do this after we saw all wf instance completed events we can't miss
+    // any completed job events
+    assertThat(RecordingExporter.jobRecords(JobIntent.COMPLETED).limit(instances).count())
+        .isEqualTo(instances);
   }
 
   private DeploymentEvent deploy(BpmnModelInstance modelInstance) {

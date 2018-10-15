@@ -39,18 +39,18 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.junit.rules.ExternalResource;
 
-public class ClientRule extends ExternalResource {
+public class GatewayRule extends ExternalResource {
 
   private final Consumer<ZeebeClientBuilder> configurator;
 
   protected ZeebeClient client;
   private final ControlledActorClock actorClock = new ControlledActorClock();
 
-  public ClientRule(final EmbeddedBrokerRule brokerRule) {
+  public GatewayRule(final EmbeddedBrokerRule brokerRule) {
     this(brokerRule, config -> {});
   }
 
-  public ClientRule(
+  public GatewayRule(
       final EmbeddedBrokerRule brokerRule, final Consumer<ZeebeClientBuilder> configurator) {
     this(
         config -> {
@@ -59,11 +59,11 @@ public class ClientRule extends ExternalResource {
         });
   }
 
-  public ClientRule(final ClusteringRule clusteringRule) {
+  public GatewayRule(final ClusteringRule clusteringRule) {
     this(config -> config.brokerContactPoint(clusteringRule.getClientAddress().toString()));
   }
 
-  private ClientRule(final Consumer<ZeebeClientBuilder> configurator) {
+  private GatewayRule(final Consumer<ZeebeClientBuilder> configurator) {
     this.configurator = configurator;
   }
 

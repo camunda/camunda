@@ -15,19 +15,19 @@
  */
 package io.zeebe.broker.it.workflow;
 
+import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertJobCompleted;
+import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertWorkflowInstanceCompleted;
+import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertWorkflowInstanceCreated;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.it.ClientRule;
+import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
-import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.gateway.api.clients.WorkflowClient;
-import io.zeebe.gateway.api.events.DeploymentEvent;
-import io.zeebe.gateway.api.events.JobEvent;
-import io.zeebe.gateway.api.events.JobState;
-import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
-import io.zeebe.gateway.api.events.WorkflowInstanceState;
+import io.zeebe.client.api.clients.WorkflowClient;
+import io.zeebe.client.api.events.DeploymentEvent;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.response.ActivatedJob;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -36,12 +36,9 @@ import org.junit.rules.RuleChain;
 public class YamlWorkflowTest {
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientRule clientRule = new ClientRule(brokerRule);
-  public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
+  public GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
 
-  @Rule
-  public RuleChain ruleChain =
-      RuleChain.outerRule(brokerRule).around(clientRule).around(eventRecorder);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   @Rule public ExpectedException exception = ExpectedException.none();
 
@@ -63,7 +60,7 @@ public class YamlWorkflowTest {
 
     // then
     assertThat(workflowInstance.getWorkflowInstanceKey()).isGreaterThan(0);
-    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.CREATED));
+    assertWorkflowInstanceCreated();
   }
 
   @Test
@@ -85,15 +82,12 @@ public class YamlWorkflowTest {
         .getJobClient()
         .newWorker()
         .jobType("foo")
-        .handler((client, job) -> client.newCompleteCommand(job).payload((String) null).send())
+        .handler((client, job) -> client.newCompleteCommand(job.getKey()).payload("{ }").send())
         .open();
 
     // then
-    waitUntil(() -> eventRecorder.hasJobEvent(JobState.COMPLETED));
-    waitUntil(
-        () ->
-            eventRecorder.hasElementInState(
-                "yaml-workflow", WorkflowInstanceState.ELEMENT_COMPLETED));
+    assertJobCompleted();
+    assertWorkflowInstanceCompleted("yaml-workflow");
   }
 
   @Test
@@ -118,7 +112,7 @@ public class YamlWorkflowTest {
     // then
     waitUntil(() -> recordingJobHandler.getHandledJobs().size() >= 1);
 
-    final JobEvent jobEvent = recordingJobHandler.getHandledJobs().get(0);
+    final ActivatedJob jobEvent = recordingJobHandler.getHandledJobs().get(0);
     assertThat(jobEvent.getCustomHeaders()).containsEntry("foo", "f").containsEntry("bar", "b");
   }
 
@@ -140,22 +134,22 @@ public class YamlWorkflowTest {
     // when
     final RecordingJobHandler recordingTaskHandler =
         new RecordingJobHandler(
-            (client, job) -> client.newCompleteCommand(job).payload("{\"result\":3}").send());
+            (client, job) ->
+                client.newCompleteCommand(job.getKey()).payload("{\"result\":3}").send());
 
     clientRule.getJobClient().newWorker().jobType("foo").handler(recordingTaskHandler).open();
 
     // then
     waitUntil(() -> recordingTaskHandler.getHandledJobs().size() >= 1);
 
-    final JobEvent jobEvent = recordingTaskHandler.getHandledJobs().get(0);
+    final ActivatedJob jobEvent = recordingTaskHandler.getHandledJobs().get(0);
     assertThat(jobEvent.getPayload()).isEqualTo("{\"bar\":1}");
 
-    waitUntil(
-        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED));
-
-    final WorkflowInstanceEvent workflowEvent =
-        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED);
-    assertThat(workflowEvent.getPayload()).isEqualTo("{\"foo\":1,\"result\":3}");
+    assertWorkflowInstanceCompleted(
+        "workflow-mappings",
+        (workflowInstance) -> {
+          assertThat(workflowInstance.getPayload()).isEqualTo("{\"foo\":1,\"result\":3}");
+        });
   }
 
   private void deploy(String resource) {

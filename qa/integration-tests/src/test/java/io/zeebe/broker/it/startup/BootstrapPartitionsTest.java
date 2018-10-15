@@ -17,7 +17,7 @@ package io.zeebe.broker.it.startup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.it.ClientRule;
+import io.zeebe.broker.it.GatewayRule;
 import io.zeebe.broker.it.clustering.ClusteringRule;
 import java.util.List;
 import org.junit.Rule;
@@ -29,16 +29,16 @@ public class BootstrapPartitionsTest {
 
   private final Timeout testTimeout = Timeout.seconds(30);
   private final ClusteringRule clusteringRule = new ClusteringRule(2, 2, 2);
-  private final ClientRule clientRule = new ClientRule(clusteringRule);
+  private final GatewayRule gatewayRule = new GatewayRule(clusteringRule);
 
   @Rule
   public RuleChain ruleChain =
-      RuleChain.outerRule(testTimeout).around(clusteringRule).around(clientRule);
+      RuleChain.outerRule(testTimeout).around(clusteringRule).around(gatewayRule);
 
   @Test
   public void shouldCreateDefaultPartitionsOnBootstrappedBrokers() {
     // when
-    final List<Integer> partitions = clientRule.getPartitions();
+    final List<Integer> partitions = gatewayRule.getPartitions();
 
     // then
     assertThat(partitions.size()).isEqualTo(2);

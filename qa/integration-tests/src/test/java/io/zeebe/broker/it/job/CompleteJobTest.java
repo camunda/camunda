@@ -20,14 +20,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.zeebe.broker.it.ClientRule;
+import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
+import io.zeebe.broker.it.util.ZeebeAssertHelper;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.gateway.api.clients.JobClient;
-import io.zeebe.gateway.api.events.JobEvent;
-import io.zeebe.gateway.api.events.JobState;
-import io.zeebe.gateway.cmd.BrokerErrorException;
-import io.zeebe.gateway.cmd.ClientCommandRejectedException;
+import io.zeebe.client.api.clients.JobClient;
+import io.zeebe.client.api.events.JobEvent;
+import io.zeebe.client.api.response.ActivatedJob;
+import io.zeebe.client.cmd.ClientException;
 import java.util.Collections;
 import org.junit.Before;
 import org.junit.Rule;
@@ -39,7 +39,7 @@ import org.junit.rules.Timeout;
 public class CompleteJobTest {
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientRule clientRule = new ClientRule(brokerRule);
+  public GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
@@ -47,7 +47,8 @@ public class CompleteJobTest {
 
   @Rule public Timeout testTimeout = Timeout.seconds(15);
 
-  private JobEvent jobEvent;
+  private ActivatedJob jobEvent;
+  private long jobKey;
 
   @Before
   public void init() {
@@ -58,45 +59,49 @@ public class CompleteJobTest {
 
     waitUntil(() -> !jobHandler.getHandledJobs().isEmpty());
     jobEvent = jobHandler.getHandledJobs().get(0);
+    jobKey = jobEvent.getKey();
   }
 
   @Test
   public void shouldCompleteJobWithoutPayload() {
     // when
-    final JobEvent job = clientRule.getJobClient().newCompleteCommand(jobEvent).send().join();
+    clientRule.getJobClient().newCompleteCommand(jobKey).send().join();
 
     // then
-    assertThat(job.getState()).isEqualTo(JobState.COMPLETED);
-    assertThat(job.getPayload()).isEqualTo("{}");
-    assertThat(job.getPayloadAsMap()).isEmpty();
+    ZeebeAssertHelper.assertJobCompleted(
+        "test",
+        (job) -> {
+          assertThat(job.getPayload()).isEqualTo("{}");
+          assertThat(job.getPayloadAsMap()).isEmpty();
+        });
   }
 
   @Test
   public void shouldCompleteJobNullPayload() {
     // when
-    final JobEvent job =
-        clientRule.getJobClient().newCompleteCommand(jobEvent).payload("null").send().join();
+    clientRule.getJobClient().newCompleteCommand(jobKey).payload("null").send().join();
 
     // then
-    assertThat(job.getState()).isEqualTo(JobState.COMPLETED);
-    assertThat(job.getPayload()).isEqualTo("{}");
-    assertThat(job.getPayloadAsMap()).isEmpty();
+    ZeebeAssertHelper.assertJobCompleted(
+        "test",
+        (job) -> {
+          assertThat(job.getPayload()).isEqualTo("{}");
+          assertThat(job.getPayloadAsMap()).isEmpty();
+        });
   }
 
   @Test
   public void shouldCompleteJobWithPayload() {
     // when
-    final JobEvent job =
-        clientRule
-            .getJobClient()
-            .newCompleteCommand(jobEvent)
-            .payload("{\"foo\":\"bar\"}")
-            .send()
-            .join();
+    clientRule.getJobClient().newCompleteCommand(jobKey).payload("{\"foo\":\"bar\"}").send().join();
 
     // then
-    assertThat(job.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
-    assertThat(job.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+    ZeebeAssertHelper.assertJobCompleted(
+        "test",
+        (job) -> {
+          assertThat(job.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
+          assertThat(job.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+        });
   }
 
   @Test
@@ -104,12 +109,10 @@ public class CompleteJobTest {
     // when
     final Throwable throwable =
         catchThrowable(
-            () ->
-                clientRule.getJobClient().newCompleteCommand(jobEvent).payload("[]").send().join());
+            () -> clientRule.getJobClient().newCompleteCommand(jobKey).payload("[]").send().join());
 
     // then
-    assertThat(throwable).isInstanceOf(BrokerErrorException.class);
-    assertThat(throwable.getMessage()).contains("Could not read property 'payload'.");
+    assertThat(throwable).isInstanceOf(ClientException.class);
     assertThat(throwable.getMessage())
         .contains("Document has invalid format. On root level an object is only allowed.");
   }
@@ -117,17 +120,20 @@ public class CompleteJobTest {
   @Test
   public void shouldCompleteJobWithPayloadAsMap() {
     // when
-    final JobEvent job =
-        clientRule
-            .getJobClient()
-            .newCompleteCommand(jobEvent)
-            .payload(Collections.singletonMap("foo", "bar"))
-            .send()
-            .join();
+    clientRule
+        .getJobClient()
+        .newCompleteCommand(jobKey)
+        .payload(Collections.singletonMap("foo", "bar"))
+        .send()
+        .join();
 
     // then
-    assertThat(job.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
-    assertThat(job.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+    ZeebeAssertHelper.assertJobCompleted(
+        "test",
+        (job) -> {
+          assertThat(job.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
+          assertThat(job.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+        });
   }
 
   @Test
@@ -136,12 +142,15 @@ public class CompleteJobTest {
     payload.foo = "bar";
 
     // when
-    final JobEvent job =
-        clientRule.getJobClient().newCompleteCommand(jobEvent).payload(payload).send().join();
+    clientRule.getJobClient().newCompleteCommand(jobKey).payload(payload).send().join();
 
     // then
-    assertThat(job.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
-    assertThat(job.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+    ZeebeAssertHelper.assertJobCompleted(
+        "test",
+        (job) -> {
+          assertThat(job.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
+          assertThat(job.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+        });
   }
 
   @Test
@@ -150,10 +159,10 @@ public class CompleteJobTest {
     final JobClient jobClient = clientRule.getClient().jobClient();
 
     final JobEvent job = jobClient.newCreateCommand().jobType("bar").send().join();
-    jobClient.newCompleteCommand(job).send().join();
+    jobClient.newCompleteCommand(job.getKey()).send().join();
 
     // then
-    thrown.expect(ClientCommandRejectedException.class);
+    thrown.expect(ClientException.class);
     thrown.expectMessage(
         "Command (COMPLETE) for event with key "
             + job.getKey()
@@ -161,7 +170,7 @@ public class CompleteJobTest {
             + "Job does not exist");
 
     // when
-    jobClient.newCompleteCommand(job).send().join();
+    jobClient.newCompleteCommand(job.getKey()).send().join();
   }
 
   public static class PayloadObject {

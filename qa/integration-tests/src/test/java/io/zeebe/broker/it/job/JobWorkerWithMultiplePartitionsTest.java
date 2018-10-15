@@ -20,7 +20,7 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.GrpcClientRule;
-import io.zeebe.broker.it.util.GrpcRecordingJobHandler;
+import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.clients.JobClient;
 import io.zeebe.client.api.events.JobEvent;
@@ -63,7 +63,7 @@ public class JobWorkerWithMultiplePartitionsTest {
 
     final String jobType = "foooo";
 
-    final GrpcRecordingJobHandler handler = new GrpcRecordingJobHandler();
+    final RecordingJobHandler handler = new RecordingJobHandler();
 
     createJobOfType(jobType);
     createJobOfType(jobType);

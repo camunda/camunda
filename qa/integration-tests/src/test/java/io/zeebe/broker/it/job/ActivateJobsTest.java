@@ -19,6 +19,7 @@ import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
+import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.it.clustering.ClusteringRule;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.response.ActivateJobsResponse;
@@ -48,26 +49,15 @@ public class ActivateJobsTest {
   private static final Map<String, Object> PAYLOAD = Collections.singletonMap("hello", "world");
 
   @Rule public ClusteringRule clusteringRule = new ClusteringRule();
+  @Rule public GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
-  @Rule public Timeout timeout = Timeout.seconds(20);
+  @Rule public Timeout timeout = Timeout.seconds(10);
 
   private ZeebeClient client;
 
   @Before
   public void setUp() {
-    client =
-        // TODO(menski): replace with client rule when switch to rpc client
-        ZeebeClient.newClientBuilder()
-            .brokerContactPoint(
-                clusteringRule
-                    .getBrokers()
-                    .get(0)
-                    .getConfig()
-                    .getNetwork()
-                    .getGateway()
-                    .toSocketAddress()
-                    .toString())
-            .build();
+    client = clientRule.getClient();
   }
 
   @After

@@ -17,7 +17,7 @@ package io.zeebe.broker.it.clustering;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.it.ClientRule;
+import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.gateway.api.commands.BrokerInfo;
 import io.zeebe.transport.SocketAddress;
 import java.util.List;
@@ -31,7 +31,7 @@ public class GossipClusteringTest {
 
   public Timeout testTimeout = Timeout.seconds(90);
   public ClusteringRule clusteringRule = new ClusteringRule();
-  public ClientRule clientRule = new ClientRule(clusteringRule);
+  public GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
   @Rule
   public RuleChain ruleChain =
