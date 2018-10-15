@@ -247,7 +247,7 @@ public class ZbRocksDb extends RocksDB {
       return true;
     }
 
-    return get(columnFamily, key, value) > 0;
+    return get(columnFamily, key, value) != RocksDB.NOT_FOUND;
   }
 
   /**
