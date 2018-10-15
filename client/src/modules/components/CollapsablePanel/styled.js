@@ -29,9 +29,12 @@ transition: opacity 0.2s ease-out;
 export const ExpandedPanel = styled(BasicPanel)`
   ${panelStyle}
   opacity: ${({isCollapsed}) => (isCollapsed ? '0' : '1')};
+  z-index: ${({isCollapsed}) => (isCollapsed ? '0' : '1')};
 `;
 
 export const CollapsedPanel = styled(BasicPanel)`
   ${panelStyle}
   opacity: ${({isCollapsed}) => (isCollapsed ? '1' : '0')};
+  z-index: ${({isCollapsed}) => (isCollapsed ? '1' : '0')};
+
 `;
