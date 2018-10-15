@@ -66,7 +66,7 @@ public class JobWorkerBuilderImpl
 
     this.timeout = configuration.getDefaultJobTimeout().toMillis();
     this.workerName = configuration.getDefaultJobWorkerName();
-    this.bufferSize = configuration.getDefaultJobSubscriptionBufferSize();
+    this.bufferSize = configuration.getDefaultJobWorkerBufferSize();
     this.pollInterval = configuration.getDefaultJobPollInterval();
   }
 

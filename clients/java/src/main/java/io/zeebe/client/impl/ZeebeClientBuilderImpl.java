@@ -28,9 +28,9 @@ import java.util.Properties;
 public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientConfiguration {
 
   private String brokerContactPoint = "0.0.0.0:26500";
-  private int jobSubscriptionBufferSize = 32;
+  private int jobWorkerBufferSize = 32;
   private ActorClock actorClock;
-  private int numSubscriptionExecutionThreads = 1;
+  private int numJobWorkerExecutionThreads = 1;
   private String defaultJobWorkerName = "default";
   private Duration defaultJobTimeout = Duration.ofMinutes(5);
   private Duration defaultJobPollInterval = Duration.ofSeconds(5);
@@ -48,24 +48,24 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   }
 
   @Override
-  public int getDefaultJobSubscriptionBufferSize() {
-    return jobSubscriptionBufferSize;
+  public int getDefaultJobWorkerBufferSize() {
+    return jobWorkerBufferSize;
   }
 
   @Override
-  public ZeebeClientBuilder defaultJobSubscriptionBufferSize(final int numberOfJobs) {
-    this.jobSubscriptionBufferSize = numberOfJobs;
+  public ZeebeClientBuilder defaultJobWorkerBufferSize(final int numberOfJobs) {
+    this.jobWorkerBufferSize = numberOfJobs;
     return this;
   }
 
   @Override
-  public int getNumSubscriptionExecutionThreads() {
-    return numSubscriptionExecutionThreads;
+  public int getNumJobWorkerExecutionThreads() {
+    return numJobWorkerExecutionThreads;
   }
 
   @Override
-  public ZeebeClientBuilder numSubscriptionExecutionThreads(final int numSubscriptionThreads) {
-    this.numSubscriptionExecutionThreads = numSubscriptionThreads;
+  public ZeebeClientBuilder numJobWorkerExecutionThreads(final int numSubscriptionThreads) {
+    this.numJobWorkerExecutionThreads = numSubscriptionThreads;
     return this;
   }
 
@@ -132,14 +132,13 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
       brokerContactPoint(properties.getProperty(ClientProperties.BROKER_CONTACTPOINT));
     }
 
-    if (properties.containsKey(ClientProperties.SUBSCRIPTION_EXECUTION_THREADS)) {
-      numSubscriptionExecutionThreads(
-          Integer.parseInt(
-              properties.getProperty(ClientProperties.SUBSCRIPTION_EXECUTION_THREADS)));
+    if (properties.containsKey(ClientProperties.JOB_WORKER_EXECUTION_THREADS)) {
+      numJobWorkerExecutionThreads(
+          Integer.parseInt(properties.getProperty(ClientProperties.JOB_WORKER_EXECUTION_THREADS)));
     }
-    if (properties.containsKey(ClientProperties.JOB_SUBSCRIPTION_BUFFER_SIZE)) {
-      defaultJobSubscriptionBufferSize(
-          Integer.parseInt(properties.getProperty(ClientProperties.JOB_SUBSCRIPTION_BUFFER_SIZE)));
+    if (properties.containsKey(ClientProperties.JOB_WORKER_BUFFER_SIZE)) {
+      defaultJobWorkerBufferSize(
+          Integer.parseInt(properties.getProperty(ClientProperties.JOB_WORKER_BUFFER_SIZE)));
     }
     if (properties.containsKey(ClientProperties.DEFAULT_JOB_WORKER_NAME)) {
       defaultJobWorkerName(properties.getProperty(ClientProperties.DEFAULT_JOB_WORKER_NAME));
@@ -168,8 +167,8 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
     final StringBuilder sb = new StringBuilder();
 
     appendProperty(sb, "brokerContactPoint", brokerContactPoint);
-    appendProperty(sb, "jobSubscriptionBufferSize", jobSubscriptionBufferSize);
-    appendProperty(sb, "numSubscriptionExecutionThreads", numSubscriptionExecutionThreads);
+    appendProperty(sb, "jobWorkerBufferSize", jobWorkerBufferSize);
+    appendProperty(sb, "numJobWorkerExecutionThreads", numJobWorkerExecutionThreads);
     appendProperty(sb, "defaultJobWorkerName", defaultJobWorkerName);
     appendProperty(sb, "defaultJobTimeout", defaultJobTimeout);
     appendProperty(sb, "defaultJobPollInterval", defaultJobPollInterval);

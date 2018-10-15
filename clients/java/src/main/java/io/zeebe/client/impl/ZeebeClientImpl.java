@@ -80,7 +80,7 @@ public class ZeebeClientImpl implements ZeebeClient {
 
   private static ScheduledExecutorService buildExecutorService(
       ZeebeClientConfiguration configuration) {
-    final int threadCount = configuration.getNumSubscriptionExecutionThreads();
+    final int threadCount = configuration.getNumJobWorkerExecutionThreads();
     return Executors.newScheduledThreadPool(threadCount);
   }
 

@@ -21,11 +21,11 @@ public interface ZeebeClientConfiguration {
   /** @see ZeebeClientBuilder#brokerContactPoint(String) */
   String getBrokerContactPoint();
 
-  /** @see ZeebeClientBuilder#numSubscriptionExecutionThreads(int) */
-  int getNumSubscriptionExecutionThreads();
+  /** @see ZeebeClientBuilder#numJobWorkerExecutionThreads(int) */
+  int getNumJobWorkerExecutionThreads();
 
-  /** @see ZeebeClientBuilder#defaultJobSubscriptionBufferSize(int) */
-  int getDefaultJobSubscriptionBufferSize();
+  /** @see ZeebeClientBuilder#defaultJobWorkerBufferSize(int) */
+  int getDefaultJobWorkerBufferSize();
 
   /** @see ZeebeClientBuilder#defaultJobWorkerName(String) */
   String getDefaultJobWorkerName();

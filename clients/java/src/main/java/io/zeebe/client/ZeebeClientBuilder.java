@@ -40,13 +40,13 @@ public interface ZeebeClientBuilder {
    * @param numberOfJobs Default value for {@link JobWorkerBuilderStep3#bufferSize(int)}. Default
    *     value is 32.
    */
-  ZeebeClientBuilder defaultJobSubscriptionBufferSize(int numberOfJobs);
+  ZeebeClientBuilder defaultJobWorkerBufferSize(int numberOfJobs);
 
   /**
-   * @param numSubscriptionThreads The number of threads for invocation of job workers. Setting this
-   *     value to 0 effectively disables subscriptions and workers. Default value is 1.
+   * @param numThreads The number of threads for invocation of job workers. Setting this value to 0
+   *     effectively disables subscriptions and workers. Default value is 1.
    */
-  ZeebeClientBuilder numSubscriptionExecutionThreads(int numSubscriptionThreads);
+  ZeebeClientBuilder numJobWorkerExecutionThreads(int numThreads);
 
   /**
    * The name of the worker which is used when none is set for a job worker. Default is 'default'.
