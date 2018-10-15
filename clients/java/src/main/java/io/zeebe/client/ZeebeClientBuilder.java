@@ -16,7 +16,6 @@
 package io.zeebe.client;
 
 import io.zeebe.client.api.subscription.JobWorkerBuilderStep1.JobWorkerBuilderStep3;
-import io.zeebe.client.api.subscription.TopicSubscriptionBuilderStep1.TopicSubscriptionBuilderStep3;
 import java.time.Duration;
 import java.util.Properties;
 
@@ -37,55 +36,17 @@ public interface ZeebeClientBuilder {
    */
   ZeebeClientBuilder brokerContactPoint(String contactPoint);
 
-  /** @param requestTimeout The request timeout in seconds. Default value is 15 seconds. */
-  ZeebeClientBuilder requestTimeout(Duration requestTimeout);
-
-  /**
-   * @param requestBlockTime The time to block when the user submits a request and the client has no
-   *     buffer (pooling) capacity to send the request. After this time, an exception is thrown.
-   *     Default value is 15 seconds.
-   */
-  ZeebeClientBuilder requestBlocktime(Duration requestBlockTime);
-
-  /** @param sendBufferSize the size of the client's send buffer in MB. Default value is 16. */
-  ZeebeClientBuilder sendBufferSize(int sendBufferSize);
-
-  /**
-   * @param numManagementThreads The number of threads the client uses for the following tasks:
-   *     <ul>
-   *       <li>Orchestrating requests
-   *       <li>Sending/Receiving network traffic
-   *       <li>Orchestrating subscriptions
-   *     </ul>
-   *     Default value is 1.
-   */
-  ZeebeClientBuilder numManagementThreads(int numManagementThreads);
-
-  /**
-   * @param numSubscriptionThreads The number of threads for invocation of job workers and topic
-   *     subscriptions. Setting this value to 0 effectively disables subscriptions and workers.
-   *     Default value is 1.
-   */
-  ZeebeClientBuilder numSubscriptionExecutionThreads(int numSubscriptionThreads);
-
-  /**
-   * @param numberOfRecords Default value for {@link TopicSubscriptionBuilderStep3#bufferSize(int)}.
-   *     Default value is 1024.
-   */
-  ZeebeClientBuilder defaultTopicSubscriptionBufferSize(int numberOfRecords);
-
   /**
    * @param numberOfJobs Default value for {@link JobWorkerBuilderStep3#bufferSize(int)}. Default
    *     value is 32.
    */
-  ZeebeClientBuilder defaultJobSubscriptionBufferSize(int numberOfJobs);
+  ZeebeClientBuilder defaultJobWorkerBufferSize(int numberOfJobs);
 
   /**
-   * The period of time in milliseconds for sending keep alive messages on tcp channels. Setting
-   * this appropriately can avoid overhead by reopening channels after idle time. Default value is 5
-   * seconds.
+   * @param numThreads The number of threads for invocation of job workers. Setting this value to 0
+   *     effectively disables subscriptions and workers. Default value is 1.
    */
-  ZeebeClientBuilder tcpChannelKeepAlivePeriod(Duration tcpChannelKeepAlivePeriod);
+  ZeebeClientBuilder numJobWorkerExecutionThreads(int numThreads);
 
   /**
    * The name of the worker which is used when none is set for a job worker. Default is 'default'.

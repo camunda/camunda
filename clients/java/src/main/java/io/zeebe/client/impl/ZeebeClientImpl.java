@@ -22,9 +22,7 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientConfiguration;
 import io.zeebe.client.api.clients.JobClient;
 import io.zeebe.client.api.clients.WorkflowClient;
-import io.zeebe.client.api.commands.PartitionsRequestStep1;
 import io.zeebe.client.api.commands.TopologyRequestStep1;
-import io.zeebe.client.api.subscription.TopicSubscriptionBuilderStep1;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.gateway.protocol.GatewayGrpc;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayStub;
@@ -82,7 +80,7 @@ public class ZeebeClientImpl implements ZeebeClient {
 
   private static ScheduledExecutorService buildExecutorService(
       ZeebeClientConfiguration configuration) {
-    final int threadCount = configuration.getNumSubscriptionExecutionThreads();
+    final int threadCount = configuration.getNumJobWorkerExecutionThreads();
     return Executors.newScheduledThreadPool(threadCount);
   }
 
@@ -94,16 +92,6 @@ public class ZeebeClientImpl implements ZeebeClient {
   @Override
   public JobClient jobClient() {
     return new JobClientImpl(asyncStub, config, objectMapper, executorService, closeables);
-  }
-
-  @Override
-  public TopicSubscriptionBuilderStep1 newSubscription() {
-    return null;
-  }
-
-  @Override
-  public PartitionsRequestStep1 newPartitionsRequest() {
-    return null;
   }
 
   @Override

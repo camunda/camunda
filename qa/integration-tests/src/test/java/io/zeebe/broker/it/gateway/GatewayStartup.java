@@ -23,7 +23,6 @@ import io.zeebe.broker.it.ClientRule;
 import io.zeebe.broker.it.clustering.ClusteringRule;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.commands.Topology;
-import java.time.Duration;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -85,16 +84,10 @@ public class GatewayStartup {
     assertThat(response).isNotNull();
 
     final ZeebeClient client2 =
-        ZeebeClient.newClientBuilder()
-            .requestTimeout(Duration.ofMillis(50))
-            .brokerContactPoint(this.broker2Address)
-            .build();
+        ZeebeClient.newClientBuilder().brokerContactPoint(this.broker2Address).build();
 
     final ZeebeClient client3 =
-        ZeebeClient.newClientBuilder()
-            .requestTimeout(Duration.ofMillis(50))
-            .brokerContactPoint(this.broker3Address)
-            .build();
+        ZeebeClient.newClientBuilder().brokerContactPoint(this.broker3Address).build();
 
     try {
       client2.newTopologyRequest().send().join();

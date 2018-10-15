@@ -17,9 +17,7 @@ package io.zeebe.client;
 
 import io.zeebe.client.api.clients.JobClient;
 import io.zeebe.client.api.clients.WorkflowClient;
-import io.zeebe.client.api.commands.PartitionsRequestStep1;
 import io.zeebe.client.api.commands.TopologyRequestStep1;
-import io.zeebe.client.api.subscription.TopicSubscriptionBuilderStep1;
 import io.zeebe.client.impl.ZeebeClientBuilderImpl;
 import io.zeebe.client.impl.ZeebeClientImpl;
 
@@ -49,51 +47,6 @@ public interface ZeebeClient extends AutoCloseable {
    * @return a client with access to all job-related operations.
    */
   JobClient jobClient();
-
-  /**
-   * Open a new subscription to receive all records (events and commands).
-   *
-   * <p>While the subscription is open, the broker continuously publishes records to the client. The
-   * client delegates the events/commands to the provided handlers. The client periodically
-   * acknowledges that records have been received and handled. When a subscription with the same
-   * name is (re-)opened, then the broker resumes the subscription from the last acknowledged record
-   * and starts publishing at the next event/command.
-   *
-   * <pre>
-   * TopicSubscription subscription = zeebeClient
-   *  .newSubscription()
-   *  .name("my-app")
-   *  .workflowInstanceEventHandler(wfEventHandler)
-   *  .open();
-   *
-   * ...
-   * subscription.close();
-   * </pre>
-   *
-   * Per partition it is guaranteed that handlers are called per record in the order of occurrence.
-   * For example: for a given workflow instance, a handler will always receive the CREATED event
-   * before the COMPLETED event. Records from different partitions are handled sequentially, but in
-   * arbitrary order.
-   *
-   * @return a builder for the subscription
-   */
-  TopicSubscriptionBuilderStep1 newSubscription();
-
-  /**
-   * Request all partitions. Can be used to inspect which partitions have been created.
-   *
-   * <pre>
-   * List&#60;Partition&#62; partitions = zeebeClient
-   *  .newPartitionsRequest()
-   *  .send()
-   *  .join()
-   *  .getPartitions();
-   *
-   * </pre>
-   *
-   * @return the request where you must call {@code send()}
-   */
-  PartitionsRequestStep1 newPartitionsRequest();
 
   /**
    * Request the current cluster topology. Can be used to inspect which brokers are available at
