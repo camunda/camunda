@@ -17,34 +17,15 @@ package io.zeebe.client;
 
 import java.time.Duration;
 
-// TODO: Issue #1133 - https://github.com/zeebe-io/zeebe/issues/1133
 public interface ZeebeClientConfiguration {
   /** @see ZeebeClientBuilder#brokerContactPoint(String) */
   String getBrokerContactPoint();
 
-  /** @see ZeebeClientBuilder#requestTimeout(Duration) */
-  Duration getRequestTimeout();
-
-  /** @see ZeebeClientBuilder#requestBlocktime(Duration) */
-  Duration getRequestBlocktime();
-
-  /** @see ZeebeClientBuilder#sendBufferSize(int) */
-  int getSendBufferSize();
-
-  /** @see ZeebeClientBuilder#numManagementThreads(int) */
-  int getNumManagementThreads();
-
   /** @see ZeebeClientBuilder#numSubscriptionExecutionThreads(int) */
   int getNumSubscriptionExecutionThreads();
 
-  /** @see ZeebeClientBuilder#defaultTopicSubscriptionBufferSize(int) */
-  int getDefaultTopicSubscriptionBufferSize();
-
   /** @see ZeebeClientBuilder#defaultJobSubscriptionBufferSize(int) */
   int getDefaultJobSubscriptionBufferSize();
-
-  /** @see ZeebeClientBuilder#tcpChannelKeepAlivePeriod(Duration) */
-  Duration getTcpChannelKeepAlivePeriod();
 
   /** @see ZeebeClientBuilder#defaultJobWorkerName(String) */
   String getDefaultJobWorkerName();

@@ -21,30 +21,11 @@ public class ClientProperties {
   /** @see ZeebeClientBuilder#brokerContactPoint(String) */
   public static final String BROKER_CONTACTPOINT = "zeebe.client.broker.contactPoint";
 
-  /** @see ZeebeClientBuilder#requestBlocktime(java.time.Duration) */
-  public static final String REQUEST_BLOCKTIME_MILLIS = "zeebe.client.requestBlockTime";
-
-  /** @see ZeebeClientBuilder#sendBufferSize(int) */
-  public static final String SENDBUFFER_SIZE = "zeebe.client.sendbuffer.size";
-
-  /** @see ZeebeClientBuilder#numManagementThreads(int) */
-  public static final String MANAGEMENT_THREADS = "zeebe.client.threads";
-
   /** @see ZeebeClientBuilder#numSubscriptionExecutionThreads(int) */
   public static final String SUBSCRIPTION_EXECUTION_THREADS = "zeebe.client.subscription.threads";
 
-  /** @see ZeebeClientBuilder#defaultTopicSubscriptionBufferSize(int) */
-  public static final String TOPIC_SUBSCRIPTION_BUFFER_SIZE =
-      "zeebe.client.subscription.buffersize";
-
-  /** @see ZeebeClientBuilder#defaultTopicSubscriptionBufferSize(int) */
+  /** @see ZeebeClientBuilder#defaultJobSubscriptionBufferSize(int) */
   public static final String JOB_SUBSCRIPTION_BUFFER_SIZE = "zeebe.client.worker.buffersize";
-
-  /** @see ZeebeClientBuilder#tcpChannelKeepAlivePeriod(java.time.Duration) */
-  public static final String TCP_CHANNEL_KEEP_ALIVE_PERIOD = "zeebe.client.channel.keepalive";
-
-  /** @see ZeebeClientBuilder#requestTimeout(java.time.Duration) */
-  public static final String REQUEST_TIMEOUT_SEC = "zeebe.client.request.timeout";
 
   /** @see ZeebeClientBuilder#defaultJobWorkerName(String) */
   public static final String DEFAULT_JOB_WORKER_NAME = "zeebe.client.job.worker";
