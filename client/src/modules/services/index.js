@@ -7,7 +7,7 @@ export {loadProcessDefinitions} from './LoadProcessDefinitions';
 export {default as processRawData} from './processRawData';
 export {numberParser} from './NumberParser';
 export {isDurationValue} from './isDurationValue';
-export {loadEntity} from './loadEntity';
+export {loadEntity, checkDeleteConflict} from './entityServices';
 
 export {getDiagramElementsBetween} from './diagramServices';
 export {getCustomReportInfo, getCustomDashboardInfo} from './customEntityListServices';

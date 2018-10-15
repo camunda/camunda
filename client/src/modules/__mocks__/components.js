@@ -17,3 +17,4 @@ export {default as Logo} from '../components/__mocks__/Logo';
 export {default as ErrorMessage} from '../components/__mocks__/ErrorMessage';
 export {default as ErrorPage} from '../components/__mocks__/ErrorPage';
 export {default as LoadingIndicator} from '../components/__mocks__/LoadingIndicator';
+export {default as ConfirmationModal} from '../components/__mocks__/ConfirmationModal';

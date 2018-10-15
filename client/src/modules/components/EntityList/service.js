@@ -39,7 +39,7 @@ export async function duplicate(api, copyData) {
 }
 
 export async function remove(id, api) {
-  return await del(`api/${api}/${id}`);
+  return await del(`api/${api}/${id}${api === 'report' ? '?force=true' : ''}`);
 }
 
 export async function update(api, id, data) {

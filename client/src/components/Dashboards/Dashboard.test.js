@@ -137,17 +137,14 @@ it('should provide a link to edit mode in view mode', () => {
   expect(node.find('.Dashboard__edit-button')).toBePresent();
 });
 
-it('should remove a dashboard when delete button is clicked', () => {
+it('should remove a dashboard on dashboard deletion', () => {
   const node = mount(shallow(<Dashboard {...props} />).get(0));
   node.setState({
     loaded: true,
     deleteModalVisible: true
   });
 
-  node
-    .find('.Dashboard__delete-dashboard-modal-button')
-    .first()
-    .simulate('click');
+  node.instance().deleteDashboard();
 
   expect(remove).toHaveBeenCalledWith('1');
 });
@@ -159,10 +156,7 @@ it('should redirect to the dashboard list on dashboard deletion', async () => {
     deleteModalVisible: true
   });
 
-  await node
-    .find('.Dashboard__delete-dashboard-modal-button')
-    .first()
-    .simulate('click');
+  await node.instance().deleteDashboard();
 
   expect(node).toIncludeText('REDIRECT to /dashboards');
 });

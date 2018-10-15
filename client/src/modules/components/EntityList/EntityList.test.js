@@ -5,6 +5,8 @@ import EntityList from './EntityList';
 
 import {create, load, duplicate, update} from './service';
 
+import {checkDeleteConflict} from 'services';
+
 const sampleEntity = {
   id: '1',
   name: 'Test Entity',
@@ -28,6 +30,12 @@ jest.mock('./service', () => {
     create: jest.fn(),
     duplicate: jest.fn(),
     update: jest.fn()
+  };
+});
+
+jest.mock('services', () => {
+  return {
+    checkDeleteConflict: jest.fn()
   };
 });
 
@@ -71,7 +79,8 @@ jest.mock('components', () => {
       <div className="sk-circle" {...props}>
         Loading...
       </div>
-    )
+    ),
+    ConfirmationModal: props => <div className="confirmationModal" />
   };
 });
 
@@ -225,7 +234,7 @@ it('should be able to sort by date', async () => {
   expect(node.state().data[0]).toEqual(sampleEntity2);
 });
 
-it('should open deletion modal on delete button click', async () => {
+it('should open confirm modal on delete button click', async () => {
   const node = mount(
     shallow(<EntityList api="endpoint" label="Dashboard" operations={['delete']} />).get(0)
   );
@@ -234,13 +243,35 @@ it('should open deletion modal on delete button click', async () => {
     data: [sampleEntity]
   });
 
-  node.instance().showDeleteModal({
+  await node.instance().showDeleteModal({
     id: '1',
     name: 'Test Entity'
   });
   await node.update();
 
-  expect(node.find('Modal').props().open).toBeTruthy();
+  expect(node.find('ConfirmationModal').props().isVisible).toBe(true);
+});
+
+it('should set conflict state on delete button click when conflict exists', async () => {
+  checkDeleteConflict.mockReturnValue({conflictedItems: [{id: '1', name: 'alert', type: 'Alert'}]});
+  const node = mount(
+    shallow(<EntityList api="endpoint" label="Dashboard" operations={['delete']} />).get(0)
+  );
+  node.setState({
+    loaded: true,
+    data: [sampleEntity]
+  });
+
+  await node.instance().showDeleteModal({
+    id: '1',
+    name: 'Test Entity'
+  });
+  await node.update();
+
+  expect(node.find('ConfirmationModal').props().conflict).toEqual({
+    items: [{id: '1', name: 'alert', type: 'Alert'}],
+    type: 'Delete'
+  });
 });
 
 it('should invoke duplicate on click', async () => {

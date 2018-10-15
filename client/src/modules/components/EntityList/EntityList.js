@@ -3,13 +3,13 @@ import React from 'react';
 import {withErrorHandling} from 'HOC';
 import {Redirect, Link} from 'react-router-dom';
 
-import {Button, Message, Input, LoadingIndicator} from 'components';
+import {Button, Message, Input, LoadingIndicator, ConfirmationModal} from 'components';
 
 import {load, create, remove, duplicate, update} from './service';
+import {checkDeleteConflict} from 'services';
 
 import entityIcons from './entityIcons';
 
-import DeleteModal from './DeleteModal';
 import EntityItem from './EntityItem';
 
 import './EntityList.css';
@@ -22,7 +22,7 @@ class EntityList extends React.Component {
       data: [],
       redirectToEntity: false,
       loaded: false,
-      deleteModalVisible: false,
+      confirmModalVisible: false,
       deleteModalEntity: {},
       query: '',
       editEntity: null
@@ -59,7 +59,7 @@ class EntityList extends React.Component {
     this.setState({
       data: this.state.data.filter(entity => entity.id !== id)
     });
-    this.closeDeleteModal();
+    this.closeConfirmModal();
   };
 
   duplicateEntity = async id => {
@@ -98,16 +98,30 @@ class EntityList extends React.Component {
     await this.loadData();
   };
 
-  showDeleteModal = ({id, name}) => {
-    this.setState({
-      deleteModalVisible: true,
-      deleteModalEntity: {id, name}
-    });
+  showDeleteModal = async ({id, name}) => {
+    const response = await checkDeleteConflict(id, this.props.api);
+    let newState = {
+      confirmModalVisible: true,
+      deleteModalEntity: {id, name},
+      conflict: null
+    };
+
+    if (response && response.conflictedItems && response.conflictedItems.length) {
+      newState = {
+        ...newState,
+        conflict: {
+          type: 'Delete',
+          items: response.conflictedItems
+        }
+      };
+    }
+
+    this.setState(newState);
   };
 
-  closeDeleteModal = () => {
+  closeConfirmModal = () => {
     this.setState({
-      deleteModalVisible: false,
+      confirmModalVisible: false,
       deleteModalEntity: {}
     });
   };
@@ -208,7 +222,7 @@ class EntityList extends React.Component {
 
   render() {
     const {error, includeViewAllLink, ContentPanel} = this.props;
-    const {redirectToEntity, deleteModalVisible, deleteModalEntity, loaded} = this.state;
+    const {redirectToEntity, confirmModalVisible, deleteModalEntity, loaded} = this.state;
 
     if (redirectToEntity !== false) {
       return <Redirect to={`/${this.props.api}/${redirectToEntity}/edit?new`} />;
@@ -223,11 +237,13 @@ class EntityList extends React.Component {
       <section className="EntityList">
         {header}
         {list}
-        <DeleteModal
-          isVisible={deleteModalVisible}
+        <ConfirmationModal
+          isVisible={confirmModalVisible}
           entityName={deleteModalEntity.name}
-          deleteEntity={this.deleteEntity}
-          closeModal={this.closeDeleteModal}
+          confirmModal={this.deleteEntity}
+          closeModal={this.closeConfirmModal}
+          conflict={this.state.conflict}
+          defaultOperation="Delete"
         />
         {this.state.editEntity && (
           <ContentPanel

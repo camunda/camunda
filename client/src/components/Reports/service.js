@@ -7,7 +7,7 @@ export async function loadSingleReport(id) {
 }
 
 export async function remove(id) {
-  return await del(`api/report/${id}`);
+  return await del(`api/report/${id}?force=true`);
 }
 
 export async function loadProcessDefinitionXml(processDefinitionKey, processDefinitionVersion) {
@@ -49,8 +49,9 @@ export async function getReportData(query, reportType) {
   return await response.json();
 }
 
-export async function saveReport(id, data) {
-  return await put(`api/report/${id}`, data);
+export async function saveReport(id, data, forceUpdate) {
+  const response = await put(`api/report/${id}?force=${forceUpdate}`, data);
+  return response.status === 204 ? response : await response.json();
 }
 
 export async function shareReport(reportId) {

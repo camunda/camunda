@@ -10,6 +10,8 @@ import {
   loadProcessDefinitionXml
 } from './service';
 
+import {checkDeleteConflict} from 'services';
+
 jest.mock('./service', () => {
   return {
     loadSingleReport: jest.fn(),
@@ -25,7 +27,8 @@ jest.mock('./ColumnRearrangement', () => props => <div>ColumnRearrangement: {pro
 
 jest.mock('services', () => {
   return {
-    loadProcessDefinitions: () => [{key: 'key', versions: [{version: 2}, {version: 1}]}]
+    loadProcessDefinitions: () => [{key: 'key', versions: [{version: 2}, {version: 1}]}],
+    checkDeleteConflict: jest.fn()
   };
 });
 
@@ -150,22 +153,19 @@ it('should open a deletion modal on delete button click', async () => {
     .first()
     .simulate('click');
 
-  expect(node).toHaveState('deleteModalVisible', true);
+  expect(node).toHaveState('confirmModalVisible', true);
 });
 
-it('should remove a report when delete button is clicked', () => {
+it('should remove a report when delete is invoked', () => {
   const node = mount(shallow(<Report {...props} />).get(0));
   node.setState({
     loaded: true,
     reportResult,
     ...sampleReport,
-    deleteModalVisible: true
+    ConfirmModalVisible: true
   });
 
-  node
-    .find('.Report__delete-report-modal-button')
-    .first()
-    .simulate('click');
+  node.instance().deleteReport();
 
   expect(remove).toHaveBeenCalledWith('1');
 });
@@ -176,13 +176,11 @@ it('should redirect to the report list on report deletion', async () => {
     loaded: true,
     reportResult,
     ...sampleReport,
-    deleteModalVisible: true
+    ConfirmModalVisible: true
   });
 
-  await node
-    .find('.Report__delete-report-modal-button')
-    .first()
-    .simulate('click');
+  node.instance().deleteReport();
+  await node.update();
 
   expect(node).toIncludeText('REDIRECT to /reports');
 });
@@ -639,5 +637,42 @@ describe('edit mode', async () => {
       }
     });
     expect(node.find('.Message')).toBePresent();
+  });
+
+  it('should set conflict state when conflict happens on delete button click', async () => {
+    const conflictedItems = [{id: '1', name: 'alert', type: 'Alert'}];
+    checkDeleteConflict.mockReturnValue({
+      conflictedItems
+    });
+    const node = mount(shallow(<Report {...props} />).get(0));
+    node.setState({
+      loaded: true,
+      reportResult,
+      ...sampleReport
+    });
+
+    await node
+      .find('.Report__delete-button')
+      .first()
+      .simulate('click');
+    expect(node.state().conflict.type).toEqual('Delete');
+    expect(node.state().conflict.items).toEqual(conflictedItems);
+  });
+
+  it('should set conflict state when conflict happens on save button click', async () => {
+    props.match.params.viewMode = 'edit';
+    const conflictedItems = [{id: '1', name: 'alert', type: 'Alert'}];
+    saveReport.mockReturnValue({conflictedItems});
+    const node = mount(shallow(<Report {...props} />).get(0));
+    node.setState({
+      loaded: true,
+      reportResult,
+      ...sampleReport
+    });
+
+    await node.find('.Report__save-button').simulate('click');
+
+    expect(node.state().conflict.type).toEqual('Save');
+    expect(node.state().conflict.items).toEqual(conflictedItems);
   });
 });

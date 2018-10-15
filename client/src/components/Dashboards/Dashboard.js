@@ -8,7 +8,6 @@ import {withErrorHandling} from 'HOC';
 
 import {
   Button,
-  Modal,
   Input,
   ShareEntity,
   DashboardView,
@@ -17,7 +16,8 @@ import {
   Popover,
   ErrorMessage,
   ErrorPage,
-  LoadingIndicator
+  LoadingIndicator,
+  ConfirmationModal
 } from 'components';
 
 import {themed} from 'theme';
@@ -61,7 +61,7 @@ export default themed(
           originalName: null,
           reports: [],
           originalReports: [],
-          deleteModalVisible: false,
+          confirmModalVisible: false,
           addButtonVisible: true,
           autoRefreshInterval: null,
           fullScreenActive: false,
@@ -170,12 +170,12 @@ export default themed(
 
       showDeleteModal = () => {
         this.setState({
-          deleteModalVisible: true
+          confirmModalVisible: true
         });
       };
-      closeDeleteModal = () => {
+      closeConfirmModal = () => {
         this.setState({
-          deleteModalVisible: false
+          confirmModalVisible: false
         });
       };
 
@@ -309,7 +309,7 @@ export default themed(
       };
 
       renderViewMode = state => {
-        const {name, lastModifier, lastModified, deleteModalVisible, isAuthorizedToShare} = state;
+        const {name, lastModifier, lastModified, confirmModalVisible, isAuthorizedToShare} = state;
         return (
           <Fullscreen enabled={this.state.fullScreenActive} onChange={this.changeFullScreen}>
             <div
@@ -391,35 +391,15 @@ export default themed(
                   </Dropdown>
                 </div>
               </div>
-              <Modal
-                open={deleteModalVisible}
-                onClose={this.closeDeleteModal}
-                onConfirm={this.deleteDashboard}
-                className="Dashboard__delete-modal"
-              >
-                <Modal.Header>Delete {this.state.name}</Modal.Header>
-                <Modal.Content>
-                  <p>
-                    You are about to delete {this.state.name}. Are you sure you want to proceed?
-                  </p>
-                </Modal.Content>
-                <Modal.Actions>
-                  <Button
-                    className="Dashboard__close-delete-modal-button"
-                    onClick={this.closeDeleteModal}
-                  >
-                    Cancel
-                  </Button>
-                  <Button
-                    type="primary"
-                    color="red"
-                    className="Dashboard__delete-dashboard-modal-button"
-                    onClick={this.deleteDashboard}
-                  >
-                    Delete
-                  </Button>
-                </Modal.Actions>
-              </Modal>
+              {confirmModalVisible && (
+                <ConfirmationModal
+                  isVisible={confirmModalVisible}
+                  closeModal={this.closeConfirmModal}
+                  entityName={name}
+                  confirmModal={this.deleteDashboard}
+                  defaultOperation="Delete"
+                />
+              )}
               <DashboardView
                 loadReport={loadReport}
                 reports={this.state.reports}

@@ -6,7 +6,6 @@ import {withErrorHandling} from 'HOC';
 import {Link, Redirect} from 'react-router-dom';
 import {
   Button,
-  Modal,
   Input,
   ShareEntity,
   ReportView,
@@ -15,7 +14,8 @@ import {
   ErrorMessage,
   ErrorPage,
   LoadingIndicator,
-  Message
+  Message,
+  ConfirmationModal
 } from 'components';
 
 import {
@@ -29,7 +29,7 @@ import {
   getSharedReport
 } from './service';
 
-import {loadProcessDefinitions} from 'services';
+import {loadProcessDefinitions, checkDeleteConflict} from 'services';
 import ReportControlPanel from './ReportControlPanel';
 import CombinedSelectionPanel from './CombinedSelectionPanel';
 
@@ -54,9 +54,11 @@ export default withErrorHandling(
         loadingReportData: false,
         redirect: false,
         originalName: null,
-        deleteModalVisible: false,
+        confirmModalVisible: false,
         serverError: null,
-        reportType: null
+        reportType: null,
+        redirectToReport: false,
+        conflict: null
       };
     }
 
@@ -249,16 +251,32 @@ export default withErrorHandling(
     };
 
     save = async evt => {
-      saveReport(this.id, {
-        name: this.state.name,
-        data: this.state.data,
-        reportType: this.state.reportType
-      });
-
-      this.setState({
-        originalData: {...this.state.data},
-        originalName: this.state.name
-      });
+      const response = await saveReport(
+        this.id,
+        {
+          name: this.state.name,
+          data: this.state.data,
+          reportType: this.state.reportType
+        },
+        this.state.conflict !== null
+      );
+      if (response && response.conflictedItems) {
+        this.setState({
+          confirmModalVisible: true,
+          conflict: {
+            type: 'Save',
+            items: response.conflictedItems
+          }
+        });
+      } else {
+        this.setState({
+          confirmModalVisible: false,
+          originalData: {...this.state.data},
+          originalName: this.state.name,
+          redirectToReport: evt,
+          conflict: null
+        });
+      }
     };
 
     cancel = async () => {
@@ -274,15 +292,28 @@ export default withErrorHandling(
       });
     };
 
-    showDeleteModal = () => {
+    showDeleteModal = async () => {
+      let conflictState = {};
+      const response = await checkDeleteConflict(this.id, 'report');
+      if (response && response.conflictedItems && response.conflictedItems.length) {
+        conflictState = {
+          conflict: {
+            type: 'Delete',
+            items: response.conflictedItems
+          }
+        };
+      }
+
       this.setState({
-        deleteModalVisible: true
+        confirmModalVisible: true,
+        ...conflictState
       });
     };
 
-    closeDeleteModal = () => {
+    closeConfirmModal = () => {
       this.setState({
-        deleteModalVisible: false
+        confirmModalVisible: false,
+        conflict: null
       });
     };
 
@@ -327,7 +358,8 @@ export default withErrorHandling(
         data,
         reportResult,
         loadingReportData,
-        reportType
+        reportType,
+        redirectToReport
       } = this.state;
       return (
         <div className="Report">
@@ -353,15 +385,15 @@ export default withErrorHandling(
               </div>
             </div>
             <div className="Report__tools">
-              <Link
+              <button
                 className="Button Report__tool-button Report__save-button"
-                to={`/report/${this.id}`}
                 disabled={!this.state.name}
                 onClick={this.save}
               >
                 <Icon type="check" />
                 Save
-              </Link>
+              </button>
+              {redirectToReport && <Redirect to={`/report/${this.id}`} />}
               <Link
                 className="Button Report__tool-button Report__cancel-button"
                 to={`/report/${this.id}`}
@@ -470,7 +502,7 @@ export default withErrorHandling(
     };
 
     renderViewMode = () => {
-      const {name, lastModifier, lastModified, reportResult, deleteModalVisible} = this.state;
+      const {name, lastModifier, lastModified, reportResult} = this.state;
 
       return (
         <div className="Report">
@@ -485,6 +517,7 @@ export default withErrorHandling(
               <Link
                 className="Report__tool-button Report__edit-button"
                 to={`/report/${this.id}/edit`}
+                onClick={() => this.setState({redirectToReport: false})}
               >
                 <Button>
                   <Icon type="edit" />
@@ -524,30 +557,6 @@ export default withErrorHandling(
               )}
             </div>
           </div>
-          <Modal
-            open={deleteModalVisible}
-            onClose={this.closeDeleteModal}
-            onConfirm={this.deleteReport}
-            className="Report__delete-modal"
-          >
-            <Modal.Header>Delete {this.state.name}</Modal.Header>
-            <Modal.Content>
-              <p>You are about to delete {this.state.name}. Are you sure you want to proceed?</p>
-            </Modal.Content>
-            <Modal.Actions>
-              <Button className="Report__close-delete-modal-button" onClick={this.closeDeleteModal}>
-                Cancel
-              </Button>
-              <Button
-                type="primary"
-                color="red"
-                className="Report__delete-report-modal-button"
-                onClick={this.deleteReport}
-              >
-                Delete
-              </Button>
-            </Modal.Actions>
-          </Modal>
           <div className="Report__view">
             <div className="Report__content">
               <ReportView report={reportResult} />
@@ -572,7 +581,7 @@ export default withErrorHandling(
     render() {
       const {viewMode} = this.props.match.params;
 
-      const {loaded, redirect, serverError} = this.state;
+      const {loaded, redirect, serverError, confirmModalVisible, conflict, name} = this.state;
 
       if (serverError) {
         return <ErrorPage entity="report" statusCode={serverError} />;
@@ -588,6 +597,16 @@ export default withErrorHandling(
 
       return (
         <div className="Report-container">
+          {confirmModalVisible && (
+            <ConfirmationModal
+              isVisible={confirmModalVisible}
+              closeModal={this.closeConfirmModal}
+              conflict={conflict}
+              entityName={name}
+              confirmModal={conflict && conflict.type === 'Save' ? this.save : this.deleteReport}
+              defaultOperation="Delete"
+            />
+          )}
           {viewMode === 'edit' ? this.renderEditMode() : this.renderViewMode()}
         </div>
       );
