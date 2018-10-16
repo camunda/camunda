@@ -25,10 +25,11 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
+
 @Component
 public class ReportReader {
-
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger logger = LoggerFactory.getLogger(ReportReader.class);
 
   @Autowired
   private Client esclient;
@@ -86,7 +87,7 @@ public class ReportReader {
       )
       .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
       .setQuery(QueryBuilders.matchAllQuery())
-      .setSize(1000)
+      .setSize(LIST_FETCH_LIMIT)
       .get();
 
     return ElasticsearchHelper.retrieveAllScrollResults(
@@ -99,9 +100,7 @@ public class ReportReader {
   }
 
   public List<CombinedReportDefinitionDto> findFirstCombinedReportsForSimpleReport(String simpleReportId) {
-    // Note: this is capped to 1000 as a generous practical limit, no paging
-    final int limit = 1000;
-    logger.debug("Fetching first {} combined reports using simpleReport with id {}", limit, simpleReportId);
+    logger.debug("Fetching first combined reports using simpleReport with id {}", simpleReportId);
 
     final QueryBuilder getCombinedReportsBySimpleReportIdQuery = QueryBuilders.boolQuery()
       .filter(QueryBuilders.nestedQuery(
@@ -113,7 +112,7 @@ public class ReportReader {
     SearchResponse searchResponse = esclient
       .prepareSearch(configurationService.getOptimizeIndex(ElasticsearchConstants.COMBINED_REPORT_TYPE))
       .setQuery(getCombinedReportsBySimpleReportIdQuery)
-      .setSize(limit)
+      .setSize(LIST_FETCH_LIMIT)
       .get();
 
     return ElasticsearchHelper.mapHits(searchResponse.getHits(), CombinedReportDefinitionDto.class, objectMapper);

@@ -11,14 +11,7 @@ import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
-import org.junit.runner.RunWith;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -57,7 +50,8 @@ public class DashboardHandlingIT {
     // then
     GetResponse response =
       elasticSearchRule.getClient()
-        .prepareGet(elasticSearchRule.getOptimizeIndex(elasticSearchRule.getDashboardType()),
+        .prepareGet(
+          elasticSearchRule.getOptimizeIndex(elasticSearchRule.getDashboardType()),
           elasticSearchRule.getDashboardType(),
           id
         )
@@ -286,23 +280,64 @@ public class DashboardHandlingIT {
     assertThat(dashboards.get(0).getId(), is(id3));
   }
 
+  @Test
+  public void deletedSingleReportIsRemovedFromDashboardWhenForced() {
+    // given
+    String dashboardId = createNewDashboard();
+    String reportIdToDelete = createNewSingleReport();
+
+    ReportLocationDto reportToBeDeletedReportLocationDto = new ReportLocationDto();
+    reportToBeDeletedReportLocationDto.setId(reportIdToDelete);
+    reportToBeDeletedReportLocationDto.setConfiguration("testConfiguration");
+    DashboardDefinitionDto dashboard = new DashboardDefinitionDto();
+    dashboard.setReports(Collections.singletonList(reportToBeDeletedReportLocationDto));
+    updateDashboard(dashboardId, dashboard);
+
+    // when
+    deleteReport(reportIdToDelete, true);
+
+    // then
+    getAllDashboards()
+      .forEach(dashboardDefinitionDto -> dashboardDefinitionDto.getReports()
+        .forEach(reportLocationDto -> assertThat(reportLocationDto.getId(), is(not(reportIdToDelete))))
+      );
+  }
+
+  private String createNewSingleReport() {
+    return embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildCreateSingleReportRequest()
+      .execute(IdDto.class, 200)
+      .getId();
+  }
+
+  private void deleteReport(String reportId, Boolean force) {
+    Response response = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildDeleteReportRequest(reportId, force)
+      .execute();
+
+    // then the status code is okay
+    assertThat(response.getStatus(), is(204));
+  }
+
   private void shiftTimeByOneSecond() {
     LocalDateUtil.setCurrentTime(LocalDateUtil.getCurrentDateTime().plusSeconds(1L));
   }
 
   private String createNewDashboard() {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildCreateDashboardRequest()
-            .execute(IdDto.class, 200)
-            .getId();
+      .getRequestExecutor()
+      .buildCreateDashboardRequest()
+      .execute(IdDto.class, 200)
+      .getId();
   }
 
   private void updateDashboard(String id, DashboardDefinitionDto updatedDashboard) {
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildUpdateDashboardRequest(id, updatedDashboard)
-            .execute();
+      .getRequestExecutor()
+      .buildUpdateDashboardRequest(id, updatedDashboard)
+      .execute();
     assertThat(response.getStatus(), is(204));
   }
 
@@ -313,9 +348,9 @@ public class DashboardHandlingIT {
 
   private List<DashboardDefinitionDto> getAllDashboardsWithQueryParam(Map<String, Object> queryParams) {
     return embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildGetAllDashboardsRequest()
-            .addQueryParams(queryParams)
-            .executeAndReturnList(DashboardDefinitionDto.class, 200);
+      .getRequestExecutor()
+      .buildGetAllDashboardsRequest()
+      .addQueryParams(queryParams)
+      .executeAndReturnList(DashboardDefinitionDto.class, 200);
   }
 }

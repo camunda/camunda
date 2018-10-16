@@ -149,8 +149,6 @@ public class ReportWriter {
     )
     .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
     .get();
-
-    removeSingleReportFromCombinedReports(reportId);
   }
 
   public void removeSingleReportFromCombinedReports(String reportId) {
@@ -176,7 +174,7 @@ public class ReportWriter {
 
     BulkByScrollResponse response = updateByQuery.get();
     if(!response.getBulkFailures().isEmpty()) {
-      logger.error("Could not remove deleted report ids from a combined report!");
+      logger.error("Could not remove report id from one or more combined report/s! {}", response.getBulkFailures());
     }
   }
 

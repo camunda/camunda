@@ -2,22 +2,32 @@ package org.camunda.optimize.service.es.writer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionUpdateDto;
+import org.camunda.optimize.service.es.schema.type.DashboardType;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.xcontent.XContentType;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.reindex.BulkByScrollResponse;
+import org.elasticsearch.index.reindex.UpdateByQueryAction;
+import org.elasticsearch.index.reindex.UpdateByQueryRequestBuilder;
+import org.elasticsearch.script.Script;
+import org.elasticsearch.script.ScriptType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -59,8 +69,8 @@ public class DashboardWriter {
 
     esclient
       .prepareIndex(
-        configurationService.getOptimizeIndex(configurationService.getDashboardType()),
-        configurationService.getDashboardType(),
+        configurationService.getOptimizeIndex(ElasticsearchConstants.DASHBOARD_TYPE),
+        ElasticsearchConstants.DASHBOARD_TYPE,
         id
       )
       .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
@@ -73,12 +83,14 @@ public class DashboardWriter {
     return idDto;
   }
 
-  public void updateDashboard(DashboardDefinitionUpdateDto dashboard, String id) throws OptimizeException, JsonProcessingException {
+  public void updateDashboard(DashboardDefinitionUpdateDto dashboard, String id) throws
+                                                                                 OptimizeException,
+                                                                                 JsonProcessingException {
     logger.debug("Updating dashboard with id [{}] in Elasticsearch", id);
     UpdateResponse updateResponse = esclient
       .prepareUpdate(
-        configurationService.getOptimizeIndex(configurationService.getDashboardType()),
-        configurationService.getDashboardType(),
+        configurationService.getOptimizeIndex(ElasticsearchConstants.DASHBOARD_TYPE),
+        ElasticsearchConstants.DASHBOARD_TYPE,
         id
       )
       .setDoc(objectMapper.writeValueAsString(dashboard), XContentType.JSON)
@@ -87,25 +99,55 @@ public class DashboardWriter {
       .get();
 
     if (updateResponse.getShardInfo().getFailed() > 0) {
-      logger.error("Was not able to store dashboard with id [{}] and name [{}]. Exception: {} \n Stacktrace: {}",
+      logger.error(
+        "Was not able to store dashboard with id [{}] and name [{}]. Exception: {} \n Stacktrace: {}",
         id,
-        dashboard.getName());
+        dashboard.getName()
+      );
       throw new OptimizeException("Was not able to store dashboard!");
     }
   }
 
-  private String currentDateAsString() {
-    return dateTimeFormatter.format(LocalDateUtil.getCurrentDateTime());
+  public void removeReportFromDashboards(String reportId) {
+    UpdateByQueryRequestBuilder updateByQuery = UpdateByQueryAction.INSTANCE.newRequestBuilder(esclient);
+    Script removeReportIdFromCombinedReportsScript = new Script(
+      ScriptType.INLINE,
+      Script.DEFAULT_SCRIPT_LANG,
+      "ctx._source.reports.removeIf(report -> report.id.equals(params.idToRemove))",
+      Collections.singletonMap("idToRemove", reportId)
+    );
+
+    updateByQuery.source(configurationService.getOptimizeIndex(ElasticsearchConstants.DASHBOARD_TYPE))
+      .abortOnVersionConflict(false)
+      .setMaxRetries(configurationService.getNumberOfRetriesOnConflict())
+      .filter(
+        QueryBuilders.nestedQuery(
+          DashboardType.REPORTS,
+          QueryBuilders.termQuery(DashboardType.REPORTS + "." + DashboardType.ID, reportId),
+          ScoreMode.None
+        )
+      )
+      .script(removeReportIdFromCombinedReportsScript)
+      .refresh(true);
+
+    BulkByScrollResponse response = updateByQuery.get();
+    if (!response.getBulkFailures().isEmpty()) {
+      logger.error("Could not remove report id from one or more dashboard/s! {}", response.getBulkFailures());
+    }
   }
 
   public void deleteDashboard(String dashboardId) {
     logger.debug("Deleting dashboard with id [{}]", dashboardId);
     esclient.prepareDelete(
-      configurationService.getOptimizeIndex(configurationService.getDashboardType()),
-      configurationService.getDashboardType(),
+      configurationService.getOptimizeIndex(ElasticsearchConstants.DASHBOARD_TYPE),
+      ElasticsearchConstants.DASHBOARD_TYPE,
       dashboardId
     )
-    .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
-    .get();
+      .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
+      .get();
+  }
+
+  private String currentDateAsString() {
+    return dateTimeFormatter.format(LocalDateUtil.getCurrentDateTime());
   }
 }

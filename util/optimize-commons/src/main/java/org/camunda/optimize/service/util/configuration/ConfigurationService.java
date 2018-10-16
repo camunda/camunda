@@ -513,13 +513,6 @@ public class ConfigurationService {
     return licenseType;
   }
 
-  public String getDashboardType() {
-    if (dashboardType == null) {
-      dashboardType = jsonContext.read(ConfigurationServiceConstants.DASHBOARD_TYPE);
-    }
-    return dashboardType;
-  }
-
   public long getSamplerInterval() {
     if (samplerInterval == null) {
       samplerInterval = jsonContext.read(ConfigurationServiceConstants.SAMPLER_INTERVAL, Long.class);

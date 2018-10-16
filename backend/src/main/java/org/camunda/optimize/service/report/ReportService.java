@@ -89,6 +89,8 @@ public class ReportService {
     if (SINGLE_REPORT_TYPE.equals(reportDefinition.getReportType())) {
       alertService.deleteAlertsForReport(reportId);
       sharingService.deleteShareForReport(reportId);
+      reportWriter.removeSingleReportFromCombinedReports(reportId);
+      dashboardService.removeReportFromDashboards(reportId);
       reportWriter.deleteSingleReport(reportId);
     } else if (COMBINED_REPORT_TYPE.equals(reportDefinition.getReportType())) {
       reportWriter.deleteCombinedReport(reportId);

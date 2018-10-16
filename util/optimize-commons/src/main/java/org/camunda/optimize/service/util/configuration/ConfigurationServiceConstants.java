@@ -54,7 +54,6 @@ public interface ConfigurationServiceConstants {
   String IMPORT_INDEX_TYPE = "$.import.indexType";
   String IMPORT_INDEX_AUTO_STORAGE_INTERVAL = "$.import.importIndexStorageIntervalInSec";
   String LICENSE_TYPE = "$.es.licenseType";
-  String DASHBOARD_TYPE = "$.es.dashboardType";
   String ALERT_TYPE = "$.es.alertType";
   String REPORT_SHARE_TYPE = "$.es.reportShareType";
   String DASHBOARD_SHARE_TYPE = "$.es.dashboardShareType";

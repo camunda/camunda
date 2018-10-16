@@ -5,6 +5,7 @@ import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
@@ -20,10 +21,11 @@ import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.List;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
+
 @Component
 public class DashboardReader {
-
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger logger = LoggerFactory.getLogger(DashboardReader.class);
 
   @Autowired
   private Client esclient;
@@ -36,8 +38,8 @@ public class DashboardReader {
     logger.debug("Fetching dashboard with id [{}]", dashboardId);
     GetResponse getResponse = esclient
       .prepareGet(
-        configurationService.getOptimizeIndex(configurationService.getDashboardType()),
-        configurationService.getDashboardType(),
+        configurationService.getOptimizeIndex(ElasticsearchConstants.DASHBOARD_TYPE),
+        ElasticsearchConstants.DASHBOARD_TYPE,
         dashboardId
       )
       .setRealtime(false)
@@ -59,9 +61,7 @@ public class DashboardReader {
   }
 
   public List<DashboardDefinitionDto> findFirstDashboardsForReport(String reportId) {
-    // Note: this is capped to 1000 as a generous practical limit, no paging
-    final int limit = 1000;
-    logger.debug("Fetching first {} dashboards using report with id {}", limit, reportId);
+    logger.debug("Fetching dashboards using report with id {}", reportId);
 
     final QueryBuilder getCombinedReportsBySimpleReportIdQuery = QueryBuilders.boolQuery()
       .filter(QueryBuilders.nestedQuery(
@@ -71,10 +71,10 @@ public class DashboardReader {
       ));
 
     SearchResponse searchResponse = esclient
-      .prepareSearch(configurationService.getOptimizeIndex(configurationService.getDashboardType()))
-      .setTypes(configurationService.getDashboardType())
+      .prepareSearch(configurationService.getOptimizeIndex(ElasticsearchConstants.DASHBOARD_TYPE))
+      .setTypes(ElasticsearchConstants.DASHBOARD_TYPE)
       .setQuery(getCombinedReportsBySimpleReportIdQuery)
-      .setSize(limit)
+      .setSize(LIST_FETCH_LIMIT)
       .get();
 
     return ElasticsearchHelper.mapHits(searchResponse.getHits(), DashboardDefinitionDto.class, objectMapper);
@@ -83,11 +83,11 @@ public class DashboardReader {
   public List<DashboardDefinitionDto> getAllDashboards() {
     logger.debug("Fetching all available dashboards");
     SearchResponse scrollResp = esclient
-      .prepareSearch(configurationService.getOptimizeIndex(configurationService.getDashboardType()))
-      .setTypes(configurationService.getDashboardType())
+      .prepareSearch(configurationService.getOptimizeIndex(ElasticsearchConstants.DASHBOARD_TYPE))
+      .setTypes(ElasticsearchConstants.DASHBOARD_TYPE)
       .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
       .setQuery(QueryBuilders.matchAllQuery())
-      .setSize(100)
+      .setSize(LIST_FETCH_LIMIT)
       .get();
 
     return ElasticsearchHelper.retrieveAllScrollResults(

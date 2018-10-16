@@ -59,6 +59,10 @@ public class DashboardService {
     return dashboardReader.findFirstDashboardsForReport(reportId);
   }
 
+  public void removeReportFromDashboards(String reportId) {
+    dashboardWriter.removeReportFromDashboards(reportId);
+  }
+
   public void deleteDashboard(String dashboardId) {
     dashboardWriter.deleteDashboard(dashboardId);
   }

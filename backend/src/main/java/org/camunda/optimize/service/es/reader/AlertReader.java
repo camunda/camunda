@@ -19,10 +19,12 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.List;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
+
 
 @Component
 public class AlertReader {
-  private final Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger logger = LoggerFactory.getLogger(AlertReader.class);
 
   @Autowired
   private Client esclient;
@@ -41,7 +43,7 @@ public class AlertReader {
         .setTypes(configurationService.getAlertType())
         .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
         .setQuery(query)
-      .setSize(1000)
+      .setSize(LIST_FETCH_LIMIT)
       .get();
 
     return ElasticsearchHelper.retrieveAllScrollResults(
@@ -79,8 +81,7 @@ public class AlertReader {
   }
 
   public List<AlertDefinitionDto> findFirstAlertsForReport(String reportId) {
-    // Note: this is capped to 1000 as a generous practical limit, no paging
-    final int limit = 1000;
+    final int limit = LIST_FETCH_LIMIT;
     logger.debug("Fetching first {} alerts using report with id {}", limit, reportId);
 
     final QueryBuilder query = QueryBuilders.termQuery(AlertType.REPORT_ID, reportId);

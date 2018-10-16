@@ -6,6 +6,8 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_TYPE;
+
 @Component
 public class DashboardType extends StrictTypeMappingCreator {
 
@@ -30,7 +32,7 @@ public class DashboardType extends StrictTypeMappingCreator {
 
   @Override
   public String getType() {
-    return configurationService.getDashboardType();
+    return DASHBOARD_TYPE;
   }
 
   @Override
