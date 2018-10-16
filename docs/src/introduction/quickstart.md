@@ -347,6 +347,9 @@ And complete it by its job key `32`.
 2018/10/15 13:55:33 Completed job with key 32 and payload {}
 ```
 
+If you want to visualize the state of the workflow instances you can start the
+[Zeebe simple monitor](https://github.com/zeebe-io/zeebe-simple-monitor).
+
 ## Next steps
 
 To continue working with Zeebe we recommend to get more familiar with the basic

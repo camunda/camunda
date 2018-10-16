@@ -23,9 +23,9 @@ You will be guided through the following steps:
 * [Zeebe Monitor](https://github.com/zeebe-io/zeebe-simple-monitor/releases)
 
 
-Before you begin to setup your project please start the broker, i.e. by running the start up script 
-`bin/broker` or `bin/broker.bat` in the distribution. Per default the broker is binding to the 
-address `localhost:26500`, which is used as contact point in this guide. In case your broker is 
+Before you begin to setup your project please start the broker, i.e. by running the start up script
+`bin/broker` or `bin/broker.bat` in the distribution. Per default the broker is binding to the
+address `localhost:26500`, which is used as contact point in this guide. In case your broker is
 available under another address please adjust the broker contact point when building the client.
 
 ## Set up a project
@@ -156,7 +156,7 @@ key:1 workflows:<bpmnProcessId:"order-process" version:1 workflowKey:1 resourceN
 
 Finally, we are ready to create a first instance of the deployed workflow.  A
 workflow instance is created of a specific version of the workflow, which can
-be set on creation. 
+be set on creation.
 
 ```go
 package main
@@ -225,8 +225,8 @@ Insert a few service tasks between the start and the end event.
 You need to set the type of each task, which identifies the nature of the work to be performed.
 Set the type of the first task to `payment-service`.
 
-Add the following lines to redeploy the modified process, activate a job and complete it for
-the first tasks type:
+Add the following lines to redeploy the modified process, then activate and
+complete a job of the first task type:
 
 ```go
 package main
@@ -292,9 +292,9 @@ When you have a look at the Zeebe Monitor, then you can see that the workflow in
 When you run the above example you should see similar output:
 
 ```
-key:26 workflows:<bpmnProcessId:"order-process" version:2 workflowKey:2 resourceName:"order-process.bpmn" >                                                                                             
-workflowKey:2 bpmnProcessId:"order-process" version:2 workflowInstanceKey:31                                                                                                                            
-Completed job key:2 type:"payment-service" jobHeaders:<workflowInstanceKey:31 bpmnProcessId:"order-process" workflowDefinitionVersion:2 workflowKey:2 activityId:"collect-money" activityInstanceKey:46 > customHeaders:"{\"method\":\"VISA\"}" worker:"sample-app" retries:3 deadline:1539603072292 payload:"{\"orderId\":\"31243\"}" 
+key:26 workflows:<bpmnProcessId:"order-process" version:2 workflowKey:2 resourceName:"order-process.bpmn" >
+workflowKey:2 bpmnProcessId:"order-process" version:2 workflowInstanceKey:31
+Completed job key:2 type:"payment-service" jobHeaders:<workflowInstanceKey:31 bpmnProcessId:"order-process" workflowDefinitionVersion:2 workflowKey:2 activityId:"collect-money" activityInstanceKey:46 > customHeaders:"{\"method\":\"VISA\"}" worker:"sample-app" retries:3 deadline:1539603072292 payload:"{\"orderId\":\"31243\"}"
 ```
 
 
