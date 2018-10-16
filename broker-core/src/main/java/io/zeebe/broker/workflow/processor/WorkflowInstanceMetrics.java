@@ -21,6 +21,7 @@ import io.zeebe.util.metrics.Metric;
 import io.zeebe.util.metrics.MetricsManager;
 
 public class WorkflowInstanceMetrics implements AutoCloseable {
+  private final Metric workflowInstanceEventCreated;
   private final Metric workflowInstanceEventCanceled;
   private final Metric workflowInstanceEventCompleted;
 
@@ -42,6 +43,14 @@ public class WorkflowInstanceMetrics implements AutoCloseable {
             .label("partition", partitionIdString)
             .label("type", "completed")
             .create();
+
+    workflowInstanceEventCreated =
+        metricsManager
+            .newMetric("workflow_instance_events_count")
+            .type("counter")
+            .label("partition", partitionIdString)
+            .label("type", "created")
+            .create();
   }
 
   public void countInstanceCanceled() {
@@ -52,8 +61,13 @@ public class WorkflowInstanceMetrics implements AutoCloseable {
     workflowInstanceEventCompleted.incrementOrdered();
   }
 
+  public void countInstanceCreated() {
+    workflowInstanceEventCreated.incrementOrdered();
+  }
+
   @Override
   public void close() {
+    workflowInstanceEventCreated.close();
     workflowInstanceEventCanceled.close();
     workflowInstanceEventCompleted.close();
   }

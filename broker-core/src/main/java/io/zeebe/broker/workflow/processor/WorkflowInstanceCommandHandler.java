@@ -15,22 +15,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.processor.instance;
+package io.zeebe.broker.workflow.processor;
 
-import io.zeebe.broker.logstreams.processor.TypedRecord;
-import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
-import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
-import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+public interface WorkflowInstanceCommandHandler {
 
-public final class WorkflowInstanceRejectedEventProcessor
-    implements TypedRecordProcessor<WorkflowInstanceRecord> {
-
-  @Override
-  public void processRecord(
-      TypedRecord<WorkflowInstanceRecord> record,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter) {
-    responseWriter.writeRejection(record);
-  }
+  void handle(WorkflowInstanceCommandContext commandContext);
 }

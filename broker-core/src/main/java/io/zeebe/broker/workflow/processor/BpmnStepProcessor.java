@@ -41,24 +41,23 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
   private final WorkflowEngineState state;
   private final BpmnStepHandlers stepHandlers;
   private final BpmnStepGuards stepGuards;
-
   private final WorkflowState workflowState;
+  private final BpmnStepContext context;
+
   private ElementInstanceState elementInstanceState;
 
-  private BpmnStepContext context;
-
   public BpmnStepProcessor(
-      WorkflowState workflowState, SubscriptionCommandSender subscriptionCommandSender) {
-    this.workflowState = workflowState;
+      WorkflowEngineState state, SubscriptionCommandSender subscriptionCommandSender) {
+    this.state = state;
+    this.workflowState = state.getWorkflowState();
     this.stepHandlers = new BpmnStepHandlers(subscriptionCommandSender, workflowState);
     this.stepGuards = new BpmnStepGuards();
-    this.state = new WorkflowEngineState(workflowState);
+    final EventOutput eventOutput = new EventOutput(state);
+    this.context = new BpmnStepContext<>(eventOutput);
   }
 
   @Override
   public void onOpen(TypedStreamProcessor streamProcessor) {
-    state.onOpen(streamProcessor);
-    this.context = new BpmnStepContext<>(state);
     this.elementInstanceState = workflowState.getElementInstanceState();
   }
 
@@ -75,6 +74,7 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
       Consumer<SideEffectProducer> sideEffect) {
 
     populateEventContext(record, streamWriter, sideEffect);
+
     if (stepGuards.shouldHandle(context)) {
       state.onEventConsumed(record);
       stepHandlers.handle(context);

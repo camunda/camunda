@@ -91,7 +91,6 @@ public class CreateWorkflowInstanceTest {
         testClient.receiveFirstWorkflowInstanceCommand(CREATE);
 
     assertThat(resp.key()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
-    assertThat(resp.position()).isGreaterThan(createWorkflowCommand.position());
     assertThat(resp.sourceRecordPosition()).isEqualTo(createWorkflowCommand.position());
     assertThat(resp.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
     assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
@@ -121,7 +120,6 @@ public class CreateWorkflowInstanceTest {
         testClient.receiveFirstWorkflowInstanceCommand(CREATE);
 
     assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-    assertThat(resp.position()).isGreaterThan(createWorkflowCommand.position());
     assertThat(resp.sourceRecordPosition()).isEqualTo(createWorkflowCommand.position());
     assertThat(resp.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
     assertThat(resp.intent()).isEqualTo(CREATED);
@@ -295,7 +293,6 @@ public class CreateWorkflowInstanceTest {
         testClient.receiveFirstWorkflowInstanceCommand(CREATE);
 
     assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-    assertThat(resp.position()).isGreaterThan(createWorkflowCommand.position());
     assertThat(resp.sourceRecordPosition()).isEqualTo(createWorkflowCommand.position());
     assertThat(resp.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
     assertThat(resp.intent()).isEqualTo(CREATED);

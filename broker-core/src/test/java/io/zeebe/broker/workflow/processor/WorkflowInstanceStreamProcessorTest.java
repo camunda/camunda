@@ -38,6 +38,7 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceReco
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
+import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.function.Predicate;
@@ -426,6 +427,37 @@ public class WorkflowInstanceStreamProcessorTest {
             eq(subscription.getWorkflowInstanceKey()),
             eq(subscription.getActivityInstanceKey()),
             any());
+  }
+
+  /** https://github.com/zeebe-io/zeebe/issues/1411 */
+  @Test
+  public void shouldUpdateStateOnCommands() {
+    // given
+    streamProcessorRule.deploy(SERVICE_TASK_WORKFLOW);
+    final TypedRecord<WorkflowInstanceRecord> createdEvent =
+        streamProcessorRule.createWorkflowInstance(PROCESS_ID);
+
+    streamProcessorRule.awaitElementInState("task", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+
+    streamProcessor.blockAfterWorkflowInstanceRecord(
+        r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.UPDATE_PAYLOAD);
+
+    final WorkflowInstanceRecord payloadUpdate = createdEvent.getValue();
+    payloadUpdate.setPayload(MsgPackUtil.asMsgPack("key", "val"));
+
+    envRule.writeCommand(
+        createdEvent.getKey(), WorkflowInstanceIntent.UPDATE_PAYLOAD, payloadUpdate);
+    waitUntil(() -> streamProcessor.isBlocked());
+
+    // when
+    streamProcessor.restart();
+    streamProcessorRule.completeFirstJob();
+
+    // then
+    final TypedRecord<WorkflowInstanceRecord> completedEvent =
+        streamProcessorRule.awaitElementInState(
+            PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED);
+    MsgPackUtil.assertEquality(completedEvent.getValue().getPayload(), "{'key': 'val'}");
   }
 
   private Predicate<TypedRecord<WorkflowInstanceRecord>> isForElement(final String elementId) {
