@@ -180,7 +180,15 @@ export default class Filters extends React.Component {
               />
             }
           >
-            <CollapsablePanel.Header isRounded>Filters</CollapsablePanel.Header>
+            <CollapsablePanel.Header isRounded>
+              Filters
+              <Styled.FiltersBadge
+                type="filters"
+                isDefault={isEqual(this.props.filter, DEFAULT_FILTER)}
+              >
+                {this.props.filterCount}
+              </Styled.FiltersBadge>
+            </CollapsablePanel.Header>
             <CollapsablePanel.Body>
               <Styled.Filters>
                 {!isWorkflowsDataLoaded ? null : (
