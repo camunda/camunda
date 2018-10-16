@@ -65,7 +65,7 @@ cd bin/
 13:59:22.170 [io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl] [client-zb-actors-0] INFO  io.zeebe.transport.endpoint - Registering endpoint for node '0' with address '0.0.0.0:26501' on transport 'broker-client-internal'
 13:59:22.444 [] [main] INFO  io.zeebe.gateway - Gateway started using grpc server: ServerImpl{logId=2, transportServer=NettyServer{logId=1, address=/0.0.0.0:26500}}
 13:59:22.453 [service-controller] [0.0.0.0:26501-zb-actors-1] INFO  io.zeebe.raft - Created raft partition-0 with configuration RaftConfiguration{heartbeatInterval='250ms', electionInterval='1s', leaveTimeout='1s'}
-13:59:22.505 [partition-0] [0.0.0.0:26501-zb-actors-0] INFO  io.zeebe.raft - Joined raft in term 0       
+13:59:22.505 [partition-0] [0.0.0.0:26501-zb-actors-0] INFO  io.zeebe.raft - Joined raft in term 0
 13:59:22.897 [exporter] [0.0.0.0:26501-zb-actors-0] INFO  io.zeebe.broker.exporter.debug - Debug exporter opened
 
 ```
@@ -143,10 +143,10 @@ which is used to complete the job later.
 
 After working on the job we can complete it using the `key` from the activated job.
 ```
-./bin/zbctl complete job 2                                                                       
+./bin/zbctl complete job 2
 ```
 ```
-2018/10/15 13:48:26 Completed job with key 2 and payload {} 
+2018/10/15 13:48:26 Completed job with key 2 and payload {}
 ```
 
 ## Step 5: Deploy a workflow
@@ -193,10 +193,10 @@ the types `payment-service`, `inventory-service` and `shipment-service`.
 But first let's deploy the workflow to the Zeebe broker.
 
 ```
-./bin/zbctl deploy order-process.bpmn                                                            
+./bin/zbctl deploy order-process.bpmn
 ```
 ```
-{                                                                                                  
+{
   "key": 1,
   "workflows": [
     {
@@ -229,10 +229,10 @@ specify the initial data of the instance as payload when we start the instance.
 > - Powershell: `'{"\"orderId"\": 1234}'`
 
 ```
-/bin/zbctl create instance order-process --payload '{"orderId": 1234}'                          
+./bin/zbctl create instance order-process --payload '{"orderId": 1234}'
 ```
 ```
-{                                                                                                  
+{
   "workflowKey": 1,
   "bpmnProcessId": "order-process",
   "version": 1,
@@ -272,7 +272,7 @@ First activate a job for the `payment-service` type.
 ```
 And complete it by its job key `12`.
 ```
-/bin/zbctl complete job 12
+./bin/zbctl complete job 12
 ```
 ```
 2018/10/15 13:55:08 Completed job with key 12 and payload {}
