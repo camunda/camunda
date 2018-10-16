@@ -15,7 +15,26 @@
  */
 package io.zeebe.msgpack.mapping;
 
-import static io.zeebe.msgpack.mapping.MappingTestUtil.*;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.JSON_MAPPER;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.MSGPACK_MAPPER;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.MSG_PACK_BYTES;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.NODE_ARRAY_KEY;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.NODE_BOOLEAN_KEY;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.NODE_BOOLEAN_VALUE;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.NODE_DOUBLE_KEY;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.NODE_DOUBLE_VALUE;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.NODE_INTEGER_KEY;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.NODE_INTEGER_VALUE;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.NODE_JSON_OBJECT_KEY;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.NODE_LONG_KEY;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.NODE_LONG_VALUE;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.NODE_STRING_KEY;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.NODE_STRING_VALUE;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.NODE_TEST_ATTR_KEY;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.NODE_TEST_ATTR_VALUE;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.assertThatIsArrayNode;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.assertThatIsLeafNode;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.assertThatIsMapNode;
 import static io.zeebe.msgpack.mapping.MappingTestUtil.constructNodeId;
 
 import org.agrona.DirectBuffer;
@@ -29,10 +48,9 @@ public class MsgPackDocumentIndexerTest {
   public void shouldIndexDocument() throws Exception {
     // given document
     final DirectBuffer document = new UnsafeBuffer(MSG_PACK_BYTES);
-    indexer.wrap(document);
 
     // when
-    final MsgPackTree documentTree = indexer.index();
+    final MsgPackTree documentTree = indexer.index(document);
 
     // then tree is expected as
     assertThatIsMapNode(
@@ -91,10 +109,9 @@ public class MsgPackDocumentIndexerTest {
     final byte[] msgPackBytes =
         MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree(jsonDocument));
     final DirectBuffer document = new UnsafeBuffer(msgPackBytes);
-    indexer.wrap(document);
 
     // when
-    final MsgPackTree documentTree = indexer.index();
+    final MsgPackTree documentTree = indexer.index(document);
 
     // then tree is expected as
     assertThatIsMapNode(documentTree, "$", "first");
@@ -149,10 +166,9 @@ public class MsgPackDocumentIndexerTest {
     final byte[] msgPackBytes =
         MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree(jsonDocument));
     final DirectBuffer document = new UnsafeBuffer(msgPackBytes);
-    indexer.wrap(document);
 
     // when
-    final MsgPackTree documentTree = indexer.index();
+    final MsgPackTree documentTree = indexer.index(document);
 
     // then tree is expected as
     assertThatIsMapNode(documentTree, "$", "friends");
@@ -186,10 +202,9 @@ public class MsgPackDocumentIndexerTest {
     final byte[] msgPackBytes =
         MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree(jsonDocument));
     final DirectBuffer document = new UnsafeBuffer(msgPackBytes);
-    indexer.wrap(document);
 
     // when
-    final MsgPackTree documentTree = indexer.index();
+    final MsgPackTree documentTree = indexer.index(document);
 
     // then tree is expected as
     assertThatIsMapNode(documentTree, "$", "a", "a0");

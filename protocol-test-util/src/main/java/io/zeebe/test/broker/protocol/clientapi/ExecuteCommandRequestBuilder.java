@@ -20,14 +20,13 @@ import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.util.collection.MapBuilder;
 import io.zeebe.transport.ClientOutput;
-import io.zeebe.transport.RemoteAddress;
 import java.util.Map;
 
 public class ExecuteCommandRequestBuilder {
   protected ExecuteCommandRequest request;
 
   public ExecuteCommandRequestBuilder(
-      ClientOutput output, RemoteAddress target, MsgPackHelper msgPackHelper) {
+      ClientOutput output, int target, MsgPackHelper msgPackHelper) {
     this.request = new ExecuteCommandRequest(output, target, msgPackHelper);
   }
 

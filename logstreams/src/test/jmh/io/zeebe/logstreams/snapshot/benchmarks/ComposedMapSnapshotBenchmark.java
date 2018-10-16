@@ -16,8 +16,13 @@
 package io.zeebe.logstreams.snapshot.benchmarks;
 
 import io.zeebe.logstreams.snapshot.ComposedSnapshot;
-import java.io.*;
-import org.openjdk.jmh.annotations.*;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.Threads;
 
 @BenchmarkMode(Mode.SingleShotTime)
 public class ComposedMapSnapshotBenchmark {

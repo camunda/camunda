@@ -18,7 +18,10 @@ package io.zeebe.logstreams.reader.benchmarks;
 import static io.zeebe.logstreams.reader.benchmarks.Benchmarks.DATA_SET_SIZE;
 
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
-import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.Threads;
 
 @BenchmarkMode(Mode.Throughput)
 public class BufferedLogStreamReaderBenchmark {

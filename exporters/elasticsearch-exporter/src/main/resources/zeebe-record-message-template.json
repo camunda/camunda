@@ -1,0 +1,35 @@
+{
+  "index_patterns": [
+    "zeebe-record-message_*"
+  ],
+  "order": 20,
+  "mappings": {
+    "_doc": {
+      "properties": {
+        "value": {
+          "dynamic": "strict",
+          "properties": {
+            "name": {
+              "type": "keyword"
+            },
+            "correlationKey": {
+              "type": "text"
+            },
+            "messageId": {
+              "type": "keyword"
+            },
+            "timeToLive": {
+              "type": "long"
+            },
+            "payload": {
+              "type": "text"
+            }
+          }
+        }
+      }
+    }
+  },
+  "aliases": {
+    "zeebe-record-message": {}
+  }
+}

@@ -17,7 +17,12 @@
  */
 package io.zeebe.broker.transport.clientapi;
 
-import static io.zeebe.protocol.clientapi.SubscribedRecordEncoder.*;
+import static io.zeebe.protocol.clientapi.SubscribedRecordEncoder.keyNullValue;
+import static io.zeebe.protocol.clientapi.SubscribedRecordEncoder.partitionIdNullValue;
+import static io.zeebe.protocol.clientapi.SubscribedRecordEncoder.positionNullValue;
+import static io.zeebe.protocol.clientapi.SubscribedRecordEncoder.sourceRecordPositionNullValue;
+import static io.zeebe.protocol.clientapi.SubscribedRecordEncoder.subscriberKeyNullValue;
+import static io.zeebe.protocol.clientapi.SubscribedRecordEncoder.timestampNullValue;
 
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
@@ -28,7 +33,6 @@ import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.transport.ServerOutput;
-import io.zeebe.transport.TransportMessage;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.buffer.DirectBufferWriter;
 import java.util.Objects;
@@ -56,7 +60,6 @@ public class SubscribedRecordWriter implements BufferWriter {
   private UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
 
   protected final ServerOutput output;
-  protected final TransportMessage message = new TransportMessage();
 
   public SubscribedRecordWriter(final ServerOutput output) {
     this.output = output;
@@ -189,9 +192,7 @@ public class SubscribedRecordWriter implements BufferWriter {
     Objects.requireNonNull(valueWriter);
 
     try {
-      message.reset().remoteStreamId(remoteStreamId).writer(this);
-
-      return output.sendMessage(message);
+      return output.sendMessage(remoteStreamId, this);
     } finally {
       reset();
     }

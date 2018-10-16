@@ -17,16 +17,23 @@
  */
 package io.zeebe.broker.clustering.base.partitions;
 
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.*;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.FOLLOWER_PARTITION_GROUP_NAME;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.RAFT_SERVICE_GROUP;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.followerPartitionServiceName;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.leaderPartitionServiceName;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.raftInstallServiceName;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.snapshotStorageServiceName;
+import static io.zeebe.broker.logstreams.LogStreamServiceNames.stateStorageFactoryServiceName;
 import static io.zeebe.raft.RaftServiceNames.leaderInitialEventCommittedServiceName;
 import static io.zeebe.raft.RaftServiceNames.raftServiceName;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfiguration;
-import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
 import io.zeebe.broker.logstreams.SnapshotStorageService;
+import io.zeebe.broker.logstreams.state.StateStorageFactory;
+import io.zeebe.broker.logstreams.state.StateStorageFactoryService;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.log.LogStream;
@@ -35,15 +42,16 @@ import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftStateListener;
 import io.zeebe.raft.controller.MemberReplicateLogController;
 import io.zeebe.raft.state.RaftState;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.CompositeServiceBuilder;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.SocketAddress;
-import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.channel.OneToOneRingBufferChannel;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.Collection;
-import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 import org.slf4j.Logger;
@@ -58,29 +66,22 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
   private static final Logger LOG = Loggers.CLUSTERING_LOGGER;
 
   private final BrokerCfg brokerCfg;
-  private final Injector<NodeInfo> localNodeInjector = new Injector<>();
   private final Injector<ClientTransport> clientTransportInjector = new Injector<>();
   private final RaftPersistentConfiguration configuration;
   private final PartitionInfo partitionInfo;
-  private final boolean isInternalSystemPartition;
 
   private ServiceStartContext startContext;
   private ServiceName<LogStream> logStreamServiceName;
 
   private ServiceName<SnapshotStorage> snapshotStorageServiceName;
+  private ServiceName<StateStorageFactory> stateStorageFactoryServiceName;
 
   public PartitionInstallService(
-      BrokerCfg brokerCfg,
-      RaftPersistentConfiguration configuration,
-      boolean isInternalSystemPartition) {
+      final BrokerCfg brokerCfg, final RaftPersistentConfiguration configuration) {
     this.brokerCfg = brokerCfg;
     this.configuration = configuration;
-    this.isInternalSystemPartition = isInternalSystemPartition;
     this.partitionInfo =
-        new PartitionInfo(
-            configuration.getTopicName(),
-            configuration.getPartitionId(),
-            configuration.getReplicationFactor());
+        new PartitionInfo(configuration.getPartitionId(), configuration.getReplicationFactor());
   }
 
   @Override
@@ -89,19 +90,15 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
   }
 
   @Override
-  public void start(ServiceStartContext startContext) {
+  public void start(final ServiceStartContext startContext) {
     this.startContext = startContext;
 
-    final NodeInfo localNode = localNodeInjector.getValue();
     final ClientTransport clientTransport = clientTransportInjector.getValue();
 
-    final DirectBuffer topicName = configuration.getTopicName();
-    final String topicNameString = BufferUtil.bufferAsString(topicName);
     final int partitionId = configuration.getPartitionId();
-    final String logName = String.format("%s-%d", topicNameString, partitionId);
+    final String logName = String.format("partition-%d", partitionId);
 
-    final ServiceName<Void> raftInstallServiceName =
-        raftInstallServiceName(topicNameString, partitionId);
+    final ServiceName<Void> raftInstallServiceName = raftInstallServiceName(partitionId);
     final ServiceName<Raft> raftServiceName = raftServiceName(logName);
 
     final CompositeServiceBuilder partitionInstall =
@@ -110,7 +107,7 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
     final String snapshotPath = configuration.getSnapshotsDirectory().getAbsolutePath();
 
     logStreamServiceName =
-        LogStreams.createFsLogStream(topicName, partitionId)
+        LogStreams.createFsLogStream(partitionId)
             .logDirectory(configuration.getLogDirectory().getAbsolutePath())
             .logSegmentSize((int) configuration.getLogSegmentSize())
             .logName(logName)
@@ -120,6 +117,13 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
     final SnapshotStorageService snapshotStorageService = new SnapshotStorageService(snapshotPath);
     snapshotStorageServiceName = snapshotStorageServiceName(logName);
     partitionInstall.createService(snapshotStorageServiceName, snapshotStorageService).install();
+
+    final StateStorageFactoryService stateStorageFactoryService =
+        new StateStorageFactoryService(configuration.getStatesDirectory());
+    stateStorageFactoryServiceName = stateStorageFactoryServiceName(logName);
+    partitionInstall
+        .createService(stateStorageFactoryServiceName, stateStorageFactoryService)
+        .install();
 
     final OneToOneRingBufferChannel messageBuffer =
         new OneToOneRingBufferChannel(
@@ -132,7 +136,7 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
         new Raft(
             logName,
             brokerCfg.getRaft(),
-            localNode.getReplicationApiAddress(),
+            brokerCfg.getCluster().getNodeId(),
             clientTransport,
             configuration,
             messageBuffer,
@@ -144,6 +148,7 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
         .createService(raftServiceName, raftService)
         .dependency(logStreamServiceName, raftService.getLogStreamInjector())
         .dependency(snapshotStorageServiceName)
+        .dependency(stateStorageFactoryServiceName)
         .group(RAFT_SERVICE_GROUP)
         .install();
 
@@ -151,10 +156,10 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
   }
 
   @Override
-  public ActorFuture<Void> onMemberLeaving(Raft raft, Collection<SocketAddress> addresses) {
+  public ActorFuture<Void> onMemberLeaving(final Raft raft, final Collection<Integer> nodeIds) {
     final ServiceName<Partition> partitionServiceName = leaderPartitionServiceName(raft.getName());
 
-    final int raftMemberSize = addresses.size() + 1; // raft does not count itself as member
+    final int raftMemberSize = nodeIds.size() + 1; // raft does not count itself as member
     final int replicationFactor = partitionInfo.getReplicationFactor();
 
     ActorFuture<Void> leaveHandledFuture = CompletableActorFuture.completed(null);
@@ -181,14 +186,14 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
   }
 
   @Override
-  public void onMemberJoined(Raft raft, Collection<SocketAddress> currentMembers) {
+  public void onMemberJoined(final Raft raft, final Collection<Integer> currentNodeIds) {
     if (raft.getState() == RaftState.LEADER) {
       installLeaderPartition(raft);
     }
   }
 
   @Override
-  public void onStateChange(Raft raft, RaftState raftState) {
+  public void onStateChange(final Raft raft, final RaftState raftState) {
     switch (raftState) {
       case LEADER:
         removeFollowerPartitionService(raft);
@@ -204,14 +209,14 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
     }
   }
 
-  private void installLeaderPartition(Raft raft) {
+  private void installLeaderPartition(final Raft raft) {
     final ServiceName<Partition> partitionServiceName = leaderPartitionServiceName(raft.getName());
 
     final int raftMemberSize = raft.getMemberSize() + 1; // raft does not count itself as member
     final int replicationFactor = partitionInfo.getReplicationFactor();
 
     if (!startContext.hasService(partitionServiceName)) {
-      if (isInternalSystemPartition || raftMemberSize >= replicationFactor) {
+      if (raftMemberSize >= replicationFactor) {
         LOG.debug(
             "Installing partition service for {}. Replication factor reached, got {}/{}.",
             partitionInfo,
@@ -225,10 +230,8 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
             .dependency(leaderInitialEventCommittedServiceName(raft.getName(), raft.getTerm()))
             .dependency(logStreamServiceName, partition.getLogStreamInjector())
             .dependency(snapshotStorageServiceName, partition.getSnapshotStorageInjector())
-            .group(
-                isInternalSystemPartition
-                    ? LEADER_PARTITION_SYSTEM_GROUP_NAME
-                    : LEADER_PARTITION_GROUP_NAME)
+            .dependency(stateStorageFactoryServiceName, partition.getStateStorageFactoryInjector())
+            .group(LEADER_PARTITION_GROUP_NAME)
             .install();
       } else {
         LOG.debug(
@@ -240,7 +243,7 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
     }
   }
 
-  private void installFollowerPartition(Raft raft) {
+  private void installFollowerPartition(final Raft raft) {
     final Partition partition = new Partition(partitionInfo, RaftState.FOLLOWER);
     final ServiceName<Partition> partitionServiceName =
         followerPartitionServiceName(raft.getName());
@@ -251,12 +254,13 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
           .createService(partitionServiceName, partition)
           .dependency(logStreamServiceName, partition.getLogStreamInjector())
           .dependency(snapshotStorageServiceName, partition.getSnapshotStorageInjector())
+          .dependency(stateStorageFactoryServiceName, partition.getStateStorageFactoryInjector())
           .group(FOLLOWER_PARTITION_GROUP_NAME)
           .install();
     }
   }
 
-  private void removeFollowerPartitionService(Raft raft) {
+  private void removeFollowerPartitionService(final Raft raft) {
     final ServiceName<Partition> partitionServiceName =
         followerPartitionServiceName(raft.getName());
 
@@ -268,9 +272,5 @@ public class PartitionInstallService implements Service<Void>, RaftStateListener
 
   public Injector<ClientTransport> getClientTransportInjector() {
     return clientTransportInjector;
-  }
-
-  public Injector<NodeInfo> getLocalNodeInjector() {
-    return localNodeInjector;
   }
 }

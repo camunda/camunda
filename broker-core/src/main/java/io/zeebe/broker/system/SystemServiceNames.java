@@ -17,24 +17,16 @@
  */
 package io.zeebe.broker.system;
 
+import io.zeebe.broker.system.management.LeaderManagementRequestHandler;
 import io.zeebe.broker.system.metrics.MetricsFileWriter;
-import io.zeebe.broker.system.workflow.repository.api.management.DeploymentManagerRequestHandler;
-import io.zeebe.broker.system.workflow.repository.service.*;
 import io.zeebe.servicecontainer.ServiceName;
 
 public class SystemServiceNames {
   public static final ServiceName<MetricsFileWriter> METRICS_FILE_WRITER =
       ServiceName.newServiceName("broker.metricsFileWriter", MetricsFileWriter.class);
 
-  public static final ServiceName<DeploymentManager> DEPLOYMENT_MANAGER_SERVICE =
-      ServiceName.newServiceName("broker.system.deployment.manager", DeploymentManager.class);
-
-  public static final ServiceName<DeploymentManagerRequestHandler>
-      DEPLOYMENT_MANAGER_REQUEST_HANDLER =
+  public static final ServiceName<LeaderManagementRequestHandler>
+      LEADER_MANAGEMENT_REQUEST_HANDLER =
           ServiceName.newServiceName(
-              "broker.deployment.requestHandler", DeploymentManagerRequestHandler.class);
-
-  public static final ServiceName<WorkflowRepositoryService> REPOSITORY_SERVICE =
-      ServiceName.newServiceName(
-          "broker.deployment.workflowRepositoryService", WorkflowRepositoryService.class);
+              "broker.system.management.requestHandler", LeaderManagementRequestHandler.class);
 }

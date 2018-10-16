@@ -16,7 +16,11 @@
 package io.zeebe.util.sched.functional;
 
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;

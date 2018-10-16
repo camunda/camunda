@@ -18,23 +18,22 @@ package io.zeebe.example.job;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.client.api.clients.JobClient;
-import io.zeebe.client.api.events.JobEvent;
+import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.subscription.JobHandler;
 import io.zeebe.client.api.subscription.JobWorker;
 import java.time.Duration;
 import java.util.Scanner;
 
 public class JobWorkerCreator {
-  public static void main(String[] args) {
-    final String broker = "127.0.0.1:51015";
-    final String topic = "default-topic";
+  public static void main(final String[] args) {
+    final String broker = "127.0.0.1:26500";
 
     final String jobType = "foo";
 
     final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder().brokerContactPoint(broker);
 
     try (ZeebeClient client = builder.build()) {
-      final JobClient jobClient = client.topicClient(topic).jobClient();
+      final JobClient jobClient = client.jobClient();
 
       System.out.println("Opening job worker.");
 
@@ -57,18 +56,18 @@ public class JobWorkerCreator {
 
   private static class ExampleJobHandler implements JobHandler {
     @Override
-    public void handle(JobClient client, JobEvent job) {
+    public void handle(final JobClient client, final ActivatedJob job) {
       // here: business logic that is executed with every job
       System.out.println(
           String.format(
               "[type: %s, key: %s, lockExpirationTime: %s]\n[headers: %s]\n[payload: %s]\n===",
               job.getType(),
-              job.getMetadata().getKey(),
+              job.getKey(),
               job.getDeadline().toString(),
               job.getHeaders(),
               job.getPayload()));
 
-      client.newCompleteCommand(job).payload((String) null).send().join();
+      client.newCompleteCommand(job.getKey()).send().join();
     }
   }
 

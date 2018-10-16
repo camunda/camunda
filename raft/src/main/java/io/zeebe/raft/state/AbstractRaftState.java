@@ -17,8 +17,20 @@ package io.zeebe.raft.state;
 
 import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.raft.*;
-import io.zeebe.raft.protocol.*;
+import io.zeebe.raft.BufferedLogStorageAppender;
+import io.zeebe.raft.IncomingRaftRequest;
+import io.zeebe.raft.Loggers;
+import io.zeebe.raft.Raft;
+import io.zeebe.raft.RaftMembers;
+import io.zeebe.raft.protocol.AppendRequest;
+import io.zeebe.raft.protocol.AppendResponse;
+import io.zeebe.raft.protocol.ConfigurationRequest;
+import io.zeebe.raft.protocol.ConfigurationResponse;
+import io.zeebe.raft.protocol.HasNodeId;
+import io.zeebe.raft.protocol.PollRequest;
+import io.zeebe.raft.protocol.PollResponse;
+import io.zeebe.raft.protocol.VoteRequest;
+import io.zeebe.raft.protocol.VoteResponse;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
@@ -188,7 +200,7 @@ public abstract class AbstractRaftState implements Service<AbstractRaftState>, M
 
     if (granted) {
       if (heartbeat.shouldElect()) {
-        raft.setVotedFor(voteRequest.getSocketAddress());
+        raft.setVotedFor(voteRequest.getNodeId());
         acceptVoteRequest(serverOutput, remoteAddress, requestId);
       } else {
         Loggers.RAFT_LOGGER.debug("Reject poll, because have no heart beat timeout.");
@@ -250,9 +262,9 @@ public abstract class AbstractRaftState implements Service<AbstractRaftState>, M
     raft.sendResponse(serverOutput, remoteAddress, requestId, voteResponse);
   }
 
-  protected void rejectAppendRequest(final HasSocketAddress hasSocketAddress, final long position) {
+  protected void rejectAppendRequest(final HasNodeId hasNodeId, final long position) {
     appendResponse.reset().setRaft(raft).setPreviousEventPosition(position).setSucceeded(false);
 
-    raft.sendMessage(hasSocketAddress.getSocketAddress(), appendResponse);
+    raft.sendMessage(hasNodeId.getNodeId(), appendResponse);
   }
 }

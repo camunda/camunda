@@ -15,7 +15,10 @@
  */
 package io.zeebe.util.collection;
 
-import static io.zeebe.util.collection.CompactListDescriptor.*;
+import static io.zeebe.util.collection.CompactListDescriptor.elementDataOffset;
+import static io.zeebe.util.collection.CompactListDescriptor.elementOffset;
+import static io.zeebe.util.collection.CompactListDescriptor.framedLength;
+import static io.zeebe.util.collection.CompactListDescriptor.requiredBufferCapacity;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.assertj.core.api.Assertions.assertThat;

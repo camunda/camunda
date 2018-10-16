@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
+import org.agrona.ExpandableDirectByteBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
@@ -66,6 +67,56 @@ public class BufferUtilTest {
 
     // then
     assertThat(dst).isNotSameAs(src).isEqualTo(src).hasSameClassAs(src);
+  }
+
+  @Test
+  public void shouldReturnCopyOfByteArrayWhenWrappingPartialArray() {
+    // given
+    final byte[] expected = new byte[BYTES1.length - 1];
+    final DirectBuffer buffer = new UnsafeBuffer();
+    buffer.wrap(BYTES1, 1, BYTES1.length - 1);
+
+    // when
+    final byte[] bytes = BufferUtil.bufferAsArray(buffer);
+    System.arraycopy(BYTES1, 1, expected, 0, expected.length);
+
+    // then
+    assertThat(buffer.byteArray()).isEqualTo(BYTES1);
+    assertThat(bytes).isEqualTo(expected);
+    assertThat(bytes).isNotEqualTo(BYTES1);
+  }
+
+  @Test
+  public void shouldReturnNewByteArrayWhenNotWrappingByteArray() {
+    // given
+    final MutableDirectBuffer buffer = new ExpandableDirectByteBuffer();
+    buffer.putBytes(0, BYTES1);
+
+    // when
+    final byte[] bytes = BufferUtil.bufferAsArray(buffer);
+
+    // then
+    assertThat(buffer.byteArray()).isNull();
+    for (int i = 0; i < BYTES1.length; i++) {
+      assertThat(bytes[i]).isEqualTo(buffer.getByte(i));
+    }
+  }
+
+  /**
+   * Returning the wrapped array is an inconsistency in the API, because we cannot safely modify the
+   * returned array.
+   */
+  @Test
+  public void shouldNotReturnWrappedArrayIfBufferOffsetIsZero() {
+    // given
+    final DirectBuffer buffer = new UnsafeBuffer(BYTES1);
+
+    // when
+    final byte[] bytes = BufferUtil.bufferAsArray(buffer);
+
+    // then
+    assertThat(buffer.byteArray()).isEqualTo(BYTES1);
+    assertThat(bytes).isNotSameAs(BYTES1);
   }
 
   public DirectBuffer asBuffer(byte[] bytes) {

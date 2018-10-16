@@ -15,33 +15,30 @@
  */
 package io.zeebe.raft.protocol;
 
-import static io.zeebe.raft.AppendResponseEncoder.*;
+import static io.zeebe.raft.AppendResponseEncoder.nodeIdNullValue;
+import static io.zeebe.raft.AppendResponseEncoder.partitionIdNullValue;
+import static io.zeebe.raft.AppendResponseEncoder.previousEventPositionNullValue;
+import static io.zeebe.raft.AppendResponseEncoder.termNullValue;
 
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.raft.*;
-import io.zeebe.transport.SocketAddress;
+import io.zeebe.raft.AppendResponseDecoder;
+import io.zeebe.raft.AppendResponseEncoder;
+import io.zeebe.raft.BooleanType;
+import io.zeebe.raft.Raft;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public class AppendResponse extends AbstractRaftMessage
-    implements HasSocketAddress, HasTerm, HasPartition {
+    implements HasNodeId, HasTerm, HasPartition {
 
   protected final AppendResponseDecoder bodyDecoder = new AppendResponseDecoder();
   protected final AppendResponseEncoder bodyEncoder = new AppendResponseEncoder();
 
-  // read + write
   protected int partitionId;
   protected int term;
   protected boolean succeeded;
   protected long previousEventPosition;
-
-  // read
-  protected final DirectBuffer readHost = new UnsafeBuffer(0, 0);
-  protected final SocketAddress readSocketAddress = new SocketAddress();
-
-  // write
-  private SocketAddress writeSocketAddress;
+  protected int nodeId;
 
   public AppendResponse() {
     reset();
@@ -52,10 +49,7 @@ public class AppendResponse extends AbstractRaftMessage
     term = termNullValue();
     succeeded = false;
     previousEventPosition = previousEventPositionNullValue();
-    readHost.wrap(0, 0);
-    readSocketAddress.reset();
-
-    writeSocketAddress = null;
+    nodeId = nodeIdNullValue();
 
     return this;
   }
@@ -104,8 +98,8 @@ public class AppendResponse extends AbstractRaftMessage
   }
 
   @Override
-  public SocketAddress getSocketAddress() {
-    return readSocketAddress;
+  public int getNodeId() {
+    return nodeId;
   }
 
   public AppendResponse setRaft(final Raft raft) {
@@ -113,21 +107,14 @@ public class AppendResponse extends AbstractRaftMessage
 
     partitionId = logStream.getPartitionId();
     term = raft.getTerm();
-
-    writeSocketAddress = raft.getSocketAddress();
+    nodeId = raft.getNodeId();
 
     return this;
   }
 
   @Override
   public int getLength() {
-    int length = headerEncoder.encodedLength() + bodyEncoder.sbeBlockLength() + hostHeaderLength();
-
-    if (writeSocketAddress != null) {
-      length += writeSocketAddress.hostLength();
-    }
-
-    return length;
+    return headerEncoder.encodedLength() + bodyEncoder.sbeBlockLength();
   }
 
   @Override
@@ -145,14 +132,7 @@ public class AppendResponse extends AbstractRaftMessage
     term = bodyDecoder.term();
     succeeded = bodyDecoder.succeeded() == BooleanType.TRUE;
     previousEventPosition = bodyDecoder.previousEventPosition();
-    readSocketAddress.port(bodyDecoder.port());
-
-    offset += bodyDecoder.sbeBlockLength();
-
-    offset += wrapVarData(buffer, offset, readHost, hostHeaderLength(), bodyDecoder.hostLength());
-    bodyDecoder.limit(offset);
-
-    readSocketAddress.host(readHost, 0, readHost.capacity());
+    nodeId = bodyDecoder.nodeId();
 
     assert bodyDecoder.limit() == frameEnd
         : "Decoder read only to position "
@@ -178,12 +158,7 @@ public class AppendResponse extends AbstractRaftMessage
         .partitionId(partitionId)
         .term(term)
         .succeeded(succeeded ? BooleanType.TRUE : BooleanType.FALSE)
-        .previousEventPosition(previousEventPosition);
-
-    if (writeSocketAddress != null) {
-      bodyEncoder
-          .port(writeSocketAddress.port())
-          .putHost(writeSocketAddress.getHostBuffer(), 0, writeSocketAddress.hostLength());
-    }
+        .previousEventPosition(previousEventPosition)
+        .nodeId(nodeId);
   }
 }

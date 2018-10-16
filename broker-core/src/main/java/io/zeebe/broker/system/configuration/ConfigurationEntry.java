@@ -18,7 +18,7 @@
 package io.zeebe.broker.system.configuration;
 
 public interface ConfigurationEntry {
-  default void init(BrokerCfg brokerConfiguration, String brokerBase) {
+  default void init(BrokerCfg globalConfig, String brokerBase, Environment environment) {
     // noop;
   }
 }

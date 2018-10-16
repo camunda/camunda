@@ -15,8 +15,13 @@
  */
 package io.zeebe.transport.impl.sender;
 
-import io.zeebe.transport.*;
-import io.zeebe.transport.impl.*;
+import io.zeebe.transport.ClientResponse;
+import io.zeebe.transport.Loggers;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.impl.ControlMessages;
+import io.zeebe.transport.impl.IncomingResponse;
+import io.zeebe.transport.impl.RemoteAddressImpl;
+import io.zeebe.transport.impl.TransportChannel;
 import io.zeebe.transport.impl.actor.ActorContext;
 import io.zeebe.transport.impl.memory.TransportMemoryPool;
 import io.zeebe.util.ByteValue;
@@ -26,7 +31,11 @@ import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.nio.ByteBuffer;
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Deque;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import org.agrona.DeadlineTimerWheel;
 import org.agrona.DeadlineTimerWheel.TimerHandler;
@@ -204,14 +213,19 @@ public class Sender extends Actor implements TimerHandler {
   }
 
   private void onMessageSubmitted(final OutgoingMessage message) {
-    try {
-      final int remoteStreamId = message.getRemoteStreamId();
-
-      final ChannelWriteQueue sendQueue = channelMap.get(remoteStreamId);
-      if (sendQueue != null) {
+    final int remoteStreamId = message.getRemoteStreamId();
+    final ChannelWriteQueue sendQueue = channelMap.get(remoteStreamId);
+    if (sendQueue != null) {
+      try {
         sendQueue.offer(message);
+      } finally {
+        reclaimMessageBuffer(message.getAllocatedBuffer());
       }
-    } finally {
+    } else if (ActorClock.currentTimeMillis() < message.getDeadline()) {
+      // channel not open, retry
+      actor.runDelayed(Duration.ofMillis(10), () -> submittedMessages.offer(message));
+    } else {
+      LOG.trace("Drop message because the channel is not open.");
       reclaimMessageBuffer(message.getAllocatedBuffer());
     }
   }

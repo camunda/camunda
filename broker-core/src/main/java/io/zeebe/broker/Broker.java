@@ -18,11 +18,14 @@
 package io.zeebe.broker;
 
 import io.zeebe.broker.clustering.ClusterComponent;
+import io.zeebe.broker.exporter.ExporterComponent;
 import io.zeebe.broker.job.JobQueueComponent;
 import io.zeebe.broker.logstreams.LogStreamsComponent;
+import io.zeebe.broker.subscription.SubscriptionComponent;
 import io.zeebe.broker.system.SystemComponent;
 import io.zeebe.broker.system.SystemContext;
 import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.broker.transport.GatewayComponent;
 import io.zeebe.broker.transport.TransportComponent;
 import io.zeebe.broker.workflow.WorkflowComponent;
 import io.zeebe.util.LogUtil;
@@ -43,32 +46,36 @@ public class Broker implements AutoCloseable {
   protected final SystemContext brokerContext;
   protected boolean isClosed = false;
 
-  public Broker(String configFileLocation, String basePath, ActorClock clock) {
+  public Broker(final String configFileLocation, final String basePath, final ActorClock clock) {
     this(new SystemContext(configFileLocation, basePath, clock));
   }
 
-  public Broker(InputStream configStream, String basePath, ActorClock clock) {
+  public Broker(final InputStream configStream, final String basePath, final ActorClock clock) {
     this(new SystemContext(configStream, basePath, clock));
   }
 
-  public Broker(BrokerCfg cfg, String basePath, ActorClock clock) {
+  public Broker(final BrokerCfg cfg, final String basePath, final ActorClock clock) {
     this(new SystemContext(cfg, basePath, clock));
   }
 
-  public Broker(SystemContext systemContext) {
+  public Broker(final SystemContext systemContext) {
     this.brokerContext = systemContext;
     LogUtil.doWithMDC(systemContext.getDiagnosticContext(), () -> start());
   }
 
   protected void start() {
     LOG.info("Version: {}", VERSION);
+    LOG.info("Starting broker with configuration {}", getConfig().toJson());
 
     brokerContext.addComponent(new SystemComponent());
     brokerContext.addComponent(new TransportComponent());
     brokerContext.addComponent(new LogStreamsComponent());
     brokerContext.addComponent(new JobQueueComponent());
     brokerContext.addComponent(new WorkflowComponent());
+    brokerContext.addComponent(new SubscriptionComponent());
     brokerContext.addComponent(new ClusterComponent());
+    brokerContext.addComponent(new GatewayComponent());
+    brokerContext.addComponent(new ExporterComponent());
 
     brokerContext.init();
   }
@@ -88,5 +95,9 @@ public class Broker implements AutoCloseable {
 
   public SystemContext getBrokerContext() {
     return brokerContext;
+  }
+
+  public BrokerCfg getConfig() {
+    return brokerContext.getBrokerConfiguration();
   }
 }

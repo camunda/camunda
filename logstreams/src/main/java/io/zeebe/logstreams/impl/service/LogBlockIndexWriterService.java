@@ -19,7 +19,10 @@ import io.zeebe.logstreams.impl.LogBlockIndexWriter;
 import io.zeebe.logstreams.impl.LogStreamBuilder;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.SchedulingHints;
 
@@ -48,8 +51,7 @@ public class LogBlockIndexWriterService implements Service<LogBlockIndexWriter> 
             logBlockIndex,
             scheduler.getMetricsManager());
 
-    startContext.async(
-        scheduler.submitActor(logBlockIndexWriter, true, SchedulingHints.ioBound((short) 0)));
+    startContext.async(scheduler.submitActor(logBlockIndexWriter, true, SchedulingHints.ioBound()));
   }
 
   @Override

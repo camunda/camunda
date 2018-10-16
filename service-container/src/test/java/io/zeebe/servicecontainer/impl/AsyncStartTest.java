@@ -15,15 +15,25 @@
  */
 package io.zeebe.servicecontainer.impl;
 
-import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.*;
+import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.assertCompleted;
+import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.assertFailed;
+import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.assertNotCompleted;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceContainer;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -137,8 +147,7 @@ public class AsyncStartTest {
   public void shouldWaitForAction() {
     // when
     final AsyncStartService service = new AsyncStartService();
-    final Runnable mockAction = mock(Runnable.class);
-    service.action = mockAction;
+    service.action = new BlockingAction();
 
     final ActorFuture<Object> startFuture =
         serviceContainer.createService(service1Name, service).install();
@@ -149,19 +158,19 @@ public class AsyncStartTest {
   }
 
   @Test
-  public void shouldContinueOnAction() {
+  public void shouldContinueOnAction() throws BrokenBarrierException, InterruptedException {
     // given
     final AsyncStartService service = new AsyncStartService();
-    final Runnable mockAction = mock(Runnable.class);
-    service.action = mockAction;
+    final BlockingAction action = new BlockingAction();
+    service.action = action;
 
     final ActorFuture<Object> startFuture =
         serviceContainer.createService(service1Name, service).install();
     actorSchedulerRule.workUntilDone();
-    actorSchedulerRule.awaitBlockingTasksCompleted(1);
 
     // when
-    verify(mockAction).run();
+    action.signal();
+    actorSchedulerRule.awaitBlockingTasksCompleted(1);
     actorSchedulerRule.workUntilDone();
 
     // then
@@ -379,6 +388,25 @@ public class AsyncStartTest {
     @Override
     public Object get() {
       return value;
+    }
+  }
+
+  /** Runnable which blocks until signaled */
+  static class BlockingAction implements Runnable {
+
+    CyclicBarrier barrier = new CyclicBarrier(2);
+
+    @Override
+    public void run() {
+      try {
+        barrier.await();
+      } catch (InterruptedException | BrokenBarrierException e) {
+        e.printStackTrace();
+      }
+    }
+
+    public void signal() throws BrokenBarrierException, InterruptedException {
+      barrier.await();
     }
   }
 }

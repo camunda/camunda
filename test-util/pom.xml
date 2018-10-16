@@ -8,7 +8,7 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zb-parent</artifactId>
-    <version>0.12.0-SNAPSHOT</version>
+    <version>0.13.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
@@ -19,9 +19,13 @@
     </dependency>
 
     <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-exporter-api</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>one.util</groupId>
       <artifactId>streamex</artifactId>
-      <version>0.6.6</version>
     </dependency>
 
     <dependency>
@@ -30,11 +34,11 @@
       <scope>provided</scope>
     </dependency>
 
-	<dependency>
+    <dependency>
       <groupId>org.msgpack</groupId>
-	  <artifactId>jackson-dataformat-msgpack</artifactId>
-	  <scope>provided</scope>
-	</dependency>
+      <artifactId>jackson-dataformat-msgpack</artifactId>
+      <scope>provided</scope>
+    </dependency>
 
     <dependency>
       <groupId>org.agrona</groupId>

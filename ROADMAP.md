@@ -22,7 +22,7 @@ a certain level of maturity.
 
 ## Milestone 2
 
-![Status: In Progress](https://img.shields.io/badge/state-in_progress-yellow.svg?style=flat-square)
+![Status: Done](https://img.shields.io/badge/state-done-brightgreen.svg?style=flat-square)
 
 * Achieve reliability in cluster setup
     * Support all partition features in cluster setup
@@ -31,18 +31,20 @@ a certain level of maturity.
 
 ## Milestone 3
 
-![Status: Not Started](https://img.shields.io/badge/state-not_started-lightgrey.svg?style=flat-square)
+![Status: In Progress](https://img.shields.io/badge/state-in_progress-yellow.svg?style=flat-square)
 
 * Achieve production-readiness:
-    * Checksums in data fragments to detect data corruption
-    * Log compaction to reclaim disk space
+    * Gracefully handle disruptive cluster changes
+    * Data retention and compaction to reclaim disk space
     * Ability to update a running Zeebe cluster
 
 ## Milestone 4
 
-![Status: Not Started](https://img.shields.io/badge/state-not_started-lightgrey.svg?style=flat-square)
+![Status: In Progress](https://img.shields.io/badge/state-in_progress-yellow.svg?style=flat-square)
 
 * Expand BPMN Support:
-    * Decision Task
-    * Parallel Gateway
-    * Message Catch Event
+    * Message ingestion & events
+    * Parallel & Event Based Gateway
+    * Embedded Subprocess
+    * Boundary Events
+    * Timer Event

@@ -13,7 +13,7 @@ The cluster is bootstrapped using a set of well-known bootstrap brokers, to whic
 
 ```toml
 [network.gossip]
-initialContactPoints = [ "node1.mycluster.loc:51016" ]
+initialContactPoints = [ "node1.mycluster.loc:26502" ]
 ```
 
 When a broker is connected to the cluster for the first time, it fetches the topology from the initial contact points and then starts gossiping with the other brokers. Brokers keep cluster topology locally across restarts.
@@ -22,7 +22,7 @@ When a broker is connected to the cluster for the first time, it fetches the top
 
 To ensure fault tolerance, Zeebe replicates data across machines using the [Raft protocol](https://en.wikipedia.org/wiki/Raft_(computer_science)).
 
-Data is organized in topics which are divided into partitions (shards). Each partition has a number of replicas. Among the replica set, a *leader* is determined by the raft protocol which takes in requests and performs all the processing. All other brokers are passive *followers*. When the leader becomes unavailable, the followers transparently select a new leader.
+Data is divided into partitions (shards). Each partition has a number of replicas. Among the replica set, a *leader* is determined by the raft protocol which takes in requests and performs all the processing. All other brokers are passive *followers*. When the leader becomes unavailable, the followers transparently select a new leader.
 
 Each broker in the cluster may be both leader and follower at the same time for different partitions. This way, client traffic is distributed evenly across all brokers.
 

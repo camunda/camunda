@@ -17,30 +17,31 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-import io.zeebe.logstreams.processor.EventLifecycleContext;
-import io.zeebe.logstreams.processor.EventProcessor;
 import io.zeebe.msgpack.UnpackedObject;
+import java.util.function.Consumer;
 
 public interface TypedRecordProcessor<T extends UnpackedObject>
     extends StreamProcessorLifecycleAware {
-  /** @see EventProcessor#processEvent() */
-  default void processRecord(TypedRecord<T> record) {}
 
-  /** @see EventProcessor#processEvent() */
-  default void processRecord(TypedRecord<T> record, EventLifecycleContext ctx) {
-    processRecord(record);
+  /** @see #processRecord(TypedRecord, TypedResponseWriter, TypedStreamWriter, Consumer) */
+  default void processRecord(
+      TypedRecord<T> record, TypedResponseWriter responseWriter, TypedStreamWriter streamWriter) {}
+
+  /**
+   * @param record
+   * @param responseWriter the default side effect that can be used for sending responses. {@link
+   *     TypedResponseWriter#flush()} must not be called in this method.
+   * @param streamWriter
+   * @param sideEffect consumer to replace the default side effect (response writer). Can be used to
+   *     implement other types of side effects or composite side effects. If a composite side effect
+   *     involving the response writer is used, {@link TypedResponseWriter#flush()} must be called
+   *     in the {@link SideEffectProducer} implementation.
+   */
+  default void processRecord(
+      TypedRecord<T> record,
+      TypedResponseWriter responseWriter,
+      TypedStreamWriter streamWriter,
+      Consumer<SideEffectProducer> sideEffect) {
+    processRecord(record, responseWriter, streamWriter);
   }
-
-  /** @see EventProcessor#executeSideEffects() */
-  default boolean executeSideEffects(TypedRecord<T> record, TypedResponseWriter responseWriter) {
-    return true;
-  }
-
-  /** @see EventProcessor#writeEvent(io.zeebe.logstreams.log.LogStreamWriter) */
-  default long writeRecord(TypedRecord<T> record, TypedStreamWriter writer) {
-    return 0;
-  }
-
-  /** @see EventProcessor#updateState() */
-  default void updateState(TypedRecord<T> record) {}
 }

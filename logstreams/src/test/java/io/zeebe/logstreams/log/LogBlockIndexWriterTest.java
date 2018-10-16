@@ -24,7 +24,9 @@ import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.logstreams.impl.LogBlockIndexWriter;
 import io.zeebe.logstreams.impl.LogEntryDescriptor;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
-import io.zeebe.logstreams.spi.*;
+import io.zeebe.logstreams.spi.LogStorage;
+import io.zeebe.logstreams.spi.ReadableSnapshot;
+import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.logstreams.util.LogStreamWriterRule;
 import io.zeebe.util.metrics.Metric;
@@ -32,7 +34,9 @@ import java.nio.ByteBuffer;
 import java.time.Duration;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
@@ -213,6 +217,8 @@ public class LogBlockIndexWriterTest {
     // given
     writer.writeEvents(2, EVENT_1, true);
     writer.writeEvents(2, EVENT_2, true);
+
+    waitUntil(() -> blockIndex.size() == 2);
 
     logStreamRule.getClock().addTime(SNAPSHOT_INTERVAL);
     waitUntil(() -> getSnapshotCount() > 0);

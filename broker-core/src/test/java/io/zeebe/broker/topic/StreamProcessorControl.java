@@ -17,12 +17,15 @@
  */
 package io.zeebe.broker.topic;
 
-import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
 import io.zeebe.broker.incident.data.IncidentRecord;
-import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
-import io.zeebe.broker.system.workflow.repository.data.DeploymentRecord;
+import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
+import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import java.util.function.Predicate;
 
 public interface StreamProcessorControl {
@@ -35,9 +38,16 @@ public interface StreamProcessorControl {
 
   void blockAfterDeploymentEvent(Predicate<TypedRecord<DeploymentRecord>> test);
 
+  void blockAfterWorkflowInstanceRecord(Predicate<TypedRecord<WorkflowInstanceRecord>> test);
+
   void blockAfterIncidentEvent(Predicate<TypedRecord<IncidentRecord>> test);
 
-  void blockAfterTopicEvent(Predicate<TypedRecord<TopicRecord>> test);
+  void blockAfterMessageEvent(Predicate<TypedRecord<MessageRecord>> test);
+
+  void blockAfterMessageSubscriptionEvent(Predicate<TypedRecord<MessageSubscriptionRecord>> test);
+
+  void blockAfterWorkflowInstanceSubscriptionEvent(
+      Predicate<TypedRecord<WorkflowInstanceSubscriptionRecord>> test);
 
   void purgeSnapshot();
 

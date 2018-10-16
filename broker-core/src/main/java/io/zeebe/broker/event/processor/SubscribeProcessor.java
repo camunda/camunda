@@ -18,12 +18,11 @@
 package io.zeebe.broker.event.processor;
 
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
-import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.logstreams.processor.EventProcessor;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.intent.SubscriberIntent;
 import io.zeebe.util.sched.future.ActorFuture;
 import org.agrona.DirectBuffer;
@@ -37,6 +36,8 @@ public class SubscribeProcessor implements EventProcessor {
   protected TopicSubscriberEvent subscriberEvent;
 
   protected EventProcessor state;
+  private long subscriberKey;
+
   protected final RequestFailureProcessor failedRequestState = new RequestFailureProcessor();
   protected final CreateSubscriptionServiceProcessor createProcessorState =
       new CreateSubscriptionServiceProcessor();
@@ -55,11 +56,14 @@ public class SubscribeProcessor implements EventProcessor {
     this.event = event;
     this.metadata = metadata;
     this.subscriberEvent = subscriberEvent;
+    this.subscriberKey = -1;
   }
 
   @Override
-  public void processEvent(EventLifecycleContext ctx) {
+  public void processEvent() {
     final DirectBuffer subscriptionName = subscriberEvent.getName();
+
+    subscriberKey = manager.nextSubscriberKey();
 
     if (subscriptionName.capacity() > maximumNameLength) {
       failedRequestState.wrapError(
@@ -81,7 +85,7 @@ public class SubscribeProcessor implements EventProcessor {
   }
 
   @Override
-  public long writeEvent(LogStreamWriter writer) {
+  public long writeEvent(LogStreamRecordWriter writer) {
     return state.writeEvent(writer);
   }
 
@@ -103,7 +107,7 @@ public class SubscribeProcessor implements EventProcessor {
     }
 
     @Override
-    public long writeEvent(LogStreamWriter writer) {
+    public long writeEvent(LogStreamRecordWriter writer) {
       // in the future, we can write a SUBSCRIBE_FAILED event here,
       // but at the moment that would make no difference for the user
       return 0L;
@@ -124,7 +128,7 @@ public class SubscribeProcessor implements EventProcessor {
       final TopicSubscriptionPushProcessor processor =
           new TopicSubscriptionPushProcessor(
               metadata.getRequestStreamId(),
-              event.getKey(),
+              subscriberKey,
               resumePosition,
               subscriptionName,
               subscriberEvent.getBufferSize(),
@@ -181,7 +185,7 @@ public class SubscribeProcessor implements EventProcessor {
     }
 
     @Override
-    public long writeEvent(LogStreamWriter writer) {
+    public long writeEvent(LogStreamRecordWriter writer) {
       metadata.protocolVersion(Protocol.PROTOCOL_VERSION).intent(SubscriberIntent.SUBSCRIBED);
 
       subscriberEvent.setStartPosition(processor.getStartPosition());
@@ -189,7 +193,7 @@ public class SubscribeProcessor implements EventProcessor {
       return writer
           .metadataWriter(metadata)
           .valueWriter(subscriberEvent)
-          .key(event.getKey())
+          .key(subscriberKey)
           .tryWrite();
     }
   }

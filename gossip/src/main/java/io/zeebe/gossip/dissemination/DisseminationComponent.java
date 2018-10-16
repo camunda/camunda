@@ -15,10 +15,17 @@
  */
 package io.zeebe.gossip.dissemination;
 
-import io.zeebe.gossip.*;
+import io.zeebe.gossip.GossipConfiguration;
+import io.zeebe.gossip.GossipMath;
+import io.zeebe.gossip.GossipMembershipListener;
 import io.zeebe.gossip.membership.Member;
 import io.zeebe.gossip.membership.MembershipList;
-import io.zeebe.gossip.protocol.*;
+import io.zeebe.gossip.protocol.CustomEvent;
+import io.zeebe.gossip.protocol.CustomEventConsumer;
+import io.zeebe.gossip.protocol.CustomEventSupplier;
+import io.zeebe.gossip.protocol.MembershipEvent;
+import io.zeebe.gossip.protocol.MembershipEventConsumer;
+import io.zeebe.gossip.protocol.MembershipEventSupplier;
 import io.zeebe.util.collection.ReusableObjectList;
 import java.util.Iterator;
 
@@ -126,7 +133,7 @@ public class DisseminationComponent
   public boolean consumeMembershipEvent(MembershipEvent event) {
     addMembershipEvent()
         .type(event.getType())
-        .address(event.getAddress())
+        .memberId(event.getMemberId())
         .gossipTerm(event.getGossipTerm());
 
     return true;
@@ -135,7 +142,7 @@ public class DisseminationComponent
   @Override
   public boolean consumeCustomEvent(CustomEvent event) {
     addCustomEvent()
-        .senderAddress(event.getSenderAddress())
+        .senderId(event.getSenderId())
         .senderGossipTerm(event.getSenderGossipTerm())
         .type(event.getType())
         .payload(event.getPayload());

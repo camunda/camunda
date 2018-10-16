@@ -20,7 +20,9 @@ import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import io.zeebe.msgpack.jsonpath.JsonPathQuery;
 import io.zeebe.msgpack.query.MsgPackQueryExecutor;
 import io.zeebe.msgpack.query.MsgPackTraverser;
-import io.zeebe.msgpack.spec.*;
+import io.zeebe.msgpack.spec.MsgPackReader;
+import io.zeebe.msgpack.spec.MsgPackToken;
+import io.zeebe.msgpack.spec.MsgPackType;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 

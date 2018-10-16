@@ -13,6 +13,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.zeebe.model.bpmn.instance;
 
-public interface StartEvent extends FlowNode {}
+import io.zeebe.model.bpmn.builder.StartEventBuilder;
+
+/**
+ * The BPMN startEvent element
+ *
+ * @author Sebastian Menski
+ */
+public interface StartEvent extends CatchEvent {
+
+  @Override
+  StartEventBuilder builder();
+
+  boolean isInterrupting();
+
+  void setInterrupting(boolean isInterrupting);
+}

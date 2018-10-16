@@ -20,18 +20,18 @@ import static io.zeebe.msgpack.mapping.MappingBuilder.createMappings;
 import static io.zeebe.msgpack.mapping.MappingTestUtil.JSON_MAPPER;
 import static io.zeebe.msgpack.mapping.MappingTestUtil.MSGPACK_MAPPER;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.runners.Parameterized.Parameter;
-import static org.junit.runners.Parameterized.Parameters;
 
+import io.zeebe.msgpack.mapping.Mapping.Type;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 /** Represents a test class to test the extract document functionality with help of mappings. */
 @RunWith(Parameterized.class)
@@ -288,6 +288,47 @@ public class MappingExtractParameterizedTest {
             createMapping("$['foo']['bar']", "$.result"),
             // expected result
             "{'result':1}"
+          },
+          {
+            // source
+            "{'key':'val'}",
+            // mapping
+            createMapping("$.notAKey", "$.key"),
+            // expected result
+            "{'key':null}"
+          },
+          {
+            // source
+            "{'key':'val'}",
+            // mapping
+            createMapping("$.notAKey", "$.arr", Type.COLLECT),
+            // expected result
+            "{'arr':[null]}"
+          },
+          {
+            // source
+            "{'key1':'val1', 'key2': 'val2'}",
+            // mapping
+            createMapping("$.*", "$.newKey", Type.PUT),
+            // expected result
+            "{'newKey': 'val1'}" // selecting the first element
+          },
+          {
+            // source
+            "{'key1':'val1', 'key2': 'val2'}",
+            // mapping
+            createMapping("$.*", "$.newKey", Type.COLLECT),
+            // expected result
+            "{'newKey': ['val1']}" // selecting the first element - collecting all elements would be
+            // nicer
+          },
+          {
+            // source
+            "{'key':'val'}",
+            // mapping
+            createMapping("$.key", "$", Type.PUT),
+            // expected result
+            "{}" // empty object - the best we can reasonably do in this rare case
           }
         });
   }
@@ -300,7 +341,7 @@ public class MappingExtractParameterizedTest {
   @Parameter(2)
   public String expectedPayload;
 
-  private MappingProcessor processor = new MappingProcessor(1024);
+  private MsgPackMergeTool mergeTool = new MsgPackMergeTool(1024);
 
   @Test
   public void shouldExtract() throws Throwable {
@@ -309,11 +350,12 @@ public class MappingExtractParameterizedTest {
     final DirectBuffer sourceDocument = new UnsafeBuffer(bytes);
 
     // when
-    final int resultLength = processor.extract(sourceDocument, mappings);
+    mergeTool.reset();
+    mergeTool.mergeDocument(sourceDocument, mappings);
 
-    final MutableDirectBuffer resultBuffer = processor.getResultBuffer();
-    final byte result[] = new byte[resultLength];
-    resultBuffer.getBytes(0, result, 0, resultLength);
+    final DirectBuffer resultBuffer = mergeTool.writeResultToBuffer();
+    final byte result[] = new byte[resultBuffer.capacity()];
+    resultBuffer.getBytes(0, result, 0, result.length);
 
     // then
     assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree(expectedPayload));

@@ -15,17 +15,17 @@
  */
 package io.zeebe.test;
 
-import static io.zeebe.test.EmbeddedBrokerRule.DEFAULT_CONFIG_SUPPLIER;
 import static io.zeebe.test.TopicEventRecorder.jobKey;
 import static io.zeebe.test.TopicEventRecorder.wfInstanceKey;
 import static org.assertj.core.api.Assertions.fail;
 
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.events.JobEvent;
-import io.zeebe.client.api.events.JobState;
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
-import io.zeebe.client.api.events.WorkflowInstanceState;
-import java.io.InputStream;
+import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.gateway.ClientProperties;
+import io.zeebe.gateway.ZeebeClient;
+import io.zeebe.gateway.api.events.JobEvent;
+import io.zeebe.gateway.api.events.JobState;
+import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
+import io.zeebe.gateway.api.events.WorkflowInstanceState;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Properties;
@@ -34,24 +34,35 @@ import java.util.function.Supplier;
 import org.junit.rules.ExternalResource;
 
 public class ZeebeTestRule extends ExternalResource {
-  private EmbeddedBrokerRule brokerRule;
-  private ClientRule clientRule;
-  private TopicEventRecorder topicEventRecorder;
+  private final EmbeddedBrokerRule brokerRule;
+  private final ClientRule clientRule;
+  private final TopicEventRecorder topicEventRecorder;
 
   public ZeebeTestRule() {
-    this(DEFAULT_CONFIG_SUPPLIER, Properties::new);
+    this(EmbeddedBrokerRule.DEFAULT_CONFIG_FILE, Properties::new);
   }
 
   public ZeebeTestRule(
-      final Supplier<InputStream> configSupplier, final Supplier<Properties> propertiesProvider) {
-    brokerRule = new EmbeddedBrokerRule(configSupplier);
-    clientRule = new ClientRule(propertiesProvider, true);
+      final String configFileClasspathLocation, final Supplier<Properties> propertiesProvider) {
+    brokerRule = new EmbeddedBrokerRule(configFileClasspathLocation);
+    clientRule =
+        new ClientRule(
+            () -> {
+              final Properties properties = propertiesProvider.get();
+              properties.setProperty(
+                  ClientProperties.BROKER_CONTACTPOINT, brokerRule.getClientAddress().toString());
+              return properties;
+            });
 
-    topicEventRecorder = new TopicEventRecorder(clientRule, clientRule.getDefaultTopic());
+    topicEventRecorder = new TopicEventRecorder(clientRule);
   }
 
   public ZeebeClient getClient() {
     return clientRule.getClient();
+  }
+
+  public BrokerCfg getBrokerCfg() {
+    return brokerRule.getBrokerCfg();
   }
 
   @Override
@@ -77,7 +88,8 @@ public class ZeebeTestRule extends ExternalResource {
         () -> {
           final WorkflowInstanceEvent event =
               topicEventRecorder.getLastWorkflowInstanceEvent(wfInstanceKey(key));
-          return event.getState().equals(WorkflowInstanceState.COMPLETED);
+          return event.getKey() == key
+              && event.getState().equals(WorkflowInstanceState.ELEMENT_COMPLETED);
         },
         "workflow instance is not completed");
   }
@@ -122,10 +134,6 @@ public class ZeebeTestRule extends ExternalResource {
     } catch (final InterruptedException e) {
       // ignore
     }
-  }
-
-  public String getDefaultTopic() {
-    return clientRule.getDefaultTopic();
   }
 
   public int getDefaultPartition() {

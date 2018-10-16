@@ -15,14 +15,24 @@
  */
 package io.zeebe.servicecontainer.impl;
 
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.CompositeServiceBuilder;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceBuilder;
+import io.zeebe.servicecontainer.ServiceContainer;
+import io.zeebe.servicecontainer.ServiceInterruptedException;
+import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.channel.ConcurrentQueueChannel;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
 import org.slf4j.Logger;

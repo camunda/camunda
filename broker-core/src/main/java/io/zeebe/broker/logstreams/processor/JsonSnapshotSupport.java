@@ -17,10 +17,14 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-import com.fasterxml.jackson.databind.*;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import io.zeebe.logstreams.spi.ComposableSnapshotSupport;
 import io.zeebe.util.ReflectUtil;
-import java.io.*;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 /**
  * Should be used for small data sets only, where programming convenience and human readability of

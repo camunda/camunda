@@ -15,6 +15,8 @@
  */
 package io.zeebe.transport;
 
+import io.zeebe.util.buffer.BufferWriter;
+
 public interface ServerOutput {
   /**
    * Sends a message according to the single message protocol.
@@ -22,7 +24,7 @@ public interface ServerOutput {
    * <p>Returns false if the message cannot be currently written due to exhausted capacity. Throws
    * an exception if the request is not sendable at all (e.g. buffer writer throws exception).
    */
-  boolean sendMessage(TransportMessage transportMessage);
+  boolean sendMessage(int streamId, BufferWriter writer);
 
   /**
    * Sends a response according to the request response protocol.

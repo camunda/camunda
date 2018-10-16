@@ -21,6 +21,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.UnstableCI;
+import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
@@ -58,7 +59,7 @@ public class TopicSubscriptionTest {
   public static final int MAXIMUM_SUBSCRIPTION_NAME_LENGTH = 32;
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientApiRule apiRule = new ClientApiRule();
+  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
@@ -162,7 +163,7 @@ public class TopicSubscriptionTest {
     SubscribedRecord jobEvent = jobEvents.get(0);
     assertThat(jobEvent.subscriberKey()).isEqualTo(subscriberKey);
     assertThat(jobEvent.subscriptionType()).isEqualTo(SubscriptionType.TOPIC_SUBSCRIPTION);
-    assertThat(jobEvent.position()).isEqualTo(jobKey);
+    assertThat(jobEvent.position()).isGreaterThan(0L);
     assertThat(jobEvent.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
     assertThat(jobEvent.recordType()).isEqualTo(RecordType.COMMAND);
     assertThat(jobEvent.valueType()).isEqualTo(ValueType.JOB);
@@ -173,12 +174,12 @@ public class TopicSubscriptionTest {
     jobEvent = jobEvents.get(1);
     assertThat(jobEvent.subscriberKey()).isEqualTo(subscriberKey);
     assertThat(jobEvent.subscriptionType()).isEqualTo(SubscriptionType.TOPIC_SUBSCRIPTION);
-    assertThat(jobEvent.position()).isGreaterThan(jobKey);
+    assertThat(jobEvent.position()).isGreaterThan(jobEvents.get(0).position());
     assertThat(jobEvent.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
     assertThat(jobEvent.recordType()).isEqualTo(RecordType.EVENT);
     assertThat(jobEvent.valueType()).isEqualTo(ValueType.JOB);
     assertThat(jobEvent.intent()).isEqualTo(JobIntent.CREATED);
-    assertThat(jobEvent.sourceRecordPosition()).isEqualTo(jobKey);
+    assertThat(jobEvent.sourceRecordPosition()).isEqualTo(jobEvents.get(0).position());
     assertThat(jobEvent.timestamp()).isEqualTo(fixedClockEpoch);
   }
 
@@ -508,9 +509,7 @@ public class TopicSubscriptionTest {
     // and the subscription service has abnormally closed
     final String name =
         "log.log."
-            + ClientApiRule.DEFAULT_TOPIC_NAME
-            + "."
-            + apiRule.getDefaultPartitionId()
+            + Partition.getPartitionName(apiRule.getDefaultPartitionId())
             + ".subscription.push.foo"; // TODO: ist das der richtige Name?
     final ServiceName<Object> subscriptionServiceName =
         ServiceName.newServiceName(name, Object.class);
@@ -592,13 +591,13 @@ public class TopicSubscriptionTest {
         .isGreaterThan(subscriptionResponse.getSequenceNumber());
   }
 
-  protected String getStringOfLength(int numCharacters) {
+  protected String getStringOfLength(final int numCharacters) {
     final char[] characters = new char[numCharacters];
     Arrays.fill(characters, 'a');
     return new String(characters);
   }
 
-  protected static ExecuteCommandResponse asCommandResponse(RawMessage message) {
+  protected static ExecuteCommandResponse asCommandResponse(final RawMessage message) {
     final ExecuteCommandResponse response = new ExecuteCommandResponse(new MsgPackHelper());
     response.wrap(message.getMessage(), 0, message.getMessage().capacity());
     return response;

@@ -17,26 +17,44 @@
  */
 package io.zeebe.broker.system.configuration;
 
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_HOST;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PORT_OFFSET;
+
 public class NetworkCfg implements ConfigurationEntry {
-  private String host = "0.0.0.0";
+
+  public static final String DEFAULT_HOST = "0.0.0.0";
+
+  private String host = DEFAULT_HOST;
   private String defaultSendBufferSize = "16M";
+  private int portOffset = 0;
 
   private SocketBindingClientApiCfg client = new SocketBindingClientApiCfg();
   private SocketBindingManagementCfg management = new SocketBindingManagementCfg();
   private SocketBindingReplicationCfg replication = new SocketBindingReplicationCfg();
+  private SocketBindingSubscriptionCfg subscription = new SocketBindingSubscriptionCfg();
+  private SocketBindingGatewayCfg gateway = new SocketBindingGatewayCfg();
 
   @Override
-  public void init(BrokerCfg brokerCfg, String brokerBase) {
+  public void init(
+      final BrokerCfg brokerCfg, final String brokerBase, final Environment environment) {
+    applyEnvironment(environment);
     client.applyDefaults(this);
     management.applyDefaults(this);
     replication.applyDefaults(this);
+    subscription.applyDefaults(this);
+    gateway.applyDefaults(this);
+  }
+
+  private void applyEnvironment(final Environment environment) {
+    environment.get(ENV_HOST).ifPresent(v -> host = v);
+    environment.getInt(ENV_PORT_OFFSET).ifPresent(v -> portOffset = v);
   }
 
   public String getHost() {
     return host;
   }
 
-  public void setHost(String host) {
+  public void setHost(final String host) {
     this.host = host;
   }
 
@@ -44,15 +62,23 @@ public class NetworkCfg implements ConfigurationEntry {
     return defaultSendBufferSize;
   }
 
-  public void setDefaultSendBufferSize(String defaultSendBufferSize) {
+  public void setDefaultSendBufferSize(final String defaultSendBufferSize) {
     this.defaultSendBufferSize = defaultSendBufferSize;
+  }
+
+  public int getPortOffset() {
+    return portOffset;
+  }
+
+  public void setPortOffset(final int portOffset) {
+    this.portOffset = portOffset;
   }
 
   public SocketBindingClientApiCfg getClient() {
     return client;
   }
 
-  public void setClient(SocketBindingClientApiCfg clientApi) {
+  public void setClient(final SocketBindingClientApiCfg clientApi) {
     this.client = clientApi;
   }
 
@@ -60,7 +86,7 @@ public class NetworkCfg implements ConfigurationEntry {
     return management;
   }
 
-  public void setManagement(SocketBindingManagementCfg managementApi) {
+  public void setManagement(final SocketBindingManagementCfg managementApi) {
     this.management = managementApi;
   }
 
@@ -68,7 +94,47 @@ public class NetworkCfg implements ConfigurationEntry {
     return replication;
   }
 
-  public void setReplication(SocketBindingReplicationCfg replicationApi) {
+  public void setReplication(final SocketBindingReplicationCfg replicationApi) {
     this.replication = replicationApi;
+  }
+
+  public SocketBindingSubscriptionCfg getSubscription() {
+    return subscription;
+  }
+
+  public void setSubscription(final SocketBindingSubscriptionCfg subscription) {
+    this.subscription = subscription;
+  }
+
+  public SocketBindingGatewayCfg getGateway() {
+    return gateway;
+  }
+
+  public void setGateway(final SocketBindingGatewayCfg gateway) {
+    this.gateway = gateway;
+  }
+
+  @Override
+  public String toString() {
+    return "NetworkCfg{"
+        + "host='"
+        + host
+        + '\''
+        + ", defaultSendBufferSize='"
+        + defaultSendBufferSize
+        + '\''
+        + ", portOffset="
+        + portOffset
+        + ", client="
+        + client
+        + ", management="
+        + management
+        + ", replication="
+        + replication
+        + ", subscription="
+        + subscription
+        + ", gateway="
+        + gateway
+        + '}';
   }
 }

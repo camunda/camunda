@@ -17,7 +17,20 @@ package io.zeebe.map;
 
 import static io.zeebe.map.BucketBufferArray.ALLOCATION_FACTOR;
 import static io.zeebe.map.BucketBufferArray.getBucketAddress;
-import static io.zeebe.map.BucketBufferArrayDescriptor.*;
+import static io.zeebe.map.BucketBufferArrayDescriptor.BLOCK_KEY_OFFSET;
+import static io.zeebe.map.BucketBufferArrayDescriptor.BUCKET_BUFFER_BUCKET_COUNT_OFFSET;
+import static io.zeebe.map.BucketBufferArrayDescriptor.BUCKET_BUFFER_HEADER_LENGTH;
+import static io.zeebe.map.BucketBufferArrayDescriptor.BUCKET_DATA_OFFSET;
+import static io.zeebe.map.BucketBufferArrayDescriptor.BUCKET_DEPTH_OFFSET;
+import static io.zeebe.map.BucketBufferArrayDescriptor.BUCKET_FILL_COUNT_OFFSET;
+import static io.zeebe.map.BucketBufferArrayDescriptor.BUCKET_HEADER_LENGTH;
+import static io.zeebe.map.BucketBufferArrayDescriptor.BUCKET_ID_OFFSET;
+import static io.zeebe.map.BucketBufferArrayDescriptor.BUCKET_OVERFLOW_POINTER_OFFSET;
+import static io.zeebe.map.BucketBufferArrayDescriptor.MAIN_BLOCK_COUNT_OFFSET;
+import static io.zeebe.map.BucketBufferArrayDescriptor.MAIN_BUCKET_BUFFER_HEADER_LEN;
+import static io.zeebe.map.BucketBufferArrayDescriptor.MAIN_BUCKET_COUNT_OFFSET;
+import static io.zeebe.map.BucketBufferArrayDescriptor.MAIN_BUFFER_COUNT_OFFSET;
+import static io.zeebe.map.BucketBufferArrayDescriptor.getBlockValueOffset;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
@@ -27,7 +40,12 @@ import io.zeebe.map.types.LongValueHandler;
 import io.zeebe.test.util.io.AlwaysFailingInputStream;
 import io.zeebe.test.util.io.RepeatedlyFailingInputStream;
 import io.zeebe.test.util.io.RepeatedlyFailingOutputStream;
-import java.io.*;
+import io.zeebe.util.FileUtil;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -280,7 +298,7 @@ public class BucketBufferArrayIOTest {
     final File tmpFile = File.createTempFile("tmpFile", ".tmp");
     final FileOutputStream outputStream = new FileOutputStream(tmpFile);
     outputStream.close();
-    tmpFile.delete();
+    FileUtil.deleteFile(tmpFile);
 
     // expect IOException
     expectedException.expect(IOException.class);

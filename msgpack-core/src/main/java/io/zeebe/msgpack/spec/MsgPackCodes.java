@@ -47,6 +47,10 @@ public final class MsgPackCodes {
     return (b & (byte) 0xe0) == FIXSTR_PREFIX;
   }
 
+  public static boolean isMap(byte b) {
+    return isFixedMap(b) || b == MAP16 || b == MAP32;
+  }
+
   public static final byte POSFIXINT_MASK = (byte) 0x80;
 
   public static final byte FIXMAP_PREFIX = (byte) 0x80;

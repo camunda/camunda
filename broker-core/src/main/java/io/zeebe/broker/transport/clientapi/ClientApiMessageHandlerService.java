@@ -19,7 +19,11 @@ package io.zeebe.broker.transport.clientapi;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceGroupReference;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 
 public class ClientApiMessageHandlerService implements Service<ClientApiMessageHandler> {
   private final Injector<Dispatcher> controlMessageBufferInjector = new Injector<>();

@@ -18,22 +18,20 @@ package io.zeebe.broker.it.clustering;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.commands.*;
-import io.zeebe.client.api.events.JobEvent;
-import io.zeebe.client.api.events.JobState;
-import io.zeebe.test.util.AutoCloseableRule;
-import org.junit.*;
+import io.zeebe.gateway.ZeebeClient;
+import io.zeebe.gateway.api.commands.BrokerInfo;
+import io.zeebe.gateway.api.events.JobEvent;
+import io.zeebe.gateway.api.events.JobState;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class TaskEventClusteredTest {
-  public ClientRule clientRule = new ClientRule();
-  public AutoCloseableRule closeables = new AutoCloseableRule();
-  public ClusteringRule clusteringRule = new ClusteringRule(closeables, clientRule);
+  public ClusteringRule clusteringRule = new ClusteringRule();
+  public ClientRule clientRule = new ClientRule(clusteringRule);
 
-  @Rule
-  public RuleChain ruleChain =
-      RuleChain.outerRule(closeables).around(clientRule).around(clusteringRule);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(clusteringRule).around(clientRule);
 
   @Test
   @Ignore("https://github.com/zeebe-io/zeebe/issues/844")
@@ -41,23 +39,14 @@ public class TaskEventClusteredTest {
     // given
     final ZeebeClient client = clientRule.getClient();
 
-    final String topicName = "foo";
-    clusteringRule.createTopic(topicName, 1);
-
-    final Topics topics = client.newTopicsRequest().send().join();
-    final Topic topic =
-        topics.getTopics().stream().filter(t -> topicName.equals(t.getName())).findFirst().get();
-
-    final BrokerInfo leader =
-        clusteringRule.getLeaderForPartition(topic.getPartitions().get(0).getId());
+    final BrokerInfo leader = clusteringRule.getLeaderForPartition(0);
 
     // choosing a new leader in a raft group where the previously leading broker is no longer
     // available
     clusteringRule.stopBroker(leader.getAddress());
 
     // when
-    final JobEvent jobEvent =
-        client.topicClient(topicName).jobClient().newCreateCommand().jobType("bar").send().join();
+    final JobEvent jobEvent = client.jobClient().newCreateCommand().jobType("bar").send().join();
 
     // then
     assertThat(jobEvent.getState()).isEqualTo(JobState.CREATED);

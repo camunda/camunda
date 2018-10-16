@@ -20,7 +20,7 @@ package io.zeebe.broker.clustering.base.topology;
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.transport.controlmessage.AbstractControlMessageHandler;
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.sched.ActorControl;
 import org.agrona.DirectBuffer;

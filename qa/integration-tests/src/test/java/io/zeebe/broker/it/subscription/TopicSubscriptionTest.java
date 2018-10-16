@@ -15,31 +15,31 @@
  */
 package io.zeebe.broker.it.subscription;
 
+import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setPartitionCount;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.clients.TopicClient;
-import io.zeebe.client.api.commands.JobCommandName;
-import io.zeebe.client.api.commands.Topic;
-import io.zeebe.client.api.commands.Topics;
-import io.zeebe.client.api.events.JobEvent;
-import io.zeebe.client.api.record.Record;
-import io.zeebe.client.api.record.ValueType;
-import io.zeebe.client.api.subscription.RecordHandler;
-import io.zeebe.client.api.subscription.TopicSubscription;
-import io.zeebe.client.impl.job.CreateJobCommandImpl;
+import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.gateway.ZeebeClient;
+import io.zeebe.gateway.api.commands.JobCommandName;
+import io.zeebe.gateway.api.events.JobEvent;
+import io.zeebe.gateway.api.record.Record;
+import io.zeebe.gateway.api.record.RecordMetadata;
+import io.zeebe.gateway.api.record.ValueType;
+import io.zeebe.gateway.api.subscription.RecordHandler;
+import io.zeebe.gateway.api.subscription.TopicSubscription;
+import io.zeebe.gateway.impl.job.CreateJobCommandImpl;
+import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -51,9 +51,9 @@ public class TopicSubscriptionTest {
 
   public static final String SUBSCRIPTION_NAME = "foo";
 
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(setPartitionCount(3));
 
-  public ClientRule clientRule = new ClientRule();
+  public ClientRule clientRule = new ClientRule(brokerRule);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
@@ -61,18 +61,15 @@ public class TopicSubscriptionTest {
 
   @Rule public Timeout timeout = Timeout.seconds(30);
 
-  protected TopicClient client;
+  protected ZeebeClient client;
   protected RecordingEventHandler recordingHandler;
   protected ObjectMapper objectMapper;
 
   @Before
   public void setUp() {
-    this.client = clientRule.getClient().topicClient();
+    this.client = clientRule.getClient();
     this.recordingHandler = new RecordingEventHandler();
     this.objectMapper = new ObjectMapper();
-
-    final String defaultTopic = clientRule.getClient().getConfiguration().getDefaultTopic();
-    clientRule.waitUntilTopicsExists(defaultTopic);
   }
 
   @Test
@@ -82,7 +79,7 @@ public class TopicSubscriptionTest {
         client.newSubscription().name(SUBSCRIPTION_NAME).recordHandler(recordingHandler).open();
 
     // then
-    assertThat(subscription.isOpen());
+    assertThat(subscription.isOpen()).isTrue();
   }
 
   @Test
@@ -99,7 +96,7 @@ public class TopicSubscriptionTest {
     assertThat(recordingHandler.numJobRecords()).isEqualTo(2);
 
     final long taskKey = job.getKey();
-    recordingHandler.assertJobRecord(0, taskKey, "CREATE");
+    recordingHandler.assertJobRecord(0, ExecuteCommandResponseDecoder.keyNullValue(), "CREATE");
     recordingHandler.assertJobRecord(1, taskKey, "CREATED");
   }
 
@@ -113,7 +110,7 @@ public class TopicSubscriptionTest {
         .newSubscription()
         .name(SUBSCRIPTION_NAME)
         .recordHandler(recordingHandler)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     // then
@@ -122,7 +119,7 @@ public class TopicSubscriptionTest {
     assertThat(recordingHandler.numJobRecords()).isEqualTo(2);
 
     final long jobKey = job.getKey();
-    recordingHandler.assertJobRecord(0, jobKey, "CREATE");
+    recordingHandler.assertJobRecord(0, ExecuteCommandResponseDecoder.keyNullValue(), "CREATE");
     recordingHandler.assertJobRecord(1, jobKey, "CREATED");
   }
 
@@ -134,7 +131,7 @@ public class TopicSubscriptionTest {
         .newSubscription()
         .name(SUBSCRIPTION_NAME)
         .recordHandler(recordingHandler)
-        .startAtTailOfTopic()
+        .startAtTail()
         .open();
 
     // when
@@ -148,19 +145,19 @@ public class TopicSubscriptionTest {
 
     // task 1 has not been received
     final long job2Key = job2.getKey();
-    recordingHandler.assertJobRecord(0, job2Key, "CREATE");
+    recordingHandler.assertJobRecord(0, ExecuteCommandResponseDecoder.keyNullValue(), "CREATE");
     recordingHandler.assertJobRecord(1, job2Key, "CREATED");
   }
 
   @Test
-  public void shouldReceiveEventsFromPosition() throws IOException {
+  public void shouldReceiveEventsFromPosition() {
     client.jobClient().newCreateCommand().jobType("foo").send().join();
 
     client
         .newSubscription()
         .name(SUBSCRIPTION_NAME)
         .recordHandler(recordingHandler)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     waitUntil(() -> recordingHandler.numJobRecords() == 2);
@@ -173,14 +170,15 @@ public class TopicSubscriptionTest {
             .collect(Collectors.toList());
 
     final RecordingEventHandler subscription2Handler = new RecordingEventHandler();
-    final long secondTaskEventPosition = recordedTaskEvents.get(1).getMetadata().getPosition();
+    final RecordMetadata metadata = recordedTaskEvents.get(1).getMetadata();
+    final long secondTaskEventPosition = metadata.getPosition();
 
     // when
     client
         .newSubscription()
         .name("another" + SUBSCRIPTION_NAME)
         .recordHandler(subscription2Handler)
-        .startAtPosition(clientRule.getDefaultPartition(), secondTaskEventPosition)
+        .startAtPosition(metadata.getPartitionId(), secondTaskEventPosition)
         .open();
 
     // then
@@ -198,7 +196,7 @@ public class TopicSubscriptionTest {
         .newSubscription()
         .name(SUBSCRIPTION_NAME)
         .recordHandler(recordingHandler)
-        .startAtPosition(clientRule.getDefaultPartition(), Long.MAX_VALUE)
+        .startAtPosition(0, Long.MAX_VALUE)
         .open();
 
     client.jobClient().newCreateCommand().jobType("foo").send().join();
@@ -207,7 +205,7 @@ public class TopicSubscriptionTest {
     waitUntil(() -> recordingHandler.numJobRecords() == 2);
 
     // the events are nevertheless received, although they have a lower position
-    assertThat(recordingHandler.numJobRecords() == 2);
+    assertThat(recordingHandler.numJobRecords()).isEqualTo(2);
   }
 
   @Test
@@ -229,7 +227,7 @@ public class TopicSubscriptionTest {
   }
 
   @Test
-  public void shouldRepeatedlyRecoverSubscription() throws InterruptedException {
+  public void shouldRepeatedlyRecoverSubscription() {
     for (int i = 0; i < 100; i++) {
       // given
       final TopicSubscription subscription =
@@ -251,7 +249,7 @@ public class TopicSubscriptionTest {
   }
 
   @Test
-  public void shouldOpenMultipleSubscriptionsOnSameTopic() throws IOException {
+  public void shouldOpenMultipleSubscriptions() throws IOException {
     // given
     final JobEvent job = client.jobClient().newCreateCommand().jobType("foo").send().join();
 
@@ -259,7 +257,7 @@ public class TopicSubscriptionTest {
         .newSubscription()
         .name(SUBSCRIPTION_NAME)
         .recordHandler(recordingHandler)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     final RecordingEventHandler secondEventHandler = new RecordingEventHandler();
@@ -268,7 +266,7 @@ public class TopicSubscriptionTest {
         .newSubscription()
         .name("another" + SUBSCRIPTION_NAME)
         .recordHandler(secondEventHandler)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     // when
@@ -277,9 +275,9 @@ public class TopicSubscriptionTest {
 
     // then
     final long jobKey = job.getKey();
-    recordingHandler.assertJobRecord(0, jobKey, "CREATE");
+    recordingHandler.assertJobRecord(0, ExecuteCommandResponseDecoder.keyNullValue(), "CREATE");
     recordingHandler.assertJobRecord(1, jobKey, "CREATED");
-    secondEventHandler.assertJobRecord(0, jobKey, "CREATE");
+    secondEventHandler.assertJobRecord(0, ExecuteCommandResponseDecoder.keyNullValue(), "CREATE");
     secondEventHandler.assertJobRecord(1, jobKey, "CREATED");
   }
 
@@ -292,12 +290,7 @@ public class TopicSubscriptionTest {
         new ParallelismDetectionHandler(handlingIntervalLength);
 
     // when
-    client
-        .newSubscription()
-        .name(SUBSCRIPTION_NAME)
-        .recordHandler(handler)
-        .startAtHeadOfTopic()
-        .open();
+    client.newSubscription().name(SUBSCRIPTION_NAME).recordHandler(handler).startAtHead().open();
 
     // then
     final int numExpectedEvents = 2;
@@ -318,7 +311,7 @@ public class TopicSubscriptionTest {
             .newSubscription()
             .name(SUBSCRIPTION_NAME)
             .recordHandler(recordingHandler)
-            .startAtHeadOfTopic()
+            .startAtHead()
             .open();
 
     // that was received by the subscription
@@ -343,7 +336,7 @@ public class TopicSubscriptionTest {
         .newSubscription()
         .name(SUBSCRIPTION_NAME)
         .recordHandler(recordingHandler)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     // then
@@ -362,12 +355,12 @@ public class TopicSubscriptionTest {
     protected AtomicInteger numInvocations = new AtomicInteger(0);
     protected long timeout;
 
-    public ParallelismDetectionHandler(Duration duration) {
+    public ParallelismDetectionHandler(final Duration duration) {
       this.timeout = duration.toMillis();
     }
 
     @Override
-    public void onRecord(Record record) throws Exception {
+    public void onRecord(final Record record) throws Exception {
       numInvocations.incrementAndGet();
       if (executing.compareAndSet(false, true)) {
         try {
@@ -402,129 +395,6 @@ public class TopicSubscriptionTest {
     client.newSubscription().name(SUBSCRIPTION_NAME).recordHandler(recordingHandler).open();
   }
 
-  @Test
-  public void testSubscriptionsWithSameNameOnDifferentTopic() {
-    // given
-    final ZeebeClient zeebeClient = clientRule.getClient();
-
-    final String anotherTopicName = "another-topic";
-    zeebeClient
-        .newCreateTopicCommand()
-        .name(anotherTopicName)
-        .partitions(1)
-        .replicationFactor(1)
-        .send()
-        .join();
-
-    clientRule.waitUntilTopicsExists(anotherTopicName);
-
-    zeebeClient
-        .topicClient(clientRule.getDefaultTopic())
-        .newSubscription()
-        .name(SUBSCRIPTION_NAME)
-        .recordHandler(recordingHandler)
-        .open();
-
-    // when
-    final TopicSubscription topic2Subscription =
-        zeebeClient
-            .topicClient(anotherTopicName)
-            .newSubscription()
-            .name(SUBSCRIPTION_NAME)
-            .recordHandler(recordingHandler)
-            .open();
-
-    // then
-    assertThat(topic2Subscription.isOpen()).isTrue();
-  }
-
-  @Test
-  public void testSubscriptionsWithSameNameOnDifferentTopicShouldReceiveRespectiveEvents() {
-    // given
-    final ZeebeClient zeebeClient = clientRule.getClient();
-    final String anotherTopicName = "another-topic";
-    zeebeClient
-        .newCreateTopicCommand()
-        .name(anotherTopicName)
-        .partitions(1)
-        .replicationFactor(1)
-        .send()
-        .join();
-    clientRule.waitUntilTopicsExists(anotherTopicName);
-    final int anotherPartitionId = 2;
-
-    final TopicClient topicClient0 = zeebeClient.topicClient(clientRule.getDefaultTopic());
-    final TopicClient topicClient1 = zeebeClient.topicClient(anotherTopicName);
-
-    final TopicSubscription topic0Subscription =
-        topicClient0
-            .newSubscription()
-            .name(SUBSCRIPTION_NAME)
-            .recordHandler(recordingHandler)
-            .startAtHeadOfTopic()
-            .open();
-
-    final RecordingEventHandler anotherRecordingHandler = new RecordingEventHandler();
-
-    final TopicSubscription topic1Subscription =
-        topicClient1
-            .newSubscription()
-            .name(SUBSCRIPTION_NAME)
-            .recordHandler(anotherRecordingHandler)
-            .startAtHeadOfTopic()
-            .open();
-
-    // when
-    topicClient0.jobClient().newCreateCommand().jobType("foo").send().join();
-
-    topicClient1.jobClient().newCreateCommand().jobType("bar").send().join();
-
-    // then
-    waitUntil(() -> recordingHandler.numJobRecords() >= 2);
-    waitUntil(() -> anotherRecordingHandler.numJobRecords() >= 2);
-
-    topic0Subscription.close();
-    topic1Subscription.close();
-
-    Set<String> receivedTopicNamesSubscription =
-        recordingHandler
-            .getRecords()
-            .stream()
-            .filter((re) -> re.getMetadata().getValueType() == ValueType.JOB)
-            .map((re) -> re.getMetadata().getTopicName())
-            .collect(Collectors.toSet());
-
-    Set<Integer> receivedPartitionIdsSubscription =
-        recordingHandler
-            .getRecords()
-            .stream()
-            .filter((re) -> re.getMetadata().getValueType() == ValueType.JOB)
-            .map((re) -> re.getMetadata().getPartitionId())
-            .collect(Collectors.toSet());
-
-    assertThat(receivedTopicNamesSubscription).containsExactly(clientRule.getDefaultTopic());
-    assertThat(receivedPartitionIdsSubscription).containsExactly(clientRule.getDefaultPartition());
-
-    receivedTopicNamesSubscription =
-        anotherRecordingHandler
-            .getRecords()
-            .stream()
-            .filter((re) -> re.getMetadata().getValueType() == ValueType.JOB)
-            .map((re) -> re.getMetadata().getTopicName())
-            .collect(Collectors.toSet());
-
-    receivedPartitionIdsSubscription =
-        anotherRecordingHandler
-            .getRecords()
-            .stream()
-            .filter((re) -> re.getMetadata().getValueType() == ValueType.JOB)
-            .map((re) -> re.getMetadata().getPartitionId())
-            .collect(Collectors.toSet());
-
-    assertThat(receivedTopicNamesSubscription).containsExactly(anotherTopicName);
-    assertThat(receivedPartitionIdsSubscription).containsExactly(anotherPartitionId);
-  }
-
   /** E.g. subscription ACKs should not be pushed to the client */
   @Test
   public void shouldNotPushAnySubscriptionEvents() {
@@ -556,7 +426,7 @@ public class TopicSubscriptionTest {
         .newSubscription()
         .name(SUBSCRIPTION_NAME)
         .recordHandler(recordingHandler)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     // then
@@ -567,34 +437,19 @@ public class TopicSubscriptionTest {
   public void shouldReceiveEventsFromMultiplePartitions() {
     // given
     final ZeebeClient zeebeClient = clientRule.getClient();
-
-    final String topicName = "pasta al forno";
-    final int numPartitions = 2;
-    zeebeClient
-        .newCreateTopicCommand()
-        .name(topicName)
-        .partitions(numPartitions)
-        .replicationFactor(1)
-        .send()
-        .join();
-
-    clientRule.waitUntilTopicsExists(topicName);
-
-    final Topics topics = zeebeClient.newTopicsRequest().send().join();
-    final Topic topic =
-        topics.getTopics().stream().filter(t -> t.getName().equals(topicName)).findFirst().get();
+    final int numPartitions = 3;
 
     final Integer[] partitionIds =
-        topic.getPartitions().stream().mapToInt(p -> p.getId()).boxed().toArray(Integer[]::new);
+        IntStream.range(0, numPartitions).boxed().toArray(Integer[]::new);
 
-    createTaskOnPartition(topicName, partitionIds[0]);
-    createTaskOnPartition(topicName, partitionIds[1]);
+    for (final int partitionId : partitionIds) {
+      createTaskOnPartition(partitionId);
+    }
 
     final List<Integer> receivedPartitionIds = new ArrayList<>();
 
     // when
     zeebeClient
-        .topicClient(topicName)
         .newSubscription()
         .name(SUBSCRIPTION_NAME)
         .recordHandler(recordingHandler)
@@ -604,7 +459,7 @@ public class TopicSubscriptionTest {
                 receivedPartitionIds.add(c.getMetadata().getPartitionId());
               }
             })
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     // then
@@ -613,10 +468,9 @@ public class TopicSubscriptionTest {
     assertThat(receivedPartitionIds).containsExactlyInAnyOrder(partitionIds);
   }
 
-  protected void createTaskOnPartition(String topic, int partition) {
+  protected void createTaskOnPartition(final int partition) {
     final CreateJobCommandImpl createCommand =
-        (CreateJobCommandImpl)
-            clientRule.getClient().topicClient(topic).jobClient().newCreateCommand().jobType("baz");
+        (CreateJobCommandImpl) clientRule.getClient().jobClient().newCreateCommand().jobType("baz");
 
     createCommand.getCommand().setPartitionId(partition);
     createCommand.send().join();

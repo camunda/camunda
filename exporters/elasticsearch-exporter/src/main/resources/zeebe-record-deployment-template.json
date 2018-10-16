@@ -1,0 +1,49 @@
+{
+  "index_patterns": [
+    "zeebe-record-deployment_*"
+  ],
+  "order": 20,
+  "mappings": {
+    "_doc": {
+      "properties": {
+        "value": {
+          "dynamic": "strict",
+          "properties": {
+            "deployedWorkflows": {
+              "properties": {
+                "bpmnProcessId": {
+                  "type": "keyword"
+                },
+                "version": {
+                  "type": "long"
+                },
+                "workflowKey": {
+                  "type": "long"
+                },
+                "resourceName": {
+                  "type": "text"
+                }
+              }
+            },
+            "resources": {
+              "properties": {
+                "resource": {
+                  "type": "text"
+                },
+                "resourceName": {
+                  "type": "text"
+                },
+                "resourceType": {
+                  "type": "keyword"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "aliases": {
+    "zeebe-record-deployment": {}
+  }
+}

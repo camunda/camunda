@@ -13,32 +13,91 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.zeebe.model.bpmn.impl.instance;
 
-import io.zeebe.model.bpmn.impl.metadata.InputOutputMappingImpl;
-import io.zeebe.model.bpmn.impl.metadata.TaskDefinitionImpl;
-import io.zeebe.model.bpmn.impl.metadata.TaskHeadersImpl;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_IMPLEMENTATION;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_OPERATION_REF;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_SERVICE_TASK;
+
+import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
+import io.zeebe.model.bpmn.instance.Operation;
 import io.zeebe.model.bpmn.instance.ServiceTask;
-import io.zeebe.model.bpmn.instance.TaskDefinition;
+import io.zeebe.model.bpmn.instance.Task;
+import org.camunda.bpm.model.xml.ModelBuilder;
+import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
+import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
+import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
+import org.camunda.bpm.model.xml.type.attribute.Attribute;
+import org.camunda.bpm.model.xml.type.reference.AttributeReference;
 
-public class ServiceTaskImpl extends FlowNodeImpl implements ServiceTask {
+/**
+ * The BPMN serviceTask element
+ *
+ * @author Sebastian Menski
+ */
+public class ServiceTaskImpl extends TaskImpl implements ServiceTask {
 
-  public TaskDefinitionImpl getTaskDefinitionImpl() {
-    return getExtensionElements() != null ? getExtensionElements().getTaskDefinition() : null;
+  protected static Attribute<String> implementationAttribute;
+  protected static AttributeReference<Operation> operationRefAttribute;
+
+  public static void registerType(ModelBuilder modelBuilder) {
+    final ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(ServiceTask.class, BPMN_ELEMENT_SERVICE_TASK)
+            .namespaceUri(BPMN20_NS)
+            .extendsType(Task.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<ServiceTask>() {
+                  @Override
+                  public ServiceTask newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new ServiceTaskImpl(instanceContext);
+                  }
+                });
+
+    implementationAttribute =
+        typeBuilder
+            .stringAttribute(BPMN_ATTRIBUTE_IMPLEMENTATION)
+            .defaultValue("##WebService")
+            .build();
+
+    operationRefAttribute =
+        typeBuilder
+            .stringAttribute(BPMN_ATTRIBUTE_OPERATION_REF)
+            .qNameAttributeReference(Operation.class)
+            .build();
+
+    typeBuilder.build();
+  }
+
+  public ServiceTaskImpl(ModelTypeInstanceContext context) {
+    super(context);
   }
 
   @Override
-  public TaskDefinition getTaskDefinition() {
-    return getTaskDefinitionImpl();
+  public ServiceTaskBuilder builder() {
+    return new ServiceTaskBuilder((BpmnModelInstance) modelInstance, this);
   }
 
   @Override
-  public TaskHeadersImpl getTaskHeaders() {
-    return getExtensionElements() != null ? getExtensionElements().getTaskHeaders() : null;
+  public String getImplementation() {
+    return implementationAttribute.getValue(this);
   }
 
   @Override
-  public InputOutputMappingImpl getInputOutputMapping() {
-    return getExtensionElements() != null ? getExtensionElements().getInputOutputMapping() : null;
+  public void setImplementation(String implementation) {
+    implementationAttribute.setValue(this, implementation);
+  }
+
+  @Override
+  public Operation getOperation() {
+    return operationRefAttribute.getReferenceTargetElement(this);
+  }
+
+  @Override
+  public void setOperation(Operation operation) {
+    operationRefAttribute.setReferenceTargetElement(this, operation);
   }
 }

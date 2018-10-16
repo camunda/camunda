@@ -19,14 +19,13 @@ import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.util.collection.MapBuilder;
 import io.zeebe.transport.ClientOutput;
-import io.zeebe.transport.RemoteAddress;
 import java.util.Map;
 
 public class ControlMessageRequestBuilder {
   protected ControlMessageRequest request;
 
   public ControlMessageRequestBuilder(
-      ClientOutput output, RemoteAddress target, MsgPackHelper msgPackHelper) {
+      ClientOutput output, int target, MsgPackHelper msgPackHelper) {
     request = new ControlMessageRequest(output, target, msgPackHelper);
   }
 

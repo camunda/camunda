@@ -20,18 +20,20 @@ import static io.zeebe.raft.state.RaftState.LEADER;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.*;
 
-import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
-import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.log.BufferedLogStreamReader;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamWriterImpl;
+import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.impl.RecordMetadata;
-import io.zeebe.raft.*;
+import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.raft.Loggers;
+import io.zeebe.raft.Raft;
+import io.zeebe.raft.RaftApiMessageHandler;
+import io.zeebe.raft.RaftConfiguration;
+import io.zeebe.raft.RaftStateListener;
 import io.zeebe.raft.controller.MemberReplicateLogController;
 import io.zeebe.raft.event.RaftConfigurationEvent;
 import io.zeebe.raft.event.RaftConfigurationEventMember;
@@ -40,34 +42,36 @@ import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.TestUtil;
-import io.zeebe.transport.*;
+import io.zeebe.transport.ClientTransport;
+import io.zeebe.transport.ServerTransport;
+import io.zeebe.transport.SocketAddress;
+import io.zeebe.transport.Transports;
+import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.LogUtil;
-import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.channel.OneToOneRingBufferChannel;
-import io.zeebe.util.sched.future.CompletableActorFuture;
-import java.lang.reflect.Field;
 import java.nio.file.Files;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 import org.junit.rules.ExternalResource;
-import org.mockito.ArgumentMatcher;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
 public class RaftRule extends ExternalResource implements RaftStateListener {
-  public static final FragmentHandler NOOP_FRAGMENT_HANDLER =
-      (buffer, offset, length, streamId, isMarkedFailed) -> FragmentHandler.CONSUME_FRAGMENT_RESULT;
 
   protected final ServiceContainer serviceContainer;
   protected final ActorScheduler actorScheduler;
   protected final RaftConfiguration configuration;
   protected final SocketAddress socketAddress;
-  protected final String topicName;
+  protected final int nodeId;
   protected final int partition;
   protected final RaftConfigurationEvent configurationEvent = new RaftConfigurationEvent();
   protected final LogStreamWriterImpl writer = new LogStreamWriterImpl();
@@ -75,61 +79,37 @@ public class RaftRule extends ExternalResource implements RaftStateListener {
   protected final RecordMetadata metadata = new RecordMetadata();
 
   protected ClientTransport clientTransport;
-  protected ClientOutput spyClientOutput;
 
   protected ServerTransport serverTransport;
 
   protected LogStream logStream;
   protected Raft raft;
-  private ActorControl raftActor;
   protected BufferedLogStreamReader uncommittedReader;
   protected BufferedLogStreamReader committedReader;
 
   private InMemoryRaftPersistentStorage persistentStorage;
 
   protected final List<RaftState> raftStateChanges = new ArrayList<>();
-  protected Set<Integer> interrupedStreams = Collections.synchronizedSet(new HashSet<>());
   private ServiceName<Raft> raftServiceName;
 
   public RaftRule(
       final ServiceContainerRule serviceContainerRule,
-      final String host,
-      final int port,
-      final String topicName,
-      final int partition,
-      final RaftRule... members) {
-    this(
-        serviceContainerRule,
-        new RaftConfiguration().setLeaveTimeout("10s"),
-        host,
-        port,
-        topicName,
-        partition,
-        members);
-  }
-
-  public RaftRule(
-      final ServiceContainerRule serviceContainerRule,
-      final RaftConfiguration configuration,
-      final String host,
-      final int port,
-      final String topicName,
+      final int nodeId,
       final int partition,
       final RaftRule... members) {
     this.actorScheduler = serviceContainerRule.getActorScheduler();
     this.serviceContainer = serviceContainerRule.get();
-    this.configuration = configuration;
-    this.socketAddress = new SocketAddress(host, port);
+    this.configuration = new RaftConfiguration().setLeaveTimeout("10s");
+    this.nodeId = nodeId;
+    this.socketAddress = SocketUtil.getNextAddress();
 
-    this.topicName = topicName;
     this.partition = partition;
     this.members = members != null ? Arrays.asList(members) : Collections.emptyList();
   }
 
   @Override
   protected void before() throws Throwable {
-    final String name = socketAddress.toString();
-    final String logName = String.format("%s-%d-%d", topicName, partition, socketAddress.port());
+    final String logName = String.format("%d-%d", partition, nodeId);
 
     final RaftApiMessageHandler raftApiMessageHandler = new RaftApiMessageHandler();
 
@@ -139,14 +119,14 @@ public class RaftRule extends ExternalResource implements RaftStateListener {
             .scheduler(actorScheduler)
             .build(raftApiMessageHandler, raftApiMessageHandler);
 
-    clientTransport = Transports.newClientTransport().scheduler(actorScheduler).build();
+    clientTransport =
+        Transports.newClientTransport("raft-" + nodeId).scheduler(actorScheduler).build();
 
     logStream =
-        LogStreams.createFsLogStream(wrapString(topicName), partition)
+        LogStreams.createFsLogStream(partition)
             .logName(logName)
             .deleteOnClose(true)
-            .logDirectory(
-                Files.createTempDirectory("raft-test-" + socketAddress.port() + "-").toString())
+            .logDirectory(Files.createTempDirectory("raft-test-" + nodeId + "-").toString())
             .serviceContainer(serviceContainer)
             .build()
             .join();
@@ -159,50 +139,23 @@ public class RaftRule extends ExternalResource implements RaftStateListener {
                     [(MemberReplicateLogController.REMOTE_BUFFER_SIZE)
                         + RingBufferDescriptor.TRAILER_LENGTH]));
 
-    spyClientOutput = spy(clientTransport.getOutput());
-    final ClientTransport spyClientTransport = spy(clientTransport);
-    when(spyClientTransport.getOutput()).thenReturn(spyClientOutput);
-
-    doAnswer(
-            new Answer<Boolean>() {
-              @Override
-              public Boolean answer(InvocationOnMock invocation) throws Throwable {
-                final TransportMessage msg = invocation.getArgument(0);
-                final int stream = readRemoteStreamId(msg);
-
-                if (interrupedStreams.contains(stream)) {
-                  return true;
-                } else {
-                  return (Boolean) invocation.callRealMethod();
-                }
-              }
-            })
-        .when(spyClientOutput)
-        .sendMessage(any(TransportMessage.class));
-
     raft =
         new Raft(
             logName,
             configuration,
-            socketAddress,
-            spyClientTransport,
+            nodeId,
+            clientTransport,
             persistentStorage,
             messageBuffer,
-            this) {
-          @Override
-          protected void onActorStarting() {
-            raftActor = actor;
-            super.onActorStarting();
-          }
-        };
+            this);
     raftApiMessageHandler.registerRaft(raft);
     raft.addMembersWhenJoined(
-        members.stream().map(RaftRule::getSocketAddress).collect(Collectors.toList()));
+        members.stream().map(RaftRule::getNodeId).collect(Collectors.toList()));
 
     uncommittedReader = new BufferedLogStreamReader(logStream, true);
     committedReader = new BufferedLogStreamReader(logStream, false);
 
-    raftServiceName = raftServiceName(name);
+    raftServiceName = raftServiceName(logName);
     serviceContainer
         .createService(raftServiceName, raft)
         .dependency(
@@ -217,7 +170,11 @@ public class RaftRule extends ExternalResource implements RaftStateListener {
       closeRaft();
     }
 
-    logStream.close();
+    try {
+      logStream.closeAsync().get(30, TimeUnit.SECONDS);
+    } catch (final Exception e) {
+      e.printStackTrace();
+    }
 
     serverTransport.close();
     clientTransport.close();
@@ -236,8 +193,8 @@ public class RaftRule extends ExternalResource implements RaftStateListener {
     return !serviceContainer.hasService(raftServiceName);
   }
 
-  public SocketAddress getSocketAddress() {
-    return socketAddress;
+  public int getNodeId() {
+    return nodeId;
   }
 
   public LogStream getLogStream() {
@@ -265,14 +222,12 @@ public class RaftRule extends ExternalResource implements RaftStateListener {
   }
 
   @Override
-  public void onStateChange(Raft raft, RaftState raftState) {
+  public void onStateChange(final Raft raft, final RaftState raftState) {
     final int partitionId = raft.getPartitionId();
-    final DirectBuffer topicName = raft.getTopicName();
-    final SocketAddress socketAddress = raft.getSocketAddress();
+    final int nodeId = raft.getNodeId();
 
-    assertThat(partitionId).isEqualTo(raft.getLogStream().getPartitionId());
-    assertThat(topicName).isEqualByComparingTo(raft.getLogStream().getTopicName());
-    assertThat(socketAddress).isEqualTo(raft.getSocketAddress());
+    assertThat(partitionId).isEqualTo(this.logStream.getPartitionId());
+    assertThat(nodeId).isEqualTo(this.nodeId);
 
     raftStateChanges.add(raftState);
   }
@@ -398,12 +353,12 @@ public class RaftRule extends ExternalResource implements RaftStateListener {
   public boolean raftEventCommitted(final int term, final RaftRule... members) {
     committedReader.seekToFirstEvent();
 
-    final Set<SocketAddress> expected;
+    final Set<Integer> expected;
 
     if (members == null) {
       expected = Collections.emptySet();
     } else {
-      expected = Arrays.stream(members).map(RaftRule::getSocketAddress).collect(Collectors.toSet());
+      expected = Arrays.stream(members).map(RaftRule::getNodeId).collect(Collectors.toSet());
     }
 
     while (committedReader.hasNext()) {
@@ -416,11 +371,11 @@ public class RaftRule extends ExternalResource implements RaftStateListener {
         final Iterator<RaftConfigurationEventMember> configurationMembers =
             configurationEvent.members().iterator();
 
-        final Set<SocketAddress> found = new HashSet<>();
+        final Set<Integer> found = new HashSet<>();
 
         while (configurationMembers.hasNext()) {
           final RaftConfigurationEventMember configurationMember = configurationMembers.next();
-          found.add(configurationMember.getSocketAddress());
+          found.add(configurationMember.getNodeId());
         }
 
         if (expected.equals(found)) {
@@ -440,61 +395,13 @@ public class RaftRule extends ExternalResource implements RaftStateListener {
     return raft.toString();
   }
 
-  public void interruptConnectionTo(RaftRule other) {
-    raftActor
-        .call(
-            () -> {
-              final ArgumentMatcher<RemoteAddress> remoteAddressMatcher =
-                  r -> other.socketAddress.equals(r.getAddress());
-
-              doReturn(
-                      CompletableActorFuture.completedExceptionally(
-                          new RequestTimeoutException("connection is interrupted")))
-                  .when(spyClientOutput)
-                  .sendRequest(argThat(remoteAddressMatcher), any());
-
-              doReturn(
-                      CompletableActorFuture.completedExceptionally(
-                          new RequestTimeoutException("timeout to " + other.socketAddress)))
-                  .when(spyClientOutput)
-                  .sendRequest(argThat(remoteAddressMatcher), any(), any());
-
-              final RemoteAddress remoteAddress =
-                  clientTransport.registerRemoteAddress(other.getSocketAddress());
-              interrupedStreams.add(remoteAddress.getStreamId());
-            })
-        .join();
+  public void interruptConnectionTo(final RaftRule other) {
+    clientTransport.deactivateEndpoint(other.getNodeId());
+    other.clientTransport.deactivateEndpoint(this.getNodeId());
   }
 
-  private int readRemoteStreamId(TransportMessage transportMessage) {
-    final Class<TransportMessage> transportMessageClass = TransportMessage.class;
-    int value;
-    try {
-      final Field remoteStreamId = transportMessageClass.getDeclaredField("remoteStreamId");
-      remoteStreamId.setAccessible(true);
-      value = (int) remoteStreamId.get(transportMessage);
-    } catch (Exception e) {
-      value = -1;
-    }
-    return value;
-  }
-
-  public void reconnectTo(RaftRule other) {
-    raftActor
-        .call(
-            () -> {
-              final ArgumentMatcher<RemoteAddress> remoteAddressMatcher =
-                  r -> r.getAddress().equals(other.socketAddress);
-              doCallRealMethod()
-                  .when(spyClientOutput)
-                  .sendRequest(argThat(remoteAddressMatcher), any());
-              doCallRealMethod()
-                  .when(spyClientOutput)
-                  .sendRequest(argThat(remoteAddressMatcher), any(), any());
-              final RemoteAddress remoteAddress =
-                  clientTransport.registerRemoteAddress(other.getSocketAddress());
-              interrupedStreams.remove(remoteAddress.getStreamId());
-            })
-        .join();
+  public void reconnectTo(final RaftRule other) {
+    clientTransport.registerEndpoint(other.getNodeId(), other.socketAddress);
+    other.clientTransport.registerEndpoint(this.getNodeId(), this.socketAddress);
   }
 }

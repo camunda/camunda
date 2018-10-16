@@ -40,7 +40,7 @@ public class TopicSubscriptionAcknowledgementTest {
   protected static final String SUBSCRIPTION_NAME = "foo";
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientApiRule apiRule = new ClientApiRule();
+  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
@@ -147,13 +147,11 @@ public class TopicSubscriptionAcknowledgementTest {
             .done()
             .sendAndAwait();
 
-    final long jobKey = response.key();
-
     // then
     final Optional<SubscribedRecord> firstEvent = apiRule.subscribedEvents().findFirst();
 
     assertThat(firstEvent).isPresent();
-    assertThat(firstEvent.get().key()).isEqualTo(jobKey);
+    assertThat(firstEvent.get().position()).isEqualTo(response.sourceRecordPosition());
   }
 
   @Test

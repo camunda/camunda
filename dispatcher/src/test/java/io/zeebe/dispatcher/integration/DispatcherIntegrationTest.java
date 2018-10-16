@@ -21,7 +21,12 @@ import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.dispatcher.*;
+import io.zeebe.dispatcher.BlockPeek;
+import io.zeebe.dispatcher.ClaimedFragment;
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.Dispatchers;
+import io.zeebe.dispatcher.FragmentHandler;
+import io.zeebe.dispatcher.Subscription;
 import io.zeebe.dispatcher.impl.log.LogBuffer;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.buffer.BufferUtil;

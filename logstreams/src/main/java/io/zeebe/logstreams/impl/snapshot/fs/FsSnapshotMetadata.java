@@ -17,7 +17,11 @@ package io.zeebe.logstreams.impl.snapshot.fs;
 
 import io.zeebe.logstreams.spi.SnapshotMetadata;
 import io.zeebe.util.LangUtil;
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStreamReader;
 import org.agrona.BitUtil;
 
 public class FsSnapshotMetadata implements SnapshotMetadata {

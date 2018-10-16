@@ -15,7 +15,10 @@
  */
 package io.zeebe.raft;
 
-import io.zeebe.transport.*;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.ServerMessageHandler;
+import io.zeebe.transport.ServerOutput;
+import io.zeebe.transport.ServerRequestHandler;
 import io.zeebe.transport.impl.actor.Receiver;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;

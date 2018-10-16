@@ -15,21 +15,35 @@
  */
 package io.zeebe.logstreams.impl.service;
 
-import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.*;
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStorageAppenderRootService;
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStorageAppenderServiceName;
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logStreamRootServiceName;
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logWriteBufferServiceName;
+import static io.zeebe.logstreams.impl.service.LogStreamServiceNames.logWriteBufferSubscriptionServiceName;
 import static io.zeebe.logstreams.log.LogStreamUtil.INVALID_ADDRESS;
 import static io.zeebe.logstreams.log.LogStreamUtil.getAddressForPosition;
 
-import io.zeebe.dispatcher.*;
-import io.zeebe.logstreams.impl.*;
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.DispatcherBuilder;
+import io.zeebe.dispatcher.Dispatchers;
+import io.zeebe.dispatcher.Subscription;
+import io.zeebe.logstreams.impl.LogBlockIndexWriter;
+import io.zeebe.logstreams.impl.LogStorageAppender;
+import io.zeebe.logstreams.impl.LogStreamBuilder;
 import io.zeebe.logstreams.impl.log.index.LogBlockIndex;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.CompositeServiceBuilder;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceContainer;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorCondition;
 import io.zeebe.util.sched.channel.ActorConditions;
 import io.zeebe.util.sched.future.ActorFuture;
-import org.agrona.DirectBuffer;
 import org.agrona.concurrent.status.Position;
 
 public class LogStreamService implements LogStream, Service<LogStream> {
@@ -45,7 +59,6 @@ public class LogStreamService implements LogStream, Service<LogStream> {
   private final ActorConditions onCommitPositionUpdatedConditions;
 
   private final String logName;
-  private final DirectBuffer topicName;
   private final int partitionId;
 
   private final ByteValue writeBufferSize;
@@ -65,9 +78,8 @@ public class LogStreamService implements LogStream, Service<LogStream> {
   private Dispatcher writeBuffer;
   private LogStorageAppender appender;
 
-  public LogStreamService(LogStreamBuilder builder) {
+  public LogStreamService(final LogStreamBuilder builder) {
     this.logName = builder.getLogName();
-    this.topicName = builder.getTopicName();
     this.partitionId = builder.getPartitionId();
     this.serviceContainer = builder.getServiceContainer();
     this.onCommitPositionUpdatedConditions = builder.getOnCommitPositionUpdatedConditions();
@@ -77,7 +89,7 @@ public class LogStreamService implements LogStream, Service<LogStream> {
   }
 
   @Override
-  public void start(ServiceStartContext startContext) {
+  public void start(final ServiceStartContext startContext) {
     commitPosition.setVolatile(INVALID_ADDRESS);
 
     serviceContext = startContext;
@@ -146,18 +158,13 @@ public class LogStreamService implements LogStream, Service<LogStream> {
   }
 
   @Override
-  public void stop(ServiceStopContext stopContext) {
+  public void stop(final ServiceStopContext stopContext) {
     // nothing to do
   }
 
   @Override
   public LogStream get() {
     return this;
-  }
-
-  @Override
-  public DirectBuffer getTopicName() {
-    return topicName;
   }
 
   @Override
@@ -217,7 +224,7 @@ public class LogStreamService implements LogStream, Service<LogStream> {
   }
 
   @Override
-  public void truncate(long position) {
+  public void truncate(final long position) {
     if (position <= getCommitPosition()) {
       throw new IllegalArgumentException("Can't truncate position which is already committed");
     }
@@ -232,29 +239,29 @@ public class LogStreamService implements LogStream, Service<LogStream> {
   }
 
   @Override
-  public void setCommitPosition(long commitPosition) {
+  public void setCommitPosition(final long commitPosition) {
     this.commitPosition.setOrdered(commitPosition);
 
     onCommitPositionUpdatedConditions.signalConsumers();
   }
 
   @Override
-  public void registerOnCommitPositionUpdatedCondition(ActorCondition condition) {
+  public void registerOnCommitPositionUpdatedCondition(final ActorCondition condition) {
     onCommitPositionUpdatedConditions.registerConsumer(condition);
   }
 
   @Override
-  public void removeOnCommitPositionUpdatedCondition(ActorCondition condition) {
+  public void removeOnCommitPositionUpdatedCondition(final ActorCondition condition) {
     onCommitPositionUpdatedConditions.removeConsumer(condition);
   }
 
   @Override
-  public void registerOnAppendCondition(ActorCondition condition) {
+  public void registerOnAppendCondition(final ActorCondition condition) {
     onLogStorageAppendedConditions.registerConsumer(condition);
   }
 
   @Override
-  public void removeOnAppendCondition(ActorCondition condition) {
+  public void removeOnAppendCondition(final ActorCondition condition) {
     onLogStorageAppendedConditions.removeConsumer(condition);
   }
 
@@ -264,7 +271,7 @@ public class LogStreamService implements LogStream, Service<LogStream> {
   }
 
   @Override
-  public void setTerm(int term) {
+  public void setTerm(final int term) {
     this.term = term;
   }
 

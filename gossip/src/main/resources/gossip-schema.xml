@@ -7,21 +7,21 @@
   <types>
     <composite name="messageHeader"
       description="Message identifiers and length of message root">
-      <type name="blockLength" primitiveType="uint16" />
-      <type name="templateId" primitiveType="uint16" />
-      <type name="schemaId" primitiveType="uint16" />
-      <type name="version" primitiveType="uint16" />
+      <type name="blockLength" primitiveType="uint16"/>
+      <type name="templateId" primitiveType="uint16"/>
+      <type name="schemaId" primitiveType="uint16"/>
+      <type name="version" primitiveType="uint16"/>
     </composite>
 
     <composite name="varDataEncoding">
-      <type name="length" primitiveType="uint16" />
+      <type name="length" primitiveType="uint16"/>
       <type name="varData" primitiveType="uint8" length="0"
-        characterEncoding="UTF-8" />
+        characterEncoding="UTF-8"/>
     </composite>
 
     <composite name="groupSizeEncoding">
-      <type name="blockLength" primitiveType="uint16" />
-      <type name="numInGroup" primitiveType="uint8" semanticType="NumInGroup" />
+      <type name="blockLength" primitiveType="uint16"/>
+      <type name="numInGroup" primitiveType="uint8" semanticType="NumInGroup"/>
     </composite>
 
     <enum name="gossipEventType" encodingType="uint8" description="type of the Gossip event">
@@ -43,26 +43,22 @@
   </types>
 
   <sbe:message name="GossipEvent" id="0" description="ping probe request">
-    <field name="eventType" id="0" type="gossipEventType" />
-    <field name="senderPort" id="1" type="uint16" />
-    <field name="probeMemberPort" id="2" type="uint16" />
+    <field name="eventType" id="0" type="gossipEventType"/>
+    <field name="senderId" id="1" type="uint16"/>
+    <field name="probeMemberId" id="2" type="uint16"/>
     <group name="membershipEvents" id="3" dimensionType="groupSizeEncoding">
-      <field name="eventType" id="4" type="membershipEventType" />
-      <field name="gossipEpoch" id="5" type="uint64" />
-      <field name="gossipHeartbeat" id="6" type="uint64" />
-      <field name="port" id="7" type="uint16"/>
-      <data name="host" id="8" type="varDataEncoding"/>
+      <field name="eventType" id="4" type="membershipEventType"/>
+      <field name="gossipEpoch" id="5" type="uint64"/>
+      <field name="gossipHeartbeat" id="6" type="uint64"/>
+      <field name="memberId" id="7" type="uint16"/>
     </group>
     <group name="customEvents" id="9" dimensionType="groupSizeEncoding">
-      <field name="senderGossipEpoch" id="10" type="uint64" />
-      <field name="senderGossipHeartbeat" id="11" type="uint64" />
-      <field name="senderPort" id="12" type="uint16" />
-      <data name="senderHost" id="13" type="varDataEncoding" />
-      <data name="eventType" id="14" type="varDataEncoding" />
-      <data name="payload" id="15" type="varDataEncoding" />
+      <field name="senderGossipEpoch" id="10" type="uint64"/>
+      <field name="senderGossipHeartbeat" id="11" type="uint64"/>
+      <field name="senderId" id="12" type="uint16"/>
+      <data name="eventType" id="14" type="varDataEncoding"/>
+      <data name="payload" id="15" type="varDataEncoding"/>
     </group>
-    <data name="senderHost" id="16" type="varDataEncoding" />
-    <data name="probeMemberHost" id="17" type="varDataEncoding" />
   </sbe:message>
 
 </sbe:messageSchema>

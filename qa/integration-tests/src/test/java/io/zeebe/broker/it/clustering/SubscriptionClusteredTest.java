@@ -19,28 +19,28 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.commands.Partition;
-import io.zeebe.client.api.commands.Topic;
-import io.zeebe.client.api.events.*;
-import io.zeebe.client.impl.job.CreateJobCommandImpl;
-import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.gateway.ZeebeClient;
+import io.zeebe.gateway.api.events.JobState;
+import io.zeebe.gateway.impl.job.CreateJobCommandImpl;
 import java.util.ArrayList;
 import java.util.List;
-import org.junit.*;
-import org.junit.rules.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
 
 public class SubscriptionClusteredTest {
-  private static final int PARTITION_COUNT = 5;
+  private static final int PARTITION_COUNT = 3;
 
-  public AutoCloseableRule closeables = new AutoCloseableRule();
   public Timeout testTimeout = Timeout.seconds(30);
-  public ClientRule clientRule = new ClientRule();
-  public ClusteringRule clusteringRule = new ClusteringRule(closeables, clientRule);
+  public ClusteringRule clusteringRule = new ClusteringRule();
+  public ClientRule clientRule = new ClientRule(clusteringRule);
 
   @Rule
   public RuleChain ruleChain =
-      RuleChain.outerRule(closeables).around(testTimeout).around(clientRule).around(clusteringRule);
+      RuleChain.outerRule(testTimeout).around(clusteringRule).around(clientRule);
 
   @Rule public ExpectedException thrown = ExpectedException.none();
 
@@ -52,25 +52,17 @@ public class SubscriptionClusteredTest {
   }
 
   @Test
-  public void shouldOpenSubscriptionGroupForDistributedTopic() {
-    // given
-    final String topicName = "pasta al forno";
-    final Topic topic = clusteringRule.createTopic(topicName, PARTITION_COUNT);
-
+  public void shouldOpenSubscriptionGroup() {
     // when
-    final Integer[] partitionIds =
-        topic.getPartitions().stream().mapToInt(Partition::getId).boxed().toArray(Integer[]::new);
+    final Integer[] partitionIds = clusteringRule.getPartitionIds().toArray(new Integer[3]);
 
-    createJobOnPartition(topicName, partitionIds[0]);
-    createJobOnPartition(topicName, partitionIds[1]);
-    createJobOnPartition(topicName, partitionIds[2]);
-    createJobOnPartition(topicName, partitionIds[3]);
-    createJobOnPartition(topicName, partitionIds[4]);
+    createJobOnPartition(partitionIds[0]);
+    createJobOnPartition(partitionIds[1]);
+    createJobOnPartition(partitionIds[2]);
 
     // and
     final List<Integer> receivedPartitionIds = new ArrayList<>();
     client
-        .topicClient(topicName)
         .newSubscription()
         .name("SubscriptionName")
         .jobEventHandler(
@@ -79,7 +71,7 @@ public class SubscriptionClusteredTest {
                 receivedPartitionIds.add(e.getMetadata().getPartitionId());
               }
             })
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     // then
@@ -88,72 +80,9 @@ public class SubscriptionClusteredTest {
     assertThat(receivedPartitionIds).containsExactlyInAnyOrder(partitionIds);
   }
 
-  @Test
-  public void shouldReceiveRaftEvents() {
-    // given
-    final String topicName = "test";
-    final int partitions = 1;
-    final int replicationFactor = clusteringRule.getBrokersInCluster().size();
-
-    clusteringRule.createTopic(topicName, partitions, replicationFactor);
-    clusteringRule.restartBroker(clusteringRule.getFollowerOnly());
-
-    // when
-    final List<RaftEvent> raftEvents = new ArrayList<>();
-    client
-        .topicClient(topicName)
-        .newSubscription()
-        .name("test-subscription")
-        .raftEventHandler(raftEvents::add)
-        .startAtHeadOfTopic()
-        .open();
-
-    // then we should receive two raft add member events
-    waitUntil(() -> raftEvents.size() == 4);
-
-    assertThat(raftEvents).hasSize(4);
-    assertThat(raftEvents)
-        .extracting(RaftEvent::getState)
-        .containsExactly(
-            RaftState.MEMBER_ADDED,
-            RaftState.MEMBER_ADDED,
-            RaftState.MEMBER_REMOVED,
-            RaftState.MEMBER_ADDED);
-    assertThat(raftEvents.get(1).getMembers()).hasSize(clusteringRule.getBrokersInCluster().size());
-  }
-
-  @Test
-  public void shouldReceiveRaftEventsFromSystemTopic() {
-    // given
-    clusteringRule.restartBroker(clusteringRule.getFollowerOnly());
-
-    // when
-    final List<RaftEvent> raftEvents = new ArrayList<>();
-    client
-        .newManagementSubscription()
-        .name("test-subscription")
-        .raftEventHandler(raftEvents::add)
-        .startAtHeadOfTopic()
-        .open();
-
-    // then we should receive two raft add member events
-    waitUntil(() -> raftEvents.size() == 4);
-
-    assertThat(raftEvents).hasSize(4);
-    assertThat(raftEvents)
-        .extracting(RaftEvent::getState)
-        .containsExactly(
-            RaftState.MEMBER_ADDED,
-            RaftState.MEMBER_ADDED,
-            RaftState.MEMBER_REMOVED,
-            RaftState.MEMBER_ADDED);
-    assertThat(raftEvents.get(1).getMembers()).hasSize(clusteringRule.getBrokersInCluster().size());
-  }
-
-  protected void createJobOnPartition(String topic, int partition) {
+  protected void createJobOnPartition(final int partition) {
     final CreateJobCommandImpl command =
-        (CreateJobCommandImpl)
-            client.topicClient(topic).jobClient().newCreateCommand().jobType("baz");
+        (CreateJobCommandImpl) client.jobClient().newCreateCommand().jobType("baz");
 
     command.getCommand().setPartitionId(partition);
     command.send().join();

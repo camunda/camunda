@@ -8,7 +8,7 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zb-parent</artifactId>
-    <version>0.12.0-SNAPSHOT</version>
+    <version>0.13.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
@@ -94,13 +94,13 @@
         <dependency>
           <groupId>net.openhft</groupId>
           <artifactId>chronicle-map</artifactId>
-          <version>3.13.0</version>
+          <version>3.16.4</version>
         </dependency>
 
         <dependency>
           <groupId>it.unimi.dsi</groupId>
           <artifactId>dsiutils</artifactId>
-          <version>2.4.0</version>
+          <version>2.5.4</version>
         </dependency>
       </dependencies>
 

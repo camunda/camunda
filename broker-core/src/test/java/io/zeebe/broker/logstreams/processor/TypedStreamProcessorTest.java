@@ -18,9 +18,9 @@
 package io.zeebe.broker.logstreams.processor;
 
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
 import io.zeebe.broker.topic.Records;
 import io.zeebe.broker.topic.StreamProcessorControl;
 import io.zeebe.broker.util.TestStreams;
@@ -28,11 +28,12 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.intent.TopicIntent;
+import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.deployment.ResourceType;
+import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.ServerOutput;
-import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.Before;
 import org.junit.Rule;
@@ -83,7 +84,8 @@ public class TypedStreamProcessorTest {
 
     final TypedStreamProcessor streamProcessor =
         env.newStreamProcessor()
-            .onCommand(ValueType.TOPIC, TopicIntent.CREATE, new BatchProcessor())
+            .keyGenerator(new KeyGenerator(env.getStream().getPartitionId(), 0, 1))
+            .onCommand(ValueType.DEPLOYMENT, DeploymentIntent.CREATE, new BatchProcessor())
             .build();
 
     final StreamProcessorControl streamProcessorControl =
@@ -92,9 +94,9 @@ public class TypedStreamProcessorTest {
     final long firstEventPosition =
         streams
             .newRecord(STREAM_NAME)
-            .event(topic("foo", 1))
+            .event(deployment("foo", ResourceType.BPMN_XML))
             .recordType(RecordType.COMMAND)
-            .intent(TopicIntent.CREATE)
+            .intent(DeploymentIntent.CREATE)
             .write();
 
     // when
@@ -105,7 +107,8 @@ public class TypedStreamProcessorTest {
                 () ->
                     streams
                         .events(STREAM_NAME)
-                        .filter(e -> Records.isEvent(e, ValueType.TOPIC, TopicIntent.CREATED))
+                        .filter(
+                            e -> Records.isEvent(e, ValueType.DEPLOYMENT, DeploymentIntent.CREATED))
                         .findFirst())
             .until(o -> o.isPresent())
             .get();
@@ -116,19 +119,26 @@ public class TypedStreamProcessorTest {
     assertThat(writtenEvent.getSourceEventPosition()).isEqualTo(firstEventPosition);
   }
 
-  protected TopicRecord topic(String name, int partitions) {
-    final TopicRecord event = new TopicRecord();
-    event.setName(BufferUtil.wrapString(name));
-    event.setPartitions(partitions);
-
+  protected DeploymentRecord deployment(final String name, final ResourceType resourceType) {
+    final DeploymentRecord event = new DeploymentRecord();
+    event
+        .resources()
+        .add()
+        .setResourceType(resourceType)
+        .setResource(wrapString("foo"))
+        .setResourceName(wrapString(name));
     return event;
   }
 
-  protected static class BatchProcessor implements TypedRecordProcessor<TopicRecord> {
+  protected static class BatchProcessor implements TypedRecordProcessor<DeploymentRecord> {
 
     @Override
-    public long writeRecord(TypedRecord<TopicRecord> event, TypedStreamWriter writer) {
-      return writer.newBatch().addNewEvent(TopicIntent.CREATED, event.getValue()).write();
+    public void processRecord(
+        final TypedRecord<DeploymentRecord> record,
+        final TypedResponseWriter responseWriter,
+        final TypedStreamWriter streamWriter) {
+      streamWriter.newBatch().addNewEvent(DeploymentIntent.CREATED, record.getValue());
+      streamWriter.flush();
     }
   }
 }

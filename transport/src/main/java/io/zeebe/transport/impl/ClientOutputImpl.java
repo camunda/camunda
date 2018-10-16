@@ -15,9 +15,16 @@
  */
 package io.zeebe.transport.impl;
 
-import io.zeebe.transport.*;
-import io.zeebe.transport.impl.sender.*;
+import io.zeebe.transport.ClientOutput;
+import io.zeebe.transport.ClientResponse;
+import io.zeebe.transport.EndpointRegistry;
+import io.zeebe.transport.RemoteAddress;
+import io.zeebe.transport.impl.sender.OutgoingMessage;
+import io.zeebe.transport.impl.sender.OutgoingRequest;
+import io.zeebe.transport.impl.sender.Sender;
+import io.zeebe.transport.impl.sender.TransportHeaderWriter;
 import io.zeebe.util.buffer.BufferWriter;
+import io.zeebe.util.sched.clock.ActorClock;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.nio.ByteBuffer;
 import java.time.Duration;
@@ -27,31 +34,46 @@ import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
 public class ClientOutputImpl implements ClientOutput {
+  protected final EndpointRegistry endpointRegistry;
   protected final Sender requestManager;
   protected final Duration defaultRequestRetryTimeout;
+  protected final long defaultMessageRetryTimeoutInMillis;
 
-  public ClientOutputImpl(Sender requestManager, Duration defaultRequestRetryTimeout) {
+  public ClientOutputImpl(
+      EndpointRegistry endpointRegistry,
+      Sender requestManager,
+      Duration defaultRequestRetryTimeout,
+      Duration defaultMessageRetryTimeout) {
+    this.endpointRegistry = endpointRegistry;
     this.requestManager = requestManager;
     this.defaultRequestRetryTimeout = defaultRequestRetryTimeout;
+    this.defaultMessageRetryTimeoutInMillis = defaultMessageRetryTimeout.toMillis();
   }
 
   @Override
-  public boolean sendMessage(TransportMessage transportMessage) {
-    final BufferWriter writer = transportMessage.getWriter();
+  public boolean sendMessage(Integer nodeId, BufferWriter writer) {
+    final RemoteAddress remoteAddress = endpointRegistry.getEndpoint(nodeId);
+    if (remoteAddress != null) {
+      return sendTransportMessage(remoteAddress.getStreamId(), writer);
+    } else {
+      return false;
+    }
+  }
+
+  private boolean sendTransportMessage(int remoteStreamId, BufferWriter writer) {
     final int framedMessageLength =
         TransportHeaderWriter.getFramedMessageLength(writer.getLength());
-
     final ByteBuffer allocatedBuffer = requestManager.allocateMessageBuffer(framedMessageLength);
 
     if (allocatedBuffer != null) {
       try {
-        final int remoteStreamId = transportMessage.getRemoteStreamId();
         final UnsafeBuffer bufferView = new UnsafeBuffer(allocatedBuffer);
         final TransportHeaderWriter headerWriter = new TransportHeaderWriter();
-
         headerWriter.wrapMessage(bufferView, writer, remoteStreamId);
+        final long deadline = ActorClock.currentTimeMillis() + defaultMessageRetryTimeoutInMillis;
 
-        final OutgoingMessage outgoingMessage = new OutgoingMessage(remoteStreamId, bufferView);
+        final OutgoingMessage outgoingMessage =
+            new OutgoingMessage(remoteStreamId, bufferView, deadline);
 
         requestManager.submitMessage(outgoingMessage);
 
@@ -66,19 +88,19 @@ public class ClientOutputImpl implements ClientOutput {
   }
 
   @Override
-  public ActorFuture<ClientResponse> sendRequest(RemoteAddress addr, BufferWriter writer) {
-    return sendRequest(addr, writer, defaultRequestRetryTimeout);
+  public ActorFuture<ClientResponse> sendRequest(Integer nodeId, BufferWriter writer) {
+    return sendRequest(nodeId, writer, defaultRequestRetryTimeout);
   }
 
   @Override
   public ActorFuture<ClientResponse> sendRequest(
-      RemoteAddress addr, BufferWriter writer, Duration timeout) {
-    return sendRequestWithRetry(() -> addr, (b) -> false, writer, timeout);
+      Integer nodeId, BufferWriter writer, Duration timeout) {
+    return sendRequestWithRetry(() -> nodeId, (b) -> false, writer, timeout);
   }
 
   @Override
   public ActorFuture<ClientResponse> sendRequestWithRetry(
-      Supplier<RemoteAddress> remoteAddressSupplier,
+      Supplier<Integer> nodeIdSupplier,
       Predicate<DirectBuffer> responseInspector,
       BufferWriter writer,
       Duration timeout) {
@@ -91,7 +113,11 @@ public class ClientOutputImpl implements ClientOutput {
       try {
         final UnsafeBuffer bufferView = new UnsafeBuffer(allocatedBuffer);
         final OutgoingRequest request =
-            new OutgoingRequest(remoteAddressSupplier, responseInspector, bufferView, timeout);
+            new OutgoingRequest(
+                () -> endpointRegistry.getEndpoint(nodeIdSupplier.get()),
+                responseInspector,
+                bufferView,
+                timeout);
 
         request.getHeaderWriter().wrapRequest(bufferView, writer);
 

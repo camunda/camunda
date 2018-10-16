@@ -17,7 +17,9 @@ package io.zeebe.raft;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.raft.util.*;
+import io.zeebe.raft.util.InMemoryRaftPersistentStorage;
+import io.zeebe.raft.util.RaftClusterRule;
+import io.zeebe.raft.util.RaftRule;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.junit.Rule;
@@ -27,8 +29,8 @@ public class RaftPersistentStorageTest {
   public ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
   public ServiceContainerRule serviceContainer = new ServiceContainerRule(actorScheduler);
 
-  public RaftRule raft1 = new RaftRule(serviceContainer, "localhost", 8001, "default", 0);
-  public RaftRule raft2 = new RaftRule(serviceContainer, "localhost", 8002, "default", 0, raft1);
+  public RaftRule raft1 = new RaftRule(serviceContainer, 1, 0);
+  public RaftRule raft2 = new RaftRule(serviceContainer, 2, 0, raft1);
 
   @Rule
   public RaftClusterRule cluster =
@@ -43,12 +45,12 @@ public class RaftPersistentStorageTest {
     // then
     InMemoryRaftPersistentStorage storage = raft1.getPersistentStorage();
     assertThat(storage.getTerm()).isEqualTo(1);
-    assertThat(storage.getVotedFor()).isEqualTo(raft1.getSocketAddress());
-    assertThat(storage.getMembers()).containsExactly(raft2.getSocketAddress());
+    assertThat(storage.getVotedFor()).isEqualTo(raft1.getNodeId());
+    assertThat(storage.getMembers()).containsExactly(raft2.getNodeId());
 
     storage = raft2.getPersistentStorage();
     assertThat(storage.getTerm()).isEqualTo(1);
     assertThat(storage.getVotedFor()).isEqualTo(null);
-    assertThat(storage.getMembers()).containsExactly(raft1.getSocketAddress());
+    assertThat(storage.getMembers()).containsExactly(raft1.getNodeId());
   }
 }

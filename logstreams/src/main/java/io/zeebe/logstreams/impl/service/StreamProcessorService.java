@@ -16,7 +16,11 @@
 package io.zeebe.logstreams.impl.service;
 
 import io.zeebe.logstreams.processor.StreamProcessorController;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceContainer;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.sched.future.ActorFuture;
 
 public class StreamProcessorService implements Service<StreamProcessorService> {

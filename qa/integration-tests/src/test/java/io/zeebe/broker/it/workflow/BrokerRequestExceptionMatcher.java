@@ -15,7 +15,7 @@
  */
 package io.zeebe.broker.it.workflow;
 
-import io.zeebe.client.cmd.BrokerErrorException;
+import io.zeebe.gateway.cmd.BrokerErrorException;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;

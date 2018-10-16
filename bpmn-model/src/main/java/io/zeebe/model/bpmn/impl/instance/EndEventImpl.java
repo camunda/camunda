@@ -13,20 +13,51 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.zeebe.model.bpmn.impl.instance;
 
-import io.zeebe.model.bpmn.instance.EndEvent;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_END_EVENT;
 
-public class EndEventImpl extends FlowNodeImpl implements EndEvent {
+import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.model.bpmn.builder.EndEventBuilder;
+import io.zeebe.model.bpmn.instance.EndEvent;
+import io.zeebe.model.bpmn.instance.ThrowEvent;
+import org.camunda.bpm.model.xml.ModelBuilder;
+import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
+import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
+import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
+
+/**
+ * The BPMN endEvent element
+ *
+ * @author Sebastian Menski
+ */
+public class EndEventImpl extends ThrowEventImpl implements EndEvent {
+
+  public static void registerType(ModelBuilder modelBuilder) {
+    final ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(EndEvent.class, BPMN_ELEMENT_END_EVENT)
+            .namespaceUri(BPMN20_NS)
+            .extendsType(ThrowEvent.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<EndEvent>() {
+                  @Override
+                  public EndEvent newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new EndEventImpl(instanceContext);
+                  }
+                });
+
+    typeBuilder.build();
+  }
+
+  public EndEventImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
 
   @Override
-  public String toString() {
-    final StringBuilder builder = new StringBuilder();
-    builder.append("EndEvent [id=");
-    builder.append(getId());
-    builder.append(", name=");
-    builder.append(getName());
-    builder.append("]");
-    return builder.toString();
+  public EndEventBuilder builder() {
+    return new EndEventBuilder((BpmnModelInstance) modelInstance, this);
   }
 }

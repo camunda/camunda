@@ -24,11 +24,20 @@ import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
-import java.nio.file.*;
+import java.nio.file.CopyOption;
+import java.nio.file.FileStore;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 import org.agrona.LangUtil;
+import org.slf4j.Logger;
 
 public class FileUtil {
+
+  public static final Logger LOG = Loggers.FILE_LOGGER;
 
   public static void closeSilently(Closeable out) {
     if (out != null) {
@@ -131,7 +140,7 @@ public class FileUtil {
   public static void replace(Path src, Path dest) throws IOException {
     try {
       Files.move(src, dest, ATOMIC_MOVE);
-    } catch (final FileAlreadyExistsException e) {
+    } catch (final Exception e) {
       // failed with atomic move, lets try again with normal replace move
       Files.move(src, dest, REPLACE_EXISTING);
     }
@@ -153,5 +162,11 @@ public class FileUtil {
     }
 
     return path;
+  }
+
+  public static void deleteFile(File file) {
+    if (file.exists() && !file.delete()) {
+      LOG.warn("Failed to delete file '{}'", file);
+    }
   }
 }

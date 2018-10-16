@@ -32,7 +32,6 @@ import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.ClientResponse;
 import io.zeebe.transport.ClientTransport;
-import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerTransportBuilder;
 import io.zeebe.util.StreamUtil;
 import io.zeebe.util.sched.Actor;
@@ -76,7 +75,7 @@ public class SnapshotReplicationService extends Actor
       new FetchSnapshotChunkResponse();
 
   private final Duration pollInterval;
-  private RemoteAddress leaderNodeAddress;
+  private int leaderNodeId;
   private String actorName;
 
   // Used to properly calculate polling intervals (since replication operation can take a while)
@@ -99,10 +98,7 @@ public class SnapshotReplicationService extends Actor
     partition = partitionInjector.getValue();
     topologyManager = topologyManagerInjector.getValue();
     listSnapshotsRequest.setPartitionId(partition.getInfo().getPartitionId());
-    actorName =
-        String.format(
-            "%s-%d-snap-repl",
-            partition.getInfo().getTopicName(), partition.getInfo().getPartitionId());
+    actorName = String.format("partition-%d-snap-repl", partition.getInfo().getPartitionId());
 
     LOG.debug("Starting replication for partition {}", partition.getInfo());
     startContext.async(startContext.getScheduler().submitActor(this), true);
@@ -147,10 +143,8 @@ public class SnapshotReplicationService extends Actor
             LOG.trace("Waiting for leader node info, retrying");
             actor.runDelayed(ERROR_RETRY_INTERVAL, this::pollLeaderForSnapshots);
           } else {
-            leaderNodeAddress =
-                clientTransport.registerRemoteAddress(leaderInfo.getManagementApiAddress());
-
-            LOG.trace("Updated leader address as {}", leaderNodeAddress);
+            leaderNodeId = leaderInfo.getNodeId();
+            LOG.trace("Updated leader node as {}", leaderNodeId);
             pollSnapshots();
           }
         });
@@ -160,8 +154,8 @@ public class SnapshotReplicationService extends Actor
     lastPollEpoch = ActorClock.currentTimeMillis();
 
     final ActorFuture<ClientResponse> responseFuture =
-        clientTransport.getOutput().sendRequest(leaderNodeAddress, listSnapshotsRequest);
-    LOG.trace("Polling snapshots from {}", leaderNodeAddress);
+        clientTransport.getOutput().sendRequest(leaderNodeId, listSnapshotsRequest);
+    LOG.trace("Polling snapshots from {}", leaderNodeId);
     snapshotsToReplicate.clear();
 
     actor.runOnCompletion(
@@ -190,7 +184,7 @@ public class SnapshotReplicationService extends Actor
   private void handleListSnapshotsResponse(final DirectBuffer buffer) {
     if (isErrorResponse(buffer)) {
       logErrorResponse("Error listing snapshots", buffer);
-      actor.runDelayed(ERROR_RETRY_INTERVAL, this::pollSnapshots);
+      actor.runDelayed(ERROR_RETRY_INTERVAL, this::pollLeaderForSnapshots);
       return;
     }
 
@@ -235,7 +229,7 @@ public class SnapshotReplicationService extends Actor
 
   private void replicateSnapshot() {
     final ActorFuture<ClientResponse> awaitFetchChunk =
-        clientTransport.getOutput().sendRequest(leaderNodeAddress, requestForNextChunk());
+        clientTransport.getOutput().sendRequest(leaderNodeId, requestForNextChunk());
 
     actor.runOnCompletion(
         awaitFetchChunk,

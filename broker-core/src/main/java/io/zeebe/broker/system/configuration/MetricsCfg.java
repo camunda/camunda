@@ -25,7 +25,7 @@ public class MetricsCfg implements ConfigurationEntry {
   private String file = "metrics/zeebe.prom";
 
   @Override
-  public void init(BrokerCfg brokerCfg, String brokerBase) {
+  public void init(BrokerCfg brokerCfg, String brokerBase, Environment environment) {
     file = ConfigurationUtil.toAbsolutePath(file, brokerBase);
   }
 
@@ -47,5 +47,17 @@ public class MetricsCfg implements ConfigurationEntry {
 
   public void setFile(String metricsFile) {
     this.file = metricsFile;
+  }
+
+  @Override
+  public String toString() {
+    return "MetricsCfg{"
+        + "reportingInterval='"
+        + reportingInterval
+        + '\''
+        + ", file='"
+        + file
+        + '\''
+        + '}';
   }
 }

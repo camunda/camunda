@@ -15,11 +15,11 @@
  */
 package io.zeebe.test;
 
-import io.zeebe.client.api.clients.TopicClient;
-import io.zeebe.client.api.events.JobEvent;
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
-import io.zeebe.client.api.events.WorkflowInstanceState;
-import io.zeebe.client.api.subscription.TopicSubscription;
+import io.zeebe.gateway.ZeebeClient;
+import io.zeebe.gateway.api.events.JobEvent;
+import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
+import io.zeebe.gateway.api.events.WorkflowInstanceState;
+import io.zeebe.gateway.api.subscription.TopicSubscription;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -36,13 +36,10 @@ public class TopicEventRecorder extends ExternalResource {
 
   private final ClientRule clientRule;
 
-  private final String topicName;
-
   protected TopicSubscription subscription;
 
-  public TopicEventRecorder(final ClientRule clientRule, final String topicName) {
+  public TopicEventRecorder(final ClientRule clientRule) {
     this.clientRule = clientRule;
-    this.topicName = topicName;
   }
 
   @Override
@@ -56,7 +53,7 @@ public class TopicEventRecorder extends ExternalResource {
   }
 
   private void startRecordingEvents() {
-    final TopicClient client = clientRule.getClient().topicClient(topicName);
+    final ZeebeClient client = clientRule.getClient();
 
     subscription =
         client

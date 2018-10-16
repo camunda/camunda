@@ -18,20 +18,22 @@
 package io.zeebe.broker.logstreams.processor;
 
 import io.zeebe.broker.logstreams.processor.CommandProcessor.CommandControl;
-import io.zeebe.broker.logstreams.processor.CommandProcessor.CommandResult;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.Intent;
 
 public class CommandProcessorImpl<T extends UnpackedObject>
-    implements TypedRecordProcessor<T>, CommandControl, CommandResult {
+    implements TypedRecordProcessor<T>, CommandControl<T> {
 
   private final CommandProcessor<T> wrappedProcessor;
 
+  private KeyGenerator keyGenerator;
+
   private boolean isAccepted;
-  private boolean respond;
+  private long entityKey;
 
   private Intent newState;
+  private T updatedValue;
 
   private RejectionType rejectionType;
   private String rejectionReason;
@@ -41,54 +43,49 @@ public class CommandProcessorImpl<T extends UnpackedObject>
   }
 
   @Override
-  public void processRecord(TypedRecord<T> record) {
-    wrappedProcessor.onCommand(record, this);
-    respond = record.getMetadata().hasRequestMetadata();
+  public void onOpen(TypedStreamProcessor streamProcessor) {
+    this.keyGenerator = streamProcessor.getKeyGenerator();
   }
 
   @Override
-  public boolean executeSideEffects(TypedRecord<T> record, TypedResponseWriter responseWriter) {
-    if (respond) {
-      if (isAccepted) {
-        return responseWriter.writeRecord(newState, record);
-      } else {
-        return responseWriter.writeRejection(record, rejectionType, rejectionReason);
+  public void processRecord(
+      TypedRecord<T> command, TypedResponseWriter responseWriter, TypedStreamWriter streamWriter) {
+
+    entityKey = command.getKey();
+
+    wrappedProcessor.onCommand(command, this);
+
+    final boolean respond = command.getMetadata().hasRequestMetadata();
+
+    if (isAccepted) {
+      streamWriter.writeFollowUpEvent(entityKey, newState, updatedValue);
+      if (respond) {
+        responseWriter.writeEventOnCommand(entityKey, newState, updatedValue, command);
       }
     } else {
-      return true;
+      streamWriter.writeRejection(command, rejectionType, rejectionReason);
+      if (respond) {
+        responseWriter.writeRejectionOnCommand(command, rejectionType, rejectionReason);
+      }
     }
   }
 
   @Override
-  public long writeRecord(TypedRecord<T> record, TypedStreamWriter writer) {
-    if (isAccepted) {
-      return writer.writeFollowUpEvent(record.getKey(), newState, record.getValue());
-    } else {
-      return writer.writeRejection(record, rejectionType, rejectionReason);
+  public long accept(Intent newState, T updatedValue) {
+    if (entityKey < 0) {
+      entityKey = keyGenerator.nextKey();
     }
-  }
 
-  @Override
-  public void updateState(TypedRecord<T> record) {
-    if (isAccepted) {
-      wrappedProcessor.updateStateOnAccept(record);
-    } else {
-      wrappedProcessor.updateStateOnReject(record);
-    }
-  }
-
-  @Override
-  public CommandResult accept(Intent newState) {
     isAccepted = true;
     this.newState = newState;
-    return this;
+    this.updatedValue = updatedValue;
+    return entityKey;
   }
 
   @Override
-  public CommandResult reject(RejectionType type, String reason) {
+  public void reject(RejectionType type, String reason) {
     isAccepted = false;
     this.rejectionType = type;
     this.rejectionReason = reason;
-    return this;
   }
 }

@@ -17,15 +17,14 @@ package io.zeebe.raft.util;
 
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.raft.RaftPersistentStorage;
-import io.zeebe.transport.SocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 
 public class InMemoryRaftPersistentStorage implements RaftPersistentStorage {
 
   private final LogStream logStream;
-  private final SocketAddress votedFor = new SocketAddress();
-  private final List<SocketAddress> members = new ArrayList<>();
+  private Integer votedFor;
+  private final List<Integer> members = new ArrayList<>();
 
   public InMemoryRaftPersistentStorage(final LogStream logStream) {
     this.logStream = logStream;
@@ -49,38 +48,29 @@ public class InMemoryRaftPersistentStorage implements RaftPersistentStorage {
   }
 
   @Override
-  public SocketAddress getVotedFor() {
-    if (votedFor.hostLength() > 0) {
-      return votedFor;
-    } else {
-      return null;
-    }
+  public Integer getVotedFor() {
+    return votedFor;
   }
 
   @Override
-  public InMemoryRaftPersistentStorage setVotedFor(final SocketAddress votedFor) {
-    if (votedFor != null) {
-      this.votedFor.wrap(votedFor);
-    } else {
-      this.votedFor.reset();
-    }
-
+  public InMemoryRaftPersistentStorage setVotedFor(final Integer votedFor) {
+    this.votedFor = votedFor;
     return this;
   }
 
   @Override
-  public InMemoryRaftPersistentStorage addMember(final SocketAddress member) {
-    members.add(member);
+  public InMemoryRaftPersistentStorage addMember(final int nodeId) {
+    members.add(nodeId);
     return this;
   }
 
   @Override
-  public RaftPersistentStorage removeMember(SocketAddress member) {
-    members.remove(member);
+  public RaftPersistentStorage removeMember(final int nodeId) {
+    members.removeIf(member -> member.equals(nodeId));
     return this;
   }
 
-  public List<SocketAddress> getMembers() {
+  public List<Integer> getMembers() {
     return members;
   }
 

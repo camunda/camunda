@@ -21,10 +21,12 @@ import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
-import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.function.Consumer;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.TemporaryFolder;
@@ -39,7 +41,7 @@ public class LogStreamRule extends ExternalResource {
   private ServiceContainer serviceContainer;
   private LogStream logStream;
 
-  private ControlledActorClock clock = new ControlledActorClock();
+  private final ControlledActorClock clock = new ControlledActorClock();
   private SnapshotStorage snapshotStorage;
 
   private final Consumer<LogStreamBuilder> streamBuilder;
@@ -77,7 +79,7 @@ public class LogStreamRule extends ExternalResource {
     serviceContainer.start();
 
     builder =
-        LogStreams.createFsLogStream(BufferUtil.wrapString(name), 0)
+        LogStreams.createFsLogStream(0)
             .logDirectory(temporaryFolder.getRoot().getAbsolutePath())
             .serviceContainer(serviceContainer);
 
@@ -91,6 +93,12 @@ public class LogStreamRule extends ExternalResource {
   protected void after() {
     if (logStream != null) {
       logStream.close();
+    }
+
+    try {
+      serviceContainer.close(5, TimeUnit.SECONDS);
+    } catch (final TimeoutException | ExecutionException | InterruptedException e) {
+      e.printStackTrace();
     }
 
     actorScheduler.stop();

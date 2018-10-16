@@ -16,54 +16,68 @@
 package io.zeebe.broker.it;
 
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import static org.junit.Assert.fail;
 
-import io.zeebe.client.ClientProperties;
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.clients.*;
-import io.zeebe.client.api.commands.*;
-import io.zeebe.client.impl.ZeebeClientBuilderImpl;
-import io.zeebe.client.impl.ZeebeClientImpl;
+import io.zeebe.broker.it.clustering.ClusteringRule;
+import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.gateway.ZeebeClient;
+import io.zeebe.gateway.ZeebeClientBuilder;
+import io.zeebe.gateway.api.clients.JobClient;
+import io.zeebe.gateway.api.clients.WorkflowClient;
+import io.zeebe.gateway.api.commands.PartitionInfo;
+import io.zeebe.gateway.api.commands.Topology;
+import io.zeebe.gateway.api.record.ValueType;
+import io.zeebe.gateway.impl.ZeebeClientBuilderImpl;
+import io.zeebe.gateway.impl.ZeebeClientImpl;
+import io.zeebe.protocol.Protocol;
+import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.sched.clock.ControlledActorClock;
-import java.util.*;
-import java.util.function.Supplier;
+import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.junit.rules.ExternalResource;
 
 public class ClientRule extends ExternalResource {
-  protected final Properties properties;
+
+  private final Consumer<ZeebeClientBuilder> configurator;
 
   protected ZeebeClient client;
-  private ControlledActorClock actorClock = new ControlledActorClock();
+  private final ControlledActorClock actorClock = new ControlledActorClock();
 
-  public ClientRule() {
-    this(Properties::new);
+  public ClientRule(final EmbeddedBrokerRule brokerRule) {
+    this(brokerRule, config -> {});
   }
 
-  public ClientRule(final String contactPoint) {
+  public ClientRule(
+      final EmbeddedBrokerRule brokerRule, final Consumer<ZeebeClientBuilder> configurator) {
     this(
-        () -> {
-          final Properties properties = new Properties();
-          properties.put(ClientProperties.BROKER_CONTACTPOINT, contactPoint);
-          return properties;
+        config -> {
+          config.brokerContactPoint(brokerRule.getClientAddress().toString());
+          configurator.accept(config);
         });
   }
 
-  public ClientRule(Supplier<Properties> propertiesProvider) {
-    this.properties = propertiesProvider.get();
+  public ClientRule(final ClusteringRule clusteringRule) {
+    this(config -> config.brokerContactPoint(clusteringRule.getClientAddress().toString()));
+  }
+
+  private ClientRule(final Consumer<ZeebeClientBuilder> configurator) {
+    this.configurator = configurator;
   }
 
   @Override
   protected void before() {
-    client =
-        ((ZeebeClientBuilderImpl) ZeebeClient.newClientBuilder().withProperties(properties))
-            .setActorClock(actorClock)
-            .build();
+    final ZeebeClientBuilderImpl builder = (ZeebeClientBuilderImpl) ZeebeClient.newClientBuilder();
+    configurator.accept(builder);
+    client = builder.setActorClock(actorClock).build();
   }
 
   @Override
   protected void after() {
     client.close();
+    client = null;
   }
 
   public ZeebeClient getClient() {
@@ -75,40 +89,43 @@ public class ClientRule extends ExternalResource {
     transport.interruptAllChannels();
   }
 
-  public void waitUntilTopicsExists(final String... topicNames) {
-    final List<String> expectedTopicNames = Arrays.asList(topicNames);
+  public void waitUntilDeploymentIsDone(final long key) {
+    final AtomicBoolean deploymentFound = new AtomicBoolean(false);
 
-    doRepeatedly(this::topicsByName).until(t -> t.keySet().containsAll(expectedTopicNames));
+    client
+        .newSubscription()
+        .name("deployment-await")
+        .recordHandler(
+            record -> {
+              if (record.getMetadata().getPartitionId() == Protocol.DEPLOYMENT_PARTITION
+                  && record.getMetadata().getValueType() == ValueType.DEPLOYMENT
+                  && record.getMetadata().getIntent().equals(DeploymentIntent.CREATED.name())
+                  && record.getKey() == key) {
+                deploymentFound.compareAndSet(false, true);
+              }
+            })
+        .open();
+
+    doRepeatedly(
+            () -> {
+              try {
+                Thread.sleep(100);
+              } catch (Exception ex) {
+                fail();
+              }
+            })
+        .until((v) -> deploymentFound.get());
   }
 
-  public Map<String, List<Partition>> topicsByName() {
-    final Topics topics = client.newTopicsRequest().send().join();
-    return topics
-        .getTopics()
-        .stream()
-        .collect(Collectors.toMap(Topic::getName, Topic::getPartitions));
-  }
-
-  public String getDefaultTopic() {
-    return client.getConfiguration().getDefaultTopic();
-  }
-
-  public int getDefaultPartition() {
-    final List<Integer> defaultPartitions =
-        doRepeatedly(() -> getPartitions(getDefaultTopic())).until(p -> !p.isEmpty());
-    return defaultPartitions.get(0);
-  }
-
-  private List<Integer> getPartitions(String topic) {
+  public List<Integer> getPartitions() {
     final Topology topology = client.newTopologyRequest().send().join();
 
     return topology
         .getBrokers()
         .stream()
         .flatMap(i -> i.getPartitions().stream())
-        .filter(p -> p.isLeader())
-        .filter(p -> p.getTopicName().equals(topic))
-        .map(p -> p.getPartitionId())
+        .filter(PartitionInfo::isLeader)
+        .map(PartitionInfo::getPartitionId)
         .collect(Collectors.toList());
   }
 
@@ -117,14 +134,10 @@ public class ClientRule extends ExternalResource {
   }
 
   public WorkflowClient getWorkflowClient() {
-    return getClient().topicClient().workflowClient();
+    return getClient().workflowClient();
   }
 
   public JobClient getJobClient() {
-    return getClient().topicClient().jobClient();
-  }
-
-  public TopicClient getTopicClient() {
-    return getClient().topicClient();
+    return getClient().jobClient();
   }
 }

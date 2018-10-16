@@ -18,7 +18,9 @@ package io.zeebe.msgpack;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.wrapArray;
 
-import io.zeebe.msgpack.spec.*;
+import io.zeebe.msgpack.spec.MsgPackReader;
+import io.zeebe.msgpack.spec.MsgPackToken;
+import io.zeebe.msgpack.spec.MsgPackWriter;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Consumer;

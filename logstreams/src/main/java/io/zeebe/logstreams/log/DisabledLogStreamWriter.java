@@ -18,58 +18,63 @@ package io.zeebe.logstreams.log;
 import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 
-public class DisabledLogStreamWriter implements LogStreamWriter {
+public class DisabledLogStreamWriter implements LogStreamRecordWriter {
 
   @Override
   public void wrap(LogStream log) {}
 
   @Override
-  public LogStreamWriter positionAsKey() {
+  public LogStreamRecordWriter positionAsKey() {
     return this;
   }
 
   @Override
-  public LogStreamWriter key(long key) {
+  public LogStreamRecordWriter keyNull() {
     return this;
   }
 
   @Override
-  public LogStreamWriter sourceRecordPosition(long position) {
+  public LogStreamRecordWriter key(long key) {
     return this;
   }
 
   @Override
-  public LogStreamWriter producerId(int producerId) {
+  public LogStreamRecordWriter sourceRecordPosition(long position) {
     return this;
   }
 
   @Override
-  public LogStreamWriter metadata(DirectBuffer buffer, int offset, int length) {
+  public LogStreamRecordWriter producerId(int producerId) {
     return this;
   }
 
   @Override
-  public LogStreamWriter metadata(DirectBuffer buffer) {
+  public LogStreamRecordWriter metadata(DirectBuffer buffer, int offset, int length) {
     return this;
   }
 
   @Override
-  public LogStreamWriter metadataWriter(BufferWriter writer) {
+  public LogStreamRecordWriter metadata(DirectBuffer buffer) {
     return this;
   }
 
   @Override
-  public LogStreamWriter value(DirectBuffer value, int valueOffset, int valueLength) {
+  public LogStreamRecordWriter metadataWriter(BufferWriter writer) {
     return this;
   }
 
   @Override
-  public LogStreamWriter value(DirectBuffer value) {
+  public LogStreamRecordWriter value(DirectBuffer value, int valueOffset, int valueLength) {
     return this;
   }
 
   @Override
-  public LogStreamWriter valueWriter(BufferWriter writer) {
+  public LogStreamRecordWriter value(DirectBuffer value) {
+    return this;
+  }
+
+  @Override
+  public LogStreamRecordWriter valueWriter(BufferWriter writer) {
     return this;
   }
 

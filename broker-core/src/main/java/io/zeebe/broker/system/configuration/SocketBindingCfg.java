@@ -36,6 +36,8 @@ public abstract class SocketBindingCfg {
     if (sendBufferSize == null) {
       sendBufferSize = networkCfg.getDefaultSendBufferSize();
     }
+
+    port += networkCfg.getPortOffset() * 10;
   }
 
   public String getHost() {
@@ -60,5 +62,19 @@ public abstract class SocketBindingCfg {
 
   public void setSendBufferSize(String sendBufferSize) {
     this.sendBufferSize = sendBufferSize;
+  }
+
+  @Override
+  public String toString() {
+    return "SocketBindingCfg{"
+        + "host='"
+        + host
+        + '\''
+        + ", port="
+        + port
+        + ", sendBufferSize='"
+        + sendBufferSize
+        + '\''
+        + '}';
   }
 }

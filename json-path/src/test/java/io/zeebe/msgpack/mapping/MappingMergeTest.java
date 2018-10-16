@@ -17,15 +17,21 @@ package io.zeebe.msgpack.mapping;
 
 import static io.zeebe.msgpack.mapping.MappingBuilder.createMapping;
 import static io.zeebe.msgpack.mapping.MappingBuilder.createMappings;
-import static io.zeebe.msgpack.mapping.MappingTestUtil.*;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.JSON_MAPPER;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.MSGPACK_MAPPER;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.MSG_PACK_BYTES;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.NODE_JSON_OBJECT_PATH;
+import static io.zeebe.msgpack.mapping.MappingTestUtil.NODE_ROOT_PATH;
 import static io.zeebe.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
 import static io.zeebe.msgpack.spec.MsgPackHelper.NIL;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import io.zeebe.util.buffer.BufferUtil;
+import java.io.IOException;
 import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -34,37 +40,38 @@ import org.junit.rules.ExpectedException;
 public class MappingMergeTest {
   @Rule public ExpectedException expectedException = ExpectedException.none();
 
-  private MappingProcessor processor = new MappingProcessor(1024);
+  private MsgPackMergeTool mergeTool = new MsgPackMergeTool(1024);
+
+  @Before
+  public void setUp() {
+    mergeTool.reset();
+  }
 
   @Test
-  public void shouldThrowExceptionIfSourceDocumentIsNull() throws Throwable {
+  public void shouldThrowExceptionOnMergeWhenDocumentIsNull() throws Throwable {
+    // expect
+    expectedException.expect(RuntimeException.class);
+    expectedException.expectMessage("document must not be null");
+
+    // when
+    mergeTool.mergeDocument(null);
+  }
+
+  @Test
+  public void shouldThrowExceptionOnMapAndMergeIfDocumentIsNull() throws Throwable {
     // given payload
     final Mapping[] mapping = createMapping("$", "$");
 
     // expect
-    expectedException.expect(IllegalArgumentException.class);
-    expectedException.expectMessage("Target document must not be null!");
+    expectedException.expect(RuntimeException.class);
+    expectedException.expectMessage("document must not be null");
 
     // when
-    processor.merge(null, null, mapping);
+    mergeTool.mergeDocument(null, mapping);
   }
 
   @Test
-  public void shouldThrowExceptionIfTargetDocumentIsNull() throws Throwable {
-    // given payload
-    final DirectBuffer targetDocument = new UnsafeBuffer(EMTPY_OBJECT);
-    final Mapping[] mapping = createMapping("$", "$");
-
-    // expect
-    expectedException.expect(IllegalArgumentException.class);
-    expectedException.expectMessage("Source document must not be null!");
-
-    // when
-    processor.merge(null, targetDocument, mapping);
-  }
-
-  @Test
-  public void shouldThrowExceptionIfMappingDoesNotMatch() throws Throwable {
+  public void shouldThrowExceptionIfMappingDoesNotMatchInStrictMode() throws Throwable {
     // given payload
     final DirectBuffer sourceDocument = new UnsafeBuffer(EMTPY_OBJECT);
     final Mapping[] mapping = createMapping("$.foo", "$");
@@ -74,15 +81,17 @@ public class MappingMergeTest {
     expectedException.expectMessage("No data found for query $.foo.");
 
     // when
-    processor.merge(sourceDocument, sourceDocument, mapping);
+    mergeTool.mergeDocumentStrictly(sourceDocument, mapping);
   }
 
   @Test
-  public void shouldThrowExceptionIfResultDocumentIsNoObject() throws Throwable {
+  public void shouldThrowExceptionIfResultDocumentIsNoObjectInStrictMode() throws Throwable {
     // given payload
     final DirectBuffer sourceDocument =
         new UnsafeBuffer(MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'foo':'bar'}")));
     final Mapping[] mapping = createMapping("$.foo", "$");
+
+    mergeTool.mergeDocumentStrictly(sourceDocument, mapping);
 
     // expect
     expectedException.expect(MappingException.class);
@@ -90,7 +99,7 @@ public class MappingMergeTest {
         "Processing failed, since mapping will result in a non map object (json object).");
 
     // when
-    processor.merge(sourceDocument, sourceDocument, mapping);
+    mergeTool.writeResultToBuffer();
   }
 
   @Test
@@ -101,10 +110,9 @@ public class MappingMergeTest {
         createMappings().mapping(NODE_JSON_OBJECT_PATH, NODE_ROOT_PATH).build();
 
     // when extract
-    int resultLength = processor.extract(sourceDocument, extractMapping);
-    MutableDirectBuffer resultBuffer = processor.getResultBuffer();
-    byte result[] = new byte[resultLength];
-    resultBuffer.getBytes(0, result, 0, resultLength);
+    mergeTool.mergeDocument(sourceDocument, extractMapping);
+    DirectBuffer resultBuffer = mergeTool.writeResultToBuffer();
+    byte[] result = BufferUtil.bufferAsArray(resultBuffer);
 
     // then expect result
     assertThat(MSGPACK_MAPPER.readTree(result))
@@ -112,13 +120,14 @@ public class MappingMergeTest {
 
     // when merge after that
     final Mapping[] mergeMapping = createMappings().mapping("$.testAttr", "$.otherAttr").build();
-    final UnsafeBuffer trimmedDocument = new UnsafeBuffer(0, 0);
-    trimmedDocument.wrap(result);
+    final UnsafeBuffer trimmedDocument = new UnsafeBuffer(result);
 
-    resultLength = processor.merge(trimmedDocument, sourceDocument, mergeMapping);
-    resultBuffer = processor.getResultBuffer();
-    result = new byte[resultLength];
-    resultBuffer.getBytes(0, result, 0, resultLength);
+    mergeTool.reset();
+    mergeTool.mergeDocument(sourceDocument);
+    mergeTool.mergeDocument(trimmedDocument, mergeMapping);
+
+    resultBuffer = mergeTool.writeResultToBuffer();
+    result = BufferUtil.bufferAsArray(resultBuffer);
 
     // then result is expected as
     final JsonNode expected =
@@ -144,10 +153,9 @@ public class MappingMergeTest {
     Mapping[] mergeMapping = createMappings().mapping("$.test", "$.obj").build();
 
     // when merge
-    int resultLength = processor.merge(sourceDocument, targetDocument, mergeMapping);
-    MutableDirectBuffer resultBuffer = processor.getResultBuffer();
-    byte result[] = new byte[resultLength];
-    resultBuffer.getBytes(0, result, 0, resultLength);
+    mergeTool.mergeDocument(targetDocument);
+    mergeTool.mergeDocument(sourceDocument, mergeMapping);
+    byte result[] = BufferUtil.bufferAsArray(mergeTool.writeResultToBuffer());
 
     // then expect result
     assertThat(MSGPACK_MAPPER.readTree(result))
@@ -162,10 +170,10 @@ public class MappingMergeTest {
     mergeMapping = createMappings().mapping("$.other[0]", "$.arr[0]").build();
 
     // when again merge after that
-    resultLength = processor.merge(sourceDocument, targetDocument, mergeMapping);
-    resultBuffer = processor.getResultBuffer();
-    result = new byte[resultLength];
-    resultBuffer.getBytes(0, result, 0, resultLength);
+    mergeTool.reset();
+    mergeTool.mergeDocument(targetDocument);
+    mergeTool.mergeDocument(sourceDocument, mergeMapping);
+    result = BufferUtil.bufferAsArray(mergeTool.writeResultToBuffer());
 
     // then expect result
     assertThat(MSGPACK_MAPPER.readTree(result))
@@ -185,10 +193,9 @@ public class MappingMergeTest {
                 JSON_MAPPER.readTree("{'arr':[0, 1], 'obj':{'int':1}, 'test':'value'}")));
 
     // when merge
-    int resultLength = processor.merge(sourceDocument, targetDocument);
-    MutableDirectBuffer resultBuffer = processor.getResultBuffer();
-    byte result[] = new byte[resultLength];
-    resultBuffer.getBytes(0, result, 0, resultLength);
+    mergeTool.mergeDocument(targetDocument);
+    mergeTool.mergeDocument(sourceDocument);
+    byte result[] = BufferUtil.bufferAsArray(mergeTool.writeResultToBuffer());
 
     // then expect result
     assertThat(MSGPACK_MAPPER.readTree(result))
@@ -202,10 +209,10 @@ public class MappingMergeTest {
     targetDocument.wrap(result);
 
     // when again merge after that
-    resultLength = processor.merge(sourceDocument, targetDocument);
-    resultBuffer = processor.getResultBuffer();
-    result = new byte[resultLength];
-    resultBuffer.getBytes(0, result, 0, resultLength);
+    mergeTool.reset();
+    mergeTool.mergeDocument(targetDocument);
+    mergeTool.mergeDocument(sourceDocument);
+    result = BufferUtil.bufferAsArray(mergeTool.writeResultToBuffer());
 
     // then expect result
     assertThat(MSGPACK_MAPPER.readTree(result))
@@ -221,11 +228,11 @@ public class MappingMergeTest {
     final DirectBuffer targetDocument = new UnsafeBuffer(EMTPY_OBJECT);
 
     // when
-    final int resultLength = processor.merge(sourceDocument, targetDocument);
+    mergeTool.mergeDocument(targetDocument);
+    mergeTool.mergeDocument(sourceDocument);
 
     // then
-    final DirectBuffer result = new UnsafeBuffer(0, 0);
-    result.wrap(processor.getResultBuffer(), 0, resultLength);
+    final DirectBuffer result = mergeTool.writeResultToBuffer();
     assertThat(result).isEqualByComparingTo(new UnsafeBuffer(EMTPY_OBJECT));
   }
 
@@ -236,11 +243,11 @@ public class MappingMergeTest {
     final DirectBuffer targetDocument = new UnsafeBuffer(NIL);
 
     // when
-    final int resultLength = processor.merge(sourceDocument, targetDocument);
+    mergeTool.mergeDocument(targetDocument);
+    mergeTool.mergeDocument(sourceDocument);
 
     // then
-    final DirectBuffer result = new UnsafeBuffer(0, 0);
-    result.wrap(processor.getResultBuffer(), 0, resultLength);
+    final DirectBuffer result = mergeTool.writeResultToBuffer();
     assertThat(result).isEqualByComparingTo(new UnsafeBuffer(EMTPY_OBJECT));
   }
 
@@ -251,11 +258,38 @@ public class MappingMergeTest {
     final DirectBuffer targetDocument = new UnsafeBuffer(NIL);
 
     // when
-    final int resultLength = processor.merge(sourceDocument, targetDocument);
+    mergeTool.mergeDocument(targetDocument);
+    mergeTool.mergeDocument(sourceDocument);
 
     // then
-    final DirectBuffer result = new UnsafeBuffer(0, 0);
-    result.wrap(processor.getResultBuffer(), 0, resultLength);
+    final DirectBuffer result = mergeTool.writeResultToBuffer();
     assertThat(result).isEqualByComparingTo(new UnsafeBuffer(NIL));
+  }
+
+  @Test
+  public void shouldMergeMultipleDocumentsInOnePass() {
+    // given
+    final DirectBuffer document1 = asMsgPack("{'att1':'val1'}");
+    final DirectBuffer document2 = asMsgPack("{'att2':'val2'}");
+    final DirectBuffer document3 = asMsgPack("{'att3':'val3'}");
+
+    // when
+    mergeTool.mergeDocument(document1);
+    mergeTool.mergeDocument(document2);
+    mergeTool.mergeDocument(document3);
+
+    // then
+    final DirectBuffer mergedDocument = mergeTool.writeResultToBuffer();
+
+    MappingTestUtil.assertThatMsgPack(mergedDocument)
+        .hasValue("{'att1':'val1', 'att2':'val2', 'att3':'val3'}");
+  }
+
+  private static DirectBuffer asMsgPack(String json) {
+    try {
+      return new UnsafeBuffer(MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree(json)));
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

@@ -15,7 +15,7 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi;
 
-import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
+import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
@@ -27,20 +27,17 @@ import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.SubscriberIntent;
 import io.zeebe.protocol.intent.SubscriptionIntent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
-import io.zeebe.test.broker.protocol.brokerapi.data.BrokerPartitionState;
 import io.zeebe.test.broker.protocol.brokerapi.data.Topology;
-import io.zeebe.test.broker.protocol.brokerapi.data.TopologyBroker;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerTransport;
+import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.Transports;
+import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
-import java.net.InetSocketAddress;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
@@ -49,30 +46,36 @@ import java.util.stream.Collectors;
 import org.junit.rules.ExternalResource;
 
 public class StubBrokerRule extends ExternalResource {
-  public static final String TEST_TOPIC_NAME = DEFAULT_TOPIC_NAME;
-  public static final int TEST_PARTITION_ID = 99;
+  public static final int TEST_PARTITION_ID = DEPLOYMENT_PARTITION;
 
-  private ControlledActorClock clock = new ControlledActorClock();
+  private final ControlledActorClock clock = new ControlledActorClock();
   protected ActorScheduler scheduler;
 
-  protected final String host;
-  protected final int port;
+  protected final int nodeId;
+  protected final SocketAddress socketAddress;
+  private final int clusterSize;
+  private final int partitionCount;
 
   protected ServerTransport transport;
 
   protected StubResponseChannelHandler channelHandler;
   protected MsgPackHelper msgPackHelper;
-  private InetSocketAddress bindAddr;
 
   protected AtomicReference<Topology> currentTopology = new AtomicReference<>();
 
   public StubBrokerRule() {
-    this("127.0.0.1", 51015);
+    this(0);
   }
 
-  public StubBrokerRule(String host, int port) {
-    this.host = host;
-    this.port = port;
+  public StubBrokerRule(final int nodeId) {
+    this(nodeId, 1, 1);
+  }
+
+  public StubBrokerRule(final int nodeId, final int clusterSize, final int partitionCount) {
+    this.nodeId = nodeId;
+    this.socketAddress = SocketUtil.getNextAddress();
+    this.clusterSize = clusterSize;
+    this.partitionCount = partitionCount;
   }
 
   @Override
@@ -89,15 +92,16 @@ public class StubBrokerRule extends ExternalResource {
     scheduler.start();
 
     channelHandler = new StubResponseChannelHandler(msgPackHelper);
-    bindAddr = new InetSocketAddress(host, port);
 
-    currentTopology.set(
-        new Topology()
-            .addLeader(host, port, TEST_TOPIC_NAME, TEST_PARTITION_ID)
-            .addLeader(host, port, Protocol.SYSTEM_TOPIC, Protocol.SYSTEM_PARTITION));
+    final Topology topology = new Topology();
+    topology.addLeader(nodeId, socketAddress, Protocol.DEPLOYMENT_PARTITION);
 
+    for (int i = TEST_PARTITION_ID; i < TEST_PARTITION_ID + partitionCount; i++) {
+      topology.addLeader(nodeId, socketAddress, i);
+    }
+
+    currentTopology.set(topology);
     stubTopologyRequest();
-
     bindTransport();
   }
 
@@ -128,7 +132,7 @@ public class StubBrokerRule extends ExternalResource {
     if (transport == null) {
       transport =
           Transports.newServerTransport()
-              .bindAddress(bindAddr)
+              .bindAddress(socketAddress.toInetSocketAddress())
               .scheduler(scheduler)
               .build(null, channelHandler);
     } else {
@@ -145,18 +149,18 @@ public class StubBrokerRule extends ExternalResource {
   }
 
   public ExecuteCommandResponseTypeBuilder onExecuteCommandRequest(
-      Predicate<ExecuteCommandRequest> activationFunction) {
+      final Predicate<ExecuteCommandRequest> activationFunction) {
     return new ExecuteCommandResponseTypeBuilder(
         channelHandler::addExecuteCommandRequestStub, activationFunction, msgPackHelper);
   }
 
   public ExecuteCommandResponseTypeBuilder onExecuteCommandRequest(
-      ValueType eventType, Intent intent) {
+      final ValueType eventType, final Intent intent) {
     return onExecuteCommandRequest(ecr -> ecr.valueType() == eventType && ecr.intent() == intent);
   }
 
   public ExecuteCommandResponseTypeBuilder onExecuteCommandRequest(
-      int partitionId, ValueType valueType, Intent intent) {
+      final int partitionId, final ValueType valueType, final Intent intent) {
     return onExecuteCommandRequest(
         ecr ->
             ecr.partitionId() == partitionId
@@ -169,7 +173,7 @@ public class StubBrokerRule extends ExternalResource {
   }
 
   public ControlMessageResponseTypeBuilder onControlMessageRequest(
-      Predicate<ControlMessageRequest> activationFunction) {
+      final Predicate<ControlMessageRequest> activationFunction) {
     return new ControlMessageResponseTypeBuilder(
         channelHandler::addControlMessageRequestStub, activationFunction, msgPackHelper);
   }
@@ -179,7 +183,7 @@ public class StubBrokerRule extends ExternalResource {
   }
 
   public List<ControlMessageRequest> getReceivedControlMessageRequestsByType(
-      ControlMessageType type) {
+      final ControlMessageType type) {
     return channelHandler
         .getReceivedControlMessageRequests()
         .stream()
@@ -204,32 +208,8 @@ public class StubBrokerRule extends ExternalResource {
         .respondWith()
         .data()
         .put("brokers", r -> currentTopology.get().getBrokers())
-        .done()
-        .register();
-
-    // assuming that topology and partitions request are consistent
-    onControlMessageRequest(
-            r ->
-                r.messageType() == ControlMessageType.REQUEST_PARTITIONS
-                    && r.partitionId() == Protocol.SYSTEM_PARTITION)
-        .respondWith()
-        .data()
-        .put(
-            "partitions",
-            r -> {
-              final Topology topology = currentTopology.get();
-              final List<Map<String, Object>> partitions = new ArrayList<>();
-              for (TopologyBroker broker : topology.getBrokers()) {
-                final List<BrokerPartitionState> brokerPartitionStates = broker.getPartitions();
-                for (BrokerPartitionState brokerPartitionState : brokerPartitionStates) {
-                  final Map<String, Object> partition = new HashMap<>();
-                  partition.put("topic", brokerPartitionState.getTopicName());
-                  partition.put("id", brokerPartitionState.getPartitionId());
-                  partitions.add(partition);
-                }
-              }
-              return partitions;
-            })
+        .put("clusterSize", clusterSize)
+        .put("partitionsCount", partitionCount)
         .done()
         .register();
   }
@@ -238,18 +218,14 @@ public class StubBrokerRule extends ExternalResource {
     return onControlMessageRequest(r -> r.messageType() == ControlMessageType.REQUEST_TOPOLOGY);
   }
 
-  public void addTopic(String topic, int partition) {
+  public void addPartition(final int partition) {
     final Topology newTopology = new Topology(currentTopology.get());
 
-    newTopology.addLeader(host, port, topic, partition);
+    newTopology.addLeader(nodeId, socketAddress, partition);
     currentTopology.set(newTopology);
   }
 
-  public void addSystemTopic() {
-    addTopic(Protocol.SYSTEM_TOPIC, Protocol.SYSTEM_PARTITION);
-  }
-
-  public void setCurrentTopology(Topology currentTopology) {
+  public void setCurrentTopology(final Topology currentTopology) {
     this.currentTopology.set(currentTopology);
   }
 
@@ -257,7 +233,7 @@ public class StubBrokerRule extends ExternalResource {
     currentTopology.set(new Topology());
   }
 
-  public void stubTopicSubscriptionApi(long initialSubscriberKey) {
+  public void stubTopicSubscriptionApi(final long initialSubscriberKey) {
     final AtomicLong subscriberKeyProvider = new AtomicLong(initialSubscriberKey);
     final AtomicLong subscriptionKeyProvider = new AtomicLong(0);
 
@@ -290,7 +266,7 @@ public class StubBrokerRule extends ExternalResource {
         .register();
   }
 
-  public void stubJobSubscriptionApi(long initialSubscriberKey) {
+  public void stubJobSubscriptionApi(final long initialSubscriberKey) {
     final AtomicLong subscriberKeyProvider = new AtomicLong(initialSubscriberKey);
 
     onControlMessageRequest((r) -> r.messageType() == ControlMessageType.ADD_JOB_SUBSCRIPTION)
@@ -317,19 +293,20 @@ public class StubBrokerRule extends ExternalResource {
         .register();
   }
 
-  public void pushRaftEvent(RemoteAddress remote, long subscriberKey, long key, long position) {
+  public void pushRaftEvent(
+      final RemoteAddress remote, final long subscriberKey, final long key, final long position) {
     pushRecord(
         remote, subscriberKey, key, position, RecordType.EVENT, ValueType.RAFT, Intent.UNKNOWN);
   }
 
   public void pushRecord(
-      RemoteAddress remote,
-      long subscriberKey,
-      long key,
-      long position,
-      RecordType recordType,
-      ValueType valueType,
-      Intent intent) {
+      final RemoteAddress remote,
+      final long subscriberKey,
+      final long key,
+      final long position,
+      final RecordType recordType,
+      final ValueType valueType,
+      final Intent intent) {
     pushRecord(
         remote,
         subscriberKey,
@@ -342,14 +319,14 @@ public class StubBrokerRule extends ExternalResource {
   }
 
   public void pushRecord(
-      RemoteAddress remote,
-      long subscriberKey,
-      long key,
-      long position,
-      Instant timestamp,
-      RecordType recordType,
-      ValueType valueType,
-      Intent intent) {
+      final RemoteAddress remote,
+      final long subscriberKey,
+      final long key,
+      final long position,
+      final Instant timestamp,
+      final RecordType recordType,
+      final ValueType valueType,
+      final Intent intent) {
     newSubscribedEvent()
         .partitionId(TEST_PARTITION_ID)
         .key(key)
@@ -366,14 +343,14 @@ public class StubBrokerRule extends ExternalResource {
         .push(remote);
   }
 
-  public void pushTopicEvent(RemoteAddress remote, Consumer<SubscribedRecordBuilder> eventConfig) {
+  public void pushTopicEvent(
+      final RemoteAddress remote, final Consumer<SubscribedRecordBuilder> eventConfig) {
     final SubscribedRecordBuilder builder =
         newSubscribedEvent().subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION);
 
     // defaults that the config can override
     builder.recordType(RecordType.EVENT);
     builder.intent(Intent.UNKNOWN);
-    builder.partitionId(1);
     builder.key(0);
     builder.position(0);
     builder.valueType(ValueType.RAFT);
@@ -388,12 +365,12 @@ public class StubBrokerRule extends ExternalResource {
   }
 
   public void pushActivatedJob(
-      RemoteAddress remote,
-      long subscriberKey,
-      long key,
-      long position,
-      String worker,
-      String jobType) {
+      final RemoteAddress remote,
+      final long subscriberKey,
+      final long key,
+      final long position,
+      final String worker,
+      final String jobType) {
     newSubscribedEvent()
         .partitionId(TEST_PARTITION_ID)
         .key(key)
@@ -428,12 +405,12 @@ public class StubBrokerRule extends ExternalResource {
     return new DeploymentStubs(this);
   }
 
-  public String getHost() {
-    return host;
+  public SocketAddress getSocketAddress() {
+    return socketAddress;
   }
 
-  public int getPort() {
-    return port;
+  public int getNodeId() {
+    return nodeId;
   }
 
   public ControlledActorClock getClock() {

@@ -17,19 +17,40 @@
  */
 package io.zeebe.broker.util;
 
-import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
 import io.zeebe.broker.incident.data.IncidentRecord;
-import io.zeebe.broker.job.data.JobRecord;
-import io.zeebe.broker.system.workflow.repository.data.DeploymentRecord;
+import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
+import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.topic.Records;
 import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.stream.StreamWrapper;
+import io.zeebe.util.buffer.BufferUtil;
 import java.util.stream.Stream;
+import org.agrona.DirectBuffer;
 
-public class RecordStream extends StreamWrapper<LoggedEvent> {
+public class RecordStream extends StreamWrapper<LoggedEvent, RecordStream> {
 
-  public RecordStream(Stream<LoggedEvent> stream) {
+  public RecordStream(final Stream<LoggedEvent> stream) {
     super(stream);
+  }
+
+  @Override
+  protected RecordStream supply(final Stream<LoggedEvent> wrappedStream) {
+    return new RecordStream(wrappedStream);
+  }
+
+  public RecordStream withIntent(final Intent intent) {
+    return new RecordStream(filter(r -> Records.hasIntent(r, intent)));
+  }
+
+  public LoggedEvent withPosition(final long position) {
+    return filter(e -> e.getPosition() == position)
+        .findFirst()
+        .orElseThrow(() -> new AssertionError("No event found with position " + position));
   }
 
   public TypedRecordStream<JobRecord> onlyJobRecords() {
@@ -49,9 +70,35 @@ public class RecordStream extends StreamWrapper<LoggedEvent> {
             .map(e -> CopiedTypedEvent.toTypedEvent(e, DeploymentRecord.class)));
   }
 
-  public TypedRecordStream<TopicRecord> onlyTopicRecords() {
+  public TypedRecordStream<WorkflowInstanceRecord> onlyWorkflowInstanceRecords() {
     return new TypedRecordStream<>(
-        filter(Records::isTopicRecord)
-            .map(e -> CopiedTypedEvent.toTypedEvent(e, TopicRecord.class)));
+        filter(Records::isWorkflowInstanceRecord)
+            .map(e -> CopiedTypedEvent.toTypedEvent(e, WorkflowInstanceRecord.class)));
+  }
+
+  public TypedRecordStream<MessageSubscriptionRecord> onlyMessageSubscriptionRecords() {
+    return new TypedRecordStream<>(
+        filter(Records::isMessageSubscriptionRecord)
+            .map(e -> CopiedTypedEvent.toTypedEvent(e, MessageSubscriptionRecord.class)));
+  }
+
+  public TypedRecordStream<WorkflowInstanceSubscriptionRecord>
+      onlyWorkflowInstanceSubscriptionRecords() {
+    return new TypedRecordStream<>(
+        filter(Records::isWorkflowInstanceSubscriptionRecord)
+            .map(e -> CopiedTypedEvent.toTypedEvent(e, WorkflowInstanceSubscriptionRecord.class)));
+  }
+
+  /**
+   * This method makes only sense when the stream contains only entries of one workflow instance and
+   * the element is only instantiated once within that instance.
+   */
+  public Stream<WorkflowInstanceIntent> onlyStatesOf(final String elementId) {
+    final DirectBuffer elementIdBuffer = BufferUtil.wrapString(elementId);
+
+    return onlyWorkflowInstanceRecords()
+        .onlyEvents()
+        .filter(r -> elementIdBuffer.equals(r.getValue().getActivityId()))
+        .map(r -> (WorkflowInstanceIntent) r.getMetadata().getIntent());
   }
 }

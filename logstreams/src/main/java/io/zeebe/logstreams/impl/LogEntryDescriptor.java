@@ -15,8 +15,12 @@
  */
 package io.zeebe.logstreams.impl;
 
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
-import static org.agrona.BitUtil.*;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedLength;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
+import static org.agrona.BitUtil.SIZE_OF_SHORT;
 
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -55,6 +59,8 @@ import org.agrona.MutableDirectBuffer;
  * </pre>
  */
 public class LogEntryDescriptor {
+
+  public static final long KEY_NULL_VALUE = -1;
 
   public static final int VERSION_OFFSET;
 

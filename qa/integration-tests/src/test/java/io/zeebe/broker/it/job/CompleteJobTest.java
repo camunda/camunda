@@ -21,21 +21,25 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
-import io.zeebe.client.api.clients.JobClient;
-import io.zeebe.client.api.events.JobEvent;
-import io.zeebe.client.api.events.JobState;
-import io.zeebe.client.cmd.BrokerErrorException;
-import io.zeebe.client.cmd.ClientCommandRejectedException;
+import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.gateway.api.clients.JobClient;
+import io.zeebe.gateway.api.events.JobEvent;
+import io.zeebe.gateway.api.events.JobState;
+import io.zeebe.gateway.cmd.BrokerErrorException;
+import io.zeebe.gateway.cmd.ClientCommandRejectedException;
 import java.util.Collections;
-import org.junit.*;
-import org.junit.rules.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
 
 public class CompleteJobTest {
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientRule clientRule = new ClientRule();
+  public ClientRule clientRule = new ClientRule(brokerRule);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
@@ -143,9 +147,10 @@ public class CompleteJobTest {
   @Test
   public void shouldProvideReasonInExceptionMessageOnRejection() {
     // given
-    final JobClient jobClient = clientRule.getClient().topicClient().jobClient();
+    final JobClient jobClient = clientRule.getClient().jobClient();
 
     final JobEvent job = jobClient.newCreateCommand().jobType("bar").send().join();
+    jobClient.newCompleteCommand(job).send().join();
 
     // then
     thrown.expect(ClientCommandRejectedException.class);
@@ -153,7 +158,7 @@ public class CompleteJobTest {
         "Command (COMPLETE) for event with key "
             + job.getKey()
             + " was rejected. It is not applicable in the current state. "
-            + "Job is not in state: ACTIVATED, TIMED_OUT");
+            + "Job does not exist");
 
     // when
     jobClient.newCompleteCommand(job).send().join();

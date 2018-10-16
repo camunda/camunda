@@ -21,7 +21,7 @@ import io.zeebe.broker.logstreams.processor.TypedEventImpl;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.util.ReflectUtil;
 
 public class CopiedTypedEvent extends TypedEventImpl {

@@ -18,7 +18,9 @@ package io.zeebe.map;
 import static io.zeebe.map.BucketBufferArray.getBucketAddress;
 
 import io.zeebe.map.iterator.ZbMapEntry;
-import java.util.*;
+import java.util.ConcurrentModificationException;
+import java.util.Iterator;
+import java.util.NoSuchElementException;
 
 /**
  * A recyclable, allocation-free iterator for a ZbMap.

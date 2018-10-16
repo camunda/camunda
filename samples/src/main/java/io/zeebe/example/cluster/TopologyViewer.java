@@ -22,7 +22,7 @@ import io.zeebe.client.api.commands.Topology;
 public class TopologyViewer {
 
   public static void main(final String[] args) {
-    final String broker = "127.0.0.1:51015";
+    final String broker = "127.0.0.1:26500";
 
     final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder().brokerContactPoint(broker);
 
@@ -41,12 +41,7 @@ public class TopologyViewer {
                     .forEach(
                         p ->
                             System.out.println(
-                                "      "
-                                    + p.getTopicName()
-                                    + "."
-                                    + p.getPartitionId()
-                                    + " - "
-                                    + p.getRole()));
+                                "      " + p.getPartitionId() + " - " + p.getRole()));
               });
 
       System.out.println("Done.");

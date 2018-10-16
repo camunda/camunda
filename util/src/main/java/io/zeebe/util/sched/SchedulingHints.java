@@ -16,11 +16,11 @@
 package io.zeebe.util.sched;
 
 public class SchedulingHints {
-  public static int ioBound(short ioDeviceId) {
+
+  public static int ioBound() {
     int hints = 0;
 
     hints = setIoBound(hints);
-    hints = setIoDevice(ioDeviceId, hints);
 
     return hints;
   }
@@ -48,14 +48,6 @@ public class SchedulingHints {
 
   public static boolean isIoBound(int hints) {
     return (hints & 1) == hints;
-  }
-
-  public static int setIoDevice(short ioDevice, int hints) {
-    return hints | (ioDevice << 1);
-  }
-
-  public static short getIoDevice(int hints) {
-    return (short) (hints >> 1);
   }
 
   public static int setPriority(short priority, int hints) {

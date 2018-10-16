@@ -25,13 +25,13 @@ public class DeploymentViewer {
 
   public static void main(final String[] args) {
 
-    final String broker = "localhost:51015";
+    final String broker = "localhost:26500";
 
     final ZeebeClientBuilder clientBuilder =
         ZeebeClient.newClientBuilder().brokerContactPoint(broker);
 
     try (ZeebeClient client = clientBuilder.build()) {
-      final WorkflowClient workflowClient = client.topicClient().workflowClient();
+      final WorkflowClient workflowClient = client.workflowClient();
 
       final Workflows workflows = workflowClient.newWorkflowRequest().send().join();
 

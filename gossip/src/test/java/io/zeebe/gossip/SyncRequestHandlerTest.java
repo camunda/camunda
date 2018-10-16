@@ -25,6 +25,7 @@ import io.zeebe.gossip.util.GossipRule;
 import io.zeebe.test.util.BufferAssert;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.DirectBuffer;
 import org.junit.Rule;
@@ -39,9 +40,9 @@ public class SyncRequestHandlerTest {
 
   private static final GossipConfiguration CONFIGURATION = new GossipConfiguration();
 
-  private GossipRule gossip1 = new GossipRule("localhost:8001");
-  private GossipRule gossip2 = new GossipRule("localhost:8002");
-  private GossipRule gossip3 = new GossipRule("localhost:8003");
+  private GossipRule gossip1 = new GossipRule(1);
+  private GossipRule gossip2 = new GossipRule(2);
+  private GossipRule gossip3 = new GossipRule(3);
 
   @Rule
   public GossipClusterRule cluster =
@@ -50,28 +51,8 @@ public class SyncRequestHandlerTest {
   @Test
   public void shouldInvokeSyncRequestHandler() {
     // given
-    final AtomicInteger invocationsHandler1 = new AtomicInteger(0);
-    final AtomicInteger invocationsHandler2 = new AtomicInteger(0);
-
-    gossip1
-        .getController()
-        .registerSyncRequestHandler(
-            TYPE_1,
-            request -> {
-              invocationsHandler1.incrementAndGet();
-
-              return CompletableActorFuture.completed(null);
-            });
-
-    gossip1
-        .getController()
-        .registerSyncRequestHandler(
-            TYPE_2,
-            request -> {
-              invocationsHandler2.incrementAndGet();
-
-              return CompletableActorFuture.completed(null);
-            });
+    final AtomicInteger invocationsHandler1 = addCounterSyncHandler(gossip1, TYPE_1);
+    final AtomicInteger invocationsHandler2 = addCounterSyncHandler(gossip1, TYPE_2);
 
     // when
     gossip2.join(gossip1).join();
@@ -80,6 +61,47 @@ public class SyncRequestHandlerTest {
     // then
     assertThat(invocationsHandler1.get()).isEqualTo(2);
     assertThat(invocationsHandler2.get()).isEqualTo(2);
+  }
+
+  @Test
+  public void shouldInvokeSyncRequestHandlerRepeatedly() {
+    // given
+    final AtomicInteger counter = addCounterSyncHandler(gossip1, TYPE_1);
+
+    // when
+    gossip2.join(gossip1).join();
+
+    // then
+    cluster.waitUntil(() -> counter.get() == 10);
+  }
+
+  @Test
+  public void shouldInvokeSyncRequestHandlerRepeatedlyOnAllNodes() {
+    // given
+    final AtomicInteger counter1 = addCounterSyncHandler(gossip1, TYPE_1);
+    final AtomicInteger counter2 = addCounterSyncHandler(gossip2, TYPE_1);
+    final AtomicInteger counter3 = addCounterSyncHandler(gossip3, TYPE_1);
+
+    // when
+    gossip2.join(gossip1).join();
+    gossip3.join(gossip1).join();
+
+    // then
+    cluster.waitUntil(() -> counter1.get() >= 10 && counter2.get() >= 10 && counter3.get() >= 10);
+  }
+
+  private AtomicInteger addCounterSyncHandler(GossipRule gossip, DirectBuffer type) {
+    final AtomicInteger invocationCounter = new AtomicInteger(0);
+    gossip
+        .getController()
+        .registerSyncRequestHandler(
+            type,
+            request -> {
+              invocationCounter.incrementAndGet();
+
+              return CompletableActorFuture.completed(null);
+            });
+    return invocationCounter;
   }
 
   @Test
@@ -92,12 +114,12 @@ public class SyncRequestHandlerTest {
         .registerSyncRequestHandler(
             TYPE_1,
             request -> {
-              request.addPayload(gossip1.getAddress(), PAYLOAD_1);
+              request.addPayload(gossip1.getNodeId(), PAYLOAD_1);
 
               return CompletableActorFuture.completed(null);
             });
 
-    gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
+    gossip1.getPublisher().publishEvent(TYPE_1, PAYLOAD_1);
 
     waitUntilCustomEventIsSpread();
 
@@ -113,6 +135,45 @@ public class SyncRequestHandlerTest {
   }
 
   @Test
+  public void shouldGetCustomEventViaSyncIfCustomEventWasLostDueToConnectionFailure() {
+    // given
+    gossip2.join(gossip1).join();
+
+    cluster.interruptConnectionBetween(gossip1, gossip2);
+    gossip2.clearReceivedEvents();
+
+    gossip1
+        .getController()
+        .registerSyncRequestHandler(
+            TYPE_1,
+            request -> {
+              request.addPayload(gossip1.getNodeId(), PAYLOAD_2);
+
+              return CompletableActorFuture.completed(null);
+            });
+    gossip1.getPublisher().publishEvent(TYPE_1, PAYLOAD_1);
+
+    final AtomicInteger counter = new AtomicInteger(0);
+    cluster.waitUntil(() -> counter.getAndIncrement() == 100);
+
+    // when
+    assertThat(gossip2.getReceivedCustomEvents(TYPE_1, gossip1)).hasSize(0);
+    cluster.reconnect(gossip1, gossip2);
+
+    cluster.waitUntil(
+        () ->
+            gossip1.receivedEvent(GossipEventType.SYNC_REQUEST, gossip2)
+                && gossip2.receivedEvent(GossipEventType.SYNC_RESPONSE, gossip1));
+
+    cluster.waitUntil(() -> gossip2.receivedCustomEvent(TYPE_1, gossip1));
+
+    // then
+    assertThat(gossip2.getReceivedCustomEvents(TYPE_1, gossip1))
+        .extracting("payload")
+        .containsAll(Arrays.asList(PAYLOAD_1, PAYLOAD_2));
+  }
+
+  @Test
   public void shouldReceiveCustomEventsWithDifferentTypes() {
     // given
     gossip2.join(gossip1).join();
@@ -122,7 +183,7 @@ public class SyncRequestHandlerTest {
         .registerSyncRequestHandler(
             TYPE_1,
             request -> {
-              request.addPayload(gossip1.getAddress(), PAYLOAD_1);
+              request.addPayload(gossip1.getNodeId(), PAYLOAD_1);
 
               return CompletableActorFuture.completed(null);
             });
@@ -132,13 +193,13 @@ public class SyncRequestHandlerTest {
         .registerSyncRequestHandler(
             TYPE_2,
             request -> {
-              request.addPayload(gossip1.getAddress(), PAYLOAD_2);
+              request.addPayload(gossip1.getNodeId(), PAYLOAD_2);
 
               return CompletableActorFuture.completed(null);
             });
 
-    gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
-    gossip1.getPushlisher().publishEvent(TYPE_2, PAYLOAD_2);
+    gossip1.getPublisher().publishEvent(TYPE_1, PAYLOAD_1);
+    gossip1.getPublisher().publishEvent(TYPE_2, PAYLOAD_2);
 
     waitUntilCustomEventIsSpread();
     waitUntilCustomEventIsSpread();
@@ -171,14 +232,14 @@ public class SyncRequestHandlerTest {
             TYPE_1,
             request -> {
               request
-                  .addPayload(gossip1.getAddress(), PAYLOAD_1)
-                  .addPayload(gossip2.getAddress(), PAYLOAD_2);
+                  .addPayload(gossip1.getNodeId(), PAYLOAD_1)
+                  .addPayload(gossip2.getNodeId(), PAYLOAD_2);
 
               return CompletableActorFuture.completed(null);
             });
 
-    gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
-    gossip2.getPushlisher().publishEvent(TYPE_1, PAYLOAD_2);
+    gossip1.getPublisher().publishEvent(TYPE_1, PAYLOAD_1);
+    gossip2.getPublisher().publishEvent(TYPE_1, PAYLOAD_2);
 
     waitUntilCustomEventIsSpread();
 
@@ -202,7 +263,7 @@ public class SyncRequestHandlerTest {
   @Test
   public void shouldProcessConcurrentSyncRequest() {
     // given
-    gossip1.getPushlisher().publishEvent(TYPE_1, PAYLOAD_1);
+    gossip1.getPublisher().publishEvent(TYPE_1, PAYLOAD_1);
 
     final CompletableActorFuture<Void> syncRequestFuture = new CompletableActorFuture<>();
 
@@ -211,7 +272,7 @@ public class SyncRequestHandlerTest {
         .registerSyncRequestHandler(
             TYPE_1,
             request -> {
-              request.addPayload(gossip1.getAddress(), PAYLOAD_1);
+              request.addPayload(gossip1.getNodeId(), PAYLOAD_1);
 
               return syncRequestFuture;
             });

@@ -15,17 +15,27 @@
  */
 package io.zeebe.dispatcher.integration;
 
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedFramedLength;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.dispatcher.*;
+import io.zeebe.dispatcher.BlockPeek;
+import io.zeebe.dispatcher.ClaimedFragmentBatch;
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.Dispatchers;
+import io.zeebe.dispatcher.Subscription;
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 public class FragmentBatchIntegrationTest {
   private static final byte[] MSG1 = "msg1".getBytes();

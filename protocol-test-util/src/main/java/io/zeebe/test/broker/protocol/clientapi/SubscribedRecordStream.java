@@ -21,10 +21,16 @@ import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.util.stream.StreamWrapper;
 import java.util.stream.Stream;
 
-public class SubscribedRecordStream extends StreamWrapper<SubscribedRecord> {
+public class SubscribedRecordStream
+    extends StreamWrapper<SubscribedRecord, SubscribedRecordStream> {
 
   public SubscribedRecordStream(Stream<SubscribedRecord> wrappedStream) {
     super(wrappedStream);
+  }
+
+  @Override
+  protected SubscribedRecordStream supply(Stream<SubscribedRecord> wrappedStream) {
+    return new SubscribedRecordStream(wrappedStream);
   }
 
   private SubscribedRecordStream recordsOfValueType(ValueType valueType) {
@@ -43,8 +49,12 @@ public class SubscribedRecordStream extends StreamWrapper<SubscribedRecord> {
     return recordsOfType(RecordType.COMMAND);
   }
 
-  public SubscribedRecordStream ofTypeWorkflowInstance() {
-    return recordsOfValueType(ValueType.WORKFLOW_INSTANCE);
+  public WorkflowInstanceRecordStream ofTypeWorkflowInstance() {
+    return new WorkflowInstanceRecordStream(recordsOfValueType(ValueType.WORKFLOW_INSTANCE));
+  }
+
+  public SubscribedRecordStream ofTypeDeployment() {
+    return recordsOfValueType(ValueType.DEPLOYMENT);
   }
 
   public SubscribedRecordStream ofTypeJob() {
@@ -61,6 +71,10 @@ public class SubscribedRecordStream extends StreamWrapper<SubscribedRecord> {
 
   public SubscribedRecordStream withIntent(Intent intent) {
     return new SubscribedRecordStream(filter(r -> r.intent() == intent));
+  }
+
+  public SubscribedRecordStream withKey(long key) {
+    return new SubscribedRecordStream(filter(r -> r.key() == key));
   }
 
   public SubscribedRecord getFirst() {

@@ -23,10 +23,10 @@ import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerResponse;
-import io.zeebe.transport.TransportMessage;
 import io.zeebe.transport.impl.RequestResponseHeaderDescriptor;
 import io.zeebe.transport.impl.TransportHeaderDescriptor;
 import io.zeebe.util.buffer.BufferReader;
+import io.zeebe.util.buffer.BufferWriter;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -46,7 +46,7 @@ public class BufferingServerOutput implements ServerOutput {
   protected List<DirectBuffer> sentResponses = new CopyOnWriteArrayList<>();
 
   @Override
-  public boolean sendMessage(TransportMessage transportMessage) {
+  public boolean sendMessage(int remoteStreamId, BufferWriter writer) {
     // ignore; not yet implemented
     return true;
   }

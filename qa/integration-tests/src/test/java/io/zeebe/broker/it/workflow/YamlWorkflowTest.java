@@ -19,14 +19,15 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
-import io.zeebe.client.api.clients.WorkflowClient;
-import io.zeebe.client.api.events.JobEvent;
-import io.zeebe.client.api.events.JobState;
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
-import io.zeebe.client.api.events.WorkflowInstanceState;
+import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.gateway.api.clients.WorkflowClient;
+import io.zeebe.gateway.api.events.DeploymentEvent;
+import io.zeebe.gateway.api.events.JobEvent;
+import io.zeebe.gateway.api.events.JobState;
+import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
+import io.zeebe.gateway.api.events.WorkflowInstanceState;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -35,7 +36,7 @@ import org.junit.rules.RuleChain;
 public class YamlWorkflowTest {
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientRule clientRule = new ClientRule();
+  public ClientRule clientRule = new ClientRule(brokerRule);
   public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
 
   @Rule
@@ -47,12 +48,8 @@ public class YamlWorkflowTest {
   @Test
   public void shouldCreateWorkflowInstance() {
     // given
-    clientRule
-        .getWorkflowClient()
-        .newDeployCommand()
-        .addResourceFromClasspath("workflows/simple-workflow.yaml")
-        .send()
-        .join();
+    final String resource = "workflows/simple-workflow.yaml";
+    deploy(resource);
 
     // when
     final WorkflowInstanceEvent workflowInstance =
@@ -72,12 +69,8 @@ public class YamlWorkflowTest {
   @Test
   public void shouldCompleteWorkflowInstanceWithTask() {
     // given
-    clientRule
-        .getWorkflowClient()
-        .newDeployCommand()
-        .addResourceFromClasspath("workflows/simple-workflow.yaml")
-        .send()
-        .join();
+    final String resource = "workflows/simple-workflow.yaml";
+    deploy(resource);
 
     clientRule
         .getWorkflowClient()
@@ -97,18 +90,17 @@ public class YamlWorkflowTest {
 
     // then
     waitUntil(() -> eventRecorder.hasJobEvent(JobState.COMPLETED));
-    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED));
+    waitUntil(
+        () ->
+            eventRecorder.hasElementInState(
+                "yaml-workflow", WorkflowInstanceState.ELEMENT_COMPLETED));
   }
 
   @Test
   public void shouldGetTaskWithHeaders() {
     // given
-    clientRule
-        .getWorkflowClient()
-        .newDeployCommand()
-        .addResourceFromClasspath("workflows/workflow-with-headers.yaml")
-        .send()
-        .join();
+    final String resource = "workflows/workflow-with-headers.yaml";
+    deploy(resource);
 
     clientRule
         .getWorkflowClient()
@@ -134,11 +126,8 @@ public class YamlWorkflowTest {
   public void shouldCompleteTaskWithPayload() {
     // given
     final WorkflowClient workflowClient = clientRule.getWorkflowClient();
-    workflowClient
-        .newDeployCommand()
-        .addResourceFromClasspath("workflows/workflow-with-mappings.yaml")
-        .send()
-        .join();
+    final String resource = "workflows/workflow-with-mappings.yaml";
+    deploy(resource);
 
     workflowClient
         .newCreateInstanceCommand()
@@ -162,10 +151,22 @@ public class YamlWorkflowTest {
     assertThat(jobEvent.getPayload()).isEqualTo("{\"bar\":1}");
 
     waitUntil(
-        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_COMPLETED));
+        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED));
 
     final WorkflowInstanceEvent workflowEvent =
-        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_COMPLETED);
+        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED);
     assertThat(workflowEvent.getPayload()).isEqualTo("{\"foo\":1,\"result\":3}");
+  }
+
+  private void deploy(String resource) {
+    final DeploymentEvent deploymentEvent =
+        clientRule
+            .getWorkflowClient()
+            .newDeployCommand()
+            .addResourceFromClasspath(resource)
+            .send()
+            .join();
+
+    clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
   }
 }

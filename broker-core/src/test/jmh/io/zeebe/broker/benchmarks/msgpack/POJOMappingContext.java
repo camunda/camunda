@@ -17,9 +17,9 @@
  */
 package io.zeebe.broker.benchmarks.msgpack;
 
-import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.msgpack.spec.MsgPackReader;
 import io.zeebe.msgpack.spec.MsgPackWriter;
+import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;

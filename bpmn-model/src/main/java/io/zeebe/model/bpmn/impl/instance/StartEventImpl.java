@@ -13,20 +13,68 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.zeebe.model.bpmn.impl.instance;
 
-import io.zeebe.model.bpmn.instance.StartEvent;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_IS_INTERRUPTING;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_START_EVENT;
 
-public class StartEventImpl extends FlowNodeImpl implements StartEvent {
+import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.model.bpmn.builder.StartEventBuilder;
+import io.zeebe.model.bpmn.instance.CatchEvent;
+import io.zeebe.model.bpmn.instance.StartEvent;
+import org.camunda.bpm.model.xml.ModelBuilder;
+import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
+import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
+import org.camunda.bpm.model.xml.type.attribute.Attribute;
+
+/**
+ * The BPMN startEvent element
+ *
+ * @author Sebastian Menski
+ */
+public class StartEventImpl extends CatchEventImpl implements StartEvent {
+
+  protected static Attribute<Boolean> isInterruptingAttribute;
+
+  public static void registerType(ModelBuilder modelBuilder) {
+
+    final ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(StartEvent.class, BPMN_ELEMENT_START_EVENT)
+            .namespaceUri(BPMN20_NS)
+            .extendsType(CatchEvent.class)
+            .instanceProvider(
+                new ModelElementTypeBuilder.ModelTypeInstanceProvider<StartEvent>() {
+                  @Override
+                  public StartEvent newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new StartEventImpl(instanceContext);
+                  }
+                });
+
+    isInterruptingAttribute =
+        typeBuilder.booleanAttribute(BPMN_ATTRIBUTE_IS_INTERRUPTING).defaultValue(true).build();
+
+    typeBuilder.build();
+  }
+
+  public StartEventImpl(ModelTypeInstanceContext context) {
+    super(context);
+  }
 
   @Override
-  public String toString() {
-    final StringBuilder builder = new StringBuilder();
-    builder.append("StartEvent [id=");
-    builder.append(getId());
-    builder.append(", name=");
-    builder.append(getName());
-    builder.append("]");
-    return builder.toString();
+  public StartEventBuilder builder() {
+    return new StartEventBuilder((BpmnModelInstance) modelInstance, this);
+  }
+
+  @Override
+  public boolean isInterrupting() {
+    return isInterruptingAttribute.getValue(this);
+  }
+
+  @Override
+  public void setInterrupting(boolean isInterrupting) {
+    isInterruptingAttribute.setValue(this, isInterrupting);
   }
 }

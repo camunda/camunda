@@ -3,12 +3,12 @@
   <modelVersion>4.0.0</modelVersion>
   <name>Zeebe Distribution</name>
   <artifactId>zeebe-distribution</artifactId>
-  <packaging>pom</packaging>
+  <packaging>jar</packaging>
 
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zb-parent</artifactId>
-    <version>0.12.0-SNAPSHOT</version>
+    <version>0.13.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
@@ -16,6 +16,11 @@
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-broker-core</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-elasticsearch-exporter</artifactId>
     </dependency>
 
     <dependency>
@@ -38,7 +43,8 @@
           <configurationDirectory>conf</configurationDirectory>
           <copyConfigurationDirectory>true</copyConfigurationDirectory>
           <includeConfigurationDirectoryInClasspath>true</includeConfigurationDirectoryInClasspath>
-          <extraJvmArguments>-Xms128m -Dlog4j.configurationFile=../conf/log4j2.xml</extraJvmArguments>
+          <extraJvmArguments>-Xms128m -Dlog4j.configurationFile=../conf/log4j2.xml
+          </extraJvmArguments>
           <repositoryLayout>flat</repositoryLayout>
           <useWildcardClassPath>true</useWildcardClassPath>
           <repositoryName>lib</repositoryName>
@@ -79,12 +85,13 @@
               <goal>run</goal>
             </goals>
             <configuration>
-              <tasks>
-                <copy file="${env.GOPATH}/src/github.com/zeebe-io/zbctl/dist/linux_amd64/zbctl" tofile="${project.build.directory}/zeebe-broker/bin/zbctl" failonerror="false" />
-                <copy file="${env.GOPATH}/src/github.com/zeebe-io/zbctl/dist/windows_amd64/zbctl.exe" tofile="${project.build.directory}/zeebe-broker/bin/zbctl.exe" failonerror="false" />
-                <copy file="${env.GOPATH}/src/github.com/zeebe-io/zbctl/dist/darwin_amd64/zbctl" tofile="${project.build.directory}/zeebe-broker/bin/zbctl.darwin" failonerror="false" />
+              <target>
+                <exec executable="${maven.multiModuleProjectDirectory}/clients/zbctl/build.sh" osfamily="unix" />
+                <copy file="${maven.multiModuleProjectDirectory}/clients/zbctl/dist/zbctl" tofile="${project.build.directory}/zeebe-broker/bin/zbctl" failonerror="false" />
+                <copy file="${maven.multiModuleProjectDirectory}/clients/zbctl/dist/zbctl.exe" tofile="${project.build.directory}/zeebe-broker/bin/zbctl.exe" failonerror="false" />
+                <copy file="${maven.multiModuleProjectDirectory}/clients/zbctl/dist/zbctl.darwin" tofile="${project.build.directory}/zeebe-broker/bin/zbctl.darwin" failonerror="false" />
                 <chmod dir="${project.build.directory}/zeebe-broker/bin" perm="ugo+rx" includes="zbctl*" />
-              </tasks>
+              </target>
             </configuration>
           </execution>
         </executions>

@@ -18,15 +18,18 @@ package io.zeebe.logstreams.processor;
 import io.zeebe.logstreams.impl.Loggers;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamReader;
-import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.spi.ReadableSnapshot;
-import io.zeebe.logstreams.spi.SnapshotStorage;
-import io.zeebe.logstreams.spi.SnapshotWriter;
+import io.zeebe.logstreams.spi.SnapshotController;
+import io.zeebe.logstreams.state.StateSnapshotMetadata;
 import io.zeebe.util.LangUtil;
 import io.zeebe.util.metrics.MetricsManager;
-import io.zeebe.util.sched.*;
+import io.zeebe.util.sched.Actor;
+import io.zeebe.util.sched.ActorCondition;
+import io.zeebe.util.sched.ActorPriority;
+import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.ActorTask.ActorLifecyclePhase;
+import io.zeebe.util.sched.SchedulingHints;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.time.Duration;
@@ -47,11 +50,11 @@ public class StreamProcessorController extends Actor {
 
   private final StreamProcessor streamProcessor;
   private final StreamProcessorContext streamProcessorContext;
+  private final SnapshotController snapshotController;
 
   private final LogStreamReader logStreamReader;
-  private final LogStreamWriter logStreamWriter;
+  private final LogStreamRecordWriter logStreamWriter;
 
-  private final SnapshotStorage snapshotStorage;
   private final Duration snapshotPeriod;
 
   private final ActorScheduler actorScheduler;
@@ -60,8 +63,6 @@ public class StreamProcessorController extends Actor {
 
   private final EventFilter eventFilter;
   private final boolean isReadOnlyProcessor;
-
-  private final EventLifecycleContext eventLifecycleContext = new EventLifecycleContext();
 
   private final Runnable readNextEvent = this::readNextEvent;
 
@@ -79,7 +80,7 @@ public class StreamProcessorController extends Actor {
 
   private StreamProcessorMetrics metrics;
 
-  public StreamProcessorController(StreamProcessorContext context) {
+  public StreamProcessorController(final StreamProcessorContext context) {
     this.streamProcessorContext = context;
     this.streamProcessorContext.setActorControl(actor);
 
@@ -90,7 +91,7 @@ public class StreamProcessorController extends Actor {
     this.streamProcessor = context.getStreamProcessor();
     this.logStreamReader = context.getLogStreamReader();
     this.logStreamWriter = context.getLogStreamWriter();
-    this.snapshotStorage = context.getSnapshotStorage();
+    this.snapshotController = context.getSnapshotController();
     this.snapshotPeriod = context.getSnapshotPeriod();
     this.eventFilter = context.getEventFilter();
     this.isReadOnlyProcessor = context.isReadOnlyProcessor();
@@ -116,22 +117,19 @@ public class StreamProcessorController extends Actor {
     final LogStream logStream = streamProcessorContext.getLogStream();
 
     final MetricsManager metricsManager = actorScheduler.getMetricsManager();
-    final String topicName =
-        logStream.getTopicName().getStringWithoutLengthUtf8(0, logStream.getTopicName().capacity());
     final String partitionId = String.valueOf(logStream.getPartitionId());
     final String processorName = getName();
 
-    metrics = new StreamProcessorMetrics(metricsManager, processorName, topicName, partitionId);
+    metrics = new StreamProcessorMetrics(metricsManager, processorName, partitionId);
 
     logStreamReader.wrap(logStream);
     logStreamWriter.wrap(logStream);
 
     try {
-      snapshotPosition = recoverFromSnapshot();
-      lastSourceEventPosition = seekToLastSourceEvent();
-
+      snapshotPosition = recoverFromSnapshot(logStream.getCommitPosition(), logStream.getTerm());
+      lastSourceEventPosition = seekFromSnapshotPositionToLastSourceEvent();
       streamProcessor.onOpen(streamProcessorContext);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       onFailure();
       LangUtil.rethrowUnchecked(e);
     }
@@ -145,38 +143,46 @@ public class StreamProcessorController extends Actor {
       } else {
         onRecovered();
       }
-    } catch (RuntimeException e) {
+    } catch (final RuntimeException e) {
       onFailure();
       throw e;
     }
   }
 
-  private long recoverFromSnapshot() throws Exception {
-    long snapshotPosition = -1L;
+  private long recoverFromSnapshot(final long commitPosition, final int term) throws Exception {
+    final StateSnapshotMetadata recovered =
+        snapshotController.recover(commitPosition, term, this::validateSnapshot);
+    final long snapshotPosition = recovered.getLastSuccessfulProcessedEventPosition();
 
-    final ReadableSnapshot lastSnapshot =
-        snapshotStorage.getLastSnapshot(streamProcessorContext.getName());
-    if (lastSnapshot != null) {
-      // recover last snapshot
-      lastSnapshot.recoverFromSnapshot(streamProcessor.getStateResource());
-
-      // read the last event from snapshot
-      snapshotPosition = lastSnapshot.getPosition();
+    logStreamReader.seekToFirstEvent(); // reset seek position
+    if (!recovered.isInitial()) {
       final boolean found = logStreamReader.seek(snapshotPosition);
-
       if (found && logStreamReader.hasNext()) {
-        // resume the next position on source log stream to continue from
-        final long sourceEventPosition = snapshotPosition;
-        logStreamReader.seek(sourceEventPosition + 1);
+        logStreamReader.seek(snapshotPosition + 1);
       } else {
         throw new IllegalStateException(
             String.format(ERROR_MESSAGE_RECOVER_FROM_SNAPSHOT_FAILED, getName()));
       }
+
+      snapshotController.purgeAllExcept(recovered);
     }
+
     return snapshotPosition;
   }
 
-  private long seekToLastSourceEvent() {
+  private boolean validateSnapshot(final StateSnapshotMetadata metadata) {
+    final boolean wasFound = logStreamReader.seek(metadata.getLastWrittenEventPosition());
+    boolean isValid = false;
+
+    if (wasFound && logStreamReader.hasNext()) {
+      final LoggedEvent event = logStreamReader.next();
+      isValid = event.getRaftTerm() == metadata.getLastWrittenEventTerm();
+    }
+
+    return isValid;
+  }
+
+  private long seekFromSnapshotPositionToLastSourceEvent() {
     long lastSourceEventPosition = -1L;
 
     if (!isReadOnlyProcessor && logStreamReader.hasNext()) {
@@ -193,9 +199,10 @@ public class StreamProcessorController extends Actor {
         }
       }
 
-      // reset reader
+      // reset position
       logStreamReader.seek(snapshotPosition + 1);
     }
+
     return lastSourceEventPosition;
   }
 
@@ -215,42 +222,26 @@ public class StreamProcessorController extends Actor {
             String.format(
                 ERROR_MESSAGE_REPROCESSING_NO_SOURCE_EVENT, getName(), lastSourceEventPosition));
       }
-    } catch (RuntimeException e) {
+    } catch (final RuntimeException e) {
       onFailure();
       throw e;
     }
   }
 
-  private void reprocessEvent(LoggedEvent currentEvent) {
+  private void reprocessEvent(final LoggedEvent currentEvent) {
     if (eventFilter == null || eventFilter.applies(currentEvent)) {
       try {
         final EventProcessor eventProcessor = streamProcessor.onEvent(currentEvent);
 
         if (eventProcessor != null) {
           // don't execute side effects or write events
-          eventLifecycleContext.reset();
-          eventProcessor.processEvent(eventLifecycleContext);
-
-          if (eventLifecycleContext.hasFuture()) {
-            actor.runOnCompletion(
-                eventLifecycleContext.getFuture(),
-                (res, err) -> {
-                  if (err == null) {
-                    eventProcessor.updateState();
-                    onRecordReprocessed(currentEvent);
-                  } else {
-                    LOG.error("Exception during async reprocessing", err);
-                    onFailure();
-                  }
-                });
-          } else {
-            eventProcessor.updateState();
-            onRecordReprocessed(currentEvent);
-          }
+          eventProcessor.processEvent();
+          eventProcessor.updateState();
+          onRecordReprocessed(currentEvent);
         } else {
           onRecordReprocessed(currentEvent);
         }
-      } catch (Exception e) {
+      } catch (final Exception e) {
         throw new RuntimeException(
             String.format(ERROR_MESSAGE_REPROCESSING_FAILED, getName(), currentEvent), e);
       }
@@ -259,7 +250,7 @@ public class StreamProcessorController extends Actor {
     }
   }
 
-  private void onRecordReprocessed(LoggedEvent currentEvent) {
+  private void onRecordReprocessed(final LoggedEvent currentEvent) {
     if (currentEvent.getPosition() == lastSourceEventPosition) {
       onRecovered();
     } else {
@@ -297,31 +288,16 @@ public class StreamProcessorController extends Actor {
     }
   }
 
-  private void processEvent(LoggedEvent event) {
+  private void processEvent(final LoggedEvent event) {
     eventProcessor = streamProcessor.onEvent(event);
 
     if (eventProcessor != null) {
       try {
         metrics.incrementEventsProcessedCount();
 
-        eventLifecycleContext.reset();
-        eventProcessor.processEvent(eventLifecycleContext);
-
-        if (eventLifecycleContext.hasFuture()) {
-          actor.runOnCompletion(
-              eventLifecycleContext.getFuture(),
-              (res, err) -> {
-                if (err != null) {
-                  LOG.error(ERROR_MESSAGE_PROCESSING_FAILED, getName(), err);
-                  onFailure();
-                } else {
-                  actor.runUntilDone(this::executeSideEffects);
-                }
-              });
-        } else {
-          actor.runUntilDone(this::executeSideEffects);
-        }
-      } catch (Exception e) {
+        eventProcessor.processEvent();
+        actor.runUntilDone(this::executeSideEffects);
+      } catch (final Exception e) {
         LOG.error(ERROR_MESSAGE_PROCESSING_FAILED, getName(), e);
         onFailure();
       }
@@ -346,7 +322,7 @@ public class StreamProcessorController extends Actor {
       } else {
         actor.done();
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       actor.done();
 
       LOG.error(ERROR_MESSAGE_PROCESSING_FAILED, getName(), e);
@@ -374,7 +350,7 @@ public class StreamProcessorController extends Actor {
       } else {
         actor.done();
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       actor.done();
 
       LOG.error(ERROR_MESSAGE_PROCESSING_FAILED, getName(), e);
@@ -396,7 +372,7 @@ public class StreamProcessorController extends Actor {
       // continue with next event
       eventProcessor = null;
       actor.submit(readNextEvent);
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOG.error(ERROR_MESSAGE_PROCESSING_FAILED, getName(), e);
       onFailure();
     }
@@ -405,7 +381,7 @@ public class StreamProcessorController extends Actor {
   private void createSnapshot() {
     if (actor.getLifecyclePhase() == ActorLifecyclePhase.STARTED) {
       // run as io-bound actor while writing snapshot
-      actor.setSchedulingHints(SchedulingHints.ioBound((short) 0));
+      actor.setSchedulingHints(SchedulingHints.ioBound());
       actor.submit(this::doCreateSnapshot);
     } else {
       doCreateSnapshot();
@@ -415,47 +391,43 @@ public class StreamProcessorController extends Actor {
   private void doCreateSnapshot() {
     if (currentEvent != null) {
       final long commitPosition = streamProcessorContext.getLogStream().getCommitPosition();
+      final long lastWrittenPosition =
+          lastWrittenEventPosition > lastSuccessfulProcessedEventPosition
+              ? lastWrittenEventPosition
+              : lastSuccessfulProcessedEventPosition;
 
-      final boolean snapshotAlreadyPresent =
-          lastSuccessfulProcessedEventPosition <= snapshotPosition;
+      final StateSnapshotMetadata metadata =
+          new StateSnapshotMetadata(
+              lastSuccessfulProcessedEventPosition,
+              lastWrittenPosition,
+              streamProcessorContext.getLogStream().getTerm(),
+              false);
 
-      if (!snapshotAlreadyPresent) {
-        // ensure that the last written event was committed
-        if (commitPosition >= lastWrittenEventPosition) {
-          writeSnapshot(lastSuccessfulProcessedEventPosition);
-        }
-      }
+      writeSnapshot(metadata, commitPosition);
     }
 
-    // re-rest to cpu bound
+    // reset to cpu bound
     actor.setSchedulingHints(SchedulingHints.cpuBound(ActorPriority.REGULAR));
   }
 
-  private void writeSnapshot(final long eventPosition) {
-    SnapshotWriter snapshotWriter = null;
+  private void writeSnapshot(final StateSnapshotMetadata metadata, final long commitPosition) {
+    final long start = System.currentTimeMillis();
+    final String name = streamProcessorContext.getName();
+    LOG.info(
+        "Write snapshot for stream processor {} at event position {}.",
+        name,
+        metadata.getLastSuccessfulProcessedEventPosition());
+
     try {
-      final long start = System.currentTimeMillis();
-      final String name = streamProcessorContext.getName();
-      LOG.info("Write snapshot for stream processor {} at event position {}.", name, eventPosition);
-
-      snapshotWriter = snapshotStorage.createSnapshot(name, eventPosition);
-
-      final long snapshotSize = snapshotWriter.writeSnapshot(streamProcessor.getStateResource());
-      snapshotWriter.commit();
+      snapshotController.takeSnapshot(metadata, commitPosition);
 
       final long snapshotCreationTime = System.currentTimeMillis() - start;
       LOG.info("Creation of snapshot {} took {} ms.", name, snapshotCreationTime);
-
-      metrics.recordSnapshotSize(snapshotSize);
       metrics.recordSnapshotCreationTime(snapshotCreationTime);
 
-      snapshotPosition = eventPosition;
-    } catch (Exception e) {
+      snapshotPosition = lastSuccessfulProcessedEventPosition;
+    } catch (final Exception e) {
       LOG.error("Stream processor '{}' failed. Can not write snapshot.", getName(), e);
-
-      if (snapshotWriter != null) {
-        snapshotWriter.abort();
-      }
     }
   }
 

@@ -18,17 +18,23 @@
 package io.zeebe.broker.logstreams.processor;
 
 import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
+import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
-import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.transport.ServerOutput;
 import java.nio.charset.StandardCharsets;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class TypedResponseWriterImpl implements TypedResponseWriter {
+public class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectProducer {
+
   protected CommandResponseWriter writer;
+  private long requestId;
+  private int requestStreamId;
+
+  private boolean isResponseStaged;
   protected int partitionId;
 
   private final UnsafeBuffer stringWrapper = new UnsafeBuffer(0, 0);
@@ -39,70 +45,132 @@ public class TypedResponseWriterImpl implements TypedResponseWriter {
   }
 
   @Override
-  public boolean writeRejection(
-      TypedRecord<?> record, RejectionType rejectionType, String rejectionReason) {
-    final byte[] bytes = rejectionReason.getBytes(StandardCharsets.UTF_8);
-    stringWrapper.wrap(bytes);
-    return write(
+  public void writeRejection(TypedRecord<?> rejection) {
+
+    final RecordMetadata metadata = rejection.getMetadata();
+
+    stage(
         RecordType.COMMAND_REJECTION,
-        record.getMetadata().getIntent(),
-        rejectionType,
+        metadata.getIntent(),
+        rejection.getKey(),
+        rejection.getMetadata().getRejectionType(),
+        rejection.getMetadata().getRejectionReason(),
+        rejection.getPosition(),
+        rejection.getSourcePosition(),
+        rejection.getTimestamp(),
+        rejection.getMetadata(),
+        rejection.getValue());
+  }
+
+  @Override
+  public void writeRejectionOnCommand(TypedRecord<?> command, RejectionType type, String reason) {
+    final byte[] bytes = reason.getBytes(StandardCharsets.UTF_8);
+    stringWrapper.wrap(bytes);
+
+    stage(
+        RecordType.COMMAND_REJECTION,
+        command.getMetadata().getIntent(),
+        command.getKey(),
+        type,
         stringWrapper,
-        record);
+        0,
+        command.getPosition(),
+        command.getTimestamp(),
+        command.getMetadata(),
+        command.getValue());
   }
 
   @Override
-  public boolean writeRejection(TypedRecord<?> record, RejectionType type, DirectBuffer reason) {
-    return write(
-        RecordType.COMMAND_REJECTION, record.getMetadata().getIntent(), type, reason, record);
+  public void writeRejectionOnCommand(
+      TypedRecord<?> command, RejectionType type, DirectBuffer reason) {
+
+    stage(
+        RecordType.COMMAND_REJECTION,
+        command.getMetadata().getIntent(),
+        command.getKey(),
+        type,
+        reason,
+        0,
+        command.getPosition(),
+        command.getTimestamp(),
+        command.getMetadata(),
+        command.getValue());
   }
 
   @Override
-  public boolean writeRecord(Intent intent, TypedRecord<?> record) {
+  public void writeEvent(TypedRecord<?> event) {
     stringWrapper.wrap(0, 0);
-    return write(RecordType.EVENT, intent, RejectionType.NULL_VAL, stringWrapper, record);
+
+    stage(
+        RecordType.EVENT,
+        event.getMetadata().getIntent(),
+        event.getKey(),
+        RejectionType.NULL_VAL,
+        stringWrapper,
+        event.getPosition(),
+        event.getSourcePosition(),
+        event.getTimestamp(),
+        event.getMetadata(),
+        event.getValue());
   }
 
   @Override
-  public boolean writeRecordUnchanged(TypedRecord<?> record) {
-    final RecordMetadata metadata = record.getMetadata();
+  public void writeEventOnCommand(
+      long eventKey, Intent eventState, UnpackedObject eventValue, TypedRecord<?> command) {
+    stringWrapper.wrap(0, 0);
 
-    return writer
-        .partitionId(partitionId)
-        .position(record.getPosition())
-        .sourcePosition(record.getSourcePosition())
-        .key(record.getKey())
-        .timestamp(record.getTimestamp())
-        .intent(metadata.getIntent())
-        .recordType(metadata.getRecordType())
-        .valueType(metadata.getValueType())
-        .rejectionType(metadata.getRejectionType())
-        .rejectionReason(metadata.getRejectionReason())
-        .valueWriter(record.getValue())
-        .tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId());
+    stage(
+        RecordType.EVENT,
+        eventState,
+        eventKey,
+        RejectionType.NULL_VAL,
+        stringWrapper,
+        0, // TODO: this depends on the value of written event =>
+        // https://github.com/zeebe-io/zeebe/issues/374
+        command.getPosition(),
+        command.getTimestamp(),
+        command.getMetadata(),
+        eventValue);
   }
 
-  private boolean write(
+  private void stage(
       RecordType type,
       Intent intent,
+      long key,
       RejectionType rejectionType,
       DirectBuffer rejectionReason,
-      TypedRecord<?> record) {
-    final RecordMetadata metadata = record.getMetadata();
-
-    return writer
+      long position,
+      long sourcePosition,
+      long timestamp,
+      RecordMetadata metadata,
+      UnpackedObject value) {
+    writer
         .partitionId(partitionId)
-        .position(0) // TODO: this depends on the value of written event =>
-        // https://github.com/zeebe-io/zeebe/issues/374
-        .sourcePosition(record.getPosition())
-        .key(record.getKey())
-        .timestamp(record.getTimestamp())
+        .position(position)
+        .sourcePosition(sourcePosition)
+        .key(key)
+        .timestamp(timestamp)
         .intent(intent)
         .recordType(type)
         .valueType(metadata.getValueType())
         .rejectionType(rejectionType)
         .rejectionReason(rejectionReason)
-        .valueWriter(record.getValue())
-        .tryWriteResponse(metadata.getRequestStreamId(), metadata.getRequestId());
+        .valueWriter(value);
+
+    this.requestId = metadata.getRequestId();
+    this.requestStreamId = metadata.getRequestStreamId();
+    isResponseStaged = true;
+  }
+
+  public void reset() {
+    isResponseStaged = false;
+  }
+
+  public boolean flush() {
+    if (isResponseStaged) {
+      return writer.tryWriteResponse(requestStreamId, requestId);
+    } else {
+      return true;
+    }
   }
 }

@@ -17,13 +17,13 @@
  */
 package io.zeebe.broker.system.configuration;
 
+import com.google.gson.GsonBuilder;
 import io.zeebe.gossip.GossipConfiguration;
 import io.zeebe.raft.RaftConfiguration;
 import java.util.ArrayList;
 import java.util.List;
 
 public class BrokerCfg {
-  private int bootstrap = 0;
 
   private NetworkCfg network = new NetworkCfg();
   private ClusterCfg cluster = new ClusterCfg();
@@ -32,29 +32,26 @@ public class BrokerCfg {
   private DataCfg data = new DataCfg();
   private GossipConfiguration gossip = new GossipConfiguration();
   private RaftConfiguration raft = new RaftConfiguration();
-  private List<TopicCfg> topics = new ArrayList<>();
+  private List<ExporterCfg> exporters = new ArrayList<>();
 
-  public void init(String brokerBase) {
-    network.init(this, brokerBase);
-    cluster.init(this, brokerBase);
-    threads.init(this, brokerBase);
-    metrics.init(this, brokerBase);
-    data.init(this, brokerBase);
+  public void init(final String brokerBase) {
+    init(brokerBase, new Environment());
   }
 
-  public int getBootstrap() {
-    return bootstrap;
-  }
-
-  public void setBootstrap(int bootstrap) {
-    this.bootstrap = bootstrap;
+  public void init(final String brokerBase, final Environment environment) {
+    network.init(this, brokerBase, environment);
+    cluster.init(this, brokerBase, environment);
+    threads.init(this, brokerBase, environment);
+    metrics.init(this, brokerBase, environment);
+    data.init(this, brokerBase, environment);
+    exporters.forEach(e -> e.init(this, brokerBase, environment));
   }
 
   public NetworkCfg getNetwork() {
     return network;
   }
 
-  public void setNetwork(NetworkCfg network) {
+  public void setNetwork(final NetworkCfg network) {
     this.network = network;
   }
 
@@ -62,7 +59,7 @@ public class BrokerCfg {
     return cluster;
   }
 
-  public void setCluster(ClusterCfg cluster) {
+  public void setCluster(final ClusterCfg cluster) {
     this.cluster = cluster;
   }
 
@@ -70,7 +67,7 @@ public class BrokerCfg {
     return threads;
   }
 
-  public void setThreads(ThreadsCfg threads) {
+  public void setThreads(final ThreadsCfg threads) {
     this.threads = threads;
   }
 
@@ -78,7 +75,7 @@ public class BrokerCfg {
     return metrics;
   }
 
-  public void setMetrics(MetricsCfg metrics) {
+  public void setMetrics(final MetricsCfg metrics) {
     this.metrics = metrics;
   }
 
@@ -86,7 +83,7 @@ public class BrokerCfg {
     return data;
   }
 
-  public void setData(DataCfg logs) {
+  public void setData(final DataCfg logs) {
     this.data = logs;
   }
 
@@ -94,7 +91,7 @@ public class BrokerCfg {
     return gossip;
   }
 
-  public void setGossip(GossipConfiguration gossip) {
+  public void setGossip(final GossipConfiguration gossip) {
     this.gossip = gossip;
   }
 
@@ -102,15 +99,41 @@ public class BrokerCfg {
     return raft;
   }
 
-  public void setRaft(RaftConfiguration raft) {
+  public void setRaft(final RaftConfiguration raft) {
     this.raft = raft;
   }
 
-  public List<TopicCfg> getTopics() {
-    return topics;
+  public List<ExporterCfg> getExporters() {
+    return exporters;
   }
 
-  public void setTopics(List<TopicCfg> topics) {
-    this.topics = topics;
+  public void setExporters(final List<ExporterCfg> exporters) {
+    this.exporters = exporters;
+  }
+
+  @Override
+  public String toString() {
+    return "BrokerCfg{"
+        + "network="
+        + network
+        + ", cluster="
+        + cluster
+        + ", threads="
+        + threads
+        + ", metrics="
+        + metrics
+        + ", data="
+        + data
+        + ", gossip="
+        + gossip
+        + ", raft="
+        + raft
+        + ", exporters="
+        + exporters
+        + '}';
+  }
+
+  public String toJson() {
+    return new GsonBuilder().setPrettyPrinting().create().toJson(this);
   }
 }

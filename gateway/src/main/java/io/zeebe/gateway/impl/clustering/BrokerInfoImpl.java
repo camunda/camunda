@@ -1,0 +1,103 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.zeebe.gateway.impl.clustering;
+
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import io.zeebe.gateway.api.commands.BrokerInfo;
+import io.zeebe.gateway.api.commands.PartitionInfo;
+import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto.BrokerDto;
+import java.util.ArrayList;
+import java.util.List;
+
+// TODO: remove with https://github.com/zeebe-io/zeebe/issues/1377
+public class BrokerInfoImpl implements BrokerInfo {
+  private int nodeId;
+  private String host;
+  private int port;
+
+  private List<PartitionInfo> partitions = new ArrayList<>();
+
+  public BrokerInfoImpl() {}
+
+  public BrokerInfoImpl(BrokerDto broker) {
+    nodeId = broker.getNodeId();
+    host = bufferAsString(broker.getHost());
+    port = broker.getPort();
+
+    partitions = new ArrayList<>();
+    broker.partitionStates().forEach(partition -> partitions.add(new PartitionInfoImpl(partition)));
+  }
+
+  @Override
+  public int getNodeId() {
+    return nodeId;
+  }
+
+  public BrokerInfoImpl setNodeId(int nodeId) {
+    this.nodeId = nodeId;
+    return this;
+  }
+
+  public BrokerInfoImpl setHost(final String host) {
+    this.host = host;
+    return this;
+  }
+
+  public BrokerInfoImpl setPort(final int port) {
+    this.port = port;
+    return this;
+  }
+
+  @Override
+  public List<PartitionInfo> getPartitions() {
+    return partitions;
+  }
+
+  @JsonDeserialize(contentAs = PartitionInfoImpl.class)
+  public void setPartitions(List<PartitionInfo> partitions) {
+    this.partitions = partitions;
+  }
+
+  @Override
+  public String getHost() {
+    return host;
+  }
+
+  @Override
+  public int getPort() {
+    return port;
+  }
+
+  @Override
+  public String getAddress() {
+    return String.format("%s:%d", host, port);
+  }
+
+  @Override
+  public String toString() {
+    final StringBuilder builder = new StringBuilder();
+    builder.append("BrokerInfo [host=");
+    builder.append(host);
+    builder.append(", port=");
+    builder.append(port);
+    builder.append(", partitions=");
+    builder.append(partitions);
+    builder.append("]");
+    return builder.toString();
+  }
+}

@@ -17,7 +17,6 @@ package io.zeebe.raft;
 
 import io.zeebe.raft.state.AbstractRaftState;
 import io.zeebe.servicecontainer.ServiceName;
-import io.zeebe.transport.SocketAddress;
 
 public class RaftServiceNames {
   public static ServiceName<Raft> raftServiceName(String raftName) {
@@ -45,9 +44,10 @@ public class RaftServiceNames {
   }
 
   public static ServiceName<Void> replicateLogConrollerServiceName(
-      String raftName, int term, SocketAddress follower) {
+      String raftName, int term, int followerNodeId) {
     return ServiceName.newServiceName(
-        String.format("raft.leader.%s.%d.replicate.%s", raftName, term, follower), Void.class);
+        String.format("raft.leader.%s.%d.replicate.%d", raftName, term, followerNodeId),
+        Void.class);
   }
 
   public static ServiceName<AbstractRaftState> leaderServiceName(String raftName, int term) {

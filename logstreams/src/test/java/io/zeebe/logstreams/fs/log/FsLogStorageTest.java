@@ -21,7 +21,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
 
 import io.zeebe.dispatcher.impl.PositionUtil;
-import io.zeebe.logstreams.impl.log.fs.*;
+import io.zeebe.logstreams.impl.log.fs.FsLogSegmentDescriptor;
+import io.zeebe.logstreams.impl.log.fs.FsLogStorage;
+import io.zeebe.logstreams.impl.log.fs.FsLogStorageConfiguration;
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.metrics.MetricsManager;
@@ -29,10 +31,14 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.file.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Random;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 
@@ -59,7 +65,7 @@ public class FsLogStorageTest {
 
     fsStorageConfig = new FsLogStorageConfiguration(SEGMENT_SIZE, logPath, 0, false);
 
-    fsLogStorage = new FsLogStorage(fsStorageConfig, new MetricsManager(), "topic", 0);
+    fsLogStorage = new FsLogStorage(fsStorageConfig, new MetricsManager(), 0);
   }
 
   @Test
@@ -132,7 +138,7 @@ public class FsLogStorageTest {
   @Test
   public void shouldDeleteLogOnCloseStorage() {
     fsStorageConfig = new FsLogStorageConfiguration(SEGMENT_SIZE, logPath, 0, true);
-    fsLogStorage = new FsLogStorage(fsStorageConfig, new MetricsManager(), "topic", 0);
+    fsLogStorage = new FsLogStorage(fsStorageConfig, new MetricsManager(), 0);
 
     fsLogStorage.open();
 
@@ -393,7 +399,7 @@ public class FsLogStorageTest {
     fsLogStorage.append(ByteBuffer.wrap(MSG));
     fsLogStorage.close();
 
-    try (FileChannel fileChannel = FileUtil.openChannel(fsStorageConfig.fileName(0), false)) {
+    try (final FileChannel fileChannel = FileUtil.openChannel(fsStorageConfig.fileName(0), false)) {
       final long originalFileSize = fileChannel.size();
 
       // append the underlying file
@@ -417,7 +423,7 @@ public class FsLogStorageTest {
     fsLogStorage.append(ByteBuffer.wrap(MSG));
     fsLogStorage.close();
 
-    try (FileChannel fileChannel = FileUtil.openChannel(fsStorageConfig.fileName(0), false)) {
+    try (final FileChannel fileChannel = FileUtil.openChannel(fsStorageConfig.fileName(0), false)) {
       final long fileSize = fileChannel.size();
 
       // remove bytes of the underlying file
@@ -732,14 +738,14 @@ public class FsLogStorageTest {
 
     try {
       fileChannel.read(buffer, address);
-    } catch (IOException e) {
+    } catch (final IOException e) {
       fail("fail to read from log file: " + logFilePath, e);
     }
 
     return buffer.array();
   }
 
-  protected void assertMessage(long address, byte[] message) {
+  protected void assertMessage(final long address, final byte[] message) {
     final int length = message.length;
     final ByteBuffer readBuffer = ByteBuffer.allocate(length);
     final long result = fsLogStorage.read(readBuffer, address);
@@ -747,22 +753,22 @@ public class FsLogStorageTest {
     assertThat(readBuffer.array()).isEqualTo(message);
   }
 
-  protected void assertNotBackupFile(File file) {
+  protected void assertNotBackupFile(final File file) {
     assertThat(file.getPath()).doesNotEndWith(".bak");
   }
 
-  protected void assertNotTruncatedFile(File file) {
+  protected void assertNotTruncatedFile(final File file) {
     assertThat(file.getPath()).doesNotEndWith(".bak.truncated");
   }
 
-  protected void copyFile(String source, String target) throws IOException {
+  protected void copyFile(final String source, final String target) throws IOException {
     final Path sourcePath = Paths.get(source);
     final Path targetPath = Paths.get(target);
 
     Files.copy(sourcePath, targetPath);
   }
 
-  protected void deleteFile(String file) throws IOException {
+  protected void deleteFile(final String file) throws IOException {
     Files.delete(Paths.get(file));
   }
 }

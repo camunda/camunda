@@ -18,10 +18,14 @@ package io.zeebe.map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.map.iterator.Long2LongZbMapEntry;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.LongStream;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 
 public class Long2LongZbMapMinimalBlockSizeTest {
@@ -32,7 +36,7 @@ public class Long2LongZbMapMinimalBlockSizeTest {
   @Rule public ExpectedException expectedException = ExpectedException.none();
 
   @Before
-  public void createmap() throws Exception {
+  public void createMap() {
     map = new Long2LongZbMap(16, 1);
   }
 
@@ -44,7 +48,7 @@ public class Long2LongZbMapMinimalBlockSizeTest {
   @Test
   public void shouldReturnMissingValueForEmptyMap() {
     // given that the map is empty
-    assertThat(map.get(0, MISSING_VALUE) == MISSING_VALUE);
+    assertThat(map.get(0, MISSING_VALUE)).isEqualTo(MISSING_VALUE);
   }
 
   @Test
@@ -53,7 +57,7 @@ public class Long2LongZbMapMinimalBlockSizeTest {
     map.put(1, 1);
 
     // then
-    assertThat(map.get(0, MISSING_VALUE) == MISSING_VALUE);
+    assertThat(map.get(0, MISSING_VALUE)).isEqualTo(MISSING_VALUE);
   }
 
   @Test
@@ -229,10 +233,7 @@ public class Long2LongZbMapMinimalBlockSizeTest {
     // if then
     final List<Long> foundKeys = new ArrayList<>();
 
-    final Iterator<Long2LongZbMapEntry> iterator = map.iterator();
-    while (iterator.hasNext()) {
-      final Long2LongZbMapEntry entry = iterator.next();
-
+    for (Long2LongZbMapEntry entry : map) {
       assertThat(entry.getKey()).isEqualTo(entry.getValue());
 
       foundKeys.add(entry.getKey());

@@ -15,7 +15,9 @@
  */
 package io.zeebe.test.broker.protocol.clientapi;
 
-import static io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder.*;
+import static io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder.keyNullValue;
+import static io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder.partitionIdNullValue;
+import static io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder.sourceRecordPositionNullValue;
 
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
@@ -25,7 +27,6 @@ import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.transport.ClientOutput;
 import io.zeebe.transport.ClientResponse;
-import io.zeebe.transport.RemoteAddress;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.future.ActorFuture;
 import java.time.Duration;
@@ -40,7 +41,7 @@ public class ExecuteCommandRequest implements BufferWriter {
   protected final MsgPackHelper msgPackHelper;
 
   protected final ClientOutput output;
-  protected final RemoteAddress target;
+  protected final int target;
 
   protected int partitionId = partitionIdNullValue();
   protected long key = keyNullValue();
@@ -51,8 +52,7 @@ public class ExecuteCommandRequest implements BufferWriter {
 
   protected ActorFuture<ClientResponse> responseFuture;
 
-  public ExecuteCommandRequest(
-      ClientOutput output, RemoteAddress target, final MsgPackHelper msgPackHelper) {
+  public ExecuteCommandRequest(ClientOutput output, int target, final MsgPackHelper msgPackHelper) {
     this.output = output;
     this.target = target;
     this.msgPackHelper = msgPackHelper;

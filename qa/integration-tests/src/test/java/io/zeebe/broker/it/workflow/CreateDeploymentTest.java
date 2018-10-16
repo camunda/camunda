@@ -19,14 +19,15 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
-import io.zeebe.client.api.commands.*;
-import io.zeebe.client.api.events.DeploymentEvent;
-import io.zeebe.client.cmd.ClientCommandRejectedException;
+import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.gateway.api.commands.DeploymentResource;
+import io.zeebe.gateway.api.commands.ResourceType;
+import io.zeebe.gateway.api.commands.Workflow;
+import io.zeebe.gateway.api.events.DeploymentEvent;
+import io.zeebe.gateway.cmd.ClientCommandRejectedException;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.impl.instance.ProcessImpl;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -34,7 +35,7 @@ import org.junit.rules.RuleChain;
 
 public class CreateDeploymentTest {
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientRule clientRule = new ClientRule();
+  public ClientRule clientRule = new ClientRule(brokerRule);
   public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
 
   @Rule
@@ -46,8 +47,8 @@ public class CreateDeploymentTest {
   @Test
   public void shouldDeployWorkflowModel() {
     // given
-    final WorkflowDefinition workflow =
-        Bpmn.createExecutableWorkflow("process").startEvent().endEvent().done();
+    final BpmnModelInstance workflow =
+        Bpmn.createExecutableProcess("process").startEvent().endEvent().done();
     // when
     final DeploymentEvent result =
         clientRule
@@ -67,9 +68,9 @@ public class CreateDeploymentTest {
     assertThat(deployedResource.getResourceType()).isEqualTo(ResourceType.BPMN_XML);
     assertThat(deployedResource.getResourceName()).isEqualTo("workflow.bpmn");
 
-    assertThat(result.getDeployedWorkflows()).hasSize(1);
+    assertThat(result.getWorkflows()).hasSize(1);
 
-    final Workflow deployedWorkflow = result.getDeployedWorkflows().get(0);
+    final Workflow deployedWorkflow = result.getWorkflows().get(0);
     assertThat(deployedWorkflow.getBpmnProcessId()).isEqualTo("process");
     assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
     assertThat(deployedWorkflow.getWorkflowKey()).isEqualTo(1L);
@@ -95,7 +96,7 @@ public class CreateDeploymentTest {
   public void shouldNotDeployInvalidModel() throws Exception {
     // then
     exception.expect(ClientCommandRejectedException.class);
-    exception.expectMessage("The process must contain at least one none start event.");
+    exception.expectMessage("Must have exactly one start event");
 
     // when
     clientRule
@@ -112,15 +113,12 @@ public class CreateDeploymentTest {
   @Test
   public void shouldNotDeployNonExecutableModel() {
     // given
-    final WorkflowDefinition model =
-        Bpmn.createExecutableWorkflow("not-executable").startEvent().endEvent().done();
-
-    final ProcessImpl workflowImpl = (ProcessImpl) model.getWorkflows().iterator().next();
-    workflowImpl.setExecutable(false);
+    final BpmnModelInstance model =
+        Bpmn.createProcess("not-executable").startEvent().endEvent().done();
 
     // then
     exception.expect(ClientCommandRejectedException.class);
-    exception.expectMessage("BPMN model must contain at least one executable process");
+    exception.expectMessage("Must contain at least one executable process");
 
     // when
     clientRule
@@ -151,9 +149,9 @@ public class CreateDeploymentTest {
     assertThat(deployedResource.getResourceType()).isEqualTo(ResourceType.YAML_WORKFLOW);
     assertThat(deployedResource.getResourceName()).isEqualTo("workflows/simple-workflow.yaml");
 
-    assertThat(result.getDeployedWorkflows()).hasSize(1);
+    assertThat(result.getWorkflows()).hasSize(1);
 
-    final Workflow deployedWorkflow = result.getDeployedWorkflows().get(0);
+    final Workflow deployedWorkflow = result.getWorkflows().get(0);
     assertThat(deployedWorkflow.getBpmnProcessId()).isEqualTo("yaml-workflow");
     assertThat(deployedWorkflow.getVersion()).isEqualTo(1);
     assertThat(deployedWorkflow.getWorkflowKey()).isGreaterThan(0);

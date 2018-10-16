@@ -30,39 +30,6 @@
 
 # ----------------------------------------------------
 
-# Controls the number of nodes this broker waits for until doing bootstrapping:
-#
-# * When using a single-node cluster, the value should be 1
-# * When using a multi-node cluster, one node should be configured with
-#   bootstrap = 3 (or 5, depending on the cluster size) and for all the other
-#   nodes it should be set to 0 (or removed from the configuration since default
-#   value is 0).
-#
-# (Note that the broker includes itself in the count, ie. when specifying '1',
-# the broker waits for itself.)
-#
-# Explanation: When doing bootstrapping, the broker ensures that internally used
-# resources such as the 'internal-system' topic are available. The
-# 'internal-system' topic is used for storing information about all the other,
-# user-defined, topics that are available in the cluster. When specifying a
-# value > 1 for this configuration property, the broker will wait for the
-# specified number of nodes to appear in the cluster and then create the
-# internal-system topic if not yet present, using the specified value as
-# replication factor.
-bootstrap = 1
-
-# Topics defined below are created automatically during bootstrapping.
-# You can configure them as follows:
-# * name: the topic name, e.g. "default-topic"
-# * partitions: the number of partitions that should be created for this topic, e.g. 1
-# * replicationFactor: the number of nodes this on which the partitions should be replicated, e.g. 3
-#                      the replication factor cannot be greater than the number of nodes in the
-#                      cluster.
-[[topics]]
-name = "default-topic"
-partitions = 1
-replicationFactor = 1
-
 [network]
 
 # This section contains the network configuration. Particularly, it allows to
@@ -75,12 +42,35 @@ replicationFactor = 1
 
 # Controls the default host the broker should bind to. Can be overwritten on a
 # per binding basis for client, management and replication
+#
+# This setting can also be overridden using the environment variable ZEEBE_HOST.
 # host = "0.0.0.0"
+
+# If a port offset is set it will be added to all ports specified in the config
+# or the default values. This is a shortcut to not always specifying every port.
+#
+# The offset will be added to the second last position of the port, as Zeebe
+# requires multiple ports. As example a portOffset of 5 will increment all ports
+# by 50, i.e. 26500 will become 26550 and so on.
+#
+# This setting can also be overridden using the environment variable ZEEBE_PORT_OFFSET.
+# portOffset = 0
 
 # Controls the default size of the buffers that are used for buffering outgoing
 # messages. Can be overwritten on a per binding basis for client, management and
 # replication
 # defaultSendBufferSize = "16M"
+
+[network.gateway]
+
+# Enables embedded gateway to start
+# enabled = true
+#
+# Overrides the host the gateway binds to
+# host = "localhost"
+#
+# Sets the port the gateway binds to
+# port = 26500
 
 [network.client]
 
@@ -88,7 +78,7 @@ replicationFactor = 1
 # host = "localhost"
 #
 # The port the client api binds to
-# port = 51015
+# port = 26501
 #
 # Overrides the size of the buffer used for buffering outgoing messages to
 # clients
@@ -104,7 +94,7 @@ replicationFactor = 1
 # host = "localhost"
 #
 # Sets the port the management api binds to
-# port = 51016
+# port = 26502
 #
 # Overrides the size of the buffer to be used for buffering outgoing messages to
 # other brokers through the management protocols
@@ -119,10 +109,26 @@ replicationFactor = 1
 # host = "localhost"
 #
 # Sets the port the replication api binds to
-# port = 51017
+# port = 26503
 #
 # Sets the buffer size used for buffering outgoing raft (replication) messages
 # sendBufferSize = "16M"
+
+[network.subscription]
+
+# Overrides the host the subscription api binds to
+# host = "localhost"
+#
+# Sets the port the subscription api binds to
+# port = 26504
+#
+# Overrides the size of the buffer to be used for buffering outgoing messages to
+# other brokers through the subscription protocols
+# sendBufferSize = "16M"
+#
+# Sets the buffer size used for receiving subscription messages and others
+# receiveBufferSize = "8M"
+
 
 [data]
 
@@ -142,6 +148,8 @@ replicationFactor = 1
 # multiple disks which are used in a JBOD (just a bunch of disks) manner. This
 # allows to get greater throughput in combination with a higher io thread count
 # since writes to different disks can potentially be done in parallel.
+#
+# This setting can also be overridden using the environment variable ZEEBE_DIRECTORIES.
 # directories = [ "data" ]
 
 # The default size of data segments.
@@ -158,11 +166,39 @@ replicationFactor = 1
 
 [cluster]
 
+# This section contains all cluster related configurations, to setup an zeebe cluster
+
+# Specifies the unique id of this broker node in a cluster.
+# The id should be between 0 and number of nodes in the cluster (exclusive).
+#
+# This setting can also be overridden using the environment variable ZEEBE_NODE_ID.
+# nodeId = 0
+
+# Controls the number of partitions, which should exist in the cluster.
+#
+# This can also be overridden using the environment variable ZEEBE_PARTITIONS_COUNT.
+# partitionsCount = 1
+
+# Controls the replication factor, which defines the count of replicas per partition.
+# The replication factor cannot be greater than the number of nodes in the cluster.
+#
+# This can also be overridden using the environment variable ZEEBE_REPLICATION_FACTOR.
+# replicationFactor = 1
+
+# Specifies the zeebe cluster size. This value is used to determine which broker
+# is responsible for which partition.
+#
+# This can also be overridden using the environment variable ZEEBE_CLUSTER_SIZE.
+# clusterSize = 1
+
 # Allows to specify a list of known other nodes to connect to on startup
 # The contact points of the management api must be specified.
 # The format is [HOST:PORT]
 # Example:
-# initialContactPoints = [ "192.168.1.22:51016", "192.168.1.32:51016" ]
+# initialContactPoints = [ "192.168.1.22:26502", "192.168.1.32:26502" ]
+#
+# This setting can also be overridden using the environment variable ZEEBE_CONTACT_POINTS
+# specifying a comma-separated list of contact points.
 #
 # Default is empty list:
 # initialContactPoints = []
@@ -203,6 +239,7 @@ replicationFactor = 1
 # probeIndirectTimeout = "1s"
 # suspicionMultiplier = 5
 # syncTimeout = "3s"
+# syncInterval = "15s"
 # joinTimeout = "1s"
 # joinInterval = "5s"
 # leaveTimeout = "1s"
@@ -214,3 +251,61 @@ replicationFactor = 1
 # heartbeatInterval = "250ms"
 # electionInterval = "1s"
 # leaveTimeout = "1s"
+
+# Configure exporters below; note that configuration parsing conventions do not apply to exporter
+# arguments, which will be parsed as normal TOML.
+#
+# Each exporter should be configured following this template:
+#
+# id:
+#   property should be unique in this configuration file, as it will server as the exporter
+#   ID for loading/unloading.
+# jarPath:
+#   path to the JAR file containing the exporter class. JARs are only loaded once, so you can define
+#   two exporters that point to the same JAR, with the same class or a different one, and use args
+#   to parametrize its instantiation.
+# className:
+#   entry point of the exporter, a class which *must* extend the io.zeebe.exporter.Exporter
+#   interface.
+#
+# A nested table as [exporters.args] will allow you to inject arbitrary arguments into your
+# class through the use of annotations.
+#
+# Enable the following exporter to get debug output of the exporter records
+#
+# [[exporters]]
+# id = "debug"
+# className = "io.zeebe.broker.exporter.DebugExporter"
+# [exporters.args]
+#   logLevel = "debug"
+#   prettyPrint = false
+#
+# An example configuration for the elasticsearch exporter:
+#
+#[[exporters]]
+#id = "elasticsearch"
+#className = "io.zeebe.exporter.ElasticsearchExporter"
+#
+#  [exporters.args]
+#  url = "http://localhost:9200"
+#
+#  [exporters.args.bulk]
+#  delay = 5
+#  size = 1_000
+#
+#  [exporters.args.index]
+#  prefix = "zeebe-record"
+#  createTemplate = true
+#
+#  command = false
+#  event = true
+#  rejection = false
+#
+#  deployment = true
+#  incident = true
+#  job = true
+#  message = false
+#  messageSubscription = false
+#  raft = false
+#  workflowInstance = true
+#  workflowInstanceSubscription = false

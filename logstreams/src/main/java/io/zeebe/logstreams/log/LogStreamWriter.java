@@ -15,34 +15,7 @@
  */
 package io.zeebe.logstreams.log;
 
-import io.zeebe.util.buffer.BufferWriter;
-import org.agrona.DirectBuffer;
-
 public interface LogStreamWriter {
-
-  void wrap(LogStream log);
-
-  LogStreamWriter positionAsKey();
-
-  LogStreamWriter key(long key);
-
-  LogStreamWriter sourceRecordPosition(long position);
-
-  LogStreamWriter producerId(int producerId);
-
-  LogStreamWriter metadata(DirectBuffer buffer, int offset, int length);
-
-  LogStreamWriter metadata(DirectBuffer buffer);
-
-  LogStreamWriter metadataWriter(BufferWriter writer);
-
-  LogStreamWriter value(DirectBuffer value, int valueOffset, int valueLength);
-
-  LogStreamWriter value(DirectBuffer value);
-
-  LogStreamWriter valueWriter(BufferWriter writer);
-
-  void reset();
 
   /**
    * Attempts to write the event to the underlying stream.

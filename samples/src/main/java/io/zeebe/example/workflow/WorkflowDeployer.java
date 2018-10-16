@@ -22,15 +22,14 @@ import io.zeebe.client.api.events.DeploymentEvent;
 
 public class WorkflowDeployer {
 
-  public static void main(String[] args) {
-    final String broker = "localhost:51015";
-    final String topic = "default-topic";
+  public static void main(final String[] args) {
+    final String broker = "localhost:26500";
 
     final ZeebeClientBuilder clientBuilder =
         ZeebeClient.newClientBuilder().brokerContactPoint(broker);
 
     try (ZeebeClient client = clientBuilder.build()) {
-      final WorkflowClient workflowClient = client.topicClient(topic).workflowClient();
+      final WorkflowClient workflowClient = client.workflowClient();
 
       final DeploymentEvent deploymentEvent =
           workflowClient
@@ -39,7 +38,7 @@ public class WorkflowDeployer {
               .send()
               .join();
 
-      System.out.println(deploymentEvent.getState());
+      System.out.println("Deployment created with key: " + deploymentEvent.getKey());
     }
   }
 }

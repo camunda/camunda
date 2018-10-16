@@ -16,13 +16,18 @@
 package io.zeebe.broker.it.util;
 
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.client.api.clients.TopicClient;
-import io.zeebe.client.api.commands.JobCommand;
-import io.zeebe.client.api.commands.JobCommandName;
-import io.zeebe.client.api.commands.WorkflowInstanceCommand;
-import io.zeebe.client.api.commands.WorkflowInstanceCommandName;
-import io.zeebe.client.api.events.*;
-import io.zeebe.client.api.subscription.TopicSubscription;
+import io.zeebe.gateway.ZeebeClient;
+import io.zeebe.gateway.api.commands.JobCommand;
+import io.zeebe.gateway.api.commands.JobCommandName;
+import io.zeebe.gateway.api.commands.WorkflowInstanceCommand;
+import io.zeebe.gateway.api.commands.WorkflowInstanceCommandName;
+import io.zeebe.gateway.api.events.IncidentEvent;
+import io.zeebe.gateway.api.events.IncidentState;
+import io.zeebe.gateway.api.events.JobEvent;
+import io.zeebe.gateway.api.events.JobState;
+import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
+import io.zeebe.gateway.api.events.WorkflowInstanceState;
+import io.zeebe.gateway.api.subscription.TopicSubscription;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Predicate;
@@ -41,7 +46,6 @@ public class TopicEventRecorder extends ExternalResource {
   private final List<IncidentEvent> incidentEvents = new CopyOnWriteArrayList<>();
 
   private final ClientRule clientRule;
-  private String topicName;
 
   protected TopicSubscription subscription;
   protected final boolean autoRecordEvents;
@@ -50,23 +54,13 @@ public class TopicEventRecorder extends ExternalResource {
     this(clientRule, true);
   }
 
-  public TopicEventRecorder(final ClientRule clientRule, boolean autoRecordEvents) {
-    this(clientRule, null, autoRecordEvents);
-  }
-
-  public TopicEventRecorder(
-      final ClientRule clientRule, final String topicName, boolean autoRecordEvents) {
+  public TopicEventRecorder(final ClientRule clientRule, final boolean autoRecordEvents) {
     this.clientRule = clientRule;
-    this.topicName = topicName;
     this.autoRecordEvents = autoRecordEvents;
   }
 
   @Override
   protected void before() {
-    if (topicName == null) {
-      topicName = clientRule.getDefaultTopic();
-    }
-
     if (autoRecordEvents) {
       startRecordingEvents();
     }
@@ -79,9 +73,8 @@ public class TopicEventRecorder extends ExternalResource {
 
   public void startRecordingEvents() {
     if (subscription == null) {
-      clientRule.waitUntilTopicsExists(topicName);
 
-      final TopicClient client = clientRule.getClient().topicClient(topicName);
+      final ZeebeClient client = clientRule.getClient();
 
       subscription =
           client
@@ -109,11 +102,29 @@ public class TopicEventRecorder extends ExternalResource {
     return wfInstanceEvents.stream().anyMatch(state(state));
   }
 
+  public boolean hasElementInState(final String elementId, final WorkflowInstanceState state) {
+    return wfInstanceEvents
+        .stream()
+        .filter(state(state))
+        .filter(r -> elementId.equals(r.getActivityId()))
+        .findFirst()
+        .isPresent();
+  }
+
   public List<WorkflowInstanceEvent> getWorkflowInstanceEvents(final WorkflowInstanceState state) {
     return wfInstanceEvents.stream().filter(state(state)).collect(Collectors.toList());
   }
 
-  public WorkflowInstanceEvent getSingleWorkflowInstanceEvent(WorkflowInstanceState state) {
+  public List<WorkflowInstanceEvent> getElementsInState(
+      final String elementId, final WorkflowInstanceState state) {
+    return wfInstanceEvents
+        .stream()
+        .filter(state(state))
+        .filter(r -> elementId.equals(r.getActivityId()))
+        .collect(Collectors.toList());
+  }
+
+  public WorkflowInstanceEvent getSingleWorkflowInstanceEvent(final WorkflowInstanceState state) {
     return wfInstanceEvents
         .stream()
         .filter(state(state))
@@ -121,8 +132,18 @@ public class TopicEventRecorder extends ExternalResource {
         .orElseThrow(() -> new AssertionError("no event found"));
   }
 
+  public WorkflowInstanceEvent getElementInState(
+      final String elementId, final WorkflowInstanceState state) {
+    return wfInstanceEvents
+        .stream()
+        .filter(state(state))
+        .filter(r -> elementId.equals(r.getActivityId()))
+        .findFirst()
+        .orElseThrow(() -> new AssertionError("no event found"));
+  }
+
   public WorkflowInstanceCommand getSingleWorkflowInstanceCommand(
-      WorkflowInstanceCommandName cmdName) {
+      final WorkflowInstanceCommandName cmdName) {
     return wfInstanceCommands
         .stream()
         .filter(workflowInstanceCommand(cmdName))
@@ -134,7 +155,7 @@ public class TopicEventRecorder extends ExternalResource {
     return jobEvents.stream().anyMatch(matcher);
   }
 
-  public boolean hasJobEvent(JobState state) {
+  public boolean hasJobEvent(final JobState state) {
     return jobEvents.stream().anyMatch(state(state));
   }
 
@@ -142,7 +163,7 @@ public class TopicEventRecorder extends ExternalResource {
     return jobCommands.stream().anyMatch(matcher);
   }
 
-  public List<JobEvent> getJobEvents(JobState state) {
+  public List<JobEvent> getJobEvents(final JobState state) {
     return jobEvents.stream().filter(state(state)).collect(Collectors.toList());
   }
 
@@ -150,7 +171,11 @@ public class TopicEventRecorder extends ExternalResource {
     return jobCommands.stream().filter(matcher).collect(Collectors.toList());
   }
 
-  public boolean hasIncidentEvent(IncidentState state) {
+  public List<IncidentEvent> getIncidentEvents(final IncidentState state) {
+    return incidentEvents.stream().filter(state(state)).collect(Collectors.toList());
+  }
+
+  public boolean hasIncidentEvent(final IncidentState state) {
     return incidentEvents.stream().anyMatch(state(state));
   }
 

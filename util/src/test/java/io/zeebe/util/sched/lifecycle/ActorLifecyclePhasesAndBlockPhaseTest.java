@@ -15,7 +15,9 @@
  */
 package io.zeebe.util.sched.lifecycle;
 
-import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.*;
+import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.CLOSE_REQUESTED;
+import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.STARTED;
+import static io.zeebe.util.sched.ActorTask.ActorLifecyclePhase.STARTING;
 import static io.zeebe.util.sched.lifecycle.LifecycleRecordingActor.FULL_LIFECYCLE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.util.Lists.newArrayList;

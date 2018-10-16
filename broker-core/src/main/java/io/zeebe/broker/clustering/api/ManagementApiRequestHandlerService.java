@@ -20,7 +20,11 @@ package io.zeebe.broker.clustering.api;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.raft.RaftPersistentConfigurationManager;
 import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceGroupReference;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.BufferingServerTransport;
 import io.zeebe.transport.ServerInputSubscription;
 import io.zeebe.util.sched.Actor;
@@ -62,13 +66,7 @@ public class ManagementApiRequestHandlerService extends Actor implements Service
   public void start(ServiceStartContext startContext) {
     serverTransport = serverTransportInjector.getValue();
     raftPersistentConfigurationManager = raftPersistentConfigurationManagerInjector.getValue();
-    managementApiRequestHandler =
-        new ManagementApiRequestHandler(
-            raftPersistentConfigurationManager,
-            actor,
-            startContext,
-            brokerCfg,
-            trackedSnapshotPartitions);
+    managementApiRequestHandler = new ManagementApiRequestHandler(actor, trackedSnapshotPartitions);
 
     startContext.async(startContext.getScheduler().submitActor(this, true));
   }

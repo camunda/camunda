@@ -16,12 +16,14 @@
 package io.zeebe.transport;
 
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import static io.zeebe.util.buffer.DirectBufferWriter.writerFor;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.impl.TransportHeaderDescriptor;
+import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.transport.util.RecordingMessageHandler;
 import io.zeebe.transport.util.TransportTestUtil;
 import io.zeebe.util.ByteValue;
@@ -29,12 +31,15 @@ import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class BufferingServerTransportTest {
   public static final ByteValue BUFFER_SIZE = ByteValue.ofKilobytes(16);
-  public static final SocketAddress SERVER_ADDRESS = new SocketAddress("localhost", 51115);
+  public static final SocketAddress SERVER_ADDRESS = SocketUtil.getNextAddress();
+  public static final int NODE_ID = 1;
 
   public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(3);
   public AutoCloseableRule closeables = new AutoCloseableRule();
@@ -45,12 +50,12 @@ public class BufferingServerTransportTest {
   protected BufferingServerTransport serverTransport;
 
   protected RecordingMessageHandler serverHandler = new RecordingMessageHandler();
-  protected RecordingMessageHandler clientHandler = new RecordingMessageHandler();
   private Dispatcher serverReceiveBuffer;
 
   @Before
   public void setUp() {
-    clientTransport = Transports.newClientTransport().scheduler(actorSchedulerRule.get()).build();
+    clientTransport =
+        Transports.newClientTransport("test").scheduler(actorSchedulerRule.get()).build();
     closeables.manage(clientTransport);
 
     serverReceiveBuffer =
@@ -81,17 +86,15 @@ public class BufferingServerTransportTest {
     final int messagesToExhaustReceiveBuffer =
         ((int) BUFFER_SIZE.toBytes() / largeBuf.capacity()) + 1;
 
-    final RemoteAddress remoteAddress =
-        clientTransport.registerRemoteAndAwaitChannel(SERVER_ADDRESS);
+    clientTransport.registerEndpoint(NODE_ID, SERVER_ADDRESS);
 
     final ServerInputSubscription serverSubscription =
         serverTransport.openSubscription("foo", serverHandler, null).join();
 
     // exhaust server's receive buffer
-    final TransportMessage message =
-        new TransportMessage().buffer(largeBuf).remoteAddress(remoteAddress);
     for (int i = 0; i < messagesToExhaustReceiveBuffer; i++) {
-      doRepeatedly(() -> clientTransport.getOutput().sendMessage(message)).until(s -> s);
+      doRepeatedly(() -> clientTransport.getOutput().sendMessage(NODE_ID, writerFor(largeBuf)))
+          .until(s -> s);
     }
 
     TransportTestUtil.waitUntilExhausted(serverReceiveBuffer);

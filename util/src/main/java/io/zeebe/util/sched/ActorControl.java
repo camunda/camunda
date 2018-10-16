@@ -16,7 +16,9 @@
 package io.zeebe.util.sched;
 
 import io.zeebe.util.sched.ActorTask.ActorLifecyclePhase;
-import io.zeebe.util.sched.channel.*;
+import io.zeebe.util.sched.channel.ChannelConsumerCondition;
+import io.zeebe.util.sched.channel.ChannelSubscription;
+import io.zeebe.util.sched.channel.ConsumableChannel;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.AllCompletedFutureConsumer;
 import io.zeebe.util.sched.future.FirstSuccessfullyCompletedFutureConsumer;
@@ -449,12 +451,11 @@ public class ActorControl {
     final ActorThread currentActorThread = ActorThread.current();
 
     if (currentActorThread != null && currentActorThread.getCurrentTask() == this.task) {
-      final ActorJob currentJob = currentActorThread.getCurrentJob();
       final ActorJob newJob = currentActorThread.newJob();
       newJob.setRunnable(runnable);
       newJob.setAutoCompleting(autocompleting);
       newJob.onJobAddedToTask(task);
-      currentJob.appendChild(newJob);
+      task.insertJob(newJob);
     } else {
       final ActorJob job = new ActorJob();
       job.setRunnable(runnable);

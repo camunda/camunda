@@ -15,8 +15,9 @@
  */
 package io.zeebe.dispatcher.impl.log;
 
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
-import static org.assertj.core.api.Assertions.*;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.dispatcher.ClaimedFragment;
 import java.util.concurrent.atomic.AtomicBoolean;

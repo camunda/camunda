@@ -17,15 +17,18 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-import io.zeebe.broker.clustering.orchestration.id.IdRecord;
-import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
+import io.zeebe.broker.exporter.stream.ExporterRecord;
 import io.zeebe.broker.incident.data.IncidentRecord;
-import io.zeebe.broker.job.data.JobRecord;
-import io.zeebe.broker.system.workflow.repository.data.DeploymentRecord;
-import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
+import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
+import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
+import io.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.transport.ServerOutput;
 import java.util.EnumMap;
 
@@ -36,18 +39,21 @@ public class TypedStreamEnvironment {
       new EnumMap<>(ValueType.class);
 
   static {
-    EVENT_REGISTRY.put(ValueType.TOPIC, TopicRecord.class);
     EVENT_REGISTRY.put(ValueType.DEPLOYMENT, DeploymentRecord.class);
     EVENT_REGISTRY.put(ValueType.JOB, JobRecord.class);
     EVENT_REGISTRY.put(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceRecord.class);
     EVENT_REGISTRY.put(ValueType.INCIDENT, IncidentRecord.class);
-    EVENT_REGISTRY.put(ValueType.ID, IdRecord.class);
+    EVENT_REGISTRY.put(ValueType.MESSAGE, MessageRecord.class);
+    EVENT_REGISTRY.put(ValueType.MESSAGE_SUBSCRIPTION, MessageSubscriptionRecord.class);
+    EVENT_REGISTRY.put(
+        ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION, WorkflowInstanceSubscriptionRecord.class);
+    EVENT_REGISTRY.put(ValueType.EXPORTER, ExporterRecord.class);
+    EVENT_REGISTRY.put(ValueType.JOB_BATCH, JobBatchRecord.class);
   }
 
   private TypedStreamReader reader;
-  private TypedStreamWriter writer;
 
-  public TypedStreamEnvironment(LogStream stream, ServerOutput output) {
+  public TypedStreamEnvironment(final LogStream stream, final ServerOutput output) {
     this.output = output;
     this.stream = stream;
   }
@@ -68,8 +74,8 @@ public class TypedStreamEnvironment {
     return new TypedEventStreamProcessorBuilder(this);
   }
 
-  public TypedStreamWriter buildStreamWriter() {
-    return new TypedStreamWriterImpl(stream, EVENT_REGISTRY);
+  public TypedCommandWriter buildCommandWriter() {
+    return new TypedCommandWriterImpl(stream, EVENT_REGISTRY);
   }
 
   public TypedStreamReader buildStreamReader() {
@@ -81,12 +87,5 @@ public class TypedStreamEnvironment {
       reader = buildStreamReader();
     }
     return reader;
-  }
-
-  public TypedStreamWriter getStreamWriter() {
-    if (writer == null) {
-      writer = buildStreamWriter();
-    }
-    return writer;
   }
 }

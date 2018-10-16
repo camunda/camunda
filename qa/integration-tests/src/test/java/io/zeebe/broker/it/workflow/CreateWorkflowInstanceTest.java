@@ -16,16 +16,18 @@
 package io.zeebe.broker.it.workflow;
 
 import static io.zeebe.test.util.TestUtil.waitUntil;
-import static org.assertj.core.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.catchThrowable;
+import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
-import io.zeebe.client.api.events.DeploymentEvent;
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
-import io.zeebe.client.api.events.WorkflowInstanceState;
-import io.zeebe.client.cmd.BrokerErrorException;
-import io.zeebe.client.cmd.ClientCommandRejectedException;
+import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.gateway.api.events.DeploymentEvent;
+import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
+import io.zeebe.gateway.api.events.WorkflowInstanceState;
+import io.zeebe.gateway.cmd.BrokerErrorException;
+import io.zeebe.gateway.cmd.ClientCommandRejectedException;
 import io.zeebe.model.bpmn.Bpmn;
 import java.util.Collections;
 import org.junit.Before;
@@ -36,7 +38,7 @@ import org.junit.rules.RuleChain;
 
 public class CreateWorkflowInstanceTest {
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientRule clientRule = new ClientRule();
+  public ClientRule clientRule = new ClientRule(brokerRule);
   public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
 
   @Rule
@@ -54,18 +56,22 @@ public class CreateWorkflowInstanceTest {
             .getWorkflowClient()
             .newDeployCommand()
             .addWorkflowModel(
-                Bpmn.createExecutableWorkflow("anId").startEvent().endEvent().done(),
+                Bpmn.createExecutableProcess("anId").startEvent().endEvent().done(),
                 "workflow.bpmn")
             .send()
             .join();
 
-    clientRule
-        .getWorkflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(
-            Bpmn.createExecutableWorkflow("anId").startEvent().endEvent().done(), "workflow.bpmn")
-        .send()
-        .join();
+    final DeploymentEvent secondDeployment =
+        clientRule
+            .getWorkflowClient()
+            .newDeployCommand()
+            .addWorkflowModel(
+                Bpmn.createExecutableProcess("anId").startEvent().endEvent().done(),
+                "workflow.bpmn")
+            .send()
+            .join();
+
+    clientRule.waitUntilDeploymentIsDone(secondDeployment.getKey());
   }
 
   @Test
@@ -110,7 +116,7 @@ public class CreateWorkflowInstanceTest {
 
   @Test
   public void shouldCreateBpmnProcessByKey() {
-    final long workflowKey = firstDeployment.getDeployedWorkflows().get(0).getWorkflowKey();
+    final long workflowKey = firstDeployment.getWorkflows().get(0).getWorkflowKey();
 
     // when
     final WorkflowInstanceEvent workflowInstance =

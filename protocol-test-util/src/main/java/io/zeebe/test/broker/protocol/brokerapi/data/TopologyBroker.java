@@ -16,19 +16,27 @@
 package io.zeebe.test.broker.protocol.brokerapi.data;
 
 import io.zeebe.transport.SocketAddress;
-import java.util.*;
+import java.util.LinkedHashSet;
+import java.util.Objects;
+import java.util.Set;
 
 public class TopologyBroker {
-  private List<BrokerPartitionState> partitions = new ArrayList<>();
+  private Set<BrokerPartitionState> partitions = new LinkedHashSet<>();
 
+  protected final int nodeId;
   protected final String host;
   protected final int port;
   private SocketAddress address;
 
-  public TopologyBroker(final String host, final int port) {
+  public TopologyBroker(final int nodeId, final String host, final int port) {
+    this.nodeId = nodeId;
     this.host = host;
     this.port = port;
     address = new SocketAddress(host, port);
+  }
+
+  public int getNodeId() {
+    return nodeId;
   }
 
   public String getHost() {
@@ -39,7 +47,7 @@ public class TopologyBroker {
     return port;
   }
 
-  public List<BrokerPartitionState> getPartitions() {
+  public Set<BrokerPartitionState> getPartitions() {
     return partitions;
   }
 
@@ -61,12 +69,12 @@ public class TopologyBroker {
       return false;
     }
     final TopologyBroker that = (TopologyBroker) o;
-    return Objects.equals(address, that.address);
+    return nodeId == that.nodeId;
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(address);
+    return Objects.hash(nodeId);
   }
 
   @Override
@@ -74,11 +82,15 @@ public class TopologyBroker {
     return "TopologyBroker{"
         + "partitions="
         + partitions
+        + ", nodeId="
+        + nodeId
         + ", host='"
         + host
         + '\''
         + ", port="
         + port
+        + ", address="
+        + address
         + '}';
   }
 }

@@ -30,13 +30,28 @@ Some workflows do not always execute the same tasks but need to choose different
 
 The diamond shape with the "X" in the middle is a special step marking that the workflow decides to take one or the other path.
 
-Conditions use [JSON Path](http://goessner.net/articles/JsonPath/) to extract properties and values from the current payload document.
+Conditions use [JSON Path](reference/json-conditions.html) to extract properties and values from the current payload document.
+
+## Events
+
+Events represent things that happen. A workflow can react to events (catching event) as well as emit events (throwing event). For example:
+
+![workflow](/basics/workflow-events.png)
+
+There are different types of events like message or timer.
 
 ## Fork / Join Concurrency
 
-> Coming soon
+In many cases, it is also useful to perform multiple tasks in parallel. This can be achieved with Fork / Join concurrency:
 
-In many cases, it is also useful to perform multiple tasks in parallel. This can be achieved with Fork / Join concurrency.
+![data-conditions](/basics/workflow-parallel-gw.png)
+
+The diamond shape with the "+" marker means that all outgoing paths are activated and all incoming paths are merged.
+
+Concurrency can also be based on data, meaning that a task is performed for every data item:
+
+![data-conditions](/basics/workflow-parallel-mi.png)
+
 
 ## BPMN 2.0
 

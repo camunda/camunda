@@ -19,7 +19,11 @@ import static io.zeebe.util.StringUtil.getBytes;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.logstreams.impl.snapshot.fs.*;
+import io.zeebe.logstreams.impl.snapshot.fs.FsReadableSnapshot;
+import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotStorage;
+import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotStorageConfiguration;
+import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotWriter;
+import io.zeebe.logstreams.impl.snapshot.fs.FsTemporarySnapshotWriter;
 import java.io.File;
 import java.nio.file.Files;
 import java.security.MessageDigest;
@@ -111,9 +115,6 @@ public class FsTemporarySnapshotWriterTest {
   public void shouldStillHaveLastSnapshotIfFailToMoveTemporaryFile() throws Exception {
     // given
     final byte[] badChecksum = new byte[] {0};
-    final FsTemporarySnapshotWriter writer =
-        new FsTemporarySnapshotWriter(
-            config, temporaryFile, checksumFile, snapshotFile, lastSnapshot);
 
     // when
     writer.getOutputStream().write(SNAPSHOT_DATA);

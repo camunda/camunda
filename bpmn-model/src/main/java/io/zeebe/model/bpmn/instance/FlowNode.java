@@ -13,12 +13,29 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.zeebe.model.bpmn.instance;
 
-import java.util.List;
+import io.zeebe.model.bpmn.Query;
+import io.zeebe.model.bpmn.builder.AbstractFlowNodeBuilder;
+import java.util.Collection;
 
+/**
+ * The BPMN flowNode element
+ *
+ * @author Sebastian Menski
+ */
 public interface FlowNode extends FlowElement {
-  List<SequenceFlow> getIncomingSequenceFlows();
 
-  List<SequenceFlow> getOutgoingSequenceFlows();
+  @Override
+  @SuppressWarnings("rawtypes")
+  AbstractFlowNodeBuilder builder();
+
+  Collection<SequenceFlow> getIncoming();
+
+  Collection<SequenceFlow> getOutgoing();
+
+  Query<FlowNode> getPreviousNodes();
+
+  Query<FlowNode> getSucceedingNodes();
 }

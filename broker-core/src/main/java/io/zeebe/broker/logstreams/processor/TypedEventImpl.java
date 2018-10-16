@@ -19,7 +19,7 @@ package io.zeebe.broker.logstreams.processor;
 
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.impl.record.RecordMetadata;
 
 @SuppressWarnings({"rawtypes"})
 public class TypedEventImpl implements TypedRecord {

@@ -17,35 +17,28 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
+import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.Intent;
 import org.agrona.DirectBuffer;
 
 public interface TypedResponseWriter {
 
-  /** @return true if successful */
-  boolean writeRejection(TypedRecord<?> record, RejectionType type, String reason);
+  void writeRejection(TypedRecord<?> rejection);
 
-  /** @return true if successful */
-  boolean writeRejection(TypedRecord<?> record, RejectionType type, DirectBuffer reason);
+  void writeRejectionOnCommand(TypedRecord<?> command, RejectionType type, DirectBuffer reason);
+
+  void writeRejectionOnCommand(TypedRecord<?> command, RejectionType type, String reason);
+
+  void writeEvent(TypedRecord<?> event);
+
+  void writeEventOnCommand(
+      long eventKey, Intent eventState, UnpackedObject eventValue, TypedRecord<?> command);
 
   /**
-   * Writes the given record as response, the source record position will be set to the record
-   * position.
+   * Submits the response to transport.
    *
-   * @return true if successful
+   * @return false in case of backpressure, else true
    */
-  boolean writeRecord(Intent intent, TypedRecord<?> record);
-
-  /*
-   * <p>
-   * Writes the given record *unchanged* as response. This method should be used, if the record is already commited and
-   * the source position should not change.
-   * </p>
-   *
-   * <p>The other write methods will use the record position as source record position.</p>
-   *
-   * @return true if successful
-   */
-  boolean writeRecordUnchanged(TypedRecord<?> record);
+  boolean flush();
 }

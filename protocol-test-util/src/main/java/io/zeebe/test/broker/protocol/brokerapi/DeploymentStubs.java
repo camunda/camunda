@@ -22,9 +22,10 @@ import java.util.function.Consumer;
 
 public class DeploymentStubs {
 
-  private StubBrokerRule broker;
+  public static final int DEFAULT_PARTITION = Protocol.DEPLOYMENT_PARTITION;
+  private final StubBrokerRule broker;
 
-  public DeploymentStubs(StubBrokerRule broker) {
+  public DeploymentStubs(final StubBrokerRule broker) {
     this.broker = broker;
   }
 
@@ -32,11 +33,11 @@ public class DeploymentStubs {
     registerCreateCommand(b -> b.sourceRecordPosition(1L));
   }
 
-  public void registerCreateCommand(Consumer<ExecuteCommandResponseBuilder> modifier) {
+  public void registerCreateCommand(final Consumer<ExecuteCommandResponseBuilder> modifier) {
     final ExecuteCommandResponseBuilder builder =
         broker
             .onExecuteCommandRequest(
-                Protocol.SYSTEM_PARTITION, ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
+                DEFAULT_PARTITION, ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
             .respondWith()
             .event()
             .intent(DeploymentIntent.CREATED)

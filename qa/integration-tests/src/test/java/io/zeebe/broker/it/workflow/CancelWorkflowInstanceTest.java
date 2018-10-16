@@ -19,15 +19,16 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
-import io.zeebe.client.api.events.JobEvent;
-import io.zeebe.client.api.events.JobState;
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
-import io.zeebe.client.api.events.WorkflowInstanceState;
-import io.zeebe.client.cmd.ClientCommandRejectedException;
+import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.gateway.api.events.DeploymentEvent;
+import io.zeebe.gateway.api.events.JobEvent;
+import io.zeebe.gateway.api.events.JobState;
+import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
+import io.zeebe.gateway.api.events.WorkflowInstanceState;
+import io.zeebe.gateway.cmd.ClientCommandRejectedException;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.ArrayList;
 import java.util.List;
 import org.junit.Before;
@@ -37,15 +38,15 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 public class CancelWorkflowInstanceTest {
-  private static final WorkflowDefinition WORKFLOW =
-      Bpmn.createExecutableWorkflow("process")
+  private static final BpmnModelInstance WORKFLOW =
+      Bpmn.createExecutableProcess("process")
           .startEvent("start")
-          .serviceTask("task", t -> t.taskType("test"))
+          .serviceTask("task", t -> t.zeebeTaskType("test"))
           .endEvent("end")
           .done();
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientRule clientRule = new ClientRule();
+  public ClientRule clientRule = new ClientRule(brokerRule);
   public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
 
   @Rule
@@ -56,12 +57,15 @@ public class CancelWorkflowInstanceTest {
 
   @Before
   public void init() {
-    clientRule
-        .getWorkflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(WORKFLOW, "workflow.bpmn")
-        .send()
-        .join();
+    final DeploymentEvent deploymentEvent =
+        clientRule
+            .getWorkflowClient()
+            .newDeployCommand()
+            .addWorkflowModel(WORKFLOW, "workflow.bpmn")
+            .send()
+            .join();
+
+    clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
   }
 
   @Test
@@ -80,7 +84,8 @@ public class CancelWorkflowInstanceTest {
     clientRule.getWorkflowClient().newCancelInstanceCommand(workflowInstance).send().join();
 
     // then
-    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.CANCELED));
+    waitUntil(
+        () -> eventRecorder.hasElementInState("process", WorkflowInstanceState.ELEMENT_TERMINATED));
   }
 
   @Test
@@ -117,6 +122,7 @@ public class CancelWorkflowInstanceTest {
 
     // then
     waitUntil(() -> eventRecorder.hasJobEvent(JobState.CANCELED));
-    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.CANCELED));
+    waitUntil(
+        () -> eventRecorder.hasElementInState("process", WorkflowInstanceState.ELEMENT_TERMINATED));
   }
 }

@@ -15,16 +15,21 @@
  */
 package io.zeebe.raft;
 
-import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
-import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.collection.LongRingBuffer;
 import io.zeebe.util.sched.ActorScheduler;
 import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Optional;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.LockSupport;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -33,11 +38,11 @@ public class ThroughputTest {
   private static final MutableDirectBuffer METADATA = new UnsafeBuffer(new byte[31]);
   private static final MutableDirectBuffer DATA = new UnsafeBuffer(new byte[256]);
 
-  public static void main(String[] args) throws IOException {
+  public static void main(final String[] args) throws IOException {
     final BenchmarkContext ctx = new BenchmarkContext();
     ctx.setUp();
 
-    final LogStreamWriter writer = ctx.writer;
+    final LogStreamRecordWriter writer = ctx.writer;
     final LogStream logStream = ctx.leader.getLogStream();
     final LongRingBuffer uncommitedPositions = new LongRingBuffer(10 * 1024);
 
@@ -65,13 +70,11 @@ public class ThroughputTest {
 
     final ServiceContainer serviceContainer = new ServiceContainerImpl(scheduler);
 
-    final ThroughPutTestRaft raft1 = new ThroughPutTestRaft(new SocketAddress("localhost", 51015));
-    final ThroughPutTestRaft raft2 =
-        new ThroughPutTestRaft(new SocketAddress("localhost", 51016), raft1);
-    final ThroughPutTestRaft raft3 =
-        new ThroughPutTestRaft(new SocketAddress("localhost", 51017), raft1);
+    final ThroughPutTestRaft raft1 = new ThroughPutTestRaft();
+    final ThroughPutTestRaft raft2 = new ThroughPutTestRaft(raft1);
+    final ThroughPutTestRaft raft3 = new ThroughPutTestRaft(raft1);
 
-    final LogStreamWriter writer = new LogStreamWriterImpl();
+    final LogStreamRecordWriter writer = new LogStreamWriterImpl();
 
     Raft leader;
 

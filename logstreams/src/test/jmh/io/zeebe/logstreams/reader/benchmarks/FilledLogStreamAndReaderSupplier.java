@@ -19,17 +19,24 @@ import static io.zeebe.logstreams.reader.benchmarks.Benchmarks.DATA_SET_SIZE;
 
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.LogStorageAppender;
-import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.log.BufferedLogStreamReader;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
-import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.annotations.Level;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
+import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.TearDown;
 
 @State(Scope.Benchmark)
 public class FilledLogStreamAndReaderSupplier {
@@ -39,7 +46,7 @@ public class FilledLogStreamAndReaderSupplier {
   ServiceContainerImpl serviceContainer;
   BufferedLogStreamReader reader = new BufferedLogStreamReader();
 
-  private long[] writeEvents(int count, DirectBuffer eventValue) {
+  private long[] writeEvents(final int count, final DirectBuffer eventValue) {
     final long[] positions = new long[count];
 
     for (int i = 0; i < count; i++) {
@@ -48,7 +55,7 @@ public class FilledLogStreamAndReaderSupplier {
     return positions;
   }
 
-  private long writeEvent(long key, DirectBuffer eventValue) {
+  private long writeEvent(final long key, final DirectBuffer eventValue) {
     long position = -1;
     while (position <= 0) {
       position = writer.key(key).value(eventValue).tryWrite();
@@ -67,7 +74,7 @@ public class FilledLogStreamAndReaderSupplier {
     serviceContainer.start();
 
     logStream =
-        LogStreams.createFsLogStream(BufferUtil.wrapString("topic"), 0)
+        LogStreams.createFsLogStream(0)
             .logName("foo")
             .logDirectory(tempDirectory.toString())
             .serviceContainer(serviceContainer)

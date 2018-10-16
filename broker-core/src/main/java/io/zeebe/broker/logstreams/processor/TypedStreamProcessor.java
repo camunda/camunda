@@ -18,16 +18,16 @@
 package io.zeebe.broker.logstreams.processor;
 
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
-import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.logstreams.processor.EventProcessor;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.logstreams.spi.SnapshotSupport;
+import io.zeebe.logstreams.state.StateController;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.ReflectUtil;
 import io.zeebe.util.sched.ActorControl;
@@ -36,13 +36,17 @@ import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.List;
 
-@SuppressWarnings({"rawtypes", "unchecked"})
+@SuppressWarnings({"unchecked"})
 public class TypedStreamProcessor implements StreamProcessor {
+
+  // TODO: remove once we remove snapshot support
+  protected StateController stateController;
 
   protected final SnapshotSupport snapshotSupport;
   protected final ServerOutput output;
   protected final RecordProcessorMap recordProcessors;
   protected final List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
+  private final KeyGenerator keyGenerator;
 
   protected final RecordMetadata metadata = new RecordMetadata();
   protected final EnumMap<ValueType, Class<? extends UnpackedObject>> eventRegistry;
@@ -56,15 +60,19 @@ public class TypedStreamProcessor implements StreamProcessor {
   private StreamProcessorContext streamProcessorContext;
 
   public TypedStreamProcessor(
-      SnapshotSupport snapshotSupport,
-      ServerOutput output,
-      RecordProcessorMap recordProcessors,
-      List<StreamProcessorLifecycleAware> lifecycleListeners,
-      EnumMap<ValueType, Class<? extends UnpackedObject>> eventRegistry,
-      TypedStreamEnvironment environment) {
+      final StateController stateController,
+      final SnapshotSupport snapshotSupport,
+      final ServerOutput output,
+      final RecordProcessorMap recordProcessors,
+      final List<StreamProcessorLifecycleAware> lifecycleListeners,
+      final EnumMap<ValueType, Class<? extends UnpackedObject>> eventRegistry,
+      final KeyGenerator keyGenerator,
+      final TypedStreamEnvironment environment) {
+    this.stateController = stateController;
     this.snapshotSupport = snapshotSupport;
     this.output = output;
     this.recordProcessors = recordProcessors;
+    this.keyGenerator = keyGenerator;
     recordProcessors.values().forEachRemaining(p -> this.lifecycleListeners.add(p));
 
     this.lifecycleListeners.addAll(lifecycleListeners);
@@ -77,10 +85,10 @@ public class TypedStreamProcessor implements StreamProcessor {
   }
 
   @Override
-  public void onOpen(StreamProcessorContext context) {
+  public void onOpen(final StreamProcessorContext context) {
     this.eventProcessorWrapper =
         new DelegatingEventProcessor(
-            context.getId(), output, context.getLogStream(), eventRegistry);
+            context.getId(), output, context.getLogStream(), eventRegistry, keyGenerator);
 
     this.actor = context.getActorControl();
     this.streamProcessorContext = context;
@@ -103,11 +111,16 @@ public class TypedStreamProcessor implements StreamProcessor {
   }
 
   @Override
-  public EventProcessor onEvent(LoggedEvent event) {
+  public StateController getStateController() {
+    return stateController;
+  }
+
+  @Override
+  public EventProcessor onEvent(final LoggedEvent event) {
     metadata.reset();
     event.readMetadata(metadata);
 
-    final TypedRecordProcessor currentProcessor =
+    final TypedRecordProcessor<?> currentProcessor =
         recordProcessors.get(
             metadata.getRecordType(), metadata.getValueType(), metadata.getIntent().value());
 
@@ -129,7 +142,7 @@ public class TypedStreamProcessor implements StreamProcessor {
         recordProcessors.containsKey(m.getRecordType(), m.getValueType(), m.getIntent().value());
   }
 
-  public ActorFuture<Void> runAsync(Runnable runnable) {
+  public ActorFuture<Void> runAsync(final Runnable runnable) {
     return actor.call(runnable);
   }
 
@@ -140,44 +153,52 @@ public class TypedStreamProcessor implements StreamProcessor {
     protected final TypedStreamWriterImpl writer;
     protected final TypedResponseWriterImpl responseWriter;
 
-    protected TypedRecordProcessor eventProcessor;
+    protected TypedRecordProcessor<?> eventProcessor;
     protected TypedEventImpl event;
+    private SideEffectProducer sideEffectProducer;
 
     public DelegatingEventProcessor(
-        int streamProcessorId,
-        ServerOutput output,
-        LogStream logStream,
-        EnumMap<ValueType, Class<? extends UnpackedObject>> eventRegistry) {
+        final int streamProcessorId,
+        final ServerOutput output,
+        final LogStream logStream,
+        final EnumMap<ValueType, Class<? extends UnpackedObject>> eventRegistry,
+        final KeyGenerator keyGenerator) {
       this.streamProcessorId = streamProcessorId;
       this.logStream = logStream;
-      this.writer = new TypedStreamWriterImpl(logStream, eventRegistry);
+      this.writer = new TypedStreamWriterImpl(logStream, eventRegistry, keyGenerator);
       this.responseWriter = new TypedResponseWriterImpl(output, logStream.getPartitionId());
     }
 
-    public void wrap(TypedRecordProcessor eventProcessor, TypedEventImpl event) {
+    public void wrap(final TypedRecordProcessor<?> eventProcessor, final TypedEventImpl event) {
       this.eventProcessor = eventProcessor;
       this.event = event;
     }
 
     @Override
-    public void processEvent(EventLifecycleContext ctx) {
-      eventProcessor.processRecord(event, ctx);
+    public void processEvent() {
+      writer.reset();
+      responseWriter.reset();
+
+      this.writer.configureSourceContext(streamProcessorId, event.getPosition());
+
+      // default side effect is responses; can be changed by processor
+      sideEffectProducer = responseWriter;
+
+      eventProcessor.processRecord(event, responseWriter, writer, this::setSideEffectProducer);
+    }
+
+    public void setSideEffectProducer(final SideEffectProducer sideEffectProducer) {
+      this.sideEffectProducer = sideEffectProducer;
     }
 
     @Override
     public boolean executeSideEffects() {
-      return eventProcessor.executeSideEffects(event, responseWriter);
+      return sideEffectProducer.flush();
     }
 
     @Override
-    public long writeEvent(LogStreamWriter writer) {
-      this.writer.configureSourceContext(streamProcessorId, event.getPosition());
-      return eventProcessor.writeRecord(event, this.writer);
-    }
-
-    @Override
-    public void updateState() {
-      eventProcessor.updateState(event);
+    public long writeEvent(final LogStreamRecordWriter writer) {
+      return this.writer.flush();
     }
   }
 
@@ -191,5 +212,9 @@ public class TypedStreamProcessor implements StreamProcessor {
 
   public TypedStreamEnvironment getEnvironment() {
     return environment;
+  }
+
+  public KeyGenerator getKeyGenerator() {
+    return keyGenerator;
   }
 }

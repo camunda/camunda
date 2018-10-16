@@ -18,10 +18,12 @@
 package io.zeebe.broker.system.configuration;
 
 public class SocketBindingClientApiCfg extends SocketBindingCfg {
+
+  public static final int DEFAULT_PORT = 26501;
   private String controlMessageBufferSize = "8M";
 
   public SocketBindingClientApiCfg() {
-    port = 51015;
+    port = DEFAULT_PORT;
   }
 
   public String getControlMessageBufferSize() {
@@ -30,5 +32,22 @@ public class SocketBindingClientApiCfg extends SocketBindingCfg {
 
   public void setControlMessageBufferSize(String controlMessageBufferSize) {
     this.controlMessageBufferSize = controlMessageBufferSize;
+  }
+
+  @Override
+  public String toString() {
+    return "SocketBindingClientApiCfg{"
+        + "controlMessageBufferSize='"
+        + controlMessageBufferSize
+        + '\''
+        + ", host='"
+        + host
+        + '\''
+        + ", port="
+        + port
+        + ", sendBufferSize='"
+        + sendBufferSize
+        + '\''
+        + '}';
   }
 }

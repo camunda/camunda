@@ -15,8 +15,6 @@
  */
 package io.zeebe.msgpack.spec;
 
-import static io.zeebe.msgpack.spec.MsgPackCodes.*;
-
 import java.util.Arrays;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;

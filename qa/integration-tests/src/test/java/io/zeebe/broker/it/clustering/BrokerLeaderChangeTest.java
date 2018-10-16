@@ -17,17 +17,22 @@ package io.zeebe.broker.it.clustering;
 
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static io.zeebe.test.util.TestUtil.waitUntil;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.client.api.commands.BrokerInfo;
-import io.zeebe.client.api.events.JobEvent;
-import io.zeebe.client.api.events.JobState;
-import io.zeebe.client.api.subscription.JobWorker;
-import io.zeebe.client.api.subscription.TopicSubscription;
-import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.gateway.api.commands.BrokerInfo;
+import io.zeebe.gateway.api.commands.PartitionBrokerRole;
+import io.zeebe.gateway.api.commands.PartitionInfo;
+import io.zeebe.gateway.api.events.JobEvent;
+import io.zeebe.gateway.api.events.JobState;
+import io.zeebe.gateway.api.subscription.JobWorker;
+import io.zeebe.gateway.api.subscription.TopicSubscription;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.atomic.AtomicBoolean;
-import org.junit.*;
+import org.junit.Ignore;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.Timeout;
 
@@ -35,21 +40,44 @@ public class BrokerLeaderChangeTest {
   public static final String NULL_PAYLOAD = null;
   public static final String JOB_TYPE = "testTask";
 
-  public AutoCloseableRule closeables = new AutoCloseableRule();
   public Timeout testTimeout = Timeout.seconds(90);
-  public ClientRule clientRule = new ClientRule();
-  public ClusteringRule clusteringRule = new ClusteringRule(closeables, clientRule);
+  public ClusteringRule clusteringRule = new ClusteringRule();
+  public ClientRule clientRule = new ClientRule(clusteringRule);
 
   @Rule
   public RuleChain ruleChain =
-      RuleChain.outerRule(closeables).around(testTimeout).around(clientRule).around(clusteringRule);
+      RuleChain.outerRule(testTimeout).around(clusteringRule).around(clientRule);
+
+  @Test
+  public void shouldBecomeFollowerAfterRestartLeaderChange() {
+    // given
+    final int partition = 1;
+    final int oldLeader = clusteringRule.getLeaderForPartition(partition).getNodeId();
+
+    clusteringRule.stopBroker(oldLeader);
+
+    waitUntil(() -> clusteringRule.getLeaderForPartition(partition).getNodeId() != oldLeader);
+
+    // when
+    clusteringRule.restartBroker(oldLeader);
+
+    // then
+    final Optional<PartitionInfo> partitionInfo =
+        clusteringRule
+            .getTopologyFromBroker(oldLeader)
+            .stream()
+            .filter(b -> b.getNodeId() == oldLeader)
+            .flatMap(b -> b.getPartitions().stream().filter(p -> p.getPartitionId() == partition))
+            .findFirst();
+
+    assertThat(partitionInfo)
+        .hasValueSatisfying(p -> assertThat(p.getRole()).isEqualTo(PartitionBrokerRole.FOLLOWER));
+  }
 
   @Test
   @Ignore("https://github.com/zeebe-io/zeebe/issues/844")
   public void shouldChangeLeaderAfterLeaderDies() {
     // given
-    clusteringRule.createTopic(clientRule.getDefaultTopic(), 1, 3);
-
     final BrokerInfo leaderForPartition = clusteringRule.getLeaderForPartition(1);
     final String leaderAddress = leaderForPartition.getAddress();
 
@@ -72,7 +100,7 @@ public class BrokerLeaderChangeTest {
     private final JobWorker jobSubscription;
     private final TopicSubscription topicSubscription;
 
-    JobCompleter(JobEvent jobEvent) {
+    JobCompleter(final JobEvent jobEvent) {
       final long eventKey = jobEvent.getMetadata().getKey();
 
       jobSubscription =
@@ -95,7 +123,7 @@ public class BrokerLeaderChangeTest {
           doRepeatedly(
                   () ->
                       clientRule
-                          .getTopicClient()
+                          .getClient()
                           .newSubscription()
                           .name("jobObserver")
                           .jobEventHandler(
@@ -105,7 +133,7 @@ public class BrokerLeaderChangeTest {
                                   isJobCompleted.set(true);
                                 }
                               })
-                          .startAtHeadOfTopic()
+                          .startAtHead()
                           .forcedStart()
                           .open())
               .until(Objects::nonNull, "Failed to open topic subscription for job completion");

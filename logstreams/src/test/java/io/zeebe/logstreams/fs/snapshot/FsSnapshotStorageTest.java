@@ -19,8 +19,13 @@ import static io.zeebe.util.StringUtil.getBytes;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.logstreams.impl.snapshot.fs.*;
+import io.zeebe.logstreams.impl.snapshot.fs.FsReadableSnapshot;
+import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotStorage;
+import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotStorageConfiguration;
+import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotWriter;
+import io.zeebe.logstreams.impl.snapshot.fs.FsTemporarySnapshotWriter;
 import io.zeebe.logstreams.spi.SnapshotMetadata;
+import io.zeebe.util.FileUtil;
 import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -138,7 +143,7 @@ public class FsSnapshotStorageTest {
     fsSnapshotWriter.getOutputStream().write(SNAPSHOT_DATA);
     fsSnapshotWriter.commit();
 
-    fsSnapshotWriter.getChecksumFile().delete();
+    FileUtil.deleteFile(fsSnapshotWriter.getChecksumFile());
 
     final FsReadableSnapshot snapshot = fsSnapshotStorage.getLastSnapshot("test");
     assertThat(snapshot).isNull();

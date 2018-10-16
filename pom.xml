@@ -9,7 +9,7 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zb-parent</artifactId>
-    <version>0.12.0-SNAPSHOT</version>
+    <version>0.13.0-SNAPSHOT</version>
     <relativePath>parent/</relativePath>
   </parent>
 
@@ -18,7 +18,6 @@
     <module>parent</module>
     <module>broker-core</module>
     <module>qa</module>
-    <module>client-java</module>
     <module>protocol-test-util</module>
     <module>samples</module>
     <module>dist</module>
@@ -40,25 +39,14 @@
     <module>json-path</module>
     <module>build-tools</module>
     <module>githooks-plugin</module>
+    <module>gateway-protocol</module>
+    <module>gateway</module>
+    <module>clients/java</module>
+    <module>exporter-api</module>
+    <module>exporter-asserts</module>
+    <module>exporters/elasticsearch-exporter</module>
+    <module>protocol-impl</module>
   </modules>
-
-  <build>
-    <plugins>
-      <!-- Zeebe githooks plugin -->
-      <plugin>
-        <groupId>io.zeebe</groupId>
-        <artifactId>zb-githooks-plugin</artifactId>
-        <version>${project.version}</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>setup</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
 
   <scm>
     <url>https://github.com/zeebe-io/zeebe</url>

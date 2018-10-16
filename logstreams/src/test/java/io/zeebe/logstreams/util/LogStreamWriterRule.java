@@ -15,7 +15,9 @@
  */
 package io.zeebe.logstreams.util;
 
-import io.zeebe.logstreams.log.*;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.test.util.TestUtil;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
@@ -25,7 +27,7 @@ public class LogStreamWriterRule extends ExternalResource {
   private LogStreamRule logStreamRule;
 
   private LogStream logStream;
-  private LogStreamWriter logStreamWriter;
+  private LogStreamRecordWriter logStreamWriter;
 
   public LogStreamWriterRule(final LogStreamRule logStreamRule) {
     this.logStreamRule = logStreamRule;
@@ -76,7 +78,7 @@ public class LogStreamWriterRule extends ExternalResource {
     return writeEvent(w -> w.positionAsKey().value(event), commit);
   }
 
-  public long writeEvent(final Consumer<LogStreamWriter> writer, final boolean commit) {
+  public long writeEvent(final Consumer<LogStreamRecordWriter> writer, final boolean commit) {
     final long position = writeEventInternal(writer);
 
     waitForPositionToBeAppended(position);
@@ -88,7 +90,7 @@ public class LogStreamWriterRule extends ExternalResource {
     return position;
   }
 
-  private long writeEventInternal(final Consumer<LogStreamWriter> writer) {
+  private long writeEventInternal(final Consumer<LogStreamRecordWriter> writer) {
     long position;
     do {
       position = tryWrite(writer);
@@ -98,14 +100,14 @@ public class LogStreamWriterRule extends ExternalResource {
   }
 
   public long tryWrite(final DirectBuffer value) {
-    return tryWrite(w -> w.positionAsKey().value(value));
+    return tryWrite(w -> w.keyNull().value(value));
   }
 
   public long tryWrite(final long key, final DirectBuffer value) {
     return tryWrite(w -> w.key(key).value(value));
   }
 
-  public long tryWrite(final Consumer<LogStreamWriter> writer) {
+  public long tryWrite(final Consumer<LogStreamRecordWriter> writer) {
     writer.accept(logStreamWriter);
 
     return logStreamWriter.tryWrite();

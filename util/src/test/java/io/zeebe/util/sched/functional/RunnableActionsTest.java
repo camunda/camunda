@@ -139,7 +139,7 @@ public class RunnableActionsTest {
     scheduler.workUntilDone();
 
     // then
-    assertThat(actor.runs == 5);
+    assertThat(actor.runs).isEqualTo(5);
   }
 
   @Test

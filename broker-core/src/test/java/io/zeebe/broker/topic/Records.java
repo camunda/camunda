@@ -17,14 +17,13 @@
  */
 package io.zeebe.broker.topic;
 
-import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
-import io.zeebe.broker.job.data.JobRecord;
-import io.zeebe.broker.system.workflow.repository.data.DeploymentRecord;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.util.ReflectUtil;
 import io.zeebe.util.buffer.BufferUtil;
@@ -32,20 +31,16 @@ import org.agrona.DirectBuffer;
 
 public class Records {
 
-  public static DeploymentRecord asDeploymentRecord(LoggedEvent event) {
+  public static DeploymentRecord asDeploymentRecord(final LoggedEvent event) {
     return readValueAs(event, DeploymentRecord.class);
   }
 
-  public static TopicRecord asTopicRecord(LoggedEvent event) {
-    return readValueAs(event, TopicRecord.class);
-  }
-
-  public static JobRecord asJobRecord(LoggedEvent event) {
+  public static JobRecord asJobRecord(final LoggedEvent event) {
     return readValueAs(event, JobRecord.class);
   }
 
   protected static <T extends UnpackedObject> T readValueAs(
-      LoggedEvent event, Class<T> valueClass) {
+      final LoggedEvent event, final Class<T> valueClass) {
     final DirectBuffer copy =
         BufferUtil.cloneBuffer(
             event.getValueBuffer(), event.getValueOffset(), event.getValueLength());
@@ -54,23 +49,35 @@ public class Records {
     return valuePojo;
   }
 
-  public static boolean isDeploymentRecord(LoggedEvent event) {
+  public static boolean isDeploymentRecord(final LoggedEvent event) {
     return isRecordOfType(event, ValueType.DEPLOYMENT);
   }
 
-  public static boolean isTopicRecord(LoggedEvent event) {
-    return isRecordOfType(event, ValueType.TOPIC);
-  }
-
-  public static boolean isJobRecord(LoggedEvent event) {
+  public static boolean isJobRecord(final LoggedEvent event) {
     return isRecordOfType(event, ValueType.JOB);
   }
 
-  public static boolean isIncidentRecord(LoggedEvent event) {
+  public static boolean isIncidentRecord(final LoggedEvent event) {
     return isRecordOfType(event, ValueType.INCIDENT);
   }
 
-  public static boolean hasIntent(LoggedEvent event, Intent intent) {
+  public static boolean isWorkflowInstanceRecord(final LoggedEvent event) {
+    return isRecordOfType(event, ValueType.WORKFLOW_INSTANCE);
+  }
+
+  public static boolean isMessageRecord(final LoggedEvent event) {
+    return isRecordOfType(event, ValueType.MESSAGE);
+  }
+
+  public static boolean isMessageSubscriptionRecord(final LoggedEvent event) {
+    return isRecordOfType(event, ValueType.MESSAGE_SUBSCRIPTION);
+  }
+
+  public static boolean isWorkflowInstanceSubscriptionRecord(final LoggedEvent event) {
+    return isRecordOfType(event, ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
+  }
+
+  public static boolean hasIntent(final LoggedEvent event, final Intent intent) {
     if (event == null) {
       return false;
     }
@@ -80,41 +87,44 @@ public class Records {
     return metadata.getIntent() == intent;
   }
 
-  private static RecordMetadata getMetadata(LoggedEvent event) {
+  private static RecordMetadata getMetadata(final LoggedEvent event) {
     final RecordMetadata metadata = new RecordMetadata();
     event.readMetadata(metadata);
 
     return metadata;
   }
 
-  public static boolean isRejection(LoggedEvent event) {
+  public static boolean isRejection(final LoggedEvent event) {
     final RecordMetadata metadata = getMetadata(event);
     return metadata.getRecordType() == RecordType.COMMAND_REJECTION;
   }
 
-  public static boolean isRejection(LoggedEvent event, ValueType valueType, Intent intent) {
+  public static boolean isRejection(
+      final LoggedEvent event, final ValueType valueType, final Intent intent) {
     return isRejection(event) && isRecordOfType(event, valueType) && hasIntent(event, intent);
   }
 
-  public static boolean isEvent(LoggedEvent event) {
+  public static boolean isEvent(final LoggedEvent event) {
     final RecordMetadata metadata = getMetadata(event);
     return metadata.getRecordType() == RecordType.EVENT;
   }
 
-  public static boolean isEvent(LoggedEvent event, ValueType valueType, Intent intent) {
+  public static boolean isEvent(
+      final LoggedEvent event, final ValueType valueType, final Intent intent) {
     return isEvent(event) && isRecordOfType(event, valueType) && hasIntent(event, intent);
   }
 
-  public static boolean isCommand(LoggedEvent event) {
+  public static boolean isCommand(final LoggedEvent event) {
     final RecordMetadata metadata = getMetadata(event);
     return metadata.getRecordType() == RecordType.COMMAND;
   }
 
-  public static boolean isCommand(LoggedEvent event, ValueType valueType, Intent intent) {
+  public static boolean isCommand(
+      final LoggedEvent event, final ValueType valueType, final Intent intent) {
     return isCommand(event) && isRecordOfType(event, valueType) && hasIntent(event, intent);
   }
 
-  protected static boolean isRecordOfType(LoggedEvent event, ValueType type) {
+  protected static boolean isRecordOfType(final LoggedEvent event, final ValueType type) {
     if (event == null) {
       return false;
     }

@@ -15,8 +15,10 @@
  */
 package io.zeebe.logstreams.processor;
 
-import io.zeebe.logstreams.log.*;
-import io.zeebe.logstreams.spi.SnapshotStorage;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamReader;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.zeebe.logstreams.spi.SnapshotController;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.ActorScheduler;
 import java.time.Duration;
@@ -31,10 +33,10 @@ public class StreamProcessorContext {
   protected LogStream logStream;
 
   protected LogStreamReader logStreamReader;
-  protected LogStreamWriter logStreamWriter;
+  protected LogStreamRecordWriter logStreamWriter;
 
   protected Duration snapshotPeriod;
-  protected SnapshotStorage snapshotStorage;
+  protected SnapshotController snapshotController;
 
   protected ActorScheduler actorScheduler;
   private ActorControl actorControl;
@@ -92,11 +94,11 @@ public class StreamProcessorContext {
     return logStreamReader;
   }
 
-  public LogStreamWriter getLogStreamWriter() {
+  public LogStreamRecordWriter getLogStreamWriter() {
     return logStreamWriter;
   }
 
-  public void setLogStreamWriter(LogStreamWriter logStreamWriter) {
+  public void setLogStreamWriter(LogStreamRecordWriter logStreamWriter) {
     this.logStreamWriter = logStreamWriter;
   }
 
@@ -108,12 +110,12 @@ public class StreamProcessorContext {
     this.snapshotPeriod = snapshotPeriod;
   }
 
-  public SnapshotStorage getSnapshotStorage() {
-    return snapshotStorage;
+  public SnapshotController getSnapshotController() {
+    return snapshotController;
   }
 
-  public void setSnapshotStorage(SnapshotStorage snapshotStorage) {
-    this.snapshotStorage = snapshotStorage;
+  public void setSnapshotController(SnapshotController snapshotController) {
+    this.snapshotController = snapshotController;
   }
 
   public void setEventFilter(EventFilter eventFilter) {

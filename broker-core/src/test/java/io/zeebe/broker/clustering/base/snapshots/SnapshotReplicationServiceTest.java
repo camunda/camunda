@@ -20,13 +20,20 @@ package io.zeebe.broker.clustering.base.snapshots;
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.snapshotReplicationServiceName;
 import static io.zeebe.util.StringUtil.getBytes;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
 
-import io.zeebe.broker.clustering.api.*;
+import io.zeebe.broker.clustering.api.ErrorResponse;
+import io.zeebe.broker.clustering.api.FetchSnapshotChunkRequest;
+import io.zeebe.broker.clustering.api.FetchSnapshotChunkResponse;
+import io.zeebe.broker.clustering.api.ListSnapshotsRequest;
+import io.zeebe.broker.clustering.api.ListSnapshotsResponse;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
 import io.zeebe.broker.util.BufferingClientOutput;
+import io.zeebe.broker.util.BufferingClientOutput.Request;
 import io.zeebe.broker.util.ControlledTopologyManager;
 import io.zeebe.clustering.management.ErrorResponseCode;
 import io.zeebe.clustering.management.FetchSnapshotChunkRequestEncoder;
@@ -72,7 +79,7 @@ public class SnapshotReplicationServiceTest {
   private final FsSnapshotStorageConfiguration config = new FsSnapshotStorageConfiguration();
   private FsSnapshotStorage storage;
   private Partition partition;
-  private final NodeInfo leaderNodeInfo = createLeaderNodeInfo();
+  private final NodeInfo leaderNodeInfo = createLeaderNodeInfo(0);
 
   @Before
   public void setUp() throws Exception {
@@ -150,14 +157,13 @@ public class SnapshotReplicationServiceTest {
         .isEqualTo(ListSnapshotsRequestEncoder.TEMPLATE_ID);
 
     // when
-    final NodeInfo newLeader = createNodeInfo("0.0.0.0", 5);
+    final NodeInfo newLeader = createNodeInfo(1, "0.0.0.0", 5);
     topologyManager.setPartitionLeader(partition, newLeader);
     output.getLastRequest().respondWith(new RuntimeException("network error"));
     actorSchedulerRule.workUntilDone();
     actorSchedulerRule.waitForTimer(SnapshotReplicationService.ERROR_RETRY_INTERVAL);
 
     // then
-    verify(transport).registerRemoteAddress(newLeader.getManagementApiAddress());
     assertThat(output.getSentRequests().size()).isEqualTo(2);
     assertThat(output.getLastRequest().getTemplateId())
         .isEqualTo(ListSnapshotsRequestEncoder.TEMPLATE_ID);
@@ -186,6 +192,33 @@ public class SnapshotReplicationServiceTest {
     assertThat(output.getSentRequests().size()).isEqualTo(2);
     assertThat(output.getLastRequest().getTemplateId())
         .isEqualTo(ListSnapshotsRequestEncoder.TEMPLATE_ID);
+  }
+
+  @Test
+  public void shouldRefreshLeaderAddressOnListSnapshotsError() throws Exception {
+    // given
+    final ErrorResponse response =
+        new ErrorResponse().setCode(ErrorResponseCode.PARTITION_NOT_FOUND).setData("fail");
+
+    // when
+    installService();
+
+    // then
+    assertThat(output.getSentRequests().size()).isEqualTo(1);
+    assertThat(output.getLastRequest().getTemplateId())
+        .isEqualTo(ListSnapshotsRequestEncoder.TEMPLATE_ID);
+
+    // when
+    final NodeInfo newLeader = createNodeInfo(1, "0.0.0.0", 12345);
+    topologyManager.setPartitionLeader(partition, newLeader);
+    output.getLastRequest().respondWith(response);
+    actorSchedulerRule.workUntilDone();
+    actorSchedulerRule.waitForTimer(SnapshotReplicationService.ERROR_RETRY_INTERVAL);
+
+    // then
+    assertThat(output.getSentRequests().size()).isEqualTo(2);
+    final Request lastRequest = output.getLastRequest();
+    assertThat(lastRequest.getTemplateId()).isEqualTo(ListSnapshotsRequestEncoder.TEMPLATE_ID);
   }
 
   @Test
@@ -392,15 +425,17 @@ public class SnapshotReplicationServiceTest {
     return new FsSnapshotMetadata(name, position, data.length, true, checksum);
   }
 
-  private NodeInfo createLeaderNodeInfo() {
-    return createNodeInfo("0.0.0.0", 51015);
+  private NodeInfo createLeaderNodeInfo(int nodeId) {
+    return createNodeInfo(nodeId, "0.0.0.0", 26501);
   }
 
-  private NodeInfo createNodeInfo(final String host, final int port) {
+  private NodeInfo createNodeInfo(int nodeId, final String host, final int port) {
     return new NodeInfo(
+        nodeId,
         new SocketAddress(host, port),
         new SocketAddress(host, port + 1),
-        new SocketAddress(host, port + 2));
+        new SocketAddress(host, port + 2),
+        new SocketAddress(host, port + 3));
   }
 
   private FsSnapshotStorage createSnapshotStorage() {
@@ -409,7 +444,7 @@ public class SnapshotReplicationServiceTest {
   }
 
   private Partition createPartition() {
-    final PartitionInfo info = new PartitionInfo(BufferUtil.wrapString("test"), 1, 1);
+    final PartitionInfo info = new PartitionInfo(1, 1);
     return new Partition(info, RaftState.FOLLOWER) {
       @Override
       public SnapshotStorage getSnapshotStorage() {

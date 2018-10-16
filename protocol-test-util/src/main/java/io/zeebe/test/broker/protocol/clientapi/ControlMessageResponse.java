@@ -15,7 +15,9 @@
  */
 package io.zeebe.test.broker.protocol.clientapi;
 
-import io.zeebe.protocol.clientapi.*;
+import io.zeebe.protocol.clientapi.ControlMessageResponseDecoder;
+import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
+import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.util.buffer.BufferReader;
 import java.io.IOException;

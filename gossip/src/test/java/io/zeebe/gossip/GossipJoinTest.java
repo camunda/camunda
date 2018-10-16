@@ -30,9 +30,9 @@ import org.junit.Test;
 import org.junit.rules.Timeout;
 
 public class GossipJoinTest {
-  private GossipRule gossip1 = new GossipRule("localhost:8001");
-  private GossipRule gossip2 = new GossipRule("localhost:8002");
-  private GossipRule gossip3 = new GossipRule("localhost:8003");
+  private GossipRule gossip1 = new GossipRule(1);
+  private GossipRule gossip2 = new GossipRule(2);
+  private GossipRule gossip3 = new GossipRule(3);
 
   @Rule public GossipClusterRule cluster = new GossipClusterRule(gossip1, gossip2, gossip3);
 
@@ -46,6 +46,81 @@ public class GossipJoinTest {
     // then
     assertThat(gossip1.receivedEvent(GossipEventType.SYNC_REQUEST, gossip2)).isTrue();
     assertThat(gossip2.receivedEvent(GossipEventType.SYNC_RESPONSE, gossip1)).isTrue();
+  }
+
+  @Test
+  public void shouldSendSyncRequestAfterReconnect() {
+    // given
+    gossip2.join(gossip1).join();
+    gossip3.join(gossip1).join();
+    cluster.interruptConnectionBetween(gossip1, gossip2);
+    gossip1.clearReceivedEvents();
+    gossip2.clearReceivedEvents();
+    gossip3.clearReceivedEvents();
+
+    // when
+    cluster.waitUntil(
+        () ->
+            gossip3.receivedEvent(GossipEventType.SYNC_REQUEST, gossip1)
+                && gossip3.receivedEvent(GossipEventType.SYNC_REQUEST, gossip1));
+    gossip3.clearReceivedEvents();
+    cluster.waitUntil(
+        () ->
+            gossip3.receivedEvent(GossipEventType.SYNC_REQUEST, gossip1)
+                && gossip3.receivedEvent(GossipEventType.SYNC_REQUEST, gossip1));
+
+    // then
+    assertThat(gossip1.receivedEvent(GossipEventType.SYNC_REQUEST, gossip2)).isFalse();
+    assertThat(gossip2.receivedEvent(GossipEventType.SYNC_REQUEST, gossip1)).isFalse();
+
+    // when
+    cluster.reconnect(gossip1, gossip2);
+
+    // then
+    cluster.waitUntil(
+        () ->
+            (gossip1.receivedEvent(GossipEventType.SYNC_REQUEST, gossip2)
+                    && gossip2.receivedEvent(GossipEventType.SYNC_RESPONSE, gossip1))
+                && (gossip2.receivedEvent(GossipEventType.SYNC_REQUEST, gossip1)
+                    && gossip1.receivedEvent(GossipEventType.SYNC_RESPONSE, gossip2)));
+  }
+
+  @Test
+  public void shouldRepeatSyncRequestAfterAnInterval() {
+    // given
+    gossip2.join(gossip1).join();
+
+    // when
+    gossip1.clearReceivedEvents();
+    gossip2.clearReceivedEvents();
+    assertThat(gossip1.receivedEvent(GossipEventType.SYNC_REQUEST, gossip2)).isFalse();
+    assertThat(gossip2.receivedEvent(GossipEventType.SYNC_RESPONSE, gossip1)).isFalse();
+
+    // then
+    cluster.waitUntil(
+        () ->
+            gossip1.receivedEvent(GossipEventType.SYNC_REQUEST, gossip2)
+                && gossip2.receivedEvent(GossipEventType.SYNC_RESPONSE, gossip1));
+  }
+
+  @Test
+  public void shouldSendSyncRequestOnAllNodes() {
+    // given
+    gossip2.join(gossip1).join();
+
+    // when
+    gossip1.clearReceivedEvents();
+    gossip2.clearReceivedEvents();
+    assertThat(gossip1.receivedEvent(GossipEventType.SYNC_REQUEST, gossip2)).isFalse();
+    assertThat(gossip2.receivedEvent(GossipEventType.SYNC_RESPONSE, gossip1)).isFalse();
+
+    // then
+    cluster.waitUntil(
+        () ->
+            (gossip1.receivedEvent(GossipEventType.SYNC_REQUEST, gossip2)
+                    && gossip2.receivedEvent(GossipEventType.SYNC_RESPONSE, gossip1))
+                && (gossip2.receivedEvent(GossipEventType.SYNC_REQUEST, gossip1)
+                    && gossip1.receivedEvent(GossipEventType.SYNC_RESPONSE, gossip2)));
   }
 
   @Test
@@ -78,19 +153,6 @@ public class GossipJoinTest {
     // then
     assertThat(gossip3.hasMember(gossip1)).isTrue();
     assertThat(gossip3.hasMember(gossip2)).isTrue();
-  }
-
-  @Test
-  public void shouldJoinIfOneContactPointIsAvailable() {
-    // given
-    cluster.interruptConnectionBetween(gossip1, gossip3);
-
-    // when
-    gossip3.join(gossip1, gossip2).join();
-
-    // then
-    assertThat(gossip2.receivedMembershipEvent(MembershipEventType.JOIN, gossip3)).isTrue();
-    assertThat(gossip1.receivedMembershipEvent(MembershipEventType.JOIN, gossip3)).isFalse();
   }
 
   @Test

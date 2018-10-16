@@ -15,18 +15,24 @@
  */
 package io.zeebe.raft.protocol;
 
-import static io.zeebe.raft.AppendRequestDecoder.*;
+import static io.zeebe.raft.AppendRequestDecoder.commitPositionNullValue;
+import static io.zeebe.raft.AppendRequestDecoder.dataHeaderLength;
+import static io.zeebe.raft.AppendRequestDecoder.nodeIdNullValue;
+import static io.zeebe.raft.AppendRequestDecoder.partitionIdNullValue;
+import static io.zeebe.raft.AppendRequestDecoder.previousEventPositionNullValue;
+import static io.zeebe.raft.AppendRequestDecoder.previousEventTermNullValue;
+import static io.zeebe.raft.AppendRequestDecoder.termNullValue;
 
 import io.zeebe.logstreams.impl.LoggedEventImpl;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.raft.*;
-import io.zeebe.transport.SocketAddress;
+import io.zeebe.raft.AppendRequestDecoder;
+import io.zeebe.raft.AppendRequestEncoder;
+import io.zeebe.raft.Raft;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class AppendRequest extends AbstractRaftMessage
-    implements HasSocketAddress, HasTerm, HasPartition {
+public class AppendRequest extends AbstractRaftMessage implements HasNodeId, HasTerm, HasPartition {
 
   protected final AppendRequestDecoder bodyDecoder = new AppendRequestDecoder();
   protected final AppendRequestEncoder bodyEncoder = new AppendRequestEncoder();
@@ -37,15 +43,13 @@ public class AppendRequest extends AbstractRaftMessage
   protected long previousEventPosition;
   protected int previousEventTerm;
   protected long commitPosition;
+  protected int nodeId;
 
   // read
-  protected final DirectBuffer readHost = new UnsafeBuffer(0, 0);
-  protected final SocketAddress readSocketAdress = new SocketAddress();
   protected final DirectBuffer readData = new UnsafeBuffer(0, 0);
   protected final LoggedEventImpl readEvent = new LoggedEventImpl();
 
   // write
-  private SocketAddress writeSocketAddress;
   private LoggedEventImpl writeEvent;
 
   public AppendRequest() {
@@ -58,13 +62,11 @@ public class AppendRequest extends AbstractRaftMessage
     previousEventPosition = previousEventPositionNullValue();
     previousEventTerm = previousEventTermNullValue();
     commitPosition = commitPositionNullValue();
+    nodeId = nodeIdNullValue();
 
-    readHost.wrap(0, 0);
-    readSocketAdress.reset();
     readData.wrap(0, 0);
     readEvent.wrap(null, -1);
 
-    writeSocketAddress = null;
     writeEvent = null;
 
     return this;
@@ -118,8 +120,8 @@ public class AppendRequest extends AbstractRaftMessage
   }
 
   @Override
-  public SocketAddress getSocketAddress() {
-    return readSocketAdress;
+  public int getNodeId() {
+    return nodeId;
   }
 
   public LoggedEventImpl getEvent() {
@@ -141,23 +143,14 @@ public class AppendRequest extends AbstractRaftMessage
     partitionId = logStream.getPartitionId();
     term = raft.getTerm();
     commitPosition = logStream.getCommitPosition();
-
-    writeSocketAddress = raft.getSocketAddress();
+    nodeId = raft.getNodeId();
 
     return this;
   }
 
   @Override
   public int getLength() {
-    int length =
-        headerEncoder.encodedLength()
-            + bodyEncoder.sbeBlockLength()
-            + hostHeaderLength()
-            + dataHeaderLength();
-
-    if (writeSocketAddress != null) {
-      length += writeSocketAddress.hostLength();
-    }
+    int length = headerEncoder.encodedLength() + bodyEncoder.sbeBlockLength() + dataHeaderLength();
 
     if (writeEvent != null) {
       length += writeEvent.getFragmentLength();
@@ -182,14 +175,9 @@ public class AppendRequest extends AbstractRaftMessage
     previousEventPosition = bodyDecoder.previousEventPosition();
     previousEventTerm = bodyDecoder.previousEventTerm();
     commitPosition = bodyDecoder.commitPosition();
-    readSocketAdress.port(bodyDecoder.port());
+    nodeId = bodyDecoder.nodeId();
 
     offset += bodyDecoder.sbeBlockLength();
-
-    offset += wrapVarData(buffer, offset, readHost, hostHeaderLength(), bodyDecoder.hostLength());
-    bodyDecoder.limit(offset);
-
-    readSocketAdress.host(readHost, 0, readHost.capacity());
 
     offset += wrapVarData(buffer, offset, readData, dataHeaderLength(), bodyDecoder.dataLength());
     bodyDecoder.limit(offset);
@@ -223,13 +211,8 @@ public class AppendRequest extends AbstractRaftMessage
         .term(term)
         .previousEventPosition(previousEventPosition)
         .previousEventTerm(previousEventTerm)
-        .commitPosition(commitPosition);
-
-    if (writeSocketAddress != null) {
-      bodyEncoder
-          .port(writeSocketAddress.port())
-          .putHost(writeSocketAddress.getHostBuffer(), 0, writeSocketAddress.hostLength());
-    }
+        .commitPosition(commitPosition)
+        .nodeId(nodeId);
 
     if (writeEvent != null) {
       bodyEncoder.putData(

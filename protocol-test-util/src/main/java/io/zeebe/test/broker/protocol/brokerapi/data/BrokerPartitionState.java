@@ -15,30 +15,51 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi.data;
 
+import java.util.Objects;
+
 public class BrokerPartitionState {
   public static final String LEADER_STATE = "LEADER";
   public static final String FOLLOWER_STATE = "FOLLOWER";
 
   private final String state;
-  private final String topicName;
   private final int partitionId;
+  private final int replicationFactor;
 
-  public BrokerPartitionState(final String state, final String topicName, final int partitionId) {
+  public BrokerPartitionState(final String state, final int partitionId, int replicationFactor) {
     this.state = state;
-    this.topicName = topicName;
     this.partitionId = partitionId;
+    this.replicationFactor = replicationFactor;
   }
 
   public String getState() {
     return state;
   }
 
-  public String getTopicName() {
-    return topicName;
-  }
-
   public int getPartitionId() {
     return partitionId;
+  }
+
+  public int getReplicationFactor() {
+    return replicationFactor;
+  }
+
+  @Override
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+    final BrokerPartitionState that = (BrokerPartitionState) o;
+    return partitionId == that.partitionId
+        && replicationFactor == that.replicationFactor
+        && Objects.equals(state, that.state);
+  }
+
+  @Override
+  public int hashCode() {
+    return Objects.hash(state, partitionId, replicationFactor);
   }
 
   @Override
@@ -47,11 +68,10 @@ public class BrokerPartitionState {
         + "state='"
         + state
         + '\''
-        + ", topicName='"
-        + topicName
-        + '\''
         + ", partitionId="
         + partitionId
+        + ", replicationFactor="
+        + replicationFactor
         + '}';
   }
 }

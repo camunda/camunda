@@ -15,7 +15,8 @@
  */
 package io.zeebe.test.util;
 
-import static io.zeebe.util.buffer.BufferUtil.*;
+import static io.zeebe.util.buffer.BufferUtil.NO_WRAP;
+import static io.zeebe.util.buffer.BufferUtil.bytesAsHexString;
 
 import io.zeebe.util.buffer.BufferWriter;
 import java.util.Arrays;

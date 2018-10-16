@@ -26,7 +26,6 @@ import io.zeebe.gossip.membership.MembershipList;
 import io.zeebe.gossip.protocol.GossipEvent;
 import io.zeebe.gossip.protocol.GossipEventConsumer;
 import io.zeebe.gossip.protocol.GossipEventSender;
-import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.collection.Reusable;
 import io.zeebe.util.collection.ReusableObjectList;
@@ -48,10 +47,10 @@ public class SyncRequestEventHandler implements GossipEventConsumer {
 
   private final List<Tuple<DirectBuffer, GossipSyncRequestHandler>> handlers = new ArrayList<>();
   private final ReusableObjectList<GossipSyncRequest> syncRequests =
-      new ReusableObjectList<>(() -> new GossipSyncRequest());
+      new ReusableObjectList<>(GossipSyncRequest::new);
 
   private final ReusableObjectList<ReceivedRequest> receivedRequests =
-      new ReusableObjectList<>(() -> new ReceivedRequest());
+      new ReusableObjectList<>(ReceivedRequest::new);
 
   public SyncRequestEventHandler(
       GossipContext context,
@@ -105,29 +104,29 @@ public class SyncRequestEventHandler implements GossipEventConsumer {
   private void sendSyncResponse() {
     for (GossipSyncRequest request : syncRequests) {
       for (GossipSyncResponsePart response : request.getResponse()) {
-        final SocketAddress address = response.getAddress();
+        final int nodeId = response.getNodeId();
 
-        final Member member = membershipList.getMemberOrSelf(address);
+        final Member member = membershipList.getMemberOrSelf(response.getNodeId());
         if (member != null) {
           final GossipTerm term = member.getTermForEventType(request.getType());
           if (term != null) {
             customEventSyncRequestSupplier
                 .add()
                 .type(request.getType())
-                .senderAddress(member.getAddress())
+                .senderId(member.getId())
                 .senderGossipTerm(term)
                 .payload(response.getPayload());
           } else {
             LOG.debug(
-                "Ignore sync response with type '{}' and sender '{}'. Event type is unknown. ",
+                "Ignore sync response with type '{}' and sender id '{}'. Event type is unknown. ",
                 bufferAsString(request.getType()),
-                address);
+                nodeId);
           }
         } else {
           LOG.debug(
-              "Ignore sync response with type '{}' and sender '{}'. Sender is unknown. ",
+              "Ignore sync response with type '{}' and sender id '{}'. Sender is unknown. ",
               bufferAsString(request.getType()),
-              address);
+              nodeId);
         }
       }
     }

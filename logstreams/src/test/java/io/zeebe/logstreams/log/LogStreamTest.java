@@ -15,10 +15,8 @@
  */
 package io.zeebe.logstreams.log;
 
-import static io.zeebe.logstreams.log.LogStream.MAX_TOPIC_NAME_LENGTH;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
-import static java.lang.String.join;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -26,22 +24,20 @@ import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.logstreams.impl.LogStreamBuilder;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.AutoCloseableRule;
-import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.io.File;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
-import org.agrona.DirectBuffer;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.*;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TemporaryFolder;
 
 public class LogStreamTest {
   public static final int PARTITION_ID = 0;
-  public static final DirectBuffer TOPIC_NAME_BUFFER = BufferUtil.wrapString("default-topic");
 
   @Rule public ExpectedException thrown = ExpectedException.none();
 
@@ -57,8 +53,8 @@ public class LogStreamTest {
           .around(serviceContainer)
           .around(closeables);
 
-  protected LogStream buildLogStream(Consumer<LogStreamBuilder> streamConfig) {
-    final LogStreamBuilder builder = new LogStreamBuilder(TOPIC_NAME_BUFFER, PARTITION_ID);
+  protected LogStream buildLogStream(final Consumer<LogStreamBuilder> streamConfig) {
+    final LogStreamBuilder builder = new LogStreamBuilder(PARTITION_ID);
     builder
         .logName("test-log-name")
         .serviceContainer(serviceContainer.get())
@@ -83,7 +79,6 @@ public class LogStreamTest {
     closeables.manage(logStream);
 
     // then
-    assertThat(logStream.getTopicName()).isEqualTo(TOPIC_NAME_BUFFER);
     assertThat(logStream.getPartitionId()).isEqualTo(PARTITION_ID);
     assertThat(logStream.getLogName()).isEqualTo("test-log-name");
 
@@ -203,29 +198,6 @@ public class LogStreamTest {
   }
 
   @Test
-  public void shouldFailToBuildLogStreamIfTopicNameIsTooLong() {
-    // given
-    final DirectBuffer topicName =
-        wrapString(join("", Collections.nCopies(MAX_TOPIC_NAME_LENGTH + 1, "f")));
-
-    final LogStreamBuilder builder =
-        new LogStreamBuilder(topicName, PARTITION_ID)
-            .logName("some-name")
-            .logRootPath(tempFolder.getRoot().getAbsolutePath())
-            .serviceContainer(serviceContainer.get());
-
-    // expect exception
-    thrown.expect(RuntimeException.class);
-    thrown.expectMessage(
-        String.format(
-            "Topic name exceeds max length (%d > %d bytes)",
-            topicName.capacity(), MAX_TOPIC_NAME_LENGTH));
-
-    // when
-    builder.build();
-  }
-
-  @Test
   public void shouldTruncateLogStorage() {
     // given
     final LogStream logStream = buildLogStream();
@@ -337,7 +309,7 @@ public class LogStreamTest {
         .hasMessage("Truncation failed! Position " + nonExistingPosition + " was not found.");
   }
 
-  private Stream<LoggedEvent> events(LogStream stream) {
+  private Stream<LoggedEvent> events(final LogStream stream) {
     final BufferedLogStreamReader reader = new BufferedLogStreamReader(stream, true);
     closeables.manage(reader);
 
@@ -346,7 +318,7 @@ public class LogStreamTest {
     return StreamSupport.stream(iterable.spliterator(), false);
   }
 
-  private long writeEvent(LogStream logStream) {
+  private long writeEvent(final LogStream logStream) {
     final LogStreamWriterImpl writer = new LogStreamWriterImpl(logStream);
 
     long position = -1L;

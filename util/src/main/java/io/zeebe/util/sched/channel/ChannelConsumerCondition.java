@@ -17,7 +17,10 @@ package io.zeebe.util.sched.channel;
 
 import static org.agrona.UnsafeAccess.UNSAFE;
 
-import io.zeebe.util.sched.*;
+import io.zeebe.util.sched.ActorCondition;
+import io.zeebe.util.sched.ActorJob;
+import io.zeebe.util.sched.ActorSubscription;
+import io.zeebe.util.sched.ActorTask;
 
 @SuppressWarnings("restriction")
 public class ChannelConsumerCondition

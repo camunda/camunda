@@ -18,9 +18,12 @@ package io.zeebe.map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.map.iterator.Bytes2LongZbMapEntry;
-import java.io.IOException;
-import java.util.*;
-import org.junit.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Test;
 
 public class Bytes2LongZbMapLargeBlockSizeTest {
   static final long MISSING_VALUE = -2;
@@ -30,7 +33,7 @@ public class Bytes2LongZbMapLargeBlockSizeTest {
   Bytes2LongZbMap map;
 
   @Before
-  public void createmap() throws IOException {
+  public void createMap() {
     final int tableSize = 32;
 
     map = new Bytes2LongZbMap(tableSize, 3, 64);
@@ -38,10 +41,7 @@ public class Bytes2LongZbMapLargeBlockSizeTest {
     // generate keys
     for (int i = 0; i < keys.length; i++) {
       final byte[] val = String.valueOf(i).getBytes();
-
-      for (int j = 0; j < val.length; j++) {
-        keys[i][j] = val[j];
-      }
+      System.arraycopy(val, 0, keys[i], 0, val.length);
     }
   }
 
@@ -53,7 +53,7 @@ public class Bytes2LongZbMapLargeBlockSizeTest {
   @Test
   public void shouldReturnMissingValueForEmptyMap() {
     // given that the map is empty
-    assertThat(map.get(keys[0], MISSING_VALUE) == MISSING_VALUE);
+    assertThat(map.get(keys[0], MISSING_VALUE)).isEqualTo(MISSING_VALUE);
   }
 
   @Test
@@ -62,7 +62,7 @@ public class Bytes2LongZbMapLargeBlockSizeTest {
     map.put(keys[1], 1);
 
     // then
-    assertThat(map.get(keys[0], MISSING_VALUE) == MISSING_VALUE);
+    assertThat(map.get(keys[0], MISSING_VALUE)).isEqualTo(MISSING_VALUE);
   }
 
   @Test
@@ -99,7 +99,7 @@ public class Bytes2LongZbMapLargeBlockSizeTest {
     }
 
     for (int i = 0; i < 16; i++) {
-      assertThat(map.get(keys[i], MISSING_VALUE) == i);
+      assertThat(map.get(keys[i], MISSING_VALUE)).isEqualTo(i);
     }
   }
 
@@ -110,7 +110,7 @@ public class Bytes2LongZbMapLargeBlockSizeTest {
     }
 
     for (int i = 0; i < 16; i++) {
-      assertThat(map.get(keys[i], MISSING_VALUE) == i);
+      assertThat(map.get(keys[i], MISSING_VALUE)).isEqualTo(i);
     }
   }
 

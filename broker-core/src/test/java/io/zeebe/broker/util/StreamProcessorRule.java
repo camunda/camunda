@@ -21,6 +21,7 @@ import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.topic.StreamProcessorControl;
 import io.zeebe.broker.transport.clientapi.BufferingServerOutput;
 import io.zeebe.broker.util.TestStreams.FluentLogWriter;
+import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.processor.StreamProcessor;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.RecordType;
@@ -38,6 +39,8 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 public class StreamProcessorRule implements TestRule {
+
+  public static final int PARTITION_ID = 0;
   // environment
   private TemporaryFolder tempFolder = new TemporaryFolder();
   private AutoCloseableRule closeables = new AutoCloseableRule();
@@ -52,14 +55,23 @@ public class StreamProcessorRule implements TestRule {
   private TestStreams streams;
   private TypedStreamEnvironment streamEnvironment;
 
-  private SetupRule rule = new SetupRule();
+  private final SetupRule rule;
 
-  private RuleChain chain =
-      RuleChain.outerRule(tempFolder)
-          .around(actorSchedulerRule)
-          .around(serviceContainerRule)
-          .around(closeables)
-          .around(rule);
+  public StreamProcessorRule() {
+    this(PARTITION_ID);
+  }
+
+  public StreamProcessorRule(int partitionId) {
+    rule = new SetupRule(partitionId);
+    chain =
+        RuleChain.outerRule(tempFolder)
+            .around(actorSchedulerRule)
+            .around(serviceContainerRule)
+            .around(closeables)
+            .around(rule);
+  }
+
+  private final RuleChain chain;
 
   @Override
   public Statement apply(Statement base, Description description) {
@@ -136,7 +148,18 @@ public class StreamProcessorRule implements TestRule {
     return output;
   }
 
+  public void printAllRecords() {
+    final LogStream logStream = streams.getLogStream(STREAM_NAME);
+    LogStreamPrinter.printRecords(logStream);
+  }
+
   private class SetupRule extends ExternalResource {
+
+    private final int partitionId;
+
+    SetupRule(int partitionId) {
+      this.partitionId = partitionId;
+    }
 
     @Override
     protected void before() throws Throwable {
@@ -148,7 +171,7 @@ public class StreamProcessorRule implements TestRule {
               closeables,
               serviceContainerRule.get(),
               actorSchedulerRule.get());
-      streams.createLogStream(STREAM_NAME);
+      streams.createLogStream(STREAM_NAME, partitionId);
 
       streams
           .newRecord(

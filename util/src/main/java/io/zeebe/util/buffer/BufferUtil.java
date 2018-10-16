@@ -18,6 +18,7 @@ package io.zeebe.util.buffer;
 import static io.zeebe.util.EnsureUtil.ensureGreaterThanOrEqual;
 import static io.zeebe.util.StringUtil.getBytes;
 
+import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
@@ -194,15 +195,13 @@ public final class BufferUtil {
     return builder.toString();
   }
 
-  public static byte[] bufferAsArray(DirectBuffer buffer) {
-    byte[] array = null;
+  /** @return a new array that is a copy of the buffer's contents */
+  public static byte[] bufferAsArray(final DirectBuffer buffer) {
+    final byte[] array;
 
-    if (buffer.byteArray() != null) {
-      array = buffer.byteArray();
-    } else {
-      array = new byte[buffer.capacity()];
-      buffer.getBytes(0, array);
-    }
+    array = new byte[buffer.capacity()];
+    buffer.getBytes(0, array);
+
     return array;
   }
 
@@ -215,6 +214,37 @@ public final class BufferUtil {
     return new UnsafeBuffer(intArrayToByteArray(bytes));
   }
 
+  public static int bufferContentsHash(DirectBuffer buffer) {
+    int hashCode = 1;
+
+    for (int i = 0, length = buffer.capacity(); i < length; i++) {
+      hashCode = 31 * hashCode + buffer.getByte(i);
+    }
+
+    return hashCode;
+  }
+
+  /**
+   * Performs bytewise comparison of a given buffer and a prefix.
+   *
+   * @param buffer the buffer to check against
+   * @param prefix the prefix to look for
+   * @return true if buffer starts with the all bytes contained in prefix
+   */
+  public static boolean startsWith(final DirectBuffer buffer, final DirectBuffer prefix) {
+    if (buffer.capacity() < prefix.capacity()) {
+      return false;
+    }
+
+    for (int i = 0; i < prefix.capacity(); i++) {
+      if (buffer.getByte(i) != prefix.getByte(i)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
   protected static byte[] intArrayToByteArray(int[] input) {
     final byte[] result = new byte[input.length];
     for (int i = 0; i < input.length; i++) {
@@ -222,5 +252,28 @@ public final class BufferUtil {
     }
 
     return result;
+  }
+
+  public static int readIntoBuffer(
+      final DirectBuffer buffer, int offset, final DirectBuffer valueBuffer) {
+    final int length = buffer.getInt(offset, ByteOrder.LITTLE_ENDIAN);
+    offset += Integer.BYTES;
+
+    final byte[] bytes = new byte[length];
+    valueBuffer.wrap(bytes);
+    buffer.getBytes(offset, bytes, 0, length);
+    offset += length;
+    return offset;
+  }
+
+  public static int writeIntoBuffer(
+      final MutableDirectBuffer writeBuffer, int offset, final DirectBuffer valueBuffer) {
+    final int valueLength = valueBuffer.capacity();
+    writeBuffer.putInt(offset, valueLength, ByteOrder.LITTLE_ENDIAN);
+    offset += Integer.BYTES;
+
+    writeBuffer.putBytes(offset, valueBuffer, 0, valueLength);
+    offset += valueLength;
+    return offset;
   }
 }

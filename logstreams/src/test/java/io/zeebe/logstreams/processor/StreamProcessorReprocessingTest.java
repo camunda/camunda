@@ -19,22 +19,30 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
-import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.logstreams.util.LogStreamRule;
 import io.zeebe.logstreams.util.LogStreamWriterRule;
 import io.zeebe.util.sched.future.ActorFuture;
-import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.util.List;
-import java.util.concurrent.*;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.rules.TemporaryFolder;
 
@@ -112,60 +120,7 @@ public class StreamProcessorReprocessingTest {
         .extracting(LoggedEvent::getPosition)
         .containsExactly(eventPosition1, eventPosition2);
 
-    verify(eventProcessor, times(2)).processEvent(any());
-    verify(eventProcessor, times(1)).executeSideEffects();
-    verify(eventProcessor, times(1)).writeEvent(any());
-    verify(eventProcessor, times(2)).updateState();
-  }
-
-  @Test
-  public void shouldReprocessSourceEventAsync()
-      throws InterruptedException, ExecutionException, TimeoutException {
-    final ActorFuture<Void> whenProcessEventInvoked = new CompletableActorFuture<>();
-    final ActorFuture<Void> whenProcessEventCompleted = new CompletableActorFuture<>();
-
-    doAnswer(
-            (invocation) -> {
-              final EventLifecycleContext ctx = invocation.getArgument(0);
-
-              if (!whenProcessEventCompleted.isDone()) // only be async on first try
-              {
-                ctx.async(whenProcessEventCompleted);
-                whenProcessEventInvoked.complete(null);
-              }
-
-              return null;
-            })
-        .when(eventProcessor)
-        .processEvent(any());
-
-    // given [1|S:-] --> [2|S:1]
-    final long eventPosition1 = writeEvent();
-    final long eventPosition2 =
-        writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition1));
-
-    // when
-    openStreamProcessorController();
-    whenProcessEventInvoked.get(5, TimeUnit.SECONDS);
-
-    // then
-    assertThat(streamProcessor.getEvents())
-        .extracting(LoggedEvent::getPosition)
-        .containsExactly(eventPosition1);
-
-    verify(eventProcessor, times(1)).processEvent(any());
-    verifyNoMoreInteractions(eventProcessor);
-
-    // and when
-    whenProcessEventCompleted.complete(null);
-    waitUntil(() -> streamProcessor.getProcessedEventCount() == 2);
-
-    // then
-    assertThat(streamProcessor.getEvents())
-        .extracting(LoggedEvent::getPosition)
-        .containsExactly(eventPosition1, eventPosition2);
-
-    verify(eventProcessor, times(2)).processEvent(any());
+    verify(eventProcessor, times(2)).processEvent();
     verify(eventProcessor, times(1)).executeSideEffects();
     verify(eventProcessor, times(1)).writeEvent(any());
     verify(eventProcessor, times(2)).updateState();
@@ -188,7 +143,7 @@ public class StreamProcessorReprocessingTest {
         .extracting(LoggedEvent::getPosition)
         .containsExactly(eventPosition1, eventPosition2);
 
-    verify(eventProcessor, times(2)).processEvent(any());
+    verify(eventProcessor, times(2)).processEvent();
     verify(eventProcessor, times(2)).executeSideEffects();
     verify(eventProcessor, times(2)).writeEvent(any());
     verify(eventProcessor, times(2)).updateState();
@@ -213,7 +168,7 @@ public class StreamProcessorReprocessingTest {
         .extracting(LoggedEvent::getPosition)
         .containsExactly(eventPosition1, eventPosition2, eventPosition3);
 
-    verify(eventProcessor, times(3)).processEvent(any());
+    verify(eventProcessor, times(3)).processEvent();
     verify(eventProcessor, times(1)).executeSideEffects();
     verify(eventProcessor, times(1)).writeEvent(any());
     verify(eventProcessor, times(3)).updateState();
@@ -237,7 +192,7 @@ public class StreamProcessorReprocessingTest {
         .extracting(LoggedEvent::getPosition)
         .containsExactly(eventPosition1, eventPosition2, eventPosition3);
 
-    verify(eventProcessor, times(3)).processEvent(any());
+    verify(eventProcessor, times(3)).processEvent();
     verify(eventProcessor, times(1)).executeSideEffects();
     verify(eventProcessor, times(1)).writeEvent(any());
     verify(eventProcessor, times(3)).updateState();
@@ -264,7 +219,7 @@ public class StreamProcessorReprocessingTest {
         .extracting(LoggedEvent::getPosition)
         .containsExactly(eventPosition2, eventPosition3);
 
-    verify(eventProcessor, times(2)).processEvent(any());
+    verify(eventProcessor, times(2)).processEvent();
     verify(eventProcessor, times(1)).executeSideEffects();
     verify(eventProcessor, times(1)).writeEvent(any());
     verify(eventProcessor, times(2)).updateState();
@@ -290,7 +245,7 @@ public class StreamProcessorReprocessingTest {
         .extracting(LoggedEvent::getPosition)
         .containsExactly(eventPosition2, eventPosition3);
 
-    verify(eventProcessor, times(2)).processEvent(any());
+    verify(eventProcessor, times(2)).processEvent();
     verify(eventProcessor, times(1)).executeSideEffects();
     verify(eventProcessor, times(1)).writeEvent(any());
     verify(eventProcessor, times(2)).updateState();
@@ -302,7 +257,7 @@ public class StreamProcessorReprocessingTest {
     final long eventPosition1 = writeEvent();
     writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition1));
 
-    doThrow(new RuntimeException("expected")).when(eventProcessor).processEvent(any());
+    doThrow(new RuntimeException("expected")).when(eventProcessor).processEvent();
 
     // when
     final ActorFuture<StreamProcessorService> future = openStreamProcessorControllerAsync();
@@ -311,35 +266,6 @@ public class StreamProcessorReprocessingTest {
 
     // then
     verify(streamProcessor, times(0)).onRecovered();
-    assertThat(streamProcessor.getEvents())
-        .extracting(LoggedEvent::getPosition)
-        .containsExactly(eventPosition1);
-  }
-
-  @Test
-  public void shouldFailOnReprocessingAsync() {
-    // given [1|S:-] --> [2|S:1]
-    final long eventPosition1 = writeEvent();
-    writeEventWith(w -> w.producerId(PROCESSOR_ID).sourceRecordPosition(eventPosition1));
-
-    doAnswer(
-            (invocation) -> {
-              final EventLifecycleContext ctx = invocation.getArgument(0);
-              ctx.async(CompletableActorFuture.completedExceptionally(new RuntimeException()));
-
-              return null;
-            })
-        .when(eventProcessor)
-        .processEvent(any());
-
-    // when
-    final ActorFuture<StreamProcessorService> future = openStreamProcessorControllerAsync();
-
-    waitUntil(() -> future.isDone());
-
-    // then
-    verify(streamProcessor, times(0)).onRecovered();
-
     assertThat(streamProcessor.getEvents())
         .extracting(LoggedEvent::getPosition)
         .containsExactly(eventPosition1);
@@ -370,7 +296,7 @@ public class StreamProcessorReprocessingTest {
         .extracting(LoggedEvent::getPosition)
         .containsExactly(eventPosition1, eventPosition2);
 
-    verify(eventProcessor, times(2)).processEvent(any());
+    verify(eventProcessor, times(2)).processEvent();
     verify(eventProcessor, times(2)).executeSideEffects();
     verify(eventProcessor, times(2)).writeEvent(any());
     verify(eventProcessor, times(2)).updateState();
@@ -490,7 +416,7 @@ public class StreamProcessorReprocessingTest {
     return writeEventWith(w -> {});
   }
 
-  private long writeEventWith(final Consumer<LogStreamWriter> wr) {
+  private long writeEventWith(final Consumer<LogStreamRecordWriter> wr) {
     return writer.writeEvent(
         w -> {
           w.positionAsKey().value(EVENT);

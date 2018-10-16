@@ -26,7 +26,7 @@ import org.slf4j.Logger;
 public class TomlConfigurationReader {
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
 
-  public BrokerCfg read(String filePath) {
+  public static BrokerCfg read(String filePath) {
     final File file = new File(filePath);
 
     LOG.info("Using configuration file " + file.getAbsolutePath());
@@ -34,7 +34,7 @@ public class TomlConfigurationReader {
     return new Toml().read(file).to(BrokerCfg.class);
   }
 
-  public BrokerCfg read(InputStream configStream) {
+  public static BrokerCfg read(InputStream configStream) {
     LOG.info("Reading configuration from input stream");
 
     return new Toml().read(configStream).to(BrokerCfg.class);

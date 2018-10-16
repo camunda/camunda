@@ -19,7 +19,9 @@ package io.zeebe.broker.clustering.base.raft;
 
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
@@ -37,9 +39,7 @@ public class RaftPersistentConfigurationManagerService
   public void start(ServiceStartContext startContext) {
     final DataCfg dataConfiguration = configuration.getData();
 
-    final String[] directories = dataConfiguration.getDirectories();
-
-    for (String directory : directories) {
+    for (String directory : dataConfiguration.getDirectories()) {
       final File configDirectory = new File(directory);
 
       if (!configDirectory.exists()) {

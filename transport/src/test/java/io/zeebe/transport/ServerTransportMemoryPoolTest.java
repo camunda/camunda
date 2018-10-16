@@ -15,24 +15,34 @@
  */
 package io.zeebe.transport;
 
+import static io.zeebe.util.buffer.DirectBufferWriter.writerFor;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.transport.impl.memory.TransportMemoryPool;
+import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.nio.ByteBuffer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.*;
+import org.junit.After;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class ServerTransportMemoryPoolTest {
-  protected static final SocketAddress ADDRESS = new SocketAddress("127.0.0.1", 51115);
+  protected static final SocketAddress ADDRESS = SocketUtil.getNextAddress();
 
   public static final DirectBuffer BUF1 = new UnsafeBuffer(new byte[32]);
 
@@ -66,12 +76,11 @@ public class ServerTransportMemoryPoolTest {
   public void shouldRejectMessageWhenBufferPoolExhaused() {
     // given
     final ServerOutput output = serverTransport.getOutput();
-    final TransportMessage message = new TransportMessage().buffer(BUF1).remoteStreamId(0);
 
     doReturn(null).when(messageMemoryPool).allocate(anyInt());
 
     // when
-    final boolean success = output.sendMessage(message);
+    final boolean success = output.sendMessage(0, writerFor(BUF1));
 
     // then
     assertThat(success).isFalse();
@@ -130,13 +139,11 @@ public class ServerTransportMemoryPoolTest {
     when(writer.getLength()).thenReturn(16);
     doThrow(RuntimeException.class).when(writer).write(any(), anyInt());
 
-    final TransportMessage message = new TransportMessage().writer(writer).remoteStreamId(0);
-
     doReturn(ByteBuffer.allocate(50)).when(messageMemoryPool).allocate(anyInt());
 
     // when
     try {
-      output.sendMessage(message);
+      output.sendMessage(0, writer);
       fail("expected exception");
     } catch (Exception e) {
       // expected

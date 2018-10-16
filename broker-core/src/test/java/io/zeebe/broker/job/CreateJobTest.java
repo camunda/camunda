@@ -33,7 +33,7 @@ import org.junit.rules.RuleChain;
 public class CreateJobTest {
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
-  public ClientApiRule apiRule = new ClientApiRule();
+  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
@@ -52,7 +52,7 @@ public class CreateJobTest {
     // then
     assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
     assertThat(resp.position()).isGreaterThanOrEqualTo(0L);
-    assertThat(resp.sourceRecordPosition()).isEqualTo(resp.key());
+    assertThat(resp.sourceRecordPosition()).isGreaterThan(0L);
     assertThat(resp.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
     assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
     assertThat(resp.intent()).isEqualTo(JobIntent.CREATED);

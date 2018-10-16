@@ -19,7 +19,11 @@ package io.zeebe.broker.system;
 
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.system.configuration.*;
+import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.broker.system.configuration.ClusterCfg;
+import io.zeebe.broker.system.configuration.SocketBindingCfg;
+import io.zeebe.broker.system.configuration.ThreadsCfg;
+import io.zeebe.broker.system.configuration.TomlConfigurationReader;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
 import io.zeebe.util.metrics.MetricsManager;
@@ -31,14 +35,24 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Paths;
 import java.time.Duration;
-import java.util.*;
-import java.util.concurrent.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import org.slf4j.Logger;
 
 public class SystemContext implements AutoCloseable {
   public static final Logger LOG = Loggers.SYSTEM_LOGGER;
   public static final String BROKER_ID_LOG_PROPERTY = "broker-id";
   public static final Duration CLOSE_TIMEOUT = Duration.ofSeconds(10);
+  public static final String NODE_ID_ERROR_MSG =
+      "Node id %s needs to be non negative and smaller then cluster size %s.";
+  public static final String REPLICATION_FACTOR_ERROR_MSG =
+      "Replication factor %s needs to be larger then zero and not larger then cluster size %s.";
 
   protected ServiceContainer serviceContainer;
 
@@ -55,33 +69,35 @@ public class SystemContext implements AutoCloseable {
   private MetricsManager metricsManager;
   private Duration closeTimeout;
 
-  public SystemContext(String configFileLocation, String basePath, ActorClock clock) {
+  public SystemContext(String configFileLocation, final String basePath, final ActorClock clock) {
     if (!Paths.get(configFileLocation).isAbsolute()) {
       configFileLocation =
           Paths.get(basePath, configFileLocation).normalize().toAbsolutePath().toString();
     }
 
-    brokerCfg = new TomlConfigurationReader().read(configFileLocation);
+    brokerCfg = TomlConfigurationReader.read(configFileLocation);
 
     initSystemContext(clock, basePath);
   }
 
-  public SystemContext(InputStream configStream, String basePath, ActorClock clock) {
-    brokerCfg = new TomlConfigurationReader().read(configStream);
+  public SystemContext(
+      final InputStream configStream, final String basePath, final ActorClock clock) {
+    brokerCfg = TomlConfigurationReader.read(configStream);
 
     initSystemContext(clock, basePath);
   }
 
-  public SystemContext(BrokerCfg brokerCfg, String basePath, ActorClock clock) {
+  public SystemContext(final BrokerCfg brokerCfg, final String basePath, final ActorClock clock) {
     this.brokerCfg = brokerCfg;
 
     initSystemContext(clock, basePath);
   }
 
-  private void initSystemContext(ActorClock clock, String basePath) {
+  private void initSystemContext(final ActorClock clock, final String basePath) {
     LOG.debug("Initializing configuration with base path {}", basePath);
 
     brokerCfg.init(basePath);
+    validateConfiguration();
 
     final SocketBindingCfg clientApiCfg = brokerCfg.getNetwork().getClient();
     final String brokerId = String.format("%s:%d", clientApiCfg.getHost(), clientApiCfg.getPort());
@@ -99,7 +115,28 @@ public class SystemContext implements AutoCloseable {
     setCloseTimeout(CLOSE_TIMEOUT);
   }
 
-  private MetricsManager initMetricsManager(String brokerId) {
+  private void validateConfiguration() {
+    final ClusterCfg cluster = brokerCfg.getCluster();
+
+    final int partitionCount = cluster.getPartitionsCount();
+    if (partitionCount < 1) {
+      throw new IllegalArgumentException("Partition count must not be smaller then 1.");
+    }
+
+    final int clusterSize = cluster.getClusterSize();
+    final int nodeId = cluster.getNodeId();
+    if (nodeId < 0 || nodeId >= clusterSize) {
+      throw new IllegalArgumentException(String.format(NODE_ID_ERROR_MSG, nodeId, clusterSize));
+    }
+
+    final int replicationFactor = cluster.getReplicationFactor();
+    if (replicationFactor < 1 || replicationFactor > clusterSize) {
+      throw new IllegalArgumentException(
+          String.format(REPLICATION_FACTOR_ERROR_MSG, replicationFactor, clusterSize));
+    }
+  }
+
+  private MetricsManager initMetricsManager(final String brokerId) {
     final Map<String, String> globalLabels = new HashMap<>();
     globalLabels.put("cluster", "zeebe");
     globalLabels.put("node", brokerId);
@@ -116,7 +153,7 @@ public class SystemContext implements AutoCloseable {
         .incrementOrdered();
   }
 
-  private ActorScheduler initScheduler(ActorClock clock, String brokerId) {
+  private ActorScheduler initScheduler(final ActorClock clock, final String brokerId) {
     final ThreadsCfg cfg = brokerCfg.getThreads();
 
     final int cpuThreads = cfg.getCpuThreadCount();
@@ -142,7 +179,7 @@ public class SystemContext implements AutoCloseable {
     return serviceContainer;
   }
 
-  public void addComponent(Component component) {
+  public void addComponent(final Component component) {
     this.components.add(component);
   }
 
@@ -153,20 +190,20 @@ public class SystemContext implements AutoCloseable {
   public void init() {
     serviceContainer.start();
 
-    for (Component brokerComponent : components) {
+    for (final Component brokerComponent : components) {
       try {
         brokerComponent.init(this);
-      } catch (RuntimeException e) {
+      } catch (final RuntimeException e) {
         close();
         throw e;
       }
     }
 
     try {
-      for (ActorFuture<?> requiredStartAction : requiredStartActions) {
+      for (final ActorFuture<?> requiredStartAction : requiredStartActions) {
         requiredStartAction.get(20, TimeUnit.SECONDS);
       }
-    } catch (Exception e) {
+    } catch (final Exception e) {
       LOG.error("Could not start broker", e);
       close();
       throw new RuntimeException(e);
@@ -179,25 +216,25 @@ public class SystemContext implements AutoCloseable {
 
     try {
       serviceContainer.close(getCloseTimeout().toMillis(), TimeUnit.MILLISECONDS);
-    } catch (TimeoutException e) {
+    } catch (final TimeoutException e) {
       LOG.error("Failed to close broker within {} seconds.", CLOSE_TIMEOUT, e);
-    } catch (ExecutionException | InterruptedException e) {
+    } catch (final ExecutionException | InterruptedException e) {
       LOG.error("Exception while closing broker", e);
     } finally {
 
-      for (Closeable delegate : closeablesToReleaseResources) {
+      for (final Closeable delegate : closeablesToReleaseResources) {
         try {
           delegate.close();
-        } catch (IOException ioe) {
+        } catch (final IOException ioe) {
           LOG.error("Exception while releasing resources", ioe);
         }
       }
 
       try {
         scheduler.stop().get(getCloseTimeout().toMillis(), TimeUnit.MILLISECONDS);
-      } catch (TimeoutException e) {
+      } catch (final TimeoutException e) {
         LOG.error("Failed to close scheduler within {} seconds", CLOSE_TIMEOUT, e);
-      } catch (ExecutionException | InterruptedException e) {
+      } catch (final ExecutionException | InterruptedException e) {
         LOG.error("Exception while closing scheduler", e);
       }
     }
@@ -207,11 +244,11 @@ public class SystemContext implements AutoCloseable {
     return brokerCfg;
   }
 
-  public void addRequiredStartAction(ActorFuture<?> future) {
+  public void addRequiredStartAction(final ActorFuture<?> future) {
     requiredStartActions.add(future);
   }
 
-  public void addResourceReleasingDelegate(Closeable delegate) {
+  public void addResourceReleasingDelegate(final Closeable delegate) {
     closeablesToReleaseResources.add(delegate);
   }
 
@@ -223,7 +260,7 @@ public class SystemContext implements AutoCloseable {
     return closeTimeout;
   }
 
-  public void setCloseTimeout(Duration closeTimeout) {
+  public void setCloseTimeout(final Duration closeTimeout) {
     this.closeTimeout = closeTimeout;
     scheduler.setBlockingTasksShutdownTime(closeTimeout);
   }

@@ -18,7 +18,10 @@ package io.zeebe.logstreams.impl.service;
 import io.zeebe.dispatcher.Subscription;
 import io.zeebe.logstreams.impl.LogStorageAppender;
 import io.zeebe.logstreams.spi.LogStorage;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.sched.SchedulingHints;
 import io.zeebe.util.sched.channel.ActorConditions;
 
@@ -51,7 +54,7 @@ public class LogStorageAppenderService implements Service<LogStorageAppender> {
             onLogStorageAppendedConditions);
 
     startContext.async(
-        startContext.getScheduler().submitActor(service, true, SchedulingHints.ioBound((short) 0)));
+        startContext.getScheduler().submitActor(service, true, SchedulingHints.ioBound()));
   }
 
   @Override

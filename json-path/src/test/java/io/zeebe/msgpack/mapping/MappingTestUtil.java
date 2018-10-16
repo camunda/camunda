@@ -21,15 +21,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.msgpack.spec.MsgPackWriter;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.assertj.core.api.AbstractObjectAssert;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
 
 public class MappingTestUtil {
@@ -108,7 +112,7 @@ public class MappingTestUtil {
 
   private static void assertChildNodes(
       MsgPackTree msgPackTree, String nodeId, int childCount, String[] childs) {
-    final Set<String> arrayValues = msgPackTree.getChilds(nodeId);
+    final Set<String> arrayValues = msgPackTree.getChildren(nodeId);
     assertThat(arrayValues.size()).isEqualTo(childCount);
     for (String child : childs) {
       assertThat(arrayValues.contains(child)).isTrue();
@@ -117,10 +121,10 @@ public class MappingTestUtil {
 
   public static void assertThatIsLeafNode(
       MsgPackTree msgPackTree, String leafId, byte[] expectedBytes) {
-    assertThat(msgPackTree.isLeaf(leafId)).isTrue();
+    assertThat(msgPackTree.isValueNode(leafId)).isTrue();
 
     WRITER.wrap(WRITE_BUFFER, 0);
-    msgPackTree.writeLeafMapping(WRITER, leafId);
+    msgPackTree.writeValueNode(WRITER, leafId);
 
     assertThat(WRITER.getOffset()).isEqualTo(expectedBytes.length);
     assertThat(WRITE_BUFFER.byteArray()).startsWith(expectedBytes);
@@ -136,5 +140,45 @@ public class MappingTestUtil {
       }
     }
     return builder.toString();
+  }
+
+  public static MsgPackAssert assertThatMsgPack(DirectBuffer msgPack) {
+    return new MsgPackAssert(msgPack);
+  }
+
+  public static class MsgPackAssert extends AbstractObjectAssert<MsgPackAssert, DirectBuffer> {
+
+    public MsgPackAssert(DirectBuffer actual) {
+      super(actual, MsgPackAssert.class);
+    }
+
+    public MsgPackAssert hasValue(String json) {
+      final byte[] actualAsArray = new byte[actual.capacity()];
+      actual.getBytes(0, actualAsArray, 0, actualAsArray.length);
+
+      final JsonNode actualTree;
+      final JsonNode expectedTree;
+
+      try {
+        actualTree = MSGPACK_MAPPER.readTree(actualAsArray);
+      } catch (IOException e) {
+        failWithMessage("Actual document is not valid msgpack: %s", e.getMessage());
+        return this;
+      }
+
+      try {
+        expectedTree = JSON_MAPPER.readTree(json);
+      } catch (IOException e) {
+        failWithMessage("Expected document is not valid json: %s", e.getMessage());
+        return this;
+      }
+
+      if (!actualTree.equals(expectedTree)) {
+        failWithMessage(
+            "Could not match documents. Expected: %s. Actual: %s", expectedTree, actualTree);
+      }
+
+      return this;
+    }
   }
 }

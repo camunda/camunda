@@ -18,12 +18,12 @@
 package io.zeebe.broker.incident.data;
 
 import io.zeebe.broker.logstreams.processor.TypedRecord;
-import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.DocumentProperty;
 import io.zeebe.msgpack.property.EnumProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import org.agrona.DirectBuffer;
 
 public class IncidentRecord extends UnpackedObject {

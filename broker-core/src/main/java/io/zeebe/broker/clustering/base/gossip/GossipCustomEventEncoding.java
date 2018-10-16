@@ -22,7 +22,6 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 
 import io.zeebe.broker.clustering.base.topology.NodeInfo;
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
-import io.zeebe.broker.clustering.base.topology.Topology;
 import io.zeebe.broker.clustering.base.topology.TopologyManagerImpl;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.transport.SocketAddress;
@@ -30,16 +29,23 @@ import java.nio.ByteOrder;
 import java.util.Set;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
 public final class GossipCustomEventEncoding {
-  public static int writeSockedAddresses(
+
+  public static int writeNodeInfo(
       NodeInfo memberInfo, MutableDirectBuffer directBuffer, int offset) {
+    offset = writeNodeId(memberInfo.getNodeId(), directBuffer, offset);
     offset = writeSocketAddress(memberInfo.getManagementApiAddress(), directBuffer, offset);
     offset = writeSocketAddress(memberInfo.getClientApiAddress(), directBuffer, offset);
     offset = writeSocketAddress(memberInfo.getReplicationApiAddress(), directBuffer, offset);
+    offset = writeSocketAddress(memberInfo.getSubscriptionApiAddress(), directBuffer, offset);
 
     return offset;
+  }
+
+  private static int writeNodeId(int nodeId, MutableDirectBuffer directBuffer, int offset) {
+    directBuffer.putInt(offset, nodeId, ByteOrder.LITTLE_ENDIAN);
+    return offset + SIZE_OF_INT;
   }
 
   private static int writeSocketAddress(
@@ -56,7 +62,26 @@ public final class GossipCustomEventEncoding {
     return offset;
   }
 
-  public static int readSocketAddress(
+  public static NodeInfo readNodeInfo(int offset, DirectBuffer directBuffer) {
+    final int nodeId = directBuffer.getInt(offset, ByteOrder.LITTLE_ENDIAN);
+    offset += SIZE_OF_INT;
+
+    final SocketAddress managementApi = new SocketAddress();
+    offset = readSocketAddress(offset, directBuffer, managementApi);
+
+    final SocketAddress clientApi = new SocketAddress();
+    offset = readSocketAddress(offset, directBuffer, clientApi);
+
+    final SocketAddress replicationApi = new SocketAddress();
+    offset = readSocketAddress(offset, directBuffer, replicationApi);
+
+    final SocketAddress subscriptionApi = new SocketAddress();
+    readSocketAddress(offset, directBuffer, subscriptionApi);
+
+    return new NodeInfo(nodeId, clientApi, managementApi, replicationApi, subscriptionApi);
+  }
+
+  private static int readSocketAddress(
       int offset, DirectBuffer directBuffer, SocketAddress apiAddress) {
     final int hostLength = directBuffer.getInt(offset, ByteOrder.LITTLE_ENDIAN);
     offset += SIZE_OF_INT;
@@ -70,14 +95,6 @@ public final class GossipCustomEventEncoding {
 
     apiAddress.host(host, 0, hostLength);
     apiAddress.port(port);
-
-    return offset;
-  }
-
-  public static int writeTopology(Topology topology, MutableDirectBuffer writeBuffer, int offset) {
-    for (NodeInfo member : topology.getMembers()) {
-      offset = writePartitions(member, writeBuffer, offset);
-    }
 
     return offset;
   }
@@ -109,13 +126,6 @@ public final class GossipCustomEventEncoding {
     writeBuffer.putInt(offset, partition.getReplicationFactor(), ByteOrder.LITTLE_ENDIAN);
     offset += SIZE_OF_INT;
 
-    final DirectBuffer currentTopicName = partition.getTopicNameBuffer();
-    writeBuffer.putInt(offset, currentTopicName.capacity(), ByteOrder.LITTLE_ENDIAN);
-    offset += SIZE_OF_INT;
-
-    writeBuffer.putBytes(offset, currentTopicName, 0, currentTopicName.capacity());
-    offset += currentTopicName.capacity();
-
     writeBuffer.putByte(offset, (byte) (state == RaftState.LEADER ? 1 : 0));
     offset += SIZE_OF_BYTE;
 
@@ -134,18 +144,11 @@ public final class GossipCustomEventEncoding {
       final int replicationFactor = buffer.getInt(offset, ByteOrder.LITTLE_ENDIAN);
       offset += SIZE_OF_INT;
 
-      final int topicNameLength = buffer.getInt(offset, ByteOrder.LITTLE_ENDIAN);
-      offset += SIZE_OF_INT;
-
-      final MutableDirectBuffer topicBuffer = new UnsafeBuffer(new byte[topicNameLength]);
-      buffer.getBytes(offset, topicBuffer, 0, topicNameLength);
-      offset += topicNameLength;
-
       final byte stateByte = buffer.getByte(offset);
       offset += SIZE_OF_BYTE;
       final RaftState raftState = stateByte == (byte) 1 ? RaftState.LEADER : RaftState.FOLLOWER;
 
-      topologyManager.updatePartition(partition, topicBuffer, replicationFactor, member, raftState);
+      topologyManager.updatePartition(partition, replicationFactor, member, raftState);
     }
   }
 }

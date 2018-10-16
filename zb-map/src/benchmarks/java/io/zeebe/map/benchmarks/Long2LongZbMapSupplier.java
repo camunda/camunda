@@ -15,27 +15,25 @@
  */
 package io.zeebe.map.benchmarks;
 
-import java.io.IOException;
-
 import io.zeebe.map.Long2LongZbMap;
-import org.openjdk.jmh.annotations.*;
-
+import java.io.IOException;
+import org.openjdk.jmh.annotations.Level;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
+import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.TearDown;
 
 @State(Scope.Benchmark)
-public class Long2LongZbMapSupplier
-{
-    Long2LongZbMap map;
+public class Long2LongZbMapSupplier {
+  Long2LongZbMap map;
 
-    @Setup(Level.Iteration)
-    public void createmap() throws IOException
-    {
-        map = new Long2LongZbMap();
-    }
+  @Setup(Level.Iteration)
+  public void createmap() throws IOException {
+    map = new Long2LongZbMap();
+  }
 
-    @TearDown(Level.Iteration)
-    public void closemap()
-    {
-        map.close();
-    }
-
+  @TearDown(Level.Iteration)
+  public void closemap() {
+    map.close();
+  }
 }

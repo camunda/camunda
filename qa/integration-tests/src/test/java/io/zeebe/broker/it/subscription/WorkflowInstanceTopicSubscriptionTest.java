@@ -18,14 +18,14 @@ package io.zeebe.broker.it.subscription;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.client.api.clients.TopicClient;
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
-import io.zeebe.client.api.events.WorkflowInstanceState;
-import io.zeebe.client.api.record.ValueType;
-import io.zeebe.client.api.subscription.WorkflowInstanceEventHandler;
+import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.gateway.ZeebeClient;
+import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
+import io.zeebe.gateway.api.events.WorkflowInstanceState;
+import io.zeebe.gateway.api.record.ValueType;
+import io.zeebe.gateway.api.subscription.WorkflowInstanceEventHandler;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.test.util.TestUtil;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -38,18 +38,18 @@ import org.junit.rules.RuleChain;
 public class WorkflowInstanceTopicSubscriptionTest {
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
-  public ClientRule clientRule = new ClientRule();
+  public ClientRule clientRule = new ClientRule(brokerRule);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
-  protected TopicClient client;
+  protected ZeebeClient client;
 
   @Before
   public void setUp() {
-    this.client = clientRule.getClient().topicClient();
+    this.client = clientRule.getClient();
 
-    final WorkflowDefinition workflow =
-        Bpmn.createExecutableWorkflow("process").startEvent("a").endEvent("b").done();
+    final BpmnModelInstance workflow =
+        Bpmn.createExecutableProcess("process").startEvent("a").endEvent("b").done();
 
     client
         .workflowClient()
@@ -79,18 +79,18 @@ public class WorkflowInstanceTopicSubscriptionTest {
         .newSubscription()
         .name("test")
         .workflowInstanceEventHandler(handler)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     // then
     TestUtil.waitUntil(() -> handler.numRecords() >= 2);
 
     final WorkflowInstanceEvent event = handler.getEvent(1);
-    assertThat(event.getState()).isEqualTo(WorkflowInstanceState.START_EVENT_OCCURRED);
+    assertThat(event.getState()).isEqualTo(WorkflowInstanceState.ELEMENT_READY);
     assertThat(event.getBpmnProcessId()).isEqualTo("process");
     assertThat(event.getVersion()).isEqualTo(1);
     assertThat(event.getWorkflowInstanceKey()).isEqualTo(workflowInstance.getWorkflowInstanceKey());
-    assertThat(event.getActivityId()).isEqualTo("a");
+    assertThat(event.getActivityId()).isEqualTo("process");
     assertThat(event.getPayload()).isEqualTo("{\"foo\":123}");
   }
 
@@ -108,7 +108,7 @@ public class WorkflowInstanceTopicSubscriptionTest {
     final RecordingEventHandler handler = new RecordingEventHandler();
 
     // when no POJO handler is registered
-    client.newSubscription().name("sub-2").recordHandler(handler).startAtHeadOfTopic().open();
+    client.newSubscription().name("sub-2").recordHandler(handler).startAtHead().open();
 
     // then
     TestUtil.waitUntil(() -> handler.numRecordsOfType(ValueType.WORKFLOW_INSTANCE) >= 3);
@@ -118,11 +118,11 @@ public class WorkflowInstanceTopicSubscriptionTest {
     protected List<WorkflowInstanceEvent> events = new ArrayList<>();
 
     @Override
-    public void onWorkflowInstanceEvent(WorkflowInstanceEvent event) throws Exception {
+    public void onWorkflowInstanceEvent(final WorkflowInstanceEvent event) throws Exception {
       this.events.add(event);
     }
 
-    public WorkflowInstanceEvent getEvent(int index) {
+    public WorkflowInstanceEvent getEvent(final int index) {
       return events.get(index);
     }
 

@@ -15,10 +15,9 @@
  */
 package io.zeebe.map.benchmarks;
 
-import java.util.HashMap;
-
 import io.zeebe.map.Long2LongZbMap;
 import it.unimi.dsi.fastutil.longs.Long2LongMap;
+import java.util.HashMap;
 import net.openhft.chronicle.map.ChronicleMap;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;

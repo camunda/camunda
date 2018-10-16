@@ -18,44 +18,39 @@ package io.zeebe.broker.it.workflow;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.broker.it.GrpcClientRule;
+import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.ZeebeFuture;
 import io.zeebe.client.api.commands.Workflow;
 import io.zeebe.client.api.commands.WorkflowResource;
 import io.zeebe.client.api.events.DeploymentEvent;
-import io.zeebe.client.cmd.BrokerErrorException;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.util.StreamUtil;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.RuleChain;
 
 public class WorkflowRepositoryTest {
+  private final List<Workflow> deployedWorkflows = new ArrayList<>();
+  private final BpmnModelInstance workflow1v1 =
+      Bpmn.createExecutableProcess("wf1").startEvent("foo").done();
+  private final BpmnModelInstance workflow1v2 =
+      Bpmn.createExecutableProcess("wf1").startEvent("bar").done();
+  private final BpmnModelInstance workflow2 =
+      Bpmn.createExecutableProcess("wf2").startEvent("start").done();
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientRule clientRule = new ClientRule();
-  public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
+  public GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
 
-  @Rule
-  public RuleChain ruleChain =
-      RuleChain.outerRule(brokerRule).around(clientRule).around(eventRecorder);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   @Rule public ExpectedException exception = ExpectedException.none();
-
-  private final List<Workflow> deployedWorkflows = new ArrayList<>();
-
-  private final WorkflowDefinition workflow1v1 =
-      Bpmn.createExecutableWorkflow("wf1").startEvent("foo").done();
-  private final WorkflowDefinition workflow1v2 =
-      Bpmn.createExecutableWorkflow("wf1").startEvent("bar").done();
-  private final WorkflowDefinition workflow2 =
-      Bpmn.createExecutableWorkflow("wf2").startEvent("start").done();
 
   @Before
   public void deployWorkflows() {
@@ -83,9 +78,11 @@ public class WorkflowRepositoryTest {
             .send()
             .join();
 
-    deployedWorkflows.addAll(firstDeployment.getDeployedWorkflows());
-    deployedWorkflows.addAll(secondDeployment.getDeployedWorkflows());
-    deployedWorkflows.addAll(thirdDeployment.getDeployedWorkflows());
+    clientRule.waitUntilDeploymentIsDone(thirdDeployment.getKey());
+
+    deployedWorkflows.addAll(firstDeployment.getWorkflows());
+    deployedWorkflows.addAll(secondDeployment.getWorkflows());
+    deployedWorkflows.addAll(thirdDeployment.getWorkflows());
   }
 
   @Test
@@ -148,8 +145,9 @@ public class WorkflowRepositoryTest {
     final ZeebeFuture<WorkflowResource> future =
         clientRule.getWorkflowClient().newResourceRequest().workflowKey(123).send();
 
-    assertThatThrownBy(() -> future.join())
-        .isInstanceOf(BrokerErrorException.class)
+    assertThatThrownBy(future::join)
+        // TODO(menski): embedded errors in grpc need for typing
+        // .isInstanceOf(BrokerErrorException.class)
         .hasMessageContaining("No workflow found with key '123'");
   }
 
@@ -163,8 +161,9 @@ public class WorkflowRepositoryTest {
             .latestVersion()
             .send();
 
-    assertThatThrownBy(() -> future.join())
-        .isInstanceOf(BrokerErrorException.class)
+    assertThatThrownBy(future::join)
+        // TODO(menski): embedded errors in grpc need for typing
+        // .isInstanceOf(BrokerErrorException.class)
         .hasMessageContaining("No workflow found with BPMN process id 'foo'");
   }
 
@@ -219,7 +218,7 @@ public class WorkflowRepositoryTest {
     assertThat(workflows).isEmpty();
   }
 
-  private long getWorkflowKey(String bpmnProcessId, int version) {
+  private long getWorkflowKey(final String bpmnProcessId, final int version) {
     return deployedWorkflows
         .stream()
         .filter(w -> w.getBpmnProcessId().equals(bpmnProcessId) && w.getVersion() == version)

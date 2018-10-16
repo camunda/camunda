@@ -8,7 +8,7 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zb-parent</artifactId>
-    <version>0.12.0-SNAPSHOT</version>
+    <version>0.13.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
 
@@ -17,6 +17,15 @@
   </properties>
 
   <dependencies>
+    <dependency>
+      <groupId>com.fasterxml.jackson.core</groupId>
+      <artifactId>jackson-databind</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>com.fasterxml.jackson.dataformat</groupId>
+      <artifactId>jackson-dataformat-yaml</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
@@ -26,6 +35,11 @@
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zb-protocol</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-protocol-impl</artifactId>
     </dependency>
 
     <dependency>
@@ -59,6 +73,21 @@
     </dependency>
 
     <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-gateway</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-msgpack-json-el</artifactId>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-exporter-api</artifactId>
+    </dependency>
+
+    <dependency>
       <groupId>com.moandjiezana.toml</groupId>
       <artifactId>toml4j</artifactId>
     </dependency>
@@ -82,6 +111,12 @@
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zb-test-util</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-exporter-asserts</artifactId>
       <scope>test</scope>
     </dependency>
 
@@ -148,6 +183,12 @@
     </dependency>
 
     <dependency>
+      <groupId>one.util</groupId>
+      <artifactId>streamex</artifactId>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>org.openjdk.jmh</groupId>
       <artifactId>jmh-core</artifactId>
       <scope>test</scope>
@@ -202,6 +243,7 @@
           <mainClass>uk.co.real_logic.sbe.SbeTool</mainClass>
           <arguments>
             <argument>${project.build.resources[0].directory}/management-schema.xml</argument>
+            <argument>${project.build.resources[0].directory}/subscription-schema.xml</argument>
           </arguments>
           <workingDirectory>${project.build.directory}/generated-sources</workingDirectory>
           <!-- system properties defined in zb-parent -->
@@ -214,6 +256,21 @@
           </dependency>
         </dependencies>
       </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <version>3.1.0</version>
+        <executions>
+          <execution>
+            <goals>
+              <goal>test-jar</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <useDefaultManifestFile>false</useDefaultManifestFile>
+        </configuration>
+      </plugin>
     </plugins>
   </build>
 
@@ -223,25 +280,6 @@
 
       <build>
         <plugins>
-
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>build-helper-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>add-jmh-tests</id>
-                <phase>generate-test-sources</phase>
-                <goals>
-                  <goal>add-test-source</goal>
-                </goals>
-                <configuration>
-                  <sources>
-                    <source>src/test/jmh</source>
-                  </sources>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
 
           <plugin>
             <groupId>org.apache.maven.plugins</groupId>

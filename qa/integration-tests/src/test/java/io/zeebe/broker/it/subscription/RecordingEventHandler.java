@@ -17,10 +17,10 @@ package io.zeebe.broker.it.subscription;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.client.api.record.Record;
-import io.zeebe.client.api.record.RecordMetadata;
-import io.zeebe.client.api.record.ValueType;
-import io.zeebe.client.api.subscription.RecordHandler;
+import io.zeebe.gateway.api.record.Record;
+import io.zeebe.gateway.api.record.RecordMetadata;
+import io.zeebe.gateway.api.record.ValueType;
+import io.zeebe.gateway.api.subscription.RecordHandler;
 import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -55,18 +55,18 @@ public class RecordingEventHandler implements RecordHandler {
     return records;
   }
 
-  public void assertJobRecord(int index, long taskKey, String intent) throws IOException {
-    final List<Record> taskEvents =
+  public void assertJobRecord(int index, long jobKey, String intent) throws IOException {
+    final List<Record> jobEvents =
         records
             .stream()
             .filter(e -> e.getMetadata().getValueType() == ValueType.JOB)
             .collect(Collectors.toList());
 
-    final Record taskEvent = taskEvents.get(index);
+    final Record taskEvent = jobEvents.get(index);
 
     final RecordMetadata eventMetadata = taskEvent.getMetadata();
     assertThat(eventMetadata.getValueType()).isEqualTo(ValueType.JOB);
-    assertThat(eventMetadata.getKey()).isEqualTo(taskKey);
+    assertThat(eventMetadata.getKey()).isEqualTo(jobKey);
     assertThat(eventMetadata.getIntent()).isEqualTo(intent);
   }
 

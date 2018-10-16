@@ -15,7 +15,10 @@
  */
 package io.zeebe.util.collection;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.NoSuchElementException;
 import java.util.function.Supplier;
 
 /** An expendable list of reusable objects. */

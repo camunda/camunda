@@ -15,7 +15,11 @@
  */
 package io.zeebe.test.util;
 
-import java.io.*;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.nio.charset.Charset;
 import java.util.Map;
 import java.util.regex.Matcher;

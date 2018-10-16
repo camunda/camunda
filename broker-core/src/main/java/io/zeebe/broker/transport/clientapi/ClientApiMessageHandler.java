@@ -18,21 +18,27 @@
 package io.zeebe.broker.transport.clientapi;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
-import io.zeebe.broker.clustering.orchestration.topic.TopicRecord;
 import io.zeebe.broker.event.processor.TopicSubscriberEvent;
 import io.zeebe.broker.event.processor.TopicSubscriptionEvent;
-import io.zeebe.broker.job.data.JobRecord;
-import io.zeebe.broker.system.workflow.repository.data.DeploymentRecord;
 import io.zeebe.broker.transport.controlmessage.ControlMessageRequestHeaderDescriptor;
-import io.zeebe.broker.workflow.data.WorkflowInstanceRecord;
 import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.dispatcher.Dispatcher;
-import io.zeebe.logstreams.log.LogStreamWriter;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.*;
-import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.clientapi.ControlMessageRequestDecoder;
+import io.zeebe.protocol.clientapi.ErrorCode;
+import io.zeebe.protocol.clientapi.ExecuteCommandRequestDecoder;
+import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
+import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
+import io.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.zeebe.protocol.impl.record.value.message.MessageRecord;
+import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerMessageHandler;
 import io.zeebe.transport.ServerOutput;
@@ -57,7 +63,7 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
 
   protected final Int2ObjectHashMap<Partition> leaderPartitions = new Int2ObjectHashMap<>();
   protected final RecordMetadata eventMetadata = new RecordMetadata();
-  protected final LogStreamWriter logStreamWriter = new LogStreamWriterImpl();
+  protected final LogStreamRecordWriter logStreamWriter = new LogStreamWriterImpl();
 
   protected final ErrorResponseWriter errorResponseWriter = new ErrorResponseWriter();
   protected final Dispatcher controlMessageDispatcher;
@@ -77,7 +83,8 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
     recordsByType.put(ValueType.WORKFLOW_INSTANCE, new WorkflowInstanceRecord());
     recordsByType.put(ValueType.SUBSCRIBER, new TopicSubscriberEvent());
     recordsByType.put(ValueType.SUBSCRIPTION, new TopicSubscriptionEvent());
-    recordsByType.put(ValueType.TOPIC, new TopicRecord());
+    recordsByType.put(ValueType.MESSAGE, new MessageRecord());
+    recordsByType.put(ValueType.JOB_BATCH, new JobBatchRecord());
   }
 
   private boolean handleExecuteCommandRequest(
@@ -126,7 +133,7 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
     try {
       // verify that the event / command is valid
       event.wrap(buffer, eventOffset, eventLength);
-    } catch (Throwable t) {
+    } catch (final Throwable t) {
       return errorResponseWriter
           .errorCode(ErrorCode.INVALID_MESSAGE)
           .errorMessage("Cannot deserialize command: '%s'.", concatErrorMessages(t))
@@ -142,7 +149,7 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
     if (key != ExecuteCommandRequestDecoder.keyNullValue()) {
       logStreamWriter.key(key);
     } else {
-      logStreamWriter.positionAsKey();
+      logStreamWriter.keyNull();
     }
 
     final long sourceRecordPosition = executeCommandRequestDecoder.sourceRecordPosition();
@@ -218,12 +225,12 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
 
   @Override
   public boolean onRequest(
-      ServerOutput output,
-      RemoteAddress remoteAddress,
-      DirectBuffer buffer,
-      int offset,
-      int length,
-      long requestId) {
+      final ServerOutput output,
+      final RemoteAddress remoteAddress,
+      final DirectBuffer buffer,
+      final int offset,
+      final int length,
+      final long requestId) {
     drainCommandQueue();
 
     messageHeaderDecoder.wrap(buffer, offset);
@@ -272,11 +279,11 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
 
   @Override
   public boolean onMessage(
-      ServerOutput output,
-      RemoteAddress remoteAddress,
-      DirectBuffer buffer,
-      int offset,
-      int length) {
+      final ServerOutput output,
+      final RemoteAddress remoteAddress,
+      final DirectBuffer buffer,
+      final int offset,
+      final int length) {
     // ignore; currently no incoming single-message client interactions
     return true;
   }

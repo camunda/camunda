@@ -15,7 +15,12 @@
  */
 package io.zeebe.dispatcher.integration;
 
-import io.zeebe.dispatcher.*;
+import io.zeebe.dispatcher.BlockPeek;
+import io.zeebe.dispatcher.ClaimedFragment;
+import io.zeebe.dispatcher.Dispatcher;
+import io.zeebe.dispatcher.Dispatchers;
+import io.zeebe.dispatcher.FragmentHandler;
+import io.zeebe.dispatcher.Subscription;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -134,7 +139,7 @@ public class ActorFrameworkIntegrationTest {
   class Producer extends Actor {
     final CountDownLatch latch = new CountDownLatch(1);
 
-    final int totalWork = 10_000_000;
+    final int totalWork = 10_000;
     final UnsafeBuffer msg = new UnsafeBuffer(ByteBuffer.allocate(4534));
 
     final Dispatcher dispatcher;
@@ -170,7 +175,7 @@ public class ActorFrameworkIntegrationTest {
   class ClaimingProducer extends Actor {
     final CountDownLatch latch = new CountDownLatch(1);
 
-    final int totalWork = 10_000_000;
+    final int totalWork = 10_000;
 
     final Dispatcher dispatcher;
     int counter = 1;

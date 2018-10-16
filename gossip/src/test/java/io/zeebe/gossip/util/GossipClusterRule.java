@@ -25,6 +25,7 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.function.BooleanSupplier;
+import org.junit.rules.ExternalResource;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -57,6 +58,20 @@ public class GossipClusterRule implements TestRule {
     final List<TestRule> rules = new ArrayList<>();
     rules.add(actorScheduler);
     rules.addAll(gossips);
+    rules.add(
+        new ExternalResource() {
+          @Override
+          protected void before() throws Throwable {
+            // register node endpoints between all gossips
+            final int size = gossips.size();
+            for (int from = 0; from < size - 1; from++) {
+              for (int to = from + 1; to < size; to++) {
+                gossips.get(from).reconnectTo(gossips.get(to));
+              }
+            }
+          }
+        });
+
     Collections.reverse(rules);
 
     for (final TestRule rule : rules) {
@@ -68,12 +83,10 @@ public class GossipClusterRule implements TestRule {
 
   public void interruptConnectionBetween(GossipRule thisMember, GossipRule thatMember) {
     thisMember.interruptConnectionTo(thatMember);
-    thatMember.interruptConnectionTo(thisMember);
   }
 
   public void reconnect(GossipRule thisMember, GossipRule thatMember) {
     thisMember.reconnectTo(thatMember);
-    thatMember.reconnectTo(thisMember);
   }
 
   public void waitUntil(BooleanSupplier condition) {

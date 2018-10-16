@@ -19,18 +19,19 @@ import static io.zeebe.broker.it.util.TopicEventRecorder.state;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
-import io.zeebe.client.api.clients.JobClient;
-import io.zeebe.client.api.clients.WorkflowClient;
-import io.zeebe.client.api.events.IncidentState;
-import io.zeebe.client.api.events.JobEvent;
-import io.zeebe.client.api.events.JobState;
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
-import io.zeebe.client.api.events.WorkflowInstanceState;
-import io.zeebe.client.api.subscription.JobHandler;
+import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.gateway.api.clients.JobClient;
+import io.zeebe.gateway.api.clients.WorkflowClient;
+import io.zeebe.gateway.api.events.DeploymentEvent;
+import io.zeebe.gateway.api.events.IncidentState;
+import io.zeebe.gateway.api.events.JobEvent;
+import io.zeebe.gateway.api.events.JobState;
+import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
+import io.zeebe.gateway.api.events.WorkflowInstanceState;
+import io.zeebe.gateway.api.subscription.JobHandler;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import java.time.Duration;
 import org.junit.Before;
 import org.junit.Rule;
@@ -38,16 +39,16 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 public class IncidentTest {
-  private static final WorkflowDefinition WORKFLOW =
-      Bpmn.createExecutableWorkflow("process")
+  private static final BpmnModelInstance WORKFLOW =
+      Bpmn.createExecutableProcess("process")
           .startEvent()
-          .serviceTask("failingTask", t -> t.taskType("test").input("$.foo", "$.foo"))
+          .serviceTask("failingTask", t -> t.zeebeTaskType("test").zeebeInput("$.foo", "$.foo"))
           .done();
 
   private static final String PAYLOAD = "{\"foo\": \"bar\"}";
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientRule clientRule = new ClientRule();
+  public ClientRule clientRule = new ClientRule(brokerRule);
   public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
 
   @Rule
@@ -59,14 +60,14 @@ public class IncidentTest {
 
   @Before
   public void setUp() {
-    workflowClient = clientRule.getClient().topicClient().workflowClient();
-    jobClient = clientRule.getClient().topicClient().jobClient();
+    workflowClient = clientRule.getClient().workflowClient();
+    jobClient = clientRule.getClient().jobClient();
   }
 
   @Test
   public void shouldCreateAndResolveInputMappingIncident() {
     // given
-    workflowClient.newDeployCommand().addWorkflowModel(WORKFLOW, "workflow.bpmn").send().join();
+    deploy();
 
     workflowClient
         .newCreateInstanceCommand()
@@ -78,7 +79,7 @@ public class IncidentTest {
     waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.CREATED));
 
     final WorkflowInstanceEvent activityInstanceEvent =
-        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ACTIVITY_READY);
+        eventRecorder.getElementInState("failingTask", WorkflowInstanceState.ELEMENT_READY);
 
     // when
     workflowClient.newUpdatePayloadCommand(activityInstanceEvent).payload(PAYLOAD).send().join();
@@ -91,7 +92,7 @@ public class IncidentTest {
   @Test
   public void shouldDeleteIncidentWhenWorkflowInstanceIsCanceled() {
     // given
-    workflowClient.newDeployCommand().addWorkflowModel(WORKFLOW, "workflow.bpmn").send().join();
+    deploy();
 
     final WorkflowInstanceEvent workflowInstance =
         workflowClient
@@ -113,7 +114,7 @@ public class IncidentTest {
   @Test
   public void shouldCreateAndResolveJobIncident() {
     // given a workflow instance with an open job
-    workflowClient.newDeployCommand().addWorkflowModel(WORKFLOW, "workflow.bpmn").send().join();
+    deploy();
 
     workflowClient
         .newCreateInstanceCommand()
@@ -150,12 +151,19 @@ public class IncidentTest {
     waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.DELETED));
   }
 
+  private void deploy() {
+    final DeploymentEvent deploymentEvent =
+        workflowClient.newDeployCommand().addWorkflowModel(WORKFLOW, "workflow.bpmn").send().join();
+
+    clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
+  }
+
   private static final class ControllableJobHandler implements JobHandler {
     boolean failJob = false;
     JobEvent job;
 
     @Override
-    public void handle(JobClient client, JobEvent job) {
+    public void handle(final JobClient client, final JobEvent job) {
       this.job = job;
 
       if (failJob) {

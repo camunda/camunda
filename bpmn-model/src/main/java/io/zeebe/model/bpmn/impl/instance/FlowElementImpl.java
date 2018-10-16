@@ -13,82 +13,103 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.zeebe.model.bpmn.impl.instance;
 
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ATTRIBUTE_NAME;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_FLOW_ELEMENT;
 
-import io.zeebe.model.bpmn.BpmnAspect;
-import io.zeebe.model.bpmn.BpmnConstants;
+import io.zeebe.model.bpmn.instance.Auditing;
+import io.zeebe.model.bpmn.instance.BaseElement;
+import io.zeebe.model.bpmn.instance.CategoryValue;
 import io.zeebe.model.bpmn.instance.FlowElement;
-import javax.xml.bind.annotation.*;
-import org.agrona.DirectBuffer;
+import io.zeebe.model.bpmn.instance.Monitoring;
+import java.util.Collection;
+import org.camunda.bpm.model.xml.ModelBuilder;
+import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
+import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
+import org.camunda.bpm.model.xml.type.attribute.Attribute;
+import org.camunda.bpm.model.xml.type.child.ChildElement;
+import org.camunda.bpm.model.xml.type.child.SequenceBuilder;
+import org.camunda.bpm.model.xml.type.reference.ElementReferenceCollection;
 
-public class FlowElementImpl extends BaseElement implements FlowElement {
-  private DirectBuffer id;
-  private DirectBuffer name;
+/**
+ * The BPMN flowElement element
+ *
+ * @author Daniel Meyer
+ * @author Sebastian Menski
+ */
+public abstract class FlowElementImpl extends BaseElementImpl implements FlowElement {
 
-  private ExtensionElementsImpl extensionElements;
+  protected static Attribute<String> nameAttribute;
+  protected static ChildElement<Auditing> auditingChild;
+  protected static ChildElement<Monitoring> monitoringChild;
+  protected static ElementReferenceCollection<CategoryValue, CategoryValueRef>
+      categoryValueRefCollection;
 
-  private BpmnAspect bpmnAspect = BpmnAspect.NONE;
+  public static void registerType(ModelBuilder modelBuilder) {
 
-  @XmlID
-  @XmlAttribute(name = BpmnConstants.BPMN_ATTRIBUTE_ID, required = true)
-  public void setId(String id) {
-    this.id = wrapString(id);
+    final ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(FlowElement.class, BPMN_ELEMENT_FLOW_ELEMENT)
+            .namespaceUri(BPMN20_NS)
+            .extendsType(BaseElement.class)
+            .abstractType();
+
+    nameAttribute = typeBuilder.stringAttribute(BPMN_ATTRIBUTE_NAME).build();
+
+    final SequenceBuilder sequenceBuilder = typeBuilder.sequence();
+
+    auditingChild = sequenceBuilder.element(Auditing.class).build();
+
+    monitoringChild = sequenceBuilder.element(Monitoring.class).build();
+
+    categoryValueRefCollection =
+        sequenceBuilder
+            .elementCollection(CategoryValueRef.class)
+            .qNameElementReferenceCollection(CategoryValue.class)
+            .build();
+
+    typeBuilder.build();
   }
 
-  public String getId() {
-    return id != null ? bufferAsString(id) : null;
+  public FlowElementImpl(ModelTypeInstanceContext context) {
+    super(context);
   }
 
-  @XmlAttribute(name = BpmnConstants.BPMN_ATTRIBUTE_NAME)
-  public void setName(String name) {
-    this.name = wrapString(name);
-  }
-
+  @Override
   public String getName() {
-    return name != null ? bufferAsString(name) : null;
-  }
-
-  @XmlElement(
-      name = BpmnConstants.BPMN_ELEMENT_EXTENSION_ELEMENTS,
-      namespace = BpmnConstants.BPMN20_NS)
-  public void setExtensionElements(ExtensionElementsImpl extensionElements) {
-    this.extensionElements = extensionElements;
-  }
-
-  public ExtensionElementsImpl getExtensionElements() {
-    return extensionElements;
+    return nameAttribute.getValue(this);
   }
 
   @Override
-  public DirectBuffer getIdAsBuffer() {
-    return id;
-  }
-
-  public DirectBuffer getNameAsBuffer() {
-    return name;
+  public void setName(String name) {
+    nameAttribute.setValue(this, name);
   }
 
   @Override
-  public BpmnAspect getBpmnAspect() {
-    return bpmnAspect;
-  }
-
-  @XmlTransient
-  public void setBpmnAspect(BpmnAspect bpmnAspect) {
-    this.bpmnAspect = bpmnAspect;
+  public Auditing getAuditing() {
+    return auditingChild.getChild(this);
   }
 
   @Override
-  public String toString() {
-    final StringBuilder builder = new StringBuilder();
-    builder.append("FlowElement [id=");
-    builder.append(getId());
-    builder.append(", name=");
-    builder.append(getName());
-    builder.append("]");
-    return builder.toString();
+  public void setAuditing(Auditing auditing) {
+    auditingChild.setChild(this, auditing);
+  }
+
+  @Override
+  public Monitoring getMonitoring() {
+    return monitoringChild.getChild(this);
+  }
+
+  @Override
+  public void setMonitoring(Monitoring monitoring) {
+    monitoringChild.setChild(this, monitoring);
+  }
+
+  @Override
+  public Collection<CategoryValue> getCategoryValueRefs() {
+    return categoryValueRefCollection.getReferenceTargetElements(this);
   }
 }

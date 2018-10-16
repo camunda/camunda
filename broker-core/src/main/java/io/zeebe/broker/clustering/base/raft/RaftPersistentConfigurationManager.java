@@ -19,10 +19,8 @@ package io.zeebe.broker.clustering.base.raft;
 
 import io.zeebe.broker.clustering.base.partitions.PartitionAlreadyExistsException;
 import io.zeebe.broker.system.configuration.DataCfg;
-import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.FileUtil;
-import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
@@ -30,7 +28,6 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import org.agrona.DirectBuffer;
 
 /**
  * Manages {@link RaftPersistentConfiguration} instances. When the broker is started, it loads the
@@ -40,6 +37,7 @@ public class RaftPersistentConfigurationManager extends Actor {
   private static final String PARTITION_METAFILE_NAME = "partition.json";
   private static final String PARTITION_LOG_DIR = "segments";
   private static final String PARTITION_SNAPSHOTS_DIR = "snapshots";
+  private static final String PARTITION_STATES_DIR = "state";
 
   private final List<RaftPersistentConfiguration> configurations = new ArrayList<>();
   private final DataCfg dataConfiguration;
@@ -48,15 +46,15 @@ public class RaftPersistentConfigurationManager extends Actor {
 
   public RaftPersistentConfigurationManager(DataCfg dataConfiguration) {
     this.dataConfiguration = dataConfiguration;
-    this.partitionCountPerDataDirectory = new int[dataConfiguration.getDirectories().length];
+    this.partitionCountPerDataDirectory = new int[dataConfiguration.getDirectories().size()];
   }
 
   @Override
   protected void onActorStarting() {
-    final String[] directories = dataConfiguration.getDirectories();
+    final List<String> directories = dataConfiguration.getDirectories();
 
-    for (int i = 0; i < directories.length; i++) {
-      readConfigurations(directories[i], i);
+    for (int i = 0; i < directories.size(); i++) {
+      readConfigurations(directories.get(i), i);
     }
   }
 
@@ -72,8 +70,11 @@ public class RaftPersistentConfigurationManager extends Actor {
       if (configFile.exists()) {
         final File logDirectory = new File(partitionDirectory, PARTITION_LOG_DIR);
         final File snapshotsDirectory = new File(partitionDirectory, PARTITION_SNAPSHOTS_DIR);
+        final File statesDirectory = new File(partitionDirectory, PARTITION_STATES_DIR);
+
         configurations.add(
-            new RaftPersistentConfiguration(configFile, logDirectory, snapshotsDirectory));
+            new RaftPersistentConfiguration(
+                configFile, logDirectory, snapshotsDirectory, statesDirectory));
         partitionCountPerDataDirectory[offset]++;
       }
     }
@@ -84,7 +85,7 @@ public class RaftPersistentConfigurationManager extends Actor {
   }
 
   public ActorFuture<RaftPersistentConfiguration> createConfiguration(
-      DirectBuffer topicName, int partitionId, int replicationFactor, List<SocketAddress> members) {
+      int partitionId, int replicationFactor, List<Integer> members) {
     final ActorFuture<RaftPersistentConfiguration> future = new CompletableActorFuture<>();
 
     actor.run(
@@ -95,12 +96,11 @@ public class RaftPersistentConfigurationManager extends Actor {
           if (partitionExists) {
             future.completeExceptionally(new PartitionAlreadyExistsException(partitionId));
           } else {
-            final String partitionName =
-                String.format("%s-%d", BufferUtil.bufferAsString(topicName), partitionId);
+            final String partitionName = String.format("partition-%d", partitionId);
 
             final int assignedDataDirOffset = assignDataDirectory();
             final String assignedDataDirectoryName =
-                dataConfiguration.getDirectories()[assignedDataDirOffset];
+                dataConfiguration.getDirectories().get(assignedDataDirOffset);
             final File partitionDirectory = new File(assignedDataDirectoryName, partitionName);
 
             try {
@@ -114,11 +114,14 @@ public class RaftPersistentConfigurationManager extends Actor {
               final File snapshotDirectory = new File(partitionDirectory, PARTITION_SNAPSHOTS_DIR);
               snapshotDirectory.mkdir();
 
+              final File statesDirectory = new File(partitionDirectory, PARTITION_STATES_DIR);
+              statesDirectory.mkdir();
+
               final RaftPersistentConfiguration storage =
-                  new RaftPersistentConfiguration(metafile, logDirectory, snapshotDirectory);
+                  new RaftPersistentConfiguration(
+                      metafile, logDirectory, snapshotDirectory, statesDirectory);
 
               storage
-                  .setTopicName(topicName)
                   .setPartitionId(partitionId)
                   .setReplicationFactor(replicationFactor)
                   .setMembers(members)

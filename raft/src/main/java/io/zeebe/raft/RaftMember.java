@@ -16,20 +16,19 @@
 package io.zeebe.raft;
 
 import io.zeebe.raft.controller.MemberReplicateLogController;
-import io.zeebe.transport.RemoteAddress;
 
 public class RaftMember {
-  private final RemoteAddress remoteAddress;
+  private final int nodeId;
   private MemberReplicateLogController replicationController;
 
   private long matchPosition;
 
-  public RaftMember(final RemoteAddress remoteAddress) {
-    this.remoteAddress = remoteAddress;
+  public RaftMember(final int nodeId) {
+    this.nodeId = nodeId;
   }
 
-  public RemoteAddress getRemoteAddress() {
-    return remoteAddress;
+  public int getNodeId() {
+    return nodeId;
   }
 
   public void onFollowerHasAcknowledgedPosition(long position) {

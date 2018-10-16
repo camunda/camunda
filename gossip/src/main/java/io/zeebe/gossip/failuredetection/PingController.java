@@ -16,10 +16,17 @@
 package io.zeebe.gossip.failuredetection;
 
 import io.zeebe.clustering.gossip.MembershipEventType;
-import io.zeebe.gossip.*;
+import io.zeebe.gossip.GossipConfiguration;
+import io.zeebe.gossip.GossipContext;
+import io.zeebe.gossip.Loggers;
 import io.zeebe.gossip.dissemination.DisseminationComponent;
-import io.zeebe.gossip.membership.*;
-import io.zeebe.gossip.protocol.*;
+import io.zeebe.gossip.membership.Member;
+import io.zeebe.gossip.membership.MembershipList;
+import io.zeebe.gossip.membership.MembershipStatus;
+import io.zeebe.gossip.membership.RoundRobinMemberIterator;
+import io.zeebe.gossip.protocol.GossipEvent;
+import io.zeebe.gossip.protocol.GossipEventFactory;
+import io.zeebe.gossip.protocol.GossipEventSender;
 import io.zeebe.transport.ClientResponse;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -70,8 +77,7 @@ public class PingController {
       LOG.trace("Send PING to '{}'", probeMember.getId());
 
       final ActorFuture<ClientResponse> responseFuture =
-          gossipEventSender.sendPing(
-              probeMember.getAddress(), configuration.getProbeTimeoutDuration());
+          gossipEventSender.sendPing(probeMember.getId(), configuration.getProbeTimeoutDuration());
 
       actor.runOnCompletion(
           responseFuture,
@@ -107,8 +113,8 @@ public class PingController {
 
         final ActorFuture<ClientResponse> responseFuture =
             gossipEventSender.sendPingReq(
-                member.getAddress(),
-                probeMember.getAddress(),
+                member.getId(),
+                probeMember.getId(),
                 configuration.getProbeIndirectTimeoutDuration());
         indirectResponseFutures.add(responseFuture);
 
@@ -147,11 +153,11 @@ public class PingController {
     if (probeMember.getStatus() == MembershipStatus.ALIVE) {
       LOG.debug("Spread SUSPECT event of member '{}'", probeMember.getId());
 
-      membershipList.suspectMember(probeMember.getAddress(), probeMember.getTerm());
+      membershipList.suspectMember(probeMember.getId(), probeMember.getTerm());
 
       disseminationComponent
           .addMembershipEvent()
-          .address(probeMember.getAddress())
+          .memberId(probeMember.getId())
           .type(MembershipEventType.SUSPECT)
           .gossipTerm(probeMember.getTerm());
     }

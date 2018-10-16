@@ -15,10 +15,14 @@
  */
 package io.zeebe.gossip.failuredetection;
 
-import io.zeebe.gossip.*;
+import io.zeebe.gossip.GossipConfiguration;
+import io.zeebe.gossip.GossipContext;
+import io.zeebe.gossip.Loggers;
 import io.zeebe.gossip.membership.Member;
 import io.zeebe.gossip.membership.MembershipList;
-import io.zeebe.gossip.protocol.*;
+import io.zeebe.gossip.protocol.GossipEvent;
+import io.zeebe.gossip.protocol.GossipEventConsumer;
+import io.zeebe.gossip.protocol.GossipEventSender;
 import io.zeebe.transport.ClientResponse;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -47,15 +51,14 @@ public class PingReqEventHandler implements GossipEventConsumer {
 
   @Override
   public void accept(GossipEvent event, long requestId, int streamId) {
-    final Member sender = membershipList.get(event.getSender());
-    final Member probeMember = membershipList.get(event.getProbeMember());
+    final Member sender = membershipList.get(event.getSenderId());
+    final Member probeMember = membershipList.get(event.getProbeMemberId());
 
     if (probeMember != null) {
       LOG.trace("Forward PING to '{}'", probeMember.getId());
 
       final ActorFuture<ClientResponse> respFuture =
-          gossipEventSender.sendPing(
-              probeMember.getAddress(), configuration.getProbeTimeoutDuration());
+          gossipEventSender.sendPing(probeMember.getId(), configuration.getProbeTimeoutDuration());
 
       actor.runOnCompletion(
           respFuture,
@@ -76,7 +79,7 @@ public class PingReqEventHandler implements GossipEventConsumer {
             }
           });
     } else {
-      LOG.debug("Reject PING-REQ for unknown member '{}'", event.getProbeMember());
+      LOG.debug("Reject PING-REQ for unknown member '{}'", event.getProbeMemberId());
     }
   }
 }

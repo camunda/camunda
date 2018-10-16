@@ -18,7 +18,9 @@ package io.zeebe.raft;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.raft.state.RaftState;
-import io.zeebe.raft.util.*;
+import io.zeebe.raft.util.EventInfo;
+import io.zeebe.raft.util.RaftClusterRule;
+import io.zeebe.raft.util.RaftRule;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.util.List;
@@ -30,9 +32,9 @@ public class RaftThreeNodesTest {
   public ActorSchedulerRule actorScheduler = new ActorSchedulerRule();
   public ServiceContainerRule serviceContainer = new ServiceContainerRule(actorScheduler);
 
-  public RaftRule raft1 = new RaftRule(serviceContainer, "localhost", 8001, "default", 0);
-  public RaftRule raft2 = new RaftRule(serviceContainer, "localhost", 8002, "default", 0, raft1);
-  public RaftRule raft3 = new RaftRule(serviceContainer, "localhost", 8003, "default", 0, raft1);
+  public RaftRule raft1 = new RaftRule(serviceContainer, 1, 0);
+  public RaftRule raft2 = new RaftRule(serviceContainer, 2, 0, raft1);
+  public RaftRule raft3 = new RaftRule(serviceContainer, 3, 0, raft1);
 
   @Rule
   public RaftClusterRule cluster =

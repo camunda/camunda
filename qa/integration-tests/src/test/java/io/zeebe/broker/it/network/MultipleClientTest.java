@@ -19,9 +19,9 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
-import io.zeebe.client.api.events.JobEvent;
+import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.gateway.api.events.JobEvent;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.junit.Rule;
@@ -32,8 +32,8 @@ import org.junit.rules.RuleChain;
 public class MultipleClientTest {
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
-  public ClientRule client1 = new ClientRule();
-  public ClientRule client2 = new ClientRule();
+  public ClientRule client1 = new ClientRule(brokerRule);
+  public ClientRule client2 = new ClientRule(brokerRule);
 
   @Rule
   public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(client1).around(client2);
@@ -46,17 +46,15 @@ public class MultipleClientTest {
     final List<JobEvent> jobEventsClient1 = new CopyOnWriteArrayList<>();
     final List<JobEvent> jobEventsClient2 = new CopyOnWriteArrayList<>();
 
-    client1.waitUntilTopicsExists(client1.getDefaultTopic());
-
     client1
-        .getTopicClient()
+        .getClient()
         .newSubscription()
         .name("client-1")
         .jobEventHandler(e -> jobEventsClient1.add(e))
         .open();
 
     client2
-        .getTopicClient()
+        .getClient()
         .newSubscription()
         .name("client-2")
         .jobEventHandler(e -> jobEventsClient2.add(e))
@@ -78,11 +76,7 @@ public class MultipleClientTest {
     // given
     final RecordingJobHandler handler1 = new RecordingJobHandler();
     final RecordingJobHandler handler2 = new RecordingJobHandler();
-
-    client1.waitUntilTopicsExists(client1.getDefaultTopic());
-
     client1.getJobClient().newWorker().jobType("foo").handler(handler1).open();
-
     client2.getJobClient().newWorker().jobType("bar").handler(handler2).open();
 
     // when

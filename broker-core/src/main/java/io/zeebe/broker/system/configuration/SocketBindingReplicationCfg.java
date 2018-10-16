@@ -18,7 +18,24 @@
 package io.zeebe.broker.system.configuration;
 
 public class SocketBindingReplicationCfg extends SocketBindingCfg {
+
+  public static final int DEFAULT_PORT = 26503;
+
   public SocketBindingReplicationCfg() {
-    port = 51017;
+    port = DEFAULT_PORT;
+  }
+
+  @Override
+  public String toString() {
+    return "SocketBindingReplicationCfg{"
+        + "host='"
+        + host
+        + '\''
+        + ", port="
+        + port
+        + ", sendBufferSize='"
+        + sendBufferSize
+        + '\''
+        + '}';
   }
 }

@@ -16,18 +16,23 @@
 package io.zeebe.transport;
 
 import static io.zeebe.test.util.TestUtil.waitUntil;
+import static io.zeebe.util.buffer.DirectBufferWriter.writerFor;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.UnstableTest;
 import io.zeebe.dispatcher.FragmentHandler;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.test.util.TestUtil;
-import io.zeebe.transport.impl.*;
+import io.zeebe.transport.impl.DefaultChannelFactory;
+import io.zeebe.transport.impl.RemoteAddressImpl;
+import io.zeebe.transport.impl.TransportChannel;
 import io.zeebe.transport.impl.TransportChannel.ChannelLifecycleListener;
 import io.zeebe.transport.impl.TransportChannel.TransportChannelMetrics;
+import io.zeebe.transport.impl.TransportChannelFactory;
+import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.transport.util.RecordingChannelListener;
 import io.zeebe.transport.util.RecordingChannelListener.Event;
-import io.zeebe.util.buffer.DirectBufferWriter;
+import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.nio.channels.SocketChannel;
@@ -35,7 +40,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.experimental.categories.Category;
 import org.junit.rules.RuleChain;
 
@@ -45,8 +52,11 @@ public class TransportChannelListenerTest {
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(actorSchedulerRule).around(closeables);
 
-  private static final SocketAddress ADDRESS = new SocketAddress("localhost", 51115);
+  private static final int NODE_ID = 1;
+  private static final SocketAddress ADDRESS = SocketUtil.getNextAddress();
+
   protected static final DirectBuffer EMPTY_BUFFER = new UnsafeBuffer(0, 0);
+  protected static final BufferWriter WRITER = writerFor(EMPTY_BUFFER);
 
   protected ServerTransport serverTransport;
 
@@ -66,7 +76,7 @@ public class TransportChannelListenerTest {
 
   private ClientTransport buildClientTransport(Consumer<ClientTransportBuilder> builderConsumer) {
     final ClientTransportBuilder transportBuilder =
-        Transports.newClientTransport().scheduler(actorSchedulerRule.get());
+        Transports.newClientTransport("test").scheduler(actorSchedulerRule.get());
     builderConsumer.accept(transportBuilder);
 
     final ClientTransport clientTransport = transportBuilder.build();
@@ -76,7 +86,7 @@ public class TransportChannelListenerTest {
   }
 
   @Test
-  public void shouldInvokeRegisteredListenerOnChannelClose() throws InterruptedException {
+  public void shouldInvokeRegisteredListenerOnChannelClose() {
     // given
     final ClientTransport clientTransport = buildClientTransport();
 
@@ -86,12 +96,10 @@ public class TransportChannelListenerTest {
     final RecordingChannelListener serverListener = new RecordingChannelListener();
     serverTransport.registerChannelListener(serverListener);
 
-    final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(ADDRESS);
+    clientTransport.registerEndpoint(NODE_ID, ADDRESS);
 
     // opens a channel asynchronously
-    clientTransport
-        .getOutput()
-        .sendRequest(remoteAddress, new DirectBufferWriter().wrap(EMPTY_BUFFER));
+    clientTransport.getOutput().sendRequest(NODE_ID, WRITER);
 
     TestUtil.waitUntil(() -> !clientListener.getOpenedConnections().isEmpty());
 
@@ -101,7 +109,9 @@ public class TransportChannelListenerTest {
     // then
     TestUtil.waitUntil(() -> !clientListener.getClosedConnections().isEmpty());
     assertThat(clientListener.getClosedConnections()).hasSize(1);
-    assertThat(clientListener.getClosedConnections().get(0)).isSameAs(remoteAddress);
+    assertThat(clientListener.getClosedConnections().get(0))
+        .extracting("address")
+        .containsExactly(ADDRESS);
 
     TestUtil.waitUntil(() -> !serverListener.getClosedConnections().isEmpty());
     assertThat(serverListener.getClosedConnections()).hasSize(1);
@@ -109,7 +119,7 @@ public class TransportChannelListenerTest {
 
   @Test
   @Category(UnstableTest.class)
-  public void shouldInvokeRegisteredListenerOnChannelOpened() throws InterruptedException {
+  public void shouldInvokeRegisteredListenerOnChannelOpened() {
     // given
     final ClientTransport clientTransport = buildClientTransport();
 
@@ -119,18 +129,18 @@ public class TransportChannelListenerTest {
     final RecordingChannelListener serverListener = new RecordingChannelListener();
     serverTransport.registerChannelListener(serverListener);
 
-    final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(ADDRESS);
+    clientTransport.registerEndpoint(NODE_ID, ADDRESS);
 
     // when
-    clientTransport
-        .getOutput()
-        .sendRequest(remoteAddress, new DirectBufferWriter().wrap(EMPTY_BUFFER));
+    clientTransport.getOutput().sendRequest(NODE_ID, WRITER);
 
     // then
     TestUtil.waitUntil(() -> !clientListener.getOpenedConnections().isEmpty());
     TestUtil.waitUntil(() -> !serverListener.getOpenedConnections().isEmpty());
 
-    assertThat(clientListener.getOpenedConnections()).containsExactly(remoteAddress);
+    assertThat(clientListener.getOpenedConnections())
+        .extracting("address")
+        .containsExactly(ADDRESS);
     assertThat(serverListener.getOpenedConnections()).hasSize(1);
   }
 
@@ -145,11 +155,9 @@ public class TransportChannelListenerTest {
     final RecordingChannelListener serverListener = new RecordingChannelListener();
     serverTransport.registerChannelListener(serverListener);
 
-    final RemoteAddress remoteAddress = clientTransport.registerRemoteAddress(ADDRESS);
+    clientTransport.registerEndpoint(NODE_ID, ADDRESS);
 
-    clientTransport
-        .getOutput()
-        .sendRequest(remoteAddress, new DirectBufferWriter().wrap(EMPTY_BUFFER));
+    clientTransport.getOutput().sendRequest(NODE_ID, WRITER);
     TestUtil.waitUntil(() -> !clientListener.getOpenedConnections().isEmpty());
 
     clientTransport.removeChannelListener(clientListener);
@@ -165,7 +173,7 @@ public class TransportChannelListenerTest {
   }
 
   @Test
-  public void shouldNotInvokeListenerWhenChannelCannotConnect() throws InterruptedException {
+  public void shouldNotInvokeListenerWhenChannelCannotConnect() {
     // given
     final CountingChannelFactory clientChannelFactory = new CountingChannelFactory();
     final ClientTransport clientTransport =
@@ -177,7 +185,7 @@ public class TransportChannelListenerTest {
     serverTransport.close();
 
     // when
-    clientTransport.registerRemoteAddress(ADDRESS); // triggering connection attempts
+    clientTransport.registerEndpoint(NODE_ID, ADDRESS); // triggering connection attempts
 
     // then
     waitUntil(
@@ -198,7 +206,7 @@ public class TransportChannelListenerTest {
     clientTransport.registerChannelListener(clientListener);
 
     // when
-    clientTransport.registerRemoteAddress(ADDRESS); // triggering connection attempts
+    clientTransport.registerEndpoint(NODE_ID, ADDRESS); // triggering connection attempts
     waitUntil(
         () ->
             clientListener.getEvents().size()

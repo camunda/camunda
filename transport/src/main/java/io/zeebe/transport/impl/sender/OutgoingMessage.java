@@ -25,9 +25,12 @@ public class OutgoingMessage {
 
   private final MutableDirectBuffer buffer;
 
-  public OutgoingMessage(int remoteStreamId, MutableDirectBuffer buffer) {
+  private final long deadline;
+
+  public OutgoingMessage(int remoteStreamId, MutableDirectBuffer buffer, long deadline) {
     this.remoteStreamId = remoteStreamId;
     this.buffer = buffer;
+    this.deadline = deadline;
   }
 
   public int getRemoteStreamId() {
@@ -44,5 +47,9 @@ public class OutgoingMessage {
 
   public ByteBuffer getAllocatedBuffer() {
     return buffer.byteBuffer();
+  }
+
+  public long getDeadline() {
+    return deadline;
   }
 }

@@ -30,6 +30,7 @@ public class GossipConfiguration {
   private int suspicionMultiplier = 5;
 
   private String syncTimeout = "3s";
+  private String syncInterval = "15s";
 
   private String joinTimeout = "1s";
   private String joinInterval = "1s";
@@ -147,6 +148,20 @@ public class GossipConfiguration {
 
   public Duration getSyncTimeoutDuration() {
     return DurationUtil.parse(syncTimeout);
+  }
+
+  /** The interval on which the sync requests are send. */
+  public String getSyncInterval() {
+    return syncInterval;
+  }
+
+  public Duration getSyncIntervalDuration() {
+    return DurationUtil.parse(syncInterval);
+  }
+
+  public GossipConfiguration setSyncInterval(String syncInterval) {
+    this.syncInterval = syncInterval;
+    return this;
   }
 
   /** The timeout of a sync request. */

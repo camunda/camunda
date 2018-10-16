@@ -15,7 +15,8 @@
  */
 package io.zeebe.logstreams.impl;
 
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.*;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.HEADER_BLOCK_LENGTH;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.getFragmentLength;
 import static io.zeebe.logstreams.spi.LogStorage.OP_RESULT_INSUFFICIENT_BUFFER_CAPACITY;
 
 import io.zeebe.logstreams.spi.ReadResultProcessor;

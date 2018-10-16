@@ -18,6 +18,7 @@
 package io.zeebe.broker.logstreams;
 
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
+import io.zeebe.broker.logstreams.state.StateStorageFactory;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.servicecontainer.ServiceName;
 
@@ -31,4 +32,10 @@ public class LogStreamServiceNames {
   public static final ServiceName<StreamProcessorServiceFactory> STREAM_PROCESSOR_SERVICE_FACTORY =
       ServiceName.newServiceName(
           "logstreams.processor-factory", StreamProcessorServiceFactory.class);
+
+  public static final ServiceName<StateStorageFactory> stateStorageFactoryServiceName(
+      String partitionName) {
+    return ServiceName.newServiceName(
+        String.format("%s.rocksdb.storage", partitionName), StateStorageFactory.class);
+  }
 }

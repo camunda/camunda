@@ -18,13 +18,16 @@
 package io.zeebe.broker.clustering.base.topology;
 
 import io.zeebe.broker.Loggers;
-import io.zeebe.broker.clustering.base.topology.TopologyDto.BrokerDto;
+import io.zeebe.protocol.PartitionState;
+import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto;
+import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto.BrokerDto;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.transport.SocketAddress;
-import io.zeebe.util.buffer.BufferUtil;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.function.Function;
-import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.slf4j.Logger;
 
@@ -43,14 +46,41 @@ public class Topology implements ReadableTopology {
   private final Int2ObjectHashMap<NodeInfo> partitionLeaders = new Int2ObjectHashMap<>();
   private final Int2ObjectHashMap<List<NodeInfo>> partitionFollowers = new Int2ObjectHashMap<>();
 
-  public Topology(NodeInfo localBroker) {
+  private final int clusterSize;
+  private final int partitionsCount;
+
+  public Topology(NodeInfo localBroker, int clusterSize, int partitionsCount) {
     this.local = localBroker;
+    this.clusterSize = clusterSize;
+    this.partitionsCount = partitionsCount;
     this.addMember(localBroker);
   }
 
   @Override
   public NodeInfo getLocal() {
     return local;
+  }
+
+  public int getClusterSize() {
+    return clusterSize;
+  }
+
+  public int getPartitionsCount() {
+    return partitionsCount;
+  }
+
+  public NodeInfo getMember(int nodeId) {
+    NodeInfo member = null;
+
+    for (int i = 0; i < members.size() && member == null; i++) {
+      final NodeInfo current = members.get(i);
+
+      if (nodeId == current.getNodeId()) {
+        member = current;
+      }
+    }
+
+    return member;
   }
 
   @Override
@@ -108,13 +138,13 @@ public class Topology implements ReadableTopology {
     return new ArrayList<>(partitions.values());
   }
 
-  public void addMember(NodeInfo member) {
-    // replace member if present
+  public boolean addMember(NodeInfo member) {
+
     if (!members.contains(member)) {
       LOG.debug("Adding {} to list of known members", member);
-
-      members.add(member);
+      return members.add(member);
     }
+    return false;
   }
 
   public void removeMember(NodeInfo member) {
@@ -158,16 +188,12 @@ public class Topology implements ReadableTopology {
   }
 
   public PartitionInfo updatePartition(
-      int partitionId,
-      DirectBuffer topicName,
-      int replicationFactor,
-      NodeInfo member,
-      RaftState state) {
+      int partitionId, int replicationFactor, NodeInfo member, RaftState state) {
     List<NodeInfo> followers = partitionFollowers.get(partitionId);
 
     PartitionInfo partition = partitions.get(partitionId);
     if (partition == null) {
-      partition = new PartitionInfo(topicName, partitionId, replicationFactor);
+      partition = new PartitionInfo(partitionId, replicationFactor);
       partitions.put(partitionId, partition);
     }
 
@@ -215,38 +241,36 @@ public class Topology implements ReadableTopology {
   }
 
   @Override
-  public TopologyDto asDto() {
-    final TopologyDto dto = new TopologyDto();
+  public TopologyResponseDto asDto() {
+    final TopologyResponseDto dto = new TopologyResponseDto();
+    dto.setClusterSize(clusterSize);
+    dto.setPartitionsCount(partitionsCount);
 
     for (NodeInfo member : members) {
       final BrokerDto broker = dto.brokers().add();
       final SocketAddress apiContactPoint = member.getClientApiAddress();
+      broker.setNodeId(member.getNodeId());
       broker.setHost(
           apiContactPoint.getHostBuffer(), 0, apiContactPoint.getHostBuffer().capacity());
       broker.setPort(apiContactPoint.port());
 
       for (PartitionInfo partition : member.getLeaders()) {
-        final DirectBuffer topicName = BufferUtil.cloneBuffer(partition.getTopicNameBuffer());
 
         broker
             .partitionStates()
             .add()
             .setPartitionId(partition.getPartitionId())
-            .setTopicName(topicName, 0, topicName.capacity())
             .setReplicationFactor(partition.getReplicationFactor())
-            .setState(RaftState.LEADER);
+            .setState(PartitionState.LEADER);
       }
 
       for (PartitionInfo partition : member.getFollowers()) {
-        final DirectBuffer topicName = BufferUtil.cloneBuffer(partition.getTopicNameBuffer());
-
         broker
             .partitionStates()
             .add()
             .setPartitionId(partition.getPartitionId())
-            .setTopicName(topicName, 0, topicName.capacity())
             .setReplicationFactor(partition.getReplicationFactor())
-            .setState(RaftState.FOLLOWER);
+            .setState(PartitionState.FOLLOWER);
       }
     }
 

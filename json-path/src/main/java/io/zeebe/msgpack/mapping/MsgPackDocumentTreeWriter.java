@@ -86,11 +86,11 @@ public class MsgPackDocumentTreeWriter {
     }
 
     final String nodeId = parentId.isEmpty() ? nodeName : construct(parentId, nodeName);
-    if (documentTree.isLeaf(nodeId)) {
-      documentTree.writeLeafMapping(msgPackWriter, nodeId);
+    if (documentTree.isValueNode(nodeId)) {
+      documentTree.writeValueNode(msgPackWriter, nodeId);
     } else {
       final boolean isArrayNode = documentTree.isArrayNode(nodeId);
-      final Set<String> childs = documentTree.getChilds(nodeId);
+      final Set<String> childs = documentTree.getChildren(nodeId);
       if (isArrayNode) {
         msgPackWriter.writeArrayHeader(childs.size());
       } else {

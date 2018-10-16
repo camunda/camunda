@@ -15,47 +15,41 @@
  */
 package io.zeebe.test.broker.protocol.brokerapi.data;
 
-import static io.zeebe.test.broker.protocol.brokerapi.data.BrokerPartitionState.FOLLOWER_STATE;
 import static io.zeebe.test.broker.protocol.brokerapi.data.BrokerPartitionState.LEADER_STATE;
 
 import io.zeebe.test.broker.protocol.brokerapi.StubBrokerRule;
 import io.zeebe.transport.SocketAddress;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 public class Topology {
 
-  protected Map<SocketAddress, TopologyBroker> brokers = new HashMap<>();
+  protected Map<Integer, TopologyBroker> brokers = new HashMap<>();
 
   public Topology() {}
 
-  public Topology(Topology other) {
+  public Topology(final Topology other) {
     this.brokers = new HashMap<>(other.brokers);
   }
 
-  private TopologyBroker getBroker(String host, int port) {
-    final SocketAddress brokerAddress = new SocketAddress(host, port);
-    TopologyBroker topologyBroker = brokers.get(brokerAddress);
+  private TopologyBroker getBroker(final int nodeId, final SocketAddress brokerAddress) {
+    TopologyBroker topologyBroker = brokers.get(nodeId);
     if (topologyBroker == null) {
-      topologyBroker = new TopologyBroker(host, port);
-      brokers.put(brokerAddress, topologyBroker);
+      topologyBroker = new TopologyBroker(nodeId, brokerAddress.host(), brokerAddress.port());
+      brokers.put(nodeId, topologyBroker);
     }
     return topologyBroker;
   }
 
-  public Topology addLeader(String host, int port, String topic, int partition) {
-    getBroker(host, port).addPartition(new BrokerPartitionState(LEADER_STATE, topic, partition));
-
-    return this;
+  public Topology addLeader(final StubBrokerRule brokerRule, final int partition) {
+    return addLeader(brokerRule.getNodeId(), brokerRule.getSocketAddress(), partition);
   }
 
-  public Topology addFollower(String host, int port, String topic, int partition) {
-    getBroker(host, port).addPartition(new BrokerPartitionState(FOLLOWER_STATE, topic, partition));
-
+  public Topology addLeader(final int nodeId, final SocketAddress address, final int partition) {
+    getBroker(nodeId, address).addPartition(new BrokerPartitionState(LEADER_STATE, partition, 1));
     return this;
-  }
-
-  public Topology addLeader(StubBrokerRule broker, String topic, int partition) {
-    return addLeader(broker.getHost(), broker.getPort(), topic, partition);
   }
 
   public Set<TopologyBroker> getBrokers() {

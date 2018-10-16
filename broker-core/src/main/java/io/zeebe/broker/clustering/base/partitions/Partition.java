@@ -18,16 +18,27 @@
 package io.zeebe.broker.clustering.base.partitions;
 
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
+import io.zeebe.broker.logstreams.state.StateStorageFactory;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.spi.SnapshotStorage;
 import io.zeebe.raft.state.RaftState;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceStartContext;
 
 /** Service representing a partition. */
 public class Partition implements Service<Partition> {
+  public static final String PARTITION_NAME_FORMAT = "partition-%d";
+
+  public static String getPartitionName(final int partitionId) {
+    return String.format(PARTITION_NAME_FORMAT, partitionId);
+  }
+
   private final Injector<LogStream> logStreamInjector = new Injector<>();
 
   private final Injector<SnapshotStorage> snapshotStorageInjector = new Injector<>();
+
+  private final Injector<StateStorageFactory> stateStorageFactoryInjector = new Injector<>();
 
   private final PartitionInfo info;
 
@@ -37,15 +48,18 @@ public class Partition implements Service<Partition> {
 
   private SnapshotStorage snapshotStorage;
 
-  public Partition(PartitionInfo partitionInfo, RaftState state) {
+  private StateStorageFactory stateStorageFactory;
+
+  public Partition(final PartitionInfo partitionInfo, final RaftState state) {
     this.info = partitionInfo;
     this.state = state;
   }
 
   @Override
-  public void start(ServiceStartContext startContext) {
+  public void start(final ServiceStartContext startContext) {
     logStream = logStreamInjector.getValue();
     snapshotStorage = snapshotStorageInjector.getValue();
+    stateStorageFactory = stateStorageFactoryInjector.getValue();
   }
 
   @Override
@@ -75,5 +89,13 @@ public class Partition implements Service<Partition> {
 
   public Injector<SnapshotStorage> getSnapshotStorageInjector() {
     return snapshotStorageInjector;
+  }
+
+  public StateStorageFactory getStateStorageFactory() {
+    return stateStorageFactory;
+  }
+
+  public Injector<StateStorageFactory> getStateStorageFactoryInjector() {
+    return stateStorageFactoryInjector;
   }
 }

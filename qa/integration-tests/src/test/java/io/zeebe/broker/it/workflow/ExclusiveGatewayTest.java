@@ -19,12 +19,13 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.TopicEventRecorder;
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
-import io.zeebe.client.api.events.WorkflowInstanceState;
+import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.gateway.api.events.DeploymentEvent;
+import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
+import io.zeebe.gateway.api.events.WorkflowInstanceState;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -32,7 +33,7 @@ import org.junit.rules.RuleChain;
 public class ExclusiveGatewayTest {
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientRule clientRule = new ClientRule();
+  public ClientRule clientRule = new ClientRule(brokerRule);
   public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
 
   @Rule
@@ -41,22 +42,18 @@ public class ExclusiveGatewayTest {
 
   @Test
   public void shouldEvaluateConditionOnFlow() {
-    final WorkflowDefinition workflowDefinition =
-        Bpmn.createExecutableWorkflow("workflow")
+    final BpmnModelInstance workflowDefinition =
+        Bpmn.createExecutableProcess("workflow")
             .startEvent()
             .exclusiveGateway()
-            .sequenceFlow(s -> s.condition("$.foo < 5"))
+            .condition("$.foo < 5")
             .endEvent("a")
-            .sequenceFlow(s -> s.defaultFlow())
+            .moveToLastExclusiveGateway()
+            .defaultFlow()
             .endEvent("b")
             .done();
 
-    clientRule
-        .getWorkflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(workflowDefinition, "workflow.bpmn")
-        .send()
-        .join();
+    deploy(workflowDefinition);
 
     // when
     clientRule
@@ -68,7 +65,8 @@ public class ExclusiveGatewayTest {
         .send()
         .join();
 
-    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED));
+    waitUntil(
+        () -> eventRecorder.hasElementInState("workflow", WorkflowInstanceState.ELEMENT_COMPLETED));
 
     final WorkflowInstanceEvent endEvent =
         eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.END_EVENT_OCCURRED);
@@ -77,22 +75,18 @@ public class ExclusiveGatewayTest {
 
   @Test
   public void shouldTakeDefaultFlow() {
-    final WorkflowDefinition workflowDefinition =
-        Bpmn.createExecutableWorkflow("workflow")
+    final BpmnModelInstance workflowDefinition =
+        Bpmn.createExecutableProcess("workflow")
             .startEvent()
             .exclusiveGateway()
-            .sequenceFlow(s -> s.condition("$.foo < 5"))
+            .condition("$.foo < 5")
             .endEvent("a")
-            .sequenceFlow(s -> s.defaultFlow())
+            .moveToLastExclusiveGateway()
+            .defaultFlow()
             .endEvent("b")
             .done();
 
-    clientRule
-        .getWorkflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(workflowDefinition, "workflow.bpmn")
-        .send()
-        .join();
+    deploy(workflowDefinition);
 
     // when
     clientRule
@@ -104,7 +98,8 @@ public class ExclusiveGatewayTest {
         .send()
         .join();
 
-    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED));
+    waitUntil(
+        () -> eventRecorder.hasElementInState("workflow", WorkflowInstanceState.ELEMENT_COMPLETED));
 
     final WorkflowInstanceEvent endEvent =
         eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.END_EVENT_OCCURRED);
@@ -114,23 +109,19 @@ public class ExclusiveGatewayTest {
   @Test
   public void shouldExecuteWorkflowWithLoop() {
     // given
-    final WorkflowDefinition workflowDefinition =
-        Bpmn.createExecutableWorkflow("workflow")
+    final BpmnModelInstance workflowDefinition =
+        Bpmn.createExecutableProcess("workflow")
             .startEvent()
-            .serviceTask("inc", t -> t.taskType("inc"))
+            .serviceTask("inc", t -> t.zeebeTaskType("inc"))
             .exclusiveGateway()
-            .sequenceFlow(s -> s.condition("$.count > 5"))
+            .condition("$.count > 5")
             .endEvent()
-            .sequenceFlow("back", s -> s.defaultFlow())
-            .joinWith("inc")
+            .moveToLastExclusiveGateway()
+            .defaultFlow()
+            .connectTo("inc")
             .done();
 
-    clientRule
-        .getWorkflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(workflowDefinition, "workflow.bpmn")
-        .send()
-        .join();
+    deploy(workflowDefinition);
 
     // when
     clientRule
@@ -157,10 +148,23 @@ public class ExclusiveGatewayTest {
         .open();
 
     // then
-    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED));
+    waitUntil(
+        () -> eventRecorder.hasElementInState("workflow", WorkflowInstanceState.ELEMENT_COMPLETED));
 
     final WorkflowInstanceEvent event =
-        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.COMPLETED);
+        eventRecorder.getElementInState("workflow", WorkflowInstanceState.ELEMENT_COMPLETED);
     assertThat(event.getPayload()).isEqualTo("{\"count\":6}");
+  }
+
+  private void deploy(BpmnModelInstance workflowDefinition) {
+    final DeploymentEvent deploymentEvent =
+        clientRule
+            .getWorkflowClient()
+            .newDeployCommand()
+            .addWorkflowModel(workflowDefinition, "workflow.bpmn")
+            .send()
+            .join();
+
+    clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
   }
 }

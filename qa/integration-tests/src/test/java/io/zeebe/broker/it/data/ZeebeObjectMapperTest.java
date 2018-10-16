@@ -20,17 +20,26 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.it.util.TopicEventRecorder;
-import io.zeebe.client.api.events.*;
-import io.zeebe.client.api.record.Record;
-import io.zeebe.client.api.record.ValueType;
-import io.zeebe.client.impl.record.RecordClassMapping;
+import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.gateway.api.events.DeploymentEvent;
+import io.zeebe.gateway.api.events.DeploymentState;
+import io.zeebe.gateway.api.events.IncidentState;
+import io.zeebe.gateway.api.events.JobEvent;
+import io.zeebe.gateway.api.events.JobState;
+import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
+import io.zeebe.gateway.api.events.WorkflowInstanceState;
+import io.zeebe.gateway.api.record.Record;
+import io.zeebe.gateway.api.record.RecordType;
+import io.zeebe.gateway.api.record.ValueType;
+import io.zeebe.gateway.impl.record.RecordClassMapping;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.junit.Rule;
@@ -41,7 +50,7 @@ import org.junit.rules.RuleChain;
 public class ZeebeObjectMapperTest {
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
-  public ClientRule clientRule = new ClientRule();
+  public ClientRule clientRule = new ClientRule(brokerRule);
 
   public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule, false);
 
@@ -95,11 +104,11 @@ public class ZeebeObjectMapperTest {
   @Test
   public void shouldSerializeAndDeserializeRecords() throws InterruptedException {
     // given
-    final WorkflowDefinition workflow =
-        Bpmn.createExecutableWorkflow("workflow")
+    final BpmnModelInstance workflow =
+        Bpmn.createExecutableProcess("workflow")
             .startEvent("start")
-            .serviceTask("task1", t -> t.taskType("task").taskHeader("cust", "val"))
-            .serviceTask("task2", t -> t.taskType("task").input("$.baz", "$.baz"))
+            .serviceTask("task1", t -> t.zeebeTaskType("task").zeebeTaskHeader("cust", "val"))
+            .serviceTask("task2", t -> t.zeebeTaskType("task").zeebeInput("$.baz", "$.baz"))
             .endEvent("end")
             .done();
 
@@ -110,14 +119,15 @@ public class ZeebeObjectMapperTest {
         .send()
         .join();
 
-    clientRule
-        .getWorkflowClient()
-        .newCreateInstanceCommand()
-        .bpmnProcessId("workflow")
-        .latestVersion()
-        .payload("{\"foo\":\"bar\"}")
-        .send()
-        .join();
+    final WorkflowInstanceEvent workflowInstanceEvent =
+        clientRule
+            .getWorkflowClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId("workflow")
+            .latestVersion()
+            .payload("{\"foo\":\"bar\"}")
+            .send()
+            .join();
 
     clientRule
         .getJobClient()
@@ -130,19 +140,11 @@ public class ZeebeObjectMapperTest {
     final List<Record> records = new CopyOnWriteArrayList<>();
 
     clientRule
-        .getTopicClient()
+        .getClient()
         .newSubscription()
         .name("test")
         .recordHandler(records::add)
-        .startAtHeadOfTopic()
-        .open();
-
-    clientRule
-        .getClient()
-        .newManagementSubscription()
-        .name("test")
-        .recordHandler(records::add)
-        .startAtHeadOfTopic()
+        .startAtHead()
         .open();
 
     waitUntil(
@@ -156,7 +158,7 @@ public class ZeebeObjectMapperTest {
             .stream()
             .filter(
                 recordFilter(
-                    ValueType.WORKFLOW_INSTANCE, WorkflowInstanceState.ACTIVITY_READY.name()))
+                    ValueType.WORKFLOW_INSTANCE, WorkflowInstanceState.ELEMENT_READY.name()))
             .map(r -> (WorkflowInstanceEvent) r)
             .collect(Collectors.toList());
 
@@ -176,7 +178,9 @@ public class ZeebeObjectMapperTest {
                 .stream()
                 .anyMatch(
                     recordFilter(
-                        ValueType.WORKFLOW_INSTANCE, WorkflowInstanceState.COMPLETED.name())));
+                            ValueType.WORKFLOW_INSTANCE,
+                            WorkflowInstanceState.ELEMENT_COMPLETED.name())
+                        .and(r -> r.getKey() == workflowInstanceEvent.getWorkflowInstanceKey())));
     waitUntil(
         () ->
             records
@@ -244,13 +248,7 @@ public class ZeebeObjectMapperTest {
   @Test
   public void shouldSerializeWorkflowInstanceRecordWithPayload() throws InterruptedException {
     // given
-    clientRule
-        .getWorkflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(
-            Bpmn.createExecutableWorkflow("workflow").startEvent().done(), "workflow.bpmn")
-        .send()
-        .join();
+    deployWorkflow();
 
     final WorkflowInstanceEvent workflowInstanceEvent =
         clientRule
@@ -274,13 +272,7 @@ public class ZeebeObjectMapperTest {
   @Test
   public void shouldSerializeWorkflowInstanceRecordWithoutPayload() throws InterruptedException {
     // given
-    clientRule
-        .getWorkflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(
-            Bpmn.createExecutableWorkflow("workflow").startEvent().done(), "workflow.bpmn")
-        .send()
-        .join();
+    deployWorkflow();
 
     final WorkflowInstanceEvent workflowInstanceEvent =
         clientRule
@@ -301,7 +293,44 @@ public class ZeebeObjectMapperTest {
     assertThat(deserializedRecord.getPayloadAsMap()).isEmpty();
   }
 
-  private static Predicate<Record> recordFilter(ValueType valueType, String intent) {
+  private void deployWorkflow() {
+    final DeploymentEvent deploymentEvent =
+        clientRule
+            .getWorkflowClient()
+            .newDeployCommand()
+            .addWorkflowModel(
+                Bpmn.createExecutableProcess("workflow").startEvent().done(), "workflow.bpmn")
+            .send()
+            .join();
+
+    final CountDownLatch latch = new CountDownLatch(1);
+    clientRule
+        .getClient()
+        .newSubscription()
+        .name("deploy")
+        .recordHandler(
+            r -> {
+              final ValueType valueType = r.getMetadata().getValueType();
+              final RecordType recordType = r.getMetadata().getRecordType();
+              final String intent = r.getMetadata().getIntent();
+              final long key = r.getKey();
+              if (recordType == RecordType.EVENT
+                  && valueType == ValueType.DEPLOYMENT
+                  && intent.equals("CREATED")
+                  && key == deploymentEvent.getKey()) {
+                latch.countDown();
+              }
+            })
+        .open();
+
+    try {
+      assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
+    } catch (final Exception e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  private static Predicate<Record> recordFilter(final ValueType valueType, final String intent) {
     return r ->
         r.getMetadata().getValueType() == valueType && r.getMetadata().getIntent().equals(intent);
   }

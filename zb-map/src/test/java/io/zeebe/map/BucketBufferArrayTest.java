@@ -15,8 +15,12 @@
  */
 package io.zeebe.map;
 
-import static io.zeebe.map.BucketBufferArray.*;
-import static io.zeebe.map.BucketBufferArrayDescriptor.*;
+import static io.zeebe.map.BucketBufferArray.ALLOCATION_FACTOR;
+import static io.zeebe.map.BucketBufferArray.OVERFLOW_BUCKET;
+import static io.zeebe.map.BucketBufferArray.getBucketAddress;
+import static io.zeebe.map.BucketBufferArrayDescriptor.BUCKET_BUFFER_HEADER_LENGTH;
+import static io.zeebe.map.BucketBufferArrayDescriptor.BUCKET_DATA_OFFSET;
+import static io.zeebe.map.BucketBufferArrayDescriptor.getBlockLength;
 import static io.zeebe.test.util.BufferAssert.assertThatBuffer;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.assertj.core.api.Assertions.assertThat;

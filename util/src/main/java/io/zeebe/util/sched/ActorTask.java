@@ -21,7 +21,9 @@ import io.zeebe.util.Loggers;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.metrics.TaskMetrics;
+import java.util.ArrayDeque;
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
@@ -92,6 +94,8 @@ public class ActorTask {
    */
   private volatile Queue<ActorJob> submittedJobs = new ClosedQueue();
 
+  private Deque<ActorJob> fastLaneJobs = new ClosedQueue();
+
   private ActorLifecyclePhase lifecyclePhase = ActorLifecyclePhase.CLOSED;
 
   volatile TaskSchedulingState schedulingState = null;
@@ -114,9 +118,6 @@ public class ActorTask {
    * the priority class of the task. Only set if the task is scheduled as non-blocking, CPU-bound
    */
   private int priority = ActorPriority.REGULAR.getPriorityClass();
-
-  /** the id of the io device used. Only set if this task is scheduled as a blocking io task */
-  private int deviceId;
 
   public ActorTask(Actor actor) {
     this.actor = actor;
@@ -142,6 +143,7 @@ public class ActorTask {
 
     this.isJumbo = false;
     this.submittedJobs = new ManyToOneConcurrentLinkedQueue<>();
+    this.fastLaneJobs = new ArrayDeque<>();
     this.lifecyclePhase = ActorLifecyclePhase.STARTING;
 
     this.isCollectTaskMetrics = taskMetrics != null;
@@ -160,10 +162,21 @@ public class ActorTask {
 
   /** Used to externally submit a job. */
   public void submit(ActorJob job) {
+    // get reference to jobs queue
+    final Queue<ActorJob> submittedJobs = this.submittedJobs;
+
     // add job to queue
     submittedJobs.offer(job);
-    // wakeup task if waiting
-    tryWakeup();
+
+    if (submittedJobs != this.submittedJobs) {
+      // jobs queue was replaced (see onClosed method)
+      // in case the job was offer after the original queue was drained
+      // we have to manually fail the job to make sure does not get lost
+      failJob(job);
+    } else {
+      // wakeup task if waiting
+      tryWakeup();
+    }
   }
 
   public boolean execute(ActorThread runner) {
@@ -176,7 +189,7 @@ public class ActorTask {
       switch (currentJob.schedulingState) {
         case TERMINATED:
           final ActorJob terminatedJob = currentJob;
-          currentJob = terminatedJob.getNext();
+          currentJob = fastLaneJobs.poll();
 
           if (terminatedJob.isTriggeredBySubscription()) {
             final ActorSubscription subscription = terminatedJob.getSubscription();
@@ -306,11 +319,19 @@ public class ActorTask {
 
     while ((j = activeJobsQueue.poll()) != null) {
       // cancel and discard jobs
-      j.failFuture("Actor is closed");
+      failJob(j);
     }
 
     if (taskMetrics != null) {
       taskMetrics.close();
+    }
+  }
+
+  private void failJob(ActorJob job) {
+    try {
+      job.failFuture("Actor is closed");
+    } catch (IllegalStateException e) {
+      // job is already completed or failed, ignore
     }
   }
 
@@ -354,16 +375,10 @@ public class ActorTask {
 
   private void discardNextJobs() {
     // discard next jobs
-    ActorJob current = currentJob;
     ActorJob next;
-    while ((next = current.next) != null) {
-      next.failFuture("Actor is closed");
-
-      current.next = null;
-      current = next;
+    while ((next = fastLaneJobs.poll()) != null) {
+      failJob(next);
     }
-
-    currentJob.next = null;
   }
 
   boolean casStateCount(long expectedCount) {
@@ -445,7 +460,7 @@ public class ActorTask {
         if (currentJob == null) {
           currentJob = job;
         } else {
-          currentJob.append(job);
+          fastLaneJobs.offer(job);
         }
 
         hasJobs = true;
@@ -488,7 +503,7 @@ public class ActorTask {
         if (currentJob == null) {
           currentJob = job;
         } else {
-          currentJob.append(job);
+          fastLaneJobs.offer(job);
         }
 
         hasJobs = true;
@@ -567,14 +582,6 @@ public class ActorTask {
     this.priority = priority;
   }
 
-  public int getDeviceId() {
-    return deviceId;
-  }
-
-  public void setDeviceId(int deviceId) {
-    this.deviceId = deviceId;
-  }
-
   public ActorExecutor getActorExecutor() {
     return actorExecutor;
   }
@@ -627,12 +634,15 @@ public class ActorTask {
       priority = SchedulingHints.getPriority(hints);
       actorThreadGroup = actorExecutor.getCpuBoundThreads();
     } else {
-      deviceId = SchedulingHints.getIoDevice(hints);
       actorThreadGroup = actorExecutor.getIoBoundThreads();
     }
   }
 
   public void resubmit() {
     actorThreadGroup.submit(this);
+  }
+
+  public void insertJob(ActorJob job) {
+    fastLaneJobs.addFirst(job);
   }
 }

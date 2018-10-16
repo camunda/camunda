@@ -50,4 +50,8 @@ public class DirectBufferWriter implements BufferWriter {
     offset = -1;
     length = 0;
   }
+
+  public static DirectBufferWriter writerFor(DirectBuffer buffer) {
+    return new DirectBufferWriter().wrap(buffer);
+  }
 }

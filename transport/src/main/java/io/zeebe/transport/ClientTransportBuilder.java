@@ -17,21 +17,32 @@ package io.zeebe.transport;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.FragmentHandler;
-import io.zeebe.transport.impl.*;
-import io.zeebe.transport.impl.actor.*;
+import io.zeebe.transport.impl.ClientOutputImpl;
+import io.zeebe.transport.impl.ClientReceiveHandler;
+import io.zeebe.transport.impl.DefaultChannelFactory;
+import io.zeebe.transport.impl.EndpointRegistryImpl;
+import io.zeebe.transport.impl.RemoteAddressListImpl;
+import io.zeebe.transport.impl.TransportChannelFactory;
+import io.zeebe.transport.impl.TransportContext;
+import io.zeebe.transport.impl.actor.ClientActorContext;
+import io.zeebe.transport.impl.actor.ClientConductor;
+import io.zeebe.transport.impl.actor.Receiver;
 import io.zeebe.transport.impl.memory.NonBlockingMemoryPool;
 import io.zeebe.transport.impl.memory.TransportMemoryPool;
 import io.zeebe.transport.impl.sender.Sender;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.sched.ActorScheduler;
 import java.time.Duration;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 public class ClientTransportBuilder {
   /** In the same order of magnitude of what apache and nginx use. */
   protected static final Duration DEFAULT_CHANNEL_KEEP_ALIVE_PERIOD = Duration.ofSeconds(5);
 
   protected static final long DEFAULT_CHANNEL_CONNECT_TIMEOUT = 500;
+  private final String name;
 
   private int messageMaxLength = 1024 * 512;
   protected Duration keepAlivePeriod = DEFAULT_CHANNEL_KEEP_ALIVE_PERIOD;
@@ -47,6 +58,11 @@ public class ClientTransportBuilder {
       new NonBlockingMemoryPool(ByteValue.ofMegabytes(4));
 
   protected Duration defaultRequestRetryTimeout = Duration.ofSeconds(15);
+  protected Duration defaultMessageRetryTimeout = Duration.ofSeconds(1);
+
+  public ClientTransportBuilder(final String name) {
+    this.name = name;
+  }
 
   public ClientTransportBuilder scheduler(ActorScheduler scheduler) {
     this.scheduler = scheduler;
@@ -105,6 +121,11 @@ public class ClientTransportBuilder {
     return this;
   }
 
+  public ClientTransportBuilder defaultMessageRetryTimeout(Duration duration) {
+    this.defaultMessageRetryTimeout = duration;
+    return this;
+  }
+
   public ClientTransport build() {
     validate();
 
@@ -114,10 +135,12 @@ public class ClientTransportBuilder {
         new Sender(actorContext, messageMemoryPool, requestMemoryPool, keepAlivePeriod);
 
     final RemoteAddressListImpl remoteAddressList = new RemoteAddressListImpl();
+    final EndpointRegistry endpointRegistry = new EndpointRegistryImpl(name, remoteAddressList);
 
     final TransportContext transportContext =
         buildTransportContext(
             remoteAddressList,
+            endpointRegistry,
             new ClientReceiveHandler(sender, receiveBuffer, listeners),
             receiveBuffer);
 
@@ -125,12 +148,16 @@ public class ClientTransportBuilder {
   }
 
   protected TransportContext buildTransportContext(
-      RemoteAddressListImpl addressList, FragmentHandler receiveHandler, Dispatcher receiveBuffer) {
+      RemoteAddressListImpl addressList,
+      EndpointRegistry endpointRegistry,
+      FragmentHandler receiveHandler,
+      Dispatcher receiveBuffer) {
     final TransportContext context = new TransportContext();
     context.setName("client");
     context.setReceiveBuffer(receiveBuffer);
     context.setMessageMaxLength(messageMaxLength);
     context.setRemoteAddressList(addressList);
+    context.setEndpointRegistry(endpointRegistry);
     context.setReceiveHandler(receiveHandler);
     context.setChannelKeepAlivePeriod(keepAlivePeriod);
 
@@ -151,7 +178,12 @@ public class ClientTransportBuilder {
     final Receiver receiver = new Receiver(actorContext, context);
     final Sender sender = actorContext.getSender();
 
-    final ClientOutput output = new ClientOutputImpl(sender, defaultRequestRetryTimeout);
+    final ClientOutput output =
+        new ClientOutputImpl(
+            context.getEndpointRegistry(),
+            sender,
+            defaultRequestRetryTimeout,
+            defaultMessageRetryTimeout);
 
     context.setClientOutput(output);
 

@@ -19,7 +19,10 @@ package io.zeebe.broker.clustering.api;
 
 import static io.zeebe.clustering.management.ListSnapshotsResponseDecoder.SnapshotsDecoder;
 import static io.zeebe.clustering.management.ListSnapshotsResponseEncoder.SnapshotsEncoder;
-import static io.zeebe.clustering.management.ListSnapshotsResponseEncoder.SnapshotsEncoder.*;
+import static io.zeebe.clustering.management.ListSnapshotsResponseEncoder.SnapshotsEncoder.checksumHeaderLength;
+import static io.zeebe.clustering.management.ListSnapshotsResponseEncoder.SnapshotsEncoder.nameHeaderLength;
+import static io.zeebe.clustering.management.ListSnapshotsResponseEncoder.SnapshotsEncoder.sbeBlockLength;
+import static io.zeebe.clustering.management.ListSnapshotsResponseEncoder.SnapshotsEncoder.sbeHeaderSize;
 import static io.zeebe.util.StringUtil.getBytes;
 
 import io.zeebe.broker.util.SbeBufferWriterReader;

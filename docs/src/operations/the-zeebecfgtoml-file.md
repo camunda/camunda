@@ -1,7 +1,10 @@
 # The zeebe.cfg.toml file
 
-The Zeebe broker can be configured using the `zeebe.cfg.toml` file which can be found in
-the distribution inside the `conf` folder.
+The following snipped represents the default Zeebe configuration, which is shipped with the distribution. It can be found inside the `config` folder (`config/zeebe.cfg.toml`) and can be used to adjust Zeebe to your needs.
 
-The file is self-documenting: it mentions all available configuration options
-along with default values, examples and explanations.
+
+[Source on github](https://github.com/zeebe-io/zeebe/tree/{{commit}}/dist/src/main/config/zeebe.cfg.toml)
+
+```toml
+{{#include ../../../dist/src/main/config/zeebe.cfg.toml}}
+```

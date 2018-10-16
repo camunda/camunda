@@ -13,41 +13,66 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.zeebe.model.bpmn.impl.instance;
 
-import io.zeebe.msgpack.el.CompiledJsonCondition;
-import javax.xml.bind.annotation.XmlTransient;
-import javax.xml.bind.annotation.XmlValue;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_ELEMENT_CONDITION_EXPRESSION;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.XSI_ATTRIBUTE_TYPE;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.XSI_NS;
 
-public class ConditionExpressionImpl {
-  private String text = "";
+import io.zeebe.model.bpmn.instance.ConditionExpression;
+import io.zeebe.model.bpmn.instance.FormalExpression;
+import org.camunda.bpm.model.xml.ModelBuilder;
+import org.camunda.bpm.model.xml.impl.instance.ModelTypeInstanceContext;
+import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder;
+import org.camunda.bpm.model.xml.type.ModelElementTypeBuilder.ModelTypeInstanceProvider;
+import org.camunda.bpm.model.xml.type.attribute.Attribute;
 
-  private CompiledJsonCondition condition;
+/**
+ * The BPMN conditionExpression element of the BPMN tSequenceFlow type
+ *
+ * @author Sebastian Menski
+ */
+public class ConditionExpressionImpl extends FormalExpressionImpl implements ConditionExpression {
 
-  public String getText() {
-    return text;
+  protected static Attribute<String> typeAttribute;
+
+  public static void registerType(ModelBuilder modelBuilder) {
+    final ModelElementTypeBuilder typeBuilder =
+        modelBuilder
+            .defineType(ConditionExpression.class, BPMN_ELEMENT_CONDITION_EXPRESSION)
+            .namespaceUri(BPMN20_NS)
+            .extendsType(FormalExpression.class)
+            .instanceProvider(
+                new ModelTypeInstanceProvider<ConditionExpression>() {
+                  @Override
+                  public ConditionExpression newInstance(ModelTypeInstanceContext instanceContext) {
+                    return new ConditionExpressionImpl(instanceContext);
+                  }
+                });
+
+    typeAttribute =
+        typeBuilder
+            .stringAttribute(XSI_ATTRIBUTE_TYPE)
+            .namespace(XSI_NS)
+            .defaultValue("tFormalExpression")
+            .build();
+
+    typeBuilder.build();
   }
 
-  @XmlValue
-  public void setText(String text) {
-    this.text = text;
-  }
-
-  @XmlTransient
-  public void setCondition(CompiledJsonCondition condition) {
-    this.condition = condition;
-  }
-
-  public CompiledJsonCondition getCondition() {
-    return condition;
+  public ConditionExpressionImpl(ModelTypeInstanceContext instanceContext) {
+    super(instanceContext);
   }
 
   @Override
-  public String toString() {
-    final StringBuilder builder = new StringBuilder();
-    builder.append("ConditionExpression [");
-    builder.append(text);
-    builder.append("]");
-    return builder.toString();
+  public String getType() {
+    return typeAttribute.getValue(this);
+  }
+
+  @Override
+  public void setType(String type) {
+    typeAttribute.setValue(this, type);
   }
 }

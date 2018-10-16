@@ -16,24 +16,20 @@
 package io.zeebe.map.benchmarks;
 
 import java.util.Random;
-
-import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
+import org.openjdk.jmh.annotations.State;
 
 @State(Scope.Benchmark)
-public class RandomKeysSupplier
-{
-    long[] keys = new long[Benchmarks.DATA_SET_SIZE];
+public class RandomKeysSupplier {
+  long[] keys = new long[Benchmarks.DATA_SET_SIZE];
 
-    @Setup
-    public void generateKeys()
-    {
-        final Random random = new Random();
+  @Setup
+  public void generateKeys() {
+    final Random random = new Random();
 
-        for (int k = 0; k < keys.length; k++)
-        {
-            keys[k] = Math.abs(random.nextLong());
-        }
+    for (int k = 0; k < keys.length; k++) {
+      keys[k] = Math.abs(random.nextLong());
     }
-
-
+  }
 }

@@ -139,8 +139,8 @@ public class GossipEventFactory {
     public boolean consumeMembershipEvent(MembershipEvent event) {
       if (LOG.isTraceEnabled()) {
         LOG.trace(
-            "Received membership event with address: '{}', type: {}, gossip-term: {}",
-            event.getAddress(),
+            "Received membership event with memberId: '{}', type: {}, gossip-term: {}",
+            event.getMemberId(),
             event.getType(),
             event.getGossipTerm());
       }
@@ -156,9 +156,9 @@ public class GossipEventFactory {
     public boolean consumeCustomEvent(CustomEvent event) {
       if (LOG.isTraceEnabled()) {
         LOG.trace(
-            "Received custom event of type '{}', sender-address: '{}', gossip-term: {}",
+            "Received custom event of type '{}', sender-id: '{}', gossip-term: {}",
             bufferAsString(event.getType()),
-            event.getSenderAddress(),
+            event.getSenderId(),
             event.getSenderGossipTerm());
       }
 

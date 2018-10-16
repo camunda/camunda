@@ -17,9 +17,7 @@ package io.zeebe.test.util.stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.junit.Test;
 
@@ -28,13 +26,25 @@ public class StreamWrapperTest {
   @Test
   public void shouldSkipElementsBasedOnPredicate() {
     // given
-    final Stream<Integer> stream = Arrays.asList(1, 2, 3, 4, 5).stream();
-    final StreamWrapper<Integer> wrapper = new StreamWrapper<>(stream);
+    final Stream<Integer> stream = Stream.of(1, 2, 3, 4, 5);
+    final IntegerStream wrapper = new IntegerStream(stream);
 
     // when
-    final List<Integer> result = wrapper.skipUntil(i -> i == 3).collect(Collectors.toList());
+    final List<Integer> result = wrapper.skipUntil(i -> i == 3).asList();
 
     // then
     assertThat(result).containsExactly(3, 4, 5);
+  }
+
+  class IntegerStream extends StreamWrapper<Integer, IntegerStream> {
+
+    IntegerStream(Stream<Integer> wrappedStream) {
+      super(wrappedStream);
+    }
+
+    @Override
+    protected IntegerStream supply(Stream<Integer> wrappedStream) {
+      return new IntegerStream(wrappedStream);
+    }
   }
 }

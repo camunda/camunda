@@ -15,12 +15,7 @@
  */
 package io.zeebe.msgpack.mapping;
 
-import static io.zeebe.msgpack.mapping.MsgPackTreeNodeIdConstructor.construct;
-
 import io.zeebe.msgpack.jsonpath.JsonPathQuery;
-import io.zeebe.msgpack.jsonpath.JsonPathToken;
-import io.zeebe.msgpack.jsonpath.JsonPathTokenVisitor;
-import io.zeebe.msgpack.jsonpath.JsonPathTokenizer;
 import io.zeebe.msgpack.query.MsgPackQueryExecutor;
 import io.zeebe.msgpack.query.MsgPackTraverser;
 import org.agrona.DirectBuffer;
@@ -84,100 +79,39 @@ public final class MsgPackDocumentExtractor {
   public static final String EXCEPTION_MSG_MAPPING_HAS_MORE_THAN_ONE_MATCHING_SOURCE =
       "JSON path mapping has more than one matching source.";
 
-  /**
-   * Holds the reference of the msg pack document tree, on which the extracted values are stored.
-   * Could either hold a reference of a wrapped message pack document tree or of the {@link
-   * #extractDocumentTree}, which is used if a new document tree should be created from an
-   * extraction of an document.
-   */
-  private MsgPackTree documentTreeReference;
-
-  /**
-   * This message pack document tree will be used if only a messag pack document is wrapped and
-   * parts of the document should be extracted.
-   */
-  private final MsgPackTree extractDocumentTree = new MsgPackTree();
+  private final MappingDiff diff = new MappingDiff();
 
   private final MsgPackTraverser traverser = new MsgPackTraverser();
   private final MsgPackQueryExecutor queryExecutor = new MsgPackQueryExecutor();
-  private final JsonPathTokenizer tokenizer = new JsonPathTokenizer();
-  private final TargetPathVisitor targetPathVisitor = new TargetPathVisitor();
 
-  /**
-   * Wraps a existing message pack document tree and a message pack document, on which the
-   * extracting should be executed.
-   *
-   * @param existingDocumentTree the tree on which the extracted parts are stored
-   * @param extractDocument the document on which parts should be extracted
-   */
-  public void wrap(MsgPackTree existingDocumentTree, DirectBuffer extractDocument) {
-    documentTreeReference = existingDocumentTree;
-    documentTreeReference.setExtractDocument(extractDocument);
-    traverser.wrap(extractDocument, 0, extractDocument.capacity());
-  }
-
-  public void wrap(DirectBuffer document) {
-    documentTreeReference = extractDocumentTree;
-    documentTreeReference.setExtractDocument(document);
+  public MsgPackDiff extract(DirectBuffer document, boolean strictMode, Mapping... mappings) {
+    diff.init(mappings, document);
     traverser.wrap(document, 0, document.capacity());
-  }
 
-  public MsgPackTree extract(Mapping... mappings) {
-    for (Mapping mapping : mappings) {
-      targetPathVisitor.reset(mapping);
-      final DirectBuffer targetQueryString = mapping.getTargetQueryBuffer();
-      tokenizer.tokenize(targetQueryString, 0, targetQueryString.capacity(), targetPathVisitor);
-    }
-    return documentTreeReference;
-  }
+    /*
+     * Optimization potential: evaluate all source queries in
+     * one pass over the document
+     */
+    for (int i = 0; i < mappings.length; i++) {
 
-  /**
-   * Creates the parent relation for the given node.
-   *
-   * <p>If the nodeName is an integer, this indicates that the parent node is an array, the nodeName
-   * is in this case the index in the array. For that the a array parent node will be created and
-   * the node will be added as child.
-   *
-   * <p>Is the nodeName not a integer this means the parent is a map (or if the parent is empty the
-   * current node is root which has no parent). A map parent node is added and the current node will
-   * added to the map node.
-   *
-   * <p>Returns the constructed new node id for the current node.
-   *
-   * @param parentId the id of the parent
-   * @param nodeName the name of the current node
-   * @return the new node id consist of the parent id and the node name
-   */
-  private String createParentRelation(String parentId, String nodeName) {
-    final String nodeId;
+      final Mapping mapping = mappings[i];
+      executeLeafMapping(mapping.getSource(), strictMode);
 
-    if (parentId.isEmpty()) {
-      nodeId = nodeName;
-    } else {
-      final boolean isIndex = isIndex(nodeName);
-
-      if (isIndex) {
-        if (!documentTreeReference.isMapNode(parentId)) {
-          documentTreeReference.addArrayNode(parentId);
+      if (queryExecutor.numResults() > 0) {
+        if (mapping.mapsToRootPath()
+            && !queryExecutor.isCurrentResultAMap(document)
+            && !strictMode) {
+          diff.setEmptyMapResult(i);
+        } else {
+          diff.setResult(
+              i, queryExecutor.currentResultPosition(), queryExecutor.currentResultLength());
         }
       } else {
-        documentTreeReference.addMapNode(parentId);
+        diff.setNullResult(i);
       }
-      nodeId = construct(parentId, nodeName);
-      documentTreeReference.addChildToNode(nodeName, parentId);
     }
-    return nodeId;
-  }
 
-  private boolean isIndex(String nodeName) {
-    final int len = nodeName.length();
-    for (int i = 0; i < len; i++) {
-      final char currentChar = nodeName.charAt(i);
-      if (currentChar < '0' || currentChar > '9') {
-        return false;
-      }
-    }
-    return true;
+    return diff;
   }
 
   /**
@@ -186,54 +120,28 @@ public final class MsgPackDocumentExtractor {
    *
    * @param jsonPathQuery the query which should be executed
    */
-  private void executeLeafMapping(JsonPathQuery jsonPathQuery) {
+  private void executeLeafMapping(JsonPathQuery jsonPathQuery, boolean strictMode) {
     queryExecutor.init(jsonPathQuery.getFilters(), jsonPathQuery.getFilterInstances());
+
+    traverser.reset();
     traverser.traverse(queryExecutor);
 
     if (queryExecutor.numResults() == 1) {
       queryExecutor.moveToResult(0);
     } else if (queryExecutor.numResults() == 0) {
       final DirectBuffer expression = jsonPathQuery.getExpression();
-      throw new MappingException(
-          String.format(
-              EXCEPTION_MSG_MAPPING_DOES_NOT_MATCH,
-              expression.getStringWithoutLengthUtf8(0, expression.capacity())));
+      if (strictMode) {
+        throw new MappingException(
+            String.format(
+                EXCEPTION_MSG_MAPPING_DOES_NOT_MATCH,
+                expression.getStringWithoutLengthUtf8(0, expression.capacity())));
+      }
     } else {
-      throw new IllegalStateException(EXCEPTION_MSG_MAPPING_HAS_MORE_THAN_ONE_MATCHING_SOURCE);
-    }
-    traverser.reset();
-  }
-
-  private final class TargetPathVisitor implements JsonPathTokenVisitor {
-    private String nodeId;
-    private String parentId;
-    private Mapping mapping;
-
-    void reset(Mapping mapping) {
-      nodeId = "";
-      parentId = "";
-      this.mapping = mapping;
-    }
-
-    @Override
-    public void visit(
-        JsonPathToken type, DirectBuffer valueBuffer, int valueOffset, int valueLength) {
-      if (type == JsonPathToken.LITERAL || type == JsonPathToken.ROOT_OBJECT) {
-        final String nodeName = valueBuffer.getStringWithoutLengthUtf8(valueOffset, valueLength);
-        nodeId = createParentRelation(parentId, nodeName);
-        parentId = nodeId;
-      } else if (type == JsonPathToken.END_INPUT) {
-        executeLeafMapping(mapping.getSource());
-        documentTreeReference.addLeafNode(
-            nodeId, queryExecutor.currentResultPosition(), queryExecutor.currentResultLength());
+      if (strictMode) {
+        throw new IllegalStateException(EXCEPTION_MSG_MAPPING_HAS_MORE_THAN_ONE_MATCHING_SOURCE);
+      } else {
+        queryExecutor.moveToResult(0);
       }
     }
-  }
-
-  public void clear() {
-    if (documentTreeReference != null) {
-      this.documentTreeReference.clear();
-    }
-    this.traverser.reset();
   }
 }

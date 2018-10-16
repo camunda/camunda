@@ -17,6 +17,7 @@ package io.zeebe.test.util.stream;
 
 import java.util.Comparator;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Optional;
 import java.util.Spliterator;
 import java.util.function.BiConsumer;
@@ -31,34 +32,120 @@ import java.util.function.ToDoubleFunction;
 import java.util.function.ToIntFunction;
 import java.util.function.ToLongFunction;
 import java.util.stream.Collector;
+import java.util.stream.Collectors;
 import java.util.stream.DoubleStream;
 import java.util.stream.IntStream;
 import java.util.stream.LongStream;
 import java.util.stream.Stream;
 import one.util.streamex.StreamEx;
 
-public class StreamWrapper<T> implements Stream<T> {
+public abstract class StreamWrapper<T, S extends StreamWrapper<T, S>> implements Stream<T> {
   private final Stream<T> wrappedStream;
 
   public StreamWrapper(Stream<T> wrappedStream) {
     this.wrappedStream = wrappedStream;
   }
 
+  protected abstract S supply(Stream<T> wrappedStream);
+
   /**
    * Skips elements until the predicate is matched. Retains the first element that matches the
    * predicate.
    */
-  public StreamWrapper<T> skipUntil(Predicate<T> predicate) {
-    return new StreamWrapper<>(StreamEx.of(this).dropWhile(predicate.negate()));
+  public S skipUntil(Predicate<T> predicate) {
+    return supply(StreamEx.of(this).dropWhile(predicate.negate()));
   }
 
   /**
    * short-circuiting operation; limits the stream to the first element that fulfills the predicate
    */
-  public StreamWrapper<T> limit(Predicate<T> predicate) {
+  public S limit(Predicate<T> predicate) {
     // #takeWhile comes with Java >= 9
-    return new StreamWrapper<>(StreamEx.of(this).takeWhileInclusive(predicate.negate()));
+    return supply(StreamEx.of(this).takeWhileInclusive(predicate.negate()));
   }
+
+  // Helper to extract values
+
+  public boolean exists() {
+    return wrappedStream.findFirst().isPresent();
+  }
+
+  public T getFirst() {
+    return wrappedStream.findFirst().orElseThrow(StreamWrapperException::new);
+  }
+
+  public T getLast() {
+    final List<T> list = asList();
+
+    if (list.isEmpty()) {
+      throw new StreamWrapperException();
+    }
+
+    return list.get(list.size() - 1);
+  }
+
+  public List<T> asList() {
+    return wrappedStream.collect(Collectors.toList());
+  }
+
+  // Custom delegate methods to fit generics
+
+  @Override
+  public S filter(final Predicate<? super T> predicate) {
+    return supply(wrappedStream.filter(predicate));
+  }
+
+  @Override
+  public S distinct() {
+    return supply(wrappedStream.distinct());
+  }
+
+  @Override
+  public S sorted() {
+    return supply(wrappedStream.sorted());
+  }
+
+  @Override
+  public S sorted(final Comparator<? super T> comparator) {
+    return supply(wrappedStream.sorted(comparator));
+  }
+
+  @Override
+  public S peek(final Consumer<? super T> consumer) {
+    return supply(wrappedStream.peek(consumer));
+  }
+
+  @Override
+  public S limit(final long l) {
+    return supply(wrappedStream.limit(l));
+  }
+
+  @Override
+  public S skip(final long l) {
+    return supply(wrappedStream.skip(l));
+  }
+
+  @Override
+  public S sequential() {
+    return supply(wrappedStream.sequential());
+  }
+
+  @Override
+  public S parallel() {
+    return supply(wrappedStream.parallel());
+  }
+
+  @Override
+  public S unordered() {
+    return supply(wrappedStream.unordered());
+  }
+
+  @Override
+  public S onClose(final Runnable runnable) {
+    return supply(wrappedStream.onClose(runnable));
+  }
+
+  // Generate delegate methods
 
   public Iterator<T> iterator() {
     return wrappedStream.iterator();
@@ -72,28 +159,8 @@ public class StreamWrapper<T> implements Stream<T> {
     return wrappedStream.isParallel();
   }
 
-  public Stream<T> sequential() {
-    return wrappedStream.sequential();
-  }
-
-  public Stream<T> parallel() {
-    return wrappedStream.parallel();
-  }
-
-  public Stream<T> unordered() {
-    return wrappedStream.unordered();
-  }
-
-  public Stream<T> onClose(Runnable closeHandler) {
-    return wrappedStream.onClose(closeHandler);
-  }
-
   public void close() {
     wrappedStream.close();
-  }
-
-  public Stream<T> filter(Predicate<? super T> predicate) {
-    return wrappedStream.filter(predicate);
   }
 
   public <R> Stream<R> map(Function<? super T, ? extends R> mapper) {
@@ -126,30 +193,6 @@ public class StreamWrapper<T> implements Stream<T> {
 
   public DoubleStream flatMapToDouble(Function<? super T, ? extends DoubleStream> mapper) {
     return wrappedStream.flatMapToDouble(mapper);
-  }
-
-  public Stream<T> distinct() {
-    return wrappedStream.distinct();
-  }
-
-  public Stream<T> sorted() {
-    return wrappedStream.sorted();
-  }
-
-  public Stream<T> sorted(Comparator<? super T> comparator) {
-    return wrappedStream.sorted(comparator);
-  }
-
-  public Stream<T> peek(Consumer<? super T> action) {
-    return wrappedStream.peek(action);
-  }
-
-  public Stream<T> limit(long maxSize) {
-    return wrappedStream.limit(maxSize);
-  }
-
-  public Stream<T> skip(long n) {
-    return wrappedStream.skip(n);
   }
 
   public void forEach(Consumer<? super T> action) {

@@ -20,29 +20,25 @@ import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
-import io.zeebe.client.ClientProperties;
-import io.zeebe.client.api.clients.JobClient;
-import io.zeebe.client.api.events.JobEvent;
-import io.zeebe.client.api.events.JobState;
-import io.zeebe.client.cmd.BrokerErrorException;
+import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.gateway.api.clients.JobClient;
+import io.zeebe.gateway.api.events.JobEvent;
+import io.zeebe.gateway.api.events.JobState;
+import io.zeebe.gateway.cmd.BrokerErrorException;
+import java.time.Duration;
 import java.util.Collections;
-import java.util.Properties;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.*;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
+import org.junit.rules.Timeout;
 
 public class CreateJobTest {
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
   public ClientRule clientRule =
-      new ClientRule(
-          () -> {
-            final Properties p = new Properties();
-            p.setProperty(ClientProperties.REQUEST_TIMEOUT_SEC, "3");
-            return p;
-          });
+      new ClientRule(brokerRule, builder -> builder.requestTimeout(Duration.ofSeconds(3)));
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
@@ -53,7 +49,7 @@ public class CreateJobTest {
   @Test
   public void shouldCreateJob() {
     // given
-    final JobClient jobClient = clientRule.getClient().topicClient().jobClient();
+    final JobClient jobClient = clientRule.getClient().jobClient();
 
     // when
     final JobEvent job =
@@ -83,7 +79,7 @@ public class CreateJobTest {
   @Test
   public void shouldCompleteJobNullPayload() {
     // given
-    final JobClient jobClient = clientRule.getClient().topicClient().jobClient();
+    final JobClient jobClient = clientRule.getClient().jobClient();
 
     // when
     final JobEvent job = jobClient.newCreateCommand().jobType("foo").payload("null").send().join();
@@ -97,7 +93,7 @@ public class CreateJobTest {
   @Test
   public void shouldCreateJobWithPayload() {
     // given
-    final JobClient jobClient = clientRule.getClient().topicClient().jobClient();
+    final JobClient jobClient = clientRule.getClient().jobClient();
 
     // when
     final JobEvent job =
@@ -111,7 +107,7 @@ public class CreateJobTest {
   @Test
   public void shouldThrowExceptionOnCompleteJobWithInvalidPayload() {
     // given
-    final JobClient jobClient = clientRule.getClient().topicClient().jobClient();
+    final JobClient jobClient = clientRule.getClient().jobClient();
 
     // when
     final Throwable throwable =
@@ -128,7 +124,7 @@ public class CreateJobTest {
   @Test
   public void shouldCreateJobWithPayloadAsMap() {
     // given
-    final JobClient jobClient = clientRule.getClient().topicClient().jobClient();
+    final JobClient jobClient = clientRule.getClient().jobClient();
 
     // when
     final JobEvent job =
@@ -147,7 +143,7 @@ public class CreateJobTest {
   @Test
   public void shouldCreateJobWithPayloadAsObject() {
     // given
-    final JobClient jobClient = clientRule.getClient().topicClient().jobClient();
+    final JobClient jobClient = clientRule.getClient().jobClient();
 
     final PayloadObject payload = new PayloadObject();
     payload.foo = "bar";
@@ -158,21 +154,6 @@ public class CreateJobTest {
     // then
     assertThat(job.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
     assertThat(job.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
-  }
-
-  @Test
-  public void shouldFailCreateJobIfTopicNameIsNotValid() {
-    // given
-    final JobClient jobClient = clientRule.getClient().topicClient("unknown-topic").jobClient();
-
-    // then
-    thrown.expect(RuntimeException.class);
-    thrown.expectMessage(
-        "Cannot determine target partition for request. "
-            + "Request was: [ topic = unknown-topic, partition = any, value type = JOB, command = CREATE ]");
-
-    // when
-    jobClient.newCreateCommand().jobType("foo").send().join();
   }
 
   public static class PayloadObject {

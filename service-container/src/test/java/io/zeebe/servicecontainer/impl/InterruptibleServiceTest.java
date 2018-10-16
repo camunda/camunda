@@ -19,7 +19,12 @@ import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.assertComplet
 import static io.zeebe.servicecontainer.impl.ActorFutureAssertions.assertNotCompleted;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceContainer;
+import io.zeebe.servicecontainer.ServiceInterruptedException;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;

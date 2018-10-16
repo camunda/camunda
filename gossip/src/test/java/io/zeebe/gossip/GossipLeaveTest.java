@@ -21,13 +21,15 @@ import io.zeebe.clustering.gossip.MembershipEventType;
 import io.zeebe.gossip.util.GossipClusterRule;
 import io.zeebe.gossip.util.GossipRule;
 import io.zeebe.util.sched.future.ActorFuture;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 import org.junit.rules.Timeout;
 
 public class GossipLeaveTest {
-  private GossipRule gossip1 = new GossipRule("localhost:8001");
-  private GossipRule gossip2 = new GossipRule("localhost:8002");
-  private GossipRule gossip3 = new GossipRule("localhost:8003");
+  private GossipRule gossip1 = new GossipRule(1);
+  private GossipRule gossip2 = new GossipRule(2);
+  private GossipRule gossip3 = new GossipRule(3);
 
   @Rule public GossipClusterRule cluster = new GossipClusterRule(gossip1, gossip2, gossip3);
 

@@ -28,7 +28,6 @@ import static org.mockito.Mockito.when;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.topology.PartitionInfo;
-import io.zeebe.broker.job.data.JobRecord;
 import io.zeebe.broker.transport.controlmessage.ControlMessageRequestHeaderDescriptor;
 import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.dispatcher.Dispatcher;
@@ -44,10 +43,11 @@ import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
 import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
 import io.zeebe.protocol.clientapi.MessageHeaderEncoder;
 import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.impl.RecordMetadata;
-import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.protocol.impl.record.RecordMetadata;
+import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.TestUtil;
@@ -75,7 +75,6 @@ public class ClientApiMessageHandlerTest {
   protected static final RemoteAddress DEFAULT_ADDRESS =
       new RemoteAddressImpl(21, new SocketAddress("foo", 4242));
 
-  protected static final DirectBuffer LOG_STREAM_TOPIC_NAME = wrapString("test-topic");
   protected static final int LOG_STREAM_PARTITION_ID = 1;
 
   protected static final byte[] JOB_EVENT;
@@ -128,7 +127,7 @@ public class ClientApiMessageHandlerTest {
     serverOutput = new BufferingServerOutput();
 
     logStream =
-        LogStreams.createFsLogStream(LOG_STREAM_TOPIC_NAME, LOG_STREAM_PARTITION_ID)
+        LogStreams.createFsLogStream(LOG_STREAM_PARTITION_ID)
             .logRootPath(tempFolder.getRoot().getAbsolutePath())
             .serviceContainer(serviceContainerRule.get())
             .logName("Test")
@@ -140,9 +139,7 @@ public class ClientApiMessageHandlerTest {
     messageHandler = new ClientApiMessageHandler(mockControlMessageDispatcher);
 
     final Partition partition =
-        new Partition(
-            new PartitionInfo(LOG_STREAM_TOPIC_NAME, LOG_STREAM_PARTITION_ID, 1),
-            RaftState.LEADER) {
+        new Partition(new PartitionInfo(LOG_STREAM_PARTITION_ID, 1), RaftState.LEADER) {
           @Override
           public LogStream getLogStream() {
             return logStream;
@@ -293,7 +290,7 @@ public class ClientApiMessageHandlerTest {
   }
 
   @Test
-  public void shouldSendErrorMessageIfTopicNotFound() {
+  public void shouldSendErrorMessageIfPartitionNotFound() {
     // given
     final int writtenLength =
         writeCommandRequestToBuffer(buffer, 99, null, ValueType.JOB, JobIntent.CREATE);
@@ -378,7 +375,7 @@ public class ClientApiMessageHandlerTest {
     // values are not present
     final int writtenLength =
         writeCommandRequestToBuffer(
-            buffer, LOG_STREAM_PARTITION_ID, null, ValueType.DEPLOYMENT, DeploymentIntent.CREATE);
+            buffer, LOG_STREAM_PARTITION_ID, null, ValueType.MESSAGE, MessageIntent.PUBLISH);
 
     // when
     final boolean isHandled =
@@ -395,7 +392,7 @@ public class ClientApiMessageHandlerTest {
     assertThat(errorDecoder.errorCode()).isEqualTo(ErrorCode.INVALID_MESSAGE);
     assertThat(errorDecoder.errorData())
         .contains("Cannot deserialize command:")
-        .contains("Property 'topicName' has no valid value");
+        .contains("Property 'name' has no valid value");
   }
 
   @Test
@@ -424,7 +421,11 @@ public class ClientApiMessageHandlerTest {
   }
 
   protected int writeCommandRequestToBuffer(
-      UnsafeBuffer buffer, int partitionId, Short protocolVersion, ValueType type, Intent intent) {
+      final UnsafeBuffer buffer,
+      final int partitionId,
+      final Short protocolVersion,
+      final ValueType type,
+      final Intent intent) {
     int offset = 0;
 
     final int protocolVersionToWrite =
@@ -451,7 +452,7 @@ public class ClientApiMessageHandlerTest {
     return headerEncoder.encodedLength() + commandRequestEncoder.encodedLength();
   }
 
-  private int writeControlRequestToBuffer(UnsafeBuffer buffer) {
+  private int writeControlRequestToBuffer(final UnsafeBuffer buffer) {
     int offset = 0;
 
     headerEncoder
@@ -484,7 +485,7 @@ public class ClientApiMessageHandlerTest {
     };
   }
 
-  protected void waitForAvailableEvent(BufferedLogStreamReader logStreamReader) {
+  protected void waitForAvailableEvent(final BufferedLogStreamReader logStreamReader) {
     TestUtil.waitUntil(() -> logStreamReader.hasNext());
   }
 }

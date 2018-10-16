@@ -19,11 +19,25 @@ import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.zeebe.clustering.gossip.GossipEventType;
 import io.zeebe.clustering.gossip.MembershipEventType;
-import io.zeebe.gossip.dissemination.*;
-import io.zeebe.gossip.failuredetection.*;
-import io.zeebe.gossip.membership.*;
-import io.zeebe.gossip.protocol.*;
-import io.zeebe.transport.*;
+import io.zeebe.gossip.dissemination.CustomEventListenerConsumer;
+import io.zeebe.gossip.dissemination.CustomEventSyncResponseSupplier;
+import io.zeebe.gossip.dissemination.DisseminationComponent;
+import io.zeebe.gossip.dissemination.SyncRequestEventHandler;
+import io.zeebe.gossip.failuredetection.JoinController;
+import io.zeebe.gossip.failuredetection.PingController;
+import io.zeebe.gossip.failuredetection.PingEventHandler;
+import io.zeebe.gossip.failuredetection.PingReqEventHandler;
+import io.zeebe.gossip.failuredetection.SyncController;
+import io.zeebe.gossip.membership.GossipTerm;
+import io.zeebe.gossip.membership.Member;
+import io.zeebe.gossip.membership.MembershipList;
+import io.zeebe.gossip.protocol.GossipEventFactory;
+import io.zeebe.gossip.protocol.GossipEventSender;
+import io.zeebe.gossip.protocol.GossipRequestHandler;
+import io.zeebe.transport.BufferingServerTransport;
+import io.zeebe.transport.ClientTransport;
+import io.zeebe.transport.ServerInputSubscription;
+import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -46,6 +60,7 @@ public class Gossip extends Actor implements GossipController, GossipEventPublis
   private final DisseminationComponent disseminationComponent;
 
   private final JoinController joinController;
+  private final SyncController syncController;
   private final PingController pingController;
   private final SyncRequestEventHandler syncRequestHandler;
 
@@ -55,15 +70,15 @@ public class Gossip extends Actor implements GossipController, GossipEventPublis
   private final String gossipName;
 
   public Gossip(
-      final SocketAddress socketAddress,
+      final int nodeId,
       final BufferingServerTransport serverTransport,
       final ClientTransport clientTransport,
       final GossipConfiguration configuration) {
-    gossipName = socketAddress.toString();
+    gossipName = "gossip-" + nodeId;
     this.serverTransport = serverTransport;
     this.configuration = configuration;
 
-    membershipList = new MembershipList(socketAddress, this::onSuspectMember);
+    membershipList = new MembershipList(nodeId, this::onSuspectMember);
     disseminationComponent = new DisseminationComponent(configuration, membershipList);
 
     customEventListenerConsumer = new CustomEventListenerConsumer();
@@ -90,6 +105,7 @@ public class Gossip extends Actor implements GossipController, GossipEventPublis
 
     joinController = new JoinController(context, actor);
     pingController = new PingController(context, actor);
+    syncController = new SyncController(context, actor);
     syncRequestHandler =
         new SyncRequestEventHandler(context, customEventSyncRequestSupplier, actor);
 
@@ -136,6 +152,7 @@ public class Gossip extends Actor implements GossipController, GossipEventPublis
             // ping is stopped when the last member is removed
           }
         });
+    syncController.setupSyncRepetition();
   }
 
   public ActorFuture<Void> close() {
@@ -158,13 +175,13 @@ public class Gossip extends Actor implements GossipController, GossipEventPublis
           if (member.getTerm().isEqual(suspicionTerm)) {
             LOG.info("Remove suspicious member '{}'", member.getId());
 
-            membershipList.removeMember(member.getAddress());
+            membershipList.removeMember(member.getId());
 
             LOG.trace("Spread CONFIRM event about '{}'", member.getId());
 
             disseminationComponent
                 .addMembershipEvent()
-                .address(member.getAddress())
+                .memberId(member.getId())
                 .gossipTerm(member.getTerm())
                 .type(MembershipEventType.CONFIRM);
           }
@@ -179,7 +196,6 @@ public class Gossip extends Actor implements GossipController, GossipEventPublis
   @Override
   public ActorFuture<Void> join(List<SocketAddress> contactPoints) {
     final CompletableActorFuture<Void> future = new CompletableActorFuture<>();
-
     actor.call(() -> joinController.join(contactPoints, future));
 
     return future;
@@ -219,7 +235,7 @@ public class Gossip extends Actor implements GossipController, GossipEventPublis
 
           disseminationComponent
               .addCustomEvent()
-              .senderAddress(self.getAddress())
+              .senderId(self.getId())
               .senderGossipTerm(currentTerm)
               .type(type)
               .payload(payload, offset, length);

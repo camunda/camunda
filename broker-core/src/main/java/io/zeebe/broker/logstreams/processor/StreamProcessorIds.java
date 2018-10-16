@@ -17,12 +17,13 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
+import io.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
+
 public class StreamProcessorIds {
   // a stream processor partitionId should be unique to distinguish event producers
 
-  public static final int JOB_QUEUE_STREAM_PROCESSOR_ID = 10;
-
-  public static final int JOB_ACTIVATE_STREAM_PROCESSOR_ID = 20;
+  public static final int JOB_STREAM_PROCESSOR_ID = 10;
 
   public static final int JOB_TIME_OUT_STREAM_PROCESSOR_ID = 30;
 
@@ -30,15 +31,24 @@ public class StreamProcessorIds {
 
   public static final int TOPIC_SUBSCRIPTION_MANAGEMENT_PROCESSOR_ID = 50;
 
-  public static final int DEPLOYMENT_PROCESSOR_ID = 60;
+  public static final int DISTRIBUTE_PROCESSOR_ID = 60;
 
   public static final int WORKFLOW_INSTANCE_PROCESSOR_ID = 70;
 
   public static final int INCIDENT_PROCESSOR_ID = 80;
 
-  public static final int SYSTEM_CREATE_TOPIC_PROCESSOR_ID = 1000;
-  public static final int SYSTEM_COLLECT_PARTITION_PROCESSOR_ID = 1001;
-  public static final int SYSTEM_ID_PROCESSOR_ID = 1002;
+  public static final int MESSAGE_PROCESSOR_ID = 90;
 
-  public static final int CLUSTER_TOPIC_STATE = 2000;
+  public static final int EXPORTER_PROCESSOR_ID = 1003;
+
+  // BEWARE: everything above 3000 is reserved for job activation processors
+  // via https://github.com/zeebe-io/zeebe/issues/927
+  public static final int JOB_ACTIVATE_STREAM_PROCESSOR_BASE_ID = 3000;
+
+  public static int generateJobActivationStreamProcessorId(final DirectBuffer type) {
+    final int typeHash = BufferUtil.bufferContentsHash(type);
+    final int idRange = Integer.MAX_VALUE - JOB_ACTIVATE_STREAM_PROCESSOR_BASE_ID;
+
+    return JOB_ACTIVATE_STREAM_PROCESSOR_BASE_ID + (Math.abs(typeHash) % idRange);
+  }
 }

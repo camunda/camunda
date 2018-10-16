@@ -13,116 +13,63 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package io.zeebe.model.bpmn.impl;
 
-import static io.zeebe.util.EnsureUtil.ensureNotNull;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN20_NS;
+import static io.zeebe.model.bpmn.impl.BpmnModelConstants.BPMN_20_SCHEMA_LOCATION;
 
-import io.zeebe.model.bpmn.BpmnConstants;
-import io.zeebe.model.bpmn.impl.instance.BaseElement;
-import io.zeebe.model.bpmn.impl.instance.DefinitionsImpl;
-import java.io.*;
-import java.net.URL;
-import javax.xml.XMLConstants;
-import javax.xml.bind.JAXBContext;
-import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.Unmarshaller;
-import javax.xml.bind.Unmarshaller.Listener;
-import javax.xml.stream.XMLInputFactory;
-import javax.xml.stream.XMLStreamException;
-import javax.xml.stream.XMLStreamReader;
-import javax.xml.validation.Schema;
+import io.zeebe.model.bpmn.Bpmn;
+import java.io.InputStream;
+import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.validation.SchemaFactory;
-import org.xml.sax.SAXException;
+import org.camunda.bpm.model.xml.impl.ModelImpl;
+import org.camunda.bpm.model.xml.impl.parser.AbstractModelParser;
+import org.camunda.bpm.model.xml.impl.util.ReflectUtil;
+import org.camunda.bpm.model.xml.instance.DomDocument;
 
-public class BpmnParser {
-  private final Unmarshaller unmarshaller;
-  private final Marshaller marshaller;
+/**
+ * The parser used when parsing BPMN Files
+ *
+ * @author Daniel Meyer
+ */
+public class BpmnParser extends AbstractModelParser {
 
-  private final XMLInputFactory xmlInputFactory;
-  private final BaseElementListener baseElementListener;
+  private static final String JAXP_SCHEMA_SOURCE =
+      "http://java.sun.com/xml/jaxp/properties/schemaSource";
+  private static final String JAXP_SCHEMA_LANGUAGE =
+      "http://java.sun.com/xml/jaxp/properties/schemaLanguage";
+
+  private static final String W3C_XML_SCHEMA = "http://www.w3.org/2001/XMLSchema";
 
   public BpmnParser() {
-    try {
-      final JAXBContext jaxbContext = JAXBContext.newInstance(DefinitionsImpl.class);
-
-      final SchemaFactory schemaFactory =
-          SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI);
-      final URL bpmnSchema = getClass().getResource("/" + BpmnConstants.BPMN_20_SCHEMA_LOCATION);
-      ensureNotNull("BPMN schema", bpmnSchema);
-      final Schema schema = schemaFactory.newSchema(bpmnSchema);
-
-      baseElementListener = new BaseElementListener();
-
-      unmarshaller = jaxbContext.createUnmarshaller();
-      unmarshaller.setSchema(schema);
-      unmarshaller.setListener(baseElementListener);
-
-      marshaller = jaxbContext.createMarshaller();
-      marshaller.setSchema(schema);
-      marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, true);
-      marshaller.setProperty(Marshaller.JAXB_ENCODING, "UTF-8");
-
-      xmlInputFactory = XMLInputFactory.newFactory();
-    } catch (JAXBException | SAXException e) {
-      throw new RuntimeException("Failed to initialize XML parser", e);
-    }
+    this.schemaFactory = SchemaFactory.newInstance(W3C_XML_SCHEMA);
+    addSchema(BPMN20_NS, createSchema(BPMN_20_SCHEMA_LOCATION, BpmnParser.class.getClassLoader()));
   }
 
-  public DefinitionsImpl readFromFile(File file) {
-    try {
-      return readFromStream(new FileInputStream(file));
-    } catch (FileNotFoundException e) {
-      throw new RuntimeException("Failed to read BPMN from file", e);
-    }
+  @Override
+  protected void configureFactory(DocumentBuilderFactory dbf) {
+    dbf.setAttribute(JAXP_SCHEMA_LANGUAGE, W3C_XML_SCHEMA);
+    dbf.setAttribute(
+        JAXP_SCHEMA_SOURCE,
+        ReflectUtil.getResource(BPMN_20_SCHEMA_LOCATION, BpmnParser.class.getClassLoader())
+            .toString());
+    super.configureFactory(dbf);
   }
 
-  public DefinitionsImpl readFromStream(InputStream stream) {
-    try {
-      final XMLStreamReader xmlStreamReader = xmlInputFactory.createXMLStreamReader(stream);
-      baseElementListener.wrap(xmlStreamReader);
-
-      final DefinitionsImpl definitions = (DefinitionsImpl) unmarshaller.unmarshal(xmlStreamReader);
-
-      return definitions;
-    } catch (JAXBException | XMLStreamException e) {
-      throw new RuntimeException("Failed to read BPMN model", e);
-    }
+  @Override
+  protected BpmnModelInstanceImpl createModelInstance(DomDocument document) {
+    return new BpmnModelInstanceImpl(
+        (ModelImpl) Bpmn.INSTANCE.getBpmnModel(), Bpmn.INSTANCE.getBpmnModelBuilder(), document);
   }
 
-  public String convertToString(DefinitionsImpl definitionsImpl) {
-    final StringWriter writer = new StringWriter();
-
-    try {
-      marshaller.marshal(definitionsImpl, writer);
-    } catch (JAXBException e) {
-      throw new RuntimeException("Failed to write BPMN XML", e);
-    }
-
-    return writer.toString();
+  @Override
+  public BpmnModelInstanceImpl parseModelFromStream(InputStream inputStream) {
+    return (BpmnModelInstanceImpl) super.parseModelFromStream(inputStream);
   }
 
-  /** Add metadata for validation. */
-  private class BaseElementListener extends Listener {
-    private XMLStreamReader xsr;
-
-    public void wrap(XMLStreamReader xsr) {
-      this.xsr = xsr;
-    }
-
-    @Override
-    public void beforeUnmarshal(Object target, Object parent) {
-      final int lineNumber = xsr.getLocation().getLineNumber();
-      final String localName = xsr.getLocalName();
-      final String prefix = xsr.getPrefix();
-
-      if (target instanceof BaseElement) {
-        final BaseElement element = (BaseElement) target;
-
-        element.setNamespace(prefix);
-        element.setElementName(localName);
-        element.setLineNumber(lineNumber);
-      }
-    }
+  @Override
+  public BpmnModelInstanceImpl getEmptyModel() {
+    return (BpmnModelInstanceImpl) super.getEmptyModel();
   }
 }

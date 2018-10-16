@@ -15,7 +15,9 @@
  */
 package io.zeebe.util;
 
-import static io.zeebe.util.ByteUnit.*;
+import static io.zeebe.util.ByteUnit.BYTES;
+import static io.zeebe.util.ByteUnit.KILOBYTES;
+import static io.zeebe.util.ByteUnit.MEGABYTES;
 
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;

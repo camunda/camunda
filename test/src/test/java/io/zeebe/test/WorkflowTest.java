@@ -15,8 +15,14 @@
  */
 package io.zeebe.test;
 
-import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import static org.assertj.core.api.Assertions.assertThat;
+
+import io.zeebe.gateway.ZeebeClient;
+import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
+import io.zeebe.gateway.api.record.RecordType;
+import io.zeebe.gateway.api.record.ValueType;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -25,27 +31,42 @@ public class WorkflowTest {
   @Rule public final ZeebeTestRule testRule = new ZeebeTestRule();
 
   private ZeebeClient client;
-  private String topic;
 
   @Before
-  public void deploy() {
+  public void deploy() throws Exception {
     client = testRule.getClient();
-    topic = testRule.getDefaultTopic();
 
     client
-        .topicClient(topic)
         .workflowClient()
         .newDeployCommand()
         .addResourceFromClasspath("process.bpmn")
         .send()
         .join();
+
+    final CountDownLatch latch = new CountDownLatch(1);
+    client
+        .newSubscription()
+        .name("deploy")
+        .recordHandler(
+            r -> {
+              final ValueType valueType = r.getMetadata().getValueType();
+              final RecordType recordType = r.getMetadata().getRecordType();
+              final String intent = r.getMetadata().getIntent();
+              if (recordType == RecordType.EVENT
+                  && valueType == ValueType.DEPLOYMENT
+                  && intent.equals("CREATED")) {
+                latch.countDown();
+              }
+            })
+        .open();
+
+    assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
   }
 
   @Test
   public void shouldCompleteWorkflowInstance() {
     final WorkflowInstanceEvent workflowInstance =
         client
-            .topicClient(topic)
             .workflowClient()
             .newCreateInstanceCommand()
             .bpmnProcessId("process")
@@ -54,7 +75,6 @@ public class WorkflowTest {
             .join();
 
     client
-        .topicClient(topic)
         .jobClient()
         .newWorker()
         .jobType("task")

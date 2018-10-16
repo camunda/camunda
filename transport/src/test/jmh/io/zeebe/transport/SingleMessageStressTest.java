@@ -15,35 +15,47 @@
  */
 package io.zeebe.transport;
 
+import io.zeebe.transport.impl.util.SocketUtil;
+import io.zeebe.util.buffer.BufferWriter;
+import io.zeebe.util.buffer.DirectBufferWriter;
 import io.zeebe.util.sched.ActorScheduler;
-import java.util.concurrent.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.annotations.Benchmark;
+import org.openjdk.jmh.annotations.BenchmarkMode;
+import org.openjdk.jmh.annotations.Fork;
+import org.openjdk.jmh.annotations.Measurement;
+import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
+import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.TearDown;
+import org.openjdk.jmh.annotations.Threads;
+import org.openjdk.jmh.annotations.Warmup;
 
 @BenchmarkMode(Mode.Throughput)
 @Fork(1)
 @Warmup(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 @Measurement(iterations = 5, time = 1, timeUnit = TimeUnit.SECONDS)
 public class SingleMessageStressTest {
-  static final AtomicInteger THREAD_ID = new AtomicInteger(0);
   private static final int BURST_SIZE = 1_000;
 
   private static final MutableDirectBuffer MSG = new UnsafeBuffer(new byte[576]);
+  private static final BufferWriter WRITER = DirectBufferWriter.writerFor(MSG);
 
   @Benchmark
   @Threads(1)
   public void sendBurstSync(BenchmarkContext ctx) throws InterruptedException {
     final ClientOutput output = ctx.output;
-    final RemoteAddress remote = ctx.remote;
-    final TransportMessage message = ctx.transportMessage;
+    final int remoteId = ctx.remoteId;
 
     for (int i = 0; i < BURST_SIZE; i++) {
-      message.reset().remoteAddress(remote).buffer(MSG);
-
-      while (!output.sendMessage(message)) {
+      while (!output.sendMessage(remoteId, WRITER)) {
         // spin
       }
 
@@ -59,16 +71,13 @@ public class SingleMessageStressTest {
     ctx.messagesReceived.set(0);
 
     final ClientOutput output = ctx.output;
-    final RemoteAddress remote = ctx.remote;
-    final TransportMessage message = ctx.transportMessage;
+    final int remoteId = ctx.remoteId;
 
     int requestsSent = 0;
 
     do {
       if (requestsSent < BURST_SIZE) {
-        message.reset().remoteAddress(remote).buffer(MSG);
-
-        if (output.sendMessage(message)) {
+        if (output.sendMessage(remoteId, WRITER)) {
           requestsSent++;
         }
       }
@@ -77,8 +86,6 @@ public class SingleMessageStressTest {
 
   @State(Scope.Benchmark)
   public static class BenchmarkContext implements ClientInputListener {
-    private final TransportMessage transportMessage = new TransportMessage();
-
     private final ActorScheduler scheduler =
         ActorScheduler.newActorScheduler()
             .setIoBoundActorThreadCount(0)
@@ -91,7 +98,7 @@ public class SingleMessageStressTest {
 
     private ClientOutput output;
 
-    private RemoteAddress remote;
+    private int remoteId;
 
     private AtomicInteger messagesReceived = new AtomicInteger(0);
 
@@ -99,10 +106,10 @@ public class SingleMessageStressTest {
     public void setUp() {
       scheduler.start();
 
-      final SocketAddress addr = new SocketAddress("localhost", 51115);
+      final SocketAddress addr = SocketUtil.getNextAddress();
 
       clientTransport =
-          Transports.newClientTransport().scheduler(scheduler).inputListener(this).build();
+          Transports.newClientTransport("test").scheduler(scheduler).inputListener(this).build();
 
       serverTransport =
           Transports.newServerTransport()
@@ -111,8 +118,9 @@ public class SingleMessageStressTest {
               .build(new EchoMessageHandler(), null);
 
       output = clientTransport.getOutput();
+      remoteId = 1;
 
-      remote = clientTransport.registerRemoteAndAwaitChannel(addr);
+      clientTransport.registerEndpointAndAwaitChannel(remoteId, addr);
     }
 
     @TearDown

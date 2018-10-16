@@ -26,14 +26,13 @@ public class StreamProcessorMetrics {
   private final Metric snapshotTimeMillisMetric;
 
   public StreamProcessorMetrics(
-      MetricsManager metricsManager, String processorName, String topicName, String partitionId) {
+      final MetricsManager metricsManager, final String processorName, final String partitionId) {
     eventsProcessedCountMetric =
         metricsManager
             .newMetric("streamprocessor_events_count")
             .type("counter")
             .label("processor", processorName)
             .label("action", "processed")
-            .label("topic", topicName)
             .label("partition", partitionId)
             .create();
 
@@ -43,7 +42,6 @@ public class StreamProcessorMetrics {
             .type("counter")
             .label("processor", processorName)
             .label("action", "written")
-            .label("topic", topicName)
             .label("partition", partitionId)
             .create();
 
@@ -53,7 +51,6 @@ public class StreamProcessorMetrics {
             .type("counter")
             .label("processor", processorName)
             .label("action", "skipped")
-            .label("topic", topicName)
             .label("partition", partitionId)
             .create();
 
@@ -62,7 +59,6 @@ public class StreamProcessorMetrics {
             .newMetric("streamprocessor_snapshot_last_size_bytes")
             .type("gauge")
             .label("processor", processorName)
-            .label("topic", topicName)
             .label("partition", partitionId)
             .create();
 
@@ -71,7 +67,6 @@ public class StreamProcessorMetrics {
             .newMetric("streamprocessor_snapshot_last_duration_millis")
             .type("gauge")
             .label("processor", processorName)
-            .label("topic", topicName)
             .label("partition", partitionId)
             .create();
   }
@@ -96,11 +91,11 @@ public class StreamProcessorMetrics {
     eventsWrittenCountMetric.incrementOrdered();
   }
 
-  public void recordSnapshotSize(long size) {
+  public void recordSnapshotSize(final long size) {
     snapshotSizeMetric.setOrdered(size);
   }
 
-  public void recordSnapshotCreationTime(long creationTime) {
+  public void recordSnapshotCreationTime(final long creationTime) {
     snapshotTimeMillisMetric.setOrdered(creationTime);
   }
 }

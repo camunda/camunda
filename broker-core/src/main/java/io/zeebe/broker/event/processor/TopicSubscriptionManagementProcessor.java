@@ -19,18 +19,31 @@ package io.zeebe.broker.event.processor;
 
 import io.zeebe.broker.Loggers;
 import io.zeebe.broker.clustering.base.partitions.Partition;
-import io.zeebe.broker.logstreams.processor.*;
-import io.zeebe.broker.transport.clientapi.*;
+import io.zeebe.broker.logstreams.processor.KeyGenerator;
+import io.zeebe.broker.logstreams.processor.MetadataFilter;
+import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
+import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
+import io.zeebe.broker.transport.clientapi.CommandResponseWriter;
+import io.zeebe.broker.transport.clientapi.ErrorResponseWriter;
+import io.zeebe.broker.transport.clientapi.SubscribedRecordWriter;
 import io.zeebe.logstreams.impl.service.LogStreamServiceNames;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
-import io.zeebe.logstreams.log.*;
-import io.zeebe.logstreams.processor.*;
+import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.logstreams.log.LogStreamRecordWriter;
+import io.zeebe.logstreams.log.LoggedEvent;
+import io.zeebe.logstreams.processor.EventProcessor;
+import io.zeebe.logstreams.processor.StreamProcessor;
+import io.zeebe.logstreams.processor.StreamProcessorContext;
+import io.zeebe.logstreams.snapshot.ComposedSnapshot;
+import io.zeebe.logstreams.snapshot.UnpackedObjectSnapshotSupport;
 import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.map.Bytes2LongZbMap;
 import io.zeebe.protocol.Protocol;
-import io.zeebe.protocol.clientapi.*;
-import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.clientapi.ErrorCode;
+import io.zeebe.protocol.clientapi.RecordType;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.intent.SubscriberIntent;
 import io.zeebe.protocol.intent.SubscriptionIntent;
 import io.zeebe.servicecontainer.ServiceContainer;
@@ -76,6 +89,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor {
   protected final TopicSubscriptionEvent subscriptionEvent = new TopicSubscriptionEvent();
   protected final TopicSubscriberEvent subscriberEvent = new TopicSubscriberEvent();
   protected LoggedEvent currentEvent;
+  private final KeyGenerator keyGenerator;
 
   public TopicSubscriptionManagementProcessor(
       Partition partition,
@@ -87,13 +101,16 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor {
       StreamProcessorServiceFactory streamProcessorServiceFactory,
       ServiceContainer serviceContainer) {
     this.partition = partition;
+    keyGenerator = new KeyGenerator(partition.getInfo().getPartitionId(), 1, 1);
     this.partitionServiceName = partitionServiceName;
     this.pushProcessorEventFilter = pushProcessorEventFilter;
     this.responseWriter = responseWriter;
     this.errorWriter = errorWriter;
     this.eventWriterFactory = eventWriterFactory;
     this.ackMap = new Bytes2LongZbMap(MAXIMUM_SUBSCRIPTION_NAME_LENGTH);
-    this.snapshotResource = new ZbMapSnapshotSupport<>(ackMap);
+    this.snapshotResource =
+        new ComposedSnapshot(
+            new ZbMapSnapshotSupport<>(ackMap), new UnpackedObjectSnapshotSupport(keyGenerator));
     this.serviceContext = serviceContainer;
     this.streamProcessorServiceFactory = streamProcessorServiceFactory;
   }
@@ -154,6 +171,10 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor {
     } else {
       return null;
     }
+  }
+
+  public long nextSubscriberKey() {
+    return keyGenerator.nextKey();
   }
 
   protected EventProcessor onSubscriptionEvent(LoggedEvent event) {
@@ -266,7 +287,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor {
 
   protected class AckProcessor implements EventProcessor {
     @Override
-    public long writeEvent(LogStreamWriter writer) {
+    public long writeEvent(LogStreamRecordWriter writer) {
       metadata
           .recordType(RecordType.EVENT)
           .valueType(ValueType.SUBSCRIPTION)
@@ -341,7 +362,7 @@ public class TopicSubscriptionManagementProcessor implements StreamProcessor {
     }
 
     @Override
-    public long writeEvent(LogStreamWriter writer) {
+    public long writeEvent(LogStreamRecordWriter writer) {
       final DirectBuffer openedSubscriptionName = subscriberEvent.getName();
 
       subscriptionEvent.reset();

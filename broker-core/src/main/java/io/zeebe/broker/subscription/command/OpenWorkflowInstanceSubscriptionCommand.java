@@ -1,0 +1,136 @@
+/*
+ * Zeebe Broker Core
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Affero General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Affero General Public License for more details.
+ *
+ * You should have received a copy of the GNU Affero General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package io.zeebe.broker.subscription.command;
+
+import static io.zeebe.broker.subscription.OpenWorkflowInstanceSubscriptionDecoder.activityInstanceKeyNullValue;
+import static io.zeebe.broker.subscription.OpenWorkflowInstanceSubscriptionDecoder.messageNameHeaderLength;
+import static io.zeebe.broker.subscription.OpenWorkflowInstanceSubscriptionDecoder.subscriptionPartitionIdNullValue;
+import static io.zeebe.broker.subscription.OpenWorkflowInstanceSubscriptionDecoder.workflowInstanceKeyNullValue;
+import static io.zeebe.broker.subscription.OpenWorkflowInstanceSubscriptionDecoder.workflowInstancePartitionIdNullValue;
+
+import io.zeebe.broker.subscription.OpenWorkflowInstanceSubscriptionDecoder;
+import io.zeebe.broker.subscription.OpenWorkflowInstanceSubscriptionEncoder;
+import io.zeebe.broker.util.SbeBufferWriterReader;
+import org.agrona.DirectBuffer;
+import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
+
+public class OpenWorkflowInstanceSubscriptionCommand
+    extends SbeBufferWriterReader<
+        OpenWorkflowInstanceSubscriptionEncoder, OpenWorkflowInstanceSubscriptionDecoder> {
+
+  private final OpenWorkflowInstanceSubscriptionEncoder encoder =
+      new OpenWorkflowInstanceSubscriptionEncoder();
+  private final OpenWorkflowInstanceSubscriptionDecoder decoder =
+      new OpenWorkflowInstanceSubscriptionDecoder();
+
+  private int subscriptionPartitionId;
+  private int workflowInstancePartitionId;
+  private long workflowInstanceKey;
+  private long activityInstanceKey;
+
+  private final UnsafeBuffer messageName = new UnsafeBuffer(0, 0);
+
+  @Override
+  protected OpenWorkflowInstanceSubscriptionEncoder getBodyEncoder() {
+    return encoder;
+  }
+
+  @Override
+  protected OpenWorkflowInstanceSubscriptionDecoder getBodyDecoder() {
+    return decoder;
+  }
+
+  @Override
+  public int getLength() {
+    return super.getLength() + messageNameHeaderLength() + messageName.capacity();
+  }
+
+  @Override
+  public void write(MutableDirectBuffer buffer, int offset) {
+    super.write(buffer, offset);
+
+    encoder
+        .subscriptionPartitionId(subscriptionPartitionId)
+        .workflowInstancePartitionId(workflowInstancePartitionId)
+        .workflowInstanceKey(workflowInstanceKey)
+        .activityInstanceKey(activityInstanceKey)
+        .putMessageName(messageName, 0, messageName.capacity());
+  }
+
+  @Override
+  public void wrap(DirectBuffer buffer, int offset, int length) {
+    super.wrap(buffer, offset, length);
+
+    subscriptionPartitionId = decoder.subscriptionPartitionId();
+    workflowInstancePartitionId = decoder.workflowInstancePartitionId();
+    workflowInstanceKey = decoder.workflowInstanceKey();
+    activityInstanceKey = decoder.activityInstanceKey();
+
+    offset = decoder.limit();
+
+    offset += messageNameHeaderLength();
+    final int messageNameLength = decoder.messageNameLength();
+    messageName.wrap(buffer, offset, messageNameLength);
+  }
+
+  @Override
+  public void reset() {
+    subscriptionPartitionId = subscriptionPartitionIdNullValue();
+    workflowInstancePartitionId = workflowInstancePartitionIdNullValue();
+    workflowInstanceKey = workflowInstanceKeyNullValue();
+    activityInstanceKey = activityInstanceKeyNullValue();
+    messageName.wrap(0, 0);
+  }
+
+  public int getSubscriptionPartitionId() {
+    return subscriptionPartitionId;
+  }
+
+  public void setSubscriptionPartitionId(int subscriptionPartitionId) {
+    this.subscriptionPartitionId = subscriptionPartitionId;
+  }
+
+  public int getWorkflowInstancePartitionId() {
+    return workflowInstancePartitionId;
+  }
+
+  public void setWorkflowInstancePartitionId(int workflowInstancePartitionId) {
+    this.workflowInstancePartitionId = workflowInstancePartitionId;
+  }
+
+  public long getWorkflowInstanceKey() {
+    return workflowInstanceKey;
+  }
+
+  public void setWorkflowInstanceKey(long workflowInstanceKey) {
+    this.workflowInstanceKey = workflowInstanceKey;
+  }
+
+  public long getActivityInstanceKey() {
+    return activityInstanceKey;
+  }
+
+  public void setActivityInstanceKey(long activityInstanceKey) {
+    this.activityInstanceKey = activityInstanceKey;
+  }
+
+  public DirectBuffer getMessageName() {
+    return messageName;
+  }
+}

@@ -16,17 +16,21 @@
 package io.zeebe.broker.it.shutdown;
 
 import io.zeebe.broker.Broker;
-import io.zeebe.broker.it.EmbeddedBrokerRule;
+import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
+import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.transport.TransportServiceNames;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceContainer;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.impl.ServerSocketBinding;
 import io.zeebe.util.FileUtil;
 import io.zeebe.util.sched.future.CompletableActorFuture;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.concurrent.ExecutionException;
@@ -83,13 +87,9 @@ public class BrokerShutdownTest {
   }
 
   private Broker startBrokerWithBlockingService(final File brokerBase) {
-    final Broker broker;
-    try (InputStream configStream =
-        EmbeddedBrokerRule.class.getResourceAsStream("/zeebe.default.cfg.toml")) {
-      broker = new Broker(configStream, brokerBase.getAbsolutePath(), null);
-    } catch (final IOException e) {
-      throw new RuntimeException("Unable to open configuration", e);
-    }
+    final BrokerCfg brokerCfg = new BrokerCfg();
+    EmbeddedBrokerRule.assignSocketAddresses(brokerCfg);
+    final Broker broker = new Broker(brokerCfg, brokerBase.getAbsolutePath(), null);
 
     final ServiceContainer serviceContainer = broker.getBrokerContext().getServiceContainer();
 
@@ -109,7 +109,7 @@ public class BrokerShutdownTest {
           .get(25, TimeUnit.SECONDS);
     } catch (InterruptedException | ExecutionException | TimeoutException e) {
       throw new RuntimeException(
-          "System patition not installed into the container withing 25 seconds.");
+          "System partition not installed into the container withing 25 seconds.");
     }
     return broker;
   }

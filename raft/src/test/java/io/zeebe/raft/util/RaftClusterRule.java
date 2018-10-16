@@ -21,7 +21,7 @@ import io.zeebe.logstreams.log.BufferedLogStreamReader;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.impl.RecordMetadata;
+import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.raft.Loggers;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.testing.ServiceContainerRule;
@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
+import org.junit.rules.ExternalResource;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
@@ -69,6 +70,20 @@ public class RaftClusterRule implements TestRule {
     rules.add(actorScheduler);
     rules.add(serviceContainerRule);
     rules.addAll(rafts);
+    rules.add(
+        new ExternalResource() {
+          @Override
+          protected void before() throws Throwable {
+            // register node endpoints between all rafts
+            final int size = rafts.size();
+            for (int from = 0; from < size - 1; from++) {
+              for (int to = from + 1; to < size; to++) {
+                rafts.get(from).reconnectTo(rafts.get(to));
+              }
+            }
+          }
+        });
+
     Collections.reverse(rules);
 
     for (final TestRule rule : rules) {
@@ -85,11 +100,7 @@ public class RaftClusterRule implements TestRule {
   public RaftClusterRule registerRaft(final RaftRule raft) {
     raft.clearSubscription();
 
-    rafts.forEach(
-        raftRule -> {
-          raft.reconnectTo(raftRule);
-          raftRule.reconnectTo(raft);
-        });
+    rafts.forEach(raft::reconnectTo);
 
     this.rafts.add(raft);
 
@@ -105,15 +116,10 @@ public class RaftClusterRule implements TestRule {
   }
 
   public RaftClusterRule removeRaft(final RaftRule raft) {
-    Loggers.RAFT_LOGGER.debug("Interrupt connections for {}", raft.getSocketAddress());
+    Loggers.RAFT_LOGGER.debug("Interrupt connections for node {}", raft.getNodeId());
 
     final RaftRule[] otherRafts = getOtherRafts(raft);
-    Arrays.stream(otherRafts)
-        .forEach(
-            raftRule -> {
-              raft.interruptConnectionTo(raftRule);
-              raftRule.interruptConnectionTo(raft);
-            });
+    Arrays.stream(otherRafts).forEach(raft::interruptConnectionTo);
 
     this.rafts.remove(raft);
 
@@ -229,7 +235,7 @@ public class RaftClusterRule implements TestRule {
   }
 
   public void printLogEntries(final RaftRule raft, final boolean readUncommitted) {
-    LOG.error("Log entries for raft {}", raft.getSocketAddress());
+    LOG.error("Log entries for raft node {}", raft.getNodeId());
 
     final LogStream logStream = raft.getLogStream();
     final long commitPosition = logStream.getCommitPosition();

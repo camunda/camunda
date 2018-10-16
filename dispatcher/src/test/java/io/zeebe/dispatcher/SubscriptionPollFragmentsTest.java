@@ -16,13 +16,28 @@
 package io.zeebe.dispatcher;
 
 import static io.zeebe.dispatcher.impl.PositionUtil.position;
-import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.*;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.FRAME_ALIGNMENT;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.HEADER_LENGTH;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.TYPE_MESSAGE;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.TYPE_PADDING;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.alignedFramedLength;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.enableFlagFailed;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.flagsOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.framedLength;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.lengthOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.messageOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.streamIdOffset;
+import static io.zeebe.dispatcher.impl.log.DataFrameDescriptor.typeOffset;
 import static org.agrona.BitUtil.align;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.dispatcher.impl.log.LogBuffer;

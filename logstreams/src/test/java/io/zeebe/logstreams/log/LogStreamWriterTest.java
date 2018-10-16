@@ -19,7 +19,10 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.logstreams.util.*;
+import io.zeebe.logstreams.impl.LogEntryDescriptor;
+import io.zeebe.logstreams.util.LogStreamReaderRule;
+import io.zeebe.logstreams.util.LogStreamRule;
+import io.zeebe.logstreams.util.LogStreamWriterRule;
 import io.zeebe.util.buffer.DirectBufferWriter;
 import io.zeebe.util.sched.future.ActorFuture;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
@@ -27,8 +30,12 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.junit.*;
-import org.junit.rules.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TemporaryFolder;
 
 public class LogStreamWriterTest {
   private static final DirectBuffer EVENT_VALUE = wrapString("value");
@@ -52,7 +59,7 @@ public class LogStreamWriterTest {
           .around(writerRule)
           .around(readerRule);
 
-  private LogStreamWriter writer;
+  private LogStreamRecordWriter writer;
 
   @Before
   public void setUp() {
@@ -78,7 +85,7 @@ public class LogStreamWriterTest {
   @Test
   public void shouldReturnPositionOfWrittenEvent() {
     // when
-    final long position = writer.positionAsKey().value(EVENT_VALUE).tryWrite();
+    final long position = writer.value(EVENT_VALUE).tryWrite();
 
     // then
     assertThat(position).isGreaterThan(0);
@@ -90,7 +97,7 @@ public class LogStreamWriterTest {
   @Test
   public void shouldWriteEventWithValueBuffer() {
     // when
-    final long position = writer.positionAsKey().value(EVENT_VALUE).tryWrite();
+    final long position = writer.value(EVENT_VALUE).tryWrite();
 
     // then
     final LoggedEvent event = getWrittenEvent(position);
@@ -104,7 +111,7 @@ public class LogStreamWriterTest {
   @Test
   public void shouldWriteEventWithValueBufferPartially() {
     // when
-    final long position = writer.positionAsKey().value(EVENT_VALUE, 1, 2).tryWrite();
+    final long position = writer.value(EVENT_VALUE, 1, 2).tryWrite();
 
     // then
     final LoggedEvent event = getWrittenEvent(position);
@@ -118,8 +125,7 @@ public class LogStreamWriterTest {
   @Test
   public void shouldWriteEventWithValueWriter() {
     // when
-    final long position =
-        writer.positionAsKey().valueWriter(new DirectBufferWriter().wrap(EVENT_VALUE)).tryWrite();
+    final long position = writer.valueWriter(new DirectBufferWriter().wrap(EVENT_VALUE)).tryWrite();
 
     // then
     final LoggedEvent event = getWrittenEvent(position);
@@ -133,8 +139,7 @@ public class LogStreamWriterTest {
   @Test
   public void shouldWriteEventWithMetadataBuffer() {
     // when
-    final long position =
-        writer.positionAsKey().value(EVENT_VALUE).metadata(EVENT_METADATA).tryWrite();
+    final long position = writer.value(EVENT_VALUE).metadata(EVENT_METADATA).tryWrite();
 
     // then
     final LoggedEvent event = getWrittenEvent(position);
@@ -148,8 +153,7 @@ public class LogStreamWriterTest {
   @Test
   public void shouldWriteEventWithMetadataBufferPartially() {
     // when
-    final long position =
-        writer.positionAsKey().value(EVENT_VALUE).metadata(EVENT_METADATA, 1, 2).tryWrite();
+    final long position = writer.value(EVENT_VALUE).metadata(EVENT_METADATA, 1, 2).tryWrite();
 
     // then
     final LoggedEvent event = getWrittenEvent(position);
@@ -165,7 +169,6 @@ public class LogStreamWriterTest {
     // when
     final long position =
         writer
-            .positionAsKey()
             .value(EVENT_VALUE)
             .metadataWriter(new DirectBufferWriter().wrap(EVENT_METADATA))
             .tryWrite();
@@ -190,7 +193,7 @@ public class LogStreamWriterTest {
 
   @Test
   public void shouldWriteEventWithTimestamp() throws InterruptedException, ExecutionException {
-    final Callable<Long> doWrite = () -> writer.positionAsKey().value(EVENT_VALUE).tryWrite();
+    final Callable<Long> doWrite = () -> writer.keyNull().value(EVENT_VALUE).tryWrite();
 
     // given
     final long firstTimestamp = System.currentTimeMillis();
@@ -227,8 +230,7 @@ public class LogStreamWriterTest {
   @Test
   public void shouldWriteEventWithSourceEvent() {
     // when
-    final long position =
-        writer.positionAsKey().value(EVENT_VALUE).sourceRecordPosition(123L).tryWrite();
+    final long position = writer.value(EVENT_VALUE).sourceRecordPosition(123L).tryWrite();
 
     // then
     final LoggedEvent event = getWrittenEvent(position);
@@ -238,7 +240,7 @@ public class LogStreamWriterTest {
   @Test
   public void shouldWriteEventWithoutSourceEvent() {
     // when
-    final long position = writer.positionAsKey().value(EVENT_VALUE).tryWrite();
+    final long position = writer.value(EVENT_VALUE).tryWrite();
 
     // then
     final LoggedEvent event = getWrittenEvent(position);
@@ -248,7 +250,7 @@ public class LogStreamWriterTest {
   @Test
   public void shouldWriteEventWithProducerId() {
     // when
-    final long position = writer.positionAsKey().value(EVENT_VALUE).producerId(123).tryWrite();
+    final long position = writer.value(EVENT_VALUE).producerId(123).tryWrite();
 
     // then
     assertThat(getWrittenEvent(position).getProducerId()).isEqualTo(123);
@@ -257,7 +259,7 @@ public class LogStreamWriterTest {
   @Test
   public void shouldWriteEventWithoutProducerId() {
     // when
-    final long position = writer.positionAsKey().value(EVENT_VALUE).tryWrite();
+    final long position = writer.value(EVENT_VALUE).tryWrite();
 
     // then
     assertThat(getWrittenEvent(position).getProducerId()).isEqualTo(-1);
@@ -269,21 +271,28 @@ public class LogStreamWriterTest {
     logStreamRule.getLogStream().setTerm(123);
 
     // when
-    final long position = writer.positionAsKey().value(EVENT_VALUE).tryWrite();
+    final long position = writer.value(EVENT_VALUE).tryWrite();
 
     // then
     assertThat(getWrittenEvent(position).getRaftTerm()).isEqualTo(123);
   }
 
   @Test
-  public void shouldFailToWriteEventWithoutKey() {
+  public void shouldWriteEventWithNullKey() {
     // when
-    assertThatThrownBy(
-            () -> {
-              writer.value(EVENT_VALUE).tryWrite();
-            })
-        .isInstanceOf(RuntimeException.class)
-        .hasMessage("key must be greater than or equal to 0");
+    final long position = writer.keyNull().value(EVENT_VALUE).tryWrite();
+
+    // then
+    assertThat(getWrittenEvent(position).getKey()).isEqualTo(LogEntryDescriptor.KEY_NULL_VALUE);
+  }
+
+  @Test
+  public void shouldWriteNullKeyByDefault() {
+    // when
+    final long position = writer.value(EVENT_VALUE).tryWrite();
+
+    // then
+    assertThat(getWrittenEvent(position).getKey()).isEqualTo(LogEntryDescriptor.KEY_NULL_VALUE);
   }
 
   @Test
@@ -291,7 +300,7 @@ public class LogStreamWriterTest {
     // when
     assertThatThrownBy(
             () -> {
-              writer.positionAsKey().tryWrite();
+              writer.keyNull().tryWrite();
             })
         .isInstanceOf(RuntimeException.class)
         .hasMessage("value must not be null");

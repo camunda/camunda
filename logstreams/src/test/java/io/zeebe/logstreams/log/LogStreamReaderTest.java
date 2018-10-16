@@ -18,7 +18,9 @@ package io.zeebe.logstreams.log;
 import static io.zeebe.util.StringUtil.getBytes;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import io.zeebe.logstreams.spi.LogStorage;
 import io.zeebe.logstreams.util.LogStreamReaderRule;

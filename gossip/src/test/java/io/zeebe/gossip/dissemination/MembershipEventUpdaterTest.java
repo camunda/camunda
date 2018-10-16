@@ -19,12 +19,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.clustering.gossip.MembershipEventType;
 import io.zeebe.gossip.GossipConfiguration;
-import io.zeebe.gossip.membership.*;
+import io.zeebe.gossip.membership.GossipTerm;
+import io.zeebe.gossip.membership.MembershipList;
+import io.zeebe.gossip.membership.MembershipStatus;
 import io.zeebe.gossip.protocol.MembershipEvent;
-import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
-import org.junit.*;
+import org.junit.Before;
+import org.junit.Rule;
+import org.junit.Test;
 
 /** */
 public class MembershipEventUpdaterTest {
@@ -33,7 +36,7 @@ public class MembershipEventUpdaterTest {
   private MembershipList membershipList;
   private DisseminationComponent disseminationComponent;
   private MembershipEventUpdater membershipEventUpdater;
-  private final SocketAddress memberAddress = new SocketAddress("localhost", 8181);
+  private final int memberId = 123;
 
   @Rule public ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule();
 
@@ -45,7 +48,7 @@ public class MembershipEventUpdaterTest {
             new Actor() {
               @Override
               protected void onActorStarting() {
-                membershipList = new MembershipList(new SocketAddress(), (member) -> {});
+                membershipList = new MembershipList(0, (member) -> {});
 
                 disseminationComponent = new DisseminationComponent(CONFIGURATION, membershipList);
                 membershipEventUpdater =
@@ -68,11 +71,11 @@ public class MembershipEventUpdaterTest {
                 final GossipTerm oldTerm = new GossipTerm().epoch(1);
                 final GossipTerm newTerm = new GossipTerm().epoch(2);
 
-                membershipList.newMember(memberAddress, newTerm);
+                membershipList.newMember(memberId, newTerm);
 
                 // when
                 final MembershipEvent membershipEvent = new MembershipEvent();
-                membershipEvent.address(memberAddress);
+                membershipEvent.memberId(memberId);
                 membershipEvent.type(MembershipEventType.LEAVE);
                 membershipEvent.gossipTerm(oldTerm);
 
@@ -83,7 +86,7 @@ public class MembershipEventUpdaterTest {
 
     // then
     assertThat(consumed).isFalse();
-    assertThat(membershipList.get(memberAddress).getStatus())
+    assertThat(membershipList.get(memberId).getStatus())
         .isEqualByComparingTo(MembershipStatus.ALIVE);
   }
 }

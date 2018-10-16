@@ -27,7 +27,6 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.Arrays;
 import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -819,6 +818,66 @@ public class MappingMergeParameterizedTest {
             // expected result
             "{'array[bar]':[0, 1, 2], 'array': {'bar': 3}, 'array[bar][0]':1}"
           },
+          {
+            // source
+            "{'in':1}",
+            // target
+            "{}",
+            // mapping
+            createMapping("$.in", "$.array", Mapping.Type.COLLECT),
+            // expected result
+            "{'array':[1]}"
+          },
+          {
+            // source
+            "{'in':1}",
+            // target
+            "{'array':[0, 1, 2]}",
+            // mapping
+            createMapping("$.in", "$.array", Mapping.Type.COLLECT),
+            // expected result
+            "{'array':[0, 1, 2, 1]}"
+          },
+          {
+            // source
+            "{'in':1}",
+            // target
+            "{'array':{'foo':'bar'}}",
+            // mapping
+            createMapping("$.in", "$.array", Mapping.Type.COLLECT),
+            // expected result
+            "{'array':[1]}"
+          },
+          {
+            // source
+            "{'in':1}",
+            // target
+            "{'array':'bar'}",
+            // mapping
+            createMapping("$.in", "$.array", Mapping.Type.COLLECT),
+            // expected result
+            "{'array':[1]}"
+          },
+          {
+            // source
+            "{'key':'newVal'}",
+            // target
+            "{'arr':[], 'key':'val'}",
+            // mapping
+            createMapping("$.key", "$.key"),
+            // expected result
+            "{'arr':[], 'key':'newVal'}"
+          },
+          {
+            // source
+            "{'key':'newVal'}",
+            // target
+            "{'obj':{}, 'key':'val'}",
+            // mapping
+            createMapping("$.key", "$.key"),
+            // expected result
+            "{'obj':{}, 'key':'newVal'}"
+          },
         });
   }
 
@@ -833,11 +892,13 @@ public class MappingMergeParameterizedTest {
   @Parameter(3)
   public String expectedPayload;
 
-  private MappingProcessor processor = new MappingProcessor(1024);
+  private MsgPackMergeTool mergeTool = new MsgPackMergeTool(1024);
 
   @Test
-  public void shouldExtractNothingFromEmptyObject() throws Throwable {
+  public void performTest() throws Throwable {
     // given payload
+    mergeTool.reset();
+
     final byte[] sourceBytes =
         MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree(sourcePayload));
     final DirectBuffer sourceDocument = new UnsafeBuffer(sourceBytes);
@@ -847,11 +908,12 @@ public class MappingMergeParameterizedTest {
     final DirectBuffer targetDocument = new UnsafeBuffer(targetBytes);
 
     // when
-    final int resultLength = processor.merge(sourceDocument, targetDocument, mappings);
+    mergeTool.mergeDocument(targetDocument);
+    mergeTool.mergeDocument(sourceDocument, mappings);
 
-    final MutableDirectBuffer resultBuffer = processor.getResultBuffer();
-    final byte result[] = new byte[resultLength];
-    resultBuffer.getBytes(0, result, 0, resultLength);
+    final DirectBuffer resultBuffer = mergeTool.writeResultToBuffer();
+    final byte result[] = new byte[resultBuffer.capacity()];
+    resultBuffer.getBytes(0, result, 0, result.length);
 
     // then result is expected as
     assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree(expectedPayload));

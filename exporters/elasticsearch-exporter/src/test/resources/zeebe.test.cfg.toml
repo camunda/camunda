@@ -1,0 +1,23 @@
+[[exporters]]
+id = "elasticsearch"
+className = "io.zeebe.exporter.ElasticsearchExporter"
+
+  [exporters.args.bulk]
+  delay = 1
+  size = 1
+
+  [exporters.args.index]
+  prefix = "test-record"
+  createTemplate = true
+  command = true
+  event = true
+  rejection = true
+  deployment = true
+  incident = true
+  job = true
+  jobBatch = true
+  message = true
+  messageSubscription = true
+  raft = true
+  workflowInstance = true
+  workflowInstanceSubscription = true

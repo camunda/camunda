@@ -23,6 +23,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.SubscriptionType;
@@ -31,7 +33,8 @@ import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
-import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
+import io.zeebe.test.broker.protocol.clientapi.TestPartitionClient;
+import io.zeebe.test.util.record.RecordingExporter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,15 +49,15 @@ public class JobUpdateRetriesTest {
   private static final int NEW_RETRIES = 20;
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientApiRule apiRule = new ClientApiRule();
+  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
-  private TestTopicClient client;
+  private TestPartitionClient client;
 
   @Before
   public void setup() {
-    client = apiRule.topic();
+    client = apiRule.partition();
   }
 
   @Test
@@ -66,25 +69,28 @@ public class JobUpdateRetriesTest {
 
     final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
 
-    Map<String, Object> event = subscribedEvent.value();
-    event.put("retries", 0);
-    final ExecuteCommandResponse failResponse =
-        client.failJob(subscribedEvent.position(), subscribedEvent.key(), event);
-
-    event = failResponse.getValue();
-    event.put("retries", NEW_RETRIES);
+    client.failJob(subscribedEvent.key(), 0);
 
     // when
     final ExecuteCommandResponse response =
-        client.updateJobRetries(subscribedEvent.position(), subscribedEvent.key(), event);
+        client.updateJobRetries(subscribedEvent.key(), NEW_RETRIES);
 
     // then
     final SubscribedRecord jobCommand =
-        apiRule.topic().receiveFirstJobCommand(JobIntent.UPDATE_RETRIES);
+        apiRule.partition().receiveFirstJobCommand(JobIntent.UPDATE_RETRIES);
 
     assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
     assertThat(response.sourceRecordPosition()).isEqualTo(jobCommand.position());
     assertThat(response.intent()).isEqualTo(JobIntent.RETRIES_UPDATED);
+
+    final Map<String, Object> expectedValue = new HashMap<>(subscribedEvent.value());
+    expectedValue.put("retries", (long) NEW_RETRIES);
+    assertThat(response.getValue()).containsAllEntriesOf(expectedValue);
+
+    final Record<JobRecordValue> loggedEvent =
+        RecordingExporter.jobRecords(JobIntent.RETRIES_UPDATED).getFirst();
+
+    assertThat(loggedEvent.getValue().getType()).isEqualTo(JOB_TYPE);
   }
 
   @Test
@@ -96,17 +102,11 @@ public class JobUpdateRetriesTest {
 
     final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
 
-    Map<String, Object> event = subscribedEvent.value();
-    event.put("retries", 0);
-    final ExecuteCommandResponse failResponse =
-        client.failJob(subscribedEvent.position(), subscribedEvent.key(), event);
-
-    event = failResponse.getValue();
-    event.put("retries", NEW_RETRIES);
+    client.failJob(subscribedEvent.key(), 0);
 
     // when
     final ExecuteCommandResponse response =
-        client.updateJobRetries(subscribedEvent.position(), subscribedEvent.key(), event);
+        client.updateJobRetries(subscribedEvent.key(), NEW_RETRIES);
 
     // then
     assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
@@ -154,20 +154,14 @@ public class JobUpdateRetriesTest {
 
   @Test
   public void shouldRejectUpdateRetriesIfJobNotFound() {
-    // given
-    final Map<String, Object> event = new HashMap<>();
-
-    event.put("retries", NEW_RETRIES);
-    event.put("type", JOB_TYPE);
-
     // when
-    final ExecuteCommandResponse response = client.updateJobRetries(0, 123, event);
+    final ExecuteCommandResponse response = client.updateJobRetries(123, NEW_RETRIES);
 
     // then
     assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(response.intent()).isEqualTo(JobIntent.UPDATE_RETRIES);
     assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.rejectionReason()).isEqualTo("Job is not in state FAILED");
+    assertThat(response.rejectionReason()).isEqualTo("Job is not failed");
   }
 
   @Test
@@ -179,22 +173,18 @@ public class JobUpdateRetriesTest {
 
     final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
 
-    Map<String, Object> event = subscribedEvent.value();
-    final ExecuteCommandResponse completeResponse =
-        client.completeJob(subscribedEvent.position(), subscribedEvent.key(), event);
-
-    event = completeResponse.getValue();
-    event.put("retries", NEW_RETRIES);
+    final Map<String, Object> event = subscribedEvent.value();
+    client.completeJob(subscribedEvent.position(), subscribedEvent.key(), event);
 
     // when
     final ExecuteCommandResponse response =
-        client.updateJobRetries(subscribedEvent.position(), subscribedEvent.key(), event);
+        client.updateJobRetries(subscribedEvent.key(), NEW_RETRIES);
 
     // then
     assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(response.intent()).isEqualTo(JobIntent.UPDATE_RETRIES);
     assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.rejectionReason()).isEqualTo("Job is not in state FAILED");
+    assertThat(response.rejectionReason()).isEqualTo("Job is not failed");
   }
 
   @Test
@@ -206,18 +196,15 @@ public class JobUpdateRetriesTest {
 
     final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
 
-    final Map<String, Object> event = subscribedEvent.value();
-    event.put("retries", NEW_RETRIES);
-
     // when
     final ExecuteCommandResponse response =
-        client.updateJobRetries(subscribedEvent.position(), subscribedEvent.key(), event);
+        client.updateJobRetries(subscribedEvent.key(), NEW_RETRIES);
 
     // then
     assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(response.intent()).isEqualTo(JobIntent.UPDATE_RETRIES);
     assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.rejectionReason()).isEqualTo("Job is not in state FAILED");
+    assertThat(response.rejectionReason()).isEqualTo("Job is not failed");
   }
 
   @Test
@@ -229,23 +216,16 @@ public class JobUpdateRetriesTest {
 
     final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
 
-    Map<String, Object> event = subscribedEvent.value();
-    event.put("retries", 0);
-    final ExecuteCommandResponse failResponse =
-        client.failJob(subscribedEvent.position(), subscribedEvent.key(), event);
-
-    event = failResponse.getValue();
-    event.put("retries", 0);
+    client.failJob(subscribedEvent.key(), 0);
 
     // when
-    final ExecuteCommandResponse response =
-        client.updateJobRetries(subscribedEvent.position(), subscribedEvent.key(), event);
+    final ExecuteCommandResponse response = client.updateJobRetries(subscribedEvent.key(), 0);
 
     // then
     assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(response.intent()).isEqualTo(JobIntent.UPDATE_RETRIES);
     assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(response.rejectionReason()).isEqualTo("Retries must be greater than 0");
+    assertThat(response.rejectionReason()).isEqualTo("Job retries must be positive");
   }
 
   @Test
@@ -257,23 +237,16 @@ public class JobUpdateRetriesTest {
 
     final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
 
-    Map<String, Object> event = subscribedEvent.value();
-    event.put("retries", 0);
-    final ExecuteCommandResponse failResponse =
-        client.failJob(subscribedEvent.position(), subscribedEvent.key(), event);
-
-    event = failResponse.getValue();
-    event.put("retries", -1);
+    client.failJob(subscribedEvent.key(), 0);
 
     // when
-    final ExecuteCommandResponse response =
-        client.updateJobRetries(subscribedEvent.position(), subscribedEvent.key(), event);
+    final ExecuteCommandResponse response = client.updateJobRetries(subscribedEvent.key(), -1);
 
     // then
     assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(response.intent()).isEqualTo(JobIntent.UPDATE_RETRIES);
     assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(response.rejectionReason()).isEqualTo("Retries must be greater than 0");
+    assertThat(response.rejectionReason()).isEqualTo("Job retries must be positive");
   }
 
   private SubscribedRecord receiveSingleSubscribedEvent() {

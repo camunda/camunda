@@ -19,20 +19,19 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.ZeebeClientBuilder;
 import io.zeebe.client.api.clients.JobClient;
 import io.zeebe.client.api.clients.WorkflowClient;
-import io.zeebe.client.api.events.JobEvent;
+import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.subscription.JobHandler;
 import java.util.Scanner;
 
 public class HandlePayloadAsPojo {
-  public static void main(String[] args) {
-    final String broker = "127.0.0.1:51015";
-    final String topic = "default-topic";
+  public static void main(final String[] args) {
+    final String broker = "127.0.0.1:26500";
 
     final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder().brokerContactPoint(broker);
 
     try (ZeebeClient client = builder.build()) {
-      final WorkflowClient workflowClient = client.topicClient(topic).workflowClient();
-      final JobClient jobClient = client.topicClient(topic).jobClient();
+      final WorkflowClient workflowClient = client.workflowClient();
+      final JobClient jobClient = client.jobClient();
 
       final Order order = new Order();
       order.setOrderId(31243);
@@ -54,7 +53,7 @@ public class HandlePayloadAsPojo {
 
   private static class DemoJobHandler implements JobHandler {
     @Override
-    public void handle(JobClient client, JobEvent job) {
+    public void handle(final JobClient client, final ActivatedJob job) {
       // read the payload of the job
       final Order order = job.getPayloadAsType(Order.class);
       System.out.println("new job with orderId: " + order.getOrderId());
@@ -62,7 +61,7 @@ public class HandlePayloadAsPojo {
       // update the payload and complete the job
       order.setTotalPrice(46.50);
 
-      client.newCompleteCommand(job).payload(order).send();
+      client.newCompleteCommand(job.getKey()).payload(order).send();
     }
   }
 
@@ -74,7 +73,7 @@ public class HandlePayloadAsPojo {
       return orderId;
     }
 
-    public void setOrderId(long orderId) {
+    public void setOrderId(final long orderId) {
       this.orderId = orderId;
     }
 
@@ -82,7 +81,7 @@ public class HandlePayloadAsPojo {
       return totalPrice;
     }
 
-    public void setTotalPrice(double totalPrice) {
+    public void setTotalPrice(final double totalPrice) {
       this.totalPrice = totalPrice;
     }
   }

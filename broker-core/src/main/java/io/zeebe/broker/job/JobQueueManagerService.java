@@ -17,23 +17,26 @@
  */
 package io.zeebe.broker.job;
 
-import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.JOB_QUEUE_STREAM_PROCESSOR_ID;
-import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.JOB_TIME_OUT_STREAM_PROCESSOR_ID;
+import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.JOB_STREAM_PROCESSOR_ID;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
-import io.zeebe.broker.job.processor.JobInstanceStreamProcessor;
-import io.zeebe.broker.job.processor.JobTimeOutStreamProcessor;
+import io.zeebe.broker.job.old.JobSubscriptionManager;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
-import io.zeebe.servicecontainer.*;
+import io.zeebe.logstreams.spi.SnapshotController;
+import io.zeebe.logstreams.state.StateStorage;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceGroupReference;
+import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorScheduler;
-import java.time.Duration;
 
 public class JobQueueManagerService implements Service<JobQueueManagerService> {
-  protected static final String NAME = "job.queue.manager";
-  public static final Duration TIME_OUT_INTERVAL = Duration.ofSeconds(30);
+  private static final String JOB_STREAM_PROCESSOR_NAME = "job";
 
   private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
   private final Injector<JobSubscriptionManager> jobSubscriptionManagerInjector = new Injector<>();
@@ -46,37 +49,26 @@ public class JobQueueManagerService implements Service<JobQueueManagerService> {
   private ActorScheduler actorScheduler;
   private StreamProcessorServiceFactory streamProcessorServiceFactory;
 
-  public void startJobQueue(ServiceName<Partition> name, Partition partition) {
+  public void installJobStreamProcessor(ServiceName<Partition> name, Partition partition) {
     final ServerTransport serverTransport = clientApiTransportInjector.getValue();
 
+    final StateStorage stateStorage =
+        partition
+            .getStateStorageFactory()
+            .create(JOB_STREAM_PROCESSOR_ID, JOB_STREAM_PROCESSOR_NAME);
     final JobSubscriptionManager jobSubscriptionManager = jobSubscriptionManagerInjector.getValue();
 
-    final JobInstanceStreamProcessor jobInstanceStreamProcessor =
-        new JobInstanceStreamProcessor(jobSubscriptionManager);
+    final JobStreamProcessor processor = new JobStreamProcessor(jobSubscriptionManager);
     final TypedStreamEnvironment env =
         new TypedStreamEnvironment(partition.getLogStream(), serverTransport.getOutput());
+    final SnapshotController snapshotController = processor.createSnapshotController(stateStorage);
 
     streamProcessorServiceFactory
         .createService(partition, name)
-        .processor(jobInstanceStreamProcessor.createStreamProcessor(env))
-        .processorId(JOB_QUEUE_STREAM_PROCESSOR_ID)
-        .processorName("job-instance")
-        .build();
-
-    startTimeOutService(name, partition, env);
-  }
-
-  protected void startTimeOutService(
-      ServiceName<Partition> partitionServiceName,
-      Partition partition,
-      TypedStreamEnvironment env) {
-    final JobTimeOutStreamProcessor timeOutStreamProcessor = new JobTimeOutStreamProcessor();
-
-    streamProcessorServiceFactory
-        .createService(partition, partitionServiceName)
-        .processor(timeOutStreamProcessor.createStreamProcessor(env))
-        .processorId(JOB_TIME_OUT_STREAM_PROCESSOR_ID)
-        .processorName("job-time-out")
+        .processor(processor.createStreamProcessor(env))
+        .processorId(JOB_STREAM_PROCESSOR_ID)
+        .processorName(JOB_STREAM_PROCESSOR_NAME)
+        .snapshotController(snapshotController)
         .build();
   }
 
@@ -111,7 +103,7 @@ public class JobQueueManagerService implements Service<JobQueueManagerService> {
         new Actor() {
           @Override
           protected void onActorStarted() {
-            startJobQueue(name, partition);
+            installJobStreamProcessor(name, partition);
           }
         });
   }

@@ -17,12 +17,12 @@
  */
 package io.zeebe.broker.logstreams.processor;
 
-import io.zeebe.logstreams.processor.EventLifecycleContext;
 import io.zeebe.logstreams.snapshot.BaseValueSnapshotSupport;
 import io.zeebe.logstreams.snapshot.ComposedSnapshot;
 import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.logstreams.spi.ComposableSnapshotSupport;
 import io.zeebe.logstreams.spi.SnapshotSupport;
+import io.zeebe.logstreams.state.StateController;
 import io.zeebe.map.ZbMap;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.value.BaseValue;
@@ -38,10 +38,13 @@ import java.util.function.Predicate;
 public class TypedEventStreamProcessorBuilder {
   protected final TypedStreamEnvironment environment;
 
+  protected StateController stateController;
   protected List<ComposableSnapshotSupport> stateResources = new ArrayList<>();
 
   protected RecordProcessorMap eventProcessors = new RecordProcessorMap();
   protected List<StreamProcessorLifecycleAware> lifecycleListeners = new ArrayList<>();
+
+  private KeyGenerator keyGenerator;
 
   public TypedEventStreamProcessorBuilder(TypedStreamEnvironment environment) {
     this.environment = environment;
@@ -100,6 +103,26 @@ public class TypedEventStreamProcessorBuilder {
     return this;
   }
 
+  /** Only required if a stream processor writes events to its own stream. */
+  public TypedEventStreamProcessorBuilder keyGenerator(KeyGenerator keyGenerator) {
+    this.keyGenerator = keyGenerator;
+    withStateResource(keyGenerator);
+    return this;
+  }
+
+  public TypedEventStreamProcessorBuilder withStateController(
+      final StateController stateController) {
+    this.stateController = stateController;
+    withListener(
+        new StreamProcessorLifecycleAware() {
+          @Override
+          public void onClose() {
+            stateController.close();
+          }
+        });
+    return this;
+  }
+
   public TypedEventStreamProcessorBuilder withStateResource(ZbMap<?, ?> map) {
     this.stateResources.add(new ZbMapSnapshotSupport<>(map));
     withListener(
@@ -135,11 +158,13 @@ public class TypedEventStreamProcessorBuilder {
     }
 
     return new TypedStreamProcessor(
+        stateController,
         snapshotSupport,
         environment.getOutput(),
         eventProcessors,
         lifecycleListeners,
         environment.getEventRegistry(),
+        keyGenerator,
         environment);
   }
 
@@ -153,37 +178,14 @@ public class TypedEventStreamProcessorBuilder {
     }
 
     @Override
-    public void processRecord(TypedRecord<T> record) {
+    public void processRecord(
+        TypedRecord<T> record,
+        TypedResponseWriter responseWriter,
+        TypedStreamWriter streamWriter,
+        Consumer<SideEffectProducer> sideEffect) {
       selectedProcessor = dispatcher.apply(record);
       if (selectedProcessor != null) {
-        selectedProcessor.processRecord(record);
-      }
-    }
-
-    @Override
-    public void processRecord(TypedRecord<T> record, EventLifecycleContext ctx) {
-      selectedProcessor = dispatcher.apply(record);
-      if (selectedProcessor != null) {
-        selectedProcessor.processRecord(record, ctx);
-      }
-    }
-
-    @Override
-    public boolean executeSideEffects(TypedRecord<T> record, TypedResponseWriter responseWriter) {
-      return selectedProcessor != null
-          ? selectedProcessor.executeSideEffects(record, responseWriter)
-          : true;
-    }
-
-    @Override
-    public long writeRecord(TypedRecord<T> record, TypedStreamWriter writer) {
-      return selectedProcessor != null ? selectedProcessor.writeRecord(record, writer) : 0L;
-    }
-
-    @Override
-    public void updateState(TypedRecord<T> record) {
-      if (selectedProcessor != null) {
-        selectedProcessor.updateState(record);
+        selectedProcessor.processRecord(record, responseWriter, streamWriter, sideEffect);
       }
     }
   }
@@ -197,7 +199,8 @@ public class TypedEventStreamProcessorBuilder {
     }
 
     @Override
-    public void processRecord(TypedRecord<T> record) {
+    public void processRecord(
+        TypedRecord<T> record, TypedResponseWriter responseWriter, TypedStreamWriter streamWriter) {
       consumer.accept(record.getValue());
     }
   }

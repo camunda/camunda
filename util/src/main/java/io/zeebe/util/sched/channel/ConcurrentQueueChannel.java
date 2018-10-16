@@ -16,7 +16,9 @@
 package io.zeebe.util.sched.channel;
 
 import io.zeebe.util.sched.ActorCondition;
-import java.util.*;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.Queue;
 import java.util.function.Consumer;
 
 /** Wraps a {@link Queue} as {@link ConsumableChannel}. */

@@ -17,10 +17,8 @@
  */
 package io.zeebe.broker.incident;
 
-import static io.zeebe.broker.test.MsgPackUtil.*;
-import static io.zeebe.test.broker.protocol.clientapi.ClientApiRule.DEFAULT_TOPIC_NAME;
+import static io.zeebe.broker.test.MsgPackConstants.MSGPACK_PAYLOAD;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
-import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -28,7 +26,7 @@ import io.zeebe.UnstableTest;
 import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -38,11 +36,12 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
-import io.zeebe.test.broker.protocol.clientapi.TestTopicClient;
+import io.zeebe.test.broker.protocol.clientapi.TestPartitionClient;
+import io.zeebe.test.util.MsgPackUtil;
 import java.io.IOException;
 import java.util.List;
 import java.util.stream.Collectors;
-import org.agrona.MutableDirectBuffer;
+import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -53,33 +52,33 @@ public class IncidentTest {
   private static final String PROP_PAYLOAD = "payload";
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientApiRule apiRule = new ClientApiRule();
+  public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
-  private TestTopicClient testClient;
+  private TestPartitionClient testClient;
 
-  private static final WorkflowDefinition WORKFLOW_INPUT_MAPPING =
-      Bpmn.createExecutableWorkflow("process")
+  private static final BpmnModelInstance WORKFLOW_INPUT_MAPPING =
+      Bpmn.createExecutableProcess("process")
           .startEvent()
-          .serviceTask("failingTask", t -> t.taskType("test").input("$.foo", "$.foo"))
+          .serviceTask("failingTask", t -> t.zeebeTaskType("test").zeebeInput("$.foo", "$.foo"))
           .done();
 
-  private static final WorkflowDefinition WORKFLOW_OUTPUT_MAPPING =
-      Bpmn.createExecutableWorkflow("process")
+  private static final BpmnModelInstance WORKFLOW_OUTPUT_MAPPING =
+      Bpmn.createExecutableProcess("process")
           .startEvent()
-          .serviceTask("failingTask", t -> t.taskType("test").output("$.foo", "$.foo"))
+          .serviceTask("failingTask", t -> t.zeebeTaskType("test").zeebeOutput("$.foo", "$.foo"))
           .done();
 
   private static final byte[] PAYLOAD;
 
   static {
-    final MutableDirectBuffer buffer =
-        encodeMsgPack(
-            (w) -> {
-              w.writeMapHeader(1);
-              w.writeString(wrapString("foo"));
-              w.writeString(wrapString("bar"));
+    final DirectBuffer buffer =
+        MsgPackUtil.encodeMsgPack(
+            p -> {
+              p.packMapHeader(1);
+              p.packString("foo");
+              p.packString("bar");
             });
     PAYLOAD = new byte[buffer.capacity()];
     buffer.getBytes(0, PAYLOAD);
@@ -87,8 +86,8 @@ public class IncidentTest {
 
   @Before
   public void init() throws Exception {
-    testClient = apiRule.topic();
-    apiRule.waitForTopic(DEFAULT_TOPIC_NAME, 1);
+    testClient = apiRule.partition();
+    apiRule.waitForPartition(1);
   }
 
   @Test
@@ -101,7 +100,7 @@ public class IncidentTest {
 
     // then
     final SubscribedRecord failureEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_READY);
+        testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_READY);
     final SubscribedRecord createIncidentEvent =
         testClient.receiveFirstIncidentCommand(IncidentIntent.CREATE);
     final SubscribedRecord incidentEvent =
@@ -118,7 +117,7 @@ public class IncidentTest {
         .containsEntry("workflowInstanceKey", workflowInstanceKey)
         .containsEntry("activityId", "failingTask")
         .containsEntry("activityInstanceKey", failureEvent.key())
-        .containsEntry("jobKey", -1);
+        .containsEntry("jobKey", -1L);
   }
 
   @Test
@@ -133,7 +132,7 @@ public class IncidentTest {
 
     // then
     final SubscribedRecord failureEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETING);
+        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETING);
     final SubscribedRecord createIncidentEvent =
         testClient.receiveFirstIncidentCommand(IncidentIntent.CREATE);
     final SubscribedRecord incidentEvent =
@@ -150,7 +149,7 @@ public class IncidentTest {
         .containsEntry("workflowInstanceKey", workflowInstanceKey)
         .containsEntry("activityId", "failingTask")
         .containsEntry("activityInstanceKey", failureEvent.key())
-        .containsEntry("jobKey", -1);
+        .containsEntry("jobKey", -1L);
   }
 
   @Test
@@ -161,7 +160,7 @@ public class IncidentTest {
     final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
     final SubscribedRecord failureEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_READY);
+        testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_READY);
     final SubscribedRecord incidentEvent =
         testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
@@ -170,7 +169,7 @@ public class IncidentTest {
 
     // then
     final SubscribedRecord followUpEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED);
+        testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
     assertThat(followUpEvent.value()).containsEntry("payload", PAYLOAD);
 
     final SubscribedRecord incidentResolvedEvent =
@@ -184,7 +183,7 @@ public class IncidentTest {
         .containsEntry("workflowInstanceKey", workflowInstanceKey)
         .containsEntry("activityId", "failingTask")
         .containsEntry("activityInstanceKey", followUpEvent.key())
-        .containsEntry("jobKey", -1);
+        .containsEntry("jobKey", -1L);
   }
 
   @Test
@@ -197,7 +196,7 @@ public class IncidentTest {
     testClient.completeJobOfType("test", MSGPACK_PAYLOAD);
 
     final SubscribedRecord failureEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETING);
+        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETING);
     final SubscribedRecord incidentEvent =
         testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
@@ -206,7 +205,7 @@ public class IncidentTest {
 
     // then
     final SubscribedRecord followUpEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
     assertThat(followUpEvent.value()).containsEntry("payload", PAYLOAD);
 
     final SubscribedRecord incidentResolvedEvent =
@@ -220,16 +219,17 @@ public class IncidentTest {
         .containsEntry("workflowInstanceKey", workflowInstanceKey)
         .containsEntry("activityId", "failingTask")
         .containsEntry("activityInstanceKey", followUpEvent.key())
-        .containsEntry("jobKey", -1);
+        .containsEntry("jobKey", -1L);
   }
 
   @Test
   public void shouldCreateIncidentForInvalidResultOnInputMapping() throws Throwable {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("failingTask", t -> t.taskType("external").input("$.string", "$"))
+            .serviceTask(
+                "failingTask", t -> t.zeebeTaskType("external").zeebeInput("$.string", "$"))
             .done());
 
     // when
@@ -237,7 +237,7 @@ public class IncidentTest {
 
     // then incident is created
     final SubscribedRecord incidentEvent =
-        testClient.receiveFirstIncidentCommand(IncidentIntent.CREATE);
+        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     assertThat(incidentEvent.key()).isGreaterThan(0);
     assertThat(incidentEvent.value())
@@ -251,9 +251,9 @@ public class IncidentTest {
   public void shouldResolveIncidentForInvalidResultOnInputMapping() throws Throwable {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("service", t -> t.taskType("external").input("$.string", "$"))
+            .serviceTask("service", t -> t.zeebeTaskType("external").zeebeInput("$.string", "$"))
             .done());
 
     // when
@@ -261,7 +261,7 @@ public class IncidentTest {
 
     // then incident is created
     final SubscribedRecord failureEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_READY);
+        testClient.receiveElementInState("service", WorkflowInstanceIntent.ELEMENT_READY);
     final SubscribedRecord incidentEvent =
         testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
@@ -270,10 +270,10 @@ public class IncidentTest {
 
     // then
     final SubscribedRecord followUpEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED);
+        testClient.receiveElementInState("service", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     final byte[] result = (byte[]) followUpEvent.value().get(PROP_PAYLOAD);
-    assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree("{'obj':'test'}"));
+    MsgPackUtil.assertEquality(result, "{'obj':'test'}");
 
     final SubscribedRecord incidentResolvedEvent =
         testClient.receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
@@ -287,30 +287,32 @@ public class IncidentTest {
         .containsEntry("workflowInstanceKey", workflowInstanceKey)
         .containsEntry("activityId", "service")
         .containsEntry("activityInstanceKey", followUpEvent.key())
-        .containsEntry("jobKey", -1);
+        .containsEntry("jobKey", -1L);
   }
 
   @Test
   public void shouldCreateIncidentForInvalidResultOnOutputMapping() throws Throwable {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask(
                 "failingTask",
-                t -> t.taskType("external").input("$.jsonObject", "$").output("$.testAttr", "$"))
+                t ->
+                    t.zeebeTaskType("external")
+                        .zeebeInput("$.jsonObject", "$")
+                        .zeebeOutput("$.testAttr", "$"))
             .done());
 
     testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 
     // when
-    testClient.completeJobOfType(
-        "external", MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'testAttr':'test'}")));
-    testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED);
+    testClient.completeJobOfType("external", MsgPackUtil.asMsgPack("{'testAttr':'test'}"));
+    testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     // then incident is created
     final SubscribedRecord incidentEvent =
-        testClient.receiveFirstIncidentCommand(IncidentIntent.CREATE);
+        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     assertThat(incidentEvent.key()).isGreaterThan(0);
     assertThat(incidentEvent.value())
@@ -324,23 +326,25 @@ public class IncidentTest {
   public void shouldResolveIncidentForInvalidResultOnOutputMapping() throws Throwable {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask(
                 "service",
-                t -> t.taskType("external").input("$.jsonObject", "$").output("$.testAttr", "$"))
+                t ->
+                    t.zeebeTaskType("external")
+                        .zeebeInput("$.jsonObject", "$")
+                        .zeebeOutput("$.testAttr", "$"))
             .done());
 
     final long workflowInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 
     // when
-    testClient.completeJobOfType(
-        "external", MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'testAttr':'test'}")));
-    testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED);
+    testClient.completeJobOfType("external", MsgPackUtil.asMsgPack("{'testAttr':'test'}"));
+    testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     // then incident is created
     final SubscribedRecord failureEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETING);
+        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETING);
     final SubscribedRecord incidentEvent =
         testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
@@ -349,10 +353,10 @@ public class IncidentTest {
 
     // then
     final SubscribedRecord followUpEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     final byte[] result = (byte[]) followUpEvent.value().get(PROP_PAYLOAD);
-    assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree("{'obj':'test'}"));
+    MsgPackUtil.assertEquality(result, "{'obj':'test'}");
 
     final SubscribedRecord incidentResolvedEvent =
         testClient.receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
@@ -366,18 +370,21 @@ public class IncidentTest {
         .containsEntry("workflowInstanceKey", workflowInstanceKey)
         .containsEntry("activityId", "service")
         .containsEntry("activityInstanceKey", followUpEvent.key())
-        .containsEntry("jobKey", -1);
+        .containsEntry("jobKey", -1L);
   }
 
   @Test
   public void shouldCreateIncidentForInAndOutputMappingAndNoTaskCompletePayload() throws Throwable {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask(
                 "failingTask",
-                t -> t.taskType("external").input("$.jsonObject", "$").output("$.testAttr", "$"))
+                t ->
+                    t.zeebeTaskType("external")
+                        .zeebeInput("$.jsonObject", "$")
+                        .zeebeOutput("$.testAttr", "$"))
             .done());
 
     testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
@@ -387,7 +394,7 @@ public class IncidentTest {
 
     // then incident is created
     final SubscribedRecord incidentEvent =
-        testClient.receiveFirstIncidentCommand(IncidentIntent.CREATE);
+        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     assertThat(incidentEvent.key()).isGreaterThan(0);
     assertThat(incidentEvent.value())
@@ -400,11 +407,14 @@ public class IncidentTest {
       throws Throwable {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask(
                 "service",
-                t -> t.taskType("external").input("$.jsonObject", "$").output("$.testAttr", "$"))
+                t ->
+                    t.zeebeTaskType("external")
+                        .zeebeInput("$.jsonObject", "$")
+                        .zeebeOutput("$.testAttr", "$"))
             .done());
 
     final long workflowInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
@@ -414,7 +424,7 @@ public class IncidentTest {
 
     // then incident is created
     final SubscribedRecord failureEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETING);
+        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETING);
     final SubscribedRecord incidentEvent =
         testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
@@ -423,10 +433,10 @@ public class IncidentTest {
 
     // then
     final SubscribedRecord followUpEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     final byte[] result = (byte[]) followUpEvent.value().get(PROP_PAYLOAD);
-    assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree("{'obj':'test'}"));
+    MsgPackUtil.assertEquality(result, "{'obj':'test'}");
 
     final SubscribedRecord incidentResolvedEvent =
         testClient.receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
@@ -438,16 +448,17 @@ public class IncidentTest {
         .containsEntry("workflowInstanceKey", workflowInstanceKey)
         .containsEntry("activityId", "service")
         .containsEntry("activityInstanceKey", followUpEvent.key())
-        .containsEntry("jobKey", -1);
+        .containsEntry("jobKey", -1L);
   }
 
   @Test
   public void shouldCreateIncidentForOutputMappingAndNoTaskCompletePayload() throws Throwable {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("failingTask", t -> t.taskType("external").output("$.testAttr", "$"))
+            .serviceTask(
+                "failingTask", t -> t.zeebeTaskType("external").zeebeOutput("$.testAttr", "$"))
             .done());
 
     testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
@@ -457,7 +468,7 @@ public class IncidentTest {
 
     // then incident is created
     final SubscribedRecord incidentEvent =
-        testClient.receiveFirstIncidentCommand(IncidentIntent.CREATE);
+        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     assertThat(incidentEvent.key()).isGreaterThan(0);
     assertThat(incidentEvent.value())
@@ -469,9 +480,9 @@ public class IncidentTest {
   public void shouldResolveIncidentForOutputMappingAndNoTaskCompletePayload() throws Throwable {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("process")
+        Bpmn.createExecutableProcess("process")
             .startEvent()
-            .serviceTask("service", t -> t.taskType("external").output("$.testAttr", "$"))
+            .serviceTask("service", t -> t.zeebeTaskType("external").zeebeOutput("$.testAttr", "$"))
             .done());
 
     final long workflowInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
@@ -481,7 +492,7 @@ public class IncidentTest {
 
     // then incident is created
     final SubscribedRecord failureEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETING);
+        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETING);
     final SubscribedRecord incidentEvent =
         testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
@@ -490,10 +501,10 @@ public class IncidentTest {
 
     // then
     final SubscribedRecord followUpEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_COMPLETED);
+        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
     final byte[] result = (byte[]) followUpEvent.value().get(PROP_PAYLOAD);
-    assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree("{'obj':'test'}"));
+    MsgPackUtil.assertEquality(result, "{'obj':'test'}");
 
     final SubscribedRecord incidentResolvedEvent =
         testClient.receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
@@ -505,19 +516,22 @@ public class IncidentTest {
         .containsEntry("workflowInstanceKey", workflowInstanceKey)
         .containsEntry("activityId", "service")
         .containsEntry("activityInstanceKey", followUpEvent.key())
-        .containsEntry("jobKey", -1);
+        .containsEntry("jobKey", -1L);
   }
 
   @Test
   public void shouldCreateIncidentIfExclusiveGatewayHasNoMatchingCondition() {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("workflow")
+        Bpmn.createExecutableProcess("workflow")
             .startEvent()
             .exclusiveGateway("xor")
-            .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
+            .sequenceFlowId("s1")
+            .condition("$.foo < 5")
             .endEvent()
-            .sequenceFlow("s2", s -> s.condition("$.foo >= 5 && $.foo < 10"))
+            .moveToLastGateway()
+            .sequenceFlowId("s2")
+            .condition("$.foo >= 5 && $.foo < 10")
             .endEvent()
             .done());
 
@@ -527,11 +541,15 @@ public class IncidentTest {
     // then incident is created
     final SubscribedRecord failingEvent =
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.GATEWAY_ACTIVATED);
-    final SubscribedRecord incidentEvent =
+
+    final SubscribedRecord incidentCommand =
         testClient.receiveFirstIncidentCommand(IncidentIntent.CREATE);
+    final SubscribedRecord incidentEvent =
+        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
+
+    assertThat(incidentCommand.sourceRecordPosition()).isEqualTo(failingEvent.position());
 
     assertThat(incidentEvent.key()).isGreaterThan(0);
-    assertThat(incidentEvent.sourceRecordPosition()).isEqualTo(failingEvent.position());
     assertThat(incidentEvent.value())
         .containsEntry("errorType", ErrorType.CONDITION_ERROR.name())
         .containsEntry(
@@ -543,12 +561,15 @@ public class IncidentTest {
   public void shouldCreateIncidentIfConditionFailsToEvaluate() {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("workflow")
+        Bpmn.createExecutableProcess("workflow")
             .startEvent()
             .exclusiveGateway("xor")
-            .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
+            .sequenceFlowId("s1")
+            .condition("$.foo < 5")
             .endEvent()
-            .sequenceFlow("s2", s -> s.condition("$.foo >= 5 && $.foo < 10"))
+            .moveToLastGateway()
+            .sequenceFlowId("s2")
+            .condition("$.foo >= 5 && $.foo < 10")
             .endEvent()
             .done());
 
@@ -557,7 +578,7 @@ public class IncidentTest {
 
     // then incident is created
     final SubscribedRecord incidentEvent =
-        testClient.receiveFirstIncidentCommand(IncidentIntent.CREATE);
+        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     assertThat(incidentEvent.key()).isGreaterThan(0);
     assertThat(incidentEvent.value())
@@ -571,12 +592,15 @@ public class IncidentTest {
   public void shouldResolveIncidentForFailedCondition() throws Throwable {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("workflow")
+        Bpmn.createExecutableProcess("workflow")
             .startEvent()
             .exclusiveGateway("xor")
-            .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
+            .sequenceFlowId("s1")
+            .condition("$.foo < 5")
             .endEvent()
-            .sequenceFlow("s2", s -> s.condition("$.foo >= 5 && $.foo < 10"))
+            .moveToLastGateway()
+            .sequenceFlowId("s2")
+            .condition("$.foo >= 5 && $.foo < 10")
             .endEvent()
             .done());
 
@@ -607,7 +631,8 @@ public class IncidentTest {
             .limit(
                 r ->
                     r.valueType() == ValueType.WORKFLOW_INSTANCE
-                        && r.intent() == WorkflowInstanceIntent.COMPLETED)
+                        && r.intent() == WorkflowInstanceIntent.ELEMENT_COMPLETED
+                        && (Long) r.value().get("workflowInstanceKey") == r.key())
             .collect(Collectors.toList());
 
     // RESOLVE triggers RESOLVED
@@ -635,19 +660,25 @@ public class IncidentTest {
                 RecordType.EVENT,
                 ValueType.WORKFLOW_INSTANCE,
                 WorkflowInstanceIntent.END_EVENT_OCCURRED),
-            tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.COMPLETED));
+            tuple(
+                RecordType.EVENT,
+                ValueType.WORKFLOW_INSTANCE,
+                WorkflowInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
   public void shouldResolveIncidentForFailedConditionAfterUploadingWrongPayload() throws Throwable {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("workflow")
+        Bpmn.createExecutableProcess("workflow")
             .startEvent()
             .exclusiveGateway("xor")
-            .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
+            .sequenceFlowId("s1")
+            .condition("$.foo < 5")
             .endEvent()
-            .sequenceFlow("s2", s -> s.condition("$.foo >= 5 && $.foo < 10"))
+            .moveToLastGateway()
+            .sequenceFlowId("s2")
+            .condition("$.foo >= 5 && $.foo < 10")
             .endEvent()
             .done());
 
@@ -723,7 +754,8 @@ public class IncidentTest {
             .limit(
                 r ->
                     r.valueType() == ValueType.WORKFLOW_INSTANCE
-                        && r.intent() == WorkflowInstanceIntent.COMPLETED)
+                        && r.intent() == WorkflowInstanceIntent.ELEMENT_COMPLETED
+                        && (Long) r.value().get("workflowInstanceKey") == r.key())
             .collect(Collectors.toList());
 
     // RESOLVE triggers  RESOLVED
@@ -747,19 +779,25 @@ public class IncidentTest {
                 RecordType.EVENT,
                 ValueType.WORKFLOW_INSTANCE,
                 WorkflowInstanceIntent.END_EVENT_OCCURRED),
-            tuple(RecordType.EVENT, ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.COMPLETED));
+            tuple(
+                RecordType.EVENT,
+                ValueType.WORKFLOW_INSTANCE,
+                WorkflowInstanceIntent.ELEMENT_COMPLETED));
   }
 
   @Test
   public void shouldResolveIncidentForExclusiveGatewayWithoutMatchingCondition() throws Throwable {
     // given
     testClient.deploy(
-        Bpmn.createExecutableWorkflow("workflow")
+        Bpmn.createExecutableProcess("workflow")
             .startEvent()
             .exclusiveGateway("xor")
-            .sequenceFlow("s1", s -> s.condition("$.foo < 5"))
+            .sequenceFlowId("s1")
+            .condition("$.foo < 5")
             .endEvent()
-            .sequenceFlow("s2", s -> s.condition("$.foo >= 5 && $.foo < 10"))
+            .moveToLastGateway()
+            .sequenceFlowId("s2")
+            .condition("$.foo >= 5 && $.foo < 10")
             .endEvent()
             .done());
 
@@ -778,18 +816,21 @@ public class IncidentTest {
 
     // then
     testClient.receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
-    testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.COMPLETED);
+    testClient.receiveElementInState("workflow", WorkflowInstanceIntent.ELEMENT_COMPLETED);
   }
 
   @Test
   public void shouldFailToResolveIncident() throws Exception {
     // given
-    final WorkflowDefinition modelInstance =
-        Bpmn.createExecutableWorkflow("process")
+    final BpmnModelInstance modelInstance =
+        Bpmn.createExecutableProcess("process")
             .startEvent()
             .serviceTask(
                 "failingTask",
-                t -> t.taskType("external").input("$.foo", "$.foo").input("$.bar", "$.bar"))
+                t ->
+                    t.zeebeTaskType("external")
+                        .zeebeInput("$.foo", "$.foo")
+                        .zeebeInput("$.bar", "$.bar"))
             .done();
 
     testClient.deploy(modelInstance);
@@ -797,7 +838,7 @@ public class IncidentTest {
     final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
     final SubscribedRecord failureEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_READY);
+        testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_READY);
     final SubscribedRecord incidentEvent =
         testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
     assertThat(incidentEvent.value())
@@ -826,7 +867,7 @@ public class IncidentTest {
     final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
     final SubscribedRecord failureEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_READY);
+        testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_READY);
     final SubscribedRecord incidentEvent =
         testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
@@ -857,15 +898,14 @@ public class IncidentTest {
     // create and resolve an first incident
     long workflowInstanceKey = testClient.createWorkflowInstance("process");
     SubscribedRecord failureEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(
-            workflowInstanceKey, WorkflowInstanceIntent.ACTIVITY_READY);
+        testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_READY);
     updatePayload(workflowInstanceKey, failureEvent.key(), PAYLOAD);
 
     // create a second incident
     workflowInstanceKey = testClient.createWorkflowInstance("process");
     failureEvent =
         testClient.receiveFirstWorkflowInstanceEvent(
-            workflowInstanceKey, WorkflowInstanceIntent.ACTIVITY_READY);
+            workflowInstanceKey, "failingTask", WorkflowInstanceIntent.ELEMENT_READY);
     final SubscribedRecord incidentEvent =
         testClient.receiveFirstIncidentEvent(workflowInstanceKey, IncidentIntent.CREATED);
 
@@ -893,7 +933,7 @@ public class IncidentTest {
 
     // then
     final SubscribedRecord activityTerminated =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_TERMINATED);
+        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_TERMINATED);
     final SubscribedRecord deleteIncidentCommand =
         testClient.receiveFirstIncidentCommand(IncidentIntent.DELETE);
     final SubscribedRecord incidentEvent =
@@ -960,13 +1000,17 @@ public class IncidentTest {
 
     // then
     final SubscribedRecord activityEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED);
+        testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
     final SubscribedRecord failedEvent = testClient.receiveFirstJobEvent(JobIntent.FAILED);
-    final SubscribedRecord incidentEvent =
+
+    final SubscribedRecord incidentCommand =
         testClient.receiveFirstIncidentCommand(IncidentIntent.CREATE);
+    final SubscribedRecord incidentEvent =
+        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
+
+    assertThat(incidentCommand.sourceRecordPosition()).isEqualTo(failedEvent.position());
 
     assertThat(incidentEvent.key()).isGreaterThan(0);
-    assertThat(incidentEvent.sourceRecordPosition()).isEqualTo(failedEvent.position());
     assertThat(incidentEvent.value())
         .containsEntry("errorType", ErrorType.JOB_NO_RETRIES.name())
         .containsEntry("errorMessage", "No more retries left.")
@@ -994,7 +1038,7 @@ public class IncidentTest {
     final SubscribedRecord jobEvent = testClient.receiveFirstJobEvent(JobIntent.FAILED);
     final SubscribedRecord jobUpdated = testClient.receiveFirstJobEvent(JobIntent.RETRIES_UPDATED);
     final SubscribedRecord activityEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ACTIVITY_ACTIVATED);
+        testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
     SubscribedRecord incidentEvent = testClient.receiveFirstIncidentCommand(IncidentIntent.DELETE);
 
     assertThat(incidentEvent.key()).isGreaterThan(0);
@@ -1085,9 +1129,9 @@ public class IncidentTest {
         .containsEntry("errorMessage", "No more retries left.")
         .containsEntry("failureEventPosition", failedEvent.position())
         .containsEntry("bpmnProcessId", "")
-        .containsEntry("workflowInstanceKey", -1)
+        .containsEntry("workflowInstanceKey", -1L)
         .containsEntry("activityId", "")
-        .containsEntry("activityInstanceKey", -1)
+        .containsEntry("activityInstanceKey", -1L)
         .containsEntry("jobKey", failedEvent.key());
   }
 
@@ -1111,9 +1155,9 @@ public class IncidentTest {
         .containsEntry("errorType", ErrorType.JOB_NO_RETRIES.name())
         .containsEntry("errorMessage", "No more retries left.")
         .containsEntry("bpmnProcessId", "")
-        .containsEntry("workflowInstanceKey", -1)
+        .containsEntry("workflowInstanceKey", -1L)
         .containsEntry("activityId", "")
-        .containsEntry("activityInstanceKey", -1)
+        .containsEntry("activityInstanceKey", -1L)
         .containsEntry("jobKey", jobEvent.key());
   }
 
@@ -1129,7 +1173,7 @@ public class IncidentTest {
             .type(ValueType.JOB, JobIntent.FAIL)
             .command()
             .put("retries", 0)
-            .put("type", "failingTask")
+            .put("type", "test")
             .put("worker", jobEvent.value().get("worker"))
             .put("headers", jobEvent.value().get("headers"))
             .done()
@@ -1175,14 +1219,13 @@ public class IncidentTest {
   }
 
   private void updatePayload(
-      final long workflowInstanceKey, final long activityInstanceKey, byte[] payload) {
+      final long workflowInstanceKey, final long activityInstanceKey, final byte[] payload) {
     final ExecuteCommandResponse response =
         apiRule
             .createCmdRequest()
             .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.UPDATE_PAYLOAD)
             .key(activityInstanceKey)
             .command()
-            .put("workflowInstanceKey", workflowInstanceKey)
             .put("payload", payload)
             .done()
             .sendAndAwait();
@@ -1192,12 +1235,11 @@ public class IncidentTest {
   }
 
   private void updatePayload(
-      long workflowInstanceKey, SubscribedRecord activityInstanceEvent, String payload)
+      final long workflowInstanceKey,
+      final SubscribedRecord activityInstanceEvent,
+      final String payload)
       throws IOException {
-    updatePayload(
-        workflowInstanceKey,
-        activityInstanceEvent.key(),
-        MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree(payload)));
+    updatePayload(workflowInstanceKey, activityInstanceEvent.key(), MsgPackUtil.asMsgPack(payload));
   }
 
   private void cancelWorkflowInstance(final long workflowInstanceKey) {
@@ -1211,6 +1253,6 @@ public class IncidentTest {
             .sendAndAwait();
 
     assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(response.intent()).isEqualTo(WorkflowInstanceIntent.CANCELED);
+    assertThat(response.intent()).isEqualTo(WorkflowInstanceIntent.CANCELING);
   }
 }

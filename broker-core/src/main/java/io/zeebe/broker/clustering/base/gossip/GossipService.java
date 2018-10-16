@@ -17,11 +17,15 @@
  */
 package io.zeebe.broker.clustering.base.gossip;
 
-import io.zeebe.broker.system.configuration.*;
+import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.gossip.Gossip;
 import io.zeebe.gossip.GossipConfiguration;
-import io.zeebe.servicecontainer.*;
-import io.zeebe.transport.*;
+import io.zeebe.servicecontainer.Injector;
+import io.zeebe.servicecontainer.Service;
+import io.zeebe.servicecontainer.ServiceStartContext;
+import io.zeebe.servicecontainer.ServiceStopContext;
+import io.zeebe.transport.BufferingServerTransport;
+import io.zeebe.transport.ClientTransport;
 
 /** Start / stop gossip on broker start / stop */
 public class GossipService implements Service<Gossip> {
@@ -32,26 +36,29 @@ public class GossipService implements Service<Gossip> {
 
   private Gossip gossip;
 
-  public GossipService(BrokerCfg configuration) {
+  public GossipService(final BrokerCfg configuration) {
     this.configuration = configuration;
   }
 
   @Override
-  public void start(ServiceStartContext startContext) {
+  public void start(final ServiceStartContext startContext) {
     final BufferingServerTransport serverTransport = bufferingServerTransportInjector.getValue();
     final ClientTransport clientTransport = clientTransportInjector.getValue();
 
-    final SocketAddress bindHost = configuration.getNetwork().getManagement().toSocketAddress();
-
     final GossipConfiguration gossipConfiguration = configuration.getGossip();
 
-    gossip = new Gossip(bindHost, serverTransport, clientTransport, gossipConfiguration);
+    gossip =
+        new Gossip(
+            configuration.getCluster().getNodeId(),
+            serverTransport,
+            clientTransport,
+            gossipConfiguration);
 
     startContext.async(startContext.getScheduler().submitActor(gossip));
   }
 
   @Override
-  public void stop(ServiceStopContext stopContext) {
+  public void stop(final ServiceStopContext stopContext) {
     stopContext.async(gossip.close());
   }
 

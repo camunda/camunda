@@ -16,12 +16,22 @@
 package io.zeebe.logstreams.log;
 
 import static io.zeebe.dispatcher.impl.log.LogBufferAppender.RESULT_PADDING_AT_END_OF_PARTITION;
-import static io.zeebe.logstreams.impl.LogEntryDescriptor.*;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.headerLength;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.metadataOffset;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.setKey;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.setMetadataLength;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.setPosition;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.setProducerId;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.setRaftTerm;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.setSourceEventPosition;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.setTimestamp;
+import static io.zeebe.logstreams.impl.LogEntryDescriptor.valueOffset;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
+import io.zeebe.logstreams.impl.LogEntryDescriptor;
 import io.zeebe.util.EnsureUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.buffer.DirectBufferWriter;
@@ -30,7 +40,7 @@ import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
 import org.agrona.MutableDirectBuffer;
 
-public class LogStreamWriterImpl implements LogStreamWriter {
+public class LogStreamWriterImpl implements LogStreamRecordWriter {
   protected final DirectBufferWriter metadataWriterInstance = new DirectBufferWriter();
   protected final DirectBufferWriter bufferWriterInstance = new DirectBufferWriter();
   protected final ClaimedFragment claimedFragment = new ClaimedFragment();
@@ -62,57 +72,62 @@ public class LogStreamWriterImpl implements LogStreamWriter {
   }
 
   @Override
-  public LogStreamWriter positionAsKey() {
+  public LogStreamRecordWriter keyNull() {
+    return key(LogEntryDescriptor.KEY_NULL_VALUE);
+  }
+
+  @Override
+  public LogStreamRecordWriter positionAsKey() {
     positionAsKey = true;
     return this;
   }
 
   @Override
-  public LogStreamWriter key(long key) {
+  public LogStreamRecordWriter key(long key) {
     this.key = key;
     return this;
   }
 
-  public LogStreamWriter sourceRecordPosition(long position) {
+  public LogStreamRecordWriter sourceRecordPosition(long position) {
     this.sourceRecordPosition = position;
     return this;
   }
 
   @Override
-  public LogStreamWriter producerId(int producerId) {
+  public LogStreamRecordWriter producerId(int producerId) {
     this.producerId = producerId;
     return this;
   }
 
   @Override
-  public LogStreamWriter metadata(DirectBuffer buffer, int offset, int length) {
+  public LogStreamRecordWriter metadata(DirectBuffer buffer, int offset, int length) {
     metadataWriterInstance.wrap(buffer, offset, length);
     return this;
   }
 
   @Override
-  public LogStreamWriter metadata(DirectBuffer buffer) {
+  public LogStreamRecordWriter metadata(DirectBuffer buffer) {
     return metadata(buffer, 0, buffer.capacity());
   }
 
   @Override
-  public LogStreamWriter metadataWriter(BufferWriter writer) {
+  public LogStreamRecordWriter metadataWriter(BufferWriter writer) {
     this.metadataWriter = writer;
     return this;
   }
 
   @Override
-  public LogStreamWriter value(DirectBuffer value, int valueOffset, int valueLength) {
+  public LogStreamRecordWriter value(DirectBuffer value, int valueOffset, int valueLength) {
     return valueWriter(bufferWriterInstance.wrap(value, valueOffset, valueLength));
   }
 
   @Override
-  public LogStreamWriter value(DirectBuffer value) {
+  public LogStreamRecordWriter value(DirectBuffer value) {
     return value(value, 0, value.capacity());
   }
 
   @Override
-  public LogStreamWriter valueWriter(BufferWriter writer) {
+  public LogStreamRecordWriter valueWriter(BufferWriter writer) {
     this.valueWriter = writer;
     return this;
   }
@@ -120,7 +135,7 @@ public class LogStreamWriterImpl implements LogStreamWriter {
   @Override
   public void reset() {
     positionAsKey = false;
-    key = -1L;
+    key = LogEntryDescriptor.KEY_NULL_VALUE;
     metadataWriter = metadataWriterInstance;
     valueWriter = null;
     sourceRecordPosition = -1L;
@@ -133,9 +148,6 @@ public class LogStreamWriterImpl implements LogStreamWriter {
   @Override
   public long tryWrite() {
     EnsureUtil.ensureNotNull("value", valueWriter);
-    if (!positionAsKey) {
-      EnsureUtil.ensureGreaterThanOrEqual("key", key, 0);
-    }
 
     long result = -1;
 

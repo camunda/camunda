@@ -8,7 +8,7 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-qa</artifactId>
-    <version>0.12.0-SNAPSHOT</version>
+    <version>0.13.0-SNAPSHOT</version>
   </parent>
 
   <dependencies>
@@ -22,11 +22,23 @@
       <artifactId>zeebe-client-java</artifactId>
     </dependency>
 
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-gateway</artifactId>
+    </dependency>
 
     <dependency>
       <groupId>io.zeebe</groupId>
       <artifactId>zb-test-util</artifactId>
       <scope>provided</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-broker-core</artifactId>
+      <type>test-jar</type>
+      <classifier>tests</classifier>
+      <scope>test</scope>
     </dependency>
 
     <dependency>
@@ -53,6 +65,12 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-exporter-asserts</artifactId>
+      <scope>test</scope>
+    </dependency>
+
   </dependencies>
 
 
@@ -62,7 +80,7 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-surefire-plugin</artifactId>
         <configuration>
-          <argLine>-XX:MaxDirectMemorySize=4g</argLine>
+          <argLine>-Xmx512m -XX:MaxDirectMemorySize=4g</argLine>
         </configuration>
       </plugin>
     </plugins>

@@ -22,8 +22,9 @@ import static io.zeebe.msgpack.mapping.MappingTestUtil.MSGPACK_MAPPER;
 import static io.zeebe.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.util.buffer.BufferUtil;
+import java.io.IOException;
 import org.agrona.DirectBuffer;
-import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Rule;
 import org.junit.Test;
@@ -33,23 +34,10 @@ import org.junit.rules.ExpectedException;
 public class MappingExtractTest {
   @Rule public ExpectedException expectedException = ExpectedException.none();
 
-  private MappingProcessor processor = new MappingProcessor(1024);
+  private MsgPackMergeTool mergeTool = new MsgPackMergeTool(1024);
 
   @Test
-  public void shouldThrowExceptionIfDocumentIsNull() throws Throwable {
-    // given mapping
-    final Mapping[] mapping = createMapping("$", "$");
-
-    // expect
-    expectedException.expect(IllegalArgumentException.class);
-    expectedException.expectMessage("Source document must not be null!");
-
-    // when
-    processor.extract(null, mapping);
-  }
-
-  @Test
-  public void shouldThrowExceptionIfMappingDoesNotMatch() throws Throwable {
+  public void shouldThrowExceptionIfMappingDoesNotMatchInStrictMode() throws Throwable {
     // given payload
     final DirectBuffer sourceDocument = new UnsafeBuffer(EMTPY_OBJECT);
     final Mapping[] mapping = createMapping("$.foo", "$");
@@ -59,15 +47,17 @@ public class MappingExtractTest {
     expectedException.expectMessage("No data found for query $.foo.");
 
     // when
-    processor.extract(sourceDocument, mapping);
+    mergeTool.mergeDocumentStrictly(sourceDocument, mapping);
   }
 
   @Test
-  public void shouldThrowExceptionIfResultDocumentIsNoObject() throws Throwable {
+  public void shouldThrowExceptionIfResultDocumentIsNoObjectInStrictMode() throws Throwable {
     // given payload
     final DirectBuffer sourceDocument =
         new UnsafeBuffer(MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'foo':'bar'}")));
     final Mapping[] mapping = createMapping("$.foo", "$");
+
+    mergeTool.mergeDocumentStrictly(sourceDocument, mapping);
 
     // expect
     expectedException.expect(MappingException.class);
@@ -75,7 +65,7 @@ public class MappingExtractTest {
         "Processing failed, since mapping will result in a non map object (json object).");
 
     // when
-    processor.extract(sourceDocument, mapping);
+    mergeTool.writeResultToBuffer();
   }
 
   @Test
@@ -89,10 +79,8 @@ public class MappingExtractTest {
     Mapping[] extractMapping = createMappings().mapping("$.arr[0]", "$").build();
 
     // when merge
-    int resultLength = processor.extract(sourceDocument, extractMapping);
-    MutableDirectBuffer resultBuffer = processor.getResultBuffer();
-    byte result[] = new byte[resultLength];
-    resultBuffer.getBytes(0, result, 0, resultLength);
+    mergeTool.mergeDocument(sourceDocument, extractMapping);
+    byte result[] = BufferUtil.bufferAsArray(mergeTool.writeResultToBuffer());
 
     // then expect result
     assertThat(MSGPACK_MAPPER.readTree(result))
@@ -103,10 +91,8 @@ public class MappingExtractTest {
     extractMapping = createMappings().mapping("$.deepObj", "$").build();
 
     // when again merge after that
-    resultLength = processor.extract(sourceDocument, extractMapping);
-    resultBuffer = processor.getResultBuffer();
-    result = new byte[resultLength];
-    resultBuffer.getBytes(0, result, 0, resultLength);
+    mergeTool.mergeDocument(sourceDocument, extractMapping);
+    result = BufferUtil.bufferAsArray(mergeTool.writeResultToBuffer());
 
     // then expect result
     assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree("{'value':123}"));
@@ -122,10 +108,9 @@ public class MappingExtractTest {
                     "{'arr':[{'deepObj':{'value':123}}, 1], 'obj':{'int':1}, 'test':'value'}")));
 
     // when merge
-    int resultLength = processor.extract(sourceDocument);
-    MutableDirectBuffer resultBuffer = processor.getResultBuffer();
-    byte result[] = new byte[resultLength];
-    resultBuffer.getBytes(0, result, 0, resultLength);
+    mergeTool.mergeDocument(sourceDocument);
+    mergeTool.mergeDocument(sourceDocument);
+    byte[] result = BufferUtil.bufferAsArray(mergeTool.writeResultToBuffer());
 
     // then expect result
     assertThat(MSGPACK_MAPPER.readTree(result))
@@ -137,12 +122,59 @@ public class MappingExtractTest {
     sourceDocument.wrap(MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree("{'foo':'bar'}")));
 
     // when again merge after that
-    resultLength = processor.extract(sourceDocument);
-    resultBuffer = processor.getResultBuffer();
-    result = new byte[resultLength];
-    resultBuffer.getBytes(0, result, 0, resultLength);
+    mergeTool.reset();
+    mergeTool.mergeDocument(sourceDocument);
+    mergeTool.mergeDocument(sourceDocument);
+    result = BufferUtil.bufferAsArray(mergeTool.writeResultToBuffer());
 
     // then expect result
     assertThat(MSGPACK_MAPPER.readTree(result)).isEqualTo(JSON_MAPPER.readTree("{'foo':'bar'}"));
+  }
+
+  @Test
+  public void shouldExtractAndMergeMultipleDocuments() {
+    // given
+    final DirectBuffer document1 = asMsgPack("{'att1':'val1'}");
+    final DirectBuffer document2 = asMsgPack("{'att2':'val2'}");
+    final DirectBuffer document3 = asMsgPack("{'att3':'val3'}");
+
+    // when
+    mergeTool.mergeDocument(document1, createMapping("$.att1", "$.newAtt1"));
+    mergeTool.mergeDocument(document2, createMapping("$.att2", "$.newAtt2"));
+    mergeTool.mergeDocument(
+        document3, createMapping("$.att3", "$.newAtt2")); // overwriting the last one
+
+    // then
+    final DirectBuffer mergedDocument = mergeTool.writeResultToBuffer();
+
+    MappingTestUtil.assertThatMsgPack(mergedDocument)
+        .hasValue("{'newAtt1':'val1', 'newAtt2':'val3'}");
+  }
+
+  @Test
+  public void shouldCollectMultipleValuesInArray() {
+    // given
+    final DirectBuffer document1 = asMsgPack("{'att1':'val1'}");
+    final DirectBuffer document2 = asMsgPack("{'att2':'val2'}");
+    final DirectBuffer document3 = asMsgPack("{'att3':'val3'}");
+
+    // when
+    mergeTool.mergeDocument(document1, createMapping("$.att1", "$.array", Mapping.Type.COLLECT));
+    mergeTool.mergeDocument(document2, createMapping("$.att2", "$.array", Mapping.Type.COLLECT));
+    mergeTool.mergeDocument(document3, createMapping("$.att3", "$.array", Mapping.Type.COLLECT));
+
+    // then
+    final DirectBuffer mergedDocument = mergeTool.writeResultToBuffer();
+
+    MappingTestUtil.assertThatMsgPack(mergedDocument)
+        .hasValue("{'array':['val1', 'val2', 'val3']}");
+  }
+
+  private static DirectBuffer asMsgPack(String json) {
+    try {
+      return new UnsafeBuffer(MSGPACK_MAPPER.writeValueAsBytes(JSON_MAPPER.readTree(json)));
+    } catch (IOException e) {
+      throw new RuntimeException(e);
+    }
   }
 }

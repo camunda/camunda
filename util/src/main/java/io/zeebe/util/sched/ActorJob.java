@@ -27,8 +27,6 @@ public class ActorJob {
   Actor actor;
   ActorTask task;
 
-  ActorJob next;
-
   private Callable<?> callable;
   private Runnable runnable;
   private Object invocationResult;
@@ -52,7 +50,7 @@ public class ActorJob {
 
     this.actorThread = runner;
     try {
-      invoke(runner);
+      invoke();
 
       if (resultFuture != null) {
         resultFuture.complete(invocationResult);
@@ -73,7 +71,7 @@ public class ActorJob {
     }
   }
 
-  private void invoke(ActorThread runner) throws Exception {
+  private void invoke() throws Exception {
     if (callable != null) {
       invocationResult = callable.call();
     } else {
@@ -94,38 +92,6 @@ public class ActorJob {
     }
   }
 
-  public void appendChild(ActorJob spawnedTask) {
-    spawnedTask.next = this.next;
-    this.next = spawnedTask;
-  }
-
-  /**
-   * Append a child task to this task. The new child task is appended to the list of tasks spawned
-   * by this task such that it is executed last.
-   */
-  public void append(ActorJob newJob) {
-    ActorJob job = this;
-    assert job != newJob : "Job cannot be twice in a job queue";
-
-    while (job.next != null) {
-      job = job.next;
-      assert job != newJob : "Job cannot be twice in a job queue";
-    }
-
-    job.appendChild(newJob);
-  }
-
-  /**
-   * remove this task from the chain of tasks to execute
-   *
-   * @return the next task
-   */
-  protected ActorJob getNext() {
-    final ActorJob next = this.next;
-    this.next = null;
-    return next;
-  }
-
   public void setRunnable(Runnable runnable) {
     this.runnable = runnable;
   }
@@ -136,15 +102,10 @@ public class ActorJob {
     return resultFuture;
   }
 
-  public ActorFuture getResultFuture() {
-    return resultFuture;
-  }
-
   /** used to recycle the job object */
   void reset() {
     schedulingState = TaskSchedulingState.NOT_SCHEDULED;
 
-    next = null;
     actor = null;
 
     task = null;
@@ -208,10 +169,6 @@ public class ActorJob {
 
   public Actor getActor() {
     return actor;
-  }
-
-  public ActorThread getActorThread() {
-    return actorThread;
   }
 
   public void setResultFuture(ActorFuture resultFuture) {

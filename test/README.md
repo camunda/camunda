@@ -53,16 +53,13 @@ public class WorkflowTest
     public final ZeebeTestRule testRule = new ZeebeTestRule();
 
     private ZeebeClient client;
-    private String topic;
 
     @Before
     public void deploy()
     {
         client = testRule.getClient();
-        topic = testRule.getDefaultTopic();
 
-        client.topicClient(topic)
-            .workflowClient()
+        client.workflowClient()
             .newDeployCommand()
             .addResourceFromClasspath("process.bpmn")
             .send()
@@ -72,16 +69,14 @@ public class WorkflowTest
     @Test
     public void shouldCompleteWorkflowInstance()
     {
-        final WorkflowInstanceEvent workflowInstance = client.topicClient(topic)
-            .workflowClient()
+        final WorkflowInstanceEvent workflowInstance = client.workflowClient()
             .newCreateInstanceCommand()
             .bpmnProcessId("process")
             .latestVersion()
             .send()
             .join();
 
-        client.topicClient(topic)
-            .jobClient()
+        client.jobClient()
             .newWorker()
             .jobType("task")
             .handler((c, j) -> c.newCompleteCommand(j).withoutPayload().send().join())
