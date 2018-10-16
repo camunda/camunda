@@ -50,24 +50,6 @@
     <module>protocol-impl</module>
   </modules>
 
-  <build>
-    <plugins>
-      <!-- Zeebe githooks plugin -->
-      <plugin>
-        <groupId>io.zeebe</groupId>
-        <artifactId>zb-githooks-plugin</artifactId>
-        <version>${project.version}</version>
-        <executions>
-          <execution>
-            <goals>
-              <goal>setup</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
-
   <scm>
     <url>https://github.com/zeebe-io/zeebe</url>
     <connection>scm:git:git@github.com:zeebe-io/zeebe.git</connection>
