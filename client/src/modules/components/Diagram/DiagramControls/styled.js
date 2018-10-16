@@ -6,10 +6,12 @@ export const DiagramControls = styled.div`
   display: flex;
   flex-direction: column;
   position: absolute;
-  right: 5px;
+  right: ${({isShifted}) => (isShifted ? '427px' : '5px')};
   bottom: 47px;
   z-index: 2;
   width: 28px;
+
+  transition: right 0.2s ease-out;
 `;
 
 export const Box = styled(Button)`

@@ -4,6 +4,8 @@ exports[`CollapsablePanel should render an exapnding panel and a collapsing one 
 <Themed(styled.div)
   isCollapsed={false}
   maxWidth={300}
+  onCollapse={[Function]}
+  type="filters"
 >
   <Styled(Panel)
     isCollapsed={false}

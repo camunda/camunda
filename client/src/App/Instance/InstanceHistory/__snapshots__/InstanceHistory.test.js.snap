@@ -16,6 +16,7 @@ exports[`InstanceHistory should render a panel with InstanceLog section and Copy
       },
     }
   }
+  hasShiftableControls={false}
   instance={
     Object {
       "id": "someInstanceId",

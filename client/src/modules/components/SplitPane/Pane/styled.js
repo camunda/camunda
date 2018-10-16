@@ -31,7 +31,8 @@ export const PaneExpandButton = styled(ExpandButton)`
 export const ButtonsContainer = styled.div`
   position: absolute;
   top: 0;
-  right: 0;
+  right: ${({isShifted}) => (isShifted ? '422px' : 0)};
   display: flex;
   z-index: 2;
+  transition: right 0.2s ease-out;
 `;

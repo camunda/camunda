@@ -314,17 +314,20 @@ describe('Instances', () => {
           });
           node.update();
 
+          const DiagramNode = node.find(Diagram);
           // then
-          expect(node.find(Diagram).length).toEqual(1);
-          expect(node.find(Diagram).props().workflowId).toEqual(
-            workflowMock.id
-          );
-          expect(node.find(Diagram).props().onFlowNodesDetailsReady).toBe(
+          expect(DiagramNode.length).toEqual(1);
+          expect(DiagramNode.props().workflowId).toEqual(workflowMock.id);
+          expect(DiagramNode.props().onFlowNodesDetailsReady).toBe(
             node.instance().fetchDiagramStatistics
           );
-          expect(node.find(Diagram).props().flowNodesStatisticsOverlay).toBe(
+          expect(DiagramNode.props().flowNodesStatisticsOverlay).toBe(
             node.state().statistics
           );
+          expect(DiagramNode.props().flowNodesStatisticsOverlay).toBe(
+            node.state().statistics
+          );
+          expect(DiagramNode.props().hasShiftableControls).toBe(true);
           expect(node.find(PanelHeader).props().children).toBe(
             workflowMock.name || workflowMock.id
           );

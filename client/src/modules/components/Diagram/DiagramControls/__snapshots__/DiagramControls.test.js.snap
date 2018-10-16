@@ -1,7 +1,9 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`DiagramControls should render diagram controls 1`] = `
-<styled.div>
+<styled.div
+  isShifted={false}
+>
   <Styled(Styled(Button))
     onClick={[Function]}
   >

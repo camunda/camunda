@@ -8,10 +8,11 @@ import * as Styled from './styled';
 export default function DiagramControls({
   handleZoomReset,
   handleZoomIn,
-  handleZoomOut
+  handleZoomOut,
+  isShifted
 }) {
   return (
-    <Styled.DiagramControls>
+    <Styled.DiagramControls isShifted={isShifted}>
       <Styled.ZoomReset onClick={handleZoomReset}>
         <DiagramReset />
       </Styled.ZoomReset>
@@ -28,5 +29,10 @@ export default function DiagramControls({
 DiagramControls.propTypes = {
   handleZoomReset: PropTypes.func.isRequired,
   handleZoomIn: PropTypes.func.isRequired,
-  handleZoomOut: PropTypes.func.isRequired
+  handleZoomOut: PropTypes.func.isRequired,
+  isShifted: PropTypes.bool
+};
+
+DiagramControls.defaultProps = {
+  isShifted: false
 };

@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 
 import CollapsablePanel from 'modules/components/CollapsablePanel';
 import ComboBadge from 'modules/components/ComboBadge';
+import {CollapsablePanelConsumer} from 'modules/contexts/CollapsablePanelContext';
 
 import {applyOperation} from 'modules/api/instances';
 import {DIRECTION, OPERATION_TYPE} from 'modules/constants';
@@ -74,47 +75,56 @@ export default class Selections extends React.Component {
   render() {
     return (
       <Styled.Selections>
-        <CollapsablePanel
-          maxWidth={479}
-          expandButton={
-            <Styled.VerticalButton label="Selections">
-              <Styled.SelectionsBadge isDefault={!this.props.selectionCount}>
-                {this.props.selectionCount}
-              </Styled.SelectionsBadge>
-            </Styled.VerticalButton>
-          }
-          collapseButton={
-            <Styled.ExpandButton
-              direction={DIRECTION.RIGHT}
-              isExpanded={true}
-              onClick={this.handleCollapse}
-              title="Collapse Selections"
-            />
-          }
-        >
-          <Styled.SelectionHeader isRounded>
-            <span>Selections</span>
-            <ComboBadge>
-              <Styled.SelectionBadgeLeft>
-                {this.props.instancesInSelectionsCount}
-              </Styled.SelectionBadgeLeft>
-              <Styled.SelectionBadgeRight>
-                {this.props.selectionCount}
-              </Styled.SelectionBadgeRight>
-            </ComboBadge>
-          </Styled.SelectionHeader>
-          <CollapsablePanel.Body>
-            <SelectionList
-              selections={this.props.selections}
-              openSelection={this.props.openSelection}
-              onToggleSelection={this.handleToggleSelection}
-              onDeleteSelection={this.handleDeleteSelection}
-              onRetrySelection={this.handleRetrySelection}
-              onCancelSelection={this.handleCancelSelection}
-            />
-          </CollapsablePanel.Body>
-          <CollapsablePanel.Footer />
-        </CollapsablePanel>
+        <CollapsablePanelConsumer>
+          {context => (
+            <CollapsablePanel
+              type="selections"
+              onCollapse={context.toggleSelections}
+              isCollapsed={context.selections}
+              maxWidth={479}
+              expandButton={
+                <Styled.VerticalButton label="Selections">
+                  <Styled.SelectionsBadge
+                    isDefault={!this.props.selectionCount}
+                  >
+                    {this.props.selectionCount}
+                  </Styled.SelectionsBadge>
+                </Styled.VerticalButton>
+              }
+              collapseButton={
+                <Styled.ExpandButton
+                  direction={DIRECTION.RIGHT}
+                  isExpanded={true}
+                  onClick={this.handleCollapse}
+                  title="Collapse Selections"
+                />
+              }
+            >
+              <Styled.SelectionHeader isRounded>
+                <span>Selections</span>
+                <ComboBadge>
+                  <Styled.SelectionBadgeLeft>
+                    {this.props.instancesInSelectionsCount}
+                  </Styled.SelectionBadgeLeft>
+                  <Styled.SelectionBadgeRight>
+                    {this.props.selectionCount}
+                  </Styled.SelectionBadgeRight>
+                </ComboBadge>
+              </Styled.SelectionHeader>
+              <CollapsablePanel.Body>
+                <SelectionList
+                  selections={this.props.selections}
+                  openSelection={this.props.openSelection}
+                  onToggleSelection={this.handleToggleSelection}
+                  onDeleteSelection={this.handleDeleteSelection}
+                  onRetrySelection={this.handleRetrySelection}
+                  onCancelSelection={this.handleCancelSelection}
+                />
+              </CollapsablePanel.Body>
+              <CollapsablePanel.Footer />
+            </CollapsablePanel>
+          )}
+        </CollapsablePanelConsumer>
       </Styled.Selections>
     );
   }

@@ -2,22 +2,24 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import CollapsablePanel from './CollapsablePanel';
-import * as Styled from './styled';
 
 const mockProps = {
   children: <div data-test="children" />,
   collapseButton: <button data-test="collapse-button" />,
   expandButton: <button data-test="expand-button" />,
-  maxWidth: 300
+  maxWidth: 300,
+  isCollapsed: false,
+  type: 'filters',
+  onCollapse: jest.fn()
 };
 
 describe('CollapsablePanel', () => {
   it('should not be collapsed by default', () => {
     // given
-    const node = new CollapsablePanel();
+    const node = shallow(<CollapsablePanel {...mockProps} />);
 
     // then
-    expect(node.state.isCollapsed).toBe(false);
+    expect(node.state().isCollapsed).toBe(false);
   });
 
   it('should render an exapnding panel and a collapsing one', () => {
@@ -38,5 +40,21 @@ describe('CollapsablePanel', () => {
       node.instance().handleButtonClick
     );
     expect(node).toMatchSnapshot();
+  });
+
+  it('should call onCollapse when clicking the CollapseButton/ExpandButton', () => {
+    const node = shallow(<CollapsablePanel {...mockProps} />);
+    const CollapseButtonNode = node.find('[data-test="collapse-button"]');
+
+    CollapseButtonNode.simulate('click');
+
+    expect(node.props().onCollapse).toHaveBeenCalled();
+    expect(node.state().isCollapsed).toBe(true);
+
+    const ExpandButtonNode = node.find('[data-test="expand-button"]');
+    ExpandButtonNode.simulate('click');
+
+    expect(node.props().onCollapse).toHaveBeenCalled();
+    expect(node.state().isCollapsed).toBe(false);
   });
 });

@@ -22,6 +22,7 @@ describe('DiagramControls', () => {
 
     // then
     expect(node.find(Styled.DiagramControls)).toHaveLength(1);
+    expect(node.find(Styled.DiagramControls).props().isShifted).toBe(false);
 
     const ZoomResetNode = node.find(Styled.ZoomReset);
     expect(ZoomResetNode).toHaveLength(1);

@@ -2,6 +2,7 @@ import React, {Children, cloneElement} from 'react';
 import PropTypes from 'prop-types';
 
 import Panel from 'modules/components/Panel';
+import {CollapsablePanelConsumer} from 'modules/contexts/CollapsablePanelContext';
 import {PANE_ID, EXPAND_STATE, DIRECTION} from 'modules/constants';
 
 import * as Styled from './styled';
@@ -14,7 +15,12 @@ export default class Pane extends React.Component {
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
       PropTypes.node
-    ])
+    ]),
+    hasShiftableControls: PropTypes.bool
+  };
+
+  static defaultProps = {
+    hasShiftableControls: false
   };
 
   handleTopExpand = () => {
@@ -42,28 +48,38 @@ export default class Pane extends React.Component {
     const isBottomButtonVisible = expandState !== EXPAND_STATE.EXPANDED;
 
     return (
-      <Styled.ButtonsContainer>
-        {isTopButtonVisible && (
-          <Styled.PaneExpandButton
-            onClick={this.handleTopExpand}
-            direction={DIRECTION.DOWN}
-            title="expand top pane"
-          />
+      <CollapsablePanelConsumer>
+        {context => (
+          <Styled.ButtonsContainer
+            isShifted={
+              this.props.hasShiftableControls ? !context.selections : false
+            }
+          >
+            {isTopButtonVisible && (
+              <Styled.PaneExpandButton
+                onClick={this.handleTopExpand}
+                direction={DIRECTION.DOWN}
+                title="Expand top pane"
+              />
+            )}
+            {isBottomButtonVisible && (
+              <Styled.PaneExpandButton
+                onClick={this.handleBottomExpand}
+                direction={DIRECTION.UP}
+                title="Expand bottom pane"
+              />
+            )}
+          </Styled.ButtonsContainer>
         )}
-        {isBottomButtonVisible && (
-          <Styled.PaneExpandButton
-            onClick={this.handleBottomExpand}
-            direction={DIRECTION.UP}
-            title="expand bottom pane"
-          />
-        )}
-      </Styled.ButtonsContainer>
+      </CollapsablePanelConsumer>
     );
   };
 
   render() {
+    const {hasShiftableControls, ...otherProps} = this.props;
+
     return (
-      <Styled.Pane {...this.props} expandState={this.props.expandState}>
+      <Styled.Pane {...otherProps} expandState={this.props.expandState}>
         {this.props.paneId === PANE_ID.BOTTOM && this.getBottomPaneButtons()}
         {this.getChildren()}
       </Styled.Pane>

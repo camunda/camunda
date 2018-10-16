@@ -65,10 +65,14 @@ describe('Pane', () => {
       );
 
       // then
-      const ExpandButtonNode = node.find(Styled.PaneExpandButton);
+      const ExpandButtonNode = node
+        .find('CollapsablePanelConsumer')
+        .dive()
+        .find(Styled.PaneExpandButton);
       expect(ExpandButtonNode).toHaveLength(1);
       expect(ExpandButtonNode.prop('direction')).toBe(DIRECTION.UP);
       expect(node).toMatchSnapshot();
+      expect(ExpandButtonNode).toMatchSnapshot();
     });
 
     it("'should render both ExpandButtons by default", () => {
@@ -84,11 +88,15 @@ describe('Pane', () => {
       );
 
       // then
-      const ExpandButtonNodes = node.find(Styled.PaneExpandButton);
+      const ExpandButtonNodes = node
+        .find('CollapsablePanelConsumer')
+        .dive()
+        .find(Styled.PaneExpandButton);
       expect(ExpandButtonNodes).toHaveLength(2);
       expect(ExpandButtonNodes.at(0).prop('direction')).toBe(DIRECTION.DOWN);
       expect(ExpandButtonNodes.at(1).prop('direction')).toBe(DIRECTION.UP);
       expect(node).toMatchSnapshot();
+      expect(ExpandButtonNodes).toMatchSnapshot();
     });
 
     it("should render ExpandButton with DOWN icon if pane is expanded'", () => {
@@ -104,10 +112,14 @@ describe('Pane', () => {
       );
 
       // then
-      const ExpandButtonNode = node.find(Styled.PaneExpandButton);
+      const ExpandButtonNode = node
+        .find('CollapsablePanelConsumer')
+        .dive()
+        .find(Styled.PaneExpandButton);
       expect(ExpandButtonNode).toHaveLength(1);
       expect(ExpandButtonNode.prop('direction')).toBe(DIRECTION.DOWN);
       expect(node).toMatchSnapshot();
+      expect(ExpandButtonNode).toMatchSnapshot();
     });
   });
 

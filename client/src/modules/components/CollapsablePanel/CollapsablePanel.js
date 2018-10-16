@@ -10,19 +10,32 @@ export default class CollapsablePanel extends React.Component {
       PropTypes.arrayOf(PropTypes.node),
       PropTypes.node
     ]),
+    isCollapsed: PropTypes.bool,
+    onCollapse: PropTypes.func,
     expandButton: PropTypes.node.isRequired,
     collapseButton: PropTypes.node.isRequired,
-    maxWidth: PropTypes.number.isRequired
+    maxWidth: PropTypes.number.isRequired,
+    type: PropTypes.oneOf(['selections', 'filters']).isRequired
   };
 
-  state = {
+  static defaultProps = {
     isCollapsed: false
   };
 
+  constructor(props) {
+    super(props);
+    this.state = {isCollapsed: props.isCollapsed};
+  }
+
   handleButtonClick = () => {
-    const {isCollapsed: currentIsCollapsed} = this.state;
-    this.setState({
-      isCollapsed: !currentIsCollapsed
+    if (this.props.onCollapse) {
+      this.props.onCollapse();
+    }
+
+    this.setState(prevState => {
+      return {
+        isCollapsed: !prevState.isCollapsed
+      };
     });
   };
 

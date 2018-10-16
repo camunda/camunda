@@ -2,6 +2,7 @@ import React from 'react';
 import {BrowserRouter as Router, Route, Switch} from 'react-router-dom';
 
 import {ThemeProvider} from 'modules/theme';
+import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
 
 import Authentication from './Authentication';
 import Login from './Login';
@@ -15,17 +16,19 @@ import ThemeToggle from 'modules/theme/ThemeToggle';
 export default function App(props) {
   return (
     <ThemeProvider>
-      <ThemeToggle />
-      <Router>
-        <Switch>
-          <Route path="/login" component={Login} />
-          <Authentication>
-            <Route exact path="/" component={Dashboard} />
-            <Route exact path="/instances" component={Instances} />
-            <Route exact path="/instances/:id" component={Instance} />
-          </Authentication>
-        </Switch>
-      </Router>
+      <CollapsablePanelProvider>
+        <ThemeToggle />
+        <Router>
+          <Switch>
+            <Route path="/login" component={Login} />
+            <Authentication>
+              <Route exact path="/" component={Dashboard} />
+              <Route exact path="/instances" component={Instances} />
+              <Route exact path="/instances/:id" component={Instance} />
+            </Authentication>
+          </Switch>
+        </Router>
+      </CollapsablePanelProvider>
     </ThemeProvider>
   );
 }

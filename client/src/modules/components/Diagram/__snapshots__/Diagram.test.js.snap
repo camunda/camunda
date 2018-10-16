@@ -181,10 +181,15 @@ exports[`Diagram should render Diagram with controls 1`] = `
   <Themed(styled.div)
     innerRef={[Function]}
   />
-  <DiagramControls
-    handleZoomIn={[Function]}
-    handleZoomOut={[Function]}
-    handleZoomReset={[Function]}
-  />
+  <CollapsablePanelConsumer />
 </styled.div>
+`;
+
+exports[`Diagram should render Diagram with controls 2`] = `
+<DiagramControls
+  handleZoomIn={[Function]}
+  handleZoomOut={[Function]}
+  handleZoomReset={[Function]}
+  isShifted={false}
+/>
 `;

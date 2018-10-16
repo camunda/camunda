@@ -106,7 +106,7 @@ export default class ListView extends React.Component {
     const isListEmpty = this.state.instances.length === 0;
 
     return (
-      <SplitPane.Pane {...this.props}>
+      <SplitPane.Pane {...this.props} hasShiftableControls>
         <SplitPane.Pane.Header>Instances</SplitPane.Pane.Header>
         <Styled.PaneBody>
           <List

@@ -6,23 +6,27 @@ exports[`Pane bottom pane 'should render both ExpandButtons by default 1`] = `
   handleExpand={[Function]}
   paneId="BOTTOM"
 >
-  <styled.div>
-    <Styled(ExpandButton)
-      direction="DOWN"
-      onClick={[Function]}
-      title="expand top pane"
-    />
-    <Styled(ExpandButton)
-      direction="UP"
-      onClick={[Function]}
-      title="expand bottom pane"
-    />
-  </styled.div>
+  <CollapsablePanelConsumer />
   <Foo
     expandState="DEFAULT"
     key=".0"
   />
 </Styled(Panel)>
+`;
+
+exports[`Pane bottom pane 'should render both ExpandButtons by default 2`] = `
+Array [
+  <Styled(ExpandButton)
+    direction="DOWN"
+    onClick={[Function]}
+    title="Expand top pane"
+/>,
+  <Styled(ExpandButton)
+    direction="UP"
+    onClick={[Function]}
+    title="Expand bottom pane"
+/>,
+]
 `;
 
 exports[`Pane bottom pane should render ExpandButton with DOWN icon if pane is expanded' 1`] = `
@@ -31,18 +35,20 @@ exports[`Pane bottom pane should render ExpandButton with DOWN icon if pane is e
   handleExpand={[Function]}
   paneId="BOTTOM"
 >
-  <styled.div>
-    <Styled(ExpandButton)
-      direction="DOWN"
-      onClick={[Function]}
-      title="expand top pane"
-    />
-  </styled.div>
+  <CollapsablePanelConsumer />
   <Foo
     expandState="EXPANDED"
     key=".0"
   />
 </Styled(Panel)>
+`;
+
+exports[`Pane bottom pane should render ExpandButton with DOWN icon if pane is expanded' 2`] = `
+<Styled(ExpandButton)
+  direction="DOWN"
+  onClick={[Function]}
+  title="Expand top pane"
+/>
 `;
 
 exports[`Pane bottom pane should render ExpandButton with UP icon if pane is collapsed 1`] = `
@@ -51,18 +57,20 @@ exports[`Pane bottom pane should render ExpandButton with UP icon if pane is col
   handleExpand={[Function]}
   paneId="BOTTOM"
 >
-  <styled.div>
-    <Styled(ExpandButton)
-      direction="UP"
-      onClick={[Function]}
-      title="expand bottom pane"
-    />
-  </styled.div>
+  <CollapsablePanelConsumer />
   <Foo
     expandState="COLLAPSED"
     key=".0"
   />
 </Styled(Panel)>
+`;
+
+exports[`Pane bottom pane should render ExpandButton with UP icon if pane is collapsed 2`] = `
+<Styled(ExpandButton)
+  direction="UP"
+  onClick={[Function]}
+  title="Expand bottom pane"
+/>
 `;
 
 exports[`Pane should render children with expandState 1`] = `

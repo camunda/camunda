@@ -125,7 +125,9 @@ describe('Filters', () => {
         {...mockProps}
         filter={DEFAULT_FILTER}
       />
-    );
+    )
+      .find('CollapsablePanelConsumer')
+      .dive();
     const ResetButtonNode = node.find(Button);
 
     expect(node.find({type: 'input'}).length).toBe(0);
@@ -163,7 +165,9 @@ describe('Filters', () => {
         {...mockProps}
         filter={DEFAULT_FILTER}
       />
-    );
+    )
+      .find('CollapsablePanelConsumer')
+      .dive();
     const FilterNodes = node.find(Styled.CheckboxGroup);
 
     // then
@@ -186,7 +190,10 @@ describe('Filters', () => {
           filter={DEFAULT_FILTER}
         />
       );
-      const field = node.find({name: 'errorMessage'});
+      const field = node
+        .find('CollapsablePanelConsumer')
+        .dive()
+        .find({name: 'errorMessage'});
 
       // then
       expect(field.length).toEqual(1);
@@ -217,7 +224,10 @@ describe('Filters', () => {
         />
       );
 
-      const field = node.find({name: 'errorMessage'});
+      const field = node
+        .find('CollapsablePanelConsumer')
+        .dive()
+        .find({name: 'errorMessage'});
       // then
       expect(node.state().filter.errorMessage).toEqual(
         'This is an error message'
@@ -293,7 +303,10 @@ describe('Filters', () => {
           filter={DEFAULT_FILTER}
         />
       );
-      const field = node.find({name: 'ids'});
+      const field = node
+        .find('CollapsablePanelConsumer')
+        .dive()
+        .find({name: 'ids'});
 
       // then
       expect(field.length).toEqual(1);
@@ -340,7 +353,10 @@ describe('Filters', () => {
         />
       );
 
-      const field = node.find({name: 'ids'});
+      const field = node
+        .find('CollapsablePanelConsumer')
+        .dive()
+        .find({name: 'ids'});
       // then
       expect(node.state().filter.ids).toEqual('a, b, c');
       expect(field.props().value).toEqual('a, b, c');
@@ -400,7 +416,10 @@ describe('Filters', () => {
           filter={DEFAULT_FILTER}
         />
       );
-      const field = node.find({name: 'workflow'});
+      const field = node
+        .find('CollapsablePanelConsumer')
+        .dive()
+        .find({name: 'workflow'});
 
       // then
       expect(field.length).toEqual(1);
@@ -422,7 +441,10 @@ describe('Filters', () => {
         />
       );
 
-      const field = node.find({name: 'workflow'});
+      const field = node
+        .find('CollapsablePanelConsumer')
+        .dive()
+        .find({name: 'workflow'});
       // then
       expect(node.state().filter.workflow).toEqual('demoProcess');
       expect(field.props().value).toEqual('demoProcess');
@@ -437,7 +459,13 @@ describe('Filters', () => {
         />
       );
 
-      expect(node.find({name: 'workflow'}).props().options).toEqual([
+      expect(
+        node
+          .find('CollapsablePanelConsumer')
+          .dive()
+          .find({name: 'workflow'})
+          .props().options
+      ).toEqual([
         {value: 'demoProcess', label: 'New demo process'},
         {value: 'orderProcess', label: 'Order'}
       ]);
@@ -475,7 +503,10 @@ describe('Filters', () => {
           filter={DEFAULT_FILTER}
         />
       );
-      const field = node.find({name: 'version'});
+      const field = node
+        .find('CollapsablePanelConsumer')
+        .dive()
+        .find({name: 'version'});
 
       // then
       expect(field.length).toEqual(1);
@@ -497,7 +528,10 @@ describe('Filters', () => {
         />
       );
 
-      const field = node.find({name: 'version'});
+      const field = node
+        .find('CollapsablePanelConsumer')
+        .dive()
+        .find({name: 'version'});
       // then
       expect(node.state().filter.version).toEqual('2');
       expect(field.props().value).toEqual('2');
@@ -519,9 +553,13 @@ describe('Filters', () => {
       node.update();
 
       // then
-      expect(node.find({name: 'version'}).props().value).toEqual(
-        String(groupedWorkflowsMock[0].workflows[0].version)
-      );
+      expect(
+        node
+          .find('CollapsablePanelConsumer')
+          .dive()
+          .find({name: 'version'})
+          .props().value
+      ).toEqual(String(groupedWorkflowsMock[0].workflows[0].version));
       expect(spy.mock.calls[0][0].version).toEqual(
         String(groupedWorkflowsMock[0].workflows[0].version)
       );
@@ -541,7 +579,11 @@ describe('Filters', () => {
       node.instance().handleWorkflowNameChange({target: {value: value}});
       node.update();
 
-      const options = node.find({name: 'version'}).props().options;
+      const options = node
+        .find('CollapsablePanelConsumer')
+        .dive()
+        .find({name: 'version'})
+        .props().options;
 
       // then
       expect(options[0].label).toEqual('Version 3');
@@ -572,9 +614,13 @@ describe('Filters', () => {
 
       // then
       // should keep the last version option selected
-      expect(node.find({name: 'version'}).props().value).toEqual(
-        String(groupedWorkflowsMock[0].workflows[0].version)
-      );
+      expect(
+        node
+          .find('CollapsablePanelConsumer')
+          .dive()
+          .find({name: 'version'})
+          .props().value
+      ).toEqual(String(groupedWorkflowsMock[0].workflows[0].version));
       // should update the workflow in Instances
       expect(spy.mock.calls.length).toEqual(1);
     });
@@ -600,8 +646,20 @@ describe('Filters', () => {
 
       // then
       // should keep the last version option selected
-      expect(node.find({name: 'version'}).props().value).toEqual('');
-      expect(node.find({name: 'workflow'}).props().value).toEqual('');
+      expect(
+        node
+          .find('CollapsablePanelConsumer')
+          .dive()
+          .find({name: 'version'})
+          .props().value
+      ).toEqual('');
+      expect(
+        node
+          .find('CollapsablePanelConsumer')
+          .dive()
+          .find({name: 'workflow'})
+          .props().value
+      ).toEqual('');
     });
 
     it('should call onFilterChange when a workflow version is selected', async () => {
@@ -664,7 +722,10 @@ describe('Filters', () => {
           filter={DEFAULT_FILTER}
         />
       );
-      const field = node.find({name: 'activityId'});
+      const field = node
+        .find('CollapsablePanelConsumer')
+        .dive()
+        .find({name: 'activityId'});
 
       // then
       expect(field.length).toEqual(1);
@@ -686,7 +747,10 @@ describe('Filters', () => {
         />
       );
 
-      const field = node.find({name: 'activityId'});
+      const field = node
+        .find('CollapsablePanelConsumer')
+        .dive()
+        .find({name: 'activityId'});
       // then
       expect(node.state().filter.activityId).toEqual('4');
       expect(field.props().value).toEqual('4');
@@ -713,7 +777,13 @@ describe('Filters', () => {
       node.update();
 
       // then
-      expect(node.find({name: 'activityId'}).props().disabled).toEqual(true);
+      expect(
+        node
+          .find('CollapsablePanelConsumer')
+          .dive()
+          .find({name: 'activityId'})
+          .props().disabled
+      ).toEqual(true);
     });
 
     it('should not be disabled when a version is selected', async () => {
@@ -737,8 +807,20 @@ describe('Filters', () => {
       node.update();
 
       // then
-      expect(node.find({name: 'activityId'}).props().disabled).toEqual(false);
-      expect(node.find({name: 'activityId'}).props().value).toEqual('');
+      expect(
+        node
+          .find('CollapsablePanelConsumer')
+          .dive()
+          .find({name: 'activityId'})
+          .props().disabled
+      ).toEqual(false);
+      expect(
+        node
+          .find('CollapsablePanelConsumer')
+          .dive()
+          .find({name: 'activityId'})
+          .props().value
+      ).toEqual('');
     });
 
     it('should read the options from this.props.activityIds', () => {
@@ -756,12 +838,20 @@ describe('Filters', () => {
       node.instance().handleWorkflowNameChange({target: {value: value}});
       node.update();
 
-      expect(node.find({name: 'activityId'}).props().options[0].value).toEqual(
-        'taskA'
-      );
-      expect(node.find({name: 'activityId'}).props().options[1].value).toEqual(
-        'taskB'
-      );
+      expect(
+        node
+          .find('CollapsablePanelConsumer')
+          .dive()
+          .find({name: 'activityId'})
+          .props().options[0].value
+      ).toEqual('taskA');
+      expect(
+        node
+          .find('CollapsablePanelConsumer')
+          .dive()
+          .find({name: 'activityId'})
+          .props().options[1].value
+      ).toEqual('taskB');
     });
 
     it('should be disabled after the workflow name is reseted', async () => {
@@ -783,8 +873,20 @@ describe('Filters', () => {
       node.update();
 
       // then
-      expect(node.find({name: 'activityId'}).props().disabled).toEqual(true);
-      expect(node.find({name: 'activityId'}).props().options.length).toEqual(0);
+      expect(
+        node
+          .find('CollapsablePanelConsumer')
+          .dive()
+          .find({name: 'activityId'})
+          .props().disabled
+      ).toEqual(true);
+      expect(
+        node
+          .find('CollapsablePanelConsumer')
+          .dive()
+          .find({name: 'activityId'})
+          .props().options.length
+      ).toEqual(0);
     });
 
     it('should display a list of activity ids', async () => {
@@ -798,7 +900,13 @@ describe('Filters', () => {
       );
 
       // then
-      expect(node.find({name: 'activityId'}).props().options.length).toEqual(2);
+      expect(
+        node
+          .find('CollapsablePanelConsumer')
+          .dive()
+          .find({name: 'activityId'})
+          .props().options.length
+      ).toEqual(2);
     });
 
     it('should set the state on activityId selection', async () => {
@@ -842,7 +950,10 @@ describe('Filters', () => {
           filter={DEFAULT_FILTER}
         />
       );
-      const field = node.find({name: 'startDate'});
+      const field = node
+        .find('CollapsablePanelConsumer')
+        .dive()
+        .find({name: 'startDate'});
 
       // then
       expect(field.length).toEqual(1);
@@ -864,7 +975,10 @@ describe('Filters', () => {
 
       //when
       node.update();
-      const field = node.find({name: 'startDate'});
+      const field = node
+        .find('CollapsablePanelConsumer')
+        .dive()
+        .find({name: 'startDate'});
       // then
       expect(node.state().filter.startDate).toEqual('08 October 2018');
       expect(field.props().value).toEqual('08 October 2018');
@@ -938,7 +1052,10 @@ describe('Filters', () => {
           filter={DEFAULT_FILTER}
         />
       );
-      const field = node.find({name: 'endDate'});
+      const field = node
+        .find('CollapsablePanelConsumer')
+        .dive()
+        .find({name: 'endDate'});
 
       // then
       expect(field.length).toEqual(1);
@@ -960,7 +1077,10 @@ describe('Filters', () => {
 
       //when
       node.update();
-      const field = node.find({name: 'endDate'});
+      const field = node
+        .find('CollapsablePanelConsumer')
+        .dive()
+        .find({name: 'endDate'});
 
       // then
       expect(node.state().filter.endDate).toEqual('10-10-2018');
@@ -1017,7 +1137,10 @@ describe('Filters', () => {
           filter={COMPLETE_FILTER}
         />
       );
-      const ResetButtonNode = node.find(Button);
+      const ResetButtonNode = node
+        .find('CollapsablePanelConsumer')
+        .dive()
+        .find(Button);
 
       // then
       expect(ResetButtonNode).toHaveLength(1);
@@ -1036,7 +1159,10 @@ describe('Filters', () => {
           filter={DEFAULT_FILTER}
         />
       );
-      const ResetButtonNode = node.find(Button);
+      const ResetButtonNode = node
+        .find('CollapsablePanelConsumer')
+        .dive()
+        .find(Button);
 
       // then
       expect(ResetButtonNode).toHaveLength(1);
@@ -1052,7 +1178,10 @@ describe('Filters', () => {
           filter={DEFAULT_FILTER}
         />
       );
-      const ResetButtonNode = node.find(Button);
+      const ResetButtonNode = node
+        .find('CollapsablePanelConsumer')
+        .dive()
+        .find(Button);
 
       //when
       node.update();
@@ -1102,14 +1231,16 @@ describe('Filters', () => {
       ResetButtonNode.simulate('click');
       node.update();
 
+      const nodeDived = node.find('CollapsablePanelConsumer').dive();
+
       // then
-      expect(node.find({name: 'workflow'}).props().value).toBe('');
-      expect(node.find({name: 'version'}).props().value).toBe('');
-      expect(node.find({name: 'ids'}).props().value).toBe('');
-      expect(node.find({name: 'errorMessage'}).props().value).toBe('');
-      expect(node.find({name: 'startDate'}).props().value).toBe('');
-      expect(node.find({name: 'endDate'}).props().value).toBe('');
-      expect(node.find({name: 'activityId'}).props().value).toBe('');
+      expect(nodeDived.find({name: 'workflow'}).props().value).toBe('');
+      expect(nodeDived.find({name: 'version'}).props().value).toBe('');
+      expect(nodeDived.find({name: 'ids'}).props().value).toBe('');
+      expect(nodeDived.find({name: 'errorMessage'}).props().value).toBe('');
+      expect(nodeDived.find({name: 'startDate'}).props().value).toBe('');
+      expect(nodeDived.find({name: 'endDate'}).props().value).toBe('');
+      expect(nodeDived.find({name: 'activityId'}).props().value).toBe('');
     });
 
     it('should call this.props.onFilterReset', async () => {
@@ -1122,7 +1253,10 @@ describe('Filters', () => {
           filter={DEFAULT_FILTER}
         />
       );
-      const ResetButtonNode = node.find(Button);
+      const ResetButtonNode = node
+        .find('CollapsablePanelConsumer')
+        .dive()
+        .find(Button);
 
       //when
       // we select a workflow

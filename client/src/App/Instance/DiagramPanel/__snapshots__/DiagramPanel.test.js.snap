@@ -7,6 +7,7 @@ exports[`DiagramPanel should render pane header and body 1`] = `
       Object {},
     ]
   }
+  hasShiftableControls={false}
   onFlowNodeSelected={[Function]}
   onFlowNodesDetailsReady={[Function]}
   selectableFlowNodes={

@@ -38,6 +38,7 @@ describe('DiagramPanel', () => {
 
     // then
     expect(node.find(Pane)).toHaveLength(1);
+    expect(node.find(Pane).props().hasShiftableControls).toBe(false);
 
     // Pane.Header
     const PaneHeaderNode = node.find(Styled.SplitPaneHeader);
@@ -82,7 +83,6 @@ describe('DiagramPanel', () => {
     expect(DiagramNode.prop('flowNodeStateOverlays')).toBe(
       mockProps.flowNodeStateOverlays
     );
-
     expect(node).toMatchSnapshot();
   });
 });

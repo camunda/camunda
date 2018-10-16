@@ -68,6 +68,20 @@ describe('Selections', () => {
     expect(node).toMatchSnapshot();
   });
 
+  it('should use CollapsablePanelConsumer', () => {
+    expect(node.find('CollapsablePanelConsumer').length).toBe(1);
+  });
+
+  it('should render a CollapsablePanel', () => {
+    const CollapsablePanelNode = node
+      .find('CollapsablePanelConsumer')
+      .dive()
+      .find('CollapsablePanel');
+
+    expect(CollapsablePanelNode.length).toBe(1);
+    expect(CollapsablePanelNode).toMatchSnapshot();
+  });
+
   it('should close a selection', () => {
     //when
     node.instance().handleToggleSelection(0);

@@ -2,105 +2,112 @@
 
 exports[`Selections should match this snapshot 1`] = `
 <styled.div>
-  <CollapsablePanel
-    collapseButton={
-      <Styled(ExpandButton)
-        direction="RIGHT"
-        isExpanded={true}
-        onClick={undefined}
-        title="Collapse Selections"
-      />
-    }
-    expandButton={
-      <Styled(VerticalExpandButton)
-        label="Selections"
-      >
-        <Styled(Badge)
-          isDefault={false}
-        >
-          2
-        </Styled(Badge)>
-      </Styled(VerticalExpandButton)>
-    }
-    maxWidth={479}
-  >
-    <Styled(PanelHeader)
-      isRounded={true}
-    >
-      <span>
-        Selections
-      </span>
-      <ComboBadge>
-        <Styled(Left)>
-          6
-        </Styled(Left)>
-        <Styled(Right)>
-          2
-        </Styled(Right)>
-      </ComboBadge>
-    </Styled(PanelHeader)>
-    <PanelBody>
-      <SelectionList
-        onCancelSelection={[Function]}
-        onDeleteSelection={[Function]}
-        onRetrySelection={[Function]}
-        onToggleSelection={[Function]}
-        openSelection={0}
-        selections={
-          Array [
-            Object {
-              "queries": Array [
-                Object {
-                  "active": true,
-                  "excludeIds": Array [],
-                  "ids": Array [],
-                  "incidents": true,
-                  "running": true,
-                },
-              ],
-              "selectionId": 0,
-              "totalCount": 3,
-              "workflowInstances": Array [
-                Object {
-                  "id": 1,
-                },
-                Object {
-                  "id": 2,
-                },
-                Object {
-                  "id": 3,
-                },
-              ],
-            },
-            Object {
-              "queries": Array [
-                Object {
-                  "active": true,
-                  "excludeIds": Array [],
-                  "ids": Array [],
-                  "incidents": false,
-                  "running": true,
-                },
-              ],
-              "selectionId": 1,
-              "totalCount": 3,
-              "workflowInstances": Array [
-                Object {
-                  "id": 1,
-                },
-                Object {
-                  "id": 2,
-                },
-                Object {
-                  "id": 3,
-                },
-              ],
-            },
-          ]
-        }
-      />
-    </PanelBody>
-    <PanelFooter />
-  </CollapsablePanel>
+  <CollapsablePanelConsumer />
 </styled.div>
+`;
+
+exports[`Selections should render a CollapsablePanel 1`] = `
+<CollapsablePanel
+  collapseButton={
+    <Styled(ExpandButton)
+      direction="RIGHT"
+      isExpanded={true}
+      onClick={undefined}
+      title="Collapse Selections"
+    />
+  }
+  expandButton={
+    <Styled(VerticalExpandButton)
+      label="Selections"
+    >
+      <Styled(Badge)
+        isDefault={false}
+      >
+        2
+      </Styled(Badge)>
+    </Styled(VerticalExpandButton)>
+  }
+  isCollapsed={false}
+  maxWidth={479}
+  onCollapse={[Function]}
+  type="selections"
+>
+  <Styled(PanelHeader)
+    isRounded={true}
+  >
+    <span>
+      Selections
+    </span>
+    <ComboBadge>
+      <Styled(Left)>
+        6
+      </Styled(Left)>
+      <Styled(Right)>
+        2
+      </Styled(Right)>
+    </ComboBadge>
+  </Styled(PanelHeader)>
+  <PanelBody>
+    <SelectionList
+      onCancelSelection={[Function]}
+      onDeleteSelection={[Function]}
+      onRetrySelection={[Function]}
+      onToggleSelection={[Function]}
+      openSelection={0}
+      selections={
+        Array [
+          Object {
+            "queries": Array [
+              Object {
+                "active": true,
+                "excludeIds": Array [],
+                "ids": Array [],
+                "incidents": true,
+                "running": true,
+              },
+            ],
+            "selectionId": 0,
+            "totalCount": 3,
+            "workflowInstances": Array [
+              Object {
+                "id": 1,
+              },
+              Object {
+                "id": 2,
+              },
+              Object {
+                "id": 3,
+              },
+            ],
+          },
+          Object {
+            "queries": Array [
+              Object {
+                "active": true,
+                "excludeIds": Array [],
+                "ids": Array [],
+                "incidents": false,
+                "running": true,
+              },
+            ],
+            "selectionId": 1,
+            "totalCount": 3,
+            "workflowInstances": Array [
+              Object {
+                "id": 1,
+              },
+              Object {
+                "id": 2,
+              },
+              Object {
+                "id": 3,
+              },
+            ],
+          },
+        ]
+      }
+    />
+  </PanelBody>
+  <PanelFooter />
+</CollapsablePanel>
 `;
