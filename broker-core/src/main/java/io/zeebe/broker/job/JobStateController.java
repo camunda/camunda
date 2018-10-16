@@ -19,8 +19,8 @@ package io.zeebe.broker.job;
 
 import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
 import static io.zeebe.util.StringUtil.getBytes;
+import static io.zeebe.util.buffer.BufferUtil.contentsEqual;
 
-import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.util.KeyStateController;
 import io.zeebe.logstreams.rocksdb.ZbRocksDb;
 import io.zeebe.logstreams.rocksdb.ZbRocksDb.IteratorControl;
@@ -90,15 +90,15 @@ public class JobStateController extends KeyStateController {
     return db;
   }
 
-  public void create(final long key, final TypedRecord<JobRecord> record) {
-    final DirectBuffer type = record.getValue().getType();
+  public void create(final long key, final JobRecord record) {
+    final DirectBuffer type = record.getType();
     DirectBuffer keyBuffer;
     DirectBuffer valueBuffer;
 
     try (WriteOptions options = new WriteOptions();
         ZbWriteBatch batch = new ZbWriteBatch()) {
       keyBuffer = getDefaultKey(key);
-      valueBuffer = writeValue(record.getValue());
+      valueBuffer = writeValue(record);
       batch.put(defaultColumnFamily, keyBuffer, valueBuffer);
 
       valueBuffer = writeStatesValue(State.ACTIVATABLE);
@@ -113,10 +113,6 @@ public class JobStateController extends KeyStateController {
     }
   }
 
-  public void activate(final TypedRecord<JobRecord> record) {
-    activate(record.getKey(), record.getValue());
-  }
-
   public void activate(final long key, final JobRecord record) {
     final DirectBuffer type = record.getType();
     final long deadline = record.getDeadline();
@@ -124,7 +120,7 @@ public class JobStateController extends KeyStateController {
     DirectBuffer keyBuffer;
     DirectBuffer valueBuffer;
 
-    try (WriteOptions options = new WriteOptions().setSync(true);
+    try (WriteOptions options = new WriteOptions();
         ZbWriteBatch batch = new ZbWriteBatch()) {
       keyBuffer = getDefaultKey(key);
       valueBuffer = writeValue(record);
@@ -145,9 +141,8 @@ public class JobStateController extends KeyStateController {
     }
   }
 
-  public void timeout(final TypedRecord<JobRecord> record) {
-    final DirectBuffer type = record.getValue().getType();
-    final long key = record.getKey();
+  public void timeout(final long key, final JobRecord record) {
+    final DirectBuffer type = record.getType();
     DirectBuffer valueBuffer;
     DirectBuffer keyBuffer;
 
@@ -155,7 +150,7 @@ public class JobStateController extends KeyStateController {
         ZbWriteBatch batch = new ZbWriteBatch()) {
 
       keyBuffer = getDefaultKey(key);
-      valueBuffer = writeValue(record.getValue());
+      valueBuffer = writeValue(record);
       batch.put(defaultColumnFamily, keyBuffer, valueBuffer);
 
       valueBuffer = writeStatesValue(State.ACTIVATABLE);
@@ -164,7 +159,7 @@ public class JobStateController extends KeyStateController {
       keyBuffer = getActivatableKey(key, type);
       batch.put(activatableColumnFamily, keyBuffer, NULL);
 
-      keyBuffer = getDeadlinesKey(key, record.getValue().getDeadline());
+      keyBuffer = getDeadlinesKey(key, record.getDeadline());
       batch.delete(deadlinesColumnFamily, keyBuffer);
 
       db.write(options, batch);
@@ -173,8 +168,8 @@ public class JobStateController extends KeyStateController {
     }
   }
 
-  public void delete(long key, JobRecord value) {
-    final DirectBuffer type = value.getType();
+  public void delete(long key, JobRecord record) {
+    final DirectBuffer type = record.getType();
     DirectBuffer keyBuffer;
 
     try (WriteOptions options = new WriteOptions();
@@ -187,7 +182,7 @@ public class JobStateController extends KeyStateController {
       final DirectBuffer activatableKey = getActivatableKey(key, type);
       batch.delete(activatableColumnFamily, activatableKey);
 
-      keyBuffer = getDeadlinesKey(key, value.getDeadline());
+      keyBuffer = getDeadlinesKey(key, record.getDeadline());
       batch.delete(deadlinesColumnFamily, keyBuffer);
 
       db.write(options, batch);
@@ -270,34 +265,33 @@ public class JobStateController extends KeyStateController {
 
   public boolean isInState(long key, State state) {
     final DirectBuffer keyBuffer = getDefaultKey(key);
-    final int bytesRead = db.get(statesColumnFamily, keyBuffer, valueBuffer);
-    if (bytesRead != RocksDB.NOT_FOUND) {
+    if (db.exists(statesColumnFamily, keyBuffer, valueBuffer)) {
       return valueBuffer.getByte(0) == state.value;
     } else {
       return false;
     }
   }
 
-  /**
-   * This currently duplicates code from ZbRocksDb#forEachPrefixed because we need to control when
-   * to stop the loop. forEach methods should typically execute once forEach as expected, without
-   * control, and an Iterator/Iterable implementation is what would be used for control over the
-   * looping process. Since it would take more time to implement non-trivial ones, this should be
-   * done later.
-   *
-   * <p>Additionally, since this method is only used to deal with subscriptions, it will be removed
-   * eventually, so performance/readability/reuse here isn't critical.
-   */
-  public void activatableJobs(final DirectBuffer type, final IteratorConsumer callback) {
+  public void forEachActivatableJobs(final DirectBuffer type, final IteratorConsumer callback) {
     final DirectBuffer prefix = getActivatablePrefix(type);
 
+    // iterate by prefix, and since we're looking for exactly the type, once we find the first one,
+    // it should iterate exactly over all those with that exact type, and once we hit a longer or
+    // different one it should stop.
     db.forEachPrefixed(
         activatableColumnFamily,
         prefix,
         (e, c) -> {
-          final DirectBuffer keyBuffer =
-              new UnsafeBuffer(e.getKey(), prefix.capacity(), Long.BYTES);
-          callback.accept(keyBuffer.getLong(0, STATE_BYTE_ORDER), getJob(keyBuffer), c);
+          final DirectBuffer entryKey = e.getKey();
+          final DirectBuffer typeBuffer =
+              new UnsafeBuffer(entryKey, 0, entryKey.capacity() - Long.BYTES);
+          if (contentsEqual(type, typeBuffer)) {
+            final DirectBuffer keyBuffer =
+                new UnsafeBuffer(entryKey, typeBuffer.capacity(), Long.BYTES);
+            callback.accept(keyBuffer.getLong(0, STATE_BYTE_ORDER), getJob(keyBuffer), c);
+          } else {
+            c.stop();
+          }
         });
   }
 
@@ -308,6 +302,11 @@ public class JobStateController extends KeyStateController {
 
   private JobRecord getJob(final DirectBuffer keyBuffer) {
     final int bytesRead = db.get(defaultColumnFamily, keyBuffer, valueBuffer);
+
+    if (bytesRead == RocksDB.NOT_FOUND) {
+      return null;
+    }
+
     return readJob(valueBuffer, bytesRead);
   }
 

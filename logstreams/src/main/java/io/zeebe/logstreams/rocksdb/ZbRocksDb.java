@@ -16,7 +16,6 @@
 package io.zeebe.logstreams.rocksdb;
 
 import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
-import static io.zeebe.util.StringUtil.getBytes;
 import static io.zeebe.util.buffer.BufferUtil.startsWith;
 
 import io.zeebe.util.EnsureUtil;
@@ -229,6 +228,8 @@ public class ZbRocksDb extends RocksDB {
       ColumnFamilyHandle columnFamily, DirectBuffer key, MutableDirectBuffer value) {
     EnsureUtil.ensureArrayBacked(key, value);
 
+    // todo(npepinpe): afaik keyMayExist doesn't necessarily fill the StringBuilder completely, so
+    // it doesn't seem particularly useful
     final StringBuilder builder = new StringBuilder();
 
     if (!keyMayExist(
@@ -241,13 +242,7 @@ public class ZbRocksDb extends RocksDB {
       return false;
     }
 
-    if (builder.length() > 0) {
-      // TODO: figure out how to read StringBuilder without allocating intermediate memory?
-      value.putBytes(0, getBytes(builder.toString()), 0, value.capacity());
-      return true;
-    }
-
-    return get(columnFamily, key, value) > 0;
+    return get(columnFamily, key, value) != RocksDB.NOT_FOUND;
   }
 
   /**
