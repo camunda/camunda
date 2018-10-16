@@ -11,14 +11,12 @@ import org.elasticsearch.client.Client;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.SearchHit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 
 
@@ -35,7 +33,6 @@ public class AlertReader {
 
   public List<AlertDefinitionDto> getStoredAlerts() {
     logger.debug("getting all stored alerts");
-    List<AlertDefinitionDto> result = new ArrayList<>();
     QueryBuilder query;
     query = QueryBuilders.matchAllQuery();
 
@@ -44,31 +41,16 @@ public class AlertReader {
         .setTypes(configurationService.getAlertType())
         .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
         .setQuery(query)
-        .setSize(20)
-        .get();
+      .setSize(1000)
+      .get();
 
-    do {
-      for (SearchHit hit : scrollResp.getHits().getHits()) {
-        result.add(mapHit(hit));
-      }
-      scrollResp = esclient
-          .prepareSearchScroll(scrollResp.getScrollId())
-          .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
-          .get();
-    } while (scrollResp.getHits().getHits().length != 0);
-
-    return result;
-  }
-
-  private AlertDefinitionDto mapHit(SearchHit hit) {
-    String content = hit.getSourceAsString();
-    AlertDefinitionDto result = null;
-    try {
-      result = objectMapper.readValue(content, AlertDefinitionDto.class);
-    } catch (IOException e) {
-      logger.error("can't map data from elasticsearch to entity", e);
-    }
-    return result;
+    return ElasticsearchHelper.retrieveAllScrollResults(
+      scrollResp,
+      AlertDefinitionDto.class,
+      objectMapper,
+      esclient,
+      configurationService.getElasticsearchScrollTimeout()
+    );
   }
 
   public AlertDefinitionDto findAlert(String alertId) {
@@ -96,33 +78,24 @@ public class AlertReader {
     }
   }
 
+  public List<AlertDefinitionDto> findFirstAlertsForReport(String reportId) {
+    // Note: this is capped to 1000 as a generous practical limit, no paging
+    final int limit = 1000;
+    logger.debug("Fetching first {} alerts using report with id {}", limit, reportId);
+
+    final QueryBuilder query = QueryBuilders.termQuery(AlertType.REPORT_ID, reportId);
+    final SearchResponse searchResponse = esclient
+        .prepareSearch(configurationService.getOptimizeIndex(configurationService.getAlertType()))
+        .setTypes(configurationService.getAlertType())
+        .setQuery(query)
+      .setSize(limit)
+      .get();
+
+    return ElasticsearchHelper.mapHits(searchResponse.getHits(), AlertDefinitionDto.class, objectMapper);
+  }
+
   private void logError(String alertId) {
     logger.error("Was not able to retrieve alert with id [{}] from Elasticsearch.", alertId);
   }
 
-  public List<AlertDefinitionDto> findAlertsForReport(String reportId) {
-    List<AlertDefinitionDto> result = new ArrayList<>();
-    QueryBuilder query;
-    query = QueryBuilders.termQuery(AlertType.REPORT_ID, reportId);
-
-    SearchResponse scrollResp = esclient
-        .prepareSearch(configurationService.getOptimizeIndex(configurationService.getAlertType()))
-        .setTypes(configurationService.getAlertType())
-        .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
-        .setQuery(query)
-        .setSize(20)
-        .get();
-
-    do {
-      for (SearchHit hit : scrollResp.getHits().getHits()) {
-        result.add(mapHit(hit));
-      }
-      scrollResp = esclient
-          .prepareSearchScroll(scrollResp.getScrollId())
-          .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
-          .get();
-    } while (scrollResp.getHits().getHits().length != 0);
-
-    return result;
-  }
 }

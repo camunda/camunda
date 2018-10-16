@@ -9,15 +9,18 @@ import org.camunda.optimize.service.es.writer.DashboardWriter;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.security.SharingService;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
 import java.util.List;
 
 
 @Component
 public class DashboardService {
+
+  private static final Logger logger = LoggerFactory.getLogger(DashboardService.class);
 
   @Autowired
   private DashboardWriter dashboardWriter;
@@ -44,12 +47,16 @@ public class DashboardService {
     sharingService.adjustDashboardShares(updatedDashboard);
   }
 
-  public List<DashboardDefinitionDto> getDashboardDefinitions() throws IOException {
+  public List<DashboardDefinitionDto> getDashboardDefinitions() {
     return dashboardReader.getAllDashboards();
   }
 
   public DashboardDefinitionDto getDashboardDefinition(String dashboardId) {
     return dashboardReader.getDashboard(dashboardId);
+  }
+
+  public List<DashboardDefinitionDto> findFirstDashboardsForReport(String reportId) {
+    return dashboardReader.findFirstDashboardsForReport(reportId);
   }
 
   public void deleteDashboard(String dashboardId) {

@@ -4,9 +4,8 @@ import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.EmailAlertEnabledDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
 import org.camunda.optimize.service.es.reader.AlertReader;
 import org.camunda.optimize.service.es.writer.AlertWriter;
@@ -43,7 +42,7 @@ import static org.camunda.optimize.service.es.report.command.util.ReportConstant
 
 
 @Component
-public class  AlertService {
+public class AlertService {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   @Autowired
@@ -70,7 +69,7 @@ public class  AlertService {
   private SchedulerFactoryBean schedulerFactoryBean;
 
   @PostConstruct
-  public void init () {
+  public void init() {
 
     if (schedulerFactoryBean == null) {
       QuartzJobFactory sampleJobFactory = new QuartzJobFactory();
@@ -129,7 +128,7 @@ public class  AlertService {
   private List<Trigger> createReminderTriggers(Map<AlertDefinitionDto, JobDetail> reminderDetails) {
     List<Trigger> triggers = new ArrayList<>();
 
-    for (Map.Entry <AlertDefinitionDto, JobDetail> e : reminderDetails.entrySet()) {
+    for (Map.Entry<AlertDefinitionDto, JobDetail> e : reminderDetails.entrySet()) {
       if (e.getKey().getReminder() != null) {
         triggers.add(alertReminderJobFactory.createTrigger(e.getKey(), e.getValue()));
       }
@@ -141,7 +140,7 @@ public class  AlertService {
   private List<Trigger> createCheckTriggers(Map<AlertDefinitionDto, JobDetail> details) {
     List<Trigger> triggers = new ArrayList<>();
 
-    for (Map.Entry <AlertDefinitionDto, JobDetail> e : details.entrySet()) {
+    for (Map.Entry<AlertDefinitionDto, JobDetail> e : details.entrySet()) {
       triggers.add(alertCheckJobFactory.createTrigger(e.getKey(), e.getValue()));
     }
 
@@ -176,10 +175,8 @@ public class  AlertService {
     return schedulerFactoryBean.getObject();
   }
 
-
-
   public List<AlertDefinitionDto> getStoredAlerts(String userId) {
-    List<AlertDefinitionDto> alerts =  alertReader.getStoredAlerts();
+    List<AlertDefinitionDto> alerts = alertReader.getStoredAlerts();
     List<String> authorizedReportIds = reportService
       .findAndFilterReports(userId)
       .stream()
@@ -190,6 +187,10 @@ public class  AlertService {
       .stream()
       .filter(a -> authorizedReportIds.contains(a.getReportId()))
       .collect(Collectors.toList());
+  }
+
+  public List<AlertDefinitionDto> findFirstAlertsForReport(String reportId) {
+    return alertReader.findFirstAlertsForReport(reportId);
   }
 
   public IdDto createAlert(AlertCreationDto toCreate, String token) {
@@ -291,7 +292,6 @@ public class  AlertService {
   }
 
 
-
   private void unscheduleCheckJob(AlertDefinitionDto toDelete) throws SchedulerException {
     JobKey toUnschedule = alertCheckJobFactory.getJobKey(toDelete);
     TriggerKey triggerKey = alertReminderJobFactory.getTriggerKey(toDelete);
@@ -303,7 +303,7 @@ public class  AlertService {
   }
 
   public void deleteAlertsForReport(String reportId) {
-    List<AlertDefinitionDto> alerts = alertReader.findAlertsForReport(reportId);
+    List<AlertDefinitionDto> alerts = alertReader.findFirstAlertsForReport(reportId);
 
     for (AlertDefinitionDto alert : alerts) {
       unscheduleJob(alert);
@@ -318,17 +318,19 @@ public class  AlertService {
   public void deleteAlertsIfNeeded(String reportId, ReportDefinitionDto reportDefinition) {
     if (SINGLE_REPORT_TYPE.equals(reportDefinition.getReportType())) {
       SingleReportDefinitionDto singleReport = (SingleReportDefinitionDto) reportDefinition;
-      SingleReportDataDto data = singleReport.getData();
-      if (
-        data == null ||
-          data.getGroupBy() == null ||
-          (!GROUP_BY_NONE_TYPE.equals(data.getGroupBy().getType()) ||
-            !SINGLE_NUMBER_VISUALIZATION.equals(data.getVisualization())
-          )
-        ) {
+      if (!validateIfReportIsSuitableForAlert(singleReport)) {
         this.deleteAlertsForReport(reportId);
       }
     }
+  }
+
+  public boolean validateIfReportIsSuitableForAlert(SingleReportDefinitionDto report) {
+    final SingleReportDataDto data = report.getData();
+    return data != null &&
+      data.getGroupBy() != null &&
+      (GROUP_BY_NONE_TYPE.equals(data.getGroupBy().getType()) &&
+        SINGLE_NUMBER_VISUALIZATION.equals(data.getVisualization())
+      );
   }
 
   public JobDetail createStatusCheckJobDetails(AlertDefinitionDto fakeReportAlert) {

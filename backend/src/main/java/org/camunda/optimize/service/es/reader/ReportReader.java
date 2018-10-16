@@ -1,8 +1,9 @@
 package org.camunda.optimize.service.es.reader;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.service.es.schema.type.SingleReportType;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
@@ -12,8 +13,8 @@ import org.elasticsearch.action.get.MultiGetResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
-import org.elasticsearch.search.SearchHit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +22,6 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.NotFoundException;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -42,21 +42,21 @@ public class ReportReader {
    *
    * @param reportId - id of report, expected not null
    * @throws OptimizeRuntimeException if report with specified ID does not
-   * exist or deserialization was not successful.
+   *                                  exist or deserialization was not successful.
    */
   public ReportDefinitionDto getReport(String reportId) {
     logger.debug("Fetching report with id [{}]", reportId);
     MultiGetResponse multiGetItemResponses = esclient.prepareMultiGet()
-    .add(
-      configurationService.getOptimizeIndex(ElasticsearchConstants.SINGLE_REPORT_TYPE),
-      ElasticsearchConstants.SINGLE_REPORT_TYPE, reportId
-    )
-    .add(
-      configurationService.getOptimizeIndex(ElasticsearchConstants.COMBINED_REPORT_TYPE),
-      ElasticsearchConstants.COMBINED_REPORT_TYPE, reportId
-    )
-    .setRealtime(false)
-    .get();
+      .add(
+        configurationService.getOptimizeIndex(ElasticsearchConstants.SINGLE_REPORT_TYPE),
+        ElasticsearchConstants.SINGLE_REPORT_TYPE, reportId
+      )
+      .add(
+        configurationService.getOptimizeIndex(ElasticsearchConstants.COMBINED_REPORT_TYPE),
+        ElasticsearchConstants.COMBINED_REPORT_TYPE, reportId
+      )
+      .setRealtime(false)
+      .get();
 
     Optional<ReportDefinitionDto> result = Optional.empty();
     for (MultiGetItemResponse itemResponse : multiGetItemResponses) {
@@ -77,6 +77,48 @@ public class ReportReader {
     return result.get();
   }
 
+  public List<ReportDefinitionDto> getAllReports() {
+    logger.debug("Fetching all available reports");
+    SearchResponse scrollResp = esclient
+      .prepareSearch(
+        configurationService.getOptimizeIndex(ElasticsearchConstants.SINGLE_REPORT_TYPE),
+        configurationService.getOptimizeIndex(ElasticsearchConstants.COMBINED_REPORT_TYPE)
+      )
+      .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
+      .setQuery(QueryBuilders.matchAllQuery())
+      .setSize(1000)
+      .get();
+
+    return ElasticsearchHelper.retrieveAllScrollResults(
+      scrollResp,
+      ReportDefinitionDto.class,
+      objectMapper,
+      esclient,
+      configurationService.getElasticsearchScrollTimeout()
+    );
+  }
+
+  public List<CombinedReportDefinitionDto> findFirstCombinedReportsForSimpleReport(String simpleReportId) {
+    // Note: this is capped to 1000 as a generous practical limit, no paging
+    final int limit = 1000;
+    logger.debug("Fetching first {} combined reports using simpleReport with id {}", limit, simpleReportId);
+
+    final QueryBuilder getCombinedReportsBySimpleReportIdQuery = QueryBuilders.boolQuery()
+      .filter(QueryBuilders.nestedQuery(
+        "data",
+        QueryBuilders.termQuery("data.reportIds", simpleReportId),
+        ScoreMode.None
+      ));
+
+    SearchResponse searchResponse = esclient
+      .prepareSearch(configurationService.getOptimizeIndex(ElasticsearchConstants.COMBINED_REPORT_TYPE))
+      .setQuery(getCombinedReportsBySimpleReportIdQuery)
+      .setSize(limit)
+      .get();
+
+    return ElasticsearchHelper.mapHits(searchResponse.getHits(), CombinedReportDefinitionDto.class, objectMapper);
+  }
+
   private Optional<ReportDefinitionDto> processGetReportResponse(String reportId, GetResponse getResponse) {
     Optional<ReportDefinitionDto> result = Optional.empty();
     if (getResponse.isExists()) {
@@ -92,45 +134,7 @@ public class ReportReader {
       }
     }
     return result;
-  }
 
-
-  public List<ReportDefinitionDto> getAllReports() {
-    logger.debug("Fetching all available reports");
-    SearchResponse scrollResp = esclient
-      .prepareSearch(
-        configurationService.getOptimizeIndex(ElasticsearchConstants.SINGLE_REPORT_TYPE),
-        configurationService.getOptimizeIndex(ElasticsearchConstants.COMBINED_REPORT_TYPE)
-      )
-      .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
-      .setQuery(QueryBuilders.matchAllQuery())
-      .setSize(1000)
-      .get();
-    List<ReportDefinitionDto> reportRequests = new ArrayList<>();
-
-    do {
-      for (SearchHit hit : scrollResp.getHits().getHits()) {
-        String responseAsString = hit.getSourceAsString();
-        try {
-          ReportDefinitionDto report =
-            objectMapper.readValue(responseAsString, ReportDefinitionDto.class);
-          reportRequests.add(report);
-        } catch (IOException e) {
-          String reason = "While retrieving all available reports "  +
-            "it was not possible to deserialize a report from Elasticsearch! " +
-            "Report response from Elasticsearch: " + responseAsString;
-          logger.error(reason, e);
-          throw new OptimizeRuntimeException(reason);
-        }
-      }
-
-      scrollResp = esclient
-        .prepareSearchScroll(scrollResp.getScrollId())
-        .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
-        .get();
-    } while (scrollResp.getHits().getHits().length != 0);
-
-    return reportRequests;
   }
 
 }

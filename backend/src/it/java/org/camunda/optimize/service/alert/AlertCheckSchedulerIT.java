@@ -109,7 +109,7 @@ public class AlertCheckSchedulerIT extends AbstractAlertIT {
     response =
       embeddedOptimizeRule
             .getRequestExecutor()
-            .buildDeleteReportRequest(simpleAlert.getReportId())
+        .buildDeleteReportRequest(simpleAlert.getReportId(), true)
             .execute();
 
     // then

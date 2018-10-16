@@ -8,6 +8,7 @@ import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDat
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.rest.providers.Secured;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.report.ReportService;
@@ -22,6 +23,7 @@ import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
+import javax.ws.rs.QueryParam;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
@@ -70,9 +72,6 @@ public class ReportRestService {
 
   /**
    * Updates the given fields of a report to the given id.
-   *
-   * @param reportId      the id of the report
-   * @param updatedReport report that needs to be updated. Only the fields that are defined here are actually updated.
    */
   @PUT
   @Path("/{id}")
@@ -80,14 +79,14 @@ public class ReportRestService {
   @Consumes(MediaType.APPLICATION_JSON)
   public void updateReport(@Context ContainerRequestContext requestContext,
                            @PathParam("id") String reportId,
+                           @QueryParam("force") boolean force,
                            ReportDefinitionDto updatedReport) throws OptimizeException, JsonProcessingException {
     String userId = getRequestUser(requestContext);
-    reportService.updateReportWithAuthorizationCheck(reportId, updatedReport, userId);
+    reportService.updateReportWithAuthorizationCheck(reportId, updatedReport, userId, force);
   }
 
   /**
    * Get a list of all available reports.
-   *
    */
   @GET
   @Produces(MediaType.APPLICATION_JSON)
@@ -112,14 +111,28 @@ public class ReportRestService {
   }
 
   /**
+   * Retrieve the conflicting items that would occur on performing a delete.
+   */
+  @GET
+  @Path("/{id}/delete-conflicts")
+  @Produces(MediaType.APPLICATION_JSON)
+  public ConflictResponseDto getDeleteConflicts(@Context ContainerRequestContext requestContext,
+                                                @PathParam("id") String reportId) {
+    String userId = getRequestUser(requestContext);
+    return reportService.getReportDeleteConflictingItemsWithAuthorizationCheck(userId, reportId);
+  }
+
+  /**
    * Delete the report to the specified id.
    */
   @DELETE
   @Path("/{id}")
+  @Produces(MediaType.APPLICATION_JSON)
   public void deleteReport(@Context ContainerRequestContext requestContext,
-                           @PathParam("id") String reportId) {
+                           @PathParam("id") String reportId,
+                           @QueryParam("force") boolean force) throws OptimizeException {
     String userId = getRequestUser(requestContext);
-    reportService.deleteReportWithAuthorizationCheck(userId, reportId);
+    reportService.deleteReportWithAuthorizationCheck(userId, reportId, force);
   }
 
   /**
@@ -150,7 +163,7 @@ public class ReportRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public ReportResultDto evaluateReport(@Context ContainerRequestContext requestContext,
-                                              SingleReportDataDto reportData) {
+                                        SingleReportDataDto reportData) {
     String userId = getRequestUser(requestContext);
     SingleReportDefinitionDto reportDefinition = new SingleReportDefinitionDto();
     reportDefinition.setData(reportData);
@@ -167,7 +180,7 @@ public class ReportRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public ReportResultDto evaluateReport(@Context ContainerRequestContext requestContext,
-                                              CombinedReportDataDto reportData) {
+                                        CombinedReportDataDto reportData) {
     String userId = getRequestUser(requestContext);
     CombinedReportDefinitionDto reportDefinition = new CombinedReportDefinitionDto();
     reportDefinition.setData(reportData);

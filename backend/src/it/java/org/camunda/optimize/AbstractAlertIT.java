@@ -33,7 +33,9 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.*;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.camunda.optimize.test.util.ReportDataHelper.createAvgPiDurationAsNumberGroupByNone;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -206,7 +208,7 @@ public abstract class AbstractAlertIT {
   protected void updateReport(String id, ReportDefinitionDto updatedReport) {
     Response response = embeddedOptimizeRule
             .getRequestExecutor()
-            .buildUpdateReportRequest(id, updatedReport)
+      .buildUpdateReportRequest(id, updatedReport, true)
             .execute();
     assertThat(response.getStatus(), is(204));
   }

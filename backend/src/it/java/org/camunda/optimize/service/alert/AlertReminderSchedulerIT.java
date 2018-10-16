@@ -14,10 +14,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.HttpHeaders;
-import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.List;
 
@@ -74,7 +70,7 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     //when
     embeddedOptimizeRule
             .getRequestExecutor()
-            .buildDeleteReportRequest(simpleAlert.getReportId())
+      .buildDeleteReportRequest(simpleAlert.getReportId(), true)
             .execute();
     //then
     assertThat(

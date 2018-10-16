@@ -23,10 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -237,7 +233,7 @@ public class CombinedReportHandlingIT {
   }
 
   @Test
-  public void deletedSingleReportsAreRemovedFromCombinedReport() {
+  public void deletedSingleReportsAreRemovedFromCombinedReportWhenForced() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
     String singleReportIdToDelete = createNewSingleReport();
@@ -247,7 +243,7 @@ public class CombinedReportHandlingIT {
 
     // when
     String combinedReportId = createNewCombinedReport(singleReportIdToDelete, remainingSingleReportId);
-    deleteReport(singleReportIdToDelete);
+    deleteReport(singleReportIdToDelete, true);
     List<ReportDefinitionDto> reports = getAllReports();
 
     // then
@@ -268,7 +264,7 @@ public class CombinedReportHandlingIT {
   }
 
   @Test
-  public void singleReportsAreRemovedFromCombinedReportOnReportUpdateWithVisualizeAsChanged() {
+  public void singleReportsAreRemovedFromCombinedReportOnReportUpdateWithVisualizeAsChangedWhenForced() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
     SingleReportDataDto countFlowNodeFrequencyGroupByFlowNode = createCountFlowNodeFrequencyGroupByFlowNode(
@@ -285,7 +281,7 @@ public class CombinedReportHandlingIT {
     SingleReportDefinitionDto report = new SingleReportDefinitionDto();
     countFlowNodeFrequencyGroupByFlowNode.setVisualization(TABLE_VISUALIZATION);
     report.setData(countFlowNodeFrequencyGroupByFlowNode);
-    updateReport(singleReportIdToUpdate, report);
+    updateReport(singleReportIdToUpdate, report, true);
     List<ReportDefinitionDto> reports = getAllReports();
 
     // then
@@ -305,7 +301,7 @@ public class CombinedReportHandlingIT {
   }
 
   @Test
-  public void singleReportsAreRemovedFromCombinedReportOnReportUpdateWithGroupByChanged() {
+  public void singleReportsAreRemovedFromCombinedReportOnReportUpdateWithGroupByChangedWhenForced() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
     SingleReportDataDto countFlowNodeFrequencyGroupByFlowNode = createCountFlowNodeFrequencyGroupByFlowNode(
@@ -322,7 +318,7 @@ public class CombinedReportHandlingIT {
     SingleReportDefinitionDto report = new SingleReportDefinitionDto();
     countFlowNodeFrequencyGroupByFlowNode.getGroupBy().setType(GROUP_BY_START_DATE_TYPE);
     report.setData(countFlowNodeFrequencyGroupByFlowNode);
-    updateReport(singleReportIdToUpdate, report);
+    updateReport(singleReportIdToUpdate, report, true);
     List<ReportDefinitionDto> reports = getAllReports();
 
     // then
@@ -342,7 +338,7 @@ public class CombinedReportHandlingIT {
   }
 
   @Test
-  public void singleReportsAreRemovedFromCombinedReportOnReportUpdateWithViewChanged() {
+  public void singleReportsAreRemovedFromCombinedReportOnReportUpdateWithViewChangedWhenForced() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
     SingleReportDataDto countFlowNodeFrequencyGroupByFlowNode = createCountFlowNodeFrequencyGroupByFlowNode(
@@ -359,7 +355,7 @@ public class CombinedReportHandlingIT {
     SingleReportDefinitionDto report = new SingleReportDefinitionDto();
     countFlowNodeFrequencyGroupByFlowNode.getView().setEntity(VIEW_PROCESS_INSTANCE_ENTITY);
     report.setData(countFlowNodeFrequencyGroupByFlowNode);
-    updateReport(singleReportIdToUpdate, report);
+    updateReport(singleReportIdToUpdate, report, true);
     List<ReportDefinitionDto> reports = getAllReports();
 
     // then
@@ -519,7 +515,6 @@ public class CombinedReportHandlingIT {
   private String createNewCombinedReport(String... singleReportIds) {
     String reportId = createNewCombinedReport();
     CombinedReportDefinitionDto report = new CombinedReportDefinitionDto();
-    CombinedReportDataDto dataDto = new CombinedReportDataDto();
     report.setData(createCombinedReport(singleReportIds));
     updateReport(reportId, report);
     return reportId;
@@ -535,12 +530,15 @@ public class CombinedReportHandlingIT {
     return engineRule.deployAndStartProcess(modelInstance);
   }
 
-
   private void deleteReport(String reportId) {
+    deleteReport(reportId, null);
+  }
+
+  private void deleteReport(String reportId, Boolean force) {
     Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildDeleteReportRequest(reportId)
-            .execute();
+      .getRequestExecutor()
+      .buildDeleteReportRequest(reportId, force)
+      .execute();
 
     // then the status code is okay
     assertThat(response.getStatus(), is(204));
@@ -563,14 +561,18 @@ public class CombinedReportHandlingIT {
   }
 
   private void updateReport(String id, ReportDefinitionDto updatedReport) {
-    Response response = getUpdateReportResponse(id, updatedReport);
+    updateReport(id, updatedReport, null);
+  }
+
+  private void updateReport(String id, ReportDefinitionDto updatedReport, Boolean force) {
+    Response response = getUpdateReportResponse(id, updatedReport, force);
     assertThat(response.getStatus(), is(204));
   }
 
-  private Response getUpdateReportResponse(String id, ReportDefinitionDto updatedReport) {
+  private Response getUpdateReportResponse(String id, ReportDefinitionDto updatedReport, Boolean force) {
     return embeddedOptimizeRule
             .getRequestExecutor()
-            .buildUpdateReportRequest(id, updatedReport)
+      .buildUpdateReportRequest(id, updatedReport, force)
             .execute();
   }
 

@@ -3,8 +3,6 @@ package org.camunda.optimize;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.TypeFactory;
-import jdk.nashorn.internal.runtime.regexp.joni.encoding.ObjPtr;
-import org.camunda.optimize.dto.optimize.query.OptimizeVersionDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertCreationDto;
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
@@ -17,7 +15,6 @@ import org.camunda.optimize.dto.optimize.query.sharing.ReportShareDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchDto;
 import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 
-import javax.ws.rs.OPTIONS;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
@@ -28,6 +25,7 @@ import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 import static org.camunda.optimize.AbstractAlertIT.ALERT;
 import static org.hamcrest.CoreMatchers.is;
@@ -212,9 +210,14 @@ public class OptimizeRequestExecutor {
   }
 
   public OptimizeRequestExecutor buildUpdateReportRequest(String id, ReportDefinitionDto entity) {
+    return buildUpdateReportRequest(id, entity, null);
+  }
+
+  public OptimizeRequestExecutor buildUpdateReportRequest(String id, ReportDefinitionDto entity, Boolean force) {
     this.path = "report" + "/" + id;
     this.body = getBody(entity);
     this.requestType = PUT;
+    Optional.ofNullable(force).ifPresent(value -> addSingleQueryParam("force", value));
     return this;
   }
 
@@ -238,10 +241,21 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
-  public OptimizeRequestExecutor buildDeleteReportRequest(String id) {
+  public OptimizeRequestExecutor buildGetReportDeleteConflictsRequest(String id) {
+    this.path = "report/" + id + "/delete-conflicts";
+    this.requestType = GET;
+    return this;
+  }
+
+  public OptimizeRequestExecutor buildDeleteReportRequest(String id, Boolean force) {
     this.path = "report/" + id;
     this.requestType = DELETE;
+    Optional.ofNullable(force).ifPresent(value -> addSingleQueryParam("force", value));
     return this;
+  }
+
+  public OptimizeRequestExecutor buildDeleteReportRequest(String id) {
+    return buildDeleteReportRequest(id, null);
   }
 
   public OptimizeRequestExecutor buildGetAllReportsRequest() {
