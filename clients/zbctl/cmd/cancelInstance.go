@@ -20,18 +20,18 @@ import (
 )
 
 var cancelInstanceCmd = &cobra.Command{
-	Use:   "instance <key>",
-	Short: "Cancel workflow instance by key",
-	Args: cobra.ExactArgs(1),
+	Use:    "instance <key>",
+	Short:  "Cancel workflow instance by key",
+	Args:   cobra.ExactArgs(1),
 	PreRun: initBroker,
 	Run: func(cmd *cobra.Command, args []string) {
 		workflowInstanceKey := convertToKey(args[0], "Expect workflow instance key as only positional argument, got")
 
 		zbCmd := client.
 			NewCancelInstanceCommand().
-		    WorkflowInstanceKey(workflowInstanceKey)
+			WorkflowInstanceKey(workflowInstanceKey)
 
-        _, err := zbCmd.Send()
+		_, err := zbCmd.Send()
 		utils.CheckOrExit(err, utils.ExitCodeIOError, defaultErrCtx)
 	},
 }

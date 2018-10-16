@@ -22,16 +22,16 @@ import (
 )
 
 var (
-	activateJobsAmountFlag int32
-	activateJobsWorkerFlag string
+	activateJobsAmountFlag  int32
+	activateJobsWorkerFlag  string
 	activateJobsTimeoutFlag time.Duration
 )
 
 // activateJobsCmd represents the activateJob command
 var activateJobsCmd = &cobra.Command{
-	Use:   "jobs <type>",
-	Short: "Activate jobs for type",
-	Args: cobra.ExactArgs(1),
+	Use:    "jobs <type>",
+	Short:  "Activate jobs for type",
+	Args:   cobra.ExactArgs(1),
 	PreRun: initBroker,
 	Run: func(cmd *cobra.Command, args []string) {
 		jobType := args[0]
@@ -42,7 +42,7 @@ var activateJobsCmd = &cobra.Command{
 		if jobsCount > 0 {
 			log.Println("Activated", jobsCount, "for type", jobType)
 			for index, job := range jobs {
-				log.Println("Job", index + 1, "/", jobsCount)
+				log.Println("Job", index+1, "/", jobsCount)
 				out.Serialize(job).Flush()
 			}
 		} else {

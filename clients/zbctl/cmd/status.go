@@ -23,9 +23,9 @@ import (
 
 // deployWorkflowCmd implements cobra command for cli
 var statusCmd = &cobra.Command{
-	Use:   "status",
-	Short: "Checks the current status of the cluster",
-	Args: cobra.NoArgs,
+	Use:    "status",
+	Short:  "Checks the current status of the cluster",
+	Args:   cobra.NoArgs,
 	PreRun: initBroker,
 	Run: func(cmd *cobra.Command, args []string) {
 		response, err := client.NewTopologyCommand().Send()
@@ -46,7 +46,7 @@ func init() {
 
 func roleToString(role pb.Partition_PartitionBrokerRole) string {
 	switch role {
-	case  pb.Partition_LEADER:
+	case pb.Partition_LEADER:
 		return "Leader"
 	case pb.Partition_FOLLOW:
 		return "Follower"

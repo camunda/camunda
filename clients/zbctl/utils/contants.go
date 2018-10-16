@@ -24,8 +24,8 @@ import (
 const (
 	DefaultBrokerAddress = "127.0.0.1:26500"
 	DefaultJobRetries    = utils.DefaultRetries
-	DefaultJobWorker    =  "zbctl"
-	DefaultJobTimeout    =  5 * time.Minute
+	DefaultJobWorker     = "zbctl"
+	DefaultJobTimeout    = 5 * time.Minute
 	LatestVersion        = commands.LatestVersion
 	EmptyJsonObject      = "{}"
 )
@@ -39,8 +39,8 @@ const (
 )
 
 var (
-	Version        = "development"
-	Commit         = "HEAD"
+	Version = "development"
+	Commit  = "HEAD"
 )
 
 func VersionString() string {

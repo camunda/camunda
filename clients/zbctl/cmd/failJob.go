@@ -25,9 +25,9 @@ var failJobRetriesFlag int32
 
 // failJobCmd represents the failJob command
 var failJobCmd = &cobra.Command{
-	Use:   "job <jobKey>",
-	Short: "Fail a job",
-	Args: cobra.ExactArgs(1),
+	Use:    "job <jobKey>",
+	Short:  "Fail a job",
+	Args:   cobra.ExactArgs(1),
 	PreRun: initBroker,
 	Run: func(cmd *cobra.Command, args []string) {
 		jobKey := convertToKey(args[0], "Expect job key as only positional argument, got")
