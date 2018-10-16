@@ -28,6 +28,7 @@ def goTests() {
     return '''\
 #!/bin/bash -eux
 cd ${GOPATH}/src/github.com/zeebe-io/zeebe/clients/go
+export CGO_ENABLED=0
 make install-deps test
 '''
 }
