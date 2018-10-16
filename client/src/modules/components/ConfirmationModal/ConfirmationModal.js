@@ -20,7 +20,10 @@ export default function ConfirmationModal(props) {
               <li key={item.id}>
                 {item.type === 'alert'
                   ? `"${item.name}" will be deleted from ${item.type}s`
-                  : `"${entityName}" will also be removed from the ${item.type}: "${item.name}"`}
+                  : `"${entityName}" will also be removed from the ${item.type.replace(
+                      '_',
+                      ' '
+                    )}: "${item.name}"`}
               </li>
             ))}
           </div>
