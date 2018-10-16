@@ -31,6 +31,7 @@ export default class Filters extends React.Component {
       startDate: PropTypes.string,
       version: PropTypes.string
     }).isRequired,
+    filterCount: PropTypes.number.isRequired,
     onFilterChange: PropTypes.func.isRequired,
     onFilterReset: PropTypes.func.isRequired,
     activityIds: PropTypes.arrayOf(
@@ -159,7 +160,9 @@ export default class Filters extends React.Component {
             <Styled.FiltersBadge
               type="filters"
               isDefault={isEqual(this.props.filter, DEFAULT_FILTER)}
-            />
+            >
+              {this.props.filterCount}
+            </Styled.FiltersBadge>
           </Styled.VerticalButton>
         }
         collapseButton={
@@ -171,7 +174,15 @@ export default class Filters extends React.Component {
           />
         }
       >
-        <CollapsablePanel.Header isRounded>Filters</CollapsablePanel.Header>
+        <CollapsablePanel.Header isRounded>
+          Filters
+          <Styled.FiltersBadge
+            type="filters"
+            isDefault={isEqual(this.props.filter, DEFAULT_FILTER)}
+          >
+            {this.props.filterCount}
+          </Styled.FiltersBadge>
+        </CollapsablePanel.Header>
         <CollapsablePanel.Body>
           <Styled.Filters>
             {!isWorkflowsDataLoaded ? null : (

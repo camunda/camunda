@@ -410,6 +410,7 @@ class Instances extends Component {
             <Styled.Filters>
               <Filters
                 filter={this.state.filter}
+                filterCount={this.state.filterCount}
                 activityIds={this.state.activityIds}
                 onFilterReset={this.handleFilterReset}
                 onFilterChange={this.handleFilterChange}

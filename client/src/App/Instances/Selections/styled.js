@@ -48,6 +48,7 @@ export const SelectionBadgeRight = styled(ComboBadgeComponent.Right)`
 
 export const SelectionsBadge = styled(BadgeComponent)`
   background-color: ${Colors.selections};
+  color: #ffffff;
 `;
 
 export const ExpandButton = styled(BasicExpandButton)`

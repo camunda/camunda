@@ -43,6 +43,7 @@ export const VerticalButton = styled(VerticalExpandButton)`
 
 export const FiltersBadge = themed(styled(Badge)`
   background-color: ${Colors.filtersAndWarnings};
+  color: ${Colors.uiDark02};
 `);
 
 const widthStyle = css`

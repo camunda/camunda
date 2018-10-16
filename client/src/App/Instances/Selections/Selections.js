@@ -79,9 +79,7 @@ export default class Selections extends React.Component {
           expandButton={
             <Styled.VerticalButton label="Selections">
               <Styled.SelectionsBadge isDefault={!this.props.selectionCount}>
-                {this.props.selectionCount > 0
-                  ? this.props.selectionCount
-                  : null}
+                {this.props.selectionCount}
               </Styled.SelectionsBadge>
             </Styled.VerticalButton>
           }

@@ -2,9 +2,6 @@ import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
 export const Header = themed(styled.div`
-  display: flex;
-  justify-content: space-between;
-  flex-direction: row;
   padding: 3px;
   padding-left: 20px;
   background-color: ${themeStyle({

@@ -98,12 +98,14 @@ describe('Filters', () => {
   const mockProps = {
     onFilterChange: spy,
     onFilterReset: resetSpy,
+    filterCount: 1,
     activityIds: []
   };
 
   const mockPropsWithActivityIds = {
     onFilterChange: spy,
     onFilterReset: resetSpy,
+    filterCount: 1,
     activityIds: [
       {value: 'taskA', label: 'task A'},
       {value: 'taskB', label: 'taskB'}
