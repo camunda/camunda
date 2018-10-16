@@ -1,7 +1,11 @@
 import styled from 'styled-components';
+import {Link} from 'react-router-dom';
+
 import {Colors, themed, themeStyle} from 'modules/theme';
 import BadgeComponent from 'modules/components/Badge';
+import ComboBadgeComponent from 'modules/components/ComboBadge';
 import {Logo} from 'modules/components/Icon';
+import withStrippedProps from 'modules/utils/withStrippedProps';
 
 export const HEADER_HEIGHT = 56;
 const separator = themeStyle({
@@ -18,17 +22,17 @@ export const LogoIcon = styled(Logo)`
   margin-right: 20px;
 `;
 
-export const Dashboard = themed(styled.div`
+export const Dashboard = themed(styled(withStrippedProps(['isActive'])(Link))`
   display: inline-block;
   padding: 0 20px;
   border-right: 1px solid ${separator};
 
   ${LogoIcon} {
-    ${({active}) => (active ? '' : `opacity: 0.8`)};
+    ${({isActive}) => (isActive ? '' : `opacity: 0.8`)};
   }
 
   span {
-    ${({active}) => (active ? '' : `opacity: 0.5;`)};
+    ${({isActive}) => (isActive ? '' : `opacity: 0.5;`)};
   }
 `);
 
@@ -56,20 +60,55 @@ export const Header = themed(styled.header`
   z-index: 4;
 `);
 
-export const ListLink = themed(styled.span`
+export const ListLink = themed(styled(withStrippedProps(['isActive'])(Link))`
   margin-left: 20px;
+  display: flex;
+  height: 20px;
+  align-items: center;
   & span {
-    ${({active}) => (active ? '' : `opacity: 0.5;`)};
+    ${({isActive}) => (isActive ? '' : `opacity: 0.5;`)};
   }
 `);
+
+// ------
+// Badges
+// ------
 
 export const Badge = styled(BadgeComponent)`
   opacity: 0.8;
 `;
 
-export const SelectionBadge = styled(Badge)`
-  margin-left: 13px;
+export const RunningInstancesBadge = themed(styled(Badge)`
+  background-color: ${themeStyle({
+    light: Colors.uiDark04,
+    dark: Colors.uiLight05
+  })};
+  color: ${themeStyle({
+    light: '#ffffff',
+    dark: Colors.uiDark04
+  })};
+`);
+
+export const FiltersBadge = styled(Badge)`
+  background-color: ${Colors.filtersAndWarnings};
+  color: ${Colors.uiDark02};
 `;
+
+export const SelectionBadgeLeft = styled(ComboBadgeComponent.Left)`
+  background-color: ${Colors.selections};
+  color: #ffffff;
+`;
+
+export const SelectionBadgeRight = styled(ComboBadgeComponent.Right)`
+  background-color: rgba(77, 144, 255, 0.75);
+  color: #ffffff;
+`;
+
+export const IncidentsBadge = styled(Badge)`
+  background-color: ${Colors.incidentsAndErrors};
+  color: #ffffff;
+`;
+// -------
 
 export const Detail = themed(styled.span`
   padding-left: 20px;

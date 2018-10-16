@@ -1,8 +1,9 @@
 import styled from 'styled-components';
 
-import {Colors, themed, themeStyle} from 'modules/theme';
+import {Colors} from 'modules/theme';
 import Panel from 'modules/components/Panel';
 import BadgeComponent from 'modules/components/Badge';
+import ComboBadgeComponent from 'modules/components/ComboBadge';
 import BasicCollapsablePanel from 'modules/components/CollapsablePanel';
 import BasicExpandButton from 'modules/components/ExpandButton';
 import VerticalExpandButton from 'modules/components/VerticalExpandButton';
@@ -27,12 +28,26 @@ export const SelectionHeader = styled(Panel.Header)`
 
   padding-left: 45px;
   display: flex;
+  align-items: center;
   flex-shrink: 0;
 `;
 
 export const Badge = styled(BadgeComponent)`
-  top: 2px;
   margin-left: 13px;
+`;
+
+export const SelectionBadgeLeft = styled(ComboBadgeComponent.Left)`
+  background: ${Colors.selections};
+  color: #ffffff;
+`;
+
+export const SelectionBadgeRight = styled(ComboBadgeComponent.Right)`
+  background: rgba(77, 144, 255, 0.75);
+  color: #ffffff;
+`;
+
+export const SelectionsBadge = styled(BadgeComponent)`
+  background-color: ${Colors.selections};
 `;
 
 export const ExpandButton = styled(BasicExpandButton)`
@@ -52,24 +67,3 @@ export const VerticalButton = styled(VerticalExpandButton)`
   width: 100%;
   height: 100%;
 `;
-
-const backgroundStyle = ({isDefault}) => {
-  return !isDefault
-    ? Colors.selections
-    : themeStyle({
-        light: Colors.uiLight05,
-        dark: Colors.uiDark06
-      });
-};
-
-export const SelectionsBadge = themed(styled.span`
-  padding: 5px 4.6px;
-  border-radius: 8.5px;
-  height: 17px;
-  min-width: 17px;
-  background: ${backgroundStyle};
-  display: flex;
-  justify-items: center;
-  align-items: center;
-  font-size: 12px;
-`);

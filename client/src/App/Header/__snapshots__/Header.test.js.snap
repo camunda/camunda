@@ -6,104 +6,88 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
     role="navigation"
   >
     <li>
-      <Themed(styled.div)
-        active={false}
+      <Themed(Styled(withStrippedProps(Link)))
+        isActive={false}
+        to="/"
       >
-        <Link
-          replace={false}
-          to="/"
-        >
-          <Styled(Logo) />
-          <span>
-            Dashboard
-          </span>
-        </Link>
-      </Themed(styled.div)>
+        <Styled(Logo) />
+        <span>
+          Dashboard
+        </span>
+      </Themed(Styled(withStrippedProps(Link)))>
     </li>
     <li
       data-test="header-link-instances"
     >
-      <Themed(styled.span)
-        active={false}
+      <Themed(Styled(withStrippedProps(Link)))
+        isActive={false}
+        title="0 Instances"
+        to="/instances"
       >
-        <Link
-          replace={false}
-          title="0 Instances"
-          to="/instances"
-        >
-          <span>
-            Instances
-          </span>
-          <Styled(Badge)
-            badgeContent={0}
-            type="instances"
-          />
-        </Link>
-      </Themed(styled.span)>
+        <span>
+          Instances
+        </span>
+        <Themed(Styled(Styled(Badge)))>
+          0
+        </Themed(Styled(Styled(Badge)))>
+      </Themed(Styled(withStrippedProps(Link)))>
     </li>
     <li
       data-test="header-link-filters"
     >
-      <Themed(styled.span)
-        active={false}
+      <Themed(Styled(withStrippedProps(Link)))
+        isActive={false}
+        title="0 Filters"
+        to="/instances?filter=%7B%7D"
       >
-        <Link
-          replace={false}
-          title="0 Filters"
-          to="/instances?filter=%7B%7D"
+        <span>
+          Filters
+        </span>
+        <Styled(Styled(Badge))
+          type="filters"
         >
-          <span>
-            Filters
-          </span>
-          <Styled(Badge)
-            badgeContent={0}
-            type="filters"
-          />
-        </Link>
-      </Themed(styled.span)>
+          0
+        </Styled(Styled(Badge))>
+      </Themed(Styled(withStrippedProps(Link)))>
     </li>
     <li
       data-test="header-link-selections"
     >
-      <Themed(styled.span)
-        active={false}
+      <Themed(Styled(withStrippedProps(Link)))
+        isActive={false}
+        title="0 0 Selections"
+        to="/instances"
       >
-        <Link
-          replace={false}
-          title="0 0 Selections"
-          to="/instances"
-        >
-          <span>
-            Selections
-          </span>
-          <Styled(Styled(Badge))
-            badgeContent={0}
-            circleContent={0}
-            type="comboSelection"
-          />
-        </Link>
-      </Themed(styled.span)>
+        <span>
+          Selections
+        </span>
+        <ComboBadge>
+          <Styled(Left)>
+            0
+          </Styled(Left)>
+          <Styled(Right)>
+            0
+          </Styled(Right)>
+        </ComboBadge>
+      </Themed(Styled(withStrippedProps(Link)))>
     </li>
     <li
       data-test="header-link-incidents"
     >
-      <Themed(styled.span)
-        active={false}
+      <Themed(Styled(withStrippedProps(Link)))
+        isActive={false}
+        title="0 Incidents"
+        to="/instances?filter=%7B%22incidents%22%3Atrue%7D"
       >
-        <Link
-          replace={false}
-          title="0 Incidents"
-          to="/instances?filter=%7B%22incidents%22%3Atrue%7D"
+        <span>
+          Incidents
+        </span>
+        <Styled(Styled(Badge))
+          type="incidents"
         >
-          <span>
-            Incidents
-          </span>
-          <Styled(Badge)
-            badgeContent={0}
-            type="incidents"
-          />
-        </Link>
-      </Themed(styled.span)>
+          0
+        </Styled(Styled(Badge))>
+      </Themed(Styled(withStrippedProps(Link)))>
     </li>
   </styled.ul>
   <Themed(styled.span) />

@@ -1,14 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Badge should show combo badge styles 1`] = `
-<Themed(styled.div)
-  badgeContent={123}
-  circleContent={10}
-  type="comboSelection"
->
-  <Themed(styled.div)>
-    10
-  </Themed(styled.div)>
+exports[`Badge should contain passed number 1`] = `
+<styled.div>
   123
-</Themed(styled.div)>
+</styled.div>
 `;

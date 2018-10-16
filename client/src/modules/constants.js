@@ -94,16 +94,6 @@ export const ACTIVITY_STATE = {
   INCIDENT: 'INCIDENT'
 };
 
-export const BADGE_TYPE = {
-  FILTERS: 'filters',
-  SELECTIONS: 'selections',
-  SELECTIONHEAD: 'selectionHead',
-  OPENSELECTIONHEAD: 'openSelectionHead',
-  COMBOSELECTION: 'comboSelection',
-  INCIDENTS: 'incidents',
-  INSTANCES: 'instances'
-};
-
 export const DROPDOWN_PLACEMENT = {
   TOP: 'top',
   BOTTOM: 'bottom'

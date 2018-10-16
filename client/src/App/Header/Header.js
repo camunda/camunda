@@ -1,13 +1,14 @@
 import React from 'react';
-import {Redirect, Link} from 'react-router-dom';
+import {Redirect} from 'react-router-dom';
 import PropTypes from 'prop-types';
 
 import Dropdown from 'modules/components/Dropdown';
+import ComboBadge from 'modules/components/ComboBadge';
 import * as api from 'modules/api/header';
 import withSharedState from 'modules/components/withSharedState';
 import {fetchWorkflowInstancesCount} from 'modules/api/instances';
 import {getFilterQueryString} from 'modules/utils/filter';
-import {BADGE_TYPE, FILTER_SELECTION} from 'modules/constants';
+import {FILTER_SELECTION} from 'modules/constants';
 
 import {filtersMap, localStateKeys, apiKeys} from './constants';
 import * as Styled from './styled.js';
@@ -111,70 +112,64 @@ class Header extends React.Component {
       <Styled.Header>
         <Styled.Menu role="navigation">
           <li>
-            <Styled.Dashboard active={active === 'dashboard'}>
-              <Link to="/">
-                <Styled.LogoIcon />
-                <span>Dashboard</span>
-              </Link>
+            <Styled.Dashboard to="/" isActive={active === 'dashboard'}>
+              <Styled.LogoIcon />
+              <span>Dashboard</span>
             </Styled.Dashboard>
           </li>
           <li data-test="header-link-instances">
-            <Styled.ListLink active={isInstancesPage}>
-              <Link
-                to="/instances"
-                title={`${this.state.runningInstancesCount} Instances`}
-              >
-                <span>Instances</span>
-                <Styled.Badge
-                  type="instances"
-                  badgeContent={this.state.runningInstancesCount}
-                />
-              </Link>
+            <Styled.ListLink
+              isActive={isInstancesPage}
+              to="/instances"
+              title={`${this.state.runningInstancesCount} Instances`}
+            >
+              <span>Instances</span>
+              <Styled.RunningInstancesBadge>
+                {this.state.runningInstancesCount}
+              </Styled.RunningInstancesBadge>
             </Styled.ListLink>
           </li>
           <li data-test="header-link-filters">
-            <Styled.ListLink active={isInstancesPage}>
-              <Link
-                to={`/instances${getFilterQueryString(this.state.filter)}`}
-                title={`${this.state.filterCount} Filters`}
-              >
-                <span>Filters</span>
-                <Styled.Badge
-                  type="filters"
-                  badgeContent={this.state.filterCount}
-                />
-              </Link>
+            <Styled.ListLink
+              isActive={isInstancesPage}
+              to={`/instances${getFilterQueryString(this.state.filter)}`}
+              title={`${this.state.filterCount} Filters`}
+            >
+              <span>Filters</span>
+              <Styled.FiltersBadge type="filters">
+                {this.state.filterCount}
+              </Styled.FiltersBadge>
             </Styled.ListLink>
           </li>
           <li data-test="header-link-selections">
-            <Styled.ListLink active={isInstancesPage}>
-              <Link
-                to="/instances"
-                title={`${this.state.instancesInSelectionsCount} ${
-                  this.state.selectionCount
-                } Selections`}
-              >
-                <span>Selections</span>
-                <Styled.SelectionBadge
-                  type={BADGE_TYPE.COMBOSELECTION}
-                  badgeContent={this.state.instancesInSelectionsCount}
-                  circleContent={this.state.selectionCount}
-                />
-              </Link>
+            <Styled.ListLink
+              to="/instances"
+              title={`${this.state.instancesInSelectionsCount} ${
+                this.state.selectionCount
+              } Selections`}
+              isActive={isInstancesPage}
+            >
+              <span>Selections</span>
+              <ComboBadge>
+                <Styled.SelectionBadgeLeft>
+                  {this.state.instancesInSelectionsCount}
+                </Styled.SelectionBadgeLeft>
+                <Styled.SelectionBadgeRight>
+                  {this.state.selectionCount}
+                </Styled.SelectionBadgeRight>
+              </ComboBadge>
             </Styled.ListLink>
           </li>
           <li data-test="header-link-incidents">
-            <Styled.ListLink active={isInstancesPage}>
-              <Link
-                to={`/instances${incidentsQuery}`}
-                title={`${this.state.incidentsCount} Incidents`}
-              >
-                <span>Incidents</span>
-                <Styled.Badge
-                  type="incidents"
-                  badgeContent={this.state.incidentsCount}
-                />
-              </Link>
+            <Styled.ListLink
+              isActive={isInstancesPage}
+              to={`/instances${incidentsQuery}`}
+              title={`${this.state.incidentsCount} Incidents`}
+            >
+              <span>Incidents</span>
+              <Styled.IncidentsBadge type="incidents">
+                {this.state.incidentsCount}
+              </Styled.IncidentsBadge>
             </Styled.ListLink>
           </li>
         </Styled.Menu>

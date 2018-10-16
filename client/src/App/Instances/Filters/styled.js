@@ -41,21 +41,8 @@ export const VerticalButton = styled(VerticalExpandButton)`
   height: 100%;
 `;
 
-const backgroundStyle = ({isDefault}) => {
-  return !isDefault
-    ? ''
-    : themeStyle({
-        light: Colors.uiLight05,
-        dark: Colors.uiDark06
-      });
-};
-
 export const FiltersBadge = themed(styled(Badge)`
-  padding: 0;
-  height: 15px;
-  width: 15px;
-  border-radius: 50%;
-  background: ${backgroundStyle};
+  background-color: ${Colors.filtersAndWarnings};
 `);
 
 const widthStyle = css`

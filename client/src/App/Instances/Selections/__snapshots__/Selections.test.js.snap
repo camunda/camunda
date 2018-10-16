@@ -15,11 +15,11 @@ exports[`Selections should match this snapshot 1`] = `
       <Styled(VerticalExpandButton)
         label="Selections"
       >
-        <Themed(styled.span)
+        <Styled(Badge)
           isDefault={false}
         >
           2
-        </Themed(styled.span)>
+        </Styled(Badge)>
       </Styled(VerticalExpandButton)>
     }
     maxWidth={479}
@@ -30,11 +30,14 @@ exports[`Selections should match this snapshot 1`] = `
       <span>
         Selections
       </span>
-      <Styled(Badge)
-        badgeContent={6}
-        circleContent={2}
-        type="comboSelection"
-      />
+      <ComboBadge>
+        <Styled(Left)>
+          6
+        </Styled(Left)>
+        <Styled(Right)>
+          2
+        </Styled(Right)>
+      </ComboBadge>
     </Styled(PanelHeader)>
     <PanelBody>
       <SelectionList

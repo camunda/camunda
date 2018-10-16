@@ -107,33 +107,41 @@ describe('Header', () => {
     // instances node
     const instancesNode = node.find('[data-test="header-link-instances"]');
     expect(instancesNode.contains('Instances')).toBe(true);
-    expect(instancesNode.find(Styled.Badge).prop('badgeContent')).toBe(
-      mockProps.runningInstancesCount
-    );
+    expect(
+      instancesNode
+        .find(Styled.RunningInstancesBadge)
+        .contains(mockProps.runningInstancesCount)
+    ).toBe(true);
 
     // filters node
     const filtersNode = node.find('[data-test="header-link-filters"]');
     expect(filtersNode.contains('Filters')).toBe(true);
-    expect(filtersNode.find(Styled.Badge).prop('badgeContent')).toBe(
-      mockProps.filterCount
-    );
+    expect(
+      filtersNode.find(Styled.FiltersBadge).contains(mockProps.filterCount)
+    ).toBe(true);
 
     // selections node
     const selectionsNode = node.find('[data-test="header-link-selections"]');
     expect(selectionsNode.contains('Selections')).toBe(true);
     expect(
-      selectionsNode.find(Styled.SelectionBadge).prop('badgeContent')
-    ).toBe(mockProps.instancesInSelectionsCount);
+      selectionsNode
+        .find(Styled.SelectionBadgeLeft)
+        .contains(mockProps.instancesInSelectionsCount)
+    ).toBe(true);
     expect(
-      selectionsNode.find(Styled.SelectionBadge).prop('circleContent')
-    ).toBe(mockProps.selectionCount);
+      selectionsNode
+        .find(Styled.SelectionBadgeRight)
+        .contains(mockProps.selectionCount)
+    ).toBe(true);
 
     // incidents node
     const incidentsNode = node.find('[data-test="header-link-incidents"]');
     expect(incidentsNode.contains('Incidents')).toBe(true);
-    expect(incidentsNode.find(Styled.Badge).prop('badgeContent')).toBe(
-      mockProps.incidentsCount
-    );
+    expect(
+      incidentsNode
+        .find(Styled.IncidentsBadge)
+        .contains(mockProps.incidentsCount)
+    ).toBe(true);
   });
 
   it('it should request user information', async () => {

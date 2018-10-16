@@ -2,9 +2,10 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import CollapsablePanel from 'modules/components/CollapsablePanel';
+import ComboBadge from 'modules/components/ComboBadge';
 
 import {applyOperation} from 'modules/api/instances';
-import {BADGE_TYPE, DIRECTION, OPERATION_TYPE} from 'modules/constants';
+import {DIRECTION, OPERATION_TYPE} from 'modules/constants';
 import {getSelectionById} from 'modules/utils/selection';
 
 import SelectionList from './SelectionList';
@@ -95,11 +96,14 @@ export default class Selections extends React.Component {
         >
           <Styled.SelectionHeader isRounded>
             <span>Selections</span>
-            <Styled.Badge
-              type={BADGE_TYPE.COMBOSELECTION}
-              badgeContent={this.props.instancesInSelectionsCount}
-              circleContent={this.props.selectionCount}
-            />
+            <ComboBadge>
+              <Styled.SelectionBadgeLeft>
+                {this.props.instancesInSelectionsCount}
+              </Styled.SelectionBadgeLeft>
+              <Styled.SelectionBadgeRight>
+                {this.props.selectionCount}
+              </Styled.SelectionBadgeRight>
+            </ComboBadge>
           </Styled.SelectionHeader>
           <CollapsablePanel.Body>
             <SelectionList
