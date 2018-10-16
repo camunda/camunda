@@ -4,13 +4,13 @@
 
   <name>Zeebe Git Hooks Maven Plugin</name>
   <artifactId>zb-githooks-plugin</artifactId>
-  <version>0.12.0</version>
+  <version>0.13.0-SNAPSHOT</version>
   <packaging>maven-plugin</packaging>
 
   <parent>
     <artifactId>zb-bom</artifactId>
     <groupId>io.zeebe</groupId>
-    <version>0.12.0</version>
+    <version>0.13.0-SNAPSHOT</version>
     <relativePath>../bom</relativePath>
   </parent>
 
