@@ -222,6 +222,16 @@ public class ZeebeValidationTest {
         Arrays.asList(
             expect("flow", "Must only have payload mappings if its target is a parallel gateway"))
       },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent("start")
+            .serviceTask("task", b -> b.zeebeTaskType("type"))
+            .condition("foo")
+            .endEvent()
+            .done(),
+        Arrays.asList(
+            expect("task", "Conditional sequence flows are only supported at exclusive gateway"))
+      },
     };
   }
 

@@ -30,6 +30,7 @@ public class ZeebeDesignTimeValidators {
     VALIDATORS.add(new EventDefinitionValidator());
     VALIDATORS.add(new ExclusiveGatewayValidator());
     VALIDATORS.add(new FlowElementValidator());
+    VALIDATORS.add(new FlowNodeValidator());
     VALIDATORS.add(new MessageValidator());
     VALIDATORS.add(new ProcessValidator());
     VALIDATORS.add(new SequenceFlowValidator());

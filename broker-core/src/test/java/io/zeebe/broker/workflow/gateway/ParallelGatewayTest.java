@@ -549,6 +549,39 @@ public class ParallelGatewayTest {
     JsonUtil.assertEquality(actualPayload, "{'key': 'val', 'arr': [null]}");
   }
 
+  @Test
+  public void shouldSplitWithUncontrolledFlow() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent("start")
+            .serviceTask("task1", b -> b.zeebeTaskType("type1"))
+            .moveToNode("start")
+            .serviceTask("task2", b -> b.zeebeTaskType("type2"))
+            .done();
+
+    testClient.deploy(process);
+
+    // when
+    testClient.createWorkflowInstance(PROCESS_ID);
+
+    // then
+    final List<SubscribedRecord> taskEvents =
+        testClient
+            .receiveEvents()
+            .ofTypeWorkflowInstance()
+            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .filter(e -> isServiceTaskInProcess((String) e.value().get("activityId"), process))
+            .limit(2)
+            .collect(Collectors.toList());
+
+    assertThat(taskEvents).hasSize(2);
+    assertThat(taskEvents)
+        .extracting(e -> e.value().get("activityId"))
+        .containsExactlyInAnyOrder("task1", "task2");
+    assertThat(taskEvents.get(0).key()).isNotEqualTo(taskEvents.get(1).key());
+  }
+
   private static boolean isServiceTaskInProcess(String activityId, BpmnModelInstance process) {
     return process
         .getModelElementsByType(ServiceTask.class)
