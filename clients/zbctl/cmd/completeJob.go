@@ -11,31 +11,35 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package cmd
 
 import (
-	"github.com/zeebe-io/zeebe/clients/zbctl/utils"
-
 	"github.com/spf13/cobra"
+	"github.com/zeebe-io/zeebe/clients/zbctl/utils"
+	"log"
 )
 
-var cancelInstanceCmd = &cobra.Command{
-	Use:   "instance <key>",
-	Short: "Cancel workflow instance by key",
+var completeJobPayloadFlag string
+
+// completeJobCmd represents the completeJob command
+var completeJobCmd = &cobra.Command{
+	Use:   "job <jobKey>",
+	Short: "Complete a job",
 	Args: cobra.ExactArgs(1),
 	PreRun: initBroker,
 	Run: func(cmd *cobra.Command, args []string) {
-		workflowInstanceKey := convertToKey(args[0], "Expect workflow instance key as only positional argument, got")
+		jobKey := convertToKey(args[0], "Expect job key as only positional argument, got")
 
-		zbCmd := client.
-			NewCancelInstanceCommand().
-		    WorkflowInstanceKey(workflowInstanceKey)
+		request, err := client.NewCompleteJobCommand().JobKey(jobKey).PayloadFromString(completeJobPayloadFlag)
+		utils.CheckOrExit(err, utils.ExitCodeConfigurationError, defaultErrCtx)
 
-        _, err := zbCmd.Send()
-		utils.CheckOrExit(err, utils.ExitCodeIOError, defaultErrCtx)
+		_, err = request.Send()
+		log.Println("Completed job with key", jobKey, "and payload", completeJobPayloadFlag)
 	},
 }
 
 func init() {
-	cancelCmd.AddCommand(cancelInstanceCmd)
+	completeCmd.AddCommand(completeJobCmd)
+	completeJobCmd.Flags().StringVar(&completeJobPayloadFlag, "payload", utils.EmptyJsonObject, "Specify payload as JSON object string")
 }

@@ -11,33 +11,36 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
+
 package cmd
 
 import (
 	"github.com/zeebe-io/zeebe/clients/zbctl/utils"
+	"log"
 
 	"github.com/spf13/cobra"
 )
 
-// deployWorkflowCmd implements cobra command for cli
-var deployWorkflowCmd = &cobra.Command{
-	Use:   "deploy <workflowPath>",
-	Short: "Creates new workflow defined by provided bpmn or yaml file as workflowPath",
-	Args: cobra.MinimumNArgs(1),
+var failJobRetriesFlag int32
+
+// failJobCmd represents the failJob command
+var failJobCmd = &cobra.Command{
+	Use:   "job <jobKey>",
+	Short: "Fail a job",
+	Args: cobra.ExactArgs(1),
 	PreRun: initBroker,
 	Run: func(cmd *cobra.Command, args []string) {
-		zbCmd := client.NewDeployWorkflowCommand().AddResourceFile(args[0])
-		for i := 1; i < len(args); i++ {
-			zbCmd = zbCmd.AddResourceFile(args[i])
-		}
+		jobKey := convertToKey(args[0], "Expect job key as only positional argument, got")
 
-		response, err := zbCmd.Send()
+		_, err := client.NewFailJobCommand().JobKey(jobKey).Retries(failJobRetriesFlag).Send()
 		utils.CheckOrExit(err, utils.ExitCodeIOError, defaultErrCtx)
 
-		out.Serialize(response).Flush()
+		log.Println("Failed job with key", jobKey, "and set remaining retries to", failJobRetriesFlag)
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(deployWorkflowCmd)
+	failCmd.AddCommand(failJobCmd)
+	failJobCmd.Flags().Int32Var(&failJobRetriesFlag, "retries", utils.DefaultJobRetries, "Specify remaining retries of job")
+	failJobCmd.MarkFlagRequired("retries")
 }

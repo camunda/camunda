@@ -14,31 +14,43 @@
 package cmd
 
 import (
+	"fmt"
+	"github.com/zeebe-io/zeebe/clients/go/pb"
 	"github.com/zeebe-io/zeebe/clients/zbctl/utils"
 
 	"github.com/spf13/cobra"
-	"github.com/zeebe-io/zeebe/clients/go"
 )
 
 // deployWorkflowCmd implements cobra command for cli
 var statusCmd = &cobra.Command{
 	Use:   "status",
 	Short: "Checks the current status of the cluster",
-	Long:  ``,
-	PreRun: func(cmd *cobra.Command, args []string) {
-		initBroker(cmd)
-	},
+	Args: cobra.NoArgs,
+	PreRun: initBroker,
 	Run: func(cmd *cobra.Command, args []string) {
-		client, err := zbc.NewZBClient(brokerAddr)
-		utils.CheckOrExit(err, utils.ExitCodeConfigurationError, defaultErrCtx)
-
 		response, err := client.NewTopologyCommand().Send()
 		utils.CheckOrExit(err, utils.ExitCodeIOError, defaultErrCtx)
 
-		out.Serialize(response).Flush()
+		for _, broker := range response.Brokers {
+			fmt.Println("Broker", broker.Host, ":", broker.Port)
+			for _, partition := range broker.Partitions {
+				fmt.Println("  Partition", partition.PartitionId, ":", roleToString(partition.Role))
+			}
+		}
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(statusCmd)
+}
+
+func roleToString(role pb.Partition_PartitionBrokerRole) string {
+	switch role {
+	case  pb.Partition_LEADER:
+		return "Leader"
+	case pb.Partition_FOLLOW:
+		return "Follower"
+	default:
+		return "Unknown"
+	}
 }

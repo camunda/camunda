@@ -21,7 +21,6 @@ import (
 var cancelCmd = &cobra.Command{
 	Use:   "cancel",
 	Short: "Cancel resource",
-	Long:  ``,
 }
 
 func init() {
