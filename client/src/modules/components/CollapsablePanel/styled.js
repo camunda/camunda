@@ -15,6 +15,7 @@ export const Collapsable = themed(styled.div`
     dark: Colors.uiDark03,
     light: Colors.uiLight02
   })};
+  border-radius: 0 3px 0 0;
 `);
 
 const panelStyle = css`
