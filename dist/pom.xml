@@ -87,7 +87,9 @@
               <goal>run</goal>
             </goals>
             <configuration>
-              <tasks>
+              <target>
+                <exec executable="${maven.multiModuleProjectDirectory}/clients/zbctl/build.sh"
+                  osfamily="unix"/>
                 <copy
                   file="${maven.multiModuleProjectDirectory}/clients/zbctl/dist/zbctl"
                   tofile="${project.build.directory}/zeebe-broker/bin/zbctl" failonerror="false"/>
@@ -100,7 +102,7 @@
                   failonerror="false"/>
                 <chmod dir="${project.build.directory}/zeebe-broker/bin" perm="ugo+rx"
                   includes="zbctl*"/>
-              </tasks>
+              </target>
             </configuration>
           </execution>
         </executions>

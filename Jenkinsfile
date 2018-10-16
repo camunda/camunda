@@ -47,7 +47,6 @@ pipeline {
             steps {
                 withMaven(jdk: jdkVersion, maven: mavenVersion, mavenSettingsConfig: mavenSettingsConfig) {
                     sh setupGoPath()
-                    sh 'clients/zbctl/build.sh'
                     sh 'mvn -B -T 1C clean com.mycila:license-maven-plugin:check com.coveo:fmt-maven-plugin:check install -DskipTests'
                 }
 
