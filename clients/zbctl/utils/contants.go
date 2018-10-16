@@ -14,8 +14,10 @@
 package utils
 
 import (
+	"fmt"
 	"github.com/zeebe-io/zeebe/clients/go/commands"
 	"github.com/zeebe-io/zeebe/clients/go/utils"
+	"math"
 	"time"
 )
 
@@ -35,3 +37,14 @@ const (
 	ExitCodeConfigurationError = 78
 	ExitCodeIOError            = 74
 )
+
+var (
+	Version        = "development"
+	Commit         = "HEAD"
+)
+
+func VersionString() string {
+	commit := Commit[0:int(math.Min(8, float64(len(Commit))))]
+	return fmt.Sprintf("zbctl %s (commit: %s)", Version, commit)
+
+}

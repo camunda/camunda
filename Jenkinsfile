@@ -9,7 +9,7 @@ def joinJmhResults = '''\
 cat **/*/jmh-result.json | jq -s add > target/jmh-result.json
 '''
 
-def goTests() {
+def setupGoPath() {
     return '''\
 #!/bin/bash -eux
 echo "== Go build environment =="
@@ -21,7 +21,12 @@ mkdir -p ${PROJECT_ROOT}
 
 PROJECT_DIR="${PROJECT_ROOT}/zeebe"
 ln -fvs ${WORKSPACE} ${PROJECT_DIR}
+'''
+}
 
+def goTests() {
+    return '''\
+#!/bin/bash -eux
 cd ${GOPATH}/src/github.com/zeebe-io/zeebe/clients/go
 make install-deps test
 '''
@@ -40,6 +45,8 @@ pipeline {
         stage('Install') {
             steps {
                 withMaven(jdk: jdkVersion, maven: mavenVersion, mavenSettingsConfig: mavenSettingsConfig) {
+                    sh setupGoPath()
+                    sh 'clients/zbctl/build.sh'
                     sh 'mvn -B -T 1C clean com.mycila:license-maven-plugin:check com.coveo:fmt-maven-plugin:check install -DskipTests'
                 }
 
@@ -68,6 +75,7 @@ pipeline {
 
                     steps {
                         unstash name: "zeebe-dist"
+                        sh setupGoPath()
                         sh goTests()
                     }
                 }
