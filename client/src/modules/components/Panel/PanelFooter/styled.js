@@ -5,7 +5,6 @@ export const Footer = themed(styled.div`
   height: 38px;
   width: 100%;
   padding: 10px 20px;
-  border-radius: 3px;
   border-top: solid 1px
     ${themeStyle({
       dark: Colors.uiDark04,

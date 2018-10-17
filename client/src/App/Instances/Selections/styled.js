@@ -20,6 +20,7 @@ export const Selections = styled.div`
 
 export const CollapsablePanel = styled(BasicCollapsablePanel)`
   box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.5);
+  border-radius: 3px 0px 0 0;
 `;
 
 export const SelectionHeader = styled(Panel.Header)`
@@ -30,6 +31,7 @@ export const SelectionHeader = styled(Panel.Header)`
   display: flex;
   align-items: center;
   flex-shrink: 0;
+  border-radius: 3px 0 0 0;
 `;
 
 export const Badge = styled(BadgeComponent)`
