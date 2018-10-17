@@ -63,15 +63,7 @@ export default class InstanceEvents extends React.Component {
   };
 
   renderEvent = (
-    {
-      label,
-      eventType,
-      eventSourceType,
-      metadata,
-      indentation,
-      payload,
-      isFirst
-    },
+    {label, eventType, eventSourceType, metadata, indentation, payload},
     idx
   ) => {
     const key = `${eventType}${idx}`;
@@ -82,7 +74,6 @@ export default class InstanceEvents extends React.Component {
     return (
       <Foldable key={key} indentation={indentation}>
         <Foldable.Summary
-          isFirst={isFirst}
           isFoldable={!isEmpty(metadata)}
           isOpenIncidentEvent={isOpenIncidentEvent}
           isSelected={key === this.props.selectedEventRow.key}
@@ -104,11 +95,11 @@ export default class InstanceEvents extends React.Component {
     );
   };
 
-  renderWorkflowInstanceEvent = (data, idx) =>
-    this.renderEvent({...data, indentation: 0, isFirst: idx === 0}, idx);
+  renderWorkflowInstanceEvent = (data, key) =>
+    this.renderEvent({...data, indentation: 0}, key);
 
-  renderActivityEvent = (data, idx) =>
-    this.renderEvent({...data, indentation: 1, isFirst: idx === 0}, idx);
+  renderActivityEvent = (data, key) =>
+    this.renderEvent({...data, indentation: 1}, key);
 
   renderActivityEvents = ({name, events, state}, idx) => {
     const key = `${name}${idx}`;
@@ -128,7 +119,9 @@ export default class InstanceEvents extends React.Component {
           )}
         </Foldable.Summary>
         <Foldable.Details>
-          {events.map(this.renderActivityEvent)}
+          {events.map((event, eventIdx) =>
+            this.renderActivityEvent(event, `${key}${eventIdx}`)
+          )}
         </Foldable.Details>
       </Foldable>
     );

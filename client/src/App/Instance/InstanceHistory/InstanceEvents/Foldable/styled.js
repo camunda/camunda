@@ -40,7 +40,7 @@ export const RightIcon = themed(styled(
 
 export const Summary = themed(styled.div`
   position: relative;
-  height: ${({isFirst}) => (isFirst ? '32px' : '31px')};
+  height: 31px;
   flex: 1;
 `);
 

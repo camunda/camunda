@@ -80,11 +80,10 @@ exports[`InstanceEvents should render grouped events 1`] = `
         <Details>
           <Foldable
             indentation={1}
-            key="fooCreated0"
+            key="fooCreatedfoo name00"
           >
             <Summary
-              data-test="fooCreated0"
-              isFirst={true}
+              data-test="fooCreatedfoo name00"
               isFoldable={true}
               isOpenIncidentEvent={false}
               isSelected={false}
@@ -103,11 +102,10 @@ exports[`InstanceEvents should render grouped events 1`] = `
           </Foldable>
           <Foldable
             indentation={1}
-            key="fooActiviated1"
+            key="fooActiviatedfoo name01"
           >
             <Summary
-              data-test="fooActiviated1"
-              isFirst={false}
+              data-test="fooActiviatedfoo name01"
               isFoldable={false}
               isOpenIncidentEvent={false}
               isSelected={false}
@@ -139,11 +137,10 @@ exports[`InstanceEvents should render grouped events 1`] = `
         <Details>
           <Foldable
             indentation={1}
-            key="CREATED0"
+            key="CREATEDbar name10"
           >
             <Summary
-              data-test="CREATED0"
-              isFirst={true}
+              data-test="CREATEDbar name10"
               isFoldable={false}
               isOpenIncidentEvent={true}
               isSelected={false}
@@ -155,11 +152,10 @@ exports[`InstanceEvents should render grouped events 1`] = `
           </Foldable>
           <Foldable
             indentation={1}
-            key="BAR_ACTIVATED1"
+            key="BAR_ACTIVATEDbar name11"
           >
             <Summary
-              data-test="BAR_ACTIVATED1"
-              isFirst={false}
+              data-test="BAR_ACTIVATEDbar name11"
               isFoldable={false}
               isOpenIncidentEvent={false}
               isSelected={false}
@@ -180,7 +176,6 @@ exports[`InstanceEvents should render grouped events 1`] = `
       >
         <Summary
           data-test="baz2"
-          isFirst={false}
           isFoldable={true}
           isOpenIncidentEvent={false}
           isSelected={false}

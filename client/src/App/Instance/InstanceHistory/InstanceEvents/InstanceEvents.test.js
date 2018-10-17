@@ -169,7 +169,7 @@ describe('InstanceEvents', () => {
   describe('selection', () => {
     it('should apply selection to the proper row', () => {
       // given
-      const selectedEventRow = {key: 'fooCreated0', payload: {}};
+      const selectedEventRow = {key: 'fooCreatedfoo name00', payload: {}};
       const node = shallow(
         <InstanceEvents {...mockProps} selectedEventRow={selectedEventRow} />
       );
