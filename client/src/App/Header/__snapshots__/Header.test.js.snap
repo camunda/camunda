@@ -62,9 +62,9 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
           Selections
         </span>
         <ComboBadge>
-          <Styled(Left)>
+          <Themed(Styled(Left))>
             0
-          </Styled(Left)>
+          </Themed(Styled(Left))>
           <Styled(Right)>
             0
           </Styled(Right)>
