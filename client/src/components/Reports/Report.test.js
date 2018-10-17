@@ -630,7 +630,10 @@ describe('edit mode', async () => {
     node.setState({
       reportResult: {
         data: {
-          visualization: 'table'
+          visualization: 'table',
+          view: {
+            operation: 'rawData'
+          }
         },
         processInstanceCount: 1500,
         result: new Array(1000)

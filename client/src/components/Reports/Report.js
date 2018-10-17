@@ -332,6 +332,8 @@ export default withErrorHandling(
         result.length &&
         data &&
         data.visualization === 'table' &&
+        data.view &&
+        data.view.operation === 'rawData' &&
         processInstanceCount > result.length
       );
     };
@@ -415,7 +417,8 @@ export default withErrorHandling(
 
           {this.maxRawDataEntriesExceeded() && (
             <Message type="warning">
-              The raw data table below only shows the last 1000 process instances
+              The raw data table below only shows {reportResult.result.length} process instances out
+              of a total of {reportResult.processInstanceCount}
             </Message>
           )}
 
