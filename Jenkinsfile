@@ -110,6 +110,15 @@ pipeline {
             }
         }
 
+        stage('Build Docker Image')
+        {
+            when { branch 'develop' }
+            build job: 'zeebe-DISTRO-docker', parameters: [
+                string(name: 'RELEASE_VERSION', value: "SNAPSHOT"),
+                booleanParam(name: 'IS_LATEST', value: false)
+            ]
+        }
+
     }
 
     post {
