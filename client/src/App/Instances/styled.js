@@ -24,7 +24,6 @@ export const Content = styled.div`
 `;
 
 export const Filters = styled.div`
-  display: flex;
   margin-right: 1px;
 `;
 

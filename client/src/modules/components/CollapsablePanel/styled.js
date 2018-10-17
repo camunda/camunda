@@ -5,17 +5,21 @@ import {Colors, themed, themeStyle} from 'modules/theme';
 import BasicPanel from '../Panel';
 
 export const Collapsable = themed(styled.div`
+  position: relative;
+
   overflow: hidden;
-  transition: width 0.2s ease-out;
   width: ${({isCollapsed, maxWidth}) =>
     isCollapsed ? '56px' : `${maxWidth}px`};
   height: 100%;
-  position: relative;
+
   background-color: ${themeStyle({
     dark: Colors.uiDark03,
     light: Colors.uiLight02
   })};
+
   border-radius: 0 3px 0 0;
+
+  transition: width 0.2s ease-out;
 `);
 
 const panelStyle = css`
