@@ -2,8 +2,6 @@ import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
 export const Header = themed(styled.div`
-  padding: 3px;
-  padding-left: 20px;
   background-color: ${themeStyle({
     dark: Colors.uiDark03,
     light: Colors.uiLight02
@@ -16,6 +14,7 @@ export const Header = themed(styled.div`
   font-size: 15px;
   font-weight: bold;
   padding: 9px 10px;
+  padding-left: 20px;
   border-radius: ${props => (props.isRounded ? '3px 3px 0 0' : 0)};
   height: 38px;
 `);
