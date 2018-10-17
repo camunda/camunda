@@ -255,7 +255,7 @@ public class SimpleEngineClient {
 
 
   private String getTaskListUri() {
-    return engineRestEndpoint + "/task";
+    return engineRestEndpoint + "/task?maxResults=1000";
   }
 
   private void claimAndCompleteUserTask(CloseableHttpClient client, TaskDto task) {
