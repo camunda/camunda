@@ -17,7 +17,6 @@ import completedLightIcon from 'modules/components/Icon/diagram-badge-single-ins
 import completedDarkIcon from 'modules/components/Icon/diagram-badge-single-instance-completed-dark.svg';
 import canceledLightIcon from 'modules/components/Icon/diagram-badge-single-instance-canceled-light.svg';
 import canceledDarkIcon from 'modules/components/Icon/diagram-badge-single-instance-canceled-dark.svg';
-import {CollapsablePanelConsumer} from 'modules/contexts/CollapsablePanelContext';
 import * as Styled from './styled';
 import DiagramControls from './DiagramControls';
 import * as api from 'modules/api/diagram';
@@ -64,12 +63,7 @@ class Diagram extends React.Component {
         completed: PropTypes.number,
         canceled: PropTypes.number
       })
-    ),
-    hasShiftableControls: PropTypes.bool
-  };
-
-  static defaultProps = {
-    hasShiftableControls: false
+    )
   };
 
   constructor(props) {
@@ -364,18 +358,11 @@ class Diagram extends React.Component {
     return (
       <Styled.Diagram>
         <Styled.DiagramCanvas innerRef={this.containerRef} />
-        <CollapsablePanelConsumer>
-          {context => (
-            <DiagramControls
-              isShifted={
-                this.props.hasShiftableControls ? !context.selections : false
-              }
-              handleZoomIn={this.handleZoomIn}
-              handleZoomOut={this.handleZoomOut}
-              handleZoomReset={this.handleZoomReset}
-            />
-          )}
-        </CollapsablePanelConsumer>
+        <DiagramControls
+          handleZoomIn={this.handleZoomIn}
+          handleZoomOut={this.handleZoomOut}
+          handleZoomReset={this.handleZoomReset}
+        />
       </Styled.Diagram>
     );
   }

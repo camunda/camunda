@@ -442,7 +442,6 @@ class Instances extends Component {
                       selectableFlowNodes={this.state.activityIds.map(
                         item => item.value
                       )}
-                      hasShiftableControls
                     />
                   )}
                 </SplitPane.Pane.Body>

@@ -6,7 +6,7 @@ export const DiagramControls = styled.div`
   display: flex;
   flex-direction: column;
   position: absolute;
-  right: ${({isShifted}) => (isShifted ? '427px' : '5px')};
+  right: 5px;
   bottom: 47px;
   z-index: 2;
   width: 28px;

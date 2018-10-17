@@ -327,7 +327,6 @@ describe('Instances', () => {
           expect(DiagramNode.props().flowNodesStatisticsOverlay).toBe(
             node.state().statistics
           );
-          expect(DiagramNode.props().hasShiftableControls).toBe(true);
           expect(node.find(PanelHeader).props().children).toBe(
             workflowMock.name || workflowMock.id
           );

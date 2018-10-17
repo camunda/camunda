@@ -63,10 +63,7 @@ describe('Diagram', () => {
     const DiagramCanvasNode = node.find(Styled.DiagramCanvas);
     expect(DiagramCanvasNode).toHaveLength(1);
     expect(DiagramCanvasNode.prop('innerRef')).toBe(nodeInstance.containerRef);
-    const DiagramControlsNode = node
-      .find('CollapsablePanelConsumer')
-      .dive()
-      .find(DiagramControls);
+    const DiagramControlsNode = node.find(DiagramControls);
     expect(DiagramControlsNode).toHaveLength(1);
     expect(DiagramControlsNode.prop('handleZoomIn')).toBe(
       nodeInstance.handleZoomIn
@@ -77,7 +74,6 @@ describe('Diagram', () => {
     expect(DiagramControlsNode.prop('handleZoomReset')).toBe(
       nodeInstance.handleZoomReset
     );
-    expect(DiagramControlsNode.prop('isShifted')).toBe(false);
     expect(node.state().isViewerLoaded).toBe(true);
     expect(node).toMatchSnapshot();
     expect(DiagramControlsNode).toMatchSnapshot();
