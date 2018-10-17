@@ -50,10 +50,6 @@
               "type": "keyword"
             }
           }
-        },
-        "value": {
-          "type": "object",
-          "dynamic": true
         }
       }
     }
