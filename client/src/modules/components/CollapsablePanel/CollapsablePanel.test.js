@@ -14,14 +14,6 @@ const mockProps = {
 };
 
 describe('CollapsablePanel', () => {
-  it('should not be collapsed by default', () => {
-    // given
-    const node = shallow(<CollapsablePanel {...mockProps} />);
-
-    // then
-    expect(node.state().isCollapsed).toBe(false);
-  });
-
   it('should render an exapnding panel and a collapsing one', () => {
     // given
     const node = shallow(<CollapsablePanel {...mockProps} />);
@@ -49,12 +41,10 @@ describe('CollapsablePanel', () => {
     CollapseButtonNode.simulate('click');
 
     expect(node.props().onCollapse).toHaveBeenCalled();
-    expect(node.state().isCollapsed).toBe(true);
 
     const ExpandButtonNode = node.find('[data-test="expand-button"]');
     ExpandButtonNode.simulate('click');
 
     expect(node.props().onCollapse).toHaveBeenCalled();
-    expect(node.state().isCollapsed).toBe(false);
   });
 });

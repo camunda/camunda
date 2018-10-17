@@ -11,7 +11,7 @@ export default class CollapsablePanel extends React.Component {
       PropTypes.node
     ]),
     isCollapsed: PropTypes.bool,
-    onCollapse: PropTypes.func,
+    onCollapse: PropTypes.func.isRequired,
     expandButton: PropTypes.node.isRequired,
     collapseButton: PropTypes.node.isRequired,
     maxWidth: PropTypes.number.isRequired,
@@ -22,21 +22,8 @@ export default class CollapsablePanel extends React.Component {
     isCollapsed: false
   };
 
-  constructor(props) {
-    super(props);
-    this.state = {isCollapsed: props.isCollapsed};
-  }
-
   handleButtonClick = () => {
-    if (this.props.onCollapse) {
-      this.props.onCollapse();
-    }
-
-    this.setState(prevState => {
-      return {
-        isCollapsed: !prevState.isCollapsed
-      };
-    });
+    this.props.onCollapse();
   };
 
   renderButton = button =>
@@ -45,8 +32,13 @@ export default class CollapsablePanel extends React.Component {
     });
 
   render() {
-    const {children, collapseButton, expandButton, ...props} = this.props;
-    const {isCollapsed} = this.state;
+    const {
+      isCollapsed,
+      children,
+      collapseButton,
+      expandButton,
+      ...props
+    } = this.props;
 
     return (
       <Styled.Collapsable {...props} isCollapsed={isCollapsed}>
