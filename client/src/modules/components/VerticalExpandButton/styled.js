@@ -33,7 +33,3 @@ export const Vertical = styled.span`
   align-items: center;
   margin-top: 11px;
 `;
-
-export const Label = styled.span`
-  padding-right: 11px;
-`;

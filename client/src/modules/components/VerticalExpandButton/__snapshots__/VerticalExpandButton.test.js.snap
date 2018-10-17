@@ -5,9 +5,9 @@ exports[`VerticalExpandButton should render a button 1`] = `
   title="Expand Random label"
 >
   <styled.span>
-    <styled.span>
+    <span>
       Random label
-    </styled.span>
+    </span>
     <button>
       Child content
     </button>

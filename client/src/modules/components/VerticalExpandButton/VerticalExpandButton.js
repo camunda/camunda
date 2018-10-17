@@ -6,7 +6,7 @@ export default function VerticalExpandButton({label, children, ...otherProps}) {
   return (
     <Styled.Button title={`Expand ${label}`} {...otherProps}>
       <Styled.Vertical>
-        <Styled.Label>{label}</Styled.Label>
+        <span>{label}</span>
         {children}
       </Styled.Vertical>
     </Styled.Button>
