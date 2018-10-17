@@ -34,6 +34,12 @@ jest.mock('components', () => {
       delete allowedProps.isInvalid;
       return <input {...allowedProps} />;
     },
+    Labeled: props => (
+      <div>
+        <label id={props.id}>{props.label}</label>
+        {props.children}
+      </div>
+    ),
     ErrorMessage: props => <div {...props}>{props.children}</div>,
     Select
   };

@@ -20,7 +20,8 @@ export default class Dropdown extends React.Component {
     };
   }
 
-  toggleOpen = () => {
+  toggleOpen = evt => {
+    evt.preventDefault();
     this.setState({open: !this.state.open, openSubmenu: null, fixedSubmenu: null});
   };
 
@@ -129,6 +130,7 @@ export default class Dropdown extends React.Component {
                       },
                       forceToggle: evt => {
                         evt.stopPropagation();
+                        evt.preventDefault();
                         this.setState(({fixedSubmenu}) => {
                           return {fixedSubmenu: fixedSubmenu === idx ? null : idx};
                         });

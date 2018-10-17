@@ -4,7 +4,7 @@ import {getToken} from 'credentials';
 
 import {login} from './service';
 
-import {Logo, Message, Button, Input} from 'components';
+import {Logo, Message, Button, Input, Labeled} from 'components';
 
 import './Login.css';
 
@@ -60,32 +60,30 @@ export default class Login extends React.Component {
         {error ? <Message type="error">{error}</Message> : ''}
         <div className="Login__controls">
           <div className="Login__row">
-            <label className="Login__label" htmlFor="username">
-              Username
-            </label>
-            <Input
-              className="Login__input"
-              type="text"
-              placeholder="Username"
-              value={username}
-              onChange={this.handleInputChange}
-              name="username"
-              autoFocus={true}
-            />
+            <Labeled label="Username">
+              <Input
+                className="Login__input"
+                type="text"
+                placeholder="Username"
+                value={username}
+                onChange={this.handleInputChange}
+                name="username"
+                autoFocus={true}
+              />
+            </Labeled>
           </div>
           <div className="Login__row">
-            <label className="Login__label" htmlFor="password">
-              Password
-            </label>
-            <Input
-              className="Login__input"
-              placeholder="Password"
-              value={password}
-              onChange={this.handleInputChange}
-              type="password"
-              name="password"
-              ref={input => (this.passwordField = input)}
-            />
+            <Labeled label="Password">
+              <Input
+                className="Login__input"
+                placeholder="Password"
+                value={password}
+                onChange={this.handleInputChange}
+                type="password"
+                name="password"
+                ref={input => (this.passwordField = input)}
+              />
+            </Labeled>
           </div>
         </div>
         <Button onClick={this.submit} type="primary" color="blue" className="Login__button">

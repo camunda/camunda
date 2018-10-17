@@ -1,6 +1,6 @@
 import React from 'react';
 
-import {Modal, Button, Input, Select, ErrorMessage, Message} from 'components';
+import {Modal, Button, Input, Select, ErrorMessage, Message, Labeled} from 'components';
 import {numberParser} from 'services';
 
 import './DurationFilter.css';
@@ -42,8 +42,8 @@ export default class DurationFilter extends React.Component {
             Reports with an active Duration Filter will only show finished instances.
           </Message>
           <div className="DurationFilter__inputs">
-            <label className="DurationFilter__input-label">
-              Only include process instances that ran for{' '}
+            <Labeled label="Only include process instances that ran for">
+              {' '}
               <Select
                 value={operator}
                 onChange={this.setOperator}
@@ -53,7 +53,7 @@ export default class DurationFilter extends React.Component {
                 <Select.Option value="<">less</Select.Option>
               </Select>{' '}
               than
-            </label>
+            </Labeled>
             <Input
               isInvalid={!isValidInput}
               value={value}

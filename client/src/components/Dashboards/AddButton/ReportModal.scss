@@ -6,8 +6,10 @@
 }
 
 .ReportModal {
-  label {
+  .externalSourceGroup .label {
     text-align: center;
+    font-size: inherit;
+    margin-bottom: 5px;
   }
   .externalInput {
     width: 100%;

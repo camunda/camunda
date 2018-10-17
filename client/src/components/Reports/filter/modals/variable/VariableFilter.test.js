@@ -18,7 +18,6 @@ jest.mock('components', () => {
     Modal,
     Typeahead: props => <div>Typeahead {JSON.stringify(props)}</div>,
     Button: props => <button {...props}>{props.children}</button>,
-    ControlGroup: props => <div>{props.children}</div>,
     Labeled: props => (
       <div>
         <label id={props.id}>{props.label}</label>

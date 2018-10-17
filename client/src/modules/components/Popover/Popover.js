@@ -42,7 +42,7 @@ export default class Popover extends React.Component {
     // so we know whether the click occured inside the popover,
     // in which case we do not want to close the popover
     setTimeout(() => {
-      if (!evt.inOverlay && this.mounted) {
+      if (!evt.inOverlay && this.mounted && evt.target.className !== 'label') {
         this.setState({
           open: false
         });

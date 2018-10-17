@@ -22,6 +22,12 @@ jest.mock('components', () => {
     Button: props => <button {...props}>{props.children}</button>,
     ControlGroup: props => <div>{props.children}</div>,
     Input: ({isInvalid, ...props}) => <input {...props} />,
+    Labeled: props => (
+      <div>
+        <label id={props.id}>{props.label}</label>
+        {props.children}
+      </div>
+    ),
     ErrorMessage: props => <div {...props} />,
     LoadingIndicator: () => <div className="sk-circle">Loading...</div>,
     Typeahead

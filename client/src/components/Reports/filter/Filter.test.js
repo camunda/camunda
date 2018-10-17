@@ -8,7 +8,15 @@ jest.mock('components', () => {
   const Dropdown = ({children}) => <p id="dropdown">Dropdown: {children}</p>;
   Dropdown.Option = props => <button {...props}>{props.children}</button>;
 
-  return {Dropdown};
+  return {
+    Dropdown,
+    Labeled: props => (
+      <div>
+        <label id={props.id}>{props.label}</label>
+        {props.children}
+      </div>
+    )
+  };
 });
 
 jest.mock('./modals', () => {

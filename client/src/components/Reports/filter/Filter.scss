@@ -1,8 +1,18 @@
+@import 'shared-styles.scss';
+
 .Filter {
   display: inline;
 
   .instanceCount {
     white-space: nowrap;
+  }
+
+  .Labeled {
+    display: inline;
+  }
+
+  .Labeled .label {
+    @include visually-hidden;
   }
 }
 

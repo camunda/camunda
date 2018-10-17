@@ -8,7 +8,8 @@ import {
   Input,
   ErrorMessage,
   Typeahead,
-  LoadingIndicator
+  LoadingIndicator,
+  Labeled
 } from 'components';
 
 import {loadEntity} from 'services';
@@ -101,22 +102,21 @@ export default class ReportModal extends React.Component {
             {external ? '- Add Optimize Report' : '+ Add External Source'}
           </p>
           {external && (
-            <ControlGroup>
-              <label htmlFor="externalInput">
-                Enter URL of external datasource to be included on the dashboard
-              </label>
-              <Input
-                name="externalInput"
-                className="externalInput"
-                placeholder="https://www.example.com/widget/embed.html"
-                value={externalUrl}
-                isInvalid={isInvalidExternal}
-                onChange={({target: {value}}) =>
-                  this.setState({
-                    externalUrl: value
-                  })
-                }
-              />
+            <ControlGroup className="externalSourceGroup">
+              <Labeled label="Enter URL of external datasource to be included on the dashboard">
+                <Input
+                  name="externalInput"
+                  className="externalInput"
+                  placeholder="https://www.example.com/widget/embed.html"
+                  value={externalUrl}
+                  isInvalid={isInvalidExternal}
+                  onChange={({target: {value}}) =>
+                    this.setState({
+                      externalUrl: value
+                    })
+                  }
+                />
+              </Labeled>
               {isInvalidExternal && (
                 <ErrorMessage className="ExternalModal__error">
                   URL has to start with http:// or https://

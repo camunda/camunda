@@ -22,6 +22,12 @@ jest.mock('components', () => {
     ButtonGroup: props => <div {...props}>{props.children}</div>,
     Input: props => <input {...props} />,
     DatePicker: props => <div>DatePicker</div>,
+    Labeled: props => (
+      <div>
+        <label id={props.id}>{props.label}</label>
+        {props.children}
+      </div>
+    ),
     Select
   };
 });

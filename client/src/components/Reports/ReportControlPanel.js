@@ -114,7 +114,7 @@ export default class ReportControlPanel extends React.Component {
             </Labeled>
           </li>
           <li className="select">
-            <Labeled label="view">{this.renderDropdown('view', view)}</Labeled>
+            <Labeled label="View">{this.renderDropdown('view', view)}</Labeled>
           </li>
           <li className="select">
             <Labeled label="Group by">{this.renderDropdown('groupBy', groupBy)}</Labeled>
@@ -295,13 +295,14 @@ export default class ReportControlPanel extends React.Component {
         {this.state.variableStartIdx > 0 && (
           <div className="inputContainer">
             <Button
-              onClick={() =>
+              onClick={evt => {
+                evt.preventDefault();
                 this.setState({
                   variableStartIdx:
                     this.state.variableStartIdx -
                     Math.min(groupByVariablePageSize, this.state.variableStartIdx)
-                })
-              }
+                });
+              }}
             >
               Previous items
             </Button>
@@ -331,12 +332,13 @@ export default class ReportControlPanel extends React.Component {
               {remaining} more item{remaining > 1 && 's'}
             </span>
             <Button
-              onClick={() =>
+              onClick={evt => {
+                evt.preventDefault();
                 this.setState({
                   variableStartIdx:
                     this.state.variableStartIdx + Math.min(groupByVariablePageSize, remaining)
-                })
-              }
+                });
+              }}
             >
               Load More
             </Button>

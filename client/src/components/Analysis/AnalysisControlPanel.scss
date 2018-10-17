@@ -22,7 +22,7 @@
   padding-right: 20px;
   margin-bottom: 24px;
 
-  .Labeled > label {
+  .Labeled .label {
     color: #626262;
     font-size: 0.875em;
     margin-bottom: 5px;
@@ -44,7 +44,6 @@
 }
 
 .AnalysisControlPanel__config {
-  display: inline-block;
   cursor: default;
 }
 

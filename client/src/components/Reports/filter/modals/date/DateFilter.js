@@ -9,7 +9,8 @@ import {
   Select,
   ErrorMessage,
   DatePicker,
-  Message
+  Message,
+  Labeled
 } from 'components';
 import {formatters} from 'services';
 import './DateFilter.css';
@@ -124,38 +125,39 @@ export default class DateFilter extends React.Component {
           </ButtonGroup>
           {mode === 'static' && (
             <React.Fragment>
-              <label className="DateFilter__input-label">
-                Select start and end dates to filter by:
-              </label>
-              <DatePicker onDateChange={this.onDateChange} initialDates={{startDate, endDate}} />
+              <Labeled label="Select start and end dates to filter by:">
+                <DatePicker onDateChange={this.onDateChange} initialDates={{startDate, endDate}} />
+              </Labeled>
             </React.Fragment>
           )}
           {mode === 'dynamic' && (
             <div className="DateFilter__inputs">
-              <label className="DateFilter__input-label">
-                {`Only include process instances ${
+              <Labeled
+                label={`Only include process instances ${
                   this.props.filterType === 'startDate' ? 'started' : 'ended'
                 } within the last`}
-              </label>
-              <Input
-                value={dynamicValue}
-                onChange={this.setDynamicValue}
-                className="DateFilter__rolling-input"
-                isInvalid={!validDate}
-              />
-              <Select value={dynamicUnit} onChange={this.setDynamicUnit}>
-                <Select.Option value="minutes">Minutes</Select.Option>
-                <Select.Option value="hours">Hours</Select.Option>
-                <Select.Option value="days">Days</Select.Option>
-                <Select.Option value="weeks">Weeks</Select.Option>
-                <Select.Option value="months">Months</Select.Option>
-                <Select.Option value="years">Years</Select.Option>
-              </Select>
-              {!validDate && (
-                <ErrorMessage className="DateFilter__warning">
-                  Please enter a numeric value
-                </ErrorMessage>
-              )}
+              >
+                <Input
+                  value={dynamicValue}
+                  onChange={this.setDynamicValue}
+                  className="DateFilter__rolling-input"
+                  isInvalid={!validDate}
+                />
+
+                <Select value={dynamicUnit} onChange={this.setDynamicUnit}>
+                  <Select.Option value="minutes">Minutes</Select.Option>
+                  <Select.Option value="hours">Hours</Select.Option>
+                  <Select.Option value="days">Days</Select.Option>
+                  <Select.Option value="weeks">Weeks</Select.Option>
+                  <Select.Option value="months">Months</Select.Option>
+                  <Select.Option value="years">Years</Select.Option>
+                </Select>
+                {!validDate && (
+                  <ErrorMessage className="DateFilter__warning">
+                    Please enter a numeric value
+                  </ErrorMessage>
+                )}
+              </Labeled>
             </div>
           )}
         </Modal.Content>
