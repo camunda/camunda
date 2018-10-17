@@ -18,9 +18,9 @@
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
-    <version.zeebe>0.11.0</version.zeebe>
-    <version.elasticsearch>6.2.4</version.elasticsearch>
-    <version.spring.boot>2.0.6.RELEASE</version.spring.boot>
+    <version.zeebe>0.12.1</version.zeebe>
+    <version.elasticsearch>6.4.2</version.elasticsearch>
+    <version.spring.boot>2.0.5.RELEASE</version.spring.boot>
 
     <version.swagger>2.9.2</version.swagger>
     <version.javax.json>1.1.3</version.javax.json>
@@ -57,7 +57,7 @@
 
       <dependency>
         <groupId>org.elasticsearch.distribution.zip</groupId>
-        <artifactId>elasticsearch</artifactId>
+        <artifactId>elasticsearch-oss</artifactId>
         <version>${version.elasticsearch}</version>
         <type>zip</type>
       </dependency>
@@ -223,6 +223,18 @@
       </releases>
       <snapshots>
         <enabled>true</enabled>
+      </snapshots>
+    </repository>
+
+    <repository>
+      <id>elasticsearch</id>
+      <name>Elasticsearch Repository</name>
+      <url>https://artifacts.elastic.co/maven/</url>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+      <snapshots>
+        <enabled>false</enabled>
       </snapshots>
     </repository>
 

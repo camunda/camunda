@@ -52,7 +52,7 @@ spec:
           cpu: 1
           memory: 1Gi
     - name: elasticsearch
-      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.2.4
+      image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.4.2
       env:
         - name: ES_JAVA_OPTS
           value: '-Xms1g -Xmx1g'
@@ -61,7 +61,7 @@ spec:
         - name: discovery.type
           value: single-node
         - name: action.auto_create_index
-          value: false
+          value: true
         - name: bootstrap.memory_lock
           value: true
       securityContext:
@@ -83,31 +83,3 @@ spec:
         requests:
           cpu: 1
           memory: 3Gi
-    - name: zeebe
-      image: camunda/zeebe:0.11.0
-      env:
-        - name: ZEEBE_HOST
-          value: localhost
-        - name: JAVA_TOOL_OPTIONS
-          value: |
-            -XX:+UnlockExperimentalVMOptions
-            -XX:+UseCGroupMemoryLimitForHeap
-            -Xms512m
-            -Xmx512m
-      ports:
-        - containerPort: 51015
-          name: zeebe-broker
-          protocol: TCP
-        - containerPort: 51016
-          name: zeebe-raft
-          protocol: TCP
-        - containerPort: 51017
-          name: zeebe-gossip
-          protocol: TCP
-      resources:
-        limits:
-          cpu: 1
-          memory: 1Gi
-        requests:
-          cpu: 1
-          memory: 1Gi

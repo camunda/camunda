@@ -3,6 +3,8 @@ package org.camunda.operate.property;
 
 public class ElasticsearchProperties {
 
+  public static final String IMPORT_POSITION_INDEX_NAME_DEFAULT = "import-position";
+
   public static final String WORKFLOW_INSTANCE_INDEX_NAME_DEFAULT = "workflow-instance";
 
   public static final String EVENT_INDEX_NAME_DEFAULT = "event";
@@ -17,7 +19,9 @@ public class ElasticsearchProperties {
 
   private String dateFormat;
 
-  private int insertBatchSize = 20;
+  private int batchSize = 20;
+
+  private String importPositionIndexName = IMPORT_POSITION_INDEX_NAME_DEFAULT;
 
   private String eventIndexName = EVENT_INDEX_NAME_DEFAULT;
 
@@ -57,12 +61,12 @@ public class ElasticsearchProperties {
     this.dateFormat = dateFormat;
   }
 
-  public int getInsertBatchSize() {
-    return insertBatchSize;
+  public int getBatchSize() {
+    return batchSize;
   }
 
-  public void setInsertBatchSize(int insertBatchSize) {
-    this.insertBatchSize = insertBatchSize;
+  public void setBatchSize(int batchSize) {
+    this.batchSize = batchSize;
   }
 
   public String getWorkflowInstanceIndexName() {
@@ -87,5 +91,13 @@ public class ElasticsearchProperties {
 
   public void setEventIndexName(String eventIndexName) {
     this.eventIndexName = eventIndexName;
+  }
+
+  public String getImportPositionIndexName() {
+    return importPositionIndexName;
+  }
+
+  public void setImportPositionIndexName(String importPositionIndexName) {
+    this.importPositionIndexName = importPositionIndexName;
   }
 }

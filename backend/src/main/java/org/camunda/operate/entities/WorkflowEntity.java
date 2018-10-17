@@ -1,14 +1,13 @@
 package org.camunda.operate.entities;
 
 
-public class WorkflowEntity extends OperateEntity {
+public class WorkflowEntity extends OperateZeebeEntity {
 
   private String name;
   private int version;
   private String bpmnProcessId;
   private String bpmnXml;
   private String resourceName;
-  private Integer partitionId;
   private long position;
   private String topicName;
 
@@ -52,14 +51,6 @@ public class WorkflowEntity extends OperateEntity {
     this.resourceName = resourceName;
   }
 
-  public Integer getPartitionId() {
-    return partitionId;
-  }
-
-  public void setPartitionId(Integer partitionId) {
-    this.partitionId = partitionId;
-  }
-
   public long getPosition() {
     return position;
   }
@@ -99,8 +90,6 @@ public class WorkflowEntity extends OperateEntity {
       return false;
     if (resourceName != null ? !resourceName.equals(that.resourceName) : that.resourceName != null)
       return false;
-    if (partitionId != null ? !partitionId.equals(that.partitionId) : that.partitionId != null)
-      return false;
     return topicName != null ? topicName.equals(that.topicName) : that.topicName == null;
   }
 
@@ -112,7 +101,6 @@ public class WorkflowEntity extends OperateEntity {
     result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
     result = 31 * result + (bpmnXml != null ? bpmnXml.hashCode() : 0);
     result = 31 * result + (resourceName != null ? resourceName.hashCode() : 0);
-    result = 31 * result + (partitionId != null ? partitionId.hashCode() : 0);
     result = 31 * result + (int) (position ^ (position >>> 32));
     result = 31 * result + (topicName != null ? topicName.hashCode() : 0);
     return result;
@@ -121,7 +109,7 @@ public class WorkflowEntity extends OperateEntity {
   @Override
   public String toString() {
     return "WorkflowEntity{" + "name='" + name + '\'' + ", version=" + version + ", bpmnProcessId='" + bpmnProcessId + '\'' + ", bpmnXml='" + bpmnXml + '\''
-      + ", resourceName='" + resourceName + '\'' + ", partitionId=" + partitionId + ", position=" + position + ", topicName='" + topicName + '\'' + "} " + super
+      + ", resourceName='" + resourceName + '\'' + ", position=" + position + ", topicName='" + topicName + '\'' + "} " + super
       .toString();
   }
 }

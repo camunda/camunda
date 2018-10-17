@@ -29,7 +29,7 @@ pipeline {
   agent {
     kubernetes {
       cloud 'operate-ci'
-      label "operate-ci-build_${env.JOB_BASE_NAME.replaceAll("%2F", "-").take(20)}-${env.BUILD_ID}"
+      label "operate-ci-build_${env.JOB_BASE_NAME.replaceAll("%2F", "-").replaceAll("\\.", "-").take(20)}-${env.BUILD_ID}"
       defaultContainer 'jnlp'
       yamlFile '.ci/podSpecs/builderAgent.yml'
     }

@@ -1,4 +1,4 @@
-package org.camunda.operate.zeebe;
+package org.camunda.operate.zeebeimport.transformers;
 
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.parsers.SAXParser;
@@ -8,16 +8,17 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import org.camunda.operate.entities.OperateZeebeEntity;
 import org.camunda.operate.entities.WorkflowEntity;
-import org.camunda.operate.es.writer.EntityStorage;
 import org.camunda.operate.property.OperateProperties;
-import org.camunda.operate.util.ZeebeUtil;
+import org.camunda.operate.zeebeimport.record.value.DeploymentRecordValueImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,78 +27,61 @@ import org.springframework.stereotype.Component;
 import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
-import io.zeebe.client.api.commands.DeploymentResource;
-import io.zeebe.client.api.commands.ResourceType;
-import io.zeebe.client.api.commands.Workflow;
-import io.zeebe.client.api.events.DeploymentEvent;
-import io.zeebe.client.api.events.DeploymentState;
-import io.zeebe.client.api.record.Record;
-import io.zeebe.client.api.record.RecordMetadata;
-import io.zeebe.client.api.subscription.DeploymentEventHandler;
-
+import io.zeebe.exporter.record.value.deployment.DeployedWorkflow;
+import io.zeebe.exporter.record.value.deployment.DeploymentResource;
+import io.zeebe.exporter.record.value.deployment.ResourceType;
+import io.zeebe.protocol.intent.DeploymentIntent;
 
 @Component
-public class DeploymentEventTransformer extends AbstractEventTransformer implements DeploymentEventHandler {
+public class DeploymentEventTransformer implements AbstractRecordTransformer {
 
   private static final Charset CHARSET = StandardCharsets.UTF_8;
   private static final Logger logger = LoggerFactory.getLogger(DeploymentEventTransformer.class);
 
-  private final static Set<DeploymentState> STATES = new HashSet<>();
-
-  @Autowired
-  private EntityStorage entityStorage;
+  private final static Set<String> STATES = new HashSet<>();
 
   @Autowired
   private OperateProperties operateProperties;
 
   static {
-    STATES.add(DeploymentState.CREATED);
+    STATES.add(DeploymentIntent.CREATED.name());
   }
 
   @Override
-  public void onDeploymentEvent(DeploymentEvent event) throws Exception {
+  public List<OperateZeebeEntity> convert(io.zeebe.exporter.record.Record record) {
 
-    ZeebeUtil.ALL_EVENTS_LOGGER.debug(event.toJson());
+    List<OperateZeebeEntity> result = new ArrayList<>();
 
-    if (STATES.contains(event.getState())) {
+//    ZeebeUtil.ALL_EVENTS_LOGGER.debug(event.toJson());
+    final String intentStr = record.getMetadata().getIntent().name();
 
-      logger.debug(event.toJson());
+    if (STATES.contains(intentStr)) {
 
-      //check that deployment is from one of the configured topics
-      final List<String> topics = operateProperties.getZeebe().getTopics();
+//      logger.debug(event.toJson());
 
-      String deploymentTopic = event.getDeploymentTopic();
+      DeploymentRecordValueImpl recordValue = (DeploymentRecordValueImpl)record.getValue();
 
-      if (topics.contains(deploymentTopic)) {
-        Map<String, DeploymentResource> resources = resourceToMap(event.getResources());
+      Map<String, DeploymentResource> resources = resourceToMap(recordValue.getResources());
 
-        for (Workflow workflow : event.getDeployedWorkflows()) {
-          String resourceName = workflow.getResourceName();
-          DeploymentResource resource = resources.get(resourceName);
+      for (DeployedWorkflow workflow : recordValue.getDeployedWorkflows()) {
+        String resourceName = workflow.getResourceName();
+        DeploymentResource resource = resources.get(resourceName);
 
-          final WorkflowEntity workflowEntity = createEntity(workflow, resource);
-          updateMetadataFields(workflowEntity, event);
+        final WorkflowEntity workflowEntity = createEntity(workflow, resource);
 
-          entityStorage.getOperateEntitiesQueue(deploymentTopic).put(workflowEntity);
-        }
+        workflowEntity.setKey(record.getKey());
 
-      } else {
-        logger.debug("Deployment event won't be processed, as we're not listening for the topic [{}]", deploymentTopic);
+        workflowEntity.setPosition(record.getPosition());
+
+        result.add(workflowEntity);
       }
 
     }
+    return result;
 
   }
 
-  private void updateMetadataFields(WorkflowEntity operateEntity, Record zeebeRecord) {
-    RecordMetadata metadata = zeebeRecord.getMetadata();
-
-    operateEntity.setPartitionId(metadata.getPartitionId());
-    operateEntity.setPosition(metadata.getPosition());
-    operateEntity.setTopicName(metadata.getTopicName());
-  }
-
-  public WorkflowEntity createEntity(Workflow workflow, DeploymentResource resource) throws InterruptedException {
+  public WorkflowEntity createEntity(DeployedWorkflow workflow, DeploymentResource resource) {
     WorkflowEntity workflowEntity = new WorkflowEntity();
 
     workflowEntity.setId(String.valueOf(workflow.getWorkflowKey()));

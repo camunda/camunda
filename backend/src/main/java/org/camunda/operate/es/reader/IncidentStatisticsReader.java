@@ -193,7 +193,7 @@ public class IncidentStatisticsReader {
         filter(activeIncidentsAggName, termQuery(INCIDENT_STATE_TERM, IncidentState.ACTIVE.toString())).subAggregation(
           terms(errorMessagesAggName).field(INCIDENT_ERRORMSG_TERM).subAggregation(
             reverseNested(incidentsToInstancesAggName).subAggregation(
-              terms(workflowIdsAggName).field(WorkflowInstanceType.WORKFLOW_ID)
+              terms(workflowIdsAggName).field(WorkflowInstanceType.WORKFLOW_ID)     //TODO check if we can put workflowId inside incident entity
             )
           )
         )

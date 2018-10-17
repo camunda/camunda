@@ -13,7 +13,7 @@
 package org.camunda.operate.zeebe.operation;
 
 import org.camunda.operate.entities.OperationType;
-import org.camunda.operate.es.writer.PersistenceException;
+import org.camunda.operate.exceptions.PersistenceException;
 
 public interface OperationHandler {
 

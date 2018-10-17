@@ -14,7 +14,7 @@ services:
     restart: always
 
   elasticsearch:
-    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.2.4
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.4.2
     container_name: elasticsearch
     environment:
       - cluster.name=docker-cluster
@@ -31,12 +31,16 @@ services:
 
   zeebe:
     container_name: zeebe
-    image: camunda/zeebe:0.11.0
+    image: camunda/zeebe:0.12.1
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_HOST=${ZEEBE_HOST:-}
+      #- "JAVA_OPTS=-agentlib:jdwp=transport=dt_socket,address=8000,server=y,suspend=n"
     ports:
-      - 51015:51015
-      - 51016:51016
-      - 51017:51017
+      - 26501:26501
+      - 26500:26500
+      #- 8000:8000
     restart: always
+    volumes:
+      - ./zeebe.cfg.toml:/usr/local/zeebe/conf/zeebe.cfg.toml
+

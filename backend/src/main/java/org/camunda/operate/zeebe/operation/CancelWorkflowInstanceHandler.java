@@ -16,16 +16,13 @@ import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
-import org.camunda.operate.es.writer.PersistenceException;
+import org.camunda.operate.exceptions.PersistenceException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
-import io.zeebe.client.cmd.ClientCommandRejectedException;
-import io.zeebe.client.impl.data.ZeebeObjectMapperImpl;
-import io.zeebe.client.impl.event.WorkflowInstanceEventImpl;
+import io.zeebe.client.cmd.ClientException;
 
 /**
  * Operation handler to cancel workflow instances.
@@ -52,26 +49,16 @@ public class CancelWorkflowInstanceHandler extends AbstractOperationHandler impl
     }
 
     try {
-      WorkflowInstanceEvent workflowInstanceEvent = createWorkflowInstanceEvent(workflowInstance);
-      zeebeClient.topicClient(workflowInstance.getTopicName()).workflowClient().newCancelInstanceCommand(workflowInstanceEvent).send().join();
+      zeebeClient.workflowClient().newCancelInstanceCommand(workflowInstance.getKey()).send().join();
       //mark operation as sent
       markAsSentOperationsOfCurrentType(workflowInstance);
-    } catch (ClientCommandRejectedException ex) {
+    } catch (ClientException ex) {
       logger.error("Zeebe command rejected: " + ex.getMessage(), ex);
       //fail operation
       failOperationsOfCurrentType(workflowInstance, ex.getMessage());
     }
 
 
-  }
-
-  private WorkflowInstanceEvent createWorkflowInstanceEvent(WorkflowInstanceEntity workflowInstance) {
-    WorkflowInstanceEventImpl workflowInstanceEvent = new WorkflowInstanceEventImpl(new ZeebeObjectMapperImpl());
-    workflowInstanceEvent.setKey(workflowInstance.getKey());
-    workflowInstanceEvent.setPartitionId(workflowInstance.getPartitionId());
-    workflowInstanceEvent.setTopicName(workflowInstance.getTopicName());
-    workflowInstanceEvent.setWorkflowKey(Long.valueOf(workflowInstance.getWorkflowId()));
-    return workflowInstanceEvent;
   }
 
   @Override

@@ -24,6 +24,7 @@ import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.types.WorkflowInstanceType;
+import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.rest.dto.WorkflowInstanceBatchOperationDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceRequestDto;
@@ -44,7 +45,6 @@ import org.elasticsearch.search.SearchHits;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
@@ -194,7 +194,7 @@ public class BatchOperationWriter {
    */
   public void scheduleBatchOperation(WorkflowInstanceBatchOperationDto batchOperationRequest) throws PersistenceException {
 
-    final int batchSize = operateProperties.getElasticsearch().getInsertBatchSize();
+    final int batchSize = operateProperties.getElasticsearch().getBatchSize();
 
     final SearchRequestBuilder searchRequest = workflowInstanceReader.createSearchRequest(new WorkflowInstanceRequestDto(batchOperationRequest.getQueries()));
     TimeValue keepAlive = new TimeValue(60000);

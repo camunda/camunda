@@ -20,7 +20,7 @@ import java.util.Map;
 import org.camunda.operate.entities.OperationEntity;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.es.writer.BatchOperationWriter;
-import org.camunda.operate.es.writer.PersistenceException;
+import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

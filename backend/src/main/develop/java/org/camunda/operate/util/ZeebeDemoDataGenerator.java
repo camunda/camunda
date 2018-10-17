@@ -4,28 +4,28 @@ import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.zeebe.DataGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.clients.TopicClient;
-import io.zeebe.client.api.events.WorkflowInstanceState;
 import io.zeebe.client.api.subscription.JobWorker;
-import io.zeebe.client.api.subscription.TopicSubscription;
-import io.zeebe.client.cmd.ClientCommandRejectedException;
+import io.zeebe.client.cmd.ClientException;
 
-
-@Component
+@Component("dataGenerator")
 @ConditionalOnProperty(name= OperateProperties.PREFIX + ".zeebe.demoData", havingValue="true")
-public class ZeebeDemoDataGenerator {
+@DependsOn("zeebeClient")
+public class ZeebeDemoDataGenerator implements DataGenerator {
 
   private static final Logger logger = LoggerFactory.getLogger(ZeebeDemoDataGenerator.class);
 
@@ -35,14 +35,13 @@ public class ZeebeDemoDataGenerator {
   @Autowired
   private OperateProperties operateProperties;
 
-  @Autowired
-  private ZeebeUtil zeebeUtil;
-
   private Random random = new Random();
 
   private boolean manuallyCalled = false;
 
   private ScheduledExecutorService scheduler;
+
+  List<Long> workflowInstanceKeys = new ArrayList<>();
 
   @PostConstruct
   private void createZeebeData() {
@@ -51,15 +50,17 @@ public class ZeebeDemoDataGenerator {
 
   public void createZeebeData(boolean manuallyCalled) {
     this.manuallyCalled = manuallyCalled;
-    try {
-      createTopic();
-    } catch (ClientCommandRejectedException ex) {
+//    try {
+      //TODO
+//      createTopic();
+//    } catch (ClientCommandRejectedException ex) {
       //data already exists
-      logger.debug("Topic [{}] already exists.", operateProperties.getZeebe().getTopics().get(0));
-      if (!manuallyCalled) {
-        return;
-      }
-    }
+//      logger.debug("Topic [{}] already exists.", operateProperties.getZeebe().getTopics().get(0));
+//      if (!manuallyCalled) {
+//        return;
+//      }
+//    }
+
     deployVersion1();
     startWorkflowInstances(1);
 
@@ -73,9 +74,6 @@ public class ZeebeDemoDataGenerator {
   }
 
   private void progressWorkflowInstances() {
-    List<TopicSubscription> topicSubscriptions = new ArrayList<>();
-    topicSubscriptions.add(cancelSomeInstances());
-
     List<JobWorker> jobWorkers = new ArrayList<>();
 
     jobWorkers.add(progressDemoProcessTaskA());
@@ -101,32 +99,31 @@ public class ZeebeDemoDataGenerator {
     //    final TopicSubscription updateRetriesIncidentSubscription = updateRetries();
 
     //start more instances after 1 minute
-    scheduler = Executors.newScheduledThreadPool(1);
+    scheduler = Executors.newScheduledThreadPool(2);
     scheduler.schedule(() ->
       startWorkflowInstances(1)
     , 1, TimeUnit.MINUTES);
 
     scheduler.schedule(() -> {
-      for (JobWorker subscription: jobWorkers) {
-        subscription.close();
-      }
-      for (TopicSubscription topicSubscription: topicSubscriptions) {
-        topicSubscription.close();
+      for (JobWorker jobWorker: jobWorkers) {
+        jobWorker.close();
       }
       //      updateRetriesIncidentSubscription.close();
-      logger.info("Subscriptions for demo data generation were canceled");
-    }, 2, TimeUnit.MINUTES);
+    }, 90, TimeUnit.SECONDS);
 
-    if (manuallyCalled) {
-      shutdownScheduler();
-    }
+    //there is a bug in Zeebe, when cancel happens concurrently with job worker running -> we're canceling after the job workers are stopped
+    scheduler.schedule(() ->
+      cancelSomeInstances(),
+      100, TimeUnit.SECONDS);
+
+    shutdownScheduler();
   }
 
   @PreDestroy
   private void shutdownScheduler() {
     scheduler.shutdown();
     try {
-      if (!scheduler.awaitTermination(3, TimeUnit.MINUTES)) {
+      if (!scheduler.awaitTermination(2, TimeUnit.MINUTES)) {
         scheduler.shutdownNow();
       }
     } catch (InterruptedException e) {
@@ -134,22 +131,23 @@ public class ZeebeDemoDataGenerator {
     }
   }
 
-  private TopicSubscription cancelSomeInstances() {
-    final String topic = operateProperties.getZeebe().getTopics().get(0);
-    final TopicClient topicClient = client.topicClient(topic);
-    return topicClient.newSubscription().name("cancelInstances").workflowInstanceEventHandler(
-      event -> {
-        if (! event.getState().equals(WorkflowInstanceState.CANCELED) && ! event.getState().equals(WorkflowInstanceState.COMPLETED) &&
-          random.nextInt(20) == 1) {
-          topicClient.workflowClient().newCancelInstanceCommand(event).send();
+  private void cancelSomeInstances() {
+    final Iterator<Long> iterator = workflowInstanceKeys.iterator();
+    while (iterator.hasNext()) {
+      long workflowInstanceKey = iterator.next();
+      if (random.nextInt(20) == 1) {
+        try {
+          client.workflowClient().newCancelInstanceCommand(workflowInstanceKey).send().join();
+        } catch (ClientException ex) {
+          logger.error("Error occurred when cancelling workflow instance:", ex);
         }
       }
-    ).startAtHeadOfTopic().forcedStart().open();
+      iterator.remove();
+    }
   }
 
   private JobWorker progressOrderProcessCheckPayment() {
-    final String topic = operateProperties.getZeebe().getTopics().get(0);
-    return client.topicClient(topic).jobClient()
+    return client.jobClient()
       .newWorker()
       .jobType("checkPayment")
       .handler((jobClient, job) -> {
@@ -159,15 +157,15 @@ public class ZeebeDemoDataGenerator {
           //fail
           throw new RuntimeException("Payment system not available.");
         case 1:
-          jobClient.newCompleteCommand(job).payload("{\"paid\":false}").send().join();
+          jobClient.newCompleteCommand(job.getKey()).payload("{\"paid\":false}").send().join();
           break;
         case 2:
         case 3:
         case 4:
-          jobClient.newCompleteCommand(job).payload("{\"paid\":true}").send().join();
+          jobClient.newCompleteCommand(job.getKey()).payload("{\"paid\":true}").send().join();
           break;
         case 5:
-          jobClient.newCompleteCommand(job).send().join();    //incident in gateway for v.1
+          jobClient.newCompleteCommand(job.getKey()).send().join();    //incident in gateway for v.1
           break;
         }
       })
@@ -177,8 +175,7 @@ public class ZeebeDemoDataGenerator {
   }
 
   private JobWorker progressOrderProcessCheckItems() {
-    final String topic = operateProperties.getZeebe().getTopics().get(0);
-    return client.topicClient(topic).jobClient().newWorker()
+    return client.jobClient().newWorker()
       .jobType("checkItems")
       .handler((jobClient, job) -> {
         final int scenario = random.nextInt(4);
@@ -186,10 +183,10 @@ public class ZeebeDemoDataGenerator {
         case 0:
         case 1:
         case 2:
-          jobClient.newCompleteCommand(job).payload("{\"smthIsMissing\":false}").send().join();
+          jobClient.newCompleteCommand(job.getKey()).payload("{\"smthIsMissing\":false}").send().join();
           break;
         case 4:
-          jobClient.newCompleteCommand(job).payload("{\"smthIsMissing\":true}").send().join();
+          jobClient.newCompleteCommand(job.getKey()).payload("{\"smthIsMissing\":true}").send().join();
           break;
         }
       })
@@ -199,8 +196,7 @@ public class ZeebeDemoDataGenerator {
   }
 
   private JobWorker progressSimpleTask(String taskType) {
-    final String topic = operateProperties.getZeebe().getTopics().get(0);
-    return client.topicClient(topic).jobClient().newWorker()
+    return client.jobClient().newWorker()
       .jobType(taskType)
       .handler((jobClient, job) ->
       {
@@ -211,11 +207,11 @@ public class ZeebeDemoDataGenerator {
           break;
         case 1:
           //successfully complete task
-          jobClient.newCompleteCommand(job).send().join();
+          jobClient.newCompleteCommand(job.getKey()).send().join();
           break;
         case 2:
           //fail task -> create incident
-          jobClient.newFailCommand(job).retries(0).send().join();
+          jobClient.newFailCommand(job.getKey()).retries(0).send().join();
           break;
         }
       })
@@ -225,15 +221,14 @@ public class ZeebeDemoDataGenerator {
   }
 
   private JobWorker progressDemoProcessTaskA() {
-    final String topic = operateProperties.getZeebe().getTopics().get(0);
-    return client.topicClient(topic).jobClient().newWorker()
+    return client.jobClient().newWorker()
       .jobType("taskA")
       .handler((jobClient, job) -> {
         final int scenarioCount = random.nextInt(2);
         switch (scenarioCount) {
         case 0:
           //successfully complete task
-          jobClient.newCompleteCommand(job).send().join();
+          jobClient.newCompleteCommand(job.getKey()).send().join();
           break;
         case 1:
           //leave the task A active
@@ -246,15 +241,14 @@ public class ZeebeDemoDataGenerator {
   }
 
   private JobWorker progressReviewLoanRequestTask() {
-    final String topic = operateProperties.getZeebe().getTopics().get(0);
-    return client.topicClient(topic).jobClient().newWorker()
+    return client.jobClient().newWorker()
       .jobType("reviewLoanRequest")
       .handler((jobClient, job) -> {
         final int scenarioCount = random.nextInt(2);
         switch (scenarioCount) {
         case 0:
           //successfully complete task
-          jobClient.newCompleteCommand(job).payload("{\"loanRequestOK\": " + random.nextBoolean()).send().join();
+          jobClient.newCompleteCommand(job.getKey()).payload("{\"loanRequestOK\": " + random.nextBoolean() + "}").send().join();
           break;
         case 1:
           //leave the task A active
@@ -267,15 +261,14 @@ public class ZeebeDemoDataGenerator {
   }
 
   private JobWorker progressCheckSchufaTask() {
-    final String topic = operateProperties.getZeebe().getTopics().get(0);
-    return client.topicClient(topic).jobClient().newWorker()
+    return client.jobClient().newWorker()
       .jobType("checkSchufa")
       .handler((jobClient, job) -> {
         final int scenarioCount = random.nextInt(2);
         switch (scenarioCount) {
         case 0:
           //successfully complete task
-          jobClient.newCompleteCommand(job).payload("{\"schufaOK\": " + random.nextBoolean()).send().join();
+          jobClient.newCompleteCommand(job.getKey()).payload("{\"schufaOK\": " + random.nextBoolean() + "}").send().join();
           break;
         case 1:
           //leave the task A active
@@ -287,33 +280,24 @@ public class ZeebeDemoDataGenerator {
       .open();
   }
 
-  public void createTopic() {
-    final String topic = operateProperties.getZeebe().getTopics().get(0);
-    zeebeUtil.createTopic(topic);
-    logger.debug("Topic [{}] was created.", operateProperties.getZeebe().getTopics().get(0));
-  }
-
-
   private void deployVersion1() {
-    final String topic = operateProperties.getZeebe().getTopics().get(0);
     //deploy workflows v.1
     final String classpathResource = "demoProcess_v_1.bpmn";
-    zeebeUtil.deployWorkflowToTheTopic(topic, classpathResource);
+    ZeebeUtil.deployWorkflow(client, classpathResource);
 
-    zeebeUtil.deployWorkflowToTheTopic(topic, "orderProcess_v_1.bpmn");
+    ZeebeUtil.deployWorkflow(client, "orderProcess_v_1.bpmn");
 
-    zeebeUtil.deployWorkflowToTheTopic(topic, "loanProcess_v_1.bpmn");
+    ZeebeUtil.deployWorkflow(client, "loanProcess_v_1.bpmn");
 
   }
 
   private void startWorkflowInstances(int version) {
-    final String topic = operateProperties.getZeebe().getTopics().get(0);
     final int instancesCount = random.nextInt(50) + 50;
     for (int i = 0; i < instancesCount; i++) {
-      zeebeUtil.startWorkflowInstance(topic, "demoProcess", "{\"a\": \"b\"}");
-
+      String instanceId = ZeebeUtil.startWorkflowInstance(client, "demoProcess", "{\"a\": \"b\"}");
+      workflowInstanceKeys.add(IdUtil.extractKey(instanceId));
       if (version < 2) {
-        zeebeUtil.startWorkflowInstance(topic, "loanProcess",
+        instanceId = ZeebeUtil.startWorkflowInstance(client, "loanProcess",
           "{\"requestId\": \"RDG123000001\",\n"
           + "  \"amount\": " + (random.nextInt(10000) + 20000) + ",\n"
           + "  \"applier\": {\n"
@@ -335,26 +319,26 @@ public class ZeebeDemoDataGenerator {
           + "  ],\n"
           + "  \"otherInfo\": null\n"
           + "}");
+        workflowInstanceKeys.add(IdUtil.extractKey(instanceId));
       }
       if (version < 3) {
-        zeebeUtil.startWorkflowInstance(topic, "orderProcess", "{\"a\": \"b\"}");
+        instanceId = ZeebeUtil.startWorkflowInstance(client, "orderProcess", "{\"a\": \"b\"}");
+        workflowInstanceKeys.add(IdUtil.extractKey(instanceId));
       }
 
     }
   }
 
   private void deployVersion2() {
-    final String topic = operateProperties.getZeebe().getTopics().get(0);
     //deploy workflows v.1
-    zeebeUtil.deployWorkflowToTheTopic(topic, "demoProcess_v_2.bpmn");
+    ZeebeUtil.deployWorkflow(client, "demoProcess_v_2.bpmn");
 
-    zeebeUtil.deployWorkflowToTheTopic(topic, "orderProcess_v_2.bpmn");
+    ZeebeUtil.deployWorkflow(client, "orderProcess_v_2.bpmn");
   }
 
   private void deployVersion3() {
-    final String topic = operateProperties.getZeebe().getTopics().get(0);
     //deploy workflows v.1
-    zeebeUtil.deployWorkflowToTheTopic(topic, "demoProcess_v_3.bpmn");
+    ZeebeUtil.deployWorkflow(client, "demoProcess_v_3.bpmn");
   }
 
   public void setClient(ZeebeClient client) {
@@ -365,7 +349,4 @@ public class ZeebeDemoDataGenerator {
     this.operateProperties = operateProperties;
   }
 
-  public void setZeebeUtil(ZeebeUtil zeebeUtil) {
-    this.zeebeUtil = zeebeUtil;
-  }
 }

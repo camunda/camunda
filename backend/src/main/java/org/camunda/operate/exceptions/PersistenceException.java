@@ -1,4 +1,4 @@
-package org.camunda.operate.es.writer;
+package org.camunda.operate.exceptions;
 
 
 public class PersistenceException extends Exception {

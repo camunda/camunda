@@ -8,6 +8,7 @@ import org.elasticsearch.ResourceAlreadyExistsException;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
 import org.elasticsearch.client.transport.TransportClient;
+import org.elasticsearch.common.Strings;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.slf4j.Logger;
@@ -80,7 +81,7 @@ public class ElasticsearchSchemaManager {
   private Settings buildSettings() throws IOException {
     return Settings.builder()
       .put("index.mapper.dynamic", false)
-      .loadFromSource(jsonBuilder()
+      .loadFromSource(Strings.toString(jsonBuilder()
       .startObject()
         .field("index.mapper.dynamic", false)
         .field("refresh_interval", "2s")
@@ -95,8 +96,7 @@ public class ElasticsearchSchemaManager {
             .endObject()
         . endObject()
         .endObject()
-      .endObject()
-      .string(), XContentType.JSON)
+      .endObject()), XContentType.JSON)
     .build();
   }
 

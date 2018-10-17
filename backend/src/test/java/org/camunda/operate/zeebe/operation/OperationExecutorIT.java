@@ -26,7 +26,7 @@ import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.types.WorkflowInstanceType;
-import org.camunda.operate.es.writer.PersistenceException;
+import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.ElasticsearchTestRule;

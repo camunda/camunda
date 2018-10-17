@@ -15,7 +15,7 @@
   <dependencies>
     <dependency>
       <groupId>org.elasticsearch.distribution.zip</groupId>
-      <artifactId>elasticsearch</artifactId>
+      <artifactId>elasticsearch-oss</artifactId>
       <type>zip</type>
     </dependency>
 

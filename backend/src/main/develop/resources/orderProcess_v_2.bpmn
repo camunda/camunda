@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:zeebe="http://camunda.org/schema/zeebe/1.0" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Zeebe Modeler" exporterVersion="0.1.0">
-  <bpmn:process id="orderProcess" isExecutable="true" name="Order process">
+  <bpmn:process id="orderProcess" name="Order process" isExecutable="true">
     <bpmn:startEvent id="StartEvent_1" name="Order received">
       <bpmn:outgoing>SequenceFlow_0j6tsnn</bpmn:outgoing>
     </bpmn:startEvent>
@@ -32,20 +32,24 @@
       <bpmn:incoming>SequenceFlow_01a5668</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1fgekwd</bpmn:outgoing>
     </bpmn:serviceTask>
-    <bpmn:exclusiveGateway id="ExclusiveGateway_0n882rg" name="All items available?" default="SequenceFlow_0drux68">
+    <bpmn:exclusiveGateway id="ExclusiveGateway_0n882rg" name="All items available?">
       <bpmn:incoming>SequenceFlow_1fgekwd</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_0drux68</bpmn:outgoing>
       <bpmn:outgoing>SequenceFlow_11p0iy6</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:sequenceFlow id="SequenceFlow_1fgekwd" sourceRef="Task_1t0a4uy" targetRef="ExclusiveGateway_0n882rg" />
-    <bpmn:sequenceFlow id="SequenceFlow_0drux68" name="OK" sourceRef="ExclusiveGateway_0n882rg" targetRef="Task_162x79i" />
-    <bpmn:exclusiveGateway id="ExclusiveGateway_1qqmrb8" name="Payment OK?" default="SequenceFlow_1dwqvrt">
+    <bpmn:sequenceFlow id="SequenceFlow_0drux68" name="OK" sourceRef="ExclusiveGateway_0n882rg" targetRef="Task_162x79i">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">$.smthIsMissing == false</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:exclusiveGateway id="ExclusiveGateway_1qqmrb8" name="Payment OK?">
       <bpmn:incoming>SequenceFlow_1s6g17c</bpmn:incoming>
       <bpmn:outgoing>SequenceFlow_1dwqvrt</bpmn:outgoing>
       <bpmn:outgoing>SequenceFlow_0jzbqu1</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     <bpmn:sequenceFlow id="SequenceFlow_1s6g17c" sourceRef="Task_1b1r7ow" targetRef="ExclusiveGateway_1qqmrb8" />
-    <bpmn:sequenceFlow id="SequenceFlow_1dwqvrt" sourceRef="ExclusiveGateway_1qqmrb8" targetRef="Task_1t0a4uy" />
+    <bpmn:sequenceFlow id="SequenceFlow_1dwqvrt" sourceRef="ExclusiveGateway_1qqmrb8" targetRef="Task_1t0a4uy">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression">$.paid == true</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
     <bpmn:serviceTask id="ServiceTask_00g0gy6" name="Request for payment">
       <bpmn:extensionElements>
         <zeebe:taskDefinition type="requestPayment" />

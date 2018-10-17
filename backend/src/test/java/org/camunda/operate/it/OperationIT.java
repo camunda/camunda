@@ -29,41 +29,37 @@ import org.camunda.operate.rest.dto.WorkflowInstanceRequestDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceResponseDto;
 import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.MockMvcTestRule;
-import org.camunda.operate.util.OperateIntegrationTest;
-import org.camunda.operate.util.ZeebeTestRule;
+import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeUtil;
+import org.camunda.operate.zeebe.operation.CancelWorkflowInstanceHandler;
 import org.camunda.operate.zeebe.operation.OperationExecutor;
+import org.camunda.operate.zeebe.operation.UpdateRetriesHandler;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.builder.BpmnBuilder;
-import io.zeebe.model.bpmn.instance.WorkflowDefinition;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.fail;
 import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INSTANCE_URL;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-public class OperationIT extends OperateIntegrationTest {
+public class OperationIT extends OperateZeebeIntegrationTest {
 
   private static final String POST_BATCH_OPERATION_URL = WORKFLOW_INSTANCE_URL + "/operation";
   private static final String QUERY_INSTANCES_URL = WORKFLOW_INSTANCE_URL;
 
   @Rule
-  public ZeebeTestRule zeebeTestRule = new ZeebeTestRule();
-
-  @Rule
   public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
-
-  @Autowired
-  public ZeebeUtil zeebeUtil;
 
   @Rule
   public MockMvcTestRule mockMvcTestRule = new MockMvcTestRule();
@@ -76,14 +72,29 @@ public class OperationIT extends OperateIntegrationTest {
   @Autowired
   private OperationExecutor operationExecutor;
 
+  @Autowired
+  private CancelWorkflowInstanceHandler cancelWorkflowInstanceHandler;
+
+  @Autowired
+  private UpdateRetriesHandler updateRetriesHandler;
+
   private Long initialBatchOperationMaxSize;
   private String workflowId;
 
   @Before
   public void starting() {
+    super.before();
+
+    try {
+      FieldSetter.setField(cancelWorkflowInstanceHandler, CancelWorkflowInstanceHandler.class.getDeclaredField("zeebeClient"), super.getClient());
+      FieldSetter.setField(updateRetriesHandler, UpdateRetriesHandler.class.getDeclaredField("zeebeClient"), super.getClient());
+    } catch (NoSuchFieldException e) {
+      fail("Failed to inject ZeebeClient into some of the beans");
+    }
+
     this.mockMvc = mockMvcTestRule.getMockMvc();
     this.initialBatchOperationMaxSize = operateProperties.getBatchOperationMaxSize();
-    workflowId = zeebeUtil.deployWorkflowToTheTopic(zeebeTestRule.getTopicName(), "demoProcess_v_1.bpmn");
+    workflowId = ZeebeUtil.deployWorkflow(super.getClient(), "demoProcess_v_1.bpmn");
   }
 
   @After
@@ -142,7 +153,7 @@ public class OperationIT extends OperateIntegrationTest {
     assertThat(operation.getEndDate()).isNull();
 
     //after we process messages from Zeebe, the state of the operation is changed to COMPLETED
-    elasticsearchTestRule.processAllEvents(3);
+    elasticsearchTestRule.processAllEvents(8);
     workflowInstances = getWorkflowInstances(workflowInstanceQuery);
     assertThat(workflowInstances.getWorkflowInstances()).hasSize(1);
     assertThat(workflowInstances.getWorkflowInstances().get(0).getOperations()).hasSize(1);
@@ -173,6 +184,7 @@ public class OperationIT extends OperateIntegrationTest {
 
     //then
     //before we process messages from Zeebe, the state of the operation must be SENT
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
     WorkflowInstanceResponseDto workflowInstances = getWorkflowInstances(workflowInstanceQuery);
 
     assertThat(workflowInstances.getWorkflowInstances()).hasSize(1);
@@ -184,7 +196,7 @@ public class OperationIT extends OperateIntegrationTest {
     assertThat(operation.getEndDate()).isNull();
 
     //after we process messages from Zeebe, the state of the operation is changed to COMPLETED
-    elasticsearchTestRule.processAllEvents(3);
+    elasticsearchTestRule.processAllEvents(8);
     workflowInstances = getWorkflowInstances(workflowInstanceQuery);
     assertThat(workflowInstances.getWorkflowInstances()).hasSize(1);
     assertThat(workflowInstances.getWorkflowInstances().get(0).getOperations()).hasSize(1);
@@ -253,7 +265,7 @@ public class OperationIT extends OperateIntegrationTest {
   public void testFailCancelOnCanceledInstance() throws Exception {
     // given
     final String workflowInstanceId = startDemoWorkflowInstance();
-    zeebeUtil.cancelWorkflowInstance(zeebeTestRule.getTopicName(), workflowInstanceId, workflowId);
+    ZeebeUtil.cancelWorkflowInstance(super.getClient(), workflowInstanceId);
     elasticsearchTestRule.processAllEvents(10);
 
     //when
@@ -281,13 +293,13 @@ public class OperationIT extends OperateIntegrationTest {
   public void testFailCancelOnCompletedInstance() throws Exception {
     // given
     final String bpmnProcessId = "startEndProcess";
-    final WorkflowDefinition startEndProcess =
-      Bpmn.createExecutableWorkflow(bpmnProcessId)
+    final BpmnModelInstance startEndProcess =
+      Bpmn.createExecutableProcess(bpmnProcessId)
         .startEvent()
         .endEvent()
         .done();
-    final String workflowId = zeebeUtil.deployWorkflowToTheTopic(zeebeTestRule.getTopicName(), startEndProcess, "startEndProcess.bpmn");
-    final String workflowInstanceId = zeebeUtil.startWorkflowInstance(zeebeTestRule.getTopicName(), bpmnProcessId, null);
+    final String workflowId = ZeebeUtil.deployWorkflow(super.getClient(), startEndProcess, "startEndProcess.bpmn");
+    final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(super.getClient(), bpmnProcessId, null);
     elasticsearchTestRule.processAllEvents(20);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
@@ -358,13 +370,13 @@ public class OperationIT extends OperateIntegrationTest {
   }
 
   private void failTaskWithNoRetriesLeft(String taskName) {
-    zeebeTestRule.setJobWorker(zeebeUtil.failTask(zeebeTestRule.getTopicName(), taskName, zeebeTestRule.getWorkerName(), 3));
+    super.setJobWorker(ZeebeUtil.failTask(super.getClient(), taskName, super.getWorkerName(), 3));
     elasticsearchTestRule.processAllEvents(20);
   }
 
   private String startDemoWorkflowInstance() {
     String processId = "demoProcess";
-    final String workflowInstanceId = zeebeUtil.startWorkflowInstance(zeebeTestRule.getTopicName(), processId, "{\"a\": \"b\"}");
+    final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(super.getClient(), processId, "{\"a\": \"b\"}");
 
     elasticsearchTestRule.processAllEvents(10);
     elasticsearchTestRule.refreshIndexesInElasticsearch();

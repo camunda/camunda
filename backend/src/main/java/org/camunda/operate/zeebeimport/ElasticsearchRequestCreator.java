@@ -1,6 +1,7 @@
-package org.camunda.operate.es.writer;
+package org.camunda.operate.zeebeimport;
 
 import org.camunda.operate.entities.OperateEntity;
+import org.camunda.operate.exceptions.PersistenceException;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 
 

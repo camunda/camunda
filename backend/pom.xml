@@ -19,6 +19,29 @@
       <groupId>io.zeebe</groupId>
       <artifactId>zeebe-client-java</artifactId>
     </dependency>
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-exporter-api</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-protocol</artifactId>
+    </dependency>
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-test</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zeebe-broker-core</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.zeebe</groupId>
+      <artifactId>zb-elasticsearch-exporter</artifactId>
+      <scope>test</scope>
+    </dependency>
 
     <!-- SPRING BOOT -->
 
@@ -159,11 +182,7 @@
                     <argument>up</argument>
                     <argument>-d</argument>
                     <argument>elasticsearch</argument>
-                    <argument>zeebe</argument>
                   </arguments>
-                  <environmentVariables>
-                    <ZEEBE_HOST>0.0.0.0</ZEEBE_HOST>
-                  </environmentVariables>
                 </configuration>
               </execution>
 

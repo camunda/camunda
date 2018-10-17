@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 public class WorkflowType extends StrictTypeMappingCreator {
 
   public static final String ID = "id";
+  public static final String KEY = "key";
   public static final String BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String NAME = "name";
   public static final String VERSION = "version";
@@ -28,6 +29,9 @@ public class WorkflowType extends StrictTypeMappingCreator {
   protected XContentBuilder addProperties(XContentBuilder xContentBuilder) throws IOException {
     return xContentBuilder
       .startObject(ID)
+        .field("type", "keyword")
+      .endObject()
+      .startObject(KEY)
         .field("type", "keyword")
       .endObject()
       .startObject(BPMN_PROCESS_ID)

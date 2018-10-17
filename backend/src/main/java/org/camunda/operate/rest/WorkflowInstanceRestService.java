@@ -7,7 +7,7 @@ import static org.camunda.operate.rest.WorkflowInstanceRestService.WORKFLOW_INST
 import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.writer.BatchOperationWriter;
-import org.camunda.operate.es.writer.PersistenceException;
+import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.rest.dto.ActivityStatisticsDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceBatchOperationDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceDto;

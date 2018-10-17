@@ -5,10 +5,11 @@ import java.util.List;
 import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.es.ElasticsearchSchemaManager;
 import org.camunda.operate.es.types.TypeMappingCreator;
-import org.camunda.operate.es.writer.ElasticsearchBulkProcessor;
-import org.camunda.operate.es.writer.PersistenceException;
+import org.camunda.operate.zeebeimport.ElasticsearchBulkProcessor;
+import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.ElasticsearchProperties;
 import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.zeebeimport.ZeebeESImporter;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.index.IndexNotFoundException;
@@ -35,6 +36,9 @@ public class ElasticsearchTestRule extends ExternalResource {
   private ElasticsearchSchemaManager elasticsearchSchemaManager;
 
   @Autowired
+  private ZeebeESImporter zeebeESImporter;
+
+  @Autowired
   private ElasticsearchBulkProcessor elasticsearchBulkProcessor;
 
   private boolean haveToClean = true;
@@ -42,6 +46,7 @@ public class ElasticsearchTestRule extends ExternalResource {
   private String workflowIndexName;
   private String workflowInstanceIndexName;
   private String eventIndexName;
+  private String importPositionIndexName;
 
   @Override
   public void before() {
@@ -49,9 +54,11 @@ public class ElasticsearchTestRule extends ExternalResource {
     workflowIndexName = ElasticsearchProperties.WORKFLOW_INDEX_NAME_DEFAULT + indexSuffix;
     workflowInstanceIndexName = ElasticsearchProperties.WORKFLOW_INSTANCE_INDEX_NAME_DEFAULT + indexSuffix;
     eventIndexName = ElasticsearchProperties.EVENT_INDEX_NAME_DEFAULT + indexSuffix;
+    importPositionIndexName = ElasticsearchProperties.IMPORT_POSITION_INDEX_NAME_DEFAULT + indexSuffix;
     operateProperties.getElasticsearch().setWorkflowIndexName(workflowIndexName);
     operateProperties.getElasticsearch().setWorkflowInstanceIndexName(workflowInstanceIndexName);
     operateProperties.getElasticsearch().setEventIndexName(eventIndexName);
+    operateProperties.getElasticsearch().setImportPositionIndexName(importPositionIndexName);
     elasticsearchSchemaManager.createIndices();
 
   }
@@ -62,6 +69,7 @@ public class ElasticsearchTestRule extends ExternalResource {
     operateProperties.getElasticsearch().setWorkflowIndexName(ElasticsearchProperties.WORKFLOW_INDEX_NAME_DEFAULT);
     operateProperties.getElasticsearch().setWorkflowInstanceIndexName(ElasticsearchProperties.WORKFLOW_INSTANCE_INDEX_NAME_DEFAULT);
     operateProperties.getElasticsearch().setEventIndexName(ElasticsearchProperties.EVENT_INDEX_NAME_DEFAULT);
+    operateProperties.getElasticsearch().setImportPositionIndexName(ElasticsearchProperties.IMPORT_POSITION_INDEX_NAME_DEFAULT);
 //    if (haveToClean) {
 //      logger.info("cleaning up elasticsearch on finish");
 //      cleanAndVerify();
@@ -71,7 +79,7 @@ public class ElasticsearchTestRule extends ExternalResource {
 
   public void removeAllIndices() {
     logger.info("Removing indices");
-    esClient.admin().indices().delete(new DeleteIndexRequest(workflowIndexName, workflowInstanceIndexName, eventIndexName));
+    esClient.admin().indices().delete(new DeleteIndexRequest(workflowIndexName, workflowInstanceIndexName, eventIndexName, importPositionIndexName));
   }
 
 //  public void cleanAndVerify() {
@@ -98,7 +106,8 @@ public class ElasticsearchTestRule extends ExternalResource {
         .prepareRefresh()
         .get();
     } catch (IndexNotFoundException e) {
-//      nothing to do
+      logger.error(e.getMessage(), e);
+      //      nothing to do
     }
   }
 
@@ -112,8 +121,8 @@ public class ElasticsearchTestRule extends ExternalResource {
       int totalCount = 0;
       int emptyAttempts = 0;
       do {
-        Thread.sleep(100L);
-        entitiesCount = elasticsearchBulkProcessor.processNextEntitiesBatch();
+        Thread.sleep(1000L);
+        entitiesCount = zeebeESImporter.processNextEntitiesBatch();
         totalCount += entitiesCount;
         if (entitiesCount > 0) {
           emptyAttempts = 0;
@@ -121,8 +130,8 @@ public class ElasticsearchTestRule extends ExternalResource {
           emptyAttempts++;
         }
       } while(totalCount < expectedMinEventsCount && emptyAttempts < 3);
-    } catch (InterruptedException e) {
-      e.printStackTrace();
+    } catch (Exception e) {
+      logger.error(e.getMessage(), e);
     }
   }
 
@@ -130,6 +139,7 @@ public class ElasticsearchTestRule extends ExternalResource {
     try {
       elasticsearchBulkProcessor.persistOperateEntities(Arrays.asList(entitiesToPersist));
     } catch (PersistenceException e) {
+      logger.error("Unable to persist entities: " + e.getMessage(), e);
       throw new RuntimeException(e);
     }
     refreshIndexesInElasticsearch();

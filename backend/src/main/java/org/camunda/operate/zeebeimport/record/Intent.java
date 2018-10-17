@@ -1,0 +1,61 @@
+package org.camunda.operate.zeebeimport.record;
+
+public enum Intent implements io.zeebe.protocol.intent.Intent {
+
+  CREATE,
+  CREATED,
+
+  DISTRIBUTE,
+  DISTRIBUTED,
+
+  RESOLVE,
+  RESOLVED,
+  RESOLVE_FAILED,
+
+  DELETE,
+  DELETED,
+
+  START_EVENT_OCCURRED,
+  END_EVENT_OCCURRED,
+  SEQUENCE_FLOW_TAKEN,
+  GATEWAY_ACTIVATED,
+
+  ELEMENT_READY,
+  ELEMENT_ACTIVATED,
+  ELEMENT_COMPLETING,
+  ELEMENT_COMPLETED,
+  ELEMENT_TERMINATING,
+  ELEMENT_TERMINATED,
+
+  CANCEL,
+  CANCELING,
+
+  UPDATE_PAYLOAD,
+  PAYLOAD_UPDATED,
+
+  //JOB
+  ACTIVATE,
+  ACTIVATED,
+
+  COMPLETE,
+  COMPLETED,
+
+  TIME_OUT,
+  TIMED_OUT,
+
+  FAIL,
+  FAILED,
+
+  UPDATE_RETRIES,
+  RETRIES_UPDATED,
+
+  CANCELED,
+
+  UNKNOWN;
+
+  private final short value = 0;
+
+  public short value() {
+    return value;
+  }
+}

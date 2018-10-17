@@ -1,19 +1,21 @@
 package org.camunda.operate.entities;
 
+import io.zeebe.protocol.intent.IncidentIntent;
+
 public enum IncidentState {
 
   ACTIVE,
   RESOLVED,
   DELETED;
 
-  public static IncidentState fromZeebeIncidentState(io.zeebe.client.api.events.IncidentState zeebeIncidentState) {
-    switch (zeebeIncidentState) {
-    case CREATED:
-    case RESOLVE_FAILED:
+  public static IncidentState fromZeebeIncidentIntent(String zeebeIncidentIntent) {
+    switch (zeebeIncidentIntent) {
+    case "CREATED":
+    case "RESOLVE_FAILED":
       return ACTIVE;
-    case RESOLVED:
+    case "RESOLVED":
       return RESOLVED;
-    case DELETED:
+    case "DELETED":
       return DELETED;
     default:
       return ACTIVE;

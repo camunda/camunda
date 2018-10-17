@@ -7,12 +7,17 @@ camunda.bpm.operate:
     dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
     demoData: false
   zeebe:
-    brokerContactPoint: localhost:51015
+    brokerContactPoint: localhost:26500
     demoData: false
     topics:
     worker: operate
   operationExecutor:
     executorEnabled: false
+  zeebeElasticsearch:
+    clusterName: docker-cluster
+    host: localhost
+    port: 9300
+    prefix: test-record
 logging:
   level:
     ROOT: INFO

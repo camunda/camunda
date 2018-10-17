@@ -15,9 +15,7 @@ package org.camunda.operate.util;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import org.camunda.operate.entities.OperateEntity;
-import org.camunda.operate.entities.WorkflowInstanceEntity;
-import org.camunda.operate.es.writer.PersistenceException;
+import org.camunda.operate.exceptions.PersistenceException;
 import org.elasticsearch.ElasticsearchException;
 import org.elasticsearch.action.bulk.BulkItemResponse;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
@@ -30,6 +28,7 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.search.SearchHit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 
@@ -93,7 +92,7 @@ public abstract class ElasticsearchUtil {
     return boolQuery().must(QueryBuilders.wrapperQuery("{\"match_none\": {}}"));
   }
 
-  public static <T extends OperateEntity> List<T> mapSearchHits(SearchHit[] searchHits, ObjectMapper objectMapper, Class<T> clazz) {
+  public static <T> List<T> mapSearchHits(SearchHit[] searchHits, ObjectMapper objectMapper, Class<T> clazz) {
     List<T> result = new ArrayList<>();
     for (SearchHit searchHit : searchHits) {
       String searchHitAsString = searchHit.getSourceAsString();
@@ -102,13 +101,33 @@ public abstract class ElasticsearchUtil {
     return result;
   }
 
-  public static <T extends OperateEntity> T fromSearchHit(String searchHitString, ObjectMapper objectMapper, Class<T> clazz) {
+  public static <T> T fromSearchHit(String searchHitString, ObjectMapper objectMapper, Class<T> clazz) {
     T workflowInstance;
     try {
       workflowInstance = objectMapper.readValue(searchHitString, clazz);
     } catch (IOException e) {
       logger.error(String.format("Error while reading entity of type %s from Elasticsearch!", clazz.getName()), e);
       throw new RuntimeException(String.format("Error while reading entity of type %s from Elasticsearch!", clazz.getName()), e);
+    }
+    return workflowInstance;
+  }
+
+  public static <T> List<T> mapSearchHits(SearchHit[] searchHits, ObjectMapper objectMapper, JavaType valueType) {
+    List<T> result = new ArrayList<>();
+    for (SearchHit searchHit : searchHits) {
+      String searchHitAsString = searchHit.getSourceAsString();
+      result.add(fromSearchHit(searchHitAsString, objectMapper, valueType));
+    }
+    return result;
+  }
+
+  public static <T> T fromSearchHit(String searchHitString, ObjectMapper objectMapper, JavaType valueType) {
+    T workflowInstance;
+    try {
+      workflowInstance = objectMapper.readValue(searchHitString, valueType);
+    } catch (IOException e) {
+      logger.error(String.format("Error while reading entity of type %s from Elasticsearch!", valueType.toString()), e);
+      throw new RuntimeException(String.format("Error while reading entity of type %s from Elasticsearch!", valueType.toString()), e);
     }
     return workflowInstance;
   }
@@ -120,6 +139,7 @@ public abstract class ElasticsearchUtil {
   public static void processBulkRequest(BulkRequestBuilder bulkRequest, boolean refreshImmediately) throws PersistenceException {
     if (bulkRequest.request().requests().size() > 0) {
       try {
+        logger.debug("************* FLUSH BULK *************");
         if (refreshImmediately) {
           bulkRequest = bulkRequest.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
         }

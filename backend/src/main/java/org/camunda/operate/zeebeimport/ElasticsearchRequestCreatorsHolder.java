@@ -1,4 +1,4 @@
-package org.camunda.operate.es.writer;
+package org.camunda.operate.zeebeimport;
 
 import java.io.IOException;
 import java.util.HashMap;
@@ -19,6 +19,9 @@ import org.camunda.operate.es.types.EventType;
 import org.camunda.operate.es.types.StrictTypeMappingCreator;
 import org.camunda.operate.es.types.WorkflowInstanceType;
 import org.camunda.operate.es.types.WorkflowType;
+import org.camunda.operate.es.writer.BatchOperationWriter;
+import org.camunda.operate.exceptions.PersistenceException;
+import org.camunda.operate.util.IdUtil;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequestBuilder;
 import org.elasticsearch.client.transport.TransportClient;
@@ -33,7 +36,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 
 @Component
 @Configuration
@@ -66,11 +68,15 @@ public class ElasticsearchRequestCreatorsHolder {
   public ElasticsearchRequestCreator<WorkflowInstanceEntity> workflowInstanceEsRequestCreator() {
     return (bulkRequestBuilder, entity) -> {
       try {
-
+        logger.debug("Workflow instance: id {}", entity.getId());
         Map<String, Object> updateFields = new HashMap<>();
+        if (entity.getStartDate() != null) {
+          updateFields.put(WorkflowInstanceType.START_DATE, entity.getStartDate());
+        }
         if (entity.getEndDate() != null) {
           updateFields.put(WorkflowInstanceType.END_DATE, entity.getEndDate());
         }
+        updateFields.put(WorkflowInstanceType.WORKFLOW_ID, entity.getWorkflowId());
         updateFields.put(WorkflowInstanceType.STATE, entity.getState());
         updateFields.put(StrictTypeMappingCreator.PARTITION_ID, entity.getPartitionId());
         updateFields.put(StrictTypeMappingCreator.POSITION, entity.getPosition());
@@ -97,15 +103,14 @@ public class ElasticsearchRequestCreatorsHolder {
   }
 
   /**
-   * Inserting or updating an incident always mean UPDATE for workflow instance index.
-   * In case the workflow instance is not there yet, we don't want to insert it (this is an exceptional situation,
-   * as we process all events in one thread in ordered manner at the moment).
+   * Inserting or updating an incident can be both insert or update for the workflow instance.
    *
    * @return
    */
   public ElasticsearchRequestCreator<IncidentEntity> incidentEsRequestCreator() {
     return (bulkRequestBuilder, entity) -> {
       try {
+        logger.debug("Incident: id {}, workflowInstanceId {}", entity.getId(), entity.getWorkflowInstanceId());
 
         Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(entity), HashMap.class);
         Map<String, Object> params = new HashMap<>();
@@ -133,12 +138,21 @@ public class ElasticsearchRequestCreatorsHolder {
             "for (int j = 0; j < ctx._source.activities.size(); j++) {" +
               "if (ctx._source.activities[j].id == params.incident.activityInstanceId) {" +
                 "if (params.incident.state == '" + IncidentState.ACTIVE.toString() + "') {" +
-                  "ctx._source.activities[j].state = '" + ActivityState.INCIDENT.toString() + "';" +
-                  "ctx._source.activities[j].endDate = null;" +
+                  "if (ctx._source.activities[j].type == '" + ActivityType.GATEWAY.toString() + "') {" +
+                    "ctx._source.activities[j].state = '" + ActivityState.INCIDENT.toString() + "';" +
+//                    "ctx._source.activities[j].endDate = null;" +   //TODO should be set by workflow instance event -> we need test case for this
+                  "} else if (ctx._source.activities[j].state != '" + ActivityState.COMPLETED.toString() + "') {" +
+                    "ctx._source.activities[j].state = '" + ActivityState.INCIDENT.toString() + "';" +
+//                    "ctx._source.activities[j].endDate = null;" +   //TODO should be set by workflow instance event -> we need test case for this
+                  "}" +
                 "} else if (ctx._source.activities[j].type == '" + ActivityType.GATEWAY.toString() + "') {" +
-                  "ctx._source.activities[j].state = '" + ActivityState.COMPLETED.toString() + "'" +
-                "} else {" +
-                  "ctx._source.activities[j].state = '" + ActivityState.ACTIVE.toString() + "'" +
+                  "ctx._source.activities[j].state = '" + ActivityState.COMPLETED.toString() + "';" +
+                "} else if (ctx._source.activities[j].state != '" + ActivityState.COMPLETED.toString() + "') {" +
+                  "if (ctx._source.activities[j].endDate == null) {" +    //TODO test case for this -> 1st come Activity activates (+ Activity completed) event(s) and then Incident Created and Resolved
+                    "ctx._source.activities[j].state = '" + ActivityState.ACTIVE.toString() + "';" +
+                  "} else { " +
+                    "ctx._source.activities[j].state = '" + ActivityState.COMPLETED.toString() + "';" +
+                  "}" +
                 "}" +
               "}" +
             "}";
@@ -149,15 +163,30 @@ public class ElasticsearchRequestCreatorsHolder {
           script,
           params
         );
+
+        //in case workflow instance was not loaded yet, we need to create new one
+        WorkflowInstanceEntity workflowInstanceEntity = createWorkflowInstanceEntity(entity);
+
         return bulkRequestBuilder.add(
           esClient
             .prepareUpdate(workflowInstanceType.getType(), workflowInstanceType.getType(), entity.getWorkflowInstanceId())
-            .setScript(updateScript));
+            .setScript(updateScript)
+            .setUpsert(objectMapper.writeValueAsString(workflowInstanceEntity), XContentType.JSON));
       } catch (IOException e) {
         logger.error("Error preparing the query to update incident", e);
         throw new PersistenceException(String.format("Error preparing the query to update incident [%s]", entity.getId()), e);
       }
     };
+  }
+
+  private WorkflowInstanceEntity createWorkflowInstanceEntity(IncidentEntity incident) {
+    WorkflowInstanceEntity workflowInstanceEntity = new WorkflowInstanceEntity();
+    workflowInstanceEntity.setId(incident.getWorkflowInstanceId());
+    workflowInstanceEntity.setPosition(incident.getPosition());
+    workflowInstanceEntity.setPartitionId(incident.getPartitionId());
+    workflowInstanceEntity.setKey(IdUtil.extractKey(incident.getWorkflowInstanceId()));
+    workflowInstanceEntity.getIncidents().add(incident);
+    return workflowInstanceEntity;
   }
 
   /**
@@ -171,6 +200,8 @@ public class ElasticsearchRequestCreatorsHolder {
     return (bulkRequestBuilder, entity) -> {
       try {
 
+        logger.debug("Activity instance: id {}, workflowInstanceId {}", entity.getId(), entity.getWorkflowInstanceId());
+
         Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(entity), HashMap.class);
         Map<String, Object> params = new HashMap<>();
         params.put("activity", jsonMap);
@@ -179,20 +210,28 @@ public class ElasticsearchRequestCreatorsHolder {
         String script =
             "boolean f = false;" +
             "ctx._source.position = params.position; " +
+            //search for active incident
+            "for (int j = 0; j < ctx._source.incidents.size(); j++) {" +
+              "if (ctx._source.incidents[j].activityInstanceId == params.activity.id && " +
+                  "ctx._source.incidents[j].state == '" + IncidentState.ACTIVE.toString() + "') {" +
+                "params.activity.state = '" + ActivityState.INCIDENT.toString() + "'; " +
+              "} " +
+            "} " +
             "for (int j = 0; j < ctx._source.activities.size(); j++) {" +
               "if (ctx._source.activities[j].id == params.activity.id) {" +
                 "if (params.activity.endDate != null) {" +
-                "ctx._source.activities[j].endDate = params.activity.endDate;" +
-                "ctx._source.activities[j].state = params.activity.state;" +
+                  "ctx._source.activities[j].endDate = params.activity.endDate;" +
+                  "ctx._source.activities[j].state = params.activity.state;" +
                 "}" +
                 "f = true;" +
                 "break;" +
               "}" +
             "}" +
             "if (!f) {" +
-              "ctx._source.activities.add(params.activity);"
-                +
-            "}";
+              "ctx._source.activities.add(params.activity);" +
+            "}"
+
+          ;
 
         Script updateScript = new Script(
           ScriptType.INLINE,
@@ -218,6 +257,8 @@ public class ElasticsearchRequestCreatorsHolder {
   public ElasticsearchRequestCreator<WorkflowEntity> workflowEsRequestCreator() {
     return (bulkRequestBuilder, entity) -> {
       try {
+        logger.debug("Workflow: id {}, bpmnProcessId {}", entity.getId(), entity.getBpmnProcessId());
+
         return bulkRequestBuilder.add(
           esClient
             .prepareIndex(workflowType.getType(), workflowType.getType(), entity.getId())
@@ -233,6 +274,8 @@ public class ElasticsearchRequestCreatorsHolder {
   public ElasticsearchRequestCreator<SequenceFlowEntity> sequenceFlowEsRequestCreator() {
     return (bulkRequestBuilder, entity) -> {
       try {
+
+        logger.debug("Sequence flow: id {}, activityId {}, workflowInstanceId {}", entity.getId(), entity.getActivityId(), entity.getWorkflowInstanceId());
 
         Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(entity), HashMap.class);
         Map<String, Object> params = new HashMap<>();
@@ -271,6 +314,10 @@ public class ElasticsearchRequestCreatorsHolder {
   public ElasticsearchRequestCreator<EventEntity> eventEsRequestCreator() {
     return (bulkRequestBuilder, entity) -> {
       try {
+
+        logger.debug("Event: id {}, eventSourceType {}, eventType {}, workflowInstanceId {}",
+          entity.getId(), entity.getEventSourceType(), entity.getEventType(), entity.getWorkflowInstanceId());
+
         //write event
         bulkRequestBuilder =
           bulkRequestBuilder.add(esClient.prepareIndex(eventType.getType(), eventType.getType(), entity.getId())
@@ -283,7 +330,7 @@ public class ElasticsearchRequestCreatorsHolder {
           //if we update smth, we need it to have affect at once
           bulkRequestBuilder.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);
         } else if (entity.getEventSourceType().equals(EventSourceType.WORKFLOW_INSTANCE) &&
-          entity.getEventType().equals(org.camunda.operate.entities.EventType.CANCELED)){
+          entity.getEventType().equals(org.camunda.operate.entities.EventType.ELEMENT_TERMINATED)){
           bulkRequestBuilder = bulkRequestBuilder.add(batchOperationWriter.createOperationCompletedRequest(entity.getWorkflowInstanceId(), OperationType.CANCEL));
           //if we update smth, we need it to have affect at once
           bulkRequestBuilder.setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE);

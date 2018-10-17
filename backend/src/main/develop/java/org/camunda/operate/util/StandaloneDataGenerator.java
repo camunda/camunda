@@ -23,7 +23,6 @@ public class StandaloneDataGenerator {
     final ZeebeClient zeebeClient = createZeebeClient(args[0]);
     final String topicName = args.length == 1 ? "new-topic" : args[1];
     zeebeDemoDataGenerator.setClient(zeebeClient);
-    zeebeDemoDataGenerator.setZeebeUtil(createZeebeUtil(zeebeClient));
     zeebeDemoDataGenerator.setOperateProperties(createOperateProperties(topicName));
     zeebeDemoDataGenerator.createZeebeData(true);
     zeebeClient.close();
@@ -33,12 +32,6 @@ public class StandaloneDataGenerator {
     OperateProperties operateProperties = new OperateProperties();
     operateProperties.getZeebe().setTopics(Arrays.asList(topicName));
     return operateProperties;
-  }
-
-  private static ZeebeUtil createZeebeUtil(ZeebeClient zeebeClient) {
-    ZeebeUtil zeebeUtil = new ZeebeUtil();
-    zeebeUtil.setClient(zeebeClient);
-    return zeebeUtil;
   }
 
   private static ZeebeClient createZeebeClient(String brokerContactPoint) {

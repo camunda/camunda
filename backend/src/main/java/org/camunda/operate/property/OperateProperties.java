@@ -17,11 +17,12 @@ public class OperateProperties {
 
   private Long batchOperationMaxSize;
 
-  /**
-   *  Configuration parameters for elasticsearch client.
-   */
   @NestedConfigurationProperty
   private ElasticsearchProperties elasticsearch = new ElasticsearchProperties();
+
+  //TODO not all properties make sense
+  @NestedConfigurationProperty
+  private ZeebeElasticsearchProperties zeebeElasticsearch = new ZeebeElasticsearchProperties();
 
   @NestedConfigurationProperty
   private ZeebeProperties zeebe = new ZeebeProperties();
@@ -51,6 +52,14 @@ public class OperateProperties {
 
   public void setElasticsearch(ElasticsearchProperties elasticsearch) {
     this.elasticsearch = elasticsearch;
+  }
+
+  public ZeebeElasticsearchProperties getZeebeElasticsearch() {
+    return zeebeElasticsearch;
+  }
+
+  public void setZeebeElasticsearch(ZeebeElasticsearchProperties zeebeElasticsearch) {
+    this.zeebeElasticsearch = zeebeElasticsearch;
   }
 
   public ZeebeProperties getZeebe() {
