@@ -43,7 +43,7 @@ export async function loadCorrelationData(
   gateway,
   end
 ) {
-  const response = await post('api/process-definition/correlation', {
+  const response = await post('api/analysis/correlation', {
     processDefinitionKey,
     processDefinitionVersion,
     filter,

@@ -407,7 +407,7 @@ public class OptimizeRequestExecutor {
 
 
   public OptimizeRequestExecutor buildProcessDefinitionCorrelation(BranchAnalysisQueryDto entity) {
-    this.path = "process-definition/correlation";
+    this.path = "analysis/correlation";
     this.requestType = POST;
     this.body = getBody(entity);
     return this;
