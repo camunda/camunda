@@ -150,9 +150,6 @@ describe('InstanceHistory', () => {
     // Copyright
     const CopyrightNode = PaneFooterNode.find(Copyright);
     expect(CopyrightNode).toHaveLength(1);
-
-    // snapshot
-    expect(node).toMatchSnapshot();
   });
 
   describe('handleEventRowChange', () => {
