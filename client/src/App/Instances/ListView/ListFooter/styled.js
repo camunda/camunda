@@ -9,7 +9,9 @@ export const DropdownOption = styled(Dropdown.Option)`
 
 export const Footer = styled.div`
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
+  align-items: center;
+  position: relative;
 `;
 
 export const Wrapper = themed(styled.div`
@@ -17,10 +19,9 @@ export const Wrapper = themed(styled.div`
 `);
 
 export const SelectionWrapper = styled.div`
-  padding: 4px 11px 5px 11px;
-  position: relative;
-  bottom: 8px;
-  margin-left: 21px;
+  position: absolute;
+  top: -4px;
+  left: 0;
 `;
 
 export const PaginatorWrapper = styled.div`
