@@ -94,10 +94,14 @@ export const FiltersBadge = styled(Badge)`
   color: ${Colors.uiDark02};
 `;
 
-export const SelectionBadgeLeft = styled(ComboBadgeComponent.Left)`
+export const SelectionBadgeLeft = themed(styled(ComboBadgeComponent.Left)`
   background-color: ${Colors.selections};
+  border-color: ${themeStyle({
+    dark: Colors.uiDark01,
+    light: Colors.uiLight01
+  })};
   color: #ffffff;
-`;
+`);
 
 export const SelectionBadgeRight = styled(ComboBadgeComponent.Right)`
   background-color: rgba(77, 144, 255, 0.75);
