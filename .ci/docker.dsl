@@ -55,10 +55,6 @@ freeStyleJob(jobName)
 
     label 'dind'
 
-    triggers {
-        githubPush()
-    }
-
     parameters
     {
         stringParam('RELEASE_VERSION', 'SNAPSHOT', 'Docker image tag')
