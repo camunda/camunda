@@ -77,7 +77,7 @@ export default class Selections extends React.Component {
       <Styled.Selections>
         <CollapsablePanelConsumer>
           {context => (
-            <CollapsablePanel
+            <Styled.CollapsablePanel
               type="selections"
               onCollapse={context.toggleSelections}
               isCollapsed={context.selections}
@@ -122,7 +122,7 @@ export default class Selections extends React.Component {
                 />
               </CollapsablePanel.Body>
               <CollapsablePanel.Footer />
-            </CollapsablePanel>
+            </Styled.CollapsablePanel>
           )}
         </CollapsablePanelConsumer>
       </Styled.Selections>

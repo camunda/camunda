@@ -7,7 +7,7 @@ exports[`Selections should match this snapshot 1`] = `
 `;
 
 exports[`Selections should render a CollapsablePanel 1`] = `
-<CollapsablePanel
+<Styled(CollapsablePanel)
   collapseButton={
     <Styled(ExpandButton)
       direction="RIGHT"
@@ -109,5 +109,5 @@ exports[`Selections should render a CollapsablePanel 1`] = `
     />
   </PanelBody>
   <PanelFooter />
-</CollapsablePanel>
+</Styled(CollapsablePanel)>
 `;

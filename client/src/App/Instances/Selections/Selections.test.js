@@ -9,6 +9,8 @@ import Selections from './Selections';
 
 import * as api from 'modules/api/instances/instances';
 
+import * as Styled from './styled';
+
 api.applyOperation = mockResolvedAsyncFn();
 
 const MockSelections = [
@@ -76,7 +78,7 @@ describe('Selections', () => {
     const CollapsablePanelNode = node
       .find('CollapsablePanelConsumer')
       .dive()
-      .find('CollapsablePanel');
+      .find(Styled.CollapsablePanel);
 
     expect(CollapsablePanelNode.length).toBe(1);
     expect(CollapsablePanelNode).toMatchSnapshot();
