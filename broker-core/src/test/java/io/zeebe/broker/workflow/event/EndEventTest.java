@@ -76,7 +76,7 @@ public class EndEventTest {
     // then
     final Record<WorkflowInstanceRecordValue> completedEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withActivityId(PROCESS_ID)
+            .withElementId(PROCESS_ID)
             .getFirst();
 
     final String actualPayload = completedEvent.getValue().getPayload();
@@ -102,7 +102,7 @@ public class EndEventTest {
     // then
     final Record<WorkflowInstanceRecordValue> completedEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withActivityId(PROCESS_ID)
+            .withElementId(PROCESS_ID)
             .getFirst();
 
     final String actualPayload = completedEvent.getValue().getPayload();
@@ -135,7 +135,7 @@ public class EndEventTest {
     // then
     final Record<WorkflowInstanceRecordValue> completedEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withActivityId(PROCESS_ID)
+            .withElementId(PROCESS_ID)
             .getFirst();
 
     final String actualPayload = completedEvent.getValue().getPayload();
@@ -173,7 +173,7 @@ public class EndEventTest {
     // then
     final Record<WorkflowInstanceRecordValue> completedEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withActivityId(PROCESS_ID)
+            .withElementId(PROCESS_ID)
             .getFirst();
 
     final String actualPayload = completedEvent.getValue().getPayload();

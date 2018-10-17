@@ -220,7 +220,7 @@ public class MessageCorrelationTest {
         testClient
             .receiveWorkflowInstances()
             .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withActivityId("receive-message")
+            .withElementId("receive-message")
             .limit(2)
             .collect(Collectors.toList());
 

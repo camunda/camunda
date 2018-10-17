@@ -27,9 +27,9 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl
   private final String errorType;
   private final String errorMessage;
   private final String bpmnProcessId;
-  private final String activityId;
+  private final String elementId;
   private final long workflowInstanceKey;
-  private final long activityInstanceKey;
+  private final long elementInstanceKey;
   private final long jobKey;
 
   public IncidentRecordValueImpl(
@@ -38,17 +38,17 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl
       final String errorType,
       final String errorMessage,
       final String bpmnProcessId,
-      final String activityId,
+      final String elementId,
       final long workflowInstanceKey,
-      final long activityInstanceKey,
+      final long elementInstanceKey,
       final long jobKey) {
     super(objectMapper, payload);
     this.errorType = errorType;
     this.errorMessage = errorMessage;
     this.bpmnProcessId = bpmnProcessId;
-    this.activityId = activityId;
+    this.elementId = elementId;
     this.workflowInstanceKey = workflowInstanceKey;
-    this.activityInstanceKey = activityInstanceKey;
+    this.elementInstanceKey = elementInstanceKey;
     this.jobKey = jobKey;
   }
 
@@ -68,8 +68,8 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl
   }
 
   @Override
-  public String getActivityId() {
-    return activityId;
+  public String getElementId() {
+    return elementId;
   }
 
   @Override
@@ -78,8 +78,8 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl
   }
 
   @Override
-  public long getActivityInstanceKey() {
-    return activityInstanceKey;
+  public long getElementInstanceKey() {
+    return elementInstanceKey;
   }
 
   @Override
@@ -100,12 +100,12 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl
     }
     final IncidentRecordValueImpl that = (IncidentRecordValueImpl) o;
     return workflowInstanceKey == that.workflowInstanceKey
-        && activityInstanceKey == that.activityInstanceKey
+        && elementInstanceKey == that.elementInstanceKey
         && jobKey == that.jobKey
         && Objects.equals(errorType, that.errorType)
         && Objects.equals(errorMessage, that.errorMessage)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
-        && Objects.equals(activityId, that.activityId);
+        && Objects.equals(elementId, that.elementId);
   }
 
   @Override
@@ -115,9 +115,9 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl
         errorType,
         errorMessage,
         bpmnProcessId,
-        activityId,
+        elementId,
         workflowInstanceKey,
-        activityInstanceKey,
+        elementInstanceKey,
         jobKey);
   }
 
@@ -133,13 +133,13 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl
         + ", bpmnProcessId='"
         + bpmnProcessId
         + '\''
-        + ", activityId='"
-        + activityId
+        + ", elementId='"
+        + elementId
         + '\''
         + ", workflowInstanceKey="
         + workflowInstanceKey
-        + ", activityInstanceKey="
-        + activityInstanceKey
+        + ", elementInstanceKey="
+        + elementInstanceKey
         + ", jobKey="
         + jobKey
         + ", payload='"

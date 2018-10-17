@@ -647,7 +647,7 @@ public class MappingIncidentTest {
         "No data found for query $.foo.",
         workflowInstanceKey,
         "failingTask",
-        incidentEvent.getValue().getActivityInstanceKey(),
+        incidentEvent.getValue().getElementInstanceKey(),
         incidentEvent);
   }
 
@@ -683,7 +683,7 @@ public class MappingIncidentTest {
         "No data found for query $.foo.",
         workflowInstanceKey,
         "failingTask",
-        incidentEvent.getValue().getActivityInstanceKey(),
+        incidentEvent.getValue().getElementInstanceKey(),
         incidentEvent);
   }
 }

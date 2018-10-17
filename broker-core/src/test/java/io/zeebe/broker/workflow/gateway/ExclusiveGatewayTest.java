@@ -82,17 +82,17 @@ public class ExclusiveGatewayTest {
     Record<WorkflowInstanceRecordValue> endEvent =
         testClient.receiveFirstWorkflowInstanceEvent(
             workflowInstance1, WorkflowInstanceIntent.END_EVENT_OCCURRED);
-    assertThat(endEvent.getValue().getActivityId()).isEqualTo("a");
+    assertThat(endEvent.getValue().getElementId()).isEqualTo("a");
 
     endEvent =
         testClient.receiveFirstWorkflowInstanceEvent(
             workflowInstance2, WorkflowInstanceIntent.END_EVENT_OCCURRED);
-    assertThat(endEvent.getValue().getActivityId()).isEqualTo("b");
+    assertThat(endEvent.getValue().getElementId()).isEqualTo("b");
 
     endEvent =
         testClient.receiveFirstWorkflowInstanceEvent(
             workflowInstance3, WorkflowInstanceIntent.END_EVENT_OCCURRED);
-    assertThat(endEvent.getValue().getActivityId()).isEqualTo("c");
+    assertThat(endEvent.getValue().getElementId()).isEqualTo("c");
   }
 
   @Test
@@ -129,7 +129,7 @@ public class ExclusiveGatewayTest {
             .withIntent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN)
             .withWorkflowInstanceKey(workflowInstance1)
             .limit(3)
-            .map(s -> s.getValue().getActivityId())
+            .map(s -> s.getValue().getElementId())
             .collect(Collectors.toList());
     assertThat(takenSequenceFlows).contains("s1").doesNotContain("s2");
 
@@ -139,7 +139,7 @@ public class ExclusiveGatewayTest {
             .withIntent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN)
             .withWorkflowInstanceKey(workflowInstance2)
             .limit(3)
-            .map(s -> s.getValue().getActivityId())
+            .map(s -> s.getValue().getElementId())
             .collect(Collectors.toList());
     assertThat(takenSequenceFlows).contains("s2").doesNotContain("s1");
   }
@@ -187,7 +187,7 @@ public class ExclusiveGatewayTest {
 
     assertThat(gateWays.get(0).getSourceRecordPosition())
         .isEqualTo(sequenceFlows.get(0).getPosition());
-    assertThat(sequenceFlows.get(1).getValue().getActivityId()).isEqualTo("s1");
+    assertThat(sequenceFlows.get(1).getValue().getElementId()).isEqualTo("s1");
     assertThat(gateWays.get(1).getSourceRecordPosition())
         .isEqualTo(sequenceFlows.get(1).getPosition());
 
@@ -217,7 +217,7 @@ public class ExclusiveGatewayTest {
 
     assertThat(gateWays.get(0).getSourceRecordPosition())
         .isEqualTo(sequenceFlows.get(0).getPosition());
-    assertThat(sequenceFlows.get(1).getValue().getActivityId()).isEqualTo("s2");
+    assertThat(sequenceFlows.get(1).getValue().getElementId()).isEqualTo("s2");
     assertThat(gateWays.get(1).getSourceRecordPosition())
         .isEqualTo(sequenceFlows.get(1).getPosition());
   }
@@ -290,7 +290,7 @@ public class ExclusiveGatewayTest {
             .withIntent(WorkflowInstanceIntent.END_EVENT_OCCURRED)
             .collect(Collectors.toList());
 
-    assertThat(completedEvents).extracting(r -> r.getValue().getActivityId()).containsExactly("a");
+    assertThat(completedEvents).extracting(r -> r.getValue().getElementId()).containsExactly("a");
   }
 
   @Test

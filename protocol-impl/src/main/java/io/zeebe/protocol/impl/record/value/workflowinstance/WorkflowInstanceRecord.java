@@ -29,7 +29,7 @@ public class WorkflowInstanceRecord extends UnpackedObject {
 
   public static final String PROP_WORKFLOW_BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String PROP_WORKFLOW_INSTANCE_KEY = "workflowInstanceKey";
-  public static final String PROP_WORKFLOW_ACTIVITY_ID = "activityId";
+  public static final String PROP_WORKFLOW_ELEMENT_ID = "elementId";
   public static final String PROP_WORKFLOW_VERSION = "version";
   public static final String PROP_WORKFLOW_KEY = "workflowKey";
   public static final String PROP_WORKFLOW_PAYLOAD = "payload";
@@ -41,7 +41,7 @@ public class WorkflowInstanceRecord extends UnpackedObject {
 
   private final LongProperty workflowInstanceKeyProp =
       new LongProperty(PROP_WORKFLOW_INSTANCE_KEY, -1L);
-  private final StringProperty activityIdProp = new StringProperty(PROP_WORKFLOW_ACTIVITY_ID, "");
+  private final StringProperty elementIdProp = new StringProperty(PROP_WORKFLOW_ELEMENT_ID, "");
 
   private final DocumentProperty payloadProp = new DocumentProperty(PROP_WORKFLOW_PAYLOAD);
 
@@ -52,7 +52,7 @@ public class WorkflowInstanceRecord extends UnpackedObject {
         .declareProperty(versionProp)
         .declareProperty(workflowKeyProp)
         .declareProperty(workflowInstanceKeyProp)
-        .declareProperty(activityIdProp)
+        .declareProperty(elementIdProp)
         .declareProperty(payloadProp)
         .declareProperty(scopeInstanceKey);
   }
@@ -77,21 +77,21 @@ public class WorkflowInstanceRecord extends UnpackedObject {
     return this;
   }
 
-  public DirectBuffer getActivityId() {
-    return activityIdProp.getValue();
+  public DirectBuffer getElementId() {
+    return elementIdProp.getValue();
   }
 
-  public WorkflowInstanceRecord setActivityId(String activityId) {
-    this.activityIdProp.setValue(activityId);
+  public WorkflowInstanceRecord setElementId(String elementId) {
+    this.elementIdProp.setValue(elementId);
     return this;
   }
 
-  public WorkflowInstanceRecord setActivityId(DirectBuffer activityId) {
-    return setActivityId(activityId, 0, activityId.capacity());
+  public WorkflowInstanceRecord setElementId(DirectBuffer elementId) {
+    return setElementId(elementId, 0, elementId.capacity());
   }
 
-  public WorkflowInstanceRecord setActivityId(DirectBuffer activityId, int offset, int length) {
-    this.activityIdProp.setValue(activityId, offset, length);
+  public WorkflowInstanceRecord setElementId(DirectBuffer elementId, int offset, int length) {
+    this.elementIdProp.setValue(elementId, offset, length);
     return this;
   }
 

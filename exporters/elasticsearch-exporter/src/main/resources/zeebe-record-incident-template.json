@@ -24,10 +24,10 @@
             "workflowInstanceKey": {
               "type": "long"
             },
-            "activityId": {
+            "elementId": {
               "type": "keyword"
             },
-            "activityInstanceKey": {
+            "elementInstanceKey": {
               "type": "long"
             },
             "jobKey": {

@@ -302,7 +302,7 @@ public class MessageCatchElementTest {
 
     Assertions.assertThat(messageSubscription.getValue())
         .hasWorkflowInstanceKey(workflowInstanceKey)
-        .hasActivityInstanceKey(catchEventEntered.getKey())
+        .hasElementInstanceKey(catchEventEntered.getKey())
         .hasMessageName("")
         .hasCorrelationKey("");
   }
@@ -328,7 +328,7 @@ public class MessageCatchElementTest {
 
     Assertions.assertThat(subscription.getValue())
         .hasWorkflowInstanceKey(workflowInstanceKey)
-        .hasActivityInstanceKey(catchEventEntered.getKey())
+        .hasElementInstanceKey(catchEventEntered.getKey())
         .hasMessageName("");
   }
 
@@ -343,13 +343,13 @@ public class MessageCatchElementTest {
     // then
     assertThat(
             RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-                .withActivityId("receive-message")
+                .withElementId("receive-message")
                 .exists())
         .isTrue();
 
     assertThat(
             RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN)
-                .withActivityId("to-end")
+                .withElementId("to-end")
                 .exists())
         .isTrue();
   }

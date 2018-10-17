@@ -71,7 +71,7 @@ public class WorkflowInstanceAssert
             .filter(
                 r ->
                     r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_TERMINATING
-                        && elementIdBuffer.equals(r.getValue().getActivityId()))
+                        && elementIdBuffer.equals(r.getValue().getElementId()))
             .findFirst();
 
     if (!terminatingRecordOptional.isPresent()) {

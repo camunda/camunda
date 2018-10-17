@@ -39,40 +39,40 @@ public class WorkflowAssert {
 
   public static void assertWorkflowInstanceRecord(
       long workflowInstanceKey,
-      String activityId,
+      String elementId,
       Record<WorkflowInstanceRecordValue> workflowInstanceCanceledEvent) {
     Assertions.assertThat(workflowInstanceCanceledEvent.getValue())
         .hasBpmnProcessId(PROCESS_ID)
         .hasVersion(1)
         .hasWorkflowInstanceKey(workflowInstanceKey)
-        .hasActivityId(activityId);
+        .hasElementId(elementId);
   }
 
   public static void assertWorkflowInstanceRecord(
       long workflowKey,
       int version,
       long workflowInstanceKey,
-      String activityId,
+      String elementId,
       Record<WorkflowInstanceRecordValue> workflowInstanceCanceledEvent) {
     Assertions.assertThat(workflowInstanceCanceledEvent.getValue())
         .hasBpmnProcessId(PROCESS_ID)
         .hasWorkflowKey(workflowKey)
         .hasVersion(version)
         .hasWorkflowInstanceKey(workflowInstanceKey)
-        .hasActivityId(activityId);
+        .hasElementId(elementId);
   }
 
   public static void assertWorkflowInstanceRecord(
       String bpmnId,
       int version,
       long workflowInstanceKey,
-      String activityId,
+      String elementId,
       Record<WorkflowInstanceRecordValue> workflowInstanceCanceledEvent) {
     Assertions.assertThat(workflowInstanceCanceledEvent.getValue())
         .hasBpmnProcessId(bpmnId)
         .hasVersion(version)
         .hasWorkflowInstanceKey(workflowInstanceKey)
-        .hasActivityId(activityId);
+        .hasElementId(elementId);
   }
 
   public static void assertWorkflowInstancePayload(

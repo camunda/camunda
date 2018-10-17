@@ -15,7 +15,6 @@
  */
 package io.zeebe.protocol.impl.record.value.job;
 
-import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_ACTIVITY_ID;
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_INSTANCE_KEY;
 
@@ -35,8 +34,7 @@ public class JobHeaders extends UnpackedObject {
   private final IntegerProperty workflowDefinitionVersionProp =
       new IntegerProperty("workflowDefinitionVersion", -1);
   private final LongProperty workflowKeyProp = new LongProperty("workflowKey", -1L);
-  private final StringProperty activityIdProp =
-      new StringProperty(PROP_WORKFLOW_ACTIVITY_ID, EMPTY_STRING);
+  private final StringProperty activityIdProp = new StringProperty("activityId", EMPTY_STRING);
   private final LongProperty activityInstanceKeyProp = new LongProperty("activityInstanceKey", -1L);
 
   public JobHeaders() {

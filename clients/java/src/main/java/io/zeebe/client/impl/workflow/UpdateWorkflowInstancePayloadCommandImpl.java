@@ -35,11 +35,11 @@ public class UpdateWorkflowInstancePayloadCommandImpl
   private final Builder builder;
 
   public UpdateWorkflowInstancePayloadCommandImpl(
-      GatewayStub asyncStub, ZeebeObjectMapper objectMapper, long activityInstanceKey) {
+      GatewayStub asyncStub, ZeebeObjectMapper objectMapper, long elementInstanceKey) {
     super(objectMapper);
     this.asyncStub = asyncStub;
     this.builder = UpdateWorkflowInstancePayloadRequest.newBuilder();
-    builder.setActivityInstanceKey(activityInstanceKey);
+    builder.setElementInstanceKey(elementInstanceKey);
   }
 
   @Override

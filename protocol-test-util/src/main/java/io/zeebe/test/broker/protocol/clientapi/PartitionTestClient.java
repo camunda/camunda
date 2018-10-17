@@ -181,16 +181,16 @@ public class PartitionTestClient {
         .sendAndAwait();
   }
 
-  public void updatePayload(final long activityInstanceKey, final String jsonPayload) {
-    updatePayload(activityInstanceKey, MsgPackUtil.asMsgPack(jsonPayload));
+  public void updatePayload(final long elementInstanceKey, final String jsonPayload) {
+    updatePayload(elementInstanceKey, MsgPackUtil.asMsgPack(jsonPayload));
   }
 
-  public void updatePayload(final long activityInstanceKey, final byte[] payload) {
+  public void updatePayload(final long elementInstanceKey, final byte[] payload) {
     final ExecuteCommandResponse response =
         apiRule
             .createCmdRequest()
             .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.UPDATE_PAYLOAD)
-            .key(activityInstanceKey)
+            .key(elementInstanceKey)
             .command()
             .put("payload", payload)
             .done()
@@ -223,7 +223,6 @@ public class PartitionTestClient {
     completeJob(jobType, MsgPackUtil.asMsgPack(jsonPayload), e -> true);
   }
 
-  @SuppressWarnings("rawtypes")
   public void completeJobOfWorkflowInstance(
       final String jobType, final long workflowInstanceKey, final byte[] payload) {
     completeJob(
@@ -393,11 +392,11 @@ public class PartitionTestClient {
   }
 
   public Record<WorkflowInstanceRecordValue> receiveFirstWorkflowInstanceEvent(
-      final long wfInstanceKey, final String activityId, final Intent intent) {
+      final long wfInstanceKey, final String elementId, final Intent intent) {
     return receiveWorkflowInstances()
         .withIntent(intent)
         .withWorkflowInstanceKey(wfInstanceKey)
-        .withActivityId(activityId)
+        .withElementId(elementId)
         .getFirst();
   }
 
@@ -411,7 +410,7 @@ public class PartitionTestClient {
 
   public Record<WorkflowInstanceRecordValue> receiveElementInState(
       final String elementId, final WorkflowInstanceIntent intent) {
-    return receiveWorkflowInstances().withIntent(intent).withActivityId(elementId).getFirst();
+    return receiveWorkflowInstances().withIntent(intent).withElementId(elementId).getFirst();
   }
 
   public Record<WorkflowInstanceRecordValue> receiveElementInState(

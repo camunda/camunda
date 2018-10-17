@@ -76,11 +76,11 @@ public class TimerCatchEventTest {
     // then
     assertThat(
             RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-                .withActivityId(PROCESS_ID)
+                .withElementId(PROCESS_ID)
                 .exists())
         .isTrue();
 
-    assertThat(RecordingExporter.workflowInstanceRecords().withActivityId("timer").limit(4))
+    assertThat(RecordingExporter.workflowInstanceRecords().withElementId("timer").limit(4))
         .extracting(r -> r.getMetadata().getIntent())
         .containsExactly(
             WorkflowInstanceIntent.ELEMENT_READY,
@@ -110,7 +110,7 @@ public class TimerCatchEventTest {
     // when
     final Record<WorkflowInstanceRecordValue> activatedEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withActivityId("timer")
+            .withElementId("timer")
             .getFirst();
 
     // then
@@ -153,7 +153,7 @@ public class TimerCatchEventTest {
     // when
     final Record<WorkflowInstanceRecordValue> activatedEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withActivityId("timer")
+            .withElementId("timer")
             .getFirst();
 
     brokerRule.getClock().addTime(Duration.ofSeconds(1));
@@ -161,7 +161,7 @@ public class TimerCatchEventTest {
     // then
     final Record<WorkflowInstanceRecordValue> completedEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withActivityId("timer")
+            .withElementId("timer")
             .getFirst();
 
     assertThat(completedEvent.getKey()).isEqualTo(activatedEvent.getKey());
@@ -225,11 +225,11 @@ public class TimerCatchEventTest {
     // then
     final Record<WorkflowInstanceRecordValue> timer1 =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withActivityId("timer1")
+            .withElementId("timer1")
             .getFirst();
     final Record<WorkflowInstanceRecordValue> timer2 =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withActivityId("timer2")
+            .withElementId("timer2")
             .getFirst();
 
     final Record<TimerRecordValue> triggeredTimer1 =

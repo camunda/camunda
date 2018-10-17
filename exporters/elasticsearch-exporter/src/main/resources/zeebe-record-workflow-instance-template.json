@@ -24,7 +24,7 @@
             "workflowInstanceKey": {
               "type": "long"
             },
-            "activityId": {
+            "elementId": {
               "type": "keyword"
             },
             "scopeInstanceKey": {

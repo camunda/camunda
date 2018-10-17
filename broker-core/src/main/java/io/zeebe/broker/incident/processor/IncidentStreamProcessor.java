@@ -145,7 +145,7 @@ public class IncidentStreamProcessor {
       if (isJobIncident) {
         failedJobMap.put(incidentEvent.getJobKey(), incidentKey);
       } else {
-        activityInstanceMap.put(incidentEvent.getActivityInstanceKey(), incidentKey);
+        activityInstanceMap.put(incidentEvent.getElementInstanceKey(), incidentKey);
       }
 
       incidentMap
@@ -176,7 +176,7 @@ public class IncidentStreamProcessor {
         incidentEvent.reset();
         incidentEvent
             .setWorkflowInstanceKey(workflowInstanceEvent.getWorkflowInstanceKey())
-            .setActivityInstanceKey(event.getKey())
+            .setElementInstanceKey(event.getKey())
             .setPayload(workflowInstanceEvent.getPayload());
 
         streamWriter.writeFollowUpCommand(incidentKey, IncidentIntent.RESOLVE, incidentEvent);
@@ -320,7 +320,7 @@ public class IncidentStreamProcessor {
               incidentKey, IncidentIntent.RESOLVED, incidentEvent.getValue());
 
           incidentMap.remove(incidentEvent.getKey());
-          activityInstanceMap.remove(incidentEvent.getValue().getActivityInstanceKey(), -1L);
+          activityInstanceMap.remove(incidentEvent.getValue().getElementInstanceKey(), -1L);
           resolvingEvents.remove(event.getSourcePosition(), -1);
         } else {
           throw new IllegalStateException("inconsistent incident map");
@@ -376,8 +376,8 @@ public class IncidentStreamProcessor {
             .setFailureEventPosition(event.getPosition())
             .setBpmnProcessId(jobHeaders.getBpmnProcessId())
             .setWorkflowInstanceKey(jobHeaders.getWorkflowInstanceKey())
-            .setActivityId(jobHeaders.getActivityId())
-            .setActivityInstanceKey(jobHeaders.getActivityInstanceKey())
+            .setElementId(jobHeaders.getActivityId())
+            .setElementInstanceKey(jobHeaders.getActivityInstanceKey())
             .setJobKey(event.getKey());
 
         failedJobMap.put(event.getKey(), NON_PERSISTENT_INCIDENT);

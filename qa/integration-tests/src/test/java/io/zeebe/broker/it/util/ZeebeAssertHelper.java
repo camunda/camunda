@@ -85,7 +85,7 @@ public class ZeebeAssertHelper {
     assertThat(
             RecordingExporter.workflowInstanceRecords(ELEMENT_TERMINATED)
                 .withBpmnProcessId(bpmnId)
-                .withActivityId(bpmnId)
+                .withElementId(bpmnId)
                 .exists())
         .isTrue();
   }
@@ -132,7 +132,7 @@ public class ZeebeAssertHelper {
     final Record<WorkflowInstanceRecordValue> workflowInstanceRecordValueRecord =
         RecordingExporter.workflowInstanceRecords(ELEMENT_COMPLETED)
             .withBpmnProcessId(bpmnId)
-            .withActivityId(activity)
+            .withElementId(activity)
             .getFirst();
 
     assertThat(workflowInstanceRecordValueRecord).isNotNull();
@@ -146,7 +146,7 @@ public class ZeebeAssertHelper {
       Consumer<WorkflowInstanceRecordValue> eventConsumer) {
     final Record<WorkflowInstanceRecordValue> workflowInstanceRecordValueRecord =
         RecordingExporter.workflowInstanceRecords(ELEMENT_COMPLETED)
-            .withActivityId(activity)
+            .withElementId(activity)
             .withWorkflowInstanceKey(workflowInstanceKey)
             .getFirst();
 
@@ -180,7 +180,7 @@ public class ZeebeAssertHelper {
       Consumer<WorkflowInstanceRecordValue> consumer) {
     final WorkflowInstanceRecordValue value =
         RecordingExporter.workflowInstanceRecords(intent)
-            .withActivityId(element)
+            .withElementId(element)
             .getFirst()
             .getValue();
 

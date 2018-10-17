@@ -134,7 +134,7 @@ public class RequestMapper {
     final BrokerUpdateWorkflowInstancePayloadRequest brokerRequest =
         new BrokerUpdateWorkflowInstancePayloadRequest();
 
-    brokerRequest.setActivityInstanceKey(grpcRequest.getActivityInstanceKey());
+    brokerRequest.setElementInstanceKey(grpcRequest.getElementInstanceKey());
     brokerRequest.setPayload(ensureJsonSet(grpcRequest.getPayload()));
 
     return brokerRequest;

@@ -50,13 +50,13 @@ public class IncidentAssert {
   public static void assertIncidentRecordValue(
       String errorType,
       String errorMsg,
-      String activityId,
+      String elementId,
       Record<IncidentRecordValue> incidentRecord) {
     final IncidentRecordValue incidentEventValue = incidentRecord.getValue();
     Assertions.assertThat(incidentEventValue)
         .hasErrorType(errorType)
         .hasErrorMessage(errorMsg)
-        .hasActivityId(activityId);
+        .hasElementId(elementId);
   }
 
   public static void assertIncidentRecordValue(
@@ -96,8 +96,8 @@ public class IncidentAssert {
       String errorType,
       String errorMsg,
       long workflowInstanceKey,
-      String activityId,
-      long activityInstanceKey,
+      String elementId,
+      long elementInstanceKey,
       long jobKey,
       Record<IncidentRecordValue> incidentResolvedEvent) {
     final IncidentRecordValue incidentEventValue = incidentResolvedEvent.getValue();
@@ -106,8 +106,8 @@ public class IncidentAssert {
         .hasErrorMessage(errorMsg)
         .hasBpmnProcessId("process")
         .hasWorkflowInstanceKey(workflowInstanceKey)
-        .hasActivityId(activityId)
-        .hasActivityInstanceKey(activityInstanceKey)
+        .hasElementId(elementId)
+        .hasElementInstanceKey(elementInstanceKey)
         .hasJobKey(jobKey);
   }
 
@@ -136,8 +136,8 @@ public class IncidentAssert {
         .hasErrorMessage("No more retries left.")
         .hasBpmnProcessId("")
         .hasWorkflowInstanceKey(-1)
-        .hasActivityId("")
-        .hasActivityInstanceKey(-1)
+        .hasElementId("")
+        .hasElementInstanceKey(-1)
         .hasJobKey(jobKey);
   }
 }

@@ -50,7 +50,7 @@ public class TerminateServiceTaskHandler extends TerminateElementHandler {
           .setBpmnProcessId(activityInstanceEvent.getBpmnProcessId())
           .setWorkflowDefinitionVersion(activityInstanceEvent.getVersion())
           .setWorkflowInstanceKey(activityInstanceEvent.getWorkflowInstanceKey())
-          .setActivityId(activityInstanceEvent.getActivityId())
+          .setActivityId(activityInstanceEvent.getElementId())
           .setActivityInstanceKey(activityInstance.getKey());
 
       batch.addFollowUpCommand(jobKey, JobIntent.CANCEL, jobRecord);

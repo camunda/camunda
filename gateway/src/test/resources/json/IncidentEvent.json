@@ -15,7 +15,7 @@
   "errorMessage": "No data found for query $.baz.",
   "bpmnProcessId": "process",
   "workflowInstanceKey": 4294967408,
-  "activityId": "task",
-  "activityInstanceKey": 4294968296,
+  "elementId": "task",
+  "elementInstanceKey": 4294968296,
   "jobKey": null
 }

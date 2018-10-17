@@ -121,7 +121,7 @@ public class ServiceTaskTest {
     assertThat(recordingJobHandler.getHandledJobs()).hasSize(1);
     final Record<WorkflowInstanceRecordValue> record =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withActivityId("task")
+            .withElementId("task")
             .findFirst()
             .get();
 

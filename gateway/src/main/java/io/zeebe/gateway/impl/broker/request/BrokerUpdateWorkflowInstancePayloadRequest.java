@@ -29,9 +29,8 @@ public class BrokerUpdateWorkflowInstancePayloadRequest
     super(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.UPDATE_PAYLOAD);
   }
 
-  public BrokerUpdateWorkflowInstancePayloadRequest setActivityInstanceKey(
-      long activityInstanceKey) {
-    request.setKey(activityInstanceKey);
+  public BrokerUpdateWorkflowInstancePayloadRequest setElementInstanceKey(long elementInstanceKey) {
+    request.setKey(elementInstanceKey);
     return this;
   }
 

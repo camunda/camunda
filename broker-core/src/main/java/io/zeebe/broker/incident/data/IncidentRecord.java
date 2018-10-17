@@ -35,8 +35,8 @@ public class IncidentRecord extends UnpackedObject {
 
   private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
   private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey", -1L);
-  private final StringProperty activityIdProp = new StringProperty("activityId", "");
-  private final LongProperty activityInstanceKeyProp = new LongProperty("activityInstanceKey", -1L);
+  private final StringProperty elementIdProp = new StringProperty("elementId", "");
+  private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
   private final LongProperty jobKeyProp = new LongProperty("jobKey", -1L);
 
   private final DocumentProperty payloadProp = new DocumentProperty("payload");
@@ -47,8 +47,8 @@ public class IncidentRecord extends UnpackedObject {
         .declareProperty(failureEventPosition)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(workflowInstanceKeyProp)
-        .declareProperty(activityIdProp)
-        .declareProperty(activityInstanceKeyProp)
+        .declareProperty(elementIdProp)
+        .declareProperty(elementInstanceKeyProp)
         .declareProperty(jobKeyProp)
         .declareProperty(payloadProp);
   }
@@ -89,12 +89,12 @@ public class IncidentRecord extends UnpackedObject {
     return this;
   }
 
-  public DirectBuffer getActivityId() {
-    return activityIdProp.getValue();
+  public DirectBuffer getElementId() {
+    return elementIdProp.getValue();
   }
 
-  public IncidentRecord setActivityId(DirectBuffer activityId) {
-    this.activityIdProp.setValue(activityId, 0, activityId.capacity());
+  public IncidentRecord setElementId(DirectBuffer elementId) {
+    this.elementIdProp.setValue(elementId, 0, elementId.capacity());
     return this;
   }
 
@@ -107,12 +107,12 @@ public class IncidentRecord extends UnpackedObject {
     return this;
   }
 
-  public long getActivityInstanceKey() {
-    return activityInstanceKeyProp.getValue();
+  public long getElementInstanceKey() {
+    return elementInstanceKeyProp.getValue();
   }
 
-  public IncidentRecord setActivityInstanceKey(long activityInstanceKey) {
-    this.activityInstanceKeyProp.setValue(activityInstanceKey);
+  public IncidentRecord setElementInstanceKey(long elementInstanceKey) {
+    this.elementInstanceKeyProp.setValue(elementInstanceKey);
     return this;
   }
 
@@ -139,10 +139,10 @@ public class IncidentRecord extends UnpackedObject {
     final WorkflowInstanceRecord value = workflowInstanceEvent.getValue();
 
     setFailureEventPosition(workflowInstanceEvent.getPosition());
-    setActivityInstanceKey(workflowInstanceEvent.getKey());
+    setElementInstanceKey(workflowInstanceEvent.getKey());
     setBpmnProcessId(value.getBpmnProcessId());
     setWorkflowInstanceKey(value.getWorkflowInstanceKey());
-    setActivityId(value.getActivityId());
+    setElementId(value.getElementId());
 
     return this;
   }

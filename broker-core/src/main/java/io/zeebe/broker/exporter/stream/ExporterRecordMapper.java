@@ -227,9 +227,9 @@ public class ExporterRecordMapper {
         record.getErrorType().name(),
         asString(record.getErrorMessage()),
         asString(record.getBpmnProcessId()),
-        asString(record.getActivityId()),
+        asString(record.getElementId()),
         record.getWorkflowInstanceKey(),
-        record.getActivityInstanceKey(),
+        record.getElementInstanceKey(),
         record.getJobKey());
   }
 
@@ -266,7 +266,7 @@ public class ExporterRecordMapper {
         objectMapper,
         asJson(record.getPayload()),
         asString(record.getBpmnProcessId()),
-        asString(record.getActivityId()),
+        asString(record.getElementId()),
         record.getVersion(),
         record.getWorkflowKey(),
         record.getWorkflowInstanceKey(),

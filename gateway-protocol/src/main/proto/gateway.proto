@@ -128,7 +128,7 @@ message CancelWorkflowInstanceResponse {
 }
 
 message UpdateWorkflowInstancePayloadRequest {
-  int64 activityInstanceKey = 1;
+  int64 elementInstanceKey = 1;
   /* payload has to be a valid json object as string */
   string payload = 2;
 }

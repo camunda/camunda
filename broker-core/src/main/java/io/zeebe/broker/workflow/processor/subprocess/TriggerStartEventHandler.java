@@ -32,7 +32,7 @@ public class TriggerStartEventHandler implements BpmnStepHandler<ExecutableFlowE
     final ExecutableFlowNode startEvent = element.getStartEvent();
 
     final WorkflowInstanceRecord value = context.getValue();
-    value.setActivityId(startEvent.getId());
+    value.setElementId(startEvent.getId());
     value.setScopeInstanceKey(context.getRecord().getKey());
 
     context.getOutput().writeNewEvent(WorkflowInstanceIntent.START_EVENT_OCCURRED, value);
