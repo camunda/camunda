@@ -39,6 +39,7 @@ export const VerticalButton = styled(VerticalExpandButton)`
   left: 0;
   width: 100%;
   height: 100%;
+  border-radius: 0 3px 0 0;
 `;
 
 export const FiltersBadge = themed(styled(Badge)`
