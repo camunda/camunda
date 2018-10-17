@@ -3,7 +3,8 @@ class Viewer {
     this.canvas = {
       zoom: jest.fn(),
       addMarker: jest.fn(),
-      removeMarker: jest.fn()
+      removeMarker: jest.fn(),
+      resized: jest.fn()
     };
     this.zoomScroll = {stepZoom: jest.fn()};
     this.container = container;

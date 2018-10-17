@@ -217,6 +217,7 @@ class Diagram extends React.Component {
 
   handleZoomReset = () => {
     const canvas = this.Viewer.get('canvas');
+    canvas.resized();
     canvas.zoom('fit-viewport', 'auto');
   };
 
