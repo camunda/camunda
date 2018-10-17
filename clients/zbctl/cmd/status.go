@@ -26,7 +26,7 @@ var statusCmd = &cobra.Command{
 	Use:    "status",
 	Short:  "Checks the current status of the cluster",
 	Args:   cobra.NoArgs,
-	PreRun: initBroker,
+	PreRun: initClient,
 	Run: func(cmd *cobra.Command, args []string) {
 		response, err := client.NewTopologyCommand().Send()
 		utils.CheckOrExit(err, utils.ExitCodeIOError, defaultErrCtx)

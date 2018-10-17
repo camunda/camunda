@@ -20,12 +20,14 @@ import (
 	"github.com/zeebe-io/zeebe/clients/zbctl/utils"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
 
 var client zbc.ZBClient
 
+var addressFlag string
 var out *utils.OutputWriter
 var defaultErrCtx *utils.ErrorContext
 
@@ -53,25 +55,29 @@ func Execute() {
 func init() {
 	out = utils.NewOutputWriter()
 	defaultErrCtx = new(utils.ErrorContext)
+
+	rootCmd.PersistentFlags().StringVar(&addressFlag, "address", "", "Specify the Zeebe addressFlag")
 }
 
-// initBroker will create a client with the broker address in the following precedence: flag, environment variable, default address
-var initBroker = func(cmd *cobra.Command, args []string) {
-	brokerAddr := utils.DefaultBrokerAddress
+// initClient will create a client with in the following precedence: address flag, environment variable, default address
+var initClient = func(cmd *cobra.Command, args []string) {
+	address := utils.DefaultAddressHost
 
-	brokerAddrEnv := os.Getenv("ZB_BROKER_ADDR")
-	if len(brokerAddrEnv) > 0 {
-		brokerAddr = brokerAddrEnv
+	addressEnv := os.Getenv("ZEEBE_ADDRESS")
+	if len(addressEnv) > 0 {
+		address = addressEnv
 	}
 
-	if cmd.Flag("broker") != nil {
-		brokerAddr = cmd.Flag("broker").Value.String()
+	if len(addressFlag) > 0 {
+		address = addressFlag
 	}
 
-	defaultErrCtx.BrokerAddr = brokerAddr
+	address = appendPort(address)
+
+	defaultErrCtx.Address = address
 
 	var err error
-	client, err = zbc.NewZBClient(brokerAddr)
+	client, err = zbc.NewZBClient(address)
 	utils.CheckOrExit(err, utils.ExitCodeConfigurationError, defaultErrCtx)
 }
 
@@ -82,4 +88,12 @@ func convertToKey(arg string, errorMsg string) int64 {
 		utils.CheckOrExit(err, utils.ExitCodeIOError, defaultErrCtx)
 	}
 	return key
+}
+
+func appendPort(address string) string {
+	if strings.Contains(address, ":") {
+		return address
+	} else {
+		return fmt.Sprintf("%s:%d", address, utils.DefaultAddressPort)
+	}
 }

@@ -20,12 +20,12 @@ import (
 )
 
 type ErrorContext struct {
-	BrokerAddr string
+	Address string
 }
 
 func errorOutput(err error, ctx *ErrorContext) string {
 	if strings.Contains(err.Error(), "connection refused") {
-		return fmt.Sprintf("unable to connect to broker %s", ctx.BrokerAddr)
+		return fmt.Sprintf("unable to connect to broker %s", ctx.Address)
 	}
 	return err.Error()
 }

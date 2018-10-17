@@ -24,7 +24,7 @@ var deployWorkflowCmd = &cobra.Command{
 	Use:    "deploy <workflowPath>",
 	Short:  "Creates new workflow defined by provided bpmn or yaml file as workflowPath",
 	Args:   cobra.MinimumNArgs(1),
-	PreRun: initBroker,
+	PreRun: initClient,
 	Run: func(cmd *cobra.Command, args []string) {
 		zbCmd := client.NewDeployWorkflowCommand().AddResourceFile(args[0])
 		for i := 1; i < len(args); i++ {
