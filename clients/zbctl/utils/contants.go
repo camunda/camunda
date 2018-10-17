@@ -22,12 +22,13 @@ import (
 )
 
 const (
-	DefaultBrokerAddress = "127.0.0.1:26500"
-	DefaultJobRetries    = utils.DefaultRetries
-	DefaultJobWorker     = "zbctl"
-	DefaultJobTimeout    = 5 * time.Minute
-	LatestVersion        = commands.LatestVersion
-	EmptyJsonObject      = "{}"
+	DefaultAddressHost = "127.0.0.1"
+	DefaultAddressPort = 26500
+	DefaultJobRetries  = utils.DefaultRetries
+	DefaultJobWorker   = "zbctl"
+	DefaultJobTimeout  = 5 * time.Minute
+	LatestVersion      = commands.LatestVersion
+	EmptyJsonObject    = "{}"
 )
 
 // process exit codes

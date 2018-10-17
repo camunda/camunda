@@ -23,7 +23,7 @@ var cancelInstanceCmd = &cobra.Command{
 	Use:    "instance <key>",
 	Short:  "Cancel workflow instance by key",
 	Args:   cobra.ExactArgs(1),
-	PreRun: initBroker,
+	PreRun: initClient,
 	Run: func(cmd *cobra.Command, args []string) {
 		workflowInstanceKey := convertToKey(args[0], "Expect workflow instance key as only positional argument, got")
 

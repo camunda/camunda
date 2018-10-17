@@ -27,7 +27,7 @@ var completeJobCmd = &cobra.Command{
 	Use:    "job <jobKey>",
 	Short:  "Complete a job",
 	Args:   cobra.ExactArgs(1),
-	PreRun: initBroker,
+	PreRun: initClient,
 	Run: func(cmd *cobra.Command, args []string) {
 		jobKey := convertToKey(args[0], "Expect job key as only positional argument, got")
 

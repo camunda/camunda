@@ -30,7 +30,7 @@ var createJobCmd = &cobra.Command{
 	Use:    "job <type>",
 	Short:  "Creates a new job with specified type",
 	Args:   cobra.ExactArgs(1),
-	PreRun: initBroker,
+	PreRun: initClient,
 	Run: func(cmd *cobra.Command, args []string) {
 		zbCmd, err := client.
 			NewCreateJobCommand().
