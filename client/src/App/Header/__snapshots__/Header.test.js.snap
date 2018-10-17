@@ -22,7 +22,7 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
       <Themed(Styled(withStrippedProps(Link)))
         isActive={false}
         title="0 Instances"
-        to="/instances"
+        to="/instances?filter=%7B%22active%22%3Atrue%2C%22incidents%22%3Atrue%7D"
       >
         <span>
           Instances
@@ -56,7 +56,7 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
       <Themed(Styled(withStrippedProps(Link)))
         isActive={false}
         title="0 0 Selections"
-        to="/instances"
+        to="/instances?filter=%7B%22active%22%3Atrue%2C%22incidents%22%3Atrue%7D"
       >
         <span>
           Selections

@@ -104,6 +104,7 @@ class Header extends React.Component {
 
     // query for the incidents link
     const incidentsQuery = getFilterQueryString(FILTER_SELECTION.incidents);
+    const runningQuery = getFilterQueryString(FILTER_SELECTION.running);
     const isInstancesPage = active === 'instances';
 
     return this.state.forceRedirect ? (
@@ -120,7 +121,7 @@ class Header extends React.Component {
           <li data-test="header-link-instances">
             <Styled.ListLink
               isActive={isInstancesPage}
-              to="/instances"
+              to={`/instances${runningQuery}`}
               title={`${this.state.runningInstancesCount} Instances`}
             >
               <span>Instances</span>
@@ -143,7 +144,7 @@ class Header extends React.Component {
           </li>
           <li data-test="header-link-selections">
             <Styled.ListLink
-              to="/instances"
+              to={`/instances${runningQuery}`}
               title={`${this.state.instancesInSelectionsCount} ${
                 this.state.selectionCount
               } Selections`}
