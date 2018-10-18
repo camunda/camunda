@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import {Colors} from './index';
+import {Colors} from 'modules/theme';
 
 const THEME_NAME = {
   LIGHT: 'light',

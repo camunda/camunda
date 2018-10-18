@@ -4,5 +4,5 @@ export {
   themeStyle,
   ThemeConsumer,
   ThemeProvider
-} from './ThemeContext.js';
+} from '../contexts/ThemeContext.js';
 export {default as operateTheme} from './operate-theme';
