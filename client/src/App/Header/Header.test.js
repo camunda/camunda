@@ -126,12 +126,12 @@ describe('Header', () => {
     expect(
       selectionsNode
         .find(Styled.SelectionBadgeLeft)
-        .contains(mockProps.instancesInSelectionsCount)
+        .contains(mockProps.selectionCount)
     ).toBe(true);
     expect(
       selectionsNode
         .find(Styled.SelectionBadgeRight)
-        .contains(mockProps.selectionCount)
+        .contains(mockProps.instancesInSelectionsCount)
     ).toBe(true);
 
     // incidents node

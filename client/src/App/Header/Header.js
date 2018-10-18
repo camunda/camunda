@@ -145,18 +145,18 @@ class Header extends React.Component {
           <li data-test="header-link-selections">
             <Styled.ListLink
               to={`/instances${runningQuery}`}
-              title={`${this.state.instancesInSelectionsCount} ${
-                this.state.selectionCount
+              title={`${this.state.selectionCount} ${
+                this.state.instancesInSelectionsCount
               } Selections`}
               isActive={isInstancesPage}
             >
               <span>Selections</span>
               <ComboBadge>
                 <Styled.SelectionBadgeLeft>
-                  {this.state.instancesInSelectionsCount}
+                  {this.state.selectionCount}
                 </Styled.SelectionBadgeLeft>
                 <Styled.SelectionBadgeRight>
-                  {this.state.selectionCount}
+                  {this.state.instancesInSelectionsCount}
                 </Styled.SelectionBadgeRight>
               </ComboBadge>
             </Styled.ListLink>

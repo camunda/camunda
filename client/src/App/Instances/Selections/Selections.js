@@ -104,10 +104,10 @@ export default class Selections extends React.Component {
                 <span>Selections</span>
                 <ComboBadge>
                   <Styled.SelectionBadgeLeft>
-                    {this.props.instancesInSelectionsCount}
+                    {this.props.selectionCount}
                   </Styled.SelectionBadgeLeft>
                   <Styled.SelectionBadgeRight>
-                    {this.props.selectionCount}
+                    {this.props.instancesInSelectionsCount}
                   </Styled.SelectionBadgeRight>
                 </ComboBadge>
               </Styled.SelectionHeader>

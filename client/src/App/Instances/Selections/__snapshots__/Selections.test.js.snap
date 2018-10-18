@@ -40,10 +40,10 @@ exports[`Selections should render a CollapsablePanel 1`] = `
     </span>
     <ComboBadge>
       <Styled(Left)>
-        6
+        2
       </Styled(Left)>
       <Styled(Right)>
-        2
+        6
       </Styled(Right)>
     </ComboBadge>
   </Styled(PanelHeader)>
