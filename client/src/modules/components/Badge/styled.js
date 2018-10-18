@@ -9,5 +9,4 @@ export const Badge = styled.div`
   border-radius: 10.5px;
   font-size: 12px;
   font-weight: 600;
-  line-height: 17px;
 `;
