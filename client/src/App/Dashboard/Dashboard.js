@@ -7,7 +7,7 @@ import MetricTile from './MetricTile';
 
 import {fetchWorkflowInstancesCount} from 'modules/api/instances';
 import {parseFilterForRequest} from 'modules/utils/filter';
-import {FILTER_SELECTION, INSTANCES_LABELS} from 'modules/constants';
+import {FILTER_SELECTION, DASHBOARD_LABELS} from 'modules/constants';
 
 import * as Styled from './styled.js';
 
@@ -53,7 +53,7 @@ class Dashboard extends Component {
               <MetricTile
                 key={tile}
                 value={this.state[tile]}
-                label={INSTANCES_LABELS[tile]}
+                label={DASHBOARD_LABELS[tile]}
                 type={tile}
               />
             ))}

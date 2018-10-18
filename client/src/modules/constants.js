@@ -37,6 +37,11 @@ export const INSTANCES_LABELS = {
   completed: 'Completed',
   canceled: 'Canceled'
 };
+export const DASHBOARD_LABELS = {
+  running: 'Running Instances',
+  active: 'Active Instances',
+  incidents: 'Instances with Incident'
+};
 
 export const CONTEXTUAL_MESSAGE_TYPE = {
   DROP_SELECTION: 'DROP_SELECTION'

@@ -63,11 +63,15 @@ export const MetricTile = themed(styled(
 
 export const Label = themed(styled.div`
   padding-bottom: 22px;
-  font-size: 40px;
-  line-height: 1.4;
+
   opacity: ${themeStyle({
     dark: 0.9,
     light: 1
   })};
+
+  font-size: 40px;
+  line-height: 1.4;
+  text-align: center;
+
   color: ${themeStyle({dark: '#ffffff', light: Colors.uiLight06})};
 `);
