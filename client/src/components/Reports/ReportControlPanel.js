@@ -281,6 +281,7 @@ export default class ReportControlPanel extends React.Component {
         <div className="inputContainer">
           <Input
             value={this.state.variableTypeaheadValue}
+            placeholder="Search for variables here"
             onKeyDown={evt => evt.stopPropagation()}
             onChange={evt =>
               this.setState({variableTypeaheadValue: evt.target.value, variableStartIdx: 0})

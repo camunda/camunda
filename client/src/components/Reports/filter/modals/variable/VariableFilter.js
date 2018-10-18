@@ -85,6 +85,7 @@ export default class VariableFilter extends React.Component {
               values={variables}
               onSelect={this.selectVariable}
               formatter={this.getVariableName}
+              placeholder="Select or search for a variable here"
             />
           </Labeled>
           <ValueInput
