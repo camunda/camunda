@@ -56,8 +56,21 @@ class EntityList extends React.Component {
     const id = this.state.deleteModalEntity.id;
     remove(id, this.props.api);
 
+    const newData = this.state.data.filter(entity => entity.id !== id).map(entity => {
+      if (
+        entity.reportType &&
+        entity.reportType === 'combined' &&
+        entity.data &&
+        entity.data.reportIds &&
+        entity.data.reportIds.includes(id)
+      ) {
+        return {...entity, data: {...entity.data, reportIds: []}};
+      }
+      return entity;
+    });
+
     this.setState({
-      data: this.state.data.filter(entity => entity.id !== id)
+      data: newData
     });
     this.closeConfirmModal();
   };
@@ -211,6 +224,7 @@ class EntityList extends React.Component {
 
   getReportVis = reportId => {
     const report = this.state.data.find(report => report.id === reportId);
+    if (!report) return null;
     return report.data.visualization;
   };
 

@@ -3,7 +3,7 @@ import {mount, shallow} from 'enzyme';
 
 import EntityList from './EntityList';
 
-import {create, load, duplicate, update} from './service';
+import {create, load, duplicate, update, remove} from './service';
 
 import {checkDeleteConflict} from 'services';
 
@@ -501,4 +501,32 @@ it('should return the visualization type of the given report id', () => {
   });
 
   expect(node.instance().getReportVis('1')).toBe('bar');
+});
+
+it('should delete a report and its references if it was included in a combined report', async () => {
+  const node = mount(
+    shallow(<EntityList api="endpoint" label="Report" operations={['delete']} />).get(0)
+  );
+
+  const singleReport = {...sampleEntity, reportType: 'single', data: {visualization: 'bar'}};
+  const combinedReport = {
+    ...sampleEntity,
+    id: '2',
+    reportType: 'combined',
+    data: {reportIds: ['1']}
+  };
+
+  node.setState({
+    loaded: true,
+    data: [singleReport, combinedReport],
+    deleteModalEntity: {
+      id: '1'
+    }
+  });
+
+  node.instance().deleteEntity();
+
+  expect(remove).toHaveBeenCalledWith('1', 'endpoint');
+  expect(node.state().data).toHaveLength(1);
+  expect(node.state().data[0].data.reportIds).toEqual([]);
 });
