@@ -5,8 +5,8 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedMapReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapSingleReportResultDto;
@@ -18,9 +18,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
@@ -214,11 +211,11 @@ public class ReportAuthorizationIT {
     // when
     CombinedReportDataDto combinedReport = createCombinedReport(authorizedReportId, notAuthorizedReportId);
 
-    CombinedMapReportResultDto result = embeddedOptimizeRule
+    CombinedReportResultDto result = embeddedOptimizeRule
             .getRequestExecutor()
             .buildEvaluateCombinedUnsavedReportRequest(combinedReport)
             .withUserAuthentication("kermit", "kermit")
-            .execute(CombinedMapReportResultDto.class, 200);
+      .execute(CombinedReportResultDto.class, 200);
 
     // then
     Map<String, MapSingleReportResultDto> resultMap = result.getResult();

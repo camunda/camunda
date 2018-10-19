@@ -7,8 +7,8 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionUpdateDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedMapReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.SingleReportResultDto;
@@ -275,7 +275,7 @@ public class ReportService {
     return reportEvaluator.evaluateSingleReport(userId, reportDefinition);
   }
 
-  public CombinedMapReportResultDto evaluateCombinedReport(String userId,
+  public CombinedReportResultDto<?> evaluateCombinedReport(String userId,
                                                            CombinedReportDefinitionDto reportDefinition) {
     return reportEvaluator.evaluateCombinedReport(userId, reportDefinition);
   }

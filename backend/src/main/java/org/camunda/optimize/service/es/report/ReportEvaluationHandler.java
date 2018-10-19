@@ -2,11 +2,12 @@ package org.camunda.optimize.service.es.report;
 
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportResultDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedMapReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapSingleReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.NumberSingleReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.SingleReportResultDto;
 import org.camunda.optimize.service.es.reader.ReportReader;
 import org.camunda.optimize.service.es.report.command.util.ReportUtil;
@@ -21,10 +22,12 @@ import org.springframework.stereotype.Component;
 
 import javax.ws.rs.ForbiddenException;
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicReference;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.COMBINED_REPORT_TYPE;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.SINGLE_REPORT_TYPE;
@@ -63,7 +66,7 @@ public abstract class ReportEvaluationHandler {
     return result;
   }
 
-  public CombinedMapReportResultDto evaluateCombinedReport(String userId,
+  public CombinedReportResultDto<?> evaluateCombinedReport(String userId,
                                                            CombinedReportDefinitionDto combinedReportDefinition) {
 
     ValidationHelper.validateCombinedReportDefinition(combinedReportDefinition);
@@ -72,17 +75,24 @@ public abstract class ReportEvaluationHandler {
     return transformToCombinedReportResult(combinedReportDefinition, resultList);
   }
 
-  private CombinedMapReportResultDto transformToCombinedReportResult(CombinedReportDefinitionDto combinedReportDefinition,
-                                                                     List<SingleReportResultDto> resultList) {
-    Map<String, MapSingleReportResultDto> reportIdToMapResult = new HashMap<>();
-    resultList
+  private <T extends SingleReportResultDto> CombinedReportResultDto<T> transformToCombinedReportResult(
+    CombinedReportDefinitionDto combinedReportDefinition,
+    List<T> singleReportResultList) {
+    final AtomicReference<Class> singleReportType = new AtomicReference<>();
+    final Map<String, T> reportIdToMapResult = singleReportResultList
       .stream()
-      .filter(r -> r instanceof MapSingleReportResultDto)
-      .map(r -> (MapSingleReportResultDto) r)
-      .forEach(r -> reportIdToMapResult.put(r.getId(), r));
-
-    CombinedMapReportResultDto combinedReportResult =
-      new CombinedMapReportResultDto();
+      .filter(t -> t instanceof NumberSingleReportResultDto || t instanceof MapSingleReportResultDto)
+      .filter(singleReportResult -> singleReportResult.getClass().equals(singleReportType.get())
+        || singleReportType.compareAndSet(null, singleReportResult.getClass()))
+      .collect(Collectors.toMap(
+        SingleReportResultDto::getId,
+        singleReportResultDto -> singleReportResultDto,
+        (u, v) -> {
+          throw new IllegalStateException(String.format("Duplicate key %s", u));
+        },
+        LinkedHashMap::new
+      ));
+    final CombinedReportResultDto<T> combinedReportResult = new CombinedReportResultDto<>();
     combinedReportResult.setResult(reportIdToMapResult);
     ReportUtil.copyCombinedReportMetaData(combinedReportDefinition, combinedReportResult);
     return combinedReportResult;
@@ -92,7 +102,7 @@ public abstract class ReportEvaluationHandler {
     List<SingleReportResultDto> resultList = new ArrayList<>();
     for (String reportId : singleReportIds) {
       ReportDefinitionDto subReportDefinition = reportReader.getReport(reportId);
-      if (SINGLE_REPORT_TYPE.equals(subReportDefinition.getReportType()) ) {
+      if (SINGLE_REPORT_TYPE.equals(subReportDefinition.getReportType())) {
 
         SingleReportDefinitionDto singleReportDefinition =
           (SingleReportDefinitionDto) subReportDefinition;
@@ -134,7 +144,7 @@ public abstract class ReportEvaluationHandler {
     if (!isAuthorizedToSeeReport(userId, reportDefinition)) {
       SingleReportDataDto reportData = reportDefinition.getData();
       throw new ForbiddenException("User [" + userId + "] is not authorized to evaluate report [" +
-        reportDefinition.getName() + "] with process definition [" + reportData.getProcessDefinitionKey() + "].");
+                                     reportDefinition.getName() + "] with process definition [" + reportData.getProcessDefinitionKey() + "].");
     }
     SingleReportResultDto result = evaluateSingleReportWithErrorCheck(reportDefinition);
     ReportUtil.copyMetaData(reportDefinition, result);

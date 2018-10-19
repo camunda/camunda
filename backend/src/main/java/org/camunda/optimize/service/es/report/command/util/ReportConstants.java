@@ -37,4 +37,8 @@ public class ReportConstants {
 
   public static final String SINGLE_REPORT_TYPE = "single";
   public static final String COMBINED_REPORT_TYPE = "combined";
+
+  public static final String RAW_RESULT_TYPE = "raw";
+  public static final String MAP_RESULT_TYPE = "map";
+  public static final String NUMBER_RESULT_TYPE = "number";
 }

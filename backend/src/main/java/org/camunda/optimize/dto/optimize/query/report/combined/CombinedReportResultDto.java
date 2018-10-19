@@ -5,8 +5,8 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.SingleReport
 
 import java.util.Map;
 
-public abstract class CombinedReportResultDto<RESULT>
-    extends CombinedReportDefinitionDto implements ReportResultDto {
+public class CombinedReportResultDto<RESULT extends SingleReportResultDto> extends CombinedReportDefinitionDto
+  implements ReportResultDto {
 
   protected Map<String, RESULT> result;
 

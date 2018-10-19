@@ -4,14 +4,14 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.IdDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.combined.CombinedMapReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportResultDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.MapSingleReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.result.NumberSingleReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.es.schema.type.CombinedReportType;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -42,10 +42,10 @@ import static org.camunda.optimize.test.util.ReportDataHelper.createCombinedRepo
 import static org.camunda.optimize.test.util.ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode;
 import static org.camunda.optimize.test.util.ReportDataHelper.createPiFrequencyCountGroupedByNone;
 import static org.camunda.optimize.test.util.ReportDataHelper.createReportDataViewRawAsTable;
-import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.*;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.core.IsNull.notNullValue;
 
 
@@ -155,7 +155,7 @@ public class CombinedReportHandlingIT {
     updateReport(reportId, report);
 
     // when
-    CombinedMapReportResultDto result = evaluateCombinedReportById(reportId);
+    CombinedReportResultDto<?> result = evaluateCombinedReportById(reportId);
 
     // then
     assertThat(result.getId(), is(reportId));
@@ -202,7 +202,7 @@ public class CombinedReportHandlingIT {
 
     // when
     String reportId = createNewCombinedReport(singleReportId, singleReportId2);
-    CombinedMapReportResultDto result = evaluateCombinedReportById(reportId);
+    CombinedReportResultDto<MapSingleReportResultDto> result = evaluateCombinedReportById(reportId);
 
     // then
     assertThat(result.getId(), is(reportId));
@@ -224,7 +224,7 @@ public class CombinedReportHandlingIT {
 
     // when
     String reportId = createNewCombinedReport(singleReportId);
-    CombinedMapReportResultDto result = evaluateCombinedReportById(reportId);
+    CombinedReportResultDto result = evaluateCombinedReportById(reportId);
 
     // then
     assertThat(result.getId(), is(reportId));
@@ -384,7 +384,7 @@ public class CombinedReportHandlingIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    CombinedMapReportResultDto result =
+    CombinedReportResultDto result =
       evaluateUnsavedCombined(createCombinedReport(singleReportId, singleReportId2));
 
     // then
@@ -405,7 +405,7 @@ public class CombinedReportHandlingIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    CombinedMapReportResultDto result =
+    CombinedReportResultDto result =
       evaluateUnsavedCombined(createCombinedReport(singleReportId));
 
     // then
@@ -416,7 +416,47 @@ public class CombinedReportHandlingIT {
   }
 
   @Test
-  public void combinedReportWithSingleNumberReport() {
+  public void combinedReportWithSingleNumberReports() {
+    // given
+    ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
+    String singleReportId1 = createNewSingleNumberReport(engineDto);
+    String singleReportId2 = createNewSingleNumberReport(engineDto);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    CombinedReportResultDto<NumberSingleReportResultDto> result = evaluateUnsavedCombined(
+      createCombinedReport(singleReportId1, singleReportId2)
+    );
+
+    // then
+    Map<String, NumberSingleReportResultDto> resultMap = result.getResult();
+    assertThat(resultMap.size(), is(2));
+    assertThat(resultMap.keySet(), contains(singleReportId1, singleReportId2));
+  }
+
+  @Test
+  public void combinedReportWithSingleMapReports() {
+    // given
+    ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
+    String singleReportId1 = createNewSingleMapReport(engineDto);
+    String singleReportId2 = createNewSingleMapReport(engineDto);
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // when
+    CombinedReportResultDto<MapSingleReportResultDto> result = evaluateUnsavedCombined(
+      createCombinedReport(singleReportId1, singleReportId2)
+    );
+
+    // then
+    Map<String, MapSingleReportResultDto> resultMap = result.getResult();
+    assertThat(resultMap.size(), is(2));
+    assertThat(resultMap.keySet(), contains(singleReportId1, singleReportId2));
+  }
+
+  @Test
+  public void combinedReportWithSingleNumberAndMapReport_firstWins() {
     // given
     ProcessInstanceEngineDto engineDto = deploySimpleServiceTaskProcessDefinition();
     String singleReportId = createNewSingleNumberReport(engineDto);
@@ -425,13 +465,14 @@ public class CombinedReportHandlingIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    CombinedMapReportResultDto result =
-      evaluateUnsavedCombined(createCombinedReport(singleReportId, singleReportId2));
+    CombinedReportResultDto<NumberSingleReportResultDto> result = evaluateUnsavedCombined(
+      createCombinedReport(singleReportId, singleReportId2)
+    );
 
     // then
-    Map<String, MapSingleReportResultDto> resultMap = result.getResult();
+    Map<String, NumberSingleReportResultDto> resultMap = result.getResult();
     assertThat(resultMap.size(), is(1));
-    assertThat(resultMap.containsKey(singleReportId2), is(true));
+    assertThat(resultMap.keySet(), contains(singleReportId));
   }
 
   @Test
@@ -444,7 +485,7 @@ public class CombinedReportHandlingIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    CombinedMapReportResultDto result =
+    CombinedReportResultDto result =
       evaluateUnsavedCombined(createCombinedReport(singleReportId, singleReportId2));
 
     // then
@@ -463,7 +504,7 @@ public class CombinedReportHandlingIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    CombinedMapReportResultDto result =
+    CombinedReportResultDto result =
       evaluateUnsavedCombined(createCombinedReport(combinedReportId, singleReportId2));
 
     // then
@@ -576,19 +617,19 @@ public class CombinedReportHandlingIT {
             .execute();
   }
 
-  private CombinedMapReportResultDto evaluateCombinedReportById(String reportId) {
+  private CombinedReportResultDto evaluateCombinedReportById(String reportId) {
     return embeddedOptimizeRule
             .getRequestExecutor()
             .buildEvaluateSavedReportRequest(reportId)
-            .execute(CombinedMapReportResultDto.class, 200);
+      .execute(CombinedReportResultDto.class, 200);
   }
 
-  private CombinedMapReportResultDto evaluateUnsavedCombined(CombinedReportDataDto reportDataDto) {
+  private CombinedReportResultDto evaluateUnsavedCombined(CombinedReportDataDto reportDataDto) {
     Response response = evaluateUnsavedCombinedReportAndReturnResponse(reportDataDto);
 
     // then the status code is okay
     assertThat(response.getStatus(), is(200));
-    return response.readEntity(CombinedMapReportResultDto.class);
+    return response.readEntity(CombinedReportResultDto.class);
   }
 
   private Response evaluateUnsavedCombinedReportAndReturnResponse(CombinedReportDataDto reportDataDto) {
