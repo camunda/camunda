@@ -360,8 +360,13 @@ class Instances extends Component {
   };
 
   handleFilterChange = async newFilter => {
-    const filter = {...this.state.filter, ...newFilter};
-    this.setFilterInURL(filter);
+    const changedFieldKey = Object.keys(newFilter)[0];
+
+    // only change the URL if a new value for the field is provided
+    if (this.state.filter[changedFieldKey] !== newFilter[changedFieldKey]) {
+      const filter = {...this.state.filter, ...newFilter};
+      this.setFilterInURL(filter);
+    }
   };
 
   setFilterInURL = filter => {

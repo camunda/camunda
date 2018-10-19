@@ -10,7 +10,6 @@ import * as apiDiagram from 'modules/api/diagram/diagram';
 import Filters from './Filters';
 import ListView from './ListView';
 import Diagram from 'modules/components/Diagram';
-import PanelHeader from 'modules/components/Panel/PanelHeader';
 
 import * as Styled from './styled';
 
@@ -25,7 +24,7 @@ const InstancesWithRunningFilter = (
   <Instances
     location={{
       search: `?filter=${encodeURIComponent(
-        '{"active": false, "incidents": true}'
+        '{"active": true, "incidents": true}'
       )}`
     }}
     getStateLocally={() => {
@@ -254,6 +253,50 @@ describe('Instances', () => {
         expect(FiltersNode.prop('groupedWorkflowInstances')).toBe(
           node.state('groupedWorkflowInstances')
         );
+      });
+
+      describe('updating the url', () => {
+        it('should update the url with a new filter value', async () => {
+          // given
+          const node = shallow(InstancesWithRunningFilter);
+
+          //when
+          await flushPromises();
+          node.update();
+
+          const setFilterInURLSpy = jest.spyOn(
+            node.instance(),
+            'setFilterInURL'
+          );
+          node.instance().handleFilterChange({active: false});
+
+          // then
+          expect(setFilterInURLSpy).toHaveBeenCalledWith({
+            active: false,
+            incidents: true
+          });
+
+          setFilterInURLSpy.mockRestore();
+        });
+
+        it('should not update the url when a value is similar', async () => {
+          // given
+          const node = shallow(InstancesWithRunningFilter);
+
+          //when
+          await flushPromises();
+          node.update();
+
+          const setFilterInURLSpy = jest.spyOn(
+            node.instance(),
+            'setFilterInURL'
+          );
+          node.instance().handleFilterChange({active: true});
+
+          expect(setFilterInURLSpy).toHaveBeenCalledTimes(0);
+
+          setFilterInURLSpy.mockRestore();
+        });
       });
 
       describe('resetFilter', () => {
