@@ -50,7 +50,7 @@
     }
 
     .variablesGroupby {
-      min-width: 130px;
+      width: 200px;
       cursor: default;
 
       .inputContainer {
@@ -92,15 +92,18 @@
         }
       }
 
+      .DropdownOption {
+        background-color: transparent;
+        overflow: hidden;
+        text-overflow: ellipsis;
+
+        &:hover {
+          background-color: #008fe6;
+        }
+      }
+
       .variableOptionsList {
         box-shadow: inset 1px 4px 9px -6px black;
-        .DropdownOption {
-          background-color: transparent;
-
-          &:hover {
-            background-color: #008fe6;
-          }
-        }
       }
     }
   }

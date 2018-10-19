@@ -289,7 +289,11 @@ export default class ReportControlPanel extends React.Component {
           />
         </div>
         {currentlySelected && (
-          <Dropdown.Option checked onClick={evt => (evt.nativeEvent.isCloseEvent = true)}>
+          <Dropdown.Option
+            checked
+            title={currentlySelected.name}
+            onClick={evt => (evt.nativeEvent.isCloseEvent = true)}
+          >
             {currentlySelected.name}
           </Dropdown.Option>
         )}
@@ -318,6 +322,7 @@ export default class ReportControlPanel extends React.Component {
             .map((variable, idx) => (
               <Dropdown.Option
                 key={idx}
+                title={variable.name}
                 onClick={evt => {
                   evt.nativeEvent.isCloseEvent = true;
                   this.update('groupBy', {type: 'variable', value: {...variable}});
