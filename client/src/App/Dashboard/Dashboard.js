@@ -55,7 +55,6 @@ class Dashboard extends Component {
                 value={this.state[tile]}
                 label={DASHBOARD_LABELS[tile]}
                 type={tile}
-                expandFilters={() => {}}
               />
             ))}
           </MetricPanel>

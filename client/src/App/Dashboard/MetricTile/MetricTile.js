@@ -29,5 +29,5 @@ MetricTile.propTypes = {
   label: PropTypes.string.isRequired,
   value: PropTypes.number.isRequired,
   metricColor: PropTypes.oneOf(['allIsWell', 'incidentsAndErrors']),
-  expandFilters: PropTypes.func.isRequired
+  expandFilters: PropTypes.func
 };
