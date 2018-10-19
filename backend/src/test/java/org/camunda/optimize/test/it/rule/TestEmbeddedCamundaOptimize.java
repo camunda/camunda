@@ -20,6 +20,7 @@ import org.springframework.context.ApplicationContext;
 
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.ClientRequestFilter;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
@@ -28,7 +29,11 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.Properties;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.*;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_RESOURCES_RESOURCE_ID;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_APPLICATION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 
 /**
  * This class is wrapper around the embedded optimize to ensure
@@ -37,7 +42,7 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
  */
 public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
 
-  private Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger logger = LoggerFactory.getLogger(TestEmbeddedCamundaOptimize.class);
 
   private final static String DEFAULT_CONTEXT_LOCATION = "classpath:embeddedOptimizeContext.xml";
   private final static String propertiesLocation = "integration-rules.properties";
@@ -299,6 +304,11 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
 
     Client client = ClientBuilder.newClient()
       .register(provider);
+    client.register((ClientRequestFilter) requestContext -> logger.info(
+      "EmbeddedTestClient request {} {}",
+      requestContext.getMethod(),
+      requestContext.getUri()
+    ));
     client.property(ClientProperties.CONNECT_TIMEOUT, 10000);
     client.property(ClientProperties.READ_TIMEOUT,    10000);
     client.property(ClientProperties.FOLLOW_REDIRECTS, Boolean.FALSE);
