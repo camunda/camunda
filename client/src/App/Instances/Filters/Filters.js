@@ -164,7 +164,6 @@ export default class Filters extends React.Component {
         {context => (
           <CollapsablePanel
             isCollapsed={context.isFiltersCollapsed}
-            type="filters"
             onCollapse={context.toggleFilters}
             maxWidth={320}
             expandButton={

@@ -29,7 +29,6 @@ exports[`Selections should render a CollapsablePanel 1`] = `
   }
   maxWidth={479}
   onCollapse={[Function]}
-  type="selections"
 >
   <Styled(PanelHeader)>
     <span>

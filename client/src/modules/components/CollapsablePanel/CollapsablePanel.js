@@ -14,8 +14,7 @@ export default class CollapsablePanel extends React.Component {
     onCollapse: PropTypes.func.isRequired,
     expandButton: PropTypes.node.isRequired,
     collapseButton: PropTypes.node.isRequired,
-    maxWidth: PropTypes.number.isRequired,
-    type: PropTypes.oneOf(['selections', 'filters']).isRequired
+    maxWidth: PropTypes.number.isRequired
   };
 
   static defaultProps = {

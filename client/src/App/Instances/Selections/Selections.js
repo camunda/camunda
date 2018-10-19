@@ -84,7 +84,6 @@ export default class Selections extends React.Component {
         <CollapsablePanelConsumer>
           {context => (
             <Styled.CollapsablePanel
-              type="selections"
               onCollapse={context.toggleSelections}
               isCollapsed={context.isSelectionsCollapsed}
               maxWidth={479}
