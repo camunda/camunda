@@ -2,8 +2,14 @@ import React, {Fragment} from 'react';
 import PropTypes from 'prop-types';
 
 import CollapsablePanel from 'modules/components/CollapsablePanel';
+import Badge from 'modules/components/Badge';
 import Button from 'modules/components/Button';
-import {DEFAULT_FILTER, FILTER_TYPES, DIRECTION} from 'modules/constants';
+import {
+  DEFAULT_FILTER,
+  FILTER_TYPES,
+  DIRECTION,
+  BADGE_TYPE
+} from 'modules/constants';
 import {CollapsablePanelConsumer} from 'modules/contexts/CollapsablePanelContext';
 import {isEqual, isEmpty} from 'modules/utils';
 
@@ -163,12 +169,9 @@ export default class Filters extends React.Component {
             maxWidth={320}
             expandButton={
               <Styled.VerticalButton label="Filters">
-                <Styled.FiltersBadge
-                  type="filters"
-                  isDefault={isEqual(this.props.filter, DEFAULT_FILTER)}
-                >
+                <Badge type={BADGE_TYPE.FILTERS}>
                   {this.props.filterCount}
-                </Styled.FiltersBadge>
+                </Badge>
               </Styled.VerticalButton>
             }
             collapseButton={
@@ -182,12 +185,7 @@ export default class Filters extends React.Component {
           >
             <CollapsablePanel.Header isRounded>
               Filters
-              <Styled.FiltersBadge
-                type="filters"
-                isDefault={isEqual(this.props.filter, DEFAULT_FILTER)}
-              >
-                {this.props.filterCount}
-              </Styled.FiltersBadge>
+              <Badge type={BADGE_TYPE.FILTERS}>{this.props.filterCount}</Badge>
             </CollapsablePanel.Header>
             <CollapsablePanel.Body>
               <Styled.Filters>

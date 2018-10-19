@@ -2,11 +2,17 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import CollapsablePanel from 'modules/components/CollapsablePanel';
+import Badge from 'modules/components/Badge';
 import ComboBadge from 'modules/components/ComboBadge';
 import {CollapsablePanelConsumer} from 'modules/contexts/CollapsablePanelContext';
 
 import {applyOperation} from 'modules/api/instances';
-import {DIRECTION, OPERATION_TYPE} from 'modules/constants';
+import {
+  DIRECTION,
+  OPERATION_TYPE,
+  BADGE_TYPE,
+  COMBO_BADGE_TYPE
+} from 'modules/constants';
 import {getSelectionById} from 'modules/utils/selection';
 
 import SelectionList from './SelectionList';
@@ -84,11 +90,9 @@ export default class Selections extends React.Component {
               maxWidth={479}
               expandButton={
                 <Styled.VerticalButton label="Selections">
-                  <Styled.SelectionsBadge
-                    isDefault={!this.props.selectionCount}
-                  >
+                  <Badge type={BADGE_TYPE.SELECTIONS}>
                     {this.props.selectionCount}
-                  </Styled.SelectionsBadge>
+                  </Badge>
                 </Styled.VerticalButton>
               }
               collapseButton={
@@ -102,13 +106,11 @@ export default class Selections extends React.Component {
             >
               <Styled.SelectionHeader isRounded>
                 <span>Selections</span>
-                <ComboBadge>
-                  <Styled.SelectionBadgeLeft>
-                    {this.props.selectionCount}
-                  </Styled.SelectionBadgeLeft>
-                  <Styled.SelectionBadgeRight>
+                <ComboBadge type={COMBO_BADGE_TYPE.SELECTIONS}>
+                  <ComboBadge.Left>{this.props.selectionCount}</ComboBadge.Left>
+                  <ComboBadge.Right>
                     {this.props.instancesInSelectionsCount}
-                  </Styled.SelectionBadgeRight>
+                  </ComboBadge.Right>
                 </ComboBadge>
               </Styled.SelectionHeader>
               <CollapsablePanel.Body>

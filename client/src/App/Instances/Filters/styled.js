@@ -1,14 +1,13 @@
 import styled, {css} from 'styled-components';
 
+import {themed, themeStyle} from 'modules/theme';
 import Panel from 'modules/components/Panel';
 import BasicExpandButton from 'modules/components/ExpandButton';
 import VerticalExpandButton from 'modules/components/VerticalExpandButton';
-import Badge from 'modules/components/Badge';
 import BasicTextInput from 'modules/components/TextInput';
 import BasicTextarea from 'modules/components/Textarea';
 import BasicSelect from 'modules/components/Select';
 import BasicCheckboxGroup from './CheckboxGroup';
-import {Colors, themed, themeStyle} from 'modules/theme';
 
 export const ExpandButton = styled(BasicExpandButton)`
   position: absolute;
@@ -41,11 +40,6 @@ export const VerticalButton = styled(VerticalExpandButton)`
   height: 100%;
   border-radius: 0 3px 0 0;
 `;
-
-export const FiltersBadge = themed(styled(Badge)`
-  background-color: ${Colors.filtersAndWarnings};
-  color: ${Colors.uiDark02};
-`);
 
 const widthStyle = css`
   width: 280px;

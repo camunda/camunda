@@ -2,7 +2,6 @@ import styled from 'styled-components';
 import {Link} from 'react-router-dom';
 
 import {Colors, themed, themeStyle} from 'modules/theme';
-import BadgeComponent from 'modules/components/Badge';
 import ComboBadgeComponent from 'modules/components/ComboBadge';
 import {Logo} from 'modules/components/Icon';
 import withStrippedProps from 'modules/utils/withStrippedProps';
@@ -70,49 +69,12 @@ export const ListLink = themed(styled(withStrippedProps(['isActive'])(Link))`
   }
 `);
 
-// ------
-// Badges
-// ------
-
-export const Badge = styled(BadgeComponent)`
-  opacity: 0.8;
-`;
-
-export const RunningInstancesBadge = themed(styled(Badge)`
-  background-color: ${themeStyle({
-    light: Colors.uiDark04,
-    dark: Colors.uiLight05
-  })};
-  color: ${themeStyle({
-    light: '#ffffff',
-    dark: Colors.uiDark04
-  })};
-`);
-
-export const FiltersBadge = styled(Badge)`
-  background-color: ${Colors.filtersAndWarnings};
-  color: ${Colors.uiDark02};
-`;
-
 export const SelectionBadgeLeft = themed(styled(ComboBadgeComponent.Left)`
-  background-color: ${Colors.selections};
   border-color: ${themeStyle({
     dark: Colors.uiDark01,
     light: Colors.uiLight01
   })};
-  color: #ffffff;
 `);
-
-export const SelectionBadgeRight = styled(ComboBadgeComponent.Right)`
-  background-color: rgba(77, 144, 255, 0.75);
-  color: #ffffff;
-`;
-
-export const IncidentsBadge = styled(Badge)`
-  background-color: ${Colors.incidentsAndErrors};
-  color: #ffffff;
-`;
-// -------
 
 export const Detail = themed(styled.span`
   padding-left: 20px;

@@ -88,8 +88,10 @@ export const ArrowIcon = styled.div`
 `;
 
 export const Badge = styled(BadgeComponent)`
-  background: ${props => (!props.isOpen ? Colors.selections : '#ffffff')};
-  color: ${props => (props.isOpen ? Colors.selections : '#ffffff')};
+  ${props =>
+    !props.isOpen
+      ? 'color: #ffffff'
+      : `background: #ffffff; color: ${Colors.selections}`};
 `;
 
 export const RetryIcon = styled(Retry)`

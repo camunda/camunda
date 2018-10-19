@@ -3,12 +3,17 @@ import {Redirect} from 'react-router-dom';
 import PropTypes from 'prop-types';
 
 import Dropdown from 'modules/components/Dropdown';
+import Badge from 'modules/components/Badge';
 import ComboBadge from 'modules/components/ComboBadge';
 import * as api from 'modules/api/header';
 import withSharedState from 'modules/components/withSharedState';
 import {fetchWorkflowInstancesCount} from 'modules/api/instances';
 import {getFilterQueryString} from 'modules/utils/filter';
-import {FILTER_SELECTION} from 'modules/constants';
+import {
+  FILTER_SELECTION,
+  BADGE_TYPE,
+  COMBO_BADGE_TYPE
+} from 'modules/constants';
 import {withCollapsablePanel} from 'modules/contexts/CollapsablePanelContext';
 import {isEqual} from 'modules/utils';
 
@@ -147,9 +152,9 @@ class Header extends React.Component {
               onClick={this.props.expandFilters}
             >
               <span>Running Instances</span>
-              <Styled.RunningInstancesBadge>
+              <Badge type={BADGE_TYPE.RUNNING_INSTANCES}>
                 {this.state.runningInstancesCount}
-              </Styled.RunningInstancesBadge>
+              </Badge>
             </Styled.ListLink>
           </li>
           <li data-test="header-link-filters">
@@ -160,9 +165,7 @@ class Header extends React.Component {
               onClick={this.props.expandFilters}
             >
               <span>Filters</span>
-              <Styled.FiltersBadge type="filters">
-                {this.state.filterCount}
-              </Styled.FiltersBadge>
+              <Badge type={BADGE_TYPE.FILTERS}>{this.state.filterCount}</Badge>
             </Styled.ListLink>
           </li>
           <li data-test="header-link-incidents">
@@ -173,9 +176,9 @@ class Header extends React.Component {
               onClick={this.props.expandFilters}
             >
               <span>Incidents</span>
-              <Styled.IncidentsBadge type="incidents">
+              <Badge type={BADGE_TYPE.INCIDENTS}>
                 {this.state.incidentsCount}
-              </Styled.IncidentsBadge>
+              </Badge>
             </Styled.ListLink>
           </li>
           <li data-test="header-link-selections">
@@ -188,13 +191,13 @@ class Header extends React.Component {
               onClick={this.props.expandSelections}
             >
               <span>Selections</span>
-              <ComboBadge>
+              <ComboBadge type={COMBO_BADGE_TYPE.SELECTIONS}>
                 <Styled.SelectionBadgeLeft>
                   {this.state.selectionCount}
                 </Styled.SelectionBadgeLeft>
-                <Styled.SelectionBadgeRight>
+                <ComboBadge.Right>
                   {this.state.instancesInSelectionsCount}
-                </Styled.SelectionBadgeRight>
+                </ComboBadge.Right>
               </ComboBadge>
             </Styled.ListLink>
           </li>

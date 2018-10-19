@@ -29,9 +29,11 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
         <span>
           Running Instances
         </span>
-        <Themed(Styled(Styled(Badge)))>
+        <Badge
+          type="RUNNING_INSTANCES"
+        >
           0
-        </Themed(Styled(Styled(Badge)))>
+        </Badge>
       </Themed(Styled(withStrippedProps(Link)))>
     </li>
     <li
@@ -46,11 +48,11 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
         <span>
           Filters
         </span>
-        <Styled(Styled(Badge))
-          type="filters"
+        <Badge
+          type="FILTERS"
         >
           0
-        </Styled(Styled(Badge))>
+        </Badge>
       </Themed(Styled(withStrippedProps(Link)))>
     </li>
     <li
@@ -65,11 +67,11 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
         <span>
           Incidents
         </span>
-        <Styled(Styled(Badge))
-          type="incidents"
+        <Badge
+          type="INCIDENTS"
         >
           0
-        </Styled(Styled(Badge))>
+        </Badge>
       </Themed(Styled(withStrippedProps(Link)))>
     </li>
     <li
@@ -84,13 +86,15 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
         <span>
           Selections
         </span>
-        <ComboBadge>
+        <ComboBadge
+          type="SELECTIONS"
+        >
           <Themed(Styled(Left))>
             0
           </Themed(Styled(Left))>
-          <Styled(Right)>
+          <Right>
             0
-          </Styled(Right)>
+          </Right>
         </ComboBadge>
       </Themed(Styled(withStrippedProps(Link)))>
     </li>

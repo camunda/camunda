@@ -3,7 +3,6 @@ import styled from 'styled-components';
 import {Colors} from 'modules/theme';
 import Panel from 'modules/components/Panel';
 import BadgeComponent from 'modules/components/Badge';
-import ComboBadgeComponent from 'modules/components/ComboBadge';
 import BasicCollapsablePanel from 'modules/components/CollapsablePanel';
 import BasicExpandButton from 'modules/components/ExpandButton';
 import VerticalExpandButton from 'modules/components/VerticalExpandButton';
@@ -36,16 +35,6 @@ export const SelectionHeader = styled(Panel.Header)`
 
 export const Badge = styled(BadgeComponent)`
   margin-left: 13px;
-`;
-
-export const SelectionBadgeLeft = styled(ComboBadgeComponent.Left)`
-  background: ${Colors.selections};
-  color: #ffffff;
-`;
-
-export const SelectionBadgeRight = styled(ComboBadgeComponent.Right)`
-  background: rgba(77, 144, 255, 0.75);
-  color: #ffffff;
 `;
 
 export const SelectionsBadge = styled(BadgeComponent)`

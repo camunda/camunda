@@ -5,6 +5,7 @@ import Dropdown from 'modules/components/Dropdown';
 
 import {getWorkflowName} from 'modules/utils/instance';
 import {Down, Right} from 'modules/components/Icon';
+import {BADGE_TYPE} from 'modules/constants';
 
 import * as Styled from './styled.js';
 
@@ -102,7 +103,9 @@ export default class Selection extends React.Component {
         <Styled.Header onClick={onToggle} {...{isOpen}}>
           {renderArrowIcon(isOpen)}
           <Styled.Headline>Selection {selectionId}</Styled.Headline>
-          <Styled.Badge isOpen={isOpen}>{instanceCount}</Styled.Badge>
+          <Styled.Badge isOpen={isOpen} type={BADGE_TYPE.SELECTIONS}>
+            {instanceCount}
+          </Styled.Badge>
 
           {isOpen && renderActions(onRetry, onCancel, onDelete)}
         </Styled.Header>

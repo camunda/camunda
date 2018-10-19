@@ -1,8 +1,14 @@
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 
+import {COMBO_BADGE_TYPE} from 'modules/constants';
 import {Colors, themed, themeStyle} from 'modules/theme';
 
 import Badge from '../Badge';
+
+const selectionsRightStyle = css`
+  background-color: rgba(77, 144, 255, 0.75);
+  color: #ffffff;
+`;
 
 export const ComboBadge = styled.div`
   position: relative;
@@ -30,4 +36,6 @@ export const Right = themed(styled(Badge)`
   padding-left: 18px;
   padding-right: 10px;
   margin-left: -10px;
+  ${props =>
+    props.type === COMBO_BADGE_TYPE.SELECTIONS ? selectionsRightStyle : ''};
 `);

@@ -1,6 +1,8 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 import Dropdown from 'modules/components/Dropdown';
+import Badge from 'modules/components/Badge';
+import ComboBadge from 'modules/components/ComboBadge';
 import * as api from 'modules/api/header/header';
 import * as instancesApi from 'modules/api/instances/instances';
 import {flushPromises, mockResolvedAsyncFn} from 'modules/testUtils';
@@ -232,9 +234,7 @@ describe('Header', () => {
     const instancesNode = node.find('[data-test="header-link-instances"]');
     expect(instancesNode.contains('Running Instances')).toBe(true);
     expect(
-      instancesNode
-        .find(Styled.RunningInstancesBadge)
-        .contains(mockProps.runningInstancesCount)
+      instancesNode.find(Badge).contains(mockProps.runningInstancesCount)
     ).toBe(true);
     expect(instancesNode.find(Styled.ListLink).prop('onClick')).toBe(
       mockCollapsablePanelProps.expandFilters
@@ -243,9 +243,7 @@ describe('Header', () => {
     // filters node
     const filtersNode = node.find('[data-test="header-link-filters"]');
     expect(filtersNode.contains('Filters')).toBe(true);
-    expect(
-      filtersNode.find(Styled.FiltersBadge).contains(mockProps.filterCount)
-    ).toBe(true);
+    expect(filtersNode.find(Badge).contains(mockProps.filterCount)).toBe(true);
     expect(filtersNode.find(Styled.ListLink).prop('onClick')).toBe(
       mockCollapsablePanelProps.expandFilters
     );
@@ -260,7 +258,7 @@ describe('Header', () => {
     ).toBe(true);
     expect(
       selectionsNode
-        .find(Styled.SelectionBadgeRight)
+        .find(ComboBadge.Right)
         .contains(mockProps.instancesInSelectionsCount)
     ).toBe(true);
     expect(selectionsNode.find(Styled.ListLink).prop('onClick')).toBe(
@@ -270,11 +268,9 @@ describe('Header', () => {
     // incidents node
     const incidentsNode = node.find('[data-test="header-link-incidents"]');
     expect(incidentsNode.contains('Incidents')).toBe(true);
-    expect(
-      incidentsNode
-        .find(Styled.IncidentsBadge)
-        .contains(mockProps.incidentsCount)
-    ).toBe(true);
+    expect(incidentsNode.find(Badge).contains(mockProps.incidentsCount)).toBe(
+      true
+    );
     expect(incidentsNode.find(Styled.ListLink).prop('onClick')).toBe(
       mockCollapsablePanelProps.expandFilters
     );

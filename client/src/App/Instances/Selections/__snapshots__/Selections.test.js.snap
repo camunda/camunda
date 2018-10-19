@@ -20,11 +20,11 @@ exports[`Selections should render a CollapsablePanel 1`] = `
     <Styled(VerticalExpandButton)
       label="Selections"
     >
-      <Styled(Badge)
-        isDefault={false}
+      <Badge
+        type="SELECTIONS"
       >
         2
-      </Styled(Badge)>
+      </Badge>
     </Styled(VerticalExpandButton)>
   }
   maxWidth={479}
@@ -37,13 +37,15 @@ exports[`Selections should render a CollapsablePanel 1`] = `
     <span>
       Selections
     </span>
-    <ComboBadge>
-      <Styled(Left)>
+    <ComboBadge
+      type="SELECTIONS"
+    >
+      <Left>
         2
-      </Styled(Left)>
-      <Styled(Right)>
+      </Left>
+      <Right>
         6
-      </Styled(Right)>
+      </Right>
     </ComboBadge>
   </Styled(PanelHeader)>
   <PanelBody>

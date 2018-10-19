@@ -1,6 +1,52 @@
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 
-export const Badge = styled.div`
+import {BADGE_TYPE} from 'modules/constants';
+import {Colors, themed, themeStyle} from 'modules/theme';
+
+const runningInstancesStyle = css`
+  background-color: ${themeStyle({
+    light: Colors.uiDark04,
+    dark: Colors.uiLight05
+  })};
+  color: ${themeStyle({
+    light: '#ffffff',
+    dark: Colors.uiDark04
+  })};
+`;
+
+const filtersStyle = css`
+  background-color: ${Colors.filtersAndWarnings};
+  color: ${Colors.uiDark02};
+`;
+
+const incidentsStyle = css`
+  background-color: ${Colors.incidentsAndErrors};
+  color: #ffffff;
+`;
+
+const selectionsStyle = css`
+  background-color: ${Colors.selections};
+  border-color: ${themeStyle({
+    dark: Colors.uiDark01,
+    light: Colors.uiLight01
+  })};
+  color: #ffffff;
+`;
+
+const badgeStyle = props => {
+  switch (props.type) {
+    case BADGE_TYPE.FILTERS:
+      return filtersStyle;
+    case BADGE_TYPE.INCIDENTS:
+      return incidentsStyle;
+    case BADGE_TYPE.SELECTIONS:
+      return selectionsStyle;
+    default:
+      return runningInstancesStyle;
+  }
+};
+
+export const Badge = themed(styled.div`
   display: inline-block;
   height: 17px;
   padding: 0 6px;
@@ -10,4 +56,5 @@ export const Badge = styled.div`
   font-size: 12px;
   font-weight: 600;
   line-height: 1.5;
-`;
+  ${badgeStyle};
+`);
