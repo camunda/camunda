@@ -4,7 +4,7 @@ exports[`InstancePayload should render empty placeholder if there is no payload 
 <Themed(styled.div)>
   <styled.div>
     <Themed(styled.span)>
-      To see the payload, select an activity and an event
+      To see the payload, select an activity and an event.
     </Themed(styled.span)>
   </styled.div>
 </Themed(styled.div)>
