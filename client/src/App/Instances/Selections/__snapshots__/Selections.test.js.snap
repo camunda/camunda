@@ -31,9 +31,7 @@ exports[`Selections should render a CollapsablePanel 1`] = `
   onCollapse={[Function]}
   type="selections"
 >
-  <Styled(PanelHeader)
-    isRounded={true}
-  >
+  <Styled(PanelHeader)>
     <span>
       Selections
     </span>

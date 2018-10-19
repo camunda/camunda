@@ -3,6 +3,7 @@ import styled from 'styled-components';
 import BadgeComponent from 'modules/components/Badge';
 import SplitPane from 'modules/components/SplitPane';
 import Panel from 'modules/components/Panel';
+import {COLLAPSABLE_PANEL_MIN_WIDTH} from 'modules/components/CollapsablePanel/styled';
 import ExpandButton from 'modules/components/ExpandButton';
 import EmptyMessage from './EmptyMessage';
 
@@ -20,7 +21,7 @@ export const Content = styled.div`
   top: 0;
   left: 0;
   height: 100%;
-  width: calc(100% - 56px);
+  width: calc(100% - ${COLLAPSABLE_PANEL_MIN_WIDTH});
 `;
 
 export const Filters = styled.div`
@@ -31,6 +32,13 @@ export const Center = styled(SplitPane)`
   width: 100%;
 `;
 
+export const Pane = styled(SplitPane.Pane)`
+  border-radius: 3px 3px 0 0;
+`;
+
+export const PaneHeader = styled(SplitPane.Pane.Header)`
+  border-radius: 3px 3px 0 0;
+`;
 export const Selections = styled.div`
   width: 479px;
   display: flex;

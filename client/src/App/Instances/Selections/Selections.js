@@ -104,7 +104,7 @@ export default class Selections extends React.Component {
                 />
               }
             >
-              <Styled.SelectionHeader isRounded>
+              <Styled.SelectionHeader>
                 <span>Selections</span>
                 <ComboBadge type={COMBO_BADGE_TYPE.SELECTIONS}>
                   <ComboBadge.Left>{this.props.selectionCount}</ComboBadge.Left>

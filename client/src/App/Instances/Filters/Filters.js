@@ -183,7 +183,7 @@ export default class Filters extends React.Component {
               />
             }
           >
-            <CollapsablePanel.Header isRounded>
+            <CollapsablePanel.Header>
               Filters
               <Badge type={BADGE_TYPE.FILTERS}>{this.props.filterCount}</Badge>
             </CollapsablePanel.Header>

@@ -419,10 +419,8 @@ class Instances extends Component {
             </Styled.Filters>
 
             <Styled.Center>
-              <SplitPane.Pane isRounded>
-                <SplitPane.Pane.Header isRounded>
-                  {workflowName}
-                </SplitPane.Pane.Header>
+              <Styled.Pane>
+                <Styled.PaneHeader>{workflowName}</Styled.PaneHeader>
                 <SplitPane.Pane.Body>
                   {this.state.filter.version === 'all' && (
                     <Styled.EmptyMessageWrapper>
@@ -445,7 +443,7 @@ class Instances extends Component {
                     />
                   )}
                 </SplitPane.Pane.Body>
-              </SplitPane.Pane>
+              </Styled.Pane>
 
               <ListView
                 openSelection={this.state.openSelection}

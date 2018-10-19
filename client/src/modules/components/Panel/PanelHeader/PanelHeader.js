@@ -11,10 +11,5 @@ PanelHeader.propTypes = {
   children: PropTypes.oneOfType([
     PropTypes.arrayOf(PropTypes.node),
     PropTypes.node
-  ]),
-  isRounded: PropTypes.bool
-};
-
-PanelHeader.defaultProps = {
-  isRounded: false
+  ])
 };

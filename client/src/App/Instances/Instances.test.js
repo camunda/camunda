@@ -12,6 +12,8 @@ import ListView from './ListView';
 import Diagram from 'modules/components/Diagram';
 import PanelHeader from 'modules/components/Panel/PanelHeader';
 
+import * as Styled from './styled';
+
 const Instances = WrappedInstances.WrappedComponent;
 const workflowMock = {
   id: '6',
@@ -297,7 +299,9 @@ describe('Instances', () => {
           // then
           expect(node.state('workflow')).toEqual({});
           expect(node.find(Diagram).length).toBe(0);
-          expect(node.find(PanelHeader).props().children).toBe('Workflow');
+          expect(node.find(Styled.PaneHeader).props().children).toBe(
+            'Workflow'
+          );
         });
 
         it('should render a diagram when workflow data is available ', async () => {
@@ -327,7 +331,7 @@ describe('Instances', () => {
           expect(DiagramNode.props().flowNodesStatisticsOverlay).toBe(
             node.state().statistics
           );
-          expect(node.find(PanelHeader).props().children).toBe(
+          expect(node.find(Styled.PaneHeader).props().children).toBe(
             workflowMock.name || workflowMock.id
           );
         });

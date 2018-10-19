@@ -12,7 +12,6 @@ export const Panel = themed(styled.div`
       light: Colors.uiLight05
     })};
   border-bottom: none;
-  border-radius: ${props => (props.isRounded ? '3px 3px 0 0' : 0)};
   background-color: ${themeStyle({
     dark: Colors.uiDark02,
     light: Colors.uiLight04

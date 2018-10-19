@@ -4,12 +4,14 @@ import {Colors, themed, themeStyle} from 'modules/theme';
 
 import BasicPanel from '../Panel';
 
+export const COLLAPSABLE_PANEL_MIN_WIDTH = '56px';
+
 export const Collapsable = themed(styled.div`
   position: relative;
 
   overflow: hidden;
   width: ${({isCollapsed, maxWidth}) =>
-    isCollapsed ? '56px' : `${maxWidth}px`};
+    isCollapsed ? COLLAPSABLE_PANEL_MIN_WIDTH : `${maxWidth}px`};
   height: 100%;
 
   background-color: ${themeStyle({
@@ -35,11 +37,15 @@ export const ExpandedPanel = styled(BasicPanel)`
   ${panelStyle}
   opacity: ${({isCollapsed}) => (isCollapsed ? '0' : '1')};
   z-index: ${({isCollapsed}) => (isCollapsed ? '0' : '1')};
+  border-radius: 3px 3px 0 0;
 `;
 
 export const CollapsedPanel = styled(BasicPanel)`
   ${panelStyle}
   opacity: ${({isCollapsed}) => (isCollapsed ? '1' : '0')};
   z-index: ${({isCollapsed}) => (isCollapsed ? '1' : '0')};
+`;
 
+export const Header = styled(BasicPanel.Header)`
+  border-radius: 3px 3px 0 0;
 `;

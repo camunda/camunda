@@ -9,7 +9,6 @@ exports[`CollapsablePanel should render an exapnding panel and a collapsing one 
 >
   <Styled(Panel)
     isCollapsed={false}
-    isRounded={true}
   >
     <button
       data-test="collapse-button"
@@ -21,7 +20,6 @@ exports[`CollapsablePanel should render an exapnding panel and a collapsing one 
   </Styled(Panel)>
   <Styled(Panel)
     isCollapsed={false}
-    isRounded={true}
   >
     <button
       data-test="expand-button"
