@@ -6,6 +6,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.data.generation.generators.client.SimpleEngineClient;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
+import org.camunda.optimize.service.util.BackoffCalculator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,6 +22,7 @@ public abstract class DataGenerator implements Runnable {
   private int nVersions;
   private int instanceCountToGenerate;
   private MessageEventCorrelater messageEventCorrelater;
+  private BackoffCalculator backoffCalculator = new BackoffCalculator(15L, 5000L);
 
   protected SimpleEngineClient engineClient;
 
@@ -113,22 +115,56 @@ public abstract class DataGenerator implements Runnable {
     return new String[] {};
   }
 
-  private void startProcessInstances(List<Integer> batchSizes, List<String> processDefinitionIds) throws IOException {
+  private void startProcessInstances(List<Integer> batchSizes, List<String> processDefinitionIds) {
     for (int ithBatch = 0; ithBatch < batchSizes.size(); ithBatch++) {
       for (int i = 0; i < batchSizes.get(ithBatch); i++) {
         Map<String, Object> variables = createVariablesForProcess();
         variables.putAll(createSimpleVariables());
-        engineClient.startProcessInstance(processDefinitionIds.get(ithBatch), variables);
+        startProcessInstance(processDefinitionIds.get(ithBatch), variables);
       }
     }
   }
 
+  private void startProcessInstance(String procDefId, Map<String, Object> variables) {
+    boolean couldStartProcessInstance = false;
+    while (!couldStartProcessInstance) {
+      try {
+        engineClient.startProcessInstance(procDefId, variables);
+        couldStartProcessInstance = true;
+      } catch (Exception exception) {
+        logError(exception);
+        long timeToSleep = backoffCalculator.calculateSleepTime();
+        logDebugSleepInformation(timeToSleep);
+        sleep(timeToSleep);
+      }
+    }
+    backoffCalculator.resetBackoff();
+  }
+
+  private void sleep(long timeToSleep) {
+    try {
+      Thread.sleep(timeToSleep);
+    } catch (InterruptedException e) {
+      logger.debug("Was interrupted from sleep. Continuing to fetch new entities.", e);
+    }
+  }
+
+  private void logDebugSleepInformation(long sleepTime) {
+    logger.debug(
+            "Sleeping for [{}] ms and retrying to start process instance afterwards.",
+            sleepTime
+    );
+  }
+
+  private void logError(Exception e) {
+    logger.error("Error during start of process instance. Please check the connection with [{}]!", e);
+  }
+
 
   private List<Integer> createProcessInstanceSizePerDefinition() {
-    LinkedList<Integer> bulkSizes = new LinkedList<>();
     int maxBulkSizeCount = instanceCountToGenerate / nVersions;
     int finalBulkSize = instanceCountToGenerate % nVersions;
-    bulkSizes.addAll(Collections.nCopies(nVersions, maxBulkSizeCount));
+    LinkedList<Integer> bulkSizes = new LinkedList<>(Collections.nCopies(nVersions, maxBulkSizeCount));
     if (finalBulkSize > 0) {
       bulkSizes.addLast(bulkSizes.removeLast() + finalBulkSize);
     }
