@@ -1,5 +1,6 @@
 package org.camunda.optimize.test.it.rule;
 
+import org.apache.http.entity.mime.MIME;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
@@ -21,9 +22,13 @@ import org.springframework.context.ApplicationContext;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.ClientRequestFilter;
+import javax.ws.rs.client.ClientResponseFilter;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.Response;
+import java.io.BufferedInputStream;
+import java.io.IOException;
+import java.io.InputStream;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
 import java.util.Map;
@@ -66,6 +71,7 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
    * even if optimize is destroyed during the test.
    */
   private static ConfigurationService perTestConfiguration;
+  public static final int MAX_LOGGED_BODY_SIZE = 10_000;
 
   /**
    * Uses the singleton pattern to ensure there is only one
@@ -124,7 +130,7 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
   public void destroy() throws Exception {
     try {
       BeanUtils.copyProperties(testOptimizeInstance.getConfigurationService(), perTestConfiguration);
-    } catch(Exception e) {
+    } catch (Exception e) {
       //nothing to do, optimize did not start correctly in a first place
     }
     testOptimizeInstance.destroyOptimize();
@@ -167,7 +173,7 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
    * The actual storing is only performed once, when this class is the first time initialized.
    */
   private void storeAuthenticationToken() {
-    if(authenticationToken == null) {
+    if (authenticationToken == null) {
       authenticationToken = getNewAuthenticationToken();
     }
   }
@@ -266,7 +272,7 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
       getApplicationContext().getBean(ElasticSearchSchemaInitializer.class);
     schemaInitializer.setInitialized(false);
     schemaInitializer.initializeSchema();
-}
+  }
 
   public WebTarget target() {
     return getClient().target(getEmbeddedOptimizeEndpoint());
@@ -290,7 +296,7 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
 
   private String getEngineUrl() {
     return properties.get("camunda.optimize.engine.rest").toString() +
-        properties.get("camunda.optimize.engine.name").toString();
+      properties.get("camunda.optimize.engine.name").toString();
   }
 
   private String getEmbeddedOptimizeRootEndpoint() {
@@ -300,7 +306,7 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
   private Client getClient() {
     // register the default object provider for serialization/deserialization ob objects
     OptimizeObjectMapperProvider provider = getApplicationContext()
-        .getBean(OptimizeObjectMapperProvider.class);
+      .getBean(OptimizeObjectMapperProvider.class);
 
     Client client = ClientBuilder.newClient()
       .register(provider);
@@ -309,10 +315,41 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
       requestContext.getMethod(),
       requestContext.getUri()
     ));
+    client.register((ClientResponseFilter) (requestContext, responseContext) -> {
+      if (responseContext.hasEntity()) {
+        responseContext.setEntityStream(wrapEntityStreamIfNecessary(responseContext.getEntityStream()));
+      }
+      logger.debug(
+        "EmbeddedTestClient response for {} {}: {}",
+        requestContext.getMethod(),
+        requestContext.getUri(),
+        responseContext.hasEntity() ? serializeBodyCappedToMaxSize(responseContext.getEntityStream()) : ""
+      );
+    });
     client.property(ClientProperties.CONNECT_TIMEOUT, 10000);
-    client.property(ClientProperties.READ_TIMEOUT,    10000);
+    client.property(ClientProperties.READ_TIMEOUT, 10000);
     client.property(ClientProperties.FOLLOW_REDIRECTS, Boolean.FALSE);
     return client;
   }
 
+  private InputStream wrapEntityStreamIfNecessary(final InputStream originalEntityStream) {
+    return !originalEntityStream.markSupported() ? new BufferedInputStream(originalEntityStream) : originalEntityStream;
+  }
+
+  private String serializeBodyCappedToMaxSize(final InputStream entityStream) throws IOException {
+    entityStream.mark(MAX_LOGGED_BODY_SIZE + 1);
+
+    final byte[] entity = new byte[MAX_LOGGED_BODY_SIZE + 1];
+    final int entitySize = entityStream.read(entity);
+    final StringBuilder stringBuilder = new StringBuilder(
+      new String(entity, 0, Math.min(entitySize, MAX_LOGGED_BODY_SIZE), MIME.DEFAULT_CHARSET)
+    );
+    if (entitySize > MAX_LOGGED_BODY_SIZE) {
+      stringBuilder.append("...");
+    }
+    stringBuilder.append('\n');
+
+    entityStream.reset();
+    return stringBuilder.toString();
+  }
 }
