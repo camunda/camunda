@@ -37,10 +37,34 @@ describe('Instances service', () => {
 describe('Selection services', () => {
   let state;
 
-  it('should return payload for create new Selection', () => {
+  it('should return payload containing included ids', () => {
     //when
     state = {
-      selection: {ids: [], excludeIds: []},
+      selection: {all: false, ids: ['foo'], excludeIds: []},
+      selections: [],
+      filter: {incidents: true}
+    };
+
+    //then
+    expect(getPayload({state})).toMatchSnapshot();
+  });
+
+  it('should return payload containing empty excluded ids', () => {
+    //when
+    state = {
+      selection: {all: true, ids: [], excludeIds: []},
+      selections: [],
+      filter: {incidents: true}
+    };
+
+    //then
+    expect(getPayload({state})).toMatchSnapshot();
+  });
+
+  it('should return payload containing excluded ids', () => {
+    //when
+    state = {
+      selection: {all: true, ids: [], excludeIds: ['foo']},
       selections: [],
       filter: {incidents: true}
     };

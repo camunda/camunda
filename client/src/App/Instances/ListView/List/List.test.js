@@ -34,6 +34,7 @@ const mockProps = {
   filter: {active: true, incidents: true},
   handleSorting: jest.fn(),
   selection: {
+    all: false,
     excludeIds: [],
     ids: [0, 10]
   },
@@ -47,6 +48,7 @@ const emptyList = {
   onEntriesPerPageChange: jest.fn(),
   handleSorting: jest.fn(),
   selection: {
+    all: false,
     excludeIds: [],
     ids: []
   },
@@ -285,8 +287,9 @@ describe('List', () => {
       it('should highlight all instances when all are selected', () => {
         node.setProps({
           selection: {
-            active: true,
-            incidents: true
+            all: true,
+            ids: [],
+            excludeIds: []
           }
         });
 
@@ -298,20 +301,13 @@ describe('List', () => {
 
       it('should not highlight any instance if none is selected', () => {
         node.setProps({
-          selection: {}
+          selection: {
+            all: false,
+            ids: [],
+            excludeIds: []
+          }
         });
 
-        // then
-        expect(node.instance().isSelected(10)).toBe(false);
-        expect(node.instance().isSelected(9)).toBe(false);
-        expect(node.instance().isSelected(8)).toBe(false);
-      });
-
-      it('should not highlight all instance if no filter is set', () => {
-        node.setProps({
-          selection: {},
-          filter: {}
-        });
         // then
         expect(node.instance().isSelected(10)).toBe(false);
         expect(node.instance().isSelected(9)).toBe(false);
@@ -321,12 +317,13 @@ describe('List', () => {
       it('should highlight an instance when it is selection', () => {
         // given
         const selectedInstanceId = 10;
-        node.setProps({filter: {active: true, incidents: true}});
-        node.setProps({selection: {excludeIds: [], ids: [selectedInstanceId]}});
+        node.setProps({
+          selection: {all: false, excludeIds: [], ids: [selectedInstanceId]}
+        });
         expect(node.instance().isSelected(selectedInstanceId)).toBe(true);
 
         // when
-        node.setProps({selection: {excludeIds: [], ids: []}});
+        node.setProps({selection: {all: false, excludeIds: [], ids: []}});
 
         // then
         expect(node.instance().isSelected(selectedInstanceId)).toBe(false);
@@ -335,16 +332,96 @@ describe('List', () => {
       it('should not highlight an instance if excluded from selectAll ', () => {
         // when
         const selectedInstanceId = 10;
-        node.setProps({filter: {active: true, incidents: true}});
         node.setProps({
           selection: {
-            active: true,
-            incidents: true,
+            all: true,
+            ids: [],
             excludeIds: [selectedInstanceId]
           }
         });
         // then
         expect(node.instance().isSelected(selectedInstanceId)).toBe(false);
+      });
+
+      it('should set selection.all to true', () => {
+        // given
+        const onUpdateSelection = jest.fn();
+
+        node.setProps({
+          filterCount: 2,
+          selection: {
+            all: false,
+            ids: [10],
+            excludeIds: []
+          },
+          onUpdateSelection: onUpdateSelection
+        });
+
+        // when
+        const select = node.instance().handleSelectInstance({id: 5});
+        select(undefined, true);
+
+        // then
+        expect(onUpdateSelection).toBeCalledWith({
+          all: true,
+          ids: [],
+          excludeIds: []
+        });
+      });
+
+      it('should set selection.all to false', () => {
+        // given
+        const onUpdateSelection = jest.fn();
+
+        node.setProps({
+          filterCount: 2,
+          selection: {
+            all: true,
+            ids: [],
+            excludeIds: [10]
+          },
+          onUpdateSelection: onUpdateSelection
+        });
+
+        // when
+        const select = node.instance().handleSelectInstance({id: 5});
+        select(undefined, false);
+        node.update();
+
+        // then
+        expect(onUpdateSelection).toBeCalledWith({
+          all: false,
+          ids: [],
+          excludeIds: []
+        });
+      });
+
+      it('should return that all instances are selected', () => {
+        // when
+        node.setProps({
+          selection: {
+            all: true,
+            ids: [],
+            excludeIds: []
+          }
+        });
+
+        // then
+        expect(node.instance().areAllInstancesSelected()).toBe(true);
+      });
+
+      it('should return that not all instances are selected when any instance is excluded', () => {
+        // when
+        node.setProps({
+          selection: {
+            all: true,
+            ids: [],
+            excludeIds: [10]
+          }
+        });
+
+        // then
+        expect(node.instance().areAllInstancesSelected()).toBe(false);
       });
     });
   });

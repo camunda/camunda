@@ -5,17 +5,17 @@ describe('ListFooter services', () => {
     let selection;
 
     it('should return false if no instances are selected', () => {
-      selection = {ids: [], excludeIds: []};
+      selection = {all: false, ids: [], excludeIds: []};
       expect(isAnyInstanceSelected(selection)).toBe(false);
     });
 
     it('should return true if all instances are selected by filters', () => {
-      selection = {ids: [], excludeIds: [], completed: true};
+      selection = {all: true, ids: [], excludeIds: []};
       expect(isAnyInstanceSelected(selection)).toBe(true);
     });
 
     it('should return true if single instances are selected by Id', () => {
-      selection = {ids: ['123'], excludeIds: []};
+      selection = {all: false, ids: ['123'], excludeIds: []};
       expect(isAnyInstanceSelected(selection)).toBe(true);
     });
   });

@@ -30,15 +30,19 @@ export function getPayload({selectionId, state}) {
     selectiondata = getSelectionById(selections, selectionId);
   }
 
+  const query = {
+    ...parseFilterForRequest(filter)
+  };
+
+  if (!selection.all) {
+    query.ids = [...selection.ids];
+  } else {
+    query.excludeIds = [...selection.excludeIds];
+  }
+
   return {
-    // makes arrays out of 'ids' and 'excludeIds' Sets.
     queries: [
-      {
-        ...parseFilterForRequest(filter),
-        ...selection,
-        ids: [...(selection.ids || [])],
-        excludeIds: [...(selection.excludeIds || [])]
-      },
+      query,
       ...(selectionId ? selections[selectiondata.index].queries : '')
     ]
   };

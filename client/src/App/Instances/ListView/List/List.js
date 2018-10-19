@@ -1,6 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
-import {isEqual, isEmpty} from 'lodash';
+import {remove} from 'lodash';
 
 import Checkbox from 'modules/components/Checkbox';
 import Table from 'modules/components/Table';
@@ -13,8 +13,6 @@ import {EXPAND_STATE} from 'modules/constants';
 import {getWorkflowName} from 'modules/utils/instance';
 import {formatDate} from 'modules/utils/date';
 
-import {createIdArrayFromFilterString} from './service';
-
 import HeaderSortIcon from './HeaderSortIcon';
 import * as Styled from './styled';
 
@@ -25,6 +23,7 @@ export default class List extends React.Component {
     onUpdateSelection: PropTypes.func.isRequired,
     onEntriesPerPageChange: PropTypes.func.isRequired,
     selection: PropTypes.shape({
+      all: PropTypes.bool,
       excludeIds: PropTypes.Array,
       ids: PropTypes.Array
     }).isRequired,
@@ -56,93 +55,88 @@ export default class List extends React.Component {
     }
   }
 
-  getSelectionFilters = (selection, filter) => {
-    let selectionFilters = {};
-    // checks if selection filters are also available in the passed filters.
-    Object.keys(selection).forEach(key => {
-      if (filter.hasOwnProperty(key)) {
-        selectionFilters[key] = selection[key];
-      }
+  handleSelectAll = (_, isChecked) => {
+    this.props.onUpdateSelection({
+      all: isChecked,
+      ids: [],
+      excludeIds: []
     });
-
-    return selectionFilters;
   };
 
-  areAllInstancesSelected = () => {
-    const {selection, filter} = this.props;
-    const selectionFilters = this.getSelectionFilters(selection, filter);
+  handleSelectInstance = instance => (_, isChecked) => {
+    const {selection, filterCount} = this.props;
 
-    if (typeof selection.ids === 'string') {
-      selection.ids = createIdArrayFromFilterString(selection.ids);
+    let {all} = selection;
+    let ids = [...selection.ids];
+    let excludeIds = [...selection.excludeIds];
+
+    let selectedIdArray = undefined;
+    let checked = undefined;
+
+    // isChecked === true => instance has been selected
+    // isChecked === false => instance has been deselected
+
+    if (all) {
+      // reverse logic:
+      // if (isChecked) => excludeIds.remove(instance) (include in selection)
+      // if (!isChecked) => excludeIds.add(instance) (exclude from selection)
+      checked = !isChecked;
+      selectedIdArray = excludeIds; // use reference to excludeIds
+    } else {
+      // if (isChecked) => ids.add(instance) (include in selection)
+      // if (!isChecked) => ids.remove(instance) (exclude from selection)
+      checked = isChecked;
+      selectedIdArray = ids; // use reference to ids
     }
 
-    if (selection.excludeIds > 0) return false;
+    this.handleSelection(selectedIdArray, instance, checked);
 
-    // all ids are selected
-    if (isEqual(selectionFilters, filter) && !isEmpty(filter)) return true;
+    if (selectedIdArray.length === filterCount) {
+      // selected array contains all filtered instances
 
-    return false;
+      // (1) reset arrays in selection
+      ids = [];
+      excludeIds = [];
+
+      // (2) determine 'all' state
+      // if (!all) => all = true
+      // if (all) => all = false
+      all = !all;
+    }
+
+    this.props.onUpdateSelection({all, ids, excludeIds});
   };
 
-  handleToggleSelectAll = (event, isChecked) => {
-    const selected = isChecked ? this.props.filter : {ids: []};
-    this.props.onUpdateSelection({...selected, excludeIds: []});
+  handleSelection = (selectedIds = [], {id}, isChecked) => {
+    if (isChecked) {
+      selectedIds.push(id);
+    } else {
+      remove(selectedIds, elem => elem === id);
+    }
   };
 
   isSelected = id => {
-    const {selection, filter} = this.props;
-    let {excludeIds, ids} = selection;
-    const selectionFilters = this.getSelectionFilters(selection, filter);
-
-    //TODO: check: transfrom to array, if id filter is used
-    if (typeof ids === 'string') {
-      ids = createIdArrayFromFilterString(ids);
-    }
-
-    // id is excluded
-    if (excludeIds && !!excludeIds.find(excludedId => excludedId === id))
-      return false;
-
-    // id is included
-    if (ids && !!ids.find(includedId => includedId === id)) return true;
-
-    // all ids are selected
-    if (isEqual(selectionFilters, filter) && !isEmpty(this.props.filter))
-      return true;
-
-    return false;
+    const {selection} = this.props;
+    const {all} = selection;
+    return all ? !this.isExcluded(id) : this.isIncluded(id);
   };
 
-  returnIdsToChange = (idsToChange, instanceId, idType, isChecked) => {
-    if (isChecked) {
-      idsToChange.push(instanceId);
-      return {[idType]: idsToChange};
-    } else {
-      idsToChange.splice(idsToChange.indexOf(instanceId), 1);
-      return {[idType]: idsToChange};
-    }
+  isExcluded = id => {
+    const {selection} = this.props;
+    const {excludeIds = []} = selection;
+    return excludeIds.indexOf(id) >= 0;
   };
 
-  onSelectionChange = instance => (event, isChecked) => {
-    const {selection, filter} = this.props;
-    const {excludeIds, ids} = selection;
-    const {id} = instance;
+  isIncluded = id => {
+    const {selection} = this.props;
+    const {ids = []} = selection;
+    return ids.indexOf(id) >= 0;
+  };
 
-    const selectionFilters = this.getSelectionFilters(selection, filter);
-
-    // exclude ids on click when all instances are selected
-    const isExcludeIdsType =
-      isEqual(selectionFilters, filter) && !isEmpty(filter);
-
-    const basicChanges = isExcludeIdsType
-      ? {...filter, ids: []}
-      : {excludeIds: []};
-
-    const selectedIds = isExcludeIdsType
-      ? this.returnIdsToChange([...excludeIds], id, 'excludeIds', !isChecked)
-      : this.returnIdsToChange([...ids], id, 'ids', isChecked);
-
-    this.props.onUpdateSelection({...basicChanges, ...selectedIds});
+  areAllInstancesSelected = () => {
+    const {selection} = this.props;
+    const {all, excludeIds = []} = selection;
+    return all && excludeIds.length === 0;
   };
 
   recalculateHeight() {
@@ -167,7 +161,7 @@ export default class List extends React.Component {
                 <Checkbox
                   disabled={!this.props.filterCount}
                   isChecked={this.areAllInstancesSelected()}
-                  onChange={this.handleToggleSelectAll}
+                  onChange={this.handleSelectAll}
                   title="Select all instances"
                 />
               </Styled.CheckAll>
@@ -217,7 +211,7 @@ export default class List extends React.Component {
                   <Checkbox
                     type="selection"
                     isChecked={this.isSelected(instance.id)}
-                    onChange={this.onSelectionChange(instance)}
+                    onChange={this.handleSelectInstance(instance)}
                     title={`Select instance ${instance.id}`}
                   />
 

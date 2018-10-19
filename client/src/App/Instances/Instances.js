@@ -65,7 +65,7 @@ class Instances extends Component {
       instancesInSelectionsCount: instancesInSelectionsCount || 0,
       openSelection: null,
       rollingSelectionIndex: rollingSelectionIndex || 0,
-      selection: {ids: [], excludeIds: []},
+      selection: {all: false, ids: [], excludeIds: []},
       selectionCount: selectionCount || 0,
       selections: selections || [],
       workflow: {},
@@ -257,7 +257,7 @@ class Instances extends Component {
           instancesInSelectionsCount + selection.totalCount,
         selectionCount: selectionCount + 1,
         openSelection: currentSelectionIndex,
-        selection: {ids: [], excludeIds: []}
+        selection: {all: false, ids: [], excludeIds: []}
       }),
       () => {
         const {
@@ -288,7 +288,7 @@ class Instances extends Component {
       {
         selections: newSelections,
         instancesInSelectionsCount: newInstancesInSelectionsCount,
-        selection: {ids: [], excludeIds: []}
+        selection: {all: false, ids: [], excludeIds: []}
       },
       () => {
         const {instancesInSelectionsCount, selections} = this.state;
@@ -365,7 +365,7 @@ class Instances extends Component {
   };
 
   setFilterInURL = filter => {
-    this.setState({selection: {ids: [], excludeIds: []}});
+    this.setState({selection: {all: false, ids: [], excludeIds: []}});
     this.props.history.push({
       pathname: this.props.location.pathname,
       search: getFilterQueryString(filter)

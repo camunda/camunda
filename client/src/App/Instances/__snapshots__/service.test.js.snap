@@ -1,12 +1,41 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
-exports[`Selection services should return payload for create new Selection 1`] = `
+exports[`Selection services should return payload containing empty excluded ids 1`] = `
 Object {
   "queries": Array [
     Object {
       "excludeIds": Array [],
       "finished": undefined,
-      "ids": Array [],
+      "incidents": true,
+      "running": true,
+    },
+  ],
+}
+`;
+
+exports[`Selection services should return payload containing excluded ids 1`] = `
+Object {
+  "queries": Array [
+    Object {
+      "excludeIds": Array [
+        "foo",
+      ],
+      "finished": undefined,
+      "incidents": true,
+      "running": true,
+    },
+  ],
+}
+`;
+
+exports[`Selection services should return payload containing included ids 1`] = `
+Object {
+  "queries": Array [
+    Object {
+      "finished": undefined,
+      "ids": Array [
+        "foo",
+      ],
       "incidents": true,
       "running": true,
     },
