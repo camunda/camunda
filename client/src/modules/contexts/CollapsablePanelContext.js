@@ -33,14 +33,6 @@ class CollapsablePanelProvider extends React.Component {
 
   expandSelections = () => this.expand('isSelectionsCollapsed');
 
-  expandFilters = () => {
-    this.setState({isFiltersCollapsed: false});
-  };
-
-  expandSelections = () => {
-    this.setState({isSelectionsCollapsed: false});
-  };
-
   render() {
     const contextValue = {
       ...this.state,
