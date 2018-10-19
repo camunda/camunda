@@ -40,7 +40,7 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
       data-test="header-link-filters"
     >
       <Themed(Styled(withStrippedProps(Link)))
-        isActive={true}
+        isActive={false}
         onClick={[Function]}
         title="View 0 Instances in Filters"
         to="/instances?filter=%7B%7D"
@@ -78,7 +78,7 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
       data-test="header-link-selections"
     >
       <Themed(Styled(withStrippedProps(Link)))
-        isActive={true}
+        isActive={false}
         onClick={[Function]}
         title="View 0 0 Selections"
         to="/instances?filter=%7B%22active%22%3Atrue%2C%22incidents%22%3Atrue%7D"

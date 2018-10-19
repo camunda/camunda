@@ -144,7 +144,7 @@ class Header extends React.Component {
           </li>
           <li data-test="header-link-instances">
             <Styled.ListLink
-              isActive={isRunningInstanceFilter}
+              isActive={active === 'instances' && isRunningInstanceFilter}
               to={`/instances${runningQuery}`}
               title={`View ${
                 this.state.runningInstancesCount
@@ -159,7 +159,9 @@ class Header extends React.Component {
           </li>
           <li data-test="header-link-filters">
             <Styled.ListLink
-              isActive={!this.props.isFiltersCollapsed}
+              isActive={
+                active === 'instances' && !this.props.isFiltersCollapsed
+              }
               to={`/instances${filterQuery}`}
               title={`View ${this.state.filterCount} Instances in Filters`}
               onClick={this.props.expandFilters}
@@ -170,7 +172,7 @@ class Header extends React.Component {
           </li>
           <li data-test="header-link-incidents">
             <Styled.ListLink
-              isActive={isIncidentsFilter}
+              isActive={active === 'instances' && isIncidentsFilter}
               to={`/instances${incidentsQuery}`}
               title={`View ${this.state.incidentsCount} Incidents`}
               onClick={this.props.expandFilters}
@@ -187,7 +189,9 @@ class Header extends React.Component {
               title={`View ${this.state.selectionCount} ${
                 this.state.instancesInSelectionsCount
               } Selections`}
-              isActive={!this.props.isSelectionsCollapsed}
+              isActive={
+                active === 'instances' && !this.props.isSelectionsCollapsed
+              }
               onClick={this.props.expandSelections}
             >
               <span>Selections</span>

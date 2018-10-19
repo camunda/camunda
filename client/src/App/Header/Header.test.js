@@ -121,6 +121,7 @@ describe('Header', () => {
       // given
       const mockProps = {
         ...mockCollapsablePanelProps,
+        active: 'instances',
         isFiltersCollapsed: false,
         getStateLocally: () => ({})
       };
@@ -146,6 +147,7 @@ describe('Header', () => {
       const mockProps = {
         ...mockCollapsablePanelProps,
         isSelectionsCollapsed: false,
+        active: 'instances',
         getStateLocally: () => ({})
       };
       const node = shallow(<Header {...mockProps} />);
@@ -169,7 +171,8 @@ describe('Header', () => {
       // given
       const mockProps = {
         ...mockCollapsablePanelProps,
-        getStateLocally: () => ({})
+        getStateLocally: () => ({}),
+        active: 'instances'
       };
       const node = shallow(<Header {...mockProps} />);
       node.setState({filter: FILTER_SELECTION.running});
@@ -203,7 +206,7 @@ describe('Header', () => {
     let incidentsNode = node.find('[data-test="header-link-incidents"]');
 
     // then
-    expect(incidentsNode.find(Styled.ListLink).prop('isActive')).toBe(true);
+    expect(incidentsNode.find(Styled.ListLink).prop('isActive')).toBe(false);
 
     // (1) when filter does not equal runningInstances
     // given
