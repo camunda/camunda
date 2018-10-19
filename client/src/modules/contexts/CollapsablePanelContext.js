@@ -16,25 +16,30 @@ class CollapsablePanelProvider extends React.Component {
   };
 
   // we start with both panels not collapsed
-  state = {filters: false, selections: false};
+  state = {isFiltersCollapsed: false, isSelectionsCollapsed: true};
 
-  toggleFilters = () => {
+  toggle = target =>
     this.setState(prevState => {
-      return {filters: !prevState.filters};
+      return {[target]: !prevState[target]};
     });
-  };
 
-  toggleSelections = () => {
-    this.setState(prevState => {
-      return {selections: !prevState.selections};
-    });
-  };
+  toggleFilters = () => this.toggle('isFiltersCollapsed');
+
+  toggleSelections = () => this.toggle('isSelectionsCollapsed');
+
+  expand = target => this.setState({[target]: false});
+
+  expandFilters = () => this.expand('isFiltersCollapsed');
+
+  expandSelections = () => this.expand('isSelectionsCollapsed');
 
   render() {
     const contextValue = {
       ...this.state,
       toggleFilters: this.toggleFilters,
-      toggleSelections: this.toggleSelections
+      toggleSelections: this.toggleSelections,
+      expandFilters: this.expandFilters,
+      expandSelections: this.expandSelections
     };
 
     return (
@@ -45,4 +50,26 @@ class CollapsablePanelProvider extends React.Component {
   }
 }
 
-export {CollapsablePanelConsumer, CollapsablePanelProvider};
+const withCollapsablePanel = Component => {
+  function WithCollapsablePanel(props) {
+    return (
+      <CollapsablePanelConsumer>
+        {contextValue => <Component {...props} {...contextValue} />}
+      </CollapsablePanelConsumer>
+    );
+  }
+
+  WithCollapsablePanel.WrappedComponent = Component;
+
+  WithCollapsablePanel.displayName = `WithCollapsablePanel(${Component.displayName ||
+    Component.name ||
+    'Component'})`;
+
+  return WithCollapsablePanel;
+};
+
+export {
+  CollapsablePanelConsumer,
+  CollapsablePanelProvider,
+  withCollapsablePanel
+};

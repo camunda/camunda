@@ -52,7 +52,9 @@ export default class Pane extends React.Component {
         {context => (
           <Styled.ButtonsContainer
             isShifted={
-              this.props.hasShiftableControls ? !context.selections : false
+              this.props.hasShiftableControls
+                ? !context.isSelectionsCollapsed
+                : false
             }
           >
             {isTopButtonVisible && (

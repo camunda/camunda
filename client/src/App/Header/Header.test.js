@@ -4,6 +4,7 @@ import Dropdown from 'modules/components/Dropdown';
 import * as api from 'modules/api/header/header';
 import * as instancesApi from 'modules/api/instances/instances';
 import {flushPromises, mockResolvedAsyncFn} from 'modules/testUtils';
+import {FILTER_SELECTION} from 'modules/constants';
 
 import HeaderWrapper from './Header';
 import * as Styled from './styled';
@@ -23,6 +24,14 @@ const INSTANCES_COUNT = 23;
 api.fetchUser = mockResolvedAsyncFn(USER);
 instancesApi.fetchWorkflowInstancesCount = mockResolvedAsyncFn(INSTANCES_COUNT);
 
+const mockCollapsablePanelProps = {
+  getStateLocally: jest.fn(),
+  isFiltersCollapsed: false,
+  isSelectionsCollapsed: false,
+  expandFilters: jest.fn(),
+  expandSelections: jest.fn()
+};
+
 describe('Header', () => {
   beforeEach(() => {
     api.fetchUser.mockClear();
@@ -39,7 +48,11 @@ describe('Header', () => {
     it("should get the value from props if it's provided", () => {
       localStateKeys.forEach(key => {
         // given
-        const mockProps = {[key]: mockValues[key], getStateLocally: () => ({})};
+        const mockProps = {
+          ...mockCollapsablePanelProps,
+          [key]: mockValues[key],
+          getStateLocally: () => ({})
+        };
         const node = shallow(<Header {...mockProps} />);
 
         // then
@@ -51,7 +64,10 @@ describe('Header', () => {
       localStateKeys.forEach(key => {
         // given
         const mockLocalState = {[key]: mockValues[key]};
-        const mockProps = {getStateLocally: () => mockLocalState};
+        const mockProps = {
+          ...mockCollapsablePanelProps,
+          getStateLocally: () => mockLocalState
+        };
         const node = shallow(<Header {...mockProps} />);
 
         // then
@@ -65,7 +81,11 @@ describe('Header', () => {
       apiKeys.forEach(key => {
         // given
         const value = 23;
-        const mockProps = {[key]: value, getStateLocally: () => ({})};
+        const mockProps = {
+          ...mockCollapsablePanelProps,
+          [key]: value,
+          getStateLocally: () => ({})
+        };
         const node = shallow(<Header {...mockProps} />);
 
         // then
@@ -75,7 +95,10 @@ describe('Header', () => {
 
     it("should get the value from api if it's not in the props", async () => {
       // given
-      const mockProps = {getStateLocally: () => ({})};
+      const mockProps = {
+        ...mockCollapsablePanelProps,
+        getStateLocally: () => ({})
+      };
       const node = shallow(<Header {...mockProps} />);
       // when
       await flushPromises();
@@ -90,9 +113,110 @@ describe('Header', () => {
     });
   });
 
+  describe('links highlights', () => {
+    it('should highlight filters link when filters is not collapsed', () => {
+      // (1) when filters is not collapsed
+      // given
+      const mockProps = {
+        ...mockCollapsablePanelProps,
+        isFiltersCollapsed: false,
+        getStateLocally: () => ({})
+      };
+      const node = shallow(<Header {...mockProps} />);
+      let filtersNode = node.find('[data-test="header-link-filters"]');
+
+      // then
+      expect(filtersNode.find(Styled.ListLink).prop('isActive')).toBe(true);
+
+      // (2) when filters is collapsed
+      // given
+      node.setProps({isFiltersCollapsed: true});
+      node.update();
+      filtersNode = node.find('[data-test="header-link-filters"]');
+
+      // then
+      expect(filtersNode.find(Styled.ListLink).prop('isActive')).toBe(false);
+    });
+
+    it('should highlight selections link when selections is not collapsed', () => {
+      // (1) when selections is not collapsed
+      // given
+      const mockProps = {
+        ...mockCollapsablePanelProps,
+        isSelectionsCollapsed: false,
+        getStateLocally: () => ({})
+      };
+      const node = shallow(<Header {...mockProps} />);
+      let selectionsNode = node.find('[data-test="header-link-selections"]');
+
+      // then
+      expect(selectionsNode.find(Styled.ListLink).prop('isActive')).toBe(true);
+
+      // (2) when selections is collapsed
+      // given
+      node.setProps({isSelectionsCollapsed: true});
+      node.update();
+      selectionsNode = node.find('[data-test="header-link-selections"]');
+
+      // then
+      expect(selectionsNode.find(Styled.ListLink).prop('isActive')).toBe(false);
+    });
+
+    it('should highlight running instance link when the filter equals selections', () => {
+      // (1) when filter equals runningInstances
+      // given
+      const mockProps = {
+        ...mockCollapsablePanelProps,
+        getStateLocally: () => ({})
+      };
+      const node = shallow(<Header {...mockProps} />);
+      node.setState({filter: FILTER_SELECTION.running});
+      node.update();
+      let instancesNode = node.find('[data-test="header-link-instances"]');
+
+      // then
+      expect(instancesNode.find(Styled.ListLink).prop('isActive')).toBe(true);
+
+      // (1) when filter does not equal runningInstances
+      // given
+      node.setState({filter: {}});
+      node.update();
+      instancesNode = node.find('[data-test="header-link-instances"]');
+
+      // then
+      expect(instancesNode.find(Styled.ListLink).prop('isActive')).toBe(false);
+    });
+  });
+
+  it('should highlight incidents link when the filter equals incidents', () => {
+    // (1) when filter equals incidents
+    // given
+    const mockProps = {
+      ...mockCollapsablePanelProps,
+      getStateLocally: () => ({})
+    };
+    const node = shallow(<Header {...mockProps} />);
+    node.setState({filter: {incidents: true}});
+    node.update();
+    let incidentsNode = node.find('[data-test="header-link-incidents"]');
+
+    // then
+    expect(incidentsNode.find(Styled.ListLink).prop('isActive')).toBe(true);
+
+    // (1) when filter does not equal runningInstances
+    // given
+    node.setState({filter: {}});
+    node.update();
+    incidentsNode = node.find('[data-test="header-link-incidents"]');
+
+    // then
+    expect(incidentsNode.find(Styled.ListLink).prop('isActive')).toBe(false);
+  });
+
   it('should show the counts and their labels', () => {
     // given
     const mockProps = {
+      ...mockCollapsablePanelProps,
       getStateLocally: () => ({}),
       runningInstancesCount: 1,
       filterCount: 2,
@@ -106,12 +230,15 @@ describe('Header', () => {
     // then
     // instances node
     const instancesNode = node.find('[data-test="header-link-instances"]');
-    expect(instancesNode.contains('Instances')).toBe(true);
+    expect(instancesNode.contains('Running Instances')).toBe(true);
     expect(
       instancesNode
         .find(Styled.RunningInstancesBadge)
         .contains(mockProps.runningInstancesCount)
     ).toBe(true);
+    expect(instancesNode.find(Styled.ListLink).prop('onClick')).toBe(
+      mockCollapsablePanelProps.expandFilters
+    );
 
     // filters node
     const filtersNode = node.find('[data-test="header-link-filters"]');
@@ -119,6 +246,9 @@ describe('Header', () => {
     expect(
       filtersNode.find(Styled.FiltersBadge).contains(mockProps.filterCount)
     ).toBe(true);
+    expect(filtersNode.find(Styled.ListLink).prop('onClick')).toBe(
+      mockCollapsablePanelProps.expandFilters
+    );
 
     // selections node
     const selectionsNode = node.find('[data-test="header-link-selections"]');
@@ -133,6 +263,9 @@ describe('Header', () => {
         .find(Styled.SelectionBadgeRight)
         .contains(mockProps.instancesInSelectionsCount)
     ).toBe(true);
+    expect(selectionsNode.find(Styled.ListLink).prop('onClick')).toBe(
+      mockCollapsablePanelProps.expandSelections
+    );
 
     // incidents node
     const incidentsNode = node.find('[data-test="header-link-incidents"]');
@@ -142,10 +275,14 @@ describe('Header', () => {
         .find(Styled.IncidentsBadge)
         .contains(mockProps.incidentsCount)
     ).toBe(true);
+    expect(incidentsNode.find(Styled.ListLink).prop('onClick')).toBe(
+      mockCollapsablePanelProps.expandFilters
+    );
   });
 
   it('it should request user information', async () => {
     const mockProps = {
+      ...mockCollapsablePanelProps,
       getStateLocally: () => ({})
     };
 
@@ -157,6 +294,7 @@ describe('Header', () => {
 
   it('it should display user firstname and lastname', async () => {
     const mockProps = {
+      ...mockCollapsablePanelProps,
       getStateLocally: () => ({})
     };
     const node = shallow(<Header {...mockProps} />);
@@ -178,6 +316,7 @@ describe('Header', () => {
   it('should logout the user when calling handleLogout', async () => {
     api.logout = mockResolvedAsyncFn();
     const mockProps = {
+      ...mockCollapsablePanelProps,
       getStateLocally: () => ({})
     };
     const node = shallow(<Header {...mockProps} />);
@@ -191,6 +330,7 @@ describe('Header', () => {
 
   it('assign handleLogout as a Dropdown.Option onClick', () => {
     const mockProps = {
+      ...mockCollapsablePanelProps,
       getStateLocally: () => ({})
     };
     const node = shallow(<Header {...mockProps} />);
@@ -202,6 +342,7 @@ describe('Header', () => {
 
   it('should contain links to dashboard and instances page', () => {
     const mockProps = {
+      ...mockCollapsablePanelProps,
       getStateLocally: () => ({})
     };
     const node = shallow(<Header {...mockProps} />);

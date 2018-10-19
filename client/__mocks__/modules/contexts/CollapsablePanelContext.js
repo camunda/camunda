@@ -6,5 +6,6 @@ const context = {
 };
 
 const CollapsablePanelConsumer = props => props.children(context);
+const withCollapsablePanel = Component => Component;
 
-export {CollapsablePanelConsumer};
+export {CollapsablePanelConsumer, withCollapsablePanel};

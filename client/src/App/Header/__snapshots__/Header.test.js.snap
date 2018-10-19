@@ -8,6 +8,7 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
     <li>
       <Themed(Styled(withStrippedProps(Link)))
         isActive={false}
+        title="View Dashboard"
         to="/"
       >
         <Styled(Logo) />
@@ -21,11 +22,12 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
     >
       <Themed(Styled(withStrippedProps(Link)))
         isActive={false}
-        title="0 Instances"
+        onClick={[Function]}
+        title="View 0 Running Instances"
         to="/instances?filter=%7B%22active%22%3Atrue%2C%22incidents%22%3Atrue%7D"
       >
         <span>
-          Instances
+          Running Instances
         </span>
         <Themed(Styled(Styled(Badge)))>
           0
@@ -36,8 +38,9 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
       data-test="header-link-filters"
     >
       <Themed(Styled(withStrippedProps(Link)))
-        isActive={false}
-        title="0 Filters"
+        isActive={true}
+        onClick={[Function]}
+        title="View 0 Instances in Filters"
         to="/instances?filter=%7B%7D"
       >
         <span>
@@ -51,11 +54,31 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
       </Themed(Styled(withStrippedProps(Link)))>
     </li>
     <li
-      data-test="header-link-selections"
+      data-test="header-link-incidents"
     >
       <Themed(Styled(withStrippedProps(Link)))
         isActive={false}
-        title="0 0 Selections"
+        onClick={[Function]}
+        title="View 0 Incidents"
+        to="/instances?filter=%7B%22incidents%22%3Atrue%7D"
+      >
+        <span>
+          Incidents
+        </span>
+        <Styled(Styled(Badge))
+          type="incidents"
+        >
+          0
+        </Styled(Styled(Badge))>
+      </Themed(Styled(withStrippedProps(Link)))>
+    </li>
+    <li
+      data-test="header-link-selections"
+    >
+      <Themed(Styled(withStrippedProps(Link)))
+        isActive={true}
+        onClick={[Function]}
+        title="View 0 0 Selections"
         to="/instances?filter=%7B%22active%22%3Atrue%2C%22incidents%22%3Atrue%7D"
       >
         <span>
@@ -69,24 +92,6 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
             0
           </Styled(Right)>
         </ComboBadge>
-      </Themed(Styled(withStrippedProps(Link)))>
-    </li>
-    <li
-      data-test="header-link-incidents"
-    >
-      <Themed(Styled(withStrippedProps(Link)))
-        isActive={false}
-        title="0 Incidents"
-        to="/instances?filter=%7B%22incidents%22%3Atrue%7D"
-      >
-        <span>
-          Incidents
-        </span>
-        <Styled(Styled(Badge))
-          type="incidents"
-        >
-          0
-        </Styled(Styled(Badge))>
       </Themed(Styled(withStrippedProps(Link)))>
     </li>
   </styled.ul>

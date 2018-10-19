@@ -27,7 +27,6 @@ exports[`Selections should render a CollapsablePanel 1`] = `
       </Styled(Badge)>
     </Styled(VerticalExpandButton)>
   }
-  isCollapsed={false}
   maxWidth={479}
   onCollapse={[Function]}
   type="selections"

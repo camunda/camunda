@@ -5,26 +5,30 @@ import MetricTile from './MetricTile';
 
 import * as Styled from './styled';
 
+const mockProps = {
+  type: 'active',
+  value: 123,
+  label: 'Active',
+  expandFilters: jest.fn()
+};
+
 describe('<MetricTile>', () => {
   it('should show the value and name prop', () => {
-    const node = shallow(
-      <MetricTile type="active" value={123} label="Active" />
+    const node = shallow(<MetricTile {...mockProps} />);
+    expect(node.find(Styled.MetricTile).prop('onClick')).toBe(
+      mockProps.expandFilters
     );
     expect(node.find(Styled.Metric).contains(123)).toEqual(true);
     expect(node.find(Styled.Label).contains('Active')).toEqual(true);
   });
 
   it('should contain a link to instances view', () => {
-    const node = shallow(
-      <MetricTile type="active" value={123} label="Active" />
-    );
+    const node = shallow(<MetricTile {...mockProps} />);
     expect(node.props().to).toContain('/instances');
   });
 
   it('should return a link with the active filters in place', () => {
-    const node = shallow(
-      <MetricTile type="active" value={123} label="Active" />
-    );
+    const node = shallow(<MetricTile {...mockProps} />);
     expect(node.props().to).toEqual(
       `/instances?filter=${encodeURIComponent('{"active":true}')}`
     );
@@ -32,7 +36,7 @@ describe('<MetricTile>', () => {
 
   it('should return a link with the running filters in place', () => {
     const node = shallow(
-      <MetricTile type="running" value={123} label="Running" />
+      <MetricTile {...mockProps} type="running" label="Running" />
     );
     expect(node.props().to).toEqual(
       `/instances?filter=${encodeURIComponent(
@@ -43,7 +47,7 @@ describe('<MetricTile>', () => {
 
   it('should return a link with the incidents filters in place', () => {
     const node = shallow(
-      <MetricTile type="incidents" value={123} label="Incidents" />
+      <MetricTile {...mockProps} type="incidents" label="Incidents" />
     );
     expect(node.props().to).toEqual(
       `/instances?filter=${encodeURIComponent('{"incidents":true}')}`

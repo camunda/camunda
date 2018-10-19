@@ -9,6 +9,8 @@ import withSharedState from 'modules/components/withSharedState';
 import {fetchWorkflowInstancesCount} from 'modules/api/instances';
 import {getFilterQueryString} from 'modules/utils/filter';
 import {FILTER_SELECTION} from 'modules/constants';
+import {withCollapsablePanel} from 'modules/contexts/CollapsablePanelContext';
+import {isEqual} from 'modules/utils';
 
 import {filtersMap, localStateKeys, apiKeys} from './constants';
 import * as Styled from './styled.js';
@@ -23,7 +25,11 @@ class Header extends React.Component {
     instancesInSelectionsCount: PropTypes.number,
     incidentsCount: PropTypes.number,
     detail: PropTypes.element,
-    getStateLocally: PropTypes.func.isRequired
+    getStateLocally: PropTypes.func.isRequired,
+    isFiltersCollapsed: PropTypes.bool.isRequired,
+    isSelectionsCollapsed: PropTypes.bool.isRequired,
+    expandFilters: PropTypes.func.isRequired,
+    expandSelections: PropTypes.func.isRequired
   };
 
   state = {
@@ -105,7 +111,16 @@ class Header extends React.Component {
     // query for the incidents link
     const incidentsQuery = getFilterQueryString(FILTER_SELECTION.incidents);
     const runningQuery = getFilterQueryString(FILTER_SELECTION.running);
-    const isInstancesPage = active === 'instances';
+    const filterQuery = getFilterQueryString(this.state.filter);
+
+    const isRunningInstanceFilter = isEqual(
+      FILTER_SELECTION.running,
+      this.state.filter
+    );
+    // P.S. checking isRunningInstanceFilter first is a small perf improvement because
+    // it checks for isRunningInstanceFilter before making an object equality check
+    const isIncidentsFilter =
+      !isRunningInstanceFilter && isEqual({incidents: true}, this.state.filter);
 
     return this.state.forceRedirect ? (
       <Redirect to="/login" />
@@ -113,18 +128,25 @@ class Header extends React.Component {
       <Styled.Header>
         <Styled.Menu role="navigation">
           <li>
-            <Styled.Dashboard to="/" isActive={active === 'dashboard'}>
+            <Styled.Dashboard
+              to="/"
+              isActive={active === 'dashboard'}
+              title="View Dashboard"
+            >
               <Styled.LogoIcon />
               <span>Dashboard</span>
             </Styled.Dashboard>
           </li>
           <li data-test="header-link-instances">
             <Styled.ListLink
-              isActive={isInstancesPage}
+              isActive={isRunningInstanceFilter}
               to={`/instances${runningQuery}`}
-              title={`${this.state.runningInstancesCount} Instances`}
+              title={`View ${
+                this.state.runningInstancesCount
+              } Running Instances`}
+              onClick={this.props.expandFilters}
             >
-              <span>Instances</span>
+              <span>Running Instances</span>
               <Styled.RunningInstancesBadge>
                 {this.state.runningInstancesCount}
               </Styled.RunningInstancesBadge>
@@ -132,9 +154,10 @@ class Header extends React.Component {
           </li>
           <li data-test="header-link-filters">
             <Styled.ListLink
-              isActive={isInstancesPage}
-              to={`/instances${getFilterQueryString(this.state.filter)}`}
-              title={`${this.state.filterCount} Filters`}
+              isActive={!this.props.isFiltersCollapsed}
+              to={`/instances${filterQuery}`}
+              title={`View ${this.state.filterCount} Instances in Filters`}
+              onClick={this.props.expandFilters}
             >
               <span>Filters</span>
               <Styled.FiltersBadge type="filters">
@@ -142,13 +165,27 @@ class Header extends React.Component {
               </Styled.FiltersBadge>
             </Styled.ListLink>
           </li>
+          <li data-test="header-link-incidents">
+            <Styled.ListLink
+              isActive={isIncidentsFilter}
+              to={`/instances${incidentsQuery}`}
+              title={`View ${this.state.incidentsCount} Incidents`}
+              onClick={this.props.expandFilters}
+            >
+              <span>Incidents</span>
+              <Styled.IncidentsBadge type="incidents">
+                {this.state.incidentsCount}
+              </Styled.IncidentsBadge>
+            </Styled.ListLink>
+          </li>
           <li data-test="header-link-selections">
             <Styled.ListLink
               to={`/instances${runningQuery}`}
-              title={`${this.state.selectionCount} ${
+              title={`View ${this.state.selectionCount} ${
                 this.state.instancesInSelectionsCount
               } Selections`}
-              isActive={isInstancesPage}
+              isActive={!this.props.isSelectionsCollapsed}
+              onClick={this.props.expandSelections}
             >
               <span>Selections</span>
               <ComboBadge>
@@ -159,18 +196,6 @@ class Header extends React.Component {
                   {this.state.instancesInSelectionsCount}
                 </Styled.SelectionBadgeRight>
               </ComboBadge>
-            </Styled.ListLink>
-          </li>
-          <li data-test="header-link-incidents">
-            <Styled.ListLink
-              isActive={isInstancesPage}
-              to={`/instances${incidentsQuery}`}
-              title={`${this.state.incidentsCount} Incidents`}
-            >
-              <span>Incidents</span>
-              <Styled.IncidentsBadge type="incidents">
-                {this.state.incidentsCount}
-              </Styled.IncidentsBadge>
             </Styled.ListLink>
           </li>
         </Styled.Menu>
@@ -190,4 +215,4 @@ class Header extends React.Component {
   }
 }
 
-export default withSharedState(Header);
+export default withCollapsablePanel(withSharedState(Header));

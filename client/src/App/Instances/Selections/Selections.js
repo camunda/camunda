@@ -80,7 +80,7 @@ export default class Selections extends React.Component {
             <Styled.CollapsablePanel
               type="selections"
               onCollapse={context.toggleSelections}
-              isCollapsed={context.selections}
+              isCollapsed={context.isSelectionsCollapsed}
               maxWidth={479}
               expandButton={
                 <Styled.VerticalButton label="Selections">
