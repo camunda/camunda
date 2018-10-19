@@ -24,6 +24,14 @@ export const Filters = styled.div`
   overflow: auto;
 `;
 
+export const FiltersHeader = styled(Panel.Header)`
+  display: flex;
+  justify-content: flex-start;
+
+  align-items: center;
+  flex-shrink: 0;
+`;
+
 export const Field = styled.div`
   padding: 10px 0;
 

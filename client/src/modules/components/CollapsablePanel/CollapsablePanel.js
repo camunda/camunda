@@ -54,7 +54,7 @@ export default class CollapsablePanel extends React.Component {
   }
 }
 
-CollapsablePanel.Header = Panel.Header;
+CollapsablePanel.Header = props => <Styled.Header {...props} />;
 
 CollapsablePanel.Body = Panel.Body;
 

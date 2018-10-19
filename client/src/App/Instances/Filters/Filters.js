@@ -183,10 +183,10 @@ export default class Filters extends React.Component {
               />
             }
           >
-            <CollapsablePanel.Header>
+            <Styled.FiltersHeader>
               Filters
               <Badge type={BADGE_TYPE.FILTERS}>{this.props.filterCount}</Badge>
-            </CollapsablePanel.Header>
+            </Styled.FiltersHeader>
             <CollapsablePanel.Body>
               <Styled.Filters>
                 {!isWorkflowsDataLoaded ? null : (

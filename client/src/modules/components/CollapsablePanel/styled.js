@@ -30,12 +30,13 @@ top: 0;
 left: 0;
 height: 100%;
 width 100%;
-transition: opacity 0.2s ease-out;
+transition: visibility 0.2s ease-out, opacity 0.2s ease-out;
 `;
 
 export const ExpandedPanel = styled(BasicPanel)`
   ${panelStyle}
   opacity: ${({isCollapsed}) => (isCollapsed ? '0' : '1')};
+  visibility: ${({isCollapsed}) => (isCollapsed ? 'hidden' : 'visible')};
   z-index: ${({isCollapsed}) => (isCollapsed ? '0' : '1')};
   border-radius: 3px 3px 0 0;
 `;
@@ -43,6 +44,7 @@ export const ExpandedPanel = styled(BasicPanel)`
 export const CollapsedPanel = styled(BasicPanel)`
   ${panelStyle}
   opacity: ${({isCollapsed}) => (isCollapsed ? '1' : '0')};
+  visibility: ${({isCollapsed}) => (isCollapsed ? 'visible' : 'hidden')};
   z-index: ${({isCollapsed}) => (isCollapsed ? '1' : '0')};
 `;
 

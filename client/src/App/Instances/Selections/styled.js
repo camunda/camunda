@@ -25,9 +25,7 @@ export const CollapsablePanel = styled(BasicCollapsablePanel)`
 export const SelectionHeader = styled(Panel.Header)`
   display: flex;
   justify-content: flex-start;
-
   padding-left: 45px;
-  display: flex;
   align-items: center;
   flex-shrink: 0;
   border-radius: 3px 0 0 0;
