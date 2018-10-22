@@ -23,7 +23,7 @@ import io.zeebe.UnstableTest;
 import io.zeebe.broker.Broker;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.snapshots.SnapshotReplicationService;
-import io.zeebe.broker.it.ClientRule;
+import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.system.configuration.DataCfg;
 import io.zeebe.logstreams.snapshot.SerializableWrapper;
 import io.zeebe.logstreams.spi.ReadableSnapshot;
@@ -59,7 +59,7 @@ public class SnapshotReplicationTest {
             data.setSnapshotPeriod("15m");
             data.setSnapshotReplicationPeriod("5ms");
           });
-  public ClientRule clientRule = new ClientRule(clusteringRule);
+  public GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
   @Rule
   public RuleChain ruleChain =

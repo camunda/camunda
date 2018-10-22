@@ -63,7 +63,7 @@ public class ClusteringRule extends ExternalResource {
       new RecordingExporterTestWatcher();
 
   // internal
-  private ZeebeClient zeebeClient;
+  private ZeebeClient gatewayClient;
   private TopologyClient topologyClient;
   private io.zeebe.client.ZeebeClient grpcClient;
 
@@ -115,13 +115,13 @@ public class ClusteringRule extends ExternalResource {
     }
 
     final BrokerCfg brokerCfg = brokerCfgs[0];
-    zeebeClient =
+    gatewayClient =
         ZeebeClient.newClientBuilder()
             .brokerContactPoint(brokerCfg.getNetwork().getClient().toSocketAddress().toString())
             .build();
 
-    closeables.add(zeebeClient);
-    topologyClient = new TopologyClient(((ZeebeClientImpl) zeebeClient).getTransport());
+    closeables.add(gatewayClient);
+    topologyClient = new TopologyClient(((ZeebeClientImpl) gatewayClient).getTransport());
 
     grpcClient =
         io.zeebe.client.ZeebeClient.newClientBuilder()
@@ -157,14 +157,6 @@ public class ClusteringRule extends ExternalResource {
     }
   }
 
-  public ZeebeClient getClient() {
-    return zeebeClient;
-  }
-
-  public io.zeebe.client.ZeebeClient getGrpcClient() {
-    return grpcClient;
-  }
-
   private void waitUntilBrokersInTopology(final BrokerCfg... brokerCfgs) {
     final Set<SocketAddress> addresses =
         Arrays.stream(brokerCfgs)
@@ -194,7 +186,7 @@ public class ClusteringRule extends ExternalResource {
     return doRepeatedly(
             () -> {
               final List<BrokerInfo> brokers =
-                  zeebeClient.newTopologyRequest().send().join().getBrokers();
+                  gatewayClient.newTopologyRequest().send().join().getBrokers();
               return extractPartitionLeader(brokers, partition);
             })
         .until(Optional::isPresent)
@@ -210,7 +202,7 @@ public class ClusteringRule extends ExternalResource {
     return doRepeatedly(
             () -> {
               final List<BrokerInfo> brokers =
-                  zeebeClient.newTopologyRequest().send().join().getBrokers();
+                  gatewayClient.newTopologyRequest().send().join().getBrokers();
               return extractPartitionFollower(brokers, partitionId);
             })
         .until(Optional::isPresent)
@@ -220,18 +212,6 @@ public class ClusteringRule extends ExternalResource {
   public SocketAddress getFollowerAddressForPartition(final int partition) {
     final BrokerInfo info = getFollowerForPartition(partition);
     return new SocketAddress(info.getHost(), info.getPort());
-  }
-
-  /** @return a node which is not leader of any partition, or null if none exist */
-  public Broker getFollowerOnly() {
-    for (final Broker broker : brokers) {
-      if (getBrokersLeadingPartitions(broker.getConfig().getNetwork().getClient().toSocketAddress())
-          .isEmpty()) {
-        return broker;
-      }
-    }
-
-    return null;
   }
 
   private Optional<BrokerInfo> extractPartitionLeader(
@@ -352,10 +332,6 @@ public class ClusteringRule extends ExternalResource {
     waitForPartitionReplicationFactor();
   }
 
-  public void restartBroker(final Broker broker) {
-    restartBroker(brokerId(broker));
-  }
-
   private int brokerId(final Broker broker) {
     return broker.getConfig().getCluster().getNodeId();
   }
@@ -378,7 +354,7 @@ public class ClusteringRule extends ExternalResource {
    * @return
    */
   public List<Integer> getBrokersLeadingPartitions(final SocketAddress socketAddress) {
-    return zeebeClient
+    return gatewayClient
         .newTopologyRequest()
         .send()
         .join()
@@ -398,7 +374,7 @@ public class ClusteringRule extends ExternalResource {
    * @return
    */
   public List<SocketAddress> getBrokersInCluster() {
-    return zeebeClient
+    return gatewayClient
         .newTopologyRequest()
         .send()
         .join()
@@ -445,7 +421,7 @@ public class ClusteringRule extends ExternalResource {
    */
   public long getPartitionLeaderCount() {
 
-    return zeebeClient
+    return gatewayClient
         .newTopologyRequest()
         .send()
         .join()
@@ -541,5 +517,13 @@ public class ClusteringRule extends ExternalResource {
 
   public SocketAddress getClientAddress() {
     return brokerCfgs[0].getNetwork().getClient().toSocketAddress();
+  }
+
+  public SocketAddress getGatewayAddress() {
+    return brokerCfgs[0].getNetwork().getGateway().toSocketAddress();
+  }
+
+  public ZeebeClient getGatewayClient() {
+    return gatewayClient;
   }
 }

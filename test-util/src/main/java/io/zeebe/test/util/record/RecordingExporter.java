@@ -51,7 +51,7 @@ public class RecordingExporter implements Exporter {
   private static final List<Record<?>> RECORDS = new CopyOnWriteArrayList<>();
 
   private static final Object EXPORT_MONITOR = new Object();
-  private static final long MAX_WAIT = Duration.ofSeconds(1).toMillis();
+  private static final long MAX_WAIT = Duration.ofSeconds(5).toMillis();
 
   @Override
   public void export(final Record record) {

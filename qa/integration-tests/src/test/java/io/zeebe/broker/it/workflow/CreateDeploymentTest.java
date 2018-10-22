@@ -15,17 +15,13 @@
  */
 package io.zeebe.broker.it.workflow;
 
-import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.gateway.api.commands.DeploymentResource;
-import io.zeebe.gateway.api.commands.ResourceType;
-import io.zeebe.gateway.api.commands.Workflow;
-import io.zeebe.gateway.api.events.DeploymentEvent;
-import io.zeebe.gateway.cmd.ClientCommandRejectedException;
+import io.zeebe.client.api.commands.Workflow;
+import io.zeebe.client.api.events.DeploymentEvent;
+import io.zeebe.client.cmd.ClientException;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import org.junit.Rule;
@@ -35,12 +31,9 @@ import org.junit.rules.RuleChain;
 
 public class CreateDeploymentTest {
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientRule clientRule = new ClientRule(brokerRule);
-  public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
+  public GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
 
-  @Rule
-  public RuleChain ruleChain =
-      RuleChain.outerRule(brokerRule).around(clientRule).around(eventRecorder);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   @Rule public ExpectedException exception = ExpectedException.none();
 
@@ -59,15 +52,7 @@ public class CreateDeploymentTest {
             .join();
 
     // then
-    assertThat(result.getMetadata().getKey()).isGreaterThan(0);
-    assertThat(result.getResources()).hasSize(1);
-
-    final DeploymentResource deployedResource = result.getResources().get(0);
-    assertThat(deployedResource.getResource())
-        .isEqualTo(Bpmn.convertToString(workflow).getBytes(UTF_8));
-    assertThat(deployedResource.getResourceType()).isEqualTo(ResourceType.BPMN_XML);
-    assertThat(deployedResource.getResourceName()).isEqualTo("workflow.bpmn");
-
+    assertThat(result.getKey()).isGreaterThan(0);
     assertThat(result.getWorkflows()).hasSize(1);
 
     final Workflow deployedWorkflow = result.getWorkflows().get(0);
@@ -80,7 +65,7 @@ public class CreateDeploymentTest {
   @Test
   public void shouldNotDeployUnparsableModel() {
     // then
-    exception.expect(ClientCommandRejectedException.class);
+    exception.expect(ClientException.class);
     exception.expectMessage("Failed to deploy resource 'invalid.bpmn'");
 
     // when
@@ -95,7 +80,7 @@ public class CreateDeploymentTest {
   @Test
   public void shouldNotDeployInvalidModel() throws Exception {
     // then
-    exception.expect(ClientCommandRejectedException.class);
+    exception.expect(ClientException.class);
     exception.expectMessage("Must have exactly one start event");
 
     // when
@@ -117,7 +102,7 @@ public class CreateDeploymentTest {
         Bpmn.createProcess("not-executable").startEvent().endEvent().done();
 
     // then
-    exception.expect(ClientCommandRejectedException.class);
+    exception.expect(ClientException.class);
     exception.expectMessage("Must contain at least one executable process");
 
     // when
@@ -141,14 +126,7 @@ public class CreateDeploymentTest {
             .join();
 
     // then
-    assertThat(result.getMetadata().getKey()).isGreaterThan(0);
-
-    assertThat(result.getResources()).hasSize(1);
-
-    final DeploymentResource deployedResource = result.getResources().get(0);
-    assertThat(deployedResource.getResourceType()).isEqualTo(ResourceType.YAML_WORKFLOW);
-    assertThat(deployedResource.getResourceName()).isEqualTo("workflows/simple-workflow.yaml");
-
+    assertThat(result.getKey()).isGreaterThan(0);
     assertThat(result.getWorkflows()).hasSize(1);
 
     final Workflow deployedWorkflow = result.getWorkflows().get(0);

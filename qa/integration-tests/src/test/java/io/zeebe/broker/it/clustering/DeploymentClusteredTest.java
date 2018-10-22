@@ -15,14 +15,13 @@
  */
 package io.zeebe.broker.it.clustering;
 
+import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertWorkflowInstanceCreated;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.it.ClientRule;
-import io.zeebe.gateway.ZeebeClient;
-import io.zeebe.gateway.api.events.DeploymentEvent;
-import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
-import io.zeebe.gateway.api.events.WorkflowInstanceState;
-import io.zeebe.gateway.cmd.ClientCommandRejectedException;
+import io.zeebe.broker.it.GrpcClientRule;
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.events.DeploymentEvent;
+import io.zeebe.client.cmd.ClientException;
 import io.zeebe.gateway.impl.workflow.CreateWorkflowInstanceCommandImpl;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -42,7 +41,7 @@ public class DeploymentClusteredTest {
 
   public Timeout testTimeout = Timeout.seconds(60);
   public ClusteringRule clusteringRule = new ClusteringRule();
-  public ClientRule clientRule = new ClientRule(clusteringRule);
+  public GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
   @Rule
   public RuleChain ruleChain =
@@ -91,16 +90,17 @@ public class DeploymentClusteredTest {
 
     // then
     for (int p = 0; p < PARTITION_COUNT; p++) {
-      final WorkflowInstanceEvent workflowInstanceEvent =
+      final long workflowInstanceKey =
           client
               .workflowClient()
               .newCreateInstanceCommand()
               .bpmnProcessId("process")
               .latestVersion()
               .send()
-              .join();
+              .join()
+              .getWorkflowInstanceKey();
 
-      assertThat(workflowInstanceEvent.getState()).isEqualTo(WorkflowInstanceState.CREATED);
+      assertWorkflowInstanceCreated(workflowInstanceKey);
     }
   }
 
@@ -150,25 +150,23 @@ public class DeploymentClusteredTest {
         .stream()
         .forEach(
             partitionId -> {
-              final WorkflowInstanceEvent workflowInstanceEvent =
-                  createWorkflowInstanceOnPartition(partitionId, "process");
-
-              assertThat(workflowInstanceEvent.getState()).isEqualTo(WorkflowInstanceState.CREATED);
+              final long instanceKey = createWorkflowInstanceOnPartition(partitionId, "process");
+              assertWorkflowInstanceCreated(instanceKey);
             });
   }
 
-  protected WorkflowInstanceEvent createWorkflowInstanceOnPartition(
-      final int partition, final String processId) {
+  protected long createWorkflowInstanceOnPartition(final int partition, final String processId) {
     final CreateWorkflowInstanceCommandImpl command =
         (CreateWorkflowInstanceCommandImpl)
-            client
+            clusteringRule
+                .getGatewayClient()
                 .workflowClient()
                 .newCreateInstanceCommand()
                 .bpmnProcessId(processId)
                 .latestVersion();
 
     command.getCommand().setPartitionId(partition);
-    return command.send().join();
+    return command.send().join().getWorkflowInstanceKey();
   }
 
   @Test
@@ -195,7 +193,7 @@ public class DeploymentClusteredTest {
   @Test
   public void shouldNotDeployUnparsable() {
     // expect
-    expectedException.expect(ClientCommandRejectedException.class);
+    expectedException.expect(ClientException.class);
     expectedException.expectMessage("Command (CREATE) was rejected");
     expectedException.expectMessage("Failed to deploy resource 'invalid.bpmn'");
     expectedException.expectMessage("SAXException while parsing input stream");

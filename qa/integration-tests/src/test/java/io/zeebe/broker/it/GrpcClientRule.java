@@ -53,7 +53,7 @@ public class GrpcClientRule extends ExternalResource {
   }
 
   public GrpcClientRule(final ClusteringRule clusteringRule) {
-    this(config -> config.brokerContactPoint(clusteringRule.getClientAddress().toString()));
+    this(config -> config.brokerContactPoint(clusteringRule.getGatewayAddress().toString()));
   }
 
   private GrpcClientRule(final Consumer<ZeebeClientBuilder> configurator) {
