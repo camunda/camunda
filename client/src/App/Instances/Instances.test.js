@@ -268,6 +268,10 @@ describe('Instances', () => {
             node.instance(),
             'setFilterInURL'
           );
+          const resetSelectionsSpy = jest.spyOn(
+            node.instance(),
+            'resetSelections'
+          );
           node.instance().handleFilterChange({active: false});
 
           // then
@@ -275,8 +279,10 @@ describe('Instances', () => {
             active: false,
             incidents: true
           });
+          expect(resetSelectionsSpy).toHaveBeenCalled();
 
           setFilterInURLSpy.mockRestore();
+          resetSelectionsSpy.mockRestore();
         });
 
         it('should not update the url when a value is similar', async () => {
@@ -321,16 +327,25 @@ describe('Instances', () => {
             node.instance(),
             'setFilterInURL'
           );
+          const resetSelectionsSpy = jest.spyOn(
+            node.instance(),
+            'resetSelections'
+          );
 
           // when
           node.instance().handleFilterReset();
 
           // then
           expect(setFilterInURLlSpy).toHaveBeenCalledWith(DEFAULT_FILTER);
+          expect(resetSelectionsSpy).toHaveBeenCalled();
           expect(storeStateLocallyMock).toHaveBeenCalledWith({
             filter: DEFAULT_FILTER
           });
           expect(node.state().workflow).toEqual(null);
+
+          resetSelectionsSpy.mockRestore();
+          setFilterInURLlSpy.mockRestore();
+          storeStateLocallyMock.mockRestore();
         });
       });
 
@@ -498,6 +513,7 @@ describe('Instances', () => {
 
         // then
         expect(fetchDiagramStatistics).toHaveBeenCalledTimes(1);
+        fetchDiagramStatistics.mockRestore();
       });
 
       it('should fetch diagram statistics when activityId in filter changes', async () => {
@@ -538,6 +554,7 @@ describe('Instances', () => {
 
         // then
         expect(fetchDiagramStatistics).toHaveBeenCalledTimes(1);
+        fetchDiagramStatistics.mockRestore();
       });
     });
 
@@ -559,6 +576,8 @@ describe('Instances', () => {
         // then
         expect(handleFilterChange).toHaveBeenCalledTimes(1);
         expect(handleFilterChange.mock.calls[0][0].activityId).toEqual('taskA');
+
+        handleFilterChange.mockRestore();
       });
 
       it('should pass the handler for node selection to the diagram', async () => {

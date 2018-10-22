@@ -373,11 +373,11 @@ class Instances extends Component {
     if (hasNewValue) {
       const filter = {...this.state.filter, ...newFilter};
       this.setFilterInURL(filter);
+      this.resetSelections();
     }
   };
 
   setFilterInURL = filter => {
-    this.setState({selection: {all: false, ids: [], excludeIds: []}});
     this.props.history.push({
       pathname: this.props.location.pathname,
       search: getFilterQueryString(filter)
@@ -394,6 +394,12 @@ class Instances extends Component {
 
     // reset filter in local storage
     this.props.storeStateLocally({filter: DEFAULT_FILTER});
+
+    this.resetSelections();
+  };
+
+  resetSelections = () => {
+    this.setState({selection: {all: false, ids: [], excludeIds: []}});
   };
 
   handleFlowNodeSelection = flowNodeId => {
