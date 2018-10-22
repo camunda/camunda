@@ -156,6 +156,7 @@ public class SimpleEngineClient {
       }
     } catch (Exception e) {
       logger.error("Error during start of process instance!");
+      throw new RuntimeException(e);
     } finally {
       closeResponse(response);
     }
