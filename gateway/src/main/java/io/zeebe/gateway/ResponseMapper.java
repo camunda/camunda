@@ -227,8 +227,8 @@ public class ResponseMapper {
         .setBpmnProcessId(bufferAsString(headers.getBpmnProcessId()))
         .setWorkflowDefinitionVersion(headers.getWorkflowDefinitionVersion())
         .setWorkflowKey(headers.getWorkflowKey())
-        .setActivityId(bufferAsString(headers.getActivityId()))
-        .setActivityInstanceKey(headers.getActivityInstanceKey())
+        .setElementId(bufferAsString(headers.getElementId()))
+        .setElementInstanceKey(headers.getElementInstanceKey())
         .build();
   }
 

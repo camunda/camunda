@@ -17,9 +17,9 @@ package io.zeebe.exporter.record.value.job;
 
 /** represents broker-defined headers associated with this job */
 public interface Headers {
-  String getActivityId();
+  String getElementId();
 
-  long getActivityInstanceKey();
+  long getElementInstanceKey();
 
   String getBpmnProcessId();
 

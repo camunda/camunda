@@ -38,8 +38,8 @@ public class ActivateJobsStub
   public static final String BPMN_PROCESS_ID = "stubProcess";
   public static final int WORKFLOW_DEFINITION_VERSION = 23;
   public static final long WORKFLOW_KEY = 4532L;
-  public static final String ACTIVITY_ID = "stubActivity";
-  public static final long ACTIVITY_INSTANCE_KEY = 459L;
+  public static final String ELEMENT_ID = "stubActivity";
+  public static final long ELEMENT_INSTANCE_KEY = 459L;
 
   public static final String CUSTOM_HEADERS = "{\"foo\": 12, \"bar\": \"val\"}";
   public static final String PAYLOAD = "{\"foo\": 13, \"bar\": \"world\"}";
@@ -85,12 +85,12 @@ public class ActivateJobsStub
     return WORKFLOW_KEY;
   }
 
-  public String getActivityId() {
-    return ACTIVITY_ID;
+  public String getElementId() {
+    return ELEMENT_ID;
   }
 
-  public long getActivityInstanceKey() {
-    return ACTIVITY_INSTANCE_KEY;
+  public long getElementInstanceKey() {
+    return ELEMENT_INSTANCE_KEY;
   }
 
   @Override
@@ -127,8 +127,8 @@ public class ActivateJobsStub
                   .setBpmnProcessId(BPMN_PROCESS_ID)
                   .setWorkflowDefinitionVersion(WORKFLOW_DEFINITION_VERSION)
                   .setWorkflowKey(WORKFLOW_KEY)
-                  .setActivityId(ACTIVITY_ID)
-                  .setActivityInstanceKey(ACTIVITY_INSTANCE_KEY);
+                  .setElementId(ELEMENT_ID)
+                  .setElementInstanceKey(ELEMENT_INSTANCE_KEY);
             });
   }
 

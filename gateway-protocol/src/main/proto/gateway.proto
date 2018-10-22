@@ -173,8 +173,8 @@ message JobHeaders {
   string bpmnProcessId = 2;
   int32 workflowDefinitionVersion = 3;
   int64 workflowKey = 4;
-  string activityId = 5;
-  int64 activityInstanceKey = 6;
+  string elementId = 5;
+  int64 elementInstanceKey = 6;
 }
 
 message ActivatedJob {

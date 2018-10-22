@@ -376,8 +376,8 @@ public class IncidentStreamProcessor {
             .setFailureEventPosition(event.getPosition())
             .setBpmnProcessId(jobHeaders.getBpmnProcessId())
             .setWorkflowInstanceKey(jobHeaders.getWorkflowInstanceKey())
-            .setElementId(jobHeaders.getActivityId())
-            .setElementInstanceKey(jobHeaders.getActivityInstanceKey())
+            .setElementId(jobHeaders.getElementId())
+            .setElementInstanceKey(jobHeaders.getElementInstanceKey())
             .setJobKey(event.getKey());
 
         failedJobMap.put(event.getKey(), NON_PERSISTENT_INCIDENT);

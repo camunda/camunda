@@ -376,8 +376,8 @@ public class ActivateJobsTest {
                 (long) jobRecordHeaders.getWorkflowDefinitionVersion()),
             entry("workflowKey", jobRecordHeaders.getWorkflowKey()),
             entry("workflowInstanceKey", jobRecordHeaders.getWorkflowInstanceKey()),
-            entry("activityId", jobRecordHeaders.getActivityId()),
-            entry("activityInstanceKey", jobRecordHeaders.getActivityInstanceKey()));
+            entry("elementId", jobRecordHeaders.getElementId()),
+            entry("elementInstanceKey", jobRecordHeaders.getElementInstanceKey()));
 
     final Map<String, Object> customHeaders = (Map<String, Object>) value.get("customHeaders");
     assertThat(customHeaders).isEqualTo(jobRecord.getValue().getCustomHeaders());

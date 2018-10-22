@@ -460,8 +460,8 @@ public class ExporterStreamProcessorTest {
         .setWorkflowKey(workflowKey)
         .setWorkflowDefinitionVersion(workflowDefinitionVersion)
         .setWorkflowInstanceKey(workflowInstanceKey)
-        .setActivityId(wrapString(elementId))
-        .setActivityInstanceKey(activityInstanceKey);
+        .setElementId(wrapString(elementId))
+        .setElementInstanceKey(activityInstanceKey);
 
     record.setCustomHeaders(CUSTOM_HEADERS_MSGPACK);
 
@@ -642,8 +642,8 @@ public class ExporterStreamProcessorTest {
         .setWorkflowKey(workflowKey)
         .setWorkflowDefinitionVersion(workflowDefinitionVersion)
         .setWorkflowInstanceKey(workflowInstanceKey)
-        .setActivityId(wrapString(activityId))
-        .setActivityInstanceKey(activityInstanceKey);
+        .setElementId(wrapString(activityId))
+        .setElementInstanceKey(activityInstanceKey);
 
     final JobRecordValueImpl jobRecordValue =
         new JobRecordValueImpl(

@@ -164,8 +164,8 @@ public class ExporterRecordMapper {
     final HeadersImpl headers =
         new HeadersImpl(
             asString(jobHeaders.getBpmnProcessId()),
-            asString(jobHeaders.getActivityId()),
-            jobHeaders.getActivityInstanceKey(),
+            asString(jobHeaders.getElementId()),
+            jobHeaders.getElementInstanceKey(),
             jobHeaders.getWorkflowInstanceKey(),
             jobHeaders.getWorkflowKey(),
             jobHeaders.getWorkflowDefinitionVersion());

@@ -119,6 +119,7 @@ public class ServiceTaskTest {
     waitUntil(() -> recordingJobHandler.getHandledJobs().size() >= 1);
 
     assertThat(recordingJobHandler.getHandledJobs()).hasSize(1);
+
     final Record<WorkflowInstanceRecordValue> record =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
             .withElementId("task")
@@ -132,8 +133,8 @@ public class ServiceTaskTest {
     assertThat(headers.getWorkflowKey()).isEqualTo(workflowInstance.getWorkflowKey());
     assertThat(headers.getWorkflowInstanceKey())
         .isEqualTo(workflowInstance.getWorkflowInstanceKey());
-    assertThat(headers.getActivityId()).isEqualTo("task");
-    assertThat(headers.getActivityInstanceKey()).isEqualTo(record.getKey());
+    assertThat(headers.getElementId()).isEqualTo("task");
+    assertThat(headers.getElementInstanceKey()).isEqualTo(record.getKey());
 
     assertThat(jobEvent.getCustomHeaders()).containsOnly(entry("cust1", "a"), entry("cust2", "b"));
   }

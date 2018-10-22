@@ -22,22 +22,22 @@ import java.util.Objects;
 
 public class HeadersImpl implements Headers {
   private final String bpmnProcessId;
-  private final String activityId;
-  private final long activityInstanceKey;
+  private final String elementId;
+  private final long elementInstanceKey;
   private final long workflowInstanceKey;
   private final long workflowKey;
   private final int workflowDefinitionVersion;
 
   public HeadersImpl(
       final String bpmnProcessId,
-      final String activityId,
-      final long activityInstanceKey,
+      final String elementId,
+      final long elementInstanceKey,
       final long workflowInstanceKey,
       final long workflowKey,
       final int workflowDefinitionVersion) {
     this.bpmnProcessId = bpmnProcessId;
-    this.activityId = activityId;
-    this.activityInstanceKey = activityInstanceKey;
+    this.elementId = elementId;
+    this.elementInstanceKey = elementInstanceKey;
     this.workflowInstanceKey = workflowInstanceKey;
     this.workflowKey = workflowKey;
     this.workflowDefinitionVersion = workflowDefinitionVersion;
@@ -49,13 +49,13 @@ public class HeadersImpl implements Headers {
   }
 
   @Override
-  public String getActivityId() {
-    return activityId;
+  public String getElementId() {
+    return elementId;
   }
 
   @Override
-  public long getActivityInstanceKey() {
-    return activityInstanceKey;
+  public long getElementInstanceKey() {
+    return elementInstanceKey;
   }
 
   @Override
@@ -82,20 +82,20 @@ public class HeadersImpl implements Headers {
       return false;
     }
     final HeadersImpl headers = (HeadersImpl) o;
-    return activityInstanceKey == headers.activityInstanceKey
+    return elementInstanceKey == headers.elementInstanceKey
         && workflowInstanceKey == headers.workflowInstanceKey
         && workflowKey == headers.workflowKey
         && workflowDefinitionVersion == headers.workflowDefinitionVersion
         && Objects.equals(bpmnProcessId, headers.bpmnProcessId)
-        && Objects.equals(activityId, headers.activityId);
+        && Objects.equals(elementId, headers.elementId);
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(
         bpmnProcessId,
-        activityId,
-        activityInstanceKey,
+        elementId,
+        elementInstanceKey,
         workflowInstanceKey,
         workflowKey,
         workflowDefinitionVersion);
@@ -108,10 +108,10 @@ public class HeadersImpl implements Headers {
         + bpmnProcessId
         + '\''
         + ", activityId='"
-        + activityId
+        + elementId
         + '\''
         + ", activityInstanceKey="
-        + activityInstanceKey
+        + elementInstanceKey
         + ", workflowInstanceKey="
         + workflowInstanceKey
         + ", workflowKey="

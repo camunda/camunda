@@ -91,7 +91,7 @@ public class EmbeddedSubProcessTest {
     MsgPackUtil.assertEquality(payload, jobCreatedEvent.getValue().getPayload());
 
     final Headers headers = jobCreatedEvent.getValue().getHeaders();
-    Assertions.assertThat(headers).hasActivityId("subProcessTask");
+    Assertions.assertThat(headers).hasElementId("subProcessTask");
   }
 
   @Test
@@ -204,7 +204,7 @@ public class EmbeddedSubProcessTest {
         testClient.receiveFirstJobEvent(JobIntent.CREATED);
 
     final Headers headers = jobCreatedEvent.getValue().getHeaders();
-    Assertions.assertThat(headers).hasActivityId("task");
+    Assertions.assertThat(headers).hasElementId("task");
   }
 
   @Test

@@ -34,16 +34,16 @@ public class JobHeaders extends UnpackedObject {
   private final IntegerProperty workflowDefinitionVersionProp =
       new IntegerProperty("workflowDefinitionVersion", -1);
   private final LongProperty workflowKeyProp = new LongProperty("workflowKey", -1L);
-  private final StringProperty activityIdProp = new StringProperty("activityId", EMPTY_STRING);
-  private final LongProperty activityInstanceKeyProp = new LongProperty("activityInstanceKey", -1L);
+  private final StringProperty elementIdProp = new StringProperty("elementId", EMPTY_STRING);
+  private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
 
   public JobHeaders() {
     this.declareProperty(bpmnProcessIdProp)
         .declareProperty(workflowDefinitionVersionProp)
         .declareProperty(workflowKeyProp)
         .declareProperty(workflowInstanceKeyProp)
-        .declareProperty(activityIdProp)
-        .declareProperty(activityInstanceKeyProp);
+        .declareProperty(elementIdProp)
+        .declareProperty(elementInstanceKeyProp);
   }
 
   public long getWorkflowInstanceKey() {
@@ -55,21 +55,21 @@ public class JobHeaders extends UnpackedObject {
     return this;
   }
 
-  public DirectBuffer getActivityId() {
-    return activityIdProp.getValue();
+  public DirectBuffer getElementId() {
+    return elementIdProp.getValue();
   }
 
-  public JobHeaders setActivityId(String activityId) {
-    this.activityIdProp.setValue(activityId);
+  public JobHeaders setElementId(String elementId) {
+    this.elementIdProp.setValue(elementId);
     return this;
   }
 
-  public JobHeaders setActivityId(DirectBuffer activityId) {
-    return setActivityId(activityId, 0, activityId.capacity());
+  public JobHeaders setElementId(DirectBuffer elementId) {
+    return setElementId(elementId, 0, elementId.capacity());
   }
 
-  public JobHeaders setActivityId(DirectBuffer activityId, int offset, int length) {
-    this.activityIdProp.setValue(activityId, offset, length);
+  public JobHeaders setElementId(DirectBuffer activityId, int offset, int length) {
+    this.elementIdProp.setValue(activityId, offset, length);
     return this;
   }
 
@@ -96,12 +96,12 @@ public class JobHeaders extends UnpackedObject {
     return this;
   }
 
-  public long getActivityInstanceKey() {
-    return activityInstanceKeyProp.getValue();
+  public long getElementInstanceKey() {
+    return elementInstanceKeyProp.getValue();
   }
 
-  public JobHeaders setActivityInstanceKey(long activityInstanceKey) {
-    this.activityInstanceKeyProp.setValue(activityInstanceKey);
+  public JobHeaders setElementInstanceKey(long elementInstanceKey) {
+    this.elementInstanceKeyProp.setValue(elementInstanceKey);
     return this;
   }
 
