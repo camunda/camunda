@@ -30,7 +30,6 @@ import io.zeebe.broker.TestLoggers;
 import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.broker.system.configuration.TomlConfigurationReader;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.servicecontainer.Injector;
@@ -44,6 +43,7 @@ import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.FileUtil;
+import io.zeebe.util.TomlConfigurationReader;
 import io.zeebe.util.allocation.DirectBufferAllocator;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.io.File;
@@ -192,7 +192,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
         if (configStream == null) {
           brokerCfg = new BrokerCfg();
         } else {
-          brokerCfg = TomlConfigurationReader.read(configStream);
+          brokerCfg = TomlConfigurationReader.read(configStream, BrokerCfg.class);
         }
         configureBroker(brokerCfg);
       } catch (final IOException e) {

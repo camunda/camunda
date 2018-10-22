@@ -20,6 +20,7 @@ package io.zeebe.broker.system.configuration;
 import com.google.gson.GsonBuilder;
 import io.zeebe.gossip.GossipConfiguration;
 import io.zeebe.raft.RaftConfiguration;
+import io.zeebe.util.Environment;
 import java.util.ArrayList;
 import java.util.List;
 

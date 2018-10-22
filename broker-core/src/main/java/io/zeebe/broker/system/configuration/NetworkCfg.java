@@ -20,6 +20,8 @@ package io.zeebe.broker.system.configuration;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_HOST;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_PORT_OFFSET;
 
+import io.zeebe.util.Environment;
+
 public class NetworkCfg implements ConfigurationEntry {
 
   public static final String DEFAULT_HOST = "0.0.0.0";

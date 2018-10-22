@@ -15,12 +15,25 @@
  */
 package io.zeebe.util;
 
+import com.moandjiezana.toml.Toml;
+import java.io.File;
+import java.io.InputStream;
 import org.slf4j.Logger;
 
-public class Loggers {
+public class TomlConfigurationReader {
+  public static final Logger LOG = Loggers.CONFIG_LOGGER;
 
-  public static final Logger CONFIG_LOGGER = new ZbLogger("io.zeebe.util.config");
-  public static final Logger ACTOR_LOGGER = new ZbLogger("io.zeebe.util.actor");
-  public static final Logger IO_LOGGER = new ZbLogger("io.zeebe.util.buffer");
-  public static final Logger FILE_LOGGER = new ZbLogger("io.zeebe.util.fs");
+  public static <T> T read(String filePath, Class<T> type) {
+    final File file = new File(filePath);
+
+    LOG.info("Reading configuration for class {} from file {} ", type, file.getAbsolutePath());
+
+    return new Toml().read(file).to(type);
+  }
+
+  public static <T> T read(InputStream configStream, Class<T> type) {
+    LOG.info("Reading configuration for class {} from input stream", type);
+
+    return new Toml().read(configStream).to(type);
+  }
 }
