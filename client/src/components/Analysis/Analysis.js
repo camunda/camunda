@@ -62,31 +62,25 @@ export default class Analysis extends React.Component {
           updateSelection={this.updateSelection}
           xml={xml}
         />
-        <div className="Analysis__diagram">
-          {xml && (
-            <BPMNDiagram xml={xml}>
-              <DiagramBehavior
-                hoveredControl={hoveredControl}
-                hoveredNode={hoveredNode}
-                updateHover={this.updateHoveredNode}
-                updateSelection={this.updateSelection}
-                gateway={gateway}
-                endEvent={endEvent}
-                data={data}
-                setViewer={this.setViewer}
-              />
-            </BPMNDiagram>
-          )}
+        <div className="content">
+          <div className="Analysis__diagram">
+            {xml && (
+              <BPMNDiagram xml={xml}>
+                <DiagramBehavior
+                  hoveredControl={hoveredControl}
+                  hoveredNode={hoveredNode}
+                  updateHover={this.updateHoveredNode}
+                  updateSelection={this.updateSelection}
+                  gateway={gateway}
+                  endEvent={endEvent}
+                  data={data}
+                  setViewer={this.setViewer}
+                />
+              </BPMNDiagram>
+            )}
+          </div>
+          <Statistics gateway={gateway} endEvent={endEvent} config={config} viewer={this.viewer} />
         </div>
-        {gateway &&
-          endEvent && (
-            <Statistics
-              gateway={gateway}
-              endEvent={endEvent}
-              config={config}
-              viewer={this.viewer}
-            />
-          )}
       </div>
     );
   }

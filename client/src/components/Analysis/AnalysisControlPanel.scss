@@ -2,11 +2,12 @@
   background-color: #f4f4f4;
   border-radius: 8px;
   border: 1px solid #dfdfdf;
-  padding: 12px 12px 0 12px;
+  padding: 12px;
 }
 
 .AnalysisControlPanel__popover {
-  width: 100%;
+  display: inline-block;
+  margin: 0 0.5em;
 }
 
 .AnalysisControlPanel__list {
@@ -20,7 +21,6 @@
   display: inline-block;
   position: relative;
   padding-right: 20px;
-  margin-bottom: 24px;
 
   .Labeled .label {
     color: #626262;
@@ -45,6 +45,8 @@
 
 .AnalysisControlPanel__config {
   cursor: default;
+  display: inline-block;
+  margin: 0 0.5em;
 }
 
 .AnalysisControlPanel__config--hover .ActionItem {

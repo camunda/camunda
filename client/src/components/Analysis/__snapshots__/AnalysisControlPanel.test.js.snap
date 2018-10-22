@@ -1,0 +1,97 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should display a sentence to describe what the user can do on this page 1`] = `
+<AnalysisControlPanel
+  filter={null}
+  processDefinitionKey=""
+  processDefinitionVersion=""
+  xml={null}
+>
+  <div
+    className="AnalysisControlPanel"
+  >
+    <ul
+      className="AnalysisControlPanel__list"
+    >
+      <li
+        className="AnalysisControlPanel__item"
+      >
+        For
+        <Popover
+          className="AnalysisControlPanel__popover"
+          title="Select Process Definition"
+        >
+          <div>
+            Select Process Definition
+             
+            <ProcessDefinitionSelection
+              onChange={undefined}
+              processDefinitionKey=""
+              processDefinitionVersion=""
+              xml={null}
+            >
+              <div>
+                ProcessDefinitionSelection
+              </div>
+            </ProcessDefinitionSelection>
+          </div>
+        </Popover>
+        analyse how the branches of
+        <div
+          className="AnalysisControlPanel__config"
+          name="AnalysisControlPanel__gateway"
+          onMouseOut={[Function]}
+          onMouseOver={[Function]}
+        >
+          <ActionItem
+            disabled={true}
+            onClick={[Function]}
+          >
+            <button
+              disabled={true}
+              id="actionItem"
+              onClick={[Function]}
+            >
+              Please Select Gateway
+            </button>
+          </ActionItem>
+        </div>
+        affect the probability that an instance reached
+        <div
+          className="AnalysisControlPanel__config"
+          name="AnalysisControlPanel__endEvent"
+          onMouseOut={[Function]}
+          onMouseOver={[Function]}
+        >
+          <ActionItem
+            disabled={true}
+            onClick={[Function]}
+          >
+            <button
+              disabled={true}
+              id="actionItem"
+              onClick={[Function]}
+            >
+              Please Select End Event
+            </button>
+          </ActionItem>
+        </div>
+      </li>
+      <li
+        className="AnalysisControlPanel__item AnalysisControlPanel__item--filter"
+      >
+        <Filter
+          data={null}
+          flowNodeNames={null}
+          onChange={undefined}
+          processDefinitionKey=""
+          processDefinitionVersion=""
+          xml={null}
+        >
+          Filter
+        </Filter>
+      </li>
+    </ul>
+  </div>
+</AnalysisControlPanel>
+`;

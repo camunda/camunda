@@ -1,5 +1,7 @@
 import React from 'react';
 
+import {getDiagramElementsBetween} from 'services';
+
 import './DiagramBehavior.css';
 
 export default class DiagramBehavior extends React.Component {
@@ -11,7 +13,10 @@ export default class DiagramBehavior extends React.Component {
       const canvas = viewer.get('canvas');
 
       // remove existing selection markers and indicate selectable status for all flownodes
-      elementRegistry.forEach(({businessObject}) => {
+      elementRegistry.forEach(element => {
+        canvas.removeMarker(element, 'analysis-part-highlight');
+
+        const {businessObject} = element;
         if (this.isValidNode(businessObject)) {
           canvas.removeMarker(businessObject.id, 'DiagramBehavior__highlight');
           canvas.removeMarker(businessObject.id, 'DiagramBehavior__selected');
@@ -37,6 +42,11 @@ export default class DiagramBehavior extends React.Component {
       }
       if (data && hoveredNode && hoveredNode.$instanceOf('bpmn:EndEvent')) {
         this.addEndEventOverlay(hoveredNode);
+      }
+
+      if (gateway && endEvent) {
+        const reachableNodes = getDiagramElementsBetween(gateway, endEvent, viewer);
+        reachableNodes.forEach(id => canvas.addMarker(id, 'analysis-part-highlight'));
       }
     }
 
@@ -78,7 +88,10 @@ export default class DiagramBehavior extends React.Component {
     const canvas = viewer.get('canvas');
 
     // remove existing selection markers
-    elementRegistry.forEach(({businessObject}) => {
+    elementRegistry.forEach(element => {
+      canvas.removeMarker(element, 'analysis-part-highlight');
+
+      const {businessObject} = element;
       if (this.isValidNode(businessObject)) {
         canvas.removeMarker(businessObject.id, 'DiagramBehavior__highlight');
         canvas.removeMarker(businessObject.id, 'DiagramBehavior__selected');

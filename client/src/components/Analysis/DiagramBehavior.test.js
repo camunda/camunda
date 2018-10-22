@@ -1,7 +1,15 @@
 import React from 'react';
-import {mount} from 'enzyme';
+import {shallow} from 'enzyme';
+
+import {getDiagramElementsBetween} from 'services';
 
 import DiagramBehavior from './DiagramBehavior';
+
+jest.mock('services', () => {
+  return {
+    getDiagramElementsBetween: jest.fn()
+  };
+});
 
 const viewer = {
   get: jest.fn().mockReturnThis(),
@@ -38,7 +46,7 @@ const props = {
 };
 
 it('should add an end event overlay if an endEvent is selected', () => {
-  mount(<DiagramBehavior {...props} endEvent={{id: 'endEvent'}} />);
+  shallow(<DiagramBehavior {...props} endEvent={{id: 'endEvent'}} />);
 
   expect(viewer.add).toHaveBeenCalled();
   expect(viewer.add.mock.calls[0][0]).toBe('endEvent');
@@ -47,7 +55,7 @@ it('should add an end event overlay if an endEvent is selected', () => {
 it('should add an overlay if an endEvent is hovered', () => {
   viewer.add.mockClear();
 
-  mount(
+  shallow(
     <DiagramBehavior
       {...props}
       hoveredNode={{
@@ -64,7 +72,7 @@ it('should add an overlay if an endEvent is hovered', () => {
 it('should call the update hover state function', () => {
   viewer.on.mockClear();
   const spy = jest.fn();
-  mount(<DiagramBehavior {...props} updateHover={spy} />);
+  shallow(<DiagramBehavior {...props} updateHover={spy} />);
 
   const element = {
     businessObject: {
@@ -80,7 +88,7 @@ it('should call the update hover state function', () => {
 it('should call the update selection state function', () => {
   viewer.on.mockClear();
   const spy = jest.fn();
-  mount(<DiagramBehavior {...props} updateSelection={spy} />);
+  shallow(<DiagramBehavior {...props} updateSelection={spy} />);
 
   const gateway = {
     businessObject: {
@@ -112,7 +120,7 @@ it('should deselct a selected element when clicking on it', () => {
     }
   };
 
-  mount(<DiagramBehavior {...props} updateSelection={spy} gateway={gateway.businessObject} />);
+  shallow(<DiagramBehavior {...props} updateSelection={spy} gateway={gateway.businessObject} />);
 
   viewer.on.mock.calls.find(call => call[0] === 'element.click')[1]({element: gateway});
   expect(spy).toHaveBeenCalledWith('gateway', null);
@@ -120,7 +128,18 @@ it('should deselct a selected element when clicking on it', () => {
 
 it('should invoke setViewer function one time on load', () => {
   props.setViewer.mockClear();
-  mount(<DiagramBehavior {...props} />);
+  shallow(<DiagramBehavior {...props} />);
 
   expect(props.setViewer).toHaveBeenCalledTimes(1);
+});
+
+it('should highlight elements between the selected gateway and end event', () => {
+  getDiagramElementsBetween.mockReturnValue(['a', 'b', 'c']);
+  shallow(<DiagramBehavior {...props} gateway="1" endEvent="2" />);
+
+  expect(getDiagramElementsBetween).toHaveBeenCalledWith('1', '2', viewer);
+
+  expect(viewer.addMarker).toHaveBeenCalledWith('a', 'analysis-part-highlight');
+  expect(viewer.addMarker).toHaveBeenCalledWith('b', 'analysis-part-highlight');
+  expect(viewer.addMarker).toHaveBeenCalledWith('c', 'analysis-part-highlight');
 });

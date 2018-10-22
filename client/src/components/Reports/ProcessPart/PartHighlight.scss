@@ -1,41 +1,5 @@
-$color: #008fe6;
+@import 'shared-styles.scss';
 
 .PartHighlight {
-  .djs-visual {
-    rect,
-    circle,
-    polygon,
-    path {
-      stroke: $color !important;
-    }
-
-    rect,
-    polygon {
-      stroke-width: 3px !important;
-    }
-
-    circle:not(:only-child) {
-      stroke-width: 2px !important;
-    }
-
-    polygon + path,
-    text {
-      fill: $color !important;
-    }
-  }
-}
-
-.djs-connection.PartHighlight {
-  .djs-visual {
-    path {
-      marker-end: url('#sequenceflow-end-highlight') !important;
-      stroke-width: 3px !important;
-      fill: none !important;
-    }
-  }
-}
-
-#sequenceflow-end-highlight path {
-  stroke: $color !important;
-  fill: $color !important;
+  @include diagram-highlight;
 }

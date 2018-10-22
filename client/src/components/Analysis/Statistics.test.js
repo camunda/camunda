@@ -1,5 +1,5 @@
 import React from 'react';
-import {mount} from 'enzyme';
+import {shallow} from 'enzyme';
 
 import {loadCorrelationData} from './service';
 
@@ -8,6 +8,10 @@ import {getDiagramElementsBetween} from 'services';
 import ChartRenderer from 'chart.js';
 
 import Statistics from './Statistics';
+
+function flushPromises() {
+  return new Promise(resolve => setImmediate(resolve));
+}
 
 jest.mock('./service', () => {
   return {
@@ -37,9 +41,21 @@ jest.mock('chart.js', () =>
   })
 );
 
+const initialProps = {
+  config: {
+    filter: [],
+    processDefinitionKey: null,
+    processDefinitionVersion: null
+  },
+  gateway: null,
+  endEvent: null
+};
+
 const props = {
   config: {
-    filter: []
+    filter: [],
+    processDefinitionKey: 'a',
+    processDefinitionVersion: 1
   },
   gateway: {
     id: 'g',
@@ -48,23 +64,33 @@ const props = {
   endEvent: {id: 'e'}
 };
 
-it('should load correlation data initially', () => {
-  mount(<Statistics {...props} />);
+it('should show a load correlation data initially', async () => {
+  const node = shallow(<Statistics {...initialProps} />);
+
+  node.setProps(props);
+  await flushPromises();
 
   expect(loadCorrelationData).toHaveBeenCalled();
 });
 
-it('should load updated correlation when selection or configuration changes', () => {
-  const node = mount(<Statistics {...props} />);
+it('should load updated correlation when selection or configuration changes', async () => {
+  const node = shallow(<Statistics {...initialProps} />);
+
+  node.setProps(props);
+  await flushPromises();
 
   loadCorrelationData.mockClear();
   node.setProps({gateway: {id: 'g2', outgoing: props.gateway.outgoing}});
+
+  await flushPromises();
 
   expect(loadCorrelationData).toHaveBeenCalled();
   expect(loadCorrelationData.mock.calls[0][3]).toBe('g2');
 
   loadCorrelationData.mockClear();
-  node.setProps({...props, config: {filter: ['aFilter']}});
+  node.setProps({config: {filter: ['aFilter']}});
+
+  await flushPromises();
 
   expect(loadCorrelationData).toHaveBeenCalled();
   expect(loadCorrelationData.mock.calls[0][2]).toEqual(['aFilter']);
@@ -73,7 +99,10 @@ it('should load updated correlation when selection or configuration changes', ()
 it('should create two Charts', async () => {
   ChartRenderer.mockClear();
 
-  const node = mount(<Statistics {...props} />);
+  const node = shallow(<Statistics {...initialProps} />);
+
+  node.setProps(props);
+  await flushPromises();
 
   node.setState({
     data: {
@@ -101,9 +130,37 @@ it('should invoke add Marker when called Mark Sequence flow function', async () 
     }
   ];
 
-  const node = mount(<Statistics {...props} />);
+  const node = shallow(<Statistics {...initialProps} />);
+
+  node.setProps(props);
+  await flushPromises();
+
   node.instance().markSequenceFlow(null, canvas, activeElements, 'testMark');
   expect(canvas.addMarker).toBeCalledWith(props.gateway.outgoing[0], 'testMark');
   expect(canvas.addMarker).toBeCalledWith('elementA', 'testMark');
   expect(canvas.addMarker).toBeCalledWith('elementB', 'testMark');
+});
+
+it('should show a placeholder text initially', () => {
+  const node = shallow(<Statistics {...initialProps} />);
+
+  expect(node).toMatchSnapshot();
+});
+
+it('should show a loading indicator while stuff is loading', () => {
+  const node = shallow(<Statistics {...initialProps} />);
+
+  node.setProps(props);
+  expect(node).toMatchSnapshot();
+});
+
+it('should show a summary after loading is complete', async () => {
+  const node = shallow(<Statistics {...initialProps} />);
+
+  node.setProps(props);
+  await flushPromises();
+
+  node.update();
+
+  expect(node).toMatchSnapshot();
 });

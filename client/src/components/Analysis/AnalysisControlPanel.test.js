@@ -150,3 +150,9 @@ it('should load the flownode names and hand them to the filter', async () => {
   expect(getFlowNodeNames).toHaveBeenCalled();
   expect(node.find('Filter').prop('flowNodeNames')).toEqual(getFlowNodeNames());
 });
+
+it('should display a sentence to describe what the user can do on this page', () => {
+  const node = mount(<AnalysisControlPanel {...emptyData} />);
+
+  expect(node).toMatchSnapshot();
+});

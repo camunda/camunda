@@ -6,6 +6,7 @@ import {loadCorrelationData} from './service';
 import {getFlowNodeNames, getDiagramElementsBetween} from 'services';
 
 import './Statistics.css';
+import {LoadingIndicator} from 'components';
 
 export default class Statistics extends React.Component {
   constructor(props) {
@@ -17,49 +18,99 @@ export default class Statistics extends React.Component {
     };
   }
 
-  loadFlowNodeNames = async () => {
-    this.setState({
-      flowNodeNames: await getFlowNodeNames(
-        this.props.config.processDefinitionKey,
-        this.props.config.processDefinitionVersion
+  loadFlowNodeNames = () => {
+    return new Promise(async resolve =>
+      this.setState(
+        {
+          flowNodeNames: await getFlowNodeNames(
+            this.props.config.processDefinitionKey,
+            this.props.config.processDefinitionVersion
+          )
+        },
+        resolve
       )
-    });
+    );
   };
 
   render() {
-    if (this.state.data) {
+    if (this.state.data && this.props.gateway && this.props.endEvent) {
+      const totalGateway = Object.keys(this.state.data.followingNodes).reduce(
+        (prev, key) => prev + this.state.data.followingNodes[key].activityCount,
+        0
+      );
+      const gatewayName = this.props.gateway.name || this.props.gateway.id;
+      const endEventName = this.props.endEvent.name || this.props.endEvent.id;
+
       return (
         <div className="Statistics">
-          <div className="Statistics__diagram-container">
-            Gateway: {this.props.gateway.name || this.props.gateway.id} / EndEvent:{' '}
-            {this.props.endEvent.name || this.props.endEvent.id}
-            <canvas ref={node => (this.relativeChart = node)} />
-          </div>
-          <div className="Statistics__diagram-container">
-            Gateway: {this.props.gateway.name || this.props.gateway.id} - Amount:{' '}
-            {Object.keys(this.state.data.followingNodes).reduce((prev, key) => {
-              return prev + this.state.data.followingNodes[key].activityCount;
-            }, 0)}
+          <p>
+            Of all <b>{totalGateway} instances</b> that passed the Gateway <i>{gatewayName}</i>
+          </p>
+          <ul>
+            {Object.keys(this.state.data.followingNodes).map(key => {
+              const count = this.state.data.followingNodes[key].activityCount;
+              const reached = this.state.data.followingNodes[key].activitiesReached;
+
+              return (
+                <li key={key}>
+                  <b>{count}</b> ({Math.round(count / totalGateway * 100) || 0}%) took the{' '}
+                  <i>{key}</i> branch, <b>{reached}</b> ({Math.round(reached / count * 100) || 0}%)
+                  of those then continued to reach the end event <i>{endEventName}</i>
+                </li>
+              );
+            })}
+          </ul>
+          <p>
+            Distribution of Instances at the Gateway <i>{gatewayName}</i>:
+          </p>
+          <div className="diagram-container">
             <canvas ref={node => (this.absoluteChart = node)} />
+          </div>
+          <p>
+            Probability to reach the end event <i>{endEventName}</i> after taking a branch:
+          </p>
+          <div className="diagram-container">
+            <canvas ref={node => (this.relativeChart = node)} />
           </div>
         </div>
       );
     }
 
-    return null;
+    if (this.props.gateway && this.props.endEvent && !this.state.data) {
+      return (
+        <div className="Statistics">
+          <LoadingIndicator />
+        </div>
+      );
+    }
+
+    return (
+      <div className="Statistics">
+        <div className="placeholder">
+          Please select a Process Definition, a Gateway and an End Event to perform the Analysis.
+        </div>
+      </div>
+    );
   }
 
-  componentDidUpdate(prevProps) {
-    const procDefDidNotChanged =
-      prevProps.config.processDefinitionKey === this.props.config.processDefinitionKey &&
-      prevProps.config.processDefinitionVersion === this.props.config.processDefinitionVersion;
-    if (
-      prevProps.gateway !== this.props.gateway ||
-      prevProps.endEvent !== this.props.endEvent ||
-      prevProps.config.filter !== this.props.config.filter
-    ) {
-      this.loadCorrelation();
-    } else if (this.state.data && procDefDidNotChanged) {
+  async componentDidUpdate(prevProps) {
+    const procDefChanged =
+      prevProps.config.processDefinitionKey !== this.props.config.processDefinitionKey ||
+      prevProps.config.processDefinitionVersion !== this.props.config.processDefinitionVersion;
+
+    if (procDefChanged) {
+      await this.loadFlowNodeNames();
+    }
+
+    const selectionChanged =
+      (prevProps.gateway !== this.props.gateway ||
+        prevProps.endEvent !== this.props.endEvent ||
+        prevProps.config.filter !== this.props.config.filter) &&
+      this.props.gateway &&
+      this.props.endEvent;
+
+    if (selectionChanged) {
+      await this.loadCorrelation();
       // relative chart
       if (this.chart1) {
         this.chart1.destroy();
@@ -82,39 +133,51 @@ export default class Statistics extends React.Component {
     }
   }
 
-  componentDidMount() {
-    this.loadFlowNodeNames();
-    this.loadCorrelation();
-  }
-
-  loadCorrelation = async () => {
-    this.setState(
-      {
-        data: await loadCorrelationData(
-          this.props.config.processDefinitionKey,
-          this.props.config.processDefinitionVersion,
-          this.props.config.filter,
-          this.props.gateway.id,
-          this.props.endEvent.id
-        )
-      },
-      this.applyFlowNodeNames
-    );
+  loadCorrelation = () => {
+    return new Promise(resolve => {
+      this.setState(
+        {
+          data: null
+        },
+        async () => {
+          this.setState(
+            {
+              data: await loadCorrelationData(
+                this.props.config.processDefinitionKey,
+                this.props.config.processDefinitionVersion,
+                this.props.config.filter,
+                this.props.gateway.id,
+                this.props.endEvent.id
+              )
+            },
+            async () => {
+              await this.applyFlowNodeNames();
+              resolve();
+            }
+          );
+        }
+      );
+    });
   };
 
   applyFlowNodeNames = () => {
-    const nodes = this.state.data.followingNodes;
-    const flowNodeNames = this.state.flowNodeNames;
-    const chartData = {};
-    Object.keys(nodes).forEach(v => {
-      const sequenceFlow = this.props.gateway.outgoing.find(({targetRef: {id}}) => id === v);
-      chartData[sequenceFlow.name || flowNodeNames[v] || v] = nodes[v];
-    });
+    return new Promise(resolve => {
+      const nodes = this.state.data.followingNodes;
+      const flowNodeNames = this.state.flowNodeNames;
+      const chartData = {};
+      Object.keys(nodes).forEach(v => {
+        const sequenceFlow = this.props.gateway.outgoing.find(({targetRef: {id}}) => id === v);
+        chartData[sequenceFlow.name || flowNodeNames[v] || v] = nodes[v];
+      });
 
-    this.setState({
-      data: {
-        followingNodes: chartData
-      }
+      this.setState(
+        {
+          data: {
+            followingNodes: chartData
+          }
+        },
+        resolve
+      );
     });
   };
 
@@ -122,7 +185,7 @@ export default class Statistics extends React.Component {
     let isInside = false;
     const {viewer} = this.props;
     return new ChartRenderer(node, {
-      type: 'bar',
+      type: 'horizontalBar',
       data: {
         labels: Object.keys(this.state.data.followingNodes),
         datasets: [
@@ -155,16 +218,18 @@ export default class Statistics extends React.Component {
               // triggered once the mouse move from outside to inside a bar box
               this.markSequenceFlow(viewer, canvas, activeElements, classMark);
               isInside = true;
+              viewer._container.classList.add('highlight-single-path');
             } else if (activeElements.length <= 0 && isInside) {
               // triggered once the mouse move from inside to outside the barchart box
               const elementRegistry = viewer.get('elementRegistry');
               elementRegistry.forEach(element => canvas.removeMarker(element, classMark));
               isInside = false;
+              viewer._container.classList.remove('highlight-single-path');
             }
           }
         },
         scales: {
-          yAxes: [
+          xAxes: [
             {
               ticks: {
                 beginAtZero: true,
