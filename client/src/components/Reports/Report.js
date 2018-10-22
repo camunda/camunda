@@ -327,7 +327,7 @@ export default withErrorHandling(
       if (!this.state.reportResult) return false;
 
       const {data, result, processInstanceCount} = this.state.reportResult;
-      return (
+      return !!(
         result &&
         result.length &&
         data &&
