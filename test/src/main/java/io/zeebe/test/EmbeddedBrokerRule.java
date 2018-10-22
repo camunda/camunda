@@ -147,7 +147,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
   }
 
   public SocketAddress getGatewayAddress() {
-    return brokerCfg.getNetwork().getGateway().toSocketAddress();
+    return brokerCfg.getGateway().getNetwork().toSocketAddress();
   }
 
   public SocketAddress getManagementAddress() {
@@ -302,7 +302,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
 
   public static void assignSocketAddresses(final BrokerCfg brokerCfg) {
     final NetworkCfg network = brokerCfg.getNetwork();
-    network.getGateway().setPort(SocketUtil.getNextAddress().port());
+    brokerCfg.getGateway().getNetwork().setPort(SocketUtil.getNextAddress().port());
     network.getClient().setPort(SocketUtil.getNextAddress().port());
     network.getManagement().setPort(SocketUtil.getNextAddress().port());
     network.getReplication().setPort(SocketUtil.getNextAddress().port());

@@ -125,7 +125,7 @@ public class ClusteringRule extends ExternalResource {
 
     grpcClient =
         io.zeebe.client.ZeebeClient.newClientBuilder()
-            .brokerContactPoint(brokerCfg.getNetwork().getGateway().toSocketAddress().toString())
+            .brokerContactPoint(brokerCfg.getGateway().getNetwork().toSocketAddress().toString())
             .build();
     closeables.add(grpcClient);
 
@@ -520,7 +520,7 @@ public class ClusteringRule extends ExternalResource {
   }
 
   public SocketAddress getGatewayAddress() {
-    return brokerCfgs[0].getNetwork().getGateway().toSocketAddress();
+    return brokerCfgs[0].getGateway().getNetwork().toSocketAddress();
   }
 
   public ZeebeClient getGatewayClient() {

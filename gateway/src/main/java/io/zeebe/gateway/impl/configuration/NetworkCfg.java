@@ -15,22 +15,26 @@
  */
 package io.zeebe.gateway.impl.configuration;
 
-import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_HOST;
 import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_PORT;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_HOST;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_PORT;
 
+import io.zeebe.transport.SocketAddress;
 import io.zeebe.util.Environment;
 import java.util.Objects;
 
 public class NetworkCfg {
 
-  private String host = DEFAULT_HOST;
+  private String host;
   private int port = DEFAULT_PORT;
 
-  public void init(Environment environment) {
-    environment.get(ENV_GATEWAY_HOST).ifPresent(v -> host = v);
-    environment.getInt(ENV_GATEWAY_PORT).ifPresent(v -> port = v);
+  public void init(Environment environment, String defaultHost) {
+    environment.get(ENV_GATEWAY_HOST).ifPresent(this::setHost);
+    environment.getInt(ENV_GATEWAY_PORT).ifPresent(this::setPort);
+
+    if (host == null) {
+      host = defaultHost;
+    }
   }
 
   public String getHost() {
@@ -49,6 +53,10 @@ public class NetworkCfg {
   public NetworkCfg setPort(int port) {
     this.port = port;
     return this;
+  }
+
+  public SocketAddress toSocketAddress() {
+    return new SocketAddress(host, port);
   }
 
   @Override

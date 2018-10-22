@@ -30,7 +30,11 @@ public class GatewayCfg {
   }
 
   public void init(Environment environment) {
-    network.init(environment);
+    init(environment, ConfigurationDefaults.DEFAULT_HOST);
+  }
+
+  public void init(Environment environment, String defaultHost) {
+    network.init(environment, defaultHost);
     cluster.init(environment);
     threads.init(environment);
   }

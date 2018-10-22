@@ -20,53 +20,74 @@ import io.grpc.ServerBuilder;
 import io.grpc.netty.NettyServerBuilder;
 import io.zeebe.gateway.impl.ZeebeClientBuilderImpl;
 import io.zeebe.gateway.impl.broker.BrokerClient;
+import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.function.Supplier;
+import java.util.function.Function;
 import org.slf4j.Logger;
 
 public class Gateway {
 
   private static final Logger LOG = Loggers.GATEWAY_LOGGER;
+  private static final Function<GatewayCfg, ServerBuilder> DEFAULT_SERVER_BUILDER_FACTORY =
+      cfg ->
+          NettyServerBuilder.forAddress(
+              new InetSocketAddress(cfg.getNetwork().getHost(), cfg.getNetwork().getPort()));
 
-  private static final int GATEWAY_DEFAULT_PORT = 26500;
-  private static final String GATEWAY_DEFAULT_HOST = "0.0.0.0";
+  public static final String VERSION;
+
+  static {
+    final String version = Gateway.class.getPackage().getImplementationVersion();
+    VERSION = version != null ? version : "development";
+  }
+
+  private final Function<GatewayCfg, ServerBuilder> serverBuilderFactory;
+  private final GatewayCfg gatewayCfg;
 
   private Server server;
-  private String brokerContactPoint = "0.0.0.0:26501";
   private BrokerClient brokerClient;
 
-  private final Supplier<ServerBuilder> serverBuilderFactory;
-
-  public Gateway() {
-    this(GATEWAY_DEFAULT_PORT);
+  public Gateway(GatewayCfg gatewayCfg) {
+    this(gatewayCfg, DEFAULT_SERVER_BUILDER_FACTORY);
   }
 
-  public Gateway(final int port) {
-    this(GATEWAY_DEFAULT_HOST, port);
-  }
-
-  public Gateway(final String host, final int port) {
-    this(() -> NettyServerBuilder.forAddress(new InetSocketAddress(host, port)));
-  }
-
-  public Gateway(Supplier<ServerBuilder> serverBuilderFactory) {
+  public Gateway(GatewayCfg gatewayCfg, Function<GatewayCfg, ServerBuilder> serverBuilderFactory) {
+    this.gatewayCfg = gatewayCfg;
     this.serverBuilderFactory = serverBuilderFactory;
   }
 
+  public void start() throws IOException {
+    LOG.info("Version: {}", VERSION);
+    LOG.info("Starting gateway with configuration {}", gatewayCfg.toJson());
+
+    brokerClient = buildBrokerClient();
+
+    server =
+        serverBuilderFactory
+            .apply(gatewayCfg)
+            .addService(new EndpointManager(brokerClient))
+            .build();
+
+    server.start();
+  }
+
+  protected BrokerClient buildBrokerClient() {
+    final ZeebeClientBuilderImpl brokerClientBuilder = new ZeebeClientBuilderImpl();
+
+    brokerClientBuilder
+        .brokerContactPoint(gatewayCfg.getCluster().getContactPoint())
+        .numManagementThreads(gatewayCfg.getThreads().getManagementThreads());
+
+    return brokerClientBuilder.buildBrokerClient();
+  }
+
+  public void listenAndServe() throws InterruptedException, IOException {
+    start();
+    server.awaitTermination();
+  }
+
   public static void main(final String[] args) {
-    int port = GATEWAY_DEFAULT_PORT;
-    final Gateway gateway;
-
-    if (args.length >= 1) {
-      try {
-        port = Integer.valueOf(args[0]);
-      } catch (final NumberFormatException exp) {
-        LOG.warn("Failed to parse specified port {} - using default port {}", args[0], port);
-      }
-    }
-
-    gateway = new Gateway(port);
+    final Gateway gateway = new Gateway(new GatewayCfg());
 
     try {
       gateway.listenAndServe();
@@ -75,33 +96,6 @@ public class Gateway {
     } finally {
       gateway.stop();
     }
-  }
-
-  public void setBrokerContactPoint(final String brokerContactPoint) {
-    this.brokerContactPoint = brokerContactPoint;
-  }
-
-  public void start() throws IOException {
-    brokerClient = buildBrokerClient();
-
-    server = serverBuilderFactory.get().addService(new EndpointManager(brokerClient)).build();
-
-    server.start();
-
-    LOG.info("Gateway started using grpc server: {}", server);
-  }
-
-  protected BrokerClient buildBrokerClient() {
-    final ZeebeClientBuilderImpl brokerClientBuilder = new ZeebeClientBuilderImpl();
-
-    brokerClientBuilder.brokerContactPoint(brokerContactPoint);
-
-    return brokerClientBuilder.buildBrokerClient();
-  }
-
-  public void listenAndServe() throws InterruptedException, IOException {
-    start();
-    server.awaitTermination();
   }
 
   public void stop() {

@@ -34,7 +34,6 @@ public class NetworkCfg implements ConfigurationEntry {
   private SocketBindingManagementCfg management = new SocketBindingManagementCfg();
   private SocketBindingReplicationCfg replication = new SocketBindingReplicationCfg();
   private SocketBindingSubscriptionCfg subscription = new SocketBindingSubscriptionCfg();
-  private SocketBindingGatewayCfg gateway = new SocketBindingGatewayCfg();
 
   @Override
   public void init(
@@ -44,7 +43,6 @@ public class NetworkCfg implements ConfigurationEntry {
     management.applyDefaults(this);
     replication.applyDefaults(this);
     subscription.applyDefaults(this);
-    gateway.applyDefaults(this);
   }
 
   private void applyEnvironment(final Environment environment) {
@@ -108,14 +106,6 @@ public class NetworkCfg implements ConfigurationEntry {
     this.subscription = subscription;
   }
 
-  public SocketBindingGatewayCfg getGateway() {
-    return gateway;
-  }
-
-  public void setGateway(final SocketBindingGatewayCfg gateway) {
-    this.gateway = gateway;
-  }
-
   @Override
   public String toString() {
     return "NetworkCfg{"
@@ -135,8 +125,6 @@ public class NetworkCfg implements ConfigurationEntry {
         + replication
         + ", subscription="
         + subscription
-        + ", gateway="
-        + gateway
         + '}';
   }
 }

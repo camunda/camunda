@@ -33,15 +33,9 @@ public class ClusterCfg {
   public void init(Environment environment) {
     environment
         .get(ENV_GATEWAY_CONTACT_POINT)
-        .ifPresent(
-            v -> {
-              if (v.contains(":")) {
-                contactPoint = v;
-              } else {
-                contactPoint = v + ":" + DEFAULT_CONTACT_POINT_PORT;
-              }
-            });
-    environment.get(ENV_GATEWAY_TRANSPORT_BUFFER).ifPresent(v -> transportBuffer = v);
+        .map(v -> v.contains(":") ? v : v + ":" + DEFAULT_CONTACT_POINT_PORT)
+        .ifPresent(this::setContactPoint);
+    environment.get(ENV_GATEWAY_TRANSPORT_BUFFER).ifPresent(this::setTransportBuffer);
   }
 
   public String getContactPoint() {

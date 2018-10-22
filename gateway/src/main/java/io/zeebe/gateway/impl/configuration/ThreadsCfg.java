@@ -26,7 +26,7 @@ public class ThreadsCfg {
   private int managementThreads = DEFAULT_MANAGEMENT_THREADS;
 
   public void init(Environment environment) {
-    environment.getInt(ENV_GATEWAY_MANAGEMENT_THREADS).ifPresent(v -> managementThreads = v);
+    environment.getInt(ENV_GATEWAY_MANAGEMENT_THREADS).ifPresent(this::setManagementThreads);
   }
 
   public int getManagementThreads() {

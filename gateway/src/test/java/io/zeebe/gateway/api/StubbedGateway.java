@@ -31,6 +31,7 @@ import io.zeebe.gateway.impl.broker.cluster.BrokerClusterStateImpl;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
+import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.gateway.protocol.GatewayGrpc;
 import io.zeebe.gateway.protocol.GatewayGrpc.GatewayBlockingStub;
 import io.zeebe.protocol.PartitionState;
@@ -52,7 +53,7 @@ public class StubbedGateway extends Gateway {
   private List<BrokerRequest> brokerRequests = new ArrayList<>();
 
   public StubbedGateway() {
-    super(() -> InProcessServerBuilder.forName(SERVER_NAME));
+    super(new GatewayCfg(), cfg -> InProcessServerBuilder.forName(SERVER_NAME));
   }
 
   public <RequestT extends BrokerRequest<?>, ResponseT extends BrokerResponse<?>>
