@@ -2,10 +2,12 @@ package commands
 
 import (
 	"github.com/golang/mock/gomock"
+	"github.com/zeebe-io/zeebe/clients/go/entities"
 	"github.com/zeebe-io/zeebe/clients/go/mock_pb"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
 	"github.com/zeebe-io/zeebe/clients/go/utils"
 	"io"
+	"reflect"
 	"testing"
 	"time"
 )
@@ -80,10 +82,16 @@ func TestActivateJobsCommand(t *testing.T) {
 		},
 	}
 
-	var expectedJobs []*pb.ActivatedJob
-	expectedJobs = append(expectedJobs, response1.Jobs...)
-	expectedJobs = append(expectedJobs, response2.Jobs...)
-	expectedJobs = append(expectedJobs, response3.Jobs...)
+	var expectedJobs []entities.Job
+	for _, job := range response1.Jobs {
+		expectedJobs = append(expectedJobs, entities.Job{*job})
+	}
+	for _, job := range response2.Jobs {
+		expectedJobs = append(expectedJobs, entities.Job{*job})
+	}
+	for _, job := range response3.Jobs {
+		expectedJobs = append(expectedJobs, entities.Job{*job})
+	}
 
 	gomock.InOrder(
 		stream.EXPECT().Recv().Return(response1, nil),
@@ -105,7 +113,7 @@ func TestActivateJobsCommand(t *testing.T) {
 	}
 
 	for i := range jobs {
-		if jobs[i] != expectedJobs[i] {
+		if !reflect.DeepEqual(jobs[i], expectedJobs[i]) {
 			t.Error("Failed to receive job: ", jobs[i], expectedJobs[i])
 		}
 	}

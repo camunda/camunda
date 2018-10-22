@@ -2,6 +2,7 @@ package commands
 
 import (
 	"context"
+	"github.com/zeebe-io/zeebe/clients/go/entities"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
 	"github.com/zeebe-io/zeebe/clients/go/utils"
 	"io"
@@ -9,7 +10,7 @@ import (
 )
 
 type DispatchActivateJobsCommand interface {
-	Send() ([]*pb.ActivatedJob, error)
+	Send() ([]entities.Job, error)
 }
 
 type ActivateJobsCommandStep1 interface {
@@ -52,7 +53,7 @@ func (cmd *ActivateJobsCommand) WorkerName(workerName string) ActivateJobsComman
 	return cmd
 }
 
-func (cmd *ActivateJobsCommand) Send() ([]*pb.ActivatedJob, error) {
+func (cmd *ActivateJobsCommand) Send() ([]entities.Job, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), utils.RequestTimeoutInSec*time.Second)
 	defer cancel()
 
@@ -61,7 +62,7 @@ func (cmd *ActivateJobsCommand) Send() ([]*pb.ActivatedJob, error) {
 		return nil, err
 	}
 
-	var activatedJobs []*pb.ActivatedJob
+	var activatedJobs []entities.Job
 
 	for {
 		response, err := stream.Recv()
@@ -71,7 +72,9 @@ func (cmd *ActivateJobsCommand) Send() ([]*pb.ActivatedJob, error) {
 		if err != nil {
 			return activatedJobs, err
 		}
-		activatedJobs = append(activatedJobs, response.Jobs...)
+		for _, activatedJob := range response.Jobs {
+			activatedJobs = append(activatedJobs, entities.Job{*activatedJob})
+		}
 	}
 
 	return activatedJobs, nil

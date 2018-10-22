@@ -3,6 +3,7 @@ package zbc
 import (
 	"github.com/zeebe-io/zeebe/clients/go/commands"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
+	"github.com/zeebe-io/zeebe/clients/go/worker"
 	"google.golang.org/grpc"
 )
 
@@ -61,6 +62,10 @@ func (client *ZBClientImpl) NewListWorkflowsCommand() commands.ListWorkflowsStep
 
 func (client *ZBClientImpl) NewGetWorkflowCommand() commands.GetWorkflowStep1 {
 	return commands.NewGetWorkflowCommand(client.gateway)
+}
+
+func (client *ZBClientImpl) NewJobWorker() worker.JobWorkerBuilderStep1 {
+	return worker.NewJobWorkerBuilder(client.gateway, client)
 }
 
 func (client *ZBClientImpl) Close() error {
