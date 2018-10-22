@@ -117,7 +117,7 @@ public class TimerCatchEventTest {
     final Record<TimerRecordValue> createdEvent =
         RecordingExporter.timerRecords(TimerIntent.CREATED).getFirst();
 
-    Assertions.assertThat(createdEvent.getValue()).hasActivityInstanceKey(activatedEvent.getKey());
+    Assertions.assertThat(createdEvent.getValue()).hasElementInstanceKey(activatedEvent.getKey());
     assertThat(createdEvent.getValue().getDueDate())
         .isGreaterThan(brokerRule.getClock().getCurrentTimeInMillis());
   }

@@ -255,7 +255,7 @@ public class ExporterRecordMapper {
         asString(record.getMessageName()),
         asString(record.getCorrelationKey()),
         record.getWorkflowInstanceKey(),
-        record.getActivityInstanceKey());
+        record.getElementInstanceKey());
   }
 
   private WorkflowInstanceRecordValue ofWorkflowInstanceRecord(final LoggedEvent event) {
@@ -283,7 +283,7 @@ public class ExporterRecordMapper {
         asJson(record.getPayload()),
         asString(record.getMessageName()),
         record.getWorkflowInstanceKey(),
-        record.getActivityInstanceKey());
+        record.getElementInstanceKey());
   }
 
   private RecordValue ofJobBatchRecord(LoggedEvent event) {
@@ -315,7 +315,7 @@ public class ExporterRecordMapper {
     event.readValue(record);
 
     return new TimerRecordValueImpl(
-        objectMapper, record.getActivityInstanceKey(), record.getDueDate());
+        objectMapper, record.getElementInstanceKey(), record.getDueDate());
   }
 
   // UTILS

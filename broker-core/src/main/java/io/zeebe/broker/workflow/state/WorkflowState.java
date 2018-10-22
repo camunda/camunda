@@ -115,12 +115,12 @@ public class WorkflowState extends KeyStateController {
   }
 
   public WorkflowSubscription findSubscription(WorkflowInstanceSubscriptionRecord record) {
-    return findSubscription(record.getWorkflowInstanceKey(), record.getActivityInstanceKey());
+    return findSubscription(record.getWorkflowInstanceKey(), record.getElementInstanceKey());
   }
 
-  public WorkflowSubscription findSubscription(long workflowInstanceKey, long activityInstanceKey) {
+  public WorkflowSubscription findSubscription(long workflowInstanceKey, long elementInstanceKey) {
     final WorkflowSubscription workflowSubscription =
-        new WorkflowSubscription(workflowInstanceKey, activityInstanceKey);
+        new WorkflowSubscription(workflowInstanceKey, elementInstanceKey);
     return subscriptionState.getSubscription(workflowSubscription);
   }
 

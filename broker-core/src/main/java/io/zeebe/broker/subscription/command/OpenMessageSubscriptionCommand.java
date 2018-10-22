@@ -17,8 +17,8 @@
  */
 package io.zeebe.broker.subscription.command;
 
-import static io.zeebe.broker.subscription.OpenMessageSubscriptionDecoder.activityInstanceKeyNullValue;
 import static io.zeebe.broker.subscription.OpenMessageSubscriptionDecoder.correlationKeyHeaderLength;
+import static io.zeebe.broker.subscription.OpenMessageSubscriptionDecoder.elementInstanceKeyNullValue;
 import static io.zeebe.broker.subscription.OpenMessageSubscriptionDecoder.messageNameHeaderLength;
 import static io.zeebe.broker.subscription.OpenMessageSubscriptionDecoder.subscriptionPartitionIdNullValue;
 import static io.zeebe.broker.subscription.OpenMessageSubscriptionDecoder.workflowInstanceKeyNullValue;
@@ -38,7 +38,7 @@ public class OpenMessageSubscriptionCommand
 
   private int subscriptionPartitionId;
   private long workflowInstanceKey;
-  private long activityInstanceKey;
+  private long elementInstanceKey;
 
   private final UnsafeBuffer messageName = new UnsafeBuffer(0, 0);
   private final UnsafeBuffer correlationKey = new UnsafeBuffer(0, 0);
@@ -69,7 +69,7 @@ public class OpenMessageSubscriptionCommand
     encoder
         .subscriptionPartitionId(subscriptionPartitionId)
         .workflowInstanceKey(workflowInstanceKey)
-        .activityInstanceKey(activityInstanceKey)
+        .elementInstanceKey(elementInstanceKey)
         .putMessageName(messageName, 0, messageName.capacity())
         .putCorrelationKey(correlationKey, 0, correlationKey.capacity());
   }
@@ -80,7 +80,7 @@ public class OpenMessageSubscriptionCommand
 
     subscriptionPartitionId = decoder.subscriptionPartitionId();
     workflowInstanceKey = decoder.workflowInstanceKey();
-    activityInstanceKey = decoder.activityInstanceKey();
+    elementInstanceKey = decoder.elementInstanceKey();
 
     offset = decoder.limit();
 
@@ -101,7 +101,7 @@ public class OpenMessageSubscriptionCommand
   public void reset() {
     subscriptionPartitionId = subscriptionPartitionIdNullValue();
     workflowInstanceKey = workflowInstanceKeyNullValue();
-    activityInstanceKey = activityInstanceKeyNullValue();
+    elementInstanceKey = elementInstanceKeyNullValue();
     messageName.wrap(0, 0);
     correlationKey.wrap(0, 0);
   }
@@ -122,12 +122,12 @@ public class OpenMessageSubscriptionCommand
     this.workflowInstanceKey = workflowInstanceKey;
   }
 
-  public long getActivityInstanceKey() {
-    return activityInstanceKey;
+  public long getElementInstanceKey() {
+    return elementInstanceKey;
   }
 
-  public void setActivityInstanceKey(long activityInstanceKey) {
-    this.activityInstanceKey = activityInstanceKey;
+  public void setElementInstanceKey(long elementInstanceKey) {
+    this.elementInstanceKey = elementInstanceKey;
   }
 
   public DirectBuffer getMessageName() {

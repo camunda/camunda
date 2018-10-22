@@ -27,19 +27,19 @@ public class MessageSubscriptionRecordValueImpl extends RecordValueImpl
   private final String messageName;
   private final String correlationKey;
   private final long workflowInstanceKey;
-  private final long activityInstanceKey;
+  private final long elementInstanceKey;
 
   public MessageSubscriptionRecordValueImpl(
       final ExporterObjectMapper objectMapper,
       final String messageName,
       final String correlationKey,
       final long workflowInstanceKey,
-      final long activityInstanceKey) {
+      final long elementInstanceKey) {
     super(objectMapper);
     this.messageName = messageName;
     this.correlationKey = correlationKey;
     this.workflowInstanceKey = workflowInstanceKey;
-    this.activityInstanceKey = activityInstanceKey;
+    this.elementInstanceKey = elementInstanceKey;
   }
 
   @Override
@@ -58,8 +58,8 @@ public class MessageSubscriptionRecordValueImpl extends RecordValueImpl
   }
 
   @Override
-  public long getActivityInstanceKey() {
-    return activityInstanceKey;
+  public long getElementInstanceKey() {
+    return elementInstanceKey;
   }
 
   @Override
@@ -72,14 +72,14 @@ public class MessageSubscriptionRecordValueImpl extends RecordValueImpl
     }
     final MessageSubscriptionRecordValueImpl that = (MessageSubscriptionRecordValueImpl) o;
     return workflowInstanceKey == that.workflowInstanceKey
-        && activityInstanceKey == that.activityInstanceKey
+        && elementInstanceKey == that.elementInstanceKey
         && Objects.equals(messageName, that.messageName)
         && Objects.equals(correlationKey, that.correlationKey);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(messageName, correlationKey, workflowInstanceKey, activityInstanceKey);
+    return Objects.hash(messageName, correlationKey, workflowInstanceKey, elementInstanceKey);
   }
 
   @Override
@@ -93,8 +93,8 @@ public class MessageSubscriptionRecordValueImpl extends RecordValueImpl
         + '\''
         + ", workflowInstanceKey="
         + workflowInstanceKey
-        + ", activityInstanceKey="
-        + activityInstanceKey
+        + ", elementInstanceKey="
+        + elementInstanceKey
         + '}';
   }
 }

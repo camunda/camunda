@@ -102,7 +102,7 @@ public class WorkflowAssert {
       Record<MessageSubscriptionRecordValue> subscription) {
     Assertions.assertThat(subscription.getValue())
         .hasWorkflowInstanceKey(workflowInstanceKey)
-        .hasActivityInstanceKey(catchEventEntered.getKey())
+        .hasElementInstanceKey(catchEventEntered.getKey())
         .hasMessageName("order canceled")
         .hasCorrelationKey(correlationKey);
   }
@@ -113,7 +113,7 @@ public class WorkflowAssert {
       Record<WorkflowInstanceSubscriptionRecordValue> subscription) {
     Assertions.assertThat(subscription.getValue())
         .hasWorkflowInstanceKey(workflowInstanceKey)
-        .hasActivityInstanceKey(catchEventEntered.getKey())
+        .hasElementInstanceKey(catchEventEntered.getKey())
         .hasMessageName("order canceled");
 
     assertThat(subscription.getValue().getPayload()).isEqualTo("{}");
@@ -126,7 +126,7 @@ public class WorkflowAssert {
       Record<WorkflowInstanceSubscriptionRecordValue> subscription) {
     Assertions.assertThat(subscription.getValue())
         .hasWorkflowInstanceKey(workflowInstanceKey)
-        .hasActivityInstanceKey(catchEventEntered.getKey())
+        .hasElementInstanceKey(catchEventEntered.getKey())
         .hasMessageName("order canceled");
 
     assertThat(subscription.getValue().getPayload()).isEqualTo(payload);

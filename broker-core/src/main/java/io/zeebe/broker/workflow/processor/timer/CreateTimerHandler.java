@@ -31,12 +31,12 @@ public class CreateTimerHandler implements BpmnStepHandler<ExecutableIntermediat
 
   @Override
   public void handle(BpmnStepContext<ExecutableIntermediateCatchElement> context) {
-    final long activityInstanceKey = context.getElementInstance().getKey();
+    final long elementInstanceKey = context.getElementInstance().getKey();
 
     final Duration duration = context.getElement().getDuration();
     final long dueDate = ActorClock.currentTimeMillis() + duration.toMillis();
 
-    timer.setActivityInstanceKey(activityInstanceKey).setDueDate(dueDate);
+    timer.setElementInstanceKey(elementInstanceKey).setDueDate(dueDate);
 
     context.getCommandWriter().writeNewCommand(TimerIntent.CREATE, timer);
   }

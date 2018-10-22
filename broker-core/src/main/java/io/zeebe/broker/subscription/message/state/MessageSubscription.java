@@ -33,23 +33,23 @@ public class MessageSubscription implements Subscription {
   private final DirectBuffer messagePayload = new UnsafeBuffer();
 
   private long workflowInstanceKey;
-  private long activityInstanceKey;
+  private long elementInstanceKey;
   private long commandSentTime;
 
   public MessageSubscription() {}
 
-  public MessageSubscription(long workflowInstanceKey, long activityInstanceKey) {
+  public MessageSubscription(long workflowInstanceKey, long elementInstanceKey) {
     this.workflowInstanceKey = workflowInstanceKey;
-    this.activityInstanceKey = activityInstanceKey;
+    this.elementInstanceKey = elementInstanceKey;
   }
 
   public MessageSubscription(
       long workflowInstanceKey,
-      long activityInstanceKey,
+      long elementInstanceKey,
       DirectBuffer messageName,
       DirectBuffer correlationKey) {
     this.workflowInstanceKey = workflowInstanceKey;
-    this.activityInstanceKey = activityInstanceKey;
+    this.elementInstanceKey = elementInstanceKey;
 
     this.messageName.wrap(messageName);
     this.correlationKey.wrap(correlationKey);
@@ -60,11 +60,11 @@ public class MessageSubscription implements Subscription {
       final String correlationKey,
       final String messagePayload,
       final long workflowInstanceKey,
-      final long activityInstanceKey,
+      final long elementInstanceKey,
       final long commandSentTime) {
     this(
         workflowInstanceKey,
-        activityInstanceKey,
+        elementInstanceKey,
         new UnsafeBuffer(messageName.getBytes()),
         new UnsafeBuffer(correlationKey.getBytes()));
 
@@ -90,8 +90,8 @@ public class MessageSubscription implements Subscription {
     return workflowInstanceKey;
   }
 
-  public long getActivityInstanceKey() {
-    return activityInstanceKey;
+  public long getElementInstanceKey() {
+    return elementInstanceKey;
   }
 
   public long getCommandSentTime() {
@@ -112,7 +112,7 @@ public class MessageSubscription implements Subscription {
     this.workflowInstanceKey = buffer.getLong(offset, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
-    this.activityInstanceKey = buffer.getLong(offset, STATE_BYTE_ORDER);
+    this.elementInstanceKey = buffer.getLong(offset, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
     this.commandSentTime = buffer.getLong(offset, STATE_BYTE_ORDER);
@@ -137,7 +137,7 @@ public class MessageSubscription implements Subscription {
     buffer.putLong(offset, workflowInstanceKey, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
-    buffer.putLong(offset, activityInstanceKey, STATE_BYTE_ORDER);
+    buffer.putLong(offset, elementInstanceKey, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
     buffer.putLong(offset, commandSentTime, STATE_BYTE_ORDER);
@@ -154,7 +154,7 @@ public class MessageSubscription implements Subscription {
     final int startOffset = offset;
     keyBuffer.putLong(offset, workflowInstanceKey, STATE_BYTE_ORDER);
     offset += Long.BYTES;
-    keyBuffer.putLong(offset, activityInstanceKey, STATE_BYTE_ORDER);
+    keyBuffer.putLong(offset, elementInstanceKey, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
     assert (offset - startOffset) == KEY_LENGTH

@@ -51,7 +51,7 @@ public class CreateTimerProcessor implements TypedRecordProcessor<TimerRecord> {
 
     final long timerKey = streamWriter.getKeyGenerator().nextKey();
 
-    timerInstance.setActivityInstanceKey(timer.getActivityInstanceKey());
+    timerInstance.setElementInstanceKey(timer.getElementInstanceKey());
     timerInstance.setDueDate(timer.getDueDate());
     timerInstance.setKey(timerKey);
 

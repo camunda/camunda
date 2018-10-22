@@ -26,18 +26,18 @@ public class WorkflowInstanceSubscriptionRecordValueImpl extends RecordValueWith
     implements WorkflowInstanceSubscriptionRecordValue {
   private final String messageName;
   private final long workflowInstanceKey;
-  private final long activityInstanceKey;
+  private final long elementInstanceKey;
 
   public WorkflowInstanceSubscriptionRecordValueImpl(
       final ExporterObjectMapper objectMapper,
       final String payload,
       final String messageName,
       final long workflowInstanceKey,
-      final long activityInstanceKey) {
+      final long elementInstanceKey) {
     super(objectMapper, payload);
     this.messageName = messageName;
     this.workflowInstanceKey = workflowInstanceKey;
-    this.activityInstanceKey = activityInstanceKey;
+    this.elementInstanceKey = elementInstanceKey;
   }
 
   @Override
@@ -51,8 +51,8 @@ public class WorkflowInstanceSubscriptionRecordValueImpl extends RecordValueWith
   }
 
   @Override
-  public long getActivityInstanceKey() {
-    return activityInstanceKey;
+  public long getElementInstanceKey() {
+    return elementInstanceKey;
   }
 
   @Override
@@ -69,13 +69,13 @@ public class WorkflowInstanceSubscriptionRecordValueImpl extends RecordValueWith
     final WorkflowInstanceSubscriptionRecordValueImpl that =
         (WorkflowInstanceSubscriptionRecordValueImpl) o;
     return workflowInstanceKey == that.workflowInstanceKey
-        && activityInstanceKey == that.activityInstanceKey
+        && elementInstanceKey == that.elementInstanceKey
         && Objects.equals(messageName, that.messageName);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), messageName, workflowInstanceKey, activityInstanceKey);
+    return Objects.hash(super.hashCode(), messageName, workflowInstanceKey, elementInstanceKey);
   }
 
   @Override
@@ -86,8 +86,8 @@ public class WorkflowInstanceSubscriptionRecordValueImpl extends RecordValueWith
         + '\''
         + ", workflowInstanceKey="
         + workflowInstanceKey
-        + ", activityInstanceKey="
-        + activityInstanceKey
+        + ", elementInstanceKey="
+        + elementInstanceKey
         + ", payload='"
         + payload
         + '\''

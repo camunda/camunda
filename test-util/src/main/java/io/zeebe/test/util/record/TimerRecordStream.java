@@ -31,7 +31,7 @@ public class TimerRecordStream extends ExporterRecordStream<TimerRecordValue, Ti
   }
 
   public TimerRecordStream withActivityInstanceId(final long activityInstanceId) {
-    return valueFilter(v -> v.getActivityInstanceKey() == activityInstanceId);
+    return valueFilter(v -> v.getElementInstanceKey() == activityInstanceId);
   }
 
   public TimerRecordStream withDueDate(final long dueDate) {

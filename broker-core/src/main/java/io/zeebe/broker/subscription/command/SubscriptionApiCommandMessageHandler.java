@@ -125,7 +125,7 @@ public class SubscriptionApiCommandMessageHandler implements ServerMessageHandle
 
     messageSubscriptionRecord
         .setWorkflowInstanceKey(openMessageSubscriptionCommand.getWorkflowInstanceKey())
-        .setActivityInstanceKey(openMessageSubscriptionCommand.getActivityInstanceKey())
+        .setElementInstanceKey(openMessageSubscriptionCommand.getElementInstanceKey())
         .setMessageName(openMessageSubscriptionCommand.getMessageName())
         .setCorrelationKey(openMessageSubscriptionCommand.getCorrelationKey());
 
@@ -148,7 +148,7 @@ public class SubscriptionApiCommandMessageHandler implements ServerMessageHandle
         .setSubscriptionPartitionId(
             openWorkflowInstanceSubscriptionCommand.getSubscriptionPartitionId())
         .setWorkflowInstanceKey(workflowInstanceKey)
-        .setActivityInstanceKey(openWorkflowInstanceSubscriptionCommand.getActivityInstanceKey())
+        .setElementInstanceKey(openWorkflowInstanceSubscriptionCommand.getElementInstanceKey())
         .setMessageName(openWorkflowInstanceSubscriptionCommand.getMessageName());
 
     return writeCommand(
@@ -170,8 +170,7 @@ public class SubscriptionApiCommandMessageHandler implements ServerMessageHandle
         .setSubscriptionPartitionId(
             correlateWorkflowInstanceSubscriptionCommand.getSubscriptionPartitionId())
         .setWorkflowInstanceKey(workflowInstanceKey)
-        .setActivityInstanceKey(
-            correlateWorkflowInstanceSubscriptionCommand.getActivityInstanceKey())
+        .setElementInstanceKey(correlateWorkflowInstanceSubscriptionCommand.getElementInstanceKey())
         .setMessageName(correlateWorkflowInstanceSubscriptionCommand.getMessageName())
         .setPayload(correlateWorkflowInstanceSubscriptionCommand.getPayload());
 
@@ -188,7 +187,7 @@ public class SubscriptionApiCommandMessageHandler implements ServerMessageHandle
     messageSubscriptionRecord.reset();
     messageSubscriptionRecord
         .setWorkflowInstanceKey(correlateMessageSubscriptionCommand.getWorkflowInstanceKey())
-        .setActivityInstanceKey(correlateMessageSubscriptionCommand.getActivityInstanceKey())
+        .setElementInstanceKey(correlateMessageSubscriptionCommand.getElementInstanceKey())
         .setMessageName(correlateMessageSubscriptionCommand.getMessageName());
 
     return writeCommand(
@@ -204,7 +203,7 @@ public class SubscriptionApiCommandMessageHandler implements ServerMessageHandle
     messageSubscriptionRecord.reset();
     messageSubscriptionRecord
         .setWorkflowInstanceKey(closeMessageSubscriptionCommand.getWorkflowInstanceKey())
-        .setActivityInstanceKey(closeMessageSubscriptionCommand.getElementInstanceKey());
+        .setElementInstanceKey(closeMessageSubscriptionCommand.getElementInstanceKey());
 
     return writeCommand(
         closeMessageSubscriptionCommand.getSubscriptionPartitionId(),
@@ -225,7 +224,7 @@ public class SubscriptionApiCommandMessageHandler implements ServerMessageHandle
         .setSubscriptionPartitionId(
             closeWorkflowInstanceSubscriptionCommand.getSubscriptionPartitionId())
         .setWorkflowInstanceKey(workflowInstanceKey)
-        .setActivityInstanceKey(closeWorkflowInstanceSubscriptionCommand.getElementInstanceKey())
+        .setElementInstanceKey(closeWorkflowInstanceSubscriptionCommand.getElementInstanceKey())
         .setMessageName(correlateWorkflowInstanceSubscriptionCommand.getMessageName());
 
     return writeCommand(

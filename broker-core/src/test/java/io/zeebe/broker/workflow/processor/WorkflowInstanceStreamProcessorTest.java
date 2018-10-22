@@ -428,7 +428,7 @@ public class WorkflowInstanceStreamProcessorTest {
         .correlateMessageSubscription(
             eq(subscription.getSubscriptionPartitionId()),
             eq(subscription.getWorkflowInstanceKey()),
-            eq(subscription.getActivityInstanceKey()),
+            eq(subscription.getElementInstanceKey()),
             any());
   }
 
@@ -504,7 +504,7 @@ public class WorkflowInstanceStreamProcessorTest {
         .closeMessageSubscription(
             subscription.getSubscriptionPartitionId(),
             subscription.getWorkflowInstanceKey(),
-            subscription.getActivityInstanceKey());
+            subscription.getElementInstanceKey());
   }
 
   @Test
@@ -559,7 +559,7 @@ public class WorkflowInstanceStreamProcessorTest {
     return new WorkflowInstanceSubscriptionRecord()
         .setSubscriptionPartitionId(0)
         .setWorkflowInstanceKey(catchEvent.getValue().getWorkflowInstanceKey())
-        .setActivityInstanceKey(catchEvent.getKey())
+        .setElementInstanceKey(catchEvent.getKey())
         .setMessageName(wrapString("order canceled"));
   }
 }

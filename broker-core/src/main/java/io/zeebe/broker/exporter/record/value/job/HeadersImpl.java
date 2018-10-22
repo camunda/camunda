@@ -110,7 +110,7 @@ public class HeadersImpl implements Headers {
         + ", activityId='"
         + elementId
         + '\''
-        + ", activityInstanceKey="
+        + ", elementInstanceKey="
         + elementInstanceKey
         + ", workflowInstanceKey="
         + workflowInstanceKey

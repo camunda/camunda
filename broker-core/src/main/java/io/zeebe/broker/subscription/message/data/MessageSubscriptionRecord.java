@@ -25,13 +25,13 @@ import org.agrona.DirectBuffer;
 public class MessageSubscriptionRecord extends UnpackedObject {
 
   private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey");
-  private final LongProperty activityInstanceKeyProp = new LongProperty("activityInstanceKey");
+  private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey");
   private final StringProperty messageNameProp = new StringProperty("messageName", "");
   private final StringProperty correlationKeyProp = new StringProperty("correlationKey", "");
 
   public MessageSubscriptionRecord() {
     this.declareProperty(workflowInstanceKeyProp)
-        .declareProperty(activityInstanceKeyProp)
+        .declareProperty(elementInstanceKeyProp)
         .declareProperty(messageNameProp)
         .declareProperty(correlationKeyProp);
   }
@@ -45,12 +45,12 @@ public class MessageSubscriptionRecord extends UnpackedObject {
     return this;
   }
 
-  public long getActivityInstanceKey() {
-    return activityInstanceKeyProp.getValue();
+  public long getElementInstanceKey() {
+    return elementInstanceKeyProp.getValue();
   }
 
-  public MessageSubscriptionRecord setActivityInstanceKey(long key) {
-    activityInstanceKeyProp.setValue(key);
+  public MessageSubscriptionRecord setElementInstanceKey(long key) {
+    elementInstanceKeyProp.setValue(key);
     return this;
   }
 

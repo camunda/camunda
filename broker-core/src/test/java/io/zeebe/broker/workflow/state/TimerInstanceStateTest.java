@@ -47,7 +47,7 @@ public class TimerInstanceStateTest {
   public void shouldInsertTimer() {
     // given
     final TimerInstance timer = new TimerInstance();
-    timer.setActivityInstanceKey(1L);
+    timer.setElementInstanceKey(1L);
     timer.setKey(2L);
     timer.setDueDate(1000L);
     state.put(timer);
@@ -60,7 +60,7 @@ public class TimerInstanceStateTest {
     assertThat(timers).hasSize(1);
 
     final TimerInstance readTimer = timers.get(0);
-    assertThat(readTimer.getActivityInstanceKey()).isEqualTo(1L);
+    assertThat(readTimer.getElementInstanceKey()).isEqualTo(1L);
     assertThat(readTimer.getKey()).isEqualTo(2L);
     assertThat(readTimer.getDueDate()).isEqualTo(1000L);
   }
@@ -69,18 +69,18 @@ public class TimerInstanceStateTest {
   public void shouldRemoveTimer() {
     // given
     final TimerInstance timer1 = new TimerInstance();
-    timer1.setActivityInstanceKey(1L);
+    timer1.setElementInstanceKey(1L);
     timer1.setDueDate(1000L);
     state.put(timer1);
 
     final TimerInstance timer2 = new TimerInstance();
-    timer2.setActivityInstanceKey(2L);
+    timer2.setElementInstanceKey(2L);
     timer2.setDueDate(2000L);
     state.put(timer2);
 
     // when
     final TimerInstance timer = new TimerInstance();
-    timer.setActivityInstanceKey(1L);
+    timer.setElementInstanceKey(1L);
     timer.setDueDate(1000L);
     state.remove(timer);
 
@@ -89,14 +89,14 @@ public class TimerInstanceStateTest {
     state.findTimersWithDueDateBefore(2000L, timers::add);
 
     assertThat(timers).hasSize(1);
-    assertThat(timers.get(0).getActivityInstanceKey()).isEqualTo(2L);
+    assertThat(timers.get(0).getElementInstanceKey()).isEqualTo(2L);
   }
 
   @Test
-  public void shouldGetTimerByActivityInstanceKey() {
+  public void shouldGetTimerByElementInstanceKey() {
     // given
     final TimerInstance timer = new TimerInstance();
-    timer.setActivityInstanceKey(1L);
+    timer.setElementInstanceKey(1L);
     timer.setKey(2L);
     timer.setDueDate(1000L);
     state.put(timer);
@@ -106,7 +106,7 @@ public class TimerInstanceStateTest {
 
     // then
     assertThat(readTimer).isNotNull();
-    assertThat(readTimer.getActivityInstanceKey()).isEqualTo(1L);
+    assertThat(readTimer.getElementInstanceKey()).isEqualTo(1L);
     assertThat(readTimer.getKey()).isEqualTo(2L);
     assertThat(readTimer.getDueDate()).isEqualTo(1000L);
 
@@ -118,23 +118,23 @@ public class TimerInstanceStateTest {
   public void shouldFindTimersWithDueDate() {
     // given
     final TimerInstance timer1 = new TimerInstance();
-    timer1.setActivityInstanceKey(1L);
+    timer1.setElementInstanceKey(1L);
     timer1.setDueDate(1000L);
     state.put(timer1);
 
     final TimerInstance timer2 = new TimerInstance();
-    timer2.setActivityInstanceKey(2L);
+    timer2.setElementInstanceKey(2L);
     timer2.setDueDate(2000L);
     state.put(timer2);
 
     final TimerInstance timer3 = new TimerInstance();
-    timer3.setActivityInstanceKey(3L);
+    timer3.setElementInstanceKey(3L);
     timer3.setDueDate(3000L);
     state.put(timer3);
 
     // when
     final List<Long> keys = new ArrayList<>();
-    state.findTimersWithDueDateBefore(2000L, t -> keys.add(t.getActivityInstanceKey()));
+    state.findTimersWithDueDateBefore(2000L, t -> keys.add(t.getElementInstanceKey()));
 
     // then
     assertThat(keys).hasSize(2);
@@ -145,17 +145,17 @@ public class TimerInstanceStateTest {
   public void shouldReturnNextDueDate() {
     // given
     final TimerInstance timer1 = new TimerInstance();
-    timer1.setActivityInstanceKey(1L);
+    timer1.setElementInstanceKey(1L);
     timer1.setDueDate(1000L);
     state.put(timer1);
 
     final TimerInstance timer2 = new TimerInstance();
-    timer2.setActivityInstanceKey(2L);
+    timer2.setElementInstanceKey(2L);
     timer2.setDueDate(2000L);
     state.put(timer2);
 
     final TimerInstance timer3 = new TimerInstance();
-    timer3.setActivityInstanceKey(3L);
+    timer3.setElementInstanceKey(3L);
     timer3.setDueDate(3000L);
     state.put(timer3);
 
@@ -180,17 +180,17 @@ public class TimerInstanceStateTest {
   public void shouldReturnNegativeDueDateIfNoMoreTimers() {
     // given
     final TimerInstance timer1 = new TimerInstance();
-    timer1.setActivityInstanceKey(1L);
+    timer1.setElementInstanceKey(1L);
     timer1.setDueDate(1000L);
     state.put(timer1);
 
     final TimerInstance timer2 = new TimerInstance();
-    timer2.setActivityInstanceKey(1L);
+    timer2.setElementInstanceKey(1L);
     timer2.setDueDate(1000L);
     state.put(timer2);
 
     final TimerInstance timer3 = new TimerInstance();
-    timer3.setActivityInstanceKey(3L);
+    timer3.setElementInstanceKey(3L);
     timer3.setDueDate(3000L);
     state.put(timer3);
 
@@ -205,12 +205,12 @@ public class TimerInstanceStateTest {
   public void shouldFindTimersWithDueDateUntilNotConsumed() {
     // given
     final TimerInstance timer1 = new TimerInstance();
-    timer1.setActivityInstanceKey(1L);
+    timer1.setElementInstanceKey(1L);
     timer1.setDueDate(1000L);
     state.put(timer1);
 
     final TimerInstance timer2 = new TimerInstance();
-    timer2.setActivityInstanceKey(2L);
+    timer2.setElementInstanceKey(2L);
     timer2.setDueDate(2000L);
     state.put(timer2);
 
@@ -220,7 +220,7 @@ public class TimerInstanceStateTest {
         state.findTimersWithDueDateBefore(
             2000L,
             t -> {
-              keys.add(t.getActivityInstanceKey());
+              keys.add(t.getElementInstanceKey());
               return false;
             });
 

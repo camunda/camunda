@@ -23,19 +23,19 @@ import io.zeebe.exporter.record.value.TimerRecordValue;
 
 public class TimerRecordValueImpl extends RecordValueImpl implements TimerRecordValue {
 
-  private final long activityInstanceKey;
+  private final long elementInstanceKey;
   private final long dueDate;
 
   public TimerRecordValueImpl(
-      ExporterObjectMapper objectMapper, long activityInstanceKey, long dueDate) {
+      ExporterObjectMapper objectMapper, long elementInstanceKey, long dueDate) {
     super(objectMapper);
-    this.activityInstanceKey = activityInstanceKey;
+    this.elementInstanceKey = elementInstanceKey;
     this.dueDate = dueDate;
   }
 
   @Override
-  public long getActivityInstanceKey() {
-    return activityInstanceKey;
+  public long getElementInstanceKey() {
+    return elementInstanceKey;
   }
 
   @Override
@@ -47,7 +47,7 @@ public class TimerRecordValueImpl extends RecordValueImpl implements TimerRecord
   public int hashCode() {
     final int prime = 31;
     int result = 1;
-    result = prime * result + (int) (activityInstanceKey ^ (activityInstanceKey >>> 32));
+    result = prime * result + (int) (elementInstanceKey ^ (elementInstanceKey >>> 32));
     result = prime * result + (int) (dueDate ^ (dueDate >>> 32));
     return result;
   }
@@ -64,7 +64,7 @@ public class TimerRecordValueImpl extends RecordValueImpl implements TimerRecord
       return false;
     }
     final TimerRecordValueImpl other = (TimerRecordValueImpl) obj;
-    if (activityInstanceKey != other.activityInstanceKey) {
+    if (elementInstanceKey != other.elementInstanceKey) {
       return false;
     }
     return dueDate == other.dueDate;
@@ -72,8 +72,8 @@ public class TimerRecordValueImpl extends RecordValueImpl implements TimerRecord
 
   @Override
   public String toString() {
-    return "TimerRecordValueImpl [activityInstanceKey="
-        + activityInstanceKey
+    return "TimerRecordValueImpl [elementInstanceKey="
+        + elementInstanceKey
         + ", dueDate="
         + dueDate
         + "]";

@@ -246,7 +246,7 @@ public class MessageCorrelationTest {
                 .limit(2)
                 .asList())
         .extracting(
-            r -> tuple(r.getValue().getActivityId(), r.getValue().getPayloadAsMap().get("nr")))
+            r -> tuple(r.getValue().getElementId(), r.getValue().getPayloadAsMap().get("nr")))
         .contains(tuple("message1", 1), tuple("message2", 2));
   }
 
@@ -281,7 +281,7 @@ public class MessageCorrelationTest {
                 .limit(2)
                 .asList())
         .extracting(
-            r -> tuple(r.getValue().getActivityId(), r.getValue().getPayloadAsMap().get("nr")))
+            r -> tuple(r.getValue().getElementId(), r.getValue().getPayloadAsMap().get("nr")))
         .contains(tuple("message1", 1), tuple("message2", 2));
   }
 
@@ -344,7 +344,7 @@ public class MessageCorrelationTest {
                 .limit(2)
                 .asList())
         .extracting(
-            r -> tuple(r.getValue().getActivityId(), r.getValue().getPayloadAsMap().get("nr")))
+            r -> tuple(r.getValue().getElementId(), r.getValue().getPayloadAsMap().get("nr")))
         .contains(tuple("message1", 1), tuple("message2", 2));
   }
 }

@@ -520,7 +520,7 @@ public class ExporterStreamProcessorTest {
 
     final MessageSubscriptionRecord record =
         new MessageSubscriptionRecord()
-            .setActivityInstanceKey(activityInstanceKey)
+            .setElementInstanceKey(activityInstanceKey)
             .setMessageName(wrapString(messageName))
             .setWorkflowInstanceKey(workflowInstanceKey)
             .setCorrelationKey(wrapString(correlationKey));
@@ -594,7 +594,7 @@ public class ExporterStreamProcessorTest {
 
     final WorkflowInstanceSubscriptionRecord record =
         new WorkflowInstanceSubscriptionRecord()
-            .setActivityInstanceKey(activityInstanceKey)
+            .setElementInstanceKey(activityInstanceKey)
             .setMessageName(wrapString(messageName))
             .setSubscriptionPartitionId(subscriptionPartitionId)
             .setWorkflowInstanceKey(workflowInstanceKey)

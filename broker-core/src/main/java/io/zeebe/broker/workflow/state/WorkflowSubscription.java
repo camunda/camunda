@@ -36,27 +36,26 @@ public class WorkflowSubscription implements Subscription {
   private final DirectBuffer correlationKey = new UnsafeBuffer();
 
   private long workflowInstanceKey;
-  private long activityInstanceKey;
+  private long elementInstanceKey;
   private int subscriptionPartitionId;
-
   private long commandSentTime;
 
   private int state = STATE_OPENING;
 
   public WorkflowSubscription() {}
 
-  public WorkflowSubscription(long workflowInstanceKey, long activityInstanceKey) {
+  public WorkflowSubscription(long workflowInstanceKey, long elementInstanceKey) {
     this.workflowInstanceKey = workflowInstanceKey;
-    this.activityInstanceKey = activityInstanceKey;
+    this.elementInstanceKey = elementInstanceKey;
   }
 
   public WorkflowSubscription(
       long workflowInstanceKey,
-      long activityInstanceKey,
+      long elementInstanceKey,
       DirectBuffer messageName,
       DirectBuffer correlationKey) {
     this.workflowInstanceKey = workflowInstanceKey;
-    this.activityInstanceKey = activityInstanceKey;
+    this.elementInstanceKey = elementInstanceKey;
 
     this.messageName.wrap(messageName);
     this.correlationKey.wrap(correlationKey);
@@ -66,11 +65,11 @@ public class WorkflowSubscription implements Subscription {
       final String messageName,
       final String correlationKey,
       final long workflowInstanceKey,
-      final long activityInstanceKey,
+      final long elementInstanceKey,
       final long commandSentTime) {
     this(
         workflowInstanceKey,
-        activityInstanceKey,
+        elementInstanceKey,
         new UnsafeBuffer(messageName.getBytes()),
         new UnsafeBuffer(correlationKey.getBytes()));
 
@@ -91,8 +90,8 @@ public class WorkflowSubscription implements Subscription {
     return workflowInstanceKey;
   }
 
-  public long getActivityInstanceKey() {
-    return activityInstanceKey;
+  public long getElementInstanceKey() {
+    return elementInstanceKey;
   }
 
   public long getCommandSentTime() {
@@ -133,7 +132,7 @@ public class WorkflowSubscription implements Subscription {
     this.workflowInstanceKey = buffer.getLong(offset, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
-    this.activityInstanceKey = buffer.getLong(offset, STATE_BYTE_ORDER);
+    this.elementInstanceKey = buffer.getLong(offset, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
     this.subscriptionPartitionId = buffer.getInt(offset, STATE_BYTE_ORDER);
@@ -159,7 +158,7 @@ public class WorkflowSubscription implements Subscription {
     buffer.putLong(offset, workflowInstanceKey, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
-    buffer.putLong(offset, activityInstanceKey, STATE_BYTE_ORDER);
+    buffer.putLong(offset, elementInstanceKey, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
     buffer.putInt(offset, subscriptionPartitionId, STATE_BYTE_ORDER);
@@ -191,7 +190,7 @@ public class WorkflowSubscription implements Subscription {
     final int startOffset = offset;
     keyBuffer.putLong(offset, workflowInstanceKey, STATE_BYTE_ORDER);
     offset += Long.BYTES;
-    keyBuffer.putLong(offset, activityInstanceKey, STATE_BYTE_ORDER);
+    keyBuffer.putLong(offset, elementInstanceKey, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
     assert (offset - startOffset) == getKeyLength()

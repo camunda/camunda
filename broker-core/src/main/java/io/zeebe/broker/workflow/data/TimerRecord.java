@@ -22,19 +22,19 @@ import io.zeebe.msgpack.property.LongProperty;
 
 public class TimerRecord extends UnpackedObject {
 
-  private final LongProperty activityInstanceKeyProp = new LongProperty("activityInstanceKey");
+  private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey");
   private final LongProperty dueDateProp = new LongProperty("dueDate");
 
   public TimerRecord() {
-    this.declareProperty(activityInstanceKeyProp).declareProperty(dueDateProp);
+    this.declareProperty(elementInstanceKeyProp).declareProperty(dueDateProp);
   }
 
-  public long getActivityInstanceKey() {
-    return activityInstanceKeyProp.getValue();
+  public long getElementInstanceKey() {
+    return elementInstanceKeyProp.getValue();
   }
 
-  public TimerRecord setActivityInstanceKey(long key) {
-    activityInstanceKeyProp.setValue(key);
+  public TimerRecord setElementInstanceKey(long key) {
+    elementInstanceKeyProp.setValue(key);
     return this;
   }
 
