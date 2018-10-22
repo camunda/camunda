@@ -18,5 +18,10 @@ describe('ListFooter services', () => {
       selection = {all: false, ids: ['123'], excludeIds: []};
       expect(isAnyInstanceSelected(selection)).toBe(true);
     });
+
+    it('should return true if single instances is not selected by Id', () => {
+      selection = {all: true, ids: [], excludeIds: ['124']};
+      expect(isAnyInstanceSelected(selection)).toBe(true);
+    });
   });
 });

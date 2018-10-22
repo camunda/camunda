@@ -152,6 +152,8 @@ export default class List extends React.Component {
   };
 
   renderTableHead() {
+    const isListEmpty = this.props.data.length === 0;
+
     return (
       <THead>
         <TR>
@@ -159,7 +161,7 @@ export default class List extends React.Component {
             <React.Fragment>
               <Styled.CheckAll>
                 <Checkbox
-                  disabled={!this.props.filterCount}
+                  disabled={isListEmpty}
                   isChecked={this.areAllInstancesSelected()}
                   onChange={this.handleSelectAll}
                   title="Select all instances"
