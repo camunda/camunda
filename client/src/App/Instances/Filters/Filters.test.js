@@ -930,9 +930,7 @@ describe('Filters', () => {
         target: {
           value: mockPropsWithActivityIds.activityIds[0].value,
           name: 'activityId'
-        },
-
-        persist: () => {}
+        }
       });
 
       // then
@@ -1221,9 +1219,7 @@ describe('Filters', () => {
         target: {
           value: mockPropsWithActivityIds.activityIds[0].value,
           name: 'activityId'
-        },
-
-        persist: () => {}
+        }
       });
       node.update();
 
