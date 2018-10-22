@@ -33,11 +33,6 @@ public class MessageSubscriptionRecordStream
     return new MessageSubscriptionRecordStream(wrappedStream);
   }
 
-  public MessageSubscriptionRecordStream withWorkflowInstancePartitionId(
-      final int workflowInstancePartitionId) {
-    return valueFilter(v -> v.getWorkflowInstancePartitionId() == workflowInstancePartitionId);
-  }
-
   public MessageSubscriptionRecordStream withWorkflowInstanceKey(final long workflowInstanceKey) {
     return valueFilter(v -> v.getWorkflowInstanceKey() == workflowInstanceKey);
   }

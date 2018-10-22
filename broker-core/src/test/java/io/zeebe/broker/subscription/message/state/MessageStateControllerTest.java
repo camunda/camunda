@@ -111,8 +111,7 @@ public class MessageStateControllerTest {
   public void shouldNotExistIfSubscriptionNotStored() {
     // given
     final MessageSubscription subscription =
-        new MessageSubscription(
-            "messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 3, 1234);
+        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 1234);
 
     // when
     final boolean exist = stateController.exist(subscription);
@@ -125,8 +124,7 @@ public class MessageStateControllerTest {
   public void shouldExistSubscription() {
     // given
     final MessageSubscription subscription =
-        new MessageSubscription(
-            "messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 3, 1234);
+        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 1234);
     stateController.put(subscription);
 
     // when
@@ -188,8 +186,7 @@ public class MessageStateControllerTest {
   public void shouldFindSubscription() {
     // given
     final MessageSubscription subscription =
-        new MessageSubscription(
-            "messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 3, 1234);
+        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 1234);
     stateController.put(subscription);
 
     // when
@@ -207,13 +204,11 @@ public class MessageStateControllerTest {
   public void shouldFindMoreSubscriptions() {
     // given
     final MessageSubscription subscription =
-        new MessageSubscription(
-            "messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 3, 1234);
+        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 1234);
     final MessageSubscription subscription2 =
-        new MessageSubscription(
-            "messageName", "correlationKey", "{\"foo\":\"bar\"}", 2, 2, 3, 1234);
+        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 2, 3, 1234);
     final MessageSubscription subscription3 =
-        new MessageSubscription("otherName", "correlationKey", "{\"foo\":\"bar\"}", 3, 2, 3, 1234);
+        new MessageSubscription("otherName", "correlationKey", "{\"foo\":\"bar\"}", 3, 4, 1234);
     stateController.put(subscription);
     stateController.put(subscription2);
     stateController.put(subscription3);
@@ -226,24 +221,23 @@ public class MessageStateControllerTest {
     assertThat(readSubscriptions.size()).isEqualTo(2);
 
     MessageSubscription readSubscription = readSubscriptions.get(0);
-    assertSubscription(subscription, readSubscription, 1234, 1, 2, 3);
+    assertSubscription(subscription, readSubscription, 1234, 1, 2);
     readSubscription = readSubscriptions.get(1);
-    assertSubscription(subscription2, readSubscription, 1234, 2, 2, 3);
+    assertSubscription(subscription2, readSubscription, 1234, 2, 3);
 
     // and
     final List<MessageSubscription> otherSubscriptions =
         stateController.findSubscriptions(wrapString("otherName"), wrapString("correlationKey"));
 
     assertThat(otherSubscriptions.size()).isEqualTo(1);
-    assertSubscription(subscription3, otherSubscriptions.get(0), 1234, 3, 2, 3);
+    assertSubscription(subscription3, otherSubscriptions.get(0), 1234, 3, 4);
   }
 
   @Test
   public void shouldFindSubscriptionWithMessageStored() {
     // given
     final MessageSubscription subscription =
-        new MessageSubscription(
-            "messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 3, 1234);
+        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 1234);
     final Message message = createMessage(1L, "name", "correlationKey");
 
     stateController.put(message);
@@ -262,14 +256,13 @@ public class MessageStateControllerTest {
 
   private void assertSubscription(
       MessageSubscription subscription, MessageSubscription readSubscription) {
-    assertSubscription(subscription, readSubscription, 1234, 1, 2, 3);
+    assertSubscription(subscription, readSubscription, 1234, 1, 2);
   }
 
   private void assertSubscription(
       MessageSubscription subscription,
       MessageSubscription readSubscription,
       long sendTime,
-      int partitionId,
       int wfInstanceKey,
       int actInstanceKey) {
     assertThat(readSubscription.getMessageName()).isEqualTo(subscription.getMessageName());
@@ -277,7 +270,6 @@ public class MessageStateControllerTest {
     assertThat(readSubscription.getMessagePayload()).isEqualTo(subscription.getMessagePayload());
 
     assertThat(readSubscription.getCommandSentTime()).isEqualTo(sendTime);
-    assertThat(readSubscription.getWorkflowInstancePartitionId()).isEqualTo(partitionId);
     assertThat(readSubscription.getWorkflowInstanceKey()).isEqualTo(wfInstanceKey);
     assertThat(readSubscription.getActivityInstanceKey()).isEqualTo(actInstanceKey);
   }
@@ -307,11 +299,9 @@ public class MessageStateControllerTest {
   public void shouldNotFindMessageSubscriptionBeforeTime() {
     // given
     final MessageSubscription subscription =
-        new MessageSubscription(
-            "messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 3, 1234);
+        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 1234);
     final MessageSubscription subscription2 =
-        new MessageSubscription(
-            "messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 3, 3, 4567);
+        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 2, 3, 4567);
     final Message message = createMessage(1L, "name", "correlationKey", "{}", "nr1", 1234);
 
     stateController.put(message);
@@ -375,10 +365,9 @@ public class MessageStateControllerTest {
   public void shouldFindMessageSubscriptionBeforeTime() {
     // given
     final MessageSubscription subscription =
-        new MessageSubscription(
-            "messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 3, 1234);
+        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 1234);
     final MessageSubscription subscription2 =
-        new MessageSubscription("otherName", "otherKey", "{\"foo\":\"bar\"}", 1, 3, 3, 2000);
+        new MessageSubscription("otherName", "otherKey", "{\"foo\":\"bar\"}", 2, 3, 2000);
     final Message message = createMessage(1L, "name", "correlationKey", "{}", "nr1", 1234);
 
     stateController.put(message);
@@ -403,10 +392,9 @@ public class MessageStateControllerTest {
   public void shouldFindMessageSubscriptionBeforeTimeInOrder() {
     // given
     final MessageSubscription subscription =
-        new MessageSubscription(
-            "messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 3, 1234);
+        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 1234);
     final MessageSubscription subscription2 =
-        new MessageSubscription("otherName", "otherKey", "{\"foo\":\"bar\"}", 1, 4, 4, 2000);
+        new MessageSubscription("otherName", "otherKey", "{\"foo\":\"bar\"}", 3, 4, 2000);
     final Message message = createMessage(1L, "name", "correlationKey", "{}", "nr1", 1234);
 
     stateController.put(message);
@@ -422,7 +410,7 @@ public class MessageStateControllerTest {
     assertThat(readSubscriptions.size()).isEqualTo(2);
     assertThat(readSubscriptions)
         .extracting(s -> s.getWorkflowInstanceKey())
-        .containsExactly(2L, 4L);
+        .containsExactly(1L, 3L);
   }
 
   @Test
@@ -536,8 +524,7 @@ public class MessageStateControllerTest {
   public void shouldRemoveSubscription() {
     // given
     final MessageSubscription subscription =
-        new MessageSubscription(
-            "messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 3, 1234);
+        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 1234);
 
     stateController.put(subscription);
 
@@ -562,16 +549,14 @@ public class MessageStateControllerTest {
   public void shouldRemoveSubscriptionWithRecord() {
     // given
     final MessageSubscription subscription =
-        new MessageSubscription(
-            "messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 3, 1234);
+        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 1234);
 
     stateController.put(subscription);
 
     // when
     final MessageSubscriptionRecord messageSubscriptionRecord = new MessageSubscriptionRecord();
-    messageSubscriptionRecord.setWorkflowInstancePartitionId(1);
-    messageSubscriptionRecord.setWorkflowInstanceKey(2);
-    messageSubscriptionRecord.setActivityInstanceKey(3);
+    messageSubscriptionRecord.setWorkflowInstanceKey(1);
+    messageSubscriptionRecord.setActivityInstanceKey(2);
     final boolean removed = stateController.remove(messageSubscriptionRecord);
 
     // then
@@ -593,8 +578,7 @@ public class MessageStateControllerTest {
   public void shouldNotFailOnRemoveSubscriptionTwice() {
     // given
     final MessageSubscription subscription =
-        new MessageSubscription(
-            "messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 3, 1234);
+        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 1234);
 
     stateController.put(subscription);
 
@@ -616,11 +600,9 @@ public class MessageStateControllerTest {
   public void shouldNotRemoveSubscriptionOnDifferentKey() {
     // given
     final MessageSubscription subscription =
-        new MessageSubscription(
-            "messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 3, 1234);
+        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 1234);
     final MessageSubscription subscription2 =
-        new MessageSubscription(
-            "messageName", "correlationKey", "{\"foo\":\"bar\"}", 2, 2, 3, 1234);
+        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 2, 3, 1234);
 
     stateController.put(subscription);
 

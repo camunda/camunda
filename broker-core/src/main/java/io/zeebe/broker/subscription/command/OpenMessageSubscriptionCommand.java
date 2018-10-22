@@ -22,7 +22,6 @@ import static io.zeebe.broker.subscription.OpenMessageSubscriptionDecoder.correl
 import static io.zeebe.broker.subscription.OpenMessageSubscriptionDecoder.messageNameHeaderLength;
 import static io.zeebe.broker.subscription.OpenMessageSubscriptionDecoder.subscriptionPartitionIdNullValue;
 import static io.zeebe.broker.subscription.OpenMessageSubscriptionDecoder.workflowInstanceKeyNullValue;
-import static io.zeebe.broker.subscription.OpenMessageSubscriptionDecoder.workflowInstancePartitionIdNullValue;
 
 import io.zeebe.broker.subscription.OpenMessageSubscriptionDecoder;
 import io.zeebe.broker.subscription.OpenMessageSubscriptionEncoder;
@@ -38,7 +37,6 @@ public class OpenMessageSubscriptionCommand
   private final OpenMessageSubscriptionDecoder decoder = new OpenMessageSubscriptionDecoder();
 
   private int subscriptionPartitionId;
-  private int workflowInstancePartitionId;
   private long workflowInstanceKey;
   private long activityInstanceKey;
 
@@ -70,7 +68,6 @@ public class OpenMessageSubscriptionCommand
 
     encoder
         .subscriptionPartitionId(subscriptionPartitionId)
-        .workflowInstancePartitionId(workflowInstancePartitionId)
         .workflowInstanceKey(workflowInstanceKey)
         .activityInstanceKey(activityInstanceKey)
         .putMessageName(messageName, 0, messageName.capacity())
@@ -82,7 +79,6 @@ public class OpenMessageSubscriptionCommand
     super.wrap(buffer, offset, length);
 
     subscriptionPartitionId = decoder.subscriptionPartitionId();
-    workflowInstancePartitionId = decoder.workflowInstancePartitionId();
     workflowInstanceKey = decoder.workflowInstanceKey();
     activityInstanceKey = decoder.activityInstanceKey();
 
@@ -104,7 +100,6 @@ public class OpenMessageSubscriptionCommand
   @Override
   public void reset() {
     subscriptionPartitionId = subscriptionPartitionIdNullValue();
-    workflowInstancePartitionId = workflowInstancePartitionIdNullValue();
     workflowInstanceKey = workflowInstanceKeyNullValue();
     activityInstanceKey = activityInstanceKeyNullValue();
     messageName.wrap(0, 0);
@@ -117,14 +112,6 @@ public class OpenMessageSubscriptionCommand
 
   public void setSubscriptionPartitionId(int subscriptionPartitionId) {
     this.subscriptionPartitionId = subscriptionPartitionId;
-  }
-
-  public int getWorkflowInstancePartitionId() {
-    return workflowInstancePartitionId;
-  }
-
-  public void setWorkflowInstancePartitionId(int workflowInstancePartitionId) {
-    this.workflowInstancePartitionId = workflowInstancePartitionId;
   }
 
   public long getWorkflowInstanceKey() {

@@ -46,21 +46,35 @@ public class PendingWorkflowInstanceSubscriptionChecker implements Runnable {
         workflowState.findSubscriptionsBefore(ActorClock.currentTimeMillis() - subscriptionTimeout);
 
     for (WorkflowSubscription subscription : pendingSubscriptions) {
-      if (subscription.isNotOpen()) {
-        if (sendCommand(subscription)) {
-          workflowState.updateCommandSendTime(subscription);
-        } else {
-          return;
-        }
+      boolean success = true;
+
+      if (subscription.isOpening()) {
+        success = sendOpenCommand(subscription);
+        workflowState.updateCommandSendTime(subscription);
+
+      } else if (subscription.isClosing()) {
+        success = sendCloseCommand(subscription);
+        workflowState.updateCommandSendTime(subscription);
+      }
+
+      if (!success) {
+        return;
       }
     }
   }
 
-  private boolean sendCommand(WorkflowSubscription subscription) {
+  private boolean sendOpenCommand(WorkflowSubscription subscription) {
     return commandSender.openMessageSubscription(
         subscription.getWorkflowInstanceKey(),
         subscription.getActivityInstanceKey(),
         subscription.getMessageName(),
         subscription.getCorrelationKey());
+  }
+
+  private boolean sendCloseCommand(WorkflowSubscription subscription) {
+    return commandSender.closeMessageSubscription(
+        subscription.getSubscriptionPartitionId(),
+        subscription.getWorkflowInstanceKey(),
+        subscription.getActivityInstanceKey());
   }
 }

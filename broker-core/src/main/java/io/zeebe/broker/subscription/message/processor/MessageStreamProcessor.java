@@ -73,6 +73,11 @@ public class MessageStreamProcessor implements StreamProcessorLifecycleAware {
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.CORRELATE,
             new CorrelateMessageSubscriptionProcessor(messageStateController))
+        .onCommand(
+            ValueType.MESSAGE_SUBSCRIPTION,
+            MessageSubscriptionIntent.CLOSE,
+            new CloseMessageSubscriptionProcessor(
+                messageStateController, subscriptionCommandSender))
         .withStateController(messageStateController)
         .withListener(this)
         .build();

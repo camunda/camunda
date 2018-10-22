@@ -17,46 +17,37 @@
  */
 package io.zeebe.broker.subscription.command;
 
-import static io.zeebe.broker.subscription.OpenWorkflowInstanceSubscriptionDecoder.activityInstanceKeyNullValue;
-import static io.zeebe.broker.subscription.OpenWorkflowInstanceSubscriptionDecoder.messageNameHeaderLength;
-import static io.zeebe.broker.subscription.OpenWorkflowInstanceSubscriptionDecoder.subscriptionPartitionIdNullValue;
-import static io.zeebe.broker.subscription.OpenWorkflowInstanceSubscriptionDecoder.workflowInstanceKeyNullValue;
+import static io.zeebe.broker.subscription.CloseWorkflowInstanceSubscriptionDecoder.elementInstanceKeyNullValue;
+import static io.zeebe.broker.subscription.CloseWorkflowInstanceSubscriptionDecoder.subscriptionPartitionIdNullValue;
+import static io.zeebe.broker.subscription.CloseWorkflowInstanceSubscriptionDecoder.workflowInstanceKeyNullValue;
 
-import io.zeebe.broker.subscription.OpenWorkflowInstanceSubscriptionDecoder;
-import io.zeebe.broker.subscription.OpenWorkflowInstanceSubscriptionEncoder;
+import io.zeebe.broker.subscription.CloseWorkflowInstanceSubscriptionDecoder;
+import io.zeebe.broker.subscription.CloseWorkflowInstanceSubscriptionEncoder;
 import io.zeebe.broker.util.SbeBufferWriterReader;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 
-public class OpenWorkflowInstanceSubscriptionCommand
+public class CloseWorkflowInstanceSubscriptionCommand
     extends SbeBufferWriterReader<
-        OpenWorkflowInstanceSubscriptionEncoder, OpenWorkflowInstanceSubscriptionDecoder> {
+        CloseWorkflowInstanceSubscriptionEncoder, CloseWorkflowInstanceSubscriptionDecoder> {
 
-  private final OpenWorkflowInstanceSubscriptionEncoder encoder =
-      new OpenWorkflowInstanceSubscriptionEncoder();
-  private final OpenWorkflowInstanceSubscriptionDecoder decoder =
-      new OpenWorkflowInstanceSubscriptionDecoder();
+  private final CloseWorkflowInstanceSubscriptionEncoder encoder =
+      new CloseWorkflowInstanceSubscriptionEncoder();
+  private final CloseWorkflowInstanceSubscriptionDecoder decoder =
+      new CloseWorkflowInstanceSubscriptionDecoder();
 
   private int subscriptionPartitionId;
   private long workflowInstanceKey;
-  private long activityInstanceKey;
-
-  private final UnsafeBuffer messageName = new UnsafeBuffer(0, 0);
+  private long elementInstanceKey;
 
   @Override
-  protected OpenWorkflowInstanceSubscriptionEncoder getBodyEncoder() {
+  protected CloseWorkflowInstanceSubscriptionEncoder getBodyEncoder() {
     return encoder;
   }
 
   @Override
-  protected OpenWorkflowInstanceSubscriptionDecoder getBodyDecoder() {
+  protected CloseWorkflowInstanceSubscriptionDecoder getBodyDecoder() {
     return decoder;
-  }
-
-  @Override
-  public int getLength() {
-    return super.getLength() + messageNameHeaderLength() + messageName.capacity();
   }
 
   @Override
@@ -66,8 +57,7 @@ public class OpenWorkflowInstanceSubscriptionCommand
     encoder
         .subscriptionPartitionId(subscriptionPartitionId)
         .workflowInstanceKey(workflowInstanceKey)
-        .activityInstanceKey(activityInstanceKey)
-        .putMessageName(messageName, 0, messageName.capacity());
+        .elementInstanceKey(elementInstanceKey);
   }
 
   @Override
@@ -76,21 +66,14 @@ public class OpenWorkflowInstanceSubscriptionCommand
 
     subscriptionPartitionId = decoder.subscriptionPartitionId();
     workflowInstanceKey = decoder.workflowInstanceKey();
-    activityInstanceKey = decoder.activityInstanceKey();
-
-    offset = decoder.limit();
-
-    offset += messageNameHeaderLength();
-    final int messageNameLength = decoder.messageNameLength();
-    messageName.wrap(buffer, offset, messageNameLength);
+    elementInstanceKey = decoder.elementInstanceKey();
   }
 
   @Override
   public void reset() {
     subscriptionPartitionId = subscriptionPartitionIdNullValue();
     workflowInstanceKey = workflowInstanceKeyNullValue();
-    activityInstanceKey = activityInstanceKeyNullValue();
-    messageName.wrap(0, 0);
+    elementInstanceKey = elementInstanceKeyNullValue();
   }
 
   public int getSubscriptionPartitionId() {
@@ -109,15 +92,11 @@ public class OpenWorkflowInstanceSubscriptionCommand
     this.workflowInstanceKey = workflowInstanceKey;
   }
 
-  public long getActivityInstanceKey() {
-    return activityInstanceKey;
+  public long getElementInstanceKey() {
+    return elementInstanceKey;
   }
 
-  public void setActivityInstanceKey(long activityInstanceKey) {
-    this.activityInstanceKey = activityInstanceKey;
-  }
-
-  public DirectBuffer getMessageName() {
-    return messageName;
+  public void setElementInstanceKey(long elementInstanceKey) {
+    this.elementInstanceKey = elementInstanceKey;
   }
 }

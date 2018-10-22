@@ -254,7 +254,6 @@ public class ExporterRecordMapper {
         objectMapper,
         asString(record.getMessageName()),
         asString(record.getCorrelationKey()),
-        record.getWorkflowInstancePartitionId(),
         record.getWorkflowInstanceKey(),
         record.getActivityInstanceKey());
   }

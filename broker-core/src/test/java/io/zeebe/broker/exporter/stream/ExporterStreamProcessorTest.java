@@ -516,7 +516,6 @@ public class ExporterStreamProcessorTest {
     final long activityInstanceKey = 1L;
     final String messageName = "name";
     final long workflowInstanceKey = 1L;
-    final int workflowInstancePartitionId = 1;
     final String correlationKey = "key";
 
     final MessageSubscriptionRecord record =
@@ -524,17 +523,11 @@ public class ExporterStreamProcessorTest {
             .setActivityInstanceKey(activityInstanceKey)
             .setMessageName(wrapString(messageName))
             .setWorkflowInstanceKey(workflowInstanceKey)
-            .setWorkflowInstancePartitionId(workflowInstancePartitionId)
             .setCorrelationKey(wrapString(correlationKey));
 
     final MessageSubscriptionRecordValue recordValue =
         new MessageSubscriptionRecordValueImpl(
-            OBJECT_MAPPER,
-            messageName,
-            correlationKey,
-            workflowInstancePartitionId,
-            workflowInstanceKey,
-            activityInstanceKey);
+            OBJECT_MAPPER, messageName, correlationKey, workflowInstanceKey, activityInstanceKey);
 
     // then
     assertRecordExported(MessageSubscriptionIntent.CORRELATE, record, recordValue);

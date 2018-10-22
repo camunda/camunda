@@ -22,6 +22,7 @@ import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.clustering.base.topology.TopologyPartitionListenerImpl;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.logstreams.log.LogStream;
+import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.impl.SubscriptionUtil;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.util.buffer.BufferWriter;
@@ -35,20 +36,20 @@ import org.agrona.collections.IntArrayList;
  * To ensure that a command is received, each command has an ACK command which is send by the receiver.
  *
  * <pre>
- *+-------------------------------------------------------------------------------------------+
- *|                                  Message Partition                                        |
- *|                                                                                           |
- *+-----------^----------------+---------------------------+----------------------^-----------+
- *            |                |                           |                      |
- *    +-------+------+  +------+--------+       +----------+---------+  +---------+---------+
- *    | Open Message |  | Open Workflow |       | Correlate Workflow |  | Correlate Message |
- *    | Subscription |  | Instance Sub  |       | Instance Sub       |  | Subscription      |
- *    +-------+------+  +------+--------+       +----------+---------+  +---------+---------+
- *            |                |                           |                      |
- * +----------+----------------v---------------------------v----------------------+-----------+
- * |                                                                                          |
- * |                              Workflow Instance Partition                                 |
- * +------------------------------------------------------------------------------------------+
+ *+---------------------------------------------------------------------------------------------------------------------------------------+
+ *|                                                       Message Partition                                                               |
+ *|                                                                                                                                       |
+ *+-----------^----------------+---------------------------+----------------------^-------------------------^------------------+----------+
+ *            |                |                           |                      |                         |                  |
+ *    +-------+------+  +------+--------+       +----------+---------+  +---------+---------+       +-------+-------+  +-------+--------+
+ *    | Open Message |  | Open Workflow |       | Correlate Workflow |  | Correlate Message |       | Close Message |  | Close Workflow |
+ *    | Subscription |  | Instance Sub  |       | Instance Sub       |  | Subscription      |       | Subscription  |  | Instance Sub   |
+ *    +-------+------+  +------+--------+       +----------+---------+  +---------+---------+       +-------+-------+  +-------+--------+
+ *            |                |                           |                      |                         |                  |
+ * +----------+----------------v---------------------------v----------------------+-------------------------+------------------v----------+
+ * |                                                                                                                                      |
+ * |                                                   Workflow Instance Partition                                                        |
+ * +--------------------------------------------------------------------------------------------------------------------------------------+
  * <pre>
  */
 public class SubscriptionCommandSender {
@@ -65,6 +66,12 @@ public class SubscriptionCommandSender {
 
   private final CorrelateMessageSubscriptionCommand correlateMessageSubscriptionCommand =
       new CorrelateMessageSubscriptionCommand();
+
+  private final CloseMessageSubscriptionCommand closeMessageSubscriptionCommand =
+      new CloseMessageSubscriptionCommand();
+
+  private final CloseWorkflowInstanceSubscriptionCommand closeWorkflowInstanceSubscriptionCommand =
+      new CloseWorkflowInstanceSubscriptionCommand();
 
   private final ClientTransport subscriptionClient;
   private final IntArrayList partitionIds;
@@ -96,7 +103,6 @@ public class SubscriptionCommandSender {
     final int subscriptionPartitionId = getSubscriptionPartitionId(correlationKey);
 
     openMessageSubscriptionCommand.setSubscriptionPartitionId(subscriptionPartitionId);
-    openMessageSubscriptionCommand.setWorkflowInstancePartitionId(partitionId);
     openMessageSubscriptionCommand.setWorkflowInstanceKey(workflowInstanceKey);
     openMessageSubscriptionCommand.setActivityInstanceKey(activityInstanceKey);
     openMessageSubscriptionCommand.getMessageName().wrap(messageName);
@@ -114,14 +120,13 @@ public class SubscriptionCommandSender {
   }
 
   public boolean openWorkflowInstanceSubscription(
-      final int workflowInstancePartitionId,
       final long workflowInstanceKey,
       final long activityInstanceKey,
       final DirectBuffer messageName) {
 
+    final int workflowInstancePartitionId = Protocol.decodePartitionId(workflowInstanceKey);
+
     openWorkflowInstanceSubscriptionCommand.setSubscriptionPartitionId(partitionId);
-    openWorkflowInstanceSubscriptionCommand.setWorkflowInstancePartitionId(
-        workflowInstancePartitionId);
     openWorkflowInstanceSubscriptionCommand.setWorkflowInstanceKey(workflowInstanceKey);
     openWorkflowInstanceSubscriptionCommand.setActivityInstanceKey(activityInstanceKey);
     openWorkflowInstanceSubscriptionCommand.getMessageName().wrap(messageName);
@@ -131,15 +136,14 @@ public class SubscriptionCommandSender {
   }
 
   public boolean correlateWorkflowInstanceSubscription(
-      final int workflowInstancePartitionId,
       final long workflowInstanceKey,
       final long activityInstanceKey,
       final DirectBuffer messageName,
       final DirectBuffer payload) {
 
+    final int workflowInstancePartitionId = Protocol.decodePartitionId(workflowInstanceKey);
+
     correlateWorkflowInstanceSubscriptionCommand.setSubscriptionPartitionId(partitionId);
-    correlateWorkflowInstanceSubscriptionCommand.setWorkflowInstancePartitionId(
-        workflowInstancePartitionId);
     correlateWorkflowInstanceSubscriptionCommand.setWorkflowInstanceKey(workflowInstanceKey);
     correlateWorkflowInstanceSubscriptionCommand.setActivityInstanceKey(activityInstanceKey);
     correlateWorkflowInstanceSubscriptionCommand.getMessageName().wrap(messageName);
@@ -156,12 +160,36 @@ public class SubscriptionCommandSender {
       final DirectBuffer messageName) {
 
     correlateMessageSubscriptionCommand.setSubscriptionPartitionId(subscriptionPartitionId);
-    correlateMessageSubscriptionCommand.setWorkflowInstancePartitionId(partitionId);
     correlateMessageSubscriptionCommand.setWorkflowInstanceKey(workflowInstanceKey);
     correlateMessageSubscriptionCommand.setActivityInstanceKey(activityInstanceKey);
     correlateMessageSubscriptionCommand.getMessageName().wrap(messageName);
 
     return sendSubscriptionCommand(subscriptionPartitionId, correlateMessageSubscriptionCommand);
+  }
+
+  public boolean closeMessageSubscription(
+      final int subscriptionPartitionId,
+      final long workflowInstanceKey,
+      final long elementInstanceKey) {
+
+    closeMessageSubscriptionCommand.setSubscriptionPartitionId(subscriptionPartitionId);
+    closeMessageSubscriptionCommand.setWorkflowInstanceKey(workflowInstanceKey);
+    closeMessageSubscriptionCommand.setElementInstanceKey(elementInstanceKey);
+
+    return sendSubscriptionCommand(subscriptionPartitionId, closeMessageSubscriptionCommand);
+  }
+
+  public boolean closeWorkflowInstanceSubscription(
+      final long workflowInstanceKey, final long elementInstanceKey) {
+
+    final int workflowInstancePartitionId = Protocol.decodePartitionId(workflowInstanceKey);
+
+    closeWorkflowInstanceSubscriptionCommand.setSubscriptionPartitionId(partitionId);
+    closeWorkflowInstanceSubscriptionCommand.setWorkflowInstanceKey(workflowInstanceKey);
+    closeWorkflowInstanceSubscriptionCommand.setElementInstanceKey(elementInstanceKey);
+
+    return sendSubscriptionCommand(
+        workflowInstancePartitionId, closeWorkflowInstanceSubscriptionCommand);
   }
 
   private boolean sendSubscriptionCommand(

@@ -26,7 +26,6 @@ public class MessageSubscriptionRecordValueImpl extends RecordValueImpl
     implements MessageSubscriptionRecordValue {
   private final String messageName;
   private final String correlationKey;
-  private final int workflowInstancePartitionId;
   private final long workflowInstanceKey;
   private final long activityInstanceKey;
 
@@ -34,13 +33,11 @@ public class MessageSubscriptionRecordValueImpl extends RecordValueImpl
       final ExporterObjectMapper objectMapper,
       final String messageName,
       final String correlationKey,
-      final int workflowInstancePartitionId,
       final long workflowInstanceKey,
       final long activityInstanceKey) {
     super(objectMapper);
     this.messageName = messageName;
     this.correlationKey = correlationKey;
-    this.workflowInstancePartitionId = workflowInstancePartitionId;
     this.workflowInstanceKey = workflowInstanceKey;
     this.activityInstanceKey = activityInstanceKey;
   }
@@ -53,11 +50,6 @@ public class MessageSubscriptionRecordValueImpl extends RecordValueImpl
   @Override
   public String getCorrelationKey() {
     return correlationKey;
-  }
-
-  @Override
-  public int getWorkflowInstancePartitionId() {
-    return workflowInstancePartitionId;
   }
 
   @Override
@@ -79,8 +71,7 @@ public class MessageSubscriptionRecordValueImpl extends RecordValueImpl
       return false;
     }
     final MessageSubscriptionRecordValueImpl that = (MessageSubscriptionRecordValueImpl) o;
-    return workflowInstancePartitionId == that.workflowInstancePartitionId
-        && workflowInstanceKey == that.workflowInstanceKey
+    return workflowInstanceKey == that.workflowInstanceKey
         && activityInstanceKey == that.activityInstanceKey
         && Objects.equals(messageName, that.messageName)
         && Objects.equals(correlationKey, that.correlationKey);
@@ -88,12 +79,7 @@ public class MessageSubscriptionRecordValueImpl extends RecordValueImpl
 
   @Override
   public int hashCode() {
-    return Objects.hash(
-        messageName,
-        correlationKey,
-        workflowInstancePartitionId,
-        workflowInstanceKey,
-        activityInstanceKey);
+    return Objects.hash(messageName, correlationKey, workflowInstanceKey, activityInstanceKey);
   }
 
   @Override
@@ -105,8 +91,6 @@ public class MessageSubscriptionRecordValueImpl extends RecordValueImpl
         + ", correlationKey='"
         + correlationKey
         + '\''
-        + ", workflowInstancePartitionId="
-        + workflowInstancePartitionId
         + ", workflowInstanceKey="
         + workflowInstanceKey
         + ", activityInstanceKey="

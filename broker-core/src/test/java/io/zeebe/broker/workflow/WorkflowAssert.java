@@ -101,7 +101,6 @@ public class WorkflowAssert {
       Record catchEventEntered,
       Record<MessageSubscriptionRecordValue> subscription) {
     Assertions.assertThat(subscription.getValue())
-        .hasWorkflowInstancePartitionId(catchEventEntered.getMetadata().getPartitionId())
         .hasWorkflowInstanceKey(workflowInstanceKey)
         .hasActivityInstanceKey(catchEventEntered.getKey())
         .hasMessageName("order canceled")

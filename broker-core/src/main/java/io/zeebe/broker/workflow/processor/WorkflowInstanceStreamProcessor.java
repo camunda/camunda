@@ -32,6 +32,7 @@ import io.zeebe.broker.workflow.processor.deployment.DeploymentCreateProcessor;
 import io.zeebe.broker.workflow.processor.deployment.TransformingDeploymentCreateProcessor;
 import io.zeebe.broker.workflow.processor.job.JobCompletedEventProcessor;
 import io.zeebe.broker.workflow.processor.job.JobCreatedProcessor;
+import io.zeebe.broker.workflow.processor.message.CloseWorkflowInstanceSubscription;
 import io.zeebe.broker.workflow.processor.message.CorrelateWorkflowInstanceSubscription;
 import io.zeebe.broker.workflow.processor.message.OpenWorkflowInstanceSubscriptionProcessor;
 import io.zeebe.broker.workflow.processor.timer.CancelTimerProcessor;
@@ -202,7 +203,11 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
             ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION,
             WorkflowInstanceSubscriptionIntent.CORRELATE,
             new CorrelateWorkflowInstanceSubscription(
-                topologyManager, workflowState, subscriptionCommandSender));
+                topologyManager, workflowState, subscriptionCommandSender))
+        .onCommand(
+            ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION,
+            WorkflowInstanceSubscriptionIntent.CLOSE,
+            new CloseWorkflowInstanceSubscription(workflowState));
   }
 
   private void addTimerStreamProcessors(

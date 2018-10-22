@@ -110,7 +110,6 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
     for (final MessageSubscription sub : matchingSubscriptions) {
       final boolean success =
           commandSender.correlateWorkflowInstanceSubscription(
-              sub.getWorkflowInstancePartitionId(),
               sub.getWorkflowInstanceKey(),
               sub.getActivityInstanceKey(),
               messageRecord.getName(),

@@ -23,16 +23,15 @@ import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.workflow.state.WorkflowState;
-import io.zeebe.broker.workflow.state.WorkflowSubscription;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 
-public class OpenWorkflowInstanceSubscriptionProcessor
+public final class CloseWorkflowInstanceSubscription
     implements TypedRecordProcessor<WorkflowInstanceSubscriptionRecord> {
 
   private final WorkflowState workflowState;
 
-  public OpenWorkflowInstanceSubscriptionProcessor(WorkflowState workflowState) {
+  public CloseWorkflowInstanceSubscription(WorkflowState workflowState) {
     this.workflowState = workflowState;
   }
 
@@ -42,20 +41,14 @@ public class OpenWorkflowInstanceSubscriptionProcessor
       TypedResponseWriter responseWriter,
       TypedStreamWriter streamWriter) {
 
-    final WorkflowInstanceSubscriptionRecord subscriptionRecord = record.getValue();
-
-    final WorkflowSubscription subscription = workflowState.findSubscription(subscriptionRecord);
-    if (subscription != null && subscription.isOpening()) {
-      subscription.setOpened();
-      subscription.setSubscriptionPartitionId(subscriptionRecord.getSubscriptionPartitionId());
-      workflowState.put(subscription);
-
+    final boolean removed = workflowState.remove(record.getValue());
+    if (removed) {
       streamWriter.writeFollowUpEvent(
-          record.getKey(), WorkflowInstanceSubscriptionIntent.OPENED, subscriptionRecord);
+          record.getKey(), WorkflowInstanceSubscriptionIntent.CLOSED, record.getValue());
 
     } else {
       streamWriter.writeRejection(
-          record, RejectionType.NOT_APPLICABLE, "subscription is already open");
+          record, RejectionType.NOT_APPLICABLE, "subscription is already closed");
     }
   }
 }

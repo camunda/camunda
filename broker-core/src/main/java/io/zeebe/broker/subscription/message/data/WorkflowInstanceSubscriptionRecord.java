@@ -30,7 +30,7 @@ public class WorkflowInstanceSubscriptionRecord extends UnpackedObject {
       new IntegerProperty("subscriptionPartitionId");
   private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey");
   private final LongProperty activityInstanceKeyProp = new LongProperty("activityInstanceKey");
-  private final StringProperty messageNameProp = new StringProperty("messageName");
+  private final StringProperty messageNameProp = new StringProperty("messageName", "");
   private final DocumentProperty payloadProp = new DocumentProperty("payload");
 
   public WorkflowInstanceSubscriptionRecord() {
