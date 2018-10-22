@@ -128,13 +128,25 @@ public class UpgradeExecutionPlan implements UpgradePlan {
   @Override
   public void execute() {
     validationService.validateVersions(client, fromVersion, toVersion);
-    ESIndexAdjuster ESIndexAdjuster = new ESIndexAdjuster(client, configurationService);
+    ESIndexAdjuster esIndexAdjuster = new ESIndexAdjuster(client, configurationService);
+    int currentStepCount = 1;
     for (UpgradeStep step : upgradeSteps) {
-      logger.info("Performing {}.", step.getClass().getSimpleName());
-      step.execute(ESIndexAdjuster);
-      logger.info("{} has successfully being executed.", step.getClass().getSimpleName());
+      logger.info(
+        "Starting step {}/{}: {}",
+        currentStepCount,
+        upgradeSteps.size(),
+        step.getClass().getSimpleName()
+      );
+      step.execute(esIndexAdjuster);
+      logger.info(
+        "Successfully finished step {}/{}: {}",
+        currentStepCount,
+        upgradeSteps.size(),
+        step.getClass().getSimpleName()
+      );
+      currentStepCount++;
     }
-    updateOptimizeVersion(ESIndexAdjuster);
+    updateOptimizeVersion(esIndexAdjuster);
   }
 
   private void updateOptimizeVersion(ESIndexAdjuster ESIndexAdjuster) {

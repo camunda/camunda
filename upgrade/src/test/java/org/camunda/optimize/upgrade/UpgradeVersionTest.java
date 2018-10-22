@@ -333,6 +333,7 @@ public class UpgradeVersionTest extends AbstractUpgradeTest {
 
     upgradePlan.execute();
     removeVersionIndex();
+    removeTaskIndex();
 
     // then
     assertThatThereIsNoDataInElasticsearch();

@@ -51,6 +51,14 @@ public abstract class AbstractUpgradeTest {
     assertThat(post.getStatusLine().getStatusCode(), is(201));
   }
 
+  protected void removeTaskIndex() {
+    try {
+      restClient.performRequest("DELETE", ".tasks", Collections.emptyMap());
+    } catch (IOException e) {
+      //nothing to do
+    }
+  }
+
   protected void removeVersionIndex() {
     try {
       restClient.performRequest("DELETE", OPTIMIZE_METADATA, Collections.emptyMap());

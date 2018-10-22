@@ -53,8 +53,10 @@ public class ESIndexAdjuster {
     this.restClient = restClient;
   }
 
-  public void reindex(String sourceTypeToConstructIndexFrom, String destinationTypeToConstructIndexFrom,
-                      String sourceType, String destType) {
+  public void reindex(String sourceTypeToConstructIndexFrom,
+                      String destinationTypeToConstructIndexFrom,
+                      String sourceType,
+                      String destType) {
     this.reindex(
       sourceTypeToConstructIndexFrom,
       destinationTypeToConstructIndexFrom,
@@ -71,7 +73,8 @@ public class ESIndexAdjuster {
       restClient.performRequest(DELETE, indexName);
     } catch (IOException e) {
       String errorMessage =
-        String.format("Could not delete index [%s]!",
+        String.format(
+          "Could not delete index [%s]!",
           indexName
         );
       throw new UpgradeRuntimeException(errorMessage, e);
@@ -87,7 +90,8 @@ public class ESIndexAdjuster {
       return extractMappings(indexName, mappingWithIndexName);
     } catch (IOException e) {
       String errorMessage =
-        String.format("Could not retrieve index mapping from [%s]!",
+        String.format(
+          "Could not retrieve index mapping from [%s]!",
           indexName
         );
       throw new UpgradeRuntimeException(errorMessage, e);
@@ -99,8 +103,11 @@ public class ESIndexAdjuster {
     return objectMapper.writeValueAsString(read);
   }
 
-  public void reindex(String sourceTypeToConstructIndexFrom, String destinationTypeToConstructIndexFrom,
-                      String sourceType, String destType, String mappingScript) {
+  public void reindex(String sourceTypeToConstructIndexFrom,
+                      String destinationTypeToConstructIndexFrom,
+                      String sourceType,
+                      String destType,
+                      String mappingScript) {
     String sourceIndex = configurationService.getOptimizeIndex(sourceTypeToConstructIndexFrom);
     String destinationIndex = configurationService.getOptimizeIndex(destinationTypeToConstructIndexFrom);
     logger.debug(
@@ -119,10 +126,19 @@ public class ESIndexAdjuster {
     om.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
 
-    Response reindexResponse;
+    ReindexTaskResponse reindexTaskResponse;
     try {
       HttpEntity entity = new NStringEntity(om.writeValueAsString(toSend), ContentType.APPLICATION_JSON);
-      reindexResponse = restClient.performRequest(POST, getReindexEndpoint(), getParamsWithRefresh(), entity);
+      Response response = restClient.performRequest(
+        POST,
+        getReindexEndpoint(),
+        getParamsWithRefreshAndWaitForCompletion(false),
+        entity
+      );
+      if (response.getStatusLine().getStatusCode() != 200) {
+        throw new UpgradeRuntimeException("Failed to start reindex from " + sourceIndex + " to " + destinationIndex);
+      }
+      reindexTaskResponse = objectMapper.readValue(response.getEntity().getContent(), ReindexTaskResponse.class);
     } catch (IOException e) {
       String errorMessage =
         String.format(
@@ -133,8 +149,8 @@ public class ESIndexAdjuster {
       throw new UpgradeRuntimeException(errorMessage, e);
     }
 
-    if (reindexResponse.getStatusLine().getStatusCode() == 200) {
-      waitUntilReindexingIsFinished();
+    if (reindexTaskResponse.getTaskId() != null) {
+      waitUntilReindexingIsFinished(reindexTaskResponse.getTaskId(), sourceIndex, destinationIndex);
     } else {
       String errorMessage =
         String.format(
@@ -146,34 +162,56 @@ public class ESIndexAdjuster {
     }
   }
 
-  private void waitUntilReindexingIsFinished() {
+  private void waitUntilReindexingIsFinished(final String taskId,
+                                             final String sourceIndex,
+                                             final String destinationIndex) {
     boolean finished = false;
 
-    Map<String, String> params = new HashMap<>();
-    params.put("detailed", "false");
-    params.put("actions", "*" + REINDEX_OPERATION);
-
+    int progress = -1;
     while (!finished) {
-      Response response;
       try {
-        response = restClient.performRequest(GET, TASKS_ENDPOINT, params);
-        String stringResponse = EntityUtils.toString(response.getEntity());
-        if (!stringResponse.contains(REINDEX_OPERATION)) {
-          finished = true;
+        Response response = restClient.performRequest(GET, TASKS_ENDPOINT + "/" + taskId);
+        if (response.getStatusLine().getStatusCode() == 200) {
+          TaskResponse taskResponse = objectMapper.readValue(response.getEntity().getContent(), TaskResponse.class);
+
+          int currentProgress = new Double(taskResponse.getProgress() * 100.0).intValue();
+          if (currentProgress != progress) {
+            progress = currentProgress;
+            logger.info(
+              "Reindexing from {} to {}, progress: {}%",
+              sourceIndex,
+              destinationIndex,
+              progress
+            );
+          }
+
+          finished = taskResponse.isDone();
         } else {
+          logger.error(
+            "Failed retrieving progress of reindex task, statusCode: {}, will retry",
+            response.getStatusLine().getStatusCode()
+          );
+        }
+
+        if (!finished) {
           Thread.sleep(ONE_SECOND);
         }
       } catch (IOException e) {
-        String errorMessage =
-          "While trying to reindex, could not check progress!";
+        String errorMessage = "While trying to reindex, could not check progress!";
         throw new UpgradeRuntimeException(errorMessage, e);
       } catch (InterruptedException e) {
-        String errorMessage =
-          "While trying to reindex, sleeping was interrupted!";
+        String errorMessage = "While trying to reindex, sleeping was interrupted!";
         throw new UpgradeRuntimeException(errorMessage, e);
       }
 
     }
+  }
+
+  private Map<String, String> getParamsWithRefreshAndWaitForCompletion(final boolean wait) {
+    HashMap<String, String> reindexParams = new HashMap<>();
+    reindexParams.put("refresh", "true");
+    reindexParams.put("wait_for_completion", String.valueOf(wait));
+    return reindexParams;
   }
 
   private Map<String, String> getParamsWithRefresh() {
@@ -188,18 +226,13 @@ public class ESIndexAdjuster {
 
   public void createIndex(String typeName, String mappingAndSettings) {
     String indexName = configurationService.getOptimizeIndex(typeName);
-    logger.debug("Creating index [{}] with mapping and settings [{}].",
-      indexName,
-      mappingAndSettings);
+    logger.debug("Creating index [{}] with mapping and settings [{}].", indexName, mappingAndSettings);
 
     HttpEntity entity = new NStringEntity(preProcess(mappingAndSettings), ContentType.APPLICATION_JSON);
     try {
       restClient.performRequest(PUT, indexName, new HashMap<>(), entity);
     } catch (IOException e) {
-      String errorMessage =
-        String.format("Could not create index [%s]!",
-          indexName
-        );
+      String errorMessage = String.format("Could not create index [%s]!", indexName);
       throw new UpgradeRuntimeException(errorMessage, e);
     }
   }
@@ -255,17 +288,14 @@ public class ESIndexAdjuster {
     return dynamicSettings;
   }
 
-  public void insertData(String type, String data)  {
+  public void insertData(String type, String data) {
     String indexName = configurationService.getOptimizeIndex(type);
     logger.debug("Inserting data to index [{}]. Data payload is [{}]", indexName, data);
     HttpEntity entity = new NStringEntity(data, ContentType.APPLICATION_JSON);
     try {
       restClient.performRequest(POST, getEndpointWithId(indexName, type), getParamsWithRefresh(), entity);
     } catch (IOException e) {
-      String errorMessage =
-        String.format("Could not add data to index [%s]!",
-          indexName
-        );
+      String errorMessage = String.format("Could not add data to index [%s]!", indexName);
       throw new UpgradeRuntimeException(errorMessage, e);
     }
   }
@@ -276,28 +306,27 @@ public class ESIndexAdjuster {
 
   public void updateData(String typeName, QueryBuilder query, String updateScript) {
     String indexName = configurationService.getOptimizeIndex(typeName);
-    logger.debug("Updating data for index [{}] using script [{}] and query [{}].",
+    logger.debug(
+      "Updating data for index [{}] using script [{}] and query [{}].",
       indexName,
       updateScript,
-      query.toString());
+      query.toString()
+    );
 
     try {
-      HashMap <String, Object> data = new HashMap<>();
+      HashMap<String, Object> data = new HashMap<>();
       ScriptWrapper scriptWrapper = new ScriptWrapper(updateScript);
 
-      data.put("script", objectMapper.convertValue(scriptWrapper, new TypeReference<HashMap <String, Object>>() {}));
+      data.put("script", objectMapper.convertValue(scriptWrapper, new TypeReference<HashMap<String, Object>>() {}));
       // we need to wrap the query in a query object in order
       // to be confirm with Elasticsearch query syntax.
       String wrappedQuery = String.format("{ \"query\": %s }", query.toString());
-      data.putAll(objectMapper.readValue(wrappedQuery, new TypeReference<HashMap <String, Object>>() {}));
+      data.putAll(objectMapper.readValue(wrappedQuery, new TypeReference<HashMap<String, Object>>() {}));
 
       HttpEntity entity = new NStringEntity(objectMapper.writeValueAsString(data), ContentType.APPLICATION_JSON);
       restClient.performRequest(POST, indexName + UPDATE_BY_QUERY_OPERATION, getParamsWithRefresh(), entity);
     } catch (IOException e) {
-      String errorMessage =
-        String.format("Could not update data for index [%s]!",
-          indexName
-        );
+      String errorMessage = String.format("Could not update data for index [%s]!", indexName);
       throw new UpgradeRuntimeException(errorMessage, e);
     }
   }
