@@ -86,18 +86,6 @@ public class Gateway {
     server.awaitTermination();
   }
 
-  public static void main(final String[] args) {
-    final Gateway gateway = new Gateway(new GatewayCfg());
-
-    try {
-      gateway.listenAndServe();
-    } catch (final Exception e) {
-      LOG.error("Gateway failed ", e);
-    } finally {
-      gateway.stop();
-    }
-  }
-
   public void stop() {
     if (brokerClient != null) {
       brokerClient.close();
