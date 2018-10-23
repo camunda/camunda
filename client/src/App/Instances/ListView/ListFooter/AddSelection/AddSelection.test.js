@@ -72,7 +72,14 @@ describe('AddSelection', () => {
       const addToOpenSelectionOption = node.find('Dropdown').childAt(1);
       addToOpenSelectionOption.simulate('click');
       expect(onAddToOpenSelectionSpy).toHaveBeenCalled();
-      expect(toggleSelectionsSpy).toHaveBeenCalled();
+    });
+
+    it('should open the selections panel on dropdown click', () => {
+      node.setProps({openSelection: 1});
+      const dropdownNode = node.find('Dropdown');
+      expect(dropdownNode.props().onOpen).toEqual(
+        node.instance().openSelectionsPanel
+      );
     });
 
     it('should disable "add to open selection" option if no selection open', () => {
@@ -113,7 +120,6 @@ describe('AddSelection', () => {
 
       // then
       expect(onAddToSpecificSelectionSpy).toHaveBeenCalledWith(0);
-      expect(toggleSelectionsSpy).toHaveBeenCalled();
     });
   });
 });

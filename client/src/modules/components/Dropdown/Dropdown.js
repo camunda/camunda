@@ -24,7 +24,8 @@ export default class Dropdown extends React.Component {
       PropTypes.node
     ]),
     buttonStyles: PropTypes.object,
-    disabled: PropTypes.bool
+    disabled: PropTypes.bool,
+    onOpen: PropTypes.func
   };
 
   state = {
@@ -75,10 +76,15 @@ export default class Dropdown extends React.Component {
     }
   };
 
-  handleOnClick = () =>
+  handleOnClick = () => {
+    if (!this.state.isOpen && this.props.onOpen) {
+      this.props.onOpen();
+    }
+
     !this.state.isOpen
       ? this.setState({isOpen: !this.state.isOpen})
       : this.resetState();
+  };
 
   renderChildrenWithProps = () =>
     React.Children.map(this.props.children, (child, index) => {

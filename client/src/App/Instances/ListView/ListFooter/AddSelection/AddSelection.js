@@ -35,12 +35,10 @@ class AddSelection extends React.Component {
 
   handleAddToOpenSelection = () => {
     this.props.onAddToOpenSelection();
-    this.openSelectionsPanel();
   };
 
   handleAddToSpecificSelection = selectionId => {
     this.props.onAddToSpecificSelection(selectionId);
-    this.openSelectionsPanel();
   };
 
   renderButton = () => {
@@ -63,6 +61,7 @@ class AddSelection extends React.Component {
         label="Add to Selection..."
         buttonStyles={Styled.DropdownButtonStyles}
         disabled={!isAnyInstanceSelected(this.props.selection)}
+        onOpen={this.openSelectionsPanel}
       >
         {selections.length < 10 ? (
           <Dropdown.Option

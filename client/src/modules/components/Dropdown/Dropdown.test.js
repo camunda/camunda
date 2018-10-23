@@ -23,6 +23,7 @@ describe('Dropdown', () => {
         placement={DROPDOWN_PLACEMENT.TOP}
         label={stringLabel}
         buttonStyle={buttonStyles}
+        onOpen={jest.fn()}
       >
         <Dropdown.Option
           disabled={false}
@@ -81,5 +82,18 @@ describe('Dropdown', () => {
     document.body.click();
     //then
     expect(onCloseSpy).toHaveBeenCalled();
+  });
+
+  it('should call onOpen on the initial click', () => {
+    const onOpenSpy = jest.spyOn(node.instance().props, 'onOpen');
+    // when clicking to open
+    node.find(Styled.Button).simulate('click');
+    expect(onOpenSpy).toHaveBeenCalled();
+
+    // when clicking to close
+    node.find(Styled.Button).simulate('click');
+    expect(onOpenSpy).toHaveBeenCalledTimes(1);
+
+    onOpenSpy.mockRestore();
   });
 });
