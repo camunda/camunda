@@ -15,7 +15,7 @@ import {
   COMBO_BADGE_TYPE
 } from 'modules/constants';
 import {withCollapsablePanel} from 'modules/contexts/CollapsablePanelContext';
-import {isEqual} from 'modules/utils';
+import {isEqual} from 'lodash';
 
 import {filtersMap, localStateKeys, apiKeys} from './constants';
 import * as Styled from './styled.js';

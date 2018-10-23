@@ -9,7 +9,7 @@ import InstanceLog from './InstanceLog';
 import InstanceEvents from './InstanceEvents';
 import InstancePayload from './InstancePayload';
 import {getGroupedEvents, getActivityInstanceEvents} from './service';
-import {isEmpty} from 'modules/utils';
+import {isEmpty} from 'lodash';
 import * as Styled from './styled';
 
 export default class InstanceHistory extends React.Component {

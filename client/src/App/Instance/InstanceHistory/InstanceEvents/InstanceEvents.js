@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import {isEmpty} from 'modules/utils';
+import {isEmpty} from 'lodash';
 import {ACTIVITY_STATE, EVENT_TYPE, EVENT_SOURCE_TYPE} from 'modules/constants';
 
 import Foldable from './Foldable';

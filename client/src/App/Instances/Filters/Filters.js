@@ -11,7 +11,7 @@ import {
   BADGE_TYPE
 } from 'modules/constants';
 import {CollapsablePanelConsumer} from 'modules/contexts/CollapsablePanelContext';
-import {isEqual, isEmpty} from 'modules/utils';
+import {isEqual, isEmpty} from 'lodash';
 
 import * as Styled from './styled';
 import {

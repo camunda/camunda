@@ -1,7 +1,7 @@
 import React, {Component, Fragment} from 'react';
 import PropTypes from 'prop-types';
 
-import {isEqual, sortBy} from 'lodash';
+import {isEqual, sortBy, isEmpty} from 'lodash';
 
 import withSharedState from 'modules/components/withSharedState';
 import SplitPane from 'modules/components/SplitPane';
@@ -15,7 +15,6 @@ import {
 } from 'modules/api/instances';
 
 import {fetchWorkflowXML} from 'modules/api/diagram';
-import {isEmpty} from 'modules/utils';
 import {
   parseFilterForRequest,
   getFilterQueryString,
