@@ -27,6 +27,10 @@ public class ValidationService {
     this.configurationService = configurationService;
   }
 
+  public void validateConfiguration() {
+    configurationService.validateNoDeprecatedConfigKeysUsed();
+  }
+
   public void validateVersions(RestClient restClient, String fromVersion, String toVersion) {
 
     try {

@@ -36,7 +36,7 @@ public class UpgradeMain {
 
   public static void main(String... args) {
 
-    String targetVersion = removeAppendixFromVersion();
+    String targetVersion = Version.VERSION;
     Upgrade upgrade = upgrades.get(targetVersion);
 
     if (upgrade == null) {
@@ -55,14 +55,6 @@ public class UpgradeMain {
     upgrade.performUpgrade();
     System.out.println("Finished upgrade successfully!");
     System.exit(0);
-  }
-
-  private static String removeAppendixFromVersion() {
-    String engineVersionWithAppendix = Version.VERSION;
-    // The version might have an appendix like 2.2.0-SNAPSHOT
-    int indexOfMinus = engineVersionWithAppendix.indexOf("-");
-    indexOfMinus = indexOfMinus == -1 ? engineVersionWithAppendix.length() : indexOfMinus;
-    return engineVersionWithAppendix.substring(0, indexOfMinus);
   }
 
   private static void printWarning(String fromVersion, String toVersion) {

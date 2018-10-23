@@ -43,6 +43,7 @@ public class UpgradeExecutionPlan implements UpgradePlan {
     defineLogbackLoggingConfiguration();
     configurationService = new ConfigurationService();
     validationService = new ValidationService(configurationService);
+    validationService.validateConfiguration();
     validationService.validateExecutionPath();
     client = ElasticsearchRestClientBuilder.build(configurationService);
   }

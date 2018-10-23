@@ -74,7 +74,9 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
   private Server setUpEmbeddedJetty(SpringAwareServletConfiguration jerseyCamundaOptimize) {
     LoggingConfigurationReader loggingConfigurationReader = new LoggingConfigurationReader();
     loggingConfigurationReader.defineLogbackLoggingConfiguration();
+
     ConfigurationService configurationService = constructConfigurationService();
+    configurationService.validateNoDeprecatedConfigKeysUsed();
 
     Server jettyServer = initServer(configurationService);
 

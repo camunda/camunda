@@ -29,8 +29,6 @@ public class UpgradeFrom24To25 implements Upgrade {
   @Override
   public void performUpgrade() {
     try {
-
-
       UpgradePlan upgradePlan = UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)

@@ -2,10 +2,10 @@ package org.camunda.optimize.service.util.configuration;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
 import com.jayway.jsonpath.Configuration;
+import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.Option;
 import com.jayway.jsonpath.ReadContext;
@@ -14,35 +14,43 @@ import com.jayway.jsonpath.spi.json.JacksonJsonProvider;
 import com.jayway.jsonpath.spi.json.JsonProvider;
 import com.jayway.jsonpath.spi.mapper.JacksonMappingProvider;
 import com.jayway.jsonpath.spi.mapper.MappingProvider;
+import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
+import org.camunda.optimize.service.metadata.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.text.MessageFormat;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.cutTrailingSlash;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.ensureGreaterThanZero;
 import static org.camunda.optimize.service.util.configuration.ConfigurationUtil.resolvePathAsAbsoluteUrl;
 
 public class ConfigurationService {
-
+  public static final String DOC_URL = MessageFormat.format(
+    "https://docs.camunda.org/optimize/{0}.{1}",
+    Version.VERSION_MAJOR,
+    Version.VERSION_MINOR
+  );
+  private static final Logger logger = LoggerFactory.getLogger(ConfigurationService.class);
   private static final String ENGINES_FIELD = "engines";
   private static final String ENGINE_REST_PATH = "/engine/";
-  private final Logger logger = LoggerFactory.getLogger(ConfigurationService.class);
-
-  private static final String[] DEFAULT_LOCATIONS = { "service-config.yaml", "environment-config.yaml" };
-  private ObjectMapper objectMapper;
-  private HashMap defaults = null;
-  private ReadContext jsonContext;
-
+  private static final String[] DEFAULT_CONFIG_LOCATIONS = {"service-config.yaml", "environment-config.yaml"};
+  private static final String[] DEFAULT_DEPRECATED_CONFIG_LOCATIONS = {"deprecated-config.yaml"};
+  private ReadContext configJsonContext;
+  private Map<String, String> deprecatedConfigKeys;
 
   private Map<String, EngineConfiguration> configuredEngines;
   private Integer tokenLifeTime;
@@ -132,13 +140,26 @@ public class ConfigurationService {
 
 
   public ConfigurationService() {
-    this((String[]) null);
+    this((String[]) null, null);
   }
 
-  public ConfigurationService(String[] locations) {
-    String[] locationsToUse = locations == null ? DEFAULT_LOCATIONS : locations;
+  public ConfigurationService(String[] sources) {
+    this(sources, null);
+  }
 
-    //prepare streams for locations
+  public ConfigurationService(List<InputStream> sources, List<InputStream> deprecatedConfigLocations) {
+    initConfigurationContexts(sources, deprecatedConfigLocations);
+  }
+
+  public ConfigurationService(String[] configLocations, String[] deprecatedConfigLocations) {
+    this(
+      getLocationsAsInputStream(configLocations == null ? DEFAULT_CONFIG_LOCATIONS : configLocations),
+      getLocationsAsInputStream(deprecatedConfigLocations == null ? DEFAULT_DEPRECATED_CONFIG_LOCATIONS :
+                                  deprecatedConfigLocations)
+    );
+  }
+
+  private static List<InputStream> getLocationsAsInputStream(String[] locationsToUse) {
     List<InputStream> sources = new ArrayList<>();
     for (String location : locationsToUse) {
       InputStream inputStream = wrapInputStream(location);
@@ -146,55 +167,46 @@ public class ConfigurationService {
         sources.add(inputStream);
       }
     }
-
-    initFromStreams(sources);
+    return sources;
   }
 
-  public ConfigurationService(List<InputStream> sources) {
-    initFromStreams(sources);
+  private static InputStream wrapInputStream(String location) {
+    return ConfigurationService.class.getClassLoader().getResourceAsStream(location);
   }
 
-  private void initFromStreams(List<InputStream> sources) {
-    objectMapper = new ObjectMapper(new YAMLFactory());
-    objectMapper.configure(JsonParser.Feature.ALLOW_COMMENTS,true);
-    //read default values from the first location
-    try {
-      //configure Jackson as provider in order to be able to use TypeRef objects
-      //during serialization process
-      Configuration.setDefaults(new Configuration.Defaults() {
+  public void validateNoDeprecatedConfigKeysUsed() {
+    final Configuration conf = Configuration.defaultConfiguration().addOptions(Option.SUPPRESS_EXCEPTIONS);
+    final DocumentContext failsafeConfigurationJsonContext = JsonPath.using(conf)
+      .parse((Object) configJsonContext.json());
 
-        private final JsonProvider jsonProvider = new JacksonJsonProvider();
-        private final MappingProvider mappingProvider = new JacksonMappingProvider();
+    final Map<String, String> usedDeprecationKeysWithNewDocumentationPath = deprecatedConfigKeys.entrySet().stream()
+      .filter(entry -> Optional.ofNullable(failsafeConfigurationJsonContext.read("$." + entry.getKey())).isPresent())
+      .map(keyAndPath -> {
+        keyAndPath.setValue(DOC_URL + keyAndPath.getValue());
+        return keyAndPath;
+      })
+      .peek(keyAndUrl -> logger.error(
+        "Deprecated setting used with key {}, please checkout the updated documentation {}",
+        keyAndUrl.getKey(), keyAndUrl.getValue()
+      ))
+      .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-        @Override
-        public JsonProvider jsonProvider() {
-          return jsonProvider;
-        }
-
-        @Override
-        public MappingProvider mappingProvider() {
-          return mappingProvider;
-        }
-
-        @Override
-        public Set<Option> options() {
-          return EnumSet.noneOf(Option.class);
-        }
-      });
-
-      JsonNode resultNode = objectMapper.readTree(sources.remove(0));
-      //read with overriding default values all locations
-      for (InputStream inputStream : sources) {
-        merge(resultNode, objectMapper.readTree(inputStream));
-      }
-
-      defaults = objectMapper.convertValue(resultNode, HashMap.class);
-    } catch (IOException e) {
-      logger.error("error reading configuration", e);
+    if (!usedDeprecationKeysWithNewDocumentationPath.isEmpty()) {
+      throw new OptimizeConfigurationException(
+        "Configuration contains deprecated entries", usedDeprecationKeysWithNewDocumentationPath
+      );
     }
+  }
 
-    //prepare to work with JSON Path
-    jsonContext = JsonPath.parse(defaults);
+  private void initConfigurationContexts(List<InputStream> configLocationsToUse,
+                                         List<InputStream> deprecatedConfigLocationsToUse) {
+    this.configJsonContext = parseConfigFromLocations(configLocationsToUse, configureConfigMapper())
+      .orElseThrow(() -> new OptimizeConfigurationException("No single configuration source could be read"));
+    this.deprecatedConfigKeys = (Map<String, String>)
+      parseConfigFromLocations(
+        deprecatedConfigLocationsToUse,
+        configureConfigMapper()
+      ).map(ReadContext::json).orElse(Collections.emptyMap());
   }
 
   private static void merge(JsonNode mainNode, JsonNode updateNode) {
@@ -226,14 +238,59 @@ public class ConfigurationService {
     mainNode.put(fieldName, value);
   }
 
-  private InputStream wrapInputStream(String location) {
-    return this.getClass().getClassLoader().getResourceAsStream(location);
+  private Optional<DocumentContext> parseConfigFromLocations(List<InputStream> sources, YAMLMapper yamlMapper) {
+    try {
+      if (sources.isEmpty()) {
+        return Optional.empty();
+      }
+      //read default values from the first location
+      JsonNode resultNode = yamlMapper.readTree(sources.remove(0));
+      //read with overriding default values all locations
+      for (InputStream inputStream : sources) {
+        merge(resultNode, yamlMapper.readTree(inputStream));
+      }
+
+      //prepare to work with JSON Path
+      return Optional.of(JsonPath.parse(yamlMapper.convertValue(resultNode, HashMap.class)));
+    } catch (IOException e) {
+      logger.error("error reading configuration", e);
+      return Optional.empty();
+    }
+  }
+
+  private YAMLMapper configureConfigMapper() {
+    final YAMLMapper yamlMapper = new YAMLMapper();
+    yamlMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
+    //configure Jackson as provider in order to be able to use TypeRef objects
+    //during serialization process
+    Configuration.setDefaults(new Configuration.Defaults() {
+
+      private final JsonProvider jsonProvider = new JacksonJsonProvider();
+      private final MappingProvider mappingProvider = new JacksonMappingProvider();
+
+      @Override
+      public JsonProvider jsonProvider() {
+        return jsonProvider;
+      }
+
+      @Override
+      public MappingProvider mappingProvider() {
+        return mappingProvider;
+      }
+
+      @Override
+      public Set<Option> options() {
+        return EnumSet.noneOf(Option.class);
+      }
+    });
+    return yamlMapper;
   }
 
   public Map<String, EngineConfiguration> getConfiguredEngines() {
     if (configuredEngines == null) {
-      TypeRef<HashMap<String, EngineConfiguration>> typeRef = new TypeRef<HashMap<String, EngineConfiguration>>() {};
-      configuredEngines = jsonContext.read(ConfigurationServiceConstants.CONFIGURED_ENGINES, typeRef);
+      TypeRef<HashMap<String, EngineConfiguration>> typeRef = new TypeRef<HashMap<String, EngineConfiguration>>() {
+      };
+      configuredEngines = configJsonContext.read(ConfigurationServiceConstants.CONFIGURED_ENGINES, typeRef);
       configuredEngines.forEach((k, v) -> {
         v.setRest(cutTrailingSlash(v.getRest()));
         v.getWebapps().setEndpoint(cutTrailingSlash(v.getWebapps().getEndpoint()));
@@ -243,45 +300,38 @@ public class ConfigurationService {
   }
 
   public Integer getTokenLifeTime() {
-    if(tokenLifeTime == null) {
-      tokenLifeTime = jsonContext.read(ConfigurationServiceConstants.TOKEN_LIFE_TIME);
+    if (tokenLifeTime == null) {
+      tokenLifeTime = configJsonContext.read(ConfigurationServiceConstants.TOKEN_LIFE_TIME);
     }
     return tokenLifeTime;
   }
 
   public String getElasticSearchHost() {
     if (elasticSearchHost == null) {
-      elasticSearchHost = jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_HOST);
+      elasticSearchHost = configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_HOST);
     }
     return elasticSearchHost;
   }
 
   public String getElasticSearchClusterName() {
     if (elasticSearchClusterName == null) {
-      elasticSearchClusterName = jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_CLUSTER_NAME);
+      elasticSearchClusterName = configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_CLUSTER_NAME);
     }
     return elasticSearchClusterName;
   }
 
   public Integer getElasticSearchTcpPort() {
     if (elasticSearchTcpPort == null) {
-      elasticSearchTcpPort = jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_TCP_PORT);
+      elasticSearchTcpPort = configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_TCP_PORT);
     }
     return elasticSearchTcpPort;
   }
 
   public Integer getElasticSearchHttpPort() {
     if (elasticSearchHttpPort == null) {
-      elasticSearchHttpPort = jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_HTTP_PORT);
+      elasticSearchHttpPort = configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_HTTP_PORT);
     }
     return elasticSearchHttpPort;
-  }
-
-  protected String getOptimizeIndex() {
-    if (optimizeIndex == null) {
-      optimizeIndex = jsonContext.read(ConfigurationServiceConstants.OPTIMIZE_INDEX);
-    }
-    return optimizeIndex;
   }
 
   public String getOptimizeIndex(String type) {
@@ -299,10 +349,17 @@ public class ConfigurationService {
     return result;
   }
 
+  protected String getOptimizeIndex() {
+    if (optimizeIndex == null) {
+      optimizeIndex = configJsonContext.read(ConfigurationServiceConstants.OPTIMIZE_INDEX);
+    }
+    return optimizeIndex;
+  }
+
   public String getUserValidationEndpoint() {
     if (userValidationEndpoint == null) {
       userValidationEndpoint = cutTrailingSlash(
-              jsonContext.read(ConfigurationServiceConstants.USER_VALIDATION_ENDPOINT)
+        configJsonContext.read(ConfigurationServiceConstants.USER_VALIDATION_ENDPOINT)
       );
     }
     return userValidationEndpoint;
@@ -310,14 +367,14 @@ public class ConfigurationService {
 
   public String getProcessDefinitionType() {
     if (processDefinitionType == null) {
-      processDefinitionType = jsonContext.read(ConfigurationServiceConstants.PROCESS_DEFINITION_TYPE);
+      processDefinitionType = configJsonContext.read(ConfigurationServiceConstants.PROCESS_DEFINITION_TYPE);
     }
     return processDefinitionType;
   }
 
   public String getMetaDataType() {
     if (metaDataType == null) {
-      metaDataType = jsonContext.read(ConfigurationServiceConstants.METADATA_TYPE);
+      metaDataType = configJsonContext.read(ConfigurationServiceConstants.METADATA_TYPE);
     }
     return metaDataType;
   }
@@ -325,7 +382,7 @@ public class ConfigurationService {
   public String getProcessDefinitionEndpoint() {
     if (processDefinitionEndpoint == null) {
       processDefinitionEndpoint = cutTrailingSlash(
-              jsonContext.read(ConfigurationServiceConstants.PROCESS_DEFINITION_ENDPOINT)
+        configJsonContext.read(ConfigurationServiceConstants.PROCESS_DEFINITION_ENDPOINT)
       );
     }
     return processDefinitionEndpoint;
@@ -333,35 +390,35 @@ public class ConfigurationService {
 
   public String getAnalyzerName() {
     if (analyzerName == null) {
-      analyzerName = jsonContext.read(ConfigurationServiceConstants.ANALYZER_NAME);
+      analyzerName = configJsonContext.read(ConfigurationServiceConstants.ANALYZER_NAME);
     }
     return analyzerName;
   }
 
   public String getTokenizer() {
     if (tokenizer == null) {
-      tokenizer = jsonContext.read(ConfigurationServiceConstants.TOKENIZER);
+      tokenizer = configJsonContext.read(ConfigurationServiceConstants.TOKENIZER);
     }
     return tokenizer;
   }
 
   public String getTokenFilter() {
     if (tokenFilter == null) {
-      tokenFilter = jsonContext.read(ConfigurationServiceConstants.TOKEN_FILTER);
+      tokenFilter = configJsonContext.read(ConfigurationServiceConstants.TOKEN_FILTER);
     }
     return tokenFilter;
   }
 
   public String getEngineDateFormat() {
     if (engineDateFormat == null) {
-      engineDateFormat = jsonContext.read(ConfigurationServiceConstants.ENGINE_DATE_FORMAT);
+      engineDateFormat = configJsonContext.read(ConfigurationServiceConstants.ENGINE_DATE_FORMAT);
     }
     return engineDateFormat;
   }
 
   public String getOptimizeDateFormat() {
     if (optimizeDateFormat == null) {
-      optimizeDateFormat = jsonContext.read(ConfigurationServiceConstants.OPTIMIZE_DATE_FORMAT);
+      optimizeDateFormat = configJsonContext.read(ConfigurationServiceConstants.OPTIMIZE_DATE_FORMAT);
     }
     return optimizeDateFormat;
   }
@@ -369,91 +426,108 @@ public class ConfigurationService {
   public int getImportIndexAutoStorageIntervalInSec() {
     if (importIndexAutoStorageIntervalInSec == null) {
       importIndexAutoStorageIntervalInSec =
-        jsonContext.read(ConfigurationServiceConstants.IMPORT_INDEX_AUTO_STORAGE_INTERVAL, Integer.class);
+        configJsonContext.read(ConfigurationServiceConstants.IMPORT_INDEX_AUTO_STORAGE_INTERVAL, Integer.class);
     }
     return importIndexAutoStorageIntervalInSec;
   }
 
   public long getImportHandlerWait() {
     if (importHandlerWait == null) {
-      importHandlerWait = jsonContext.read(ConfigurationServiceConstants.IMPORT_HANDLER_INTERVAL, Long.class);
+      importHandlerWait = configJsonContext.read(ConfigurationServiceConstants.IMPORT_HANDLER_INTERVAL, Long.class);
     }
     return importHandlerWait;
   }
 
   public long getMaximumBackoff() {
     if (maximumBackoff == null) {
-      maximumBackoff = jsonContext.read(ConfigurationServiceConstants.MAXIMUM_BACK_OFF, Long.class);
+      maximumBackoff = configJsonContext.read(ConfigurationServiceConstants.MAXIMUM_BACK_OFF, Long.class);
     }
     return maximumBackoff;
   }
 
   public int getElasticsearchJobExecutorQueueSize() {
     if (elasticsearchJobExecutorQueueSize == null) {
-      elasticsearchJobExecutorQueueSize = jsonContext.read(ConfigurationServiceConstants.ELASTICSEARCH_MAX_JOB_QUEUE_SIZE, Integer.class);
+      elasticsearchJobExecutorQueueSize = configJsonContext.read(
+        ConfigurationServiceConstants.ELASTICSEARCH_MAX_JOB_QUEUE_SIZE,
+        Integer.class
+      );
     }
     return elasticsearchJobExecutorQueueSize;
   }
 
   public int getElasticsearchJobExecutorThreadCount() {
     if (elasticsearchJobExecutorThreadCount == null) {
-      elasticsearchJobExecutorThreadCount = jsonContext.read(ConfigurationServiceConstants.ELASTICSEARCH_IMPORT_EXECUTOR_THREAD_COUNT, Integer.class);
+      elasticsearchJobExecutorThreadCount = configJsonContext.read(
+        ConfigurationServiceConstants.ELASTICSEARCH_IMPORT_EXECUTOR_THREAD_COUNT,
+        Integer.class
+      );
     }
     return elasticsearchJobExecutorThreadCount;
   }
 
   public int getElasticsearchScrollTimeout() {
     if (elasticsearchScrollTimeout == null) {
-      elasticsearchScrollTimeout = jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SCROLL_TIMEOUT, Integer.class);
+      elasticsearchScrollTimeout = configJsonContext.read(
+        ConfigurationServiceConstants.ELASTIC_SEARCH_SCROLL_TIMEOUT,
+        Integer.class
+      );
     }
     return elasticsearchScrollTimeout;
   }
 
   public int getElasticsearchConnectionTimeout() {
     if (elasticsearchConnectionTimeout == null) {
-      elasticsearchConnectionTimeout = jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_CONNECTION_TIMEOUT, Integer.class);
+      elasticsearchConnectionTimeout = configJsonContext.read(
+        ConfigurationServiceConstants.ELASTIC_SEARCH_CONNECTION_TIMEOUT,
+        Integer.class
+      );
     }
     return elasticsearchConnectionTimeout;
   }
 
   public int getEngineConnectTimeout() {
     if (engineConnectTimeout == null) {
-      engineConnectTimeout = jsonContext.read(ConfigurationServiceConstants.ENGINE_CONNECT_TIMEOUT, Integer.class);
+      engineConnectTimeout = configJsonContext.read(
+        ConfigurationServiceConstants.ENGINE_CONNECT_TIMEOUT,
+        Integer.class
+      );
     }
     return engineConnectTimeout;
   }
 
   public int getEngineReadTimeout() {
     if (engineReadTimeout == null) {
-      engineReadTimeout = jsonContext.read(ConfigurationServiceConstants.ENGINE_READ_TIMEOUT, Integer.class);
+      engineReadTimeout = configJsonContext.read(ConfigurationServiceConstants.ENGINE_READ_TIMEOUT, Integer.class);
     }
     return engineReadTimeout;
   }
 
   public String getImportIndexType() {
     if (importIndexType == null) {
-      importIndexType = jsonContext.read(ConfigurationServiceConstants.IMPORT_INDEX_TYPE);
+      importIndexType = configJsonContext.read(ConfigurationServiceConstants.IMPORT_INDEX_TYPE);
     }
     return importIndexType;
   }
 
   public String getDurationHeatmapTargetValueType() {
     if (durationHeatmapTargetValueType == null) {
-      durationHeatmapTargetValueType = jsonContext.read(ConfigurationServiceConstants.DURATION_HEATMAP_TARGET_VALUE_TYPE);
+      durationHeatmapTargetValueType =
+        configJsonContext.read(ConfigurationServiceConstants.DURATION_HEATMAP_TARGET_VALUE_TYPE);
     }
     return durationHeatmapTargetValueType;
   }
 
   public String getProcessInstanceType() {
     if (processInstanceType == null) {
-      processInstanceType = jsonContext.read(ConfigurationServiceConstants.PROCESS_INSTANCE_TYPE);
+      processInstanceType = configJsonContext.read(ConfigurationServiceConstants.PROCESS_INSTANCE_TYPE);
     }
     return processInstanceType;
   }
 
   public int getEngineImportProcessInstanceMaxPageSize() {
     if (engineImportProcessInstanceMaxPageSize == null) {
-      engineImportProcessInstanceMaxPageSize = jsonContext.read(ConfigurationServiceConstants.ENGINE_IMPORT_PROCESS_INSTANCE_MAX_PAGE_SIZE);
+      engineImportProcessInstanceMaxPageSize =
+        configJsonContext.read(ConfigurationServiceConstants.ENGINE_IMPORT_PROCESS_INSTANCE_MAX_PAGE_SIZE);
     }
     ensureGreaterThanZero(engineImportProcessInstanceMaxPageSize);
     return engineImportProcessInstanceMaxPageSize;
@@ -461,7 +535,8 @@ public class ConfigurationService {
 
   public int getEngineImportVariableInstanceMaxPageSize() {
     if (engineImportVariableInstanceMaxPageSize == null) {
-      engineImportVariableInstanceMaxPageSize = jsonContext.read(ConfigurationServiceConstants.ENGINE_IMPORT_VARIABLE_INSTANCE_MAX_PAGE_SIZE);
+      engineImportVariableInstanceMaxPageSize =
+        configJsonContext.read(ConfigurationServiceConstants.ENGINE_IMPORT_VARIABLE_INSTANCE_MAX_PAGE_SIZE);
     }
     ensureGreaterThanZero(engineImportVariableInstanceMaxPageSize);
     return engineImportVariableInstanceMaxPageSize;
@@ -469,30 +544,29 @@ public class ConfigurationService {
 
   public String getEsRefreshInterval() {
     if (esRefreshInterval == null) {
-      esRefreshInterval = jsonContext.read(ConfigurationServiceConstants.ES_REFRESH_INTERVAL);
+      esRefreshInterval = configJsonContext.read(ConfigurationServiceConstants.ES_REFRESH_INTERVAL);
     }
     return esRefreshInterval;
   }
 
   public int getEsNumberOfReplicas() {
     if (esNumberOfReplicas == null) {
-      esNumberOfReplicas = jsonContext.read(ConfigurationServiceConstants.ES_NUMBER_OF_REPLICAS);
+      esNumberOfReplicas = configJsonContext.read(ConfigurationServiceConstants.ES_NUMBER_OF_REPLICAS);
     }
     return esNumberOfReplicas;
   }
 
   public int getEsNumberOfShards() {
     if (esNumberOfShards == null) {
-      esNumberOfShards = jsonContext.read(ConfigurationServiceConstants.ES_NUMBER_OF_SHARDS);
+      esNumberOfShards = configJsonContext.read(ConfigurationServiceConstants.ES_NUMBER_OF_SHARDS);
     }
     return esNumberOfShards;
   }
 
-
   public int getEngineImportProcessDefinitionXmlMaxPageSize() {
     if (engineImportProcessDefinitionXmlMaxPageSize == null) {
       engineImportProcessDefinitionXmlMaxPageSize =
-        jsonContext.read(ConfigurationServiceConstants.ENGINE_IMPORT_PROCESS_DEFINITION_XML_MAX_PAGE_SIZE);
+        configJsonContext.read(ConfigurationServiceConstants.ENGINE_IMPORT_PROCESS_DEFINITION_XML_MAX_PAGE_SIZE);
     }
     return engineImportProcessDefinitionXmlMaxPageSize;
   }
@@ -500,7 +574,7 @@ public class ConfigurationService {
   public String getProcessDefinitionXmlEndpoint() {
     if (processDefinitionXmlEndpoint == null) {
       processDefinitionXmlEndpoint = cutTrailingSlash(
-              jsonContext.read(ConfigurationServiceConstants.PROCESS_DEFINITION_XML_ENDPOINT)
+        configJsonContext.read(ConfigurationServiceConstants.PROCESS_DEFINITION_XML_ENDPOINT)
       );
     }
     return processDefinitionXmlEndpoint;
@@ -508,46 +582,51 @@ public class ConfigurationService {
 
   public String getLicenseType() {
     if (licenseType == null) {
-      licenseType = jsonContext.read(ConfigurationServiceConstants.LICENSE_TYPE);
+      licenseType = configJsonContext.read(ConfigurationServiceConstants.LICENSE_TYPE);
     }
     return licenseType;
   }
 
   public long getSamplerInterval() {
     if (samplerInterval == null) {
-      samplerInterval = jsonContext.read(ConfigurationServiceConstants.SAMPLER_INTERVAL, Long.class);
+      samplerInterval = configJsonContext.read(ConfigurationServiceConstants.SAMPLER_INTERVAL, Long.class);
     }
     return samplerInterval;
   }
 
   public List<String> getVariableImportPluginBasePackages() {
     if (variableImportPluginBasePackages == null) {
-      TypeRef<List<String>> typeRef = new TypeRef<List<String>>() {};
+      TypeRef<List<String>> typeRef = new TypeRef<List<String>>() {
+      };
       variableImportPluginBasePackages =
-        jsonContext.read(ConfigurationServiceConstants.VARIABLE_IMPORT_PLUGIN_BASE_PACKAGES, typeRef);
+        configJsonContext.read(ConfigurationServiceConstants.VARIABLE_IMPORT_PLUGIN_BASE_PACKAGES, typeRef);
     }
     return variableImportPluginBasePackages;
   }
-  
+
   public List<String> getEngineRestFilterPluginBasePackages() {
     if (engineRestFilterPluginBasePackages == null) {
-      TypeRef<List<String>> typeRef = new TypeRef<List<String>>() {};
+      TypeRef<List<String>> typeRef = new TypeRef<List<String>>() {
+      };
       engineRestFilterPluginBasePackages =
-        jsonContext.read(ConfigurationServiceConstants.ENGINE_REST_FILTER_PLUGIN_BASE_PACKAGES, typeRef);
+        configJsonContext.read(ConfigurationServiceConstants.ENGINE_REST_FILTER_PLUGIN_BASE_PACKAGES, typeRef);
     }
     return engineRestFilterPluginBasePackages;
   }
 
   public int getNumberOfRetriesOnConflict() {
     if (numberOfRetriesOnConflict == null) {
-      numberOfRetriesOnConflict = jsonContext.read(ConfigurationServiceConstants.NUMBER_OF_RETRIES_ON_CONFLICT);
+      numberOfRetriesOnConflict = configJsonContext.read(ConfigurationServiceConstants.NUMBER_OF_RETRIES_ON_CONFLICT);
     }
     return numberOfRetriesOnConflict;
   }
 
   public long getEngineImportActivityInstanceMaxPageSize() {
     if (engineImportActivityInstanceMaxPageSize == null) {
-      engineImportActivityInstanceMaxPageSize = jsonContext.read(ConfigurationServiceConstants.ENGINE_IMPORT_ACTIVITY_INSTANCE_MAX_PAGE_SIZE, Long.class);
+      engineImportActivityInstanceMaxPageSize = configJsonContext.read(
+        ConfigurationServiceConstants.ENGINE_IMPORT_ACTIVITY_INSTANCE_MAX_PAGE_SIZE,
+        Long.class
+      );
     }
     ensureGreaterThanZero(engineImportActivityInstanceMaxPageSize);
     return engineImportActivityInstanceMaxPageSize;
@@ -555,72 +634,68 @@ public class ConfigurationService {
 
   public String getContainerHost() {
     if (containerHost == null) {
-      containerHost = jsonContext.read(ConfigurationServiceConstants.CONTAINER_HOST);
+      containerHost = configJsonContext.read(ConfigurationServiceConstants.CONTAINER_HOST);
     }
     return containerHost;
   }
 
   public String getContainerKeystorePassword() {
     if (containerKeystorePassword == null) {
-      containerKeystorePassword = jsonContext.read(ConfigurationServiceConstants.CONTAINER_KEYSTORE_PASSWORD);
+      containerKeystorePassword = configJsonContext.read(ConfigurationServiceConstants.CONTAINER_KEYSTORE_PASSWORD);
     }
     return containerKeystorePassword;
   }
 
   public String getContainerKeystoreLocation() {
     if (containerKeystoreLocation == null) {
-      containerKeystoreLocation = jsonContext.read(ConfigurationServiceConstants.CONTAINER_KEYSTORE_LOCATION);
+      containerKeystoreLocation = configJsonContext.read(ConfigurationServiceConstants.CONTAINER_KEYSTORE_LOCATION);
+      // we need external form here for the path to work if the keystore is inside the jar (default)
+      containerKeystoreLocation = ConfigurationUtil.resolvePathAsAbsoluteUrl(containerKeystoreLocation)
+        .toExternalForm();
     }
     return containerKeystoreLocation;
   }
 
   public int getContainerHttpsPort() {
     if (containerHttpsPort == null) {
-      containerHttpsPort = jsonContext.read(ConfigurationServiceConstants.CONTAINER_HTTPS_PORT);
+      containerHttpsPort = configJsonContext.read(ConfigurationServiceConstants.CONTAINER_HTTPS_PORT);
     }
     return containerHttpsPort;
   }
 
   public int getContainerHttpPort() {
     if (containerHttpPort == null) {
-      containerHttpPort = jsonContext.read(ConfigurationServiceConstants.CONTAINER_HTTP_PORT);
+      containerHttpPort = configJsonContext.read(ConfigurationServiceConstants.CONTAINER_HTTP_PORT);
     }
     return containerHttpPort;
   }
 
   public int getMaxStatusConnections() {
     if (maxStatusConnections == null) {
-      maxStatusConnections = jsonContext.read(ConfigurationServiceConstants.CONTAINER_STATUS_MAX_CONNECTIONS);
+      maxStatusConnections = configJsonContext.read(ConfigurationServiceConstants.CONTAINER_STATUS_MAX_CONNECTIONS);
     }
     return maxStatusConnections;
   }
 
   public Boolean getCheckMetadata() {
     if (checkMetadata == null) {
-      checkMetadata = jsonContext.read(ConfigurationServiceConstants.CHECK_METADATA);
+      checkMetadata = configJsonContext.read(ConfigurationServiceConstants.CHECK_METADATA);
     }
     return checkMetadata;
   }
 
   public String getAlertType() {
     if (alertType == null) {
-      alertType = jsonContext.read(ConfigurationServiceConstants.ALERT_TYPE);
+      alertType = configJsonContext.read(ConfigurationServiceConstants.ALERT_TYPE);
     }
     return alertType;
   }
 
   public String getReportShareType() {
     if (reportShareType == null) {
-      reportShareType = jsonContext.read(ConfigurationServiceConstants.REPORT_SHARE_TYPE);
+      reportShareType = configJsonContext.read(ConfigurationServiceConstants.REPORT_SHARE_TYPE);
     }
     return reportShareType;
-  }
-
-  public String getDashboardShareType() {
-    if (dashboardShareType == null) {
-      dashboardShareType = jsonContext.read(ConfigurationServiceConstants.DASHBOARD_SHARE_TYPE);
-    }
-    return dashboardShareType;
   }
 
   public String getProcessDefinitionXmlEndpoint(String processDefinitionId) {
@@ -641,7 +716,8 @@ public class ConfigurationService {
 
   /**
    * This method is mostly for internal usage. All API invocations
-   * should rely on {@link org.camunda.optimize.service.util.configuration.ConfigurationService#getEngineRestApiEndpointOfCustomEngine(java.lang.String)}
+   * should rely on
+   * {@link org.camunda.optimize.service.util.configuration.ConfigurationService#getEngineRestApiEndpointOfCustomEngine(java.lang.String)}
    *
    * @param engineAlias - an alias of configured engine
    * @return <b>raw</b> REST endpoint, without engine suffix
@@ -658,87 +734,99 @@ public class ConfigurationService {
     return this.getConfiguredEngines().get(engineAlias);
   }
 
+  public String getDashboardShareType() {
+    if (dashboardShareType == null) {
+      dashboardShareType = configJsonContext.read(ConfigurationServiceConstants.DASHBOARD_SHARE_TYPE);
+    }
+    return dashboardShareType;
+  }
+
   public Properties getQuartzProperties() {
     if (quartzProperties == null) {
       quartzProperties = new Properties();
-      quartzProperties.put("org.quartz.jobStore.class", jsonContext.read(ConfigurationServiceConstants.QUARTZ_JOB_STORE_CLASS));
+      quartzProperties.put(
+        "org.quartz.jobStore.class",
+        configJsonContext.read(ConfigurationServiceConstants.QUARTZ_JOB_STORE_CLASS)
+      );
     }
     return quartzProperties;
   }
 
   public String getAlertEmailUsername() {
     if (alertEmailUsername == null) {
-      alertEmailUsername = jsonContext.read(ConfigurationServiceConstants.EMAIL_USERNAME);
+      alertEmailUsername = configJsonContext.read(ConfigurationServiceConstants.EMAIL_USERNAME);
     }
     return alertEmailUsername;
   }
 
   public String getAlertEmailPassword() {
     if (alertEmailPassword == null) {
-      alertEmailPassword = jsonContext.read(ConfigurationServiceConstants.EMAIL_PASSWORD);
+      alertEmailPassword = configJsonContext.read(ConfigurationServiceConstants.EMAIL_PASSWORD);
     }
     return alertEmailPassword;
   }
 
   public boolean isEmailEnabled() {
     if (emailsEnabled == null) {
-      emailsEnabled = jsonContext.read(ConfigurationServiceConstants.EMAIL_ENABLED);
+      emailsEnabled = configJsonContext.read(ConfigurationServiceConstants.EMAIL_ENABLED);
     }
     return emailsEnabled;
   }
 
   public String getAlertEmailAddress() {
     if (alertEmailAddress == null) {
-      alertEmailAddress = jsonContext.read(ConfigurationServiceConstants.EMAIL_ADDRESS);
+      alertEmailAddress = configJsonContext.read(ConfigurationServiceConstants.EMAIL_ADDRESS);
     }
     return alertEmailAddress;
   }
 
   public String getAlertEmailHostname() {
     if (alertEmailHostname == null) {
-      alertEmailHostname = jsonContext.read(ConfigurationServiceConstants.EMAIL_HOSTNAME);
+      alertEmailHostname = configJsonContext.read(ConfigurationServiceConstants.EMAIL_HOSTNAME);
     }
     return alertEmailHostname;
   }
 
   public Integer getAlertEmailPort() {
     if (alertEmailPort == null) {
-      alertEmailPort = jsonContext.read(ConfigurationServiceConstants.EMAIL_PORT);
+      alertEmailPort = configJsonContext.read(ConfigurationServiceConstants.EMAIL_PORT);
     }
     return alertEmailPort;
   }
 
   public String getAlertEmailProtocol() {
     if (alertEmailProtocol == null) {
-      alertEmailProtocol = jsonContext.read(ConfigurationServiceConstants.EMAIL_PROTOCOL);
+      alertEmailProtocol = configJsonContext.read(ConfigurationServiceConstants.EMAIL_PROTOCOL);
     }
     return alertEmailProtocol;
   }
 
   public Integer getExportCsvLimit() {
     if (exportCsvLimit == null) {
-      exportCsvLimit = jsonContext.read(ConfigurationServiceConstants.EXPORT_CSV_LIMIT);
+      exportCsvLimit = configJsonContext.read(ConfigurationServiceConstants.EXPORT_CSV_LIMIT);
     }
     return exportCsvLimit;
   }
 
   public Integer getExportCsvOffset() {
     if (exportCsvOffset == null) {
-      exportCsvOffset = jsonContext.read(ConfigurationServiceConstants.EXPORT_CSV_OFFSET);
+      exportCsvOffset = configJsonContext.read(ConfigurationServiceConstants.EXPORT_CSV_OFFSET);
     }
     return exportCsvOffset;
   }
 
   public String getElasticsearchSecurityUsername() {
     if (elasticsearchSecurityUsername == null) {
-      elasticsearchSecurityUsername = jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_USERNAME);
+      elasticsearchSecurityUsername =
+        configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_USERNAME);
     }
     return elasticsearchSecurityUsername;
   }
 
   public String getElasticsearchSecurityPassword() {
     if (elasticsearchSecurityPassword == null) {
-      elasticsearchSecurityPassword = jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_PASSWORD);
+      elasticsearchSecurityPassword =
+        configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_PASSWORD);
     }
     return elasticsearchSecurityPassword;
   }
@@ -746,14 +834,15 @@ public class ConfigurationService {
   public Boolean getElasticsearchSecuritySSLEnabled() {
     if (elasticsearchSecuritySSLEnabled == null) {
       elasticsearchSecuritySSLEnabled =
-        jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_ENABLED);
+        configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_ENABLED);
     }
     return elasticsearchSecuritySSLEnabled;
   }
 
   public String getElasticsearchSecuritySSLKey() {
     if (elasticsearchSecuritySSLKey == null) {
-      elasticsearchSecuritySSLKey = jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_KEY);
+      elasticsearchSecuritySSLKey =
+        configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_KEY);
       elasticsearchSecuritySSLKey = resolvePathAsAbsoluteUrl(elasticsearchSecuritySSLKey).getPath();
     }
     return elasticsearchSecuritySSLKey;
@@ -762,7 +851,7 @@ public class ConfigurationService {
   public String getElasticsearchSecuritySSLCertificate() {
     if (elasticsearchSecuritySSLCertificate == null) {
       elasticsearchSecuritySSLCertificate =
-        jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE);
+        configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE);
       elasticsearchSecuritySSLCertificate = resolvePathAsAbsoluteUrl(elasticsearchSecuritySSLCertificate).getPath();
     }
     return elasticsearchSecuritySSLCertificate;
@@ -771,19 +860,11 @@ public class ConfigurationService {
   public String getElasticsearchSecuritySSLCertificateAuthorities() {
     if (elasticsearchSecuritySSLCertificateAuthorities == null) {
       elasticsearchSecuritySSLCertificateAuthorities =
-        jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES);
+        configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES);
       elasticsearchSecuritySSLCertificateAuthorities = resolvePathAsAbsoluteUrl(
         elasticsearchSecuritySSLCertificateAuthorities).getPath();
     }
     return elasticsearchSecuritySSLCertificateAuthorities;
-  }
-
-  public String getElasticsearchSecuritySSLVerificationMode() {
-    if (elasticsearchSecuritySSLVerificationMode == null) {
-      elasticsearchSecuritySSLVerificationMode =
-        jsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_VERIFICATION_MODE);
-    }
-    return elasticsearchSecuritySSLVerificationMode;
   }
 
   public void setMaxStatusConnections(Integer maxStatusConnections) {
@@ -801,7 +882,7 @@ public class ConfigurationService {
   public void setVariableImportPluginBasePackages(List<String> variableImportPluginBasePackages) {
     this.variableImportPluginBasePackages = variableImportPluginBasePackages;
   }
-  
+
   public void setEngineRestFilterPluginBasePackages(List<String> engineRestFilterPluginBasePackages) {
     this.engineRestFilterPluginBasePackages = engineRestFilterPluginBasePackages;
   }
@@ -822,32 +903,20 @@ public class ConfigurationService {
     return logger;
   }
 
-  public static String[] getDefaultLocations() {
-    return DEFAULT_LOCATIONS;
+  public String getElasticsearchSecuritySSLVerificationMode() {
+    if (elasticsearchSecuritySSLVerificationMode == null) {
+      elasticsearchSecuritySSLVerificationMode =
+        configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_VERIFICATION_MODE);
+    }
+    return elasticsearchSecuritySSLVerificationMode;
   }
 
-  public ObjectMapper getObjectMapper() {
-    return objectMapper;
+  public ReadContext getConfigJsonContext() {
+    return configJsonContext;
   }
 
-  public void setObjectMapper(ObjectMapper objectMapper) {
-    this.objectMapper = objectMapper;
-  }
-
-  public HashMap getDefaults() {
-    return defaults;
-  }
-
-  public void setDefaults(HashMap defaults) {
-    this.defaults = defaults;
-  }
-
-  public ReadContext getJsonContext() {
-    return jsonContext;
-  }
-
-  public void setJsonContext(ReadContext jsonContext) {
-    this.jsonContext = jsonContext;
+  public void setConfigJsonContext(ReadContext configJsonContext) {
+    this.configJsonContext = configJsonContext;
   }
 
   public void setTokenLifeTime(Integer tokenLifeTime) {

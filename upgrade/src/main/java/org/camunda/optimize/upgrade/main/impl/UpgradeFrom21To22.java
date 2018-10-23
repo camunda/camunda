@@ -14,7 +14,9 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
 
 
@@ -39,8 +41,6 @@ public class UpgradeFrom21To22 implements Upgrade {
   @Override
   public void performUpgrade() {
     try {
-
-
       UpgradePlan upgradePlan = UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
