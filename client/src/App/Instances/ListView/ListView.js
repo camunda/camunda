@@ -46,7 +46,6 @@ export default class ListView extends React.Component {
 
     // set firstElement to 0 when filter changes
     if (hasFilterChanged && this.state.firstElement !== 0) {
-      console.log('changed filter', this.props.filter);
       return this.setState({firstElement: 0});
     }
 
