@@ -36,7 +36,7 @@ public class UpgradeMain {
 
   public static void main(String... args) {
 
-    String targetVersion = Version.VERSION;
+    String targetVersion = args.length > 0 ? args[0] : Version.VERSION;
     Upgrade upgrade = upgrades.get(targetVersion);
 
     if (upgrade == null) {
