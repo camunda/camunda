@@ -28,7 +28,7 @@ public class TaskResponse {
   public Double getProgress() {
     return Optional.ofNullable(task).flatMap(Task::getStatus)
       .map(status -> status.total == 0
-        ? 1.0D
+        ? 0.0D
         : ((double) (status.created + status.updated + status.deleted)) / status.total)
       .orElse(0.0D);
   }
