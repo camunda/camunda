@@ -21,7 +21,7 @@ export const DropdownOption = styled(Dropdown.Option)`
   padding: 0px;
 `;
 
-export const SelectionButton = themed(styled.div`
+export const SelectionButton = themed(styled.button`
   font-family: IBMPlexSans;
   font-size: 13px;
   font-weight: 600;
