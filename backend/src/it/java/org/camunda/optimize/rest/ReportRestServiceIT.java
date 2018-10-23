@@ -16,6 +16,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinit
 import org.camunda.optimize.dto.optimize.rest.ConflictResponseDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemDto;
 import org.camunda.optimize.dto.optimize.rest.ConflictedItemType;
+import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
 import org.camunda.optimize.service.es.report.command.util.ReportConstants;
 import org.camunda.optimize.service.exceptions.ReportEvaluationException;
 import org.camunda.optimize.service.sharing.AbstractSharingIT;
@@ -79,6 +80,25 @@ public class ReportRestServiceIT {
       .execute(IdDto.class, 200);
     // then
     assertThat(idDto, is(notNullValue()));
+  }
+
+  @Test
+  public void createNewReportWithESWatermarkReached() throws InterruptedException {
+    //given
+    elasticSearchRule.setDiskWatermarks("1", "2", "3");
+
+    //when
+    ErrorResponseDto response = embeddedOptimizeRule
+            .getRequestExecutor()
+            .buildCreateSingleReportRequest()
+            .execute(ErrorResponseDto.class, 500);
+
+    //revert settings
+    elasticSearchRule.setDiskWatermarks("85", "90", "95");
+    elasticSearchRule.disableReadOnlyForAllIndexes();
+
+    //then
+    assertThat(response.getErrorMessage().contains("Your Elasticsearch index is set to read-only mode"), is(true));
   }
 
   @Test
