@@ -3,6 +3,8 @@ import {mount} from 'enzyme';
 
 import Popover from './Popover';
 
+const flushPromises = () => new Promise(resolve => setImmediate(resolve));
+
 it('should include a button to toggle the popover', () => {
   const node = mount(<Popover title="Foobar" />);
 
@@ -21,10 +23,11 @@ it('should do not display child content initially', () => {
   expect(node).not.toIncludeText('Child content');
 });
 
-it('should display child content when clicking on the button', () => {
+it('should display child content when clicking on the button', async () => {
   const node = mount(<Popover title="a">Child content</Popover>);
 
   node.find('button').simulate('click');
+  await flushPromises();
 
   expect(node).toIncludeText('Child content');
 });
@@ -45,7 +48,7 @@ it('should not close the popover when clicking inside the popover', () => {
     </Popover>
   );
 
-  node.find('button').simulate('click');
+  node.setState({open: true});
   node.find('p').simulate('click');
 
   expect(node).toIncludeText('Child content');
