@@ -353,13 +353,16 @@ describe('Instances', () => {
         it('should render no diagram on initial render', () => {
           // given
           const node = shallow(InstancesWithRunningFilter);
-
+          const noWorkflowMessage = node.find(
+            '[data-test="data-test-noWorkflowMessage"]'
+          );
           // then
           expect(node.state('workflow')).toEqual({});
           expect(node.find(Diagram).length).toBe(0);
           expect(node.find(Styled.PaneHeader).props().children).toBe(
             'Workflow'
           );
+          expect(noWorkflowMessage.length).toBe(1);
         });
 
         it('should render a diagram when workflow data is available ', async () => {
@@ -377,6 +380,7 @@ describe('Instances', () => {
           node.update();
 
           const DiagramNode = node.find(Diagram);
+
           // then
           expect(DiagramNode.length).toEqual(1);
           expect(DiagramNode.props().workflowId).toEqual(workflowMock.id);
@@ -392,6 +396,12 @@ describe('Instances', () => {
           expect(node.find(Styled.PaneHeader).props().children).toBe(
             workflowMock.name || workflowMock.id
           );
+          expect(
+            node.find('[data-test="data-test-noWorkflowMessage"]').length
+          ).toBe(0);
+          expect(
+            node.find('[data-test="data-test-allVersionsMessage"]').length
+          ).toBe(0);
         });
 
         it('should not display a diagram when all versions are selected', async () => {
@@ -412,7 +422,7 @@ describe('Instances', () => {
 
           const diagram = node.find(Diagram);
           const emptyMessage = node.find(
-            '[data-test="data-test-emptyDiagram"]'
+            '[data-test="data-test-allVersionsMessage"]'
           );
 
           expect(diagram.length).toBe(0);

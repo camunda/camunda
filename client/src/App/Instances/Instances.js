@@ -440,11 +440,20 @@ class Instances extends Component {
               <Styled.Pane>
                 <Styled.PaneHeader>{workflowName}</Styled.PaneHeader>
                 <SplitPane.Pane.Body>
+                  {!this.state.filter.workflow && (
+                    <Styled.EmptyMessageWrapper>
+                      <Styled.DiagramEmptyMessage
+                        message={`There is no Workflow selected.\n
+To see a diagram, select a Workflow in the Filters panel.`}
+                        data-test="data-test-noWorkflowMessage"
+                      />
+                    </Styled.EmptyMessageWrapper>
+                  )}
                   {this.state.filter.version === 'all' && (
                     <Styled.EmptyMessageWrapper>
                       <Styled.DiagramEmptyMessage
                         message={getEmptyDiagramMessage(workflowName)}
-                        data-test="data-test-emptyDiagram"
+                        data-test="data-test-allVersionsMessage"
                       />
                     </Styled.EmptyMessageWrapper>
                   )}
