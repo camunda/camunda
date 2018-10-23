@@ -97,12 +97,6 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
     return streamProcessor;
   }
 
-  @Override
-  protected void after() {
-    // TODO Auto-generated method stub
-    super.after();
-  }
-
   public void deploy(final BpmnModelInstance modelInstance) {
     final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
     Bpmn.writeModelToStream(outStream, modelInstance);

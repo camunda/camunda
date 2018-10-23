@@ -30,15 +30,11 @@ import io.zeebe.broker.logstreams.processor.TypedStreamReader;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.workflow.processor.deployment.DeploymentCreateProcessor;
 import io.zeebe.broker.workflow.processor.deployment.TransformingDeploymentCreateProcessor;
-import io.zeebe.broker.workflow.processor.instance.CancelWorkflowInstanceProcessor;
-import io.zeebe.broker.workflow.processor.instance.CreateWorkflowInstanceEventProcessor;
-import io.zeebe.broker.workflow.processor.instance.UpdatePayloadProcessor;
-import io.zeebe.broker.workflow.processor.instance.WorkflowInstanceCreatedEventProcessor;
-import io.zeebe.broker.workflow.processor.instance.WorkflowInstanceRejectedEventProcessor;
 import io.zeebe.broker.workflow.processor.job.JobCompletedEventProcessor;
 import io.zeebe.broker.workflow.processor.job.JobCreatedProcessor;
 import io.zeebe.broker.workflow.processor.message.CorrelateWorkflowInstanceSubscription;
 import io.zeebe.broker.workflow.processor.message.OpenWorkflowInstanceSubscriptionProcessor;
+import io.zeebe.broker.workflow.state.WorkflowEngineState;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.logstreams.processor.StreamProcessorContext;
 import io.zeebe.logstreams.state.StateSnapshotController;
@@ -82,14 +78,15 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
 
   public TypedStreamProcessor createStreamProcessor(final TypedStreamEnvironment environment) {
     final int partitionId = environment.getStream().getPartitionId();
-    final TypedEventStreamProcessorBuilder streamProcessorBuilder =
-        environment
-            .newStreamProcessor()
-            .keyGenerator(
-                KeyGenerator.createWorkflowInstanceKeyGenerator(partitionId, workflowState));
+    final KeyGenerator keyGenerator =
+        KeyGenerator.createWorkflowInstanceKeyGenerator(partitionId, workflowState);
+    final WorkflowEngineState engineState = new WorkflowEngineState(workflowState);
 
-    addWorkflowInstanceEventStreamProcessors(streamProcessorBuilder);
-    addBpmnStepProcessor(streamProcessorBuilder);
+    final TypedEventStreamProcessorBuilder streamProcessorBuilder =
+        environment.newStreamProcessor().keyGenerator(keyGenerator).withListener(engineState);
+
+    addWorkflowInstanceCommandProcessor(streamProcessorBuilder, engineState, keyGenerator);
+    addBpmnStepProcessor(streamProcessorBuilder, engineState);
     addJobStreamProcessors(streamProcessorBuilder);
     addMessageStreamProcessors(streamProcessorBuilder);
     addDeploymentStreamProcessors(streamProcessorBuilder, partitionId);
@@ -112,34 +109,26 @@ public class WorkflowInstanceStreamProcessor implements StreamProcessorLifecycle
     streamProcessorBuilder.onCommand(ValueType.DEPLOYMENT, CREATE, processor);
   }
 
-  public void addWorkflowInstanceEventStreamProcessors(
-      final TypedEventStreamProcessorBuilder builder) {
+  private void addWorkflowInstanceCommandProcessor(
+      final TypedEventStreamProcessorBuilder builder,
+      WorkflowEngineState workflowEngineState,
+      KeyGenerator keyGenerator) {
+
+    final WorkflowInstanceCommandProcessor commandProcessor =
+        new WorkflowInstanceCommandProcessor(keyGenerator, workflowEngineState);
+
     builder
+        .onCommand(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE, commandProcessor)
+        .onCommand(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CANCEL, commandProcessor)
         .onCommand(
-            ValueType.WORKFLOW_INSTANCE,
-            WorkflowInstanceIntent.CREATE,
-            new CreateWorkflowInstanceEventProcessor(workflowState))
-        .onEvent(
-            ValueType.WORKFLOW_INSTANCE,
-            WorkflowInstanceIntent.CREATED,
-            new WorkflowInstanceCreatedEventProcessor(workflowState))
-        .onRejection(
-            ValueType.WORKFLOW_INSTANCE,
-            WorkflowInstanceIntent.CREATE,
-            new WorkflowInstanceRejectedEventProcessor())
-        .onCommand(
-            ValueType.WORKFLOW_INSTANCE,
-            WorkflowInstanceIntent.CANCEL,
-            new CancelWorkflowInstanceProcessor(workflowState))
-        .onCommand(
-            ValueType.WORKFLOW_INSTANCE,
-            WorkflowInstanceIntent.UPDATE_PAYLOAD,
-            new UpdatePayloadProcessor(workflowState));
+            ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.UPDATE_PAYLOAD, commandProcessor);
   }
 
-  private void addBpmnStepProcessor(final TypedEventStreamProcessorBuilder streamProcessorBuilder) {
+  private void addBpmnStepProcessor(
+      TypedEventStreamProcessorBuilder streamProcessorBuilder,
+      WorkflowEngineState workflowEngineState) {
     final BpmnStepProcessor bpmnStepProcessor =
-        new BpmnStepProcessor(workflowState, subscriptionCommandSender);
+        new BpmnStepProcessor(workflowEngineState, subscriptionCommandSender);
 
     streamProcessorBuilder
         .onEvent(

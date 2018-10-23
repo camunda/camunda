@@ -87,7 +87,6 @@ public class WorkflowInstanceFunctionalTest {
     final long workflowInstanceKey = response.key();
 
     assertThat(response.sourceRecordPosition()).isEqualTo(workflowCreateCmd.position());
-    assertThat(response.position()).isGreaterThan(workflowCreateCmd.position());
 
     assertThat(startEvent.key()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
     assertThat(startEvent.position()).isGreaterThan(response.position());

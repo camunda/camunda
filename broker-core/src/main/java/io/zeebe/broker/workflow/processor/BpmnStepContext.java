@@ -27,7 +27,6 @@ import io.zeebe.broker.logstreams.processor.TypedStreamWriterImpl;
 import io.zeebe.broker.workflow.model.ExecutableFlowElement;
 import io.zeebe.broker.workflow.model.ExecutableWorkflow;
 import io.zeebe.broker.workflow.state.ElementInstance;
-import io.zeebe.broker.workflow.state.WorkflowEngineState;
 import io.zeebe.msgpack.mapping.MsgPackMergeTool;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.IncidentIntent;
@@ -49,8 +48,8 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
   private final IncidentRecord incidentCommand = new IncidentRecord();
   private final MsgPackMergeTool mergeTool;
 
-  public BpmnStepContext(WorkflowEngineState state) {
-    this.eventOutput = new EventOutput(state);
+  public BpmnStepContext(EventOutput eventOutput) {
+    this.eventOutput = eventOutput;
     this.mergeTool = new MsgPackMergeTool(4096);
   }
 
