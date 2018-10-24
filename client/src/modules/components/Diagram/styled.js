@@ -45,12 +45,12 @@ export function getInlineStyle(state, theme) {
       dark: Colors.incidentsAndErrors
     },
     completed: {
-      light: Colors.badge02,
-      dark: Colors.badge01
-    },
-    canceled: {
       light: Colors.badge01,
       dark: Colors.badge02
+    },
+    canceled: {
+      light: Colors.badge02,
+      dark: Colors.badge01
     }
   };
 

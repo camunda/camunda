@@ -50,8 +50,8 @@ const Colors = {
   darkFocusInner: '#2B7BFF',
 
   // Badge Colors
-  badge01: '#88888d',
-  badge02: '#d7d7d9'
+  badge01: '#d7d7d9',
+  badge02: '#88888d'
 };
 
 export default Colors;
