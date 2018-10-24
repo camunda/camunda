@@ -15,6 +15,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
@@ -29,10 +30,10 @@ public class VariableUpdateInstanceImportService {
   private VariableUpdateWriter variableWriter;
 
   public VariableUpdateInstanceImportService(
-      VariableUpdateWriter variableWriter,
-      ImportAdapterProvider importAdapterProvider,
-      ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
-      EngineContext engineContext
+    VariableUpdateWriter variableWriter,
+    ImportAdapterProvider importAdapterProvider,
+    ElasticsearchImportJobExecutor elasticsearchImportJobExecutor,
+    EngineContext engineContext
   ) {
     this.elasticsearchImportJobExecutor = elasticsearchImportJobExecutor;
     this.engineContext = engineContext;
@@ -46,8 +47,7 @@ public class VariableUpdateInstanceImportService {
     boolean newDataIsAvailable = !pageOfEngineEntities.isEmpty();
     if (newDataIsAvailable) {
       List<VariableDto> newOptimizeEntities = mapEngineEntitiesToOptimizeEntities(pageOfEngineEntities);
-      ElasticsearchImportJob<VariableDto> elasticsearchImportJob =
-        createElasticsearchImportJob(newOptimizeEntities);
+      ElasticsearchImportJob<VariableDto> elasticsearchImportJob = createElasticsearchImportJob(newOptimizeEntities);
       addElasticsearchImportJobToQueue(elasticsearchImportJob);
     }
   }
@@ -61,9 +61,7 @@ public class VariableUpdateInstanceImportService {
   }
 
   private List<VariableDto> mapEngineEntitiesToOptimizeEntities(List<HistoricVariableUpdateInstanceDto> engineEntities) {
-    List<? extends PluginVariableDto> result = mapEngineVariablesToOptimizeVariables(engineEntities);
-    List<PluginVariableDto> pluginVariableList = new ArrayList<>(result.size());
-    pluginVariableList.addAll(result);
+    List<PluginVariableDto> pluginVariableList = mapEngineVariablesToOptimizeVariablesAndDeduplicate(engineEntities);
     for (VariableImportAdapter variableImportAdapter : importAdapterProvider.getPlugins()) {
       pluginVariableList = variableImportAdapter.adaptVariables(pluginVariableList);
     }
@@ -74,7 +72,7 @@ public class VariableUpdateInstanceImportService {
     List<VariableDto> variableImportList = new ArrayList<>(pluginVariableList.size());
     for (PluginVariableDto dto : pluginVariableList) {
       if (isValidVariable(dto)) {
-        if( dto instanceof VariableDto) {
+        if (dto instanceof VariableDto) {
           variableImportList.add((VariableDto) dto);
         } else {
           variableImportList.add(convertPluginVariableToImportVariable(dto));
@@ -100,11 +98,16 @@ public class VariableUpdateInstanceImportService {
     return variableDto;
   }
 
-  private List<? extends PluginVariableDto> mapEngineVariablesToOptimizeVariables(List<HistoricVariableUpdateInstanceDto> engineEntities) {
-    return engineEntities
-    .stream()
+  private List<PluginVariableDto> mapEngineVariablesToOptimizeVariablesAndDeduplicate(List<HistoricVariableUpdateInstanceDto> engineEntities) {
+    final Map<String, PluginVariableDto> resultSet = engineEntities.stream()
       .map(this::mapEngineEntityToOptimizeEntity)
-      .collect(Collectors.toList());
+      .collect(Collectors.toMap(
+        PluginVariableDto::getId,
+        pluginVariableDto -> pluginVariableDto,
+        (existingEntry, newEntry) -> newEntry.getVersion() > existingEntry.getVersion() ? newEntry : existingEntry
+      ));
+
+    return new ArrayList<>(resultSet.values());
   }
 
   private VariableDto mapEngineEntityToOptimizeEntity(HistoricVariableUpdateInstanceDto engineEntity) {
@@ -129,37 +132,55 @@ public class VariableUpdateInstanceImportService {
       logger.info("Refuse to add null variable from import adapter plugin.");
       return false;
     } else if (isNullOrEmpty(variableDto.getId())) {
-      logger.info("Refuse to add variable with name [{}] from variable import adapter plugin. Variable has no id.",
-        variableDto.getName());
+      logger.info(
+        "Refuse to add variable with name [{}] from variable import adapter plugin. Variable has no id.",
+        variableDto.getName()
+      );
       return false;
     } else if (isNullOrEmpty(variableDto.getName())) {
-      logger.info("Refuse to add variable with id [{}] from variable import adapter plugin. Variable has no name.",
-        variableDto.getId());
+      logger.info(
+        "Refuse to add variable with id [{}] from variable import adapter plugin. Variable has no name.",
+        variableDto.getId()
+      );
       return false;
     } else if (isNullOrEmpty(variableDto.getType()) || !isVariableTypeSupported(variableDto.getType())) {
-      logger.info("Refuse to add variable [{}] from variable import adapter plugin. Variable has no type or type is not supported.",
-        variableDto.getName());
+      logger.info(
+        "Refuse to add variable [{}] from variable import adapter plugin. Variable has no type or type is not " +
+          "supported.",
+        variableDto.getName()
+      );
       return false;
     } else if (isNullOrEmpty(variableDto.getProcessInstanceId())) {
-      logger.info("Refuse to add variable [{}] from variable import adapter plugin. Variable has no process instance id.",
-        variableDto.getName());
+      logger.info(
+        "Refuse to add variable [{}] from variable import adapter plugin. Variable has no process instance id.",
+        variableDto.getName()
+      );
       return false;
     } else if (isNullOrEmpty(variableDto.getProcessDefinitionId())) {
-      logger.info("Refuse to add variable [{}] from variable import adapter plugin. Variable has no process definition id.",
-        variableDto.getName());
+      logger.info(
+        "Refuse to add variable [{}] from variable import adapter plugin. Variable has no process definition id.",
+        variableDto.getName()
+      );
       return false;
     } else if (isNullOrEmpty(variableDto.getProcessDefinitionKey())) {
-      logger.info("Refuse to add variable [{}] from variable import adapter plugin. Variable has no process definition key.",
-        variableDto.getName());
+      logger.info(
+        "Refuse to add variable [{}] from variable import adapter plugin. Variable has no process definition key.",
+        variableDto.getName()
+      );
       return false;
-    }  else if (isNullOrZero(variableDto.getVersion())) {
-      logger.info("Refuse to add variable [{}] with version [{}] from variable import adapter plugin. Variable has no version or version is invalid.",
+    } else if (isNullOrZero(variableDto.getVersion())) {
+      logger.info(
+        "Refuse to add variable [{}] with version [{}] from variable import adapter plugin. Variable has no version " +
+          "or version is invalid.",
         variableDto.getName(),
-        variableDto.getVersion());
+        variableDto.getVersion()
+      );
       return false;
     } else if (isNullOrEmpty(variableDto.getEngineAlias())) {
-      logger.info("Refuse to add variable [{}] from variable import adapter plugin. Variable has no engine alias.",
-        variableDto.getName());
+      logger.info(
+        "Refuse to add variable [{}] from variable import adapter plugin. Variable has no engine alias.",
+        variableDto.getName()
+      );
       return false;
     }
     return true;
@@ -174,8 +195,7 @@ public class VariableUpdateInstanceImportService {
   }
 
   private ElasticsearchImportJob<VariableDto> createElasticsearchImportJob(List<VariableDto> processInstances) {
-    VariableUpdateElasticsearchImportJob importJob =
-        new VariableUpdateElasticsearchImportJob(variableWriter);
+    VariableUpdateElasticsearchImportJob importJob = new VariableUpdateElasticsearchImportJob(variableWriter);
     importJob.setEntitiesToImport(processInstances);
     return importJob;
   }
