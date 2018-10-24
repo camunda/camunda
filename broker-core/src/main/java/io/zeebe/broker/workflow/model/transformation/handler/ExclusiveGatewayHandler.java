@@ -52,13 +52,17 @@ public class ExclusiveGatewayHandler implements ModelElementTransformer<Exclusiv
       TransformContext context) {
     final Collection<SequenceFlow> outgoingFlows = element.getOutgoing();
 
-    if (outgoingFlows.size() >= 1
-        && outgoingFlows.iterator().next().getConditionExpression() != null) {
-      gateway.bindLifecycleState(
-          WorkflowInstanceIntent.GATEWAY_ACTIVATED, BpmnStep.EXCLUSIVE_SPLIT);
-    } else {
+    final boolean hasNoOutgoingFlows = outgoingFlows.size() == 0;
+    final boolean hasSingleNonConditionalOutgoingFlow =
+        outgoingFlows.size() == 1
+            && outgoingFlows.iterator().next().getConditionExpression() == null;
+
+    if (hasNoOutgoingFlows || hasSingleNonConditionalOutgoingFlow) {
       gateway.bindLifecycleState(
           WorkflowInstanceIntent.GATEWAY_ACTIVATED, context.getCurrentFlowNodeOutgoingStep());
+    } else {
+      gateway.bindLifecycleState(
+          WorkflowInstanceIntent.GATEWAY_ACTIVATED, BpmnStep.EXCLUSIVE_SPLIT);
     }
   }
 
