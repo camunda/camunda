@@ -43,6 +43,7 @@ public class DataGenerationExecutor {
 
   private Long totalInstanceCount;
   private String engineRestEndpoint;
+  private long timeoutInHours;
   private SimpleEngineClient engineClient;
 
   private List<DataGenerator> dataGenerators;
@@ -52,9 +53,10 @@ public class DataGenerationExecutor {
   private ScheduledExecutorService progressReporter;
   private UserTaskCompleter completer;
 
-  DataGenerationExecutor(long totalInstanceCount, String engineRestEndpoint) {
+  public DataGenerationExecutor(long totalInstanceCount, String engineRestEndpoint, long timeoutInHours) {
     this.totalInstanceCount = totalInstanceCount;
     this.engineRestEndpoint = engineRestEndpoint;
+    this.timeoutInHours = timeoutInHours;
   }
 
   private void init() {
@@ -112,14 +114,25 @@ public class DataGenerationExecutor {
     progressReporter = reportDataGenerationProgress(importJobsQueue);
   }
 
-  public void awaitDataGenerationTermination() throws InterruptedException {
+  public void awaitDataGenerationTermination() {
     importExecutor.shutdown();
-    importExecutor.awaitTermination(16L, TimeUnit.HOURS);
-    if (progressReporter != null) {
-      stopReportingProgress(progressReporter);
+    try {
+      boolean finishedGeneration =
+        importExecutor.awaitTermination(timeoutInHours, TimeUnit.HOURS);
+      if (!finishedGeneration) {
+        logger.error("Could not finish data generation in time. Trying to interrupt!");
+        importExecutor.shutdownNow();
+      }
+    } catch(InterruptedException e) {
+      Thread.currentThread().interrupt();
+      logger.error("Data generation has been interrupted!", e);
+    } finally {
+      if (progressReporter != null) {
+        stopReportingProgress(progressReporter);
+      }
+      completer.stopUserTaskCompletion();
+      engineClient.close();
     }
-    completer.stopUserTaskCompletion();
-    engineClient.close();
   }
 
   private void stopReportingProgress(ScheduledExecutorService exec) {

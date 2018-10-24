@@ -32,6 +32,12 @@ mvn clean compile exec:java -Dexec.args="--numberOfProcessInstances 100000"
 mvn clean compile exec:java -Dexec.args="--engineRest http://localhost:8080/engine-rest"
 ```
 
+* adjust until the data generation timeouts (the default value is displayed):
+
+```
+mvn clean compile exec:java -Dexec.args="--timeoutInHours 16"
+```
+
 ### Data generation progress
 
 Once the data generation is started, it will print out the progress of

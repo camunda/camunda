@@ -121,6 +121,9 @@ public abstract class DataGenerator implements Runnable {
         Map<String, Object> variables = createVariablesForProcess();
         variables.putAll(createSimpleVariables());
         startProcessInstance(processDefinitionIds.get(ithBatch), variables);
+        if (Thread.currentThread().isInterrupted()) {
+          return;
+        }
       }
     }
   }

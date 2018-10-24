@@ -13,6 +13,13 @@ public class Main {
 
   private long numberOfProcessInstancesToGenerate;
   private String engineRestEndpoint;
+  private long timeoutInHours;
+
+  private Main(long numberOfProcessInstancesToGenerate, String engineRestEndpoint, long timeoutInHours) {
+    this.numberOfProcessInstancesToGenerate = numberOfProcessInstancesToGenerate;
+    this.engineRestEndpoint = engineRestEndpoint;
+    this.timeoutInHours = timeoutInHours;
+  }
 
   public static void main(String[] args) throws InterruptedException {
     // by default create 100 000 process instances
@@ -20,14 +27,11 @@ public class Main {
     long numberOfProcessInstancesToGenerate =
       Long.parseLong(arguments.get("numberOfProcessInstances"));
     String engineRestEndpoint = arguments.get("engineRest");
+    long timeoutInHours =
+      Long.parseLong(arguments.get("timeoutInHours"));
 
-    Main main = new Main(numberOfProcessInstancesToGenerate, engineRestEndpoint);
+    Main main = new Main(numberOfProcessInstancesToGenerate, engineRestEndpoint, timeoutInHours);
     main.generateData();
-  }
-
-  private Main(long numberOfProcessInstancesToGenerate, String engineRestEndpoint) {
-    this.numberOfProcessInstancesToGenerate = numberOfProcessInstancesToGenerate;
-    this.engineRestEndpoint = engineRestEndpoint;
   }
 
   private static Map<String, String> extractArguments(String[] args) {
@@ -36,9 +40,9 @@ public class Main {
     }
     Map<String, String> arguments = new HashMap<>();
     fillArgumentMapWithDefaultValues(arguments);
-    for (int i=0; i<args.length; i+=2) {
+    for (int i = 0; i < args.length; i += 2) {
       String identifier = stripLeadingHyphens(args[i]);
-      String value = args[i+1];
+      String value = args[i + 1];
       ensureIdentifierIsKnown(arguments, identifier);
       arguments.put(identifier, value);
     }
@@ -54,24 +58,25 @@ public class Main {
   private static void fillArgumentMapWithDefaultValues(Map<String, String> arguments) {
     arguments.put("numberOfProcessInstances", String.valueOf(100_000));
     arguments.put("engineRest", "http://localhost:8080/engine-rest");
+    arguments.put("timeoutInHours", String.valueOf(16));
   }
 
   private static String stripLeadingHyphens(String str) {
     int index = str.lastIndexOf("-");
     if (index != -1) {
-      return str.substring(index+1);
+      return str.substring(index + 1);
     } else {
       return str;
     }
   }
 
   private static boolean arrayHasUnevenLength(String[] args) {
-    return args.length%2 != 0;
+    return args.length % 2 != 0;
   }
 
   private void generateData() throws InterruptedException {
     DataGenerationExecutor dataGenerationExecutor =
-      new DataGenerationExecutor(numberOfProcessInstancesToGenerate, engineRestEndpoint);
+      new DataGenerationExecutor(numberOfProcessInstancesToGenerate, engineRestEndpoint, timeoutInHours);
     dataGenerationExecutor.executeDataGeneration();
     dataGenerationExecutor.awaitDataGenerationTermination();
     logger.info("Finished data generation!");
