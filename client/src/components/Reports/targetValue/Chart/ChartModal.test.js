@@ -43,6 +43,7 @@ jest.mock('components', () => {
 
 const validProps = {
   reportResult: {
+    reportType: 'single',
     data: {
       processDefinitionKey: 'a',
       processDefinitionVersion: 1,
@@ -90,6 +91,7 @@ it('should display select dateFormat dropdown when viewProberty equal duration',
 it('should hide select dateFormat dropdown when viewProberty is not equal duration', () => {
   const newProps = {
     reportResult: {
+      reportType: 'single',
       data: {
         processDefinitionKey: 'a',
         processDefinitionVersion: 1,
@@ -134,4 +136,57 @@ it('should invoke the confirm prop on confirm button click', async () => {
   node.find('button[type="primary"]').simulate('click');
 
   expect(spy).toHaveBeenCalled();
+});
+
+describe('isDurationReport', () => {
+  it('should return true if combined report is duration report', async () => {
+    const combinedProps = {
+      ...validProps,
+      reportResult: {
+        ...validProps.reportResult,
+        reportType: 'combined',
+        result: {
+          test: {
+            data: {
+              visualization: 'bar',
+              view: {
+                property: 'duration'
+              }
+            }
+          }
+        }
+      }
+    };
+    const node = mount(<ChartModal {...combinedProps} />);
+
+    expect(node.instance().isDurationReport()).toBe(true);
+  });
+
+  it('should return true if single report is bar or line', async () => {
+    const node = mount(<ChartModal {...validProps} />);
+
+    expect(node.instance().isDurationReport()).toBe(true);
+  });
+
+  it('should return false if single report is not duartion report', async () => {
+    const newProps = {
+      ...validProps,
+      reportResult: {
+        ...validProps.reportResult,
+        data: {
+          processDefinitionKey: 'a',
+          processDefinitionVersion: 1,
+          view: {
+            entity: 'flowNode',
+            operation: 'avg_flowNode_duration',
+            property: 'not duartion'
+          },
+          visualization: 'bar'
+        }
+      }
+    };
+    const node = mount(<ChartModal {...newProps} />);
+
+    expect(node.instance().isDurationReport()).toBe(false);
+  });
 });

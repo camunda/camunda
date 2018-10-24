@@ -18,9 +18,10 @@ export default class ChartModal extends React.Component {
   }
 
   rerenderReport() {
-    const {configuration: {targetValue: {values}}, reportResult} = this.props;
-    if (values) {
-      const dateFormat = reportResult.data.view.property !== 'duration' ? '' : values.dateFormat;
+    const {configuration: {targetValue}} = this.props;
+    if (targetValue && targetValue.values) {
+      const values = targetValue.values;
+      const dateFormat = !this.isDurationReport() ? '' : values.dateFormat;
       return this.setState({
         ...values,
         dateFormat
@@ -31,6 +32,14 @@ export default class ChartModal extends React.Component {
       isBelow: false,
       dateFormat: ''
     });
+  }
+
+  isDurationReport() {
+    const report = this.props.reportResult;
+    if (report.reportType === 'single') return report.data.view.property === 'duration';
+    else if (report.result && Object.values(report.result).length)
+      return Object.values(report.result)[0].data.view.property === 'duration';
+    else return false;
   }
 
   componentDidUpdate(prevProps) {
@@ -77,7 +86,7 @@ export default class ChartModal extends React.Component {
               </ErrorMessage>
             )}
           </LabeledInput>
-          {this.props.reportResult.data.view.property === 'duration' && (
+          {this.isDurationReport() && (
             <Select
               className="ChartModal__select"
               value={this.state.dateFormat}

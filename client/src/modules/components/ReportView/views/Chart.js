@@ -76,25 +76,35 @@ export default themed(
       let dataArr = data;
       if (!isCombined) dataArr = [data];
 
-      const colors = this.createColors(dataArr.length);
+      let colors = this.createColors(dataArr.length);
+      colors[0] = this.getColorFor('bar');
 
       let labels = Object.keys(Object.assign({}, ...dataArr));
+      dataArr = uniteResults(dataArr, labels);
 
-      if (!isCombined && type === 'line' && targetValue && targetValue.active)
-        return this.createTargetLineChartData(targetValue, labels, data);
+      if (type === 'line' && targetValue && targetValue.active) {
+        if (!isCombined)
+          return {
+            labels,
+            datasets: this.createSingleTargetLineDataset(targetValue, data, colors[0])
+          };
+
+        return {
+          labels,
+          datasets: this.createCombinedTargetLineDatasets(dataArr, targetValue, colors)
+        };
+      }
 
       if (this.props.isDate)
         labels.sort((a, b) => {
           return new Date(a) - new Date(b);
         });
 
-      dataArr = uniteResults(dataArr, labels);
-
       const datasets = dataArr.map((report, index) => {
         return {
           label: this.props.reportsNames && this.props.reportsNames[index],
           data: Object.values(report),
-          ...this.createDatasetOptions(type, data, targetValue, colors[index], isCombined)
+          ...this.createDatasetOptions(type, report, targetValue, colors[index], isCombined)
         };
       });
 
@@ -104,31 +114,47 @@ export default themed(
       };
     };
 
-    createTargetLineChartData = (targetValue, labels, data) => {
+    createCombinedTargetLineDatasets = (dataArr, targetValue, colors) => {
+      return dataArr.reduce((prevDataset, report, i) => {
+        return [
+          ...prevDataset,
+          ...this.createSingleTargetLineDataset(
+            targetValue,
+            report,
+            colors[i],
+            this.props.reportsNames[i]
+          )
+        ];
+      }, []);
+    };
+
+    createSingleTargetLineDataset = (targetValue, data, color, reportName) => {
+      const isCombined = this.props.reportType === 'combined';
       const allValues = Object.values(data);
       const targetValues = getLineTargetValues(allValues, targetValue.values);
 
       const datasets = [
         {
           data: targetValues,
-          borderColor: this.getColorFor('targetBar'),
-          backgroundColor: this.getColorFor('targetArea'),
+          borderColor: isCombined ? color : this.getColorFor('targetBar'),
+          pointBorderColor: this.getColorFor('targetBar'),
+          backgroundColor: isCombined ? 'transparent' : this.getColorFor('targetArea'),
+          legendColor: color,
           borderWidth: 2,
           lineTension: 0
         },
         {
+          label: reportName,
           data: allValues,
-          borderColor: this.getColorFor('bar'),
-          backgroundColor: this.getColorFor('area'),
+          borderColor: color,
+          backgroundColor: isCombined ? 'transparent' : this.getColorFor('area'),
+          legendColor: color,
           borderWidth: 2,
           lineTension: 0
         }
       ];
 
-      return {
-        labels,
-        datasets
-      };
+      return datasets;
     };
 
     drawHorizentalLine = chart => {
@@ -166,13 +192,15 @@ export default themed(
             borderColor: isCombined ? color : this.getColorFor('bar'),
             backgroundColor: isCombined ? 'transparent' : this.getColorFor('area'),
             borderWidth: 2,
+            legendColor: color,
             lineTension: 0
           };
         case 'bar':
-          const barColor = isCombined ? color : this.determineBarColor(targetValue, data);
+          const barColor = targetValue ? this.determineBarColor(targetValue, data, color) : color;
           return {
             borderColor: barColor,
             backgroundColor: barColor,
+            legendColor: color,
             borderWidth: 1
           };
         default:
@@ -186,24 +214,49 @@ export default themed(
 
     createColors = amount => {
       const colors = [];
-      const stepSize = ~~(360 / amount);
+      //250 is used instead of 360 to avoid the red colors in the color wheel
+      const stepSize = ~~(250 / amount);
 
-      for (let i = 0; i < amount; i++) {
+      for (let i = 1; i <= amount; i++) {
         colors.push(`hsl(${i * stepSize}, 65%, ${this.props.theme === 'dark' ? 40 : 50}%)`);
       }
       return colors;
     };
 
-    determineBarColor = ({active, values}, data) => {
-      if (!active) return this.getColorFor('bar');
+    determineBarColor = ({active, values}, data, color) => {
+      if (!active) return color;
+
       const barValue = values.dateFormat
         ? convertToMilliseconds(values.target, values.dateFormat)
         : values.target;
+
+      const targetColor =
+        this.props.reportType === 'combined'
+          ? this.getStripedColor(color)
+          : this.getColorFor('targetBar');
       return Object.values(data).map(height => {
-        if (values.isBelow)
-          return height < barValue ? this.getColorFor('bar') : this.getColorFor('targetBar');
-        else return height >= barValue ? this.getColorFor('bar') : this.getColorFor('targetBar');
+        if (values.isBelow) return height < barValue ? color : targetColor;
+        else return height >= barValue ? color : targetColor;
       });
+    };
+
+    getStripedColor = color => {
+      const ctx = this.container.getContext('2d');
+
+      const numberOfStripes = 100;
+      for (let i = 0; i < numberOfStripes * 2; i++) {
+        const thickness = 300 / numberOfStripes;
+        ctx.beginPath();
+        ctx.strokeStyle = i % 2 ? 'transparent' : color;
+        ctx.lineWidth = thickness;
+        ctx.lineCap = 'round';
+
+        ctx.moveTo(i * thickness + thickness / 2 - 300, 0);
+        ctx.lineTo(i * thickness + thickness / 2, 300);
+        ctx.stroke();
+      }
+
+      return ctx.createPattern(this.container, 'repeat');
     };
 
     createPieOptions = () => {
@@ -212,11 +265,37 @@ export default themed(
       };
     };
 
+    // overide the default generate labels function
+    generateLabels = chart => {
+      const data = chart.data;
+      return data.datasets.length
+        ? data.datasets
+            .map(function(dataset) {
+              return {
+                text: dataset.label,
+                fillStyle: !dataset.backgroundColor.length
+                  ? dataset.backgroundColor
+                  : dataset.legendColor,
+                strokeStyle: dataset.legendColor
+              };
+            }, this)
+            .filter(dataset => {
+              return dataset.text;
+            })
+        : [];
+    };
+
     createBarOptions = (data, targetValue) => {
       const isCombined = this.props.reportType === 'combined';
-      const targetLine = targetValue && !isCombined ? this.getFormattedTargetValue(targetValue) : 0;
+      const targetLine = targetValue ? this.getFormattedTargetValue(targetValue) : 0;
       return {
-        legend: {display: isCombined},
+        legend: {
+          display: isCombined,
+          labels: {
+            generateLabels: this.generateLabels
+          },
+          onClick: e => e.stopPropagation()
+        },
         scales: {
           yAxes: [
             {
@@ -324,13 +403,26 @@ export default themed(
                 processInstanceCountArr = [processInstanceCountArr];
 
               if (this.props.property === 'frequency') {
+                let processInstanceCount = processInstanceCountArr[datasetIndex];
+                // in the case of the line with target value we have 2 datasets for each report
+                // we have to divide by 2 to get the right index
+                if (type === 'line' && targetValue && targetValue.active) {
+                  processInstanceCount = processInstanceCountArr[~~(datasetIndex / 2)];
+                }
                 return `${formatted} (${getRelativeValue(
                   datasets[datasetIndex].data[index],
-                  processInstanceCountArr[datasetIndex]
+                  processInstanceCount
                 )})`;
               } else {
                 return formatted;
               }
+            },
+            labelColor: function(tooltipItem, chart) {
+              const datasetOptions = chart.data.datasets[tooltipItem.datasetIndex];
+              return {
+                borderColor: datasetOptions.legendColor,
+                backgroundColor: datasetOptions.legendColor
+              };
             }
           }
         }

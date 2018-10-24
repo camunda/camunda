@@ -57,7 +57,8 @@ export default class ReportView extends React.Component {
     const result = report.result;
     if (result && typeof result === 'object' && Object.keys(result).length) {
       const {data} = Object.values(report.result)[0];
-      return this.getConfig(data.visualization, 'combined', report.result, data);
+      const combinedReportData = {...data, configuration: report.data.configuration};
+      return this.getConfig(data.visualization, 'combined', report.result, combinedReportData);
     }
     return this.buildInstructionMessage('one or more reports from the list', true);
   };

@@ -82,7 +82,6 @@
   display: flex;
   flex-grow: 1;
   margin-bottom: 24px;
-  overflow: auto;
 }
 
 .Report__content {
@@ -94,9 +93,18 @@
   min-height: 0;
 }
 
-.combinedSelectionPanel {
+.combinedPanel {
   width: 30%;
-  margin-top: 24px;
   margin-bottom: 24px;
+  text-align: right;
   overflow: auto;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+
+  .TargetValueComparison {
+    display: block;
+    flex-shrink: 1;
+    margin-bottom: 10px;
+  }
 }

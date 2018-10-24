@@ -2,6 +2,7 @@ import React from 'react';
 import moment from 'moment';
 import update from 'immutability-helper';
 import {withErrorHandling} from 'HOC';
+import {TargetValueComparison} from './targetValue';
 
 import {Link, Redirect} from 'react-router-dom';
 import {
@@ -175,6 +176,11 @@ export default withErrorHandling(
 
       if (updates.visualization && updates.visualization !== this.state.data.visualization) {
         data.configuration = {...data.configuration, alwaysShowTooltips: false};
+      }
+
+      // if combined report has no reports then reset configuration
+      if (this.state.reportType === 'combined' && updates.reportIds && !updates.reportIds.length) {
+        data.configuration = {targetValue: {}};
       }
 
       this.setState({data});
@@ -352,6 +358,12 @@ export default withErrorHandling(
       )}.csv${queryString}`;
     };
 
+    isTargetValuePossible = reportResult => {
+      if (reportResult.result && Object.values(reportResult.result).length)
+        return ['bar', 'line'].includes(Object.values(reportResult.result)[0].data.visualization);
+      return false;
+    };
+
     renderEditMode = () => {
       const {
         name,
@@ -434,9 +446,17 @@ export default withErrorHandling(
               )}
             </div>
             {reportType === 'combined' && (
-              <div className="combinedSelectionPanel">
+              <div className="combinedPanel">
+                {this.isTargetValuePossible(reportResult) && (
+                  <TargetValueComparison
+                    reportResult={reportResult}
+                    configuration={data.configuration}
+                    onChange={this.updateReport}
+                  />
+                )}
                 <CombinedSelectionPanel
                   reportResult={reportResult}
+                  configuration={data.configuration}
                   updateReport={this.updateReport}
                 />
               </div>

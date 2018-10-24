@@ -25,6 +25,10 @@ jest.mock('./service', () => {
 jest.mock('./ColumnSelection', () => () => <div>ColumnSelection</div>);
 jest.mock('./ColumnRearrangement', () => props => <div>ColumnRearrangement: {props.children}</div>);
 
+jest.mock('./targetValue', () => {
+  return {TargetValueComparison: () => <div>TargetValueComparison</div>};
+});
+
 jest.mock('services', () => {
   return {
     loadProcessDefinitions: () => [{key: 'key', versions: [{version: 2}, {version: 1}]}],
@@ -197,11 +201,18 @@ it('should not contain a Control Panel in edit mode for a combined report', () =
 
   const combinedReport = {
     ...sampleReport,
-    reportType: 'combined'
+    reportType: 'combined',
+    result: {
+      test: {
+        data: {
+          visualization: 'test'
+        }
+      }
+    }
   };
 
   const node = mount(shallow(<Report {...props} />).get(0));
-  node.setState({loaded: true, reportResult, ...combinedReport});
+  node.setState({loaded: true, reportResult: combinedReport, ...combinedReport});
 
   expect(node).not.toIncludeText('ControlPanel');
 });
@@ -677,5 +688,70 @@ describe('edit mode', async () => {
 
     expect(node.state().conflict.type).toEqual('Save');
     expect(node.state().conflict.items).toEqual(conflictedItems);
+  });
+
+  it('should reset the target value when reports get deselected', async () => {
+    props.match.params.viewMode = 'edit';
+
+    const combinedReport = {
+      ...sampleReport,
+      reportType: 'combined',
+      data: {
+        reportIds: ['test'],
+        configuration: {
+          targetValue: {
+            active: true,
+            value: 25
+          }
+        }
+      }
+    };
+
+    const node = mount(shallow(<Report {...props} />).get(0));
+    node.setState({
+      loaded: true,
+      reportResult: combinedReport,
+      ...combinedReport
+    });
+
+    getReportData.mockReturnValue(combinedReport);
+
+    node.instance().updateReport({reportIds: []});
+
+    expect(node.state().data.configuration).toEqual({targetValue: {}});
+  });
+
+  it('should enable target value option when combined report is barchart or linechart', async () => {
+    props.match.params.viewMode = 'edit';
+
+    const combinedReport = {
+      ...sampleReport,
+      reportType: 'combined',
+      data: {
+        reportIds: ['test'],
+        configuration: {
+          targetValue: {
+            active: true,
+            value: 25
+          }
+        }
+      },
+      result: {
+        test: {
+          data: {
+            visualization: 'bar'
+          }
+        }
+      }
+    };
+
+    const node = mount(shallow(<Report {...props} />).get(0));
+    node.setState({
+      loaded: true,
+      reportResult: combinedReport,
+      ...combinedReport
+    });
+
+    expect(node.find('TargetValueComparison')).toBePresent();
   });
 });

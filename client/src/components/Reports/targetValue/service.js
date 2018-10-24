@@ -26,10 +26,22 @@ export function isSingleNumber({processDefinitionKey, processDefinitionVersion, 
   return processDefinitionKey && processDefinitionVersion && visualization === 'number';
 }
 
-export function isChart({processDefinitionKey, processDefinitionVersion, visualization}) {
+export function isChart(reportResult) {
+  const {reportType} = reportResult;
+  let {
+    visualization,
+    reportIds,
+    processDefinitionKey,
+    processDefinitionVersion
+  } = reportResult.data;
+
+  if (reportType === 'combined') {
+    if (!reportIds || !reportIds.length) return false;
+    visualization = reportResult.result[reportIds[0]].data.visualization;
+  }
+
   return (
-    processDefinitionKey &&
-    processDefinitionVersion &&
+    ((processDefinitionKey && processDefinitionVersion) || reportIds) &&
     (visualization === 'bar' || visualization === 'line')
   );
 }

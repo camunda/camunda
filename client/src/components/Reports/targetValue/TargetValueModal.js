@@ -16,7 +16,7 @@ export default function TargetValueModal(props) {
     );
   } else if (isDurationHeatmap(props.reportResult.data)) {
     return <DurationHeatmapModal {...props} />;
-  } else if (isChart(props.reportResult.data)) {
+  } else if (isChart(props.reportResult)) {
     return <ChartModal {...props} />;
   }
 

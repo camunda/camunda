@@ -145,8 +145,8 @@ it('should return the default bar color if targetvalue is not active', () => {
   const data = {foo: 123};
   const node = mount(<Chart data={data} />);
 
-  const value = node.instance().determineBarColor({active: false, values: null}, data);
-  expect(value).toEqual('#1991c8');
+  const value = node.instance().determineBarColor({active: false, values: null}, data, 'testColor');
+  expect(value).toEqual('testColor');
 });
 
 it('should return red color for all bars below a target value', () => {
@@ -162,9 +162,10 @@ it('should return red color for all bars below a target value', () => {
         dateFormat: ''
       }
     },
-    data
+    data,
+    'testColor'
   );
-  expect(value).toEqual(['#1991c8', '#A62A31']);
+  expect(value).toEqual(['testColor', '#A62A31']);
 });
 
 it('should set LineAt option to 0 if the target value is not active', () => {
@@ -194,9 +195,20 @@ it('should create two datasets for line chart with target values', () => {
   const data = {foo: 123, bar: 5, dar: 5};
   const node = mount(<Chart data={data} />);
   const targetValue = {values: {target: 10}};
-  const labels = ['a', 'b', 'c'];
-  const lineChartData = node.instance().createTargetLineChartData(targetValue, labels, data);
-  expect(lineChartData.datasets).toHaveLength(2);
+  const lineChartData = node
+    .instance()
+    .createSingleTargetLineDataset(targetValue, data, 'blue', 'test');
+  expect(lineChartData).toHaveLength(2);
+});
+
+it('should create two datasets for each report in combined line charts with target values', () => {
+  const data = {foo: 123, bar: 5, dar: 5};
+  const node = mount(<Chart data={data} reportsNames={['test1', 'test2']} />);
+  const targetValue = {values: {target: 10}};
+  const lineChartData = node
+    .instance()
+    .createCombinedTargetLineDatasets([data, data], targetValue, ['blue', 'yellow']);
+  expect(lineChartData).toHaveLength(4);
 });
 
 it('should return correct chart data object for a single report', () => {
@@ -210,6 +222,7 @@ it('should return correct chart data object for a single report', () => {
     datasets: [
       {
         label: undefined,
+        legendColor: '#1991c8',
         lineTension: 0,
         data: [123, 5],
         borderColor: '#1991c8',
@@ -235,7 +248,8 @@ it('should return correct chart data object for a combined report', () => {
         label: 'Report A',
         lineTension: 0,
         data: [123, 5],
-        borderColor: 'hsl(0, 65%, 50%)',
+        borderColor: '#1991c8',
+        legendColor: '#1991c8',
         backgroundColor: 'transparent',
         borderWidth: 2
       },
@@ -243,10 +257,44 @@ it('should return correct chart data object for a combined report', () => {
         label: 'Report B',
         lineTension: 0,
         data: [1, 3],
-        borderColor: 'hsl(180, 65%, 50%)',
+        legendColor: 'hsl(250, 65%, 50%)',
+        borderColor: 'hsl(250, 65%, 50%)',
         backgroundColor: 'transparent',
         borderWidth: 2
       }
     ]
+  });
+});
+
+it('should filter labels with undefined names and show correct label coloring', () => {
+  const data = [{foo: 123, bar: 5}, {foo: 1, dar: 3}];
+  const node = mount(<Chart data={data} />);
+
+  const datasets = node.instance().generateLabels({
+    data: {
+      datasets: [
+        {label: undefined, backgroundColor: [], legendColor: 'red'},
+        {label: 'test', backgroundColor: ['blue', 'yellow'], legendColor: 'red'}
+      ]
+    }
+  });
+
+  expect(datasets).toEqual([{text: 'test', fillStyle: 'red', strokeStyle: 'red'}]);
+});
+
+it('should return correct colors for the tooltip label', () => {
+  const data = {foo: 123};
+  const node = mount(<Chart data={data} />);
+
+  const color = 'testColor';
+
+  const response = node
+    .instance()
+    .createChartOptions('bar')
+    .tooltips.callbacks.labelColor({datasetIndex: 0}, {data: {datasets: [{legendColor: color}]}});
+
+  expect(response).toEqual({
+    borderColor: color,
+    backgroundColor: color
   });
 });
