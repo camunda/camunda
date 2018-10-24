@@ -20,10 +20,10 @@ import static org.junit.Assert.fail;
 
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.model.bpmn.instance.CompensateEventDefinition;
 import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.zeebe.model.bpmn.instance.Message;
 import io.zeebe.model.bpmn.instance.ReceiveTask;
-import io.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
@@ -188,13 +188,38 @@ public class ZeebeValidationTest {
       {
         Bpmn.createExecutableProcess("process")
             .startEvent()
-            .intermediateCatchEvent("catch")
-            .timerWithCycle("some config")
+            .intermediateCatchEvent("catch", c -> c.timerWithCycle(""))
+            .endEvent()
+            .done(),
+        Arrays.asList(expect(IntermediateCatchEvent.class, "Must have a time duration"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .intermediateCatchEvent("catch", c -> c.timerWithDuration("foo"))
+            .endEvent()
+            .done(),
+        Arrays.asList(expect(IntermediateCatchEvent.class, "Time duration is invalid"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .intermediateCatchEvent()
             .endEvent()
             .done(),
         Arrays.asList(
-            expect(TimerEventDefinition.class, "Event definition of this type is not supported"),
-            expect(IntermediateCatchEvent.class, "Must have a message event definition"))
+            expect(IntermediateCatchEvent.class, "Must have exactly one event definition"))
+      },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .intermediateCatchEvent("catch", c -> c.compensateEventDefinition())
+            .endEvent()
+            .done(),
+        Arrays.asList(
+            expect(
+                CompensateEventDefinition.class, "Event definition of this type is not supported"),
+            expect(IntermediateCatchEvent.class, "Must have a message or timer event definition"))
       },
       {
         Bpmn.createExecutableProcess("process")

@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.workflow.processor.servicetask;
 
-import io.zeebe.broker.workflow.model.ExecutableServiceTask;
+import io.zeebe.broker.workflow.model.element.ExecutableServiceTask;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;

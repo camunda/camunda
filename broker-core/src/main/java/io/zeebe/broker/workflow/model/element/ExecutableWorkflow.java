@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.model;
+package io.zeebe.broker.workflow.model.element;
 
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.HashMap;
@@ -25,18 +25,18 @@ import org.agrona.DirectBuffer;
 /** Executable* prefix in order to avoid confusion with model API classes. */
 public class ExecutableWorkflow extends ExecutableFlowElementContainer {
 
-  private final Map<DirectBuffer, ExecutableFlowElement> flowElements = new HashMap<>();
+  private final Map<DirectBuffer, AbstractFlowElement> flowElements = new HashMap<>();
 
   public ExecutableWorkflow(String id) {
     super(id);
     addFlowElement(this);
   }
 
-  public void addFlowElement(ExecutableFlowElement element) {
+  public void addFlowElement(AbstractFlowElement element) {
     flowElements.put(element.getId(), element);
   }
 
-  public ExecutableFlowElement getElementById(DirectBuffer id) {
+  public AbstractFlowElement getElementById(DirectBuffer id) {
     return flowElements.get(id);
   }
 

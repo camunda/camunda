@@ -77,6 +77,10 @@ public class Records {
     return isRecordOfType(event, ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
   }
 
+  public static boolean isTimerRecord(final LoggedEvent event) {
+    return isRecordOfType(event, ValueType.TIMER);
+  }
+
   public static boolean hasIntent(final LoggedEvent event, final Intent intent) {
     if (event == null) {
       return false;

@@ -15,33 +15,23 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.model;
+package io.zeebe.broker.workflow.model.element;
 
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.util.buffer.BufferUtil;
-import java.util.EnumMap;
-import java.util.Map;
-import org.agrona.DirectBuffer;
+import io.zeebe.msgpack.mapping.Mapping;
 
-public abstract class ExecutableFlowElement {
+public class ExecutableEndEvent extends ExecutableFlowNode {
 
-  private final DirectBuffer id;
-  private Map<WorkflowInstanceIntent, BpmnStep> bpmnSteps =
-      new EnumMap<>(WorkflowInstanceIntent.class);
-
-  public ExecutableFlowElement(String id) {
-    this.id = BufferUtil.wrapString(id);
+  public ExecutableEndEvent(String id) {
+    super(id);
   }
 
-  public DirectBuffer getId() {
-    return id;
+  private Mapping[] payloadMappings = new Mapping[0];
+
+  public void setPayloadMappings(Mapping[] payloadMappings) {
+    this.payloadMappings = payloadMappings;
   }
 
-  public void bindLifecycleState(WorkflowInstanceIntent state, BpmnStep step) {
-    this.bpmnSteps.put(state, step);
-  }
-
-  public BpmnStep getStep(WorkflowInstanceIntent state) {
-    return bpmnSteps.get(state);
+  public Mapping[] getPayloadMappings() {
+    return payloadMappings;
   }
 }

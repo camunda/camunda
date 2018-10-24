@@ -429,7 +429,7 @@ Elements marked in orange are currently implemented by Zeebe.
       </td>
     </tr>
     <tr>
-      <td>Timer</td>
+      <td><a href="/bpmn-workflows/timer-events.html">Timer</a></td>
       <td>
           <svg height="40" version="1.1" width="40" xmlns="http://www.w3.org/2000/svg">
             <g class="djs-visual">
@@ -457,7 +457,7 @@ Elements marked in orange are currently implemented by Zeebe.
             </g>
           </svg>
       </td>
-      <td>
+      <td class="implemented">
           <svg height="40" version="1.1" width="40" xmlns="http://www.w3.org/2000/svg">
             <circle cx="20" cy="20" r="15" fill="#ffffff" stroke="#333333" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="1" id="svg_1" style="stroke-linecap: round; stroke-linejoin: round; stroke-opacity: 1;"></circle>
             <circle cx="20" cy="20" r="12" fill="none" stroke="#333333" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="1" style="stroke-linecap: round; stroke-linejoin: round; stroke-opacity: 1;"></circle>

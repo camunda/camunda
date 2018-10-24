@@ -18,7 +18,7 @@
 package io.zeebe.broker.workflow.processor.servicetask;
 
 import io.zeebe.broker.logstreams.processor.TypedBatchWriter;
-import io.zeebe.broker.workflow.model.ExecutableFlowNode;
+import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.flownode.TerminateElementHandler;
 import io.zeebe.broker.workflow.state.ElementInstance;

@@ -26,6 +26,7 @@
     * [Events](bpmn-workflows/events.md)
       * [None Events](bpmn-workflows/none-events.md)
       * [Message Events](bpmn-workflows/message-events.md)
+      * [Timer Events](bpmn-workflows/timer-events.md)
     * [Sub Processes](bpmn-workflows/subprocesses.md)
 * [BPMN Modeler](bpmn-modeler/README.md)
     * [Introduction](bpmn-modeler/introduction.md)

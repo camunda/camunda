@@ -15,14 +15,14 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.model;
+package io.zeebe.broker.workflow.model.element;
 
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
 import io.zeebe.msgpack.mapping.Mapping;
 import java.util.ArrayList;
 import java.util.List;
 
-public class ExecutableFlowNode extends ExecutableFlowElement {
+public class ExecutableFlowNode extends AbstractFlowElement {
 
   private List<ExecutableSequenceFlow> incoming = new ArrayList<>();
   private List<ExecutableSequenceFlow> outgoing = new ArrayList<>();

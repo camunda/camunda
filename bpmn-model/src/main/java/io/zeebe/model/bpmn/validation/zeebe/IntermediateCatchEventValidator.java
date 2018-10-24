@@ -19,8 +19,11 @@ import io.zeebe.model.bpmn.instance.EventDefinition;
 import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.zeebe.model.bpmn.instance.Message;
 import io.zeebe.model.bpmn.instance.MessageEventDefinition;
+import io.zeebe.model.bpmn.instance.TimeDuration;
+import io.zeebe.model.bpmn.instance.TimerEventDefinition;
+import java.time.Duration;
+import java.time.format.DateTimeParseException;
 import java.util.Collection;
-import java.util.Optional;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
 import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
@@ -37,16 +40,49 @@ public class IntermediateCatchEventValidator
       IntermediateCatchEvent element, ValidationResultCollector validationResultCollector) {
 
     final Collection<EventDefinition> eventDefinitions = element.getEventDefinitions();
-    final Optional<EventDefinition> messageEventDefinition =
-        eventDefinitions.stream().filter(e -> e instanceof MessageEventDefinition).findFirst();
 
-    if (!messageEventDefinition.isPresent()) {
-      validationResultCollector.addError(0, "Must have a message event definition");
+    if (eventDefinitions.size() != 1) {
+      validationResultCollector.addError(0, "Must have exactly one event definition");
 
     } else {
-      final Message message = ((MessageEventDefinition) messageEventDefinition.get()).getMessage();
-      if (message == null) {
-        validationResultCollector.addError(0, "Must reference a message");
+      final EventDefinition eventDefinition = eventDefinitions.iterator().next();
+
+      if (eventDefinition instanceof MessageEventDefinition) {
+        validateMessageEventDefinition(
+            (MessageEventDefinition) eventDefinition, validationResultCollector);
+
+      } else if (eventDefinition instanceof TimerEventDefinition) {
+        validateTimerEventDefinition(
+            validationResultCollector, (TimerEventDefinition) eventDefinition);
+
+      } else {
+        validationResultCollector.addError(0, "Must have a message or timer event definition");
+      }
+    }
+  }
+
+  private static void validateMessageEventDefinition(
+      final MessageEventDefinition messageEventDefinition,
+      ValidationResultCollector validationResultCollector) {
+
+    final Message message = messageEventDefinition.getMessage();
+    if (message == null) {
+      validationResultCollector.addError(0, "Must reference a message");
+    }
+  }
+
+  private void validateTimerEventDefinition(
+      ValidationResultCollector validationResultCollector,
+      final TimerEventDefinition timerEventDefinition) {
+
+    final TimeDuration timeDuration = timerEventDefinition.getTimeDuration();
+    if (timeDuration == null) {
+      validationResultCollector.addError(0, "Must have a time duration");
+    } else {
+      try {
+        Duration.parse(timeDuration.getTextContent());
+      } catch (DateTimeParseException e) {
+        validationResultCollector.addError(0, "Time duration is invalid");
       }
     }
   }

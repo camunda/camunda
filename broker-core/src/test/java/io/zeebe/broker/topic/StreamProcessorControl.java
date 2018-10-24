@@ -21,6 +21,7 @@ import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
+import io.zeebe.broker.workflow.data.TimerRecord;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -48,6 +49,8 @@ public interface StreamProcessorControl {
 
   void blockAfterWorkflowInstanceSubscriptionEvent(
       Predicate<TypedRecord<WorkflowInstanceSubscriptionRecord>> test);
+
+  void blockAfterTimerEvent(Predicate<TypedRecord<TimerRecord>> test);
 
   void purgeSnapshot();
 

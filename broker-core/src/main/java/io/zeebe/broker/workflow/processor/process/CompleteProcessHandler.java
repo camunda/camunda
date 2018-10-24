@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.workflow.processor.process;
 
-import io.zeebe.broker.workflow.model.ExecutableWorkflow;
+import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;

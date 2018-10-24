@@ -20,8 +20,8 @@ package io.zeebe.broker.workflow.model.transformation.handler;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 
 import io.zeebe.broker.workflow.model.BpmnStep;
-import io.zeebe.broker.workflow.model.ExecutableServiceTask;
-import io.zeebe.broker.workflow.model.ExecutableWorkflow;
+import io.zeebe.broker.workflow.model.element.ExecutableServiceTask;
+import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.ServiceTask;

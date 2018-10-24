@@ -15,12 +15,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.model;
+package io.zeebe.broker.workflow.model.element;
 
 import io.zeebe.msgpack.el.CompiledJsonCondition;
 import io.zeebe.msgpack.mapping.Mapping;
 
-public class ExecutableSequenceFlow extends ExecutableFlowElement {
+public class ExecutableSequenceFlow extends AbstractFlowElement {
 
   private ExecutableFlowNode target;
   private CompiledJsonCondition condition;

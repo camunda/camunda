@@ -21,6 +21,7 @@ import io.zeebe.broker.exporter.stream.ExporterRecord;
 import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
+import io.zeebe.broker.workflow.data.TimerRecord;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -49,6 +50,7 @@ public class TypedStreamEnvironment {
         ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION, WorkflowInstanceSubscriptionRecord.class);
     EVENT_REGISTRY.put(ValueType.EXPORTER, ExporterRecord.class);
     EVENT_REGISTRY.put(ValueType.JOB_BATCH, JobBatchRecord.class);
+    EVENT_REGISTRY.put(ValueType.TIMER, TimerRecord.class);
   }
 
   private TypedStreamReader reader;

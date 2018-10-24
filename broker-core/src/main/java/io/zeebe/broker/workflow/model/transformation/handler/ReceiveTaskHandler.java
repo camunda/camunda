@@ -17,16 +17,17 @@
  */
 package io.zeebe.broker.workflow.model.transformation.handler;
 
-import io.zeebe.broker.workflow.model.ExecutableMessageCatchElement;
-import io.zeebe.broker.workflow.model.ExecutableWorkflow;
+import io.zeebe.broker.workflow.model.BpmnStep;
+import io.zeebe.broker.workflow.model.element.ExecutableMessage;
+import io.zeebe.broker.workflow.model.element.ExecutableReceiveTask;
+import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.Message;
 import io.zeebe.model.bpmn.instance.ReceiveTask;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class ReceiveTaskHandler implements ModelElementTransformer<ReceiveTask> {
-
-  private final MessageCatchElementHandler messageCatchHandler = new MessageCatchElementHandler();
 
   @Override
   public Class<ReceiveTask> getType() {
@@ -39,11 +40,31 @@ public class ReceiveTaskHandler implements ModelElementTransformer<ReceiveTask> 
     // only message supported at this point
 
     final ExecutableWorkflow workflow = context.getCurrentWorkflow();
-    final ExecutableMessageCatchElement executableElement =
-        workflow.getElementById(element.getId(), ExecutableMessageCatchElement.class);
+    final ExecutableReceiveTask executableElement =
+        workflow.getElementById(element.getId(), ExecutableReceiveTask.class);
 
     final Message message = element.getMessage();
 
-    messageCatchHandler.transform(executableElement, message, context);
+    final ExecutableMessage executableMessage = context.getMessage(message.getId());
+    executableElement.setMessage(executableMessage);
+
+    bindLifecycle(context, executableElement);
+  }
+
+  private void bindLifecycle(
+      TransformContext context, final ExecutableReceiveTask executableElement) {
+
+    executableElement.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_READY, BpmnStep.APPLY_INPUT_MAPPING);
+    executableElement.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.SUBSCRIBE_TO_INTERMEDIATE_MESSAGE);
+    executableElement.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.APPLY_OUTPUT_MAPPING);
+    executableElement.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_COMPLETED, context.getCurrentFlowNodeOutgoingStep());
+    executableElement.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.TERMINATE_ELEMENT);
+    executableElement.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.PROPAGATE_TERMINATION);
   }
 }

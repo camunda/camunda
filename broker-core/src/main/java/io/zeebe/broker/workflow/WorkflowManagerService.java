@@ -33,6 +33,7 @@ import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.transport.controlmessage.ControlMessageHandlerManager;
 import io.zeebe.broker.workflow.deployment.distribute.processor.DistributionStreamProcessor;
 import io.zeebe.broker.workflow.processor.WorkflowInstanceStreamProcessor;
+import io.zeebe.broker.workflow.processor.timer.DueDateTimerChecker;
 import io.zeebe.broker.workflow.repository.GetWorkflowControlMessageHandler;
 import io.zeebe.broker.workflow.repository.ListWorkflowsControlMessageHandler;
 import io.zeebe.broker.workflow.repository.WorkflowRepositoryService;
@@ -147,9 +148,15 @@ public class WorkflowManagerService implements Service<WorkflowManagerService> {
     final SubscriptionCommandSender subscriptionCommandSender =
         new SubscriptionCommandSender(clusterCfg, subscriptionApiClientInjector.getValue());
 
+    final DueDateTimerChecker timerChecker = new DueDateTimerChecker(workflowState);
+
     final WorkflowInstanceStreamProcessor streamProcessor =
         createWorkflowStreamProcessor(
-            partition, partitionServiceName, workflowState, subscriptionCommandSender);
+            partition,
+            partitionServiceName,
+            workflowState,
+            subscriptionCommandSender,
+            timerChecker);
     final TypedStreamEnvironment env =
         new TypedStreamEnvironment(partition.getLogStream(), transport.getOutput());
 
@@ -173,7 +180,8 @@ public class WorkflowManagerService implements Service<WorkflowManagerService> {
       final Partition partition,
       final ServiceName<Partition> partitionServiceName,
       final WorkflowState workflowState,
-      final SubscriptionCommandSender subscriptionCommandSender) {
+      final SubscriptionCommandSender subscriptionCommandSender,
+      final DueDateTimerChecker timerChecker) {
     final WorkflowInstanceStreamProcessor streamProcessor;
     if (Protocol.DEPLOYMENT_PARTITION == partition.getInfo().getPartitionId()) {
       streamProcessor =
@@ -198,11 +206,12 @@ public class WorkflowManagerService implements Service<WorkflowManagerService> {
               },
               workflowState,
               subscriptionCommandSender,
-              topologyManager);
+              topologyManager,
+              timerChecker);
     } else {
       streamProcessor =
           new WorkflowInstanceStreamProcessor(
-              workflowState, subscriptionCommandSender, topologyManager);
+              workflowState, subscriptionCommandSender, topologyManager, timerChecker);
     }
     return streamProcessor;
   }

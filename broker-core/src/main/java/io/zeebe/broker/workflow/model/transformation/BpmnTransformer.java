@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.workflow.model.transformation;
 
-import io.zeebe.broker.workflow.model.ExecutableWorkflow;
+import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.handler.ActivityHandler;
 import io.zeebe.broker.workflow.model.transformation.handler.CreateWorkflowHandler;
 import io.zeebe.broker.workflow.model.transformation.handler.EndEventHandler;
@@ -25,6 +25,7 @@ import io.zeebe.broker.workflow.model.transformation.handler.ExclusiveGatewayHan
 import io.zeebe.broker.workflow.model.transformation.handler.FlowElementHandler;
 import io.zeebe.broker.workflow.model.transformation.handler.FlowNodeHandler;
 import io.zeebe.broker.workflow.model.transformation.handler.IntermediateCatchEventHandler;
+import io.zeebe.broker.workflow.model.transformation.handler.MessageHandler;
 import io.zeebe.broker.workflow.model.transformation.handler.ParallelGatewayHandler;
 import io.zeebe.broker.workflow.model.transformation.handler.ProcessHandler;
 import io.zeebe.broker.workflow.model.transformation.handler.ReceiveTaskHandler;
@@ -55,9 +56,9 @@ public class BpmnTransformer {
     this.step1Visitor = new TransformationVisitor();
     step1Visitor.registerHandler(new FlowElementHandler());
     step1Visitor.registerHandler(new CreateWorkflowHandler());
+    step1Visitor.registerHandler(new MessageHandler());
 
     this.step2Visitor = new TransformationVisitor();
-
     step2Visitor.registerHandler(new ActivityHandler());
     step2Visitor.registerHandler(new EndEventHandler());
     step2Visitor.registerHandler(new ExclusiveGatewayHandler());

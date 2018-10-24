@@ -22,8 +22,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.workflow.deployment.transform.DeploymentTransformer;
-import io.zeebe.broker.workflow.model.ExecutableFlowElement;
-import io.zeebe.broker.workflow.model.ExecutableWorkflow;
+import io.zeebe.broker.workflow.model.element.AbstractFlowElement;
+import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -310,7 +310,7 @@ public class WorkflowStateTest {
     // then
     final ExecutableWorkflow workflow = deployedWorkflow.getWorkflow();
     assertThat(workflow).isNotNull();
-    final ExecutableFlowElement serviceTask = workflow.getElementById(wrapString("test"));
+    final AbstractFlowElement serviceTask = workflow.getElementById(wrapString("test"));
     assertThat(serviceTask).isNotNull();
   }
 
@@ -328,7 +328,7 @@ public class WorkflowStateTest {
     // then
     final ExecutableWorkflow workflow = deployedWorkflow.getWorkflow();
     assertThat(workflow).isNotNull();
-    final ExecutableFlowElement serviceTask = workflow.getElementById(wrapString("test"));
+    final AbstractFlowElement serviceTask = workflow.getElementById(wrapString("test"));
     assertThat(serviceTask).isNotNull();
   }
 
@@ -346,7 +346,7 @@ public class WorkflowStateTest {
     // then
     final ExecutableWorkflow workflow = deployedWorkflow.getWorkflow();
     assertThat(workflow).isNotNull();
-    final ExecutableFlowElement serviceTask = workflow.getElementById(wrapString("test"));
+    final AbstractFlowElement serviceTask = workflow.getElementById(wrapString("test"));
     assertThat(serviceTask).isNotNull();
   }
 

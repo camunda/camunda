@@ -15,21 +15,9 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.model;
+package io.zeebe.broker.workflow.model.element;
 
-public class ExecutableFlowElementContainer extends ExecutableFlowNode {
+public interface ExecutableMessageCatchElement extends ExecutableFlowElement {
 
-  private ExecutableFlowNode startEvent;
-
-  public ExecutableFlowElementContainer(String id) {
-    super(id);
-  }
-
-  public ExecutableFlowNode getStartEvent() {
-    return startEvent;
-  }
-
-  public void setStartEvent(ExecutableFlowNode startEvent) {
-    this.startEvent = startEvent;
-  }
+  ExecutableMessage getMessage();
 }
