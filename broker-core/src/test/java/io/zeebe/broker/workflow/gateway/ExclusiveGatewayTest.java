@@ -22,6 +22,8 @@ import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
@@ -29,8 +31,10 @@ import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
 import io.zeebe.test.broker.protocol.clientapi.TestPartitionClient;
 import io.zeebe.test.util.MsgPackUtil;
+import io.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
 import java.util.stream.Collectors;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -43,6 +47,11 @@ public class ExclusiveGatewayTest {
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
   private TestPartitionClient testClient;
+
+  @Before
+  public void init() {
+    testClient = apiRule.partition();
+  }
 
   @Test
   public void shouldSpitOnExclusiveGateway() {
@@ -248,6 +257,65 @@ public class ExclusiveGatewayTest {
             WorkflowInstanceIntent.GATEWAY_ACTIVATED,
             WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
             WorkflowInstanceIntent.END_EVENT_OCCURRED,
+            WorkflowInstanceIntent.ELEMENT_COMPLETING,
+            WorkflowInstanceIntent.ELEMENT_COMPLETED);
+  }
+
+  /** https://github.com/zeebe-io/zeebe/issues/1540 */
+  @Test
+  public void shouldSplitIfDefaultFlowIsDeclaredFirst() {
+    final BpmnModelInstance workflowDefinition =
+        Bpmn.createExecutableProcess("workflow")
+            .startEvent()
+            .exclusiveGateway()
+            .defaultFlow()
+            .endEvent("a")
+            .moveToLastExclusiveGateway()
+            .condition("$.foo < 5")
+            .endEvent("b")
+            .done();
+
+    testClient.deploy(workflowDefinition);
+
+    // when
+    testClient.createWorkflowInstance("workflow", MsgPackUtil.asMsgPack("foo", 10));
+
+    // then
+    final List<Record<WorkflowInstanceRecordValue>> completedEvents =
+        RecordingExporter.workflowInstanceRecords()
+            .limitToWorkflowInstanceCompleted()
+            .withIntent(WorkflowInstanceIntent.END_EVENT_OCCURRED)
+            .collect(Collectors.toList());
+
+    assertThat(completedEvents).extracting(r -> r.getValue().getActivityId()).containsExactly("a");
+  }
+
+  @Test
+  public void shouldEndScopeIfGatewayHasNoOutgoingFlows() {
+    final BpmnModelInstance workflowDefinition =
+        Bpmn.createExecutableProcess("workflow").startEvent().exclusiveGateway().done();
+
+    testClient.deploy(workflowDefinition);
+
+    // when
+    testClient.createWorkflowInstance("workflow", MsgPackUtil.asMsgPack("foo", 10));
+
+    // then
+    final List<Record<WorkflowInstanceRecordValue>> completedEvents =
+        RecordingExporter.workflowInstanceRecords()
+            .onlyEvents()
+            .limitToWorkflowInstanceCompleted()
+            .collect(Collectors.toList());
+
+    assertThat(completedEvents)
+        .extracting(r -> r.getMetadata().getIntent())
+        .containsExactly(
+            WorkflowInstanceIntent.CREATED,
+            WorkflowInstanceIntent.ELEMENT_READY,
+            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+            WorkflowInstanceIntent.START_EVENT_OCCURRED,
+            WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN,
+            WorkflowInstanceIntent.GATEWAY_ACTIVATED,
             WorkflowInstanceIntent.ELEMENT_COMPLETING,
             WorkflowInstanceIntent.ELEMENT_COMPLETED);
   }
