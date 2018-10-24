@@ -14,10 +14,12 @@ import javax.annotation.PostConstruct;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
 public abstract class TimestampBasedImportIndexHandler
   implements ImportIndexHandler<TimestampBasedImportPage, TimestampBasedImportIndexDto> {
+  private static final int CURRENT_TIME_BACKOFF_MILLIS = 2000;
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -41,18 +43,29 @@ public abstract class TimestampBasedImportIndexHandler
     readIndexFromElasticsearch();
   }
 
-  public void updateTimestampOfLastEntity(OffsetDateTime timestamp) {
-    timestampOfLastEntity = timestamp;
+  /**
+   * States the Elasticsearch document name where the index information should be stored.
+   */
+  protected abstract String getElasticsearchDocID();
+
+  public void updateTimestampOfLastEntity(final OffsetDateTime timestamp) {
+    final OffsetDateTime backOffWindowStart = reduceByCurrentTimeBackoff(
+      OffsetDateTime.ofInstant(Instant.now(), ZoneId.systemDefault())
+    );
+    if (timestamp.isAfter(backOffWindowStart)) {
+      logger.info(
+        "Timestamp is in the current time backoff window of {}ms, will save begin of backoff window as last timestamp",
+        CURRENT_TIME_BACKOFF_MILLIS
+      );
+      this.timestampOfLastEntity= backOffWindowStart;
+    } else {
+      this.timestampOfLastEntity = timestamp;
+    }
   }
 
   public OffsetDateTime getTimestampOfLastEntity() {
     return timestampOfLastEntity;
   }
-
-  /**
-   * States the Elasticsearch document name where the index information should be stored.
-   */
-  protected abstract String getElasticsearchDocID();
 
   @Override
   public void readIndexFromElasticsearch() {
@@ -80,10 +93,6 @@ public abstract class TimestampBasedImportIndexHandler
     return indexToStore;
   }
 
-  private OffsetDateTime getTimestampBeforeEngineExisted() {
-    return OffsetDateTime.ofInstant(Instant.EPOCH, ZoneId.systemDefault());
-  }
-
   @Override
   public void resetImportIndex() {
     timestampOfLastEntity = getTimestampBeforeEngineExisted();
@@ -105,6 +114,14 @@ public abstract class TimestampBasedImportIndexHandler
   @Override
   public EngineContext getEngineContext() {
     return engineContext;
+  }
+
+  private OffsetDateTime getTimestampBeforeEngineExisted() {
+    return OffsetDateTime.ofInstant(Instant.EPOCH, ZoneId.systemDefault());
+  }
+
+  private OffsetDateTime reduceByCurrentTimeBackoff(OffsetDateTime currentDateTime) {
+    return currentDateTime.minus(CURRENT_TIME_BACKOFF_MILLIS, ChronoUnit.MILLIS);
   }
 
 }
