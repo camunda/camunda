@@ -17,6 +17,7 @@ package io.zeebe.test.util.record;
 
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.stream.Stream;
 
 public class WorkflowInstanceRecordStream
@@ -55,5 +56,12 @@ public class WorkflowInstanceRecordStream
 
   public WorkflowInstanceRecordStream withScopeInstanceKey(final long scopeInstanceKey) {
     return valueFilter(v -> v.getScopeInstanceKey() == scopeInstanceKey);
+  }
+
+  public WorkflowInstanceRecordStream limitToWorkflowInstanceCompleted() {
+    return limit(
+        r ->
+            r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_COMPLETED
+                && r.getKey() == r.getValue().getWorkflowInstanceKey());
   }
 }
