@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.test;
 
-import io.zeebe.broker.exporter.DebugExporter;
+import io.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.ExporterCfg;
@@ -30,7 +30,7 @@ public class EmbeddedBrokerConfigurator {
   public static final Consumer<BrokerCfg> NOOP = cfg -> {};
 
   public static final Consumer<BrokerCfg> DEBUG_EXPORTER =
-      cfg -> cfg.getExporters().add(DebugExporter.defaultConfig(false));
+      cfg -> cfg.getExporters().add(DebugLogExporter.defaultConfig(false));
 
   public static final Consumer<BrokerCfg> TEST_RECORDER =
       cfg -> {

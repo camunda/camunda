@@ -19,6 +19,7 @@ package io.zeebe.broker.exporter;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.exporter.context.Context;
@@ -83,7 +84,7 @@ public class ExporterManagerTest {
         .sendAndAwait();
   }
 
-  public static class TestExporter extends DebugExporter {
+  public static class TestExporter extends DebugLogExporter {
 
     // configure will be called initial for validation and after that for every partition
     static CountDownLatch configureLatch = new CountDownLatch(PARTITIONS + 1);

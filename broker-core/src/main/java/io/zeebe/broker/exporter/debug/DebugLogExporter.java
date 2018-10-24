@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.exporter;
+package io.zeebe.broker.exporter.debug;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -29,7 +29,7 @@ import io.zeebe.exporter.spi.Exporter;
 import java.util.Collections;
 import org.slf4j.Logger;
 
-public class DebugExporter implements Exporter {
+public class DebugLogExporter implements Exporter {
 
   private Logger log;
   private LogLevel logLevel;
@@ -71,7 +71,7 @@ public class DebugExporter implements Exporter {
   public static ExporterCfg defaultConfig(final boolean prettyPrint) {
     final ExporterCfg exporterCfg = new ExporterCfg();
     exporterCfg.setId("debug");
-    exporterCfg.setClassName(DebugExporter.class.getName());
+    exporterCfg.setClassName(DebugLogExporter.class.getName());
     exporterCfg.setArgs(Collections.singletonMap("prettyPrint", prettyPrint));
     return exporterCfg;
   }
