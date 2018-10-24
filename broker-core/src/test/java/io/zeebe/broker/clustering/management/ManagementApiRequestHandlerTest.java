@@ -295,7 +295,7 @@ public class ManagementApiRequestHandlerTest {
   }
 
   @Test
-  public void shouldFetchSnapshotChunkAndReceiveErrorOnSnapshotNotFound() throws Exception {
+  public void shouldFetchSnapshotChunkAndReceiveErrorOnSnapshotNotFound() {
     // given
     final int partitionId = 3;
 

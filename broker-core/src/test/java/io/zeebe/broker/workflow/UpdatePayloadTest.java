@@ -18,11 +18,14 @@
 package io.zeebe.broker.workflow;
 
 import static io.zeebe.broker.test.MsgPackConstants.MSGPACK_PAYLOAD;
+import static io.zeebe.broker.workflow.WorkflowAssert.assertWorkflowInstancePayload;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.msgpack.spec.MsgPackHelper;
@@ -32,8 +35,7 @@ import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
-import io.zeebe.test.broker.protocol.clientapi.TestPartitionClient;
+import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.MsgPackUtil;
 import org.junit.Before;
 import org.junit.Rule;
@@ -60,11 +62,11 @@ public class UpdatePayloadTest {
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
-  private TestPartitionClient testClient;
+  private PartitionTestClient testClient;
 
   @Before
   public void init() {
-    testClient = apiRule.partition();
+    testClient = apiRule.partitionClient();
   }
 
   @Test
@@ -74,28 +76,27 @@ public class UpdatePayloadTest {
 
     final long workflowInstanceKey = testClient.createWorkflowInstance("process");
 
-    final SubscribedRecord activityInstanceEvent = waitForActivityActivatedEvent();
+    final Record<WorkflowInstanceRecordValue> activityInstanceEvent =
+        waitForActivityActivatedEvent();
 
     // when
     final ExecuteCommandResponse response =
-        updatePayload(activityInstanceEvent.key(), MsgPackUtil.asMsgPack("{'foo':'bar'}"));
+        updatePayload(activityInstanceEvent.getKey(), MsgPackUtil.asMsgPack("{'foo':'bar'}"));
 
     // then
-    assertThat(response.intent()).isEqualTo(WorkflowInstanceIntent.PAYLOAD_UPDATED);
+    assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.PAYLOAD_UPDATED);
 
-    final SubscribedRecord updateCommand =
+    final Record<WorkflowInstanceRecordValue> updateCommand =
         testClient.receiveFirstWorkflowInstanceCommand(WorkflowInstanceIntent.UPDATE_PAYLOAD);
-    final SubscribedRecord updatedEvent =
+    final Record<WorkflowInstanceRecordValue> updatedEvent =
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.PAYLOAD_UPDATED);
 
-    assertThat(updatedEvent.sourceRecordPosition()).isEqualTo(updateCommand.position());
-    assertThat(updatedEvent.position()).isGreaterThan(response.position());
-    assertThat(updatedEvent.key()).isEqualTo(activityInstanceEvent.key());
-    assertThat(updatedEvent.value()).containsEntry("workflowInstanceKey", workflowInstanceKey);
+    assertThat(updatedEvent.getSourceRecordPosition()).isEqualTo(updateCommand.getPosition());
+    assertThat(updatedEvent.getPosition()).isGreaterThan(response.getPosition());
+    assertThat(updatedEvent.getKey()).isEqualTo(activityInstanceEvent.getKey());
+    assertThat(updatedEvent.getValue().getWorkflowInstanceKey()).isEqualTo(workflowInstanceKey);
 
-    final byte[] payload = (byte[]) updatedEvent.value().get("payload");
-
-    MsgPackUtil.assertEquality(payload, "{'foo':'bar'}");
+    assertWorkflowInstancePayload(updatedEvent, "{'foo':'bar'}");
   }
 
   @Test
@@ -105,19 +106,19 @@ public class UpdatePayloadTest {
 
     testClient.createWorkflowInstance("process");
 
-    final SubscribedRecord activityInstanceEvent = waitForActivityActivatedEvent();
+    final Record<WorkflowInstanceRecordValue> activityInstanceEvent =
+        waitForActivityActivatedEvent();
 
     // when
     final ExecuteCommandResponse response =
-        updatePayload(activityInstanceEvent.key(), MsgPackHelper.NIL);
+        updatePayload(activityInstanceEvent.getKey(), MsgPackHelper.NIL);
 
     // then
-    assertThat(response.intent()).isEqualTo(WorkflowInstanceIntent.PAYLOAD_UPDATED);
-    final SubscribedRecord updatedEvent =
+    assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.PAYLOAD_UPDATED);
+    final Record<WorkflowInstanceRecordValue> updatedEvent =
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.PAYLOAD_UPDATED);
 
-    final byte[] payload = (byte[]) updatedEvent.value().get("payload");
-    assertThat(payload).isEqualTo(MsgPackHelper.EMTPY_OBJECT);
+    assertWorkflowInstancePayload(updatedEvent, "{}");
   }
 
   @Test
@@ -127,18 +128,19 @@ public class UpdatePayloadTest {
 
     testClient.createWorkflowInstance("process");
 
-    final SubscribedRecord activityInstanceEvent = waitForActivityActivatedEvent();
+    final Record<WorkflowInstanceRecordValue> activityInstanceEvent =
+        waitForActivityActivatedEvent();
 
     // when
-    final ExecuteCommandResponse response = updatePayload(activityInstanceEvent.key(), new byte[0]);
+    final ExecuteCommandResponse response =
+        updatePayload(activityInstanceEvent.getKey(), new byte[0]);
 
     // then
-    assertThat(response.intent()).isEqualTo(WorkflowInstanceIntent.PAYLOAD_UPDATED);
-    final SubscribedRecord updatedEvent =
+    assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.PAYLOAD_UPDATED);
+    final Record<WorkflowInstanceRecordValue> updatedEvent =
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.PAYLOAD_UPDATED);
 
-    final byte[] payload = (byte[]) updatedEvent.value().get("payload");
-    assertThat(payload).isEqualTo(MsgPackHelper.EMTPY_OBJECT);
+    assertWorkflowInstancePayload(updatedEvent, "{}");
   }
 
   @Test
@@ -148,20 +150,21 @@ public class UpdatePayloadTest {
 
     testClient.createWorkflowInstance("process");
 
-    final SubscribedRecord activityInstanceEvent = waitForActivityActivatedEvent();
+    final Record<WorkflowInstanceRecordValue> activityInstanceEvent =
+        waitForActivityActivatedEvent();
 
     // when
-    updatePayload(activityInstanceEvent.key(), MsgPackUtil.asMsgPack("{'b':'wf'}"));
+    updatePayload(activityInstanceEvent.getKey(), MsgPackUtil.asMsgPack("{'b':'wf'}"));
 
     testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.PAYLOAD_UPDATED);
 
     testClient.completeJobOfType("task-1", MSGPACK_PAYLOAD);
 
     // then
-    final SubscribedRecord activityCompletedEvent = waitForActivityCompletedEvent();
+    final Record<WorkflowInstanceRecordValue> activityCompletedEvent =
+        waitForActivityCompletedEvent();
 
-    final byte[] payload = (byte[]) activityCompletedEvent.value().get("payload");
-    MsgPackUtil.assertEquality(payload, "{'obj':{'testAttr':'test'}, 'b':'wf'}");
+    assertWorkflowInstancePayload(activityCompletedEvent, "{'obj':{'testAttr':'test'}, 'b':'wf'}");
   }
 
   @Test
@@ -176,22 +179,21 @@ public class UpdatePayloadTest {
 
     testClient.createWorkflowInstance("wf", asMsgPack("id", "123"));
 
-    final SubscribedRecord catchEventEntered =
+    final Record<WorkflowInstanceRecordValue> catchEventEntered =
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
-    updatePayload(catchEventEntered.key(), MsgPackUtil.asMsgPack("{'id':'123', 'x': 1}"));
+    updatePayload(catchEventEntered.getKey(), MsgPackUtil.asMsgPack("{'id':'123', 'x': 1}"));
 
     testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.PAYLOAD_UPDATED);
 
     testClient.publishMessage("msg", "123", asMsgPack("y", 2));
 
     // then
-    final SubscribedRecord catchEventOccurred =
+    final Record<WorkflowInstanceRecordValue> catchEventOccurred =
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
-    final byte[] payload = (byte[]) catchEventOccurred.value().get("payload");
-    MsgPackUtil.assertEquality(payload, "{'id':'123', 'x': 1, 'y': 2}");
+    assertWorkflowInstancePayload(catchEventOccurred, "{'id':'123', 'x': 1, 'y': 2}");
   }
 
   @Test
@@ -199,12 +201,13 @@ public class UpdatePayloadTest {
     // given
     testClient.deploy(WORKFLOW);
     testClient.createWorkflowInstance("process");
-    final SubscribedRecord activityInstanceEvent = waitForActivityActivatedEvent();
+    final Record<WorkflowInstanceRecordValue> activityInstanceEvent =
+        waitForActivityActivatedEvent();
 
     // when
     final Throwable throwable =
         catchThrowable(
-            () -> updatePayload(activityInstanceEvent.key(), MsgPackUtil.asMsgPack("'foo'")));
+            () -> updatePayload(activityInstanceEvent.getKey(), MsgPackUtil.asMsgPack("'foo'")));
 
     // then
     assertThat(throwable).isInstanceOf(RuntimeException.class);
@@ -219,16 +222,20 @@ public class UpdatePayloadTest {
     final ExecuteCommandResponse response = updatePayload(-1L, MSGPACK_PAYLOAD);
 
     // then
-    final SubscribedRecord updateCommand =
+    final Record<WorkflowInstanceRecordValue> updateCommand =
         testClient.receiveFirstWorkflowInstanceCommand(WorkflowInstanceIntent.UPDATE_PAYLOAD);
 
-    assertThat(response.sourceRecordPosition()).isEqualTo(updateCommand.position());
-    assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.rejectionReason()).isEqualTo("Workflow instance is not running");
+    assertThat(response.getSourceRecordPosition()).isEqualTo(updateCommand.getPosition());
+    assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
+    assertThat(response.getRejectionReason()).isEqualTo("Workflow instance is not running");
 
-    final SubscribedRecord rejection =
-        testClient.receiveRejections().withIntent(WorkflowInstanceIntent.UPDATE_PAYLOAD).getFirst();
+    final Record<WorkflowInstanceRecordValue> rejection =
+        testClient
+            .receiveWorkflowInstances()
+            .onlyCommandRejections()
+            .withIntent(WorkflowInstanceIntent.UPDATE_PAYLOAD)
+            .getFirst();
 
     assertThat(rejection).isNotNull();
   }
@@ -240,7 +247,8 @@ public class UpdatePayloadTest {
 
     testClient.createWorkflowInstance("process");
 
-    final SubscribedRecord activityInstanceEvent = waitForActivityActivatedEvent();
+    final Record<WorkflowInstanceRecordValue> activityInstanceEvent =
+        waitForActivityActivatedEvent();
 
     testClient.completeJobOfType("task-1", MSGPACK_PAYLOAD);
 
@@ -251,33 +259,37 @@ public class UpdatePayloadTest {
 
     // when
     final ExecuteCommandResponse response =
-        updatePayload(activityInstanceEvent.key(), MSGPACK_PAYLOAD);
+        updatePayload(activityInstanceEvent.getKey(), MSGPACK_PAYLOAD);
 
     // then
-    final SubscribedRecord updateCommand =
+    final Record<WorkflowInstanceRecordValue> updateCommand =
         testClient.receiveFirstWorkflowInstanceCommand(WorkflowInstanceIntent.UPDATE_PAYLOAD);
 
-    assertThat(response.sourceRecordPosition()).isEqualTo(updateCommand.position());
-    assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.rejectionReason()).isEqualTo("Workflow instance is not running");
+    assertThat(response.getSourceRecordPosition()).isEqualTo(updateCommand.getPosition());
+    assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
+    assertThat(response.getRejectionReason()).isEqualTo("Workflow instance is not running");
 
-    final SubscribedRecord rejection =
-        testClient.receiveRejections().withIntent(WorkflowInstanceIntent.UPDATE_PAYLOAD).getFirst();
+    final Record<WorkflowInstanceRecordValue> rejection =
+        testClient
+            .receiveWorkflowInstances()
+            .onlyCommandRejections()
+            .withIntent(WorkflowInstanceIntent.UPDATE_PAYLOAD)
+            .getFirst();
 
     assertThat(rejection).isNotNull();
   }
 
-  private SubscribedRecord waitForActivityCompletedEvent() {
+  private Record<WorkflowInstanceRecordValue> waitForActivityCompletedEvent() {
     return testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
   }
 
-  private SubscribedRecord waitForActivityActivatedEvent() {
+  private Record<WorkflowInstanceRecordValue> waitForActivityActivatedEvent() {
     return testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
   }
 
-  private ExecuteCommandResponse updatePayload(final long activityInstanceKey, final byte[] payload)
-      throws Exception {
+  private ExecuteCommandResponse updatePayload(
+      final long activityInstanceKey, final byte[] payload) {
     return apiRule
         .createCmdRequest()
         .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.UPDATE_PAYLOAD)

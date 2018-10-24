@@ -61,43 +61,43 @@ public class ExecuteCommandResponse implements BufferReader {
     return buf;
   }
 
-  public long position() {
+  public long getPosition() {
     return responseDecoder.position();
   }
 
-  public long sourceRecordPosition() {
+  public long getSourceRecordPosition() {
     return responseDecoder.sourceRecordPosition();
   }
 
-  public long key() {
+  public long getKey() {
     return responseDecoder.key();
   }
 
-  public long timestamp() {
+  public long getTimestamp() {
     return responseDecoder.timestamp();
   }
 
-  public int partitionId() {
+  public int getPartitionId() {
     return responseDecoder.partitionId();
   }
 
-  public ValueType valueType() {
+  public ValueType getValueType() {
     return responseDecoder.valueType();
   }
 
-  public Intent intent() {
+  public Intent getIntent() {
     return Intent.fromProtocolValue(responseDecoder.valueType(), responseDecoder.intent());
   }
 
-  public RecordType recordType() {
+  public RecordType getRecordType() {
     return responseDecoder.recordType();
   }
 
-  public RejectionType rejectionType() {
+  public RejectionType getRejectionType() {
     return responseDecoder.rejectionType();
   }
 
-  public String rejectionReason() {
+  public String getRejectionReason() {
     return rejectionReason;
   }
 

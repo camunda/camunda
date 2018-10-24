@@ -18,22 +18,26 @@
 package io.zeebe.broker.job;
 
 import static io.zeebe.protocol.intent.JobIntent.ACTIVATE;
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
-import static io.zeebe.test.util.TestUtil.waitUntil;
+import static io.zeebe.protocol.intent.JobIntent.ACTIVATED;
+import static io.zeebe.protocol.intent.JobIntent.COMPLETED;
+import static io.zeebe.protocol.intent.JobIntent.FAILED;
+import static io.zeebe.protocol.intent.JobIntent.TIME_OUT;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.RecordMetadata;
+import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
-import io.zeebe.test.broker.protocol.clientapi.TestPartitionClient;
+import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import java.time.Duration;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -43,9 +47,15 @@ public class JobTimeOutTest {
   public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+  private PartitionTestClient client;
+
+  @Before
+  public void setup() {
+    client = apiRule.partitionClient();
+  }
 
   @Test
-  public void shouldNotTimeOutIfDeadlineNotExceeded() throws InterruptedException {
+  public void shouldNotTimeOutIfDeadlineNotExceeded() {
     // given
     brokerRule.getClock().pinCurrentTime();
     final Duration timeout = Duration.ofSeconds(60);
@@ -56,17 +66,17 @@ public class JobTimeOutTest {
     apiRule
         .openJobSubscription(apiRule.getDefaultPartitionId(), jobType, timeout.toMillis())
         .await();
-    apiRule.subscribedEvents().findFirst().get(); // => job is activated
+    client.receiveFirstJobEvent(ACTIVATED);
 
     // when
     brokerRule.getClock().addTime(timeout.minus(Duration.ofSeconds(1)));
 
     // then
-    assertNoMoreJobsReceived();
+    assertNoMoreJobsReceived(ACTIVATED);
   }
 
   @Test
-  public void shouldNotTimeOutIfJobCompleted() throws InterruptedException {
+  public void shouldNotTimeOutIfJobCompleted() {
     // given
     brokerRule.getClock().pinCurrentTime();
     final Duration timeout = Duration.ofSeconds(60);
@@ -77,16 +87,14 @@ public class JobTimeOutTest {
     apiRule
         .openJobSubscription(apiRule.getDefaultPartitionId(), jobType, timeout.toMillis())
         .await();
-    final SubscribedRecord activatedJob =
-        apiRule.subscribedEvents().findFirst().get(); // => job is activated
-
-    completeJob(activatedJob);
+    final Record activatedJob = client.receiveFirstJobEvent(ACTIVATED);
+    client.completeJob(activatedJob.getKey(), "{}");
 
     // when
     brokerRule.getClock().addTime(timeout.plus(Duration.ofSeconds(1)));
 
     // then
-    assertNoMoreJobsReceived();
+    assertNoMoreJobsReceived(COMPLETED);
   }
 
   @Test
@@ -101,18 +109,14 @@ public class JobTimeOutTest {
     apiRule
         .openJobSubscription(apiRule.getDefaultPartitionId(), jobType, timeout.toMillis())
         .await();
-    final SubscribedRecord activatedJob =
-        apiRule.subscribedEvents().findFirst().get(); // => job is activated
-
-    final Map<String, Object> event = new HashMap<>(activatedJob.value());
-    event.put("retries", 0);
-    failJob(activatedJob.key(), event);
+    final Record activatedJob = client.receiveFirstJobEvent(ACTIVATED);
+    client.failJob(activatedJob.getKey(), 0);
 
     // when
     brokerRule.getClock().addTime(timeout.plus(Duration.ofSeconds(1)));
 
     // then
-    assertNoMoreJobsReceived();
+    assertNoMoreJobsReceived(FAILED);
   }
 
   @Test
@@ -120,28 +124,23 @@ public class JobTimeOutTest {
     // given
     final String jobType = "foo";
     final long jobKey1 = createJob(jobType);
-
-    final long timeout = 1000L;
+    final long timeout = 10L;
 
     apiRule.openJobSubscription(apiRule.getDefaultPartitionId(), jobType, timeout);
-
-    waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 1);
-    apiRule.moveMessageStreamToTail();
+    client.receiveFirstJobEvent(ACTIVATED);
+    brokerRule.getClock().addTime(JobStreamProcessor.TIME_OUT_POLLING_INTERVAL);
 
     // when expired
-    doRepeatedly(
-            () -> {
-              brokerRule.getClock().addTime(JobStreamProcessor.TIME_OUT_POLLING_INTERVAL);
-            })
-        .until(v -> apiRule.numSubscribedEventsAvailable() == 1);
+    client.receiveFirstJobEvent(TIME_OUT);
 
     // then activated again
-    final List<SubscribedRecord> events =
-        apiRule.partition().receiveRecords().ofTypeJob().limit(8).collect(Collectors.toList());
+    final List<Record<JobRecordValue>> jobEvents =
+        client.receiveJobs().limit(8).collect(Collectors.toList());
 
-    assertThat(events).extracting(e -> e.key()).contains(jobKey1);
-    assertThat(events)
-        .extracting(e -> e.intent())
+    assertThat(jobEvents).extracting(e -> e.getKey()).contains(jobKey1);
+    assertThat(jobEvents)
+        .extracting(Record::getMetadata)
+        .extracting(RecordMetadata::getIntent)
         .containsExactly(
             JobIntent.CREATE,
             JobIntent.CREATED,
@@ -159,36 +158,35 @@ public class JobTimeOutTest {
     final String jobType = "foo";
     createJob(jobType);
 
-    final long timeout = 1000L;
+    final long timeout = 10L;
     apiRule.openJobSubscription(apiRule.getDefaultPartitionId(), jobType, timeout);
-
-    waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 1);
-    apiRule.moveMessageStreamToTail();
+    client.receiveFirstJobEvent(ACTIVATED);
+    brokerRule.getClock().addTime(JobStreamProcessor.TIME_OUT_POLLING_INTERVAL);
 
     // when expired
-    doRepeatedly(
-            () -> {
-              brokerRule.getClock().addTime(JobStreamProcessor.TIME_OUT_POLLING_INTERVAL);
-            })
-        .until(v -> apiRule.numSubscribedEventsAvailable() == 1);
+    client.receiveFirstJobEvent(TIME_OUT);
 
     // then activated again
-    final SubscribedRecord jobActiviated = apiRule.subscribedEvents().findAny().get();
-    final TestPartitionClient partitionClient = apiRule.partition();
-    final SubscribedRecord firstActivateCommand =
-        partitionClient.receiveRecords().ofTypeJob().withIntent(ACTIVATE).findFirst().get();
-    assertThat(jobActiviated.sourceRecordPosition()).isNotEqualTo(firstActivateCommand.position());
+    final Record jobActivated =
+        client
+            .receiveJobs()
+            .skipUntil(j -> j.getMetadata().getIntent() == TIME_OUT)
+            .withIntent(ACTIVATED)
+            .getFirst();
+    final Record firstActivateCommand = client.receiveFirstJobCommand(ACTIVATE);
+    assertThat(jobActivated.getSourceRecordPosition())
+        .isNotEqualTo(firstActivateCommand.getPosition());
 
-    final SubscribedRecord secondActivateCommand =
-        partitionClient
-            .receiveRecords()
-            .ofTypeJob()
+    final Record secondActivateCommand =
+        client
+            .receiveJobs()
             .withIntent(ACTIVATE)
-            .skipUntil(s -> s.position() > firstActivateCommand.position())
+            .skipUntil(s -> s.getPosition() > firstActivateCommand.getPosition())
             .findFirst()
             .get();
 
-    assertThat(jobActiviated.sourceRecordPosition()).isEqualTo(secondActivateCommand.position());
+    assertThat(jobActivated.getSourceRecordPosition())
+        .isEqualTo(secondActivateCommand.getPosition());
   }
 
   @Test
@@ -197,34 +195,26 @@ public class JobTimeOutTest {
     final String jobType = "foo";
     final long jobKey1 = createJob(jobType);
     final long jobKey2 = createJob(jobType);
-
-    final long timeout = 1000L;
+    final long timeout = 10L;
 
     apiRule.openJobSubscription(apiRule.getDefaultPartitionId(), jobType, timeout);
 
-    waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 2); // both jobs activated
-    apiRule.moveMessageStreamToTail();
-
     // when
-    doRepeatedly(
-            () -> {
-              brokerRule.getClock().addTime(JobStreamProcessor.TIME_OUT_POLLING_INTERVAL);
-            })
-        .until(v -> apiRule.numSubscribedEventsAvailable() == 2);
+    client.receiveJobs().withIntent(ACTIVATED).limit(2).count();
+    brokerRule.getClock().addTime(JobStreamProcessor.TIME_OUT_POLLING_INTERVAL);
 
     // then
-    final List<SubscribedRecord> expiredEvents =
-        apiRule.partition().receiveRecords().ofTypeJob().limit(16).collect(Collectors.toList());
+    final List<Record> expiredEvents = client.receiveJobs().limit(16).collect(Collectors.toList());
 
     assertThat(expiredEvents)
-        .filteredOn(e -> e.intent() == JobIntent.ACTIVATED)
+        .filteredOn(e -> e.getMetadata().getIntent() == JobIntent.ACTIVATED)
         .hasSize(4)
-        .extracting(e -> e.key())
+        .extracting(e -> e.getKey())
         .containsExactlyInAnyOrder(jobKey1, jobKey2, jobKey1, jobKey2);
 
     assertThat(expiredEvents)
-        .filteredOn(e -> e.intent() == JobIntent.TIMED_OUT)
-        .extracting(e -> e.key())
+        .filteredOn(e -> e.getMetadata().getIntent() == JobIntent.TIMED_OUT)
+        .extracting(e -> e.getKey())
         .containsExactlyInAnyOrder(jobKey1, jobKey2);
   }
 
@@ -239,38 +229,13 @@ public class JobTimeOutTest {
             .done()
             .sendAndAwait();
 
-    return resp.key();
+    return resp.getKey();
   }
 
-  private void completeJob(final SubscribedRecord activatedJob) {
-    apiRule
-        .createCmdRequest()
-        .type(ValueType.JOB, JobIntent.COMPLETE)
-        .key(activatedJob.key())
-        .command()
-        .putAll(activatedJob.value())
-        .done()
-        .sendAndAwait();
-  }
+  private void assertNoMoreJobsReceived(Intent lastIntent) {
+    final long eventCount =
+        client.receiveJobs().limit(j -> j.getMetadata().getIntent() == lastIntent).count();
 
-  private void failJob(final long key, final Map<String, Object> event) {
-    apiRule
-        .createCmdRequest()
-        .type(ValueType.JOB, JobIntent.FAIL)
-        .key(key)
-        .command()
-        .putAll(event)
-        .done()
-        .sendAndAwait();
-  }
-
-  private void assertNoMoreJobsReceived() {
-    try {
-      Thread.sleep(1000L);
-    } catch (final InterruptedException e) {
-      throw new RuntimeException(e);
-    }
-
-    assertThat(apiRule.numSubscribedEventsAvailable()).isEqualTo(0);
+    assertThat(client.receiveJobs().skip(eventCount).exists()).isFalse();
   }
 }

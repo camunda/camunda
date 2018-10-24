@@ -50,12 +50,12 @@ public class CreateJobTest {
             .sendAndAwait();
 
     // then
-    assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-    assertThat(resp.position()).isGreaterThanOrEqualTo(0L);
-    assertThat(resp.sourceRecordPosition()).isGreaterThan(0L);
-    assertThat(resp.partitionId()).isEqualTo(apiRule.getDefaultPartitionId());
-    assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(resp.intent()).isEqualTo(JobIntent.CREATED);
+    assertThat(resp.getKey()).isGreaterThanOrEqualTo(0L);
+    assertThat(resp.getPosition()).isGreaterThanOrEqualTo(0L);
+    assertThat(resp.getSourceRecordPosition()).isGreaterThan(0L);
+    assertThat(resp.getPartitionId()).isEqualTo(apiRule.getDefaultPartitionId());
+    assertThat(resp.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(resp.getIntent()).isEqualTo(JobIntent.CREATED);
 
     final Map<String, Object> event = resp.getValue();
     assertThat(event).containsEntry("type", "theJobType");

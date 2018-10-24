@@ -56,7 +56,6 @@ import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.impl.RemoteAddressImpl;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
@@ -156,7 +155,7 @@ public class ClientApiMessageHandlerTest {
   }
 
   @Test
-  public void shouldHandleCommandRequest() throws InterruptedException, ExecutionException {
+  public void shouldHandleCommandRequest() {
     // given
     final int writtenLength =
         writeCommandRequestToBuffer(
@@ -191,8 +190,7 @@ public class ClientApiMessageHandlerTest {
   }
 
   @Test
-  public void shouldWriteCommandRequestProtocolVersion()
-      throws InterruptedException, ExecutionException {
+  public void shouldWriteCommandRequestProtocolVersion() {
     // given
     final short clientProtocolVersion = Protocol.PROTOCOL_VERSION - 1;
     final int writtenLength =
@@ -221,7 +219,7 @@ public class ClientApiMessageHandlerTest {
   }
 
   @Test
-  public void shouldWriteCommandRequestEventType() throws InterruptedException, ExecutionException {
+  public void shouldWriteCommandRequestEventType() {
     // given
     final int writtenLength =
         writeCommandRequestToBuffer(
@@ -314,7 +312,7 @@ public class ClientApiMessageHandlerTest {
   }
 
   @Test
-  public void shouldNotHandleUnkownRequest() throws InterruptedException, ExecutionException {
+  public void shouldNotHandleUnkownRequest() {
     // given
     headerEncoder
         .wrap(buffer, 0)
@@ -368,10 +366,10 @@ public class ClientApiMessageHandlerTest {
   }
 
   @Test
-  public void shouldSendErrorMessageOnInvalidRequest()
-      throws InterruptedException, ExecutionException {
+  public void shouldSendErrorMessageOnInvalidRequest() {
     // given
-    // request is invalid because Value type DEPLOYMENT does not match value contents, i.e. required
+    // request is invalid because Value type DEPLOYMENT does not match getValue contents, i.e.
+    // required
     // values are not present
     final int writtenLength =
         writeCommandRequestToBuffer(
@@ -396,8 +394,7 @@ public class ClientApiMessageHandlerTest {
   }
 
   @Test
-  public void shouldSendErrorMessageOnUnsupportedRequest()
-      throws InterruptedException, ExecutionException {
+  public void shouldSendErrorMessageOnUnsupportedRequest() {
     // given
     final int writtenLength =
         writeCommandRequestToBuffer(

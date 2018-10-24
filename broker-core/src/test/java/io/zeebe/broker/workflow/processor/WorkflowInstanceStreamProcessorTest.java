@@ -132,7 +132,7 @@ public class WorkflowInstanceStreamProcessorTest {
   }
 
   @Test
-  public void shouldCancelActivityInStateReady() throws InterruptedException {
+  public void shouldCancelActivityInStateReady() {
     // given
     streamProcessorRule.deploy(SERVICE_TASK_WORKFLOW);
 

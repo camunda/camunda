@@ -51,7 +51,7 @@ public class RecordStream extends StreamWrapper<LoggedEvent, RecordStream> {
   public LoggedEvent withPosition(final long position) {
     return filter(e -> e.getPosition() == position)
         .findFirst()
-        .orElseThrow(() -> new AssertionError("No event found with position " + position));
+        .orElseThrow(() -> new AssertionError("No event found with getPosition " + position));
   }
 
   public TypedRecordStream<JobRecord> onlyJobRecords() {

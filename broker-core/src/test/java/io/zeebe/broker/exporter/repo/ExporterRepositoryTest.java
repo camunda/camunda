@@ -72,9 +72,7 @@ public class ExporterRepositoryTest {
   }
 
   @Test
-  public void shouldLoadInternalExporter()
-      throws ExporterLoadException, ExporterJarLoadException, InstantiationException,
-          IllegalAccessException {
+  public void shouldLoadInternalExporter() throws ExporterLoadException, ExporterJarLoadException {
     // given
     final ExporterCfg config = new ExporterCfg();
     config.setClassName(ControlledTestExporter.class.getCanonicalName());

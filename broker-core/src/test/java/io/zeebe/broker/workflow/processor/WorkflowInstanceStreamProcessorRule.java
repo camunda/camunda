@@ -72,7 +72,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
   }
 
   @Override
-  protected void before() throws Throwable {
+  protected void before() {
     workflowState = new WorkflowState();
 
     mockSubscriptionCommandSender = mock(SubscriptionCommandSender.class);

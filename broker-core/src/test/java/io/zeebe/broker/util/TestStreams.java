@@ -161,8 +161,8 @@ public class TestStreams {
   }
 
   /**
-   * Truncates events with position greater than the argument. Includes committed events. Resets
-   * commit position to the argument position.
+   * Truncates events with getPosition greater than the argument. Includes committed events. Resets
+   * commit getPosition to the argument getPosition.
    *
    * @param position exclusive (unlike {@link LogStream#truncate(long)}!)
    */
@@ -466,7 +466,7 @@ public class TestStreams {
 
         @Override
         public boolean executeSideEffects() {
-          return actualProcessor != null ? actualProcessor.executeSideEffects() : true;
+          return actualProcessor == null || actualProcessor.executeSideEffects();
         }
 
         @Override
@@ -541,7 +541,7 @@ public class TestStreams {
     public TestStreams.FluentLogWriter event(final UnpackedObject event) {
       final ValueType eventType = VALUE_TYPES.get(event.getClass());
       if (eventType == null) {
-        throw new RuntimeException("No event type registered for value " + event.getClass());
+        throw new RuntimeException("No event type registered for getValue " + event.getClass());
       }
 
       this.metadata.valueType(eventType);

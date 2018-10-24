@@ -95,7 +95,7 @@ public class SnapshotReplicationServiceTest {
   }
 
   @Test
-  public void shouldRetryIfLeaderNotInTopologyYet() throws Exception {
+  public void shouldRetryIfLeaderNotInTopologyYet() {
     // given
     topologyManager.getTopology().removeMember(leaderNodeInfo);
 
@@ -170,7 +170,7 @@ public class SnapshotReplicationServiceTest {
   }
 
   @Test
-  public void shouldRetryIfListSnapshotsFails() throws Exception {
+  public void shouldRetryIfListSnapshotsFails() {
     // given
     final ErrorResponse response =
         new ErrorResponse().setCode(ErrorResponseCode.PARTITION_NOT_FOUND).setData("fail");
@@ -195,7 +195,7 @@ public class SnapshotReplicationServiceTest {
   }
 
   @Test
-  public void shouldRefreshLeaderAddressOnListSnapshotsError() throws Exception {
+  public void shouldRefreshLeaderAddressOnListSnapshotsError() {
     // given
     final ErrorResponse response =
         new ErrorResponse().setCode(ErrorResponseCode.PARTITION_NOT_FOUND).setData("fail");

@@ -42,16 +42,16 @@ public class UniqueKeyFormatTest {
   public void shouldStartWorkflowInstanceAtNoneStartEvent() {
     // given
     apiRule
-        .partition()
+        .partitionClient()
         .deploy(Bpmn.createExecutableProcess("process").startEvent("foo").endEvent().done());
 
     // when
     TestUtil.waitUntil(() -> RecordingExporter.deploymentRecords().withPartitionId(2).exists());
     final ExecuteCommandResponse workflowInstanceWithResponse =
-        apiRule.partition(2).createWorkflowInstanceWithResponse("process");
+        apiRule.partitionClient(2).createWorkflowInstanceWithResponse("process");
 
-    // then partition id is encoded in the returned key
-    final long key = workflowInstanceWithResponse.key();
+    // then partition id is encoded in the returned getKey
+    final long key = workflowInstanceWithResponse.getKey();
     final int partitionId = Protocol.decodePartitionId(key);
     assertThat(partitionId).isEqualTo(2);
   }

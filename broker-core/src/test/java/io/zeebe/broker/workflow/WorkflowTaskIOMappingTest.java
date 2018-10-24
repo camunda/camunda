@@ -20,24 +20,24 @@ package io.zeebe.broker.workflow;
 import static io.zeebe.broker.test.MsgPackConstants.JSON_DOCUMENT;
 import static io.zeebe.broker.test.MsgPackConstants.MERGED_OTHER_WITH_JSON_DOCUMENT;
 import static io.zeebe.broker.test.MsgPackConstants.MSGPACK_PAYLOAD;
+import static io.zeebe.broker.test.MsgPackConstants.NODE_JSON_OBJECT_PATH;
+import static io.zeebe.broker.test.MsgPackConstants.NODE_ROOT_PATH;
+import static io.zeebe.broker.test.MsgPackConstants.NODE_STRING_PATH;
 import static io.zeebe.broker.test.MsgPackConstants.OTHER_DOCUMENT;
 import static io.zeebe.broker.test.MsgPackConstants.OTHER_PAYLOAD;
-import static io.zeebe.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
+import static io.zeebe.broker.workflow.JobAssert.assertJobPayload;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
-import io.zeebe.test.broker.protocol.clientapi.TestPartitionClient;
+import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.MsgPackUtil;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Before;
@@ -47,26 +47,20 @@ import org.junit.rules.RuleChain;
 
 /** Represents a test class to test the input and output mappings for tasks inside a workflow. */
 public class WorkflowTaskIOMappingTest {
-  private static final String PROP_JOB_PAYLOAD = "payload";
-
-  private static final String NODE_STRING_PATH = "$.string";
-  private static final String NODE_JSON_OBJECT_PATH = "$.jsonObject";
-  private static final String NODE_ROOT_PATH = "$";
-
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
   public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
-  private TestPartitionClient testClient;
+  private PartitionTestClient testClient;
 
   @Before
   public void init() {
-    testClient = apiRule.partition();
+    testClient = apiRule.partitionClient();
   }
 
   @Test
-  public void shouldUseDefaultInputMappingIfNoMappingIsSpecified() throws IOException {
+  public void shouldUseDefaultInputMappingIfNoMappingIsSpecified() {
     // given
     testClient.deploy(
         Bpmn.createExecutableProcess("process")
@@ -79,15 +73,14 @@ public class WorkflowTaskIOMappingTest {
     final long workflowInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 
     // then
-    final SubscribedRecord event = testClient.receiveFirstJobEvent(JobIntent.CREATED);
+    final Record event = testClient.receiveFirstJobEvent(JobIntent.CREATED);
 
-    assertThat(event.key()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
-    final byte[] result = (byte[]) event.value().get(PROP_JOB_PAYLOAD);
-    MsgPackUtil.assertEquality(result, JSON_DOCUMENT);
+    assertThat(event.getKey()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
+    assertJobPayload(event, JSON_DOCUMENT);
   }
 
   @Test
-  public void shouldCreateTwoNewObjectsViaInputMapping() throws IOException {
+  public void shouldCreateTwoNewObjectsViaInputMapping() {
     // given
     testClient.deploy(
         Bpmn.createExecutableProcess("process")
@@ -103,11 +96,10 @@ public class WorkflowTaskIOMappingTest {
 
     // when
     testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
-    final SubscribedRecord event = testClient.receiveFirstJobCommand(JobIntent.CREATE);
+    final Record event = testClient.receiveFirstJobCommand(JobIntent.CREATE);
 
     // then payload is expected as
-    final byte[] result = (byte[]) event.value().get(PROP_JOB_PAYLOAD);
-    MsgPackUtil.assertEquality(result, "{'newFoo':'value', 'newObj':{'testAttr':'test'}}");
+    assertJobPayload(event, "{'newFoo':'value', 'newObj':{'testAttr':'test'}}");
   }
 
   @Test
@@ -122,66 +114,14 @@ public class WorkflowTaskIOMappingTest {
 
     // when
     testClient.createWorkflowInstance("process");
-    final SubscribedRecord event = testClient.receiveFirstJobCommand(JobIntent.CREATE);
+    final Record event = testClient.receiveFirstJobCommand(JobIntent.CREATE);
 
     // then
-    assertThat(event.value())
-        .containsEntry(WorkflowInstanceRecord.PROP_WORKFLOW_PAYLOAD, EMTPY_OBJECT);
+    assertJobPayload(event, "{}");
   }
 
   @Test
-  public void shouldCreateIncidentForNoMatchOnInputMapping() {
-    // given
-    testClient.deploy(
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask(
-                "service",
-                t -> t.zeebeTaskType("external").zeebeInput("$.notExisting", NODE_ROOT_PATH))
-            .endEvent()
-            .done());
-
-    // when
-    testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
-    final SubscribedRecord incidentEvent =
-        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
-
-    // then incident is created
-    assertThat(incidentEvent.key()).isGreaterThan(0);
-    assertThat(incidentEvent.value())
-        .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
-        .containsEntry("errorMessage", "No data found for query $.notExisting.");
-  }
-
-  @Test
-  public void shouldCreateIncidentForNonMatchingAndMatchingValueOnInputMapping() {
-    // given
-    testClient.deploy(
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask(
-                "service",
-                t ->
-                    t.zeebeTaskType("external")
-                        .zeebeInput("$.notExisting", "$.nullVal")
-                        .zeebeInput(NODE_STRING_PATH, "$.existing"))
-            .endEvent()
-            .done());
-
-    // when
-    testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
-    final SubscribedRecord incidentEvent =
-        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
-
-    // then incident is created
-    assertThat(incidentEvent.key()).isGreaterThan(0);
-    assertThat(incidentEvent.value())
-        .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
-        .containsEntry("errorMessage", "No data found for query $.notExisting.");
-  }
-
-  @Test
-  public void shouldUseDefaultOutputMapping() throws IOException {
+  public void shouldUseDefaultOutputMapping() {
     // given
     testClient.deploy(
         Bpmn.createExecutableProcess("process")
@@ -196,15 +136,11 @@ public class WorkflowTaskIOMappingTest {
     testClient.completeJobOfType("external", OTHER_PAYLOAD);
 
     // then
-    final SubscribedRecord activityCompletedEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
-
-    final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    MsgPackUtil.assertEquality(result, MERGED_OTHER_WITH_JSON_DOCUMENT);
+    assertRecordPayload(WorkflowInstanceIntent.ELEMENT_COMPLETED, MERGED_OTHER_WITH_JSON_DOCUMENT);
   }
 
   @Test
-  public void shouldUseDefaultOutputMappingWithNoWorkflowPayload() throws IOException {
+  public void shouldUseDefaultOutputMappingWithNoWorkflowPayload() {
     // given
     testClient.deploy(
         Bpmn.createExecutableProcess("process")
@@ -219,15 +155,11 @@ public class WorkflowTaskIOMappingTest {
     testClient.completeJobOfType("external", OTHER_PAYLOAD);
 
     // then
-    final SubscribedRecord activityCompletedEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
-
-    final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    MsgPackUtil.assertEquality(result, OTHER_DOCUMENT);
+    assertRecordPayload(WorkflowInstanceIntent.ELEMENT_COMPLETED, OTHER_DOCUMENT);
   }
 
   @Test
-  public void shouldUseOutputMappingWithNoWorkflowPayload() throws IOException {
+  public void shouldUseOutputMappingWithNoWorkflowPayload() {
     // given
     testClient.deploy(
         Bpmn.createExecutableProcess("process")
@@ -243,15 +175,11 @@ public class WorkflowTaskIOMappingTest {
     testClient.completeJobOfType("external", OTHER_PAYLOAD);
 
     // then
-    final SubscribedRecord activityCompletedEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
-
-    final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    MsgPackUtil.assertEquality(result, "{'foo':'bar'}");
+    assertRecordPayload(WorkflowInstanceIntent.ELEMENT_COMPLETED, "{'foo':'bar'}");
   }
 
   @Test
-  public void shouldUseNoneOutputBehaviorWithoutCompletePayload() throws IOException {
+  public void shouldUseNoneOutputBehaviorWithoutCompletePayload() {
     // given
     testClient.deploy(
         Bpmn.createExecutableProcess("process")
@@ -268,15 +196,11 @@ public class WorkflowTaskIOMappingTest {
     testClient.completeJobOfType("external");
 
     // then
-    final SubscribedRecord activityCompletedEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
-
-    final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    MsgPackUtil.assertEquality(result, JSON_DOCUMENT);
+    assertRecordPayload(WorkflowInstanceIntent.ELEMENT_COMPLETED, JSON_DOCUMENT);
   }
 
   @Test
-  public void shouldUseNoneOutputBehaviorAndCompletePayload() throws IOException {
+  public void shouldUseNoneOutputBehaviorAndCompletePayload() {
     // given
     testClient.deploy(
         Bpmn.createExecutableProcess("process")
@@ -293,15 +217,11 @@ public class WorkflowTaskIOMappingTest {
     testClient.completeJobOfType("external", OTHER_PAYLOAD);
 
     // then
-    final SubscribedRecord activityCompletedEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
-
-    final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    MsgPackUtil.assertEquality(result, JSON_DOCUMENT);
+    assertRecordPayload(WorkflowInstanceIntent.ELEMENT_COMPLETED, JSON_DOCUMENT);
   }
 
   @Test
-  public void shouldUseOverwriteOutputBehaviorWithoutCompletePayload() throws IOException {
+  public void shouldUseOverwriteOutputBehaviorWithoutCompletePayload() {
     // given
     testClient.deploy(
         Bpmn.createExecutableProcess("process")
@@ -318,15 +238,11 @@ public class WorkflowTaskIOMappingTest {
     testClient.completeJobOfType("external");
 
     // then
-    final SubscribedRecord activityCompletedEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
-
-    final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    MsgPackUtil.assertEquality(result, "{}");
+    assertRecordPayload(WorkflowInstanceIntent.ELEMENT_COMPLETED, "{}");
   }
 
   @Test
-  public void shouldUseOverwriteOutputBehaviorAndCompletePayload() throws IOException {
+  public void shouldUseOverwriteOutputBehaviorAndCompletePayload() {
     // given
     testClient.deploy(
         Bpmn.createExecutableProcess("process")
@@ -343,16 +259,11 @@ public class WorkflowTaskIOMappingTest {
     testClient.completeJobOfType("external", OTHER_PAYLOAD);
 
     // then
-    final SubscribedRecord activityCompletedEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
-
-    final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    MsgPackUtil.assertEquality(result, OTHER_DOCUMENT);
+    assertRecordPayload(WorkflowInstanceIntent.ELEMENT_COMPLETED, OTHER_DOCUMENT);
   }
 
   @Test
-  public void shouldUseOverwriteOutputBehaviorWithOutputMappingAndCompletePayload()
-      throws IOException {
+  public void shouldUseOverwriteOutputBehaviorWithOutputMappingAndCompletePayload() {
     // given
     testClient.deploy(
         Bpmn.createExecutableProcess("process")
@@ -372,46 +283,11 @@ public class WorkflowTaskIOMappingTest {
     testClient.completeJobOfType("external", OTHER_PAYLOAD);
 
     // then
-    final SubscribedRecord activityCompletedEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
-
-    final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    MsgPackUtil.assertEquality(result, "{'foo':'bar'}");
+    assertRecordPayload(WorkflowInstanceIntent.ELEMENT_COMPLETED, "{'foo':'bar'}");
   }
 
   @Test
-  public void
-      shouldCreateIncidentOnOverwriteOutputBehaviorWithOutputMappingAndWithoutCompletedPayload() {
-    // given
-    testClient.deploy(
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask(
-                "service",
-                t ->
-                    t.zeebeTaskType("external")
-                        .zeebeOutputBehavior(ZeebeOutputBehavior.overwrite)
-                        .zeebeOutput("$.string", "$.foo"))
-            .endEvent()
-            .done());
-
-    testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
-
-    // when
-    testClient.completeJobOfType("external");
-
-    // then incident is created
-    final SubscribedRecord incidentEvent =
-        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
-
-    assertThat(incidentEvent.key()).isGreaterThan(0);
-    assertThat(incidentEvent.value())
-        .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
-        .containsEntry("errorMessage", "No data found for query $.string.");
-  }
-
-  @Test
-  public void shouldUseDefaultOutputMappingWithNoCompletePayload() throws IOException {
+  public void shouldUseDefaultOutputMappingWithNoCompletePayload() {
     // given
     testClient.deploy(
         Bpmn.createExecutableProcess("process")
@@ -426,15 +302,11 @@ public class WorkflowTaskIOMappingTest {
     testClient.completeJobOfType("external");
 
     // then
-    final SubscribedRecord activityCompletedEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
-
-    final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    MsgPackUtil.assertEquality(result, JSON_DOCUMENT);
+    assertRecordPayload(WorkflowInstanceIntent.ELEMENT_COMPLETED, JSON_DOCUMENT);
   }
 
   @Test
-  public void shouldUseDefaultOutputMappingWithNoCreatedPayload() throws IOException {
+  public void shouldUseDefaultOutputMappingWithNoCreatedPayload() {
     // given
     testClient.deploy(
         Bpmn.createExecutableProcess("process")
@@ -449,15 +321,11 @@ public class WorkflowTaskIOMappingTest {
     testClient.completeJobOfType("external", OTHER_PAYLOAD);
 
     // then
-    final SubscribedRecord activityCompletedEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
-
-    final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    MsgPackUtil.assertEquality(result, OTHER_DOCUMENT);
+    assertRecordPayload(WorkflowInstanceIntent.ELEMENT_COMPLETED, OTHER_DOCUMENT);
   }
 
   @Test
-  public void shouldNotSeePayloadOfWorkflowInstanceBefore() throws IOException {
+  public void shouldNotSeePayloadOfWorkflowInstanceBefore() {
     // given
     testClient.deploy(
         Bpmn.createExecutableProcess("process")
@@ -475,22 +343,20 @@ public class WorkflowTaskIOMappingTest {
         "external", secondWFInstanceKey, MsgPackUtil.asMsgPack("{'foo':'bar'}"));
 
     // then first event payload is expected as
-    final SubscribedRecord firstWFActivityCompletedEvent =
+    assertRecordPayload(
         testClient.receiveFirstWorkflowInstanceEvent(
-            firstWFInstanceKey, WorkflowInstanceIntent.ELEMENT_COMPLETED);
-    byte[] payload = (byte[]) firstWFActivityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    MsgPackUtil.assertEquality(payload, JSON_DOCUMENT);
+            firstWFInstanceKey, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+        JSON_DOCUMENT);
 
     // and second event payload is expected as
-    final SubscribedRecord secondWFActivityCompletedEvent =
+    assertRecordPayload(
         testClient.receiveFirstWorkflowInstanceEvent(
-            secondWFInstanceKey, WorkflowInstanceIntent.ELEMENT_COMPLETED);
-    payload = (byte[]) secondWFActivityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    MsgPackUtil.assertEquality(payload, "{'foo':'bar'}");
+            secondWFInstanceKey, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+        "{'foo':'bar'}");
   }
 
   @Test
-  public void shouldNotSeePayloadOfWorkflowInstanceBeforeOnOutputMapping() throws IOException {
+  public void shouldNotSeePayloadOfWorkflowInstanceBeforeOnOutputMapping() {
     // given
     testClient.deploy(
         Bpmn.createExecutableProcess("process")
@@ -511,24 +377,20 @@ public class WorkflowTaskIOMappingTest {
         "external", secondWFInstanceKey, MsgPackUtil.asMsgPack("{'foo':'bar'}"));
 
     // then first event payload is expected as
-    final SubscribedRecord firstWFActivityCompletedEvent =
+    assertRecordPayload(
         testClient.receiveFirstWorkflowInstanceEvent(
-            firstWFInstanceKey, WorkflowInstanceIntent.ELEMENT_COMPLETED);
-    byte[] payload = (byte[]) firstWFActivityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    MsgPackUtil.assertEquality(
-        payload,
+            firstWFInstanceKey, WorkflowInstanceIntent.ELEMENT_COMPLETED),
         "{'string':'value', 'jsonObject':{'testAttr':'test'},'taskPayload':{'string':'value', 'jsonObject':{'testAttr':'test'}}}");
 
     // and second event payload is expected as
-    final SubscribedRecord secondWFActivityCompletedEvent =
+    assertRecordPayload(
         testClient.receiveFirstWorkflowInstanceEvent(
-            secondWFInstanceKey, WorkflowInstanceIntent.ELEMENT_COMPLETED);
-    payload = (byte[]) secondWFActivityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    MsgPackUtil.assertEquality(payload, "{'otherPayload':'value','taskPayload':{'foo':'bar'}}");
+            secondWFInstanceKey, WorkflowInstanceIntent.ELEMENT_COMPLETED),
+        "{'otherPayload':'value','taskPayload':{'foo':'bar'}}");
   }
 
   @Test
-  public void shouldUseDefaultOutputMappingIfOnlyInputMappingSpecified() throws IOException {
+  public void shouldUseDefaultOutputMappingIfOnlyInputMappingSpecified() {
     // given
     final Map<String, String> inputMapping = new HashMap<>();
     inputMapping.put(NODE_ROOT_PATH, NODE_ROOT_PATH);
@@ -547,11 +409,7 @@ public class WorkflowTaskIOMappingTest {
     testClient.completeJobOfType("external", OTHER_PAYLOAD);
 
     // then
-    final SubscribedRecord activityCompletedEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
-
-    final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    MsgPackUtil.assertEquality(result, MERGED_OTHER_WITH_JSON_DOCUMENT);
+    assertRecordPayload(WorkflowInstanceIntent.ELEMENT_COMPLETED, MERGED_OTHER_WITH_JSON_DOCUMENT);
   }
 
   @Test
@@ -570,15 +428,11 @@ public class WorkflowTaskIOMappingTest {
     testClient.completeJobOfType("external");
 
     // then
-    final SubscribedRecord activityCompletedEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
-
-    assertThat(activityCompletedEvent.value())
-        .containsEntry(WorkflowInstanceRecord.PROP_WORKFLOW_PAYLOAD, MSGPACK_PAYLOAD);
+    assertRecordPayload(WorkflowInstanceIntent.ELEMENT_COMPLETED, JSON_DOCUMENT);
   }
 
   @Test
-  public void shouldUseOutputMappingToAddObjectsToWorkflowPayload() throws IOException {
+  public void shouldUseOutputMappingToAddObjectsToWorkflowPayload() {
     // given
     testClient.deploy(
         Bpmn.createExecutableProcess("process")
@@ -596,47 +450,14 @@ public class WorkflowTaskIOMappingTest {
 
     // when
     testClient.completeJobOfType("external", MSGPACK_PAYLOAD);
-    final SubscribedRecord activityCompletedEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
-
-    // then payload contains old objects
-    final byte[] result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    MsgPackUtil.assertEquality(
-        result,
+    assertRecordPayload(
+        WorkflowInstanceIntent.ELEMENT_COMPLETED,
         "{'newFoo':'value', 'newObj':{'testAttr':'test'},"
             + " 'string':'value', 'jsonObject':{'testAttr':'test'}}");
   }
 
   @Test
-  public void shouldCreateIncidentForNotMatchingOnOutputMapping() {
-    // given
-    testClient.deploy(
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask(
-                "service",
-                t -> t.zeebeTaskType("external").zeebeOutput("$.notExisting", "$.notExist"))
-            .endEvent()
-            .done());
-
-    testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
-
-    // when
-    testClient.completeJobOfType("external", MSGPACK_PAYLOAD);
-    testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-
-    final SubscribedRecord incidentEvent =
-        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
-
-    // then incident is created
-    assertThat(incidentEvent.key()).isGreaterThan(0);
-    assertThat(incidentEvent.value())
-        .containsEntry("errorType", ErrorType.IO_MAPPING_ERROR.name())
-        .containsEntry("errorMessage", "No data found for query $.notExisting.");
-  }
-
-  @Test
-  public void shouldUseInOutMapping() throws IOException {
+  public void shouldUseInOutMapping() {
     // given
     testClient.deploy(
         Bpmn.createExecutableProcess("process")
@@ -652,21 +473,34 @@ public class WorkflowTaskIOMappingTest {
 
     // when
     testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
-    final SubscribedRecord event = testClient.receiveFirstJobCommand(JobIntent.CREATE);
 
     // then payload is expected as
-    byte[] result = (byte[]) event.value().get(PROP_JOB_PAYLOAD);
-    MsgPackUtil.assertEquality(result, "{'testAttr':'test'}");
+    assertRecordPayload(JobIntent.CREATE, "{'testAttr':'test'}");
 
     // when
     testClient.completeJobOfType("external", MsgPackUtil.asMsgPack("{'testAttr':123}"));
 
     // then
-    final SubscribedRecord activityCompletedEvent =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
+    assertRecordPayload(
+        WorkflowInstanceIntent.ELEMENT_COMPLETED,
+        "{'string':'value', 'jsonObject':{'testAttr':'test'}, 'result':123}");
+  }
 
-    result = (byte[]) activityCompletedEvent.value().get(PROP_JOB_PAYLOAD);
-    MsgPackUtil.assertEquality(
-        result, "{'string':'value', 'jsonObject':{'testAttr':'test'}, 'result':123}");
+  private void assertRecordPayload(JobIntent instanceIntent, String mergedOtherWithJsonDocument) {
+    final Record activityCompletedEvent = testClient.receiveFirstJobEvent(instanceIntent);
+    JobAssert.assertJobPayload(activityCompletedEvent, mergedOtherWithJsonDocument);
+  }
+
+  private void assertRecordPayload(
+      WorkflowInstanceIntent instanceIntent, String mergedOtherWithJsonDocument) {
+    final Record activityCompletedEvent =
+        testClient.receiveFirstWorkflowInstanceEvent(instanceIntent);
+    WorkflowAssert.assertWorkflowInstancePayload(
+        activityCompletedEvent, mergedOtherWithJsonDocument);
+  }
+
+  private void assertRecordPayload(
+      Record<WorkflowInstanceRecordValue> event, String mergedOtherWithJsonDocument) {
+    WorkflowAssert.assertWorkflowInstancePayload(event, mergedOtherWithJsonDocument);
   }
 }
