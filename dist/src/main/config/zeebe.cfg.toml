@@ -32,36 +32,34 @@
 
 
 [gateway]
-# Enable the embedded gateway to start on broker startup
-#
+# Enable the embedded gateway to start on broker startup.
 # This setting can also be overridden using the environment variable ZEEBE_EMBED_GATEWAY.
 # enable = true
 
 [gateway.network]
-# Sets the host the embedded gateway binds to
-#
-# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_HOST.
+# Sets the host the embedded gateway binds to.
+# This setting can be specified using the following precedence:
+# 1. setting the environment variable ZEEBE_GATEWAY_HOST
+# 2. setting gateway.network.host property in this file
+# 3. setting the environment variable ZEEBE__HOST
+# 4. setting network.host property in this file
 # host = "0.0.0.0"
-#
-# Sets the port the embedded gateway binds to
-#
+
+# Sets the port the embedded gateway binds to.
 # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_PORT.
 # port = 26500
 
 [gateway.cluster]
-# Sets the broker the gateway should initial contact
-#
+# Sets the broker the gateway should initial contact.
 # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CONTACT_POINT.
 # contactPoint = "127.0.0.1:26501"
 
-# Sets size of the transport buffer to send and received messages between gateway and broker cluster
-#
+# Sets size of the transport buffer to send and received messages between gateway and broker cluster.
 # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_TRANSPORT_BUFFER.
 # transportBuffer = "2M"
 
 [gateway.threads]
 # Sets the number of threads the gateway will use to communicate with the broker cluster
-#
 # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_MANAGEMENT_THREADS.
 # managementThreads = 1
 
