@@ -5,6 +5,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/zeebe-io/zeebe/clients/go/mock_pb"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
+	"github.com/zeebe-io/zeebe/clients/go/utils"
 	"testing"
 )
 
@@ -55,7 +56,7 @@ func TestCreateWorkflowInstanceCommandByBpmnProcessId(t *testing.T) {
 
 	request := &pb.CreateWorkflowInstanceRequest{
 		BpmnProcessId: "foo",
-		Version:       LatestVersion,
+		Version:       utils.LatestVersion,
 	}
 	stub := &pb.CreateWorkflowInstanceResponse{
 		WorkflowKey:         123,

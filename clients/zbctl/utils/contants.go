@@ -15,7 +15,6 @@ package utils
 
 import (
 	"fmt"
-	"github.com/zeebe-io/zeebe/clients/go/commands"
 	"github.com/zeebe-io/zeebe/clients/go/utils"
 	"math"
 	"time"
@@ -27,7 +26,7 @@ const (
 	DefaultJobRetries  = utils.DefaultRetries
 	DefaultJobWorker   = "zbctl"
 	DefaultJobTimeout  = 5 * time.Minute
-	LatestVersion      = commands.LatestVersion
+	LatestVersion      = utils.LatestVersion
 	EmptyJsonObject    = "{}"
 )
 

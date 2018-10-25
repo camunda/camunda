@@ -9,10 +9,6 @@ import (
 	"time"
 )
 
-const (
-	LatestVersion = -1
-)
-
 type DispatchCreateInstanceCommand interface {
 	Send() (*pb.CreateWorkflowInstanceResponse, error)
 }
@@ -79,7 +75,7 @@ func (cmd *CreateInstanceCommand) Version(version int32) CreateInstanceCommandSt
 }
 
 func (cmd *CreateInstanceCommand) LatestVersion() CreateInstanceCommandStep3 {
-	cmd.request.Version = LatestVersion
+	cmd.request.Version = utils.LatestVersion
 	return cmd
 }
 
