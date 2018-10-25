@@ -6,3 +6,4 @@ export {
   ThemeProvider
 } from '../contexts/ThemeContext.js';
 export {default as operateTheme} from './operate-theme';
+export {default as interactions} from './interactions';

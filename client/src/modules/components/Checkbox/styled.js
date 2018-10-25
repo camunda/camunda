@@ -1,6 +1,6 @@
 import styled from 'styled-components';
 
-import {Colors, themed, themeStyle} from 'modules/theme';
+import {Colors, themed, themeStyle, interactions} from 'modules/theme';
 
 export const Checkbox = styled.div`
   position: relative;
@@ -86,8 +86,7 @@ export const CustomCheckbox = themed(styled.div`
 
   /* simulate focus */
   &:before {
-    box-shadow: ${({focused}) =>
-      focused && '0px 0px 0px 1px rgb(59, 153, 252)'};
+    ${({focused}) => focused && interactions.focus.css};
   }
 
   /* default: empty checkbox */
