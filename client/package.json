@@ -30,7 +30,7 @@
     "ancestorSeparator": " @ "
   },
   "devDependencies": {
-    "enzyme": "^3.3.0",
+    "enzyme": "^3.7.0",
     "enzyme-adapter-react-16": "^1.6.0",
     "eslint-config-react-app": "^3.0.4",
     "eslint-plugin-prettier": "^2.6.2",
