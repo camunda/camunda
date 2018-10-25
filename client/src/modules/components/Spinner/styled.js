@@ -15,6 +15,5 @@ export const Spinner = themed(styled.div`
     })};
   border-right-color: transparent;
 
-  transform: translateZ(0);
   animation: ${Animations.Spinner} 0.65s infinite linear;
 `);
