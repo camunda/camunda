@@ -23,7 +23,6 @@ import io.zeebe.broker.job.old.JobSubscription;
 import io.zeebe.broker.job.old.JobSubscriptionManager;
 import io.zeebe.broker.job.old.JobSubscriptionRequest;
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -48,12 +47,10 @@ public class AddJobSubscriptionHandler extends AbstractControlMessageHandler {
       final ActorControl actor,
       final int partitionId,
       final DirectBuffer buffer,
-      final RecordMetadata eventMetada) {
+      final long requestId,
+      final int requestStreamId) {
     final JobSubscriptionRequest request = new JobSubscriptionRequest();
     request.wrap(cloneBuffer(buffer));
-
-    final long requestId = eventMetada.getRequestId();
-    final int requestStreamId = eventMetada.getRequestStreamId();
 
     final JobSubscription jobSubscription =
         new JobSubscription(

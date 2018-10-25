@@ -23,7 +23,6 @@ import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.impl.data.repository.GetWorkflowControlRequest;
 import io.zeebe.protocol.impl.data.repository.WorkflowMetadataAndResource;
-import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorControl;
@@ -49,14 +48,15 @@ public class GetWorkflowControlMessageHandler extends AbstractControlMessageHand
       final ActorControl actor,
       final int partitionId,
       final DirectBuffer buffer,
-      final RecordMetadata metadata) {
+      final long requestId,
+      final int requestStreamId) {
     final WorkflowRepositoryService repository = workflowRepositroyServiceRef.get();
 
     if (repository == null) {
       sendErrorResponse(
           actor,
-          metadata.getRequestStreamId(),
-          metadata.getRequestId(),
+          requestStreamId,
+          requestId,
           ErrorCode.PARTITION_NOT_FOUND,
           "Workflow request must address the leader of the first partition %d",
           Protocol.DEPLOYMENT_PARTITION);
@@ -96,22 +96,13 @@ public class GetWorkflowControlMessageHandler extends AbstractControlMessageHand
           future,
           (workflowAndResource, err) -> {
             if (err != null) {
-              sendErrorResponse(
-                  actor, metadata.getRequestStreamId(), metadata.getRequestId(), err.getMessage());
+              sendErrorResponse(actor, requestStreamId, requestId, err.getMessage());
             } else {
               if (workflowAndResource != null) {
-                sendResponse(
-                    actor,
-                    metadata.getRequestStreamId(),
-                    metadata.getRequestId(),
-                    workflowAndResource);
+                sendResponse(actor, requestStreamId, requestId, workflowAndResource);
               } else {
                 sendErrorResponse(
-                    actor,
-                    metadata.getRequestStreamId(),
-                    metadata.getRequestId(),
-                    ErrorCode.NOT_FOUND,
-                    errorMessage);
+                    actor, requestStreamId, requestId, ErrorCode.NOT_FOUND, errorMessage);
               }
             }
           });
