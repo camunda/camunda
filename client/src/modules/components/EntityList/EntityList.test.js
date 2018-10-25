@@ -513,7 +513,7 @@ it('should delete a report and its references if it was included in a combined r
     ...sampleEntity,
     id: '2',
     reportType: 'combined',
-    data: {reportIds: ['1']}
+    data: {reportIds: ['1', '2']}
   };
 
   node.setState({
@@ -528,5 +528,5 @@ it('should delete a report and its references if it was included in a combined r
 
   expect(remove).toHaveBeenCalledWith('1', 'endpoint');
   expect(node.state().data).toHaveLength(1);
-  expect(node.state().data[0].data.reportIds).toEqual([]);
+  expect(node.state().data[0].data.reportIds).toEqual(['2']);
 });

@@ -56,7 +56,14 @@ class EntityList extends React.Component {
     const id = this.state.deleteModalEntity.id;
     remove(id, this.props.api);
 
-    const newData = this.state.data.filter(entity => entity.id !== id).map(entity => {
+    this.setState({
+      data: this.filterEntity(id)
+    });
+    this.closeConfirmModal();
+  };
+
+  filterEntity = id => {
+    return this.state.data.filter(entity => entity.id !== id).map(entity => {
       if (
         entity.reportType &&
         entity.reportType === 'combined' &&
@@ -64,15 +71,11 @@ class EntityList extends React.Component {
         entity.data.reportIds &&
         entity.data.reportIds.includes(id)
       ) {
-        return {...entity, data: {...entity.data, reportIds: []}};
+        const newReportIds = entity.data.reportIds.filter(item => item !== id);
+        return {...entity, data: {...entity.data, reportIds: newReportIds}};
       }
       return entity;
     });
-
-    this.setState({
-      data: newData
-    });
-    this.closeConfirmModal();
   };
 
   duplicateEntity = async id => {
