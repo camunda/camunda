@@ -1,6 +1,6 @@
 import React from 'react';
 
-import './DragBehavior.css';
+import './DragBehavior.scss';
 import {snapInPosition, collidesWithReport, applyPlacement} from '../service';
 
 export default class DragBehavior extends React.Component {

@@ -25,7 +25,6 @@ exports[`should display a sentence to describe what the user can do on this page
             Select Process Definition
              
             <ProcessDefinitionSelection
-              onChange={undefined}
               processDefinitionKey=""
               processDefinitionVersion=""
               xml={null}
@@ -83,7 +82,6 @@ exports[`should display a sentence to describe what the user can do on this page
         <Filter
           data={null}
           flowNodeNames={null}
-          onChange={undefined}
           processDefinitionKey=""
           processDefinitionVersion=""
           xml={null}

@@ -1,27 +1,25 @@
-/* eslint import/no-webpack-loader-syntax: 0 */
-
-import autorefresh from '-!svg-react-loader!./autorefresh.svg';
-import check from '-!svg-react-loader!./check.svg';
-import deleteIcon from '-!svg-react-loader!./delete.svg';
-import exitFullscreen from '-!svg-react-loader!./exit-fullscreen.svg';
-import fullscreen from '-!svg-react-loader!./fullscreen.svg';
-import plus from '-!svg-react-loader!./plus.svg';
-import share from '-!svg-react-loader!./share.svg';
-import edit from '-!svg-react-loader!./edit.svg';
-import close from '-!svg-react-loader!./close.svg';
-import stop from '-!svg-react-loader!./stop.svg';
-import link from '-!svg-react-loader!./link.svg';
-import embed from '-!svg-react-loader!./embed.svg';
-import save from '-!svg-react-loader!./save.svg';
-import overflowMenuVertical from '-!svg-react-loader!./overflow-menu-vertical.svg';
-import overflowMenuHorizontal from '-!svg-react-loader!./overflow-menu-horizontal.svg';
-import openInCockpit from '-!svg-react-loader!./open-in-cockpit.svg';
-import copyDocument from '-!svg-react-loader!./copy-document.svg';
-import checkSmall from '-!svg-react-loader!./check-small.svg';
-import left from '-!svg-react-loader!./left.svg';
-import up from '-!svg-react-loader!./up.svg';
-import right from '-!svg-react-loader!./right.svg';
-import down from '-!svg-react-loader!./down.svg';
+import {ReactComponent as autorefresh} from './autorefresh.svg';
+import {ReactComponent as check} from './check.svg';
+import {ReactComponent as deleteIcon} from './delete.svg';
+import {ReactComponent as exitFullscreen} from './exit-fullscreen.svg';
+import {ReactComponent as fullscreen} from './fullscreen.svg';
+import {ReactComponent as plus} from './plus.svg';
+import {ReactComponent as share} from './share.svg';
+import {ReactComponent as edit} from './edit.svg';
+import {ReactComponent as close} from './close.svg';
+import {ReactComponent as stop} from './stop.svg';
+import {ReactComponent as link} from './link.svg';
+import {ReactComponent as embed} from './embed.svg';
+import {ReactComponent as save} from './save.svg';
+import {ReactComponent as overflowMenuVertical} from './overflow-menu-vertical.svg';
+import {ReactComponent as overflowMenuHorizontal} from './overflow-menu-horizontal.svg';
+import {ReactComponent as openInCockpit} from './open-in-cockpit.svg';
+import {ReactComponent as copyDocument} from './copy-document.svg';
+import {ReactComponent as checkSmall} from './check-small.svg';
+import {ReactComponent as left} from './left.svg';
+import {ReactComponent as up} from './up.svg';
+import {ReactComponent as right} from './right.svg';
+import {ReactComponent as down} from './down.svg';
 
 const icons = {
   autorefresh,

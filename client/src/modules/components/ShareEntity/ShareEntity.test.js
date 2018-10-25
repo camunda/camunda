@@ -26,6 +26,16 @@ const props = {
   getSharedEntity: jest.fn()
 };
 
+beforeAll(() => {
+  const windowProps = JSON.stringify(window.location);
+  delete window.location;
+
+  Object.defineProperty(window, 'location', {
+    value: JSON.parse(windowProps)
+  });
+  window.location.origin = 'http://example.com';
+});
+
 it('should render without crashing', () => {
   mount(<ShareEntity {...props} />);
 });
@@ -58,9 +68,6 @@ it('should delete entity if sharing is revoked', () => {
 
 it('should construct special link', () => {
   const node = mount(<ShareEntity type="report" {...props} />);
-  Object.defineProperty(window.location, 'origin', {
-    value: 'http://example.com'
-  });
 
   node.setState({loaded: true, id: 10});
 

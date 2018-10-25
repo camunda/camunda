@@ -2,7 +2,7 @@ import React from 'react';
 import classnames from 'classnames';
 import {Modal, ButtonGroup, Button, BPMNDiagram, ClickBehavior} from 'components';
 
-import './NodeFilter.css';
+import './NodeFilter.scss';
 
 export default class NodeFilter extends React.Component {
   constructor(props) {

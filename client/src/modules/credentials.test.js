@@ -1,9 +1,20 @@
 import {get, destroy, store, getToken} from './credentials';
 
+beforeAll(() => {
+  delete window.localStorage;
+  Object.defineProperty(window, 'localStorage', {
+    value: {
+      getItem: jest.fn(),
+      setItem: jest.fn(),
+      removeItem: jest.fn()
+    }
+  });
+});
+
 it('store the login data in localstorage', () => {
   store('login');
 
-  expect(localStorage.setItem.mock.calls[0][1]).toBe('"login"');
+  expect(window.localStorage.setItem.mock.calls[0][1]).toBe('"login"');
 });
 
 it('should retrieve the whole data with get', () => {

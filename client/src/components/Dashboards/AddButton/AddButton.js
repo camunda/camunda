@@ -6,7 +6,7 @@ import {getOccupiedTiles} from '../service';
 
 import ReportModal from './ReportModal';
 
-import './AddButton.css';
+import './AddButton.scss';
 
 const size = {width: 6, height: 4};
 

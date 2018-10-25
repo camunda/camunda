@@ -5,7 +5,7 @@ import {loadCorrelationData} from './service';
 
 import {getFlowNodeNames, getDiagramElementsBetween} from 'services';
 
-import './Statistics.css';
+import './Statistics.scss';
 import {LoadingIndicator} from 'components';
 
 export default class Statistics extends React.Component {

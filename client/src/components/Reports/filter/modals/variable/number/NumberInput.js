@@ -3,7 +3,7 @@ import React from 'react';
 import {ButtonGroup, Button, Input, ErrorMessage} from 'components';
 import classnames from 'classnames';
 
-import './NumberInput.css';
+import './NumberInput.scss';
 
 export default class NumberInput extends React.Component {
   static defaultFilter = {operator: 'in', values: ['']};

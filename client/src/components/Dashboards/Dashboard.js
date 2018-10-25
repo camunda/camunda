@@ -41,7 +41,7 @@ import {DragBehavior} from './DragBehavior';
 import {ResizeHandle} from './ResizeHandle';
 import {AutoRefreshBehavior, AutoRefreshIcon} from './AutoRefresh';
 
-import './Dashboard.css';
+import './Dashboard.scss';
 
 export default themed(
   withErrorHandling(

@@ -3,7 +3,7 @@ import classnames from 'classnames';
 import ReactTable from 'react-table';
 import {Button} from 'components';
 
-import './Table.css';
+import './Table.scss';
 
 const defaultPageSize = 20;
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import './Select.css';
+import './Select.scss';
 
 export default function Select(props) {
   const allowedProps = {...props};

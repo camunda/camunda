@@ -5,7 +5,7 @@ import {Button, Icon} from 'components';
 import DropdownOption from './DropdownOption';
 import Submenu from './Submenu';
 
-import './Dropdown.css';
+import './Dropdown.scss';
 
 export default class Dropdown extends React.Component {
   menuContainer = React.createRef();

@@ -4,7 +4,7 @@ import moment from 'moment';
 import {ActionItem} from 'components';
 import {formatters} from 'services';
 
-import './FilterList.css';
+import './FilterList.scss';
 
 export default class FilterList extends React.Component {
   createOperator = name => {

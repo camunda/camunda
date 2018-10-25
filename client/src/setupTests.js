@@ -7,13 +7,6 @@ import 'element-closest';
 
 Enzyme.configure({adapter: new Adapter()});
 
-const localStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn()
-};
-global.localStorage = localStorageMock;
-
 document.execCommand = jest.fn();
 
 global.MutationObserver = class MutationObserver {

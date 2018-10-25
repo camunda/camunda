@@ -1,7 +1,7 @@
 import React from 'react';
 import {CopyToClipboard, Switch, Icon, LoadingIndicator} from 'components';
 
-import './ShareEntity.css';
+import './ShareEntity.scss';
 
 export default class ShareEntity extends React.Component {
   constructor(props) {

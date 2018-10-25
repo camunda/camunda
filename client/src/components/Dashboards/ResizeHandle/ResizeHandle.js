@@ -1,6 +1,6 @@
 import React from 'react';
 
-import './ResizeHandle.css';
+import './ResizeHandle.scss';
 import {snapInPosition, collidesWithReport, applyPlacement} from '../service';
 
 export default class ResizeHandle extends React.Component {

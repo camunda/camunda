@@ -1,6 +1,6 @@
 import React from 'react';
 
-import './ReportBlankSlate.css';
+import './ReportBlankSlate.scss';
 
 export default function ReportBlankSlate(props) {
   return (

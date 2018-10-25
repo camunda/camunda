@@ -2,7 +2,7 @@ import React from 'react';
 import {loadEntity} from 'services';
 import {TypeaheadMultipleSelection} from 'components';
 
-import './CombinedSelectionPanel.css';
+import './CombinedSelectionPanel.scss';
 
 export default class CombinedSelectionPanel extends React.Component {
   constructor(props) {

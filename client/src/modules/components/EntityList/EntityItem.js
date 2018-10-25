@@ -7,7 +7,7 @@ import {Link} from 'react-router-dom';
 import entityIcons from './entityIcons';
 import {formatters} from 'services';
 
-import './EntityItem.css';
+import './EntityItem.scss';
 
 export default class EntityItem extends React.Component {
   getEntityIcon = entity => {

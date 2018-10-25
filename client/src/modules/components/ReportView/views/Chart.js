@@ -7,7 +7,7 @@ import {formatters} from 'services';
 
 import {themed} from 'theme';
 
-import './Chart.css';
+import './Chart.scss';
 import {darkColors, lightColors} from './Chart.colors.js';
 
 const {convertToMilliseconds} = formatters;

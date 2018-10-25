@@ -3,6 +3,21 @@ import {mount} from 'enzyme';
 
 import ConfirmationModal from './ConfirmationModal';
 
+jest.mock('components', () => {
+  const Button = props => (
+    <button {...props} active={props.active ? 'true' : undefined}>
+      {props.children}
+    </button>
+  );
+
+  const Modal = ({onConfirm, ...props}) => <div {...props}>{props.children}</div>;
+  Modal.Header = props => <div>{props.children}</div>;
+  Modal.Content = props => <div>{props.children}</div>;
+  Modal.Actions = props => <div>{props.children}</div>;
+
+  return {Button, Modal};
+});
+
 it('should have a closed modal when open is false', () => {
   const props = {
     open: false,

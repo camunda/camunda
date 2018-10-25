@@ -13,7 +13,7 @@ import {
   Labeled
 } from 'components';
 import {formatters} from 'services';
-import './DateFilter.css';
+import './DateFilter.scss';
 
 export default class DateFilter extends React.Component {
   constructor(props) {

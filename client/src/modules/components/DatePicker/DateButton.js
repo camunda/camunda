@@ -1,7 +1,7 @@
 import React from 'react';
 import moment from 'moment';
 
-import './DateButton.css';
+import './DateButton.scss';
 
 import {Button} from 'components';
 

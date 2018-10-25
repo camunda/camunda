@@ -12,7 +12,7 @@ import entityIcons from './entityIcons';
 
 import EntityItem from './EntityItem';
 
-import './EntityList.css';
+import './EntityList.scss';
 
 class EntityList extends React.Component {
   constructor(props) {

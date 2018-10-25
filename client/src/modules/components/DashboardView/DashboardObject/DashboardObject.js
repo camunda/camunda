@@ -1,6 +1,6 @@
 import React from 'react';
 
-import './DashboardObject.css';
+import './DashboardObject.scss';
 
 export default function DashboardObject({
   x,

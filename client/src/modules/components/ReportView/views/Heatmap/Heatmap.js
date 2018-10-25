@@ -7,7 +7,7 @@ import {calculateTargetValueHeat} from './service';
 import {getRelativeValue} from '../service';
 import {formatters} from 'services';
 
-import './Heatmap.css';
+import './Heatmap.scss';
 
 const Heatmap = props => {
   const {xml} = props;

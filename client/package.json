@@ -16,6 +16,7 @@
     "moment": "^2.19.1",
     "object.values": "^1.0.4",
     "react": "16.3.1",
+    "react-app-polyfill": "^0.1.3",
     "react-date-range": "^0.9.4",
     "react-dom": "16.3.1",
     "react-full-screen": "^0.2.2",
@@ -26,24 +27,18 @@
   },
   "scripts": {
     "precommit": "lint-staged",
-    "build-css": "node-sass-chokidar --quiet --include-path ./src/shared-styles src/ -o src/",
-    "watch-css": "npm run build-css && node-sass-chokidar --include-path ./src/shared-styles src/ -o src/ --watch --recursive",
-    "start-js": "react-scripts start",
-    "start": "npm-run-all -p watch-css start-js",
-    "build-js": "react-scripts build",
-    "build": "npm-run-all build-css build-js",
-    "test": "react-scripts test --env=jsdom",
-    "test:ci": "CI=true react-scripts test --env=jsdom --maxWorkers=$LIMITS_CPU --ci --testResultsProcessor='jest-junit'",
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
+    "test:ci":
+      "CI=true react-scripts test --maxWorkers=$LIMITS_CPU --ci --testResultsProcessor='jest-junit'",
     "eject": "react-scripts eject",
     "postinstall": "node scripts/wireModules",
     "start-backend": "node scripts/start-backend",
     "dependencies": "node scripts/dependencies.js"
   },
   "lint-staged": {
-    "src/**/*.{js,scss}": [
-      "prettier --write",
-      "git add"
-    ]
+    "src/**/*.{js,scss}": ["prettier --write", "git add"]
   },
   "jest-junit": {
     "suiteName": "client",
@@ -57,9 +52,10 @@
     "ansi-html": "^0.0.7",
     "camunda-bpm-sdk-js": "camunda/camunda-bpm-sdk-js",
     "chalk": "^2.1.0",
-    "enzyme": "^3.1.0",
-    "enzyme-adapter-react-16": "^1.1.1",
+    "enzyme": "3.7.0",
+    "enzyme-adapter-react-16": "1.6.0",
     "eslint-plugin-prettier": "^2.6.0",
+    "http-proxy-middleware": "^0.19.0",
     "husky": "^0.14.3",
     "jest-enzyme": "^4.0.1",
     "jest-junit": "^5.0.0",
@@ -67,25 +63,15 @@
     "license-checker": "^14.0.0",
     "lint-staged": "^7.2.0",
     "mock-socket": "^7.1.0",
-    "node-sass-chokidar": "^0.0.3",
-    "npm-run-all": "^4.1.2",
+    "node-sass": "^4.9.4",
     "opn": "^5.4.0",
     "prettier": "1.11.1",
     "react-router": "^4.2.0",
-    "react-scripts": "1.1.4",
+    "react-scripts": "2.0.5",
     "request": "^2.83.0",
     "shelljs": "^0.7.8",
-    "svg-react-loader": "^0.4.5",
     "tarball-extract": "^0.0.6",
     "ws": "^6.1.0"
   },
-  "proxy": {
-    "/api": {
-      "target": "http://localhost:8090"
-    },
-    "/ws": {
-      "target": "ws://localhost:8090",
-      "ws": true
-    }
-  }
+  "browserslist": [">0.2%", "not dead", "not ie <= 11", "not op_mini all"]
 }

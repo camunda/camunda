@@ -5,7 +5,7 @@ import DateInput from './DateInput';
 import moment from 'moment';
 import {isDateValid} from './service';
 
-import './DateFields.css';
+import './DateFields.scss';
 
 export default class DateFields extends React.PureComponent {
   constructor(props) {

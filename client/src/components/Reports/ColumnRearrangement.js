@@ -3,7 +3,7 @@ import React from 'react';
 import {processRawData} from 'services';
 import {isRawDataReport} from './service';
 
-import './ColumnRearrangement.css';
+import './ColumnRearrangement.scss';
 
 export default {
   Wrapper: class ColumnRearrangement extends React.Component {

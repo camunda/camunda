@@ -6,7 +6,7 @@ import Viewer from 'bpmn-js/lib/Viewer';
 import {withErrorHandling} from 'HOC';
 import {themed} from 'theme';
 
-import './BPMNDiagram.css';
+import './BPMNDiagram.scss';
 import {LoadingIndicator} from 'components';
 
 const availableViewers = [];

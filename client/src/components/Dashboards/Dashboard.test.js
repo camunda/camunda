@@ -6,6 +6,68 @@ import {loadDashboard, remove, update, isAuthorizedToShareDashboard} from './ser
 
 const {WrappedComponent: Dashboard} = ThemedDashboard;
 
+console.error = jest.fn();
+
+jest.mock('components', () => {
+  const Button = props => (
+    <button {...props} active={props.active ? 'true' : undefined}>
+      {props.children}
+    </button>
+  );
+
+  const Dropdown = props => <div>{props.children}</div>;
+  Dropdown.Option = props => <Button {...props}>{props.children}</Button>;
+
+  return {
+    Button,
+    Input: props => (
+      <input
+        id={props.id}
+        readOnly={props.readOnly}
+        type={props.type}
+        onChange={props.onChange}
+        onBlur={props.onBlur}
+        value={props.value}
+        name={props.name}
+        className={props.className}
+      />
+    ),
+    ShareEntity: () => <div />,
+    DashboardView: ({children, reportAddons}) => (
+      <div className="DashboardView">
+        {children} Addons: {reportAddons}
+      </div>
+    ),
+    Icon: ({type}) => <span>Icon: {type}</span>,
+    Dropdown,
+    Popover: ({title, children}) => (
+      <div>
+        {title} {children}
+      </div>
+    ),
+    ErrorMessage: props => <div {...props}>{props.children}</div>,
+    ErrorPage: () => <div>{`error page`}</div>,
+    LoadingIndicator: props => (
+      <div className="sk-circle" {...props}>
+        Loading...
+      </div>
+    ),
+    ConfirmationModal: ({
+      onConfirm,
+      isVisible,
+      closeModal,
+      entityName,
+      confirmModal,
+      defaultOperation,
+      ...props
+    }) => (
+      <div className="ConfirmationModal" {...props}>
+        {props.children}
+      </div>
+    )
+  };
+});
+
 jest.mock('./service', () => {
   return {
     loadDashboard: jest.fn(),

@@ -18,7 +18,7 @@ import {
 } from 'components';
 import {formatters, numberParser} from 'services';
 
-import './DurationHeatmapModal.css';
+import './DurationHeatmapModal.scss';
 
 export default class DurationHeatmapModal extends React.Component {
   constructor(props) {

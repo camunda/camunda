@@ -2,7 +2,7 @@ import React from 'react';
 import classnames from 'classnames';
 import {Input, Button} from 'components';
 
-import './CopyToClipboard.css';
+import './CopyToClipboard.scss';
 
 export default class CopyToClipboard extends React.Component {
   copyText = event => {

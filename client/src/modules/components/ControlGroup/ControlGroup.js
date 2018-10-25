@@ -1,6 +1,6 @@
 import React from 'react';
 import classnames from 'classnames';
-import './ControlGroup.css';
+import './ControlGroup.scss';
 
 export default function ControlGroup(props) {
   return (

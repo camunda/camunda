@@ -2,7 +2,7 @@ import React from 'react';
 import classnames from 'classnames';
 import {Input, ErrorMessage} from 'components';
 
-import './DateInput.css';
+import './DateInput.scss';
 
 class DateInput extends React.PureComponent {
   render() {

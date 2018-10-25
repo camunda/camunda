@@ -1,6 +1,6 @@
 import React from 'react';
 import 'spinkit/css/spinners/8-circle.css';
-import './LoadingIndicator.css';
+import './LoadingIndicator.scss';
 import classnames from 'classnames';
 
 export default function LoadingIndicator(props) {

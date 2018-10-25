@@ -6,7 +6,7 @@ import {login} from './service';
 
 import {Logo, Message, Button, Input, Labeled} from 'components';
 
-import './Login.css';
+import './Login.scss';
 
 export default class Login extends React.Component {
   constructor(props) {

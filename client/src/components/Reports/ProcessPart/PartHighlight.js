@@ -2,7 +2,7 @@ import React from 'react';
 
 import {getDiagramElementsBetween} from 'services';
 
-import './PartHighlight.css';
+import './PartHighlight.scss';
 
 export default class PartHighlight extends React.Component {
   render() {

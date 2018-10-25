@@ -1,6 +1,6 @@
 import React from 'react';
 
-import './ClickBehavior.css';
+import './ClickBehavior.scss';
 
 export default class ClickBehavior extends React.Component {
   render() {

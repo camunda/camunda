@@ -4,7 +4,7 @@ import {Calendar} from 'react-date-range';
 import {adjustRange} from './service';
 import moment from 'moment';
 
-import './DateRange.css';
+import './DateRange.scss';
 
 const theme = {
   DayInRange: {

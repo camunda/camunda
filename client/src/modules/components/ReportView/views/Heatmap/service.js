@@ -1,5 +1,5 @@
 import HeatmapJS from 'heatmap.js';
-import './Tooltip.css';
+import './Tooltip.scss';
 import {formatters} from 'services';
 
 const {convertToMilliseconds} = formatters;

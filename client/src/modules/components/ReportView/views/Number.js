@@ -4,7 +4,7 @@ import ReportBlankSlate from '../ReportBlankSlate';
 import ProgressBar from './ProgressBar';
 import {formatters, isDurationValue} from 'services';
 
-import './Number.css';
+import './Number.scss';
 
 export default function Number({data, formatter, errorMessage, targetValue}) {
   if (isDurationValue(data)) {

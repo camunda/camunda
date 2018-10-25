@@ -7,7 +7,7 @@ import {isSingleNumber, isDurationHeatmap, isChart} from './service';
 import {ButtonGroup, Button} from 'components';
 import settingsIcon from './settings.svg';
 
-import './TargetValueComparison.css';
+import './TargetValueComparison.scss';
 
 export default class TargetValueComparison extends React.Component {
   constructor(props) {

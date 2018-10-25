@@ -1,7 +1,7 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import './ProgressBar.css';
+import './ProgressBar.scss';
 
 export default function ProgressBar({min, max, value, formatter}) {
   const relative = Math.min(1, Math.max(0, (value - min) / (max - min)));

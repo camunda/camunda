@@ -5,7 +5,7 @@ import {Dropdown} from 'components';
 import {DateFilter, VariableFilter, NodeFilter, DurationFilter} from './modals';
 
 import FilterList from './FilterList';
-import './Filter.css';
+import './Filter.scss';
 
 export default class Filter extends React.Component {
   constructor(props) {

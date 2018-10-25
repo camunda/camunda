@@ -4,7 +4,7 @@ import {Modal, Button, ButtonGroup, LabeledInput, Select, ErrorMessage} from 'co
 import classnames from 'classnames';
 
 import {isValidNumber} from '../service';
-import './ChartModal.css';
+import './ChartModal.scss';
 
 export default class ChartModal extends React.Component {
   state = {

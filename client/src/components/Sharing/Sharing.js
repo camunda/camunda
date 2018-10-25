@@ -1,6 +1,6 @@
 import React from 'react';
 
-import './Sharing.css';
+import './Sharing.scss';
 import {ReportView, DashboardView, Icon, Button, LoadingIndicator} from 'components';
 import {Link} from 'react-router-dom';
 import {evaluateEntity, createLoadReportCallback} from './service';

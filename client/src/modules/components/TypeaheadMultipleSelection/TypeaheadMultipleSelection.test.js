@@ -4,14 +4,6 @@ import TypeaheadMultipleSelection from './TypeaheadMultipleSelection';
 
 import {mount} from 'enzyme';
 
-jest.mock('services', () => {
-  return {
-    formatters: {
-      getHighlightedText: text => text
-    }
-  };
-});
-
 it('should still contain selected value after changing the filter', async () => {
   const allValues = ['asd', 'dhdf', 'fefwf', 'aaf', 'thdfhr'];
   const toggleValue = jest.fn();

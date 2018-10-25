@@ -1,7 +1,7 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import './Message.css';
+import './Message.scss';
 
 export default function Message({type, children}) {
   return (

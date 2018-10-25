@@ -15,10 +15,9 @@ import {emailNotificationIsEnabled} from './service';
 
 import ThresholdInput from './ThresholdInput';
 
-import './AlertModal.css';
+import './AlertModal.scss';
 
 import {formatters} from 'services';
-const {convertDurationToObject, convertDurationToSingleNumber} = formatters;
 
 const newAlert = {
   name: 'New Alert',
@@ -62,7 +61,7 @@ export default function AlertModal(reports) {
             ...alert,
             threshold:
               this.getReportType(alert.reportId) === 'duration'
-                ? convertDurationToObject(alert.threshold)
+                ? formatters.convertDurationToObject(alert.threshold)
                 : alert.threshold.toString(),
             checkInterval: {
               value: alert.checkInterval.value.toString(),
@@ -105,7 +104,7 @@ export default function AlertModal(reports) {
     confirm = () => {
       this.props.onConfirm({
         ...this.state,
-        threshold: convertDurationToSingleNumber(this.state.threshold)
+        threshold: formatters.convertDurationToSingleNumber(this.state.threshold)
       });
     };
 

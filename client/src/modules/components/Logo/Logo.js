@@ -1,7 +1,7 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import './Logo.css';
+import './Logo.scss';
 
 export default function Logo(props) {
   const svgProps = {};

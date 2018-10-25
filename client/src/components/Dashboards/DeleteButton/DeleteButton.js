@@ -2,7 +2,7 @@ import React from 'react';
 
 import {Button} from 'components';
 
-import './DeleteButton.css';
+import './DeleteButton.scss';
 
 export default function DeleteButton(props) {
   return (

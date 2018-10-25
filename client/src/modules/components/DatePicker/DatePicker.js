@@ -3,7 +3,7 @@ import moment from 'moment';
 
 import {ButtonGroup} from 'components';
 
-import './DatePicker.css';
+import './DatePicker.scss';
 
 import DateFields from './DateFields';
 import DateButton from './DateButton';

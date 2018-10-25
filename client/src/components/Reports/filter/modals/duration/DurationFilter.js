@@ -3,7 +3,7 @@ import React from 'react';
 import {Modal, Button, Input, Select, ErrorMessage, Message, Labeled} from 'components';
 import {numberParser} from 'services';
 
-import './DurationFilter.css';
+import './DurationFilter.scss';
 
 export default class DurationFilter extends React.Component {
   constructor(props) {

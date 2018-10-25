@@ -12,6 +12,59 @@ import {
 
 import {checkDeleteConflict} from 'services';
 
+console.error = jest.fn();
+
+jest.mock('components', () => {
+  return {
+    Button: props => (
+      <button {...props} active={props.active ? 'true' : undefined}>
+        {props.children}
+      </button>
+    ),
+    Input: props => (
+      <input
+        id={props.id}
+        readOnly={props.readOnly}
+        type={props.type}
+        onChange={props.onChange}
+        onBlur={props.onBlur}
+        value={props.value}
+        name={props.name}
+        className={props.className}
+      />
+    ),
+    ShareEntity: () => <div />,
+    ReportView: () => <div>ReportView</div>,
+    Popover: ({title, children}) => (
+      <div>
+        {title} {children}
+      </div>
+    ),
+    Icon: ({type}) => <span>Icon: {type}</span>,
+    ErrorMessage: props => <div {...props}>{props.children}</div>,
+    ErrorPage: () => <div>{`error page`}</div>,
+    LoadingIndicator: props => (
+      <div className="sk-circle" {...props}>
+        Loading...
+      </div>
+    ),
+    Message: ({type, children}) => <div className={'Message Message--' + type}>{children}</div>,
+    ConfirmationModal: ({
+      onConfirm,
+      isVisible,
+      closeModal,
+      entityName,
+      confirmModal,
+      defaultOperation,
+      ...props
+    }) => (
+      <div className="ConfirmationModal" {...props}>
+        {props.children}
+      </div>
+    )
+  };
+});
+
 jest.mock('./service', () => {
   return {
     loadSingleReport: jest.fn(),

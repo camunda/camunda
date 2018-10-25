@@ -1,7 +1,7 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import './Input.css';
+import './Input.scss';
 
 export default React.forwardRef(function Input(props, ref) {
   const allowedProps = {...props};

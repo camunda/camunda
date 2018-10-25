@@ -2,7 +2,7 @@ import React from 'react';
 import {Input, LoadingIndicator} from 'components';
 import {formatters} from 'services';
 
-import './TypeaheadMultipleSelection.css';
+import './TypeaheadMultipleSelection.scss';
 
 export default class TypeaheadMultipleSelection extends React.Component {
   state = {

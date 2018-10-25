@@ -7,7 +7,7 @@ import {Link} from 'react-router-dom';
 
 import {themed} from 'theme';
 
-import './OptimizeReport.css';
+import './OptimizeReport.scss';
 
 export default themed(
   class OptimizeReport extends React.Component {

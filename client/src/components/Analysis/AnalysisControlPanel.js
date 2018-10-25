@@ -6,7 +6,7 @@ import {extractProcessDefinitionName, getFlowNodeNames} from 'services';
 
 import {Filter} from '../Reports';
 
-import './AnalysisControlPanel.css';
+import './AnalysisControlPanel.scss';
 
 export default class AnalysisControlPanel extends React.Component {
   constructor(props) {

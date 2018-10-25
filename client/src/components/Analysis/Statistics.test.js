@@ -13,6 +13,12 @@ function flushPromises() {
   return new Promise(resolve => setImmediate(resolve));
 }
 
+jest.mock('components', () => {
+  return {
+    LoadingIndicator: () => <span>loading</span>
+  };
+});
+
 jest.mock('./service', () => {
   return {
     loadCorrelationData: jest.fn().mockReturnValue({

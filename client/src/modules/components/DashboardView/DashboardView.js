@@ -3,7 +3,7 @@ import React from 'react';
 import {DashboardReport} from './DashboardReport';
 import {DashboardObject} from './DashboardObject';
 
-import './DashboardView.css';
+import './DashboardView.scss';
 
 const columns = 18;
 const tileAspectRatio = 1;

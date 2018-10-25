@@ -1,7 +1,7 @@
 import React from 'react';
 import {Link} from 'react-router-dom';
 
-import './ErrorPage.css';
+import './ErrorPage.scss';
 
 const defaultMessage = 'Something went wrong.';
 const defaultDescription = (

@@ -1,6 +1,6 @@
 import React from 'react';
 
-import './TargetValueDiagramBehavior.css';
+import './TargetValueDiagramBehavior.scss';
 
 export default class TargetValueDiagramBehavior extends React.Component {
   render() {

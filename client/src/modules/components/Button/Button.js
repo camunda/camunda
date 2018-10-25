@@ -2,7 +2,7 @@ import React from 'react';
 import classnames from 'classnames';
 import {Link} from 'react-router-dom';
 
-import './Button.css';
+import './Button.scss';
 
 export default React.forwardRef(function Button(props, ref) {
   const filteredProps = {...props};

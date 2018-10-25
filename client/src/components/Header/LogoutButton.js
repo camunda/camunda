@@ -5,7 +5,7 @@ import {get} from 'request';
 import {withErrorHandling} from 'HOC';
 import {Button} from 'components';
 
-import './LogoutButton.css';
+import './LogoutButton.scss';
 
 export default withErrorHandling(
   class LogoutButton extends React.Component {

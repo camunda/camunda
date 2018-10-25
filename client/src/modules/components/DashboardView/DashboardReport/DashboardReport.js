@@ -3,7 +3,7 @@ import React from 'react';
 import ExternalReport from './ExternalReport';
 import OptimizeReport from './OptimizeReport';
 
-import './DashboardReport.css';
+import './DashboardReport.scss';
 
 export default function DashboardReport({
   report,

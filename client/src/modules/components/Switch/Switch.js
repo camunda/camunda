@@ -2,7 +2,7 @@ import React from 'react';
 import classnames from 'classnames';
 
 import {Input} from 'components';
-import './Switch.css';
+import './Switch.scss';
 
 export default function Switch(props) {
   return (

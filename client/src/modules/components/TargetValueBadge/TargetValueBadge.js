@@ -1,7 +1,7 @@
 import React from 'react';
 import {formatters} from 'services';
 
-import './TargetValueBadge.css';
+import './TargetValueBadge.scss';
 
 const badgeType = 'TARGET_VALUE_BADGE';
 

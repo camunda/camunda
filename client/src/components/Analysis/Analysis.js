@@ -8,7 +8,7 @@ import {loadProcessDefinitions} from 'services';
 import DiagramBehavior from './DiagramBehavior';
 import Statistics from './Statistics';
 
-import './Analysis.css';
+import './Analysis.scss';
 
 export default class Analysis extends React.Component {
   constructor(props) {

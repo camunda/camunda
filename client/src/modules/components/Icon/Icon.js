@@ -1,7 +1,7 @@
 import React from 'react';
 import classnames from 'classnames';
 
-import './Icon.css';
+import './Icon.scss';
 import icons from './icons';
 
 export default function Icon(props) {

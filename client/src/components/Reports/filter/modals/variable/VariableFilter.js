@@ -8,7 +8,7 @@ import {DateInput} from './date';
 
 import {loadVariables} from './service';
 
-import './VariableFilter.css';
+import './VariableFilter.scss';
 
 export default class VariableFilter extends React.Component {
   state = {

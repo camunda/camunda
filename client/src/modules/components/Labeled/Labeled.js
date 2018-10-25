@@ -1,7 +1,7 @@
 import React from 'react';
 
 import classnames from 'classnames';
-import './Labeled.css';
+import './Labeled.scss';
 
 export default function Labeled({label, className, children, ...props}) {
   return (

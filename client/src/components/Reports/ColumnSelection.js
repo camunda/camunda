@@ -4,7 +4,7 @@ import {Popover, Switch} from 'components';
 import {isRawDataReport} from './service';
 import {formatters} from 'services';
 
-import './ColumnSelection.css';
+import './ColumnSelection.scss';
 
 const {convertCamelToSpaces} = formatters;
 

@@ -1,21 +1,19 @@
-/* eslint import/no-webpack-loader-syntax: 0 */
-
-import alert from '-!svg-react-loader!./alert.svg';
-import alerts from '-!svg-react-loader!./alerts.svg';
-import dashboard from '-!svg-react-loader!./dashboard.svg';
-import dashboards from '-!svg-react-loader!./dashboards.svg';
-import CombinedReportBar from '-!svg-react-loader!./report-combined-bar-chart.svg';
-import reportBar from '-!svg-react-loader!./report-bar-chart.svg';
-import reportHeat from '-!svg-react-loader!./report-heatmap.svg';
-import CombinedReportLine from '-!svg-react-loader!./report-combined-line-chart.svg';
-import reportLine from '-!svg-react-loader!./report-line-chart.svg';
-import reportNumber from '-!svg-react-loader!./report-number.svg';
-import CombinedReportNumber from '-!svg-react-loader!./report-combined-number.svg';
-import reportPie from '-!svg-react-loader!./report-pie-chart.svg';
-import CombinedReportTable from '-!svg-react-loader!./report-combined-table.svg';
-import reportTable from '-!svg-react-loader!./report-table.svg';
-import reports from '-!svg-react-loader!./reports.svg';
-import reportEmpty from '-!svg-react-loader!./report-empty.svg';
+import {ReactComponent as alert} from './alert.svg';
+import {ReactComponent as alerts} from './alerts.svg';
+import {ReactComponent as dashboard} from './dashboard.svg';
+import {ReactComponent as dashboards} from './dashboards.svg';
+import {ReactComponent as CombinedReportBar} from './report-combined-bar-chart.svg';
+import {ReactComponent as reportBar} from './report-bar-chart.svg';
+import {ReactComponent as reportHeat} from './report-heatmap.svg';
+import {ReactComponent as CombinedReportLine} from './report-combined-line-chart.svg';
+import {ReactComponent as reportLine} from './report-line-chart.svg';
+import {ReactComponent as reportNumber} from './report-number.svg';
+import {ReactComponent as CombinedReportNumber} from './report-number.svg';
+import {ReactComponent as reportPie} from './report-pie-chart.svg';
+import {ReactComponent as CombinedReportTable} from './report-combined-table.svg';
+import {ReactComponent as reportTable} from './report-table.svg';
+import {ReactComponent as reports} from './reports.svg';
+import {ReactComponent as reportEmpty} from './report-empty.svg';
 
 const icons = {
   alert: {

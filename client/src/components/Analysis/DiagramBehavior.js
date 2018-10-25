@@ -2,7 +2,7 @@ import React from 'react';
 
 import {getDiagramElementsBetween} from 'services';
 
-import './DiagramBehavior.css';
+import './DiagramBehavior.scss';
 
 export default class DiagramBehavior extends React.Component {
   render() {

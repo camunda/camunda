@@ -4,7 +4,7 @@ import {LabeledInput, ErrorMessage} from 'components';
 
 import {isValidNumber} from '../service';
 
-import './NumberInputs.css';
+import './NumberInputs.scss';
 
 export default class NumberInputs extends React.Component {
   state = {

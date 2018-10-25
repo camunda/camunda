@@ -1,37 +1,33 @@
 import React from 'react';
-import {mount} from 'enzyme';
+import {shallow} from 'enzyme';
+
+import {Button} from 'components';
 
 import ActionItem from './ActionItem';
 
-jest.mock('components', () => {
-  return {
-    Button: props => <button {...props}>{props.children}</button>
-  };
-});
-
 it('should have an action button', () => {
-  const node = mount(<ActionItem />);
+  const node = shallow(<ActionItem />);
 
-  expect(node.find('button')).toBePresent();
+  expect(node.find(Button)).toBePresent();
 });
 
 it('should render child content', () => {
-  const node = mount(<ActionItem>Some child content</ActionItem>);
+  const node = shallow(<ActionItem>Some child content</ActionItem>);
 
   expect(node.find('span')).toIncludeText('Some child content');
 });
 
 it('should call the onClick handler', () => {
   const spy = jest.fn();
-  const node = mount(<ActionItem onClick={spy}>Content</ActionItem>);
+  const node = shallow(<ActionItem onClick={spy}>Content</ActionItem>);
 
-  node.find('button').simulate('click');
+  node.find(Button).simulate('click');
 
   expect(spy).toHaveBeenCalled();
 });
 
 it('should pass the disabled prop to the child-button', () => {
-  const node = mount(<ActionItem disabled />);
+  const node = shallow(<ActionItem disabled />);
 
-  expect(node.find('button')).toBeDisabled();
+  expect(node.find(Button)).toBeDisabled();
 });

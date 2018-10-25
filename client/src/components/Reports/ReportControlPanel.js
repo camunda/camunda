@@ -9,7 +9,7 @@ import {ProcessPart} from './ProcessPart';
 
 import {loadVariables} from './service';
 
-import './ReportControlPanel.css';
+import './ReportControlPanel.scss';
 
 const {view, groupBy, visualization, getLabelFor, isAllowed, getNext} = reportConfig;
 const groupByVariablePageSize = 5;

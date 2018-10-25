@@ -6,7 +6,7 @@ import classnames from 'classnames';
 
 import {loadValues} from './service';
 
-import './StringInput.css';
+import './StringInput.scss';
 
 const valuesToLoad = 10;
 

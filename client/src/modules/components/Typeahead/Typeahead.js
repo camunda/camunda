@@ -3,7 +3,7 @@ import classnames from 'classnames';
 import {Input, Dropdown} from 'components';
 import {formatters} from 'services';
 
-import './Typeahead.css';
+import './Typeahead.scss';
 
 const valuesShownInBox = 10;
 const valueHeight = 30;

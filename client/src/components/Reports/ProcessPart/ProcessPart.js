@@ -3,7 +3,7 @@ import {Button, Modal, BPMNDiagram, ClickBehavior, ActionItem, Message} from 'co
 
 import PartHighlight from './PartHighlight';
 
-import './ProcessPart.css';
+import './ProcessPart.scss';
 
 export default class ProcessPart extends React.Component {
   state = {

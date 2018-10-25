@@ -4,7 +4,7 @@ import AlertModal from './AlertModal';
 
 import {formatters, loadEntity} from 'services';
 
-import './Alerts.css';
+import './Alerts.scss';
 const {duration, frequency} = formatters;
 
 export default class Alerts extends React.Component {

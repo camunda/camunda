@@ -1,70 +1,19 @@
 import React from 'react';
-import {mount} from 'enzyme';
+import {shallow} from 'enzyme';
 
 import AlertModalFunc from './AlertModal';
-import {emailNotificationIsEnabled} from './service';
 
-import {formatters} from 'services';
+import ThresholdInput from './ThresholdInput';
 
-jest.mock('./service', () => {
-  return {
-    emailNotificationIsEnabled: jest.fn()
-  };
-});
+import * as services from 'services';
+import * as service from './service';
 
-jest.mock('./ThresholdInput', () => () => 'ThresholdInput');
+service.emailNotificationIsEnabled = jest.fn();
 
-jest.mock('components', () => {
-  const Modal = props => <div id="modal">{props.children}</div>;
-  Modal.Header = props => <div id="modal_header">{props.children}</div>;
-  Modal.Content = props => <div id="modal_content">{props.children}</div>;
-  Modal.Actions = props => <div id="modal_actions">{props.children}</div>;
-
-  const Select = props => {
-    const allowedProps = {...props};
-    delete allowedProps.isInvalid;
-    return <select {...allowedProps}>{props.children}</select>;
-  };
-  Select.Option = props => <option {...props}>{props.children}</option>;
-
-  const Typeahead = props => <div>Typeahead: {JSON.stringify(props)}</div>;
-
-  return {
-    Modal,
-    ErrorMessage: props => <div {...props}>{props.children}</div>,
-    Button: props => <button {...props}>{props.children}</button>,
-    Input: props => {
-      return <input {...props} />;
-    },
-    LabeledInput: props => {
-      const allowedProps = {...props};
-      delete allowedProps.isInvalid;
-      return (
-        <div {...allowedProps}>
-          <label> {allowedProps.label}</label>
-          <input />;
-        </div>
-      );
-    },
-    Labeled: props => (
-      <div>
-        <label id={props.id}>{props.label}</label>
-        {props.children}
-      </div>
-    ),
-    Select,
-    Typeahead
-  };
-});
-
-jest.mock('services', () => {
-  return {
-    formatters: {
-      convertDurationToSingleNumber: jest.fn().mockReturnValue(723),
-      convertDurationToObject: jest.fn().mockReturnValue({value: '14', unit: 'seconds'})
-    }
-  };
-});
+services.formatters = {
+  convertDurationToSingleNumber: jest.fn().mockReturnValue(723),
+  convertDurationToObject: jest.fn().mockReturnValue({value: '14', unit: 'seconds'})
+};
 
 const entity = {
   id: '71395',
@@ -94,7 +43,7 @@ const reports = [
 const AlertModal = AlertModalFunc(reports);
 
 it('should apply the alert property to the state when changing props', () => {
-  const node = mount(<AlertModal reports={reports} />);
+  const node = shallow(<AlertModal reports={reports} />);
 
   node.setProps({entity});
 
@@ -117,64 +66,64 @@ it('should apply the alert property to the state when changing props', () => {
 
 it('should call the onConfirm method', () => {
   const spy = jest.fn();
-  const node = mount(<AlertModal reports={reports} onConfirm={spy} />);
+  const node = shallow(<AlertModal reports={reports} onConfirm={spy} />);
 
   node.setProps({entity});
 
-  node.find('button[type="primary"]').simulate('click');
+  node.find({type: 'primary'}).simulate('click');
 
   expect(spy).toHaveBeenCalled();
 });
 
 it('should disable the submit button if the name is empty', () => {
-  const node = mount(<AlertModal reports={reports} />);
+  const node = shallow(<AlertModal reports={reports} />);
 
   node.setProps({entity});
-  node.setState({name: ''}, expect(node.find('button[type="primary"]')).toBeDisabled);
+  node.setState({name: ''});
+
+  expect(node.find({type: 'primary'})).toBeDisabled();
 });
 
 it('should disable the submit button if the email is not valid', () => {
-  const node = mount(<AlertModal reports={reports} />);
+  const node = shallow(<AlertModal reports={reports} />);
 
   node.setProps({entity});
-  node.setState(
-    {email: 'this is not a valid email'},
-    expect(node.find('button[type="primary"]')).toBeDisabled
-  );
+  node.setState({email: 'this is not a valid email'});
+  expect(node.find({type: 'primary'})).toBeDisabled();
 });
 
 it('should disable the submit button if no report is selected', () => {
-  const node = mount(<AlertModal reports={reports} />);
+  const node = shallow(<AlertModal reports={reports} />);
 
   node.setProps({entity});
-  node.setState({reportId: ''}, expect(node.find('button[type="primary"]')).toBeDisabled);
+  node.setState({reportId: ''});
+  expect(node.find({type: 'primary'})).toBeDisabled();
 });
 
 it('should disable the submit button if the threshold is not a number', () => {
-  const node = mount(<AlertModal reports={reports} />);
+  const node = shallow(<AlertModal reports={reports} />);
 
   node.setProps({entity});
-  node.setState({threshold: 'five'}, expect(node.find('button[type="primary"]')).toBeDisabled);
+  node.setState({threshold: 'five'});
+  expect(node.find({type: 'primary'})).toBeDisabled();
 });
 
 it('should disable the submit button if the check interval is negative', () => {
-  const node = mount(<AlertModal reports={reports} />);
+  const node = shallow(<AlertModal reports={reports} />);
 
   node.setProps({entity});
-  node.setState(
-    {
-      checkInterval: {
-        value: '-7',
-        unit: 'seconds'
-      }
-    },
-    expect(node.find('button[type="primary"]')).toBeDisabled
-  );
+  node.setState({
+    checkInterval: {
+      value: '-7',
+      unit: 'seconds'
+    }
+  });
+  expect(node.find({type: 'primary'})).toBeDisabled();
 });
 
 it('should show warning that email is not configured', async () => {
-  emailNotificationIsEnabled.mockReturnValue(false);
-  const node = await mount(<AlertModal reports={reports} />);
+  service.emailNotificationIsEnabled.mockReturnValue(false);
+  const node = await shallow(<AlertModal reports={reports} />);
   await node.update();
 
   expect(
@@ -183,8 +132,8 @@ it('should show warning that email is not configured', async () => {
 });
 
 it('should not display warning if email is configured', async () => {
-  emailNotificationIsEnabled.mockReturnValue(true);
-  const node = await mount(<AlertModal reports={reports} />);
+  service.emailNotificationIsEnabled.mockReturnValue(true);
+  const node = await shallow(<AlertModal reports={reports} />);
   await node.instance().componentDidMount();
   await node.update();
 
@@ -192,7 +141,7 @@ it('should not display warning if email is configured', async () => {
 });
 
 it('should set isInvalid property for input if value is invalid', async () => {
-  const node = await mount(<AlertModal reports={reports} />);
+  const node = await shallow(<AlertModal reports={reports} />);
   node.setState({name: ''});
   await node.update();
 
@@ -205,7 +154,7 @@ it('should set isInvalid property for input if value is invalid', async () => {
 });
 
 it('should convert a duration threshold when opening', async () => {
-  const node = await mount(<AlertModal reports={reports} />);
+  const node = await shallow(<AlertModal reports={reports} />);
 
   await node.instance().componentDidMount();
 
@@ -227,12 +176,12 @@ it('should convert a duration threshold when opening', async () => {
   });
 
   expect(node.state('threshold')).toEqual({value: '14', unit: 'seconds'});
-  expect(formatters.convertDurationToObject).toHaveBeenCalledWith('14000');
+  expect(services.formatters.convertDurationToObject).toHaveBeenCalledWith('14000');
 });
 
 it('should convert a duration threshold when confirming', async () => {
   const spy = jest.fn();
-  const node = await mount(<AlertModal reports={reports} onConfirm={spy} />);
+  const node = await shallow(<AlertModal reports={reports} onConfirm={spy} />);
   node.setState({threshold: {value: '723', unit: 'milliseconds'}});
 
   node.instance().confirm();
@@ -242,13 +191,13 @@ it('should convert a duration threshold when confirming', async () => {
 });
 
 it('should contain a threshold input', () => {
-  const node = mount(<AlertModal reports={reports} />);
+  const node = shallow(<AlertModal reports={reports} />);
 
-  expect(node).toIncludeText('ThresholdInput');
+  expect(node.find(ThresholdInput)).toBePresent();
 });
 
 it('should pass the selected report as initial value to the typeahead', () => {
-  const node = mount(<AlertModal reports={reports} entity={entity} />);
+  const node = shallow(<AlertModal reports={reports} entity={entity} />);
 
   expect(node.find('Typeahead').props().initialValue.name).toBe('Nice report');
 });

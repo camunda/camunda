@@ -5,14 +5,6 @@ import {Dropdown, Input} from 'components';
 
 import {mount} from 'enzyme';
 
-jest.mock('services', () => {
-  return {
-    formatters: {
-      getHighlightedText: text => text
-    }
-  };
-});
-
 it('should display available options if dropdown is open', () => {
   const node = mount(<Typeahead values={['foo', 'bar']} />);
 

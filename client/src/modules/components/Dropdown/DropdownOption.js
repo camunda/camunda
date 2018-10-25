@@ -1,6 +1,6 @@
 import React from 'react';
 import {Icon} from 'components';
-import './DropdownOption.css';
+import './DropdownOption.scss';
 import classnames from 'classnames';
 
 export default function DropdownOption({active, ...props}) {

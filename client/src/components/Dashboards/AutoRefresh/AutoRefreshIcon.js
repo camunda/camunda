@@ -2,7 +2,7 @@ import React from 'react';
 
 import {Icon} from 'components';
 
-import './AutoRefreshIcon.css';
+import './AutoRefreshIcon.scss';
 
 const imageSize = 16;
 const center = imageSize / 2;

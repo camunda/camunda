@@ -5,7 +5,7 @@ import {Select, BPMNDiagram, LoadingIndicator, Labeled} from 'components';
 
 import {loadProcessDefinitions} from 'services';
 
-import './ProcessDefinitionSelection.css';
+import './ProcessDefinitionSelection.scss';
 
 export default class ProcessDefinitionSelection extends React.Component {
   constructor(props) {

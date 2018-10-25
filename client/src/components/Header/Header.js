@@ -5,7 +5,7 @@ import {Logo} from 'components';
 import HeaderNav from './HeaderNav';
 import LogoutButton from './LogoutButton';
 
-import './Header.css';
+import './Header.scss';
 
 export default function Header({name}) {
   return (

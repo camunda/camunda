@@ -1,7 +1,9 @@
+import 'react-app-polyfill/ie11';
+
 import React from 'react';
 import ReactDOM from 'react-dom';
 
-import './style.css';
+import './style.scss';
 import 'polyfills';
 
 import App from './App';

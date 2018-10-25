@@ -1,4 +1,4 @@
-@import 'shared-styles.scss';
+@import 'shared-styles/shared-styles.scss';
 
 .bjs-container:not(.highlight-single-path) .analysis-part-highlight {
   @include diagram-highlight;

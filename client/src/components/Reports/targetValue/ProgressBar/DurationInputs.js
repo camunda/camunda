@@ -3,7 +3,7 @@ import React from 'react';
 import {LabeledInput, ErrorMessage, Select} from 'components';
 
 import {formatters, isDurationValue} from 'services';
-import './DurationInputs.css';
+import './DurationInputs.scss';
 
 const {convertDurationToSingleNumber} = formatters;
 

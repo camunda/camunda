@@ -14,7 +14,7 @@ import {
 
 import {loadEntity} from 'services';
 
-import './ReportModal.css';
+import './ReportModal.scss';
 
 export default class ReportModal extends React.Component {
   state = {

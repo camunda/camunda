@@ -37,7 +37,7 @@ import CombinedSelectionPanel from './CombinedSelectionPanel';
 import ColumnSelection from './ColumnSelection';
 import ColumnRearrangement from './ColumnRearrangement';
 
-import './Report.css';
+import './Report.scss';
 
 export default withErrorHandling(
   class Report extends React.Component {

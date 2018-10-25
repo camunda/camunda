@@ -2,7 +2,7 @@ import React from 'react';
 import classnames from 'classnames';
 import {Button} from 'components';
 
-import './ActionItem.css';
+import './ActionItem.scss';
 
 export default function ActionItem(props) {
   return (

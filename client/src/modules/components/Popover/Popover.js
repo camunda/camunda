@@ -3,7 +3,7 @@ import classnames from 'classnames';
 
 import {Button, Icon} from 'components';
 
-import './Popover.css';
+import './Popover.scss';
 
 export default class Popover extends React.Component {
   constructor(props) {

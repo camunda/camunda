@@ -1,7 +1,7 @@
 import React from 'react';
 import HeaderNavItem from './HeaderNavItem';
 
-import './HeaderNav.css';
+import './HeaderNav.scss';
 
 export default function HeaderNav(props) {
   return (

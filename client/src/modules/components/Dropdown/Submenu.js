@@ -5,7 +5,7 @@ import DropdownOption from './DropdownOption';
 
 import {Icon} from 'components';
 
-import './Submenu.css';
+import './Submenu.scss';
 
 export default class Submenu extends React.Component {
   onClick = evt => {
