@@ -1,7 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`Instance rendering should display a Header, DiagramPanel and Copyright 1`] = `
-<React.Fragment>
+<Fragment>
   <HeaderSharedState
     detail={
       <InstanceDetail
@@ -169,5 +169,5 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
       />
     </SplitPane>
   </styled.div>
-</React.Fragment>
+</Fragment>
 `;

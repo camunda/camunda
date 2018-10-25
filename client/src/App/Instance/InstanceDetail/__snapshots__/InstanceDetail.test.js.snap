@@ -1,7 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`InstanceDetail should render state icon and instance id 1`] = `
-<React.Fragment>
+<Fragment>
   <Themed(StateIcon)
     instance={
       Object {
@@ -11,5 +11,5 @@ exports[`InstanceDetail should render state icon and instance id 1`] = `
   />
    Instance 
   foo
-</React.Fragment>
+</Fragment>
 `;

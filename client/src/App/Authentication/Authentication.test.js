@@ -53,14 +53,15 @@ describe('Authentication', () => {
 
   it('should set forceRedirect to true on failed response', () => {
     // given
-    const setStateSpy = jest.spyOn(Authentication.prototype, 'setState');
+    // mock resetState so we can catch the forceRedirect change in state
+    node.instance().resetState = jest.fn();
 
     // when
     node.instance().interceptResponse({status: 401});
 
     // then
-    expect(setStateSpy.mock.calls[0][0]).toEqual({forceRedirect: true});
-    expect(setStateSpy.mock.calls[0][1]).toBe(node.instance().resetState);
+    expect(node.state().forceRedirect).toBe(true);
+    expect(node.instance().resetState).toBeCalled();
   });
 
   it('should reset falseRedirect to false when resetState is called', () => {

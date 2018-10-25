@@ -6,7 +6,9 @@ exports[`Pane bottom pane 'should render both ExpandButtons by default 1`] = `
   handleExpand={[MockFunction]}
   paneId="BOTTOM"
 >
-  <CollapsablePanelConsumer />
+  <CollapsablePanelConsumer>
+    <Component />
+  </CollapsablePanelConsumer>
   <Foo
     expandState="DEFAULT"
     key=".0"
@@ -35,7 +37,9 @@ exports[`Pane bottom pane should render ExpandButton with DOWN icon if pane is e
   handleExpand={[MockFunction]}
   paneId="BOTTOM"
 >
-  <CollapsablePanelConsumer />
+  <CollapsablePanelConsumer>
+    <Component />
+  </CollapsablePanelConsumer>
   <Foo
     expandState="EXPANDED"
     key=".0"
@@ -57,7 +61,9 @@ exports[`Pane bottom pane should render ExpandButton with UP icon if pane is col
   handleExpand={[MockFunction]}
   paneId="BOTTOM"
 >
-  <CollapsablePanelConsumer />
+  <CollapsablePanelConsumer>
+    <Component />
+  </CollapsablePanelConsumer>
   <Foo
     expandState="COLLAPSED"
     key=".0"
