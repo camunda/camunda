@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.system.configuration;
 
+import io.zeebe.util.Environment;
 import java.util.Collections;
 import java.util.List;
 import org.agrona.collections.IntArrayList;

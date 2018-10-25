@@ -67,6 +67,13 @@
                 <commandLineArgument>conf/zeebe.cfg.toml</commandLineArgument>
               </commandLineArguments>
             </program>
+            <program>
+              <mainClass>io.zeebe.gateway.StandaloneGateway</mainClass>
+              <id>gateway</id>
+              <commandLineArguments>
+                <commandLineArgument>conf/gateway.cfg.toml</commandLineArgument>
+              </commandLineArguments>
+            </program>
           </programs>
         </configuration>
         <executions>

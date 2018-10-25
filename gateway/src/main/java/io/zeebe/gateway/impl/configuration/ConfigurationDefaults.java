@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.util;
+package io.zeebe.gateway.impl.configuration;
 
-import org.slf4j.Logger;
+public class ConfigurationDefaults {
 
-public class Loggers {
-
-  public static final Logger CONFIG_LOGGER = new ZbLogger("io.zeebe.util.config");
-  public static final Logger ACTOR_LOGGER = new ZbLogger("io.zeebe.util.actor");
-  public static final Logger IO_LOGGER = new ZbLogger("io.zeebe.util.buffer");
-  public static final Logger FILE_LOGGER = new ZbLogger("io.zeebe.util.fs");
+  public static final String DEFAULT_HOST = "0.0.0.0";
+  public static final int DEFAULT_PORT = 26500;
+  public static final String DEFAULT_CONTACT_POINT_HOST = "127.0.0.1";
+  public static final int DEFAULT_CONTACT_POINT_PORT = 26501;
+  public static final String DEFAULT_TRANSPORT_BUFFER_SIZE = "2M";
+  public static final int DEFAULT_MANAGEMENT_THREADS = 1;
 }

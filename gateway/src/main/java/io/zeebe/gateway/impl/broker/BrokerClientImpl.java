@@ -43,13 +43,6 @@ import org.slf4j.Logger;
 public class BrokerClientImpl implements BrokerClient {
   public static final Logger LOG = Loggers.BROKER_CLIENT_LOGGER;
 
-  public static final String VERSION;
-
-  static {
-    final String version = BrokerClientImpl.class.getPackage().getImplementationVersion();
-    VERSION = version != null ? version : "development";
-  }
-
   protected final ZeebeClientConfiguration configuration;
   protected final ActorScheduler actorScheduler;
   private final Dispatcher dataFrameReceiveBuffer;
@@ -73,15 +66,14 @@ public class BrokerClientImpl implements BrokerClient {
             .setCpuBoundActorThreadCount(configuration.getNumManagementThreads())
             .setIoBoundActorThreadCount(0)
             .setActorClock(actorClock)
-            .setSchedulerName("client")
+            .setSchedulerName("gateway")
             .build();
     this.actorScheduler.start();
 
     final ByteValue sendBufferSize = ByteValue.ofMegabytes(configuration.getSendBufferSize());
-    final long requestBlockTimeMs = configuration.getRequestBlocktime().toMillis();
 
     dataFrameReceiveBuffer =
-        Dispatchers.create("receive-buffer")
+        Dispatchers.create("gateway-receive-buffer")
             .bufferSize(sendBufferSize)
             .modePubSub()
             .frameMaxLength(1024 * 1024)

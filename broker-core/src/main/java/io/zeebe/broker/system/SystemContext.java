@@ -23,9 +23,9 @@ import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.SocketBindingCfg;
 import io.zeebe.broker.system.configuration.ThreadsCfg;
-import io.zeebe.broker.system.configuration.TomlConfigurationReader;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.impl.ServiceContainerImpl;
+import io.zeebe.util.TomlConfigurationReader;
 import io.zeebe.util.metrics.MetricsManager;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ActorClock;
@@ -75,14 +75,14 @@ public class SystemContext implements AutoCloseable {
           Paths.get(basePath, configFileLocation).normalize().toAbsolutePath().toString();
     }
 
-    brokerCfg = TomlConfigurationReader.read(configFileLocation);
+    brokerCfg = TomlConfigurationReader.read(configFileLocation, BrokerCfg.class);
 
     initSystemContext(clock, basePath);
   }
 
   public SystemContext(
       final InputStream configStream, final String basePath, final ActorClock clock) {
-    brokerCfg = TomlConfigurationReader.read(configStream);
+    brokerCfg = TomlConfigurationReader.read(configStream, BrokerCfg.class);
 
     initSystemContext(clock, basePath);
   }

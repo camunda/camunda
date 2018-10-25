@@ -13,14 +13,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.util;
+package io.zeebe.gateway.impl.configuration;
 
-import org.slf4j.Logger;
+public class EnvironmentConstants {
 
-public class Loggers {
-
-  public static final Logger CONFIG_LOGGER = new ZbLogger("io.zeebe.util.config");
-  public static final Logger ACTOR_LOGGER = new ZbLogger("io.zeebe.util.actor");
-  public static final Logger IO_LOGGER = new ZbLogger("io.zeebe.util.buffer");
-  public static final Logger FILE_LOGGER = new ZbLogger("io.zeebe.util.fs");
+  public static final String ENV_GATEWAY_HOST = "ZEEBE_GATEWAY_HOST";
+  public static final String ENV_GATEWAY_PORT = "ZEEBE_GATEWAY_PORT";
+  public static final String ENV_GATEWAY_CONTACT_POINT = "ZEEBE_GATEWAY_CONTACT_POINT";
+  public static final String ENV_GATEWAY_TRANSPORT_BUFFER = "ZEEBE_GATEWAY_TRANSPORT_BUFFER";
+  public static final String ENV_GATEWAY_MANAGEMENT_THREADS = "ZEEBE_GATEWAY_MANAGEMENT_THREADS";
 }

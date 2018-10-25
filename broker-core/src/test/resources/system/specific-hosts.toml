@@ -1,4 +1,4 @@
-[network.gateway]
+[gateway.network]
 host = "gatewayHost"
 
 [network.client]

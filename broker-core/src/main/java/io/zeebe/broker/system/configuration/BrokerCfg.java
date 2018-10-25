@@ -20,6 +20,7 @@ package io.zeebe.broker.system.configuration;
 import com.google.gson.GsonBuilder;
 import io.zeebe.gossip.GossipConfiguration;
 import io.zeebe.raft.RaftConfiguration;
+import io.zeebe.util.Environment;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,6 +34,7 @@ public class BrokerCfg {
   private GossipConfiguration gossip = new GossipConfiguration();
   private RaftConfiguration raft = new RaftConfiguration();
   private List<ExporterCfg> exporters = new ArrayList<>();
+  private EmbeddedGatewayCfg gateway = new EmbeddedGatewayCfg();
 
   public void init(final String brokerBase) {
     init(brokerBase, new Environment());
@@ -45,6 +47,7 @@ public class BrokerCfg {
     metrics.init(this, brokerBase, environment);
     data.init(this, brokerBase, environment);
     exporters.forEach(e -> e.init(this, brokerBase, environment));
+    gateway.init(this, brokerBase, environment);
   }
 
   public NetworkCfg getNetwork() {
@@ -111,6 +114,15 @@ public class BrokerCfg {
     this.exporters = exporters;
   }
 
+  public EmbeddedGatewayCfg getGateway() {
+    return gateway;
+  }
+
+  public BrokerCfg setGateway(EmbeddedGatewayCfg gateway) {
+    this.gateway = gateway;
+    return this;
+  }
+
   @Override
   public String toString() {
     return "BrokerCfg{"
@@ -130,6 +142,8 @@ public class BrokerCfg {
         + raft
         + ", exporters="
         + exporters
+        + ", gateway="
+        + gateway
         + '}';
   }
 
