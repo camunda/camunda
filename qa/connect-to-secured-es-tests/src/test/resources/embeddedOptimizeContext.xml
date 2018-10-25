@@ -33,7 +33,7 @@
 
   <bean id="tokenService"  class="org.camunda.optimize.test.it.factory.SpyTokenServiceFactory"/>
 
-  <bean id="transportClient"  class="org.camunda.optimize.test.it.factory.SpyTransportClientFactory"/>
+  <bean id="transportClient"  class="org.camunda.optimize.service.es.TransportClientFactory"/>
 
   <bean id="objectMapper"
         class="com.fasterxml.jackson.databind.ObjectMapper"
