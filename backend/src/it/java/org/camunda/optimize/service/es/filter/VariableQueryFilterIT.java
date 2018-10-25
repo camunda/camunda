@@ -6,7 +6,11 @@ import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.FilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.*;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.BooleanVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.DateVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.LongVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.OperatorMultipleValuesVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.StringVariableFilterDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.raw.RawDataSingleReportResultDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -17,8 +21,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.time.OffsetDateTime;
@@ -29,8 +31,16 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.*;
-import static org.camunda.optimize.service.util.VariableHelper.*;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.GREATER_THAN;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.GREATER_THAN_EQUALS;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.IN;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LESS_THAN;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LESS_THAN_EQUALS;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.NOT_IN;
+import static org.camunda.optimize.service.util.VariableHelper.DOUBLE_TYPE;
+import static org.camunda.optimize.service.util.VariableHelper.INTEGER_TYPE;
+import static org.camunda.optimize.service.util.VariableHelper.LONG_TYPE;
+import static org.camunda.optimize.service.util.VariableHelper.SHORT_TYPE;
 import static org.camunda.optimize.test.util.ReportDataHelper.createReportDataViewRawAsTable;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -611,45 +621,48 @@ public class VariableQueryFilterIT {
   }
 
   @Test
-  public void dateLessThanVariableFilter() throws Exception {
+  public void dateLessThanOrEqualVariableFilter() throws Exception {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
-    variables.put("var", nowDateMinusSeconds(2));
+    final OffsetDateTime now = nowDate();
+    variables.put("var", now.minusSeconds(2));
     engineRule.startProcessInstance(processDefinition.getId(), variables);
-    variables.put("var", nowDateMinusSeconds(1));
+    variables.put("var", now.minusSeconds(1));
     engineRule.startProcessInstance(processDefinition.getId(), variables);
-    variables.put("var", nowDatePlus10Seconds());
+    variables.put("var", now);
+    engineRule.startProcessInstance(processDefinition.getId(), variables);
+    variables.put("var", now.plusSeconds(10));
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    VariableFilterDto filter = VariableFilterUtilHelper.createDateVariableFilter("var", null, OffsetDateTime.now());
+    VariableFilterDto filter = VariableFilterUtilHelper.createDateVariableFilter("var", null, now);
     RawDataSingleReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
-    assertResults(result, 2);
+    assertResults(result, 3);
   }
 
   @Test
-  public void dateGreaterThanVariableFilter() throws Exception {
+  public void dateGreaterOrEqualThanVariableFilter() throws Exception {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
-    variables.put("var", nowDate());
+    final OffsetDateTime now = nowDate();
+    variables.put("var", now);
     engineRule.startProcessInstance(processDefinition.getId(), variables);
-    OffsetDateTime nowMinusTwoSeconds = nowDateMinusSeconds(2);
-    variables.put("var", nowMinusTwoSeconds);
+    variables.put("var", now.minusSeconds(2));
     engineRule.startProcessInstance(processDefinition.getId(), variables);
-    variables.put("var", nowDatePlus10Seconds());
+    variables.put("var", now.plusSeconds(10));
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
     VariableFilterDto filter =
-        VariableFilterUtilHelper.createDateVariableFilter("var", OffsetDateTime.now().minusSeconds(2L), null);
+        VariableFilterUtilHelper.createDateVariableFilter("var", now.minusSeconds(1), null);
     RawDataSingleReportResultDto result = evaluateReportWithFilter(processDefinition, filter);
 
     // then
@@ -659,14 +672,14 @@ public class VariableQueryFilterIT {
   @Test
   public void dateEqualVariableFilter() throws Exception {
     // given
-    OffsetDateTime now = nowDate();
+    final OffsetDateTime now = nowDate();
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", now);
     engineRule.startProcessInstance(processDefinition.getId(), variables);
-    variables.put("var", nowDateMinusSeconds(2));
+    variables.put("var", now.minusSeconds(2));
     engineRule.startProcessInstance(processDefinition.getId(), variables);
-    variables.put("var", nowDatePlus10Seconds());
+    variables.put("var", now.plusSeconds(10));
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -683,12 +696,11 @@ public class VariableQueryFilterIT {
   public void dateWithinRangeVariableFilter() throws Exception {
     // given
     ProcessDefinitionEngineDto processDefinition = deploySimpleProcessDefinition();
-    OffsetDateTime now = OffsetDateTime.now();
-    OffsetDateTime nowMinus2Seconds = nowDateMinusSeconds(2);
+    OffsetDateTime now = nowDate();
     Map<String, Object> variables = new HashMap<>();
-    variables.put("var", nowDate());
+    variables.put("var", now);
     engineRule.startProcessInstance(processDefinition.getId(), variables);
-    variables.put("var", nowMinus2Seconds);
+    variables.put("var", now.minusSeconds(2));
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
@@ -710,9 +722,9 @@ public class VariableQueryFilterIT {
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", now);
     engineRule.startProcessInstance(processDefinition.getId(), variables);
-    variables.put("var", nowDateMinusSeconds(2));
+    variables.put("var", now.minusSeconds(2));
     engineRule.startProcessInstance(processDefinition.getId(), variables);
-    variables.put("var", nowDatePlus10Seconds());
+    variables.put("var", now.plusSeconds(10));
     engineRule.startProcessInstance(processDefinition.getId(), variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -796,15 +808,6 @@ public class VariableQueryFilterIT {
 
   private OffsetDateTime nowDate() {
     return OffsetDateTime.now();
-  }
-
-
-  private OffsetDateTime nowDateMinusSeconds(int nSeconds) {
-    return OffsetDateTime.now().minusSeconds(nSeconds);
-  }
-
-  private OffsetDateTime nowDatePlus10Seconds() {
-    return OffsetDateTime.now().plusSeconds(10);
   }
 
   private VariableFilterDto createNumericVariableFilter(String operator, String variableName, String variableType, String variableValue) {
