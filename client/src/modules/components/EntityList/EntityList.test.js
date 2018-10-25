@@ -249,7 +249,7 @@ it('should open confirm modal on delete button click', async () => {
   });
   await node.update();
 
-  expect(node.find('ConfirmationModal').props().isVisible).toBe(true);
+  expect(node.find('ConfirmationModal').props().open).toBe(true);
 });
 
 it('should set conflict state on delete button click when conflict exists', async () => {

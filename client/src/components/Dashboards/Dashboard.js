@@ -391,15 +391,12 @@ export default themed(
                   </Dropdown>
                 </div>
               </div>
-              {confirmModalVisible && (
-                <ConfirmationModal
-                  isVisible={confirmModalVisible}
-                  closeModal={this.closeConfirmModal}
-                  entityName={name}
-                  confirmModal={this.deleteDashboard}
-                  defaultOperation="Delete"
-                />
-              )}
+              <ConfirmationModal
+                open={confirmModalVisible}
+                onClose={this.closeConfirmModal}
+                onConfirm={this.deleteDashboard}
+                entityName={name}
+              />
               <DashboardView
                 loadReport={loadReport}
                 reports={this.state.reports}

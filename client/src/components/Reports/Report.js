@@ -257,32 +257,38 @@ export default withErrorHandling(
     };
 
     save = async evt => {
-      const response = await saveReport(
-        this.id,
-        {
-          name: this.state.name,
-          data: this.state.data,
-          reportType: this.state.reportType
+      await this.props.mightFail(
+        saveReport(
+          this.id,
+          {
+            name: this.state.name,
+            data: this.state.data,
+            reportType: this.state.reportType
+          },
+          this.state.conflict !== null
+        ),
+        () => {
+          this.setState({
+            confirmModalVisible: false,
+            originalData: {...this.state.data},
+            originalName: this.state.name,
+            redirectToReport: !!evt,
+            conflict: null
+          });
         },
-        this.state.conflict !== null
-      );
-      if (response && response.conflictedItems) {
-        this.setState({
-          confirmModalVisible: true,
-          conflict: {
-            type: 'Save',
-            items: response.conflictedItems
+        async error => {
+          if (error.statusText === 'Conflict') {
+            const conflictData = await error.json();
+            this.setState({
+              confirmModalVisible: true,
+              conflict: {
+                type: 'Save',
+                items: conflictData.conflictedItems
+              }
+            });
           }
-        });
-      } else {
-        this.setState({
-          confirmModalVisible: false,
-          originalData: {...this.state.data},
-          originalName: this.state.name,
-          redirectToReport: evt,
-          conflict: null
-        });
-      }
+        }
+      );
     };
 
     cancel = async () => {
@@ -540,7 +546,6 @@ export default withErrorHandling(
               <Link
                 className="Report__tool-button Report__edit-button"
                 to={`/report/${this.id}/edit`}
-                onClick={() => this.setState({redirectToReport: false})}
               >
                 <Button>
                   <Icon type="edit" />
@@ -594,6 +599,7 @@ export default withErrorHandling(
     };
 
     componentDidUpdate() {
+      if (this.state.redirectToReport) this.setState({redirectToReport: false});
       if (this.nameInput && this.isNew) {
         this.nameInput.focus();
         this.nameInput.select();
@@ -620,16 +626,13 @@ export default withErrorHandling(
 
       return (
         <div className="Report-container">
-          {confirmModalVisible && (
-            <ConfirmationModal
-              isVisible={confirmModalVisible}
-              closeModal={this.closeConfirmModal}
-              conflict={conflict}
-              entityName={name}
-              confirmModal={conflict && conflict.type === 'Save' ? this.save : this.deleteReport}
-              defaultOperation="Delete"
-            />
-          )}
+          <ConfirmationModal
+            open={confirmModalVisible}
+            onClose={this.closeConfirmModal}
+            onConfirm={conflict && conflict.type === 'Save' ? this.save : this.deleteReport}
+            conflict={conflict}
+            entityName={name}
+          />
           {viewMode === 'edit' ? this.renderEditMode() : this.renderViewMode()}
         </div>
       );

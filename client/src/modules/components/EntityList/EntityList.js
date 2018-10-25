@@ -113,19 +113,16 @@ class EntityList extends React.Component {
 
   showDeleteModal = async ({id, name}) => {
     const response = await checkDeleteConflict(id, this.props.api);
-    let newState = {
+    const newState = {
       confirmModalVisible: true,
       deleteModalEntity: {id, name},
       conflict: null
     };
 
     if (response && response.conflictedItems && response.conflictedItems.length) {
-      newState = {
-        ...newState,
-        conflict: {
-          type: 'Delete',
-          items: response.conflictedItems
-        }
+      newState.conflict = {
+        type: 'Delete',
+        items: response.conflictedItems
       };
     }
 
@@ -252,12 +249,11 @@ class EntityList extends React.Component {
         {header}
         {list}
         <ConfirmationModal
-          isVisible={confirmModalVisible}
+          open={confirmModalVisible}
+          onClose={this.closeConfirmModal}
+          onConfirm={this.deleteEntity}
           entityName={deleteModalEntity.name}
-          confirmModal={this.deleteEntity}
-          closeModal={this.closeConfirmModal}
           conflict={this.state.conflict}
-          defaultOperation="Delete"
         />
         {this.state.editEntity && (
           <ContentPanel

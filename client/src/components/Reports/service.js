@@ -50,8 +50,7 @@ export async function getReportData(query, reportType) {
 }
 
 export async function saveReport(id, data, forceUpdate) {
-  const response = await put(`api/report/${id}?force=${forceUpdate}`, data);
-  return response.status === 204 ? response : await response.json();
+  return await put(`api/report/${id}?force=${forceUpdate}`, data);
 }
 
 export async function shareReport(reportId) {

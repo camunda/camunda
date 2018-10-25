@@ -676,7 +676,11 @@ describe('edit mode', async () => {
   it('should set conflict state when conflict happens on save button click', async () => {
     props.match.params.viewMode = 'edit';
     const conflictedItems = [{id: '1', name: 'alert', type: 'Alert'}];
-    saveReport.mockReturnValue({conflictedItems});
+    saveReport.mockImplementation(async () => {
+      const error = {statusText: 'Conflict', json: async () => ({conflictedItems})};
+      throw error;
+    });
+
     const node = mount(shallow(<Report {...props} />).get(0));
     node.setState({
       loaded: true,
@@ -685,6 +689,7 @@ describe('edit mode', async () => {
     });
 
     await node.find('.Report__save-button').simulate('click');
+    await node.update();
 
     expect(node.state().conflict.type).toEqual('Save');
     expect(node.state().conflict.items).toEqual(conflictedItems);

@@ -3,11 +3,12 @@ import React from 'react';
 import {Button, Modal} from 'components';
 
 export default function ConfirmationModal(props) {
-  const {isVisible, entityName, confirmModal, closeModal, conflict, defaultOperation} = props;
+  const {entityName, conflict, ...modalProps} = props;
+  const operation = conflict ? conflict.type : 'Delete';
   return (
-    <Modal open={isVisible} onClose={closeModal} onConfirm={confirmModal}>
+    <Modal {...modalProps}>
       <Modal.Header>
-        {conflict ? conflict.type : defaultOperation} {entityName}
+        {operation} {entityName}
       </Modal.Header>
       <Modal.Content>
         {conflict && (
@@ -19,7 +20,7 @@ export default function ConfirmationModal(props) {
             {conflict.items.map(item => (
               <li key={item.id}>
                 {item.type === 'alert'
-                  ? `"${item.name}" will be deleted from ${item.type}s`
+                  ? `"${item.name}" will be deleted from alerts`
                   : `"${entityName}" will also be removed from the ${item.type.replace(
                       '_',
                       ' '
@@ -32,11 +33,11 @@ export default function ConfirmationModal(props) {
         <p>Are you sure you want to proceed?</p>
       </Modal.Content>
       <Modal.Actions>
-        <Button className="CloseModalButton" onClick={closeModal}>
+        <Button className="close" onClick={modalProps.onClose}>
           Close
         </Button>
-        <Button type="primary" color="red" className="ConfirmModalButton" onClick={confirmModal}>
-          {conflict ? conflict.type : defaultOperation}
+        <Button type="primary" color="red" className="confirm" onClick={modalProps.onConfirm}>
+          {operation}
         </Button>
       </Modal.Actions>
     </Modal>

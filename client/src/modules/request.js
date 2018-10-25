@@ -65,7 +65,7 @@ export async function request({url, method, body, query, headers}) {
     response = await fct(response);
   });
 
-  if ((response.status >= 200 && response.status < 300) || response.status === 409) {
+  if (response.status >= 200 && response.status < 300) {
     return response;
   } else {
     throw response;

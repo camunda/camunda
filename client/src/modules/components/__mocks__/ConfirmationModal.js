@@ -1,14 +1,6 @@
 import React from 'react';
 
-const ConfirmationModal = ({
-  onConfirm,
-  isVisible,
-  closeModal,
-  entityName,
-  confirmModal,
-  defaultOperation,
-  ...props
-}) => (
+const ConfirmationModal = ({onConfirm, open, onClose, entityName, ...props}) => (
   <div className="ConfirmationModal" {...props}>
     {props.children}
   </div>
