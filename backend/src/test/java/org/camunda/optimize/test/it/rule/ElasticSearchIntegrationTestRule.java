@@ -10,9 +10,6 @@ import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.service.util.CustomDeserializer;
 import org.camunda.optimize.service.util.CustomSerializer;
 import org.camunda.optimize.test.util.PropertyUtil;
-import org.elasticsearch.action.ActionFuture;
-import org.elasticsearch.action.admin.cluster.settings.ClusterUpdateSettingsRequest;
-import org.elasticsearch.action.admin.cluster.settings.ClusterUpdateSettingsResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.Client;
@@ -31,7 +28,11 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import java.net.InetAddress;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
 import static org.hamcrest.CoreMatchers.is;
@@ -250,28 +251,6 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   public String getOptimizeIndex(String type) {
     String original = this.getOptimizeIndex() + "-" + type;
     return original.toLowerCase();
-  }
-
-  public void setDiskWatermarks(String low, String high, String flood_stage) throws InterruptedException {
-    ClusterUpdateSettingsRequest request = new ClusterUpdateSettingsRequest();
-
-    request.transientSettings("{\n" +
-            "    \"cluster.routing.allocation.disk.watermark.low\": \""+ low +"%\",\n" +
-            "    \"cluster.routing.allocation.disk.watermark.high\": \"" + high + "%\",\n" +
-            "    \"cluster.routing.allocation.disk.watermark.flood_stage\": \""+ flood_stage +"%\",\n" +
-            "    \"cluster.info.update.interval\": \"10s\"" +
-            "  }", XContentType.JSON);
-
-    esclient.admin().cluster().updateSettings(request);
-
-    //wait until the indexes are updated according to changes (10s is the minimal update interval)
-    Thread.sleep(10000);
-  }
-
-  public void disableReadOnlyForAllIndexes() {
-    esclient.admin().indices().prepareUpdateSettings("_all")
-            .setSettings("{\"index.blocks.read_only_allow_delete\":null}", XContentType.JSON)
-            .get();
   }
 
   public String getProcessDefinitionType() {

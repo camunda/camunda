@@ -1,7 +1,6 @@
 package org.camunda.optimize.rest.providers;
 
 import org.camunda.optimize.dto.optimize.rest.ErrorResponseDto;
-import org.elasticsearch.cluster.block.ClusterBlockException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,9 +17,11 @@ public class GenericExceptionMapper implements ExceptionMapper<Throwable> {
   private final Logger logger = LoggerFactory.getLogger(getClass());
 
   private static Response buildGenericErrorResponse(Throwable e) {
-    return Response
+    final Response response = Response
       .status(getStatusForError(e))
       .entity(new ErrorResponseDto(e.getMessage())).build();
+
+    return response;
   }
 
   private static Response.Status getStatusForError(Throwable e) {
