@@ -15,10 +15,12 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.processor.catchevent;
+package io.zeebe.broker.workflow.processor.message;
 
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 
+import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.workflow.model.element.ExecutableMessage;
 import io.zeebe.broker.workflow.model.element.ExecutableMessageCatchElement;
@@ -33,7 +35,7 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceReco
 import io.zeebe.util.sched.clock.ActorClock;
 import org.agrona.DirectBuffer;
 
-public class SubscribeMessageHandler implements BpmnStepHandler<ExecutableMessageCatchElement> {
+public class MessageCatchElementHandler implements BpmnStepHandler<ExecutableMessageCatchElement> {
 
   private final MsgPackQueryProcessor queryProcessor = new MsgPackQueryProcessor();
   private final WorkflowState workflowState;
@@ -45,7 +47,7 @@ public class SubscribeMessageHandler implements BpmnStepHandler<ExecutableMessag
 
   private final SubscriptionCommandSender subscriptionCommandSender;
 
-  public SubscribeMessageHandler(
+  public MessageCatchElementHandler(
       final SubscriptionCommandSender subscriptionCommandSender,
       final WorkflowState workflowState) {
     this.subscriptionCommandSender = subscriptionCommandSender;
@@ -59,17 +61,20 @@ public class SubscribeMessageHandler implements BpmnStepHandler<ExecutableMessag
     this.activityInstanceKey = context.getRecord().getKey();
     this.message = context.getElement().getMessage();
 
-    extractedCorrelationKey = extractCorrelationKey();
-    context.getSideEffect().accept(this::openMessageSubscription);
+    extractedCorrelationKey = extractCorrelationKey(context);
 
-    final WorkflowSubscription subscription =
-        new WorkflowSubscription(
-            workflowInstance.getWorkflowInstanceKey(),
-            activityInstanceKey,
-            cloneBuffer(message.getMessageName()),
-            cloneBuffer(extractedCorrelationKey));
-    subscription.setCommandSentTime(ActorClock.currentTimeMillis());
-    workflowState.put(subscription);
+    if (extractedCorrelationKey != null) {
+      context.getSideEffect().accept(this::openMessageSubscription);
+
+      final WorkflowSubscription subscription =
+          new WorkflowSubscription(
+              workflowInstance.getWorkflowInstanceKey(),
+              activityInstanceKey,
+              cloneBuffer(message.getMessageName()),
+              cloneBuffer(extractedCorrelationKey));
+      subscription.setCommandSentTime(ActorClock.currentTimeMillis());
+      workflowState.put(subscription);
+    }
   }
 
   private boolean openMessageSubscription() {
@@ -80,7 +85,8 @@ public class SubscribeMessageHandler implements BpmnStepHandler<ExecutableMessag
         extractedCorrelationKey);
   }
 
-  private DirectBuffer extractCorrelationKey() {
+  private DirectBuffer extractCorrelationKey(
+      BpmnStepContext<ExecutableMessageCatchElement> context) {
     final QueryResults results =
         queryProcessor.process(message.getCorrelationKey(), workflowInstance.getPayload());
     if (results.size() == 1) {
@@ -93,12 +99,20 @@ public class SubscribeMessageHandler implements BpmnStepHandler<ExecutableMessag
         return result.getLongAsBuffer();
 
       } else {
-        // the exception will be replaces by an incident - #1018
-        throw new RuntimeException("Failed to extract correlation-key: wrong type");
+        raiseIncident(context, "the value must be either a string or a number");
       }
     } else {
-      // the exception will be replaces by an incident - #1018
-      throw new RuntimeException("Failed to extract correlation-key: no result");
+      raiseIncident(context, "no value found");
     }
+    return null;
+  }
+
+  private void raiseIncident(
+      BpmnStepContext<ExecutableMessageCatchElement> context, String failure) {
+    final String expression = bufferAsString(message.getCorrelationKey().getExpression());
+    final String failureMessage =
+        String.format("Failed to extract the correlation-key by '%s': %s", expression, failure);
+
+    context.raiseIncident(ErrorType.EXTRACT_VALUE_ERROR, failureMessage);
   }
 }
