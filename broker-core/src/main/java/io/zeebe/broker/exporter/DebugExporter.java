@@ -17,7 +17,10 @@
  */
 package io.zeebe.broker.exporter;
 
-import io.zeebe.broker.exporter.record.RecordImpl;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.SerializationFeature;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.exporter.context.Context;
 import io.zeebe.exporter.context.Controller;
@@ -31,6 +34,7 @@ public class DebugExporter implements Exporter {
   private Logger log;
   private LogLevel logLevel;
   private DebugExporterConfiguration configuration;
+  private ObjectMapper objectMapper;
 
   @Override
   public void configure(Context context) {
@@ -42,6 +46,12 @@ public class DebugExporter implements Exporter {
   @Override
   public void open(Controller controller) {
     log("Debug exporter opened");
+    objectMapper = new ObjectMapper();
+    objectMapper.registerModule(new JavaTimeModule());
+    objectMapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
+    if (configuration.prettyPrint) {
+      objectMapper.enable(SerializationFeature.INDENT_OUTPUT);
+    }
   }
 
   @Override
@@ -51,10 +61,11 @@ public class DebugExporter implements Exporter {
 
   @Override
   public void export(Record record) {
-    if (configuration.prettyPrint) {
-      ((RecordImpl) record).getObjectMapper().setPrettyPrint();
+    try {
+      log("{}", objectMapper.writeValueAsString(record));
+    } catch (JsonProcessingException e) {
+      log("Failed to serialize object '{}' to JSON", record, e);
     }
-    log("{}", record.toJson());
   }
 
   public static ExporterCfg defaultConfig(final boolean prettyPrint) {

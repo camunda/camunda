@@ -117,8 +117,4 @@ public class ExporterObjectMapper {
       throw new RuntimeException("Failed deserialize Msgpack JSON to map", e);
     }
   }
-
-  public void setPrettyPrint() {
-    jsonObjectMapper.enable(SerializationFeature.INDENT_OUTPUT);
-  }
 }
