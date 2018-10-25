@@ -3,6 +3,8 @@ import {Colors, Animations, themed, themeStyle} from 'modules/theme';
 
 export const Spinner = themed(styled.div`
   border-radius: 50%;
+
+  // intentionally sized based on the parent's font-size
   width: 1em;
   height: 1em;
 
