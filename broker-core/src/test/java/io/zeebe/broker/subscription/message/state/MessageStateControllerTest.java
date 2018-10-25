@@ -135,7 +135,24 @@ public class MessageStateControllerTest {
   }
 
   @Test
-  public void shouldFindFirstMessage() {
+  public void shouldVisitMessages() {
+    // given
+    final Message message = createMessage(1L, "name", "correlationKey");
+    stateController.put(message);
+
+    // when
+    final List<Message> messages = new ArrayList<Message>();
+    stateController.visitMessages(wrapString("name"), wrapString("correlationKey"), messages::add);
+
+    // then
+    assertThat(messages).hasSize(1);
+    assertThat(messages.get(0).getKey()).isEqualTo(message.getKey());
+    assertThat(messages.get(0).getName()).isEqualTo(message.getName());
+    assertThat(messages.get(0).getCorrelationKey()).isEqualTo(message.getCorrelationKey());
+  }
+
+  @Test
+  public void shouldVisitMessagesInOrder() {
     // given
     final Message message = createMessage(1L, "name", "correlationKey");
     stateController.put(message);
@@ -144,49 +161,72 @@ public class MessageStateControllerTest {
     stateController.put(message2);
 
     // when
-    final Message readMessage =
-        stateController.findFirstMessage(wrapString("name"), wrapString("correlationKey"));
+    final List<Long> keys = new ArrayList<>();
+    stateController.visitMessages(
+        wrapString("name"), wrapString("correlationKey"), m -> keys.add(m.getKey()));
 
     // then
-    assertThat(readMessage).isNotNull();
-    assertThat(readMessage.getKey()).isEqualTo(message.getKey());
-    assertThat(readMessage.getName()).isEqualTo(message.getName());
-    assertThat(readMessage.getCorrelationKey()).isEqualTo(message.getCorrelationKey());
+    assertThat(keys).hasSize(2).containsExactly(1L, 2L);
   }
 
   @Test
-  public void shouldNotFindMessageIfNameDoesntMatch() {
+  public void shouldVisitMessagesUntilStop() {
+    // given
+    final Message message = createMessage(1L, "name", "correlationKey");
+    stateController.put(message);
+
+    final Message message2 = createMessage(2L, "name", "correlationKey");
+    stateController.put(message2);
+
+    // when
+    final List<Long> keys = new ArrayList<>();
+    stateController.visitMessages(
+        wrapString("name"),
+        wrapString("correlationKey"),
+        m -> {
+          keys.add(m.getKey());
+          return false;
+        });
+
+    // then
+    assertThat(keys).hasSize(1).contains(1L);
+  }
+
+  @Test
+  public void shouldNotVisitMessagesIfNameDoesntMatch() {
     // given
     final Message message = createMessage(1L, "name", "correlationKey");
     stateController.put(message);
 
     // when
-    final Message readMessage =
-        stateController.findFirstMessage(wrapString("otherName"), wrapString("correlationKey"));
+    final List<Long> keys = new ArrayList<>();
+    stateController.visitMessages(
+        wrapString("otherName"), wrapString("correlationKey"), m -> keys.add(m.getKey()));
 
     // then
-    assertThat(readMessage).isNull();
+    assertThat(keys).isEmpty();
   }
 
   @Test
-  public void shouldNotFindMessageIfCorrelationKeyDoesntMatch() {
+  public void shouldNotVisitMessageIfCorrelationKeyDoesntMatch() {
     // given
     final Message message = createMessage(1L, "name", "correlationKey");
     stateController.put(message);
 
     // when
-    final Message readMessage =
-        stateController.findFirstMessage(wrapString("name"), wrapString("otherCorrelationKey"));
+    final List<Long> keys = new ArrayList<>();
+    stateController.visitMessages(
+        wrapString("name"), wrapString("otherCorrelationKey"), m -> keys.add(m.getKey()));
 
     // then
-    assertThat(readMessage).isNull();
+    assertThat(keys).isEmpty();
   }
 
   @Test
   public void shouldFindSubscription() {
     // given
     final MessageSubscription subscription =
-        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 1234);
+        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 0);
     stateController.put(subscription);
 
     // when
@@ -204,11 +244,11 @@ public class MessageStateControllerTest {
   public void shouldFindMoreSubscriptions() {
     // given
     final MessageSubscription subscription =
-        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 1234);
+        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 0);
     final MessageSubscription subscription2 =
-        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 2, 3, 1234);
+        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 2, 3, 0);
     final MessageSubscription subscription3 =
-        new MessageSubscription("otherName", "correlationKey", "{\"foo\":\"bar\"}", 3, 4, 1234);
+        new MessageSubscription("otherName", "correlationKey", "{\"foo\":\"bar\"}", 3, 4, 0);
     stateController.put(subscription);
     stateController.put(subscription2);
     stateController.put(subscription3);
@@ -221,23 +261,23 @@ public class MessageStateControllerTest {
     assertThat(readSubscriptions.size()).isEqualTo(2);
 
     MessageSubscription readSubscription = readSubscriptions.get(0);
-    assertSubscription(subscription, readSubscription, 1234, 1, 2);
+    assertSubscription(subscription, readSubscription, 0, 1, 2);
     readSubscription = readSubscriptions.get(1);
-    assertSubscription(subscription2, readSubscription, 1234, 2, 3);
+    assertSubscription(subscription2, readSubscription, 0, 2, 3);
 
     // and
     final List<MessageSubscription> otherSubscriptions =
         stateController.findSubscriptions(wrapString("otherName"), wrapString("correlationKey"));
 
     assertThat(otherSubscriptions.size()).isEqualTo(1);
-    assertSubscription(subscription3, otherSubscriptions.get(0), 1234, 3, 4);
+    assertSubscription(subscription3, otherSubscriptions.get(0), 0, 3, 4);
   }
 
   @Test
   public void shouldFindSubscriptionWithMessageStored() {
     // given
     final MessageSubscription subscription =
-        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 1234);
+        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 0);
     final Message message = createMessage(1L, "name", "correlationKey");
 
     stateController.put(message);
@@ -254,9 +294,28 @@ public class MessageStateControllerTest {
     assertSubscription(subscription, readSubscription);
   }
 
+  @Test
+  public void shouldFindOnlySubscriptionsWithoutSendTime() {
+    // given
+    final MessageSubscription subscription =
+        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 1234);
+    final MessageSubscription subscription2 =
+        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 3, 4, 0);
+    stateController.put(subscription);
+    stateController.put(subscription2);
+
+    // when
+    final List<MessageSubscription> readSubscriptions =
+        stateController.findSubscriptions(wrapString("messageName"), wrapString("correlationKey"));
+
+    // then
+    assertThat(readSubscriptions.size()).isEqualTo(1);
+    assertThat(readSubscriptions.get(0).getWorkflowInstanceKey()).isEqualTo(3);
+  }
+
   private void assertSubscription(
       MessageSubscription subscription, MessageSubscription readSubscription) {
-    assertSubscription(subscription, readSubscription, 1234, 1, 2);
+    assertSubscription(subscription, readSubscription, 0, 1, 2);
   }
 
   private void assertSubscription(
@@ -275,7 +334,7 @@ public class MessageStateControllerTest {
   }
 
   @Test
-  public void shouldNotFindMessageBeforeTime() {
+  public void shouldNotVisitMessagesBeforeTime() {
     // given
     final Message message = createMessage(1L, "name", "correlationKey", "{}", "nr1", 1234);
     final Message message2 = createMessage(2L, "name", "correlationKey", "{}", "nr2", 4567);
@@ -285,7 +344,7 @@ public class MessageStateControllerTest {
 
     // then
     final List<Message> readMessage = new ArrayList<>();
-    stateController.findMessagesWithDeadlineBefore(1_000, readMessage::add);
+    stateController.visitMessagesWithDeadlineBefore(1_000, readMessage::add);
 
     assertThat(readMessage).isEmpty();
   }
@@ -313,7 +372,7 @@ public class MessageStateControllerTest {
   }
 
   @Test
-  public void shouldFindMessageBeforeTime() {
+  public void shouldVisitMessagesBeforeTime() {
     // given
     final Message message = createMessage(1L, "name", "correlationKey", "{}", "nr1", 1234);
     final Message message2 = createMessage(2L, "otherName", "correlationKey", "{}", "nr2", 2000);
@@ -323,14 +382,14 @@ public class MessageStateControllerTest {
 
     // then
     final List<Message> readMessage = new ArrayList<>();
-    stateController.findMessagesWithDeadlineBefore(1_999, readMessage::add);
+    stateController.visitMessagesWithDeadlineBefore(1_999, readMessage::add);
 
     assertThat(readMessage.size()).isEqualTo(1);
     assertThat(readMessage.get(0).getKey()).isEqualTo(1L);
   }
 
   @Test
-  public void shouldFindMessageBeforeTimeInOrder() {
+  public void shouldVisitMessagesBeforeTimeInOrder() {
     // given
     final long now = ActorClock.currentTimeMillis();
 
@@ -345,7 +404,7 @@ public class MessageStateControllerTest {
 
     // then
     final List<Long> readMessage = new ArrayList<>();
-    stateController.findMessagesWithDeadlineBefore(deadline, m -> readMessage.add(m.getKey()));
+    stateController.visitMessagesWithDeadlineBefore(deadline, m -> readMessage.add(m.getKey()));
 
     assertThat(readMessage.size()).isEqualTo(2);
     assertThat(readMessage).containsExactly(1L, 2L);
@@ -409,25 +468,34 @@ public class MessageStateControllerTest {
     final Message message = createMessage(1L, "name", "correlationKey", "{}", "id", 1234);
     stateController.put(message);
 
+    stateController.putMessageCorrelation(1L, 2L);
+    stateController.putMessageCorrelation(1L, 3L);
+
     // when
     stateController.remove(message.getKey());
 
     // then
     final List<Message> readMessages = new ArrayList<>();
-    stateController.findMessagesWithDeadlineBefore(2000, readMessages::add);
+    stateController.visitMessagesWithDeadlineBefore(2000, readMessages::add);
 
     assertThat(readMessages.size()).isEqualTo(0);
 
     // and
-    final Message readMessage =
-        stateController.findFirstMessage(wrapString("messageName"), wrapString("correlationKey"));
-    assertThat(readMessage).isNull();
+    final List<Long> keys = new ArrayList<>();
+    stateController.visitMessages(
+        wrapString("name"), wrapString("correlationKey"), m -> keys.add(m.getKey()));
+
+    assertThat(keys).isEmpty();
 
     // and
     final boolean exist =
         stateController.exist(
             wrapString("messageName"), wrapString("correlationKey"), wrapString("id"));
     assertThat(exist).isFalse();
+
+    // and
+    assertThat(stateController.existMessageCorrelation(1L, 2L)).isFalse();
+    assertThat(stateController.existMessageCorrelation(1L, 3L)).isFalse();
   }
 
   @Test
@@ -442,14 +510,16 @@ public class MessageStateControllerTest {
 
     // then
     final List<Message> readMessages = new ArrayList<>();
-    stateController.findMessagesWithDeadlineBefore(2000, readMessages::add);
+    stateController.visitMessagesWithDeadlineBefore(2000, readMessages::add);
 
     assertThat(readMessages.size()).isEqualTo(0);
 
     // and
-    final Message readMessage =
-        stateController.findFirstMessage(wrapString("name"), wrapString("correlationKey"));
-    assertThat(readMessage).isNull();
+    final List<Long> keys = new ArrayList<>();
+    stateController.visitMessages(
+        wrapString("name"), wrapString("correlationKey"), m -> keys.add(m.getKey()));
+
+    assertThat(keys).isEmpty();
   }
 
   @Test
@@ -465,14 +535,16 @@ public class MessageStateControllerTest {
 
     // then
     final List<Message> readMessages = new ArrayList<>();
-    stateController.findMessagesWithDeadlineBefore(2000, readMessages::add);
+    stateController.visitMessagesWithDeadlineBefore(2000, readMessages::add);
 
     assertThat(readMessages.size()).isEqualTo(0);
 
     // and
-    final Message readMessage =
-        stateController.findFirstMessage(wrapString("messageName"), wrapString("correlationKey"));
-    assertThat(readMessage).isNull();
+    final List<Long> keys = new ArrayList<>();
+    stateController.visitMessages(
+        wrapString("name"), wrapString("correlationKey"), m -> keys.add(m.getKey()));
+
+    assertThat(keys).isEmpty();
 
     // and
     final boolean exist =
@@ -489,25 +561,45 @@ public class MessageStateControllerTest {
 
     stateController.put(message);
 
+    stateController.putMessageCorrelation(1L, 3L);
+    stateController.putMessageCorrelation(2L, 4L);
+
     // when
     stateController.remove(message2.getKey());
 
     // then
     final long deadline = ActorClock.currentTimeMillis() + 2_000L;
     final List<Message> readMessages = new ArrayList<>();
-    stateController.findMessagesWithDeadlineBefore(deadline, readMessages::add);
+    stateController.visitMessagesWithDeadlineBefore(deadline, readMessages::add);
 
     assertThat(readMessages.size()).isEqualTo(1);
 
     // and
-    final Message readMessage =
-        stateController.findFirstMessage(wrapString("name"), wrapString("correlationKey"));
-    assertThat(readMessage).isNotNull();
+    final List<Long> keys = new ArrayList<>();
+    stateController.visitMessages(
+        wrapString("name"), wrapString("correlationKey"), m -> keys.add(m.getKey()));
+
+    assertThat(keys).hasSize(1).contains(1L);
 
     // and
     final boolean exist =
         stateController.exist(wrapString("name"), wrapString("correlationKey"), wrapString("id1"));
     assertThat(exist).isTrue();
+
+    // and
+    assertThat(stateController.existMessageCorrelation(1L, 3L));
+  }
+
+  @Test
+  public void shouldExistCorrelatedMessage() {
+    // when
+    stateController.putMessageCorrelation(1L, 2L);
+
+    // then
+    assertThat(stateController.existMessageCorrelation(1L, 2L)).isTrue();
+
+    assertThat(stateController.existMessageCorrelation(3L, 2L)).isFalse();
+    assertThat(stateController.existMessageCorrelation(1L, 3L)).isFalse();
   }
 
   @Test
@@ -590,9 +682,9 @@ public class MessageStateControllerTest {
   public void shouldNotRemoveSubscriptionOnDifferentKey() {
     // given
     final MessageSubscription subscription =
-        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 1234);
+        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 0);
     final MessageSubscription subscription2 =
-        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 2, 3, 1234);
+        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 2, 3, 0);
 
     stateController.put(subscription);
 
@@ -600,11 +692,7 @@ public class MessageStateControllerTest {
     stateController.remove(subscription2);
 
     // then
-    List<MessageSubscription> readSubscriptions = stateController.findSubscriptionBefore(2000);
-    assertThat(readSubscriptions.size()).isEqualTo(1);
-
-    // and
-    readSubscriptions =
+    final List<MessageSubscription> readSubscriptions =
         stateController.findSubscriptions(wrapString("messageName"), wrapString("correlationKey"));
     assertThat(readSubscriptions.size()).isEqualTo(1);
   }

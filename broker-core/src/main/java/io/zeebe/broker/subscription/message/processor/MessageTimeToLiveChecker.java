@@ -39,7 +39,7 @@ public class MessageTimeToLiveChecker implements Runnable {
 
   @Override
   public void run() {
-    messageStateController.findMessagesWithDeadlineBefore(
+    messageStateController.visitMessagesWithDeadlineBefore(
         ActorClock.currentTimeMillis(), this::writeDeleteMessageCommand);
   }
 

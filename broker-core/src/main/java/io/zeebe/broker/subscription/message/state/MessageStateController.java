@@ -26,7 +26,6 @@ import io.zeebe.logstreams.rocksdb.ZbRocksDb;
 import io.zeebe.logstreams.rocksdb.ZbWriteBatch;
 import java.io.File;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
@@ -44,9 +43,14 @@ public class MessageStateController extends KeyStateController {
   private static final byte[] MESSAGE_COLUMN_FAMILY_NAME = "messages".getBytes();
   private static final byte[] DEADLINE_COLUMN_FAMILY_NAME = "deadlines".getBytes();
   private static final byte[] MESSAGE_ID_COLUMN_FAMILY_NAME = "messageIds".getBytes();
+  private static final byte[] CORRELATED_MESSAGE_COLUMN_FAMILY_NAME =
+      "correlatedMessages".getBytes();
 
   public static final byte[][] COLUMN_FAMILY_NAMES = {
-    MESSAGE_COLUMN_FAMILY_NAME, DEADLINE_COLUMN_FAMILY_NAME, MESSAGE_ID_COLUMN_FAMILY_NAME
+    MESSAGE_COLUMN_FAMILY_NAME,
+    DEADLINE_COLUMN_FAMILY_NAME,
+    MESSAGE_ID_COLUMN_FAMILY_NAME,
+    CORRELATED_MESSAGE_COLUMN_FAMILY_NAME
   };
 
   private final ExpandableArrayBuffer keyBuffer = new ExpandableArrayBuffer();
@@ -75,6 +79,11 @@ public class MessageStateController extends KeyStateController {
    *
    * exist a message for a given message name, correlation key and message id */
   private ColumnFamilyHandle messageIdColumnFamily;
+  /**
+   * <pre>key | workflow instance key -> []
+   *
+   * check if a message is correlated to a workflow instance */
+  private ColumnFamilyHandle correlatedMessageColumnFamily;
 
   private SubscriptionState<MessageSubscription> subscriptionState;
 
@@ -93,6 +102,7 @@ public class MessageStateController extends KeyStateController {
     messageColumnFamily = getColumnFamilyHandle(MESSAGE_COLUMN_FAMILY_NAME);
     deadlineColumnFamily = getColumnFamilyHandle(DEADLINE_COLUMN_FAMILY_NAME);
     messageIdColumnFamily = getColumnFamilyHandle(MESSAGE_ID_COLUMN_FAMILY_NAME);
+    correlatedMessageColumnFamily = getColumnFamilyHandle(CORRELATED_MESSAGE_COLUMN_FAMILY_NAME);
 
     subscriptionState = new SubscriptionState<>(this, MessageSubscription.class);
 
@@ -185,7 +195,37 @@ public class MessageStateController extends KeyStateController {
     return offset;
   }
 
-  public Message findFirstMessage(final DirectBuffer name, final DirectBuffer correlationKey) {
+  private int writeCorrelatedMessageKey(
+      MutableDirectBuffer buffer, long messageKey, long workflowInstanceKey) {
+    int offset = 0;
+
+    buffer.putLong(offset, messageKey, STATE_BYTE_ORDER);
+    offset += Long.BYTES;
+
+    buffer.putLong(offset, workflowInstanceKey, STATE_BYTE_ORDER);
+    offset += Long.BYTES;
+    return offset;
+  }
+
+  public void putMessageCorrelation(long messageKey, long workflowInstanceKey) {
+    final int length = writeCorrelatedMessageKey(keyBuffer, messageKey, workflowInstanceKey);
+    db.put(
+        correlatedMessageColumnFamily,
+        keyBuffer.byteArray(),
+        0,
+        length,
+        EXISTENCE,
+        0,
+        EXISTENCE.length);
+  }
+
+  public boolean existMessageCorrelation(long messageKey, long workflowInstanceKey) {
+    final int length = writeCorrelatedMessageKey(keyBuffer, messageKey, workflowInstanceKey);
+    return db.exists(correlatedMessageColumnFamily, keyBuffer.byteArray(), 0, length);
+  }
+
+  public void visitMessages(
+      final DirectBuffer name, final DirectBuffer correlationKey, final MessageVisitor visitor) {
     int offset = 0;
     final int prefixLength = name.capacity() + correlationKey.capacity();
     final MutableDirectBuffer prefixBuffer = new UnsafeBuffer(new byte[prefixLength]);
@@ -195,8 +235,6 @@ public class MessageStateController extends KeyStateController {
 
     prefixBuffer.putBytes(offset, correlationKey, 0, correlationKey.capacity());
 
-    final AtomicBoolean found = new AtomicBoolean();
-
     db.forEachPrefixed(
         messageColumnFamily,
         prefixBuffer,
@@ -204,16 +242,13 @@ public class MessageStateController extends KeyStateController {
           iterateKeyBuffer.wrap(entry.getKey());
 
           final long messageKey = iterateKeyBuffer.getLong(prefixLength, STATE_BYTE_ORDER);
-          found.set(readMessage(messageKey, message));
+          readMessage(messageKey, message);
 
-          control.stop();
+          final boolean visited = visitor.visit(message);
+          if (!visited) {
+            control.stop();
+          }
         });
-
-    if (found.get()) {
-      return message;
-    } else {
-      return null;
-    }
   }
 
   private boolean readMessage(long key, Message message) {
@@ -227,7 +262,7 @@ public class MessageStateController extends KeyStateController {
     }
   }
 
-  public void findMessagesWithDeadlineBefore(final long timestamp, IteratorConsumer consumer) {
+  public void visitMessagesWithDeadlineBefore(final long timestamp, MessageVisitor visitor) {
 
     db.forEach(
         deadlineColumnFamily,
@@ -235,14 +270,14 @@ public class MessageStateController extends KeyStateController {
           iterateKeyBuffer.wrap(entry.getKey());
           final long deadline = iterateKeyBuffer.getLong(0, STATE_BYTE_ORDER);
 
-          boolean consumed = false;
+          boolean visited = false;
           if (deadline <= timestamp) {
             final long messageKey = iterateKeyBuffer.getLong(Long.BYTES, STATE_BYTE_ORDER);
 
             readMessage(messageKey, message);
-            consumed = consumer.accept(message);
+            visited = visitor.visit(message);
           }
-          if (!consumed) {
+          if (!visited) {
             control.stop();
           }
         });
@@ -278,6 +313,17 @@ public class MessageStateController extends KeyStateController {
                 keyBuffer, message.getName(), message.getCorrelationKey(), message.getId());
         batch.delete(messageIdColumnFamily, keyBuffer.byteArray(), length);
       }
+
+      final UnsafeBuffer prefixBuffer = new UnsafeBuffer(new byte[Long.BYTES]);
+      prefixBuffer.putLong(0, key, STATE_BYTE_ORDER);
+
+      db.forEachPrefixed(
+          correlatedMessageColumnFamily,
+          prefixBuffer,
+          (entry, control) -> {
+            batch.delete(correlatedMessageColumnFamily, entry.getKey());
+          });
+
       db.write(options, batch);
     } catch (RocksDBException e) {
       throw new RuntimeException(e);
@@ -294,7 +340,13 @@ public class MessageStateController extends KeyStateController {
 
   public List<MessageSubscription> findSubscriptions(
       final DirectBuffer messageName, final DirectBuffer correlationKey) {
-    return subscriptionState.findSubscriptions(messageName, correlationKey);
+    // ignore subscriptions for which a correlate command is already send for (i.e. pending
+    // subscription) - will be improved by #1421
+    return subscriptionState
+        .findSubscriptions(messageName, correlationKey)
+        .stream()
+        .filter(s -> s.getCommandSentTime() <= 0L)
+        .collect(Collectors.toList());
   }
 
   public List<MessageSubscription> findSubscriptionBefore(final long deadline) {
@@ -326,7 +378,7 @@ public class MessageStateController extends KeyStateController {
   }
 
   @FunctionalInterface
-  public interface IteratorConsumer {
-    boolean accept(Message message);
+  public interface MessageVisitor {
+    boolean visit(Message message);
   }
 }
