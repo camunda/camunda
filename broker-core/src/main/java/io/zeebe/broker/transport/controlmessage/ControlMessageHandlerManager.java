@@ -28,7 +28,6 @@ import io.zeebe.protocol.clientapi.ControlMessageRequestDecoder;
 import io.zeebe.protocol.clientapi.ControlMessageType;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerResponse;
 import io.zeebe.util.sched.Actor;
@@ -66,7 +65,6 @@ public class ControlMessageHandlerManager extends Actor implements FragmentHandl
       new Int2ObjectHashMap<>();
 
   protected final ErrorResponseWriter errorResponseWriter;
-  protected final RecordMetadata eventMetada = new RecordMetadata();
   protected final ServerResponse response = new ServerResponse();
 
   public ControlMessageHandlerManager(
@@ -166,12 +164,8 @@ public class ControlMessageHandlerManager extends Actor implements FragmentHandl
   public int onFragment(
       DirectBuffer buffer, int offset, int length, int streamId, boolean isMarkedFailed) {
     requestHeaderDescriptor.wrap(buffer, offset);
-
-    eventMetada.reset();
-
-    eventMetada
-        .requestId(requestHeaderDescriptor.requestId())
-        .requestStreamId(requestHeaderDescriptor.streamId());
+    final long requestId = requestHeaderDescriptor.requestId();
+    final int requestStreamId = requestHeaderDescriptor.streamId();
 
     offset += ControlMessageRequestHeaderDescriptor.headerLength();
 
@@ -191,7 +185,7 @@ public class ControlMessageHandlerManager extends Actor implements FragmentHandl
 
     final ControlMessageHandler handler = handlersByTypeId.get(messageType.value());
     if (handler != null) {
-      handler.handle(actor, partitionId, requestBuffer, eventMetada);
+      handler.handle(actor, partitionId, requestBuffer, requestId, requestStreamId);
     } else {
       sendResponse(
           actor,
@@ -201,8 +195,7 @@ public class ControlMessageHandlerManager extends Actor implements FragmentHandl
                 .errorMessage(
                     "Cannot handle control message with type '%s'.",
                     getLastRequestMessageType().name())
-                .tryWriteResponseOrLogFailure(
-                    eventMetada.getRequestStreamId(), eventMetada.getRequestId());
+                .tryWriteResponseOrLogFailure(requestStreamId, requestId);
           });
     }
 

@@ -18,7 +18,6 @@
 package io.zeebe.broker.transport.controlmessage;
 
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.util.sched.ActorControl;
 import org.agrona.DirectBuffer;
 
@@ -31,15 +30,20 @@ public interface ControlMessageHandler {
    * Handle the given control message asynchronously. An implementation may copy the buffer if the
    * data is used beyond the invocation.
    *
-   * <p>Backpressure should be implemented in the {@link #handle(ActorControl, int, DirectBuffer,
-   * RecordMetadata)} methdod like follows: Sending response (success or error) should be done via
+   * <p>Backpressure should be implemented in the {@link ##handle(ActorControl, int, DirectBuffer,
+   * long, int)} methdod like follows: Sending response (success or error) should be done via
    * actor.runUntilDone. This will block the calling actor, until the response is send successfully.
    *
    * @param actor the actor that can be used for waiting of async calls
    * @param partitionId < 0 if no specific partition is addressed
-   * @param buffer the buffer which contains the control message as MsgPack-JSON
-   * @param metadata the metadata (channel partitionId, connection partitionId, request partitionId)
-   *     of the request
+   * @param requestBuffer the buffer which contains the control message as MsgPack-JSON
+   * @param requestId the id of the incoming request
+   * @param requestStreamId the stream id of the incoming request
    */
-  void handle(ActorControl actor, int partitionId, DirectBuffer buffer, RecordMetadata metadata);
+  void handle(
+      ActorControl actor,
+      int partitionId,
+      DirectBuffer requestBuffer,
+      long requestId,
+      int requestStreamId);
 }
