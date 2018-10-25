@@ -139,7 +139,7 @@ public class ElasticsearchExporter implements Exporter {
   private void createRootIndexTemplate() {
     final String templateName = configuration.index.prefix;
     final String filename = ZEEBE_RECORD_TEMPLATE_JSON;
-    if (!client.putIndexTemplate(templateName, filename)) {
+    if (!client.putIndexTemplate(templateName, filename, "-")) {
       log.warn("Put index template {} from file {} was not acknowledged", templateName, filename);
     }
   }

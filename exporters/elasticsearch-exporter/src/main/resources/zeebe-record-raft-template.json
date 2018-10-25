@@ -3,6 +3,9 @@
     "zeebe-record-raft_*"
   ],
   "order": 20,
+  "aliases": {
+    "zeebe-record-raft": {}
+  },
   "mappings": {
     "_doc": {
       "properties": {
@@ -20,8 +23,5 @@
         }
       }
     }
-  },
-  "aliases": {
-    "zeebe-record-raft": {}
   }
 }
