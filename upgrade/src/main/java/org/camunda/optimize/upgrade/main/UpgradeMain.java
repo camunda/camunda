@@ -36,7 +36,10 @@ public class UpgradeMain {
 
   public static void main(String... args) {
 
-    String targetVersion = args.length > 0 ? args[0] : Version.VERSION;
+    String targetVersion = Arrays.stream(args)
+      .filter(arg -> arg.matches("\\d\\.\\d\\.\\d"))
+      .findFirst()
+      .orElse(Version.VERSION);
     Upgrade upgrade = upgrades.get(targetVersion);
 
     if (upgrade == null) {
@@ -47,7 +50,7 @@ public class UpgradeMain {
       throw new UpgradeRuntimeException(errorMessage);
     }
 
-    if (args.length == 0 || !args[0].contains("skip-warning")) {
+    if (Arrays.stream(args).noneMatch(arg -> arg.contains("skip-warning"))) {
       printWarning(upgrade.getInitialVersion(), upgrade.getTargetVersion());
     }
 
