@@ -114,11 +114,12 @@ public class ElasticsearchClient {
   public boolean putIndexTemplate(final ValueType valueType) {
     final String templateName = indexPrefixForValueType(valueType);
     final String filename = indexTemplateForValueType(valueType);
-    return putIndexTemplate(templateName, filename);
+    return putIndexTemplate(templateName, filename, INDEX_DELIMITER);
   }
 
   /** @return true if request was acknowledged */
-  public boolean putIndexTemplate(final String templateName, final String filename) {
+  public boolean putIndexTemplate(
+      final String templateName, final String filename, final String indexDelimiter) {
     final Map<String, Object> template;
     try (InputStream inputStream = ElasticsearchExporter.class.getResourceAsStream(filename)) {
       if (inputStream != null) {
@@ -133,7 +134,7 @@ public class ElasticsearchClient {
     }
 
     // update prefix in template in case it was changed in configuration
-    template.put("index_patterns", Collections.singletonList(templateName + INDEX_DELIMITER + "*"));
+    template.put("index_patterns", Collections.singletonList(templateName + indexDelimiter + "*"));
 
     // update alias in template in case it was changed in configuration
     template.put("aliases", Collections.singletonMap(templateName, Collections.EMPTY_MAP));

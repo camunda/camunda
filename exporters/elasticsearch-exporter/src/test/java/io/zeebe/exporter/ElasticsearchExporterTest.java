@@ -70,7 +70,7 @@ public class ElasticsearchExporterTest {
     createExporter(config);
 
     // then
-    verify(esClient).putIndexTemplate("foo-bar", ZEEBE_RECORD_TEMPLATE_JSON);
+    verify(esClient).putIndexTemplate("foo-bar", ZEEBE_RECORD_TEMPLATE_JSON, "-");
 
     verify(esClient).putIndexTemplate(ValueType.DEPLOYMENT);
     verify(esClient).putIndexTemplate(ValueType.INCIDENT);
@@ -318,7 +318,7 @@ public class ElasticsearchExporterTest {
     final ElasticsearchClient client = mock(ElasticsearchClient.class);
     when(client.flush()).thenReturn(true);
     when(client.putIndexTemplate(any(ValueType.class))).thenReturn(true);
-    when(client.putIndexTemplate(anyString(), anyString())).thenReturn(true);
+    when(client.putIndexTemplate(anyString(), anyString(), anyString())).thenReturn(true);
     return client;
   }
 

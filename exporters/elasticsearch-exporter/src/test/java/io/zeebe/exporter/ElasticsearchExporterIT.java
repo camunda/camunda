@@ -18,6 +18,7 @@ package io.zeebe.exporter;
 import static io.zeebe.test.util.record.RecordingExporter.workflowInstanceRecords;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
+import com.carrotsearch.hppc.cursors.ObjectCursor;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.zeebe.broker.system.configuration.ExporterCfg;
@@ -34,9 +35,12 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.elasticsearch.action.admin.indices.settings.get.GetSettingsRequest;
 import org.elasticsearch.action.get.GetRequest;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.client.RequestOptions;
+import org.elasticsearch.common.collect.ImmutableOpenMap;
+import org.elasticsearch.common.settings.Settings;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -142,8 +146,30 @@ public class ElasticsearchExporterIT {
                 .filter(r -> r.getKey() == r.getValue().getWorkflowInstanceKey())
                 .exists());
 
+    // assert index settings for all created indices
+    assertIndexSettings();
+
     // assert all records which where recorded during the tests where exported
     assertRecordsExported();
+  }
+
+  private void assertIndexSettings() {
+    final ImmutableOpenMap<String, Settings> settingsForIndices = esClient.getSettingsForIndices();
+    for (ObjectCursor<String> key : settingsForIndices.keys()) {
+      final Settings settings = settingsForIndices.get(key.value);
+      final Integer numberOfShards = settings.getAsInt("index.number_of_shards", -1);
+      final Integer numberOfReplicas = settings.getAsInt("index.number_of_replicas", -1);
+
+      assertThat(numberOfShards)
+          .withFailMessage(
+              "Expected number of shards of index %s to be 1 but was %d", key.value, numberOfShards)
+          .isEqualTo(1);
+      assertThat(numberOfReplicas)
+          .withFailMessage(
+              "Expected number of replicas of index %s to be 0 but was %d",
+              key.value, numberOfReplicas)
+          .isEqualTo(0);
+    }
   }
 
   private void assertRecordsExported() {
@@ -207,7 +233,18 @@ public class ElasticsearchExporterIT {
       super(configuration, log);
     }
 
-    // used in tests
+    protected ImmutableOpenMap<String, Settings> getSettingsForIndices() {
+      final GetSettingsRequest settingsRequest = new GetSettingsRequest();
+      try {
+        return client
+            .indices()
+            .getSettings(settingsRequest, RequestOptions.DEFAULT)
+            .getIndexToSettings();
+      } catch (IOException e) {
+        throw new ElasticsearchExporterException("Failed to get index settings", e);
+      }
+    }
+
     protected Map<String, Object> get(Record<?> record) {
       final GetRequest request = new GetRequest(indexFor(record), typeFor(record), idFor(record));
       try {

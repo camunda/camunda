@@ -3,6 +3,9 @@
     "zeebe-record-workflow-instance_*"
   ],
   "order": 20,
+  "aliases": {
+    "zeebe-record-workflow-instance": {}
+  },
   "mappings": {
     "_doc": {
       "properties": {
@@ -34,8 +37,5 @@
         }
       }
     }
-  },
-  "aliases": {
-    "zeebe-record-workflow-instance": {}
   }
 }
