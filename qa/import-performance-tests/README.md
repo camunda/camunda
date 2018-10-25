@@ -1,21 +1,39 @@
-# Camunda Optimize Import Performance
+# Camunda Optimize Import Performance - Static
 
-In order to measure performance of the import process following steps are required 
+In order to measure performance of the import process of a static data set the following steps are required
 
 * start Camunda BPM Platform with one of the supported databases 
 * populate test data into Platform 
 * run import process 
 * evaluate results\ prepare report 
 
-to start test one could use following command 
+to start the tests one could use following command
 
 ```
-mvn -Pperformance-test clean verify
+mvn -Pstatic-data-import-performance-test clean verify
 ```
 
 please note that test relies on the fact that you already have Camunda BPM Platform started and 
 configured to connect ot the database against which test will be run. Elasticsearch
 instance will be started by maven.
+
+# Camunda Optimize Import Performance - Live
+
+In order to measure performance of the import process while the engine is generating data
+
+* start Camunda BPM, postgres and elasticsearch using the following docker commands
+
+```
+docker-compose -f ../../docker-compose.postgresql.yml up -d --force-recreate
+```
+
+to start the tests one could use following command
+
+```
+mvn -Plive-data-import-performance-test clean verify
+```
+
+
 
 ## Camunda BP Platform 
 

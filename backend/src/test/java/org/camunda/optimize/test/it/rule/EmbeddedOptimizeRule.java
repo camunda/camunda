@@ -60,16 +60,23 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     this.context = context;
   }
 
+  public void startContinuousImportScheduling() {
+    getOptimize().startImportSchedulers();
+  }
+
   public void scheduleAllJobsAndImportEngineEntities() {
-
-    ElasticsearchImportJobExecutor elasticsearchImportJobExecutor = getElasticsearchImportJobExecutor();
-    elasticsearchImportJobExecutor.startExecutingImportJobs();
-
     try {
       resetImportStartIndexes();
     } catch (Exception e) {
       //nothing to do
     }
+    resetBackoffAndScheduleAllImportsAndWaitUntilFinished();
+  }
+
+  public void resetBackoffAndScheduleAllImportsAndWaitUntilFinished() {
+    ElasticsearchImportJobExecutor elasticsearchImportJobExecutor = getElasticsearchImportJobExecutor();
+    elasticsearchImportJobExecutor.startExecutingImportJobs();
+
     for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
       if (scheduler.isEnabled()) {
         logger.debug("scheduling first import round");
@@ -79,6 +86,8 @@ public class EmbeddedOptimizeRule extends TestWatcher {
         scheduleImportAndWaitUntilIsFinished(scheduler);
       }
     }
+
+    elasticsearchImportJobExecutor.stopExecutingImportJobs();
   }
 
   private void resetImportBackoff() {

@@ -34,9 +34,11 @@ public class EngineDatabaseRule extends TestWatcher {
   private static Connection connection = null;
 
   private String database = System.getProperty("database", "h2");
+  private Boolean usePostgresOptimizations = true;
 
   public EngineDatabaseRule(Properties properties) {
     database = properties.getProperty("db.name");
+    usePostgresOptimizations = Boolean.valueOf(properties.getProperty("db.usePostgresOptimizations"));
     String jdbcDriver = properties.getProperty("db.jdbc.driver");
     String dbUrl = properties.getProperty("db.url");
     if (dbUrl == null || dbUrl.isEmpty() || dbUrl.startsWith("${")) {
@@ -297,7 +299,7 @@ public class EngineDatabaseRule extends TestWatcher {
     String sql = "select count(*) as total from act_hi_actinst;";
     String postgresSQL =
       "SELECT reltuples AS total FROM pg_class WHERE relname = 'act_hi_actinst';";
-    sql = DATABASE_POSTGRESQL.equals(database)? postgresSQL: sql;
+    sql = usePostgresOptimizations() ? postgresSQL: sql;
     ResultSet statement =
       connection.createStatement().executeQuery(sql);
     statement.next();
@@ -316,7 +318,7 @@ public class EngineDatabaseRule extends TestWatcher {
     String sql = "select count(*) as total from act_hi_procinst;";
     String postgresSQL =
       "SELECT reltuples AS total FROM pg_class WHERE relname = 'act_hi_procinst';";
-    sql = DATABASE_POSTGRESQL.equals(database)? postgresSQL: sql;
+    sql = usePostgresOptimizations() ? postgresSQL: sql;
     ResultSet statement =
       connection.createStatement().executeQuery(sql);
     statement.next();
@@ -327,7 +329,7 @@ public class EngineDatabaseRule extends TestWatcher {
     String sql = "select count(*) as total from act_hi_varinst;";
     String postgresSQL =
       "SELECT reltuples AS total FROM pg_class WHERE relname = 'act_hi_varinst';";
-    sql = DATABASE_POSTGRESQL.equals(database)? postgresSQL: sql;
+    sql = usePostgresOptimizations() ? postgresSQL: sql;
     ResultSet statement =
       connection.createStatement().executeQuery(sql);
     statement.next();
@@ -356,5 +358,9 @@ public class EngineDatabaseRule extends TestWatcher {
   @Override
   protected void finished(Description description) {
     super.finished(description);
+  }
+
+  private boolean usePostgresOptimizations() {
+    return DATABASE_POSTGRESQL.equals(database) && usePostgresOptimizations;
   }
 }
