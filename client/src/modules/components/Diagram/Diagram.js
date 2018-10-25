@@ -279,7 +279,7 @@ class Diagram extends React.Component {
     // Note that we also pass the type 'flow-node-state' to
     // the overlay to be able to clear all overlays of such type. (cf. clearOverlaysByType)
     this.Viewer.get('overlays').add(id, FLOW_NODE_STATE_OVERLAY_ID, {
-      position: {bottom: 14, left: -10},
+      position: {bottom: 17, left: -7},
       html: img
     });
   };
