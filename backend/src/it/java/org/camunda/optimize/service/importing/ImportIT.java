@@ -4,6 +4,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
+import org.camunda.optimize.service.engine.importing.index.handler.TimestampBasedImportIndexHandler;
 import org.camunda.optimize.service.es.filter.CanceledInstancesOnlyQueryFilter;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -22,8 +23,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.HttpHeaders;
 import java.io.IOException;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
@@ -48,7 +47,7 @@ import static org.hamcrest.Matchers.lessThanOrEqualTo;
 public class ImportIT  {
 
   public static final String HTTP_LOCALHOST = "http://localhost:8080";
-  
+
   public EngineIntegrationRule engineRule = new EngineIntegrationRule();
   public ElasticSearchIntegrationTestRule elasticSearchRule = new ElasticSearchIntegrationTestRule();
   public EmbeddedOptimizeRule embeddedOptimizeRule = new EmbeddedOptimizeRule();
@@ -261,10 +260,14 @@ public class ImportIT  {
   }
 
   @Test
-  public void indexIsIncrementedEvenAfterReset() {
+  public void indexLastTimestampIsEqualEvenAfterReset() throws InterruptedException {
     // given
     deployAndStartSimpleServiceTask();
     deployAndStartSimpleServiceTask();
+
+    // sleep in order to avoid the timestamp import backoff window that modifies the latestTimestamp stored
+    Thread.sleep(TimestampBasedImportIndexHandler.CURRENT_TIME_BACKOFF_MILLIS);
+
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     List<Long> firstRoundIndexes =  embeddedOptimizeRule.getImportIndexes();
@@ -272,6 +275,7 @@ public class ImportIT  {
     // then
     embeddedOptimizeRule.resetImportStartIndexes();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
     List<Long> secondsRoundIndexes = embeddedOptimizeRule.getImportIndexes();
 
     // then

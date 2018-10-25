@@ -19,7 +19,7 @@ import java.util.Optional;
 
 public abstract class TimestampBasedImportIndexHandler
   implements ImportIndexHandler<TimestampBasedImportPage, TimestampBasedImportIndexDto> {
-  private static final int CURRENT_TIME_BACKOFF_MILLIS = 2000;
+  public static final int CURRENT_TIME_BACKOFF_MILLIS = 2000;
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
