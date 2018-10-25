@@ -3,6 +3,7 @@ package zbc
 import (
 	"github.com/zeebe-io/zeebe/clients/go/commands"
 	"github.com/zeebe-io/zeebe/clients/go/worker"
+	"time"
 )
 
 type ZBClient interface {
@@ -25,6 +26,8 @@ type ZBClient interface {
 	NewGetWorkflowCommand() commands.GetWorkflowStep1
 
 	NewJobWorker() worker.JobWorkerBuilderStep1
+
+	SetRequestTimeout(time.Duration) ZBClient
 
 	Close() error
 }

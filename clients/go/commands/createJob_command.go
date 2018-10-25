@@ -8,6 +8,10 @@ import (
 	"time"
 )
 
+const (
+	DefaultJobRetries = 3
+)
+
 type DispatchCreateJobCommand interface {
 	Send() (*pb.CreateJobResponse, error)
 }
@@ -39,8 +43,9 @@ type CreateJobCommand struct {
 
 	customHeaders map[string]interface{}
 
-	request *pb.CreateJobRequest
-	gateway pb.GatewayClient
+	request        *pb.CreateJobRequest
+	gateway        pb.GatewayClient
+	requestTimeout time.Duration
 }
 
 func (cmd *CreateJobCommand) GetRequest() *pb.CreateJobRequest {
@@ -48,11 +53,12 @@ func (cmd *CreateJobCommand) GetRequest() *pb.CreateJobRequest {
 }
 
 func (cmd *CreateJobCommand) SetCustomHeadersFromObject(header interface{}) (CreateJobCommandStep2, error) {
-	jsonString, err := cmd.ToString(header)
+	value, err := cmd.AsJson("custom headers", header)
 	if err != nil {
 		return nil, err
 	}
-	cmd.request.CustomHeaders = jsonString
+
+	cmd.request.CustomHeaders = value
 	return cmd, nil
 }
 
@@ -61,11 +67,13 @@ func (cmd *CreateJobCommand) SetCustomHeadersFromMap(headers map[string]interfac
 }
 
 func (cmd *CreateJobCommand) SetCustomHeadersFromString(jsonString string) (CreateJobCommandStep2, error) {
-	if cmd.Validate([]byte(jsonString)) {
-		cmd.request.CustomHeaders = jsonString
-		return cmd, nil
+	err := cmd.Validate("custom headers", jsonString)
+	if err != nil {
+		return nil, err
 	}
-	return nil, utils.ErrNotValidJsonString
+
+	cmd.request.CustomHeaders = jsonString
+	return cmd, err
 }
 
 func (cmd *CreateJobCommand) SetCustomHeadersFromStringer(jsonString fmt.Stringer) (CreateJobCommandStep2, error) {
@@ -83,11 +91,13 @@ func (cmd *CreateJobCommand) Retries(retries int32) CreateJobCommandStep2 {
 }
 
 func (cmd *CreateJobCommand) PayloadFromString(payload string) (CreateJobCommandStep2, error) {
-	if cmd.Validate([]byte(payload)) {
-		cmd.request.Payload = payload
-		return cmd, nil
+	err := cmd.Validate("payload", payload)
+	if err != nil {
+		return nil, err
 	}
-	return nil, utils.ErrNotValidJsonString
+
+	cmd.request.Payload = payload
+	return cmd, nil
 }
 
 func (cmd *CreateJobCommand) PayloadFromStringer(payload fmt.Stringer) (CreateJobCommandStep2, error) {
@@ -95,11 +105,12 @@ func (cmd *CreateJobCommand) PayloadFromStringer(payload fmt.Stringer) (CreateJo
 }
 
 func (cmd *CreateJobCommand) PayloadFromObject(payload interface{}) (CreateJobCommandStep2, error) {
-	jsonString, err := cmd.ToString(payload)
+	value, err := cmd.AsJson("payload", payload)
 	if err != nil {
 		return nil, err
 	}
-	cmd.request.Payload = jsonString
+
+	cmd.request.Payload = value
 	return cmd, nil
 }
 
@@ -119,20 +130,20 @@ func (cmd *CreateJobCommand) Send() (*pb.CreateJobResponse, error) {
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), utils.RequestTimeoutInSec*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
 	defer cancel()
 
 	return cmd.gateway.CreateJob(ctx, cmd.request)
 }
 
-func NewCreateJobCommand(gateway pb.GatewayClient) CreateJobCommandStep1 {
+func NewCreateJobCommand(gateway pb.GatewayClient, requestTimeout time.Duration) CreateJobCommandStep1 {
 	return &CreateJobCommand{
 		SerializerMixin: utils.NewJsonStringSerializer(),
 		customHeaders:   make(map[string]interface{}),
 		request: &pb.CreateJobRequest{
-			Retries: utils.DefaultRetries,
-			Payload: "",
+			Retries: DefaultJobRetries,
 		},
-		gateway: gateway,
+		gateway:        gateway,
+		requestTimeout: requestTimeout,
 	}
 }

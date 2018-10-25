@@ -22,8 +22,8 @@ func TestActivateJobsCommand(t *testing.T) {
 	request := &pb.ActivateJobsRequest{
 		Type:    "foo",
 		Amount:  5,
-		Timeout: utils.DefaultJobTimeoutInMs,
-		Worker:  utils.DefaultJobWorkerName,
+		Timeout: DefaultJobTimeoutInMs,
+		Worker:  DefaultJobWorkerName,
 	}
 
 	response1 := &pb.ActivateJobsResponse{
@@ -33,7 +33,7 @@ func TestActivateJobsCommand(t *testing.T) {
 				Type:     "foo",
 				Retries:  3,
 				Deadline: 123123,
-				Worker:   utils.DefaultJobWorkerName,
+				Worker:   DefaultJobWorkerName,
 				JobHeaders: &pb.JobHeaders{
 					ElementInstanceKey:       123,
 					WorkflowKey:               124,
@@ -57,7 +57,7 @@ func TestActivateJobsCommand(t *testing.T) {
 				Type:     "foo",
 				Retries:  3,
 				Deadline: 123123,
-				Worker:   utils.DefaultJobWorkerName,
+				Worker:   DefaultJobWorkerName,
 				JobHeaders: &pb.JobHeaders{
 					ElementInstanceKey:       123,
 					WorkflowKey:               124,
@@ -74,7 +74,7 @@ func TestActivateJobsCommand(t *testing.T) {
 				Type:          "foo",
 				Retries:       3,
 				Deadline:      123123,
-				Worker:        utils.DefaultJobWorkerName,
+				Worker:        DefaultJobWorkerName,
 				JobHeaders:    &pb.JobHeaders{},
 				CustomHeaders: "{}",
 				Payload:       "{}",
@@ -100,9 +100,9 @@ func TestActivateJobsCommand(t *testing.T) {
 		stream.EXPECT().Recv().Return(nil, io.EOF),
 	)
 
-	client.EXPECT().ActivateJobs(gomock.Any(), &rpcMsg{msg: request}).Return(stream, nil)
+	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stream, nil)
 
-	jobs, err := NewActivateJobsCommand(client).JobType("foo").Amount(5).Send()
+	jobs, err := NewActivateJobsCommand(client, utils.DefaultTestTimeout).JobType("foo").Amount(5).Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -130,13 +130,13 @@ func TestActivateJobsCommandWithTimeout(t *testing.T) {
 		Type:    "foo",
 		Amount:  5,
 		Timeout: 60 * 1000,
-		Worker:  utils.DefaultJobWorkerName,
+		Worker:  DefaultJobWorkerName,
 	}
 
 	stream.EXPECT().Recv().Return(nil, io.EOF)
-	client.EXPECT().ActivateJobs(gomock.Any(), &rpcMsg{msg: request}).Return(stream, nil)
+	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stream, nil)
 
-	jobs, err := NewActivateJobsCommand(client).JobType("foo").Amount(5).Timeout(1 * time.Minute).Send()
+	jobs, err := NewActivateJobsCommand(client, utils.DefaultTestTimeout).JobType("foo").Amount(5).Timeout(1 * time.Minute).Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -157,14 +157,14 @@ func TestActivateJobsCommandWithWorkerName(t *testing.T) {
 	request := &pb.ActivateJobsRequest{
 		Type:    "foo",
 		Amount:  5,
-		Timeout: utils.DefaultJobTimeoutInMs,
+		Timeout: DefaultJobTimeoutInMs,
 		Worker:  "bar",
 	}
 
 	stream.EXPECT().Recv().Return(nil, io.EOF)
-	client.EXPECT().ActivateJobs(gomock.Any(), &rpcMsg{msg: request}).Return(stream, nil)
+	client.EXPECT().ActivateJobs(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stream, nil)
 
-	jobs, err := NewActivateJobsCommand(client).JobType("foo").Amount(5).WorkerName("bar").Send()
+	jobs, err := NewActivateJobsCommand(client, utils.DefaultTestTimeout).JobType("foo").Amount(5).WorkerName("bar").Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")

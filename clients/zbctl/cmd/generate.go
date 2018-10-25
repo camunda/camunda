@@ -11,30 +11,18 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-package utils
+
+package cmd
 
 import (
-	"fmt"
-	"os"
-	"strings"
+	"github.com/spf13/cobra"
 )
 
-type ErrorContext struct {
-	Address string
+var generateCmd = &cobra.Command{
+	Use:   "generate",
+	Short: "Generate documentation",
 }
 
-func errorOutput(err error, ctx *ErrorContext) string {
-	if strings.Contains(err.Error(), "connection refused") {
-		return fmt.Sprintf("unable to connect to broker %s", ctx.Address)
-	}
-	return err.Error()
-}
-
-func CheckOrExit(err error, exitCode int, ctx *ErrorContext) {
-	if err == nil {
-		return
-	}
-
-	fmt.Printf("%+v \n\n", errorOutput(err, ctx))
-	os.Exit(exitCode)
+func init() {
+	rootCmd.AddCommand(generateCmd)
 }

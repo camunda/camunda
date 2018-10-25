@@ -16,9 +16,13 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/zeebe-io/zeebe/clients/zbctl/utils"
+	"github.com/zeebe-io/zeebe/clients/go/commands"
 	"log"
 	"time"
+)
+
+const (
+	DefaultJobWorkerName = "zbctl"
 )
 
 var (
@@ -27,33 +31,36 @@ var (
 	activateJobsTimeoutFlag time.Duration
 )
 
-// activateJobsCmd represents the activateJob command
 var activateJobsCmd = &cobra.Command{
-	Use:    "jobs <type>",
-	Short:  "Activate jobs for type",
-	Args:   cobra.ExactArgs(1),
-	PreRun: initClient,
-	Run: func(cmd *cobra.Command, args []string) {
+	Use:     "jobs <type>",
+	Short:   "Activate jobs for type",
+	Args:    cobra.ExactArgs(1),
+	PreRunE: initClient,
+	RunE: func(cmd *cobra.Command, args []string) error {
 		jobType := args[0]
 		jobs, err := client.NewActivateJobsCommand().JobType(jobType).Amount(activateJobsAmountFlag).WorkerName(activateJobsWorkerFlag).Timeout(activateJobsTimeoutFlag).Send()
-		utils.CheckOrExit(err, utils.ExitCodeIOError, defaultErrCtx)
+		if err != nil {
+			return err
+		}
 
 		jobsCount := len(jobs)
 		if jobsCount > 0 {
 			log.Println("Activated", jobsCount, "for type", jobType)
 			for index, job := range jobs {
 				log.Println("Job", index+1, "/", jobsCount)
-				out.Serialize(job).Flush()
+				printJson(job)
 			}
 		} else {
 			log.Println("No jobs found to activate for type", jobType)
 		}
+
+		return nil
 	},
 }
 
 func init() {
 	activateCmd.AddCommand(activateJobsCmd)
 	activateJobsCmd.Flags().Int32Var(&activateJobsAmountFlag, "amount", 1, "Specify amount of jobs to activate")
-	activateJobsCmd.Flags().StringVar(&activateJobsWorkerFlag, "worker", utils.DefaultJobWorker, "Specify the name of the worker")
-	activateJobsCmd.Flags().DurationVar(&activateJobsTimeoutFlag, "timeout", utils.DefaultJobTimeout, "Specify the timeout of the activated job")
+	activateJobsCmd.Flags().StringVar(&activateJobsWorkerFlag, "worker", DefaultJobWorkerName, "Specify the name of the worker")
+	activateJobsCmd.Flags().DurationVar(&activateJobsTimeoutFlag, "timeout", commands.DefaultJobTimeout, "Specify the timeout of the activated job")
 }

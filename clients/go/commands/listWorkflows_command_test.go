@@ -4,6 +4,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/zeebe-io/zeebe/clients/go/mock_pb"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
+	"github.com/zeebe-io/zeebe/clients/go/utils"
 	"testing"
 )
 
@@ -16,9 +17,9 @@ func TestListWorkflowsCommand(t *testing.T) {
 	request := &pb.ListWorkflowsRequest{}
 	stub := &pb.ListWorkflowsResponse{}
 
-	client.EXPECT().ListWorkflows(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().ListWorkflows(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewListWorkflowsCommand(client)
+	command := NewListWorkflowsCommand(client, utils.DefaultTestTimeout)
 
 	response, err := command.Send()
 
@@ -42,9 +43,9 @@ func TestListWorkflowsCommandWithBpmnProcessId(t *testing.T) {
 	}
 	stub := &pb.ListWorkflowsResponse{}
 
-	client.EXPECT().ListWorkflows(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().ListWorkflows(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewListWorkflowsCommand(client)
+	command := NewListWorkflowsCommand(client, utils.DefaultTestTimeout)
 
 	response, err := command.BpmnProcessId("foo").Send()
 

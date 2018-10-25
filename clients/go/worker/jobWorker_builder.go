@@ -1,19 +1,27 @@
 package worker
 
 import (
+	"github.com/zeebe-io/zeebe/clients/go/commands"
 	"github.com/zeebe-io/zeebe/clients/go/entities"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
-	"github.com/zeebe-io/zeebe/clients/go/utils"
 	"log"
 	"math"
 	"sync"
 	"time"
 )
 
+const (
+	DefaultJobWorkerBufferSize    = 32
+	DefaultJobWorkerConcurrency   = 4
+	DefaultJobWorkerPollInterval  = 5 * time.Second
+	DefaultJobWorkerPollThreshold = 0.3
+)
+
 type JobWorkerBuilder struct {
-	gatewayClient pb.GatewayClient
-	jobClient     JobClient
-	request       pb.ActivateJobsRequest
+	gatewayClient  pb.GatewayClient
+	jobClient      JobClient
+	request        pb.ActivateJobsRequest
+	requestTimeout time.Duration
 
 	handler       JobHandler
 	bufferSize    int
@@ -113,10 +121,11 @@ func (builder *JobWorkerBuilder) Open() JobWorker {
 	closeWait.Add(2)
 
 	poller := jobPoller{
-		client:       builder.gatewayClient,
-		bufferSize:   builder.bufferSize,
-		pollInterval: builder.pollInterval,
-		request:      builder.request,
+		client:         builder.gatewayClient,
+		bufferSize:     builder.bufferSize,
+		pollInterval:   builder.pollInterval,
+		request:        builder.request,
+		requestTimeout: builder.requestTimeout,
 
 		jobQueue:       jobQueue,
 		workerFinished: workerFinished,
@@ -141,17 +150,18 @@ func (builder *JobWorkerBuilder) Open() JobWorker {
 	}
 }
 
-func NewJobWorkerBuilder(gatewayClient pb.GatewayClient, jobClient JobClient) JobWorkerBuilderStep1 {
+func NewJobWorkerBuilder(gatewayClient pb.GatewayClient, jobClient JobClient, requestTimeout time.Duration) JobWorkerBuilderStep1 {
 	return &JobWorkerBuilder{
 		gatewayClient: gatewayClient,
 		jobClient:     jobClient,
-		bufferSize:    utils.DefaultJobWorkerBufferSize,
-		concurrency:   utils.DefaultJobWorkerConcurrency,
-		pollInterval:  utils.DefaultJobWorkerPollInterval,
-		pollThreshold: utils.DefaultJobWorkerPollThreshold,
+		bufferSize:    DefaultJobWorkerBufferSize,
+		concurrency:   DefaultJobWorkerConcurrency,
+		pollInterval:  DefaultJobWorkerPollInterval,
+		pollThreshold: DefaultJobWorkerPollThreshold,
 		request: pb.ActivateJobsRequest{
-			Timeout: utils.DefaultJobTimeoutInMs,
-			Worker:  utils.DefaultJobWorkerName,
+			Timeout: commands.DefaultJobTimeoutInMs,
+			Worker:  commands.DefaultJobWorkerName,
 		},
+		requestTimeout: requestTimeout,
 	}
 }

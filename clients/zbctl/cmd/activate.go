@@ -18,7 +18,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// activateCmd represents the activate command
 var activateCmd = &cobra.Command{
 	Use:   "activate",
 	Short: "Activate a resource",

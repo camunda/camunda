@@ -15,32 +15,33 @@
 package cmd
 
 import (
-	"github.com/zeebe-io/zeebe/clients/zbctl/utils"
-	"log"
-
 	"github.com/spf13/cobra"
+	"github.com/zeebe-io/zeebe/clients/go/commands"
+	"log"
 )
 
-var failJobRetriesFlag int32
+var (
+	failJobRetriesKey  int64
+	failJobRetriesFlag int32
+)
 
-// failJobCmd represents the failJob command
 var failJobCmd = &cobra.Command{
-	Use:    "job <jobKey>",
-	Short:  "Fail a job",
-	Args:   cobra.ExactArgs(1),
-	PreRun: initClient,
-	Run: func(cmd *cobra.Command, args []string) {
-		jobKey := convertToKey(args[0], "Expect job key as only positional argument, got")
+	Use:     "job <key>",
+	Short:   "Fail a job",
+	Args:    keyArg(&failJobRetriesKey),
+	PreRunE: initClient,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		_, err := client.NewFailJobCommand().JobKey(failJobRetriesKey).Retries(failJobRetriesFlag).Send()
+		if err == nil {
+			log.Println("Failed job with key", failJobRetriesKey, "and set remaining retries to", failJobRetriesFlag)
+		}
 
-		_, err := client.NewFailJobCommand().JobKey(jobKey).Retries(failJobRetriesFlag).Send()
-		utils.CheckOrExit(err, utils.ExitCodeIOError, defaultErrCtx)
-
-		log.Println("Failed job with key", jobKey, "and set remaining retries to", failJobRetriesFlag)
+		return err
 	},
 }
 
 func init() {
 	failCmd.AddCommand(failJobCmd)
-	failJobCmd.Flags().Int32Var(&failJobRetriesFlag, "retries", utils.DefaultJobRetries, "Specify remaining retries of job")
+	failJobCmd.Flags().Int32Var(&failJobRetriesFlag, "retries", commands.DefaultJobRetries, "Specify remaining retries of job")
 	failJobCmd.MarkFlagRequired("retries")
 }

@@ -15,8 +15,6 @@
 package cmd
 
 import (
-	"github.com/zeebe-io/zeebe/clients/zbctl/utils"
-
 	"github.com/spf13/cobra"
 )
 
@@ -27,13 +25,14 @@ var listWorkflowsCmd = &cobra.Command{
 	Use:   "workflows",
 	Short: "List deployed workflows",
 	Args: cobra.NoArgs,
-	PreRun: initClient,
-	Run: func(cmd *cobra.Command, args []string) {
+	PreRunE: initClient,
+	RunE: func(cmd *cobra.Command, args []string) error {
 		response, err := client.NewListWorkflowsCommand().BpmnProcessId(listWorkflowsBpmnProcessIdFlag).Send()
-		utils.CheckOrExit(err, utils.ExitCodeIOError, defaultErrCtx)
-		if response.Workflows != nil {
-			out.Serialize(response.Workflows).Flush()
+		if err == nil && response.Workflows != nil {
+			printJson(response.Workflows)
 		}
+
+		return err
 	},
 }
 

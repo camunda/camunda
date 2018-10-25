@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"github.com/golang/mock/gomock"
 	"github.com/golang/protobuf/proto"
+	"github.com/zeebe-io/zeebe/clients/go/commands"
 	"github.com/zeebe-io/zeebe/clients/go/entities"
 	"github.com/zeebe-io/zeebe/clients/go/mock_pb"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
@@ -38,9 +39,9 @@ func TestJobWorkerActivateJobsDefault(t *testing.T) {
 
 	request := &pb.ActivateJobsRequest{
 		Type:    "foo",
-		Amount:  utils.DefaultJobWorkerBufferSize,
-		Timeout: utils.DefaultJobTimeoutInMs,
-		Worker:  utils.DefaultJobWorkerName,
+		Amount:  DefaultJobWorkerBufferSize,
+		Timeout: commands.DefaultJobTimeoutInMs,
+		Worker:  commands.DefaultJobWorkerName,
 	}
 
 	response := &pb.ActivateJobsResponse{
@@ -57,7 +58,7 @@ func TestJobWorkerActivateJobsDefault(t *testing.T) {
 
 	jobs := make(chan entities.Job, 1)
 
-	NewJobWorkerBuilder(client, nil).JobType("foo").Handler(func(client JobClient, job entities.Job) {
+	NewJobWorkerBuilder(client, nil, utils.DefaultTestTimeout).JobType("foo").Handler(func(client JobClient, job entities.Job) {
 		jobs <- job
 	}).Open()
 
@@ -67,7 +68,7 @@ func TestJobWorkerActivateJobsDefault(t *testing.T) {
 		if job.Key != expected {
 			t.Error("Failed to received job", expected, "got", job.Key)
 		}
-	case <-time.After(5 * time.Hour):
+	case <-time.After(utils.DefaultTestTimeout):
 		t.Error("Failed to receive all jobs before timeout")
 	}
 }
@@ -79,10 +80,12 @@ func TestJobWorkerActivateJobsCustom(t *testing.T) {
 	client := mock_pb.NewMockGatewayClient(ctrl)
 	stream := mock_pb.NewMockGateway_ActivateJobsClient(ctrl)
 
+	timeout := 7 * time.Minute
+
 	request := &pb.ActivateJobsRequest{
 		Type:    "foo",
 		Amount:  123,
-		Timeout: 7 * 60 * 1000,
+		Timeout: int64(timeout / time.Millisecond),
 		Worker:  "fooWorker",
 	}
 
@@ -100,9 +103,9 @@ func TestJobWorkerActivateJobsCustom(t *testing.T) {
 
 	jobs := make(chan entities.Job, 1)
 
-	NewJobWorkerBuilder(client, nil).JobType("foo").Handler(func(client JobClient, job entities.Job) {
+	NewJobWorkerBuilder(client, nil, utils.DefaultTestTimeout).JobType("foo").Handler(func(client JobClient, job entities.Job) {
 		jobs <- job
-	}).BufferSize(123).Timeout(7 * time.Minute).Name("fooWorker").Open()
+	}).BufferSize(123).Timeout(timeout).Name("fooWorker").Open()
 
 	select {
 	case job := <-jobs:
@@ -110,7 +113,7 @@ func TestJobWorkerActivateJobsCustom(t *testing.T) {
 		if job.Key != expected {
 			t.Error("Failed to received job", expected, "got", job.Key)
 		}
-	case <-time.After(5 * time.Hour):
+	case <-time.After(utils.DefaultTestTimeout):
 		t.Error("Failed to receive all jobs before timeout")
 	}
 }

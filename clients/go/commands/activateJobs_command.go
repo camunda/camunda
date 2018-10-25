@@ -4,9 +4,14 @@ import (
 	"context"
 	"github.com/zeebe-io/zeebe/clients/go/entities"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
-	"github.com/zeebe-io/zeebe/clients/go/utils"
 	"io"
 	"time"
+)
+
+const (
+	DefaultJobTimeout     = time.Duration(5 * time.Minute)
+	DefaultJobTimeoutInMs = int64(DefaultJobTimeout / time.Millisecond)
+	DefaultJobWorkerName  = "default"
 )
 
 type DispatchActivateJobsCommand interface {
@@ -29,8 +34,9 @@ type ActivateJobsCommandStep3 interface {
 }
 
 type ActivateJobsCommand struct {
-	request *pb.ActivateJobsRequest
-	gateway pb.GatewayClient
+	request        *pb.ActivateJobsRequest
+	gateway        pb.GatewayClient
+	requestTimeout time.Duration
 }
 
 func (cmd *ActivateJobsCommand) JobType(jobType string) ActivateJobsCommandStep2 {
@@ -54,7 +60,7 @@ func (cmd *ActivateJobsCommand) WorkerName(workerName string) ActivateJobsComman
 }
 
 func (cmd *ActivateJobsCommand) Send() ([]entities.Job, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), utils.RequestTimeoutInSec*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
 	defer cancel()
 
 	stream, err := cmd.gateway.ActivateJobs(ctx, cmd.request)
@@ -80,12 +86,13 @@ func (cmd *ActivateJobsCommand) Send() ([]entities.Job, error) {
 	return activatedJobs, nil
 }
 
-func NewActivateJobsCommand(gateway pb.GatewayClient) ActivateJobsCommandStep1 {
+func NewActivateJobsCommand(gateway pb.GatewayClient, requestTimeout time.Duration) ActivateJobsCommandStep1 {
 	return &ActivateJobsCommand{
 		request: &pb.ActivateJobsRequest{
-			Timeout: utils.DefaultJobTimeoutInMs,
-			Worker:  utils.DefaultJobWorkerName,
+			Timeout: DefaultJobTimeoutInMs,
+			Worker:  DefaultJobWorkerName,
 		},
-		gateway: gateway,
+		gateway:        gateway,
+		requestTimeout: requestTimeout,
 	}
 }

@@ -18,8 +18,8 @@ import (
 	"bytes"
 	"fmt"
 	"github.com/spf13/cobra"
+	"github.com/zeebe-io/zeebe/clients/go/commands"
 	"github.com/zeebe-io/zeebe/clients/go/entities"
-	"github.com/zeebe-io/zeebe/clients/go/utils"
 	"github.com/zeebe-io/zeebe/clients/go/worker"
 	"io"
 	"log"
@@ -29,12 +29,12 @@ import (
 )
 
 var (
-	createWorkerHandlerFlag string
-	createWorkerNameFlag string
-	createWorkerTimeoutFlag time.Duration
-	createWorkerBufferSizeFlag int
-	createWorkerConcurrencyFlag int
-	createWorkerPollIntervalFlag time.Duration
+	createWorkerHandlerFlag       string
+	createWorkerNameFlag          string
+	createWorkerTimeoutFlag       time.Duration
+	createWorkerBufferSizeFlag    int
+	createWorkerConcurrencyFlag   int
+	createWorkerPollIntervalFlag  time.Duration
 	createWorkerPollThresholdFlag float64
 
 	createWorkerHandlerArgs []string
@@ -49,8 +49,8 @@ The handler will receive the payload of the activated job as JSON object on stdi
 If the handler finishes successful the job will be completed with the payload provided on stdout, again as JSON object.
 If the handler exits with an none zero exit code the job will be failed, the handler can provide a failure message on stderr.
 `,
-	Args: cobra.ExactArgs(1),
-	PreRun: initClient,
+	Args:    cobra.ExactArgs(1),
+	PreRunE: initClient,
 	Run: func(cmd *cobra.Command, args []string) {
 		createWorkerHandlerArgs = strings.Split(createWorkerHandlerFlag, " ")
 
@@ -136,10 +136,10 @@ func init() {
 	createWorkerCmd.Flags().StringVar(&createWorkerHandlerFlag, "handler", "", "Specify handler to invoke for each job")
 	createWorkerCmd.MarkFlagRequired("handler")
 
-	createWorkerCmd.Flags().StringVar(&createWorkerNameFlag, "name", "zbctl", "Specify the worker name")
-	createWorkerCmd.Flags().DurationVar(&createWorkerTimeoutFlag, "timeout", utils.DefaultJobTimeout, "Specify the duration no other worker should work on job activated by this worker")
-	createWorkerCmd.Flags().IntVar(&createWorkerBufferSizeFlag, "bufferSize", utils.DefaultJobWorkerBufferSize, "Specify the maximum number of jobs which will be activated for this worker at the same time")
-	createWorkerCmd.Flags().IntVar(&createWorkerConcurrencyFlag, "concurrency", utils.DefaultJobWorkerConcurrency, "Specify the maximum number of concurrent spawned goroutines to complete jobs")
-	createWorkerCmd.Flags().DurationVar(&createWorkerPollIntervalFlag, "pollInterval", utils.DefaultJobWorkerPollInterval, "Specify the maximal interval between polling for new jobs")
-	createWorkerCmd.Flags().Float64Var(&createWorkerPollThresholdFlag, "pollThreshold", utils.DefaultJobWorkerPollThreshold, "Specify the threshold of buffered activated jobs before polling for new jobs, i.e. pollThreshold * bufferSize")
+	createWorkerCmd.Flags().StringVar(&createWorkerNameFlag, "name", DefaultJobWorkerName, "Specify the worker name")
+	createWorkerCmd.Flags().DurationVar(&createWorkerTimeoutFlag, "timeout", commands.DefaultJobTimeout, "Specify the duration no other worker should work on job activated by this worker")
+	createWorkerCmd.Flags().IntVar(&createWorkerBufferSizeFlag, "bufferSize", worker.DefaultJobWorkerBufferSize, "Specify the maximum number of jobs which will be activated for this worker at the same time")
+	createWorkerCmd.Flags().IntVar(&createWorkerConcurrencyFlag, "concurrency", worker.DefaultJobWorkerConcurrency, "Specify the maximum number of concurrent spawned goroutines to complete jobs")
+	createWorkerCmd.Flags().DurationVar(&createWorkerPollIntervalFlag, "pollInterval", worker.DefaultJobWorkerPollInterval, "Specify the maximal interval between polling for new jobs")
+	createWorkerCmd.Flags().Float64Var(&createWorkerPollThresholdFlag, "pollThreshold", worker.DefaultJobWorkerPollThreshold, "Specify the threshold of buffered activated jobs before polling for new jobs, i.e. pollThreshold * bufferSize")
 }

@@ -3,7 +3,6 @@ package commands
 import (
 	"context"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
-	"github.com/zeebe-io/zeebe/clients/go/utils"
 	"time"
 )
 
@@ -20,8 +19,9 @@ type FailJobCommandStep2 interface {
 }
 
 type FailJobCommand struct {
-	request *pb.FailJobRequest
-	gateway pb.GatewayClient
+	request        *pb.FailJobRequest
+	gateway        pb.GatewayClient
+	requestTimeout time.Duration
 }
 
 func (cmd *FailJobCommand) JobKey(jobKey int64) FailJobCommandStep2 {
@@ -35,15 +35,16 @@ func (cmd *FailJobCommand) Retries(retries int32) DispatchFailJobCommand {
 }
 
 func (cmd *FailJobCommand) Send() (*pb.FailJobResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), utils.RequestTimeoutInSec*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
 	defer cancel()
 
 	return cmd.gateway.FailJob(ctx, cmd.request)
 }
 
-func NewFailJobCommand(gateway pb.GatewayClient) FailJobCommandStep1 {
+func NewFailJobCommand(gateway pb.GatewayClient, requestTimeout time.Duration) FailJobCommandStep1 {
 	return &FailJobCommand{
-		request: &pb.FailJobRequest{},
-		gateway: gateway,
+		request:        &pb.FailJobRequest{},
+		gateway:        gateway,
+		requestTimeout: requestTimeout,
 	}
 }

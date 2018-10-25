@@ -17,16 +17,25 @@ package cmd
 import (
 	"fmt"
 	"github.com/spf13/cobra"
-	"github.com/zeebe-io/zeebe/clients/zbctl/utils"
+	"math"
 )
 
-// versionCmd represents the version command
+var (
+	Version = "development"
+	Commit  = "HEAD"
+)
+
+func VersionString() string {
+	commit := Commit[0:int(math.Min(8, float64(len(Commit))))]
+	return fmt.Sprintf("zbctl %s (commit: %s)", Version, commit)
+}
+
 var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print the version of zbctl",
+	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println(utils.VersionString())
-
+		fmt.Println(VersionString())
 	},
 }
 

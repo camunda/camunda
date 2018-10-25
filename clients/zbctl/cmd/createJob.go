@@ -14,9 +14,8 @@
 package cmd
 
 import (
-	"github.com/zeebe-io/zeebe/clients/zbctl/utils"
-
 	"github.com/spf13/cobra"
+	"github.com/zeebe-io/zeebe/clients/go/commands"
 )
 
 var (
@@ -25,40 +24,45 @@ var (
 	createJobPayloadFlag       string
 )
 
-// createJobCmd implements cobra command for CLI
 var createJobCmd = &cobra.Command{
-	Use:    "job <type>",
-	Short:  "Creates a new job with specified type",
-	Args:   cobra.ExactArgs(1),
-	PreRun: initClient,
-	Run: func(cmd *cobra.Command, args []string) {
+	Use:     "job <type>",
+	Short:   "Creates a new job with specified type",
+	Args:    cobra.ExactArgs(1),
+	PreRunE: initClient,
+	RunE: func(cmd *cobra.Command, args []string) error {
 		zbCmd, err := client.
 			NewCreateJobCommand().
 			JobType(args[0]).
 			Retries(createJobRetriesFlag).
 			SetCustomHeadersFromString(createJobCustomHeadersFlag)
-		utils.CheckOrExit(err, utils.ExitCodeIOError, defaultErrCtx)
+		if err != nil {
+			return err
+		}
 
 		zbCmd, err = zbCmd.PayloadFromString(createJobPayloadFlag)
-		utils.CheckOrExit(err, utils.ExitCodeIOError, defaultErrCtx)
+		if err != nil {
+			return err
+		}
 
 		response, err := zbCmd.Send()
-		utils.CheckOrExit(err, utils.ExitCodeIOError, defaultErrCtx)
+		if err != nil {
+			return err
+		}
 
-		out.Serialize(response).Flush()
+		return printJson(response)
 	},
 }
 
 func init() {
 	createCmd.AddCommand(createJobCmd)
 
-	createJobCmd.Flags().Int32Var(&createJobRetriesFlag, "retries", utils.DefaultJobRetries, "Retries of job")
+	createJobCmd.Flags().Int32Var(&createJobRetriesFlag, "retries", commands.DefaultJobRetries, "Specify retries of job")
 
 	createJobCmd.
 		Flags().
-		StringVar(&createJobCustomHeadersFlag, "headers", utils.EmptyJsonObject, "Specify custom headers as JSON string")
+		StringVar(&createJobCustomHeadersFlag, "headers", "{}", "Specify custom headers as JSON string")
 
 	createJobCmd.
 		Flags().
-		StringVar(&createJobPayloadFlag, "payload", utils.EmptyJsonObject, "Specify payload as JSON string")
+		StringVar(&createJobPayloadFlag, "payload", "{}", "Specify payload as JSON string")
 }

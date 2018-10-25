@@ -4,6 +4,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/zeebe-io/zeebe/clients/go/mock_pb"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
+	"github.com/zeebe-io/zeebe/clients/go/utils"
 	"io/ioutil"
 	"testing"
 )
@@ -42,9 +43,9 @@ func TestDeployCommand(t *testing.T) {
 	}
 	stub := &pb.DeployWorkflowResponse{}
 
-	client.EXPECT().DeployWorkflow(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().DeployWorkflow(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewDeployCommand(client)
+	command := NewDeployCommand(client, utils.DefaultTestTimeout)
 
 	response, err := command.
 		AddResourceFile(demoName).

@@ -4,7 +4,6 @@ import (
 	"context"
 	"github.com/zeebe-io/zeebe/clients/go/entities"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
-	"github.com/zeebe-io/zeebe/clients/go/utils"
 	"io"
 	"log"
 	"sync"
@@ -12,10 +11,11 @@ import (
 )
 
 type jobPoller struct {
-	client       pb.GatewayClient
-	request      pb.ActivateJobsRequest
-	bufferSize   int
-	pollInterval time.Duration
+	client         pb.GatewayClient
+	request        pb.ActivateJobsRequest
+	requestTimeout time.Duration
+	bufferSize     int
+	pollInterval   time.Duration
 
 	jobQueue       chan entities.Job
 	workerFinished chan bool
@@ -53,7 +53,7 @@ func (poller *jobPoller) shouldActivateJobs() bool {
 }
 
 func (poller *jobPoller) activateJobs() {
-	ctx, cancel := context.WithTimeout(context.Background(), utils.RequestTimeoutInSec*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), poller.requestTimeout)
 	defer cancel()
 
 	poller.request.Amount = int32(poller.bufferSize - poller.remaining)

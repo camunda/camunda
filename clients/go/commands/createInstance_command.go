@@ -9,6 +9,8 @@ import (
 	"time"
 )
 
+const LatestVersion = -1
+
 type DispatchCreateInstanceCommand interface {
 	Send() (*pb.CreateWorkflowInstanceResponse, error)
 }
@@ -40,16 +42,19 @@ type CreateInstanceCommandStep3 interface {
 type CreateInstanceCommand struct {
 	utils.SerializerMixin
 
-	request *pb.CreateWorkflowInstanceRequest
-	gateway pb.GatewayClient
+	request        *pb.CreateWorkflowInstanceRequest
+	gateway        pb.GatewayClient
+	requestTimeout time.Duration
 }
 
 func (cmd *CreateInstanceCommand) PayloadFromString(payload string) (DispatchCreateInstanceCommand, error) {
-	if cmd.Validate([]byte(payload)) {
-		cmd.request.Payload = payload
-		return cmd, nil
+	err := cmd.Validate("payload", payload)
+	if err != nil {
+		return nil, err
 	}
-	return nil, utils.ErrNotValidJsonString
+
+	cmd.request.Payload = payload
+	return cmd, nil
 }
 
 func (cmd *CreateInstanceCommand) PayloadFromStringer(payload fmt.Stringer) (DispatchCreateInstanceCommand, error) {
@@ -57,12 +62,13 @@ func (cmd *CreateInstanceCommand) PayloadFromStringer(payload fmt.Stringer) (Dis
 }
 
 func (cmd *CreateInstanceCommand) PayloadFromObject(payload interface{}) (DispatchCreateInstanceCommand, error) {
-	jsonStringPayload, err := cmd.ToString(payload)
+	value, err := cmd.AsJson("payload", payload)
 	if err != nil {
 		return nil, err
 	}
-	cmd.request.Payload = jsonStringPayload
-	return cmd, nil
+
+	cmd.request.Payload = value
+	return cmd, err
 }
 
 func (cmd *CreateInstanceCommand) PayloadFromMap(payload map[string]interface{}) (DispatchCreateInstanceCommand, error) {
@@ -75,7 +81,7 @@ func (cmd *CreateInstanceCommand) Version(version int32) CreateInstanceCommandSt
 }
 
 func (cmd *CreateInstanceCommand) LatestVersion() CreateInstanceCommandStep3 {
-	cmd.request.Version = utils.LatestVersion
+	cmd.request.Version = LatestVersion
 	return cmd
 }
 
@@ -90,16 +96,17 @@ func (cmd *CreateInstanceCommand) BPMNProcessId(id string) CreateInstanceCommand
 }
 
 func (cmd *CreateInstanceCommand) Send() (*pb.CreateWorkflowInstanceResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), utils.RequestTimeoutInSec*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
 	defer cancel()
 
 	return cmd.gateway.CreateWorkflowInstance(ctx, cmd.request)
 }
 
-func NewCreateInstanceCommand(gateway pb.GatewayClient) CreateInstanceCommandStep1 {
+func NewCreateInstanceCommand(gateway pb.GatewayClient, requestTimeout time.Duration) CreateInstanceCommandStep1 {
 	return &CreateInstanceCommand{
 		SerializerMixin: utils.NewJsonStringSerializer(),
 		request:         &pb.CreateWorkflowInstanceRequest{},
 		gateway:         gateway,
+		requestTimeout:  requestTimeout,
 	}
 }

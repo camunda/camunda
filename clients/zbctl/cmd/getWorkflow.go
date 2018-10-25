@@ -18,8 +18,6 @@ import (
 	"fmt"
 	"github.com/spf13/cobra"
 	"github.com/zeebe-io/zeebe/clients/go/commands"
-	"github.com/zeebe-io/zeebe/clients/zbctl/utils"
-	"os"
 )
 
 var (
@@ -33,16 +31,18 @@ var getWorkflowCmd = &cobra.Command{
 	Use:   "workflow",
 	Short: "Get a workflow resource",
 	Args: cobra.NoArgs,
-	PreRun: initClient,
-	Run: func(cmd *cobra.Command, args []string) {
+	PreRunE: initClient,
+	RunE: func(cmd *cobra.Command, args []string) error {
 		if getWorkflowKeyFlag < 1 && len(getWorkflowBpmnProcessIdFlag) == 0 {
-			fmt.Println("Either workflow key or BPMN process id has to be specified")
-			os.Exit(utils.ExitCodeConfigurationError)
+			return fmt.Errorf("either workflow key or BPMN process id has to be specified")
 		}
 
-		if getWorkflowKeyFlag > 0 && getWorkflowVersionFlag > utils.LatestVersion {
-			fmt.Println("No version allowed when workflow key is specified, got key", getWorkflowKeyFlag, "and version", getWorkflowVersionFlag)
-			os.Exit(utils.ExitCodeConfigurationError)
+		if getWorkflowKeyFlag > 0 && len(getWorkflowBpmnProcessIdFlag) > 0 {
+			return fmt.Errorf("only one of workflow key or BPMN process id can be specified, got key %d and BPMN process id %q", getWorkflowKeyFlag, getWorkflowBpmnProcessIdFlag)
+		}
+
+		if getWorkflowKeyFlag > 0 && getWorkflowVersionFlag > commands.LatestVersion {
+			return fmt.Errorf("no version allowed when workflow key is specified, got key %d and verion %d", getWorkflowKeyFlag, getWorkflowVersionFlag)
 		}
 
 		var request commands.DispatchGetWorkflowCommand
@@ -54,9 +54,11 @@ var getWorkflowCmd = &cobra.Command{
 		}
 
 		response, err := request.Send()
-		utils.CheckOrExit(err, utils.ExitCodeIOError, defaultErrCtx)
+		if err == nil {
+			printJson(response)
+		}
 
-		out.Serialize(response).Flush()
+		return err
 	},
 }
 
@@ -65,5 +67,5 @@ func init() {
 
 	getWorkflowCmd.Flags().Int64Var(&getWorkflowKeyFlag, "workflowKey", 0, "Specify workflow key")
 	getWorkflowCmd.Flags().StringVar(&getWorkflowBpmnProcessIdFlag, "bpmnProcessId", "", "Specify BPMN process id of workflow")
-	getWorkflowCmd.Flags().Int32Var(&getWorkflowVersionFlag, "version", utils.LatestVersion, "Specify workflow version if BPMN process id is specified")
+	getWorkflowCmd.Flags().Int32Var(&getWorkflowVersionFlag, "version", commands.LatestVersion, "Specify workflow version if BPMN process id is specified")
 }

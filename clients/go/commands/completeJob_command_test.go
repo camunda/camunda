@@ -4,6 +4,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/zeebe-io/zeebe/clients/go/mock_pb"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
+	"github.com/zeebe-io/zeebe/clients/go/utils"
 	"testing"
 )
 
@@ -18,9 +19,9 @@ func TestCompleteJobCommand(t *testing.T) {
 	}
 	stub := &pb.CompleteJobResponse{}
 
-	client.EXPECT().CompleteJob(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().CompleteJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	response, err := NewCompleteJobCommand(client).JobKey(123).Send()
+	response, err := NewCompleteJobCommand(client, utils.DefaultTestTimeout).JobKey(123).Send()
 
 	if err != nil {
 		t.Errorf("Failed to send request")
@@ -45,9 +46,9 @@ func TestCompleteJobCommandWithPayloadFromString(t *testing.T) {
 	}
 	stub := &pb.CompleteJobResponse{}
 
-	client.EXPECT().CompleteJob(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().CompleteJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCompleteJobCommand(client)
+	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout)
 
 	payloadCommand, err := command.JobKey(123).PayloadFromString(payload)
 	if err != nil {
@@ -79,9 +80,9 @@ func TestCompleteJobCommandWithPayloadFromStringer(t *testing.T) {
 	}
 	stub := &pb.CompleteJobResponse{}
 
-	client.EXPECT().CompleteJob(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().CompleteJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCompleteJobCommand(client)
+	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout)
 
 	payloadCommand, err := command.JobKey(123).PayloadFromStringer(DataType{Foo: "bar"})
 	if err != nil {
@@ -113,9 +114,9 @@ func TestCompleteJobCommandWithPayloadFromObject(t *testing.T) {
 	}
 	stub := &pb.CompleteJobResponse{}
 
-	client.EXPECT().CompleteJob(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().CompleteJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCompleteJobCommand(client)
+	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout)
 
 	payloadCommand, err := command.JobKey(123).PayloadFromObject(DataType{Foo: "bar"})
 	if err != nil {
@@ -149,9 +150,9 @@ func TestCompleteJobCommandWithPayloadFromMap(t *testing.T) {
 	}
 	stub := &pb.CompleteJobResponse{}
 
-	client.EXPECT().CompleteJob(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().CompleteJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCompleteJobCommand(client)
+	command := NewCompleteJobCommand(client, utils.DefaultTestTimeout)
 
 	payloadCommand, err := command.JobKey(123).PayloadFromMap(payloadMap)
 	if err != nil {

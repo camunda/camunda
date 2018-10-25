@@ -3,7 +3,6 @@ package commands
 import (
 	"context"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
-	"github.com/zeebe-io/zeebe/clients/go/utils"
 	"time"
 )
 
@@ -17,8 +16,9 @@ type DispatchListWorkflowsCommand interface {
 }
 
 type ListWorkflowsCommand struct {
-	gateway pb.GatewayClient
-	request *pb.ListWorkflowsRequest
+	gateway        pb.GatewayClient
+	request        *pb.ListWorkflowsRequest
+	requestTimeout time.Duration
 }
 
 func (cmd *ListWorkflowsCommand) BpmnProcessId(bpmnProcessId string) ListWorkflowsStep1 {
@@ -27,15 +27,16 @@ func (cmd *ListWorkflowsCommand) BpmnProcessId(bpmnProcessId string) ListWorkflo
 }
 
 func (cmd *ListWorkflowsCommand) Send() (*pb.ListWorkflowsResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), utils.StreamTimeoutInSec*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
 	defer cancel()
 
 	return cmd.gateway.ListWorkflows(ctx, cmd.request)
 }
 
-func NewListWorkflowsCommand(gateway pb.GatewayClient) ListWorkflowsStep1 {
+func NewListWorkflowsCommand(gateway pb.GatewayClient, requestTimeout time.Duration) ListWorkflowsStep1 {
 	return &ListWorkflowsCommand{
-		gateway: gateway,
-		request: &pb.ListWorkflowsRequest{},
+		gateway:        gateway,
+		request:        &pb.ListWorkflowsRequest{},
+		requestTimeout: requestTimeout,
 	}
 }
