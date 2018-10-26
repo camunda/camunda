@@ -138,7 +138,7 @@ public class WorkflowInstanceReader {
 
     logger.debug("Workflow instance search request: \n{}", constantScoreQuery.toString());
 
-    final SearchRequestBuilder searchRequestBuilder = esClient.prepareSearch(workflowInstanceType.getType());
+    final SearchRequestBuilder searchRequestBuilder = esClient.prepareSearch(workflowInstanceType.getAlias());
     applySorting(searchRequestBuilder, request.getSorting());
     return searchRequestBuilder.setQuery(constantScoreQuery);
   }
@@ -338,12 +338,17 @@ public class WorkflowInstanceReader {
    * @return
    */
   public WorkflowInstanceEntity getWorkflowInstanceById(String workflowInstanceId) {
-    final GetResponse response = esClient.prepareGet(workflowInstanceType.getType(), workflowInstanceType.getType(), workflowInstanceId).get();
+    final TermQueryBuilder q = termQuery(ElasticsearchUtil.ES_ID_FIELD_NAME, workflowInstanceId);
 
-    if (response.isExists()) {
-      return ElasticsearchUtil.fromSearchHit(response.getSourceAsString(), objectMapper, WorkflowInstanceEntity.class);
-    }
-    else {
+    final SearchResponse response = esClient.prepareSearch(workflowInstanceType.getAlias())
+      .setQuery(q)
+      .get();
+
+    if (response.getHits().totalHits == 1) {
+      return ElasticsearchUtil.fromSearchHit(response.getHits().getHits()[0].getSourceAsString(), objectMapper, WorkflowInstanceEntity.class);
+    } else if (response.getHits().totalHits > 1) {
+      throw new NotFoundException(String.format("Could not find unique workflow instance with id '%s'.", workflowInstanceId));
+    } else {
       throw new NotFoundException(String.format("Could not find workflow instance with id '%s'.", workflowInstanceId));
     }
   }
@@ -430,7 +435,7 @@ public class WorkflowInstanceReader {
 
     ConstantScoreQueryBuilder constantScoreQuery = constantScoreQuery(nestedQuery);
 
-    final SearchRequestBuilder searchRequestBuilder = esClient.prepareSearch(workflowInstanceType.getType());
+    final SearchRequestBuilder searchRequestBuilder = esClient.prepareSearch(workflowInstanceType.getAlias());
     searchRequestBuilder.setQuery(constantScoreQuery);
 
     SearchResponse response = searchRequestBuilder
@@ -482,7 +487,7 @@ public class WorkflowInstanceReader {
             );
 
     final SearchRequestBuilder searchRequestBuilder =
-      esClient.prepareSearch(workflowInstanceType.getType())
+      esClient.prepareSearch(workflowInstanceType.getAlias())
         .setSize(0)
         .setQuery(q)
         .addAggregation(agg);
@@ -527,7 +532,7 @@ public class WorkflowInstanceReader {
       );
 
     final SearchRequestBuilder searchRequestBuilder =
-      esClient.prepareSearch(workflowInstanceType.getType())
+      esClient.prepareSearch(workflowInstanceType.getAlias())
         .setSize(0)
         .setQuery(q)
         .addAggregation(agg);

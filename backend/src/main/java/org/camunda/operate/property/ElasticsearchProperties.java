@@ -1,15 +1,21 @@
 package org.camunda.operate.property;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 
 public class ElasticsearchProperties {
 
-  public static final String IMPORT_POSITION_INDEX_NAME_DEFAULT = "import-position";
+  private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-  public static final String WORKFLOW_INSTANCE_INDEX_NAME_DEFAULT = "workflow-instance";
+  public static final String IMPORT_POSITION_INDEX_PATTERN = "import-position";
 
-  public static final String EVENT_INDEX_NAME_DEFAULT = "event";
+  public static final String WORKFLOW_INSTANCE_INDEX_PATTERN = "workflow-instance";
 
-  public static final String WORKFLOW_INDEX_NAME_DEFAULT = "workflow";
+  public static final String EVENT_INDEX_PATTERN = "event";
+
+  public static final String WORKFLOW_INDEX_PATTERN = "workflow";
+
+  public static final String DATE_FORMAT_DEFAULT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
 
   private String clusterName= "elasticsearch";
 
@@ -17,17 +23,25 @@ public class ElasticsearchProperties {
 
   private int port = 9300;
 
-  private String dateFormat;
+  private String dateFormat = DATE_FORMAT_DEFAULT;
 
   private int batchSize = 20;
 
-  private String importPositionIndexName = IMPORT_POSITION_INDEX_NAME_DEFAULT;
+  private String importPositionIndexName = IMPORT_POSITION_INDEX_PATTERN + "_" + DATE_FORMATTER.format(LocalDate.now());
 
-  private String eventIndexName = EVENT_INDEX_NAME_DEFAULT;
+  private String eventIndexName = EVENT_INDEX_PATTERN + "_" + DATE_FORMATTER.format(LocalDate.now());
 
-  private String workflowInstanceIndexName = WORKFLOW_INSTANCE_INDEX_NAME_DEFAULT;
+  private String workflowInstanceIndexName = WORKFLOW_INSTANCE_INDEX_PATTERN + "_" + DATE_FORMATTER.format(LocalDate.now());
 
-  private String workflowIndexName = WORKFLOW_INDEX_NAME_DEFAULT;
+  private String workflowIndexName = WORKFLOW_INDEX_PATTERN + "_" + DATE_FORMATTER.format(LocalDate.now());
+
+  private String importPositionAlias = IMPORT_POSITION_INDEX_PATTERN;
+
+  private String eventAlias = EVENT_INDEX_PATTERN;
+
+  private String workflowInstanceAlias = WORKFLOW_INSTANCE_INDEX_PATTERN;
+
+  private String workflowAlias = WORKFLOW_INDEX_PATTERN;
 
   public String getClusterName() {
     return clusterName;
@@ -99,5 +113,37 @@ public class ElasticsearchProperties {
 
   public void setImportPositionIndexName(String importPositionIndexName) {
     this.importPositionIndexName = importPositionIndexName;
+  }
+
+  public String getImportPositionAlias() {
+    return importPositionAlias;
+  }
+
+  public void setImportPositionAlias(String importPositionAlias) {
+    this.importPositionAlias = importPositionAlias;
+  }
+
+  public String getEventAlias() {
+    return eventAlias;
+  }
+
+  public void setEventAlias(String eventAlias) {
+    this.eventAlias = eventAlias;
+  }
+
+  public String getWorkflowInstanceAlias() {
+    return workflowInstanceAlias;
+  }
+
+  public void setWorkflowInstanceAlias(String workflowInstanceAlias) {
+    this.workflowInstanceAlias = workflowInstanceAlias;
+  }
+
+  public String getWorkflowAlias() {
+    return workflowAlias;
+  }
+
+  public void setWorkflowAlias(String workflowAlias) {
+    this.workflowAlias = workflowAlias;
   }
 }

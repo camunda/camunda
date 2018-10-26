@@ -16,8 +16,13 @@ public class ImportPositionType extends StrictTypeMappingCreator {
   private OperateProperties operateProperties;
 
   @Override
-  public String getType() {
+  public String getIndexName() {
     return operateProperties.getElasticsearch().getImportPositionIndexName();
+  }
+
+  @Override
+  public String getAlias() {
+    return operateProperties.getElasticsearch().getImportPositionAlias();
   }
 
   @Override

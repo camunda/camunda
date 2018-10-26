@@ -5,7 +5,9 @@ import org.elasticsearch.common.xcontent.XContentBuilder;
 
 public interface TypeMappingCreator {
 
-  String getType();
+  String getIndexName();
+
+  String getAlias();
 
   XContentBuilder getSource() throws IOException;
 

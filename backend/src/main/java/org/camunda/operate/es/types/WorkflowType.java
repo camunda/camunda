@@ -21,8 +21,13 @@ public class WorkflowType extends StrictTypeMappingCreator {
   private OperateProperties operateProperties;
 
   @Override
-  public String getType() {
+  public String getIndexName() {
     return operateProperties.getElasticsearch().getWorkflowIndexName();
+  }
+
+  @Override
+  public String getAlias() {
+    return operateProperties.getElasticsearch().getWorkflowAlias();
   }
 
   @Override

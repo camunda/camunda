@@ -4,7 +4,9 @@ import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.List;
 import org.camunda.operate.es.types.TypeMappingCreator;
+import org.camunda.operate.util.ElasticsearchUtil;
 import org.elasticsearch.ResourceAlreadyExistsException;
+import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
 import org.elasticsearch.client.transport.TransportClient;
@@ -48,32 +50,34 @@ public class ElasticsearchSchemaManager {
       try {
         indexSettings = buildSettings();
       } catch (IOException e) {
-        logger.error(String.format("Could not create settings for index [%s]", mapping.getType()), e);
+        logger.error(String.format("Could not create settings for index [%s]", mapping.getIndexName()), e);
       }
       CreateIndexRequestBuilder createIndexRequestBuilder =
-        esClient.admin().indices().prepareCreate(mapping.getType()).setSettings(indexSettings);
+        esClient.admin().indices().prepareCreate(mapping.getIndexName())
+          .addAlias(new Alias(mapping.getAlias()))
+          .setSettings(indexSettings);
 
-      createIndexRequestBuilder = createIndexRequestBuilder.addMapping(mapping.getType(), mapping.getSource());
+      createIndexRequestBuilder = createIndexRequestBuilder.addMapping(ElasticsearchUtil.ES_INDEX_TYPE, mapping.getSource());
 
       createIndexRequestBuilder.get();
 
     } catch (IOException e) {
-      String message = String.format("Could not add mapping to the index [%s]", mapping.getType());
+      String message = String.format("Could not add mapping to the index [%s]", mapping.getIndexName());
       logger.error(message, e);
     } catch (ResourceAlreadyExistsException e) {
-      logger.warn("Index for type [{}] already exists", mapping.getType());
+      logger.warn("Index for type [{}] already exists", mapping.getIndexName());
     }
 
     esClient.admin().indices().prepareRefresh().get();
-    logger.debug("Index [{}] was successfully created", mapping.getType());
+    logger.debug("Index [{}] was successfully created", mapping.getIndexName());
   }
 
   /**
-   * Checks in Elasticsearch, if the schema already exists. For this it searches for `workflow-definition` index.
+   * Checks in Elasticsearch, if the schema already exists. For this it searches for one of used aliases.
    * @return true is Elasticsearch schema already exists, false otherwise
    */
   private boolean schemaAlreadyExists() {
-    IndicesExistsResponse response = esClient.admin().indices().prepareExists(typeMappingCreators.get(0).getType()).get();
+    IndicesExistsResponse response = esClient.admin().indices().prepareExists(typeMappingCreators.get(0).getAlias()).get();
     return response.isExists();
   }
 

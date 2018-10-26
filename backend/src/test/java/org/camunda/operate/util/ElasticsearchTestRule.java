@@ -51,14 +51,21 @@ public class ElasticsearchTestRule extends ExternalResource {
   @Override
   public void before() {
     final String indexSuffix = TestUtil.createRandomString(10);
-    workflowIndexName = ElasticsearchProperties.WORKFLOW_INDEX_NAME_DEFAULT + indexSuffix;
-    workflowInstanceIndexName = ElasticsearchProperties.WORKFLOW_INSTANCE_INDEX_NAME_DEFAULT + indexSuffix;
-    eventIndexName = ElasticsearchProperties.EVENT_INDEX_NAME_DEFAULT + indexSuffix;
-    importPositionIndexName = ElasticsearchProperties.IMPORT_POSITION_INDEX_NAME_DEFAULT + indexSuffix;
+    workflowIndexName = ElasticsearchProperties.WORKFLOW_INDEX_PATTERN + "_" + indexSuffix;
+    workflowInstanceIndexName = ElasticsearchProperties.WORKFLOW_INSTANCE_INDEX_PATTERN + "_" + indexSuffix;
+    eventIndexName = ElasticsearchProperties.EVENT_INDEX_PATTERN + "_" + indexSuffix;
+    importPositionIndexName = ElasticsearchProperties.IMPORT_POSITION_INDEX_PATTERN + "_" + indexSuffix;
     operateProperties.getElasticsearch().setWorkflowIndexName(workflowIndexName);
     operateProperties.getElasticsearch().setWorkflowInstanceIndexName(workflowInstanceIndexName);
     operateProperties.getElasticsearch().setEventIndexName(eventIndexName);
     operateProperties.getElasticsearch().setImportPositionIndexName(importPositionIndexName);
+
+    //make aliases differ from index names
+    operateProperties.getElasticsearch().setWorkflowAlias(workflowIndexName + "_alias");
+    operateProperties.getElasticsearch().setWorkflowInstanceAlias(workflowInstanceIndexName + "_alias");
+    operateProperties.getElasticsearch().setEventAlias(eventIndexName + "_alias");
+    operateProperties.getElasticsearch().setImportPositionAlias(importPositionIndexName + "_alias");
+
     elasticsearchSchemaManager.createIndices();
 
   }
@@ -66,10 +73,16 @@ public class ElasticsearchTestRule extends ExternalResource {
   @Override
   public void after() {
     removeAllIndices();
-    operateProperties.getElasticsearch().setWorkflowIndexName(ElasticsearchProperties.WORKFLOW_INDEX_NAME_DEFAULT);
-    operateProperties.getElasticsearch().setWorkflowInstanceIndexName(ElasticsearchProperties.WORKFLOW_INSTANCE_INDEX_NAME_DEFAULT);
-    operateProperties.getElasticsearch().setEventIndexName(ElasticsearchProperties.EVENT_INDEX_NAME_DEFAULT);
-    operateProperties.getElasticsearch().setImportPositionIndexName(ElasticsearchProperties.IMPORT_POSITION_INDEX_NAME_DEFAULT);
+    operateProperties.getElasticsearch().setWorkflowIndexName(ElasticsearchProperties.WORKFLOW_INDEX_PATTERN);
+    operateProperties.getElasticsearch().setWorkflowInstanceIndexName(ElasticsearchProperties.WORKFLOW_INSTANCE_INDEX_PATTERN);
+    operateProperties.getElasticsearch().setEventIndexName(ElasticsearchProperties.EVENT_INDEX_PATTERN);
+    operateProperties.getElasticsearch().setImportPositionIndexName(ElasticsearchProperties.IMPORT_POSITION_INDEX_PATTERN);
+
+    operateProperties.getElasticsearch().setWorkflowAlias(ElasticsearchProperties.WORKFLOW_INDEX_PATTERN);
+    operateProperties.getElasticsearch().setWorkflowInstanceAlias(ElasticsearchProperties.WORKFLOW_INSTANCE_INDEX_PATTERN);
+    operateProperties.getElasticsearch().setEventAlias(ElasticsearchProperties.EVENT_INDEX_PATTERN);
+    operateProperties.getElasticsearch().setImportPositionAlias(ElasticsearchProperties.IMPORT_POSITION_INDEX_PATTERN);
+
 //    if (haveToClean) {
 //      logger.info("cleaning up elasticsearch on finish");
 //      cleanAndVerify();
@@ -93,10 +106,10 @@ public class ElasticsearchTestRule extends ExternalResource {
 //      BulkByScrollResponse response = DeleteByQueryAction.INSTANCE.newRequestBuilder(esClient)
 //        .refresh(true)
 //        .filter(matchAllQuery())
-//        .source(mapping.getType())
+//        .source(mapping.getIndexName())
 //        .execute()
 //        .actionGet();
-//      logger.info("[{}] documents are removed from the index [{}]", response.getDeleted(), mapping.getType());
+//      logger.info("[{}] documents are removed from the index [{}]", response.getDeleted(), mapping.getIndexName());
 //    }
 //  }
 //

@@ -8,11 +8,11 @@ import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.es.types.WorkflowType;
 import org.camunda.operate.rest.exception.NotFoundException;
 import org.camunda.operate.util.ElasticsearchUtil;
-import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
 import org.elasticsearch.common.unit.TimeValue;
+import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
 import org.elasticsearch.search.aggregations.bucket.terms.Terms;
@@ -24,6 +24,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import static org.camunda.operate.es.types.WorkflowType.BPMN_XML;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.topHits;
 
@@ -47,14 +48,20 @@ public class WorkflowReader {
    * @return
    */
   public String getDiagram(String workflowId) {
-    GetResponse response = esClient.prepareGet(workflowType.getType(), workflowType.getType(), workflowId).setFetchSource(BPMN_XML, null).get();
+    final TermQueryBuilder q = termQuery(ElasticsearchUtil.ES_ID_FIELD_NAME, workflowId);
 
-    if (response.isExists()) {
-      Map<String, Object> result = response.getSourceAsMap();
+    final SearchResponse response = esClient.prepareSearch(workflowType.getAlias())
+      .setFetchSource(BPMN_XML, null)
+      .setQuery(q)
+      .get();
+
+    if (response.getHits().totalHits == 1) {
+      Map<String, Object> result = response.getHits().getHits()[0].getSourceAsMap();
       return (String) result.get(BPMN_XML);
-    }
-    else {
-      throw new NotFoundException(String.format("Could not find xml for workflow with id '%s'.", workflowId));
+    } else if (response.getHits().totalHits > 1) {
+      throw new NotFoundException(String.format("Could not find unique workflow with id '%s'.", workflowId));
+    } else {
+      throw new NotFoundException(String.format("Could not find workflow with id '%s'.", workflowId));
     }
   }
 
@@ -64,12 +71,17 @@ public class WorkflowReader {
    * @return
    */
   public WorkflowEntity getWorkflow(String workflowId) {
-    final GetResponse response = esClient.prepareGet(workflowType.getType(), workflowType.getType(), workflowId).get();
+    final TermQueryBuilder q = termQuery(ElasticsearchUtil.ES_ID_FIELD_NAME, workflowId);
 
-    if (response.isExists()) {
-      return fromSearchHit(response.getSourceAsString());
-    }
-    else {
+    final SearchResponse response = esClient.prepareSearch(workflowType.getAlias())
+      .setQuery(q)
+      .get();
+
+    if (response.getHits().totalHits == 1) {
+      return fromSearchHit(response.getHits().getHits()[0].getSourceAsString());
+    } else if (response.getHits().totalHits > 1) {
+      throw new NotFoundException(String.format("Could not find unique workflow with id '%s'.", workflowId));
+    } else {
       throw new NotFoundException(String.format("Could not find workflow with id '%s'.", workflowId));
     }
   }
@@ -86,7 +98,7 @@ public class WorkflowReader {
     final String groupsAggName = "group_by_bpmnProcessId";
     final String workflowsAggName = "workflows";
     final SearchRequestBuilder searchRequestBuilder =
-      esClient.prepareSearch(workflowType.getType()).setSize(0)
+      esClient.prepareSearch(workflowType.getAlias()).setSize(0)
         .addAggregation(
           terms(groupsAggName)
             .field(WorkflowType.BPMN_PROCESS_ID)
@@ -128,7 +140,7 @@ public class WorkflowReader {
     Map<String, WorkflowEntity> map = new HashMap<>();
 
     final SearchRequestBuilder searchRequestBuilder =
-      esClient.prepareSearch(workflowType.getType());
+      esClient.prepareSearch(workflowType.getAlias());
 
     final List<WorkflowEntity> workflowsList = scroll(searchRequestBuilder);
     for (WorkflowEntity workflowEntity: workflowsList) {

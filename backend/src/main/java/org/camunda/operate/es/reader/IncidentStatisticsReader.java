@@ -155,7 +155,7 @@ public class IncidentStatisticsReader {
     logger.debug("Incident by workflow statistics query: \n{}\n and aggregation: \n{}", activeInstancesQ.toString(), agg.toString());
 
     final SearchRequestBuilder searchRequestBuilder =
-      esClient.prepareSearch(workflowInstanceType.getType())
+      esClient.prepareSearch(workflowInstanceType.getAlias())
         .setSize(0)
         .setQuery(activeInstancesQ)
         .addAggregation(agg);
@@ -202,7 +202,7 @@ public class IncidentStatisticsReader {
     logger.debug("Incident by error message statistics query: \n{}\n and aggregation: \n{}", withIncidentsQ.toString(), agg.toString());
 
     final SearchRequestBuilder searchRequestBuilder =
-      esClient.prepareSearch(workflowInstanceType.getType())
+      esClient.prepareSearch(workflowInstanceType.getAlias())
         .setSize(0)
         .setQuery(withIncidentsQ)
         .addAggregation(agg);

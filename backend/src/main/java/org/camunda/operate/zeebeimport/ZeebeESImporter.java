@@ -91,7 +91,7 @@ public class ZeebeESImporter extends Thread {
 
     final SearchResponse searchResponse =
       esClient
-        .prepareSearch(importPositionType.getType())
+        .prepareSearch(importPositionType.getAlias())
         .setQuery(queryBuilder)
         .setSize(10)
         .setFetchSource(ImportPositionType.POSITION, null)
@@ -116,7 +116,7 @@ public class ZeebeESImporter extends Thread {
     updateFields.put(ImportPositionType.POSITION, entity.getPosition());
     try {
       esClient
-        .prepareUpdate(importPositionType.getType(), importPositionType.getType(), entity.getId())
+        .prepareUpdate(importPositionType.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
         .setUpsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
         .setDoc(updateFields)
         .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)

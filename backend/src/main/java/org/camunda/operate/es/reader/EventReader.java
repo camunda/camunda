@@ -142,7 +142,7 @@ public class EventReader {
     logger.debug("Events search request: \n{}", constantScoreQuery.toString());
 
     return esClient
-      .prepareSearch(eventType.getType())
+      .prepareSearch(eventType.getAlias())
       .setQuery(constantScoreQuery);
   }
 

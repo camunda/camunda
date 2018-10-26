@@ -21,6 +21,7 @@ import org.camunda.operate.es.types.WorkflowInstanceType;
 import org.camunda.operate.es.types.WorkflowType;
 import org.camunda.operate.es.writer.BatchOperationWriter;
 import org.camunda.operate.exceptions.PersistenceException;
+import org.camunda.operate.util.ElasticsearchUtil;
 import org.camunda.operate.util.IdUtil;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateRequestBuilder;
@@ -90,7 +91,7 @@ public class ElasticsearchRequestCreatorsHolder {
 
         final UpdateRequestBuilder updateRequest =
           esClient
-            .prepareUpdate(workflowInstanceType.getType(), workflowInstanceType.getType(), entity.getId())
+            .prepareUpdate(workflowInstanceType.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
             .setUpsert(objectMapper.writeValueAsString(entity), XContentType.JSON)
             .setDoc(jsonMap);
 
@@ -169,7 +170,7 @@ public class ElasticsearchRequestCreatorsHolder {
 
         return bulkRequestBuilder.add(
           esClient
-            .prepareUpdate(workflowInstanceType.getType(), workflowInstanceType.getType(), entity.getWorkflowInstanceId())
+            .prepareUpdate(workflowInstanceType.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getWorkflowInstanceId())
             .setScript(updateScript)
             .setUpsert(objectMapper.writeValueAsString(workflowInstanceEntity), XContentType.JSON));
       } catch (IOException e) {
@@ -241,7 +242,7 @@ public class ElasticsearchRequestCreatorsHolder {
         );
         return bulkRequestBuilder.add(
           esClient
-            .prepareUpdate(workflowInstanceType.getType(), workflowInstanceType.getType(), entity.getWorkflowInstanceId())
+            .prepareUpdate(workflowInstanceType.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getWorkflowInstanceId())
             .setScript(updateScript));
       } catch (IOException e) {
         logger.error("Error preparing the query to update activity instance", e);
@@ -261,7 +262,7 @@ public class ElasticsearchRequestCreatorsHolder {
 
         return bulkRequestBuilder.add(
           esClient
-            .prepareIndex(workflowType.getType(), workflowType.getType(), entity.getId())
+            .prepareIndex(workflowType.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
             .setSource(objectMapper.writeValueAsString(entity), XContentType.JSON)
         );
       } catch (JsonProcessingException e) {
@@ -301,7 +302,7 @@ public class ElasticsearchRequestCreatorsHolder {
         );
         return bulkRequestBuilder.add(
           esClient
-            .prepareUpdate(workflowInstanceType.getType(), workflowInstanceType.getType(), entity.getWorkflowInstanceId())
+            .prepareUpdate(workflowInstanceType.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getWorkflowInstanceId())
             .setScript(updateScript));
       } catch (IOException e) {
         logger.error("Error preparing the query to insert sequence flow", e);
@@ -320,7 +321,7 @@ public class ElasticsearchRequestCreatorsHolder {
 
         //write event
         bulkRequestBuilder =
-          bulkRequestBuilder.add(esClient.prepareIndex(eventType.getType(), eventType.getType(), entity.getId())
+          bulkRequestBuilder.add(esClient.prepareIndex(eventType.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, entity.getId())
           .setSource(objectMapper.writeValueAsString(entity), XContentType.JSON));
 
         //complete operation in workflow instance if needed
