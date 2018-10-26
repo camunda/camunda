@@ -40,7 +40,7 @@
     "lint-staged": "^7.3.0",
     "prettier": "^1.14.3",
     "react-scripts": "2.0.5",
-    "react-styleguidist": "^7.3.6"
+    "react-styleguidist": "^8.0.1"
   },
   "lint-staged": {
     "src/**/*.js": [
