@@ -3,6 +3,7 @@ package utils
 import "time"
 
 const (
+	LatestVersion         = -1
 	DefaultRetries        = 3
 	RequestTimeoutInSec   = 5
 	StreamTimeoutInSec    = 15

@@ -55,6 +55,14 @@ func (client *ZBClientImpl) NewActivateJobsCommand() commands.ActivateJobsComman
 	return commands.NewActivateJobsCommand(client.gateway)
 }
 
+func (client *ZBClientImpl) NewListWorkflowsCommand() commands.ListWorkflowsStep1 {
+	return commands.NewListWorkflowsCommand(client.gateway)
+}
+
+func (client *ZBClientImpl) NewGetWorkflowCommand() commands.GetWorkflowStep1 {
+	return commands.NewGetWorkflowCommand(client.gateway)
+}
+
 func (client *ZBClientImpl) Close() error {
 	return client.connection.Close()
 }

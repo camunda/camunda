@@ -20,5 +20,8 @@ type ZBClient interface {
 	NewFailJobCommand() commands.FailJobCommandStep1
 	NewUpdateJobRetriesCommand() commands.UpdateJobRetriesCommandStep1
 
+	NewListWorkflowsCommand() commands.ListWorkflowsStep1
+	NewGetWorkflowCommand() commands.GetWorkflowStep1
+
 	Close() error
 }
