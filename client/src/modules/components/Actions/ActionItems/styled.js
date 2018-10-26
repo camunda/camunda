@@ -8,7 +8,7 @@ export const Ul = themed(styled.ul`
   display: inline-flex;
   flex-direction: row;
   padding: 2px;
-  margin: 0 5px;
+  margin: 0px;
 
   list-style-type: none;
   border-radius: 12px;
@@ -74,10 +74,7 @@ export const Button = themed(styled.button`
 `);
 
 export const iconStyle = css`
-  opacity: ${themeStyle({
-    dark: 0.5,
-    light: 0.7
-  })};
+  opacity: 0.7;
   color: ${themeStyle({
     dark: '#ffffff',
     light: Colors.uiDark02
