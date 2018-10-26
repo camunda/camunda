@@ -3,6 +3,9 @@
     "zeebe-record-deployment_*"
   ],
   "order": 20,
+  "aliases": {
+    "zeebe-record-deployment": {}
+  },
   "mappings": {
     "_doc": {
       "properties": {
@@ -42,8 +45,5 @@
         }
       }
     }
-  },
-  "aliases": {
-    "zeebe-record-deployment": {}
   }
 }
