@@ -59,7 +59,7 @@ public class CompleteJobTest {
     // given
     createJob(JOB_TYPE);
 
-    apiRule.openJobSubscription(JOB_TYPE).await();
+    apiRule.activateJobs(JOB_TYPE).await();
 
     final Record<JobRecordValue> jobEvent = receiveSingleJobEvent();
 
@@ -114,7 +114,7 @@ public class CompleteJobTest {
     // given
     createJob(JOB_TYPE);
 
-    apiRule.openJobSubscription(JOB_TYPE).await();
+    apiRule.activateJobs(JOB_TYPE).await();
 
     final Record<JobRecordValue> jobEvent = receiveSingleJobEvent();
 
@@ -132,7 +132,7 @@ public class CompleteJobTest {
   public void shouldCompleteJobWithNilPayload() {
     // given
     createJob(JOB_TYPE);
-    apiRule.openJobSubscription(JOB_TYPE).await();
+    apiRule.activateJobs(JOB_TYPE).await();
     final Record<JobRecordValue> jobEvent = receiveSingleJobEvent();
 
     // when
@@ -150,7 +150,7 @@ public class CompleteJobTest {
     // given
     createJob(JOB_TYPE);
 
-    apiRule.openJobSubscription(JOB_TYPE).await();
+    apiRule.activateJobs(JOB_TYPE).await();
 
     final Record<JobRecordValue> jobEvent = receiveSingleJobEvent();
 
@@ -167,8 +167,7 @@ public class CompleteJobTest {
   public void shouldCompleteJobWithNoPayload() {
     // given
     createJob(JOB_TYPE);
-
-    apiRule.openJobSubscription(JOB_TYPE).await();
+    apiRule.activateJobs(JOB_TYPE).await();
 
     final Record<JobRecordValue> jobEvent = receiveSingleJobEvent();
 
@@ -186,8 +185,7 @@ public class CompleteJobTest {
   public void shouldThrowExceptionOnCompletionIfPayloadIsInvalid() {
     // given
     createJob(JOB_TYPE);
-
-    apiRule.openJobSubscription(JOB_TYPE).await();
+    apiRule.activateJobs(JOB_TYPE).await();
 
     final Record<JobRecordValue> jobEvent = receiveSingleJobEvent();
     final byte[] invalidPayload = new byte[] {1}; // positive fixnum, i.e. no object
@@ -209,7 +207,7 @@ public class CompleteJobTest {
     final ExecuteCommandResponse response2 = createJob(JOB_TYPE);
     assertThat(response2.getRecordType()).isEqualTo(RecordType.EVENT);
 
-    apiRule.openJobSubscription(JOB_TYPE).await();
+    apiRule.activateJobs(JOB_TYPE).await();
 
     final Record<JobRecordValue> jobEvent = receiveSingleJobEvent();
     testClient.completeJob(jobEvent.getKey(), jobEvent.getValue().getPayload());
@@ -233,7 +231,7 @@ public class CompleteJobTest {
     assertThat(job.getRecordType()).isEqualTo(RecordType.EVENT);
 
     // when
-    apiRule.openJobSubscription(JOB_TYPE).await();
+    apiRule.activateJobs(JOB_TYPE).await();
     final Record<JobRecordValue> jobEvent = receiveSingleJobEvent();
     failJob(jobEvent.getKey());
     final ExecuteCommandResponse response =
