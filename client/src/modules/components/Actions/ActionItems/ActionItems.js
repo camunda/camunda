@@ -42,5 +42,5 @@ ActionItems.Item = function Item(props) {
 
 ActionItems.Item.propTypes = {
   type: PropTypes.oneOf(Object.keys(OPERATION_TYPE)).isRequired,
-  onClick: PropTypes.func.isRequired
+  onClick: PropTypes.func
 };
