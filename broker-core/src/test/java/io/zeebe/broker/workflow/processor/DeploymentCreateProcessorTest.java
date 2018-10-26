@@ -57,7 +57,7 @@ public class DeploymentCreateProcessorTest {
   private WorkflowState workflowState;
 
   @Before
-  public void setUp() throws Exception {
+  public void setUp() {
     MockitoAnnotations.initMocks(this);
 
     workflowState = new WorkflowState();

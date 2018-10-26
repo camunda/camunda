@@ -17,27 +17,27 @@
  */
 package io.zeebe.broker.workflow.subprocess;
 
-import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.exporter.record.Assertions;
 import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.record.value.job.Headers;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
-import io.zeebe.test.broker.protocol.clientapi.TestPartitionClient;
+import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.JsonUtil;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.Rule;
@@ -69,11 +69,11 @@ public class EmbeddedSubProcessTest {
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
-  private TestPartitionClient testClient;
+  private PartitionTestClient testClient;
 
   @Before
   public void init() {
-    testClient = apiRule.partition();
+    testClient = apiRule.partitionClient();
   }
 
   @Test
@@ -86,12 +86,12 @@ public class EmbeddedSubProcessTest {
     testClient.createWorkflowInstance(PROCESS_ID, payload);
 
     // then
-    final SubscribedRecord jobCreatedEvent = testClient.receiveFirstJobEvent(JobIntent.CREATED);
-    assertThat(jobCreatedEvent.value()).containsEntry("payload", payload);
+    final Record<JobRecordValue> jobCreatedEvent =
+        testClient.receiveFirstJobEvent(JobIntent.CREATED);
+    MsgPackUtil.assertEquality(payload, jobCreatedEvent.getValue().getPayload());
 
-    final Map<String, Object> headers =
-        (Map<String, Object>) jobCreatedEvent.value().get("headers");
-    assertThat(headers).containsEntry("activityId", "subProcessTask");
+    final Headers headers = jobCreatedEvent.getValue().getHeaders();
+    Assertions.assertThat(headers).hasActivityId("subProcessTask");
   }
 
   @Test
@@ -104,13 +104,17 @@ public class EmbeddedSubProcessTest {
     final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID, payload);
 
     // then
-    waitUntil(() -> testClient.receiveEvents().ofTypeJob().findFirst().isPresent());
+    testClient.receiveJobs().getFirst();
 
-    final List<SubscribedRecord> workflowInstanceEvents =
-        testClient.receiveEvents().ofTypeWorkflowInstance().limit(11).collect(Collectors.toList());
+    final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
+        testClient
+            .receiveWorkflowInstances()
+            .skipUntil(e -> e.getMetadata().getIntent() == WorkflowInstanceIntent.CREATED)
+            .limit(11)
+            .collect(Collectors.toList());
 
     assertThat(workflowInstanceEvents)
-        .extracting(e -> e.intent(), e -> e.value().get("activityId"))
+        .extracting(e -> e.getMetadata().getIntent(), e -> e.getValue().getActivityId())
         .containsExactly(
             tuple(WorkflowInstanceIntent.CREATED, PROCESS_ID),
             tuple(WorkflowInstanceIntent.ELEMENT_READY, PROCESS_ID),
@@ -124,12 +128,12 @@ public class EmbeddedSubProcessTest {
             tuple(WorkflowInstanceIntent.ELEMENT_READY, "subProcessTask"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "subProcessTask"));
 
-    final SubscribedRecord subProcessReady = workflowInstanceEvents.get(5);
-    assertThat(subProcessReady.value()).containsEntry("scopeInstanceKey", workflowInstanceKey);
+    final Record<WorkflowInstanceRecordValue> subProcessReady = workflowInstanceEvents.get(5);
+    assertThat(subProcessReady.getValue().getScopeInstanceKey()).isEqualTo(workflowInstanceKey);
 
-    final SubscribedRecord subProcessTaskReady = workflowInstanceEvents.get(9);
-    assertThat(subProcessTaskReady.value())
-        .containsEntry("scopeInstanceKey", subProcessReady.key());
+    final Record<WorkflowInstanceRecordValue> subProcessTaskReady = workflowInstanceEvents.get(9);
+    assertThat(subProcessTaskReady.getValue().getScopeInstanceKey())
+        .isEqualTo(subProcessReady.getKey());
   }
 
   @Test
@@ -142,11 +146,15 @@ public class EmbeddedSubProcessTest {
     testClient.completeJobOfType("type");
 
     // then
-    final List<SubscribedRecord> workflowInstanceEvents =
-        testClient.receiveEvents().ofTypeWorkflowInstance().limit(21).collect(Collectors.toList());
+    final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
+        testClient
+            .receiveWorkflowInstances()
+            .skipUntil(e -> e.getMetadata().getIntent() == WorkflowInstanceIntent.CREATED)
+            .limit(21)
+            .collect(Collectors.toList());
 
     assertThat(workflowInstanceEvents)
-        .extracting(e -> e.intent(), e -> e.value().get("activityId"))
+        .extracting(e -> e.getMetadata().getIntent(), e -> e.getValue().getActivityId())
         .containsExactly(
             tuple(WorkflowInstanceIntent.CREATED, PROCESS_ID),
             tuple(WorkflowInstanceIntent.ELEMENT_READY, PROCESS_ID),
@@ -192,11 +200,11 @@ public class EmbeddedSubProcessTest {
     testClient.createWorkflowInstance(PROCESS_ID);
 
     // then
-    final SubscribedRecord jobCreatedEvent = testClient.receiveFirstJobEvent(JobIntent.CREATED);
+    final Record<JobRecordValue> jobCreatedEvent =
+        testClient.receiveFirstJobEvent(JobIntent.CREATED);
 
-    final Map<String, Object> headers =
-        (Map<String, Object>) jobCreatedEvent.value().get("headers");
-    assertThat(headers).containsEntry("activityId", "task");
+    final Headers headers = jobCreatedEvent.getValue().getHeaders();
+    Assertions.assertThat(headers).hasActivityId("task");
   }
 
   @Test
@@ -224,8 +232,9 @@ public class EmbeddedSubProcessTest {
     testClient.createWorkflowInstance(PROCESS_ID, payload);
 
     // then
-    final SubscribedRecord jobCreatedEvent = testClient.receiveFirstJobEvent(JobIntent.CREATED);
-    assertThat(jobCreatedEvent.value()).containsEntry("payload", expectedMappedPayload);
+    final Record<JobRecordValue> jobCreatedEvent =
+        testClient.receiveFirstJobEvent(JobIntent.CREATED);
+    MsgPackUtil.assertEquality(expectedMappedPayload, jobCreatedEvent.getValue().getPayload());
   }
 
   @Test
@@ -254,9 +263,10 @@ public class EmbeddedSubProcessTest {
     testClient.completeJobOfType("type", payload);
 
     // then
-    final SubscribedRecord instanceCompletedEvent =
+    final Record<WorkflowInstanceRecordValue> instanceCompletedEvent =
         testClient.receiveElementInState(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED);
-    assertThat(instanceCompletedEvent.value()).containsEntry("payload", expectedMappedPayload);
+    MsgPackUtil.assertEquality(
+        expectedMappedPayload, instanceCompletedEvent.getValue().getPayload());
   }
 
   @Test
@@ -288,9 +298,11 @@ public class EmbeddedSubProcessTest {
     testClient.completeJobOfType("type", otherPayload);
 
     // then
-    final SubscribedRecord instanceCompletedEvent =
+    final Record<WorkflowInstanceRecordValue> instanceCompletedEvent =
         testClient.receiveElementInState(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_COMPLETED);
-    assertThat(instanceCompletedEvent.value()).containsEntry("payload", expectedMappedPayload);
+
+    MsgPackUtil.assertEquality(
+        expectedMappedPayload, instanceCompletedEvent.getValue().getPayload());
   }
 
   @Test
@@ -323,16 +335,15 @@ public class EmbeddedSubProcessTest {
 
     final List<String> elementFilter = Arrays.asList("innerSubProcess", "outerSubProcess", "task");
 
-    final List<SubscribedRecord> workflowInstanceEvents =
+    final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
         testClient
-            .receiveEvents()
-            .ofTypeWorkflowInstance()
-            .filter(r -> elementFilter.contains(r.value().get("activityId")))
+            .receiveWorkflowInstances()
+            .filter(r -> elementFilter.contains(r.getValue().getActivityId()))
             .limit(12)
             .collect(Collectors.toList());
 
     assertThat(workflowInstanceEvents)
-        .extracting(e -> e.intent(), e -> e.value().get("activityId"))
+        .extracting(e -> e.getMetadata().getIntent(), e -> e.getValue().getActivityId())
         .containsExactly(
             tuple(WorkflowInstanceIntent.ELEMENT_READY, "outerSubProcess"),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, "outerSubProcess"),

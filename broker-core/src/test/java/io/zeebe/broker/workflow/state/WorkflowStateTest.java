@@ -228,7 +228,7 @@ public class WorkflowStateTest {
     assertThat(deployedWorkflow).isNotNull();
     assertThat(secondWorkflow).isNotNull();
 
-    // key's should increase
+    // getKey's should increase
     assertThat(deployedWorkflow.getKey()).isEqualTo(1L);
     assertThat(secondWorkflow.getKey()).isEqualTo(2L);
 

@@ -23,6 +23,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.value.DeploymentRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
@@ -35,7 +37,6 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceReco
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
 import io.zeebe.util.StreamUtil;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -61,8 +62,6 @@ public class CreateDeploymentTest {
   private static final BpmnModelInstance WORKFLOW_2 =
       Bpmn.createExecutableProcess("process2").startEvent().endEvent().done();
 
-  public static final int PARTITION_ID = 1;
-
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
   public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
@@ -85,15 +84,15 @@ public class CreateDeploymentTest {
             .sendAndAwait();
 
     // then
-    final SubscribedRecord createDeploymentCommand = getFirstDeploymentCreateCommand();
+    final Record<DeploymentRecordValue> createDeploymentCommand = getFirstDeploymentCreateCommand();
 
-    assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-    assertThat(resp.position()).isGreaterThanOrEqualTo(0L);
-    assertThat(resp.sourceRecordPosition()).isEqualTo(createDeploymentCommand.position());
-    assertThat(resp.partitionId()).isEqualTo(DEPLOYMENT_PARTITION);
+    assertThat(resp.getKey()).isGreaterThanOrEqualTo(0L);
+    assertThat(resp.getPosition()).isGreaterThanOrEqualTo(0L);
+    assertThat(resp.getSourceRecordPosition()).isEqualTo(createDeploymentCommand.getPosition());
+    assertThat(resp.getPartitionId()).isEqualTo(DEPLOYMENT_PARTITION);
 
-    assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATED);
+    assertThat(resp.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(resp.getIntent()).isEqualTo(DeploymentIntent.CREATED);
   }
 
   @SuppressWarnings("unchecked")
@@ -101,9 +100,9 @@ public class CreateDeploymentTest {
   public void shouldReturnDeployedWorkflowDefinitions() {
     // when
     final ExecuteCommandResponse firstDeployment =
-        apiRule.partition().deployWithResponse(WORKFLOW, "wf1.bpmn");
+        apiRule.partitionClient().deployWithResponse(WORKFLOW, "wf1.bpmn");
     final ExecuteCommandResponse secondDeployment =
-        apiRule.partition().deployWithResponse(WORKFLOW, "wf2.bpmn");
+        apiRule.partitionClient().deployWithResponse(WORKFLOW, "wf2.bpmn");
 
     // then
     List<Map<String, Object>> deployedWorkflows =
@@ -135,15 +134,15 @@ public class CreateDeploymentTest {
     // when
     final ExecuteCommandResponse resp =
         apiRule
-            .partition()
+            .partitionClient()
             .deployWithResponse(
                 StreamUtil.read(resourceAsStream),
                 ResourceType.BPMN_XML.name(),
                 "collaboration.bpmn");
 
     // then
-    assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATED);
+    assertThat(resp.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(resp.getIntent()).isEqualTo(DeploymentIntent.CREATED);
 
     final List<Map<String, Object>> deployedWorkflows =
         Arrays.asList(getDeployedWorkflow(resp, 0), getDeployedWorkflow(resp, 1));
@@ -172,8 +171,8 @@ public class CreateDeploymentTest {
             .sendAndAwait();
 
     // then
-    assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATED);
+    assertThat(resp.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(resp.getIntent()).isEqualTo(DeploymentIntent.CREATED);
 
     final List<Map<String, Object>> deployedWorkflows =
         Arrays.asList(getDeployedWorkflow(resp, 0), getDeployedWorkflow(resp, 1));
@@ -190,17 +189,17 @@ public class CreateDeploymentTest {
     final byte[] resource = Files.readAllBytes(path);
 
     // when
-    final ExecuteCommandResponse resp = apiRule.partition().deployWithResponse(resource);
+    final ExecuteCommandResponse resp = apiRule.partitionClient().deployWithResponse(resource);
 
     // then
-    final SubscribedRecord createDeploymentCommand = getFirstDeploymentCreateCommand();
+    final Record<DeploymentRecordValue> createDeploymentCommand = getFirstDeploymentCreateCommand();
 
-    assertThat(resp.key()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
-    assertThat(resp.sourceRecordPosition()).isEqualTo(createDeploymentCommand.position());
-    assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATE);
-    assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(resp.rejectionReason()).contains("ERROR: Must have exactly one start event");
+    assertThat(resp.getKey()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
+    assertThat(resp.getSourceRecordPosition()).isEqualTo(createDeploymentCommand.getPosition());
+    assertThat(resp.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(resp.getIntent()).isEqualTo(DeploymentIntent.CREATE);
+    assertThat(resp.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+    assertThat(resp.getRejectionReason()).contains("ERROR: Must have exactly one start event");
   }
 
   @Test
@@ -211,17 +210,17 @@ public class CreateDeploymentTest {
     final byte[] resource = Files.readAllBytes(path);
 
     // when
-    final ExecuteCommandResponse resp = apiRule.partition().deployWithResponse(resource);
+    final ExecuteCommandResponse resp = apiRule.partitionClient().deployWithResponse(resource);
 
     // then
-    final SubscribedRecord createDeploymentCommand = getFirstDeploymentCreateCommand();
+    final Record<DeploymentRecordValue> createDeploymentCommand = getFirstDeploymentCreateCommand();
 
-    assertThat(resp.key()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
-    assertThat(resp.sourceRecordPosition()).isEqualTo(createDeploymentCommand.position());
-    assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATE);
-    assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(resp.rejectionReason())
+    assertThat(resp.getKey()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
+    assertThat(resp.getSourceRecordPosition()).isEqualTo(createDeploymentCommand.getPosition());
+    assertThat(resp.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(resp.getIntent()).isEqualTo(DeploymentIntent.CREATE);
+    assertThat(resp.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+    assertThat(resp.getRejectionReason())
         .contains("Element: flow2 > conditionExpression")
         .contains("ERROR: Condition expression is invalid");
   }
@@ -247,16 +246,16 @@ public class CreateDeploymentTest {
             .sendAndAwait();
 
     // then
-    final SubscribedRecord createDeploymentCommand = getFirstDeploymentCreateCommand();
+    final Record<DeploymentRecordValue> createDeploymentCommand = getFirstDeploymentCreateCommand();
 
-    assertThat(resp.key()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
-    assertThat(resp.sourceRecordPosition()).isEqualTo(createDeploymentCommand.position());
-    assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(resp.rejectionReason())
+    assertThat(resp.getKey()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
+    assertThat(resp.getSourceRecordPosition()).isEqualTo(createDeploymentCommand.getPosition());
+    assertThat(resp.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(resp.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+    assertThat(resp.getRejectionReason())
         .contains("Resource 'process2.bpmn':")
         .contains("ERROR: Must have exactly one start event");
-    assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATE);
+    assertThat(resp.getIntent()).isEqualTo(DeploymentIntent.CREATE);
   }
 
   @Test
@@ -273,14 +272,15 @@ public class CreateDeploymentTest {
             .sendAndAwait();
 
     // then
-    final SubscribedRecord createDeploymentCommand = getFirstDeploymentCreateCommand();
+    final Record<DeploymentRecordValue> createDeploymentCommand = getFirstDeploymentCreateCommand();
 
-    assertThat(resp.key()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
-    assertThat(resp.sourceRecordPosition()).isEqualTo(createDeploymentCommand.position());
-    assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATE);
-    assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(resp.rejectionReason()).isEqualTo("Deployment doesn't contain a resource to deploy");
+    assertThat(resp.getKey()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
+    assertThat(resp.getSourceRecordPosition()).isEqualTo(createDeploymentCommand.getPosition());
+    assertThat(resp.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(resp.getIntent()).isEqualTo(DeploymentIntent.CREATE);
+    assertThat(resp.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+    assertThat(resp.getRejectionReason())
+        .isEqualTo("Deployment doesn't contain a resource to deploy");
   }
 
   @Test
@@ -288,16 +288,16 @@ public class CreateDeploymentTest {
     // when
     final ExecuteCommandResponse resp =
         apiRule
-            .partition()
+            .partitionClient()
             .deployWithResponse(
                 "not a workflow".getBytes(UTF_8), ResourceType.BPMN_XML.name(), "invalid.bpmn");
 
     // then
-    assertThat(resp.key()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
-    assertThat(resp.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATE);
-    assertThat(resp.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(resp.rejectionReason())
+    assertThat(resp.getKey()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
+    assertThat(resp.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(resp.getIntent()).isEqualTo(DeploymentIntent.CREATE);
+    assertThat(resp.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+    assertThat(resp.getRejectionReason())
         .contains("Failed to deploy resource 'invalid.bpmn':")
         .contains("SAXException while parsing input stream");
   }
@@ -312,13 +312,13 @@ public class CreateDeploymentTest {
     // when
     final ExecuteCommandResponse resp =
         apiRule
-            .partition()
+            .partitionClient()
             .deployWithResponse(
                 yamlWorkflow, ResourceType.YAML_WORKFLOW.name(), "simple-workflow.yaml");
 
     // then
-    assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATED);
+    assertThat(resp.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(resp.getIntent()).isEqualTo(DeploymentIntent.CREATED);
 
     final Map<String, Object> deployedWorkflow = getDeployedWorkflow(resp, 0);
 
@@ -331,8 +331,8 @@ public class CreateDeploymentTest {
     // given
 
     // when
-    final ExecuteCommandResponse d1 = apiRule.partition().deployWithResponse(WORKFLOW);
-    final ExecuteCommandResponse d2 = apiRule.partition().deployWithResponse(WORKFLOW);
+    final ExecuteCommandResponse d1 = apiRule.partitionClient().deployWithResponse(WORKFLOW);
+    final ExecuteCommandResponse d2 = apiRule.partitionClient().deployWithResponse(WORKFLOW);
 
     // then
     final Map<String, Object> workflow1 = getDeployedWorkflow(d1, 0);
@@ -365,13 +365,11 @@ public class CreateDeploymentTest {
     return d1Workflows.get(offset);
   }
 
-  public SubscribedRecord getFirstDeploymentCreateCommand() {
+  public Record<DeploymentRecordValue> getFirstDeploymentCreateCommand() {
     return apiRule
-        .partition(DEPLOYMENT_PARTITION)
-        .receiveRecords()
-        .skipUntil(r -> r.valueType() == ValueType.DEPLOYMENT)
-        .filter(r -> r.valueType() == ValueType.DEPLOYMENT && r.intent() == DeploymentIntent.CREATE)
-        .findFirst()
-        .get();
+        .partitionClient(DEPLOYMENT_PARTITION)
+        .receiveDeployments()
+        .withIntent(DeploymentIntent.CREATE)
+        .getFirst();
   }
 }

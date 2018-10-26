@@ -20,11 +20,6 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
-import io.zeebe.protocol.clientapi.MessageHeaderDecoder;
-import io.zeebe.protocol.clientapi.SubscribedRecordDecoder;
-import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.intent.SubscriberIntent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.SocketAddress;
@@ -37,8 +32,6 @@ import java.util.Map;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
-import org.agrona.DirectBuffer;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.junit.rules.ExternalResource;
 
@@ -52,9 +45,8 @@ public class ClientApiRule extends ExternalResource {
   protected final Supplier<SocketAddress> brokerAddressSupplier;
 
   protected MsgPackHelper msgPackHelper;
-  protected RawMessageCollector incomingMessageCollector;
 
-  private final Int2ObjectHashMap<TestPartitionClient> testPartitionClients =
+  private final Int2ObjectHashMap<PartitionTestClient> testPartitionClients =
       new Int2ObjectHashMap<>();
   private final ControlledActorClock controlledActorClock = new ControlledActorClock();
   private ActorScheduler scheduler;
@@ -80,13 +72,7 @@ public class ClientApiRule extends ExternalResource {
             .build();
     scheduler.start();
 
-    incomingMessageCollector = new RawMessageCollector();
-
-    transport =
-        Transports.newClientTransport("gateway")
-            .inputListener(incomingMessageCollector)
-            .scheduler(scheduler)
-            .build();
+    transport = Transports.newClientTransport("gateway").scheduler(scheduler).build();
 
     msgPackHelper = new MsgPackHelper();
     transport.registerEndpoint(nodeId, brokerAddressSupplier.get());
@@ -116,56 +102,15 @@ public class ClientApiRule extends ExternalResource {
     return new ControlMessageRequestBuilder(transport.getOutput(), nodeId, msgPackHelper);
   }
 
-  public ClientApiRule moveMessageStreamToTail() {
-    incomingMessageCollector.moveToTail();
-    return this;
+  public PartitionTestClient partitionClient() {
+    return partitionClient(defaultPartitionId);
   }
 
-  public ClientApiRule moveMessageStreamToHead() {
-    incomingMessageCollector.moveToHead();
-    return this;
-  }
-
-  public int numSubscribedEventsAvailable() {
-    return (int) incomingMessageCollector.getNumMessagesFulfilling(this::isSubscribedEvent);
-  }
-
-  public TestPartitionClient partition() {
-    return partition(defaultPartitionId);
-  }
-
-  public TestPartitionClient partition(final int partitionId) {
+  public PartitionTestClient partitionClient(final int partitionId) {
     if (!testPartitionClients.containsKey(partitionId)) {
-      testPartitionClients.put(partitionId, new TestPartitionClient(this, partitionId));
+      testPartitionClients.put(partitionId, new PartitionTestClient(this, partitionId));
     }
     return testPartitionClients.get(partitionId);
-  }
-
-  public ExecuteCommandRequest openTopicSubscription(final String name, final long startPosition) {
-    return openTopicSubscription(defaultPartitionId, name, startPosition);
-  }
-
-  public ExecuteCommandRequest openTopicSubscription(
-      final int partitionId, final String name, final long startPosition) {
-    return createCmdRequest()
-        .partitionId(partitionId)
-        .type(ValueType.SUBSCRIBER, SubscriberIntent.SUBSCRIBE)
-        .command()
-        .put("startPosition", startPosition)
-        .put("name", name)
-        .put("bufferSize", 1024)
-        .done()
-        .send();
-  }
-
-  public ControlMessageRequest closeTopicSubscription(final long subscriberKey) {
-    return createControlMessageRequest()
-        .messageType(ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
-        .data()
-        .put("partitionId", defaultPartitionId)
-        .put("subscriberKey", subscriberKey)
-        .done()
-        .send();
   }
 
   public ControlMessageRequest openJobSubscription(final String type) {
@@ -198,53 +143,6 @@ public class ClientApiRule extends ExternalResource {
   public ControlMessageRequest openJobSubscription(
       final int partitionId, final String type, final long lockDuration) {
     return openJobSubscription(partitionId, type, lockDuration, 10);
-  }
-
-  public Stream<RawMessage> incomingMessages() {
-    return Stream.generate(incomingMessageCollector);
-  }
-
-  /**
-   * @return an infinite stream of received subscribed events; make sure to use short-circuiting
-   *     operations to reduce it to a finite stream
-   */
-  public Stream<SubscribedRecord> subscribedEvents() {
-    return incomingMessages().filter(this::isSubscribedEvent).map(this::asSubscribedEvent);
-  }
-
-  public Stream<RawMessage> commandResponses() {
-    return incomingMessages().filter(this::isCommandResponse);
-  }
-
-  public void interruptAllChannels() {
-    transport.interruptAllChannels();
-  }
-
-  public SocketAddress getBrokerAddress() {
-    return brokerAddressSupplier.get();
-  }
-
-  protected SubscribedRecord asSubscribedEvent(final RawMessage message) {
-    final SubscribedRecord event = new SubscribedRecord(message);
-    event.wrap(message.getMessage(), 0, message.getMessage().capacity());
-    return event;
-  }
-
-  protected boolean isCommandResponse(final RawMessage message) {
-    return message.isResponse()
-        && isMessageOfType(message.getMessage(), ExecuteCommandResponseDecoder.TEMPLATE_ID);
-  }
-
-  protected boolean isSubscribedEvent(final RawMessage message) {
-    return message.isMessage()
-        && isMessageOfType(message.getMessage(), SubscribedRecordDecoder.TEMPLATE_ID);
-  }
-
-  protected boolean isMessageOfType(final DirectBuffer message, final int type) {
-    final MessageHeaderDecoder headerDecoder = new MessageHeaderDecoder();
-    headerDecoder.wrap(message, 0);
-
-    return headerDecoder.templateId() == type;
   }
 
   public void waitForPartition(final int partitions) {

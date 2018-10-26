@@ -64,7 +64,7 @@ public class KeyGeneratorTest {
   }
 
   @Test
-  public void shouldHaveUniqueGlobalKeyFormat() throws Exception {
+  public void shouldHaveUniqueGlobalKeyFormat() {
     // given
     final KeyGenerator keyGenerator = new KeyGenerator(1, 5, 1);
 

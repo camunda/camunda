@@ -107,7 +107,7 @@ public class LogStreamPrinter {
       event.readValue(record);
       writeWorkflowInstanceBody(record, sb);
     } else {
-      sb.append("<value>");
+      sb.append("<getValue>");
     }
   }
 

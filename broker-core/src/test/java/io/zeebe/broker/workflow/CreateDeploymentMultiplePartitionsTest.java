@@ -21,21 +21,23 @@ import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setPartitionCount;
 import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 import static io.zeebe.test.util.TestUtil.doRepeatedly;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.data.MapEntry.entry;
 
 import io.zeebe.UnstableTest;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.exporter.record.Assertions;
+import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.value.DeploymentRecordValue;
+import io.zeebe.exporter.record.value.deployment.DeployedWorkflow;
+import io.zeebe.exporter.record.value.deployment.DeploymentResource;
+import io.zeebe.exporter.record.value.deployment.ResourceType;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.impl.record.value.deployment.ResourceType;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
 import java.io.ByteArrayOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -70,7 +72,7 @@ public class CreateDeploymentMultiplePartitionsTest {
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
   @Test
-  public void shouldCreateDeploymentOnAllPartitions() throws Exception {
+  public void shouldCreateDeploymentOnAllPartitions() {
     // when
     final ExecuteCommandResponse resp =
         apiRule
@@ -85,16 +87,16 @@ public class CreateDeploymentMultiplePartitionsTest {
             .sendAndAwait();
 
     // then
-    assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-    assertThat(resp.position()).isGreaterThanOrEqualTo(0L);
-    assertThat(resp.partitionId()).isEqualTo(PARTITION_ID);
+    assertThat(resp.getKey()).isGreaterThanOrEqualTo(0L);
+    assertThat(resp.getPosition()).isGreaterThanOrEqualTo(0L);
+    assertThat(resp.getPartitionId()).isEqualTo(PARTITION_ID);
 
-    assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATED);
+    assertThat(resp.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(resp.getIntent()).isEqualTo(DeploymentIntent.CREATED);
 
-    assertCreatedDeploymentEventOnPartition(0, resp.key());
-    assertCreatedDeploymentEventOnPartition(1, resp.key());
-    assertCreatedDeploymentEventOnPartition(2, resp.key());
+    assertCreatedDeploymentEventOnPartition(0, resp.getKey());
+    assertCreatedDeploymentEventOnPartition(1, resp.getKey());
+    assertCreatedDeploymentEventOnPartition(2, resp.getKey());
   }
 
   @Test
@@ -107,17 +109,17 @@ public class CreateDeploymentMultiplePartitionsTest {
     // when
     final ExecuteCommandResponse resp =
         apiRule
-            .partition()
+            .partitionClient()
             .deployWithResponse(
                 yamlWorkflow, ResourceType.YAML_WORKFLOW.name(), "simple-workflow.yaml");
 
     // then
-    assertThat(resp.key()).isGreaterThanOrEqualTo(0L);
-    assertThat(resp.position()).isGreaterThanOrEqualTo(0L);
-    assertThat(resp.partitionId()).isEqualTo(PARTITION_ID);
+    assertThat(resp.getKey()).isGreaterThanOrEqualTo(0L);
+    assertThat(resp.getPosition()).isGreaterThanOrEqualTo(0L);
+    assertThat(resp.getPartitionId()).isEqualTo(PARTITION_ID);
 
-    assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATED);
+    assertThat(resp.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(resp.getIntent()).isEqualTo(DeploymentIntent.CREATED);
 
     final Map<String, Object> resources = deploymentResource(yamlWorkflow, "simple-workflow.yaml");
     resources.put("resourceType", ResourceType.YAML_WORKFLOW.name());
@@ -125,22 +127,20 @@ public class CreateDeploymentMultiplePartitionsTest {
     for (int i = 0; i < PARTITION_COUNT; i++) {
       assertCreatedDeploymentEventResources(
           i,
-          resp.key(),
+          resp.getKey(),
           (deploymentCreatedEvent) -> {
-            final Map<String, Object> map =
-                (Map<String, Object>)
-                    ((List) deploymentCreatedEvent.value().get("resources")).get(0);
-            assertThat(map).contains(entry("resourceType", ResourceType.YAML_WORKFLOW.name()));
+            final DeploymentRecordValue deployment = deploymentCreatedEvent.getValue();
+            final DeploymentResource resource = deployment.getResources().get(0);
+            Assertions.assertThat(resource).hasResourceType(ResourceType.YAML_WORKFLOW);
 
-            final List<Map<String, Object>> deployedWorkflows =
-                (List<Map<String, Object>>) deploymentCreatedEvent.value().get("workflows");
+            final List<DeployedWorkflow> deployedWorkflows = deployment.getDeployedWorkflows();
             assertThat(deployedWorkflows).hasSize(1);
-            assertThat(deployedWorkflows.get(0))
-                .containsExactly(
-                    entry("bpmnProcessId", "yaml-workflow"),
-                    entry("version", 1L),
-                    entry("workflowKey", 1L),
-                    entry("resourceName", "simple-workflow.yaml"));
+
+            Assertions.assertThat(deployedWorkflows.get(0))
+                .hasBpmnProcessId("yaml-workflow")
+                .hasVersion(1)
+                .hasWorkflowKey(1)
+                .hasResourceName("simple-workflow.yaml");
           });
     }
   }
@@ -164,20 +164,20 @@ public class CreateDeploymentMultiplePartitionsTest {
             .sendAndAwait();
 
     // then
-    assertThat(resp.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(resp.intent()).isEqualTo(DeploymentIntent.CREATED);
+    assertThat(resp.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(resp.getIntent()).isEqualTo(DeploymentIntent.CREATED);
 
     for (int i = 0; i < PARTITION_COUNT; i++) {
       assertCreatedDeploymentEventResources(
           i,
-          resp.key(),
+          resp.getKey(),
           (createdDeployment) -> {
-            final List<Map<String, Object>> deployedWorkflows =
+            final List<DeployedWorkflow> deployedWorkflows =
                 Arrays.asList(
                     getDeployedWorkflow(createdDeployment, 0),
                     getDeployedWorkflow(createdDeployment, 1));
             assertThat(deployedWorkflows)
-                .extracting(s -> s.get(WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID))
+                .extracting(s -> s.getBpmnProcessId())
                 .contains("process", "process2");
           });
     }
@@ -189,8 +189,8 @@ public class CreateDeploymentMultiplePartitionsTest {
     // given
 
     // when
-    final ExecuteCommandResponse d1 = apiRule.partition().deployWithResponse(WORKFLOW);
-    final ExecuteCommandResponse d2 = apiRule.partition().deployWithResponse(WORKFLOW);
+    final ExecuteCommandResponse d1 = apiRule.partitionClient().deployWithResponse(WORKFLOW);
+    final ExecuteCommandResponse d2 = apiRule.partitionClient().deployWithResponse(WORKFLOW);
 
     // then
     final Map<String, Object> workflow1 = getDeployedWorkflow(d1, 0);
@@ -199,9 +199,9 @@ public class CreateDeploymentMultiplePartitionsTest {
     for (int i = 0; i < PARTITION_COUNT; i++) {
       assertCreatedDeploymentEventResources(
           i,
-          d1.key(),
+          d1.getKey(),
           createdDeployment -> {
-            assertThat(getDeployedWorkflow(createdDeployment, 0).get("version")).isEqualTo(1L);
+            assertThat(getDeployedWorkflow(createdDeployment, 0).getVersion()).isEqualTo(1L);
           });
     }
 
@@ -211,16 +211,16 @@ public class CreateDeploymentMultiplePartitionsTest {
     for (int i = 0; i < PARTITION_COUNT; i++) {
       assertCreatedDeploymentEventResources(
           i,
-          d2.key(),
+          d2.getKey(),
           createdDeployment -> {
-            assertThat(getDeployedWorkflow(createdDeployment, 0).get("version")).isEqualTo(2L);
+            assertThat(getDeployedWorkflow(createdDeployment, 0).getVersion()).isEqualTo(2L);
           });
     }
   }
 
   @Test
   @Category(UnstableTest.class) // => https://github.com/zeebe-io/zeebe/issues/1250
-  public void shouldCreateDeploymentOnAllPartitionsWithRestartBroker() throws Exception {
+  public void shouldCreateDeploymentOnAllPartitionsWithRestartBroker() {
     // given
     apiRule
         .createCmdRequest()
@@ -268,10 +268,9 @@ public class CreateDeploymentMultiplePartitionsTest {
   }
 
   @SuppressWarnings("unchecked")
-  private Map<String, Object> getDeployedWorkflow(final SubscribedRecord record, final int offset) {
-    final List<Map<String, Object>> d1Workflows =
-        (List<Map<String, Object>>) record.value().get("workflows");
-    return d1Workflows.get(offset);
+  private DeployedWorkflow getDeployedWorkflow(
+      final Record<DeploymentRecordValue> record, final int offset) {
+    return record.getValue().getDeployedWorkflows().get(offset);
   }
 
   private void assertCreatedDeploymentEventOnPartition(
@@ -280,8 +279,9 @@ public class CreateDeploymentMultiplePartitionsTest {
         expectedPartition,
         expectedKey,
         (deploymentCreatedEvent) -> {
-          assertThat(deploymentCreatedEvent.key()).isEqualTo(expectedKey);
-          assertThat(deploymentCreatedEvent.partitionId()).isEqualTo(expectedPartition);
+          assertThat(deploymentCreatedEvent.getKey()).isEqualTo(expectedKey);
+          assertThat(deploymentCreatedEvent.getMetadata().getPartitionId())
+              .isEqualTo(expectedPartition);
 
           assertDeploymentRecord(deploymentCreatedEvent);
         });
@@ -291,88 +291,60 @@ public class CreateDeploymentMultiplePartitionsTest {
     assertAnyCreatedDeploymentEventResources(
         expectedPartition,
         (deploymentCreatedEvent) -> {
-          assertThat(deploymentCreatedEvent.partitionId()).isEqualTo(expectedPartition);
+          assertThat(deploymentCreatedEvent.getMetadata().getPartitionId())
+              .isEqualTo(expectedPartition);
 
           assertDeploymentRecord(deploymentCreatedEvent);
         });
   }
 
-  private void assertDeploymentRecord(final SubscribedRecord deploymentCreatedEvent) {
-    final Map<String, Object> resources = deploymentResource(bpmnXml(WORKFLOW), "process.bpmn");
-    resources.put("resourceType", "BPMN_XML");
+  private void assertDeploymentRecord(final Record<DeploymentRecordValue> deploymentCreatedEvent) {
 
-    final Map<String, Object> map =
-        (Map<String, Object>) ((List) deploymentCreatedEvent.value().get("resources")).get(0);
-    assertThat(map).contains(entry("resource", resources.get("resource")));
-    assertThat(map).contains(entry("resourceType", resources.get("resourceType")));
+    final DeploymentResource resource = deploymentCreatedEvent.getValue().getResources().get(0);
 
-    final List<Map<String, Object>> deployedWorkflows =
-        (List<Map<String, Object>>) deploymentCreatedEvent.value().get("workflows");
+    Assertions.assertThat(resource)
+        .hasResource(bpmnXml(WORKFLOW))
+        .hasResourceType(ResourceType.BPMN_XML);
+
+    final List<DeployedWorkflow> deployedWorkflows =
+        deploymentCreatedEvent.getValue().getDeployedWorkflows();
+
     assertThat(deployedWorkflows).hasSize(1);
-    assertThat(deployedWorkflows.get(0))
-        .containsExactly(
-            entry("bpmnProcessId", "process"),
-            entry("version", 1L),
-            entry("workflowKey", 1L),
-            entry("resourceName", "process.bpmn"));
+    Assertions.assertThat(deployedWorkflows.get(0))
+        .hasBpmnProcessId("process")
+        .hasVersion(1)
+        .hasWorkflowKey(1)
+        .hasResourceName("process.bpmn");
   }
 
   private void assertCreatedDeploymentEventResources(
       final int expectedPartition,
       final long expectedKey,
-      final Consumer<SubscribedRecord> deploymentAssert) {
-    final SubscribedRecord deploymentCreatedEvent =
+      final Consumer<Record<DeploymentRecordValue>> deploymentAssert) {
+    final Record deploymentCreatedEvent =
         apiRule
-            .partition(expectedPartition)
-            .receiveRecords()
-            .skipUntil(r -> r.valueType() == ValueType.DEPLOYMENT)
-            .filter(
-                r ->
-                    r.valueType() == ValueType.DEPLOYMENT
-                        && r.intent() == DeploymentIntent.CREATED
-                        && r.key() == expectedKey)
-            .findFirst()
-            .get();
+            .partitionClient(expectedPartition)
+            .receiveDeployments()
+            .withIntent(DeploymentIntent.CREATED)
+            .withKey(expectedKey)
+            .getFirst();
 
-    assertThat(deploymentCreatedEvent.key()).isEqualTo(expectedKey);
-    assertThat(deploymentCreatedEvent.partitionId()).isEqualTo(expectedPartition);
+    assertThat(deploymentCreatedEvent.getKey()).isEqualTo(expectedKey);
+    assertThat(deploymentCreatedEvent.getMetadata().getPartitionId()).isEqualTo(expectedPartition);
 
     deploymentAssert.accept(deploymentCreatedEvent);
   }
 
-  private void assertRejectedCreateDeploymentCommand(
-      final int expectedPartition, final long expectedKey) {
-    final SubscribedRecord deploymentCreateCommandRejection =
-        apiRule
-            .partition(expectedPartition)
-            .receiveRecords()
-            .filter(
-                r ->
-                    r.recordType() == RecordType.COMMAND_REJECTION
-                        && r.valueType() == ValueType.DEPLOYMENT
-                        && r.intent() == DeploymentIntent.CREATE
-                        && r.key() == expectedKey)
-            .findFirst()
-            .get();
-
-    assertThat(deploymentCreateCommandRejection.key()).isEqualTo(expectedKey);
-    assertThat(deploymentCreateCommandRejection.partitionId()).isEqualTo(expectedPartition);
-  }
-
   private void assertAnyCreatedDeploymentEventResources(
-      final int expectedPartition, final Consumer<SubscribedRecord> deploymentAssert) {
-    final SubscribedRecord deploymentCreatedEvent =
+      final int expectedPartition, final Consumer<Record> deploymentAssert) {
+    final Record deploymentCreatedEvent =
         apiRule
-            .partition(expectedPartition)
-            .receiveRecords()
-            .skipUntil(r -> r.valueType() == ValueType.DEPLOYMENT)
-            .filter(
-                r ->
-                    r.valueType() == ValueType.DEPLOYMENT && r.intent() == DeploymentIntent.CREATED)
-            .findFirst()
-            .get();
+            .partitionClient(expectedPartition)
+            .receiveDeployments()
+            .withIntent(DeploymentIntent.CREATED)
+            .getFirst();
 
-    assertThat(deploymentCreatedEvent.partitionId()).isEqualTo(expectedPartition);
+    assertThat(deploymentCreatedEvent.getMetadata().getPartitionId()).isEqualTo(expectedPartition);
 
     deploymentAssert.accept(deploymentCreatedEvent);
   }

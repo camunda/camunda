@@ -18,7 +18,7 @@
 package io.zeebe.broker.subscription.message;
 
 import static io.zeebe.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
-import static io.zeebe.test.broker.protocol.clientapi.TestPartitionClient.intent;
+import static io.zeebe.protocol.intent.MessageIntent.PUBLISH;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
@@ -26,6 +26,9 @@ import static org.assertj.core.api.Assertions.entry;
 import io.zeebe.broker.subscription.message.processor.MessageStreamProcessor;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.broker.test.MsgPackConstants;
+import io.zeebe.exporter.record.Assertions;
+import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.value.MessageRecordValue;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -33,8 +36,9 @@ import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandRequestBuilder;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
-import io.zeebe.test.broker.protocol.clientapi.TestPartitionClient;
+import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
+import io.zeebe.test.util.MsgPackUtil;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -45,6 +49,12 @@ public class PublishMessageTest {
   public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
+  private PartitionTestClient testClient;
+
+  @Before
+  public void setup() {
+    testClient = apiRule.partitionClient();
+  }
 
   @Test
   public void shouldPublishMessage() {
@@ -52,7 +62,7 @@ public class PublishMessageTest {
     final ExecuteCommandResponse response =
         apiRule
             .createCmdRequest()
-            .type(ValueType.MESSAGE, MessageIntent.PUBLISH)
+            .type(ValueType.MESSAGE, PUBLISH)
             .command()
             .put("name", "order canceled")
             .put("correlationKey", "order-123")
@@ -60,8 +70,8 @@ public class PublishMessageTest {
             .done()
             .sendAndAwait();
 
-    assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(response.intent()).isEqualTo(MessageIntent.PUBLISHED);
+    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(response.getIntent()).isEqualTo(MessageIntent.PUBLISHED);
     assertThat(response.getValue())
         .containsExactly(
             entry("name", "order canceled"),
@@ -70,21 +80,17 @@ public class PublishMessageTest {
             entry("payload", EMTPY_OBJECT),
             entry("messageId", ""));
 
-    final SubscribedRecord publishedEvent =
-        apiRule
-            .partition()
-            .receiveEvents()
-            .filter(intent(MessageIntent.PUBLISHED))
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("no follow-up event found"));
+    final Record<MessageRecordValue> publishedEvent =
+        testClient.receiveFirstMessageEvent(MessageIntent.PUBLISHED);
+    assertThat(publishedEvent.getKey()).isEqualTo(response.getKey());
+    assertThat(MsgPackUtil.asMsgPack(publishedEvent.getValue().getPayload()))
+        .isEqualTo(EMTPY_OBJECT);
 
-    assertThat(publishedEvent.value())
-        .containsExactly(
-            entry("name", "order canceled"),
-            entry("correlationKey", "order-123"),
-            entry("timeToLive", 1_000L),
-            entry("payload", EMTPY_OBJECT),
-            entry("messageId", ""));
+    Assertions.assertThat(publishedEvent.getValue())
+        .hasName("order canceled")
+        .hasCorrelationKey("order-123")
+        .hasTimeToLive(1000L)
+        .hasMessageId("");
   }
 
   @Test
@@ -93,7 +99,7 @@ public class PublishMessageTest {
     final ExecuteCommandResponse response =
         apiRule
             .createCmdRequest()
-            .type(ValueType.MESSAGE, MessageIntent.PUBLISH)
+            .type(ValueType.MESSAGE, PUBLISH)
             .command()
             .put("name", "order canceled")
             .put("correlationKey", "order-123")
@@ -102,7 +108,7 @@ public class PublishMessageTest {
             .done()
             .sendAndAwait();
 
-    assertThat(response.intent()).isEqualTo(MessageIntent.PUBLISHED);
+    assertThat(response.getIntent()).isEqualTo(MessageIntent.PUBLISHED);
     assertThat(response.getValue()).contains(entry("payload", MsgPackConstants.MSGPACK_PAYLOAD));
   }
 
@@ -112,7 +118,7 @@ public class PublishMessageTest {
     final ExecuteCommandResponse response =
         apiRule
             .createCmdRequest()
-            .type(ValueType.MESSAGE, MessageIntent.PUBLISH)
+            .type(ValueType.MESSAGE, PUBLISH)
             .command()
             .put("name", "order canceled")
             .put("correlationKey", "order-123")
@@ -121,7 +127,7 @@ public class PublishMessageTest {
             .done()
             .sendAndAwait();
 
-    assertThat(response.intent()).isEqualTo(MessageIntent.PUBLISHED);
+    assertThat(response.getIntent()).isEqualTo(MessageIntent.PUBLISHED);
     assertThat(response.getValue()).contains(entry("messageId", "msg-1"));
   }
 
@@ -131,7 +137,7 @@ public class PublishMessageTest {
     final ExecuteCommandResponse response =
         apiRule
             .createCmdRequest()
-            .type(ValueType.MESSAGE, MessageIntent.PUBLISH)
+            .type(ValueType.MESSAGE, PUBLISH)
             .command()
             .put("name", "order canceled")
             .put("correlationKey", "order-123")
@@ -139,7 +145,7 @@ public class PublishMessageTest {
             .done()
             .sendAndAwait();
 
-    assertThat(response.intent()).isEqualTo(MessageIntent.PUBLISHED);
+    assertThat(response.getIntent()).isEqualTo(MessageIntent.PUBLISHED);
     assertThat(response.getValue()).contains(entry("timeToLive", 0L));
   }
 
@@ -149,7 +155,7 @@ public class PublishMessageTest {
     final ExecuteCommandResponse response =
         apiRule
             .createCmdRequest()
-            .type(ValueType.MESSAGE, MessageIntent.PUBLISH)
+            .type(ValueType.MESSAGE, PUBLISH)
             .command()
             .put("name", "order canceled")
             .put("correlationKey", "order-123")
@@ -157,7 +163,7 @@ public class PublishMessageTest {
             .done()
             .sendAndAwait();
 
-    assertThat(response.intent()).isEqualTo(MessageIntent.PUBLISHED);
+    assertThat(response.getIntent()).isEqualTo(MessageIntent.PUBLISHED);
     assertThat(response.getValue()).contains(entry("timeToLive", -1L));
   }
 
@@ -168,7 +174,7 @@ public class PublishMessageTest {
 
     final ExecuteCommandResponse response = publishMessage("order canceled", "order-123", "msg-2");
 
-    assertThat(response.intent()).isEqualTo(MessageIntent.PUBLISHED);
+    assertThat(response.getIntent()).isEqualTo(MessageIntent.PUBLISHED);
   }
 
   @Test
@@ -178,7 +184,7 @@ public class PublishMessageTest {
 
     final ExecuteCommandResponse response = publishMessage("order shipped", "order-123", "msg-1");
 
-    assertThat(response.intent()).isEqualTo(MessageIntent.PUBLISHED);
+    assertThat(response.getIntent()).isEqualTo(MessageIntent.PUBLISHED);
   }
 
   @Test
@@ -188,7 +194,7 @@ public class PublishMessageTest {
 
     final ExecuteCommandResponse response = publishMessage("order canceled", "order-456", "msg-1");
 
-    assertThat(response.intent()).isEqualTo(MessageIntent.PUBLISHED);
+    assertThat(response.getIntent()).isEqualTo(MessageIntent.PUBLISHED);
   }
 
   @Test
@@ -198,7 +204,7 @@ public class PublishMessageTest {
 
     final ExecuteCommandResponse response = publishMessage("order canceled", "order-123", "");
 
-    assertThat(response.intent()).isEqualTo(MessageIntent.PUBLISHED);
+    assertThat(response.getIntent()).isEqualTo(MessageIntent.PUBLISHED);
   }
 
   @Test
@@ -206,7 +212,7 @@ public class PublishMessageTest {
 
     apiRule
         .createCmdRequest()
-        .type(ValueType.MESSAGE, MessageIntent.PUBLISH)
+        .type(ValueType.MESSAGE, PUBLISH)
         .command()
         .put("name", "order canceled")
         .put("correlationKey", "order-123")
@@ -217,7 +223,7 @@ public class PublishMessageTest {
     final ExecuteCommandResponse response =
         apiRule
             .createCmdRequest()
-            .type(ValueType.MESSAGE, MessageIntent.PUBLISH)
+            .type(ValueType.MESSAGE, PUBLISH)
             .command()
             .put("name", "order canceled")
             .put("correlationKey", "order-123")
@@ -225,7 +231,7 @@ public class PublishMessageTest {
             .done()
             .sendAndAwait();
 
-    assertThat(response.intent()).isEqualTo(MessageIntent.PUBLISHED);
+    assertThat(response.getIntent()).isEqualTo(MessageIntent.PUBLISHED);
   }
 
   @Test
@@ -235,21 +241,16 @@ public class PublishMessageTest {
 
     final ExecuteCommandResponse response = publishMessage("order canceled", "order-123", "msg-1");
 
-    assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(response.rejectionReason())
+    assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+    assertThat(response.getRejectionReason())
         .isEqualTo("message with id 'msg-1' is already published");
 
-    final SubscribedRecord rejection =
-        apiRule
-            .partition()
-            .receiveRejections()
-            .filter(intent(MessageIntent.PUBLISH))
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("no rejection found"));
+    final Record<MessageRecordValue> rejection =
+        testClient.receiveMessages().onlyCommandRejections().withIntent(PUBLISH).getFirst();
 
-    assertThat(rejection.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(rejection.rejectionReason())
+    assertThat(rejection.getMetadata().getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+    assertThat(rejection.getMetadata().getRejectionReason())
         .isEqualTo("message with id 'msg-1' is already published");
   }
 
@@ -261,7 +262,7 @@ public class PublishMessageTest {
     final ExecuteCommandResponse response =
         apiRule
             .createCmdRequest()
-            .type(ValueType.MESSAGE, MessageIntent.PUBLISH)
+            .type(ValueType.MESSAGE, PUBLISH)
             .command()
             .put("name", "order canceled")
             .put("correlationKey", "order-123")
@@ -270,28 +271,23 @@ public class PublishMessageTest {
             .sendAndAwait();
 
     // when
-    final TestPartitionClient testClient = apiRule.partition();
+    final PartitionTestClient testClient = apiRule.partitionClient();
 
     brokerRule
         .getClock()
         .addTime(MessageStreamProcessor.MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL.plusMillis(timeToLive));
 
     // then
-    final SubscribedRecord deletedEvent =
-        testClient
-            .receiveEvents()
-            .filter(intent(MessageIntent.DELETED))
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("no delete event found"));
+    final Record<MessageRecordValue> deletedEvent =
+        testClient.receiveFirstMessageEvent(MessageIntent.DELETED);
+    assertThat(deletedEvent.getKey()).isEqualTo(response.getKey());
+    assertThat(MsgPackUtil.asMsgPack(deletedEvent.getValue().getPayload())).isEqualTo(EMTPY_OBJECT);
 
-    assertThat(deletedEvent.key()).isEqualTo(response.key());
-    assertThat(deletedEvent.value())
-        .containsExactly(
-            entry("name", "order canceled"),
-            entry("correlationKey", "order-123"),
-            entry("timeToLive", timeToLive),
-            entry("payload", EMTPY_OBJECT),
-            entry("messageId", ""));
+    Assertions.assertThat(deletedEvent.getValue())
+        .hasName("order canceled")
+        .hasCorrelationKey("order-123")
+        .hasTimeToLive(100L)
+        .hasMessageId("");
   }
 
   @Test
@@ -300,7 +296,7 @@ public class PublishMessageTest {
     final ExecuteCommandResponse response =
         apiRule
             .createCmdRequest()
-            .type(ValueType.MESSAGE, MessageIntent.PUBLISH)
+            .type(ValueType.MESSAGE, PUBLISH)
             .command()
             .put("name", "order canceled")
             .put("correlationKey", "order-123")
@@ -309,26 +305,20 @@ public class PublishMessageTest {
             .sendAndAwait();
 
     // when
-    final TestPartitionClient testClient = apiRule.partition();
-
     brokerRule.getClock().addTime(MessageStreamProcessor.MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL);
 
     // then
-    final SubscribedRecord deletedEvent =
-        testClient
-            .receiveEvents()
-            .filter(intent(MessageIntent.DELETED))
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("no delete event found"));
+    final Record<MessageRecordValue> deletedEvent =
+        testClient.receiveFirstMessageEvent(MessageIntent.DELETED);
 
-    assertThat(deletedEvent.key()).isEqualTo(response.key());
-    assertThat(deletedEvent.value())
-        .containsExactly(
-            entry("name", "order canceled"),
-            entry("correlationKey", "order-123"),
-            entry("timeToLive", 0L),
-            entry("payload", EMTPY_OBJECT),
-            entry("messageId", ""));
+    assertThat(deletedEvent.getKey()).isEqualTo(response.getKey());
+    assertThat(MsgPackUtil.asMsgPack(deletedEvent.getValue().getPayload())).isEqualTo(EMTPY_OBJECT);
+
+    Assertions.assertThat(deletedEvent.getValue())
+        .hasName("order canceled")
+        .hasCorrelationKey("order-123")
+        .hasTimeToLive(0L)
+        .hasMessageId("");
   }
 
   @Test
@@ -337,7 +327,7 @@ public class PublishMessageTest {
     final ExecuteCommandRequestBuilder request =
         apiRule
             .createCmdRequest()
-            .type(ValueType.MESSAGE, MessageIntent.PUBLISH)
+            .type(ValueType.MESSAGE, PUBLISH)
             .command()
             .put("correlationKey", "order-123")
             .put("timeToLive", 1_000)
@@ -353,7 +343,7 @@ public class PublishMessageTest {
     final ExecuteCommandRequestBuilder request =
         apiRule
             .createCmdRequest()
-            .type(ValueType.MESSAGE, MessageIntent.PUBLISH)
+            .type(ValueType.MESSAGE, PUBLISH)
             .command()
             .put("name", "order canceled")
             .put("timeToLive", 1_000)
@@ -369,7 +359,7 @@ public class PublishMessageTest {
     final ExecuteCommandRequestBuilder request =
         apiRule
             .createCmdRequest()
-            .type(ValueType.MESSAGE, MessageIntent.PUBLISH)
+            .type(ValueType.MESSAGE, PUBLISH)
             .command()
             .put("name", "order canceled")
             .put("correlationKey", "order-123")
@@ -384,7 +374,7 @@ public class PublishMessageTest {
 
     return apiRule
         .createCmdRequest()
-        .type(ValueType.MESSAGE, MessageIntent.PUBLISH)
+        .type(ValueType.MESSAGE, PUBLISH)
         .command()
         .put("name", name)
         .put("correlationKey", correlationKey)

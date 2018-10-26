@@ -162,7 +162,7 @@ public class StreamProcessorRule implements TestRule {
     }
 
     @Override
-    protected void before() throws Throwable {
+    protected void before() {
       output = new BufferingServerOutput();
 
       streams =

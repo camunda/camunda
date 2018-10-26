@@ -18,19 +18,23 @@
 package io.zeebe.broker.workflow;
 
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setPartitionCount;
-import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_ACTIVITY_ID;
-import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
-import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_INSTANCE_KEY;
-import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_VERSION;
-import static io.zeebe.test.broker.protocol.clientapi.TestPartitionClient.intent;
+import static io.zeebe.broker.workflow.WorkflowAssert.assertMessageSubscription;
+import static io.zeebe.broker.workflow.WorkflowAssert.assertWorkflowInstancePayload;
+import static io.zeebe.broker.workflow.WorkflowAssert.assertWorkflowInstanceRecord;
+import static io.zeebe.broker.workflow.WorkflowAssert.assertWorkflowSubscription;
+import static io.zeebe.broker.workflow.gateway.ParallelGatewayStreamProcessorTest.PROCESS_ID;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.entry;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.exporter.record.Assertions;
+import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.RecordMetadata;
+import io.zeebe.exporter.record.value.MessageSubscriptionRecordValue;
+import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
-import io.zeebe.msgpack.spec.MsgPackHelper;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.SubscriptionUtil;
@@ -39,10 +43,7 @@ import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
-import io.zeebe.test.broker.protocol.clientapi.TestPartitionClient;
-import io.zeebe.test.util.MsgPackUtil;
+import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -66,7 +67,7 @@ public class MessageCorrelationTest {
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
   private static final BpmnModelInstance CATCH_EVENT_WORKFLOW =
-      Bpmn.createExecutableProcess("wf")
+      Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .intermediateCatchEvent("receive-message")
           .message(m -> m.name("order canceled").zeebeCorrelationKey("$.orderId"))
@@ -75,7 +76,7 @@ public class MessageCorrelationTest {
           .done();
 
   private static final BpmnModelInstance RECEIVE_TASK_WORKFLOW =
-      Bpmn.createExecutableProcess("wf")
+      Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .receiveTask("receive-message")
           .message(m -> m.name("order canceled").zeebeCorrelationKey("$.orderId"))
@@ -97,17 +98,17 @@ public class MessageCorrelationTest {
     };
   }
 
-  private TestPartitionClient testClient;
+  private PartitionTestClient testClient;
 
   @Before
   public void init() {
     apiRule.waitForPartition(3);
-    testClient = apiRule.partition();
+    testClient = apiRule.partitionClient();
     final long deploymentKey = testClient.deploy(workflow);
 
     testClient.receiveFirstDeploymentEvent(DeploymentIntent.CREATED, deploymentKey);
-    apiRule.partition(1).receiveFirstDeploymentEvent(DeploymentIntent.CREATED, deploymentKey);
-    apiRule.partition(2).receiveFirstDeploymentEvent(DeploymentIntent.CREATED, deploymentKey);
+    apiRule.partitionClient(1).receiveFirstDeploymentEvent(DeploymentIntent.CREATED, deploymentKey);
+    apiRule.partitionClient(2).receiveFirstDeploymentEvent(DeploymentIntent.CREATED, deploymentKey);
   }
 
   @Test
@@ -115,13 +116,14 @@ public class MessageCorrelationTest {
 
     testClient.publishMessage("order canceled", "order-123");
 
-    testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
+    testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
-    final List<SubscribedRecord> events =
-        testClient.receiveRecords().ofTypeWorkflowInstance().limit(11).collect(Collectors.toList());
+    final List<Record<WorkflowInstanceRecordValue>> events =
+        testClient.receiveWorkflowInstances().limit(11).collect(Collectors.toList());
 
     assertThat(events)
-        .extracting(SubscribedRecord::intent)
+        .extracting(Record::getMetadata)
+        .extracting(RecordMetadata::getIntent)
         .containsExactly(
             WorkflowInstanceIntent.CREATE,
             WorkflowInstanceIntent.CREATED,
@@ -140,40 +142,32 @@ public class MessageCorrelationTest {
   public void shouldActivateElement() {
 
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
+        testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
-    final SubscribedRecord event =
+    final Record event =
         testClient.receiveElementInState(
             "receive-message", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
-    assertThat(event.value())
-        .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "wf")
-        .containsEntry(PROP_WORKFLOW_VERSION, 1L)
-        .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
-        .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "receive-message");
+    assertWorkflowInstanceRecord(workflowInstanceKey, "receive-message", event);
   }
 
   @Test
   public void shouldOpenMessageSubscription() {
 
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
+        testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
-    final SubscribedRecord catchEventEntered =
+    final Record catchEventEntered =
         testClient.receiveElementInState(
             "receive-message", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
-    final SubscribedRecord messageSubscription =
-        findMessageSubscription(MessageSubscriptionIntent.OPENED);
-    assertThat(messageSubscription.valueType()).isEqualTo(ValueType.MESSAGE_SUBSCRIPTION);
-    assertThat(messageSubscription.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(messageSubscription.value())
-        .containsExactly(
-            entry("workflowInstancePartitionId", (long) catchEventEntered.partitionId()),
-            entry("workflowInstanceKey", workflowInstanceKey),
-            entry("activityInstanceKey", catchEventEntered.key()),
-            entry("messageName", "order canceled"),
-            entry("correlationKey", "order-123"));
+    final Record messageSubscription = findMessageSubscription(MessageSubscriptionIntent.OPENED);
+    assertThat(messageSubscription.getMetadata().getValueType())
+        .isEqualTo(ValueType.MESSAGE_SUBSCRIPTION);
+    assertThat(messageSubscription.getMetadata().getRecordType()).isEqualTo(RecordType.EVENT);
+
+    assertMessageSubscription(
+        workflowInstanceKey, "order-123", catchEventEntered, messageSubscription);
   }
 
   @Test
@@ -183,65 +177,61 @@ public class MessageCorrelationTest {
 
     final String correlationKey = "order-123";
 
-    final TestPartitionClient workflowPartition = apiRule.partition(partitionIds.get(0));
-    final TestPartitionClient subscriptionPartition =
-        apiRule.partition(getPartitionId(correlationKey));
+    final PartitionTestClient workflowPartition = apiRule.partitionClient(partitionIds.get(0));
+    final PartitionTestClient subscriptionPartition =
+        apiRule.partitionClient(getPartitionId(correlationKey));
 
     testClient.deploy(CATCH_EVENT_WORKFLOW);
 
     // when
     final long workflowInstanceKey1 =
-        workflowPartition.createWorkflowInstance("wf", asMsgPack("orderId", correlationKey));
+        workflowPartition.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", correlationKey));
 
     final long workflowInstanceKey2 =
-        workflowPartition.createWorkflowInstance("wf", asMsgPack("orderId", correlationKey));
+        workflowPartition.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", correlationKey));
 
     // then
-    final List<SubscribedRecord> subscriptions =
+    final List<Record<MessageSubscriptionRecordValue>> subscriptions =
         subscriptionPartition
-            .receiveEvents()
-            .filter(intent(MessageSubscriptionIntent.OPENED))
+            .receiveMessageSubscriptions()
+            .withIntent(MessageSubscriptionIntent.OPENED)
             .limit(2)
             .collect(Collectors.toList());
 
     assertThat(subscriptions)
-        .extracting(s -> s.value().get("workflowInstanceKey"))
+        .extracting(s -> s.getValue().getWorkflowInstanceKey())
         .contains(workflowInstanceKey1, workflowInstanceKey2);
   }
 
   @Test
   public void shouldOpenWorkflowInstanceSubscription() {
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
+        testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
-    final SubscribedRecord catchEventEntered =
+    final Record catchEventEntered =
         testClient.receiveElementInState(
             "receive-message", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
-    final SubscribedRecord workflowInstanceSubscription =
+    final Record workflowInstanceSubscription =
         testClient
-            .receiveEvents()
-            .filter(intent(WorkflowInstanceSubscriptionIntent.OPENED))
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("no workflow instance subscription event found"));
+            .receiveWorkflowInstanceSubscriptions()
+            .withIntent(WorkflowInstanceSubscriptionIntent.OPENED)
+            .getFirst();
 
-    assertThat(workflowInstanceSubscription.valueType())
+    assertThat(workflowInstanceSubscription.getMetadata().getValueType())
         .isEqualTo(ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
-    assertThat(workflowInstanceSubscription.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(workflowInstanceSubscription.value())
-        .containsExactly(
-            entry("subscriptionPartitionId", (long) getPartitionId("order-123")),
-            entry("workflowInstanceKey", workflowInstanceKey),
-            entry("activityInstanceKey", catchEventEntered.key()),
-            entry("messageName", "order canceled"),
-            entry("payload", MsgPackHelper.EMTPY_OBJECT));
+    assertThat(workflowInstanceSubscription.getMetadata().getRecordType())
+        .isEqualTo(RecordType.EVENT);
+
+    assertWorkflowSubscription(
+        workflowInstanceKey, catchEventEntered, workflowInstanceSubscription);
   }
 
   @Test
-  public void shouldCorrelateMessageIfEnteredBefore() throws Exception {
+  public void shouldCorrelateMessageIfEnteredBefore() {
     // given
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
+        testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
     findMessageSubscription(MessageSubscriptionIntent.OPENED);
 
@@ -249,86 +239,68 @@ public class MessageCorrelationTest {
     testClient.publishMessage("order canceled", "order-123", asMsgPack("foo", "bar"));
 
     // then
-    final SubscribedRecord event =
+    final Record event =
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
-    assertThat(event.value())
-        .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "wf")
-        .containsEntry(PROP_WORKFLOW_VERSION, 1L)
-        .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
-        .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "receive-message");
-
-    final byte[] payload = (byte[]) event.value().get("payload");
-    MsgPackUtil.assertEquality(payload, "{'orderId':'order-123', 'foo':'bar'}");
+    assertWorkflowInstanceRecord(workflowInstanceKey, "receive-message", event);
+    assertWorkflowInstancePayload(event, "{'orderId':'order-123', 'foo':'bar'}");
   }
 
   @Test
-  public void shouldCorrelateMessageIfPublishedBefore() throws Exception {
+  public void shouldCorrelateMessageIfPublishedBefore() {
     // given
     testClient.publishMessage("order canceled", "order-123", asMsgPack("foo", "bar"));
 
     // when
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
+        testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
     // then
-    final SubscribedRecord event =
+    final Record event =
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
-
-    assertThat(event.value())
-        .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "wf")
-        .containsEntry(PROP_WORKFLOW_VERSION, 1L)
-        .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
-        .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "receive-message");
-
-    final byte[] payload = (byte[]) event.value().get("payload");
-    MsgPackUtil.assertEquality(payload, "{'orderId':'order-123', 'foo':'bar'}");
+    assertWorkflowInstanceRecord(workflowInstanceKey, "receive-message", event);
+    assertWorkflowInstancePayload(event, "{'orderId':'order-123', 'foo':'bar'}");
   }
 
   @Test
-  public void shouldCorrelateFirstPublishedMessage() throws Exception {
+  public void shouldCorrelateFirstPublishedMessage() {
     // given
     testClient.publishMessage("order canceled", "order-123", asMsgPack("nr", "first"));
 
     testClient.publishMessage("order canceled", "order-123", asMsgPack("nr", "second"));
 
     // when
-    testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
+    testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
     // then
-    final SubscribedRecord event =
+    final Record<WorkflowInstanceRecordValue> event =
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
-    final byte[] payload = (byte[]) event.value().get("payload");
-    MsgPackUtil.assertEquality(payload, "{'orderId':'order-123', 'nr':'first'}");
+    assertWorkflowInstancePayload(event, "{'orderId':'order-123', 'nr':'first'}");
   }
 
   @Test
   public void shouldContinueInstanceAfteMessageIsCorrelated() {
     // given
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
+        testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
     // when
     testClient.publishMessage("order canceled", "order-123");
 
     // then
-    final SubscribedRecord event =
+    final Record event =
         testClient.receiveFirstWorkflowInstanceEvent(
             workflowInstanceKey, "to-end", WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN);
 
-    assertThat(event.value())
-        .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "wf")
-        .containsEntry(PROP_WORKFLOW_VERSION, 1L)
-        .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey)
-        .containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "to-end");
+    assertWorkflowInstanceRecord(workflowInstanceKey, "to-end", event);
   }
 
   @Test
-  public void shouldCorrelateMessageWithZeroTTL() throws Exception {
+  public void shouldCorrelateMessageWithZeroTTL() {
     // given
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
+        testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
     findMessageSubscription(MessageSubscriptionIntent.OPENED);
 
@@ -336,79 +308,76 @@ public class MessageCorrelationTest {
     testClient.publishMessage("order canceled", "order-123", asMsgPack("foo", "bar"), 0);
 
     // then
-    final SubscribedRecord event =
+    final Record<WorkflowInstanceRecordValue> event =
         testClient.receiveElementInState(
             "receive-message", WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
-    assertThat(event.value()).containsEntry(PROP_WORKFLOW_INSTANCE_KEY, workflowInstanceKey);
+    assertThat(event.getValue().getWorkflowInstanceKey()).isEqualTo(workflowInstanceKey);
   }
 
   @Test
-  public void shouldNotCorrelateMessageAfterTTL() throws Exception {
+  public void shouldNotCorrelateMessageAfterTTL() {
     // given
     testClient.publishMessage("order canceled", "order-123", asMsgPack("nr", "first"), 0);
     testClient.publishMessage("order canceled", "order-123", asMsgPack("nr", "second"), 10_000);
 
     // when
-    testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
+    testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
     // then
-    final SubscribedRecord event =
+    final Record<WorkflowInstanceRecordValue> event =
         testClient.receiveElementInState(
             "receive-message", WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
-    final byte[] payload = (byte[]) event.value().get("payload");
-    MsgPackUtil.assertEquality(payload, "{'orderId':'order-123', 'nr':'second'}");
+    assertWorkflowInstancePayload(event, "{'orderId':'order-123', 'nr':'second'}");
   }
 
   @Test
-  public void shouldCorrelateMessageByCorrelationKey() throws Exception {
+  public void shouldCorrelateMessageByCorrelationKey() {
     // given
     final long workflowInstanceKey1 =
-        testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
+        testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
     final long workflowInstanceKey2 =
-        testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-456"));
+        testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-456"));
 
     // when
     testClient.publishMessage("order canceled", "order-123", asMsgPack("foo", "bar"));
     testClient.publishMessage("order canceled", "order-456", asMsgPack("foo", "baz"));
 
     // then
-    final SubscribedRecord catchEventOccurred1 =
+    final Record<WorkflowInstanceRecordValue> catchEventOccurred1 =
         testClient.receiveFirstWorkflowInstanceEvent(
             workflowInstanceKey1, WorkflowInstanceIntent.ELEMENT_COMPLETED);
-    final byte[] payload1 = (byte[]) catchEventOccurred1.value().get("payload");
-    MsgPackUtil.assertEquality(payload1, "{'orderId':'order-123', 'foo':'bar'}");
+    assertWorkflowInstancePayload(catchEventOccurred1, "{'orderId':'order-123', 'foo':'bar'}");
 
-    final SubscribedRecord catchEventOccurred2 =
+    final Record<WorkflowInstanceRecordValue> catchEventOccurred2 =
         testClient.receiveFirstWorkflowInstanceEvent(
             workflowInstanceKey2, WorkflowInstanceIntent.ELEMENT_COMPLETED);
-    final byte[] payload2 = (byte[]) catchEventOccurred2.value().get("payload");
-    MsgPackUtil.assertEquality(payload2, "{'orderId':'order-456', 'foo':'baz'}");
+    assertWorkflowInstancePayload(catchEventOccurred2, "{'orderId':'order-456', 'foo':'baz'}");
   }
 
   @Test
   public void shouldCorrelateMessageToAllSubscriptions() {
     // given
     final long workflowInstanceKey1 =
-        testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
+        testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
     final long workflowInstanceKey2 =
-        testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
+        testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
     // when
     testClient.publishMessage("order canceled", "order-123");
 
     // then
-    final List<SubscribedRecord> events =
+    final List<Record<WorkflowInstanceRecordValue>> events =
         testClient
-            .receiveEvents()
-            .filter(intent(WorkflowInstanceIntent.ELEMENT_COMPLETED))
-            .filter(r -> "receive-message".equals(r.value().get("activityId")))
+            .receiveWorkflowInstances()
+            .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+            .withActivityId("receive-message")
             .limit(2)
             .collect(Collectors.toList());
 
     assertThat(events)
-        .extracting(r -> r.value().get("workflowInstanceKey"))
+        .extracting(r -> r.getValue().getWorkflowInstanceKey())
         .contains(workflowInstanceKey1, workflowInstanceKey2);
   }
 
@@ -416,44 +385,38 @@ public class MessageCorrelationTest {
   public void shouldCorrelateWorkflowInstanceSubscription() {
     // given
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
+        testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
-    final SubscribedRecord catchEventEntered =
+    final Record catchEventEntered =
         testClient.receiveElementInState(
             "receive-message", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     // when
     final DirectBuffer messagePayload = asMsgPack("foo", "bar");
-    final ExecuteCommandResponse resp =
-        testClient.publishMessage("order canceled", "order-123", messagePayload);
-    final int messagePartitionId = resp.partitionId();
+    testClient.publishMessage("order canceled", "order-123", messagePayload);
 
     // then
-    final SubscribedRecord subscription =
+    final Record<WorkflowInstanceSubscriptionRecordValue> subscription =
         testClient
-            .receiveEvents()
-            .filter(intent(WorkflowInstanceSubscriptionIntent.CORRELATED))
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("no subscription event found"));
+            .receiveWorkflowInstanceSubscriptions()
+            .withIntent(WorkflowInstanceSubscriptionIntent.CORRELATED)
+            .getFirst();
 
-    assertThat(subscription.valueType()).isEqualTo(ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
-    assertThat(subscription.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(subscription.value())
-        .containsExactly(
-            entry("subscriptionPartitionId", (long) messagePartitionId),
-            entry("workflowInstanceKey", workflowInstanceKey),
-            entry("activityInstanceKey", catchEventEntered.key()),
-            entry("messageName", "order canceled"),
-            entry("payload", messagePayload.byteArray()));
+    assertThat(subscription.getMetadata().getValueType())
+        .isEqualTo(ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION);
+    assertThat(subscription.getMetadata().getRecordType()).isEqualTo(RecordType.EVENT);
+
+    assertWorkflowSubscription(
+        workflowInstanceKey, "{\"foo\":\"bar\"}", catchEventEntered, subscription);
   }
 
   @Test
   public void shouldCorrelateMessageSubscription() {
     // given
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
+        testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
-    final SubscribedRecord catchEventEntered =
+    final Record catchEventEntered =
         testClient.receiveElementInState(
             "receive-message", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
@@ -461,31 +424,25 @@ public class MessageCorrelationTest {
     testClient.publishMessage("order canceled", "order-123", asMsgPack("foo", "bar"));
 
     // then
-    final SubscribedRecord subscription =
+    final Record<MessageSubscriptionRecordValue> subscription =
         testClient
-            .receiveEvents()
-            .filter(intent(MessageSubscriptionIntent.CORRELATED))
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("no subscription event found"));
+            .receiveMessageSubscriptions()
+            .withIntent(MessageSubscriptionIntent.CORRELATED)
+            .getFirst();
 
-    assertThat(subscription.valueType()).isEqualTo(ValueType.MESSAGE_SUBSCRIPTION);
-    assertThat(subscription.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(subscription.value())
-        .containsExactly(
-            entry("workflowInstancePartitionId", (long) catchEventEntered.partitionId()),
-            entry("workflowInstanceKey", workflowInstanceKey),
-            entry("activityInstanceKey", catchEventEntered.key()),
-            entry("messageName", "order canceled"),
-            entry("correlationKey", ""));
+    assertThat(subscription.getMetadata().getValueType()).isEqualTo(ValueType.MESSAGE_SUBSCRIPTION);
+    assertThat(subscription.getMetadata().getRecordType()).isEqualTo(RecordType.EVENT);
+
+    assertMessageSubscription(workflowInstanceKey, catchEventEntered, subscription);
   }
 
   @Test
-  public void shouldRejectCorrelateCommand() throws Exception {
+  public void shouldRejectCorrelateCommand() {
     // given
     final long workflowInstanceKey =
-        testClient.createWorkflowInstance("wf", asMsgPack("orderId", "order-123"));
+        testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
-    final SubscribedRecord catchEventEntered =
+    final Record catchEventEntered =
         testClient.receiveElementInState(
             "receive-message", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
@@ -498,30 +455,26 @@ public class MessageCorrelationTest {
         .done()
         .send();
 
-    testClient.receiveElementInState("wf", WorkflowInstanceIntent.ELEMENT_TERMINATED);
+    testClient.receiveElementInState(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_TERMINATED);
 
     testClient.publishMessage("order canceled", "order-123");
 
     // then
-    final SubscribedRecord rejection =
+    final Record<WorkflowInstanceSubscriptionRecordValue> rejection =
         testClient
-            .receiveRejections()
-            .filter(intent(WorkflowInstanceSubscriptionIntent.CORRELATE))
-            .findFirst()
-            .orElseThrow(() -> new AssertionError("no rejection found"));
+            .receiveWorkflowInstanceSubscriptions()
+            .withIntent(WorkflowInstanceSubscriptionIntent.CORRELATE)
+            .onlyCommandRejections()
+            .getFirst();
 
-    assertThat(rejection.value())
-        .containsEntry("workflowInstanceKey", workflowInstanceKey)
-        .containsEntry("activityInstanceKey", catchEventEntered.key());
+    Assertions.assertThat(rejection.getValue())
+        .hasWorkflowInstanceKey(workflowInstanceKey)
+        .hasActivityInstanceKey(catchEventEntered.getKey());
   }
 
-  private SubscribedRecord findMessageSubscription(final MessageSubscriptionIntent intent)
-      throws AssertionError {
-    return testClient
-        .receiveEvents()
-        .filter(intent(intent))
-        .findFirst()
-        .orElseThrow(() -> new AssertionError("no message subscription event found"));
+  private Record<MessageSubscriptionRecordValue> findMessageSubscription(
+      final MessageSubscriptionIntent intent) throws AssertionError {
+    return testClient.receiveMessageSubscriptions().withIntent(intent).getFirst();
   }
 
   private int getPartitionId(final String correlationKey) {

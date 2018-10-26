@@ -93,8 +93,8 @@ public class ActivateJobsTest {
             .sendAndAwait();
 
     // then
-    assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(response.rejectionReason())
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+    assertThat(response.getRejectionReason())
         .isEqualTo("Job batch amount must be greater than zero, got 0");
   }
 
@@ -116,8 +116,8 @@ public class ActivateJobsTest {
             .sendAndAwait();
 
     // then
-    assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(response.rejectionReason())
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+    assertThat(response.getRejectionReason())
         .isEqualTo("Job batch timeout must be greater than zero, got 0");
   }
 
@@ -139,8 +139,8 @@ public class ActivateJobsTest {
             .sendAndAwait();
 
     // then
-    assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(response.rejectionReason()).isEqualTo("Job batch type must not be empty");
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+    assertThat(response.getRejectionReason()).isEqualTo("Job batch type must not be empty");
   }
 
   @Test
@@ -161,8 +161,8 @@ public class ActivateJobsTest {
             .sendAndAwait();
 
     // then
-    assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(response.rejectionReason()).isEqualTo("Job batch worker must not be empty");
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+    assertThat(response.getRejectionReason()).isEqualTo("Job batch worker must not be empty");
   }
 
   @Test
@@ -195,7 +195,7 @@ public class ActivateJobsTest {
         (List<Map<String, Object>>) response.getValue().get("jobs");
 
     // then
-    assertThat(response.intent()).isEqualTo(JobBatchIntent.ACTIVATED);
+    assertThat(response.getIntent()).isEqualTo(JobBatchIntent.ACTIVATED);
 
     assertThat(jobKeys).hasSize(1);
     assertThat(jobs).hasSize(1);
@@ -217,7 +217,7 @@ public class ActivateJobsTest {
     final Record<JobBatchRecordValue> jobBatchActivatedRecord =
         jobBatchRecords(JobBatchIntent.ACTIVATED).getFirst();
     assertThat(jobBatchActivatedRecord)
-        .hasKey(response.key())
+        .hasKey(response.getKey())
         .hasSourceRecordPosition(jobBatchActivateRecord.getPosition())
         .hasProducerId(StreamProcessorIds.JOB_STREAM_PROCESSOR_ID)
         .hasTimestamp(clock.getCurrentTime());
@@ -404,7 +404,7 @@ public class ActivateJobsTest {
         .put("payload", PAYLOAD_MSG_PACK)
         .done()
         .sendAndAwait()
-        .key();
+        .getKey();
   }
 
   private List<Job> activateJobs(int amount) {
@@ -447,7 +447,7 @@ public class ActivateJobsTest {
         .putAll(job.value)
         .done()
         .sendAndAwait()
-        .key();
+        .getKey();
   }
 
   private long deployWorkflow(String... taskTypes) {
@@ -472,7 +472,7 @@ public class ActivateJobsTest {
             Collections.singletonList(deploymentResource(bpmnXml(model), "process.bpmn")))
         .done()
         .sendAndAwait()
-        .key();
+        .getKey();
   }
 
   private Map<String, Object> deploymentResource(final byte[] resource, final String name) {
@@ -506,7 +506,7 @@ public class ActivateJobsTest {
         .put(PROP_WORKFLOW_PAYLOAD, PAYLOAD_MSG_PACK)
         .done()
         .sendAndAwait()
-        .key();
+        .getKey();
   }
 
   static class Job {
