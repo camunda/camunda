@@ -59,7 +59,7 @@ public class JobUpdateRetriesTest {
     // given
     client.createJob(JOB_TYPE);
 
-    apiRule.openJobSubscription(JOB_TYPE).await();
+    apiRule.activateJobs(JOB_TYPE).await();
 
     final Record<JobRecordValue> jobEvent = client.receiveFirstJobEvent(JobIntent.ACTIVATED);
 
@@ -95,8 +95,7 @@ public class JobUpdateRetriesTest {
   public void shouldUpdateRetriesAndRetry() {
     // given
     client.createJob(JOB_TYPE);
-
-    apiRule.openJobSubscription(JOB_TYPE).await();
+    apiRule.activateJobs(JOB_TYPE).await();
 
     final Record jobEvent = client.receiveFirstJobEvent(JobIntent.ACTIVATED);
 
@@ -104,6 +103,7 @@ public class JobUpdateRetriesTest {
 
     // when
     final ExecuteCommandResponse response = client.updateJobRetries(jobEvent.getKey(), NEW_RETRIES);
+    apiRule.activateJobs(JOB_TYPE).await();
 
     // then
     assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
@@ -122,7 +122,7 @@ public class JobUpdateRetriesTest {
         .isGreaterThanOrEqualTo(jobEvent.getTimestamp().toEpochMilli());
 
     // and the job lifecycle is correct
-    final List<Record> jobEvents = client.receiveJobs().limit(10).collect(Collectors.toList());
+    final List<Record> jobEvents = client.receiveJobs().limit(8).collect(Collectors.toList());
 
     assertThat(jobEvents)
         .extracting(Record::getMetadata)
@@ -130,13 +130,11 @@ public class JobUpdateRetriesTest {
         .containsExactly(
             tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.CREATE),
             tuple(RecordType.EVENT, ValueType.JOB, JobIntent.CREATED),
-            tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.ACTIVATE),
             tuple(RecordType.EVENT, ValueType.JOB, JobIntent.ACTIVATED),
             tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.FAIL),
             tuple(RecordType.EVENT, ValueType.JOB, JobIntent.FAILED),
             tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.UPDATE_RETRIES),
             tuple(RecordType.EVENT, ValueType.JOB, JobIntent.RETRIES_UPDATED),
-            tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.ACTIVATE),
             tuple(RecordType.EVENT, ValueType.JOB, JobIntent.ACTIVATED));
   }
 
@@ -156,7 +154,7 @@ public class JobUpdateRetriesTest {
   public void shouldRejectUpdateRetriesIfJobCompleted() {
     // given
     client.createJob(JOB_TYPE);
-    apiRule.openJobSubscription(JOB_TYPE).await();
+    apiRule.activateJobs(JOB_TYPE).await();
 
     final Record<JobRecordValue> jobEvent = client.receiveFirstJobEvent(JobIntent.ACTIVATED);
     client.completeJob(jobEvent.getKey(), "{}");
@@ -176,7 +174,7 @@ public class JobUpdateRetriesTest {
     // given
     client.createJob(JOB_TYPE);
 
-    apiRule.openJobSubscription(JOB_TYPE).await();
+    apiRule.activateJobs(JOB_TYPE).await();
 
     final Record jobEvent = client.receiveFirstJobEvent(JobIntent.ACTIVATED);
 
@@ -195,7 +193,7 @@ public class JobUpdateRetriesTest {
     // given
     client.createJob(JOB_TYPE);
 
-    apiRule.openJobSubscription(JOB_TYPE).await();
+    apiRule.activateJobs(JOB_TYPE).await();
 
     final Record jobEvent = client.receiveFirstJobEvent(JobIntent.ACTIVATED);
 
@@ -216,7 +214,7 @@ public class JobUpdateRetriesTest {
     // given
     client.createJob(JOB_TYPE);
 
-    apiRule.openJobSubscription(JOB_TYPE).await();
+    apiRule.activateJobs(JOB_TYPE).await();
 
     final Record jobEvent = client.receiveFirstJobEvent(JobIntent.ACTIVATED);
 

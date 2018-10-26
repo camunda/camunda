@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.job;
 
-import static io.zeebe.protocol.intent.JobIntent.ACTIVATE;
 import static io.zeebe.protocol.intent.JobIntent.ACTIVATED;
 import static io.zeebe.protocol.intent.JobIntent.COMPLETED;
 import static io.zeebe.protocol.intent.JobIntent.FAILED;
@@ -30,6 +29,7 @@ import io.zeebe.exporter.record.RecordMetadata;
 import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.Intent;
+import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
@@ -63,9 +63,7 @@ public class JobTimeOutTest {
 
     createJob(jobType);
 
-    apiRule
-        .openJobSubscription(apiRule.getDefaultPartitionId(), jobType, timeout.toMillis())
-        .await();
+    apiRule.activateJobs(apiRule.getDefaultPartitionId(), jobType, timeout.toMillis()).await();
     client.receiveFirstJobEvent(ACTIVATED);
 
     // when
@@ -84,9 +82,7 @@ public class JobTimeOutTest {
 
     createJob(jobType);
 
-    apiRule
-        .openJobSubscription(apiRule.getDefaultPartitionId(), jobType, timeout.toMillis())
-        .await();
+    apiRule.activateJobs(apiRule.getDefaultPartitionId(), jobType, timeout.toMillis()).await();
     final Record activatedJob = client.receiveFirstJobEvent(ACTIVATED);
     client.completeJob(activatedJob.getKey(), "{}");
 
@@ -106,9 +102,7 @@ public class JobTimeOutTest {
 
     createJob(jobType);
 
-    apiRule
-        .openJobSubscription(apiRule.getDefaultPartitionId(), jobType, timeout.toMillis())
-        .await();
+    apiRule.activateJobs(apiRule.getDefaultPartitionId(), jobType, timeout.toMillis()).await();
     final Record activatedJob = client.receiveFirstJobEvent(ACTIVATED);
     client.failJob(activatedJob.getKey(), 0);
 
@@ -126,12 +120,13 @@ public class JobTimeOutTest {
     final long jobKey1 = createJob(jobType);
     final long timeout = 10L;
 
-    apiRule.openJobSubscription(apiRule.getDefaultPartitionId(), jobType, timeout);
+    apiRule.activateJobs(apiRule.getDefaultPartitionId(), jobType, timeout);
     client.receiveFirstJobEvent(ACTIVATED);
     brokerRule.getClock().addTime(JobStreamProcessor.TIME_OUT_POLLING_INTERVAL);
 
     // when expired
     client.receiveFirstJobEvent(TIME_OUT);
+    apiRule.activateJobs(jobType);
 
     // then activated again
     final List<Record<JobRecordValue>> jobEvents =
@@ -144,11 +139,9 @@ public class JobTimeOutTest {
         .containsExactly(
             JobIntent.CREATE,
             JobIntent.CREATED,
-            ACTIVATE,
             JobIntent.ACTIVATED,
             JobIntent.TIME_OUT,
             JobIntent.TIMED_OUT,
-            ACTIVATE,
             JobIntent.ACTIVATED);
   }
 
@@ -157,14 +150,14 @@ public class JobTimeOutTest {
     // given
     final String jobType = "foo";
     createJob(jobType);
-
     final long timeout = 10L;
-    apiRule.openJobSubscription(apiRule.getDefaultPartitionId(), jobType, timeout);
+    apiRule.activateJobs(apiRule.getDefaultPartitionId(), jobType, timeout);
     client.receiveFirstJobEvent(ACTIVATED);
     brokerRule.getClock().addTime(JobStreamProcessor.TIME_OUT_POLLING_INTERVAL);
 
     // when expired
     client.receiveFirstJobEvent(TIME_OUT);
+    apiRule.activateJobs(jobType);
 
     // then activated again
     final Record jobActivated =
@@ -173,14 +166,16 @@ public class JobTimeOutTest {
             .skipUntil(j -> j.getMetadata().getIntent() == TIME_OUT)
             .withIntent(ACTIVATED)
             .getFirst();
-    final Record firstActivateCommand = client.receiveFirstJobCommand(ACTIVATE);
+
+    final Record firstActivateCommand =
+        client.receiveFirstJobBatchCommands().withIntent(JobBatchIntent.ACTIVATE).getFirst();
     assertThat(jobActivated.getSourceRecordPosition())
         .isNotEqualTo(firstActivateCommand.getPosition());
 
     final Record secondActivateCommand =
         client
-            .receiveJobs()
-            .withIntent(ACTIVATE)
+            .receiveFirstJobBatchCommands()
+            .withIntent(JobBatchIntent.ACTIVATE)
             .skipUntil(s -> s.getPosition() > firstActivateCommand.getPosition())
             .findFirst()
             .get();
@@ -197,11 +192,13 @@ public class JobTimeOutTest {
     final long jobKey2 = createJob(jobType);
     final long timeout = 10L;
 
-    apiRule.openJobSubscription(apiRule.getDefaultPartitionId(), jobType, timeout);
+    apiRule.activateJobs(apiRule.getDefaultPartitionId(), jobType, timeout);
 
     // when
     client.receiveJobs().withIntent(ACTIVATED).limit(2).count();
     brokerRule.getClock().addTime(JobStreamProcessor.TIME_OUT_POLLING_INTERVAL);
+    client.receiveFirstJobEvent(JobIntent.TIMED_OUT);
+    apiRule.activateJobs(jobType);
 
     // then
     final List<Record> expiredEvents = client.receiveJobs().limit(16).collect(Collectors.toList());

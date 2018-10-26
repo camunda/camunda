@@ -233,7 +233,7 @@ public class JobFailIncidentTest {
   }
 
   private void failJobWithNoRetriesLeft() {
-    apiRule.openJobSubscription("test").await();
+    apiRule.activateJobs("test").await();
 
     final Record jobEvent = testClient.receiveFirstJobEvent(JobIntent.ACTIVATED);
     final ExecuteCommandResponse response = testClient.failJob(jobEvent.getKey(), 0);

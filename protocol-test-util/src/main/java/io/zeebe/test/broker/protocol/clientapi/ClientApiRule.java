@@ -20,6 +20,9 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.JobBatchIntent;
+import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.SocketAddress;
@@ -37,6 +40,7 @@ import org.junit.rules.ExternalResource;
 
 public class ClientApiRule extends ExternalResource {
 
+  private static final String DEFAULT_WORKER = "defaultWorker";
   public static final long DEFAULT_LOCK_DURATION = 10000L;
 
   protected ClientTransport transport;
@@ -98,6 +102,12 @@ public class ClientApiRule extends ExternalResource {
         .partitionId(defaultPartitionId);
   }
 
+  /** targets the default partition by default */
+  public ExecuteCommandRequestBuilder createCmdRequest(int partition) {
+    return new ExecuteCommandRequestBuilder(transport.getOutput(), nodeId, msgPackHelper)
+        .partitionId(partition);
+  }
+
   public ControlMessageRequestBuilder createControlMessageRequest() {
     return new ControlMessageRequestBuilder(transport.getOutput(), nodeId, msgPackHelper);
   }
@@ -113,36 +123,34 @@ public class ClientApiRule extends ExternalResource {
     return testPartitionClients.get(partitionId);
   }
 
-  public ControlMessageRequest openJobSubscription(final String type) {
-    return openJobSubscription(defaultPartitionId, type, DEFAULT_LOCK_DURATION);
+  public ExecuteCommandRequest activateJobs(final String type) {
+    return activateJobs(defaultPartitionId, type, DEFAULT_LOCK_DURATION);
   }
 
-  public ControlMessageRequest closeJobSubscription(final long subscriberKey) {
-    return createControlMessageRequest()
-        .messageType(ControlMessageType.REMOVE_JOB_SUBSCRIPTION)
-        .data()
-        .put("subscriberKey", subscriberKey)
-        .done()
-        .send();
-  }
+  public ExecuteCommandRequest activateJobs(
+      final int partitionId, final String type, final long lockDuration, final int amount) {
+    // to make sure that job already exist
+    partitionClient(partitionId)
+        .receiveJobs()
+        .withIntent(JobIntent.CREATED)
+        .withType(type)
+        .getFirst();
 
-  public ControlMessageRequest openJobSubscription(
-      final int partitionId, final String type, final long lockDuration, final int credits) {
-    return createControlMessageRequest()
-        .messageType(ControlMessageType.ADD_JOB_SUBSCRIPTION)
-        .partitionId(partitionId)
-        .data()
-        .put("jobType", type)
+    return createCmdRequest(partitionId)
+        .type(ValueType.JOB_BATCH, JobBatchIntent.ACTIVATE)
+        .command()
+        .put("type", type)
+        .put("worker", DEFAULT_WORKER)
         .put("timeout", lockDuration)
-        .put("worker", "test")
-        .put("credits", credits)
+        .put("amount", amount)
+        .put("jobs", Collections.emptyList())
         .done()
         .send();
   }
 
-  public ControlMessageRequest openJobSubscription(
+  public ExecuteCommandRequest activateJobs(
       final int partitionId, final String type, final long lockDuration) {
-    return openJobSubscription(partitionId, type, lockDuration, 10);
+    return activateJobs(partitionId, type, lockDuration, 10);
   }
 
   public void waitForPartition(final int partitions) {

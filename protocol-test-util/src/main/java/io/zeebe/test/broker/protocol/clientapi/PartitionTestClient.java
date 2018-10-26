@@ -39,6 +39,7 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.DeploymentRecordStream;
 import io.zeebe.test.util.record.IncidentRecordStream;
+import io.zeebe.test.util.record.JobBatchRecordStream;
 import io.zeebe.test.util.record.JobRecordStream;
 import io.zeebe.test.util.record.MessageRecordStream;
 import io.zeebe.test.util.record.MessageSubscriptionRecordStream;
@@ -250,7 +251,7 @@ public class PartitionTestClient {
       final String jobType,
       final byte[] payload,
       final Predicate<Record<JobRecordValue>> jobEventFilter) {
-    apiRule.openJobSubscription(partitionId, jobType, 1000L).await();
+    apiRule.activateJobs(partitionId, jobType, 1000L).await();
 
     final Record<JobRecordValue> jobEvent =
         receiveJobs()
@@ -440,6 +441,18 @@ public class PartitionTestClient {
 
   public Record<JobRecordValue> receiveFirstJobCommand(final JobIntent intent) {
     return receiveJobs().onlyCommands().withIntent(intent).getFirst();
+  }
+
+  /////////////////////////////////////////////
+  // JOB BATCHS ///////////////////////////////
+  /////////////////////////////////////////////
+
+  public JobBatchRecordStream receiveJobBatchs() {
+    return RecordingExporter.jobBatchRecords().withPartitionId(partitionId);
+  }
+
+  public JobBatchRecordStream receiveFirstJobBatchCommands() {
+    return RecordingExporter.jobBatchRecords().withPartitionId(partitionId).onlyCommands();
   }
 
   /////////////////////////////////////////////
