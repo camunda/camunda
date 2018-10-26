@@ -4,12 +4,20 @@
 
 def static OPERATE_DOCKER_IMAGE() { return "gcr.io/ci-30-162810/camunda-operate" }
 
+String getBranchSlug() {
+  return env.BRANCH_NAME.toLowerCase().replaceAll(/[^a-z0-9-]/, '-').minus('-deploy')
+}
+
 String getGitCommitMsg() {
   return sh(script: 'git log --format=%B -n 1 HEAD', returnStdout: true).trim()
 }
 
 String getGitCommitHash() {
   return sh(script: 'git rev-parse --verify HEAD', returnStdout: true).trim()
+}
+
+String getImageTag() {
+  return env.BRANCH_NAME == 'master' ? getGitCommitHash() : "branch-${getBranchSlug()}"
 }
 
 void buildNotification(String buildStatus) {
@@ -48,7 +56,7 @@ pipeline {
   }
 
   stages {
-    stage('Build Frontend') {
+    stage('Frontend - Build') {
       steps {
         container('node') {
           sh '''
@@ -59,7 +67,7 @@ pipeline {
         }
       }
     }
-    stage('Build Backend') {
+    stage('Backend - Build') {
       steps {
         container('maven') {
           // MaxRAMFraction = LIMITS_CPU because there are only maven build threads
@@ -73,7 +81,7 @@ pipeline {
     }
     stage('Unit tests') {
       parallel {
-        stage('Backend') {
+        stage('Backend - Tests') {
           steps {
             container('maven') {
               // MaxRAMFraction = LIMITS_CPU+1 because there are LIMITS_CPU surefire threads + one maven thread
@@ -91,7 +99,7 @@ pipeline {
             }
           }
         }
-        stage('Frontend') {
+        stage('Frontend - Tests') {
           steps {
             container('node') {
               sh '''
@@ -108,20 +116,62 @@ pipeline {
         }
       }
     }
-    stage('Deploy Snapshot') {
-      when {
-          branch 'master'
-      }
-      steps {
-        lock('operate-snapshot-upload') {
-          container('maven') {
-            sh '''
-              JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU))" \
-              mvn deploy -s settings.xml -P -docker,skipFrontendBuild -DskipTests=true -B -T$LIMITS_CPU --fail-at-end \
-                  -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
-            '''
+    stage('Deploy') {
+      parallel {
+        stage('Deploy - Nexus Snapshot') {
+          when {
+              branch 'master'
+          }
+          steps {
+            lock('operate-snapshot-upload') {
+              container('maven') {
+                sh '''
+                  JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU))" \
+                  mvn deploy -s settings.xml -P -docker,skipFrontendBuild -DskipTests=true -B -T$LIMITS_CPU --fail-at-end \
+                      -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
+                '''
+              }
+            }
           }
         }
+        stage('Deploy - Docker Image') {
+          when {
+            expression { BRANCH_NAME ==~ /(master|.*-deploy)/ }
+          }
+          environment {
+            IMAGE_TAG = getImageTag()
+            GCR_REGISTRY = credentials('docker-registry-ci3')
+          }
+          steps {
+            lock('operate-dockerimage-upload') {
+              container('docker') {
+                sh """
+                  echo '${GCR_REGISTRY}' | docker login -u _json_key https://gcr.io --password-stdin
+
+                  docker build -t ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG} .
+
+                  docker push ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG}
+
+                  if [ "${env.BRANCH_NAME}" = 'master' ]; then
+                    docker tag ${OPERATE_DOCKER_IMAGE()}:${IMAGE_TAG} ${OPERATE_DOCKER_IMAGE()}:latest
+                    docker push ${OPERATE_DOCKER_IMAGE()}:latest
+                  fi
+                """
+              }
+            }
+          }
+        }
+      }
+    }
+    stage ('Deploy to K8s') {
+      when {
+        expression { BRANCH_NAME ==~ /(master|.*-deploy)/ }
+      }
+      steps {
+        build job: '/deploy-branch-to-k8s',
+          parameters: [
+              string(name: 'BRANCH', value: getBranchSlug()),
+          ]
       }
     }
   }

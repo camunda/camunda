@@ -33,8 +33,8 @@ spec:
           cpu: 2
           memory: 3Gi
         requests:
-          cpu: 2
-          memory: 3Gi
+          cpu: 500m
+          memory: 1Gi
     - name: node
       image: node:8.11.2-alpine
       command: ["cat"]
@@ -46,16 +46,16 @@ spec:
               resource: limits.cpu
       resources:
         limits:
-          cpu: 1
+          cpu: 2
           memory: 1Gi
         requests:
-          cpu: 1
-          memory: 1Gi
+          cpu: 500m
+          memory: 512Mi
     - name: elasticsearch
       image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.4.2
       env:
         - name: ES_JAVA_OPTS
-          value: '-Xms1g -Xmx1g'
+          value: '-Xms512m -Xmx512m'
         - name: cluster.name
           value: docker-cluster
         - name: discovery.type
@@ -64,6 +64,8 @@ spec:
           value: true
         - name: bootstrap.memory_lock
           value: true
+        - name: processors
+          value: 1
       securityContext:
         privileged: true
         capabilities:
@@ -79,7 +81,20 @@ spec:
       resources:
         limits:
           cpu: 1
-          memory: 3Gi
+          memory: 1Gi
         requests:
+          cpu: 500m
+          memory: 1Gi
+    - name: docker
+      image: docker:18.06.1-ce-dind
+      args: ["--storage-driver=overlay2"]
+      securityContext:
+        privileged: true
+      tty: true
+      resources:
+        limits:
           cpu: 1
-          memory: 3Gi
+          memory: 1Gi
+        requests:
+          cpu: 500m
+          memory: 512Mi
