@@ -179,9 +179,9 @@ it('should remove any previous startDate filters when adding a new date filter',
   expect(spy.mock.calls[0][0].filter).toEqual([{type: 'startDate', value: 'new date'}]);
 });
 
-it('should remove any completed/running instances only filters when adding a new completed instances only filter', () => {
+it('should remove any completed instances only filters when adding a new completed instances only filter', () => {
   const spy = jest.fn();
-  const previousFilters = [{type: 'runningInstancesOnly'}, {type: 'completedInstancesOnly'}];
+  const previousFilters = [{type: 'completedInstancesOnly'}];
 
   const node = mount(<Filter data={previousFilters} onChange={spy} />);
 
@@ -190,9 +190,9 @@ it('should remove any completed/running instances only filters when adding a new
   expect(spy.mock.calls[0][0].filter).toEqual([{type: 'completedInstancesOnly'}]);
 });
 
-it('should remove any completed/running instances only filters when adding a new running instances only filter', () => {
+it('should remove any running instances only filters when adding a new running instances only filter', () => {
   const spy = jest.fn();
-  const previousFilters = [{type: 'runningInstancesOnly'}, {type: 'completedInstancesOnly'}];
+  const previousFilters = [{type: 'runningInstancesOnly'}];
 
   const node = mount(<Filter data={previousFilters} onChange={spy} />);
 

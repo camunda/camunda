@@ -59,7 +59,8 @@ export default withErrorHandling(
         serverError: null,
         reportType: null,
         redirectToReport: false,
-        conflict: null
+        conflict: null,
+        filtersWarning: false
       };
     }
 
@@ -89,7 +90,6 @@ export default withErrorHandling(
         groupBy: null,
         visualization: null,
         processPart: null,
-        filter: [],
         configuration: {}
       };
 
@@ -117,7 +117,8 @@ export default withErrorHandling(
               originalData: {...stateData},
               reportResult: reportResult || {reportType, data: stateData},
               originalName: name,
-              reportType
+              reportType,
+              filtersWarning: stateData.filter && this.incompatibleFilters(stateData.filter)
             },
             () => {
               if (isNew) {
@@ -148,6 +149,16 @@ export default withErrorHandling(
       this.setState({
         name: evt.target.value
       });
+    };
+
+    incompatibleFilters = filterData => {
+      const filters = filterData.map(filter => filter.type);
+
+      return (
+        ['completedInstancesOnly', 'canceledInstancesOnly'].every(val => filters.includes(val)) ||
+        ['completedInstancesOnly', 'runningInstancesOnly'].every(val => filters.includes(val)) ||
+        ['canceledInstancesOnly', 'runningInstancesOnly'].every(val => filters.includes(val))
+      );
     };
 
     updateReport = async updates => {
@@ -183,7 +194,10 @@ export default withErrorHandling(
         data.configuration = {targetValue: {}};
       }
 
-      this.setState({data});
+      this.setState({
+        data,
+        filtersWarning: updates.filter && this.incompatibleFilters(updates.filter)
+      });
 
       this.updateReportResult(updates, data);
     };
@@ -379,7 +393,8 @@ export default withErrorHandling(
         reportResult,
         loadingReportData,
         reportType,
-        redirectToReport
+        redirectToReport,
+        filtersWarning
       } = this.state;
       return (
         <div className="Report">
@@ -437,6 +452,12 @@ export default withErrorHandling(
             <Message type="warning">
               The raw data table below only shows {reportResult.result.length} process instances out
               of a total of {reportResult.processInstanceCount}
+            </Message>
+          )}
+
+          {filtersWarning && (
+            <Message type="warning">
+              No data is shown since the combination of filters is incompatible with each other
             </Message>
           )}
 

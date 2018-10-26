@@ -653,6 +653,29 @@ describe('edit mode', async () => {
     expect(node.find('.Message')).toBePresent();
   });
 
+  it('should show a warning message when user selects incompatible filter combination', async () => {
+    props.match.params.viewMode = 'edit';
+    const node = mount(shallow(<Report {...props} />).get(0));
+    await node.instance().componentDidMount();
+
+    node.instance().updateReport({
+      filter: [{type: 'completedInstancesOnly', data: null}]
+    });
+
+    expect(node.state().filtersWarning).toBe(false);
+
+    node.instance().updateReport({
+      filter: [
+        {type: 'completedInstancesOnly', data: null},
+        {type: 'runningInstancesOnly', data: null}
+      ]
+    });
+
+    await node.update();
+    expect(node.state().filtersWarning).toBe(true);
+    expect(node.find('.Message')).toIncludeText('No data is shown');
+  });
+
   it('should set conflict state when conflict happens on delete button click', async () => {
     const conflictedItems = [{id: '1', name: 'alert', type: 'Alert'}];
     checkDeleteConflict.mockReturnValue({

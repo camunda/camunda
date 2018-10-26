@@ -74,12 +74,12 @@ export default class Filter extends React.Component {
     filters = this.filterIncompatibleExistingFilters(filters, newFilter.type, ['startDate']);
     filters = this.filterIncompatibleExistingFilters(filters, newFilter.type, ['endDate']);
     filters = this.filterIncompatibleExistingFilters(filters, newFilter.type, [
-      'runningInstancesOnly',
       'completedInstancesOnly'
     ]);
-
     filters = this.filterIncompatibleExistingFilters(filters, newFilter.type, [
-      'runningInstancesOnly',
+      'runningInstancesOnly'
+    ]);
+    filters = this.filterIncompatibleExistingFilters(filters, newFilter.type, [
       'canceledInstancesOnly'
     ]);
 
