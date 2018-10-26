@@ -1,6 +1,6 @@
 import React from 'react';
 
-import {Dropdown, Labeled} from 'components';
+import {Dropdown} from 'components';
 
 import {DateFilter, VariableFilter, NodeFilter, DurationFilter} from './modals';
 
@@ -131,15 +131,13 @@ export default class Filter extends React.Component {
 
     return (
       <div className="Filter">
-        <Labeled label="Filters">
-          <FilterList
-            {...this.definitionConfig()}
-            flowNodeNames={this.props.flowNodeNames}
-            openEditFilterModal={this.openEditFilterModal}
-            data={this.props.data}
-            deleteFilter={this.deleteFilter}
-          />
-        </Labeled>
+        <FilterList
+          {...this.definitionConfig()}
+          flowNodeNames={this.props.flowNodeNames}
+          openEditFilterModal={this.openEditFilterModal}
+          data={this.props.data}
+          deleteFilter={this.deleteFilter}
+        />
         <Dropdown label="Add Filter" id="ControlPanel__filters" className="Filter__dropdown">
           <Dropdown.Option onClick={this.filterByInstancesOnly('runningInstancesOnly')}>
             Running Instances Only
