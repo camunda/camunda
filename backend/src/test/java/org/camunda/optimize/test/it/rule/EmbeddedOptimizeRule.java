@@ -74,9 +74,6 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   }
 
   public void resetBackoffAndScheduleAllImportsAndWaitUntilFinished() {
-    ElasticsearchImportJobExecutor elasticsearchImportJobExecutor = getElasticsearchImportJobExecutor();
-    elasticsearchImportJobExecutor.startExecutingImportJobs();
-
     for (EngineImportScheduler scheduler : getImportSchedulerFactory().getImportSchedulers()) {
       if (scheduler.isEnabled()) {
         logger.debug("scheduling first import round");
@@ -87,7 +84,6 @@ public class EmbeddedOptimizeRule extends TestWatcher {
       }
     }
 
-    elasticsearchImportJobExecutor.stopExecutingImportJobs();
   }
 
   private void resetImportBackoff() {
@@ -229,6 +225,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   public void startOptimize() throws Exception {
     getOptimize().start();
     getAlertService().init();
+    getElasticsearchImportJobExecutor().startExecutingImportJobs();
   }
 
   protected void finished(Description description) {
@@ -240,7 +237,6 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     } catch (Exception e) {
       logger.error("clean up after test", e);
     }
-
   }
 
   public void reloadConfiguration() {
@@ -248,6 +244,12 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   }
 
   public void stopOptimize() {
+    try {
+      this.getElasticsearchImportJobExecutor().stopExecutingImportJobs();
+    } catch (Exception e) {
+      logger.error("Failed to stop elasticsearch import", e);
+    }
+
     try {
       this.getAlertService().destroy();
     } catch (Exception e) {
