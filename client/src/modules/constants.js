@@ -131,3 +131,11 @@ export const BADGE_TYPE = {
 export const COMBO_BADGE_TYPE = {
   SELECTIONS: 'SELECTIONS'
 };
+
+export const OPERATION_STATE = {
+  SCHEDULED: 'SCHEDULED',
+  LOCKED: 'LOCKED',
+  SENT: 'SENT',
+  FAILED: 'FAILED',
+  COMPLETED: 'COMPLETED'
+};

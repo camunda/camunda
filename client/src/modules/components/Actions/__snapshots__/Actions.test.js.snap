@@ -1,0 +1,19 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Actions should match snapshots 1`] = `
+<styled.div>
+  <Themed(Styled(Spinner)) />
+  <ActionItems />
+</styled.div>
+`;
+
+exports[`Actions should match snapshots 2`] = `
+<styled.div>
+  <StatusItems>
+    <Item
+      type="UPDATE_RETRIES"
+    />
+  </StatusItems>
+  <ActionItems />
+</styled.div>
+`;

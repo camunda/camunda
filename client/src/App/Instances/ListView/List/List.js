@@ -234,9 +234,10 @@ export default class List extends React.Component {
               <TD>{formatDate(instance.startDate)}</TD>
               <TD>{formatDate(instance.endDate)}</TD>
               <TD>
-                <Styled.Cell>
-                  <Actions instance={instance} />
-                </Styled.Cell>
+                <Actions
+                  instance={instance}
+                  selected={this.isSelected(instance.id)}
+                />
               </TD>
             </TR>
           ))}
