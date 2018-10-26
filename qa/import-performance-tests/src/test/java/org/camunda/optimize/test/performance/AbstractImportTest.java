@@ -183,14 +183,24 @@ public abstract class AbstractImportTest {
 
   protected void assertThatEngineAndElasticDataMatch() throws SQLException {
     assertThat(
+      "processDefinitionsCount",
       getImportedCountOf(configurationService.getProcessDefinitionType()),
       is(engineDatabaseRule.countProcessDefinitions())
     );
     assertThat(
+      "processInstanceTypeCount",
       getImportedCountOf(configurationService.getProcessInstanceType()),
       is(engineDatabaseRule.countHistoricProcessInstances())
     );
-    assertThat(getVariableInstanceCount(), is(engineDatabaseRule.countHistoricVariableInstances()));
-    assertThat(getActivityCount(), is(engineDatabaseRule.countHistoricActivityInstances()));
+    assertThat(
+      "variableInstanceCount",
+      getVariableInstanceCount(),
+      is(engineDatabaseRule.countHistoricVariableInstances())
+    );
+    assertThat(
+      "historicActivityInstanceCount",
+      getActivityCount(),
+      is(engineDatabaseRule.countHistoricActivityInstances())
+    );
   }
 }

@@ -78,13 +78,15 @@ spec:
         value: Europe/Berlin
       - name: WAIT_FOR
         value: opt-ci-perf.db:5432
+    command: ["/bin/bash", "-c"]
+    args: ["/bin/echo 'export CATALINA_OPTS=-Xmx2g' > /camunda/bin/setenv.sh && /camunda/camunda.sh"]
     resources:
       limits:
-        cpu: 6
-        memory: 6Gi
+        cpu: 5
+        memory: 3Gi
       requests:
-        cpu: 6
-        memory: 6Gi
+        cpu: 5
+        memory: 3Gi
     volumeMounts:
       - name: cambpm-storage
         mountPath: /camunda/logs
@@ -118,11 +120,11 @@ spec:
       protocol: TCP
     resources:
       limits:
-        cpu: 12
-        memory: 12Gi
+        cpu: 4
+        memory: 8Gi
       requests:
-        cpu: 12
-        memory: 12Gi
+        cpu: 4
+        memory: 8Gi
     volumeMounts:
       - name: es-storage
         mountPath: /usr/share/elasticsearch/logs
@@ -183,7 +185,7 @@ pipeline {
       steps {
         container('maven') {
           sh 'mvn -T\$LIMITS_CPU -DskipTests -Dskip.fe.build -Dskip.docker -s settings.xml clean install -B'
-          sh 'mvn -Pperformance-test -f qa/import-performance-tests/pom.xml -s settings.xml clean test -Ddb.url=jdbc:postgresql://opt-ci-perf.db:5432/optimize-ci-performance -B'
+          sh 'mvn -Pstatic-data-import-performance-test -f qa/import-performance-tests/pom.xml -s settings.xml clean test -Ddb.url=jdbc:postgresql://opt-ci-perf.db:5432/optimize-ci-performance -B'
         }
       }
       post {
