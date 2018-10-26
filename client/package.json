@@ -32,7 +32,7 @@
   "devDependencies": {
     "enzyme": "^3.3.0",
     "enzyme-adapter-react-16": "^1.6.0",
-    "eslint-config-react-app": "^2.1.0",
+    "eslint-config-react-app": "^3.0.4",
     "eslint-plugin-prettier": "^2.6.2",
     "husky": "^1.1.2",
     "jest-enzyme": "^6.0.4",
