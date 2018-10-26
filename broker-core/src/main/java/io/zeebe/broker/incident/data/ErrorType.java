@@ -25,4 +25,6 @@ public enum ErrorType {
   JOB_NO_RETRIES,
 
   CONDITION_ERROR,
+
+  EXTRACT_VALUE_ERROR
 }

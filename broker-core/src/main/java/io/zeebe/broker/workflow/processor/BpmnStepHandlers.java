@@ -23,12 +23,12 @@ import io.zeebe.broker.workflow.model.element.ExecutableFlowElement;
 import io.zeebe.broker.workflow.processor.activity.InputMappingHandler;
 import io.zeebe.broker.workflow.processor.activity.OutputMappingHandler;
 import io.zeebe.broker.workflow.processor.activity.PropagateTerminationHandler;
-import io.zeebe.broker.workflow.processor.catchevent.SubscribeMessageHandler;
 import io.zeebe.broker.workflow.processor.flownode.ConsumeTokenHandler;
 import io.zeebe.broker.workflow.processor.flownode.TakeSequenceFlowHandler;
 import io.zeebe.broker.workflow.processor.flownode.TerminateElementHandler;
 import io.zeebe.broker.workflow.processor.gateway.ExclusiveSplitHandler;
 import io.zeebe.broker.workflow.processor.gateway.ParallelSplitHandler;
+import io.zeebe.broker.workflow.processor.message.MessageCatchElementHandler;
 import io.zeebe.broker.workflow.processor.process.CompleteProcessHandler;
 import io.zeebe.broker.workflow.processor.sequenceflow.ActivateGatewayHandler;
 import io.zeebe.broker.workflow.processor.sequenceflow.ParallelMergeHandler;
@@ -91,7 +91,7 @@ public class BpmnStepHandlers {
     // intermediate catch event
     stepHandlers.put(
         BpmnStep.SUBSCRIBE_TO_INTERMEDIATE_MESSAGE,
-        new SubscribeMessageHandler(subscriptionCommandSender, workflowState));
+        new MessageCatchElementHandler(subscriptionCommandSender, workflowState));
     stepHandlers.put(BpmnStep.CREATE_TIMER, new CreateTimerHandler());
 
     // process
