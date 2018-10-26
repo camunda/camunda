@@ -1,7 +1,9 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {DiagramReset, Plus, Minus} from 'modules/components/Icon';
+import {ReactComponent as DiagramReset} from 'modules/components/Icon/diagram-reset.svg';
+import {ReactComponent as Plus} from 'modules/components/Icon/plus.svg';
+import {ReactComponent as Minus} from 'modules/components/Icon/minus.svg';
 
 import DiagramControls from './DiagramControls';
 import * as Styled from './styled';

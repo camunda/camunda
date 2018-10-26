@@ -1,7 +1,10 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import {LeftBar, Left, Right, RightBar} from 'modules/components/Icon';
+import {ReactComponent as LeftBar} from 'modules/components/Icon/left-bar.svg';
+import {ReactComponent as Left} from 'modules/components/Icon/left.svg';
+import {ReactComponent as Right} from 'modules/components/Icon/right.svg';
+import {ReactComponent as RightBar} from 'modules/components/Icon/right-bar.svg';
 import {getRange, getCurrentPage} from './service';
 
 import * as Styled from './styled';

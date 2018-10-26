@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 
 import {Colors, themed, themeStyle} from 'modules/theme';
-import {InstanceHistoryIconIncidentActive} from 'modules/components/Icon';
+import {ReactComponent as InstanceHistoryIconIncidentActive} from 'modules/components/Icon/instance-history-icon-incident-active.svg';
 
 export const InstanceEvents = themed(styled.div`
   flex: 1;

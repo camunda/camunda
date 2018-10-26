@@ -2,24 +2,24 @@
 
 exports[`ExpandButton should render Down icon if icon direction is DOWN 1`] = `
 <Themed(styled.button)>
-  <Themed(Styled(DownBar)) />
+  <Themed(Styled(ReactComponent)) />
 </Themed(styled.button)>
 `;
 
 exports[`ExpandButton should render Left icon if icon direction is LEFT 1`] = `
 <Themed(styled.button)>
-  <Themed(Styled(LeftBar)) />
+  <Themed(Styled(ReactComponent)) />
 </Themed(styled.button)>
 `;
 
 exports[`ExpandButton should render Right icon if icon direction is RIGHT 1`] = `
 <Themed(styled.button)>
-  <Themed(Styled(RightBar)) />
+  <Themed(Styled(ReactComponent)) />
 </Themed(styled.button)>
 `;
 
 exports[`ExpandButton should render Up icon if icon direction is UP 1`] = `
 <Themed(styled.button)>
-  <Themed(Styled(UpBar)) />
+  <Themed(Styled(ReactComponent)) />
 </Themed(styled.button)>
 `;

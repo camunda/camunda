@@ -1,9 +1,10 @@
 import styled, {css} from 'styled-components';
 import {themed, themeStyle, Colors} from 'modules/theme';
 
-import {RemoveItem} from 'modules/components/Icon';
-
-import {Retry, Batch, Stop} from 'modules/components/Icon';
+import {ReactComponent as RemoveItem} from 'modules/components/Icon/remove-item.svg';
+import {ReactComponent as Retry} from 'modules/components/Icon/retry.svg';
+import {ReactComponent as Batch} from 'modules/components/Icon/batch.svg';
+import {ReactComponent as Stop} from 'modules/components/Icon/stop.svg';
 import BadgeComponent from 'modules/components/Badge';
 
 const themedWith = (dark, light) => {

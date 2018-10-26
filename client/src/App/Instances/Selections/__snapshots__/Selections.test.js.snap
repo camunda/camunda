@@ -12,7 +12,6 @@ exports[`Selections should render a CollapsablePanel 1`] = `
     <Styled(ExpandButton)
       direction="RIGHT"
       isExpanded={true}
-      onClick={undefined}
       title="Collapse Selections"
     />
   }
@@ -28,7 +27,7 @@ exports[`Selections should render a CollapsablePanel 1`] = `
     </Styled(VerticalExpandButton)>
   }
   maxWidth={479}
-  onCollapse={[Function]}
+  onCollapse={[MockFunction]}
 >
   <Styled(PanelHeader)>
     <span>

@@ -3,7 +3,7 @@ import {Link} from 'react-router-dom';
 
 import {Colors, themed, themeStyle} from 'modules/theme';
 import ComboBadgeComponent from 'modules/components/ComboBadge';
-import {Logo} from 'modules/components/Icon';
+import {ReactComponent as Logo} from 'modules/components/Icon/logo.svg';
 import withStrippedProps from 'modules/utils/withStrippedProps';
 
 export const HEADER_HEIGHT = 56;

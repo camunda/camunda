@@ -11,7 +11,7 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
         title="View Dashboard"
         to="/"
       >
-        <Styled(Logo) />
+        <Styled(ReactComponent) />
         <span>
           Dashboard
         </span>
@@ -22,7 +22,7 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
     >
       <Themed(Styled(withStrippedProps(Link)))
         isActive={false}
-        onClick={[Function]}
+        onClick={[MockFunction]}
         title="View 0 Running Instances"
         to="/instances?filter=%7B%22active%22%3Atrue%2C%22incidents%22%3Atrue%7D"
       >
@@ -41,7 +41,7 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
     >
       <Themed(Styled(withStrippedProps(Link)))
         isActive={false}
-        onClick={[Function]}
+        onClick={[MockFunction]}
         title="View 0 Instances in Filters"
         to="/instances?filter=%7B%7D"
       >
@@ -60,7 +60,7 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
     >
       <Themed(Styled(withStrippedProps(Link)))
         isActive={false}
-        onClick={[Function]}
+        onClick={[MockFunction]}
         title="View 0 Incidents"
         to="/instances?filter=%7B%22incidents%22%3Atrue%7D"
       >
@@ -79,7 +79,7 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
     >
       <Themed(Styled(withStrippedProps(Link)))
         isActive={false}
-        onClick={[Function]}
+        onClick={[MockFunction]}
         title="View 0 0 Selections"
         to="/instances?filter=%7B%22active%22%3Atrue%2C%22incidents%22%3Atrue%7D"
       >

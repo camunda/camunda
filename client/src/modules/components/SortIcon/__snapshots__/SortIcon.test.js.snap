@@ -5,7 +5,7 @@ exports[`SortIcon should render a Down icon if order is desc 1`] = `
   href="#"
   sortOrder="desc"
 >
-  <Themed(Styled(withStrippedProps(Down)))
+  <Themed(Styled(withStrippedProps(ReactComponent)))
     sortOrder="desc"
   />
 </styled.a>
@@ -16,7 +16,7 @@ exports[`SortIcon should render a Down icon if order is null 1`] = `
   href="#"
   sortOrder={null}
 >
-  <Themed(Styled(withStrippedProps(Down)))
+  <Themed(Styled(withStrippedProps(ReactComponent)))
     sortOrder={null}
   />
 </styled.a>
@@ -27,7 +27,7 @@ exports[`SortIcon should render an Up icon if order is asc 1`] = `
   href="#"
   sortOrder="asc"
 >
-  <Themed(Styled(withStrippedProps(Up)))
+  <Themed(Styled(withStrippedProps(ReactComponent)))
     sortOrder="asc"
   />
 </styled.a>

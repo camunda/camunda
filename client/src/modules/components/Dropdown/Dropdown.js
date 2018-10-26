@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import {Down} from 'modules/components/Icon';
+import {ReactComponent as Down} from 'modules/components/Icon/down.svg';
 
 import {DROPDOWN_PLACEMENT} from 'modules/constants';
 
@@ -71,7 +71,7 @@ export default class Dropdown extends React.Component {
   };
 
   onClose = ({target}) => {
-    if (!this.container.contains(target) || !target) {
+    if (!this.container || !this.container.contains(target) || !target) {
       this.resetState();
     }
   };

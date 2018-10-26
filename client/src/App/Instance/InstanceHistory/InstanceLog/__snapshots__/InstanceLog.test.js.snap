@@ -23,7 +23,7 @@ exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
       "workflowId": "foo",
     }
   }
-  onActivityInstanceSelected={[Function]}
+  onActivityInstanceSelected={[MockFunction]}
   selectedActivityInstanceId={null}
 >
   <styled.ul>
@@ -35,7 +35,7 @@ exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
         isSelected={true}
         onClick={[Function]}
       >
-        <Themed(Styled(withStrippedProps(Document)))
+        <Themed(Styled(withStrippedProps(ReactComponent)))
           isSelected={true}
         />
         foo

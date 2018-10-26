@@ -4,7 +4,8 @@ import StateIcon from 'modules/components/StateIcon';
 import Dropdown from 'modules/components/Dropdown';
 
 import {getWorkflowName} from 'modules/utils/instance';
-import {Down, Right} from 'modules/components/Icon';
+import {ReactComponent as Down} from 'modules/components/Icon/down.svg';
+import {ReactComponent as Right} from 'modules/components/Icon/right.svg';
 import {BADGE_TYPE} from 'modules/constants';
 
 import * as Styled from './styled.js';

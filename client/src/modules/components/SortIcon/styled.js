@@ -1,6 +1,7 @@
 import styled, {css} from 'styled-components';
 
-import {Up as DefaultUp, Down as DefaultDown} from 'modules/components/Icon';
+import {ReactComponent as DefaultUp} from 'modules/components/Icon/up.svg';
+import {ReactComponent as DefaultDown} from 'modules/components/Icon/down.svg';
 import {themed, Colors, themeStyle} from 'modules/theme';
 import withStrippedProps from 'modules/utils/withStrippedProps';
 

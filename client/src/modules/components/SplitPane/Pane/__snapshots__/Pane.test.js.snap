@@ -3,7 +3,7 @@
 exports[`Pane bottom pane 'should render both ExpandButtons by default 1`] = `
 <Styled(Panel)
   expandState="DEFAULT"
-  handleExpand={[Function]}
+  handleExpand={[MockFunction]}
   paneId="BOTTOM"
 >
   <CollapsablePanelConsumer />
@@ -20,19 +20,19 @@ Array [
     direction="DOWN"
     onClick={[Function]}
     title="Expand top pane"
-/>,
+  />,
   <Styled(ExpandButton)
     direction="UP"
     onClick={[Function]}
     title="Expand bottom pane"
-/>,
+  />,
 ]
 `;
 
 exports[`Pane bottom pane should render ExpandButton with DOWN icon if pane is expanded' 1`] = `
 <Styled(Panel)
   expandState="EXPANDED"
-  handleExpand={[Function]}
+  handleExpand={[MockFunction]}
   paneId="BOTTOM"
 >
   <CollapsablePanelConsumer />
@@ -54,7 +54,7 @@ exports[`Pane bottom pane should render ExpandButton with DOWN icon if pane is e
 exports[`Pane bottom pane should render ExpandButton with UP icon if pane is collapsed 1`] = `
 <Styled(Panel)
   expandState="COLLAPSED"
-  handleExpand={[Function]}
+  handleExpand={[MockFunction]}
   paneId="BOTTOM"
 >
   <CollapsablePanelConsumer />
@@ -76,7 +76,7 @@ exports[`Pane bottom pane should render ExpandButton with UP icon if pane is col
 exports[`Pane should render children with expandState 1`] = `
 <Styled(Panel)
   expandState="EXPANDED"
-  handleExpand={[Function]}
+  handleExpand={[MockFunction]}
   paneId="TOP"
 >
   <Foo
@@ -89,7 +89,7 @@ exports[`Pane should render children with expandState 1`] = `
 exports[`Pane top pane should not render expand buttons 1`] = `
 <Styled(Panel)
   expandState="COLLAPSED"
-  handleExpand={[Function]}
+  handleExpand={[MockFunction]}
   paneId="TOP"
 >
   <Foo

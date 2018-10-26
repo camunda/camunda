@@ -1,7 +1,9 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import {DiagramReset, Plus, Minus} from 'modules/components/Icon';
+import {ReactComponent as DiagramReset} from 'modules/components/Icon/diagram-reset.svg';
+import {ReactComponent as Plus} from 'modules/components/Icon/plus.svg';
+import {ReactComponent as Minus} from 'modules/components/Icon/minus.svg';
 
 import * as Styled from './styled';
 

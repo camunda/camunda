@@ -1,7 +1,7 @@
 import styled, {css} from 'styled-components';
 
 import {Colors, themed, themeStyle} from 'modules/theme';
-import {Document} from 'modules/components/Icon';
+import {ReactComponent as Document} from 'modules/components/Icon/document.svg';
 import BasicFlowNodeIcon from 'modules/components/FlowNodeIcon';
 import withStrippedProps from 'modules/utils/withStrippedProps';
 
@@ -35,11 +35,6 @@ const colorStyle = css`
       ? 'rgba(255, 255, 255, 0.9)'
       : Colors.uiDark04;
   }};
-`;
-
-const iconPositionStyle = css`
-  position: relative;
-  top: 3px;
 `;
 
 export const LogEntryToggle = themed(styled.button`
@@ -114,7 +109,6 @@ export const DocumentIcon = themed(styled(
   margin-right: 8px;
 
   ${colorStyle};
-  ${iconPositionStyle};
 `);
 
 export const FlowNodeIcon = themed(styled(BasicFlowNodeIcon)`

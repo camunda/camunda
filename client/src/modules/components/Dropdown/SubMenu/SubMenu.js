@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import {Right} from 'modules/components/Icon';
+import {ReactComponent as Right} from 'modules/components/Icon/right.svg';
 
 import * as Styled from './styled';
 

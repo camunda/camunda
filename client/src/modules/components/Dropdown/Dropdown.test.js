@@ -1,7 +1,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {Batch} from 'modules/components/Icon';
+import {ReactComponent as Batch} from 'modules/components/Icon/batch.svg';
 import {DROPDOWN_PLACEMENT} from 'modules/constants';
 
 import Dropdown from './Dropdown';

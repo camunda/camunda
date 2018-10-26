@@ -7,7 +7,7 @@ exports[`Foldable should be folded by default 1`] = `
     isFolded={true}
     isSelected={true}
     key=".0"
-    onSelection={[Function]}
+    onSelection={[MockFunction]}
     toggleFold={[Function]}
   >
     foo summary

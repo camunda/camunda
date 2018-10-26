@@ -4,8 +4,8 @@ exports[`FlowNodeIcon flow node state should render active dark icon 1`] = `
 <styled.span
   theme="dark"
 >
-  <Styled(FlowNodeTaskDefault) />
-  <Styled(FlowNodeStateOkDark) />
+  <Styled(ReactComponent) />
+  <Styled(ReactComponent) />
 </styled.span>
 `;
 
@@ -13,8 +13,8 @@ exports[`FlowNodeIcon flow node state should render active light icon 1`] = `
 <styled.span
   theme="light"
 >
-  <Styled(FlowNodeTaskDefault) />
-  <Styled(FlowNodeStateOkLight) />
+  <Styled(ReactComponent) />
+  <Styled(ReactComponent) />
 </styled.span>
 `;
 
@@ -22,8 +22,8 @@ exports[`FlowNodeIcon flow node state should render active light icon if it's se
 <styled.span
   theme="dark"
 >
-  <Styled(FlowNodeTaskDefault) />
-  <Styled(FlowNodeStateOkLight) />
+  <Styled(ReactComponent) />
+  <Styled(ReactComponent) />
 </styled.span>
 `;
 
@@ -31,8 +31,8 @@ exports[`FlowNodeIcon flow node state should render canceled dark icon 1`] = `
 <styled.span
   theme="dark"
 >
-  <Styled(FlowNodeTaskDefault) />
-  <Styled(FlowNodeStateCanceledDark) />
+  <Styled(ReactComponent) />
+  <Styled(ReactComponent) />
 </styled.span>
 `;
 
@@ -40,8 +40,8 @@ exports[`FlowNodeIcon flow node state should render canceled light icon 1`] = `
 <styled.span
   theme="light"
 >
-  <Styled(FlowNodeTaskDefault) />
-  <Styled(FlowNodeStateCanceledLight) />
+  <Styled(ReactComponent) />
+  <Styled(ReactComponent) />
 </styled.span>
 `;
 
@@ -49,8 +49,8 @@ exports[`FlowNodeIcon flow node state should render canceled selected icon 1`] =
 <styled.span
   theme="dark"
 >
-  <Styled(FlowNodeTaskDefault) />
-  <Styled(FlowNodeStateCanceledSelected) />
+  <Styled(ReactComponent) />
+  <Styled(ReactComponent) />
 </styled.span>
 `;
 
@@ -58,8 +58,8 @@ exports[`FlowNodeIcon flow node state should render completed dark icon 1`] = `
 <styled.span
   theme="dark"
 >
-  <Styled(FlowNodeTaskDefault) />
-  <Styled(FlowNodeStateCompletedDark) />
+  <Styled(ReactComponent) />
+  <Styled(ReactComponent) />
 </styled.span>
 `;
 
@@ -67,8 +67,8 @@ exports[`FlowNodeIcon flow node state should render completed light icon 1`] = `
 <styled.span
   theme="light"
 >
-  <Styled(FlowNodeTaskDefault) />
-  <Styled(FlowNodeStateCompletedLight) />
+  <Styled(ReactComponent) />
+  <Styled(ReactComponent) />
 </styled.span>
 `;
 
@@ -76,8 +76,8 @@ exports[`FlowNodeIcon flow node state should render completed selected icon 1`] 
 <styled.span
   theme="dark"
 >
-  <Styled(FlowNodeTaskDefault) />
-  <Styled(FlowNodeStateCompletedSelected) />
+  <Styled(ReactComponent) />
+  <Styled(ReactComponent) />
 </styled.span>
 `;
 
@@ -85,8 +85,8 @@ exports[`FlowNodeIcon flow node state should render incident dark icon 1`] = `
 <styled.span
   theme="dark"
 >
-  <Styled(FlowNodeTaskDefault) />
-  <Styled(FlowNodeStateIncidentDark) />
+  <Styled(ReactComponent) />
+  <Styled(ReactComponent) />
 </styled.span>
 `;
 
@@ -94,8 +94,8 @@ exports[`FlowNodeIcon flow node state should render incident light icon 1`] = `
 <styled.span
   theme="light"
 >
-  <Styled(FlowNodeTaskDefault) />
-  <Styled(FlowNodeStateIncidentLight) />
+  <Styled(ReactComponent) />
+  <Styled(ReactComponent) />
 </styled.span>
 `;
 
@@ -103,8 +103,8 @@ exports[`FlowNodeIcon flow node state should render incident light icon if it's 
 <styled.span
   theme="dark"
 >
-  <Styled(FlowNodeTaskDefault) />
-  <Styled(FlowNodeStateIncidentLight) />
+  <Styled(ReactComponent) />
+  <Styled(ReactComponent) />
 </styled.span>
 `;
 
@@ -112,8 +112,8 @@ exports[`FlowNodeIcon flow node type should render end event icon 1`] = `
 <styled.span
   theme="dark"
 >
-  <Styled(FlowNodeEndEvent) />
-  <Styled(FlowNodeStateOkDark) />
+  <Styled(ReactComponent) />
+  <Styled(ReactComponent) />
 </styled.span>
 `;
 
@@ -121,8 +121,8 @@ exports[`FlowNodeIcon flow node type should render exclusive gateway icon 1`] = 
 <styled.span
   theme="dark"
 >
-  <Styled(FlowNodeExclusiveGateway) />
-  <Styled(FlowNodeStateOkDark) />
+  <Styled(ReactComponent) />
+  <Styled(ReactComponent) />
 </styled.span>
 `;
 
@@ -130,8 +130,8 @@ exports[`FlowNodeIcon flow node type should render exclusive parallel icon 1`] =
 <styled.span
   theme="dark"
 >
-  <Styled(FlowNodeParallelGateway) />
-  <Styled(FlowNodeStateOkDark) />
+  <Styled(ReactComponent) />
+  <Styled(ReactComponent) />
 </styled.span>
 `;
 
@@ -139,8 +139,8 @@ exports[`FlowNodeIcon flow node type should render start event icon 1`] = `
 <styled.span
   theme="dark"
 >
-  <Styled(FlowNodeStartEvent) />
-  <Styled(FlowNodeStateOkDark) />
+  <Styled(ReactComponent) />
+  <Styled(ReactComponent) />
 </styled.span>
 `;
 
@@ -148,7 +148,7 @@ exports[`FlowNodeIcon flow node type should render task icon 1`] = `
 <styled.span
   theme="dark"
 >
-  <Styled(FlowNodeTaskDefault) />
-  <Styled(FlowNodeStateOkDark) />
+  <Styled(ReactComponent) />
+  <Styled(ReactComponent) />
 </styled.span>
 `;

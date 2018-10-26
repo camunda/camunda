@@ -3,19 +3,19 @@
 exports[`DiagramControls should render diagram controls 1`] = `
 <styled.div>
   <Styled(Styled(Button))
-    onClick={[Function]}
+    onClick={[MockFunction]}
   >
-    <DiagramReset />
+    <ReactComponent />
   </Styled(Styled(Button))>
   <Styled(Styled(Button))
-    onClick={[Function]}
+    onClick={[MockFunction]}
   >
-    <Plus />
+    <ReactComponent />
   </Styled(Styled(Button))>
   <Styled(Styled(Button))
-    onClick={[Function]}
+    onClick={[MockFunction]}
   >
-    <Minus />
+    <ReactComponent />
   </Styled(Styled(Button))>
 </styled.div>
 `;

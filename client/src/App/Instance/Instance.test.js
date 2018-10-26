@@ -17,7 +17,6 @@ import InstanceHistory from './InstanceHistory';
 
 const xmlMock = '<foo />';
 api.fetchWorkflowXML = mockResolvedAsyncFn(xmlMock);
-jest.mock('./DiagramPanel');
 
 const INSTANCE = {
   id: '4294980768',

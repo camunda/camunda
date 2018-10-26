@@ -19,7 +19,7 @@ exports[`Login should display an error if any field is empty 1`] = `
   onSubmit={[Function]}
 >
   <Themed(styled.div)>
-    <Themed(Styled(Logo)) />
+    <Themed(Styled(ReactComponent)) />
     <Themed(styled.span)>
       Operate
     </Themed(styled.span)>
@@ -60,7 +60,7 @@ exports[`Login should display an error on unsuccessful login 1`] = `
   onSubmit={[Function]}
 >
   <Themed(styled.div)>
-    <Themed(Styled(Logo)) />
+    <Themed(Styled(ReactComponent)) />
     <Themed(styled.span)>
       Operate
     </Themed(styled.span)>
@@ -101,7 +101,7 @@ exports[`Login should render login form by default 1`] = `
   onSubmit={[Function]}
 >
   <Themed(styled.div)>
-    <Themed(Styled(Logo)) />
+    <Themed(Styled(ReactComponent)) />
     <Themed(styled.span)>
       Operate
     </Themed(styled.span)>

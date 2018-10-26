@@ -1,7 +1,10 @@
 import styled, {css} from 'styled-components';
 
 import {themed, themeStyle, Colors} from 'modules/theme';
-import {UpBar, DownBar, LeftBar, RightBar} from 'modules/components/Icon';
+import {ReactComponent as UpBar} from 'modules/components/Icon/up-bar.svg';
+import {ReactComponent as DownBar} from 'modules/components/Icon/down-bar.svg';
+import {ReactComponent as LeftBar} from 'modules/components/Icon/left-bar.svg';
+import {ReactComponent as RightBar} from 'modules/components/Icon/right-bar.svg';
 
 export const ExpandButton = themed(styled.button`
   padding-left: 11.5px;

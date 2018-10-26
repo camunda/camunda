@@ -7,14 +7,14 @@ exports[`should not show ellipsis when first page is just barely out of range 1`
     onClick={[Function]}
     withIcon={true}
   >
-    <LeftBar />
+    <ReactComponent />
   </Themed(styled.button)>
   <Themed(styled.button)
     disabled={false}
     onClick={[Function]}
     withIcon={true}
   >
-    <Left />
+    <ReactComponent />
   </Themed(styled.button)>
   <React.Fragment>
     <Themed(styled.button)
@@ -73,14 +73,14 @@ exports[`should not show ellipsis when first page is just barely out of range 1`
     onClick={[Function]}
     withIcon={true}
   >
-    <Right />
+    <ReactComponent />
   </Themed(styled.button)>
   <Themed(styled.button)
     disabled={false}
     onClick={[Function]}
     withIcon={true}
   >
-    <RightBar />
+    <ReactComponent />
   </Themed(styled.button)>
 </styled.div>
 `;
@@ -92,14 +92,14 @@ exports[`should show ellipsis on both sides in the middle 1`] = `
     onClick={[Function]}
     withIcon={true}
   >
-    <LeftBar />
+    <ReactComponent />
   </Themed(styled.button)>
   <Themed(styled.button)
     disabled={false}
     onClick={[Function]}
     withIcon={true}
   >
-    <Left />
+    <ReactComponent />
   </Themed(styled.button)>
   <React.Fragment>
     <Themed(styled.button)
@@ -161,14 +161,14 @@ exports[`should show ellipsis on both sides in the middle 1`] = `
     onClick={[Function]}
     withIcon={true}
   >
-    <Right />
+    <ReactComponent />
   </Themed(styled.button)>
   <Themed(styled.button)
     disabled={false}
     onClick={[Function]}
     withIcon={true}
   >
-    <RightBar />
+    <ReactComponent />
   </Themed(styled.button)>
 </styled.div>
 `;
@@ -180,14 +180,14 @@ exports[`should show the first five pages when on first page 1`] = `
     onClick={[Function]}
     withIcon={true}
   >
-    <LeftBar />
+    <ReactComponent />
   </Themed(styled.button)>
   <Themed(styled.button)
     disabled={true}
     onClick={[Function]}
     withIcon={true}
   >
-    <Left />
+    <ReactComponent />
   </Themed(styled.button)>
   <Themed(styled.button)
     active={true}
@@ -239,14 +239,14 @@ exports[`should show the first five pages when on first page 1`] = `
     onClick={[Function]}
     withIcon={true}
   >
-    <Right />
+    <ReactComponent />
   </Themed(styled.button)>
   <Themed(styled.button)
     disabled={false}
     onClick={[Function]}
     withIcon={true}
   >
-    <RightBar />
+    <ReactComponent />
   </Themed(styled.button)>
 </styled.div>
 `;
@@ -258,14 +258,14 @@ exports[`should show the last five pages when on last page 1`] = `
     onClick={[Function]}
     withIcon={true}
   >
-    <LeftBar />
+    <ReactComponent />
   </Themed(styled.button)>
   <Themed(styled.button)
     disabled={false}
     onClick={[Function]}
     withIcon={true}
   >
-    <Left />
+    <ReactComponent />
   </Themed(styled.button)>
   <React.Fragment>
     <Themed(styled.button)
@@ -317,14 +317,14 @@ exports[`should show the last five pages when on last page 1`] = `
     onClick={[Function]}
     withIcon={true}
   >
-    <Right />
+    <ReactComponent />
   </Themed(styled.button)>
   <Themed(styled.button)
     disabled={false}
     onClick={[Function]}
     withIcon={true}
   >
-    <RightBar />
+    <ReactComponent />
   </Themed(styled.button)>
 </styled.div>
 `;

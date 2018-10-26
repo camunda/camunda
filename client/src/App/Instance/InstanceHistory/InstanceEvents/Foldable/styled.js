@@ -1,7 +1,8 @@
 import styled, {css} from 'styled-components';
 
 import {themed, Colors} from 'modules/theme';
-import {Down, Right} from 'modules/components/Icon';
+import {ReactComponent as Down} from 'modules/components/Icon/down.svg';
+import {ReactComponent as Right} from 'modules/components/Icon/right.svg';
 import withStrippedProps from 'modules/utils/withStrippedProps';
 
 const iconStyle = css`

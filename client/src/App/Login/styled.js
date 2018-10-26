@@ -1,7 +1,7 @@
 import styled from 'styled-components';
 
 import {Colors, themed, themeStyle} from 'modules/theme';
-import {Logo as BaseLogo} from 'modules/components/Icon';
+import {ReactComponent as BaseLogo} from 'modules/components/Icon/logo.svg';
 import TextInput from 'modules/components/TextInput';
 
 export const Login = styled.div`

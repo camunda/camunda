@@ -54,7 +54,7 @@ exports[`InstanceEvents should render grouped events 1`] = `
       },
     ]
   }
-  onEventRowChanged={[Function]}
+  onEventRowChanged={[MockFunction]}
   selectedEventRow={
     Object {
       "key": null,
@@ -130,7 +130,7 @@ exports[`InstanceEvents should render grouped events 1`] = `
           onSelection={[Function]}
         >
           bar name
-          <Styled(InstanceHistoryIconIncidentActive)
+          <Styled(ReactComponent)
             title="bar name has an incident"
           />
         </Summary>
@@ -147,7 +147,7 @@ exports[`InstanceEvents should render grouped events 1`] = `
               onSelection={[Function]}
             >
               JOB CREATED
-              <Styled(InstanceHistoryIconIncidentActive) />
+              <Styled(ReactComponent) />
             </Summary>
           </Foldable>
           <Foldable

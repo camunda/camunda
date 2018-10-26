@@ -1,23 +1,21 @@
 import styled, {css} from 'styled-components';
-import {
-  FlowNodeEndEvent,
-  FlowNodeExclusiveGateway,
-  FlowNodeParallelGateway,
-  FlowNodeStartEvent,
-  FlowNodeStateCanceledDark,
-  FlowNodeStateCanceledLight,
-  FlowNodeStateCanceledSelected,
-  FlowNodeStateCompletedDark,
-  FlowNodeStateCompletedLight,
-  FlowNodeStateCompletedSelected,
-  FlowNodeStateIncidentDark,
-  FlowNodeStateIncidentLight,
-  FlowNodeStateOkDark,
-  FlowNodeStateOkLight,
-  FlowNodeTaskDefault,
-  FlowNodeTaskService,
-  FlowNodeTaskUser
-} from 'modules/components/Icon';
+import {ReactComponent as FlowNodeEndEvent} from 'modules/components/Icon/flow-node-end-event.svg';
+import {ReactComponent as FlowNodeExclusiveGateway} from 'modules/components/Icon/flow-node-exclusive-gateway.svg';
+import {ReactComponent as FlowNodeParallelGateway} from 'modules/components/Icon/flow-node-parallel-gateway.svg';
+import {ReactComponent as FlowNodeStartEvent} from 'modules/components/Icon/flow-node-start-event.svg';
+import {ReactComponent as FlowNodeStateCanceledDark} from 'modules/components/Icon/flow-node-state-canceled-dark.svg';
+import {ReactComponent as FlowNodeStateCanceledLight} from 'modules/components/Icon/flow-node-state-canceled-light.svg';
+import {ReactComponent as FlowNodeStateCanceledSelected} from 'modules/components/Icon/flow-node-state-canceled-selected.svg';
+import {ReactComponent as FlowNodeStateCompletedDark} from 'modules/components/Icon/flow-node-state-completed-dark.svg';
+import {ReactComponent as FlowNodeStateCompletedLight} from 'modules/components/Icon/flow-node-state-completed-light.svg';
+import {ReactComponent as FlowNodeStateCompletedSelected} from 'modules/components/Icon/flow-node-state-completed-selected.svg';
+import {ReactComponent as FlowNodeStateIncidentDark} from 'modules/components/Icon/flow-node-state-incident-dark.svg';
+import {ReactComponent as FlowNodeStateIncidentLight} from 'modules/components/Icon/flow-node-state-incident-light.svg';
+import {ReactComponent as FlowNodeStateOkDark} from 'modules/components/Icon/flow-node-state-ok-dark.svg';
+import {ReactComponent as FlowNodeStateOkLight} from 'modules/components/Icon/flow-node-state-ok-light.svg';
+import {ReactComponent as FlowNodeTaskDefault} from 'modules/components/Icon/flow-node-task-default.svg';
+import {ReactComponent as FlowNodeTaskService} from 'modules/components/Icon/flow-node-task-service.svg';
+import {ReactComponent as FlowNodeTaskUser} from 'modules/components/Icon/flow-node-task-user.svg';
 
 export const IconContainer = styled.span`
   width: 26px;

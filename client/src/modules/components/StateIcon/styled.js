@@ -1,10 +1,9 @@
 import styled, {css} from 'styled-components';
-import {
-  StateIconIncident,
-  StateOk,
-  StateCompleted,
-  Stop
-} from 'modules/components/Icon';
+
+import {ReactComponent as StateIconIncident} from 'modules/components/Icon/state-icon-incident.svg';
+import {ReactComponent as StateOk} from 'modules/components/Icon/state-ok.svg';
+import {ReactComponent as StateCompleted} from 'modules/components/Icon/state-completed.svg';
+import {ReactComponent as Stop} from 'modules/components/Icon/stop.svg';
 import {Colors, themeStyle} from 'modules/theme';
 
 const iconPosition = css`
