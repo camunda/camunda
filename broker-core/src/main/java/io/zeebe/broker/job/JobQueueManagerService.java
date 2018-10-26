@@ -20,7 +20,6 @@ package io.zeebe.broker.job;
 import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.JOB_STREAM_PROCESSOR_ID;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
-import io.zeebe.broker.job.old.JobSubscriptionManager;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.logstreams.spi.SnapshotController;
@@ -39,7 +38,6 @@ public class JobQueueManagerService implements Service<JobQueueManagerService> {
   private static final String JOB_STREAM_PROCESSOR_NAME = "job";
 
   private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
-  private final Injector<JobSubscriptionManager> jobSubscriptionManagerInjector = new Injector<>();
   private final Injector<StreamProcessorServiceFactory> streamProcessorServiceFactoryInjector =
       new Injector<>();
 
@@ -56,9 +54,8 @@ public class JobQueueManagerService implements Service<JobQueueManagerService> {
         partition
             .getStateStorageFactory()
             .create(JOB_STREAM_PROCESSOR_ID, JOB_STREAM_PROCESSOR_NAME);
-    final JobSubscriptionManager jobSubscriptionManager = jobSubscriptionManagerInjector.getValue();
 
-    final JobStreamProcessor processor = new JobStreamProcessor(jobSubscriptionManager);
+    final JobStreamProcessor processor = new JobStreamProcessor();
     final TypedStreamEnvironment env =
         new TypedStreamEnvironment(partition.getLogStream(), serverTransport.getOutput());
     final SnapshotController snapshotController = processor.createSnapshotController(stateStorage);
@@ -88,10 +85,6 @@ public class JobQueueManagerService implements Service<JobQueueManagerService> {
 
   public Injector<ServerTransport> getClientApiTransportInjector() {
     return clientApiTransportInjector;
-  }
-
-  public Injector<JobSubscriptionManager> getJobSubscriptionManagerInjector() {
-    return jobSubscriptionManagerInjector;
   }
 
   public ServiceGroupReference<Partition> getPartitionsGroupReference() {
