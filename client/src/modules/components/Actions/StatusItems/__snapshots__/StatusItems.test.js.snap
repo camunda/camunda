@@ -1,0 +1,18 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`StatusItems should match snapshots 1`] = `
+<Themed(styled.ul)>
+  <Item
+    key=".0"
+    type="UPDATE_RETRIES"
+  />
+</Themed(styled.ul)>
+`;
+
+exports[`StatusItems should match snapshots 2`] = `
+<Themed(styled.div)
+  type="UPDATE_RETRIES"
+>
+  <Themed(Styled(Retry)) />
+</Themed(styled.div)>
+`;
