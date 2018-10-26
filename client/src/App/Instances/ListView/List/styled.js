@@ -28,9 +28,8 @@ export const SelectionStatusIndicator = themed(styled.div`
   display: inline-block;
   height: 36px;
   width: 9px;
-  ${({selected}) =>
-    selected &&
-    `background-color: ${Colors.selections};`} vertical-align: bottom;
+  ${({selected}) => selected && `background-color: ${Colors.selections};`};
+  vertical-align: bottom;
   margin-left: -5px;
   margin-right: 11px;
 
