@@ -19,6 +19,7 @@ import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEW
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_HOST;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_MANAGEMENT_THREADS;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_PORT;
+import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_REQUEST_TIMEOUT;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_TRANSPORT_BUFFER;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -42,7 +43,11 @@ public class GatewayCfgTest {
     DEFAULT_CFG.init();
     CUSTOM_CFG.init();
     CUSTOM_CFG.getNetwork().setHost("192.168.0.1").setPort(123);
-    CUSTOM_CFG.getCluster().setContactPoint("foobar:1234").setTransportBuffer("4K");
+    CUSTOM_CFG
+        .getCluster()
+        .setContactPoint("foobar:1234")
+        .setTransportBuffer("4K")
+        .setRequestTimeout("123h");
     CUSTOM_CFG.getThreads().setManagementThreads(100);
   }
 
@@ -74,10 +79,15 @@ public class GatewayCfgTest {
     setEnv(ENV_GATEWAY_CONTACT_POINT, "broker:432");
     setEnv(ENV_GATEWAY_TRANSPORT_BUFFER, "12G");
     setEnv(ENV_GATEWAY_MANAGEMENT_THREADS, "32");
+    setEnv(ENV_GATEWAY_REQUEST_TIMEOUT, "43m");
 
     final GatewayCfg expected = new GatewayCfg();
     expected.getNetwork().setHost("zeebe").setPort(5432);
-    expected.getCluster().setContactPoint("broker:432").setTransportBuffer("12G");
+    expected
+        .getCluster()
+        .setContactPoint("broker:432")
+        .setTransportBuffer("12G")
+        .setRequestTimeout("43m");
     expected.getThreads().setManagementThreads(32);
 
     // when

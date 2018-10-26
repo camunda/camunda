@@ -18,7 +18,7 @@ package io.zeebe.broker.it.clustering;
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.it.util.ZeebeAssertHelper;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.gateway.api.commands.BrokerInfo;
+import io.zeebe.client.api.commands.BrokerInfo;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,7 +40,7 @@ public class TaskEventClusteredTest {
 
     // choosing a new leader in a raft group where the previously leading broker is no longer
     // available
-    clusteringRule.stopBroker(leader.getAddress());
+    clusteringRule.stopBroker(leader.getNodeId());
 
     // when
     client.jobClient().newCreateCommand().jobType("bar").send().join();

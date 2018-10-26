@@ -20,11 +20,11 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.GrpcClientRule;
+import io.zeebe.client.api.commands.BrokerInfo;
+import io.zeebe.client.api.commands.PartitionBrokerRole;
+import io.zeebe.client.api.commands.PartitionInfo;
 import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.subscription.JobWorker;
-import io.zeebe.gateway.api.commands.BrokerInfo;
-import io.zeebe.gateway.api.commands.PartitionBrokerRole;
-import io.zeebe.gateway.api.commands.PartitionInfo;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -38,7 +38,7 @@ public class BrokerLeaderChangeTest {
   public static final String NULL_PAYLOAD = null;
   public static final String JOB_TYPE = "testTask";
 
-  public Timeout testTimeout = Timeout.seconds(15);
+  public Timeout testTimeout = Timeout.seconds(60);
   public ClusteringRule clusteringRule = new ClusteringRule();
   public GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
@@ -77,13 +77,12 @@ public class BrokerLeaderChangeTest {
   public void shouldChangeLeaderAfterLeaderDies() {
     // given
     final BrokerInfo leaderForPartition = clusteringRule.getLeaderForPartition(1);
-    final String leaderAddress = leaderForPartition.getAddress();
 
     final JobEvent jobEvent =
         clientRule.getJobClient().newCreateCommand().jobType(JOB_TYPE).send().join();
 
     // when
-    clusteringRule.stopBroker(leaderAddress);
+    clusteringRule.stopBroker(leaderForPartition.getNodeId());
     final JobCompleter jobCompleter = new JobCompleter(jobEvent);
 
     // then

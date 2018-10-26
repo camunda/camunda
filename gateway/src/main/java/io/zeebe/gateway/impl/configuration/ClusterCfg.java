@@ -17,18 +17,23 @@ package io.zeebe.gateway.impl.configuration;
 
 import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_HOST;
 import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_CONTACT_POINT_PORT;
+import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_REQUEST_TIMEOUT;
 import static io.zeebe.gateway.impl.configuration.ConfigurationDefaults.DEFAULT_TRANSPORT_BUFFER_SIZE;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_CONTACT_POINT;
+import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_REQUEST_TIMEOUT;
 import static io.zeebe.gateway.impl.configuration.EnvironmentConstants.ENV_GATEWAY_TRANSPORT_BUFFER;
 
 import io.zeebe.util.ByteValue;
+import io.zeebe.util.DurationUtil;
 import io.zeebe.util.Environment;
+import java.time.Duration;
 import java.util.Objects;
 
 public class ClusterCfg {
 
   private String contactPoint = DEFAULT_CONTACT_POINT_HOST + ":" + DEFAULT_CONTACT_POINT_PORT;
   private String transportBuffer = DEFAULT_TRANSPORT_BUFFER_SIZE;
+  private String requestTimeout = DEFAULT_REQUEST_TIMEOUT;
 
   public void init(Environment environment) {
     environment
@@ -36,6 +41,7 @@ public class ClusterCfg {
         .map(v -> v.contains(":") ? v : v + ":" + DEFAULT_CONTACT_POINT_PORT)
         .ifPresent(this::setContactPoint);
     environment.get(ENV_GATEWAY_TRANSPORT_BUFFER).ifPresent(this::setTransportBuffer);
+    environment.get(ENV_GATEWAY_REQUEST_TIMEOUT).ifPresent(this::setRequestTimeout);
   }
 
   public String getContactPoint() {
@@ -56,6 +62,15 @@ public class ClusterCfg {
     return this;
   }
 
+  public Duration getRequestTimeout() {
+    return DurationUtil.parse(requestTimeout);
+  }
+
+  public ClusterCfg setRequestTimeout(String requestTimeout) {
+    this.requestTimeout = requestTimeout;
+    return this;
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {
@@ -66,12 +81,13 @@ public class ClusterCfg {
     }
     final ClusterCfg that = (ClusterCfg) o;
     return Objects.equals(contactPoint, that.contactPoint)
-        && Objects.equals(transportBuffer, that.transportBuffer);
+        && Objects.equals(transportBuffer, that.transportBuffer)
+        && Objects.equals(requestTimeout, that.requestTimeout);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(contactPoint, transportBuffer);
+    return Objects.hash(contactPoint, transportBuffer, requestTimeout);
   }
 
   @Override
@@ -82,6 +98,9 @@ public class ClusterCfg {
         + '\''
         + ", transportBuffer='"
         + transportBuffer
+        + '\''
+        + ", requestTimeout='"
+        + requestTimeout
         + '\''
         + '}';
   }

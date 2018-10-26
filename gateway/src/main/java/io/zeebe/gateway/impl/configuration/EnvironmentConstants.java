@@ -22,4 +22,5 @@ public class EnvironmentConstants {
   public static final String ENV_GATEWAY_CONTACT_POINT = "ZEEBE_GATEWAY_CONTACT_POINT";
   public static final String ENV_GATEWAY_TRANSPORT_BUFFER = "ZEEBE_GATEWAY_TRANSPORT_BUFFER";
   public static final String ENV_GATEWAY_MANAGEMENT_THREADS = "ZEEBE_GATEWAY_MANAGEMENT_THREADS";
+  public static final String ENV_GATEWAY_REQUEST_TIMEOUT = "ZEEBE_GATEWAY_REQUEST_TIMEOUT";
 }

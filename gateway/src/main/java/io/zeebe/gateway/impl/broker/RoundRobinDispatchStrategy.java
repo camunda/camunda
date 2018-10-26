@@ -22,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 public class RoundRobinDispatchStrategy implements RequestDispatchStrategy {
 
   protected final BrokerTopologyManagerImpl topologyManager;
-  protected AtomicInteger partitions = new AtomicInteger(0);
+  protected final AtomicInteger partitions = new AtomicInteger(0);
 
   public RoundRobinDispatchStrategy(final BrokerTopologyManagerImpl topologyManager) {
     this.topologyManager = topologyManager;

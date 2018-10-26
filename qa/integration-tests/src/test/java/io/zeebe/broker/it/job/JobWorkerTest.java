@@ -220,6 +220,27 @@ public class JobWorkerTest {
   }
 
   @Test
+  public void shouldFailJobManuallyAndRetry() {
+    // given
+    createJobOfType("foo");
+
+    final RecordingJobHandler jobHandler =
+        new RecordingJobHandler(
+            (c, j) -> c.newFailCommand(j.getKey()).retries(1).send(),
+            (c, j) -> c.newCompleteCommand(j.getKey()).send().join());
+
+    // when
+    jobClient.newWorker().jobType("foo").handler(jobHandler).name("myWorker").open();
+
+    // then
+    waitUntil(() -> jobHandler.getHandledJobs().size() == 2);
+    Record<JobRecordValue> record = jobRecords(JobIntent.FAILED).getFirst();
+    assertThat(record.getValue()).hasType("foo").hasWorker("myWorker").hasRetries(1);
+    record = jobRecords(JobIntent.COMPLETED).getFirst();
+    assertThat(record.getValue()).hasType("foo").hasWorker("myWorker");
+  }
+
+  @Test
   public void shouldMarkJobAsFailedAndRetryIfHandlerThrowsException() {
     // given
     final JobEvent job = createJobOfType("foo");

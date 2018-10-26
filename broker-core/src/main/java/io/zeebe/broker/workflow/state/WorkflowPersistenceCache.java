@@ -68,7 +68,7 @@ public class WorkflowPersistenceCache {
   private final Long2ObjectHashMap<DeployedWorkflow> workflowsByKey;
   private final PersistenceHelper persistenceHelper;
 
-  public WorkflowPersistenceCache(StateController rocksDbWrapper) throws Exception {
+  public WorkflowPersistenceCache(StateController rocksDbWrapper) {
     this.rocksDbWrapper = rocksDbWrapper;
     persistenceHelper = new PersistenceHelper(rocksDbWrapper);
 

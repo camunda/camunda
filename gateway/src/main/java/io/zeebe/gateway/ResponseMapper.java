@@ -169,15 +169,14 @@ public class ResponseMapper {
     brokerResponse
         .getWorkflows()
         .forEach(
-            workflowMetadata -> {
-              builder
-                  .addWorkflowsBuilder()
-                  .setBpmnProcessId(bufferAsString(workflowMetadata.getBpmnProcessId()))
-                  .setVersion(workflowMetadata.getVersion())
-                  .setWorkflowKey(workflowMetadata.getWorkflowKey())
-                  .setResourceName(bufferAsString(workflowMetadata.getResourceName()))
-                  .build();
-            });
+            workflowMetadata ->
+                builder
+                    .addWorkflowsBuilder()
+                    .setBpmnProcessId(bufferAsString(workflowMetadata.getBpmnProcessId()))
+                    .setVersion(workflowMetadata.getVersion())
+                    .setWorkflowKey(workflowMetadata.getWorkflowKey())
+                    .setResourceName(bufferAsString(workflowMetadata.getResourceName()))
+                    .build());
 
     return builder.build();
   }

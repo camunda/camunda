@@ -40,6 +40,9 @@ public class EmbeddedBrokerConfigurator {
         cfg.getExporters().add(exporterCfg);
       };
 
+  public static final Consumer<BrokerCfg> DISABLE_EMBEDDED_GATEWAY =
+      cfg -> cfg.getGateway().setEnable(false);
+
   public static Consumer<BrokerCfg> setPartitionCount(final int partitionCount) {
     return cfg -> cfg.getCluster().setPartitionsCount(partitionCount);
   }

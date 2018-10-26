@@ -19,10 +19,10 @@ package io.zeebe.broker.logstreams.processor;
 
 public interface StreamProcessorLifecycleAware {
 
-  default void onOpen(TypedStreamProcessor streamProcessor) {};
+  default void onOpen(TypedStreamProcessor streamProcessor) {}
 
   /** Callback after reprocessing was successful and before regular processing begins */
-  default void onRecovered(TypedStreamProcessor streamProcessor) {};
+  default void onRecovered(TypedStreamProcessor streamProcessor) {}
 
-  default void onClose() {};
+  default void onClose() {}
 }

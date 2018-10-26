@@ -38,7 +38,6 @@ import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
-import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.impl.util.SocketUtil;
@@ -200,7 +199,6 @@ public class EmbeddedBrokerRule extends ExternalResource {
       }
     }
 
-    RecordingExporter.reset();
     broker = new Broker(brokerCfg, newTemporaryFolder.getAbsolutePath(), controlledActorClock);
 
     final ServiceContainer serviceContainer = broker.getBrokerContext().getServiceContainer();
@@ -317,6 +315,11 @@ public class EmbeddedBrokerRule extends ExternalResource {
     setManagementApiPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
     setReplicationApiPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
     setSubscriptionApiPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
+  }
+
+  public void interruptClientConnections() {
+    getService(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME))
+        .interruptAllChannels();
   }
 
   static class TestService implements Service<TestService> {

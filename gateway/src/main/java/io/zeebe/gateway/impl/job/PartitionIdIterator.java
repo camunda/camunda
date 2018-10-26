@@ -1,0 +1,48 @@
+/*
+ * Copyright © 2017 camunda services GmbH (info@camunda.com)
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+package io.zeebe.gateway.impl.job;
+
+import java.util.Iterator;
+import java.util.PrimitiveIterator.OfInt;
+import java.util.stream.IntStream;
+
+public class PartitionIdIterator implements Iterator<Integer> {
+
+  private final OfInt iterator;
+  private int currentPartitionId;
+
+  public PartitionIdIterator(int startPartitionId, int partitionsCount) {
+    iterator =
+        IntStream.range(0, partitionsCount)
+            .map(index -> (index + startPartitionId) % partitionsCount)
+            .iterator();
+  }
+
+  @Override
+  public boolean hasNext() {
+    return iterator.hasNext();
+  }
+
+  @Override
+  public Integer next() {
+    currentPartitionId = iterator.next();
+    return currentPartitionId;
+  }
+
+  public int getCurrentPartitionId() {
+    return currentPartitionId;
+  }
+}

@@ -51,7 +51,7 @@ public class ActivateJobsTest {
   @Rule public ClusteringRule clusteringRule = new ClusteringRule();
   @Rule public GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
-  @Rule public Timeout timeout = Timeout.seconds(10);
+  @Rule public Timeout timeout = Timeout.seconds(60);
 
   private ZeebeClient client;
 

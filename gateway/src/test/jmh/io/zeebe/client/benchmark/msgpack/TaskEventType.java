@@ -33,5 +33,5 @@ public enum TaskEventType {
 
   ABORT,
   ABORTED,
-  ABORT_FAILED;
+  ABORT_FAILED
 }
