@@ -30,7 +30,6 @@
     "ancestorSeparator": " @ "
   },
   "devDependencies": {
-    "@svgr/webpack": "^2.3.0",
     "enzyme": "^3.3.0",
     "enzyme-adapter-react-16": "^1.6.0",
     "eslint-config-react-app": "^2.1.0",
@@ -49,7 +48,7 @@
       "git add"
     ]
   },
-  "proxy":"http://localhost:8080",
+  "proxy": "http://localhost:8080",
   "browserslist": [
     ">0.2%",
     "not dead",
