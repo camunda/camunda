@@ -167,15 +167,37 @@ export default class ReportView extends React.Component {
     return this.getConfig(data.visualization, 'single', result, data, processInstanceCount);
   };
 
+  getCombinedNumberData = result => {
+    return Object.values(result).map(report => ({
+      [report.name]: report.result
+    }));
+  };
+
   getConfig = (visualization, reportType, result, data, processInstanceCount) => {
     let config;
 
     switch (visualization) {
       case 'number':
-        config = {
-          component: Number,
-          props: {data: result, targetValue: data.configuration.targetValue}
-        };
+        if (reportType === 'combined') {
+          config = {
+            component: Chart,
+            props: {
+              reportsNames: Object.values(result).map(report => report.name),
+              data: this.getCombinedNumberData(result),
+              reportType: 'combined',
+              isDate: false,
+              type: 'bar',
+              targetValue: {},
+              property: data.view.property,
+              stacked: true
+            }
+          };
+        } else {
+          config = {
+            component: Number,
+            props: {data: result, targetValue: data.configuration.targetValue}
+          };
+        }
         break;
       case 'table':
         config = {

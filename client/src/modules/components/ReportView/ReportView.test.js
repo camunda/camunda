@@ -340,4 +340,26 @@ describe('combined Report View', () => {
     });
     expect(spy).toHaveBeenCalled();
   });
+
+  it('should convert results of a combined number report to a correctly formatted barchart data', () => {
+    const NumberReportA = {
+      ...reportA,
+      result: 100
+    };
+
+    const NumberReportB = {
+      ...reportA,
+      name: 'report B',
+      result: 200
+    };
+
+    const node = mount(<ReportView report={CombinedReport} />);
+
+    const barData = node.instance().getCombinedNumberData({
+      NumberReportA: NumberReportA,
+      NumberReportB: NumberReportB
+    });
+
+    expect(barData).toEqual([{'report A': 100}, {'report B': 200}]);
+  });
 });

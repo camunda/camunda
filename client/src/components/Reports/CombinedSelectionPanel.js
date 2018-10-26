@@ -17,7 +17,7 @@ export default class CombinedSelectionPanel extends React.Component {
   }
 
   async componentDidMount() {
-    const acceptedVisualizations = ['table', 'bar', 'line'];
+    const acceptedVisualizations = ['table', 'bar', 'line', 'number'];
 
     const reports = (await loadEntity('report')).filter(
       report =>

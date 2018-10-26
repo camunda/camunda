@@ -10,6 +10,7 @@ import reportHeat from '-!svg-react-loader!./report-heatmap.svg';
 import CombinedReportLine from '-!svg-react-loader!./report-combined-line-chart.svg';
 import reportLine from '-!svg-react-loader!./report-line-chart.svg';
 import reportNumber from '-!svg-react-loader!./report-number.svg';
+import CombinedReportNumber from '-!svg-react-loader!./report-combined-number.svg';
 import reportPie from '-!svg-react-loader!./report-pie-chart.svg';
 import CombinedReportTable from '-!svg-react-loader!./report-combined-table.svg';
 import reportTable from '-!svg-react-loader!./report-table.svg';
@@ -31,7 +32,11 @@ const icons = {
       Component: reportLine,
       CombinedComponent: CombinedReportLine
     },
-    number: {label: 'Number Report', Component: reportNumber},
+    number: {
+      label: 'Number Report',
+      Component: reportNumber,
+      CombinedComponent: CombinedReportNumber
+    },
     pie: {label: 'Pie Chart Report', Component: reportPie},
     table: {label: 'Table Report', Component: reportTable, CombinedComponent: CombinedReportTable}
   },

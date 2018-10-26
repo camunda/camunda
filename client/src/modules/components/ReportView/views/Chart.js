@@ -318,7 +318,8 @@ export default themed(
               },
               ticks: {
                 fontColor: this.getColorFor('label')
-              }
+              },
+              stacked: this.props.stacked
             }
           ]
         },
@@ -399,10 +400,11 @@ export default themed(
             label: ({index, datasetIndex}, {datasets}) => {
               const formatted = this.props.formatter(datasets[datasetIndex].data[index]);
               let processInstanceCountArr = this.props.processInstanceCount;
-              if (this.props.reportType === 'single')
-                processInstanceCountArr = [processInstanceCountArr];
 
-              if (this.props.property === 'frequency') {
+              if (this.props.property === 'frequency' && processInstanceCountArr) {
+                if (this.props.reportType === 'single')
+                  processInstanceCountArr = [processInstanceCountArr];
+
                 let processInstanceCount = processInstanceCountArr[datasetIndex];
                 // in the case of the line with target value we have 2 datasets for each report
                 // we have to divide by 2 to get the right index
