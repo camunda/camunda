@@ -15,12 +15,12 @@
  */
 package io.zeebe.test;
 
-import io.zeebe.gateway.ZeebeClient;
-import io.zeebe.gateway.api.clients.JobClient;
-import io.zeebe.gateway.api.clients.WorkflowClient;
-import io.zeebe.gateway.api.commands.BrokerInfo;
-import io.zeebe.gateway.api.commands.PartitionInfo;
-import io.zeebe.gateway.api.commands.Topology;
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.clients.JobClient;
+import io.zeebe.client.api.clients.WorkflowClient;
+import io.zeebe.client.api.commands.BrokerInfo;
+import io.zeebe.client.api.commands.PartitionInfo;
+import io.zeebe.client.api.commands.Topology;
 import java.util.List;
 import java.util.Properties;
 import java.util.function.Supplier;

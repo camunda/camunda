@@ -57,7 +57,7 @@ public class SubscribedRecordWriter implements BufferWriter {
   private short intent = Intent.NULL_VAL;
   protected long timestamp = timestampNullValue();
   private RejectionType rejectionType = RejectionType.NULL_VAL;
-  private UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
+  private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
 
   protected final ServerOutput output;
 

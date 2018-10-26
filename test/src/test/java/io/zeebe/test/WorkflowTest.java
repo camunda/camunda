@@ -15,8 +15,8 @@
  */
 package io.zeebe.test;
 
-import io.zeebe.gateway.ZeebeClient;
-import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.test.util.record.RecordingExporter;
 import org.junit.Before;
@@ -29,7 +29,7 @@ public class WorkflowTest {
   private ZeebeClient client;
 
   @Before
-  public void deploy() throws Exception {
+  public void deploy() {
     client = testRule.getClient();
 
     client
@@ -57,7 +57,7 @@ public class WorkflowTest {
         .jobClient()
         .newWorker()
         .jobType("task")
-        .handler((c, j) -> c.newCompleteCommand(j).payload((String) null).send().join())
+        .handler((c, j) -> c.newCompleteCommand(j.getKey()).send().join())
         .name("test")
         .open();
 
