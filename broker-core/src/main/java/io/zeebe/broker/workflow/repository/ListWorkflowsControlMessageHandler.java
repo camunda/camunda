@@ -25,7 +25,6 @@ import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.impl.data.repository.ListWorkflowsControlRequest;
 import io.zeebe.protocol.impl.data.repository.ListWorkflowsResponse;
 import io.zeebe.protocol.impl.data.repository.WorkflowMetadata;
-import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.sched.ActorControl;
@@ -52,14 +51,15 @@ public class ListWorkflowsControlMessageHandler extends AbstractControlMessageHa
       final ActorControl actor,
       final int partitionId,
       final DirectBuffer buffer,
-      final RecordMetadata metadata) {
+      final long requestId,
+      final int requestStreamId) {
     final WorkflowRepositoryService repository = workflowRepositoryServiceRef.get();
 
     if (repository == null) {
       sendErrorResponse(
           actor,
-          metadata.getRequestStreamId(),
-          metadata.getRequestId(),
+          requestStreamId,
+          requestId,
           ErrorCode.PARTITION_NOT_FOUND,
           "Workflow request must address the leader of the first partition %d",
           Protocol.DEPLOYMENT_PARTITION);
@@ -81,8 +81,7 @@ public class ListWorkflowsControlMessageHandler extends AbstractControlMessageHa
           future,
           (workflows, err) -> {
             if (err != null) {
-              sendErrorResponse(
-                  actor, metadata.getRequestStreamId(), metadata.getRequestId(), err.getMessage());
+              sendErrorResponse(actor, requestStreamId, requestId, err.getMessage());
             } else {
               final ListWorkflowsResponse response = new ListWorkflowsResponse();
               final ValueArray<WorkflowMetadata> responseWorkflows = response.getWorkflows();
@@ -98,7 +97,7 @@ public class ListWorkflowsControlMessageHandler extends AbstractControlMessageHa
                             .setVersion(workflow.getVersion()));
               }
 
-              sendResponse(actor, metadata.getRequestStreamId(), metadata.getRequestId(), response);
+              sendResponse(actor, requestStreamId, requestId, response);
             }
           });
     }

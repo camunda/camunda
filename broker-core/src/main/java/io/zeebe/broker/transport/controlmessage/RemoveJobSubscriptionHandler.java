@@ -20,7 +20,6 @@ package io.zeebe.broker.transport.controlmessage;
 import io.zeebe.broker.job.old.JobSubscriptionManager;
 import io.zeebe.broker.job.old.JobSubscriptionRequest;
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.future.ActorFuture;
@@ -47,9 +46,8 @@ public class RemoveJobSubscriptionHandler extends AbstractControlMessageHandler 
       final ActorControl actor,
       final int partitionId,
       final DirectBuffer buffer,
-      final RecordMetadata eventMetadata) {
-    final int requestStreamId = eventMetadata.getRequestStreamId();
-    final long requestId = eventMetadata.getRequestId();
+      final long requestId,
+      final int requestStreamId) {
 
     subscription.reset();
     subscription.wrap(buffer);
