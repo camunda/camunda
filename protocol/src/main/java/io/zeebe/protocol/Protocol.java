@@ -34,6 +34,10 @@ public class Protocol {
   /** By convention, the partition to deploy to */
   public static final int DEPLOYMENT_PARTITION = 0;
 
+  public static final long encodePartitionId(int partitionId, long key) {
+    return ((long) partitionId << KEY_BITS) + key;
+  }
+
   public static final int decodePartitionId(long key) {
     return (int) (key >> KEY_BITS);
   }

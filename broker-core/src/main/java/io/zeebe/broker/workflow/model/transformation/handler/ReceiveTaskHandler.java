@@ -63,7 +63,7 @@ public class ReceiveTaskHandler implements ModelElementTransformer<ReceiveTask> 
     executableElement.bindLifecycleState(
         WorkflowInstanceIntent.ELEMENT_COMPLETED, context.getCurrentFlowNodeOutgoingStep());
     executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.TERMINATE_ELEMENT);
+        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.TERMINATE_INTERMEDIATE_MESSAGE);
     executableElement.bindLifecycleState(
         WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.PROPAGATE_TERMINATION);
   }

@@ -60,7 +60,6 @@ public class OpenMessageSubscriptionProcessor
 
     final MessageSubscription subscription =
         new MessageSubscription(
-            subscriptionRecord.getWorkflowInstancePartitionId(),
             subscriptionRecord.getWorkflowInstanceKey(),
             subscriptionRecord.getActivityInstanceKey(),
             subscriptionRecord.getMessageName(),
@@ -105,7 +104,6 @@ public class OpenMessageSubscriptionProcessor
 
   private boolean sendCorrelateCommand() {
     return commandSender.correlateWorkflowInstanceSubscription(
-        subscriptionRecord.getWorkflowInstancePartitionId(),
         subscriptionRecord.getWorkflowInstanceKey(),
         subscriptionRecord.getActivityInstanceKey(),
         subscriptionRecord.getMessageName(),
@@ -114,7 +112,6 @@ public class OpenMessageSubscriptionProcessor
 
   private boolean sendAcknowledgeCommand() {
     return commandSender.openWorkflowInstanceSubscription(
-        subscriptionRecord.getWorkflowInstancePartitionId(),
         subscriptionRecord.getWorkflowInstanceKey(),
         subscriptionRecord.getActivityInstanceKey(),
         subscriptionRecord.getMessageName());

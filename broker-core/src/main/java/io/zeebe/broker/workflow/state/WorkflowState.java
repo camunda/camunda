@@ -21,7 +21,6 @@ import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRec
 import io.zeebe.broker.subscription.message.state.SubscriptionState;
 import io.zeebe.broker.util.KeyStateController;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.util.buffer.BufferUtil;
 import java.io.File;
 import java.util.Collection;
 import java.util.List;
@@ -116,11 +115,12 @@ public class WorkflowState extends KeyStateController {
   }
 
   public WorkflowSubscription findSubscription(WorkflowInstanceSubscriptionRecord record) {
+    return findSubscription(record.getWorkflowInstanceKey(), record.getActivityInstanceKey());
+  }
+
+  public WorkflowSubscription findSubscription(long workflowInstanceKey, long activityInstanceKey) {
     final WorkflowSubscription workflowSubscription =
-        new WorkflowSubscription(
-            record.getWorkflowInstanceKey(),
-            record.getActivityInstanceKey(),
-            BufferUtil.cloneBuffer(record.getMessageName()));
+        new WorkflowSubscription(workflowInstanceKey, activityInstanceKey);
     return subscriptionState.getSubscription(workflowSubscription);
   }
 

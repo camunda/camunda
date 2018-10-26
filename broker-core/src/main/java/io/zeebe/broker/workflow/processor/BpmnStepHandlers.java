@@ -29,6 +29,7 @@ import io.zeebe.broker.workflow.processor.flownode.TerminateElementHandler;
 import io.zeebe.broker.workflow.processor.gateway.ExclusiveSplitHandler;
 import io.zeebe.broker.workflow.processor.gateway.ParallelSplitHandler;
 import io.zeebe.broker.workflow.processor.message.MessageCatchElementHandler;
+import io.zeebe.broker.workflow.processor.message.TerminateIntermediateMessageHandler;
 import io.zeebe.broker.workflow.processor.process.CompleteProcessHandler;
 import io.zeebe.broker.workflow.processor.sequenceflow.ActivateGatewayHandler;
 import io.zeebe.broker.workflow.processor.sequenceflow.ParallelMergeHandler;
@@ -83,6 +84,9 @@ public class BpmnStepHandlers {
     stepHandlers.put(BpmnStep.TERMINATE_ELEMENT, new TerminateElementHandler());
     stepHandlers.put(BpmnStep.TERMINATE_JOB_TASK, new TerminateServiceTaskHandler());
     stepHandlers.put(BpmnStep.TERMINATE_TIMER, new TerminateTimerHandler(workflowState));
+    stepHandlers.put(
+        BpmnStep.TERMINATE_INTERMEDIATE_MESSAGE,
+        new TerminateIntermediateMessageHandler(workflowState, subscriptionCommandSender));
     stepHandlers.put(
         BpmnStep.TERMINATE_CONTAINED_INSTANCES,
         new TerminateContainedElementsHandler(workflowState));

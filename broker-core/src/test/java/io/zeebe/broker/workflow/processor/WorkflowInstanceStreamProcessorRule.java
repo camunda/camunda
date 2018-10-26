@@ -29,6 +29,7 @@ import static org.mockito.Mockito.when;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
+import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.topic.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
 import io.zeebe.broker.workflow.processor.timer.DueDateTimerChecker;
@@ -84,6 +85,8 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
         .thenReturn(true);
     when(mockSubscriptionCommandSender.correlateMessageSubscription(
             anyInt(), anyLong(), anyLong(), any()))
+        .thenReturn(true);
+    when(mockSubscriptionCommandSender.closeMessageSubscription(anyInt(), anyLong(), anyLong()))
         .thenReturn(true);
 
     streamProcessor =
@@ -181,6 +184,24 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
 
   private void awaitFirstRecordInState(final Intent state) {
     waitUntil(() -> environmentRule.events().withIntent(state).findFirst().isPresent());
+  }
+
+  public TypedRecord<WorkflowInstanceSubscriptionRecord> awaitAndGetFirstSubscriptionRejection() {
+    waitUntil(
+        () ->
+            environmentRule
+                .events()
+                .onlyWorkflowInstanceSubscriptionRecords()
+                .onlyRejections()
+                .findFirst()
+                .isPresent());
+
+    return environmentRule
+        .events()
+        .onlyWorkflowInstanceSubscriptionRecords()
+        .onlyRejections()
+        .findFirst()
+        .get();
   }
 
   public TypedRecord<WorkflowInstanceRecord> awaitElementInState(

@@ -411,8 +411,7 @@ public class WorkflowStateTest {
     // given
     final WorkflowSubscription workflowSubscription =
         new WorkflowSubscription("message", "correlation", 1, 2, 100);
-    workflowSubscription.setOpen(true);
-
+    workflowSubscription.setOpened();
     // when
     workflowState.put(workflowSubscription);
 
@@ -433,7 +432,7 @@ public class WorkflowStateTest {
     assertThat(subscription.getWorkflowInstanceKey()).isEqualTo(1);
     assertThat(subscription.getActivityInstanceKey()).isEqualTo(2);
     assertThat(subscription.getCommandSentTime()).isEqualTo(100);
-    assertThat(subscription.isNotOpen()).isFalse();
+    assertThat(subscription.isOpening()).isFalse();
   }
 
   @Test

@@ -70,6 +70,8 @@ public class IntermediateCatchEventHandler
 
     executableElement.bindLifecycleState(
         WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.SUBSCRIBE_TO_INTERMEDIATE_MESSAGE);
+    executableElement.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.TERMINATE_INTERMEDIATE_MESSAGE);
   }
 
   private void transformTimerEventDefinition(
@@ -95,8 +97,6 @@ public class IntermediateCatchEventHandler
         WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.APPLY_OUTPUT_MAPPING);
     executableElement.bindLifecycleState(
         WorkflowInstanceIntent.ELEMENT_COMPLETED, context.getCurrentFlowNodeOutgoingStep());
-    executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.TERMINATE_ELEMENT);
     executableElement.bindLifecycleState(
         WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.PROPAGATE_TERMINATION);
   }

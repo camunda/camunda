@@ -22,7 +22,6 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.timeout;
@@ -60,11 +59,14 @@ public class MessageStreamProcessorTest {
     MockitoAnnotations.initMocks(this);
 
     when(mockSubscriptionCommandSender.openWorkflowInstanceSubscription(
-            anyInt(), anyLong(), anyLong(), any()))
+            anyLong(), anyLong(), any()))
         .thenReturn(true);
 
     when(mockSubscriptionCommandSender.correlateWorkflowInstanceSubscription(
-            anyInt(), anyLong(), anyLong(), any(), any()))
+            anyLong(), anyLong(), any(), any()))
+        .thenReturn(true);
+
+    when(mockSubscriptionCommandSender.closeWorkflowInstanceSubscription(anyLong(), anyLong()))
         .thenReturn(true);
 
     streamProcessor =
@@ -91,16 +93,8 @@ public class MessageStreamProcessorTest {
     streamProcessor.unblock();
 
     // then
-    waitUntil(
-        () ->
-            rule.events()
-                .onlyMessageSubscriptionRecords()
-                .onlyRejections()
-                .findFirst()
-                .isPresent());
-
     final TypedRecord<MessageSubscriptionRecord> rejection =
-        rule.events().onlyMessageSubscriptionRecords().onlyRejections().findFirst().get();
+        awaitAndGetFirstSubscriptionRejection();
 
     assertThat(rejection.getMetadata().getIntent()).isEqualTo(MessageSubscriptionIntent.OPEN);
     assertThat(rejection.getSourcePosition()).isEqualTo(secondCommandPosition);
@@ -109,7 +103,6 @@ public class MessageStreamProcessorTest {
 
     verify(mockSubscriptionCommandSender, timeout(5_000).times(2))
         .openWorkflowInstanceSubscription(
-            eq(subscription.getWorkflowInstancePartitionId()),
             eq(subscription.getWorkflowInstanceKey()),
             eq(subscription.getActivityInstanceKey()),
             any());
@@ -140,7 +133,6 @@ public class MessageStreamProcessorTest {
     // then
     verify(mockSubscriptionCommandSender, timeout(5_000).times(2))
         .correlateWorkflowInstanceSubscription(
-            subscription.getWorkflowInstancePartitionId(),
             subscription.getWorkflowInstanceKey(),
             subscription.getActivityInstanceKey(),
             subscription.getMessageName(),
@@ -172,7 +164,6 @@ public class MessageStreamProcessorTest {
     // then
     verify(mockSubscriptionCommandSender, timeout(5_000).times(2))
         .correlateWorkflowInstanceSubscription(
-            subscription.getWorkflowInstancePartitionId(),
             subscription.getWorkflowInstanceKey(),
             subscription.getActivityInstanceKey(),
             subscription.getMessageName(),
@@ -202,16 +193,8 @@ public class MessageStreamProcessorTest {
     streamProcessor.unblock();
 
     // then
-    waitUntil(
-        () ->
-            rule.events()
-                .onlyMessageSubscriptionRecords()
-                .onlyRejections()
-                .findFirst()
-                .isPresent());
-
     final TypedRecord<MessageSubscriptionRecord> rejection =
-        rule.events().onlyMessageSubscriptionRecords().onlyRejections().findFirst().get();
+        awaitAndGetFirstSubscriptionRejection();
 
     assertThat(rejection.getMetadata().getIntent()).isEqualTo(MessageSubscriptionIntent.CORRELATE);
     assertThat(rejection.getSourcePosition()).isEqualTo(secondCommandPosition);
@@ -219,10 +202,42 @@ public class MessageStreamProcessorTest {
         .isEqualTo("subscription is already correlated");
   }
 
+  @Test
+  public void shouldRejectDuplicatedCloseMessageSubscription() {
+    // given
+    final MessageSubscriptionRecord subscription = messageSubscription();
+
+    streamProcessor.blockAfterMessageSubscriptionEvent(
+        m -> m.getMetadata().getIntent() == MessageSubscriptionIntent.OPENED);
+
+    rule.writeCommand(MessageSubscriptionIntent.OPEN, subscription);
+
+    waitUntil(() -> streamProcessor.isBlocked());
+
+    // when
+    rule.writeCommand(MessageSubscriptionIntent.CLOSE, subscription);
+    final long secondCommandPosition =
+        rule.writeCommand(MessageSubscriptionIntent.CLOSE, subscription);
+
+    streamProcessor.unblock();
+
+    // then
+    final TypedRecord<MessageSubscriptionRecord> rejection =
+        awaitAndGetFirstSubscriptionRejection();
+
+    assertThat(rejection.getMetadata().getIntent()).isEqualTo(MessageSubscriptionIntent.CLOSE);
+    assertThat(rejection.getSourcePosition()).isEqualTo(secondCommandPosition);
+    assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
+        .isEqualTo("subscription is already closed");
+
+    verify(mockSubscriptionCommandSender, timeout(5_000).times(2))
+        .closeWorkflowInstanceSubscription(
+            subscription.getWorkflowInstanceKey(), subscription.getActivityInstanceKey());
+  }
+
   private MessageSubscriptionRecord messageSubscription() {
     final MessageSubscriptionRecord subscription = new MessageSubscriptionRecord();
     subscription
-        .setWorkflowInstancePartitionId(0)
         .setWorkflowInstanceKey(1L)
         .setActivityInstanceKey(2L)
         .setMessageName(wrapString("order canceled"))
@@ -240,5 +255,17 @@ public class MessageStreamProcessorTest {
         .setPayload(asMsgPack("orderId", "order-123"));
 
     return message;
+  }
+
+  private TypedRecord<MessageSubscriptionRecord> awaitAndGetFirstSubscriptionRejection() {
+    waitUntil(
+        () ->
+            rule.events()
+                .onlyMessageSubscriptionRecords()
+                .onlyRejections()
+                .findFirst()
+                .isPresent());
+
+    return rule.events().onlyMessageSubscriptionRecords().onlyRejections().findFirst().get();
   }
 }

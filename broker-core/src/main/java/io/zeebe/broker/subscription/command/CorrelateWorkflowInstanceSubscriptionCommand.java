@@ -22,7 +22,6 @@ import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscription
 import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.payloadHeaderLength;
 import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.subscriptionPartitionIdNullValue;
 import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.workflowInstanceKeyNullValue;
-import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.workflowInstancePartitionIdNullValue;
 
 import io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder;
 import io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionEncoder;
@@ -42,7 +41,6 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
       new CorrelateWorkflowInstanceSubscriptionDecoder();
 
   private int subscriptionPartitionId;
-  private int workflowInstancePartitionId;
   private long workflowInstanceKey;
   private long activityInstanceKey;
 
@@ -74,7 +72,6 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
 
     encoder
         .subscriptionPartitionId(subscriptionPartitionId)
-        .workflowInstancePartitionId(workflowInstancePartitionId)
         .workflowInstanceKey(workflowInstanceKey)
         .activityInstanceKey(activityInstanceKey)
         .putMessageName(messageName, 0, messageName.capacity())
@@ -86,7 +83,6 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
     super.wrap(buffer, offset, length);
 
     subscriptionPartitionId = decoder.subscriptionPartitionId();
-    workflowInstancePartitionId = decoder.workflowInstancePartitionId();
     workflowInstanceKey = decoder.workflowInstanceKey();
     activityInstanceKey = decoder.activityInstanceKey();
 
@@ -108,7 +104,6 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
   @Override
   public void reset() {
     subscriptionPartitionId = subscriptionPartitionIdNullValue();
-    workflowInstancePartitionId = workflowInstancePartitionIdNullValue();
     workflowInstanceKey = workflowInstanceKeyNullValue();
     activityInstanceKey = activityInstanceKeyNullValue();
     messageName.wrap(0, 0);
@@ -121,14 +116,6 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
 
   public void setSubscriptionPartitionId(int subscriptionPartitionId) {
     this.subscriptionPartitionId = subscriptionPartitionId;
-  }
-
-  public int getWorkflowInstancePartitionId() {
-    return workflowInstancePartitionId;
-  }
-
-  public void setWorkflowInstancePartitionId(int workflowInstancePartitionId) {
-    this.workflowInstancePartitionId = workflowInstancePartitionId;
   }
 
   public long getWorkflowInstanceKey() {
