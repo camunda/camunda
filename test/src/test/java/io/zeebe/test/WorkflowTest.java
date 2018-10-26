@@ -39,7 +39,7 @@ public class WorkflowTest {
         .send()
         .join();
 
-    RecordingExporter.deploymentRecords().withIntent(DeploymentIntent.CREATED).getFirst();
+    RecordingExporter.deploymentRecords(DeploymentIntent.CREATED).getFirst();
   }
 
   @Test

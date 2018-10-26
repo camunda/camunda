@@ -28,7 +28,7 @@ import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.util.sched.ActorScheduler;
-import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
 public class ControlMessageHandlerManagerService implements Service<ControlMessageHandlerManager> {
@@ -51,7 +51,7 @@ public class ControlMessageHandlerManagerService implements Service<ControlMessa
     final ServerOutput output = transport.getOutput();
 
     final List<ControlMessageHandler> controlMessageHandlers =
-        Arrays.asList(new RequestTopologyHandler(output, topologyManager));
+        Collections.singletonList(new RequestTopologyHandler(output, topologyManager));
 
     service =
         new ControlMessageHandlerManager(
