@@ -12,3 +12,6 @@ env-down:
 env-status:
 	docker-compose ps
 
+.PHONY: env-clean
+env-clean: env-down
+	docker system prune -a
