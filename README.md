@@ -42,6 +42,16 @@ This command should pull/build the necessary containers to run the
 application locally, the first run might take a while. This includes
 a local elasticsearch, zeebe, operate backend and frontend.
 
+You can clean your local docker environment using:
+
+```
+make env-clean
+```
+
+This will delete all dangling images and containers. It might be useful
+when you run out of space or if you encounter any problem with the docker
+daemon.
+
 ## Commit Message Guidelines
 
 * **feat** (new feature for the user, not a new feature for build script)
