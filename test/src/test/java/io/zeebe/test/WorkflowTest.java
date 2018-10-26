@@ -15,14 +15,10 @@
  */
 package io.zeebe.test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import io.zeebe.gateway.ZeebeClient;
 import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
-import io.zeebe.gateway.api.record.RecordType;
-import io.zeebe.gateway.api.record.ValueType;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.test.util.record.RecordingExporter;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -43,24 +39,7 @@ public class WorkflowTest {
         .send()
         .join();
 
-    final CountDownLatch latch = new CountDownLatch(1);
-    client
-        .newSubscription()
-        .name("deploy")
-        .recordHandler(
-            r -> {
-              final ValueType valueType = r.getMetadata().getValueType();
-              final RecordType recordType = r.getMetadata().getRecordType();
-              final String intent = r.getMetadata().getIntent();
-              if (recordType == RecordType.EVENT
-                  && valueType == ValueType.DEPLOYMENT
-                  && intent.equals("CREATED")) {
-                latch.countDown();
-              }
-            })
-        .open();
-
-    assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
+    RecordingExporter.deploymentRecords().withIntent(DeploymentIntent.CREATED).getFirst();
   }
 
   @Test
