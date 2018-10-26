@@ -18,8 +18,8 @@ package io.zeebe.test;
 import static org.assertj.core.api.Assertions.fail;
 
 import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.gateway.ClientProperties;
-import io.zeebe.gateway.ZeebeClient;
+import io.zeebe.client.ClientProperties;
+import io.zeebe.client.ZeebeClient;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.record.RecordingExporter;
@@ -47,7 +47,7 @@ public class ZeebeTestRule extends ExternalResource {
             () -> {
               final Properties properties = propertiesProvider.get();
               properties.setProperty(
-                  ClientProperties.BROKER_CONTACTPOINT, brokerRule.getClientAddress().toString());
+                  ClientProperties.BROKER_CONTACTPOINT, brokerRule.getGatewayAddress().toString());
               return properties;
             });
   }
@@ -85,7 +85,7 @@ public class ZeebeTestRule extends ExternalResource {
           .withWorkflowInstanceKey(key)
           .withKey(key)
           .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-          .getLast();
+          .getFirst();
     } catch (StreamWrapperException swe) {
       throw new RuntimeException(
           String.format(
