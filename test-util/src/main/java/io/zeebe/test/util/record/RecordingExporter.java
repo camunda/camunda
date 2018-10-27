@@ -103,7 +103,7 @@ public class RecordingExporter implements Exporter {
     return new DeploymentRecordStream(records(ValueType.DEPLOYMENT, DeploymentRecordValue.class));
   }
 
-  public static DeploymentRecordStream deploymentRecordStream(final DeploymentIntent intent) {
+  public static DeploymentRecordStream deploymentRecords(final DeploymentIntent intent) {
     return deploymentRecords().withIntent(intent);
   }
 
