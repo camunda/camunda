@@ -4,8 +4,9 @@
 
 #### Bug Fixes
 
-* **broker:**  exclusive split when default flow is first in XML ([3c91aa1d](https://github.com/zeebe-io/zeebe/commit/3c91aa1dc4f4740f50c3661cd87d8d565fae8ef3))
-* **broker-core:**  fix concurrency problems with request metadata ([85e26e92](https://github.com/zeebe-io/zeebe/commit/85e26e926d131f23e8e5d9a28fac3a1e8da0f367))
+* **broker-core:**
+  *  exclusive split when default flow is first in XML ([3c91aa1d](https://github.com/zeebe-io/zeebe/commit/3c91aa1dc4f4740f50c3661cd87d8d565fae8ef3))
+  *  fix concurrency problems with request metadata ([85e26e92](https://github.com/zeebe-io/zeebe/commit/85e26e926d131f23e8e5d9a28fac3a1e8da0f367))
 * **exporters/elasticsearch:**  use correct index delimiter in root template ([9572500a](https://github.com/zeebe-io/zeebe/commit/9572500a0c889028e9966d0b31941092f3789caa))
 
 
