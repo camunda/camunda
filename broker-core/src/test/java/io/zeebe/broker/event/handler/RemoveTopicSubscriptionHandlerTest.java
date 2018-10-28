@@ -28,7 +28,6 @@ import io.zeebe.broker.transport.clientapi.BufferingServerOutput;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.ErrorResponseDecoder;
-import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.util.sched.Actor;
 import io.zeebe.util.sched.ActorControl;
 import io.zeebe.util.sched.testing.ControlledActorSchedulerRule;
@@ -70,12 +69,9 @@ public class RemoveTopicSubscriptionHandlerTest {
     final RemoveTopicSubscriptionHandler handler =
         new RemoveTopicSubscriptionHandler(output, subscriptionService);
 
-    final RecordMetadata metadata = new RecordMetadata();
-    metadata.requestStreamId(14);
-
     final DirectBuffer request = encode(new CloseSubscriptionRequest().setSubscriberKey(5L));
     actorSchedulerRule.submitActor(
-        new Handler((actor) -> handler.handle(actor, 0, request, metadata)));
+        new Handler((actor) -> handler.handle(actor, 0, request, 0, 14)));
     actorSchedulerRule.workUntilDone();
 
     // when

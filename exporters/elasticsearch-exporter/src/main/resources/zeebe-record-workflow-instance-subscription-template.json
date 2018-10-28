@@ -2,7 +2,10 @@
   "index_patterns": [
     "zeebe-record-workflow-instance-subscription_*"
   ],
-  "order": 30,
+  "order": 20,
+  "aliases": {
+    "zeebe-record-workflow-instance-subscription": {}
+  },
   "mappings": {
     "_doc": {
       "properties": {
@@ -25,8 +28,5 @@
         }
       }
     }
-  },
-  "aliases": {
-    "zeebe-record-workflow-instance-subscription": {}
   }
 }

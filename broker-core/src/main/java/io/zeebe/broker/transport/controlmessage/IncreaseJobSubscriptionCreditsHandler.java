@@ -21,7 +21,6 @@ import io.zeebe.broker.job.old.CreditsRequest;
 import io.zeebe.broker.job.old.JobSubscriptionManager;
 import io.zeebe.broker.job.old.JobSubscriptionRequest;
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.transport.ServerOutput;
 import io.zeebe.util.sched.ActorControl;
 import org.agrona.DirectBuffer;
@@ -49,9 +48,8 @@ public class IncreaseJobSubscriptionCreditsHandler extends AbstractControlMessag
       final ActorControl actor,
       final int partitionId,
       final DirectBuffer buffer,
-      final RecordMetadata eventMetadata) {
-    final long requestId = eventMetadata.getRequestId();
-    final int requestStreamId = eventMetadata.getRequestStreamId();
+      final long requestId,
+      final int requestStreamId) {
     subscription.reset();
     subscription.wrap(buffer);
 

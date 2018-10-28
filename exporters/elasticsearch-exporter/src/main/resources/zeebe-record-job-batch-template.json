@@ -3,6 +3,9 @@
     "zeebe-record-job-batch_*"
   ],
   "order": 20,
+  "aliases": {
+    "zeebe-record-job-batch": {}
+  },
   "mappings": {
     "_doc": {
       "properties": {
