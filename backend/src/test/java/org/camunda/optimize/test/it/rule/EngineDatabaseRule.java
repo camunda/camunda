@@ -12,6 +12,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.OffsetDateTime;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 
 public class EngineDatabaseRule extends TestWatcher {
@@ -38,7 +39,7 @@ public class EngineDatabaseRule extends TestWatcher {
 
   public EngineDatabaseRule(Properties properties) {
     database = properties.getProperty("db.name");
-    usePostgresOptimizations = Boolean.valueOf(properties.getProperty("db.usePostgresOptimizations"));
+    usePostgresOptimizations = Optional.ofNullable(properties.getProperty("db.usePostgresOptimizations")).map(Boolean::valueOf).orElse(true);
     String jdbcDriver = properties.getProperty("db.jdbc.driver");
     String dbUrl = properties.getProperty("db.url");
     if (dbUrl == null || dbUrl.isEmpty() || dbUrl.startsWith("${")) {
