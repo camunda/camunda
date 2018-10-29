@@ -109,4 +109,17 @@ public class SingleReportDataDto implements ReportDataDto, Combinable {
       ReportUtil.isCombinable(groupBy, that.groupBy) &&
       Objects.equals(visualization, that.visualization);
   }
+
+  @Override
+  public String toString() {
+    return "SingleReportDataDto{" +
+      "processDefinitionKey='" + processDefinitionKey + '\'' +
+      ", processDefinitionVersion='" + processDefinitionVersion + '\'' +
+      ", filter=" + filter +
+      ", view=" + view +
+      ", groupBy=" + groupBy +
+      ", visualization='" + visualization + '\'' +
+      ", processPart=" + processPart +
+      '}';
+  }
 }

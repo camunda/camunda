@@ -30,4 +30,9 @@ public abstract class FilterDto<DATA extends FilterDataDto> {
   public void setData(DATA data) {
     this.data = data;
   }
+
+  @Override
+  public String toString() {
+    return "Filter=" + getClass().getSimpleName();
+  }
 }

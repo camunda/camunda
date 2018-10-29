@@ -8,7 +8,6 @@
     </encoder>
   </appender>
 
-  <logger name="org.glassfish.jersey.tracing" level="ALL" />
   <logger name="org.camunda.optimize" level="info" />
 
   <root level="info">

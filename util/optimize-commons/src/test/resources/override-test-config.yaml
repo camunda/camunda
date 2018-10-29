@@ -16,4 +16,4 @@ es:
       certificate: ''
       certificate_authorities: ''
       verification_mode: ''
-      enabled: false
+      enabled: true

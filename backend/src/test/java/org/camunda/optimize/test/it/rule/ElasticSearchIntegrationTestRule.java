@@ -41,6 +41,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
   private Logger logger = LoggerFactory.getLogger(ElasticSearchIntegrationTestRule.class);
+  private static final String DEFAULT_PROPERTIES_PATH = "integration-rules.properties";
   private Properties properties;
   private static ObjectMapper objectMapper;
   private static Client esclient;
@@ -50,7 +51,11 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
   private Map<String, List<String>> documentEntriesTracker = new HashMap<>();
 
   public ElasticSearchIntegrationTestRule() {
-    properties = PropertyUtil.loadProperties("integration-rules.properties");
+    this(DEFAULT_PROPERTIES_PATH);
+  }
+
+  public ElasticSearchIntegrationTestRule(String propertiesLocation) {
+    properties = PropertyUtil.loadProperties(propertiesLocation);
   }
 
   private void initEsclient() {

@@ -25,6 +25,8 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
+import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.rest.engine.dto.DeploymentDto;
 import org.camunda.optimize.rest.engine.dto.GroupDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
@@ -54,6 +56,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
@@ -81,6 +84,7 @@ public class EngineIntegrationRule extends TestWatcher {
   private Logger logger = LoggerFactory.getLogger(EngineIntegrationRule.class);
 
   private ObjectMapper objectMapper;
+  private boolean shouldCleanEngine;
 
   public EngineIntegrationRule () {
     this(DEFAULT_PROPERTIES_PATH);
@@ -88,11 +92,17 @@ public class EngineIntegrationRule extends TestWatcher {
 
   public EngineIntegrationRule(String propertiesLocation) {
     properties = PropertyUtil.loadProperties(propertiesLocation);
+    checkIfShouldCleanEngine();
     setupObjectMapper();
   }
 
-  private void init() {
-    cleanEngine();
+  private void checkIfShouldCleanEngine() {
+    String shouldCleanEngineProperty =
+      properties.getProperty("camunda.optimize.test.clean-engine");
+    shouldCleanEngine = Optional.ofNullable(shouldCleanEngineProperty)
+      .orElseThrow(OptimizeIntegrationTestException::new)
+      .trim()
+      .matches("true");
   }
 
   private void setupObjectMapper() {
@@ -118,11 +128,9 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   protected void starting(Description description) {
-    this.init();
-  }
-
-  protected void finished(Description description) {
-    cleanEngine();
+    if (shouldCleanEngine) {
+      cleanEngine();
+    }
   }
 
   private void cleanEngine() {
@@ -226,6 +234,49 @@ public class EngineIntegrationRule extends TestWatcher {
       throw new OptimizeRuntimeException("Could not fetch the process definition!", e);
     }
   }
+
+  public List<ProcessDefinitionEngineDto> getLatestProcessDefinitions() {
+    CloseableHttpClient client = getHttpClient();
+    URI uri;
+    try {
+      uri = new URIBuilder(getProcessDefinitionUri())
+        .setParameter("latestVersion", "true")
+        .build();
+    } catch (URISyntaxException e) {
+      throw new OptimizeRuntimeException("Could not create URI!", e);
+    }
+    HttpRequestBase get = new HttpGet(uri);
+    CloseableHttpResponse response;
+    try {
+      response = client.execute(get);
+      String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+      List<ProcessDefinitionEngineDto> procDefs =
+        objectMapper.readValue(responseString, new TypeReference<List<ProcessDefinitionEngineDto>>(){});
+      response.close();
+      return procDefs;
+    } catch (IOException e) {
+      throw new OptimizeRuntimeException("Could not fetch the process definition!", e);
+    }
+  }
+
+  public ProcessDefinitionXmlEngineDto getProcessDefinitionXml(String processDefinitionId) {
+    CloseableHttpClient client = getHttpClient();
+    HttpRequestBase get = new HttpGet(getProcessDefinitionXmlUri(processDefinitionId));
+    CloseableHttpResponse response;
+    try {
+      response = client.execute(get);
+      String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+      ProcessDefinitionXmlEngineDto xml =
+        objectMapper.readValue(responseString, ProcessDefinitionXmlEngineDto.class);
+      response.close();
+      return xml;
+    } catch (IOException e) {
+      String errorMessage =
+        String.format("Could not fetch the process definition xml for id [%s]!", processDefinitionId);
+      throw new OptimizeRuntimeException(errorMessage, e);
+    }
+  }
+
 
   public ProcessInstanceEngineDto deployAndStartProcessWithVariables(BpmnModelInstance bpmnModelInstance,
                                                                      Map<String, Object> variables) {
@@ -387,6 +438,10 @@ public class EngineIntegrationRule extends TestWatcher {
 
   private String getProcessDefinitionUri() {
     return getEngineUrl() + "/process-definition";
+  }
+
+  private String getProcessDefinitionXmlUri(String processDefinitionId) {
+    return getProcessDefinitionUri() + "/" + processDefinitionId + "/xml";
   }
 
   private String getCountHistoryUri() {

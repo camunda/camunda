@@ -24,4 +24,12 @@ public class ProcessPartDto {
   public String createCommandKey() {
     return "processPart";
   }
+
+  @Override
+  public String toString() {
+    return "ProcessPartDto{" +
+      "start='" + start + '\'' +
+      ", end='" + end + '\'' +
+      '}';
+  }
 }

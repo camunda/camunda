@@ -840,7 +840,7 @@ public class ConfigurationService {
   }
 
   public String getElasticsearchSecuritySSLKey() {
-    if (elasticsearchSecuritySSLKey == null) {
+    if (elasticsearchSecuritySSLKey == null && getElasticsearchSecuritySSLEnabled()) {
       elasticsearchSecuritySSLKey =
         configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_KEY);
       elasticsearchSecuritySSLKey = resolvePathAsAbsoluteUrl(elasticsearchSecuritySSLKey).getPath();
@@ -849,16 +849,17 @@ public class ConfigurationService {
   }
 
   public String getElasticsearchSecuritySSLCertificate() {
-    if (elasticsearchSecuritySSLCertificate == null) {
+    if (elasticsearchSecuritySSLCertificate == null && getElasticsearchSecuritySSLEnabled()) {
       elasticsearchSecuritySSLCertificate =
         configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE);
-      elasticsearchSecuritySSLCertificate = resolvePathAsAbsoluteUrl(elasticsearchSecuritySSLCertificate).getPath();
+      elasticsearchSecuritySSLCertificate =
+        resolvePathAsAbsoluteUrl(elasticsearchSecuritySSLCertificate).getPath();
     }
     return elasticsearchSecuritySSLCertificate;
   }
 
   public String getElasticsearchSecuritySSLCertificateAuthorities() {
-    if (elasticsearchSecuritySSLCertificateAuthorities == null) {
+    if (elasticsearchSecuritySSLCertificateAuthorities == null && getElasticsearchSecuritySSLEnabled()) {
       elasticsearchSecuritySSLCertificateAuthorities =
         configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES);
       elasticsearchSecuritySSLCertificateAuthorities = resolvePathAsAbsoluteUrl(

@@ -62,4 +62,13 @@ public class ViewDto implements Combinable {
     String separator = "-";
     return operation + separator + entity + separator + property;
   }
+
+  @Override
+  public String toString() {
+    return "ViewDto{" +
+      "operation='" + operation + '\'' +
+      ", entity='" + entity + '\'' +
+      ", property='" + property + '\'' +
+      '}';
+  }
 }

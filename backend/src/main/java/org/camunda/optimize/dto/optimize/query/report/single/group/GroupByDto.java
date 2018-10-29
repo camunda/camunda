@@ -72,4 +72,6 @@ public abstract class GroupByDto<VALUE extends GroupByValueDto> implements Combi
   public String createCommandKey() {
     return type;
   }
+
+
 }
