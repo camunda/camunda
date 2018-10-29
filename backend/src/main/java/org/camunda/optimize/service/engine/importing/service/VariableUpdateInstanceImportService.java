@@ -61,7 +61,7 @@ public class VariableUpdateInstanceImportService {
   }
 
   private List<VariableDto> mapEngineEntitiesToOptimizeEntities(List<HistoricVariableUpdateInstanceDto> engineEntities) {
-    List<PluginVariableDto> pluginVariableList = mapEngineVariablesToOptimizeVariablesAndDeduplicate(engineEntities);
+    List<PluginVariableDto> pluginVariableList = mapEngineVariablesToOptimizeVariablesAndRemoveDuplicates(engineEntities);
     for (VariableImportAdapter variableImportAdapter : importAdapterProvider.getPlugins()) {
       pluginVariableList = variableImportAdapter.adaptVariables(pluginVariableList);
     }
@@ -98,7 +98,7 @@ public class VariableUpdateInstanceImportService {
     return variableDto;
   }
 
-  private List<PluginVariableDto> mapEngineVariablesToOptimizeVariablesAndDeduplicate(List<HistoricVariableUpdateInstanceDto> engineEntities) {
+  private List<PluginVariableDto> mapEngineVariablesToOptimizeVariablesAndRemoveDuplicates(List<HistoricVariableUpdateInstanceDto> engineEntities) {
     final Map<String, PluginVariableDto> resultSet = engineEntities.stream()
       .map(this::mapEngineEntityToOptimizeEntity)
       .collect(Collectors.toMap(
