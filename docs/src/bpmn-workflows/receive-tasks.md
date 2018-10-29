@@ -32,9 +32,24 @@ Read more about [message correlation](reference/message-correlation.html).
 XML representation:
 
 ```xml
-<bpmn:receiveTask id="IntermediateThrowEvent_090vvrf" name="Money collected"
-	messageRef="Message_1iz5qtq">
+<bpmn:receiveTask id="money-collected" name="Money collected" messageRef="Message_1iz5qtq">
 </bpmn:receiveTask>
 ```
 
-> [Message intermediate catch events](workflow/message-events.html) are an alternative to receive tasks.
+> [Message intermediate catch events](/bpmn-workflows/message-events.html) are an alternative to receive tasks.
+
+## Payload Mapping
+
+By default, the complete message payload is merged into the workflow instance payload. This behavior can be customized by defining an output mapping at the receive task. See the [Input/Output Mappings](/bpmn-workflows/data-flow.html#inputoutput-mappings) section for details on this concept.
+
+XML representation:
+
+```xml
+<bpmn:receiveTask id="money-collected" name="Money collected" messageRef="Message_1iz5qtq">
+	<bpmn:extensionElements>
+    <zeebe:ioMapping>
+      <zeebe:output source="$.price" target="$.totalPrice"/>
+     </zeebe:ioMapping>
+  </bpmn:extensionElements>
+</bpmn:receiveTask>
+```

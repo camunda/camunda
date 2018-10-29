@@ -28,12 +28,16 @@ import io.zeebe.model.bpmn.instance.TimeCycle;
 import io.zeebe.model.bpmn.instance.TimeDate;
 import io.zeebe.model.bpmn.instance.TimeDuration;
 import io.zeebe.model.bpmn.instance.TimerEventDefinition;
+import io.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
+import io.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
+import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
+import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
 import java.util.function.Consumer;
 
 /** @author Sebastian Menski */
 public abstract class AbstractCatchEventBuilder<
         B extends AbstractCatchEventBuilder<B, E>, E extends CatchEvent>
-    extends AbstractEventBuilder<B, E> {
+    extends AbstractEventBuilder<B, E> implements ZeebePayloadMappingBuilder<B> {
 
   protected AbstractCatchEventBuilder(
       BpmnModelInstance modelInstance, E element, Class<?> selfType) {
@@ -177,8 +181,37 @@ public abstract class AbstractCatchEventBuilder<
     return new ConditionalEventDefinitionBuilder(modelInstance, eventDefinition);
   }
 
+  @Override
   public B condition(String condition) {
     conditionalEventDefinition().condition(condition);
+    return myself;
+  }
+
+  @Override
+  public B zeebeOutputBehavior(ZeebeOutputBehavior outputBehavior) {
+    final ZeebeIoMapping ioMapping = getCreateSingleExtensionElement(ZeebeIoMapping.class);
+    ioMapping.setOutputBehavhior(outputBehavior);
+
+    return myself;
+  }
+
+  @Override
+  public B zeebeInput(String source, String target) {
+    final ZeebeIoMapping ioMapping = getCreateSingleExtensionElement(ZeebeIoMapping.class);
+    final ZeebeInput input = createChild(ioMapping, ZeebeInput.class);
+    input.setSource(source);
+    input.setTarget(target);
+
+    return myself;
+  }
+
+  @Override
+  public B zeebeOutput(String source, String target) {
+    final ZeebeIoMapping ioMapping = getCreateSingleExtensionElement(ZeebeIoMapping.class);
+    final ZeebeOutput input = createChild(ioMapping, ZeebeOutput.class);
+    input.setSource(source);
+    input.setTarget(target);
+
     return myself;
   }
 }
