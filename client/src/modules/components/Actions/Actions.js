@@ -12,7 +12,7 @@ import {
   isWithIncident,
   isRunning,
   getLatestOperation,
-  getLatesOperationState
+  getLatestOperationState
 } from './service';
 
 import * as Styled from './styled';
@@ -26,8 +26,9 @@ export default class Actions extends React.Component {
   state = {operationState: '', operationType: ''};
 
   componentDidMount = () => {
+    console.log(this.props.instance.operations);
     let operationType;
-    const operationState = getLatesOperationState(
+    const operationState = getLatestOperationState(
       this.props.instance.operations
     );
 
@@ -45,13 +46,13 @@ export default class Actions extends React.Component {
 
     if (operations.length > prevProps.instance.operations.length) {
       // change operation state & failed operation icons when new page is loaded;
-      operationState = getLatesOperationState(operations);
+      operationState = getLatestOperationState(operations);
       operationType = getLatestOperation(operations).type;
 
       this.setState({operationState, operationType});
     } else if (this.props.instance.id !== prevProps.instance.id) {
       // change operation state
-      operationState = getLatesOperationState(operations);
+      operationState = getLatestOperationState(operations);
 
       this.setState({operationState});
     }
@@ -80,6 +81,7 @@ export default class Actions extends React.Component {
     );
 
   render() {
+    console.log(this.state.operationState);
     return (
       <Styled.Actions>
         {this.state.operationState === OPERATION_STATE.SCHEDULED ? (

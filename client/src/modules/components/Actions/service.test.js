@@ -8,7 +8,7 @@ import {
   isWithIncident,
   isRunning,
   getLatestOperation,
-  getLatesOperationState
+  getLatestOperationState
 } from './service';
 
 import {xTimes, createOperation} from 'modules/testUtils';
@@ -108,13 +108,13 @@ describe('Action services', () => {
       });
     });
 
-    describe('getLatesOperationState', () => {
+    describe('getLatestOperationState', () => {
       beforeEach(() => {
         mockOperations = [];
       });
 
       it('should return "" when no operations exist', () => {
-        expect(getLatesOperationState(mockOperations)).toBe('');
+        expect(getLatestOperationState(mockOperations)).toBe('');
       });
 
       it('should summerize some operation-states and return "SCHEDULED"', () => {
@@ -123,7 +123,7 @@ describe('Action services', () => {
           createOperation({state: OPERATION_STATE.SCHEDULED})
         );
         //then
-        expect(getLatesOperationState(mockOperations)).toBe(
+        expect(getLatestOperationState(mockOperations)).toBe(
           OPERATION_STATE.SCHEDULED
         );
 
@@ -132,7 +132,7 @@ describe('Action services', () => {
         mockOperations.push(createOperation({state: OPERATION_STATE.LOCKED}));
 
         //then
-        expect(getLatesOperationState(mockOperations)).toBe(
+        expect(getLatestOperationState(mockOperations)).toBe(
           OPERATION_STATE.SCHEDULED
         );
       });
@@ -142,7 +142,7 @@ describe('Action services', () => {
         mockOperations.push(createOperation({state: OPERATION_STATE.SENT}));
 
         //then
-        expect(getLatesOperationState(mockOperations)).toBe(
+        expect(getLatestOperationState(mockOperations)).toBe(
           OPERATION_STATE.SENT
         );
 
@@ -151,7 +151,7 @@ describe('Action services', () => {
         mockOperations.push(createOperation({state: OPERATION_STATE.FAILED}));
 
         //then
-        expect(getLatesOperationState(mockOperations)).toBe(
+        expect(getLatestOperationState(mockOperations)).toBe(
           OPERATION_STATE.FAILED
         );
 
@@ -162,7 +162,7 @@ describe('Action services', () => {
         );
 
         //then
-        expect(getLatesOperationState(mockOperations)).toBe(
+        expect(getLatestOperationState(mockOperations)).toBe(
           OPERATION_STATE.COMPLETED
         );
       });

@@ -55,7 +55,7 @@ export const getLatestOperation = operations => {
  * @returns a string value specifying the state of the latest operation scheduled.
  * @param {*} instance complete instance object
  */
-export const getLatesOperationState = operations => {
+export const getLatestOperationState = operations => {
   if (!operations.length > 0) {
     return '';
   }
