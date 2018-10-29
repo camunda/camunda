@@ -35,7 +35,7 @@
     "eslint-config-react-app": "^3.0.4",
     "eslint-plugin-prettier": "^2.6.2",
     "husky": "^1.1.2",
-    "jest-enzyme": "^6.0.4",
+    "jest-enzyme": "^7.0.0",
     "jest-junit": "^5.2.0",
     "lint-staged": "^7.3.0",
     "prettier": "^1.14.3",
