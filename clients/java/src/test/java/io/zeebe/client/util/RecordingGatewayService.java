@@ -174,8 +174,9 @@ public class RecordingGatewayService extends GatewayImplBase {
     return Partition.newBuilder().setPartitionId(partitionId).setRole(role).build();
   }
 
-  public static BrokerInfo broker(String host, int port, Partition... partitions) {
+  public static BrokerInfo broker(int nodeId, String host, int port, Partition... partitions) {
     return BrokerInfo.newBuilder()
+        .setNodeId(nodeId)
         .setHost(host)
         .setPort(port)
         .addAllPartitions(Arrays.asList(partitions))

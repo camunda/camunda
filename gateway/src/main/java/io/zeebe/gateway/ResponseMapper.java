@@ -62,7 +62,7 @@ public class ResponseMapper {
       case LEADER:
         return PartitionBrokerRole.LEADER;
       case FOLLOWER:
-        return PartitionBrokerRole.FOLLOW;
+        return PartitionBrokerRole.FOLLOWER;
       default:
         throw new ClientException(
             "Unknown broker role in response for partition "
@@ -80,9 +80,11 @@ public class ResponseMapper {
         .brokers()
         .forEach(
             broker -> {
-              final Builder brokerInfo = BrokerInfo.newBuilder();
-              brokerInfo.setHost(bufferAsString(broker.getHost()));
-              brokerInfo.setPort(broker.getPort());
+              final Builder brokerInfo =
+                  BrokerInfo.newBuilder()
+                      .setNodeId(broker.getNodeId())
+                      .setHost(bufferAsString(broker.getHost()))
+                      .setPort(broker.getPort());
 
               broker
                   .partitionStates()
