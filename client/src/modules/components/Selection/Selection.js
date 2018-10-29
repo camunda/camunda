@@ -49,7 +49,8 @@ export default class Selection extends React.Component {
     return (
       <Styled.Footer>
         <Styled.MoreInstances>
-          {`${difference} more Instance${difference !== 1 ? 's' : ''}`}
+          {difference > 0 &&
+            `${difference} more Instance${difference !== 1 ? 's' : ''}`}
         </Styled.MoreInstances>
       </Styled.Footer>
     );
