@@ -26,11 +26,6 @@ export const EventsContainer = styled.ul`
 `;
 
 export const EventEntry = themed(styled.li`
-  border-bottom: 1px solid
-    ${themeStyle({
-      dark: Colors.uiDark04,
-      light: Colors.uiLight05
-    })};
   position: relative;
   display: block;
 `);

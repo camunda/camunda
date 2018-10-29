@@ -40,9 +40,7 @@ export default class Foldable extends React.Component {
 Foldable.Summary = function Summary({
   toggleFold,
   isFoldable,
-  isFolded,
   indentation = 0,
-  isSelected,
   onSelection,
   children,
   ...props
@@ -51,17 +49,17 @@ Foldable.Summary = function Summary({
     <Styled.Summary {...props}>
       {!isFoldable ? null : (
         <Styled.FoldButton onClick={toggleFold} indentation={indentation}>
-          {!isFolded ? (
-            <Styled.DownIcon isSelected={isSelected} />
+          {!props.isFolded ? (
+            <Styled.DownIcon isSelected={props.isSelected} />
           ) : (
-            <Styled.RightIcon isSelected={isSelected} />
+            <Styled.RightIcon isSelected={props.isSelected} />
           )}
         </Styled.FoldButton>
       )}
       <Styled.SummaryLabel
         isFoldable={isFoldable}
         indentation={indentation}
-        isSelected={isSelected}
+        isSelected={props.isSelected}
         onClick={onSelection}
       >
         {children}

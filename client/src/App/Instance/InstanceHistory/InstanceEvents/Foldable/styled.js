@@ -1,6 +1,6 @@
 import styled, {css} from 'styled-components';
 
-import {themed, Colors} from 'modules/theme';
+import {themed, themeStyle, Colors} from 'modules/theme';
 import {ReactComponent as Down} from 'modules/components/Icon/down.svg';
 import {ReactComponent as Right} from 'modules/components/Icon/right.svg';
 import withStrippedProps from 'modules/utils/withStrippedProps';
@@ -39,10 +39,18 @@ export const RightIcon = themed(styled(
   ${iconStyle};
 `);
 
+const borderBottomStyle = css`
+1px solid ${themeStyle({
+  dark: Colors.uiDark04,
+  light: Colors.uiLight05
+})}`;
+
 export const Summary = themed(styled.div`
   position: relative;
-  height: 31px;
+  height: 32px;
   flex: 1;
+  border-bottom: ${props => (!props.isFolded ? 'none' : borderBottomStyle)};
+  border-color: ${props => (!props.isSelected ? '' : Colors.selections)};
 `);
 
 export const SummaryLabel = themed(styled.button`
@@ -56,10 +64,10 @@ export const SummaryLabel = themed(styled.button`
   height: 100%;
   margin: 0;
   border: none;
-  background-color: ${({isSelected}) =>
-    !isSelected ? 'transparent' : Colors.selections};
   font-size: 14px;
   text-align: left;
+  background-color: ${props =>
+    !props.isSelected ? 'transparent' : Colors.selections};
   color: ${({theme, isSelected}) => {
     return isSelected || theme === 'dark'
       ? 'rgba(255, 255, 255, 0.9)'
@@ -67,6 +75,7 @@ export const SummaryLabel = themed(styled.button`
   }};
 `);
 
-export const Details = styled.div`
+export const Details = themed(styled.div`
   display: ${({isFolded}) => (!isFolded ? 'block' : 'none')};
-`;
+  border-bottom: ${borderBottomStyle};
+`);
