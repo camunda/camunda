@@ -101,7 +101,6 @@ export default class Popover extends React.Component {
   };
 
   catchClick = evt => {
-    evt.preventDefault();
     evt.nativeEvent.inOverlay = true;
   };
 
