@@ -33,7 +33,7 @@
     "enzyme": "^3.7.0",
     "enzyme-adapter-react-16": "^1.6.0",
     "eslint-config-react-app": "^3.0.4",
-    "eslint-plugin-prettier": "^2.6.2",
+    "eslint-plugin-prettier": "^3.0.0",
     "husky": "^1.1.2",
     "jest-enzyme": "^7.0.0",
     "jest-junit": "^5.2.0",
