@@ -26,7 +26,6 @@ export default class Actions extends React.Component {
   state = {operationState: '', operationType: ''};
 
   componentDidMount = () => {
-    console.log(this.props.instance.operations);
     let operationType;
     const operationState = getLatestOperationState(
       this.props.instance.operations
