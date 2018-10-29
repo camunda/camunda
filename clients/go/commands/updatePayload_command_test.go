@@ -16,7 +16,7 @@ func TestUpdatePayloadCommandWithPayloadFromString(t *testing.T) {
 	payload := "{\"foo\":\"bar\"}"
 
 	request := &pb.UpdateWorkflowInstancePayloadRequest{
-		ActivityInstanceKey: 123,
+		ElementInstanceKey: 123,
 		Payload:             payload,
 	}
 	stub := &pb.UpdateWorkflowInstancePayloadResponse{}
@@ -25,7 +25,7 @@ func TestUpdatePayloadCommandWithPayloadFromString(t *testing.T) {
 
 	command := NewUpdatePayloadCommand(client)
 
-	payloadCommand, err := command.ActivityInstanceKey(123).PayloadFromString(payload)
+	payloadCommand, err := command.ElementInstanceKey(123).PayloadFromString(payload)
 	if err != nil {
 		t.Error("Failed to set payload: ", err)
 	}
@@ -50,7 +50,7 @@ func TestUpdatePayloadCommandWithPayloadFromStringer(t *testing.T) {
 	payload := "{\"foo\":\"bar\"}"
 
 	request := &pb.UpdateWorkflowInstancePayloadRequest{
-		ActivityInstanceKey: 123,
+		ElementInstanceKey: 123,
 		Payload:             payload,
 	}
 	stub := &pb.UpdateWorkflowInstancePayloadResponse{}
@@ -59,7 +59,7 @@ func TestUpdatePayloadCommandWithPayloadFromStringer(t *testing.T) {
 
 	command := NewUpdatePayloadCommand(client)
 
-	payloadCommand, err := command.ActivityInstanceKey(123).PayloadFromStringer(DataType{Foo: "bar"})
+	payloadCommand, err := command.ElementInstanceKey(123).PayloadFromStringer(DataType{Foo: "bar"})
 	if err != nil {
 		t.Error("Failed to set payload: ", err)
 	}
@@ -84,7 +84,7 @@ func TestUpdatePayloadCommandWithPayloadFromObject(t *testing.T) {
 	payload := "{\"foo\":\"bar\"}"
 
 	request := &pb.UpdateWorkflowInstancePayloadRequest{
-		ActivityInstanceKey: 123,
+		ElementInstanceKey: 123,
 		Payload:             payload,
 	}
 	stub := &pb.UpdateWorkflowInstancePayloadResponse{}
@@ -93,7 +93,7 @@ func TestUpdatePayloadCommandWithPayloadFromObject(t *testing.T) {
 
 	command := NewUpdatePayloadCommand(client)
 
-	payloadCommand, err := command.ActivityInstanceKey(123).PayloadFromObject(DataType{Foo: "bar"})
+	payloadCommand, err := command.ElementInstanceKey(123).PayloadFromObject(DataType{Foo: "bar"})
 	if err != nil {
 		t.Error("Failed to set payload: ", err)
 	}
@@ -120,7 +120,7 @@ func TestUpdatePayloadCommandWithPayloadFromMap(t *testing.T) {
 	payloadMap["foo"] = "bar"
 
 	request := &pb.UpdateWorkflowInstancePayloadRequest{
-		ActivityInstanceKey: 123,
+		ElementInstanceKey: 123,
 		Payload:             payload,
 	}
 	stub := &pb.UpdateWorkflowInstancePayloadResponse{}
@@ -129,7 +129,7 @@ func TestUpdatePayloadCommandWithPayloadFromMap(t *testing.T) {
 
 	command := NewUpdatePayloadCommand(client)
 
-	payloadCommand, err := command.ActivityInstanceKey(123).PayloadFromMap(payloadMap)
+	payloadCommand, err := command.ElementInstanceKey(123).PayloadFromMap(payloadMap)
 	if err != nil {
 		t.Error("Failed to set payload: ", err)
 	}

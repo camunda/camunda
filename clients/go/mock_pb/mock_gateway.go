@@ -5,9 +5,9 @@
 package mock_pb
 
 import (
-	context "context"
 	gomock "github.com/golang/mock/gomock"
 	pb "github.com/zeebe-io/zeebe/clients/go/pb"
+	context "golang.org/x/net/context"
 	grpc "google.golang.org/grpc"
 	metadata "google.golang.org/grpc/metadata"
 	reflect "reflect"
