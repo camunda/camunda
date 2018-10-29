@@ -64,4 +64,11 @@ public class WorkflowInstanceRecordStream
             r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_COMPLETED
                 && r.getKey() == r.getValue().getWorkflowInstanceKey());
   }
+
+  /**
+   * @return stream with only records for the workflow instance (i.e. root scope of the instance)
+   */
+  public WorkflowInstanceRecordStream filterRootScope() {
+    return filter(r -> r.getKey() == r.getValue().getWorkflowInstanceKey());
+  }
 }

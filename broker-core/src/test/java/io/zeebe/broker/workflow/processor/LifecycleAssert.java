@@ -17,8 +17,6 @@
  */
 package io.zeebe.broker.workflow.processor;
 
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.CANCELING;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.CREATED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETING;
@@ -26,12 +24,10 @@ import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_READY;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_TERMINATED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_TERMINATING;
 
-import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.stream.Collectors;
 import org.assertj.core.api.AbstractListAssert;
 import org.assertj.core.api.ObjectAssert;
 import org.assertj.core.util.Lists;
@@ -61,9 +57,6 @@ public class LifecycleAssert
     ELEMENT_LIFECYCLE.put(ELEMENT_COMPLETED, EnumSet.noneOf(WorkflowInstanceIntent.class));
     ELEMENT_LIFECYCLE.put(ELEMENT_TERMINATING, EnumSet.of(ELEMENT_TERMINATED));
     ELEMENT_LIFECYCLE.put(ELEMENT_TERMINATED, EnumSet.noneOf(WorkflowInstanceIntent.class));
-
-    ELEMENT_LIFECYCLE.put(CREATED, EnumSet.of(ELEMENT_READY));
-    ELEMENT_LIFECYCLE.put(CANCELING, EnumSet.of(ELEMENT_TERMINATING));
   }
 
   public LifecycleAssert(List<WorkflowInstanceIntent> actual) {
@@ -123,18 +116,6 @@ public class LifecycleAssert
   }
 
   public static LifecycleAssert assertThat(List<WorkflowInstanceIntent> trajectory) {
-    return new LifecycleAssert(filterWorkflowInstanceEvents(trajectory));
-  }
-
-  private static List<WorkflowInstanceIntent> filterWorkflowInstanceEvents(
-      List<WorkflowInstanceIntent> trajectory) {
-    return trajectory
-        .stream()
-        .filter(s -> !isWorkflowInstanceState(s))
-        .collect(Collectors.toList());
-  }
-
-  private static boolean isWorkflowInstanceState(Intent state) {
-    return state == WorkflowInstanceIntent.CANCELING || state == WorkflowInstanceIntent.CREATED;
+    return new LifecycleAssert(trajectory);
   }
 }

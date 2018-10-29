@@ -581,7 +581,7 @@ public class ExporterStreamProcessorTest {
             scopeInstanceKey);
 
     // then
-    assertRecordExported(WorkflowInstanceIntent.CREATED, record, recordValue);
+    assertRecordExported(WorkflowInstanceIntent.ELEMENT_READY, record, recordValue);
   }
 
   @Test
