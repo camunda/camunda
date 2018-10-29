@@ -90,6 +90,7 @@ export default withErrorHandling(
         groupBy: null,
         visualization: null,
         processPart: null,
+        filter: [],
         configuration: {}
       };
 
