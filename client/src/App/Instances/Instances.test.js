@@ -4,7 +4,7 @@ import {shallow} from 'enzyme';
 import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
 
 import WrappedInstances from './Instances';
-import {DEFAULT_FILTER} from 'modules/constants';
+import {DEFAULT_FILTER, PAGE_TITLE} from 'modules/constants';
 import * as api from 'modules/api/instances/instances';
 import * as apiDiagram from 'modules/api/diagram/diagram';
 import Filters from './Filters';
@@ -167,6 +167,7 @@ describe('Instances', () => {
         expect(node.state.activityIds.length).toBe(0);
         expect(node.state.workflow).toEqual({});
         expect(node.state.groupedWorkflowInstances).toEqual({});
+        expect(document.title).toBe(PAGE_TITLE.INSTANCES);
       });
     });
 

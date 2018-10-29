@@ -139,3 +139,11 @@ export const OPERATION_STATE = {
   FAILED: 'FAILED',
   COMPLETED: 'COMPLETED'
 };
+
+export const PAGE_TITLE = {
+  LOGIN: 'Camunda Operate: Log In',
+  DASHBOARD: 'Camunda Operate: Dashboard',
+  INSTANCES: 'Camunda Operate: Instances',
+  INSTANCE: (instanceId, workflowName) =>
+    `Camunda Operate: Instance ${instanceId} of Workflow ${workflowName}`
+};

@@ -3,6 +3,8 @@ import PropTypes from 'prop-types';
 
 import SplitPane from 'modules/components/SplitPane';
 import * as api from 'modules/api/instances';
+import {PAGE_TITLE} from 'modules/constants';
+import {getWorkflowName} from 'modules/utils/instance';
 
 import InstanceDetail from './InstanceDetail';
 import Header from '../Header';
@@ -33,6 +35,11 @@ export default class Instance extends Component {
   async componentDidMount() {
     const id = this.props.match.params.id;
     const instance = await api.fetchWorkflowInstance(id);
+
+    document.title = PAGE_TITLE.INSTANCE(
+      instance.id,
+      getWorkflowName(instance)
+    );
 
     this.setState({
       loaded: true,

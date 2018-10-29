@@ -5,6 +5,7 @@ import {Redirect} from 'react-router-dom';
 import {login} from 'modules/api/login';
 import withSharedState from 'modules/components/withSharedState';
 import Button from 'modules/components/Button';
+import {PAGE_TITLE} from 'modules/constants';
 
 import {REQUIRED_FIELD_ERROR, LOGIN_ERROR} from './constants';
 import * as Styled from './styled';
@@ -21,6 +22,10 @@ class Login extends React.Component {
     forceRedirect: false,
     error: null
   };
+
+  componentDidMount() {
+    document.title = PAGE_TITLE.LOGIN;
+  }
 
   handleLogin = async e => {
     e.preventDefault();

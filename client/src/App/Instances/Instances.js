@@ -6,7 +6,7 @@ import {isEqual, sortBy, isEmpty} from 'lodash';
 import withSharedState from 'modules/components/withSharedState';
 import SplitPane from 'modules/components/SplitPane';
 import Diagram from 'modules/components/Diagram';
-import {DEFAULT_FILTER} from 'modules/constants';
+import {DEFAULT_FILTER, PAGE_TITLE} from 'modules/constants';
 import {
   fetchWorkflowInstanceBySelection,
   fetchWorkflowInstancesCount,
@@ -74,6 +74,7 @@ class Instances extends Component {
   }
 
   async componentDidMount() {
+    document.title = PAGE_TITLE.INSTANCES;
     const groupedWorkflows = await fetchGroupedWorkflowInstances();
     this.setGroupedWorkflowInstances(groupedWorkflows);
 

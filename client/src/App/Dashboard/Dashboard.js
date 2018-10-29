@@ -7,7 +7,11 @@ import MetricTile from './MetricTile';
 
 import {fetchWorkflowInstancesCount} from 'modules/api/instances';
 import {parseFilterForRequest} from 'modules/utils/filter';
-import {FILTER_SELECTION, DASHBOARD_LABELS} from 'modules/constants';
+import {
+  FILTER_SELECTION,
+  DASHBOARD_LABELS,
+  PAGE_TITLE
+} from 'modules/constants';
 
 import * as Styled from './styled.js';
 
@@ -19,6 +23,7 @@ class Dashboard extends Component {
   };
 
   componentDidMount = async () => {
+    document.title = PAGE_TITLE.DASHBOARD;
     const counts = await this.fetchCounts();
     this.setState({...counts});
   };

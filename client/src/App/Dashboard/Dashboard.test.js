@@ -1,5 +1,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
+
+import {PAGE_TITLE} from 'modules/constants';
 import {mockResolvedAsyncFn} from 'modules/testUtils';
 
 import Dashboard from './Dashboard';
@@ -15,6 +17,10 @@ describe('Dashboard', () => {
 
   beforeEach(() => {
     node = shallow(<Dashboard />);
+  });
+
+  it('should set proper page title', () => {
+    expect(document.title).toBe(PAGE_TITLE.DASHBOARD);
   });
 
   it('should render MetricPanel component', () => {

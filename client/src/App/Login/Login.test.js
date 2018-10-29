@@ -11,6 +11,7 @@ import {
 import Login from './Login';
 import * as Styled from './styled';
 import * as api from 'modules/api/login/login';
+import {PAGE_TITLE} from 'modules/constants';
 import {REQUIRED_FIELD_ERROR, LOGIN_ERROR} from './constants';
 
 jest.mock('modules/request');
@@ -42,6 +43,10 @@ describe('Login', () => {
     expect(node.state('password')).toEqual('');
     expect(node.state('forceRedirect')).toBe(false);
     expect(node.state('error')).toBeNull();
+  });
+
+  it('should set proper page title', () => {
+    expect(document.title).toBe(PAGE_TITLE.LOGIN);
   });
 
   it('should render login form by default', () => {

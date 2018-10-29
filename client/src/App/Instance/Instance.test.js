@@ -5,9 +5,11 @@ import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
 import {
   INSTANCE_STATE,
   ACTIVITY_STATE,
-  FLOW_NODE_TYPE
+  FLOW_NODE_TYPE,
+  PAGE_TITLE
 } from 'modules/constants';
 import * as api from 'modules/api/instances/instances';
+import {getWorkflowName} from 'modules/utils/instance';
 
 import Instance from './Instance';
 import Header from './../Header';
@@ -145,6 +147,14 @@ describe('Instance', () => {
       // then
       expect(node.state('instance')).toEqual(INSTANCE);
       expect(node.state('loaded')).toBe(true);
+      expect(document.title).toBe(
+        PAGE_TITLE.INSTANCE(INSTANCE.id, getWorkflowName(INSTANCE))
+      );
+      expect(document.title).toBe(
+        `Camunda Operate: Instance ${INSTANCE.id} of Workflow ${getWorkflowName(
+          INSTANCE
+        )}`
+      );
     });
   });
 
