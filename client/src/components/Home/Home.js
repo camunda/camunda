@@ -8,7 +8,7 @@ export default function Home() {
       key="dashboard"
       api="dashboard"
       label="Dashboard"
-      displayOnly="5"
+      loadOnly="5"
       sortBy={'lastModified'}
       operations={['edit']}
       includeViewAllLink={true}

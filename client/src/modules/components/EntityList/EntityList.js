@@ -35,7 +35,7 @@ class EntityList extends React.Component {
 
   loadData = async () => {
     this.props.mightFail(
-      await load(this.props.api, this.props.displayOnly, this.props.sortBy),
+      await load(this.props.api, this.props.loadOnly, this.props.sortBy),
       response => {
         this.setState({
           data: response,
@@ -175,8 +175,12 @@ class EntityList extends React.Component {
   };
 
   renderList = () => {
-    const {data} = this.state;
-    const {operations, label, api, renderCustom, ContentPanel} = this.props;
+    let {data} = this.state;
+    const {operations, label, api, renderCustom, ContentPanel, displayOnly} = this.props;
+
+    if (displayOnly && data.length > displayOnly) {
+      data = data.slice(0, displayOnly);
+    }
 
     const list =
       data.length === 0 ? (

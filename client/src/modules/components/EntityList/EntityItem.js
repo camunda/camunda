@@ -68,7 +68,8 @@ export default class EntityItem extends React.Component {
           parentClassName: 'dataMeta',
           content: (
             <React.Fragment>
-              {`Last modified ${moment(lastModified).format('lll')} by `}
+              {`Last modified ${moment(lastModified).format('lll')}`}
+              <br /> {'by '}
               <strong>{lastModifier}</strong>
             </React.Fragment>
           )

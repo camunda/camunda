@@ -105,9 +105,23 @@ it('should initially load data', () => {
 });
 
 it('should only load the specified amount of results', () => {
-  mount(<EntityList api="endpoint" label="Dashboard" displayOnly="5" />);
+  mount(<EntityList api="endpoint" label="Dashboard" loadOnly="5" />);
 
   expect(load).toHaveBeenCalledWith('endpoint', '5', undefined);
+});
+
+it('should only display the specified amound of result', async () => {
+  const node = mount(
+    shallow(<EntityList api="endpoint" label="Dashboard" displayOnly="5" />).get(0)
+  );
+
+  node.setState({
+    loaded: true,
+    data: Array(10).fill(sampleEntity)
+  });
+
+  await node.update();
+  expect(node.find('ul').children().length).toBe(5);
 });
 
 it('should display a list with the results', () => {
