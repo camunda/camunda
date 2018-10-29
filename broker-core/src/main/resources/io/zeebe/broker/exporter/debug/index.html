@@ -159,17 +159,17 @@
           case 'MESSAGE_SUBSCRIPTION':
           case 'WORKFLOW_INSTANCE_SUBSCRIPTION':
             r._bpmnProcessId = r.value.bpmnProcessId;
-            r._elementId = r.value.activityId;
+            r._elementId = r.value.elementId;
             r._workflowInstanceKey = r.value.workflowInstanceKey;
             r._scopeInstanceKey = r.value.scopeInstanceKey;
-            r._elementInstanceKey = r.value.activityInstanceKey;
+            r._elementInstanceKey = r.value.elementInstanceKey;
             break;
           case 'JOB':
             r._bpmnProcessId = r.value.headers.bpmnProcessId;
-            r._elementId = r.value.headers.activityId;
+            r._elementId = r.value.headers.elementId;
             r._workflowInstanceKey = r.value.headers.workflowInstanceKey;
             r._scopeInstanceKey = r.value.headers.scopeInstanceKey;
-            r._elementInstanceKey = r.value.headers.activityInstanceKey;
+            r._elementInstanceKey = r.value.headers.elementInstanceKey;
             break;
       }
       return r;
