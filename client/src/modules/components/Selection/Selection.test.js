@@ -57,7 +57,9 @@ describe('Selection', () => {
   it('should contain a Footer', () => {
     expect(node.find(Styled.Footer)).toExist();
     expect(node.find(Styled.MoreInstances)).toExist();
-    expect(node.find(Styled.MoreInstances).contains('144 more Instances'));
+    expect(node.find(Styled.MoreInstances).contains('144 more Instances')).toBe(
+      true
+    );
   });
 
   it('should contain Actions', () => {

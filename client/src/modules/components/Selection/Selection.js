@@ -44,13 +44,16 @@ export default class Selection extends React.Component {
     ));
   };
 
-  renderFooter = (instanceCount, numberOfDisplayedInstances) => (
-    <Styled.Footer>
-      <Styled.MoreInstances>
-        {instanceCount - numberOfDisplayedInstances + ' more Instances'}
-      </Styled.MoreInstances>
-    </Styled.Footer>
-  );
+  renderFooter = (instanceCount, numberOfDisplayedInstances) => {
+    const difference = instanceCount - numberOfDisplayedInstances;
+    return (
+      <Styled.Footer>
+        <Styled.MoreInstances>
+          {`${difference} more Instance${difference !== 1 ? 's' : ''}`}
+        </Styled.MoreInstances>
+      </Styled.Footer>
+    );
+  };
 
   renderRetryLabel = () => (
     <div>
