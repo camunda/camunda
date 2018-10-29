@@ -1,7 +1,8 @@
 import styled, {css} from 'styled-components';
 import {Colors, themed} from 'modules/theme';
 
-import {Retry, Stop} from 'modules/components/Icon';
+import {ReactComponent as Retry} from 'modules/components/Icon/retry.svg';
+import {ReactComponent as Stop} from 'modules/components/Icon/retry.svg';
 
 export const Ul = themed(styled.ul`
   display: inline-flex;
