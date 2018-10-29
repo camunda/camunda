@@ -277,7 +277,7 @@ export default class List extends React.Component {
 
     return (
       <Styled.List>
-        <Styled.TableContainer innerRef={this.containerRef}>
+        <Styled.TableContainer ref={this.containerRef}>
           <Table>
             {this.renderTableHead()}
             {isListEmpty &&

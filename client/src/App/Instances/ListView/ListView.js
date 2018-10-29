@@ -96,13 +96,14 @@ export default class ListView extends React.Component {
       filterCount,
       onAddToOpenSelection,
       onAddNewSelection,
-      onAddToSpecificSelection
+      onAddToSpecificSelection,
+      ...props
     } = this.props;
 
     const isListEmpty = this.state.instances.length === 0;
 
     return (
-      <SplitPane.Pane {...this.props} hasShiftableControls>
+      <SplitPane.Pane {...props} hasShiftableControls>
         <SplitPane.Pane.Header>Instances</SplitPane.Pane.Header>
         <Styled.PaneBody>
           <List

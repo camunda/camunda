@@ -62,7 +62,7 @@ export default class Checkbox extends React.Component {
       isChecked,
       type,
       title,
-      ...other
+      ...props
     } = this.props;
     const {isFocused} = this.state;
     return (
@@ -80,14 +80,14 @@ export default class Checkbox extends React.Component {
           indeterminate={isIndeterminate}
           type="checkbox"
           checked={isChecked}
-          innerRef={this.inputRef}
+          ref={this.inputRef}
           checkboxType={type}
           onChange={this.handleChange}
           onFocus={this.handleFocus}
           onBlur={this.handleFocus}
           aria-label={!id ? label || title : null}
           title={label || title}
-          {...other}
+          {...props}
         />
 
         {label && (

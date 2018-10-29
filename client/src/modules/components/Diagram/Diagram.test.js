@@ -62,7 +62,7 @@ describe('Diagram', () => {
     expect(node.find(Styled.Diagram)).toHaveLength(1);
     const DiagramCanvasNode = node.find(Styled.DiagramCanvas);
     expect(DiagramCanvasNode).toHaveLength(1);
-    expect(DiagramCanvasNode.prop('innerRef')).toBe(nodeInstance.containerRef);
+    expect(DiagramCanvasNode.prop('ref')).toBe(nodeInstance.containerRef);
     const DiagramControlsNode = node.find(DiagramControls);
     expect(DiagramControlsNode).toHaveLength(1);
     expect(DiagramControlsNode.prop('handleZoomIn')).toBe(
