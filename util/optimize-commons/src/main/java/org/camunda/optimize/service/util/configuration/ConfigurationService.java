@@ -2,8 +2,10 @@ package org.camunda.optimize.service.util.configuration;
 
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.jayway.jsonpath.Configuration;
 import com.jayway.jsonpath.DocumentContext;
 import com.jayway.jsonpath.JsonPath;
@@ -138,6 +140,9 @@ public class ConfigurationService {
 
   private Properties quartzProperties;
 
+  // history cleanup
+  private OptimizeCleanupConfiguration cleanupServiceConfiguration;
+
 
   public ConfigurationService() {
     this((String[]) null, null);
@@ -261,12 +266,15 @@ public class ConfigurationService {
   private YAMLMapper configureConfigMapper() {
     final YAMLMapper yamlMapper = new YAMLMapper();
     yamlMapper.configure(JsonParser.Feature.ALLOW_COMMENTS, true);
+    // to parse dates
+    yamlMapper.registerModule(new JavaTimeModule());
     //configure Jackson as provider in order to be able to use TypeRef objects
     //during serialization process
     Configuration.setDefaults(new Configuration.Defaults() {
+      private final ObjectMapper objectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
-      private final JsonProvider jsonProvider = new JacksonJsonProvider();
-      private final MappingProvider mappingProvider = new JacksonMappingProvider();
+      private final JsonProvider jsonProvider = new JacksonJsonProvider(objectMapper);
+      private final MappingProvider mappingProvider = new JacksonMappingProvider(objectMapper);
 
       @Override
       public JsonProvider jsonProvider() {
@@ -866,6 +874,14 @@ public class ConfigurationService {
         elasticsearchSecuritySSLCertificateAuthorities).getPath();
     }
     return elasticsearchSecuritySSLCertificateAuthorities;
+  }
+
+  public OptimizeCleanupConfiguration getCleanupServiceConfiguration() {
+    if (cleanupServiceConfiguration == null) {
+      cleanupServiceConfiguration = configJsonContext.read(ConfigurationServiceConstants.HISTORY_CLEANUP, OptimizeCleanupConfiguration.class);
+      cleanupServiceConfiguration.validate();
+    }
+    return cleanupServiceConfiguration;
   }
 
   public void setMaxStatusConnections(Integer maxStatusConnections) {

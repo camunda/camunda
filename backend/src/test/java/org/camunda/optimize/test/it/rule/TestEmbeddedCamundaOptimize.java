@@ -8,6 +8,7 @@ import org.camunda.optimize.rest.engine.dto.UserCredentialsDto;
 import org.camunda.optimize.rest.engine.dto.UserDto;
 import org.camunda.optimize.rest.engine.dto.UserProfileDto;
 import org.camunda.optimize.rest.providers.OptimizeObjectMapperProvider;
+import org.camunda.optimize.service.cleanup.OptimizeCleanupService;
 import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
@@ -163,6 +164,10 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
 
   public ConfigurationService getConfigurationService() {
     return getApplicationContext().getBean(ConfigurationService.class);
+  }
+
+  public OptimizeCleanupService getCleanupService() {
+    return getApplicationContext().getBean(OptimizeCleanupService.class);
   }
 
   public DateTimeFormatter getDateTimeFormatter() {

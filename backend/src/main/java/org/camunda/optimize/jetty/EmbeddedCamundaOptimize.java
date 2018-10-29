@@ -27,10 +27,7 @@ import org.springframework.context.ApplicationContext;
 import javax.servlet.ServletException;
 import javax.websocket.DeploymentException;
 import javax.websocket.server.ServerContainer;
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.List;
-import java.util.Properties;
 
 /**
  * Jetty embedded server wrapping jersey servlet handler and loading properties from
@@ -51,7 +48,11 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
   private Server jettyServer;
 
   public EmbeddedCamundaOptimize() {
-    jerseyCamundaOptimize = new SpringAwareServletConfiguration();
+    this(null);
+  }
+
+  public EmbeddedCamundaOptimize(String contextLocation) {
+    jerseyCamundaOptimize = new SpringAwareServletConfiguration(contextLocation);
     jettyServer = setUpEmbeddedJetty(jerseyCamundaOptimize);
     disableServerSignature(jettyServer);
   }
@@ -64,11 +65,6 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
         }
       }
     }
-  }
-
-  public EmbeddedCamundaOptimize(String contextLocation) {
-    jerseyCamundaOptimize = new SpringAwareServletConfiguration(contextLocation);
-    jettyServer = setUpEmbeddedJetty(jerseyCamundaOptimize);
   }
 
   private Server setUpEmbeddedJetty(SpringAwareServletConfiguration jerseyCamundaOptimize) {
@@ -144,28 +140,6 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     connector.setPort(configurationService.getContainerHttpPort());
     connector.setHost(host);
     return connector;
-  }
-
-  /**
-   * Since spring context is not loaded yet, just hook up properties manually.
-   */
-  private Properties getProperties() {
-    Properties result = new Properties();
-    try {
-      result.load(
-          this.getClass().getClassLoader()
-              .getResourceAsStream("service.properties")
-      );
-      InputStream environmentProperties = this.getClass().getClassLoader()
-          .getResourceAsStream("environment.properties");
-      if (environmentProperties != null) {
-        //overwrites previously loaded properties
-        result.load(environmentProperties);
-      }
-    } catch (IOException e) {
-      logger.error("cant read properties", e);
-    }
-    return result;
   }
 
   public void startOptimize() throws Exception {

@@ -6,6 +6,7 @@ import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.alert.AlertService;
+import org.camunda.optimize.service.cleanup.OptimizeCleanupService;
 import org.camunda.optimize.service.engine.importing.EngineImportScheduler;
 import org.camunda.optimize.service.engine.importing.EngineImportSchedulerFactory;
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandler;
@@ -321,6 +322,10 @@ public class EmbeddedOptimizeRule extends TestWatcher {
 
   public ConfigurationService getConfigurationService() {
     return getOptimize().getConfigurationService();
+  }
+
+  public OptimizeCleanupService getCleanupService() {
+    return getOptimize().getCleanupService();
   }
 
   /**

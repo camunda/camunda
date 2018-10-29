@@ -35,10 +35,13 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
   private ApplicationContext applicationContext;
 
   public SpringAwareServletConfiguration() {
+    this(null);
   }
 
   public SpringAwareServletConfiguration(String contextLocation) {
-    this.springContextLocation = contextLocation;
+    if (contextLocation != null) {
+      this.springContextLocation = contextLocation;
+    }
   }
 
   private ServletHolder initJerseyServlet() {
