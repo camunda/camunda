@@ -15,7 +15,6 @@
  */
 package io.zeebe.broker.it.util;
 
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.CREATED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_READY;
@@ -31,6 +30,7 @@ import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.WorkflowInstanceRecordStream;
 import java.util.function.Consumer;
 
 public class ZeebeAssertHelper {
@@ -41,15 +41,15 @@ public class ZeebeAssertHelper {
 
   public static void assertWorkflowInstanceCreated(long workflowInstanceKey) {
     assertThat(
-            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.CREATED)
+            RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_READY)
+                .withKey(workflowInstanceKey)
                 .withWorkflowInstanceKey(workflowInstanceKey)
                 .exists())
         .isTrue();
-    assertWorkflowInstanceState(CREATED, (e) -> {});
   }
 
   public static void assertWorkflowInstanceCreated(Consumer<WorkflowInstanceRecordValue> consumer) {
-    assertWorkflowInstanceState(CREATED, consumer);
+    assertWorkflowInstanceState(WorkflowInstanceIntent.ELEMENT_READY, consumer);
   }
 
   public static void assertJobCreated(String jobType) {
@@ -166,23 +166,24 @@ public class ZeebeAssertHelper {
 
   public static void assertWorkflowInstanceState(
       WorkflowInstanceIntent intent, Consumer<WorkflowInstanceRecordValue> consumer) {
-    final WorkflowInstanceRecordValue value =
-        RecordingExporter.workflowInstanceRecords(intent).getFirst().getValue();
-
-    assertThat(value).isNotNull();
-
-    consumer.accept(value);
+    consumeFirstWorkflowInstanceRecord(
+        RecordingExporter.workflowInstanceRecords(intent)
+            .filter(r -> r.getKey() == r.getValue().getWorkflowInstanceKey()),
+        consumer);
   }
 
   public static void assertElementInState(
       WorkflowInstanceIntent intent,
       String element,
       Consumer<WorkflowInstanceRecordValue> consumer) {
-    final WorkflowInstanceRecordValue value =
-        RecordingExporter.workflowInstanceRecords(intent)
-            .withElementId(element)
-            .getFirst()
-            .getValue();
+    consumeFirstWorkflowInstanceRecord(
+        RecordingExporter.workflowInstanceRecords(intent).withElementId(element), consumer);
+  }
+
+  private static void consumeFirstWorkflowInstanceRecord(
+      WorkflowInstanceRecordStream stream, Consumer<WorkflowInstanceRecordValue> consumer) {
+
+    final WorkflowInstanceRecordValue value = stream.getFirst().getValue();
 
     assertThat(value).isNotNull();
 

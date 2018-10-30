@@ -17,25 +17,22 @@ package io.zeebe.protocol.intent;
 
 public enum WorkflowInstanceIntent implements Intent {
   CREATE((short) 0),
-  CREATED((short) 1),
+  START_EVENT_OCCURRED((short) 1),
+  END_EVENT_OCCURRED((short) 2),
+  SEQUENCE_FLOW_TAKEN((short) 3),
+  GATEWAY_ACTIVATED((short) 4),
 
-  START_EVENT_OCCURRED((short) 2),
-  END_EVENT_OCCURRED((short) 3),
-  SEQUENCE_FLOW_TAKEN((short) 4),
-  GATEWAY_ACTIVATED((short) 5),
+  ELEMENT_READY((short) 5),
+  ELEMENT_ACTIVATED((short) 6),
+  ELEMENT_COMPLETING((short) 7),
+  ELEMENT_COMPLETED((short) 8),
+  ELEMENT_TERMINATING((short) 9),
+  ELEMENT_TERMINATED((short) 10),
 
-  ELEMENT_READY((short) 6),
-  ELEMENT_ACTIVATED((short) 7),
-  ELEMENT_COMPLETING((short) 8),
-  ELEMENT_COMPLETED((short) 9),
-  ELEMENT_TERMINATING((short) 10),
-  ELEMENT_TERMINATED((short) 11),
+  CANCEL((short) 11),
 
-  CANCEL((short) 12),
-  CANCELING((short) 13),
-
-  UPDATE_PAYLOAD((short) 14),
-  PAYLOAD_UPDATED((short) 15);
+  UPDATE_PAYLOAD((short) 12),
+  PAYLOAD_UPDATED((short) 13);
 
   private final short value;
 
@@ -52,34 +49,30 @@ public enum WorkflowInstanceIntent implements Intent {
       case 0:
         return CREATE;
       case 1:
-        return CREATED;
-      case 2:
         return START_EVENT_OCCURRED;
-      case 3:
+      case 2:
         return END_EVENT_OCCURRED;
-      case 4:
+      case 3:
         return SEQUENCE_FLOW_TAKEN;
-      case 5:
+      case 4:
         return GATEWAY_ACTIVATED;
-      case 6:
+      case 5:
         return ELEMENT_READY;
-      case 7:
+      case 6:
         return ELEMENT_ACTIVATED;
-      case 8:
+      case 7:
         return ELEMENT_COMPLETING;
-      case 9:
+      case 8:
         return ELEMENT_COMPLETED;
-      case 10:
+      case 9:
         return ELEMENT_TERMINATING;
-      case 11:
+      case 10:
         return ELEMENT_TERMINATED;
-      case 12:
+      case 11:
         return CANCEL;
-      case 13:
-        return CANCELING;
-      case 14:
+      case 12:
         return UPDATE_PAYLOAD;
-      case 15:
+      case 13:
         return PAYLOAD_UPDATED;
       default:
         return Intent.UNKNOWN;

@@ -322,14 +322,13 @@ public class WorkflowInstanceFunctionalTest {
 
     // then
     final List<Record> workflowEvents =
-        testClient.receiveWorkflowInstances().limit(14).collect(Collectors.toList());
+        testClient.receiveWorkflowInstances().limit(13).collect(Collectors.toList());
 
     assertThat(workflowEvents)
         .extracting(Record::getMetadata)
         .extracting(e -> e.getIntent())
         .containsExactly(
             WorkflowInstanceIntent.CREATE,
-            WorkflowInstanceIntent.CREATED,
             WorkflowInstanceIntent.ELEMENT_READY,
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
             WorkflowInstanceIntent.START_EVENT_OCCURRED,

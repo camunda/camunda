@@ -59,13 +59,11 @@ public class CreateWorkflowInstanceHandler implements WorkflowInstanceCommandHan
           .setElementId(bpmnId);
 
       final EventOutput eventOutput = commandContext.getOutput();
-      eventOutput.newBatch();
-      eventOutput.writeFollowUpEvent(workflowInstanceKey, WorkflowInstanceIntent.CREATED, command);
       eventOutput.writeFollowUpEvent(
           workflowInstanceKey, WorkflowInstanceIntent.ELEMENT_READY, command);
 
       responseWriter.writeEventOnCommand(
-          workflowInstanceKey, WorkflowInstanceIntent.CREATED, command, record);
+          workflowInstanceKey, WorkflowInstanceIntent.ELEMENT_READY, command, record);
     } else {
       commandContext.reject(RejectionType.BAD_VALUE, "Workflow is not deployed");
     }

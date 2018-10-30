@@ -119,14 +119,13 @@ public class MessageCatchElementTest {
     testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", "order-123"));
 
     final List<Record<WorkflowInstanceRecordValue>> events =
-        testClient.receiveWorkflowInstances().limit(11).collect(Collectors.toList());
+        testClient.receiveWorkflowInstances().limit(10).collect(Collectors.toList());
 
     assertThat(events)
         .extracting(Record::getMetadata)
         .extracting(RecordMetadata::getIntent)
         .containsExactly(
             WorkflowInstanceIntent.CREATE,
-            WorkflowInstanceIntent.CREATED,
             WorkflowInstanceIntent.ELEMENT_READY,
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
             WorkflowInstanceIntent.START_EVENT_OCCURRED,

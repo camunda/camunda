@@ -40,14 +40,13 @@ public class CancelWorkflowInstanceHandler implements WorkflowInstanceCommandHan
       final EventOutput output = commandContext.getOutput();
       final WorkflowInstanceRecord value = workflowInstance.getValue();
 
-      output.newBatch();
-      output.writeFollowUpEvent(command.getKey(), WorkflowInstanceIntent.CANCELING, value);
       output.writeFollowUpEvent(
           command.getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATING, value);
 
       commandContext
           .getResponseWriter()
-          .writeEventOnCommand(command.getKey(), WorkflowInstanceIntent.CANCELING, value, command);
+          .writeEventOnCommand(
+              command.getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATING, value, command);
     } else {
       commandContext.reject(RejectionType.NOT_APPLICABLE, "Workflow instance is not running");
     }

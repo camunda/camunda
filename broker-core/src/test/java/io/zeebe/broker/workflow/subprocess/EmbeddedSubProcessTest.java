@@ -109,14 +109,16 @@ public class EmbeddedSubProcessTest {
     final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
         testClient
             .receiveWorkflowInstances()
-            .skipUntil(e -> e.getMetadata().getIntent() == WorkflowInstanceIntent.CREATED)
-            .limit(11)
+            .limit(
+                r ->
+                    r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_ACTIVATED
+                        && "subProcessTask".equals(r.getValue().getElementId()))
             .collect(Collectors.toList());
 
     assertThat(workflowInstanceEvents)
         .extracting(e -> e.getMetadata().getIntent(), e -> e.getValue().getElementId())
         .containsExactly(
-            tuple(WorkflowInstanceIntent.CREATED, PROCESS_ID),
+            tuple(WorkflowInstanceIntent.CREATE, ""),
             tuple(WorkflowInstanceIntent.ELEMENT_READY, PROCESS_ID),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, PROCESS_ID),
             tuple(WorkflowInstanceIntent.START_EVENT_OCCURRED, "start"),
@@ -149,14 +151,13 @@ public class EmbeddedSubProcessTest {
     final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
         testClient
             .receiveWorkflowInstances()
-            .skipUntil(e -> e.getMetadata().getIntent() == WorkflowInstanceIntent.CREATED)
-            .limit(21)
+            .limitToWorkflowInstanceCompleted()
             .collect(Collectors.toList());
 
     assertThat(workflowInstanceEvents)
         .extracting(e -> e.getMetadata().getIntent(), e -> e.getValue().getElementId())
         .containsExactly(
-            tuple(WorkflowInstanceIntent.CREATED, PROCESS_ID),
+            tuple(WorkflowInstanceIntent.CREATE, ""),
             tuple(WorkflowInstanceIntent.ELEMENT_READY, PROCESS_ID),
             tuple(WorkflowInstanceIntent.ELEMENT_ACTIVATED, PROCESS_ID),
             tuple(WorkflowInstanceIntent.START_EVENT_OCCURRED, "start"),

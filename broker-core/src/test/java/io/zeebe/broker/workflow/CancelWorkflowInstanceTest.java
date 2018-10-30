@@ -113,7 +113,7 @@ public class CancelWorkflowInstanceTest {
         testClient.receiveFirstWorkflowInstanceCommand(WorkflowInstanceIntent.CANCEL);
 
     assertThat(response.getSourceRecordPosition()).isEqualTo(cancelWorkflow.getPosition());
-    assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.CANCELING);
+    assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_TERMINATING);
 
     final Record<WorkflowInstanceRecordValue> workflowInstanceCanceledEvent =
         testClient.receiveElementInState(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_TERMINATED);
@@ -132,7 +132,6 @@ public class CancelWorkflowInstanceTest {
         .extracting(e -> e.getValue().getElementId(), e -> e.getMetadata().getIntent())
         .containsSequence(
             tuple("", WorkflowInstanceIntent.CANCEL),
-            tuple(PROCESS_ID, WorkflowInstanceIntent.CANCELING),
             tuple(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_TERMINATING),
             tuple("task", WorkflowInstanceIntent.ELEMENT_TERMINATING),
             tuple("task", WorkflowInstanceIntent.ELEMENT_TERMINATED),
@@ -161,7 +160,6 @@ public class CancelWorkflowInstanceTest {
         .extracting(e -> e.getValue().getElementId(), e -> e.getMetadata().getIntent())
         .containsSequence(
             tuple("", WorkflowInstanceIntent.CANCEL),
-            tuple(PROCESS_ID, WorkflowInstanceIntent.CANCELING),
             tuple(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_TERMINATING),
             tuple("subProcess", WorkflowInstanceIntent.ELEMENT_TERMINATING),
             tuple("task", WorkflowInstanceIntent.ELEMENT_TERMINATING),
@@ -183,7 +181,7 @@ public class CancelWorkflowInstanceTest {
     final ExecuteCommandResponse response = cancelWorkflowInstance(workflowInstanceKey);
 
     // then
-    assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.CANCELING);
+    assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_TERMINATING);
 
     final Record<WorkflowInstanceRecordValue> activityTerminatedEvent =
         testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_TERMINATED);
@@ -248,7 +246,7 @@ public class CancelWorkflowInstanceTest {
     final ExecuteCommandResponse response = cancelWorkflowInstance(workflowInstanceKey);
 
     // then
-    assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.CANCELING);
+    assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_TERMINATING);
 
     final Record<WorkflowInstanceRecordValue> activityTerminatingEvent =
         testClient.receiveElementInState("catch-event", WorkflowInstanceIntent.ELEMENT_TERMINATING);
@@ -274,7 +272,7 @@ public class CancelWorkflowInstanceTest {
     final ExecuteCommandResponse response = cancelWorkflowInstance(workflowInstanceKey);
 
     // then
-    assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.CANCELING);
+    assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_TERMINATING);
 
     final Record<WorkflowInstanceRecordValue> terminateActivity =
         testClient.receiveElementInState("task", WorkflowInstanceIntent.ELEMENT_TERMINATING);
@@ -376,7 +374,7 @@ public class CancelWorkflowInstanceTest {
         response.getRawValue(), activatedEvent.getValue().toJson(), "payload");
 
     final io.zeebe.exporter.record.Record<WorkflowInstanceRecordValue> cancelingEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.CANCELING)
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_TERMINATING)
             .withElementId(PROCESS_ID)
             .getFirst();
 
