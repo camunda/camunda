@@ -120,6 +120,12 @@ pipeline {
             }
         }
 
+        stage('Trigger Performance Tests') {
+            when { branch 'develop' }
+            steps {
+                build job: 'zeebe-cluster-performance-tests', wait: false
+            }
+        }
     }
 
     post {
