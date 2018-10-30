@@ -167,7 +167,7 @@ export default class List extends React.Component {
                   title="Select all instances"
                 />
               </Styled.CheckAll>
-              Workflow Definition
+              Workflow
             </React.Fragment>
           </TH>
           <TH>

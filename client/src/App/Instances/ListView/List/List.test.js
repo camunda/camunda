@@ -95,7 +95,7 @@ describe('List', () => {
       expect(THeadNode.find(Styled.Th).length).toBe(1);
 
       // Workflow Definition TH
-      expect(THNodes.at(0).contains('Workflow Definition')).toBe(true);
+      expect(THNodes.at(0).contains('Workflow')).toBe(true);
       const CheckboxNode = THNodes.at(0).find(Checkbox);
       expect(CheckboxNode).toHaveLength(1);
       expect(CheckboxNode.prop('isChecked')).toBe(
