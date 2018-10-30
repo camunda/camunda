@@ -283,24 +283,6 @@ class Instances extends Component {
     this.addSelectionToList({...payload, ...instancesDetails});
   };
 
-  addToSelectionbyId = (newSelections, newInstancesInSelectionsCount) => {
-    this.setState(
-      {
-        selections: newSelections,
-        instancesInSelectionsCount: newInstancesInSelectionsCount,
-        selection: {all: false, ids: [], excludeIds: []}
-      },
-      () => {
-        const {instancesInSelectionsCount, selections} = this.state;
-
-        this.props.storeStateLocally({
-          instancesInSelectionsCount,
-          selections
-        });
-      }
-    );
-  };
-
   handleAddToSelectionById = async selectionId => {
     const {selections, instancesInSelectionsCount} = this.state;
     const selectiondata = getSelectionById(selections, selectionId);
@@ -317,10 +299,25 @@ class Instances extends Component {
 
     selections[selectiondata.index] = newSelection;
 
-    const newInstancesInSelectionsCount =
-      instancesInSelectionsCount - previousTotalCount + newSelection.totalCount;
+    this.setState(
+      {
+        selections,
+        instancesInSelectionsCount:
+          instancesInSelectionsCount -
+          previousTotalCount +
+          newSelection.totalCount,
+        selection: {all: false, ids: [], excludeIds: []},
+        openSelection: selectionId
+      },
+      () => {
+        const {instancesInSelectionsCount, selections} = this.state;
 
-    this.addToSelectionbyId(selections, newInstancesInSelectionsCount);
+        this.props.storeStateLocally({
+          instancesInSelectionsCount,
+          selections
+        });
+      }
+    );
   };
 
   setFilterFromUrl = () => {

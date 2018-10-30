@@ -11,6 +11,7 @@ import Filters from './Filters';
 import ListView from './ListView';
 import Diagram from 'modules/components/Diagram';
 
+import {getPayload} from './service';
 import * as Styled from './styled';
 
 const Instances = WrappedInstances.WrappedComponent;
@@ -20,6 +21,7 @@ const workflowMock = {
   version: 3,
   bpmnProcessId: 'demoProcess'
 };
+const storeStateLocallyMock = jest.fn();
 const InstancesWithRunningFilter = (
   <Instances
     location={{
@@ -30,7 +32,7 @@ const InstancesWithRunningFilter = (
     getStateLocally={() => {
       return {filterCount: 0};
     }}
-    storeStateLocally={() => {}}
+    storeStateLocally={storeStateLocallyMock}
     history={{push: () => {}}}
   />
 );
@@ -134,11 +136,16 @@ const statistics = [
   }
 ];
 
+const selection = {selectionId: 'foo', totalCount: 21};
+
 // mock api
 api.fetchWorkflowInstancesCount = mockResolvedAsyncFn(Count);
 api.fetchWorkflowInstances = mockResolvedAsyncFn([]);
 api.fetchGroupedWorkflowInstances = mockResolvedAsyncFn(groupedWorkflowsMock);
 api.fetchWorkflowInstancesStatistics = mockResolvedAsyncFn(statistics);
+api.fetchWorkflowInstanceBySelection = mockResolvedAsyncFn({
+  id: 'foo'
+});
 apiDiagram.fetchWorkflowXML = mockResolvedAsyncFn('');
 
 jest.mock('bpmn-js', () => ({}));
@@ -151,6 +158,7 @@ describe('Instances', () => {
       api.fetchGroupedWorkflowInstances.mockClear();
       api.fetchWorkflowInstancesStatistics.mockClear();
       apiDiagram.fetchWorkflowXML.mockClear();
+      storeStateLocallyMock.mockClear();
     });
 
     describe('initial render', () => {
@@ -615,6 +623,39 @@ describe('Instances', () => {
           node.instance().handleFlowNodeSelection
         );
         expect(diagram.props().selectableFlowNodes).toEqual(['a', 'b']);
+      });
+    });
+
+    describe('addSelectionToList', () => {
+      it('should add selection to list of selections', () => {
+        // given
+        const node = shallow(InstancesWithRunningFilter);
+
+        // when
+        node.instance().addSelectionToList(selection);
+        node.update();
+
+        // then
+        const expectedSelections = [{selectionId: 1, ...selection}];
+        expect(node.state('selections')).toEqual(expectedSelections);
+        expect(node.state('rollingSelectionIndex')).toBe(1);
+        expect(node.state('instancesInSelectionsCount')).toBe(
+          selection.totalCount
+        );
+        expect(node.state('selectionCount')).toBe(1);
+        expect(node.state('openSelection')).toBe(1);
+        expect(node.state('selection')).toEqual({
+          all: false,
+          ids: [],
+          excludeIds: []
+        });
+        const storeStateLocallyCall = storeStateLocallyMock.mock.calls[0][0];
+        expect(storeStateLocallyCall.selections).toEqual(expectedSelections);
+        expect(storeStateLocallyCall.rollingSelectionIndex).toBe(1);
+        expect(storeStateLocallyCall.instancesInSelectionsCount).toBe(
+          selection.totalCount
+        );
+        expect(storeStateLocallyCall.selectionCount).toBe(1);
       });
     });
   });
