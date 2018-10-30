@@ -32,6 +32,7 @@ import io.zeebe.broker.subscription.message.state.MessageSubscription;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.intent.MessageIntent;
+import io.zeebe.util.sched.clock.ActorClock;
 import java.util.List;
 import java.util.function.Consumer;
 
@@ -96,7 +97,8 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
                 messageRecord.getCorrelationKey(),
                 messageRecord.getPayload(),
                 messageRecord.getMessageId(),
-                messageRecord.getTimeToLive());
+                messageRecord.getTimeToLive(),
+                messageRecord.getTimeToLive() + ActorClock.currentTimeMillis());
         messageStateController.put(message);
 
       } else {

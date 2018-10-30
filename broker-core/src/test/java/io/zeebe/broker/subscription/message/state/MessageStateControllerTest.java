@@ -277,20 +277,15 @@ public class MessageStateControllerTest {
   @Test
   public void shouldNotFindMessageBeforeTime() {
     // given
-    final long now = ActorClock.currentTimeMillis();
-
     final Message message = createMessage(1L, "name", "correlationKey", "{}", "nr1", 1234);
     final Message message2 = createMessage(2L, "name", "correlationKey", "{}", "nr2", 4567);
 
     stateController.put(message);
     stateController.put(message2);
 
-    // when
-    final long deadline = now + 1_000L;
-
     // then
     final List<Message> readMessage = new ArrayList<>();
-    stateController.findMessagesWithDeadlineBefore(deadline, readMessage::add);
+    stateController.findMessagesWithDeadlineBefore(1_000, readMessage::add);
 
     assertThat(readMessage).isEmpty();
   }
@@ -320,20 +315,15 @@ public class MessageStateControllerTest {
   @Test
   public void shouldFindMessageBeforeTime() {
     // given
-    final long now = ActorClock.currentTimeMillis();
-
     final Message message = createMessage(1L, "name", "correlationKey", "{}", "nr1", 1234);
     final Message message2 = createMessage(2L, "otherName", "correlationKey", "{}", "nr2", 2000);
 
     stateController.put(message);
     stateController.put(message2);
 
-    // when
-    final long deadline = now + 1999L;
-
     // then
     final List<Message> readMessage = new ArrayList<>();
-    stateController.findMessagesWithDeadlineBefore(deadline, readMessage::add);
+    stateController.findMessagesWithDeadlineBefore(1_999, readMessage::add);
 
     assertThat(readMessage.size()).isEqualTo(1);
     assertThat(readMessage.get(0).getKey()).isEqualTo(1L);
@@ -626,13 +616,20 @@ public class MessageStateControllerTest {
         wrapString(correlationKey),
         wrapString(""),
         new UnsafeBuffer(0, 0),
+        10_000,
         0L);
   }
 
   private Message createMessage(
       long key, String name, String correlationKey, String payload, String id) {
     return new Message(
-        key, wrapString(name), wrapString(correlationKey), wrapString(payload), wrapString(id), 0L);
+        key,
+        wrapString(name),
+        wrapString(correlationKey),
+        wrapString(payload),
+        wrapString(id),
+        10_000,
+        0L);
   }
 
   private Message createMessage(
@@ -643,6 +640,7 @@ public class MessageStateControllerTest {
         wrapString(correlationKey),
         wrapString(payload),
         wrapString(id),
+        10_000L,
         deadline);
   }
 }

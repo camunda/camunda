@@ -23,7 +23,6 @@ import static io.zeebe.util.buffer.BufferUtil.writeIntoBuffer;
 
 import io.zeebe.util.buffer.BufferReader;
 import io.zeebe.util.buffer.BufferWriter;
-import io.zeebe.util.sched.clock.ActorClock;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -46,7 +45,8 @@ public final class Message implements BufferWriter, BufferReader {
       DirectBuffer correlationKey,
       DirectBuffer payload,
       DirectBuffer id,
-      long timeToLive) {
+      long timeToLive,
+      long deadline) {
     this.name.wrap(name);
     this.correlationKey.wrap(correlationKey);
     this.payload.wrap(payload);
@@ -54,7 +54,7 @@ public final class Message implements BufferWriter, BufferReader {
 
     this.key = key;
     this.timeToLive = timeToLive;
-    this.deadline = ActorClock.currentTimeMillis() + timeToLive;
+    this.deadline = deadline;
   }
 
   public DirectBuffer getName() {
