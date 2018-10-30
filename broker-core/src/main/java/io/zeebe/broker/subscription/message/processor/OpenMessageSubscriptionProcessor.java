@@ -42,7 +42,9 @@ public class OpenMessageSubscriptionProcessor
 
   private final DirectBuffer messagePayload = new UnsafeBuffer(0, 0);
 
+  private Consumer<SideEffectProducer> sideEffect;
   private MessageSubscriptionRecord subscriptionRecord;
+  private MessageSubscription subscription;
 
   public OpenMessageSubscriptionProcessor(
       MessageStateController messageStateController, SubscriptionCommandSender commandSender) {
@@ -56,9 +58,10 @@ public class OpenMessageSubscriptionProcessor
       TypedResponseWriter responseWriter,
       TypedStreamWriter streamWriter,
       Consumer<SideEffectProducer> sideEffect) {
+    this.sideEffect = sideEffect;
     subscriptionRecord = record.getValue();
 
-    final MessageSubscription subscription =
+    subscription =
         new MessageSubscription(
             subscriptionRecord.getWorkflowInstanceKey(),
             subscriptionRecord.getActivityInstanceKey(),
@@ -73,33 +76,45 @@ public class OpenMessageSubscriptionProcessor
       return;
     }
 
-    // handle new subscription
-    handleNewSubscription(record, streamWriter, sideEffect, subscription);
+    handleNewSubscription(record, streamWriter);
   }
 
   private void handleNewSubscription(
-      TypedRecord<MessageSubscriptionRecord> record,
-      TypedStreamWriter streamWriter,
-      Consumer<SideEffectProducer> sideEffect,
-      MessageSubscription subscription) {
-    final Message message =
-        messageStateController.findFirstMessage(
-            subscriptionRecord.getMessageName(), subscriptionRecord.getCorrelationKey());
+      TypedRecord<MessageSubscriptionRecord> record, TypedStreamWriter streamWriter) {
 
-    if (message != null) {
-      messagePayload.wrap(message.getPayload());
+    sideEffect.accept(this::sendAcknowledgeCommand);
 
-      sideEffect.accept(this::sendCorrelateCommand);
+    messageStateController.visitMessages(
+        subscriptionRecord.getMessageName(),
+        subscriptionRecord.getCorrelationKey(),
+        this::correlateMessage);
 
-      subscription.setMessagePayload(message.getPayload());
-      subscription.setCommandSentTime(ActorClock.currentTimeMillis());
-    } else {
-      sideEffect.accept(this::sendAcknowledgeCommand);
-    }
     messageStateController.put(subscription);
 
     streamWriter.writeFollowUpEvent(
         record.getKey(), MessageSubscriptionIntent.OPENED, subscriptionRecord);
+  }
+
+  private boolean correlateMessage(Message message) {
+    // correlate the first message which is not correlated to the workflow instance yet
+
+    final boolean isCorrelatedBefore =
+        messageStateController.existMessageCorrelation(
+            message.getKey(), subscriptionRecord.getWorkflowInstanceKey());
+
+    if (!isCorrelatedBefore) {
+      messagePayload.wrap(message.getPayload());
+
+      // send the correlate instead of acknowledge command
+      sideEffect.accept(this::sendCorrelateCommand);
+
+      subscription.setMessagePayload(message.getPayload());
+      subscription.setCommandSentTime(ActorClock.currentTimeMillis());
+
+      messageStateController.putMessageCorrelation(
+          message.getKey(), subscriptionRecord.getWorkflowInstanceKey());
+    }
+    return isCorrelatedBefore;
   }
 
   private boolean sendCorrelateCommand() {
