@@ -12,7 +12,7 @@
 
   <properties>
     <skip.tests>true</skip.tests>
-    <test.argLine>-Xmx1024m</test.argLine>
+    <test.argLine>-Xmx2048m</test.argLine>
     <db.url />
   </properties>
 
