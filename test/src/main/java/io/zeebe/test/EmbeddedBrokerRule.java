@@ -189,7 +189,6 @@ public class EmbeddedBrokerRule extends ExternalResource {
       }
     }
 
-    RecordingExporter.reset();
     broker = new Broker(brokerCfg, newTemporaryFolder.getAbsolutePath(), controlledActorClock);
 
     final ServiceContainer serviceContainer = broker.getBrokerContext().getServiceContainer();

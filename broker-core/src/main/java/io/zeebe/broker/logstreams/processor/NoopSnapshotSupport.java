@@ -24,13 +24,13 @@ import java.io.OutputStream;
 public class NoopSnapshotSupport implements SnapshotSupport {
 
   @Override
-  public long writeSnapshot(OutputStream outputStream) throws Exception {
+  public long writeSnapshot(OutputStream outputStream) {
     // do nothing
     return 0;
   }
 
   @Override
-  public void recoverFromSnapshot(InputStream inputStream) throws Exception {
+  public void recoverFromSnapshot(InputStream inputStream) {
     // do nothing
   }
 

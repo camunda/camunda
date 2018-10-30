@@ -17,9 +17,9 @@ package io.zeebe.broker.it.network;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.it.GatewayRule;
+import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.gateway.api.events.JobEvent;
+import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.test.util.TestUtil;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,9 +29,9 @@ import org.junit.rules.Timeout;
 
 public class ClientReconnectTest {
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public GatewayRule gatewayRule = new GatewayRule(brokerRule);
+  public GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
 
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(gatewayRule);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   @Rule public ExpectedException thrown = ExpectedException.none();
 
@@ -42,7 +42,7 @@ public class ClientReconnectTest {
     // given
     final long initialTaskKey = createJob();
 
-    gatewayRule.interruptBrokerConnections();
+    brokerRule.interruptClientConnections();
 
     // when
     final long newTaskKey = TestUtil.doRepeatedly(() -> createJob()).until((key) -> key != null);
@@ -53,7 +53,7 @@ public class ClientReconnectTest {
 
   protected long createJob() {
     final JobEvent jobEvent =
-        gatewayRule
+        clientRule
             .getJobClient()
             .newCreateCommand()
             .jobType("foo")
@@ -63,6 +63,6 @@ public class ClientReconnectTest {
             .send()
             .join();
 
-    return jobEvent.getMetadata().getKey();
+    return jobEvent.getKey();
   }
 }

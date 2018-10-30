@@ -163,7 +163,6 @@ public class RequestMapper {
     if (value == null || value.trim().isEmpty()) {
       return DocumentValue.EMPTY_DOCUMENT;
     } else {
-      // TODO(menski): is msgpack convert thread safe? maybe one instance per thread local?
       return new UnsafeBuffer(MSG_PACK_CONVERTER.convertToMsgPack(value));
     }
   }

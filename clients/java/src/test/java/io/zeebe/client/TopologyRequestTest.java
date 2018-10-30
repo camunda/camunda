@@ -17,7 +17,7 @@ package io.zeebe.client;
 
 import static io.zeebe.client.util.RecordingGatewayService.broker;
 import static io.zeebe.client.util.RecordingGatewayService.partition;
-import static io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole.FOLLOW;
+import static io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole.FOLLOWER;
 import static io.zeebe.gateway.protocol.GatewayOuterClass.Partition.PartitionBrokerRole.LEADER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -39,9 +39,9 @@ public class TopologyRequestTest extends ClientTest {
   public void shouldRequestTopology() {
     // given
     gatewayService.onTopologyRequest(
-        broker("host1", 123, partition(0, LEADER), partition(1, FOLLOW)),
-        broker("host2", 212, partition(0, FOLLOW), partition(1, LEADER)),
-        broker("host3", 432, partition(0, FOLLOW), partition(1, FOLLOW)));
+        broker(0, "host1", 123, partition(0, LEADER), partition(1, FOLLOWER)),
+        broker(1, "host2", 212, partition(0, FOLLOWER), partition(1, LEADER)),
+        broker(2, "host3", 432, partition(0, FOLLOWER), partition(1, FOLLOWER)));
 
     // when
     final Topology topology = client.newTopologyRequest().send().join();
@@ -51,6 +51,7 @@ public class TopologyRequestTest extends ClientTest {
     assertThat(brokers).hasSize(3);
 
     BrokerInfo broker = brokers.get(0);
+    assertThat(broker.getNodeId()).isEqualTo(0);
     assertThat(broker.getHost()).isEqualTo("host1");
     assertThat(broker.getPort()).isEqualTo(123);
     assertThat(broker.getAddress()).isEqualTo("host1:123");
@@ -59,6 +60,7 @@ public class TopologyRequestTest extends ClientTest {
         .containsOnly(tuple(0, PartitionBrokerRole.LEADER), tuple(1, PartitionBrokerRole.FOLLOWER));
 
     broker = brokers.get(1);
+    assertThat(broker.getNodeId()).isEqualTo(1);
     assertThat(broker.getHost()).isEqualTo("host2");
     assertThat(broker.getPort()).isEqualTo(212);
     assertThat(broker.getAddress()).isEqualTo("host2:212");
@@ -67,6 +69,7 @@ public class TopologyRequestTest extends ClientTest {
         .containsOnly(tuple(0, PartitionBrokerRole.FOLLOWER), tuple(1, PartitionBrokerRole.LEADER));
 
     broker = brokers.get(2);
+    assertThat(broker.getNodeId()).isEqualTo(2);
     assertThat(broker.getHost()).isEqualTo("host3");
     assertThat(broker.getPort()).isEqualTo(432);
     assertThat(broker.getAddress()).isEqualTo("host3:432");

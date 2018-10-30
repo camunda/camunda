@@ -70,7 +70,7 @@ public class UpdatePayloadTest {
   }
 
   @Test
-  public void shouldUpdatePayload() throws Exception {
+  public void shouldUpdatePayload() {
     // given
     testClient.deploy(WORKFLOW);
 
@@ -100,7 +100,7 @@ public class UpdatePayloadTest {
   }
 
   @Test
-  public void shouldUpdateWithNilPayload() throws Exception {
+  public void shouldUpdateWithNilPayload() {
     // given
     testClient.deploy(WORKFLOW);
 
@@ -122,7 +122,7 @@ public class UpdatePayloadTest {
   }
 
   @Test
-  public void shouldUpdateWithZeroLengthPayload() throws Exception {
+  public void shouldUpdateWithZeroLengthPayload() {
     // given
     testClient.deploy(WORKFLOW);
 
@@ -144,7 +144,7 @@ public class UpdatePayloadTest {
   }
 
   @Test
-  public void shouldUpdatePayloadWhenActivityActivated() throws Exception {
+  public void shouldUpdatePayloadWhenActivityActivated() {
     // given
     testClient.deploy(WORKFLOW);
 
@@ -168,7 +168,7 @@ public class UpdatePayloadTest {
   }
 
   @Test
-  public void shouldUpdatePayloadWhenCatchEventIsEntered() throws Exception {
+  public void shouldUpdatePayloadWhenCatchEventIsEntered() {
     // given
     testClient.deploy(
         Bpmn.createExecutableProcess("wf")
@@ -217,7 +217,7 @@ public class UpdatePayloadTest {
   }
 
   @Test
-  public void shouldRejectUpdateForNonExistingWorkflowInstance() throws Exception {
+  public void shouldRejectUpdateForNonExistingWorkflowInstance() {
     // when
     final ExecuteCommandResponse response = updatePayload(-1L, MSGPACK_PAYLOAD);
 
@@ -241,7 +241,7 @@ public class UpdatePayloadTest {
   }
 
   @Test
-  public void shouldRejectUpdateForCompletedWorkflowInstance() throws Exception {
+  public void shouldRejectUpdateForCompletedWorkflowInstance() {
     // given
     testClient.deploy(WORKFLOW);
 

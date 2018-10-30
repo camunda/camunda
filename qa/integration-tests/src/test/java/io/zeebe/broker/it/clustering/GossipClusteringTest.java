@@ -18,7 +18,7 @@ package io.zeebe.broker.it.clustering;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.GrpcClientRule;
-import io.zeebe.gateway.api.commands.BrokerInfo;
+import io.zeebe.client.api.commands.BrokerInfo;
 import io.zeebe.transport.SocketAddress;
 import java.util.List;
 import org.junit.Rule;
@@ -77,7 +77,7 @@ public class GossipClusteringTest {
         clusteringRule.getOtherBrokers(leaderForPartition.getAddress());
 
     // when
-    clusteringRule.stopBroker(leaderForPartition.getAddress());
+    clusteringRule.stopBroker(leaderForPartition.getNodeId());
 
     // then
     final List<SocketAddress> topologyBrokers = clusteringRule.getBrokersInCluster();

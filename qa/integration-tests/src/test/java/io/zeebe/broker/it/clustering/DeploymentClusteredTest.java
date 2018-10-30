@@ -22,7 +22,6 @@ import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.events.DeploymentEvent;
 import io.zeebe.client.cmd.ClientException;
-import io.zeebe.gateway.impl.workflow.CreateWorkflowInstanceCommandImpl;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import org.junit.Before;
@@ -150,23 +149,10 @@ public class DeploymentClusteredTest {
         .stream()
         .forEach(
             partitionId -> {
-              final long instanceKey = createWorkflowInstanceOnPartition(partitionId, "process");
+              final long instanceKey =
+                  clusteringRule.createWorkflowInstanceOnPartition(partitionId, "process");
               assertWorkflowInstanceCreated(instanceKey);
             });
-  }
-
-  protected long createWorkflowInstanceOnPartition(final int partition, final String processId) {
-    final CreateWorkflowInstanceCommandImpl command =
-        (CreateWorkflowInstanceCommandImpl)
-            clusteringRule
-                .getGatewayClient()
-                .workflowClient()
-                .newCreateInstanceCommand()
-                .bpmnProcessId(processId)
-                .latestVersion();
-
-    command.getCommand().setPartitionId(partition);
-    return command.send().join().getWorkflowInstanceKey();
   }
 
   @Test

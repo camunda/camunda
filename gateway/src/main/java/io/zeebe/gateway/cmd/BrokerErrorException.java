@@ -49,9 +49,4 @@ public class BrokerErrorException extends ClientException {
   public String getErrorMessage() {
     return errorMessage;
   }
-
-  @Override
-  public ClientException newInCurrentContext() {
-    return new BrokerErrorException(errorCode, errorMessage, this);
-  }
 }

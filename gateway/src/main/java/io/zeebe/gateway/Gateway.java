@@ -18,8 +18,8 @@ package io.zeebe.gateway;
 import io.grpc.Server;
 import io.grpc.ServerBuilder;
 import io.grpc.netty.NettyServerBuilder;
-import io.zeebe.gateway.impl.ZeebeClientBuilderImpl;
 import io.zeebe.gateway.impl.broker.BrokerClient;
+import io.zeebe.gateway.impl.broker.BrokerClientImpl;
 import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -56,6 +56,14 @@ public class Gateway {
     this.serverBuilderFactory = serverBuilderFactory;
   }
 
+  public GatewayCfg getGatewayCfg() {
+    return gatewayCfg;
+  }
+
+  public BrokerClient getBrokerClient() {
+    return brokerClient;
+  }
+
   public void start() throws IOException {
     LOG.info("Version: {}", VERSION);
     LOG.info("Starting gateway with configuration {}", gatewayCfg.toJson());
@@ -72,13 +80,7 @@ public class Gateway {
   }
 
   protected BrokerClient buildBrokerClient() {
-    final ZeebeClientBuilderImpl brokerClientBuilder = new ZeebeClientBuilderImpl();
-
-    brokerClientBuilder
-        .brokerContactPoint(gatewayCfg.getCluster().getContactPoint())
-        .numManagementThreads(gatewayCfg.getThreads().getManagementThreads());
-
-    return brokerClientBuilder.buildBrokerClient();
+    return new BrokerClientImpl(gatewayCfg);
   }
 
   public void listenAndServe() throws InterruptedException, IOException {
@@ -87,11 +89,6 @@ public class Gateway {
   }
 
   public void stop() {
-    if (brokerClient != null) {
-      brokerClient.close();
-      brokerClient = null;
-    }
-
     if (server != null && !server.isShutdown()) {
       server.shutdown();
       try {
@@ -101,6 +98,11 @@ public class Gateway {
       } finally {
         server = null;
       }
+    }
+
+    if (brokerClient != null) {
+      brokerClient.close();
+      brokerClient = null;
     }
   }
 }

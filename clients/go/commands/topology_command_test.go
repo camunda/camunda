@@ -17,8 +17,9 @@ func TestTopologyCommand(t *testing.T) {
 	stub := &pb.TopologyResponse{
 		Brokers: []*pb.BrokerInfo{
 			{
-				Host: "foo",
-				Port: 12,
+				NodeId: 0,
+				Host:   "foo",
+				Port:   12,
 				Partitions: []*pb.Partition{
 					{
 						PartitionId: 0,
@@ -26,13 +27,14 @@ func TestTopologyCommand(t *testing.T) {
 					},
 					{
 						PartitionId: 1,
-						Role:        pb.Partition_FOLLOW,
+						Role:        pb.Partition_FOLLOWER,
 					},
 				},
 			},
 			{
-				Host: "bar",
-				Port: 9237,
+				NodeId: 1,
+				Host:   "bar",
+				Port:   9237,
 				Partitions: []*pb.Partition{
 					{
 						PartitionId: 1,
@@ -40,7 +42,7 @@ func TestTopologyCommand(t *testing.T) {
 					},
 					{
 						PartitionId: 0,
-						Role:        pb.Partition_FOLLOW,
+						Role:        pb.Partition_FOLLOWER,
 					},
 				},
 			},

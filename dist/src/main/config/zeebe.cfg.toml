@@ -58,6 +58,10 @@
 # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_TRANSPORT_BUFFER.
 # transportBuffer = "2M"
 
+# Sets the timeout of requests send to the broker cluster
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_REQUEST_TIMEOUT.
+# requestTimeout = "15s"
+
 [gateway.threads]
 # Sets the number of threads the gateway will use to communicate with the broker cluster
 # This setting can also be overridden using the environment variable ZEEBE_GATEWAY_MANAGEMENT_THREADS.

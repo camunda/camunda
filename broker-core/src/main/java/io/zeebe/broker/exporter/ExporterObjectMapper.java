@@ -26,7 +26,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import io.zeebe.gateway.impl.data.MsgPackConverter;
-import io.zeebe.gateway.impl.data.MsgpackInstantModule;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Map;
@@ -74,8 +73,6 @@ public class ExporterObjectMapper {
     objectMapper.disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
 
     objectMapper.setInjectableValues(injectableValues);
-
-    objectMapper.registerModule(new MsgpackInstantModule());
 
     return objectMapper;
   }

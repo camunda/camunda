@@ -15,7 +15,7 @@
  */
 package io.zeebe.gateway.impl.broker.request;
 
-import io.zeebe.gateway.impl.Loggers;
+import io.zeebe.gateway.Loggers;
 import io.zeebe.gateway.impl.broker.response.BrokerError;
 import io.zeebe.gateway.impl.broker.response.BrokerErrorResponse;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
@@ -88,7 +88,7 @@ public abstract class BrokerRequest<T> implements BufferWriter {
       }
     } catch (Exception e) {
       // Log response buffer for debugging purpose
-      Loggers.BROKER_CLIENT_LOGGER.error(
+      Loggers.GATEWAY_LOGGER.error(
           "Failed to read response: {}{}{}",
           e.getMessage(),
           System.lineSeparator(),

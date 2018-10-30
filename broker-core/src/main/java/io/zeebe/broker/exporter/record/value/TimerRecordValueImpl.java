@@ -67,10 +67,7 @@ public class TimerRecordValueImpl extends RecordValueImpl implements TimerRecord
     if (activityInstanceKey != other.activityInstanceKey) {
       return false;
     }
-    if (dueDate != other.dueDate) {
-      return false;
-    }
-    return true;
+    return dueDate == other.dueDate;
   }
 
   @Override
