@@ -14,7 +14,9 @@ import './ReportControlPanel.scss';
 const {view, groupBy, visualization, getLabelFor, isAllowed, getNext} = reportConfig;
 const groupByVariablePageSize = 5;
 
-const getDataKeys = data => Object.keys(typeof data === 'object' ? data : {...data});
+// We need to do explicit Object coercion thanks to IE
+// eslint-disable-next-line no-new-object
+const getDataKeys = data => Object.keys(new Object(data));
 
 export default class ReportControlPanel extends React.Component {
   constructor(props) {

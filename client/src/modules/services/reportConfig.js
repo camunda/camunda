@@ -144,7 +144,9 @@ export const view = {
   }
 };
 
-const getDataKeys = data => Object.keys(typeof data === 'object' ? data : {...data});
+// We need to do explicit Object coercion thanks to IE
+// eslint-disable-next-line no-new-object
+const getDataKeys = data => Object.keys(new Object(data));
 
 /**
  * Retrieves the first level subobject form the configuration that corresponds to the entry. This does not fetch any submenu entries.
