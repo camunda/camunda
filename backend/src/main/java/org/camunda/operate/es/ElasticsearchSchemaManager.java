@@ -35,6 +35,8 @@ public class ElasticsearchSchemaManager {
     if (!schemaAlreadyExists()) {
       logger.info("Elasticsearch schema is empty. Indices will be created.");
       createIndices();
+    } else {
+      logger.info("Elasticsearch schema already exists");
     }
   }
 
