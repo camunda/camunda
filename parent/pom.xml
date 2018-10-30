@@ -23,7 +23,7 @@
     <checkstyle.config.location>.checkstyle.xml</checkstyle.config.location>
 
     <!-- EXTERNAL LIBS -->
-    <version.agrona>0.9.25</version.agrona>
+    <version.agrona>0.9.26</version.agrona>
     <version.assertj>3.11.1</version.assertj>
     <version.elasticsearch>6.4.2</version.elasticsearch>
     <version.grpc>1.16.0</version.grpc>
