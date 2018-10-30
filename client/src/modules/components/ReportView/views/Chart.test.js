@@ -257,8 +257,8 @@ it('should return correct chart data object for a combined report', () => {
         label: 'Report B',
         lineTension: 0,
         data: [1, 3],
-        legendColor: 'hsl(250, 65%, 50%)',
-        borderColor: 'hsl(250, 65%, 50%)',
+        legendColor: 'hsl(180, 65%, 50%)',
+        borderColor: 'hsl(180, 65%, 50%)',
         backgroundColor: 'transparent',
         borderWidth: 2
       }
@@ -270,7 +270,7 @@ it('should filter labels with undefined names and show correct label coloring', 
   const data = [{foo: 123, bar: 5}, {foo: 1, dar: 3}];
   const node = mount(<Chart data={data} />);
 
-  const datasets = node.instance().generateLabels({
+  const datasets = node.instance().generateLegendLabels({
     data: {
       datasets: [
         {label: undefined, backgroundColor: [], legendColor: 'red'},

@@ -7,14 +7,14 @@ import {ChartModal} from './Chart';
 import {isSingleNumber, isDurationHeatmap, isChart} from './service';
 
 export default function TargetValueModal(props) {
-  if (isSingleNumber(props.reportResult.data)) {
+  if (isSingleNumber(props.reportResult)) {
     return (
       <ProgressBarModal
         {...props}
         type={props.reportResult.data.view.property === 'frequency' ? 'number' : 'duration'}
       />
     );
-  } else if (isDurationHeatmap(props.reportResult.data)) {
+  } else if (isDurationHeatmap(props.reportResult)) {
     return <DurationHeatmapModal {...props} />;
   } else if (isChart(props.reportResult)) {
     return <ChartModal {...props} />;

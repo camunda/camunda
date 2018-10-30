@@ -1,10 +1,11 @@
-export function isDurationHeatmap({
-  processDefinitionKey,
-  processDefinitionVersion,
-  view,
-  groupBy,
-  visualization
-}) {
+export function isDurationHeatmap(reportResult) {
+  const {
+    processDefinitionKey,
+    processDefinitionVersion,
+    view,
+    groupBy,
+    visualization
+  } = reportResult.data;
   return (
     processDefinitionKey &&
     processDefinitionVersion &&
@@ -22,7 +23,8 @@ export function isDurationHeatmap({
   );
 }
 
-export function isSingleNumber({processDefinitionKey, processDefinitionVersion, visualization}) {
+export function isSingleNumber(reportResult) {
+  const {processDefinitionKey, processDefinitionVersion, visualization} = reportResult.data;
   return processDefinitionKey && processDefinitionVersion && visualization === 'number';
 }
 

@@ -70,10 +70,6 @@ jest.mock('./service', () => {
 jest.mock('./ColumnSelection', () => () => <div>ColumnSelection</div>);
 jest.mock('./ColumnRearrangement', () => props => <div>ColumnRearrangement: {props.children}</div>);
 
-jest.mock('./targetValue', () => {
-  return {TargetValueComparison: () => <div>TargetValueComparison</div>};
-});
-
 jest.mock('services', () => {
   return {
     loadProcessDefinitions: () => [{key: 'key', versions: [{version: 2}, {version: 1}]}],
@@ -106,8 +102,8 @@ jest.mock('./ReportControlPanel', () => {
   return () => <div>ControlPanel</div>;
 });
 
-jest.mock('./CombinedSelectionPanel', () => {
-  return () => <div>CombinedSelectionPanel</div>;
+jest.mock('./CombinedReportPanel', () => {
+  return () => <div>CombinedReportPanel</div>;
 });
 
 const props = {
@@ -792,39 +788,5 @@ describe('edit mode', async () => {
     node.instance().updateReport({reportIds: []});
 
     expect(node.state().data.configuration).toEqual({targetValue: {}});
-  });
-
-  it('should enable target value option when combined report is barchart or linechart', async () => {
-    props.match.params.viewMode = 'edit';
-
-    const combinedReport = {
-      ...sampleReport,
-      reportType: 'combined',
-      data: {
-        reportIds: ['test'],
-        configuration: {
-          targetValue: {
-            active: true,
-            value: 25
-          }
-        }
-      },
-      result: {
-        test: {
-          data: {
-            visualization: 'bar'
-          }
-        }
-      }
-    };
-
-    const node = mount(shallow(<Report {...props} />).get(0));
-    node.setState({
-      loaded: true,
-      reportResult: combinedReport,
-      ...combinedReport
-    });
-
-    expect(node.find('TargetValueComparison')).toBePresent();
   });
 });

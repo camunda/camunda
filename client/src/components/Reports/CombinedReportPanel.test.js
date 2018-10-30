@@ -1,7 +1,7 @@
 import React from 'react';
 import {mount} from 'enzyme';
 import {loadEntity} from 'services';
-import CombinedSelectionPanel from './CombinedSelectionPanel';
+import CombinedReportPanel from './CombinedReportPanel';
 
 jest.mock('services', () => {
   return {
@@ -16,6 +16,10 @@ jest.mock('components', () => {
   return {
     TypeaheadMultipleSelection: props => <ul>{JSON.stringify(props)}</ul>
   };
+});
+
+jest.mock('./targetValue', () => {
+  return {TargetValueComparison: () => <div>TargetValueComparison</div>};
 });
 
 const reportsList = [
@@ -71,21 +75,21 @@ const reportsList = [
 loadEntity.mockReturnValue(reportsList);
 
 it('should invoke loadEntity to load all reports when it is mounted', async () => {
-  const node = await mount(<CombinedSelectionPanel reportResult={reportsList[1]} />);
+  const node = await mount(<CombinedReportPanel reportResult={reportsList[1]} />);
   await node.update();
 
   expect(loadEntity).toHaveBeenCalled();
 });
 
 it('should not include heatmap report', async () => {
-  const node = await mount(<CombinedSelectionPanel reportResult={reportsList[1]} />);
+  const node = await mount(<CombinedReportPanel reportResult={reportsList[1]} />);
   await node.update();
 
   expect(node).not.toIncludeText('heatmap');
 });
 
 it('should have input checkbox for only single report items in the list', async () => {
-  const node = await mount(<CombinedSelectionPanel reportResult={reportsList[1]} />);
+  const node = await mount(<CombinedReportPanel reportResult={reportsList[1]} />);
   await node.update();
 
   expect(node.find('ul').first()).toIncludeText('Single Report');
@@ -95,7 +99,7 @@ it('should have input checkbox for only single report items in the list', async 
 describe('isCompatible', () => {
   let node = {};
   beforeEach(async () => {
-    node = await mount(<CombinedSelectionPanel reportResult={reportsList[1]} />);
+    node = await mount(<CombinedReportPanel reportResult={reportsList[1]} />);
     await node.update();
   });
 
@@ -157,4 +161,11 @@ describe('isCompatible', () => {
 
     expect(node.instance().isCompatible(reportSameOperation)).toBeFalsy();
   });
+});
+
+it('should enable target value option when combined report is barchart or linechart', async () => {
+  const node = await mount(<CombinedReportPanel reportResult={reportsList[1]} />);
+  await node.update();
+
+  expect(node.find('TargetValueComparison')).toBePresent();
 });

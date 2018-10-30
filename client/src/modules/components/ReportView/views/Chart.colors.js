@@ -16,3 +16,5 @@ export const lightColors = {
   targetArea: '#F1A7AE',
   border: '#fff'
 };
+
+export const numberOfStripes = 100;

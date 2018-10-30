@@ -8,7 +8,7 @@ import {formatters} from 'services';
 import {themed} from 'theme';
 
 import './Chart.scss';
-import {darkColors, lightColors} from './Chart.colors.js';
+import {darkColors, lightColors, numberOfStripes} from './Chart.colors.js';
 
 const {convertToMilliseconds} = formatters;
 
@@ -76,22 +76,18 @@ export default themed(
       let dataArr = data;
       if (!isCombined) dataArr = [data];
 
-      let colors = this.createColors(dataArr.length);
-      colors[0] = this.getColorFor('bar');
+      let datasetsColors = this.createColors(dataArr.length);
+      datasetsColors[0] = this.getColorFor('bar');
 
       let labels = Object.keys(Object.assign({}, ...dataArr));
       dataArr = uniteResults(dataArr, labels);
 
       if (type === 'line' && targetValue && targetValue.active) {
-        if (!isCombined)
-          return {
-            labels,
-            datasets: this.createSingleTargetLineDataset(targetValue, data, colors[0])
-          };
-
         return {
           labels,
-          datasets: this.createCombinedTargetLineDatasets(dataArr, targetValue, colors)
+          datasets: isCombined
+            ? this.createCombinedTargetLineDatasets(dataArr, targetValue, datasetsColors)
+            : this.createSingleTargetLineDataset(targetValue, data, datasetsColors[0])
         };
       }
 
@@ -104,7 +100,7 @@ export default themed(
         return {
           label: this.props.reportsNames && this.props.reportsNames[index],
           data: Object.values(report),
-          ...this.createDatasetOptions(type, report, targetValue, colors[index], isCombined)
+          ...this.createDatasetOptions(type, report, targetValue, datasetsColors[index], isCombined)
         };
       });
 
@@ -114,21 +110,21 @@ export default themed(
       };
     };
 
-    createCombinedTargetLineDatasets = (dataArr, targetValue, colors) => {
+    createCombinedTargetLineDatasets = (dataArr, targetValue, datasetsColors) => {
       return dataArr.reduce((prevDataset, report, i) => {
         return [
           ...prevDataset,
           ...this.createSingleTargetLineDataset(
             targetValue,
             report,
-            colors[i],
+            datasetsColors[i],
             this.props.reportsNames[i]
           )
         ];
       }, []);
     };
 
-    createSingleTargetLineDataset = (targetValue, data, color, reportName) => {
+    createSingleTargetLineDataset = (targetValue, data, datasetColor, reportName) => {
       const isCombined = this.props.reportType === 'combined';
       const allValues = Object.values(data);
       const targetValues = getLineTargetValues(allValues, targetValue.values);
@@ -136,19 +132,19 @@ export default themed(
       const datasets = [
         {
           data: targetValues,
-          borderColor: isCombined ? color : this.getColorFor('targetBar'),
+          borderColor: isCombined ? datasetColor : this.getColorFor('targetBar'),
           pointBorderColor: this.getColorFor('targetBar'),
           backgroundColor: isCombined ? 'transparent' : this.getColorFor('targetArea'),
-          legendColor: color,
+          legendColor: datasetColor,
           borderWidth: 2,
           lineTension: 0
         },
         {
           label: reportName,
           data: allValues,
-          borderColor: color,
+          borderColor: datasetColor,
           backgroundColor: isCombined ? 'transparent' : this.getColorFor('area'),
-          legendColor: color,
+          legendColor: datasetColor,
           borderWidth: 2,
           lineTension: 0
         }
@@ -179,7 +175,7 @@ export default themed(
     componentDidMount = this.createNewChart;
     componentDidUpdate = this.createNewChart;
 
-    createDatasetOptions = (type, data, targetValue, color, isCombined) => {
+    createDatasetOptions = (type, data, targetValue, datasetColor, isCombined) => {
       switch (type) {
         case 'pie':
           return {
@@ -189,18 +185,20 @@ export default themed(
           };
         case 'line':
           return {
-            borderColor: isCombined ? color : this.getColorFor('bar'),
+            borderColor: isCombined ? datasetColor : this.getColorFor('bar'),
             backgroundColor: isCombined ? 'transparent' : this.getColorFor('area'),
             borderWidth: 2,
-            legendColor: color,
+            legendColor: datasetColor,
             lineTension: 0
           };
         case 'bar':
-          const barColor = targetValue ? this.determineBarColor(targetValue, data, color) : color;
+          const barColor = targetValue
+            ? this.determineBarColor(targetValue, data, datasetColor)
+            : datasetColor;
           return {
             borderColor: barColor,
             backgroundColor: barColor,
-            legendColor: color,
+            legendColor: datasetColor,
             borderWidth: 1
           };
         default:
@@ -214,17 +212,22 @@ export default themed(
 
     createColors = amount => {
       const colors = [];
-      //250 is used instead of 360 to avoid the red colors in the color wheel
-      const stepSize = ~~(250 / amount);
+      // added an offset of 50 to avoid red colors
+      const offset = 50;
+      const startValue = offset;
+      const stopValue = 360 - offset;
+      const stepSize = ~~((stopValue - startValue) / amount);
 
-      for (let i = 1; i <= amount; i++) {
-        colors.push(`hsl(${i * stepSize}, 65%, ${this.props.theme === 'dark' ? 40 : 50}%)`);
+      for (let i = 0; i < amount; i++) {
+        colors.push(
+          `hsl(${i * stepSize + offset}, 65%, ${this.props.theme === 'dark' ? 40 : 50}%)`
+        );
       }
       return colors;
     };
 
-    determineBarColor = ({active, values}, data, color) => {
-      if (!active) return color;
+    determineBarColor = ({active, values}, data, datasetColor) => {
+      if (!active) return datasetColor;
 
       const barValue = values.dateFormat
         ? convertToMilliseconds(values.target, values.dateFormat)
@@ -232,27 +235,31 @@ export default themed(
 
       const targetColor =
         this.props.reportType === 'combined'
-          ? this.getStripedColor(color)
+          ? this.getStripedColor(datasetColor)
           : this.getColorFor('targetBar');
+
       return Object.values(data).map(height => {
-        if (values.isBelow) return height < barValue ? color : targetColor;
-        else return height >= barValue ? color : targetColor;
+        if (values.isBelow) return height < barValue ? datasetColor : targetColor;
+        else return height >= barValue ? datasetColor : targetColor;
       });
     };
 
     getStripedColor = color => {
       const ctx = this.container.getContext('2d');
+      const defaultCanvasWidth = 300;
 
-      const numberOfStripes = 100;
+      // we multiply by 2 here to make the moveto reach x=0 at the end of the loop
+      // since we are shifting the stripes to the left by canvaswidth
       for (let i = 0; i < numberOfStripes * 2; i++) {
-        const thickness = 300 / numberOfStripes;
+        const thickness = defaultCanvasWidth / numberOfStripes;
         ctx.beginPath();
         ctx.strokeStyle = i % 2 ? 'transparent' : color;
         ctx.lineWidth = thickness;
         ctx.lineCap = 'round';
 
-        ctx.moveTo(i * thickness + thickness / 2 - 300, 0);
-        ctx.lineTo(i * thickness + thickness / 2, 300);
+        // shift the starting point to the left by defaultCanvasWidth to make lines diagonal
+        ctx.moveTo(i * thickness + thickness / 2 - defaultCanvasWidth, 0);
+        ctx.lineTo(i * thickness + thickness / 2, defaultCanvasWidth);
         ctx.stroke();
       }
 
@@ -265,8 +272,9 @@ export default themed(
       };
     };
 
-    // overide the default generate labels function
-    generateLabels = chart => {
+    // Override the default generate legend's labels function
+    // This is done to modify the colors retrieval method of the side squares and filter unneeded labels
+    generateLegendLabels = chart => {
       const data = chart.data;
       return data.datasets.length
         ? data.datasets
@@ -292,8 +300,9 @@ export default themed(
         legend: {
           display: isCombined,
           labels: {
-            generateLabels: this.generateLabels
+            generateLabels: this.generateLegendLabels
           },
+          // prevent hiding datasets when clicking on their legends
           onClick: e => e.stopPropagation()
         },
         scales: {
@@ -398,6 +407,8 @@ export default themed(
         animation: false,
         tooltips: {
           callbacks: {
+            // if pie chart then manually append labels to tooltips
+            ...(type === 'pie' ? {beforeLabel: ({index}, {labels}) => labels[index]} : {}),
             label: ({index, datasetIndex}, {datasets}) => {
               const formatted = this.props.formatter(datasets[datasetIndex].data[index]);
               let processInstanceCountArr = this.props.processInstanceCount;
@@ -422,6 +433,14 @@ export default themed(
             },
             labelColor: function(tooltipItem, chart) {
               const datasetOptions = chart.data.datasets[tooltipItem.datasetIndex];
+              if (type === 'pie') {
+                const color = datasetOptions.backgroundColor[tooltipItem.index];
+                return {
+                  borderColor: color,
+                  backgroundColor: color
+                };
+              }
+
               return {
                 borderColor: datasetOptions.legendColor,
                 backgroundColor: datasetOptions.legendColor

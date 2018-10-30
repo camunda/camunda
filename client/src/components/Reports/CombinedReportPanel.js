@@ -1,10 +1,11 @@
 import React from 'react';
 import {loadEntity} from 'services';
 import {TypeaheadMultipleSelection} from 'components';
+import {TargetValueComparison} from './targetValue';
 
-import './CombinedSelectionPanel.scss';
+import './CombinedReportPanel.scss';
 
-export default class CombinedSelectionPanel extends React.Component {
+export default class CombinedReportPanel extends React.Component {
   constructor(props) {
     super(props);
 
@@ -96,24 +97,41 @@ export default class CombinedSelectionPanel extends React.Component {
   search = (searchQuery, name) =>
     searchQuery ? name.toLowerCase().includes(searchQuery.toLowerCase()) : true;
 
+  isTargetValuePossible = reportResult => {
+    if (reportResult.result && Object.values(reportResult.result).length)
+      return ['bar', 'line'].includes(Object.values(reportResult.result)[0].data.visualization);
+    return false;
+  };
+
   render() {
-    const {reports, selectedReports, searchQuery} = this.state;
+    const {reports, selectedReports, searchQuery, referenceReport} = this.state;
     const selectedReportsList = selectedReports;
     const combinableReportList = reports.filter(
       report => this.search(searchQuery, report.name) && this.isCompatible(report)
     );
 
+    const isChart = referenceReport && ['bar', 'line'].includes(referenceReport.visualization);
+
     return (
-      <div className="PanelSelection">
-        <TypeaheadMultipleSelection
-          availableValues={combinableReportList}
-          selectedValues={selectedReportsList}
-          setFilter={evt => this.setState({searchQuery: evt.target.value})}
-          toggleValue={this.update}
-          label="reports"
-          loading={false}
-          format={v => v.name}
-        />
+      <div className="combinedPanel">
+        {isChart && (
+          <TargetValueComparison
+            reportResult={this.props.reportResult}
+            configuration={this.props.configuration}
+            onChange={this.props.updateReport}
+          />
+        )}
+        <div className="PanelSelection">
+          <TypeaheadMultipleSelection
+            availableValues={combinableReportList}
+            selectedValues={selectedReportsList}
+            setFilter={evt => this.setState({searchQuery: evt.target.value})}
+            toggleValue={this.update}
+            label="reports"
+            loading={false}
+            format={v => v.name}
+          />
+        </div>
       </div>
     );
   }

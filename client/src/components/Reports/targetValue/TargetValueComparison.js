@@ -83,8 +83,8 @@ export default class TargetValueComparison extends React.Component {
 
   isEnabled = () => {
     return (
-      isDurationHeatmap(this.props.reportResult.data) ||
-      isSingleNumber(this.props.reportResult.data) ||
+      isDurationHeatmap(this.props.reportResult) ||
+      isSingleNumber(this.props.reportResult) ||
       isChart(this.props.reportResult)
     );
   };
