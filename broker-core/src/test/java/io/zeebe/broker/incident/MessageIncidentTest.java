@@ -73,7 +73,7 @@ public class MessageIncidentTest {
 
     final Record<WorkflowInstanceRecordValue> failureEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withActivityId("catch")
+            .withElementId("catch")
             .getFirst();
 
     // then
@@ -85,8 +85,8 @@ public class MessageIncidentTest {
         .hasErrorMessage("Failed to extract the correlation-key by '$.orderId': no value found")
         .hasBpmnProcessId(PROCESS_ID)
         .hasWorkflowInstanceKey(workflowInstanceKey)
-        .hasActivityId("catch")
-        .hasActivityInstanceKey(failureEvent.getKey())
+        .hasElementId("catch")
+        .hasElementInstanceKey(failureEvent.getKey())
         .hasJobKey(-1L);
   }
 
@@ -98,7 +98,7 @@ public class MessageIncidentTest {
 
     final Record<WorkflowInstanceRecordValue> failureEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withActivityId("catch")
+            .withElementId("catch")
             .getFirst();
 
     // then
@@ -111,8 +111,8 @@ public class MessageIncidentTest {
             "Failed to extract the correlation-key by '$.orderId': the value must be either a string or a number")
         .hasBpmnProcessId(PROCESS_ID)
         .hasWorkflowInstanceKey(workflowInstanceKey)
-        .hasActivityId("catch")
-        .hasActivityInstanceKey(failureEvent.getKey())
+        .hasElementId("catch")
+        .hasElementInstanceKey(failureEvent.getKey())
         .hasJobKey(-1L);
   }
 
@@ -125,7 +125,7 @@ public class MessageIncidentTest {
         RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst();
 
     testClient.updatePayload(
-        incidentCreatedRecord.getValue().getActivityInstanceKey(), "{\"orderId\":\"order123\"}");
+        incidentCreatedRecord.getValue().getElementInstanceKey(), "{\"orderId\":\"order123\"}");
 
     // then
     assertThat(

@@ -80,7 +80,7 @@ public class IncidentTest {
 
     // when
     workflowClient
-        .newUpdatePayloadCommand(incident.getValue().getActivityInstanceKey())
+        .newUpdatePayloadCommand(incident.getValue().getElementInstanceKey())
         .payload(PAYLOAD)
         .send()
         .join();

@@ -41,7 +41,7 @@ public class MessageCatchElementHandler implements BpmnStepHandler<ExecutableMes
   private final WorkflowState workflowState;
 
   private WorkflowInstanceRecord workflowInstance;
-  private long activityInstanceKey;
+  private long elementInstanceKey;
   private ExecutableMessage message;
   private DirectBuffer extractedCorrelationKey;
 
@@ -58,7 +58,7 @@ public class MessageCatchElementHandler implements BpmnStepHandler<ExecutableMes
   public void handle(final BpmnStepContext<ExecutableMessageCatchElement> context) {
 
     this.workflowInstance = context.getValue();
-    this.activityInstanceKey = context.getRecord().getKey();
+    this.elementInstanceKey = context.getRecord().getKey();
     this.message = context.getElement().getMessage();
 
     extractedCorrelationKey = extractCorrelationKey(context);
@@ -69,7 +69,7 @@ public class MessageCatchElementHandler implements BpmnStepHandler<ExecutableMes
       final WorkflowSubscription subscription =
           new WorkflowSubscription(
               workflowInstance.getWorkflowInstanceKey(),
-              activityInstanceKey,
+              elementInstanceKey,
               cloneBuffer(message.getMessageName()),
               cloneBuffer(extractedCorrelationKey));
       subscription.setCommandSentTime(ActorClock.currentTimeMillis());
@@ -80,7 +80,7 @@ public class MessageCatchElementHandler implements BpmnStepHandler<ExecutableMes
   private boolean openMessageSubscription() {
     return subscriptionCommandSender.openMessageSubscription(
         workflowInstance.getWorkflowInstanceKey(),
-        activityInstanceKey,
+        elementInstanceKey,
         message.getMessageName(),
         extractedCorrelationKey);
   }

@@ -57,6 +57,6 @@ public class TerminateIntermediateMessageHandler extends TerminateElementHandler
     return subscriptionCommandSender.closeMessageSubscription(
         subscription.getSubscriptionPartitionId(),
         subscription.getWorkflowInstanceKey(),
-        subscription.getActivityInstanceKey());
+        subscription.getElementInstanceKey());
   }
 }

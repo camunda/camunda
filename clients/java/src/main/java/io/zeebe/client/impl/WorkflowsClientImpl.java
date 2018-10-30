@@ -66,9 +66,9 @@ public class WorkflowsClientImpl implements WorkflowClient {
 
   @Override
   public UpdatePayloadWorkflowInstanceCommandStep1 newUpdatePayloadCommand(
-      final long activityInstanceKey) {
+      final long elementInstanceKey) {
     return new UpdateWorkflowInstancePayloadCommandImpl(
-        asyncStub, objectMapper, activityInstanceKey);
+        asyncStub, objectMapper, elementInstanceKey);
   }
 
   @Override

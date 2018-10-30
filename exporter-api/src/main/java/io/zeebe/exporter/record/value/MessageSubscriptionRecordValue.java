@@ -27,8 +27,8 @@ public interface MessageSubscriptionRecordValue extends RecordValue {
   /** @return the workflow instance key tied to the subscription */
   long getWorkflowInstanceKey();
 
-  /** @return the activity instance key tied to the subscription */
-  long getActivityInstanceKey();
+  /** @return the element instance key tied to the subscription */
+  long getElementInstanceKey();
 
   /** @return the name of the message */
   String getMessageName();

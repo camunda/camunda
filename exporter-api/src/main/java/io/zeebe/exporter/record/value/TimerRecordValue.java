@@ -25,8 +25,8 @@ import io.zeebe.protocol.intent.TimerIntent;
  */
 public interface TimerRecordValue extends RecordValue {
 
-  /** @return the key of the related activity instance. */
-  long getActivityInstanceKey();
+  /** @return the key of the related element instance. */
+  long getElementInstanceKey();
 
   /** @return the due date of the timer as Unix timestamp in millis. */
   long getDueDate();

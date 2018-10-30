@@ -40,7 +40,7 @@ public class ParallelSplitHandler implements BpmnStepHandler<ExecutableFlowNode>
     for (int i = 0; i < outgoingFlows.size(); i++) {
       final ExecutableSequenceFlow flow = outgoingFlows.get(i);
 
-      value.setActivityId(flow.getId());
+      value.setElementId(flow.getId());
       streamWriter.writeNewEvent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, value);
     }
   }

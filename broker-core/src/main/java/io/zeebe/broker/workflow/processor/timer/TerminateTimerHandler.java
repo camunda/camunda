@@ -47,7 +47,7 @@ public class TerminateTimerHandler extends TerminateElementHandler {
         workflowState.getTimerState().get(activityInstance.getKey());
     if (timerInstance != null) {
       timerRecord
-          .setActivityInstanceKey(timerInstance.getActivityInstanceKey())
+          .setElementInstanceKey(timerInstance.getElementInstanceKey())
           .setDueDate(timerInstance.getDueDate());
 
       batch.addFollowUpCommand(timerInstance.getKey(), TimerIntent.CANCEL, timerRecord);

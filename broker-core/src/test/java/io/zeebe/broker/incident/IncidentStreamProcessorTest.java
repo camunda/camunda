@@ -84,7 +84,7 @@ public class IncidentStreamProcessorTest {
   public void shouldNotResolveIncidentIfActivityTerminated() {
     // given
     final long workflowInstanceKey = 1L;
-    final long activityInstanceKey = 2L;
+    final long elementInstanceKey = 2L;
 
     final StreamProcessorControl control = rule.runStreamProcessor(this::buildStreamProcessor);
     control.blockAfterIncidentEvent(e -> e.getMetadata().getIntent() == IncidentIntent.CREATED);
@@ -93,21 +93,20 @@ public class IncidentStreamProcessorTest {
     activityInstance.setWorkflowInstanceKey(workflowInstanceKey);
 
     final long position =
-        rule.writeEvent(
-            activityInstanceKey, WorkflowInstanceIntent.ELEMENT_READY, activityInstance);
+        rule.writeEvent(elementInstanceKey, WorkflowInstanceIntent.ELEMENT_READY, activityInstance);
 
     final IncidentRecord incident = new IncidentRecord();
     incident.setWorkflowInstanceKey(workflowInstanceKey);
-    incident.setActivityInstanceKey(activityInstanceKey);
+    incident.setElementInstanceKey(elementInstanceKey);
     incident.setFailureEventPosition(position);
 
     rule.writeCommand(IncidentIntent.CREATE, incident);
 
     waitForEventWithIntent(IncidentIntent.CREATED); // stream processor is now blocked
 
-    rule.writeEvent(activityInstanceKey, WorkflowInstanceIntent.PAYLOAD_UPDATED, activityInstance);
+    rule.writeEvent(elementInstanceKey, WorkflowInstanceIntent.PAYLOAD_UPDATED, activityInstance);
     rule.writeEvent(
-        activityInstanceKey, WorkflowInstanceIntent.ELEMENT_TERMINATED, activityInstance);
+        elementInstanceKey, WorkflowInstanceIntent.ELEMENT_TERMINATED, activityInstance);
 
     // when
     control.unblock();

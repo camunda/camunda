@@ -395,10 +395,10 @@ public class ExporterStreamProcessorTest {
   @Test
   public void shouldExportIncidentRecord() {
     // given
-    final long activityInstanceKey = 34;
+    final long elementInstanceKey = 34;
     final long workflowInstanceKey = 10;
     final long failureEventPosition = 12;
-    final String activityId = "activity";
+    final String elementId = "activity";
     final String bpmnProcessId = "process";
     final String errorMessage = "error";
     final ErrorType errorType = ErrorType.IO_MAPPING_ERROR;
@@ -406,10 +406,10 @@ public class ExporterStreamProcessorTest {
 
     final IncidentRecord record =
         new IncidentRecord()
-            .setActivityInstanceKey(activityInstanceKey)
+            .setElementInstanceKey(elementInstanceKey)
             .setWorkflowInstanceKey(workflowInstanceKey)
             .setFailureEventPosition(failureEventPosition)
-            .setActivityId(wrapString(activityId))
+            .setElementId(wrapString(elementId))
             .setBpmnProcessId(wrapString(bpmnProcessId))
             .setErrorMessage(errorMessage)
             .setErrorType(errorType)
@@ -423,9 +423,9 @@ public class ExporterStreamProcessorTest {
             errorType.name(),
             errorMessage,
             bpmnProcessId,
-            activityId,
+            elementId,
             workflowInstanceKey,
-            activityInstanceKey,
+            elementInstanceKey,
             jobKey);
 
     // then
@@ -444,7 +444,7 @@ public class ExporterStreamProcessorTest {
     final int workflowKey = 13;
     final int workflowDefinitionVersion = 12;
     final int workflowInstanceKey = 1234;
-    final String activityId = "activity";
+    final String elementId = "activity";
     final int activityInstanceKey = 123;
 
     final JobRecord record =
@@ -460,8 +460,8 @@ public class ExporterStreamProcessorTest {
         .setWorkflowKey(workflowKey)
         .setWorkflowDefinitionVersion(workflowDefinitionVersion)
         .setWorkflowInstanceKey(workflowInstanceKey)
-        .setActivityId(wrapString(activityId))
-        .setActivityInstanceKey(activityInstanceKey);
+        .setElementId(wrapString(elementId))
+        .setElementInstanceKey(activityInstanceKey);
 
     record.setCustomHeaders(CUSTOM_HEADERS_MSGPACK);
 
@@ -474,7 +474,7 @@ public class ExporterStreamProcessorTest {
             Instant.ofEpochMilli(deadline),
             new HeadersImpl(
                 bpmnProcessId,
-                activityId,
+                elementId,
                 activityInstanceKey,
                 workflowInstanceKey,
                 workflowKey,
@@ -520,7 +520,7 @@ public class ExporterStreamProcessorTest {
 
     final MessageSubscriptionRecord record =
         new MessageSubscriptionRecord()
-            .setActivityInstanceKey(activityInstanceKey)
+            .setElementInstanceKey(activityInstanceKey)
             .setMessageName(wrapString(messageName))
             .setWorkflowInstanceKey(workflowInstanceKey)
             .setCorrelationKey(wrapString(correlationKey));
@@ -556,12 +556,12 @@ public class ExporterStreamProcessorTest {
     final int workflowKey = 13;
     final int version = 12;
     final int workflowInstanceKey = 1234;
-    final String activityId = "activity";
+    final String elementId = "activity";
     final int scopeInstanceKey = 123;
 
     final WorkflowInstanceRecord record =
         new WorkflowInstanceRecord()
-            .setActivityId(activityId)
+            .setElementId(elementId)
             .setPayload(PAYLOAD_MSGPACK)
             .setBpmnProcessId(wrapString(bpmnProcessId))
             .setVersion(version)
@@ -574,7 +574,7 @@ public class ExporterStreamProcessorTest {
             OBJECT_MAPPER,
             PAYLOAD_JSON,
             bpmnProcessId,
-            activityId,
+            elementId,
             version,
             workflowKey,
             workflowInstanceKey,
@@ -594,7 +594,7 @@ public class ExporterStreamProcessorTest {
 
     final WorkflowInstanceSubscriptionRecord record =
         new WorkflowInstanceSubscriptionRecord()
-            .setActivityInstanceKey(activityInstanceKey)
+            .setElementInstanceKey(activityInstanceKey)
             .setMessageName(wrapString(messageName))
             .setSubscriptionPartitionId(subscriptionPartitionId)
             .setWorkflowInstanceKey(workflowInstanceKey)
@@ -642,8 +642,8 @@ public class ExporterStreamProcessorTest {
         .setWorkflowKey(workflowKey)
         .setWorkflowDefinitionVersion(workflowDefinitionVersion)
         .setWorkflowInstanceKey(workflowInstanceKey)
-        .setActivityId(wrapString(activityId))
-        .setActivityInstanceKey(activityInstanceKey);
+        .setElementId(wrapString(activityId))
+        .setElementInstanceKey(activityInstanceKey);
 
     final JobRecordValueImpl jobRecordValue =
         new JobRecordValueImpl(

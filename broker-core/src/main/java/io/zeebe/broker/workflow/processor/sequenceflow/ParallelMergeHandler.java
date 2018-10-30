@@ -66,7 +66,7 @@ public class ParallelMergeHandler implements BpmnStepHandler<ExecutableSequenceF
           .forEach(r -> eventOutput.consumeDeferredEvent(scopeInstance.getKey(), r.getKey()));
 
       final WorkflowInstanceRecord value = context.getValue();
-      value.setActivityId(gateway.getId());
+      value.setElementId(gateway.getId());
       value.setPayload(propagatedPayload);
       context.getOutput().writeNewEvent(WorkflowInstanceIntent.GATEWAY_ACTIVATED, value);
     }
@@ -109,7 +109,7 @@ public class ParallelMergeHandler implements BpmnStepHandler<ExecutableSequenceF
       for (int j = 0; j < deferredTokens.size(); j++) {
         final IndexedRecord recordToMatch = deferredTokens.get(j);
 
-        if (recordToMatch.getValue().getActivityId().equals(flow.getId())) {
+        if (recordToMatch.getValue().getElementId().equals(flow.getId())) {
           mergingRecords.put(flow, recordToMatch);
           break;
         }

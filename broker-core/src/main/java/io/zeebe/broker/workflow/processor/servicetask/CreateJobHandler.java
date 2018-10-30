@@ -46,8 +46,8 @@ public class CreateJobHandler implements BpmnStepHandler<ExecutableServiceTask> 
         .setWorkflowDefinitionVersion(value.getVersion())
         .setWorkflowKey(value.getWorkflowKey())
         .setWorkflowInstanceKey(value.getWorkflowInstanceKey())
-        .setActivityId(serviceTask.getId())
-        .setActivityInstanceKey(context.getRecord().getKey());
+        .setElementId(serviceTask.getId())
+        .setElementInstanceKey(context.getRecord().getKey());
 
     final DirectBuffer headers = serviceTask.getEncodedHeaders();
     jobCommand.setCustomHeaders(headers);

@@ -47,14 +47,6 @@ public class IncidentRecordStream
     return valueFilter(v -> v.getWorkflowInstanceKey() == workflowInstanceKey);
   }
 
-  public IncidentRecordStream withActivityId(final String activityId) {
-    return valueFilter(v -> activityId.equals(v.getActivityId()));
-  }
-
-  public IncidentRecordStream withActivityInstanceKey(final long activityInstanceKey) {
-    return valueFilter(v -> v.getActivityInstanceKey() == activityInstanceKey);
-  }
-
   public IncidentRecordStream withJobKey(final long jobKey) {
     return valueFilter(v -> v.getJobKey() == jobKey);
   }

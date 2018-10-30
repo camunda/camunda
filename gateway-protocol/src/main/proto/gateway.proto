@@ -128,7 +128,7 @@ message CancelWorkflowInstanceResponse {
 }
 
 message UpdateWorkflowInstancePayloadRequest {
-  int64 activityInstanceKey = 1;
+  int64 elementInstanceKey = 1;
   /* payload has to be a valid json object as string */
   string payload = 2;
 }
@@ -173,8 +173,8 @@ message JobHeaders {
   string bpmnProcessId = 2;
   int32 workflowDefinitionVersion = 3;
   int64 workflowKey = 4;
-  string activityId = 5;
-  int64 activityInstanceKey = 6;
+  string elementId = 5;
+  int64 elementInstanceKey = 6;
 }
 
 message ActivatedJob {

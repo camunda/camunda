@@ -81,7 +81,7 @@ public class UpdatePayloadTest {
     // given
     final long workflowInstanceKey =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withActivityId("task-1")
+            .withElementId("task-1")
             .findFirst()
             .get()
             .getValue()
@@ -108,7 +108,7 @@ public class UpdatePayloadTest {
     // given
     final long workflowInstanceKey =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withActivityId("task-1")
+            .withElementId("task-1")
             .findFirst()
             .get()
             .getValue()
@@ -135,7 +135,7 @@ public class UpdatePayloadTest {
     // given
     final Record<WorkflowInstanceRecordValue> workflowInstanceRecordValueRecord =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withActivityId("task-1")
+            .withElementId("task-1")
             .findFirst()
             .get();
 
@@ -162,7 +162,7 @@ public class UpdatePayloadTest {
     // given
     final Record<WorkflowInstanceRecordValue> workflowInstanceRecordValueRecord =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withActivityId("task-1")
+            .withElementId("task-1")
             .findFirst()
             .get();
 
@@ -203,7 +203,7 @@ public class UpdatePayloadTest {
     // given
     final long workflowInstanceKey =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withActivityId("task-1")
+            .withElementId("task-1")
             .findFirst()
             .get()
             .getValue()
@@ -233,7 +233,7 @@ public class UpdatePayloadTest {
 
     final long workflowInstanceKey =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withActivityId("task-1")
+            .withElementId("task-1")
             .findFirst()
             .get()
             .getValue()
@@ -270,7 +270,7 @@ public class UpdatePayloadTest {
 
     final long workflowInstanceKey =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withActivityId("task-1")
+            .withElementId("task-1")
             .findFirst()
             .get()
             .getValue()

@@ -26,8 +26,8 @@ public interface WorkflowInstanceSubscriptionRecordValue extends RecordValueWith
   /** @return the workflow instance key */
   long getWorkflowInstanceKey();
 
-  /** @return the activity instance key */
-  long getActivityInstanceKey();
+  /** @return the element instance key */
+  long getElementInstanceKey();
 
   /** @return the message name */
   String getMessageName();

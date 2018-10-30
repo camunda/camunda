@@ -41,7 +41,7 @@ public class UpdatePayloadTest extends GatewayTest {
 
     final UpdateWorkflowInstancePayloadRequest request =
         UpdateWorkflowInstancePayloadRequest.newBuilder()
-            .setActivityInstanceKey(123)
+            .setElementInstanceKey(123)
             .setPayload(payload)
             .build();
 

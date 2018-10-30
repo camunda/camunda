@@ -133,7 +133,7 @@ public class TimerStreamProcessorTest {
             activityId, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     return new TimerRecord()
-        .setActivityInstanceKey(activatedEvent.getKey())
+        .setElementInstanceKey(activatedEvent.getKey())
         .setDueDate(activatedEvent.getTimestamp() + Duration.ofSeconds(10).toMillis());
   }
 

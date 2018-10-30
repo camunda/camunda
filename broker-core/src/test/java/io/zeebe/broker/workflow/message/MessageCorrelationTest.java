@@ -220,7 +220,7 @@ public class MessageCorrelationTest {
         testClient
             .receiveWorkflowInstances()
             .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withActivityId("receive-message")
+            .withElementId("receive-message")
             .limit(2)
             .collect(Collectors.toList());
 
@@ -246,7 +246,7 @@ public class MessageCorrelationTest {
                 .limit(2)
                 .asList())
         .extracting(
-            r -> tuple(r.getValue().getActivityId(), r.getValue().getPayloadAsMap().get("nr")))
+            r -> tuple(r.getValue().getElementId(), r.getValue().getPayloadAsMap().get("nr")))
         .contains(tuple("message1", 1), tuple("message2", 2));
   }
 
@@ -281,7 +281,7 @@ public class MessageCorrelationTest {
                 .limit(2)
                 .asList())
         .extracting(
-            r -> tuple(r.getValue().getActivityId(), r.getValue().getPayloadAsMap().get("nr")))
+            r -> tuple(r.getValue().getElementId(), r.getValue().getPayloadAsMap().get("nr")))
         .contains(tuple("message1", 1), tuple("message2", 2));
   }
 
@@ -344,7 +344,7 @@ public class MessageCorrelationTest {
                 .limit(2)
                 .asList())
         .extracting(
-            r -> tuple(r.getValue().getActivityId(), r.getValue().getPayloadAsMap().get("nr")))
+            r -> tuple(r.getValue().getElementId(), r.getValue().getPayloadAsMap().get("nr")))
         .contains(tuple("message1", 1), tuple("message2", 2));
   }
 }

@@ -44,20 +44,20 @@ public final class JobCompletedEventProcessor implements TypedRecordProcessor<Jo
 
     final JobRecord jobEvent = record.getValue();
     final JobHeaders jobHeaders = jobEvent.getHeaders();
-    final long activityInstanceKey = jobHeaders.getActivityInstanceKey();
-    final ElementInstance activityInstance =
-        workflowState.getElementInstanceState().getInstance(activityInstanceKey);
+    final long elementInstanceKey = jobHeaders.getElementInstanceKey();
+    final ElementInstance elementInstance =
+        workflowState.getElementInstanceState().getInstance(elementInstanceKey);
 
-    if (activityInstance != null) {
+    if (elementInstance != null) {
 
-      final WorkflowInstanceRecord value = activityInstance.getValue();
+      final WorkflowInstanceRecord value = elementInstance.getValue();
       value.setPayload(jobEvent.getPayload());
 
       streamWriter.writeFollowUpEvent(
-          activityInstanceKey, WorkflowInstanceIntent.ELEMENT_COMPLETING, value);
-      activityInstance.setState(WorkflowInstanceIntent.ELEMENT_COMPLETING);
-      activityInstance.setJobKey(-1);
-      activityInstance.setValue(value);
+          elementInstanceKey, WorkflowInstanceIntent.ELEMENT_COMPLETING, value);
+      elementInstance.setState(WorkflowInstanceIntent.ELEMENT_COMPLETING);
+      elementInstance.setJobKey(-1);
+      elementInstance.setValue(value);
     }
   }
 }

@@ -37,21 +37,21 @@ public class TerminateServiceTaskHandler extends TerminateElementHandler {
   protected void addTerminatingRecords(
       BpmnStepContext<ExecutableFlowNode> context, TypedBatchWriter batch) {
 
-    final ElementInstance activityInstance = context.getElementInstance();
+    final ElementInstance elementInstance = context.getElementInstance();
 
-    final long jobKey = activityInstance.getJobKey();
+    final long jobKey = elementInstance.getJobKey();
     if (jobKey > 0) {
-      final WorkflowInstanceRecord activityInstanceEvent = context.getValue();
+      final WorkflowInstanceRecord elementInstanceEvent = context.getValue();
 
       jobRecord.reset();
       jobRecord
           .setType(EMPTY_JOB_TYPE)
           .getHeaders()
-          .setBpmnProcessId(activityInstanceEvent.getBpmnProcessId())
-          .setWorkflowDefinitionVersion(activityInstanceEvent.getVersion())
-          .setWorkflowInstanceKey(activityInstanceEvent.getWorkflowInstanceKey())
-          .setActivityId(activityInstanceEvent.getActivityId())
-          .setActivityInstanceKey(activityInstance.getKey());
+          .setBpmnProcessId(elementInstanceEvent.getBpmnProcessId())
+          .setWorkflowDefinitionVersion(elementInstanceEvent.getVersion())
+          .setWorkflowInstanceKey(elementInstanceEvent.getWorkflowInstanceKey())
+          .setElementId(elementInstanceEvent.getElementId())
+          .setElementInstanceKey(elementInstance.getKey());
 
       batch.addFollowUpCommand(jobKey, JobIntent.CANCEL, jobRecord);
     }

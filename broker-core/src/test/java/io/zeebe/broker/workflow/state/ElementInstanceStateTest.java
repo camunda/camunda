@@ -76,7 +76,7 @@ public class ElementInstanceStateTest {
 
     // when
     final WorkflowInstanceRecord otherRecord = createWorkflowInstanceRecord();
-    otherRecord.setActivityId("subProcess");
+    otherRecord.setElementId("subProcess");
     otherRecord.setPayload(asMsgPack("foo", "bar"));
     final ElementInstance childInstance =
         elementInstanceState.newInstance(
@@ -143,7 +143,7 @@ public class ElementInstanceStateTest {
     final ElementInstance parentInstance =
         elementInstanceState.newInstance(
             100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    workflowInstanceRecord.setActivityId("subProcess");
+    workflowInstanceRecord.setElementId("subProcess");
     elementInstanceState.newInstance(
         parentInstance, 101, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_READY);
 
@@ -161,7 +161,7 @@ public class ElementInstanceStateTest {
     final ElementInstance parentInstance =
         elementInstanceState.newInstance(
             100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    workflowInstanceRecord.setActivityId("subProcess");
+    workflowInstanceRecord.setElementId("subProcess");
     elementInstanceState.newInstance(
         parentInstance, 101, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_READY);
 
@@ -179,7 +179,7 @@ public class ElementInstanceStateTest {
     final ElementInstance parentInstance =
         elementInstanceState.newInstance(
             100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    workflowInstanceRecord.setActivityId("subProcess");
+    workflowInstanceRecord.setElementId("subProcess");
     elementInstanceState.newInstance(
         parentInstance, 101, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_READY);
     elementInstanceState.flushDirtyState();
@@ -206,10 +206,10 @@ public class ElementInstanceStateTest {
     final ElementInstance parentInstance =
         elementInstanceState.newInstance(
             100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    workflowInstanceRecord.setActivityId("subProcess");
+    workflowInstanceRecord.setElementId("subProcess");
     elementInstanceState.newInstance(
         parentInstance, 101, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_READY);
-    workflowInstanceRecord.setActivityId("subProcess2");
+    workflowInstanceRecord.setElementId("subProcess2");
     elementInstanceState.newInstance(
         parentInstance, 102, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_READY);
     elementInstanceState.flushDirtyState();
@@ -359,10 +359,10 @@ public class ElementInstanceStateTest {
     final ElementInstance parentInstance =
         elementInstanceState.newInstance(
             100, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    workflowInstanceRecord.setActivityId("subProcess");
+    workflowInstanceRecord.setElementId("subProcess");
     elementInstanceState.newInstance(
         parentInstance, 101, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_READY);
-    workflowInstanceRecord.setActivityId("subProcess2");
+    workflowInstanceRecord.setElementId("subProcess2");
     elementInstanceState.newInstance(
         parentInstance, 102, workflowInstanceRecord, WorkflowInstanceIntent.ELEMENT_READY);
     elementInstanceState.flushDirtyState();
@@ -500,7 +500,7 @@ public class ElementInstanceStateTest {
     assertWorkflowInstanceRecord(record);
   }
 
-  private void assertChildInstance(ElementInstance childInstance, long key, String activityId) {
+  private void assertChildInstance(ElementInstance childInstance, long key, String elementId) {
     assertThat(childInstance.getKey()).isEqualTo(key);
     assertThat(childInstance.getState()).isEqualTo(WorkflowInstanceIntent.ELEMENT_READY);
     assertThat(childInstance.getJobKey()).isEqualTo(0);
@@ -510,12 +510,12 @@ public class ElementInstanceStateTest {
     assertThat(childInstance.getNumberOfActiveExecutionPaths()).isEqualTo(0);
     assertThat(childInstance.getNumberOfActiveTokens()).isEqualTo(0);
 
-    assertWorkflowInstanceRecord(childInstance.getValue(), wrapString(activityId));
+    assertWorkflowInstanceRecord(childInstance.getValue(), wrapString(elementId));
   }
 
   private WorkflowInstanceRecord createWorkflowInstanceRecord() {
     final WorkflowInstanceRecord workflowInstanceRecord = new WorkflowInstanceRecord();
-    workflowInstanceRecord.setActivityId("startEvent");
+    workflowInstanceRecord.setElementId("startEvent");
     workflowInstanceRecord.setBpmnProcessId(wrapString("process1"));
     workflowInstanceRecord.setWorkflowInstanceKey(1000L);
     workflowInstanceRecord.setScopeInstanceKey(1001L);
@@ -529,9 +529,8 @@ public class ElementInstanceStateTest {
     assertWorkflowInstanceRecord(record, wrapString("startEvent"));
   }
 
-  private void assertWorkflowInstanceRecord(
-      WorkflowInstanceRecord record, DirectBuffer activityId) {
-    assertThat(record.getActivityId()).isEqualTo(activityId);
+  private void assertWorkflowInstanceRecord(WorkflowInstanceRecord record, DirectBuffer elementId) {
+    assertThat(record.getElementId()).isEqualTo(elementId);
     assertThat(record.getBpmnProcessId()).isEqualTo(wrapString("process1"));
     assertThat(record.getWorkflowInstanceKey()).isEqualTo(1000L);
     assertThat(record.getScopeInstanceKey()).isEqualTo(1001L);

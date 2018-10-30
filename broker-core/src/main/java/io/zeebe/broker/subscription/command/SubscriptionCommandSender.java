@@ -96,7 +96,7 @@ public class SubscriptionCommandSender {
 
   public boolean openMessageSubscription(
       final long workflowInstanceKey,
-      final long activityInstanceKey,
+      final long elementInstanceKey,
       final DirectBuffer messageName,
       final DirectBuffer correlationKey) {
 
@@ -104,7 +104,7 @@ public class SubscriptionCommandSender {
 
     openMessageSubscriptionCommand.setSubscriptionPartitionId(subscriptionPartitionId);
     openMessageSubscriptionCommand.setWorkflowInstanceKey(workflowInstanceKey);
-    openMessageSubscriptionCommand.setActivityInstanceKey(activityInstanceKey);
+    openMessageSubscriptionCommand.setElementInstanceKey(elementInstanceKey);
     openMessageSubscriptionCommand.getMessageName().wrap(messageName);
     openMessageSubscriptionCommand.getCorrelationKey().wrap(correlationKey);
 
@@ -121,14 +121,14 @@ public class SubscriptionCommandSender {
 
   public boolean openWorkflowInstanceSubscription(
       final long workflowInstanceKey,
-      final long activityInstanceKey,
+      final long elementInstanceKey,
       final DirectBuffer messageName) {
 
     final int workflowInstancePartitionId = Protocol.decodePartitionId(workflowInstanceKey);
 
     openWorkflowInstanceSubscriptionCommand.setSubscriptionPartitionId(partitionId);
     openWorkflowInstanceSubscriptionCommand.setWorkflowInstanceKey(workflowInstanceKey);
-    openWorkflowInstanceSubscriptionCommand.setActivityInstanceKey(activityInstanceKey);
+    openWorkflowInstanceSubscriptionCommand.setElementInstanceKey(elementInstanceKey);
     openWorkflowInstanceSubscriptionCommand.getMessageName().wrap(messageName);
 
     return sendSubscriptionCommand(
@@ -137,7 +137,7 @@ public class SubscriptionCommandSender {
 
   public boolean correlateWorkflowInstanceSubscription(
       final long workflowInstanceKey,
-      final long activityInstanceKey,
+      final long elementInstanceKey,
       final DirectBuffer messageName,
       final DirectBuffer payload) {
 
@@ -145,7 +145,7 @@ public class SubscriptionCommandSender {
 
     correlateWorkflowInstanceSubscriptionCommand.setSubscriptionPartitionId(partitionId);
     correlateWorkflowInstanceSubscriptionCommand.setWorkflowInstanceKey(workflowInstanceKey);
-    correlateWorkflowInstanceSubscriptionCommand.setActivityInstanceKey(activityInstanceKey);
+    correlateWorkflowInstanceSubscriptionCommand.setElementInstanceKey(elementInstanceKey);
     correlateWorkflowInstanceSubscriptionCommand.getMessageName().wrap(messageName);
     correlateWorkflowInstanceSubscriptionCommand.getPayload().wrap(payload);
 
@@ -156,12 +156,12 @@ public class SubscriptionCommandSender {
   public boolean correlateMessageSubscription(
       final int subscriptionPartitionId,
       final long workflowInstanceKey,
-      final long activityInstanceKey,
+      final long elementInstanceKey,
       final DirectBuffer messageName) {
 
     correlateMessageSubscriptionCommand.setSubscriptionPartitionId(subscriptionPartitionId);
     correlateMessageSubscriptionCommand.setWorkflowInstanceKey(workflowInstanceKey);
-    correlateMessageSubscriptionCommand.setActivityInstanceKey(activityInstanceKey);
+    correlateMessageSubscriptionCommand.setElementInstanceKey(elementInstanceKey);
     correlateMessageSubscriptionCommand.getMessageName().wrap(messageName);
 
     return sendSubscriptionCommand(subscriptionPartitionId, correlateMessageSubscriptionCommand);

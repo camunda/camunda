@@ -164,8 +164,8 @@ public class ExporterRecordMapper {
     final HeadersImpl headers =
         new HeadersImpl(
             asString(jobHeaders.getBpmnProcessId()),
-            asString(jobHeaders.getActivityId()),
-            jobHeaders.getActivityInstanceKey(),
+            asString(jobHeaders.getElementId()),
+            jobHeaders.getElementInstanceKey(),
             jobHeaders.getWorkflowInstanceKey(),
             jobHeaders.getWorkflowKey(),
             jobHeaders.getWorkflowDefinitionVersion());
@@ -227,9 +227,9 @@ public class ExporterRecordMapper {
         record.getErrorType().name(),
         asString(record.getErrorMessage()),
         asString(record.getBpmnProcessId()),
-        asString(record.getActivityId()),
+        asString(record.getElementId()),
         record.getWorkflowInstanceKey(),
-        record.getActivityInstanceKey(),
+        record.getElementInstanceKey(),
         record.getJobKey());
   }
 
@@ -255,7 +255,7 @@ public class ExporterRecordMapper {
         asString(record.getMessageName()),
         asString(record.getCorrelationKey()),
         record.getWorkflowInstanceKey(),
-        record.getActivityInstanceKey());
+        record.getElementInstanceKey());
   }
 
   private WorkflowInstanceRecordValue ofWorkflowInstanceRecord(final LoggedEvent event) {
@@ -266,7 +266,7 @@ public class ExporterRecordMapper {
         objectMapper,
         asJson(record.getPayload()),
         asString(record.getBpmnProcessId()),
-        asString(record.getActivityId()),
+        asString(record.getElementId()),
         record.getVersion(),
         record.getWorkflowKey(),
         record.getWorkflowInstanceKey(),
@@ -283,7 +283,7 @@ public class ExporterRecordMapper {
         asJson(record.getPayload()),
         asString(record.getMessageName()),
         record.getWorkflowInstanceKey(),
-        record.getActivityInstanceKey());
+        record.getElementInstanceKey());
   }
 
   private RecordValue ofJobBatchRecord(LoggedEvent event) {
@@ -315,7 +315,7 @@ public class ExporterRecordMapper {
     event.readValue(record);
 
     return new TimerRecordValueImpl(
-        objectMapper, record.getActivityInstanceKey(), record.getDueDate());
+        objectMapper, record.getElementInstanceKey(), record.getDueDate());
   }
 
   // UTILS

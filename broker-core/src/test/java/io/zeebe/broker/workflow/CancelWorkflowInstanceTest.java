@@ -129,7 +129,7 @@ public class CancelWorkflowInstanceTest {
             .collect(Collectors.toList());
 
     assertThat(workflowEvents)
-        .extracting(e -> e.getValue().getActivityId(), e -> e.getMetadata().getIntent())
+        .extracting(e -> e.getValue().getElementId(), e -> e.getMetadata().getIntent())
         .containsSequence(
             tuple("", WorkflowInstanceIntent.CANCEL),
             tuple(PROCESS_ID, WorkflowInstanceIntent.CANCELING),
@@ -158,7 +158,7 @@ public class CancelWorkflowInstanceTest {
             .collect(Collectors.toList());
 
     assertThat(workflowEvents)
-        .extracting(e -> e.getValue().getActivityId(), e -> e.getMetadata().getIntent())
+        .extracting(e -> e.getValue().getElementId(), e -> e.getMetadata().getIntent())
         .containsSequence(
             tuple("", WorkflowInstanceIntent.CANCEL),
             tuple(PROCESS_ID, WorkflowInstanceIntent.CANCELING),
@@ -222,11 +222,11 @@ public class CancelWorkflowInstanceTest {
 
     assertThat(terminatedElements).hasSize(3);
     assertThat(terminatedElements.subList(0, 2))
-        .extracting(r -> r.getValue().getActivityId())
+        .extracting(r -> r.getValue().getElementId())
         .contains("task1", "task2");
 
     final Record<WorkflowInstanceRecordValue> processTerminatedEvent = terminatedElements.get(2);
-    assertThat(processTerminatedEvent.getValue().getActivityId()).isEqualTo(PROCESS_ID);
+    assertThat(processTerminatedEvent.getValue().getElementId()).isEqualTo(PROCESS_ID);
   }
 
   @Test
@@ -365,7 +365,7 @@ public class CancelWorkflowInstanceTest {
     final long workflowInstanceKey = testClient.createWorkflowInstance(PROCESS_ID);
     final io.zeebe.exporter.record.Record<WorkflowInstanceRecordValue> activatedEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
-            .withActivityId(PROCESS_ID)
+            .withElementId(PROCESS_ID)
             .getFirst();
 
     // when
@@ -377,7 +377,7 @@ public class CancelWorkflowInstanceTest {
 
     final io.zeebe.exporter.record.Record<WorkflowInstanceRecordValue> cancelingEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.CANCELING)
-            .withActivityId(PROCESS_ID)
+            .withElementId(PROCESS_ID)
             .getFirst();
 
     assertThat(cancelingEvent.getValue()).isEqualTo(activatedEvent.getValue());

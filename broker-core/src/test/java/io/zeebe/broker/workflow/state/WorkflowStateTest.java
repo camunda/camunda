@@ -420,7 +420,7 @@ public class WorkflowStateTest {
         new WorkflowInstanceSubscriptionRecord();
     workflowInstanceSubscriptionRecord.setMessageName(wrapString("message"));
     workflowInstanceSubscriptionRecord.setWorkflowInstanceKey(1);
-    workflowInstanceSubscriptionRecord.setActivityInstanceKey(2);
+    workflowInstanceSubscriptionRecord.setElementInstanceKey(2);
 
     final WorkflowSubscription subscription =
         workflowState.findSubscription(workflowInstanceSubscriptionRecord);
@@ -430,7 +430,7 @@ public class WorkflowStateTest {
     assertThat(subscription.getMessageName()).isEqualTo(wrapString("message"));
     assertThat(subscription.getCorrelationKey()).isEqualTo(wrapString("correlation"));
     assertThat(subscription.getWorkflowInstanceKey()).isEqualTo(1);
-    assertThat(subscription.getActivityInstanceKey()).isEqualTo(2);
+    assertThat(subscription.getElementInstanceKey()).isEqualTo(2);
     assertThat(subscription.getCommandSentTime()).isEqualTo(100);
     assertThat(subscription.isOpening()).isFalse();
   }
@@ -447,7 +447,7 @@ public class WorkflowStateTest {
         new WorkflowInstanceSubscriptionRecord();
     workflowInstanceSubscriptionRecord.setMessageName(wrapString("message"));
     workflowInstanceSubscriptionRecord.setWorkflowInstanceKey(1);
-    workflowInstanceSubscriptionRecord.setActivityInstanceKey(2);
+    workflowInstanceSubscriptionRecord.setElementInstanceKey(2);
 
     final WorkflowSubscription subscription =
         workflowState.findSubscription(workflowInstanceSubscriptionRecord);
@@ -458,7 +458,7 @@ public class WorkflowStateTest {
     assertThat(subscription.getMessageName()).isEqualTo(wrapString("message"));
     assertThat(subscription.getCorrelationKey()).isEqualTo(wrapString("correlation"));
     assertThat(subscription.getWorkflowInstanceKey()).isEqualTo(1);
-    assertThat(subscription.getActivityInstanceKey()).isEqualTo(2);
+    assertThat(subscription.getElementInstanceKey()).isEqualTo(2);
     assertThat(subscription.getCommandSentTime()).isEqualTo(100);
   }
 
@@ -497,7 +497,7 @@ public class WorkflowStateTest {
         .extracting(w -> w.getWorkflowInstanceKey())
         .containsExactly(1L);
     assertThat(workflowSubscriptions)
-        .extracting(w -> w.getActivityInstanceKey())
+        .extracting(w -> w.getElementInstanceKey())
         .containsExactly(2L);
     assertThat(workflowSubscriptions).extracting(w -> w.getCommandSentTime()).containsExactly(100L);
   }
@@ -541,7 +541,7 @@ public class WorkflowStateTest {
         .extracting(w -> w.getWorkflowInstanceKey())
         .containsExactlyInAnyOrder(1L, 3L);
     assertThat(workflowSubscriptions)
-        .extracting(w -> w.getActivityInstanceKey())
+        .extracting(w -> w.getElementInstanceKey())
         .containsExactlyInAnyOrder(2L, 4L);
     assertThat(workflowSubscriptions)
         .extracting(w -> w.getCommandSentTime())
@@ -563,7 +563,7 @@ public class WorkflowStateTest {
         new WorkflowInstanceSubscriptionRecord();
     workflowInstanceSubscriptionRecord.setMessageName(wrapString("message"));
     workflowInstanceSubscriptionRecord.setWorkflowInstanceKey(1);
-    workflowInstanceSubscriptionRecord.setActivityInstanceKey(2);
+    workflowInstanceSubscriptionRecord.setElementInstanceKey(2);
 
     final WorkflowSubscription subscription =
         workflowState.findSubscription(workflowInstanceSubscriptionRecord);
@@ -588,7 +588,7 @@ public class WorkflowStateTest {
         new WorkflowInstanceSubscriptionRecord();
     workflowInstanceSubscriptionRecord.setMessageName(wrapString("message"));
     workflowInstanceSubscriptionRecord.setWorkflowInstanceKey(1);
-    workflowInstanceSubscriptionRecord.setActivityInstanceKey(2);
+    workflowInstanceSubscriptionRecord.setElementInstanceKey(2);
     workflowState.remove(workflowInstanceSubscriptionRecord);
 
     // then

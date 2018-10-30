@@ -73,9 +73,9 @@ public class ActivateJobsTest extends GatewayTest {
       assertThat(job.getJobHeaders().getWorkflowDefinitionVersion())
           .isEqualTo(stub.getWorkflowDefinitionVersion());
       assertThat(job.getJobHeaders().getWorkflowKey()).isEqualTo(stub.getWorkflowKey());
-      assertThat(job.getJobHeaders().getActivityId()).isEqualTo(stub.getActivityId());
-      assertThat(job.getJobHeaders().getActivityInstanceKey())
-          .isEqualTo(stub.getActivityInstanceKey());
+      assertThat(job.getJobHeaders().getElementId()).isEqualTo(stub.getElementId());
+      assertThat(job.getJobHeaders().getElementInstanceKey())
+          .isEqualTo(stub.getElementInstanceKey());
       JsonUtil.assertEquality(job.getCustomHeaders(), stub.getCustomHeaders());
       JsonUtil.assertEquality(job.getPayload(), stub.getPayload());
 

@@ -35,10 +35,8 @@ public interface WorkflowInstanceRecordValue extends RecordValueWithPayload {
   /** @return the key of the workflow instance */
   long getWorkflowInstanceKey();
 
-  /**
-   * @return the id of the current activity, or empty if the event does not belong to an activity.
-   */
-  String getActivityId();
+  /** @return the id of the current workflow element, or empty if the id is not specified. */
+  String getElementId();
 
   /**
    * @return the key of the activity instance that is the flow scope of this flow element instance;

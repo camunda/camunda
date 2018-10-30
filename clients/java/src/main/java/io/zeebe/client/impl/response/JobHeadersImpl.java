@@ -24,16 +24,16 @@ public class JobHeadersImpl implements JobHeaders {
   private final String bpmnProcessId;
   private final int workflowDefinitionVersion;
   private final long workflowKey;
-  private final String activityId;
-  private final long activityInstanceKey;
+  private final String elementId;
+  private final long elementInstanceKey;
 
   public JobHeadersImpl(GatewayOuterClass.JobHeaders jobHeaders) {
     workflowInstanceKey = jobHeaders.getWorkflowInstanceKey();
     bpmnProcessId = jobHeaders.getBpmnProcessId();
     workflowDefinitionVersion = jobHeaders.getWorkflowDefinitionVersion();
     workflowKey = jobHeaders.getWorkflowKey();
-    activityId = jobHeaders.getActivityId();
-    activityInstanceKey = jobHeaders.getActivityInstanceKey();
+    elementId = jobHeaders.getElementId();
+    elementInstanceKey = jobHeaders.getElementInstanceKey();
   }
 
   @Override
@@ -57,13 +57,13 @@ public class JobHeadersImpl implements JobHeaders {
   }
 
   @Override
-  public String getActivityId() {
-    return activityId;
+  public String getElementId() {
+    return elementId;
   }
 
   @Override
-  public long getActivityInstanceKey() {
-    return activityInstanceKey;
+  public long getElementInstanceKey() {
+    return elementInstanceKey;
   }
 
   @Override
@@ -79,10 +79,10 @@ public class JobHeadersImpl implements JobHeaders {
         + ", workflowKey="
         + workflowKey
         + ", activityId='"
-        + activityId
+        + elementId
         + '\''
-        + ", activityInstanceKey="
-        + activityInstanceKey
+        + ", elementInstanceKey="
+        + elementInstanceKey
         + '}';
   }
 }

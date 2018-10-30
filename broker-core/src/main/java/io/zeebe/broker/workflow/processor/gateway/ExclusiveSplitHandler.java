@@ -43,7 +43,7 @@ public class ExclusiveSplitHandler implements BpmnStepHandler<ExecutableExclusiv
           getSequenceFlowWithFulfilledCondition(context.getElement(), value.getPayload());
 
       if (sequenceFlow != null) {
-        value.setActivityId(sequenceFlow.getId());
+        value.setElementId(sequenceFlow.getId());
         context.getOutput().writeNewEvent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, value);
       } else {
         final String errorMessage = "All conditions evaluated to false and no default flow is set.";

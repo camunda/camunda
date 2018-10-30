@@ -37,8 +37,8 @@ public class MessageSubscriptionRecordStream
     return valueFilter(v -> v.getWorkflowInstanceKey() == workflowInstanceKey);
   }
 
-  public MessageSubscriptionRecordStream withActivityInstanceKey(final long activityInstanceKey) {
-    return valueFilter(v -> v.getActivityInstanceKey() == activityInstanceKey);
+  public MessageSubscriptionRecordStream withElementInstanceKey(final long elementInstanceKey) {
+    return valueFilter(v -> v.getElementInstanceKey() == elementInstanceKey);
   }
 
   public MessageSubscriptionRecordStream withMessageName(final String messageName) {

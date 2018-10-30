@@ -64,7 +64,7 @@ public class OpenMessageSubscriptionProcessor
     subscription =
         new MessageSubscription(
             subscriptionRecord.getWorkflowInstanceKey(),
-            subscriptionRecord.getActivityInstanceKey(),
+            subscriptionRecord.getElementInstanceKey(),
             subscriptionRecord.getMessageName(),
             subscriptionRecord.getCorrelationKey());
 
@@ -120,7 +120,7 @@ public class OpenMessageSubscriptionProcessor
   private boolean sendCorrelateCommand() {
     return commandSender.correlateWorkflowInstanceSubscription(
         subscriptionRecord.getWorkflowInstanceKey(),
-        subscriptionRecord.getActivityInstanceKey(),
+        subscriptionRecord.getElementInstanceKey(),
         subscriptionRecord.getMessageName(),
         messagePayload);
   }
@@ -128,7 +128,7 @@ public class OpenMessageSubscriptionProcessor
   private boolean sendAcknowledgeCommand() {
     return commandSender.openWorkflowInstanceSubscription(
         subscriptionRecord.getWorkflowInstanceKey(),
-        subscriptionRecord.getActivityInstanceKey(),
+        subscriptionRecord.getElementInstanceKey(),
         subscriptionRecord.getMessageName());
   }
 }

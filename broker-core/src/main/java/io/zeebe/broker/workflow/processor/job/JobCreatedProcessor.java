@@ -41,13 +41,13 @@ public final class JobCreatedProcessor implements TypedRecordProcessor<JobRecord
       TypedStreamWriter streamWriter) {
 
     final JobHeaders jobHeaders = record.getValue().getHeaders();
-    final long activityInstanceKey = jobHeaders.getActivityInstanceKey();
-    if (activityInstanceKey > 0) {
-      final ElementInstance activityInstance =
-          workflowState.getElementInstanceState().getInstance(activityInstanceKey);
+    final long elementInstanceKey = jobHeaders.getElementInstanceKey();
+    if (elementInstanceKey > 0) {
+      final ElementInstance elementInstance =
+          workflowState.getElementInstanceState().getInstance(elementInstanceKey);
 
-      if (activityInstance != null) {
-        activityInstance.setJobKey(record.getKey());
+      if (elementInstance != null) {
+        elementInstance.setJobKey(record.getKey());
       }
     }
   }

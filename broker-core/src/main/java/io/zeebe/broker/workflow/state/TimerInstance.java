@@ -29,15 +29,15 @@ public class TimerInstance implements BufferReader, BufferWriter {
   public static final int LENGTH = 3 * Long.BYTES;
 
   private long key;
-  private long activityInstanceKey;
+  private long elementInstanceKey;
   private long dueDate;
 
-  public long getActivityInstanceKey() {
-    return activityInstanceKey;
+  public long getElementInstanceKey() {
+    return elementInstanceKey;
   }
 
-  public void setActivityInstanceKey(long activityInstanceKey) {
-    this.activityInstanceKey = activityInstanceKey;
+  public void setElementInstanceKey(long elementInstanceKey) {
+    this.elementInstanceKey = elementInstanceKey;
   }
 
   public long getDueDate() {
@@ -63,7 +63,7 @@ public class TimerInstance implements BufferReader, BufferWriter {
 
   @Override
   public void write(MutableDirectBuffer buffer, int offset) {
-    buffer.putLong(offset, activityInstanceKey, STATE_BYTE_ORDER);
+    buffer.putLong(offset, elementInstanceKey, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
     buffer.putLong(offset, dueDate, STATE_BYTE_ORDER);
@@ -74,7 +74,7 @@ public class TimerInstance implements BufferReader, BufferWriter {
 
   @Override
   public void wrap(DirectBuffer buffer, int offset, int length) {
-    activityInstanceKey = buffer.getLong(offset, STATE_BYTE_ORDER);
+    elementInstanceKey = buffer.getLong(offset, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
     dueDate = buffer.getLong(offset, STATE_BYTE_ORDER);

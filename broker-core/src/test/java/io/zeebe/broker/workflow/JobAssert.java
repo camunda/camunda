@@ -39,7 +39,7 @@ public class JobAssert {
   public static void assertJobHeaders(long workflowInstanceKey, Record<JobRecordValue> jobRecord) {
     final Headers headers = jobRecord.getValue().getHeaders();
     Assertions.assertThat(headers)
-        .hasActivityId("task")
+        .hasElementId("task")
         .hasWorkflowDefinitionVersion(1)
         .hasBpmnProcessId(PROCESS_ID)
         .hasWorkflowInstanceKey(workflowInstanceKey);
@@ -49,7 +49,7 @@ public class JobAssert {
       long workflowInstanceKey, String activityId, Record<JobRecordValue> jobRecord) {
     final Headers headers = jobRecord.getValue().getHeaders();
     Assertions.assertThat(headers)
-        .hasActivityId(activityId)
+        .hasElementId(activityId)
         .hasWorkflowDefinitionVersion(1)
         .hasBpmnProcessId(PROCESS_ID)
         .hasWorkflowInstanceKey(workflowInstanceKey);

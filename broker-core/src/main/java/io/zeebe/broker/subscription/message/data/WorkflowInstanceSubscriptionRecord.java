@@ -29,14 +29,14 @@ public class WorkflowInstanceSubscriptionRecord extends UnpackedObject {
   private final IntegerProperty subscriptionPartitionIdProp =
       new IntegerProperty("subscriptionPartitionId");
   private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey");
-  private final LongProperty activityInstanceKeyProp = new LongProperty("activityInstanceKey");
+  private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey");
   private final StringProperty messageNameProp = new StringProperty("messageName", "");
   private final DocumentProperty payloadProp = new DocumentProperty("payload");
 
   public WorkflowInstanceSubscriptionRecord() {
     this.declareProperty(subscriptionPartitionIdProp)
         .declareProperty(workflowInstanceKeyProp)
-        .declareProperty(activityInstanceKeyProp)
+        .declareProperty(elementInstanceKeyProp)
         .declareProperty(messageNameProp)
         .declareProperty(payloadProp);
   }
@@ -59,12 +59,12 @@ public class WorkflowInstanceSubscriptionRecord extends UnpackedObject {
     return this;
   }
 
-  public long getActivityInstanceKey() {
-    return activityInstanceKeyProp.getValue();
+  public long getElementInstanceKey() {
+    return elementInstanceKeyProp.getValue();
   }
 
-  public WorkflowInstanceSubscriptionRecord setActivityInstanceKey(long key) {
-    activityInstanceKeyProp.setValue(key);
+  public WorkflowInstanceSubscriptionRecord setElementInstanceKey(long key) {
+    elementInstanceKeyProp.setValue(key);
     return this;
   }
 

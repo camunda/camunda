@@ -330,7 +330,7 @@ public class MessageStateControllerTest {
 
     assertThat(readSubscription.getCommandSentTime()).isEqualTo(sendTime);
     assertThat(readSubscription.getWorkflowInstanceKey()).isEqualTo(wfInstanceKey);
-    assertThat(readSubscription.getActivityInstanceKey()).isEqualTo(actInstanceKey);
+    assertThat(readSubscription.getElementInstanceKey()).isEqualTo(actInstanceKey);
   }
 
   @Test
@@ -638,7 +638,7 @@ public class MessageStateControllerTest {
     // when
     final MessageSubscriptionRecord messageSubscriptionRecord = new MessageSubscriptionRecord();
     messageSubscriptionRecord.setWorkflowInstanceKey(1);
-    messageSubscriptionRecord.setActivityInstanceKey(2);
+    messageSubscriptionRecord.setElementInstanceKey(2);
     final boolean removed = stateController.remove(messageSubscriptionRecord);
 
     // then

@@ -104,7 +104,7 @@ public class MessageStreamProcessorTest {
     verify(mockSubscriptionCommandSender, timeout(5_000).times(2))
         .openWorkflowInstanceSubscription(
             eq(subscription.getWorkflowInstanceKey()),
-            eq(subscription.getActivityInstanceKey()),
+            eq(subscription.getElementInstanceKey()),
             any());
   }
 
@@ -134,7 +134,7 @@ public class MessageStreamProcessorTest {
     verify(mockSubscriptionCommandSender, timeout(5_000).times(2))
         .correlateWorkflowInstanceSubscription(
             subscription.getWorkflowInstanceKey(),
-            subscription.getActivityInstanceKey(),
+            subscription.getElementInstanceKey(),
             subscription.getMessageName(),
             message.getPayload());
   }
@@ -165,7 +165,7 @@ public class MessageStreamProcessorTest {
     verify(mockSubscriptionCommandSender, timeout(5_000).times(2))
         .correlateWorkflowInstanceSubscription(
             subscription.getWorkflowInstanceKey(),
-            subscription.getActivityInstanceKey(),
+            subscription.getElementInstanceKey(),
             subscription.getMessageName(),
             message.getPayload());
   }
@@ -232,14 +232,14 @@ public class MessageStreamProcessorTest {
 
     verify(mockSubscriptionCommandSender, timeout(5_000).times(2))
         .closeWorkflowInstanceSubscription(
-            subscription.getWorkflowInstanceKey(), subscription.getActivityInstanceKey());
+            subscription.getWorkflowInstanceKey(), subscription.getElementInstanceKey());
   }
 
   private MessageSubscriptionRecord messageSubscription() {
     final MessageSubscriptionRecord subscription = new MessageSubscriptionRecord();
     subscription
         .setWorkflowInstanceKey(1L)
-        .setActivityInstanceKey(2L)
+        .setElementInstanceKey(2L)
         .setMessageName(wrapString("order canceled"))
         .setCorrelationKey(wrapString("order-123"));
 

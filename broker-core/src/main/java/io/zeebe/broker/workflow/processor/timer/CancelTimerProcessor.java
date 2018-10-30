@@ -44,7 +44,7 @@ public class CancelTimerProcessor implements TypedRecordProcessor<TimerRecord> {
     final TimerRecord timer = record.getValue();
 
     final TimerInstance timerInstance =
-        workflowState.getTimerState().get(timer.getActivityInstanceKey());
+        workflowState.getTimerState().get(timer.getElementInstanceKey());
     if (timerInstance == null) {
       streamWriter.writeRejection(
           record, RejectionType.NOT_APPLICABLE, "timer is already triggered or canceled");

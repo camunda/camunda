@@ -180,7 +180,7 @@ public class JobFailIncidentTest {
         "No more retries left.",
         workflowInstanceKey,
         "failingTask",
-        incidentEvent.getValue().getActivityInstanceKey(),
+        incidentEvent.getValue().getElementInstanceKey(),
         jobEvent.getKey(),
         incidentEvent);
 
@@ -192,7 +192,7 @@ public class JobFailIncidentTest {
         "No more retries left.",
         workflowInstanceKey,
         "failingTask",
-        incidentEvent.getValue().getActivityInstanceKey(),
+        incidentEvent.getValue().getElementInstanceKey(),
         jobEvent.getKey(),
         incidentEvent);
   }

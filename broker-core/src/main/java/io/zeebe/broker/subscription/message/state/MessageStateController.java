@@ -359,7 +359,7 @@ public class MessageStateController extends KeyStateController {
 
   public MessageSubscription findSubscription(MessageSubscriptionRecord record) {
     final MessageSubscription messageSubscription =
-        new MessageSubscription(record.getWorkflowInstanceKey(), record.getActivityInstanceKey());
+        new MessageSubscription(record.getWorkflowInstanceKey(), record.getElementInstanceKey());
     return subscriptionState.getSubscription(messageSubscription);
   }
 

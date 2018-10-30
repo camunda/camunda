@@ -33,7 +33,7 @@ public class StartStatefulElementHandler implements BpmnStepHandler<ExecutableSe
     final ExecutableFlowNode targetNode = sequenceFlow.getTarget();
 
     final WorkflowInstanceRecord value = context.getValue();
-    value.setActivityId(targetNode.getId());
+    value.setElementId(targetNode.getId());
 
     context.getOutput().writeNewEvent(WorkflowInstanceIntent.ELEMENT_READY, value);
   }

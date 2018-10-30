@@ -72,7 +72,7 @@ public class TimerInstanceState {
     try (final WriteOptions options = new WriteOptions();
         final ZbWriteBatch batch = new ZbWriteBatch()) {
 
-      defaultKeyBuffer.putLong(0, timer.getActivityInstanceKey(), STATE_BYTE_ORDER);
+      defaultKeyBuffer.putLong(0, timer.getElementInstanceKey(), STATE_BYTE_ORDER);
       timer.write(valueBuffer, 0);
       batch.put(defaultColumnFamily, defaultKeyBuffer, valueBuffer);
 
@@ -92,7 +92,7 @@ public class TimerInstanceState {
 
   private void writeDueDateKey(MutableDirectBuffer buffer, TimerInstance timer) {
     buffer.putLong(0, timer.getDueDate(), STATE_BYTE_ORDER);
-    buffer.putLong(Long.BYTES, timer.getActivityInstanceKey(), STATE_BYTE_ORDER);
+    buffer.putLong(Long.BYTES, timer.getElementInstanceKey(), STATE_BYTE_ORDER);
   }
 
   public long findTimersWithDueDateBefore(final long timestamp, IteratorConsumer consumer) {
@@ -106,8 +106,8 @@ public class TimerInstanceState {
 
           boolean consumed = false;
           if (dueDate <= timestamp) {
-            final long activityInstanceKey = dueDateKeyBuffer.getLong(Long.BYTES, STATE_BYTE_ORDER);
-            readTimer(activityInstanceKey, timer);
+            final long elementInstanceKey = dueDateKeyBuffer.getLong(Long.BYTES, STATE_BYTE_ORDER);
+            readTimer(elementInstanceKey, timer);
             consumed = consumer.accept(timer);
           }
 
@@ -139,8 +139,8 @@ public class TimerInstanceState {
     }
   }
 
-  public TimerInstance get(long activityInstanceKey) {
-    final boolean found = readTimer(activityInstanceKey, timer);
+  public TimerInstance get(long elementInstanceKey) {
+    final boolean found = readTimer(elementInstanceKey, timer);
     if (found) {
       return timer;
     } else {
@@ -152,7 +152,7 @@ public class TimerInstanceState {
     try (final WriteOptions options = new WriteOptions();
         final ZbWriteBatch batch = new ZbWriteBatch()) {
 
-      defaultKeyBuffer.putLong(0, timer.getActivityInstanceKey(), STATE_BYTE_ORDER);
+      defaultKeyBuffer.putLong(0, timer.getElementInstanceKey(), STATE_BYTE_ORDER);
       batch.delete(defaultColumnFamily, defaultKeyBuffer);
 
       writeDueDateKey(dueDateKeyBuffer, timer);

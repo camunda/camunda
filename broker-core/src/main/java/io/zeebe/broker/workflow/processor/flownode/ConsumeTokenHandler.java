@@ -80,7 +80,7 @@ public class ConsumeTokenHandler implements BpmnStepHandler<ExecutableFlowNode> 
 
     for (IndexedRecord record : finishedTokens) {
       final WorkflowInstanceRecord mergingValue = record.getValue();
-      final ExecutableFlowElement element = workflow.getElementById(mergingValue.getActivityId());
+      final ExecutableFlowElement element = workflow.getElementById(mergingValue.getElementId());
       if (element instanceof ExecutableEndEvent) {
         final Mapping[] mappings = ((ExecutableEndEvent) element).getPayloadMappings();
 

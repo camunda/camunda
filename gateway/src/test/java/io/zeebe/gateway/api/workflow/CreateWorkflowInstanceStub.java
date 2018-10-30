@@ -56,7 +56,7 @@ public class CreateWorkflowInstanceStub
       throws Exception {
     final WorkflowInstanceRecord response = new WorkflowInstanceRecord();
     response.setWorkflowInstanceKey(WORKFLOW_INSTANCE_KEY);
-    response.setActivityId(PROCESS_ID);
+    response.setElementId(PROCESS_ID);
     response.setBpmnProcessId(PROCESS_ID);
     response.setPayload(request.getRequestWriter().getPayload());
     response.setScopeInstanceKey(-1);

@@ -100,10 +100,10 @@ public interface WorkflowClient {
    * <p>If the workflow instance failed because of a payload-related incident then it will try to
    * resolve the incident with the given payload.
    *
-   * @param event the latest workflow instance event
+   * @param elementInstanceKey the key of the element instance to update the payload for
    * @return a builder for the command
    */
-  UpdatePayloadWorkflowInstanceCommandStep1 newUpdatePayloadCommand(long activityInstanceKey);
+  UpdatePayloadWorkflowInstanceCommandStep1 newUpdatePayloadCommand(long elementInstanceKey);
 
   /**
    * Command to publish a message which can be correlated to a workflow instance.

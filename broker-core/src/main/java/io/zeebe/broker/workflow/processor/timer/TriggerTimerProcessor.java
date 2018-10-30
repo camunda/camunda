@@ -45,9 +45,9 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
       TypedStreamWriter streamWriter) {
 
     final TimerRecord timer = record.getValue();
-    final long activityInstanceKey = timer.getActivityInstanceKey();
+    final long elementInstanceKey = timer.getElementInstanceKey();
 
-    final TimerInstance timerInstance = workflowState.getTimerState().get(activityInstanceKey);
+    final TimerInstance timerInstance = workflowState.getTimerState().get(elementInstanceKey);
     if (timerInstance == null) {
       streamWriter.writeRejection(
           record, RejectionType.NOT_APPLICABLE, "timer is already triggered or canceled");
@@ -58,13 +58,13 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
     batchWriter.addFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
 
     final ElementInstance elementInstance =
-        workflowState.getElementInstanceState().getInstance(activityInstanceKey);
+        workflowState.getElementInstanceState().getInstance(elementInstanceKey);
 
     if (elementInstance != null
         && elementInstance.getState() == WorkflowInstanceIntent.ELEMENT_ACTIVATED) {
 
       batchWriter.addFollowUpEvent(
-          activityInstanceKey,
+          elementInstanceKey,
           WorkflowInstanceIntent.ELEMENT_COMPLETING,
           elementInstance.getValue());
 

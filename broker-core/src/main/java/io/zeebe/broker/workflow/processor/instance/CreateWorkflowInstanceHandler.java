@@ -56,7 +56,7 @@ public class CreateWorkflowInstanceHandler implements WorkflowInstanceCommandHan
           .setBpmnProcessId(bpmnId)
           .setWorkflowKey(workflowDefinition.getKey())
           .setVersion(workflowDefinition.getVersion())
-          .setActivityId(bpmnId);
+          .setElementId(bpmnId);
 
       final EventOutput eventOutput = commandContext.getOutput();
       eventOutput.newBatch();

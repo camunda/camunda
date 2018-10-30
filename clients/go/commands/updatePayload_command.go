@@ -13,7 +13,7 @@ type DispatchUpdatePayloadCommand interface {
 }
 
 type UpdatePayloadCommandStep1 interface {
-	ActivityInstanceKey(int64) UpdatePayloadCommandStep2
+	ElementInstanceKey(int64) UpdatePayloadCommandStep2
 }
 
 type UpdatePayloadCommandStep2 interface {
@@ -30,8 +30,8 @@ type UpdatePayloadCommand struct {
 	gateway pb.GatewayClient
 }
 
-func (cmd *UpdatePayloadCommand) ActivityInstanceKey(activityInstanceKey int64) UpdatePayloadCommandStep2 {
-	cmd.request.ActivityInstanceKey = activityInstanceKey
+func (cmd *UpdatePayloadCommand) ElementInstanceKey(elementInstanceKey int64) UpdatePayloadCommandStep2 {
+	cmd.request.ElementInstanceKey = elementInstanceKey
 	return cmd
 }
 
