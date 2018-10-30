@@ -80,7 +80,6 @@ export default class Actions extends React.Component {
     );
 
   render() {
-    console.log(this.state.operationState);
     return (
       <Styled.Actions>
         {this.state.operationState === OPERATION_STATE.SCHEDULED ? (
