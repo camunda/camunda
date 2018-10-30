@@ -30,8 +30,8 @@ spec:
             -XX:+UseCGroupMemoryLimitForHeap
       resources:
         limits:
-          cpu: 2
-          memory: 3Gi
+          cpu: 4
+          memory: 6Gi
         requests:
           cpu: 500m
           memory: 1Gi
