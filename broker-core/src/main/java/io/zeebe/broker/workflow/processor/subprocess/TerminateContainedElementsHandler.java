@@ -49,9 +49,6 @@ public class TerminateContainedElementsHandler
           WorkflowInstanceIntent.ELEMENT_TERMINATED,
           context.getValue());
     } else {
-
-      streamWriter.newBatch();
-
       for (int i = 0; i < children.size(); i++) {
         final ElementInstance child = children.get(i);
 

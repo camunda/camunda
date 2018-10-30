@@ -15,26 +15,33 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.processor.sequenceflow;
+package io.zeebe.broker.workflow.processor.flownode;
 
 import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
-import io.zeebe.broker.workflow.model.element.ExecutableSequenceFlow;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
-public class StartStatefulElementHandler implements BpmnStepHandler<ExecutableSequenceFlow> {
+public class ActivateFlowNodeHandler<T extends ExecutableFlowNode> implements BpmnStepHandler<T> {
+  private final IOMappingHelper ioMappingHelper = new IOMappingHelper();
 
   @Override
-  public void handle(BpmnStepContext<ExecutableSequenceFlow> context) {
+  public void handle(BpmnStepContext<T> context) {
+    ioMappingHelper.applyInputMappings(context);
+    activate(context);
 
-    final ExecutableSequenceFlow sequenceFlow = context.getElement();
-    final ExecutableFlowNode targetNode = sequenceFlow.getTarget();
-
-    final WorkflowInstanceRecord value = context.getValue();
-    value.setElementId(targetNode.getId());
-
-    context.getOutput().writeNewEvent(WorkflowInstanceIntent.ELEMENT_READY, value);
+    context
+        .getOutput()
+        .writeFollowUpEvent(
+            context.getRecord().getKey(),
+            WorkflowInstanceIntent.ELEMENT_ACTIVATED,
+            context.getValue());
   }
+
+  /**
+   * To be overridden by subclasses
+   *
+   * @param context current processor context
+   */
+  protected void activate(BpmnStepContext<T> context) {}
 }

@@ -103,7 +103,7 @@ public class TimerInstanceStateTest {
     state.put(timer);
 
     // when
-    final TimerInstance readTimer = state.get(1L);
+    final TimerInstance readTimer = state.get(1L, 2L);
 
     // then
     assertThat(readTimer).isNotNull();
@@ -112,7 +112,7 @@ public class TimerInstanceStateTest {
     assertThat(readTimer.getDueDate()).isEqualTo(1000L);
 
     // and
-    assertThat(state.get(2L)).isNull();
+    assertThat(state.get(2L, 1L)).isNull();
   }
 
   @Test
@@ -229,5 +229,35 @@ public class TimerInstanceStateTest {
     assertThat(keys).hasSize(1);
     assertThat(keys).contains(1L);
     assertThat(nextDueDate).isEqualTo(timer1.getDueDate());
+  }
+
+  @Test
+  public void shouldListAllTimersByElementInstanceKey() {
+    // given
+    final TimerInstance timer1 = new TimerInstance();
+    timer1.setElementInstanceKey(1L);
+    timer1.setKey(1L);
+    timer1.setDueDate(1000L);
+    state.put(timer1);
+
+    final TimerInstance timer2 = new TimerInstance();
+    timer2.setElementInstanceKey(1L);
+    timer2.setKey(2L);
+    timer2.setDueDate(2000L);
+    state.put(timer2);
+
+    final TimerInstance timer3 = new TimerInstance();
+    timer3.setElementInstanceKey(2L);
+    timer3.setKey(3L);
+    timer3.setDueDate(2000L);
+    state.put(timer3);
+
+    // when
+    final List<Long> keys = new ArrayList<>();
+    state.forEachTimerForActivity(1L, t -> keys.add(t.getKey()));
+
+    // then
+    assertThat(keys).hasSize(2);
+    assertThat(keys).containsExactly(1L, 2L);
   }
 }

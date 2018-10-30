@@ -23,7 +23,9 @@ import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.workflow.data.TimerRecord;
+import io.zeebe.broker.workflow.processor.boundary.BoundaryEventHelper;
 import io.zeebe.broker.workflow.state.ElementInstance;
+import io.zeebe.broker.workflow.state.ElementInstanceState;
 import io.zeebe.broker.workflow.state.TimerInstance;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.protocol.clientapi.RejectionType;
@@ -31,7 +33,7 @@ import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> {
-
+  private final BoundaryEventHelper boundaryEventHelper = new BoundaryEventHelper();
   private final WorkflowState workflowState;
 
   public TriggerTimerProcessor(WorkflowState workflowState) {
@@ -43,11 +45,11 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
       TypedRecord<TimerRecord> record,
       TypedResponseWriter responseWriter,
       TypedStreamWriter streamWriter) {
-
     final TimerRecord timer = record.getValue();
     final long elementInstanceKey = timer.getElementInstanceKey();
 
-    final TimerInstance timerInstance = workflowState.getTimerState().get(elementInstanceKey);
+    final TimerInstance timerInstance =
+        workflowState.getTimerState().get(elementInstanceKey, record.getKey());
     if (timerInstance == null) {
       streamWriter.writeRejection(
           record, RejectionType.NOT_APPLICABLE, "timer is already triggered or canceled");
@@ -55,23 +57,32 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
     }
 
     final TypedBatchWriter batchWriter = streamWriter.newBatch();
-    batchWriter.addFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
+    final ElementInstanceState elementInstanceState = workflowState.getElementInstanceState();
+    final ElementInstance elementInstance = elementInstanceState.getInstance(elementInstanceKey);
+    final TimerRecord timerRecord = record.getValue();
 
-    final ElementInstance elementInstance =
-        workflowState.getElementInstanceState().getInstance(elementInstanceKey);
+    batchWriter.addFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
 
     if (elementInstance != null
         && elementInstance.getState() == WorkflowInstanceIntent.ELEMENT_ACTIVATED) {
+      if (boundaryEventHelper.shouldTriggerBoundaryEvent(
+          elementInstance, timerRecord.getHandlerNodeId())) {
+        boundaryEventHelper.triggerBoundaryEvent(
+            workflowState, elementInstance, timerRecord.getHandlerNodeId(), batchWriter);
+      } else {
+        completeActivatedNode(elementInstanceKey, batchWriter, elementInstance);
+      }
 
-      batchWriter.addFollowUpEvent(
-          elementInstanceKey,
-          WorkflowInstanceIntent.ELEMENT_COMPLETING,
-          elementInstance.getValue());
-
-      elementInstance.setState(WorkflowInstanceIntent.ELEMENT_COMPLETING);
-      workflowState.getElementInstanceState().flushDirtyState();
+      elementInstanceState.flushDirtyState();
     }
 
     workflowState.getTimerState().remove(timerInstance);
+  }
+
+  private void completeActivatedNode(
+      long activityInstanceKey, TypedBatchWriter batchWriter, ElementInstance elementInstance) {
+    batchWriter.addFollowUpEvent(
+        activityInstanceKey, WorkflowInstanceIntent.ELEMENT_COMPLETING, elementInstance.getValue());
+    elementInstance.setState(WorkflowInstanceIntent.ELEMENT_COMPLETING);
   }
 }

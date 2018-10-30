@@ -166,7 +166,7 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
     if (WorkflowInstanceLifecycle.isInitialState(state)) {
       createNewElementInstance(key, state, value);
     } else if (WorkflowInstanceLifecycle.isFinalState(state)) {
-      removeElementInstance(key, value);
+      removeElementInstance(key, value, state);
     } else {
       updateElementInstance(key, state, value);
     }
@@ -186,13 +186,15 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
     scopeInstance.setValue(value);
   }
 
-  private void removeElementInstance(long key, WorkflowInstanceRecord value) {
+  private void removeElementInstance(
+      long key, WorkflowInstanceRecord value, WorkflowInstanceIntent state) {
     elementInstanceState.removeInstance(key);
 
     final long scopeInstanceKey = value.getScopeInstanceKey();
 
     // a final state is triggers continued execution, i.e. we count a new token
-    if (scopeInstanceKey >= 0) // i.e. not root scope
+    if (scopeInstanceKey >= 0
+        && state == WorkflowInstanceIntent.ELEMENT_COMPLETED) // i.e. not root scope
     {
       elementInstanceState.spawnToken(scopeInstanceKey);
     }

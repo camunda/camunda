@@ -315,7 +315,10 @@ public class ExporterRecordMapper {
     event.readValue(record);
 
     return new TimerRecordValueImpl(
-        objectMapper, record.getElementInstanceKey(), record.getDueDate());
+        objectMapper,
+        record.getElementInstanceKey(),
+        record.getDueDate(),
+        asString(record.getHandlerNodeId()));
   }
 
   // UTILS

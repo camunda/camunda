@@ -36,7 +36,7 @@ public class ProcessHandler implements ModelElementTransformer<Process> {
     final ExecutableWorkflow workflow = context.getWorkflow(element.getId());
     context.setCurrentWorkflow(workflow);
 
-    workflow.bindLifecycleState(WorkflowInstanceIntent.ELEMENT_READY, BpmnStep.APPLY_INPUT_MAPPING);
+    workflow.bindLifecycleState(WorkflowInstanceIntent.ELEMENT_READY, BpmnStep.ACTIVATE_FLOW_NODE);
     workflow.bindLifecycleState(
         WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.TRIGGER_START_EVENT);
     workflow.bindLifecycleState(

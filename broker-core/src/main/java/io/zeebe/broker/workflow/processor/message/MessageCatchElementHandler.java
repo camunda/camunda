@@ -17,102 +17,15 @@
  */
 package io.zeebe.broker.workflow.processor.message;
 
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
-import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
-
-import io.zeebe.broker.incident.data.ErrorType;
-import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
-import io.zeebe.broker.workflow.model.element.ExecutableMessage;
 import io.zeebe.broker.workflow.model.element.ExecutableMessageCatchElement;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
-import io.zeebe.broker.workflow.state.WorkflowState;
-import io.zeebe.broker.workflow.state.WorkflowSubscription;
-import io.zeebe.msgpack.query.MsgPackQueryProcessor;
-import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResult;
-import io.zeebe.msgpack.query.MsgPackQueryProcessor.QueryResults;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
-import io.zeebe.util.sched.clock.ActorClock;
-import org.agrona.DirectBuffer;
 
 public class MessageCatchElementHandler implements BpmnStepHandler<ExecutableMessageCatchElement> {
-
-  private final MsgPackQueryProcessor queryProcessor = new MsgPackQueryProcessor();
-  private final WorkflowState workflowState;
-
-  private WorkflowInstanceRecord workflowInstance;
-  private long elementInstanceKey;
-  private ExecutableMessage message;
-  private DirectBuffer extractedCorrelationKey;
-
-  private final SubscriptionCommandSender subscriptionCommandSender;
-
-  public MessageCatchElementHandler(
-      final SubscriptionCommandSender subscriptionCommandSender,
-      final WorkflowState workflowState) {
-    this.subscriptionCommandSender = subscriptionCommandSender;
-    this.workflowState = workflowState;
-  }
-
   @Override
   public void handle(final BpmnStepContext<ExecutableMessageCatchElement> context) {
-
-    this.workflowInstance = context.getValue();
-    this.elementInstanceKey = context.getRecord().getKey();
-    this.message = context.getElement().getMessage();
-
-    extractedCorrelationKey = extractCorrelationKey(context);
-
-    if (extractedCorrelationKey != null) {
-      context.getSideEffect().accept(this::openMessageSubscription);
-
-      final WorkflowSubscription subscription =
-          new WorkflowSubscription(
-              workflowInstance.getWorkflowInstanceKey(),
-              elementInstanceKey,
-              cloneBuffer(message.getMessageName()),
-              cloneBuffer(extractedCorrelationKey));
-      subscription.setCommandSentTime(ActorClock.currentTimeMillis());
-      workflowState.put(subscription);
-    }
-  }
-
-  private boolean openMessageSubscription() {
-    return subscriptionCommandSender.openMessageSubscription(
-        workflowInstance.getWorkflowInstanceKey(),
-        elementInstanceKey,
-        message.getMessageName(),
-        extractedCorrelationKey);
-  }
-
-  private DirectBuffer extractCorrelationKey(
-      BpmnStepContext<ExecutableMessageCatchElement> context) {
-    final QueryResults results =
-        queryProcessor.process(message.getCorrelationKey(), workflowInstance.getPayload());
-    if (results.size() == 1) {
-      final QueryResult result = results.getSingleResult();
-
-      if (result.isString()) {
-        return result.getString();
-
-      } else if (result.isLong()) {
-        return result.getLongAsBuffer();
-
-      } else {
-        raiseIncident(context, "the value must be either a string or a number");
-      }
-    } else {
-      raiseIncident(context, "no value found");
-    }
-    return null;
-  }
-
-  private void raiseIncident(
-      BpmnStepContext<ExecutableMessageCatchElement> context, String failure) {
-    final String expression = bufferAsString(message.getCorrelationKey().getExpression());
-    final String failureMessage =
-        String.format("Failed to extract the correlation-key by '%s': %s", expression, failure);
-
-    context.raiseIncident(ErrorType.EXTRACT_VALUE_ERROR, failureMessage);
+    context
+        .getCatchEventOutput()
+        .subscribeToMessageEvent(context, context.getElement().getMessage());
   }
 }

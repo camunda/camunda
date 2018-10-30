@@ -193,6 +193,9 @@ public class LogStreamBatchWriterImpl implements LogStreamBatchWriter, LogEntryB
 
   @Override
   public long tryWrite() {
+    if (eventCount == 0) {
+      return 0L;
+    }
     ensureGreaterThan("event count", eventCount, 0);
 
     long result = claimBatchForEvents();

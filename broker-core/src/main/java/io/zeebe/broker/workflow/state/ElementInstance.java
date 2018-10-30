@@ -33,6 +33,7 @@ public class ElementInstance implements Persistable {
   private int childCount;
   private long jobKey;
   private int activeTokens = 0;
+  private long attachedToKey;
 
   ElementInstance() {
     this.elementRecord = new IndexedRecord();
@@ -108,6 +109,14 @@ public class ElementInstance implements Persistable {
     return activeTokens + getNumberOfActiveElementInstances();
   }
 
+  public long getAttachedToKey() {
+    return attachedToKey;
+  }
+
+  public void setAttachedToKey(long attachedToKey) {
+    this.attachedToKey = attachedToKey;
+  }
+
   @Override
   public void wrap(DirectBuffer buffer, int offset, int length) {
     final int startOffset = offset;
@@ -123,13 +132,16 @@ public class ElementInstance implements Persistable {
     parentKey = buffer.getLong(offset, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
+    attachedToKey = buffer.getLong(offset, STATE_BYTE_ORDER);
+    offset += Long.BYTES;
+
     final int writtenLength = offset - startOffset;
     elementRecord.wrap(buffer, offset, length - writtenLength);
   }
 
   @Override
   public int getLength() {
-    return 2 * Long.BYTES + 2 * Integer.BYTES + elementRecord.getLength();
+    return 3 * Long.BYTES + 2 * Integer.BYTES + elementRecord.getLength();
   }
 
   @Override
@@ -148,6 +160,9 @@ public class ElementInstance implements Persistable {
     buffer.putLong(offset, parentKey, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
+    buffer.putLong(offset, attachedToKey, STATE_BYTE_ORDER);
+    offset += Long.BYTES;
+
     final int endLength = offset - startOffset;
     final int expectedLength = getLength() - elementRecord.getLength();
     assert endLength == expectedLength : "End length differs with getLength()";
@@ -155,6 +170,7 @@ public class ElementInstance implements Persistable {
     elementRecord.write(buffer, offset);
   }
 
+  @Override
   public void writeKey(MutableDirectBuffer keyBuffer, int offset) {
     int keyOffset = offset;
     keyBuffer.putLong(keyOffset, getKey(), STATE_BYTE_ORDER);
@@ -163,6 +179,7 @@ public class ElementInstance implements Persistable {
         : "Offset problem: end length is not equal to expected key length";
   }
 
+  @Override
   public int getKeyLength() {
     return Long.BYTES;
   }

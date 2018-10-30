@@ -17,33 +17,31 @@
  */
 package io.zeebe.broker.workflow.processor.flownode;
 
-import io.zeebe.broker.logstreams.processor.TypedBatchWriter;
-import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
-import io.zeebe.broker.workflow.processor.EventOutput;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
-public class TerminateElementHandler implements BpmnStepHandler<ExecutableFlowNode> {
+public class CompleteFlowNodeHandler<T extends ExecutableFlowNode> implements BpmnStepHandler<T> {
+  private final IOMappingHelper ioMappingHelper = new IOMappingHelper();
 
   @Override
-  public void handle(BpmnStepContext<ExecutableFlowNode> context) {
-    final TypedRecord<WorkflowInstanceRecord> terminatingRecord = context.getRecord();
+  public void handle(BpmnStepContext<T> context) {
+    ioMappingHelper.applyOutputMappings(context);
+    complete(context);
 
-    final EventOutput instanceWriter = context.getOutput();
-    instanceWriter.newBatch();
-
-    addTerminatingRecords(context, instanceWriter.getBatchWriter());
-
-    instanceWriter.writeFollowUpEvent(
-        terminatingRecord.getKey(),
-        WorkflowInstanceIntent.ELEMENT_TERMINATED,
-        terminatingRecord.getValue());
+    context
+        .getOutput()
+        .writeFollowUpEvent(
+            context.getRecord().getKey(),
+            WorkflowInstanceIntent.ELEMENT_COMPLETED,
+            context.getValue());
   }
 
-  // to be overriden by subclasses
-  protected void addTerminatingRecords(
-      BpmnStepContext<ExecutableFlowNode> context, TypedBatchWriter batch) {}
+  /**
+   * To be overridden by subclasses
+   *
+   * @param context current processor context
+   */
+  public void complete(BpmnStepContext<? extends T> context) {}
 }

@@ -15,32 +15,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.processor.gateway;
+package io.zeebe.broker.workflow.processor.sequenceflow;
 
 import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
 import io.zeebe.broker.workflow.model.element.ExecutableSequenceFlow;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
-import io.zeebe.broker.workflow.processor.EventOutput;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import java.util.List;
 
-public class ParallelSplitHandler implements BpmnStepHandler<ExecutableFlowNode> {
+public class StartFlowNodeHandler implements BpmnStepHandler<ExecutableSequenceFlow> {
 
   @Override
-  public void handle(BpmnStepContext<ExecutableFlowNode> context) {
-    final ExecutableFlowNode element = context.getElement();
+  public void handle(BpmnStepContext<ExecutableSequenceFlow> context) {
+    final ExecutableSequenceFlow sequenceFlow = context.getElement();
+    final ExecutableFlowNode targetNode = sequenceFlow.getTarget();
+
     final WorkflowInstanceRecord value = context.getValue();
+    value.setElementId(targetNode.getId());
 
-    final List<ExecutableSequenceFlow> outgoingFlows = element.getOutgoing();
-    final EventOutput streamWriter = context.getOutput();
-
-    for (int i = 0; i < outgoingFlows.size(); i++) {
-      final ExecutableSequenceFlow flow = outgoingFlows.get(i);
-
-      value.setElementId(flow.getId());
-      streamWriter.writeNewEvent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, value);
-    }
+    context.getOutput().writeNewEvent(WorkflowInstanceIntent.ELEMENT_READY, value);
   }
 }

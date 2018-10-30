@@ -35,22 +35,24 @@ import java.util.function.Consumer;
 
 public class BpmnStepContext<T extends ExecutableFlowElement> {
 
+  private final IncidentRecord incidentCommand = new IncidentRecord();
+  private final EventOutput eventOutput;
+  private final MsgPackMergeTool mergeTool;
+  private final CatchEventOutput catchEventOutput;
+
   private TypedRecord<WorkflowInstanceRecord> record;
   private ExecutableWorkflow workflow;
   private ExecutableFlowElement element;
   private TypedCommandWriter commandWriter;
-  private final EventOutput eventOutput;
   private Consumer<SideEffectProducer> sideEffect;
 
   private ElementInstance flowScopeInstance;
   private ElementInstance elementInstance;
 
-  private final IncidentRecord incidentCommand = new IncidentRecord();
-  private final MsgPackMergeTool mergeTool;
-
-  public BpmnStepContext(EventOutput eventOutput) {
+  public BpmnStepContext(EventOutput eventOutput, CatchEventOutput catchEventOutput) {
     this.eventOutput = eventOutput;
     this.mergeTool = new MsgPackMergeTool(4096);
+    this.catchEventOutput = catchEventOutput;
   }
 
   public TypedRecord<WorkflowInstanceRecord> getRecord() {
@@ -98,6 +100,10 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
     return commandWriter;
   }
 
+  public CatchEventOutput getCatchEventOutput() {
+    return catchEventOutput;
+  }
+
   public ElementInstance getFlowScopeInstance() {
     return flowScopeInstance;
   }
@@ -132,7 +138,6 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
   }
 
   public void raiseIncident(ErrorType errorType, String errorMessage) {
-
     incidentCommand.reset();
 
     incidentCommand

@@ -15,10 +15,23 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.processor;
+package io.zeebe.broker.workflow.model.element;
 
-import io.zeebe.broker.workflow.model.element.ExecutableFlowElement;
+import java.util.ArrayList;
+import java.util.List;
 
-public interface BpmnStepHandler<T extends ExecutableFlowElement> {
-  void handle(BpmnStepContext<T> context);
+public class ExecutableActivity extends ExecutableFlowNode {
+  private List<ExecutableBoundaryEvent> boundaryEvents = new ArrayList<>();
+
+  public ExecutableActivity(String id) {
+    super(id);
+  }
+
+  public List<ExecutableBoundaryEvent> getBoundaryEvents() {
+    return boundaryEvents;
+  }
+
+  public void attach(ExecutableBoundaryEvent boundaryEvent) {
+    boundaryEvents.add(boundaryEvent);
+  }
 }

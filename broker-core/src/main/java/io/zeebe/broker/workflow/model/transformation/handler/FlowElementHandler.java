@@ -18,6 +18,8 @@
 package io.zeebe.broker.workflow.model.transformation.handler;
 
 import io.zeebe.broker.workflow.model.element.AbstractFlowElement;
+import io.zeebe.broker.workflow.model.element.ExecutableActivity;
+import io.zeebe.broker.workflow.model.element.ExecutableBoundaryEvent;
 import io.zeebe.broker.workflow.model.element.ExecutableEndEvent;
 import io.zeebe.broker.workflow.model.element.ExecutableExclusiveGateway;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElementContainer;
@@ -29,6 +31,8 @@ import io.zeebe.broker.workflow.model.element.ExecutableServiceTask;
 import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
+import io.zeebe.model.bpmn.instance.Activity;
+import io.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.zeebe.model.bpmn.instance.EndEvent;
 import io.zeebe.model.bpmn.instance.ExclusiveGateway;
 import io.zeebe.model.bpmn.instance.FlowElement;
@@ -50,6 +54,8 @@ public class FlowElementHandler implements ModelElementTransformer<FlowElement> 
   static {
     ELEMENT_FACTORIES = new HashMap<>();
 
+    ELEMENT_FACTORIES.put(Activity.class, ExecutableActivity::new);
+    ELEMENT_FACTORIES.put(BoundaryEvent.class, ExecutableBoundaryEvent::new);
     ELEMENT_FACTORIES.put(EndEvent.class, ExecutableEndEvent::new);
     ELEMENT_FACTORIES.put(ExclusiveGateway.class, ExecutableExclusiveGateway::new);
     ELEMENT_FACTORIES.put(IntermediateCatchEvent.class, ExecutableIntermediateCatchElement::new);

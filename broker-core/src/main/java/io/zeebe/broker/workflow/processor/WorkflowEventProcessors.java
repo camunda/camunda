@@ -113,6 +113,10 @@ public class WorkflowEventProcessors {
         .onEvent(
             ValueType.WORKFLOW_INSTANCE,
             WorkflowInstanceIntent.ELEMENT_TERMINATED,
+            bpmnStepProcessor)
+        .onEvent(
+            ValueType.WORKFLOW_INSTANCE,
+            WorkflowInstanceIntent.BOUNDARY_EVENT_TRIGGERED,
             bpmnStepProcessor);
   }
 

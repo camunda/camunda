@@ -20,20 +20,25 @@ package io.zeebe.broker.workflow.processor;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.workflow.model.BpmnStep;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElement;
-import io.zeebe.broker.workflow.processor.activity.InputMappingHandler;
-import io.zeebe.broker.workflow.processor.activity.OutputMappingHandler;
-import io.zeebe.broker.workflow.processor.activity.PropagateTerminationHandler;
+import io.zeebe.broker.workflow.processor.activity.ActivateActivityHandler;
+import io.zeebe.broker.workflow.processor.activity.CompleteActivityHandler;
+import io.zeebe.broker.workflow.processor.activity.TerminateActivityHandler;
+import io.zeebe.broker.workflow.processor.boundary.BoundaryEventTriggeredHandler;
+import io.zeebe.broker.workflow.processor.flownode.ActivateFlowNodeHandler;
+import io.zeebe.broker.workflow.processor.flownode.CompleteFlowNodeHandler;
 import io.zeebe.broker.workflow.processor.flownode.ConsumeTokenHandler;
+import io.zeebe.broker.workflow.processor.flownode.PropagateTerminationHandler;
 import io.zeebe.broker.workflow.processor.flownode.TakeSequenceFlowHandler;
-import io.zeebe.broker.workflow.processor.flownode.TerminateElementHandler;
+import io.zeebe.broker.workflow.processor.flownode.TerminateFlowNodeHandler;
 import io.zeebe.broker.workflow.processor.gateway.ExclusiveSplitHandler;
 import io.zeebe.broker.workflow.processor.gateway.ParallelSplitHandler;
 import io.zeebe.broker.workflow.processor.message.MessageCatchElementHandler;
 import io.zeebe.broker.workflow.processor.message.TerminateIntermediateMessageHandler;
+import io.zeebe.broker.workflow.processor.message.TerminateReceiveTaskHandler;
 import io.zeebe.broker.workflow.processor.process.CompleteProcessHandler;
 import io.zeebe.broker.workflow.processor.sequenceflow.ActivateGatewayHandler;
 import io.zeebe.broker.workflow.processor.sequenceflow.ParallelMergeHandler;
-import io.zeebe.broker.workflow.processor.sequenceflow.StartStatefulElementHandler;
+import io.zeebe.broker.workflow.processor.sequenceflow.StartFlowNodeHandler;
 import io.zeebe.broker.workflow.processor.sequenceflow.TriggerEndEventHandler;
 import io.zeebe.broker.workflow.processor.servicetask.CreateJobHandler;
 import io.zeebe.broker.workflow.processor.servicetask.TerminateServiceTaskHandler;
@@ -52,22 +57,30 @@ public class BpmnStepHandlers {
 
   public BpmnStepHandlers(
       SubscriptionCommandSender subscriptionCommandSender, WorkflowState workflowState) {
-
     // activity
+    stepHandlers.put(BpmnStep.ACTIVATE_ACTIVITY, new ActivateActivityHandler());
+    stepHandlers.put(BpmnStep.COMPLETE_ACTIVITY, new CompleteActivityHandler());
+    stepHandlers.put(BpmnStep.TERMINATE_ACTIVITY, new TerminateActivityHandler());
+
+    // boundary events
+    stepHandlers.put(BpmnStep.BOUNDARY_EVENT_TRIGGERED, new BoundaryEventTriggeredHandler());
+
+    // service task
     stepHandlers.put(BpmnStep.CREATE_JOB, new CreateJobHandler());
-    stepHandlers.put(BpmnStep.APPLY_INPUT_MAPPING, new InputMappingHandler());
-    stepHandlers.put(BpmnStep.APPLY_OUTPUT_MAPPING, new OutputMappingHandler());
 
     // exclusive gateway
     stepHandlers.put(BpmnStep.EXCLUSIVE_SPLIT, new ExclusiveSplitHandler());
 
-    // flow node
+    // flow nodes
     stepHandlers.put(BpmnStep.CONSUME_TOKEN, new ConsumeTokenHandler(workflowState));
-    stepHandlers.put(BpmnStep.TAKE_SEQUENCE_FLOW, new TakeSequenceFlowHandler());
+    stepHandlers.put(BpmnStep.START_FLOW_NODE, new StartFlowNodeHandler());
+    stepHandlers.put(BpmnStep.ACTIVATE_FLOW_NODE, new ActivateFlowNodeHandler());
+    stepHandlers.put(BpmnStep.COMPLETE_FLOW_NODE, new CompleteFlowNodeHandler());
+    stepHandlers.put(BpmnStep.TERMINATE_ELEMENT, new TerminateFlowNodeHandler());
 
     // sequence flow
+    stepHandlers.put(BpmnStep.TAKE_SEQUENCE_FLOW, new TakeSequenceFlowHandler());
     stepHandlers.put(BpmnStep.ACTIVATE_GATEWAY, new ActivateGatewayHandler());
-    stepHandlers.put(BpmnStep.START_STATEFUL_ELEMENT, new StartStatefulElementHandler());
     stepHandlers.put(BpmnStep.TRIGGER_END_EVENT, new TriggerEndEventHandler());
     stepHandlers.put(BpmnStep.PARALLEL_MERGE, new ParallelMergeHandler(workflowState));
 
@@ -78,21 +91,18 @@ public class BpmnStepHandlers {
     stepHandlers.put(BpmnStep.PARALLEL_SPLIT, new ParallelSplitHandler());
 
     // termination
-    stepHandlers.put(BpmnStep.TERMINATE_ELEMENT, new TerminateElementHandler());
     stepHandlers.put(BpmnStep.TERMINATE_JOB_TASK, new TerminateServiceTaskHandler());
-    stepHandlers.put(BpmnStep.TERMINATE_TIMER, new TerminateTimerHandler(workflowState));
+    stepHandlers.put(BpmnStep.TERMINATE_TIMER, new TerminateTimerHandler());
+    stepHandlers.put(BpmnStep.TERMINATE_RECEIVE_TASK, new TerminateReceiveTaskHandler());
     stepHandlers.put(
-        BpmnStep.TERMINATE_INTERMEDIATE_MESSAGE,
-        new TerminateIntermediateMessageHandler(workflowState, subscriptionCommandSender));
+        BpmnStep.TERMINATE_INTERMEDIATE_MESSAGE, new TerminateIntermediateMessageHandler());
     stepHandlers.put(
         BpmnStep.TERMINATE_CONTAINED_INSTANCES,
         new TerminateContainedElementsHandler(workflowState));
     stepHandlers.put(BpmnStep.PROPAGATE_TERMINATION, new PropagateTerminationHandler());
 
     // intermediate catch event
-    stepHandlers.put(
-        BpmnStep.SUBSCRIBE_TO_INTERMEDIATE_MESSAGE,
-        new MessageCatchElementHandler(subscriptionCommandSender, workflowState));
+    stepHandlers.put(BpmnStep.SUBSCRIBE_TO_INTERMEDIATE_MESSAGE, new MessageCatchElementHandler());
     stepHandlers.put(BpmnStep.CREATE_TIMER, new CreateTimerHandler());
 
     // process
@@ -101,15 +111,14 @@ public class BpmnStepHandlers {
 
   public void handle(BpmnStepContext context) {
     final ExecutableFlowElement flowElement = context.getElement();
-    final BpmnStep step =
-        flowElement.getStep((WorkflowInstanceIntent) context.getRecord().getMetadata().getIntent());
+    final WorkflowInstanceIntent state =
+        (WorkflowInstanceIntent) context.getRecord().getMetadata().getIntent();
+    final BpmnStep step = flowElement.getStep(state);
 
     if (step != null) {
       final BpmnStepHandler stepHandler = stepHandlers.get(step);
-
-      if (stepHandler != null) {
-        stepHandler.handle(context);
-      }
+      assert stepHandler != null : "no step handler configured for step " + step.toString();
+      stepHandler.handle(context);
     }
   }
 }

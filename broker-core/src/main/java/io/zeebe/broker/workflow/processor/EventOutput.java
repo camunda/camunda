@@ -26,10 +26,7 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceReco
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class EventOutput {
-
   private final WorkflowEngineState materializedState;
-
-  private TypedStreamWriter streamWriter;
   private TypedBatchWriter batchWriter;
 
   public EventOutput(WorkflowEngineState materializedState) {
@@ -37,16 +34,7 @@ public class EventOutput {
   }
 
   public void setStreamWriter(TypedStreamWriter streamWriter) {
-    this.streamWriter = streamWriter;
-    this.batchWriter = null;
-  }
-
-  /**
-   * Ideally we can get rid of this. Calling code should not need to declare upfront how many
-   * records it writes.
-   */
-  public void newBatch() {
-    batchWriter = streamWriter.newBatch();
+    this.batchWriter = streamWriter.newBatch();
   }
 
   /**
@@ -60,13 +48,7 @@ public class EventOutput {
   }
 
   public long writeNewEvent(WorkflowInstanceIntent state, WorkflowInstanceRecord value) {
-    final long key;
-    if (batchWriter != null) {
-      key = batchWriter.addNewEvent(state, value);
-    } else {
-      key = streamWriter.writeNewEvent(state, value);
-    }
-
+    final long key = batchWriter.addNewEvent(state, value);
     materializedState.onEventProduced(key, state, value);
 
     return key;
@@ -74,12 +56,7 @@ public class EventOutput {
 
   public void writeFollowUpEvent(
       long key, WorkflowInstanceIntent state, WorkflowInstanceRecord value) {
-    if (batchWriter != null) {
-      batchWriter.addFollowUpEvent(key, state, value);
-    } else {
-      streamWriter.writeFollowUpEvent(key, state, value);
-    }
-
+    batchWriter.addFollowUpEvent(key, state, value);
     materializedState.onEventProduced(key, state, value);
   }
 

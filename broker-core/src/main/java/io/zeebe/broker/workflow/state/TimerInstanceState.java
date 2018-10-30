@@ -22,9 +22,13 @@ import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
 
 import io.zeebe.logstreams.rocksdb.ZbWriteBatch;
 import io.zeebe.logstreams.state.StateController;
+import java.util.function.Consumer;
+import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.rocksdb.ColumnFamilyHandle;
+import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.WriteOptions;
 
@@ -38,10 +42,13 @@ public class TimerInstanceState {
     DEFAULT_COLUMN_FAMILY_NAME, DUE_DATES_COLUMN_FAMILY_NAME
   };
 
-  private final UnsafeBuffer defaultKeyBuffer = new UnsafeBuffer(new byte[Long.BYTES]);
-  private final UnsafeBuffer dueDateKeyBuffer = new UnsafeBuffer(new byte[2 * Long.BYTES]);
+  private final UnsafeBuffer defaultKeyBuffer =
+      new UnsafeBuffer(new byte[TimerInstance.KEY_LENGTH]);
+  private final UnsafeBuffer dueDateKeyBuffer =
+      new UnsafeBuffer(new byte[Long.BYTES + TimerInstance.KEY_LENGTH]);
+  private final UnsafeBuffer activityKeyPrefixBuffer = new UnsafeBuffer(new byte[Long.BYTES]);
 
-  private final UnsafeBuffer valueBuffer = new UnsafeBuffer(new byte[TimerInstance.LENGTH]);
+  private final ExpandableArrayBuffer valueBuffer = new ExpandableArrayBuffer();
 
   private final TimerInstance timer = new TimerInstance();
 
@@ -69,12 +76,10 @@ public class TimerInstanceState {
   }
 
   public void put(TimerInstance timer) {
-
     try (final WriteOptions options = new WriteOptions();
         final ZbWriteBatch batch = new ZbWriteBatch()) {
-
-      defaultKeyBuffer.putLong(0, timer.getElementInstanceKey(), STATE_BYTE_ORDER);
-      timer.write(valueBuffer, 0);
+      timer.writeKey(defaultKeyBuffer, 0);
+      final DirectBuffer valueBuffer = writeIntoValueBuffer(timer);
       batch.put(defaultColumnFamily, defaultKeyBuffer, valueBuffer);
 
       writeDueDateKey(dueDateKeyBuffer, timer);
@@ -93,7 +98,12 @@ public class TimerInstanceState {
 
   private void writeDueDateKey(MutableDirectBuffer buffer, TimerInstance timer) {
     buffer.putLong(0, timer.getDueDate(), STATE_BYTE_ORDER);
-    buffer.putLong(Long.BYTES, timer.getElementInstanceKey(), STATE_BYTE_ORDER);
+    timer.writeKey(buffer, Long.BYTES);
+  }
+
+  private DirectBuffer writeIntoValueBuffer(TimerInstance timer) {
+    timer.write(valueBuffer, 0);
+    return new UnsafeBuffer(valueBuffer, 0, timer.getLength());
   }
 
   public long findTimersWithDueDateBefore(final long timestamp, IteratorConsumer consumer) {
@@ -108,7 +118,8 @@ public class TimerInstanceState {
           boolean consumed = false;
           if (dueDate <= timestamp) {
             final long elementInstanceKey = dueDateKeyBuffer.getLong(Long.BYTES, STATE_BYTE_ORDER);
-            readTimer(elementInstanceKey, timer);
+            final long timerKey = dueDateKeyBuffer.getLong(2 * Long.BYTES, STATE_BYTE_ORDER);
+            readTimer(elementInstanceKey, timerKey, timer);
             consumed = consumer.accept(timer);
           }
 
@@ -121,27 +132,51 @@ public class TimerInstanceState {
     return nextDueDate;
   }
 
-  private boolean readTimer(long key, TimerInstance timer) {
-    defaultKeyBuffer.putLong(0, key, STATE_BYTE_ORDER);
+  private boolean readTimer(long elementInstanceKey, long timerKey, TimerInstance timer) {
+    this.timer.setElementInstanceKey(elementInstanceKey);
+    this.timer.setKey(timerKey);
+    this.timer.writeKey(defaultKeyBuffer, 0);
+
+    return readTimer(defaultKeyBuffer, timer);
+  }
+
+  private boolean readTimer(DirectBuffer keyBuffer, TimerInstance timer) {
     final int readBytes =
         db.get(
             defaultColumnFamily,
-            defaultKeyBuffer.byteArray(),
+            keyBuffer.byteArray(),
             0,
-            defaultKeyBuffer.capacity(),
+            keyBuffer.capacity(),
             valueBuffer.byteArray(),
             0,
             valueBuffer.capacity());
-    if (readBytes > 0) {
-      timer.wrap(valueBuffer, 0, readBytes);
-      return true;
-    } else {
+
+    if (readBytes == RocksDB.NOT_FOUND) {
       return false;
     }
+
+    timer.wrap(valueBuffer, 0, readBytes);
+    return true;
   }
 
-  public TimerInstance get(long elementInstanceKey) {
-    final boolean found = readTimer(elementInstanceKey, timer);
+  /**
+   * NOTE: the timer instance given to the consumer is shared and will be mutated on the next
+   * iteration.
+   */
+  public void forEachTimerForActivity(long activityInstanceKey, Consumer<TimerInstance> action) {
+    activityKeyPrefixBuffer.putLong(0, activityInstanceKey, STATE_BYTE_ORDER);
+    db.whileEqualPrefix(
+        defaultColumnFamily,
+        activityKeyPrefixBuffer.byteArray(),
+        (key, value) -> {
+          if (readTimer(new UnsafeBuffer(key), timer)) {
+            action.accept(timer);
+          }
+        });
+  }
+
+  public TimerInstance get(long elementInstanceKey, long timerKey) {
+    final boolean found = readTimer(elementInstanceKey, timerKey, timer);
     if (found) {
       return timer;
     } else {

@@ -17,27 +17,18 @@
  */
 package io.zeebe.broker.workflow.processor.timer;
 
-import io.zeebe.broker.workflow.data.TimerRecord;
 import io.zeebe.broker.workflow.model.element.ExecutableIntermediateCatchElement;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
-import io.zeebe.protocol.intent.TimerIntent;
-import io.zeebe.util.sched.clock.ActorClock;
-import java.time.Duration;
 
 public class CreateTimerHandler implements BpmnStepHandler<ExecutableIntermediateCatchElement> {
-
-  private final TimerRecord timer = new TimerRecord();
-
   @Override
   public void handle(BpmnStepContext<ExecutableIntermediateCatchElement> context) {
-    final long elementInstanceKey = context.getElementInstance().getKey();
-
-    final Duration duration = context.getElement().getDuration();
-    final long dueDate = ActorClock.currentTimeMillis() + duration.toMillis();
-
-    timer.setElementInstanceKey(elementInstanceKey).setDueDate(dueDate);
-
-    context.getCommandWriter().writeNewCommand(TimerIntent.CREATE, timer);
+    context
+        .getCatchEventOutput()
+        .subscribeToTimerEvent(
+            context.getElementInstance(),
+            context.getElement(),
+            context.getOutput().getBatchWriter());
   }
 }

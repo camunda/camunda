@@ -19,6 +19,7 @@ package io.zeebe.broker.workflow.model.transformation;
 
 import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.handler.ActivityHandler;
+import io.zeebe.broker.workflow.model.transformation.handler.BoundaryEventHandler;
 import io.zeebe.broker.workflow.model.transformation.handler.CreateWorkflowHandler;
 import io.zeebe.broker.workflow.model.transformation.handler.EndEventHandler;
 import io.zeebe.broker.workflow.model.transformation.handler.ExclusiveGatewayHandler;
@@ -60,6 +61,7 @@ public class BpmnTransformer {
 
     this.step2Visitor = new TransformationVisitor();
     step2Visitor.registerHandler(new ActivityHandler());
+    step2Visitor.registerHandler(new BoundaryEventHandler());
     step2Visitor.registerHandler(new EndEventHandler());
     step2Visitor.registerHandler(new ExclusiveGatewayHandler());
     step2Visitor.registerHandler(new FlowNodeHandler());

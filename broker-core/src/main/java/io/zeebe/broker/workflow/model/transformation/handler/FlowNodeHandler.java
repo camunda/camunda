@@ -40,14 +40,14 @@ public class FlowNodeHandler implements ModelElementTransformer<FlowNode> {
   }
 
   @Override
-  public void transform(FlowNode element, TransformContext context) {
+  public void transform(FlowNode flowNode, TransformContext context) {
     final ExecutableWorkflow workflow = context.getCurrentWorkflow();
-    final ExecutableFlowNode flowNode =
-        workflow.getElementById(element.getId(), ExecutableFlowNode.class);
+    final ExecutableFlowNode element =
+        workflow.getElementById(flowNode.getId(), ExecutableFlowNode.class);
 
-    transformIoMappings(element, flowNode, context);
+    transformIoMappings(flowNode, element, context);
 
-    final BpmnStep outgoingBehavior = determineOutgoingBehavior(element, flowNode);
+    final BpmnStep outgoingBehavior = determineOutgoingBehavior(flowNode, element);
     context.setCurrentFlowNodeOutgoingStep(outgoingBehavior);
   }
 

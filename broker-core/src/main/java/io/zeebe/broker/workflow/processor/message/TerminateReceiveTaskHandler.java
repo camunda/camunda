@@ -15,10 +15,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.processor;
+package io.zeebe.broker.workflow.processor.message;
 
-import io.zeebe.broker.workflow.model.element.ExecutableFlowElement;
+import io.zeebe.broker.workflow.model.element.ExecutableReceiveTask;
+import io.zeebe.broker.workflow.processor.BpmnStepContext;
+import io.zeebe.broker.workflow.processor.activity.TerminateActivityHandler;
 
-public interface BpmnStepHandler<T extends ExecutableFlowElement> {
-  void handle(BpmnStepContext<T> context);
+public class TerminateReceiveTaskHandler extends TerminateActivityHandler<ExecutableReceiveTask> {
+  @Override
+  protected void terminate(BpmnStepContext<ExecutableReceiveTask> context) {
+    super.terminate(context);
+    context.getCatchEventOutput().unsubscribeFromMessageEvent(context);
+  }
 }

@@ -15,27 +15,31 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.processor.activity;
+package io.zeebe.broker.workflow.processor.flownode;
 
-import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
+import io.zeebe.broker.workflow.model.element.ExecutableFlowElement;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
-import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
-public class PropagateTerminationHandler implements BpmnStepHandler<ExecutableFlowNode> {
-
+public class TerminateFlowNodeHandler<T extends ExecutableFlowElement>
+    implements BpmnStepHandler<T> {
   @Override
-  public void handle(BpmnStepContext<ExecutableFlowNode> context) {
-    final ElementInstance flowScopeInstance = context.getFlowScopeInstance();
+  public void handle(BpmnStepContext<T> context) {
+    terminate(context);
 
-    if (flowScopeInstance.getNumberOfActiveElementInstances() == 0) {
-      context
-          .getOutput()
-          .writeFollowUpEvent(
-              flowScopeInstance.getKey(),
-              WorkflowInstanceIntent.ELEMENT_TERMINATED,
-              flowScopeInstance.getValue());
-    }
+    context
+        .getOutput()
+        .writeFollowUpEvent(
+            context.getRecord().getKey(),
+            WorkflowInstanceIntent.ELEMENT_TERMINATED,
+            context.getValue());
   }
+
+  /**
+   * To be overridden by subclasses
+   *
+   * @param context current processor context
+   */
+  protected void terminate(BpmnStepContext<T> context) {}
 }

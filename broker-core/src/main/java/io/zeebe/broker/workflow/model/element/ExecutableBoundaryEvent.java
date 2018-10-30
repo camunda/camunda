@@ -15,10 +15,33 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.processor;
+package io.zeebe.broker.workflow.model.element;
 
-import io.zeebe.broker.workflow.model.element.ExecutableFlowElement;
+public class ExecutableBoundaryEvent extends ExecutableIntermediateCatchElement {
+  private ExecutableActivity attachedTo;
+  private boolean cancelActivity;
 
-public interface BpmnStepHandler<T extends ExecutableFlowElement> {
-  void handle(BpmnStepContext<T> context);
+  public ExecutableBoundaryEvent(String id) {
+    super(id);
+  }
+
+  public ExecutableActivity getAttachedTo() {
+    return attachedTo;
+  }
+
+  public void setAttachedTo(ExecutableActivity attachedTo) {
+    this.attachedTo = attachedTo;
+  }
+
+  public boolean cancelActivity() {
+    return cancelActivity;
+  }
+
+  public void setCancelActivity(boolean cancelActivity) {
+    this.cancelActivity = cancelActivity;
+  }
+
+  public boolean isTimerEvent() {
+    return getDuration() != null;
+  }
 }

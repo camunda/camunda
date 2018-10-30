@@ -18,16 +18,17 @@
 package io.zeebe.broker.workflow.state;
 
 import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
+import static io.zeebe.util.buffer.BufferUtil.readIntoBuffer;
+import static io.zeebe.util.buffer.BufferUtil.writeIntoBuffer;
 
-import io.zeebe.util.buffer.BufferReader;
-import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 
-public class TimerInstance implements BufferReader, BufferWriter {
+public class TimerInstance implements Persistable {
+  public static final int KEY_LENGTH = 2 * Long.BYTES;
 
-  public static final int LENGTH = 3 * Long.BYTES;
-
+  private final DirectBuffer handlerNodeId = new UnsafeBuffer(0, 0);
   private long key;
   private long elementInstanceKey;
   private long dueDate;
@@ -56,9 +57,17 @@ public class TimerInstance implements BufferReader, BufferWriter {
     this.key = key;
   }
 
+  public DirectBuffer getHandlerNodeId() {
+    return handlerNodeId;
+  }
+
+  public void setHandlerNodeId(DirectBuffer handlerNodeId) {
+    this.handlerNodeId.wrap(handlerNodeId);
+  }
+
   @Override
   public int getLength() {
-    return LENGTH;
+    return 3 * Long.BYTES + Integer.BYTES + handlerNodeId.capacity();
   }
 
   @Override
@@ -70,6 +79,10 @@ public class TimerInstance implements BufferReader, BufferWriter {
     offset += Long.BYTES;
 
     buffer.putLong(offset, key, STATE_BYTE_ORDER);
+    offset += Long.BYTES;
+
+    offset = writeIntoBuffer(buffer, offset, handlerNodeId);
+    assert offset == getLength() : "End offset differs from getLength()";
   }
 
   @Override
@@ -81,5 +94,26 @@ public class TimerInstance implements BufferReader, BufferWriter {
     offset += Long.BYTES;
 
     key = buffer.getLong(offset, STATE_BYTE_ORDER);
+    offset += Long.BYTES;
+
+    offset = readIntoBuffer(buffer, offset, handlerNodeId);
+    assert offset == length : "End offset differs from length";
+  }
+
+  @Override
+  public void writeKey(MutableDirectBuffer keyBuffer, int offset) {
+    int keyOffset = offset;
+    keyBuffer.putLong(keyOffset, elementInstanceKey, STATE_BYTE_ORDER);
+    keyOffset += Long.BYTES;
+
+    keyBuffer.putLong(keyOffset, key, STATE_BYTE_ORDER);
+    keyOffset += Long.BYTES;
+
+    assert (keyOffset - offset) == getKeyLength() : "End offset differs from getKeyLength()";
+  }
+
+  @Override
+  public int getKeyLength() {
+    return KEY_LENGTH;
   }
 }

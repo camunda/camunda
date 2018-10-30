@@ -47,6 +47,17 @@ public class TimerCatchEventTest {
           .intermediateCatchEvent("timer", c -> c.timerWithDuration("PT0.1S"))
           .endEvent()
           .done();
+  private static final BpmnModelInstance BOUNDARY_EVENT_WORKFLOW =
+      Bpmn.createExecutableProcess("process")
+          .startEvent()
+          .serviceTask("task", b -> b.zeebeTaskType("type"))
+          .boundaryEvent("timer")
+          .cancelActivity(true)
+          .timerWithDuration("PT1S")
+          .endEvent("eventEnd")
+          .moveToActivity("task")
+          .endEvent("taskEnd")
+          .done();
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
   public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
@@ -234,11 +245,11 @@ public class TimerCatchEventTest {
 
     final Record<TimerRecordValue> triggeredTimer1 =
         RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
-            .withActivityInstanceId(timer1.getKey())
+            .withElementInstanceKey(timer1.getKey())
             .getFirst();
     final Record<TimerRecordValue> triggeredTimer2 =
         RecordingExporter.timerRecords(TimerIntent.TRIGGERED)
-            .withActivityInstanceId(timer2.getKey())
+            .withElementInstanceKey(timer2.getKey())
             .getFirst();
 
     assertThat(triggeredTimer1.getValue().getDueDate())
@@ -272,5 +283,46 @@ public class TimerCatchEventTest {
     assertThat(canceledEvent.getValue()).isEqualTo(createdEvent.getValue());
     assertThat(canceledEvent.getValue().getDueDate())
         .isGreaterThan(brokerRule.getClock().getCurrentTimeInMillis());
+  }
+
+  @Test
+  public void shouldCreateTimerBasedOnBoundaryEvent() {
+    // given
+    testClient.deploy(BOUNDARY_EVENT_WORKFLOW);
+    testClient.createWorkflowInstance("process");
+
+    // when
+    final long nowMs = brokerRule.getClock().getCurrentTimeInMillis();
+    final Record<TimerRecordValue> timerCreatedRecord =
+        RecordingExporter.timerRecords(TimerIntent.CREATED).getFirst();
+    final Record<WorkflowInstanceRecordValue> activityRecord =
+        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementId("task")
+            .getFirst();
+
+    // then
+    assertThat(timerCreatedRecord.getValue().getDueDate()).isBetween(nowMs, nowMs + 2000);
+    assertThat(timerCreatedRecord.getValue().getElementInstanceKey())
+        .isEqualTo(activityRecord.getKey());
+    assertThat(timerCreatedRecord.getValue().getHandlerFlowNodeId()).isEqualTo("timer");
+  }
+
+  @Test
+  public void shouldTriggerHandlerNodeWhenAttachedToActivity() {
+    // given
+    testClient.deploy(BOUNDARY_EVENT_WORKFLOW);
+    testClient.createWorkflowInstance("process");
+
+    // when
+    RecordingExporter.timerRecords(TimerIntent.CREATED).getFirst();
+    brokerRule.getClock().addTime(Duration.ofSeconds(10));
+
+    // then
+    assertThat(
+            RecordingExporter.workflowInstanceRecords(
+                    WorkflowInstanceIntent.BOUNDARY_EVENT_TRIGGERED)
+                .withElementId("timer")
+                .count())
+        .isEqualTo(1);
   }
 }

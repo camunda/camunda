@@ -15,16 +15,29 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.processor.message;
+package io.zeebe.broker.workflow.processor.activity;
 
-import io.zeebe.broker.workflow.model.element.ExecutableIntermediateCatchElement;
+import io.zeebe.broker.workflow.model.element.ExecutableActivity;
+import io.zeebe.broker.workflow.model.element.ExecutableBoundaryEvent;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.flownode.TerminateFlowNodeHandler;
+import java.util.List;
 
-public class TerminateIntermediateMessageHandler
-    extends TerminateFlowNodeHandler<ExecutableIntermediateCatchElement> {
+public class TerminateActivityHandler<T extends ExecutableActivity>
+    extends TerminateFlowNodeHandler<T> {
   @Override
-  protected void terminate(BpmnStepContext<ExecutableIntermediateCatchElement> context) {
-    context.getCatchEventOutput().unsubscribeFromMessageEvent(context);
+  protected void terminate(BpmnStepContext<T> context) {
+    super.terminate(context);
+
+    final List<ExecutableBoundaryEvent> boundaryEvents = context.getElement().getBoundaryEvents();
+
+    for (final ExecutableBoundaryEvent boundaryEvent : boundaryEvents) {
+      if (boundaryEvent.isTimerEvent()) {
+        context
+            .getCatchEventOutput()
+            .unsubscribeFromTimerEvents(
+                context.getElementInstance().getKey(), context.getOutput().getBatchWriter());
+      }
+    }
   }
 }
