@@ -329,6 +329,7 @@ public class PartitionTestClient {
       final String messageName, final String correlationKey, final byte[] payload, final long ttl) {
     return apiRule
         .createCmdRequest()
+        .partitionId(partitionId)
         .type(ValueType.MESSAGE, MessageIntent.PUBLISH)
         .command()
         .put("name", messageName)

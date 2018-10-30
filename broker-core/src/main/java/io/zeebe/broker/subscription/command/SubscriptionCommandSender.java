@@ -74,7 +74,7 @@ public class SubscriptionCommandSender {
       new CloseWorkflowInstanceSubscriptionCommand();
 
   private final ClientTransport subscriptionClient;
-  private final IntArrayList partitionIds;
+  private final IntArrayList partitionIds = new IntArrayList();
 
   private int partitionId;
   private TopologyPartitionListenerImpl partitionListener;
@@ -82,7 +82,6 @@ public class SubscriptionCommandSender {
   public SubscriptionCommandSender(
       final ClusterCfg clusterCfg, final ClientTransport subscriptionClient) {
     this.subscriptionClient = subscriptionClient;
-    partitionIds = new IntArrayList();
     partitionIds.addAll(clusterCfg.getPartitionIds());
   }
 
@@ -100,7 +99,8 @@ public class SubscriptionCommandSender {
       final DirectBuffer messageName,
       final DirectBuffer correlationKey) {
 
-    final int subscriptionPartitionId = getSubscriptionPartitionId(correlationKey);
+    final int subscriptionPartitionId =
+        SubscriptionUtil.getSubscriptionPartitionId(correlationKey, partitionIds.size());
 
     openMessageSubscriptionCommand.setSubscriptionPartitionId(subscriptionPartitionId);
     openMessageSubscriptionCommand.setWorkflowInstanceKey(workflowInstanceKey);
@@ -109,14 +109,6 @@ public class SubscriptionCommandSender {
     openMessageSubscriptionCommand.getCorrelationKey().wrap(correlationKey);
 
     return sendSubscriptionCommand(subscriptionPartitionId, openMessageSubscriptionCommand);
-  }
-
-  private int getSubscriptionPartitionId(final DirectBuffer correlationKey) {
-    if (partitionIds == null) {
-      throw new IllegalStateException("no partition ids available");
-    }
-
-    return SubscriptionUtil.getSubscriptionPartitionId(correlationKey, partitionIds.size());
   }
 
   public boolean openWorkflowInstanceSubscription(

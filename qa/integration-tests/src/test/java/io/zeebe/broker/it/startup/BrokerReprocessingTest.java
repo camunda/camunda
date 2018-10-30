@@ -619,14 +619,9 @@ public class BrokerReprocessingTest {
   }
 
   @Test
-  public void shouldCorrelateMessageAfterRestartIfEnteredBeforeA() throws Exception {
+  public void shouldCorrelateMessageAfterRestartIfEnteredBefore() throws Exception {
     // given
-    clientRule
-        .getWorkflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(WORKFLOW_MESSAGE, "message.bpmn")
-        .send()
-        .join();
+    deploy(WORKFLOW_MESSAGE, "message.bpmn");
 
     final long workflowInstanceKey =
         startWorkflowInstance(PROCESS_ID, singletonMap("orderId", "order-123"))
@@ -658,12 +653,7 @@ public class BrokerReprocessingTest {
   @Test
   public void shouldCorrelateMessageAfterRestartIfPublishedBefore() throws Exception {
     // given
-    clientRule
-        .getWorkflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(WORKFLOW_MESSAGE, "message.bpmn")
-        .send()
-        .join();
+    deploy(WORKFLOW_MESSAGE, "message.bpmn");
 
     publishMessage("order canceled", "order-123", singletonMap("foo", "bar"));
     reprocessingTrigger.accept(this);
