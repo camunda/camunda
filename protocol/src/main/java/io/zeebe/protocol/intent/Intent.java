@@ -24,8 +24,6 @@ public interface Intent {
       Arrays.asList(
           DeploymentIntent.class,
           IncidentIntent.class,
-          SubscriberIntent.class,
-          SubscriptionIntent.class,
           JobIntent.class,
           WorkflowInstanceIntent.class,
           MessageIntent.class,
@@ -64,10 +62,6 @@ public interface Intent {
         return Intent.UNKNOWN;
       case RAFT:
         return RaftIntent.from(intent);
-      case SUBSCRIBER:
-        return SubscriberIntent.from(intent);
-      case SUBSCRIPTION:
-        return SubscriptionIntent.from(intent);
       case JOB:
         return JobIntent.from(intent);
       case WORKFLOW_INSTANCE:
@@ -102,10 +96,6 @@ public interface Intent {
         return Intent.UNKNOWN;
       case RAFT:
         return RaftIntent.valueOf(intent);
-      case SUBSCRIBER:
-        return SubscriberIntent.valueOf(intent);
-      case SUBSCRIPTION:
-        return SubscriptionIntent.valueOf(intent);
       case JOB:
         return JobIntent.valueOf(intent);
       case WORKFLOW_INSTANCE:

@@ -92,13 +92,13 @@ public class BrokerLeaderChangeTest {
   }
 
   class JobCompleter {
-    private final JobWorker jobSubscription;
+    private final JobWorker jobWorker;
     private final CountDownLatch latch = new CountDownLatch(1);
 
     JobCompleter(final JobEvent jobEvent) {
       final long eventKey = jobEvent.getKey();
 
-      jobSubscription =
+      jobWorker =
           clientRule
               .getJobClient()
               .newWorker()
@@ -123,8 +123,8 @@ public class BrokerLeaderChangeTest {
     }
 
     void close() {
-      if (!jobSubscription.isClosed()) {
-        jobSubscription.close();
+      if (!jobWorker.isClosed()) {
+        jobWorker.close();
       }
     }
   }

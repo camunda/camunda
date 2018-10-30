@@ -20,7 +20,6 @@ package io.zeebe.broker.util;
 import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
-import io.zeebe.broker.topic.Records;
 import io.zeebe.broker.workflow.data.TimerRecord;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;

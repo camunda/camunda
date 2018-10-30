@@ -18,7 +18,6 @@
 package io.zeebe.broker.util;
 
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
-import io.zeebe.broker.topic.StreamProcessorControl;
 import io.zeebe.broker.transport.clientapi.BufferingServerOutput;
 import io.zeebe.broker.util.TestStreams.FluentLogWriter;
 import io.zeebe.logstreams.log.LogStream;
@@ -42,11 +41,12 @@ public class StreamProcessorRule implements TestRule {
 
   public static final int PARTITION_ID = 0;
   // environment
-  private TemporaryFolder tempFolder = new TemporaryFolder();
-  private AutoCloseableRule closeables = new AutoCloseableRule();
-  private ControlledActorClock clock = new ControlledActorClock();
-  private ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(clock);
-  private ServiceContainerRule serviceContainerRule = new ServiceContainerRule(actorSchedulerRule);
+  private final TemporaryFolder tempFolder = new TemporaryFolder();
+  private final AutoCloseableRule closeables = new AutoCloseableRule();
+  private final ControlledActorClock clock = new ControlledActorClock();
+  private final ActorSchedulerRule actorSchedulerRule = new ActorSchedulerRule(clock);
+  private final ServiceContainerRule serviceContainerRule =
+      new ServiceContainerRule(actorSchedulerRule);
 
   // things provisioned by this rule
   public static final String STREAM_NAME = "stream";
