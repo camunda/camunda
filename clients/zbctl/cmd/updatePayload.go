@@ -24,14 +24,14 @@ var updatePayloadFlag string
 
 // updatePayloadCmd represents the updatePayload command
 var updatePayloadCmd = &cobra.Command{
-	Use:    "payload <activityInstanceKey>",
+	Use:    "payload <elementInstanceKey>",
 	Short:  "Update the payload of a workflow instance",
 	Args:   cobra.ExactArgs(1),
 	PreRun: initClient,
 	Run: func(cmd *cobra.Command, args []string) {
 		activityInstanceKey := convertToKey(args[0], "Expect activity instance id as only positional argument, got")
 
-		request, err := client.NewUpdatePayloadCommand().ActivityInstanceKey(activityInstanceKey).PayloadFromString(updatePayloadFlag)
+		request, err := client.NewUpdatePayloadCommand().ElementInstanceKey(activityInstanceKey).PayloadFromString(updatePayloadFlag)
 		utils.CheckOrExit(err, utils.ExitCodeConfigurationError, defaultErrCtx)
 
 		_, err = request.Send()

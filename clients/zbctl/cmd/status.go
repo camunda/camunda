@@ -48,7 +48,7 @@ func roleToString(role pb.Partition_PartitionBrokerRole) string {
 	switch role {
 	case pb.Partition_LEADER:
 		return "Leader"
-	case pb.Partition_FOLLOW:
+	case pb.Partition_FOLLOWER:
 		return "Follower"
 	default:
 		return "Unknown"
