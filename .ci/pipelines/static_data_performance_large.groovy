@@ -82,10 +82,10 @@ spec:
     args: ["/bin/echo 'export CATALINA_OPTS=-Xmx2g' > /camunda/bin/setenv.sh && /camunda/camunda.sh"]
     resources:
       limits:
-        cpu: 5
+        cpu: 2
         memory: 3Gi
       requests:
-        cpu: 5
+        cpu: 2
         memory: 3Gi
     volumeMounts:
       - name: cambpm-storage
@@ -120,10 +120,10 @@ spec:
       protocol: TCP
     resources:
       limits:
-        cpu: 4
+        cpu: 6
         memory: 8Gi
       requests:
-        cpu: 4
+        cpu: 6
         memory: 8Gi
     volumeMounts:
       - name: es-storage
@@ -169,7 +169,7 @@ pipeline {
   options {
     buildDiscarder(logRotator(numToKeepStr: '50'))
     timestamps()
-    timeout(time: 30, unit: 'MINUTES')
+    timeout(time: 60, unit: 'MINUTES')
   }
 
   stages {

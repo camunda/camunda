@@ -12,6 +12,7 @@
 
   <properties>
     <skip.tests>true</skip.tests>
+    <test.argLine>-Xmx1024m</test.argLine>
     <db.url />
   </properties>
 
@@ -146,6 +147,7 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
+              <argLine>${test.argLine}</argLine>
               <includes>**/*StaticDataTest.java</includes>
             </configuration>
           </plugin>
@@ -163,6 +165,7 @@
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-surefire-plugin</artifactId>
             <configuration>
+              <argLine>${test.argLine}</argLine>
               <includes>**/*LiveLoadTest.java</includes>
             </configuration>
           </plugin>
