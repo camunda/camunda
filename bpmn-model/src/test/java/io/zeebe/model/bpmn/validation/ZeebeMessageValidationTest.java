@@ -19,7 +19,6 @@ import static io.zeebe.model.bpmn.validation.ExpectedValidationResult.expect;
 import static java.util.Collections.singletonList;
 
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.zeebe.model.bpmn.instance.EndEvent;
 import io.zeebe.model.bpmn.instance.IntermediateThrowEvent;
 import io.zeebe.model.bpmn.instance.Message;
@@ -99,15 +98,6 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
             .message(b -> b.name("foo").zeebeCorrelationKey("correlationKey"))
             .done(),
         singletonList(expect(StartEvent.class, "Must be a none start event"))
-      },
-      {
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .serviceTask("task", t -> t.zeebeTaskType("foo"))
-            .boundaryEvent()
-            .message(b -> b.name("foo").zeebeCorrelationKey("correlationKey"))
-            .done(),
-        singletonList(expect(BoundaryEvent.class, "Elements of this type are not supported"))
       },
       {
         Bpmn.createExecutableProcess("process")

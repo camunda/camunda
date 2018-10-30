@@ -69,7 +69,7 @@ public class ZeebeValidationTest extends AbstractZeebeValidationTest {
         Arrays.asList(
             expect(
                 CompensateEventDefinition.class, "Event definition of this type is not supported"),
-            expect(IntermediateCatchEvent.class, "Must have a message or timer event definition"))
+            expect(IntermediateCatchEvent.class, "Event definition must be one of: message, timer"))
       },
       {
         "no-start-event-sub-process.bpmn",
