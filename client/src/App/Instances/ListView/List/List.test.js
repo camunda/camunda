@@ -63,14 +63,16 @@ describe('List', () => {
       expect(new List().state.rowsToDisplay).toBe(9);
     });
 
-    it('should render table container with ref', () => {
+    it('should render table container with innerRef', () => {
       // given
       const node = shallow(<List {...mockProps} />);
 
       //then
       const TableContainerNode = node.find(Styled.TableContainer);
       expect(TableContainerNode).toHaveLength(1);
-      expect(TableContainerNode.prop('ref')).toBe(node.instance().containerRef);
+      expect(TableContainerNode.prop('innerRef')).toBe(
+        node.instance().containerRef
+      );
     });
 
     it('should render table head', () => {

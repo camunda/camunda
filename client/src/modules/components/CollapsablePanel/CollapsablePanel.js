@@ -36,7 +36,6 @@ export default class CollapsablePanel extends React.Component {
       children,
       collapseButton,
       expandButton,
-      onCollapse,
       ...props
     } = this.props;
 

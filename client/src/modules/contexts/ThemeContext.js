@@ -60,14 +60,12 @@ class ThemeProvider extends React.Component {
 }
 
 const themed = Component => {
-  class Themed extends React.Component {
-    render() {
-      return (
-        <ThemeConsumer>
-          {({theme}) => <Component {...this.props} theme={theme} />}
-        </ThemeConsumer>
-      );
-    }
+  function Themed(props) {
+    return (
+      <ThemeConsumer>
+        {({theme}) => <Component {...props} theme={theme} />}
+      </ThemeConsumer>
+    );
   }
 
   Themed.WrappedComponent = Component;
