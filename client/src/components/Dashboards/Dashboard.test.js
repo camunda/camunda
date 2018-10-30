@@ -52,15 +52,7 @@ jest.mock('components', () => {
         Loading...
       </div>
     ),
-    ConfirmationModal: ({
-      onConfirm,
-      isVisible,
-      closeModal,
-      entityName,
-      confirmModal,
-      defaultOperation,
-      ...props
-    }) => (
+    ConfirmationModal: ({onConfirm, open, onClose, entityName, ...props}) => (
       <div className="ConfirmationModal" {...props}>
         {props.children}
       </div>
