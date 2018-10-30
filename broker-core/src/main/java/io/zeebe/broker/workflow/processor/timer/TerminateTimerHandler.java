@@ -17,40 +17,17 @@
  */
 package io.zeebe.broker.workflow.processor.timer;
 
-import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
-import io.zeebe.broker.workflow.data.TimerRecord;
-import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
+import io.zeebe.broker.workflow.model.element.ExecutableIntermediateCatchElement;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
-import io.zeebe.broker.workflow.processor.flownode.TerminateElementHandler;
-import io.zeebe.broker.workflow.state.ElementInstance;
-import io.zeebe.broker.workflow.state.TimerInstance;
-import io.zeebe.broker.workflow.state.WorkflowState;
-import io.zeebe.protocol.intent.TimerIntent;
+import io.zeebe.broker.workflow.processor.flownode.TerminateFlowNodeHandler;
 
-public class TerminateTimerHandler extends TerminateElementHandler {
-
-  private final WorkflowState workflowState;
-
-  private final TimerRecord timerRecord = new TimerRecord();
-
-  public TerminateTimerHandler(final WorkflowState workflowState) {
-    this.workflowState = workflowState;
-  }
-
+public class TerminateTimerHandler
+    extends TerminateFlowNodeHandler<ExecutableIntermediateCatchElement> {
   @Override
-  protected void addTerminatingRecords(
-      final BpmnStepContext<ExecutableFlowNode> context, final TypedStreamWriter batch) {
-
-    final ElementInstance activityInstance = context.getElementInstance();
-
-    final TimerInstance timerInstance =
-        workflowState.getTimerState().get(activityInstance.getKey());
-    if (timerInstance != null) {
-      timerRecord
-          .setElementInstanceKey(timerInstance.getElementInstanceKey())
-          .setDueDate(timerInstance.getDueDate());
-
-      batch.appendFollowUpCommand(timerInstance.getKey(), TimerIntent.CANCEL, timerRecord);
-    }
+  protected void terminate(BpmnStepContext<ExecutableIntermediateCatchElement> context) {
+    context
+        .getCatchEventOutput()
+        .unsubscribeFromTimerEvents(
+            context.getElementInstance().getKey(), context.getOutput().getStreamWriter());
   }
 }

@@ -57,6 +57,9 @@ public class BpmnStepGuards {
     stepGuards.put(WorkflowInstanceIntent.GATEWAY_ACTIVATED, scopeActiveGuard);
     stepGuards.put(WorkflowInstanceIntent.START_EVENT_OCCURRED, scopeActiveGuard);
     stepGuards.put(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, scopeActiveGuard);
+
+    stepGuards.put(WorkflowInstanceIntent.CATCH_EVENT_TRIGGERING, scopeActiveGuard);
+    stepGuards.put(WorkflowInstanceIntent.CATCH_EVENT_TRIGGERED, scopeActiveGuard);
   }
 
   public boolean shouldHandle(BpmnStepContext context) {

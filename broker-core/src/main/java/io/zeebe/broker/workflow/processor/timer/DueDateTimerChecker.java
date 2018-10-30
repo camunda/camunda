@@ -89,9 +89,11 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
     }
   }
 
-  private boolean triggerTimer(final TimerInstance timer) {
-
-    timerRecord.setElementInstanceKey(timer.getElementInstanceKey()).setDueDate(timer.getDueDate());
+  private boolean triggerTimer(TimerInstance timer) {
+    timerRecord
+        .setElementInstanceKey(timer.getElementInstanceKey())
+        .setDueDate(timer.getDueDate())
+        .setHandlerNodeId(timer.getHandlerNodeId());
 
     streamWriter.appendFollowUpCommand(timer.getKey(), TimerIntent.TRIGGER, timerRecord);
 

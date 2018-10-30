@@ -17,6 +17,7 @@ package io.zeebe.test.broker.protocol.clientapi;
 
 import static io.zeebe.protocol.intent.JobIntent.ACTIVATED;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsArray;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.exporter.record.Record;
@@ -24,6 +25,7 @@ import io.zeebe.exporter.record.value.DeploymentRecordValue;
 import io.zeebe.exporter.record.value.IncidentRecordValue;
 import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.exporter.record.value.MessageRecordValue;
+import io.zeebe.exporter.record.value.TimerRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -35,6 +37,7 @@ import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.MessageIntent;
+import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.DeploymentRecordStream;
@@ -44,6 +47,7 @@ import io.zeebe.test.util.record.JobRecordStream;
 import io.zeebe.test.util.record.MessageRecordStream;
 import io.zeebe.test.util.record.MessageSubscriptionRecordStream;
 import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.record.TimerRecordStream;
 import io.zeebe.test.util.record.WorkflowInstanceRecordStream;
 import io.zeebe.test.util.record.WorkflowInstanceSubscriptionRecordStream;
 import io.zeebe.util.buffer.BufferUtil;
@@ -481,5 +485,22 @@ public class PartitionTestClient {
 
   public WorkflowInstanceSubscriptionRecordStream receiveWorkflowInstanceSubscriptions() {
     return RecordingExporter.workflowInstanceSubscriptionRecords().withPartitionId(partitionId);
+  }
+
+  /////////////////////////////////////////////
+  // TIMER ////////////////////////////////////
+  /////////////////////////////////////////////
+
+  public TimerRecordStream receiveTimerRecords() {
+    return RecordingExporter.timerRecords().withPartitionId(partitionId);
+  }
+
+  public Record<TimerRecordValue> receiveTimerRecord(String handlerNodeId, TimerIntent intent) {
+    return receiveTimerRecords().withIntent(intent).withHandlerNodeId(handlerNodeId).getFirst();
+  }
+
+  public Record<TimerRecordValue> receiveTimerRecord(
+      DirectBuffer handlerNodeId, TimerIntent intent) {
+    return receiveTimerRecord(bufferAsString(handlerNodeId), intent);
   }
 }

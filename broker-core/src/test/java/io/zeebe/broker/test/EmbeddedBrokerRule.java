@@ -147,6 +147,8 @@ public class EmbeddedBrokerRule extends ExternalResource {
       } catch (final IOException e) {
         e.printStackTrace();
       }
+
+      controlledActorClock.reset();
     }
   }
 

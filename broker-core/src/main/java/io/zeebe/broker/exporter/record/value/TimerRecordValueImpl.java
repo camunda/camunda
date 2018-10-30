@@ -20,17 +20,23 @@ package io.zeebe.broker.exporter.record.value;
 import io.zeebe.broker.exporter.ExporterObjectMapper;
 import io.zeebe.broker.exporter.record.RecordValueImpl;
 import io.zeebe.exporter.record.value.TimerRecordValue;
+import java.util.Objects;
 
 public class TimerRecordValueImpl extends RecordValueImpl implements TimerRecordValue {
 
   private final long elementInstanceKey;
   private final long dueDate;
+  private final String handlerFlowNodeId;
 
   public TimerRecordValueImpl(
-      ExporterObjectMapper objectMapper, long elementInstanceKey, long dueDate) {
+      ExporterObjectMapper objectMapper,
+      long elementInstanceKey,
+      long dueDate,
+      String handlerFlowNodeId) {
     super(objectMapper);
     this.elementInstanceKey = elementInstanceKey;
     this.dueDate = dueDate;
+    this.handlerFlowNodeId = handlerFlowNodeId;
   }
 
   @Override
@@ -44,12 +50,13 @@ public class TimerRecordValueImpl extends RecordValueImpl implements TimerRecord
   }
 
   @Override
+  public String getHandlerFlowNodeId() {
+    return handlerFlowNodeId;
+  }
+
+  @Override
   public int hashCode() {
-    final int prime = 31;
-    int result = 1;
-    result = prime * result + (int) (elementInstanceKey ^ (elementInstanceKey >>> 32));
-    result = prime * result + (int) (dueDate ^ (dueDate >>> 32));
-    return result;
+    return Objects.hash(dueDate, elementInstanceKey, handlerFlowNodeId);
   }
 
   @Override
@@ -67,7 +74,12 @@ public class TimerRecordValueImpl extends RecordValueImpl implements TimerRecord
     if (elementInstanceKey != other.elementInstanceKey) {
       return false;
     }
-    return dueDate == other.dueDate;
+
+    if (dueDate != other.dueDate) {
+      return false;
+    }
+
+    return handlerFlowNodeId.equals(other.handlerFlowNodeId);
   }
 
   @Override
@@ -76,6 +88,8 @@ public class TimerRecordValueImpl extends RecordValueImpl implements TimerRecord
         + elementInstanceKey
         + ", dueDate="
         + dueDate
+        + ", handlerFlowNodeId"
+        + handlerFlowNodeId
         + "]";
   }
 }

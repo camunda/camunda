@@ -15,34 +15,25 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.processor.flownode;
+package io.zeebe.broker.workflow.processor.sequenceflow;
 
-import io.zeebe.broker.logstreams.processor.TypedRecord;
-import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
+import io.zeebe.broker.workflow.model.element.ExecutableSequenceFlow;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
-import io.zeebe.broker.workflow.processor.EventOutput;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
-public class TerminateElementHandler implements BpmnStepHandler<ExecutableFlowNode> {
+public class StartFlowNodeHandler implements BpmnStepHandler<ExecutableSequenceFlow> {
 
   @Override
-  public void handle(final BpmnStepContext<ExecutableFlowNode> context) {
-    final TypedRecord<WorkflowInstanceRecord> terminatingRecord = context.getRecord();
+  public void handle(BpmnStepContext<ExecutableSequenceFlow> context) {
+    final ExecutableSequenceFlow sequenceFlow = context.getElement();
+    final ExecutableFlowNode targetNode = sequenceFlow.getTarget();
 
-    final EventOutput instanceWriter = context.getOutput();
+    final WorkflowInstanceRecord value = context.getValue();
+    value.setElementId(targetNode.getId());
 
-    addTerminatingRecords(context, instanceWriter.getStreamWriter());
-
-    instanceWriter.appendFollowUpEvent(
-        terminatingRecord.getKey(),
-        WorkflowInstanceIntent.ELEMENT_TERMINATED,
-        terminatingRecord.getValue());
+    context.getOutput().appendNewEvent(WorkflowInstanceIntent.ELEMENT_READY, value);
   }
-
-  // to be overriden by subclasses
-  protected void addTerminatingRecords(
-      final BpmnStepContext<ExecutableFlowNode> context, final TypedStreamWriter batch) {}
 }

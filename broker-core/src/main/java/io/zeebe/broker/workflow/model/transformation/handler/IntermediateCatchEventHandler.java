@@ -89,14 +89,15 @@ public class IntermediateCatchEventHandler
   }
 
   private void bindDefaultLifecycle(
-      TransformContext context, final ExecutableIntermediateCatchElement executableElement) {
+      TransformContext context, ExecutableIntermediateCatchElement executableElement) {
+    executableElement.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_READY, BpmnStep.ACTIVATE_FLOW_NODE);
 
     executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_READY, BpmnStep.APPLY_INPUT_MAPPING);
-    executableElement.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.APPLY_OUTPUT_MAPPING);
+        WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.COMPLETE_FLOW_NODE);
     executableElement.bindLifecycleState(
         WorkflowInstanceIntent.ELEMENT_COMPLETED, context.getCurrentFlowNodeOutgoingStep());
+
     executableElement.bindLifecycleState(
         WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.PROPAGATE_TERMINATION);
   }

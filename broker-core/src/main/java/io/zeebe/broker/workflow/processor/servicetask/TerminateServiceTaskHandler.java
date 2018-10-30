@@ -18,16 +18,14 @@
 package io.zeebe.broker.workflow.processor.servicetask;
 
 import io.zeebe.broker.job.JobState;
-import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
-import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
+import io.zeebe.broker.workflow.model.element.ExecutableServiceTask;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
-import io.zeebe.broker.workflow.processor.flownode.TerminateElementHandler;
+import io.zeebe.broker.workflow.processor.activity.TerminateActivityHandler;
 import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.intent.JobIntent;
 
-public class TerminateServiceTaskHandler extends TerminateElementHandler {
-
+public class TerminateServiceTaskHandler extends TerminateActivityHandler<ExecutableServiceTask> {
   private final JobState jobState;
 
   public TerminateServiceTaskHandler(JobState jobState) {
@@ -35,11 +33,10 @@ public class TerminateServiceTaskHandler extends TerminateElementHandler {
   }
 
   @Override
-  protected void addTerminatingRecords(
-      final BpmnStepContext<ExecutableFlowNode> context, final TypedStreamWriter batch) {
+  protected void terminate(BpmnStepContext<ExecutableServiceTask> context) {
+    super.terminate(context);
 
     final ElementInstance elementInstance = context.getElementInstance();
-
     final long jobKey = elementInstance.getJobKey();
     if (jobKey > 0) {
       final JobRecord job = jobState.getJob(jobKey);
@@ -49,7 +46,7 @@ public class TerminateServiceTaskHandler extends TerminateElementHandler {
             String.format("Expected to find job with key %d, but no job found", jobKey));
       }
 
-      batch.appendFollowUpCommand(jobKey, JobIntent.CANCEL, job);
+      context.getOutput().getStreamWriter().appendFollowUpCommand(jobKey, JobIntent.CANCEL, job);
     }
   }
 }

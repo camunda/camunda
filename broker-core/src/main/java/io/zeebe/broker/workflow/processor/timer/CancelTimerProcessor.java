@@ -28,7 +28,6 @@ import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.TimerIntent;
 
 public class CancelTimerProcessor implements TypedRecordProcessor<TimerRecord> {
-
   private final WorkflowState workflowState;
 
   public CancelTimerProcessor(final WorkflowState workflowState) {
@@ -37,21 +36,18 @@ public class CancelTimerProcessor implements TypedRecordProcessor<TimerRecord> {
 
   @Override
   public void processRecord(
-      final TypedRecord<TimerRecord> record,
-      final TypedResponseWriter responseWriter,
-      final TypedStreamWriter streamWriter) {
-
+      TypedRecord<TimerRecord> record,
+      TypedResponseWriter responseWriter,
+      TypedStreamWriter streamWriter) {
     final TimerRecord timer = record.getValue();
-
     final TimerInstance timerInstance =
-        workflowState.getTimerState().get(timer.getElementInstanceKey());
+        workflowState.getTimerState().get(timer.getElementInstanceKey(), record.getKey());
+
     if (timerInstance == null) {
       streamWriter.appendRejection(
           record, RejectionType.NOT_APPLICABLE, "timer is already triggered or canceled");
-
     } else {
       streamWriter.appendFollowUpEvent(record.getKey(), TimerIntent.CANCELED, timer);
-
       workflowState.getTimerState().remove(timerInstance);
     }
   }

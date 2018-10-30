@@ -26,11 +26,8 @@ import io.zeebe.broker.util.StreamProcessorRule;
 import io.zeebe.broker.workflow.data.TimerRecord;
 import io.zeebe.broker.workflow.processor.WorkflowInstanceStreamProcessorRule;
 import io.zeebe.model.bpmn.Bpmn;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.TimerIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;
-import java.time.Duration;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -70,11 +67,12 @@ public class TimerStreamProcessorTest {
   @Test
   public void shouldRejectTriggerCommand() {
     // when
-    final TimerRecord timerRecord = timerRecordForActivity("timer");
+    final TypedRecord<TimerRecord> timerRecord = timerRecordForActivity("timer");
 
-    envRule.writeCommand(TimerIntent.CANCEL, timerRecord);
+    envRule.writeCommand(timerRecord.getKey(), TimerIntent.CANCEL, timerRecord.getValue());
 
-    final long secondCommandPosition = envRule.writeCommand(TimerIntent.TRIGGER, timerRecord);
+    final long secondCommandPosition =
+        envRule.writeCommand(timerRecord.getKey(), TimerIntent.TRIGGER, timerRecord.getValue());
 
     streamProcessor.unblock();
 
@@ -90,11 +88,13 @@ public class TimerStreamProcessorTest {
   @Test
   public void shouldRejectDuplicatedTriggerCommand() {
     // when
-    final TimerRecord timerRecord = timerRecordForActivity("timer");
+    final TypedRecord<TimerRecord> timerRecord = timerRecordForActivity("timer");
 
-    envRule.writeCommand(TimerIntent.TRIGGER, timerRecord);
+    final long firstCommandPosition =
+        envRule.writeCommand(timerRecord.getKey(), TimerIntent.TRIGGER, timerRecord.getValue());
 
-    final long secondCommandPosition = envRule.writeCommand(TimerIntent.TRIGGER, timerRecord);
+    final long secondCommandPosition =
+        envRule.writeCommand(timerRecord.getKey(), TimerIntent.TRIGGER, timerRecord.getValue());
 
     streamProcessor.unblock();
 
@@ -110,11 +110,12 @@ public class TimerStreamProcessorTest {
   @Test
   public void shouldRejectCancelCommand() {
     // when
-    final TimerRecord timerRecord = timerRecordForActivity("timer");
+    final TypedRecord<TimerRecord> timerRecord = timerRecordForActivity("timer");
 
-    envRule.writeCommand(TimerIntent.TRIGGER, timerRecord);
+    envRule.writeCommand(timerRecord.getKey(), TimerIntent.TRIGGER, timerRecord.getValue());
 
-    final long secondCommandPosition = envRule.writeCommand(TimerIntent.CANCEL, timerRecord);
+    final long secondCommandPosition =
+        envRule.writeCommand(timerRecord.getKey(), TimerIntent.CANCEL, timerRecord.getValue());
 
     streamProcessor.unblock();
 
@@ -127,14 +128,8 @@ public class TimerStreamProcessorTest {
         .isEqualTo("timer is already triggered or canceled");
   }
 
-  private TimerRecord timerRecordForActivity(final String activityId) {
-    final TypedRecord<WorkflowInstanceRecord> activatedEvent =
-        streamProcessorRule.awaitElementInState(
-            activityId, WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-
-    return new TimerRecord()
-        .setElementInstanceKey(activatedEvent.getKey())
-        .setDueDate(activatedEvent.getTimestamp() + Duration.ofSeconds(10).toMillis());
+  private TypedRecord<TimerRecord> timerRecordForActivity(final String activityId) {
+    return streamProcessorRule.awaitTimerInState(activityId, TimerIntent.CREATED);
   }
 
   private TypedRecord<TimerRecord> findTimerCommandRejection() {

@@ -276,4 +276,28 @@ public final class BufferUtil {
     offset += valueLength;
     return offset;
   }
+
+  public static int writeIntoBuffer(
+      final MutableDirectBuffer writeBuffer, int offset, final BufferWriter value) {
+    final int valueLength = value.getLength();
+    writeBuffer.putInt(offset, valueLength, ByteOrder.LITTLE_ENDIAN);
+    offset += Integer.BYTES;
+
+    value.write(writeBuffer, offset);
+    return offset + valueLength;
+  }
+
+  /**
+   * NOTE: as opposed to readIntoBuffer above, this does not clone the buffer to be read, just wraps
+   * it.
+   */
+  public static int readIntoBuffer(
+      final DirectBuffer readBuffer, int offset, final BufferReader reader) {
+    final int valueLength = readBuffer.getInt(offset, ByteOrder.LITTLE_ENDIAN);
+    offset += Integer.BYTES;
+
+    reader.wrap(readBuffer, offset, valueLength);
+
+    return offset + valueLength;
+  }
 }

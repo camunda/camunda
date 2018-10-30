@@ -17,26 +17,18 @@
  */
 package io.zeebe.broker.workflow.model.element;
 
-/**
- * ExecutableFlowElementContainer is currently used to represent processes as well ({@link
- * io.zeebe.model.bpmn.instance.Process}), which may seem counter intuitive; at the moment, the
- * reason is that sub processes are also modelled using the same class, and sub processes need to
- * reuse the logic for both. As this diverges (i.e. processes/sub-processes), we should refactor
- * this.
- */
-public class ExecutableFlowElementContainer extends ExecutableActivity {
+public class ExecutableBoundaryEvent extends ExecutableIntermediateCatchElement {
+  private boolean cancelActivity;
 
-  private ExecutableFlowNode startEvent;
-
-  public ExecutableFlowElementContainer(String id) {
+  public ExecutableBoundaryEvent(String id) {
     super(id);
   }
 
-  public ExecutableFlowNode getStartEvent() {
-    return startEvent;
+  public boolean cancelActivity() {
+    return cancelActivity;
   }
 
-  public void setStartEvent(ExecutableFlowNode startEvent) {
-    this.startEvent = startEvent;
+  public void setCancelActivity(boolean cancelActivity) {
+    this.cancelActivity = cancelActivity;
   }
 }

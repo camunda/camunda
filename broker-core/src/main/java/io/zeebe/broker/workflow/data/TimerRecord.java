@@ -19,14 +19,19 @@ package io.zeebe.broker.workflow.data;
 
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.property.LongProperty;
+import io.zeebe.msgpack.property.StringProperty;
+import org.agrona.DirectBuffer;
 
 public class TimerRecord extends UnpackedObject {
 
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey");
   private final LongProperty dueDateProp = new LongProperty("dueDate");
+  private final StringProperty handlerNodeId = new StringProperty("handlerNodeId");
 
   public TimerRecord() {
-    this.declareProperty(elementInstanceKeyProp).declareProperty(dueDateProp);
+    this.declareProperty(elementInstanceKeyProp)
+        .declareProperty(dueDateProp)
+        .declareProperty(handlerNodeId);
   }
 
   public long getElementInstanceKey() {
@@ -44,6 +49,15 @@ public class TimerRecord extends UnpackedObject {
 
   public TimerRecord setDueDate(long dueDate) {
     this.dueDateProp.setValue(dueDate);
+    return this;
+  }
+
+  public DirectBuffer getHandlerNodeId() {
+    return handlerNodeId.getValue();
+  }
+
+  public TimerRecord setHandlerNodeId(DirectBuffer handlerNodeId) {
+    this.handlerNodeId.setValue(handlerNodeId);
     return this;
   }
 }

@@ -34,6 +34,8 @@ import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.util.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
+import io.zeebe.broker.util.TypedRecordStream;
+import io.zeebe.broker.workflow.data.TimerRecord;
 import io.zeebe.broker.workflow.processor.timer.DueDateTimerChecker;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.model.bpmn.Bpmn;
@@ -45,9 +47,11 @@ import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.Intent;
 import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.util.buffer.BufferUtil;
 import java.io.ByteArrayOutputStream;
+import java.util.function.Supplier;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.Rule;
@@ -225,5 +229,33 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
                     .findFirst())
         .until(o -> o.isPresent())
         .get();
+  }
+
+  public TypedRecord<TimerRecord> awaitTimerInState(final String timerId, final TimerIntent state) {
+    final DirectBuffer handlerNodeId = wrapString(timerId);
+    final Supplier<TypedRecordStream<TimerRecord>> lookupStream =
+        () ->
+            environmentRule
+                .events()
+                .onlyTimerRecords()
+                .filter(r -> r.getValue().getHandlerNodeId().equals(handlerNodeId))
+                .withIntent(state);
+
+    waitUntil(() -> lookupStream.get().findFirst().isPresent());
+    return lookupStream.get().findFirst().get();
+  }
+
+  public TypedRecord<JobRecord> awaitJobInState(final String activityId, final JobIntent state) {
+    final DirectBuffer activityIdBuffer = wrapString(activityId);
+    final Supplier<TypedRecordStream<JobRecord>> lookupStream =
+        () ->
+            environmentRule
+                .events()
+                .onlyJobRecords()
+                .filter(r -> r.getValue().getHeaders().getElementId().equals(activityIdBuffer))
+                .withIntent(state);
+
+    waitUntil(() -> lookupStream.get().findFirst().isPresent());
+    return lookupStream.get().findFirst().get();
   }
 }
