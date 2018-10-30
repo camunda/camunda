@@ -303,8 +303,9 @@ export default themed(
                 color: this.getColorFor('grid')
               },
               ticks: {
-                ...(this.props.property === 'duration' &&
-                  this.createDurationFormattingOptions(data, targetLine, isCombined)),
+                ...(this.props.property === 'duration'
+                  ? this.createDurationFormattingOptions(data, targetLine, isCombined)
+                  : {}),
                 beginAtZero: true,
                 fontColor: this.getColorFor('label'),
                 suggestedMax: targetLine

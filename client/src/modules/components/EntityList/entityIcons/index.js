@@ -8,7 +8,7 @@ import {ReactComponent as reportHeat} from './report-heatmap.svg';
 import {ReactComponent as CombinedReportLine} from './report-combined-line-chart.svg';
 import {ReactComponent as reportLine} from './report-line-chart.svg';
 import {ReactComponent as reportNumber} from './report-number.svg';
-import {ReactComponent as CombinedReportNumber} from './report-number.svg';
+import {ReactComponent as CombinedReportNumber} from './report-combined-number.svg';
 import {ReactComponent as reportPie} from './report-pie-chart.svg';
 import {ReactComponent as CombinedReportTable} from './report-combined-table.svg';
 import {ReactComponent as reportTable} from './report-table.svg';
