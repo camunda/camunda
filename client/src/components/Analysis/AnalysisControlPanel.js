@@ -112,7 +112,7 @@ export default class AnalysisControlPanel extends React.Component {
     return (
       <div className="AnalysisControlPanel">
         <ul className="AnalysisControlPanel__list">
-          <li className="AnalysisControlPanel__item">
+          <li className="AnalysisControlPanel__item summary">
             For
             <Popover className="AnalysisControlPanel__popover" title={this.createTitle()}>
               <ProcessDefinitionSelection

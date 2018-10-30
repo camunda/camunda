@@ -14,7 +14,7 @@ exports[`should display a sentence to describe what the user can do on this page
       className="AnalysisControlPanel__list"
     >
       <li
-        className="AnalysisControlPanel__item"
+        className="AnalysisControlPanel__item summary"
       >
         For
         <Popover

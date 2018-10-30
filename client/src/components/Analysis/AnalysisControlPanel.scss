@@ -27,6 +27,10 @@
     font-size: 0.875em;
     margin-bottom: 5px;
   }
+
+  &.summary {
+    line-height: 50px;
+  }
 }
 
 .AnalysisControlPanel__item--select {
@@ -47,6 +51,7 @@
   cursor: default;
   display: inline-block;
   margin: 0 0.5em;
+  line-height: 20px;
 }
 
 .AnalysisControlPanel__config--hover .ActionItem {
