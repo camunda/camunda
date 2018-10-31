@@ -6,14 +6,6 @@
   .instanceCount {
     white-space: nowrap;
   }
-
-  .Labeled {
-    display: inline;
-  }
-
-  .Labeled .label {
-    @include visually-hidden;
-  }
 }
 
 .Filter__dropdown {
