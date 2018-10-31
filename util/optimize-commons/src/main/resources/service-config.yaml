@@ -268,7 +268,7 @@ historyCleanup:
   cronTrigger: '0 1 * * *'
   # time to live (ttl) for process instance data, from when reached the process instance will get cleaned up
   # Format is ISO_8601 duration  https://en.wikipedia.org/wiki/ISO_8601#Durations
-  ttl: 'P1M'
+  ttl: 'P2Y'
   # type of cleanup to perform, possible values:
   # 'all' - delete everything related to the process instance
   # 'variables' - only delete associated variables of a process instance
