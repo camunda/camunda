@@ -74,14 +74,4 @@ const interactionStyles = css`
       light: Colors.lightActive
     })};
   }
-
-  &:focus {
-    z-index: 1;
-    box-shadow: ${themeStyle({
-      dark: `0 0 0 1px ${Colors.focusOuter},0 0 0 4px ${Colors.darkFocusInner}`,
-      light: `0 0 0 1px ${Colors.focusOuter}, 0 0 0 4px ${
-        Colors.lightFocusInner
-      }`
-    })};
-  }
 `;

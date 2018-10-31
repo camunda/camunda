@@ -38,15 +38,6 @@ export const Button = themed(styled.button`
   /* Other */
   cursor: ${({disabled}) => (disabled ? 'default' : 'pointer')};
 
-  &:focus {
-    box-shadow: ${themeStyle({
-      dark: `0 0 0 1px ${Colors.focusOuter},0 0 0 4px ${Colors.darkFocusInner}`,
-      light: `0 0 0 1px ${Colors.focusOuter}, 0 0 0 4px ${
-        Colors.lightFocusInner
-      }`
-    })};
-  }
-
   & > svg {
     vertical-align: text-bottom;
   }
