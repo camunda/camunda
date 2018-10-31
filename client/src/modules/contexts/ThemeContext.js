@@ -80,7 +80,6 @@ const themed = Component => {
   ThemedWithRef.WrappedComponent = Component;
   const name = Component.displayName || Component.name;
   ThemedWithRef.displayName = `Themed(${name})`;
-
   return ThemedWithRef;
 };
 

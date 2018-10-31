@@ -71,7 +71,9 @@ describe('List', () => {
 
       expect(TableContainerNode).toHaveLength(1);
 
-      // expect(TableContainerNode.prop('ref')).toBe(node.instance().containerRef);
+      expect(TableContainerNode.dive().props().forwardedRef).toBe(
+        node.instance().myRef
+      );
     });
 
     it('should render table head', () => {
@@ -258,7 +260,7 @@ describe('List', () => {
       it('should set state.rowsToDisplay', () => {
         // given
         const node = shallow(<List {...mockProps} />);
-        node.instance().container = {clientHeight: 38};
+        node.instance().myRef.current = {clientHeight: 38};
         const expectedRows = 0;
 
         // when

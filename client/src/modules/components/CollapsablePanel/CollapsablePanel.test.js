@@ -39,7 +39,6 @@ describe('CollapsablePanel', () => {
     const CollapseButtonNode = node.find('[data-test="collapse-button"]');
 
     CollapseButtonNode.simulate('click');
-
     expect(node.props().onCollapse).toHaveBeenCalled();
 
     const ExpandButtonNode = node.find('[data-test="expand-button"]');

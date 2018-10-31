@@ -35,9 +35,13 @@ export default class List extends React.Component {
     isDataLoaded: PropTypes.bool
   };
 
-  state = {
-    rowsToDisplay: 9
-  };
+  constructor(props) {
+    super(props);
+    this.myRef = React.createRef();
+    this.state = {
+      rowsToDisplay: 9
+    };
+  }
 
   componentDidMount() {
     this.recalculateHeight();
@@ -140,16 +144,12 @@ export default class List extends React.Component {
   };
 
   recalculateHeight() {
-    if (this.container) {
-      const rows = ~~(this.container.clientHeight / 38) - 1;
+    if (this.myRef.current) {
+      const rows = ~~(this.myRef.current.clientHeight / 38) - 1;
       this.setState({rowsToDisplay: rows});
       this.props.onEntriesPerPageChange(rows);
     }
   }
-
-  containerRef = node => {
-    this.container = node;
-  };
 
   renderTableHead() {
     const isListEmpty = this.props.data.length === 0;
@@ -276,7 +276,7 @@ export default class List extends React.Component {
 
     return (
       <Styled.List>
-        <Styled.TableContainer ref={this.containerRef}>
+        <Styled.TableContainer ref={this.myRef}>
           <Table>
             {this.renderTableHead()}
             {isListEmpty &&

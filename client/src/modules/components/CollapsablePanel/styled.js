@@ -1,12 +1,21 @@
 import styled, {css} from 'styled-components';
 
 import {Colors, themed, themeStyle} from 'modules/theme';
+import withStrippedProps from 'modules/utils/withStrippedProps';
 
 import BasicPanel from '../Panel';
 
 export const COLLAPSABLE_PANEL_MIN_WIDTH = '56px';
 
-export const Collapsable = themed(styled.div`
+export const Collapsable = themed(styled(
+  withStrippedProps([
+    'isCollapsed',
+    'maxWidth',
+    'onCollapse',
+    'expandButton',
+    'collapseButton'
+  ])('div')
+)`
   position: relative;
 
   overflow: hidden;

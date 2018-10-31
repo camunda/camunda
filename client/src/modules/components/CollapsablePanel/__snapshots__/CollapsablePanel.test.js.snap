@@ -1,7 +1,17 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`CollapsablePanel should render an exapnding panel and a collapsing one 1`] = `
-<Themed(styled.div)
+<Themed(Styled(withStrippedProps(Component)))
+  collapseButton={
+    <button
+      data-test="collapse-button"
+    />
+  }
+  expandButton={
+    <button
+      data-test="expand-button"
+    />
+  }
   isCollapsed={false}
   maxWidth={300}
   onCollapse={[MockFunction]}
@@ -26,5 +36,5 @@ exports[`CollapsablePanel should render an exapnding panel and a collapsing one 
       onClick={[Function]}
     />
   </Styled(Panel)>
-</Themed(styled.div)>
+</Themed(Styled(withStrippedProps(Component)))>
 `;

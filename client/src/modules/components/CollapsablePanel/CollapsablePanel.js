@@ -31,17 +31,10 @@ export default class CollapsablePanel extends React.Component {
     });
 
   render() {
-    const {
-      isCollapsed,
-      children,
-      collapseButton,
-      expandButton,
-      onCollapse,
-      ...rest
-    } = this.props;
+    const {isCollapsed, children, collapseButton, expandButton} = this.props;
 
     return (
-      <Styled.Collapsable {...rest} isCollapsed={isCollapsed}>
+      <Styled.Collapsable {...this.props} isCollapsed={isCollapsed}>
         <Styled.ExpandedPanel isCollapsed={isCollapsed}>
           {this.renderButton(collapseButton)}
           {children}
