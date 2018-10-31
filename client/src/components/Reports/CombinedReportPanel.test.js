@@ -1,25 +1,18 @@
 import React from 'react';
-import {mount} from 'enzyme';
+import {shallow} from 'enzyme';
 import {loadEntity} from 'services';
 import CombinedReportPanel from './CombinedReportPanel';
 
 jest.mock('services', () => {
+  const rest = jest.requireActual('services');
+
   return {
-    loadEntity: jest.fn(),
+    ...rest,
     formatters: {
       getHighlightedText: text => text
-    }
+    },
+    loadEntity: jest.fn()
   };
-});
-
-jest.mock('components', () => {
-  return {
-    TypeaheadMultipleSelection: props => <ul>{JSON.stringify(props)}</ul>
-  };
-});
-
-jest.mock('./targetValue', () => {
-  return {TargetValueComparison: () => <div>TargetValueComparison</div>};
 });
 
 const reportsList = [
@@ -75,31 +68,32 @@ const reportsList = [
 loadEntity.mockReturnValue(reportsList);
 
 it('should invoke loadEntity to load all reports when it is mounted', async () => {
-  const node = await mount(<CombinedReportPanel reportResult={reportsList[1]} />);
+  const node = await shallow(<CombinedReportPanel reportResult={reportsList[1]} />);
   await node.update();
 
   expect(loadEntity).toHaveBeenCalled();
 });
 
 it('should not include heatmap report', async () => {
-  const node = await mount(<CombinedReportPanel reportResult={reportsList[1]} />);
+  const node = await shallow(<CombinedReportPanel reportResult={reportsList[1]} />);
   await node.update();
 
   expect(node).not.toIncludeText('heatmap');
 });
 
 it('should have input checkbox for only single report items in the list', async () => {
-  const node = await mount(<CombinedReportPanel reportResult={reportsList[1]} />);
+  const node = await shallow(<CombinedReportPanel reportResult={reportsList[1]} />);
   await node.update();
-
-  expect(node.find('ul').first()).toIncludeText('Single Report');
-  expect(node.find('ul').first()).not.toIncludeText('Combined Report');
+  expect(JSON.stringify(node.find('TypeaheadMultipleSelection').props())).toMatch('Single Report');
+  expect(JSON.stringify(node.find('TypeaheadMultipleSelection').props())).not.toMatch(
+    'Combined Report'
+  );
 });
 
 describe('isCompatible', () => {
   let node = {};
   beforeEach(async () => {
-    node = await mount(<CombinedReportPanel reportResult={reportsList[1]} />);
+    node = await shallow(<CombinedReportPanel reportResult={reportsList[1]} />);
     await node.update();
   });
 
@@ -164,7 +158,7 @@ describe('isCompatible', () => {
 });
 
 it('should enable target value option when combined report is barchart or linechart', async () => {
-  const node = await mount(<CombinedReportPanel reportResult={reportsList[1]} />);
+  const node = await shallow(<CombinedReportPanel reportResult={reportsList[1]} />);
   await node.update();
 
   expect(node.find('TargetValueComparison')).toBePresent();

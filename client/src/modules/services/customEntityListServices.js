@@ -1,4 +1,4 @@
-import {extractProcessDefinitionName} from 'services';
+import {extractProcessDefinitionName} from './GetProcessDefinitionName';
 
 export function getCustomReportInfo(report) {
   if (report.data) {

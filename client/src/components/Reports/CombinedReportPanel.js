@@ -97,12 +97,6 @@ export default class CombinedReportPanel extends React.Component {
   search = (searchQuery, name) =>
     searchQuery ? name.toLowerCase().includes(searchQuery.toLowerCase()) : true;
 
-  isTargetValuePossible = reportResult => {
-    if (reportResult.result && Object.values(reportResult.result).length)
-      return ['bar', 'line'].includes(Object.values(reportResult.result)[0].data.visualization);
-    return false;
-  };
-
   render() {
     const {reports, selectedReports, searchQuery, referenceReport} = this.state;
     const selectedReportsList = selectedReports;
@@ -113,7 +107,7 @@ export default class CombinedReportPanel extends React.Component {
     const isChart = referenceReport && ['bar', 'line'].includes(referenceReport.visualization);
 
     return (
-      <div className="combinedPanel">
+      <div className="CombinedReportPanel">
         {isChart && (
           <TargetValueComparison
             reportResult={this.props.reportResult}
@@ -121,17 +115,15 @@ export default class CombinedReportPanel extends React.Component {
             onChange={this.props.updateReport}
           />
         )}
-        <div className="PanelSelection">
-          <TypeaheadMultipleSelection
-            availableValues={combinableReportList}
-            selectedValues={selectedReportsList}
-            setFilter={evt => this.setState({searchQuery: evt.target.value})}
-            toggleValue={this.update}
-            label="reports"
-            loading={false}
-            format={v => v.name}
-          />
-        </div>
+        <TypeaheadMultipleSelection
+          availableValues={combinableReportList}
+          selectedValues={selectedReportsList}
+          setFilter={evt => this.setState({searchQuery: evt.target.value})}
+          toggleValue={this.update}
+          label="reports"
+          loading={false}
+          format={v => v.name}
+        />
       </div>
     );
   }

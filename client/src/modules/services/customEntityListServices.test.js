@@ -1,6 +1,6 @@
 import {getCustomReportInfo, getCustomDashboardInfo} from './customEntityListServices';
 
-jest.mock('services', () => ({
+jest.mock('./GetProcessDefinitionName', () => ({
   extractProcessDefinitionName: () => 'exampleProcessDefName'
 }));
 
