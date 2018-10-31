@@ -93,77 +93,20 @@ describe('Action services', () => {
       });
 
     describe('getLatestOperation', () => {
-      beforeEach(() => {
-        // Create Mock Data
+      it('should return "" when no operations are available', () => {
         mockOperations = [];
-        createMockOperations(3, mockOperations);
+        createMockOperations(0, mockOperations);
+        expect(getLatestOperation(mockOperations)).toEqual('');
       });
 
       it('should retrun operations sorted in ascending order by startDate', () => {
+        // Create Mock Data
+        mockOperations = [];
+        createMockOperations(3, mockOperations);
         const latestDate = `2018-10-13T09:20:38.661Z`;
 
         expect(getLatestOperation(mockOperations)).toEqual(
           createOperation({startDate: latestDate})
-        );
-      });
-    });
-
-    describe('getLatestOperationState', () => {
-      beforeEach(() => {
-        mockOperations = [];
-      });
-
-      it('should return "" when no operations exist', () => {
-        expect(getLatestOperationState(mockOperations)).toBe('');
-      });
-
-      it('should summerize some operation-states and return "SCHEDULED"', () => {
-        //given
-        mockOperations.push(
-          createOperation({state: OPERATION_STATE.SCHEDULED})
-        );
-        //then
-        expect(getLatestOperationState(mockOperations)).toBe(
-          OPERATION_STATE.SCHEDULED
-        );
-
-        //given
-        mockOperations = [];
-        mockOperations.push(createOperation({state: OPERATION_STATE.LOCKED}));
-
-        //then
-        expect(getLatestOperationState(mockOperations)).toBe(
-          OPERATION_STATE.SCHEDULED
-        );
-      });
-
-      it('should not return "SCHEDULED for the remaining operation-states', () => {
-        //given
-        mockOperations.push(createOperation({state: OPERATION_STATE.SENT}));
-
-        //then
-        expect(getLatestOperationState(mockOperations)).toBe(
-          OPERATION_STATE.SENT
-        );
-
-        //given
-        mockOperations = [];
-        mockOperations.push(createOperation({state: OPERATION_STATE.FAILED}));
-
-        //then
-        expect(getLatestOperationState(mockOperations)).toBe(
-          OPERATION_STATE.FAILED
-        );
-
-        //given
-        mockOperations = [];
-        mockOperations.push(
-          createOperation({state: OPERATION_STATE.COMPLETED})
-        );
-
-        //then
-        expect(getLatestOperationState(mockOperations)).toBe(
-          OPERATION_STATE.COMPLETED
         );
       });
     });

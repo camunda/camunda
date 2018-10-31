@@ -2,13 +2,18 @@
 
 exports[`Actions should match snapshots 1`] = `
 <styled.div>
-  <Themed(Styled(Spinner)) />
+  <ActionSpinner
+    operationState="SCHEDULED"
+  />
   <ActionItems />
 </styled.div>
 `;
 
 exports[`Actions should match snapshots 2`] = `
 <styled.div>
+  <ActionSpinner
+    operationState="FAILED"
+  />
   <StatusItems>
     <Item
       type="UPDATE_RETRIES"

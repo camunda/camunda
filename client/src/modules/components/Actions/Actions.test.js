@@ -14,6 +14,7 @@ import {
 } from 'modules/constants';
 
 import Actions from './Actions';
+import ActionSpinner from './ActionSpinner';
 import ActionItems from './ActionItems';
 import StatusItems from './StatusItems';
 
@@ -63,14 +64,16 @@ describe('Actions', () => {
     expect(node.find(ActionItems)).toExist();
   });
 
-  it('should render a spinner', () => {
+  it('should pass the operationState to the spinner component', () => {
     // when
     mockOperation = createOperation({state: OPERATION_STATE.SCHEDULED});
     mockInstance = createInstance({operations: [mockOperation]});
     node = shallow(<Actions instance={mockInstance} />);
 
     //then
-    expect(node.find(Styled.ActionSpinner)).toExist();
+    expect(node.find(ActionSpinner).props().operationState).toBe(
+      OPERATION_STATE.SCHEDULED
+    );
   });
 
   it('should render a failed action icon', () => {

@@ -1,11 +1,7 @@
 import {orderBy} from 'lodash';
 
 import {getInstanceState} from 'modules/utils/instance';
-import {
-  INSTANCE_STATE,
-  OPERATION_TYPE,
-  OPERATION_STATE
-} from 'modules/constants';
+import {INSTANCE_STATE, OPERATION_TYPE} from 'modules/constants';
 
 /**
  * @returns an query object based on the type of operation to perform
@@ -48,18 +44,7 @@ export const isRunning = instance => {
  * @param {*} operations array of operations
  */
 export const getLatestOperation = operations => {
-  return orderBy(operations, ['startDate'], ['desc'])[0];
-};
-
-/**
- * @returns a string value specifying the state of the latest operation scheduled.
- * @param {*} instance complete instance object
- */
-export const getLatestOperationState = operations => {
-  if (!operations.length > 0) {
-    return '';
-  }
-  const scheduledState = [OPERATION_STATE.SCHEDULED, OPERATION_STATE.LOCKED];
-  const {state} = getLatestOperation(operations);
-  return scheduledState.includes(state) ? OPERATION_STATE.SCHEDULED : state;
+  return operations.length > 0
+    ? orderBy(operations, ['startDate'], ['desc'])[0]
+    : '';
 };
