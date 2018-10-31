@@ -103,7 +103,7 @@ it('should toggle target value view mode off when a setting changes', () => {
 
   node.instance().update('visualization', 'someTestVis');
 
-  expect(spy.mock.calls[0][0].configuration.targetValue.active).toBe(false);
+  expect(spy.mock.calls[0][0].configuration.targetValue).toBe(null);
 });
 
 it('should disable the groupBy and visualization Selects if view is not selected', () => {
@@ -127,7 +127,7 @@ it('should set or reset following selects according to the getNext function', ()
   node.instance().update('view', 'foo');
 
   expect(spy).toHaveBeenCalledWith({
-    configuration: {targetValue: {active: false}, xml: 'fooXml'},
+    configuration: {targetValue: null, xml: 'fooXml'},
     view: 'foo',
     groupBy: 'next'
   });
@@ -287,7 +287,7 @@ it('should reset the target value when changing from line chart or barchart to s
 
   node.instance().update('visualization', 'something else');
   expect(spy).toHaveBeenCalledWith({
-    configuration: {targetValue: {active: false}, xml: 'fooXml'},
+    configuration: {targetValue: null, xml: 'fooXml'},
     groupBy: null,
     visualization: null
   });

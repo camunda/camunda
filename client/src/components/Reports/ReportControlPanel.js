@@ -371,7 +371,7 @@ export default class ReportControlPanel extends React.Component {
       // reset the target value
       update.configuration = {
         ...this.props.configuration,
-        targetValue: {active: false}
+        targetValue: null
       };
     }
 

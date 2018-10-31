@@ -785,6 +785,6 @@ describe('edit mode', async () => {
 
     node.instance().updateReport({reportIds: []});
 
-    expect(node.state().data.configuration).toEqual({targetValue: {}});
+    expect(node.state().data.configuration).toEqual({targetValue: null});
   });
 });

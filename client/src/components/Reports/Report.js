@@ -158,7 +158,7 @@ export default withErrorHandling(
       const processDefinitionWasUpdated =
         updates.processDefinitionKey || updates.processDefinitionVersion;
       if (processDefinitionWasUpdated) {
-        data.configuration = {...data.configuration, excludedColumns: [], targetValue: {}};
+        data.configuration = {...data.configuration, excludedColumns: [], targetValue: null};
         data.processPart = null;
 
         if (data.groupBy && data.groupBy.type === 'variable') {
@@ -169,7 +169,7 @@ export default withErrorHandling(
       }
 
       if (updates.view) {
-        data.configuration = {...data.configuration, targetValue: {}};
+        data.configuration = {...data.configuration, targetValue: null};
         data.processPart = null;
       }
 
@@ -179,7 +179,7 @@ export default withErrorHandling(
 
       // if combined report has no reports then reset configuration
       if (this.state.reportType === 'combined' && updates.reportIds && !updates.reportIds.length) {
-        data.configuration = {targetValue: {}};
+        data.configuration = {targetValue: null};
       }
 
       this.setState({data});
