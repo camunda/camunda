@@ -55,6 +55,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     String processId = "demoProcess";
     final String workflowId = ZeebeUtil.deployWorkflow(zeebeClient, "demoProcess_v_1.bpmn");
     final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //when
     //1st load workflow instance index, then deployment
@@ -77,6 +78,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     //create an incident
     setJobWorker(ZeebeUtil.failTask(getClient(), activityId, getWorkerName(), 3));
+    elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //when
     //1st load incident and then workflow instance events
