@@ -1,7 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
-<Themed(styled.div)
+<Themed(Styled(withStrippedProps(Component)))
   activitiesDetails={
     Object {
       "1": Object {
@@ -76,5 +76,5 @@ exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
       </Themed(styled.button)>
     </Themed(styled.li)>
   </styled.ul>
-</Themed(styled.div)>
+</Themed(Styled(withStrippedProps(Component)))>
 `;

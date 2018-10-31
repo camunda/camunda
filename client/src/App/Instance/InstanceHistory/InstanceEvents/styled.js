@@ -3,7 +3,13 @@ import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 import {ReactComponent as InstanceHistoryIconIncidentActive} from 'modules/components/Icon/instance-history-icon-incident-active.svg';
 
-export const InstanceEvents = themed(styled.div`
+import withStrippedProps from 'modules/utils/withStrippedProps';
+
+export const InstanceEvents = themed(styled(
+  withStrippedProps(['onEventRowChanged', 'groupedEvents', 'selectedEventRow'])(
+    'div'
+  )
+)`
   flex: 1;
   position: relative;
 

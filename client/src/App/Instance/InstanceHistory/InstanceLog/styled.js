@@ -5,20 +5,28 @@ import {ReactComponent as Document} from 'modules/components/Icon/document.svg';
 import BasicFlowNodeIcon from 'modules/components/FlowNodeIcon';
 import withStrippedProps from 'modules/utils/withStrippedProps';
 
-export const InstanceLog = themed(styled.div`
-  flex: 1;
-  display: flex;
+export const InstanceLog = themed(
+  styled(
+    withStrippedProps([
+      'onActivityInstanceSelected',
+      'activitiesDetails',
+      'selectedActivityInstanceId'
+    ])('div')
+  )`
+    flex: 1;
+    display: flex;
 
-  overflow: auto;
-  border: solid 1px
-    ${themeStyle({
-      dark: Colors.uiDark04,
-      light: Colors.uiLight05
-    })};
-  border-top: none;
-  border-bottom: none;
-  position: relative;
-`);
+    overflow: auto;
+    border: solid 1px
+      ${themeStyle({
+        dark: Colors.uiDark04,
+        light: Colors.uiLight05
+      })};
+    border-top: none;
+    border-bottom: none;
+    position: relative;
+  `
+);
 
 export const EntriesContainer = styled.ul`
   position: absolute;

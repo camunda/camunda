@@ -1,7 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`InstanceEvents should render grouped events 1`] = `
-<Themed(styled.div)
+<Themed(Styled(withStrippedProps(Component)))
   groupedEvents={
     Array [
       Object {
@@ -206,5 +206,5 @@ exports[`InstanceEvents should render grouped events 1`] = `
       </Foldable>
     </Themed(styled.li)>
   </styled.ul>
-</Themed(styled.div)>
+</Themed(Styled(withStrippedProps(Component)))>
 `;
