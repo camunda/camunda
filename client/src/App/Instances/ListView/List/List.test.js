@@ -32,7 +32,7 @@ const mockProps = {
   onUpdateSelection: jest.fn(),
   onEntriesPerPageChange: jest.fn(),
   filter: {active: true, incidents: true},
-  handleSorting: jest.fn(),
+  onSort: jest.fn(),
   selection: {
     all: false,
     excludeIds: [],
@@ -46,7 +46,7 @@ const emptyList = {
   data: [],
   onUpdateSelection: jest.fn(),
   onEntriesPerPageChange: jest.fn(),
-  handleSorting: jest.fn(),
+  onSort: jest.fn(),
   selection: {
     all: false,
     excludeIds: [],
@@ -90,7 +90,7 @@ describe('List', () => {
 
       // TH
       const THNodes = THeadNode.find(TH);
-      expect(THNodes.length).toBe(4);
+      expect(THNodes.length).toBe(5);
 
       // Styled TH
       expect(THeadNode.find(Styled.Th).length).toBe(1);
@@ -104,40 +104,60 @@ describe('List', () => {
       );
 
       // Instance Id TH
-      expect(THNodes.at(1).contains('Instance Id')).toBe(true);
+      const InstanceIdTHNode = THNodes.at(1);
+      expect(InstanceIdTHNode.contains('Instance Id')).toBe(true);
+
       // Instance Id HeaderSortIcon
-      const InstanceHeaderSortIconNode = THNodes.at(1).find(HeaderSortIcon);
+      const InstanceHeaderSortIconNode = InstanceIdTHNode.find(HeaderSortIcon);
       expect(InstanceHeaderSortIconNode).toHaveLength(1);
       expect(InstanceHeaderSortIconNode.prop('sortKey')).toBe('id');
       expect(InstanceHeaderSortIconNode.prop('sorting')).toEqual(
         mockProps.sorting
       );
       expect(InstanceHeaderSortIconNode.prop('handleSorting')).toBe(
-        mockProps.handleSorting
+        mockProps.onSort
+      );
+
+      // Version TH
+      const VersionTHNode = THNodes.at(2);
+      expect(VersionTHNode.contains('Version')).toBe(true);
+      // Version HeaderSortIcon
+      const InstanceHeaderSortVersionNode = VersionTHNode.find(HeaderSortIcon);
+      expect(InstanceHeaderSortVersionNode).toHaveLength(1);
+      expect(InstanceHeaderSortVersionNode.prop('sortKey')).toBe(
+        'workflowVersion'
+      );
+      expect(InstanceHeaderSortVersionNode.prop('sorting')).toEqual(
+        mockProps.sorting
+      );
+      expect(InstanceHeaderSortVersionNode.prop('handleSorting')).toBe(
+        mockProps.onSort
       );
 
       // Start Time TH
-      expect(THNodes.at(2).contains('Start Time')).toBe(true);
+      const StartTimeTHNode = THNodes.at(3);
+      expect(StartTimeTHNode.contains('Start Time')).toBe(true);
       // Start Time HeaderSortIcon
-      const STimeHeaderSortIconNode = THNodes.at(2).find(HeaderSortIcon);
+      const STimeHeaderSortIconNode = StartTimeTHNode.find(HeaderSortIcon);
       expect(STimeHeaderSortIconNode.prop('sortKey')).toBe('startDate');
       expect(STimeHeaderSortIconNode.prop('sorting')).toEqual(
         mockProps.sorting
       );
       expect(STimeHeaderSortIconNode.prop('handleSorting')).toBe(
-        mockProps.handleSorting
+        mockProps.onSort
       );
 
       // End Time TH
-      expect(THNodes.at(3).contains('End Time')).toBe(true);
+      const EndTimeTHNode = THNodes.at(4);
+      expect(EndTimeTHNode.contains('End Time')).toBe(true);
       // Start Time HeaderSortIcon
-      const ETimeHeaderSortIconNode = THNodes.at(3).find(HeaderSortIcon);
+      const ETimeHeaderSortIconNode = EndTimeTHNode.find(HeaderSortIcon);
       expect(ETimeHeaderSortIconNode.prop('sortKey')).toBe('endDate');
       expect(ETimeHeaderSortIconNode.prop('sorting')).toEqual(
         mockProps.sorting
       );
       expect(ETimeHeaderSortIconNode.prop('handleSorting')).toBe(
-        mockProps.handleSorting
+        mockProps.onSort
       );
 
       // Action TH
@@ -161,7 +181,7 @@ describe('List', () => {
 
         // TD
         const TDNodes = TRNode.find(TD);
-        expect(TDNodes.length).toBe(5);
+        expect(TDNodes.length).toBe(6);
 
         // Workflow Definition TD
         expect(TDNodes.at(0).find(Checkbox)).toHaveLength(1);
@@ -181,18 +201,23 @@ describe('List', () => {
         );
         expect(InstanceAnchorNode.contains(currentInstance.id)).toBe(true);
 
+        // Version TD
+        expect(
+          TDNodes.at(2).contains(`Version ${currentInstance.workflowVersion}`)
+        ).toBe(true);
+
         // Start Date TD
         expect(
-          TDNodes.at(2).contains(formatDate(currentInstance.startDate))
+          TDNodes.at(3).contains(formatDate(currentInstance.startDate))
         ).toBe(true);
 
         // End Date TD
         expect(
-          TDNodes.at(3).contains(formatDate(currentInstance.endDate))
+          TDNodes.at(4).contains(formatDate(currentInstance.endDate))
         ).toBe(true);
 
         // Actions TD
-        expect(TDNodes.at(4).find(Actions));
+        expect(TDNodes.at(5).find(Actions));
       });
     });
 

@@ -129,7 +129,8 @@ export const createInstance = ({
   operations = [createOperation()],
   startDate = '2018-06-21T11:13:31.094+0000',
   state = 'ACTIVE',
-  workflowId = '2'
+  workflowId = '2',
+  workflowVersion = '1'
 } = {}) => {
   return {
     activities,
@@ -140,6 +141,7 @@ export const createInstance = ({
     operations,
     startDate,
     state,
-    workflowId
+    workflowId,
+    workflowVersion
   };
 };

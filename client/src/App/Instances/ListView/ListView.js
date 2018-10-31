@@ -112,7 +112,7 @@ export default class ListView extends React.Component {
             filter={filter}
             expandState={expandState}
             sorting={this.state.sorting}
-            handleSorting={this.handleSorting}
+            onSort={this.handleSorting}
             onUpdateSelection={onUpdateSelection}
             onEntriesPerPageChange={entriesPerPage =>
               this.setState({entriesPerPage})

@@ -30,7 +30,7 @@ export default class List extends React.Component {
     filterCount: PropTypes.number,
     filter: PropTypes.object,
     sorting: PropTypes.object,
-    handleSorting: PropTypes.func,
+    onSort: PropTypes.func,
     expandState: PropTypes.oneOf(Object.values(EXPAND_STATE)),
     isDataLoaded: PropTypes.bool
   };
@@ -174,7 +174,15 @@ export default class List extends React.Component {
             <HeaderSortIcon
               sortKey="id"
               sorting={this.props.sorting}
-              handleSorting={this.props.handleSorting}
+              handleSorting={this.props.onSort}
+            />
+          </TH>
+          <TH>
+            Version
+            <HeaderSortIcon
+              sortKey="workflowVersion"
+              sorting={this.props.sorting}
+              handleSorting={this.props.onSort}
             />
           </TH>
           <TH>
@@ -182,7 +190,7 @@ export default class List extends React.Component {
             <HeaderSortIcon
               sortKey="startDate"
               sorting={this.props.sorting}
-              handleSorting={this.props.handleSorting}
+              handleSorting={this.props.onSort}
             />
           </TH>
           <TH>
@@ -190,7 +198,7 @@ export default class List extends React.Component {
             <HeaderSortIcon
               sortKey="endDate"
               sorting={this.props.sorting}
-              handleSorting={this.props.handleSorting}
+              handleSorting={this.props.onSort}
             />
           </TH>
           <Styled.Th>Actions</Styled.Th>
@@ -230,6 +238,7 @@ export default class List extends React.Component {
                   {instance.id}
                 </Styled.InstanceAnchor>
               </TD>
+              <TD>{`Version ${instance.workflowVersion}`}</TD>
               <TD>{formatDate(instance.startDate)}</TD>
               <TD>{formatDate(instance.endDate)}</TD>
               <TD>
