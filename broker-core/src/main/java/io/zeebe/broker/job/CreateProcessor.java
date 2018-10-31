@@ -17,9 +17,22 @@
  */
 package io.zeebe.broker.job;
 
-import io.zeebe.servicecontainer.ServiceName;
+import io.zeebe.broker.logstreams.processor.CommandProcessor;
+import io.zeebe.broker.logstreams.processor.TypedRecord;
+import io.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.zeebe.protocol.intent.JobIntent;
 
-public class JobQueueServiceNames {
-  public static final ServiceName<JobQueueManagerService> JOB_QUEUE_MANAGER =
-      ServiceName.newServiceName("jobqueue.manager", JobQueueManagerService.class);
+public class CreateProcessor implements CommandProcessor<JobRecord> {
+
+  private final JobState state;
+
+  public CreateProcessor(JobState state) {
+    this.state = state;
+  }
+
+  @Override
+  public void onCommand(TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
+    final long key = commandControl.accept(JobIntent.CREATED, command.getValue());
+    state.create(key, command.getValue());
+  }
 }

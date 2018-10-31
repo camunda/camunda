@@ -38,4 +38,7 @@ public class LogStreamServiceNames {
     return ServiceName.newServiceName(
         String.format("%s.rocksdb.storage", partitionName), StateStorageFactory.class);
   }
+
+  public static final ServiceName<ZbStreamProcessorService> ZB_STREAM_PROCESSOR_SERVICE_NAME =
+      ServiceName.newServiceName("logstreams.processor", ZbStreamProcessorService.class);
 }

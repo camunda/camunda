@@ -27,7 +27,7 @@ import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.state.Message;
-import io.zeebe.broker.subscription.message.state.MessageStateController;
+import io.zeebe.broker.subscription.message.state.MessageState;
 import io.zeebe.broker.subscription.message.state.MessageSubscription;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
@@ -39,7 +39,7 @@ import java.util.stream.Collectors;
 
 public class PublishMessageProcessor implements TypedRecordProcessor<MessageRecord> {
 
-  private final MessageStateController messageStateController;
+  private final MessageState messageState;
   private final SubscriptionCommandSender commandSender;
 
   private TypedResponseWriter responseWriter;
@@ -47,9 +47,8 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
   private List<MessageSubscription> matchingSubscriptions;
 
   public PublishMessageProcessor(
-      MessageStateController messageStateController,
-      final SubscriptionCommandSender commandSender) {
-    this.messageStateController = messageStateController;
+      MessageState messageState, final SubscriptionCommandSender commandSender) {
+    this.messageState = messageState;
     this.commandSender = commandSender;
   }
 
@@ -63,7 +62,7 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
     messageRecord = command.getValue();
 
     if (messageRecord.hasMessageId()
-        && messageStateController.exist(
+        && messageState.exist(
             messageRecord.getName(),
             messageRecord.getCorrelationKey(),
             messageRecord.getMessageId())) {
@@ -93,7 +92,7 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
     // correlate the message only once per workflow instance
     // - will be improved by #1421
     matchingSubscriptions =
-        messageStateController
+        messageState
             .findSubscriptions(messageRecord.getName(), messageRecord.getCorrelationKey())
             .stream()
             .collect(Collectors.groupingBy(MessageSubscription::getWorkflowInstanceKey))
@@ -105,7 +104,7 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
     for (final MessageSubscription sub : matchingSubscriptions) {
       sub.setMessagePayload(messageRecord.getPayload());
 
-      messageStateController.updateCommandSentTime(sub);
+      messageState.updateCommandSentTime(sub);
     }
 
     sideEffect.accept(this::correlateMessage);
@@ -120,11 +119,10 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
               messageRecord.getMessageId(),
               messageRecord.getTimeToLive(),
               messageRecord.getTimeToLive() + ActorClock.currentTimeMillis());
-      messageStateController.put(message);
+      messageState.put(message);
 
       for (MessageSubscription sub : matchingSubscriptions) {
-        messageStateController.putMessageCorrelation(
-            message.getKey(), sub.getWorkflowInstanceKey());
+        messageState.putMessageCorrelation(message.getKey(), sub.getWorkflowInstanceKey());
       }
 
     } else {

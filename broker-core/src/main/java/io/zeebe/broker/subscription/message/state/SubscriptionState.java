@@ -35,10 +35,14 @@ public class SubscriptionState<T extends Subscription> {
   public static final int KEY_OFFSET = TIME_OFFSET + Long.BYTES;
   public static final int TIME_LENGTH = Long.BYTES;
 
-  private static final byte[] SUB_NAME = "subscription".getBytes();
-  private static final byte[] SUB_SEND_TIME_NAME = "subSendTime".getBytes();
+  private static final String SUB_NAME = "subscriptionStateSubscription";
+  private static final String SUB_SEND_TIME_NAME = "subscriptionStateSubSendTime";
 
-  public static final byte[][] COLUMN_FAMILY_NAMES = {SUB_NAME, SUB_SEND_TIME_NAME};
+  public static final byte[][] getColumnFamilyNames(String suffix) {
+    final String subName = SUB_NAME + suffix;
+    final String subSendTimeName = SUB_SEND_TIME_NAME + suffix;
+    return new byte[][] {subName.getBytes(), subSendTimeName.getBytes()};
+  }
 
   private final StateController rocksDbWrapper;
 
@@ -52,7 +56,7 @@ public class SubscriptionState<T extends Subscription> {
   private final Class<T> clazz;
   private final PersistenceHelper persistenceHelper;
 
-  public SubscriptionState(StateController rocksDbWrapper, Class<T> clazz) {
+  public SubscriptionState(StateController rocksDbWrapper, String suffix, Class<T> clazz) {
     this.rocksDbWrapper = rocksDbWrapper;
     this.persistenceHelper = new PersistenceHelper(rocksDbWrapper);
     this.clazz = clazz;
@@ -60,8 +64,9 @@ public class SubscriptionState<T extends Subscription> {
     keyBuffer = new ExpandableArrayBuffer();
     valueBuffer = new ExpandableArrayBuffer();
 
-    subscriptionHandle = rocksDbWrapper.getColumnFamilyHandle(SUB_NAME);
-    subSendTimeHandle = rocksDbWrapper.getColumnFamilyHandle(SUB_SEND_TIME_NAME);
+    subscriptionHandle = rocksDbWrapper.getColumnFamilyHandle((SUB_NAME + suffix).getBytes());
+    subSendTimeHandle =
+        rocksDbWrapper.getColumnFamilyHandle((SUB_SEND_TIME_NAME + suffix).getBytes());
   }
 
   public void put(final T subscription) {

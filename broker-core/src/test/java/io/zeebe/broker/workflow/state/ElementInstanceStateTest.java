@@ -24,6 +24,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.zeebe.broker.logstreams.processor.TypedRecord;
+import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.workflow.state.StoredRecord.Purpose;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
@@ -46,10 +47,10 @@ public class ElementInstanceStateTest {
 
   @Before
   public void setUp() throws Exception {
-    final WorkflowState workflowState = new WorkflowState();
-    workflowState.open(folder.newFolder("rocksdb"), false);
-    elementInstanceState = workflowState.getElementInstanceState();
-    closeables.manage(workflowState);
+    final ZeebeState zeebeState = new ZeebeState();
+    zeebeState.open(folder.newFolder("rocksdb"), false);
+    elementInstanceState = zeebeState.getWorkflowState().getElementInstanceState();
+    closeables.manage(zeebeState);
   }
 
   @Test

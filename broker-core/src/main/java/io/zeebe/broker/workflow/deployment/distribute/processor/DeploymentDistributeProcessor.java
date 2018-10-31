@@ -26,7 +26,7 @@ import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.system.configuration.ClusterCfg;
-import io.zeebe.broker.workflow.deployment.distribute.processor.state.DeploymentsStateController;
+import io.zeebe.broker.workflow.deployment.distribute.processor.state.DeploymentsState;
 import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
@@ -45,7 +45,7 @@ public class DeploymentDistributeProcessor implements TypedRecordProcessor<Deplo
   private final TopologyManager topologyManager;
   private final LogStreamWriterImpl logStreamWriter;
   private final ClientTransport managementApi;
-  private final DeploymentsStateController deploymentsStateController;
+  private final DeploymentsState deploymentsState;
   private final ClusterCfg clusterCfg;
 
   private ActorControl actor;
@@ -56,11 +56,11 @@ public class DeploymentDistributeProcessor implements TypedRecordProcessor<Deplo
   public DeploymentDistributeProcessor(
       final ClusterCfg clusterCfg,
       final TopologyManager topologyManager,
-      final DeploymentsStateController deploymentsStateController,
+      final DeploymentsState deploymentsState,
       final ClientTransport managementClient,
       final LogStreamWriterImpl logStreamWriter) {
     this.clusterCfg = clusterCfg;
-    this.deploymentsStateController = deploymentsStateController;
+    this.deploymentsState = deploymentsState;
     this.topologyManager = topologyManager;
     managementApi = managementClient;
     this.logStreamWriter = logStreamWriter;
@@ -76,14 +76,14 @@ public class DeploymentDistributeProcessor implements TypedRecordProcessor<Deplo
 
     deploymentDistributor =
         new DeploymentDistributor(
-            clusterCfg, managementApi, partitionListener, deploymentsStateController, actor);
+            clusterCfg, managementApi, partitionListener, deploymentsState, actor);
 
     actor.submit(this::reprocessPendingDeployments);
   }
 
   private void reprocessPendingDeployments() {
-    deploymentsStateController.foreachPending(
-        ((key, pendingDeploymentDistribution) -> {
+    deploymentsState.foreachPending(
+        ((pendingDeploymentDistribution, key) -> {
           final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
           final DirectBuffer deployment = pendingDeploymentDistribution.getDeployment();
           buffer.putBytes(0, deployment, 0, deployment.capacity());

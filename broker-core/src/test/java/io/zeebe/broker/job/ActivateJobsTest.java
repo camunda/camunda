@@ -28,7 +28,6 @@ import static io.zeebe.test.util.record.RecordingExporter.workflowInstanceRecord
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.JobBatchRecordValue;
@@ -219,7 +218,6 @@ public class ActivateJobsTest {
     assertThat(jobBatchActivatedRecord)
         .hasKey(response.getKey())
         .hasSourceRecordPosition(jobBatchActivateRecord.getPosition())
-        .hasProducerId(StreamProcessorIds.JOB_STREAM_PROCESSOR_ID)
         .hasTimestamp(clock.getCurrentTime());
   }
 

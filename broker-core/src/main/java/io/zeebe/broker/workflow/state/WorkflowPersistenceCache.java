@@ -42,10 +42,12 @@ import org.agrona.io.DirectBufferInputStream;
 import org.rocksdb.ColumnFamilyHandle;
 
 public class WorkflowPersistenceCache {
-  private static final byte[] WORKFLOWS_FAMILY_NAME = "workflows".getBytes();
+  private static final byte[] WORKFLOWS_FAMILY_NAME =
+      "workflowPersistenceCacheWorkflows".getBytes();
   private static final byte[] WORKFLOWS_BY_ID_AND_VERSION_FAMILY_NAME =
-      "workflowsByIdAndVersion".getBytes();
-  private static final byte[] LATEST_WORKFLOWS_FAMILY_NAME = "latestWorkflow".getBytes();
+      "workflowPersistenceCacheWorkflowsByIdAndVersion".getBytes();
+  private static final byte[] LATEST_WORKFLOWS_FAMILY_NAME =
+      "workflowPersistenceCacheLatestWorkflow".getBytes();
 
   public static final byte[][] COLUMN_FAMILY_NAMES = {
     WORKFLOWS_FAMILY_NAME, WORKFLOWS_BY_ID_AND_VERSION_FAMILY_NAME, LATEST_WORKFLOWS_FAMILY_NAME

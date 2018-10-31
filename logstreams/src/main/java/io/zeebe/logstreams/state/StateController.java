@@ -18,6 +18,7 @@ package io.zeebe.logstreams.state;
 import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
 
 import io.zeebe.logstreams.impl.Loggers;
+import io.zeebe.logstreams.rocksdb.ZbRocksDb;
 import io.zeebe.util.ByteValue;
 import io.zeebe.util.LangUtil;
 import io.zeebe.util.buffer.BufferWriter;
@@ -25,7 +26,9 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.function.BiConsumer;
 import java.util.function.BiFunction;
 import org.agrona.CloseHelper;
@@ -68,7 +71,7 @@ public class StateController implements AutoCloseable {
 
   protected final MutableDirectBuffer dbLongBuffer = new UnsafeBuffer(new byte[Long.BYTES]);
   private boolean isOpened = false;
-  private RocksDB db;
+  private ZbRocksDb db;
   protected File dbDirectory;
   protected List<AutoCloseable> closeables = new ArrayList<>();
 
@@ -110,11 +113,11 @@ public class StateController implements AutoCloseable {
     return db;
   }
 
-  protected RocksDB openDb(final Options options) throws RocksDBException {
-    return RocksDB.open(options, dbDirectory.getAbsolutePath());
+  protected ZbRocksDb openDb(final Options options) throws RocksDBException {
+    return ZbRocksDb.open(options, dbDirectory.getAbsolutePath());
   }
 
-  protected RocksDB open(
+  protected ZbRocksDb open(
       final File dbDirectory, final boolean reopen, List<byte[]> columnFamilyNames)
       throws Exception {
     if (!isOpened) {
@@ -148,8 +151,8 @@ public class StateController implements AutoCloseable {
     return db;
   }
 
-  protected RocksDB openDb(DBOptions dbOptions) throws RocksDBException {
-    return RocksDB.open(
+  protected ZbRocksDb openDb(DBOptions dbOptions) throws RocksDBException {
+    return ZbRocksDb.open(
         dbOptions, dbDirectory.getAbsolutePath(), columnFamilyDescriptors, columnFamilyHandles);
   }
 
@@ -175,7 +178,16 @@ public class StateController implements AutoCloseable {
     columnFamilyDescriptors.add(defaultFamilyDescriptor);
 
     if (columnFamilyNames != null && columnFamilyNames.size() > 0) {
+      final Set<Integer> duplicateCheck = new HashSet<>();
       for (byte[] name : columnFamilyNames) {
+        final boolean isDuplicate = !duplicateCheck.add(Arrays.hashCode(name));
+        if (isDuplicate) {
+          throw new IllegalStateException(
+              String.format(
+                  "Expect to have no duplicate column family name, got '%s' as duplicate.",
+                  new String(name)));
+        }
+
         final ColumnFamilyDescriptor columnFamilyDescriptor =
             new ColumnFamilyDescriptor(name, columnFamilyOptions);
         columnFamilyDescriptors.add(columnFamilyDescriptor);
@@ -276,7 +288,7 @@ public class StateController implements AutoCloseable {
     isOpened = false;
   }
 
-  public RocksDB getDb() {
+  public ZbRocksDb getDb() {
     return db;
   }
 
@@ -426,22 +438,7 @@ public class StateController implements AutoCloseable {
       final byte[] value,
       final int valueOffset,
       final int valueLength) {
-    try {
-      final long nativeHandle = (long) RocksDbInternal.columnFamilyHandle.get(columnFamilyHandle);
-      return (int)
-          RocksDbInternal.getWithHandle.invoke(
-              db,
-              nativeHandle_,
-              key,
-              keyOffset,
-              keyLength,
-              value,
-              valueOffset,
-              valueLength,
-              nativeHandle);
-    } catch (final Exception ex) {
-      throw new RuntimeException(ex);
-    }
+    return db.get(columnFamilyHandle, key, keyOffset, keyLength, value, valueOffset, valueLength);
   }
 
   public int get(
@@ -487,25 +484,6 @@ public class StateController implements AutoCloseable {
     }
 
     return bytes;
-  }
-
-  public boolean tryGet(final long key, final byte[] valueBuffer) {
-    setLong(key);
-
-    return tryGet(dbLongBuffer.byteArray(), valueBuffer);
-  }
-
-  public boolean tryGet(final byte[] keyBuffer, final byte[] valueBuffer) {
-    boolean found = false;
-
-    try {
-      final int bytesRead = getDb().get(keyBuffer, valueBuffer);
-      found = bytesRead == valueBuffer.length;
-    } catch (final RocksDBException e) {
-      LangUtil.rethrowUnchecked(e);
-    }
-
-    return found;
   }
 
   public boolean exist(

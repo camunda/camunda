@@ -19,6 +19,7 @@ package io.zeebe.broker.workflow.state;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.test.util.AutoCloseableRule;
 import java.util.ArrayList;
 import java.util.List;
@@ -37,10 +38,10 @@ public class TimerInstanceStateTest {
 
   @Before
   public void setUp() throws Exception {
-    final WorkflowState workflowState = new WorkflowState();
-    workflowState.open(folder.newFolder("rocksdb"), false);
-    state = workflowState.getTimerState();
-    closeables.manage(workflowState);
+    final ZeebeState zeebeState = new ZeebeState();
+    zeebeState.open(folder.newFolder("rocksdb"), false);
+    state = zeebeState.getWorkflowState().getTimerState();
+    closeables.manage(zeebeState);
   }
 
   @Test

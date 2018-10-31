@@ -23,7 +23,7 @@ import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
-import io.zeebe.broker.subscription.message.state.MessageStateController;
+import io.zeebe.broker.subscription.message.state.MessageState;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import java.util.function.Consumer;
@@ -31,10 +31,10 @@ import java.util.function.Consumer;
 public class CorrelateMessageSubscriptionProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
 
-  private final MessageStateController messageStateController;
+  private final MessageState messageState;
 
-  public CorrelateMessageSubscriptionProcessor(MessageStateController messageStateController) {
-    this.messageStateController = messageStateController;
+  public CorrelateMessageSubscriptionProcessor(MessageState messageState) {
+    this.messageState = messageState;
   }
 
   @Override
@@ -46,7 +46,7 @@ public class CorrelateMessageSubscriptionProcessor
 
     final MessageSubscriptionRecord subscriptionRecord = record.getValue();
 
-    if (messageStateController.remove(subscriptionRecord)) {
+    if (messageState.remove(subscriptionRecord)) {
       streamWriter.writeFollowUpEvent(
           record.getKey(), MessageSubscriptionIntent.CORRELATED, subscriptionRecord);
     } else {

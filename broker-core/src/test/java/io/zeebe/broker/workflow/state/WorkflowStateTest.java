@@ -20,6 +20,7 @@ package io.zeebe.broker.workflow.state;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.workflow.deployment.transform.DeploymentTransformer;
 import io.zeebe.broker.workflow.model.element.AbstractFlowElement;
@@ -41,16 +42,18 @@ public class WorkflowStateTest {
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
   private WorkflowState workflowState;
+  private ZeebeState zeebeState;
 
   @Before
   public void setUp() throws Exception {
-    workflowState = new WorkflowState();
-    workflowState.open(folder.newFolder("rocksdb"), false);
+    zeebeState = new ZeebeState();
+    zeebeState.open(folder.newFolder("rocksdb"), false);
+    workflowState = zeebeState.getWorkflowState();
   }
 
   @After
   public void tearDown() {
-    workflowState.close();
+    zeebeState.close();
   }
 
   @Test

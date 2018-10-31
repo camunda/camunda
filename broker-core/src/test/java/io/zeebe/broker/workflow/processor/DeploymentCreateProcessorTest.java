@@ -21,13 +21,11 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
-import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.util.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
 import io.zeebe.broker.workflow.deployment.transform.DeploymentTransformer;
-import io.zeebe.broker.workflow.processor.timer.DueDateTimerChecker;
+import io.zeebe.broker.workflow.processor.deployment.DeploymentEventProcessors;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -41,32 +39,27 @@ import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 
 public class DeploymentCreateProcessorTest {
   @Rule
   public StreamProcessorRule rule = new StreamProcessorRule(Protocol.DEPLOYMENT_PARTITION + 1);
 
-  @Mock TopologyManager topologyManager;
-  @Mock private SubscriptionCommandSender mockSubscriptionCommandSender;
-  @Mock private DueDateTimerChecker mockTimerEventScheduler;
-
   private StreamProcessorControl streamProcessor;
-  private WorkflowInstanceStreamProcessor workflowInstanceStreamProcessor;
   private WorkflowState workflowState;
 
   @Before
   public void setUp() {
     MockitoAnnotations.initMocks(this);
-
-    workflowState = new WorkflowState();
-    workflowInstanceStreamProcessor =
-        new WorkflowInstanceStreamProcessor(
-            workflowState, mockSubscriptionCommandSender, topologyManager, mockTimerEventScheduler);
-
     streamProcessor =
-        rule.initStreamProcessor(env -> workflowInstanceStreamProcessor.createStreamProcessor(env));
+        rule.initStreamProcessor(
+            (typedEventStreamProcessorBuilder, zeebeState) -> {
+              workflowState = zeebeState.getWorkflowState();
+
+              DeploymentEventProcessors.addDeploymentCreateProcessor(
+                  typedEventStreamProcessorBuilder, workflowState);
+              return typedEventStreamProcessorBuilder.build();
+            });
   }
 
   @Test

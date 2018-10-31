@@ -29,7 +29,6 @@ import static io.zeebe.broker.workflow.WorkflowServiceNames.WORKFLOW_MANAGER;
 
 import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
-import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.servicecontainer.ServiceContainer;
 
@@ -37,10 +36,8 @@ public class WorkflowComponent implements Component {
   @Override
   public void init(final SystemContext context) {
     final ServiceContainer serviceContainer = context.getServiceContainer();
-    final BrokerCfg brokerConfiguration = context.getBrokerConfiguration();
 
-    final WorkflowManagerService workflowManagerService =
-        new WorkflowManagerService(brokerConfiguration.getCluster());
+    final WorkflowManagerService workflowManagerService = new WorkflowManagerService();
     serviceContainer
         .createService(WORKFLOW_MANAGER, workflowManagerService)
         .dependency(

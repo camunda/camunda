@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.workflow.processor.instance;
 
-import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.workflow.processor.EventOutput;
@@ -32,11 +31,9 @@ import org.agrona.DirectBuffer;
 
 public class CreateWorkflowInstanceHandler implements WorkflowInstanceCommandHandler {
 
-  private final KeyGenerator keyGenerator;
   private final WorkflowState workflowState;
 
-  public CreateWorkflowInstanceHandler(KeyGenerator keyGenerator, WorkflowState workflowState) {
-    this.keyGenerator = keyGenerator;
+  public CreateWorkflowInstanceHandler(WorkflowState workflowState) {
     this.workflowState = workflowState;
   }
 
@@ -49,7 +46,7 @@ public class CreateWorkflowInstanceHandler implements WorkflowInstanceCommandHan
     final DeployedWorkflow workflowDefinition = getWorkflowDefinition(command);
 
     if (workflowDefinition != null) {
-      final long workflowInstanceKey = keyGenerator.nextKey();
+      final long workflowInstanceKey = commandContext.getKeyGenerator().nextKey();
       command.setWorkflowInstanceKey(workflowInstanceKey);
       final DirectBuffer bpmnId = workflowDefinition.getWorkflow().getId();
       command

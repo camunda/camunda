@@ -18,29 +18,13 @@
 package io.zeebe.broker.workflow;
 
 import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.INCIDENT_PROCESSOR_ID;
-import static io.zeebe.broker.logstreams.processor.StreamProcessorIds.WORKFLOW_INSTANCE_PROCESSOR_ID;
-import static io.zeebe.broker.workflow.WorkflowServiceNames.WORKFLOW_REPOSITORY_SERVICE;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.incident.processor.IncidentStreamProcessor;
-import io.zeebe.broker.logstreams.processor.StreamProcessorIds;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
-import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory.Builder;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
-import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
-import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.transport.controlmessage.ControlMessageHandlerManager;
-import io.zeebe.broker.workflow.deployment.distribute.processor.DistributionStreamProcessor;
-import io.zeebe.broker.workflow.processor.WorkflowInstanceStreamProcessor;
-import io.zeebe.broker.workflow.processor.timer.DueDateTimerChecker;
-import io.zeebe.broker.workflow.repository.GetWorkflowControlMessageHandler;
-import io.zeebe.broker.workflow.repository.ListWorkflowsControlMessageHandler;
-import io.zeebe.broker.workflow.repository.WorkflowRepositoryService;
-import io.zeebe.broker.workflow.state.WorkflowState;
-import io.zeebe.logstreams.state.StateSnapshotController;
-import io.zeebe.logstreams.state.StateStorage;
-import io.zeebe.protocol.Protocol;
 import io.zeebe.servicecontainer.Injector;
 import io.zeebe.servicecontainer.Service;
 import io.zeebe.servicecontainer.ServiceGroupReference;
@@ -52,7 +36,6 @@ import io.zeebe.transport.ServerTransport;
 /** Tracks leader partitions and installs the workflow instance stream processors */
 public class WorkflowManagerService implements Service<WorkflowManagerService> {
 
-  public static final String WORKFLOW_INSTANCE_PROCESSOR_NAME = "workflow-instance";
   private final Injector<ServerTransport> clientApiTransportInjector = new Injector<>();
   private final Injector<ClientTransport> managementApiClientInjector = new Injector<>();
   private final Injector<ClientTransport> subscriptionApiClientInjector = new Injector<>();
@@ -67,153 +50,18 @@ public class WorkflowManagerService implements Service<WorkflowManagerService> {
           .onAdd((partitionName, partition) -> startStreamProcessors(partitionName, partition))
           .build();
 
-  private final ClusterCfg clusterCfg;
-
-  public WorkflowManagerService(final ClusterCfg clusterCfg) {
-    this.clusterCfg = clusterCfg;
-  }
-
-  private GetWorkflowControlMessageHandler getWorkflowMessageHandler;
-  private ListWorkflowsControlMessageHandler listWorkflowsControlMessageHandler;
   private StreamProcessorServiceFactory streamProcessorServiceFactory;
   private ServerTransport clientApiTransport;
-  private TopologyManager topologyManager;
-  private ServiceStartContext startContext;
-  private ClientTransport managementApi;
 
   @Override
   public void start(final ServiceStartContext serviceContext) {
-    this.startContext = serviceContext;
-    this.managementApi = managementApiClientInjector.getValue();
     this.clientApiTransport = clientApiTransportInjector.getValue();
     this.streamProcessorServiceFactory = streamProcessorServiceFactoryInjector.getValue();
-    this.topologyManager = topologyManagerInjector.getValue();
-
-    getWorkflowMessageHandler =
-        new GetWorkflowControlMessageHandler(clientApiTransport.getOutput());
-    listWorkflowsControlMessageHandler =
-        new ListWorkflowsControlMessageHandler(clientApiTransport.getOutput());
-
-    final ControlMessageHandlerManager controlMessageHandlerManager =
-        controlMessageHandlerManagerServiceInjector.getValue();
-    controlMessageHandlerManager.registerHandler(getWorkflowMessageHandler);
-    controlMessageHandlerManager.registerHandler(listWorkflowsControlMessageHandler);
   }
 
   public void startStreamProcessors(
       final ServiceName<Partition> partitionServiceName, final Partition partition) {
-    installWorkflowStreamProcessor(partition, partitionServiceName);
     installIncidentStreamProcessor(partition, partitionServiceName);
-
-    if (Protocol.DEPLOYMENT_PARTITION == partition.getInfo().getPartitionId()) {
-      installDistributeStreamProcessor(partition, partitionServiceName);
-    }
-  }
-
-  private void installDistributeStreamProcessor(
-      final Partition partition, final ServiceName<Partition> partitionServiceName) {
-
-    final String processorName = "deployment-" + partition.getInfo().getPartitionId();
-    final int deploymentProcessorId = StreamProcessorIds.DISTRIBUTE_PROCESSOR_ID;
-
-    final Builder streamProcessorServiceBuilder =
-        streamProcessorServiceFactory
-            .createService(partition, partitionServiceName)
-            .processorId(deploymentProcessorId)
-            .processorName(processorName);
-
-    final TypedStreamEnvironment streamEnvironment =
-        new TypedStreamEnvironment(partition.getLogStream(), clientApiTransport.getOutput());
-
-    final DistributionStreamProcessor distributionStreamProcessor =
-        new DistributionStreamProcessor(clusterCfg, topologyManager, managementApi);
-
-    final StateStorage stateStorage =
-        partition.getStateStorageFactory().create(deploymentProcessorId, processorName);
-    final StateSnapshotController stateSnapshotController =
-        distributionStreamProcessor.createStateSnapshotController(stateStorage);
-
-    streamProcessorServiceBuilder
-        .processor(distributionStreamProcessor.createStreamProcessor(streamEnvironment))
-        .snapshotController(stateSnapshotController)
-        .build();
-  }
-
-  private void installWorkflowStreamProcessor(
-      final Partition partition, final ServiceName<Partition> partitionServiceName) {
-    final ServerTransport transport = clientApiTransportInjector.getValue();
-
-    final WorkflowState workflowState = new WorkflowState();
-
-    final SubscriptionCommandSender subscriptionCommandSender =
-        new SubscriptionCommandSender(clusterCfg, subscriptionApiClientInjector.getValue());
-
-    final DueDateTimerChecker timerChecker = new DueDateTimerChecker(workflowState);
-
-    final WorkflowInstanceStreamProcessor streamProcessor =
-        createWorkflowStreamProcessor(
-            partition,
-            partitionServiceName,
-            workflowState,
-            subscriptionCommandSender,
-            timerChecker);
-    final TypedStreamEnvironment env =
-        new TypedStreamEnvironment(partition.getLogStream(), transport.getOutput());
-
-    final StateStorage stateStorage =
-        partition
-            .getStateStorageFactory()
-            .create(WORKFLOW_INSTANCE_PROCESSOR_ID, WORKFLOW_INSTANCE_PROCESSOR_NAME);
-    final StateSnapshotController snapshotController =
-        streamProcessor.createSnapshotController(stateStorage);
-
-    streamProcessorServiceFactory
-        .createService(partition, partitionServiceName)
-        .processor(streamProcessor.createStreamProcessor(env))
-        .snapshotController(snapshotController)
-        .processorId(WORKFLOW_INSTANCE_PROCESSOR_ID)
-        .processorName(WORKFLOW_INSTANCE_PROCESSOR_NAME)
-        .build();
-  }
-
-  private WorkflowInstanceStreamProcessor createWorkflowStreamProcessor(
-      final Partition partition,
-      final ServiceName<Partition> partitionServiceName,
-      final WorkflowState workflowState,
-      final SubscriptionCommandSender subscriptionCommandSender,
-      final DueDateTimerChecker timerChecker) {
-    final WorkflowInstanceStreamProcessor streamProcessor;
-    if (Protocol.DEPLOYMENT_PARTITION == partition.getInfo().getPartitionId()) {
-      streamProcessor =
-          new WorkflowInstanceStreamProcessor(
-              ctx -> {
-                final WorkflowRepositoryService workflowRepositoryService =
-                    new WorkflowRepositoryService(ctx.getActorControl(), workflowState);
-
-                startContext
-                    .createService(WORKFLOW_REPOSITORY_SERVICE, workflowRepositoryService)
-                    .dependency(partitionServiceName)
-                    .install();
-
-                getWorkflowMessageHandler.setWorkflowRepositoryService(workflowRepositoryService);
-
-                listWorkflowsControlMessageHandler.setWorkflowRepositoryService(
-                    workflowRepositoryService);
-              },
-              () -> {
-                getWorkflowMessageHandler.setWorkflowRepositoryService(null);
-                listWorkflowsControlMessageHandler.setWorkflowRepositoryService(null);
-              },
-              workflowState,
-              subscriptionCommandSender,
-              topologyManager,
-              timerChecker);
-    } else {
-      streamProcessor =
-          new WorkflowInstanceStreamProcessor(
-              workflowState, subscriptionCommandSender, topologyManager, timerChecker);
-    }
-    return streamProcessor;
   }
 
   private void installIncidentStreamProcessor(

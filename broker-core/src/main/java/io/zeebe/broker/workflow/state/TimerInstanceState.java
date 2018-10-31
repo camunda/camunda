@@ -30,8 +30,9 @@ import org.rocksdb.WriteOptions;
 
 public class TimerInstanceState {
 
-  private static final byte[] DEFAULT_COLUMN_FAMILY_NAME = "timers".getBytes();
-  private static final byte[] DUE_DATES_COLUMN_FAMILY_NAME = "dueDates".getBytes();
+  private static final byte[] DEFAULT_COLUMN_FAMILY_NAME = "timerInstanceStateTimers".getBytes();
+  private static final byte[] DUE_DATES_COLUMN_FAMILY_NAME =
+      "timerInstanceStateDueDates".getBytes();
 
   public static final byte[][] COLUMN_FAMILY_NAMES = {
     DEFAULT_COLUMN_FAMILY_NAME, DUE_DATES_COLUMN_FAMILY_NAME
@@ -49,14 +50,14 @@ public class TimerInstanceState {
   /**
    * <pre> activity instance key -> timer
    */
-  private ColumnFamilyHandle defaultColumnFamily;
+  private final ColumnFamilyHandle defaultColumnFamily;
 
   /**
    * <pre>due date | activity instance key -> []
    *
    * find timers which are before a given timestamp
    */
-  private ColumnFamilyHandle dueDatesColumnFamily;
+  private final ColumnFamilyHandle dueDatesColumnFamily;
 
   private final StateController db;
 

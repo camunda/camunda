@@ -27,7 +27,9 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
+import io.zeebe.broker.job.JobEventProcessors;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
+import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.util.StreamProcessorControl;
@@ -63,6 +65,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
 
   private StreamProcessorControl streamProcessor;
   private WorkflowState workflowState;
+  private ZeebeState zeebeState;
 
   public WorkflowInstanceStreamProcessorRule(StreamProcessorRule streamProcessorRule) {
     this.environmentRule = streamProcessorRule;
@@ -74,7 +77,8 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
 
   @Override
   protected void before() {
-    workflowState = new WorkflowState();
+    zeebeState = new ZeebeState();
+    workflowState = zeebeState.getWorkflowState();
 
     mockSubscriptionCommandSender = mock(SubscriptionCommandSender.class);
     mockTopologyManager = mock(TopologyManager.class);
@@ -91,15 +95,18 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
 
     streamProcessor =
         environmentRule.runStreamProcessor(
-            env -> {
-              final WorkflowInstanceStreamProcessor streamProcessor =
-                  new WorkflowInstanceStreamProcessor(
-                      workflowState,
-                      mockSubscriptionCommandSender,
-                      mockTopologyManager,
-                      mockTimerEventScheduler);
+            (typedEventStreamProcessorBuilder, zeebeState) -> {
+              workflowState = zeebeState.getWorkflowState();
+              WorkflowEventProcessors.addWorkflowProcessors(
+                  typedEventStreamProcessorBuilder,
+                  zeebeState,
+                  mockSubscriptionCommandSender,
+                  mockTopologyManager,
+                  mockTimerEventScheduler);
 
-              return streamProcessor.createStreamProcessor(env);
+              JobEventProcessors.addJobProcessors(typedEventStreamProcessorBuilder, zeebeState);
+
+              return typedEventStreamProcessorBuilder.build();
             });
   }
 

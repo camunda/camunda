@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.workflow.processor;
 
-import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
@@ -33,10 +32,9 @@ public class WorkflowInstanceCommandProcessor
   private final WorkflowEngineState state;
   private final WorkflowInstanceCommandContext context;
 
-  public WorkflowInstanceCommandProcessor(KeyGenerator keyGenerator, WorkflowEngineState state) {
+  public WorkflowInstanceCommandProcessor(WorkflowEngineState state) {
     this.state = state;
-    this.commandHandlers =
-        new WorkflowInstanceCommandHandlers(keyGenerator, state.getWorkflowState());
+    this.commandHandlers = new WorkflowInstanceCommandHandlers(state.getWorkflowState());
     final EventOutput output = new EventOutput(state);
     this.context = new WorkflowInstanceCommandContext(output);
   }
@@ -46,7 +44,6 @@ public class WorkflowInstanceCommandProcessor
       TypedRecord<WorkflowInstanceRecord> record,
       TypedResponseWriter responseWriter,
       TypedStreamWriter streamWriter) {
-
     populateCommandContext(record, responseWriter, streamWriter);
     commandHandlers.handle(context);
     state.getElementInstanceState().flushDirtyState();

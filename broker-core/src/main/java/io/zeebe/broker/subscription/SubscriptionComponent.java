@@ -18,31 +18,19 @@
 package io.zeebe.broker.subscription;
 
 import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
-import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.TOPOLOGY_MANAGER_SERVICE;
-import static io.zeebe.broker.logstreams.LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY;
-import static io.zeebe.broker.subscription.SubscriptionServiceNames.MESSAGE_SERVICE_NAME;
 import static io.zeebe.broker.subscription.SubscriptionServiceNames.SUBSCRIPTION_API_MESSAGE_HANDLER_SERVICE_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.CLIENT_API_SERVER_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_CLIENT_NAME;
-import static io.zeebe.broker.transport.TransportServiceNames.SUBSCRIPTION_API_CLIENT_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.SUBSCRIPTION_API_SERVER_NAME;
 import static io.zeebe.broker.transport.TransportServiceNames.bufferingServerTransport;
-import static io.zeebe.broker.transport.TransportServiceNames.clientTransport;
-import static io.zeebe.broker.transport.TransportServiceNames.serverTransport;
 
 import io.zeebe.broker.subscription.command.SubscriptionApiCommandMessageHandlerService;
-import io.zeebe.broker.subscription.message.MessageService;
 import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
-import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.servicecontainer.ServiceContainer;
 
 public class SubscriptionComponent implements Component {
 
   @Override
   public void init(final SystemContext context) {
-    final BrokerCfg brokerConfiguration = context.getBrokerConfiguration();
-
     final ServiceContainer serviceContainer = context.getServiceContainer();
 
     final SubscriptionApiCommandMessageHandlerService messageHandlerService =
@@ -54,24 +42,6 @@ public class SubscriptionComponent implements Component {
             messageHandlerService.getServerTransportInjector())
         .groupReference(
             LEADER_PARTITION_GROUP_NAME, messageHandlerService.getLeaderParitionsGroupReference())
-        .install();
-
-    final MessageService messageService = new MessageService(brokerConfiguration.getCluster());
-    serviceContainer
-        .createService(MESSAGE_SERVICE_NAME, messageService)
-        .dependency(
-            serverTransport(CLIENT_API_SERVER_NAME), messageService.getClientApiTransportInjector())
-        .dependency(TOPOLOGY_MANAGER_SERVICE, messageService.getTopologyManagerInjector())
-        .dependency(
-            clientTransport(MANAGEMENT_API_CLIENT_NAME),
-            messageService.getManagementApiClientInjector())
-        .dependency(
-            clientTransport(SUBSCRIPTION_API_CLIENT_NAME),
-            messageService.getSubscriptionApiClientInjector())
-        .dependency(
-            STREAM_PROCESSOR_SERVICE_FACTORY,
-            messageService.getStreamProcessorServiceFactoryInjector())
-        .groupReference(LEADER_PARTITION_GROUP_NAME, messageService.getPartitionsGroupReference())
         .install();
   }
 }
