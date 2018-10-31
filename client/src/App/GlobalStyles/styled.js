@@ -1,9 +1,10 @@
-import styled from 'styled-components';
+// import styled from 'styled-components';
 import {interactions, themed} from 'modules/theme';
+import {createGlobalStyle} from 'styled-components';
 
 const resetFocusCss = 'outline: none';
 
-export const GlobalCss = themed(styled.div`
+export const GlobalStyles = themed(createGlobalStyle`
   // these elements have custom styling for :focus only on keyboard focus,
   //  not on mouse click (clicking them does not show the focus style)
   button:focus,

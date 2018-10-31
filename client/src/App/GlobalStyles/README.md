@@ -1,4 +1,4 @@
-# GlobalCss
+# GlobalStyles
 
 This is a top level component used to set the focus style for all our
 focusable elements: button, select, textarea, anchor, input.

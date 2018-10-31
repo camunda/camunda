@@ -33,11 +33,7 @@ export default class GlobalCss extends React.Component {
   };
 
   render() {
-    return (
-      <Styled.GlobalCss tabKeyPressed={this.state.tabKeyPressed}>
-        {this.props.children}
-      </Styled.GlobalCss>
-    );
+    return <Styled.GlobalStyles tabKeyPressed={this.state.tabKeyPressed} />;
   }
 }
 
