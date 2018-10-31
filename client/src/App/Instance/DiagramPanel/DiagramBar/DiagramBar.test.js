@@ -33,8 +33,8 @@ describe('DiagramBar', () => {
     // then
     const StyledIncidentMessageNode = node.find(Styled.IncidentMessage);
     expect(StyledIncidentMessageNode).toHaveLength(1);
-    expect(StyledIncidentMessageNode.dive().text()).toContain('Incident:');
-    expect(StyledIncidentMessageNode.dive().text()).toContain(mockErrorMessage);
+    expect(StyledIncidentMessageNode.text()).toContain('Incident:');
+    expect(StyledIncidentMessageNode.text()).toContain(mockErrorMessage);
     expect(node).toMatchSnapshot();
   });
 });

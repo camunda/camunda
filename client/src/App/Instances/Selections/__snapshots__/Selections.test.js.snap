@@ -11,14 +11,14 @@ exports[`Selections should match this snapshot 1`] = `
 exports[`Selections should render a CollapsablePanel 1`] = `
 <Styled(CollapsablePanel)
   collapseButton={
-    <Styled(ExpandButton)
+    <ForwardRef
       direction="RIGHT"
       isExpanded={true}
       title="Collapse Selections"
     />
   }
   expandButton={
-    <Styled(VerticalExpandButton)
+    <ForwardRef
       label="Selections"
     >
       <Badge
@@ -27,7 +27,7 @@ exports[`Selections should render a CollapsablePanel 1`] = `
       >
         2
       </Badge>
-    </Styled(VerticalExpandButton)>
+    </ForwardRef>
   }
   maxWidth={479}
   onCollapse={[MockFunction]}

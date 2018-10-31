@@ -80,7 +80,7 @@ export default class Checkbox extends React.Component {
           indeterminate={isIndeterminate}
           type="checkbox"
           checked={isChecked}
-          innerRef={this.inputRef}
+          ref={this.inputRef}
           checkboxType={type}
           onChange={this.handleChange}
           onFocus={this.handleFocus}

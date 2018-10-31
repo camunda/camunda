@@ -107,7 +107,7 @@ export default class Dropdown extends React.Component {
     const {isOpen} = this.state;
     const {placement} = this.props;
     return (
-      <Styled.Dropdown innerRef={this.setRef}>
+      <Styled.Dropdown ref={this.setRef}>
         <Styled.Button
           onKeyDown={this.handleKeyPress}
           buttonStyles={this.props.buttonStyles}

@@ -60,21 +60,28 @@ class ThemeProvider extends React.Component {
 }
 
 const themed = Component => {
-  function Themed(props) {
-    return (
-      <ThemeConsumer>
-        {({theme}) => <Component {...props} theme={theme} />}
-      </ThemeConsumer>
-    );
+  class Themed extends React.Component {
+    render() {
+      const {forwardedRef, ...rest} = this.props;
+      return (
+        <ThemeConsumer>
+          {({theme}) => (
+            <Component ref={forwardedRef} {...rest} theme={theme} />
+          )}
+        </ThemeConsumer>
+      );
+    }
   }
 
-  Themed.WrappedComponent = Component;
+  const ThemedWithRef = React.forwardRef((props, ref) => {
+    return <Themed {...props} forwardedRef={ref} />;
+  });
 
-  Themed.displayName = `Themed(${Component.displayName ||
-    Component.name ||
-    'Component'})`;
+  ThemedWithRef.WrappedComponent = Component;
+  const name = Component.displayName || Component.name;
+  ThemedWithRef.displayName = `Themed(${name})`;
 
-  return Themed;
+  return ThemedWithRef;
 };
 
 const themeStyle = config => ({theme}) => config[theme];

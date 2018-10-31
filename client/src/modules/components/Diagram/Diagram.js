@@ -68,9 +68,9 @@ class Diagram extends React.Component {
 
   constructor(props) {
     super(props);
-    this.containerNode = null;
     this.Viewer = null;
     this.workflowXML = null;
+    this.myRef = React.createRef();
   }
 
   state = {
@@ -171,7 +171,7 @@ class Diagram extends React.Component {
   initViewer = () => {
     // colors config for bpmnRenderer
     this.Viewer = new BPMNViewer({
-      container: this.containerNode,
+      container: this.myRef.current,
       bpmnRenderer: getDiagramColors(this.props.theme)
     });
 
@@ -357,7 +357,8 @@ class Diagram extends React.Component {
   render() {
     return (
       <Styled.Diagram>
-        <Styled.DiagramCanvas innerRef={this.containerRef} />
+        <Styled.DiagramCanvas ref={this.myRef} />
+
         <DiagramControls
           handleZoomIn={this.handleZoomIn}
           handleZoomOut={this.handleZoomOut}

@@ -178,9 +178,7 @@ Object {
 
 exports[`Diagram should render Diagram with controls 1`] = `
 <styled.div>
-  <Themed(styled.div)
-    innerRef={[Function]}
-  />
+  <Themed(styled.div) />
   <DiagramControls
     handleZoomIn={[Function]}
     handleZoomOut={[Function]}

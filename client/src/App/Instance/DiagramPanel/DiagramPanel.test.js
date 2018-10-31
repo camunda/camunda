@@ -48,13 +48,11 @@ describe('DiagramPanel', () => {
     const StateIconNode = StyledTableNode.find(StateIcon);
     expect(StateIconNode).toHaveLength(1);
     expect(StateIconNode.prop('instance')).toBe(mockInstance);
-    expect(StyledTableNode.dive().text()).toContain(
-      getWorkflowName(mockInstance)
-    );
+    expect(StyledTableNode.text()).toContain(getWorkflowName(mockInstance));
     expect(node.find(Pane.Body)).toHaveLength(1);
-    expect(StyledTableNode.dive().text()).toContain(mockInstance.id);
-    expect(StyledTableNode.dive().text()).toContain(formattedStartDate);
-    expect(StyledTableNode.dive().text()).toContain(formattedEndDate);
+    expect(StyledTableNode.text()).toContain(mockInstance.id);
+    expect(StyledTableNode.text()).toContain(formattedStartDate);
+    expect(StyledTableNode.text()).toContain(formattedEndDate);
 
     // Pane.Body
     const PaneBodyNode = node.find(Pane.Body);

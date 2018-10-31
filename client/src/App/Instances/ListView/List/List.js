@@ -153,7 +153,6 @@ export default class List extends React.Component {
 
   renderTableHead() {
     const isListEmpty = this.props.data.length === 0;
-
     return (
       <THead>
         <TR>
@@ -277,7 +276,7 @@ export default class List extends React.Component {
 
     return (
       <Styled.List>
-        <Styled.TableContainer innerRef={this.containerRef}>
+        <Styled.TableContainer ref={this.containerRef}>
           <Table>
             {this.renderTableHead()}
             {isListEmpty &&

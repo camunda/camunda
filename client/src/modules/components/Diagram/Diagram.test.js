@@ -47,7 +47,7 @@ describe('Diagram', () => {
 
     // then
     expect(nodeInstance.Viewer).toBe(null);
-    expect(nodeInstance.containerNode).toBe(null);
+    expect(nodeInstance.myRef.current).toBe(null);
     expect(nodeInstance.workflowXML).toBe(null);
     expect(nodeInstance.state.isViewerLoaded).toBe(false);
   });
@@ -62,7 +62,9 @@ describe('Diagram', () => {
     expect(node.find(Styled.Diagram)).toHaveLength(1);
     const DiagramCanvasNode = node.find(Styled.DiagramCanvas);
     expect(DiagramCanvasNode).toHaveLength(1);
-    expect(DiagramCanvasNode.prop('innerRef')).toBe(nodeInstance.containerRef);
+    expect(DiagramCanvasNode.dive().props().forwardedRef).toBe(
+      nodeInstance.myRef
+    );
     const DiagramControlsNode = node.find(DiagramControls);
     expect(DiagramControlsNode).toHaveLength(1);
     expect(DiagramControlsNode.prop('handleZoomIn')).toBe(
@@ -178,7 +180,7 @@ describe('Diagram', () => {
 
       //then
       const {container, bpmnRenderer} = nodeInstance.Viewer;
-      expect(container).toBe(nodeInstance.containerNode);
+      expect(container).toBe(nodeInstance.myRef.current);
       expect(bpmnRenderer).toEqual({
         defaultFillColor: Colors.uiDark02,
         defaultStrokeColor: Colors.darkDiagram
@@ -193,7 +195,7 @@ describe('Diagram', () => {
 
       //then
       const {container, bpmnRenderer} = nodeInstance.Viewer;
-      expect(container).toBe(nodeInstance.containerNode);
+      expect(container).toBe(nodeInstance.myRef.current);
       expect(bpmnRenderer).toEqual({
         defaultFillColor: Colors.uiLight04,
         defaultStrokeColor: Colors.uiLight06
