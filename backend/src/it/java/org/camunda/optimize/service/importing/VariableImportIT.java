@@ -10,16 +10,13 @@ import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.util.VariableTestUtil;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,7 +65,7 @@ public class VariableImportIT {
         .endEvent()
       .done();
 
-    Map<String, Object> variables = createPrimitiveTypeVariables();
+    Map<String, Object> variables = VariableTestUtil.createAllPrimitiveTypeVariables();
     ProcessInstanceEngineDto instanceDto =
       engineRule.deployAndStartProcessWithVariables(processModel, variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
@@ -105,18 +102,7 @@ public class VariableImportIT {
     assertThat(variablesResponseDtos.size(),is(0));
   }
 
-  private Map<String, Object> createPrimitiveTypeVariables() {
-    Map<String, Object> variables = new HashMap<>();
-    Integer integer = 1;
-    variables.put("stringVar", "aStringValue");
-    variables.put("boolVar", true);
-    variables.put("integerVar", integer);
-    variables.put("shortVar", integer.shortValue());
-    variables.put("longVar", 1L);
-    variables.put("doubleVar", 1.1);
-    variables.put("dateVar", new Date());
-    return variables;
-  }
+
 
   @Test
   public void variableUpdateImport() {
@@ -127,7 +113,7 @@ public class VariableImportIT {
       .endEvent()
       .done();
 
-    Map<String, Object> variables = createPrimitiveTypeVariables();
+    Map<String, Object> variables = VariableTestUtil.createAllPrimitiveTypeVariables();
     ProcessInstanceEngineDto instanceDto =
       engineRule.deployAndStartProcessWithVariables(processModel, variables);
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();

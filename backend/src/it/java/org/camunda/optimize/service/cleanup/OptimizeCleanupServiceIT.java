@@ -12,6 +12,7 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.util.VariableTestUtil;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
 import org.junit.Rule;
@@ -113,7 +114,7 @@ public class OptimizeCleanupServiceIT {
   }
 
   private ProcessInstanceEngineDto startNewProcessWithSameProcessDefinitionId(String processDefinitionId) {
-    return engineRule.startProcessInstance(processDefinitionId, generateProcessVariables());
+    return engineRule.startProcessInstance(processDefinitionId, VariableTestUtil.createAllPrimitiveTypeVariables());
   }
 
   private List<String> deployTwoProcessInstancesWithEndTimeLessThanTtl() throws SQLException {
@@ -167,7 +168,7 @@ public class OptimizeCleanupServiceIT {
     assertThat(idsResp.getHits().getTotalHits(), is(Long.valueOf(processIds.size())));
 
     for (SearchHit searchHit : idsResp.getHits().getHits()) {
-      for (String variableFieldName : new String[]{ProcessInstanceType.STRING_VARIABLES, ProcessInstanceType.INTEGER_VARIABLES}) {
+      for (String variableFieldName : VariableHelper.getAllVariableTypeFieldLabels()) {
         assertThat(
           variableFieldName + "is not empty",
           ((Collection) searchHit.getSourceAsMap().get(variableFieldName)).size(),
@@ -185,15 +186,9 @@ public class OptimizeCleanupServiceIT {
       .camundaExpression("${true}")
       .endEvent()
       .done();
-    return engineRule.deployAndStartProcessWithVariables(processModel, generateProcessVariables());
+    return engineRule.deployAndStartProcessWithVariables(processModel, VariableTestUtil.createAllPrimitiveTypeVariables());
   }
 
-  private Map<String, Object> generateProcessVariables() {
-    Map<String, Object> variables = new HashMap<>();
-    variables.put("aVariable", "aStringVariable");
-    variables.put("anotherVariable", 5);
-    return variables;
-  }
 
   private OptimizeCleanupConfiguration getCleanupConfiguration() {
     return embeddedOptimizeRule.getConfigurationService().getCleanupServiceConfiguration();

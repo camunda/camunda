@@ -14,7 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.TaskScheduler;
 import org.springframework.scheduling.concurrent.ThreadPoolTaskScheduler;
 import org.springframework.scheduling.support.CronTrigger;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
@@ -24,7 +24,7 @@ import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
 import java.util.stream.Collectors;
 
-@Service
+@Component
 public class OptimizeCleanupService {
   private final static Logger logger = LoggerFactory.getLogger(OptimizeCleanupService.class);
 
