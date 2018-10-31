@@ -21,6 +21,8 @@ public class WorkflowInstanceRequestDto {
   public static final String SORT_BY_ID = "id";
   public static final String SORT_BY_START_DATE = "startDate";
   public static final String SORT_BY_END_DATE = "endDate";
+  public static final String SORT_BY_WORKFLOW_NAME = "workflowName";
+  public static final String SORT_BY_WORFLOW_VERSION = "workflowVersion";
 
   public static final List<String> VALID_SORT_BY_VALUES;
   static {
@@ -28,6 +30,8 @@ public class WorkflowInstanceRequestDto {
     VALID_SORT_BY_VALUES.add(SORT_BY_ID);
     VALID_SORT_BY_VALUES.add(SORT_BY_START_DATE);
     VALID_SORT_BY_VALUES.add(SORT_BY_END_DATE);
+    VALID_SORT_BY_VALUES.add(SORT_BY_WORKFLOW_NAME);
+    VALID_SORT_BY_VALUES.add(SORT_BY_WORFLOW_VERSION);
   }
 
   public WorkflowInstanceRequestDto() {
