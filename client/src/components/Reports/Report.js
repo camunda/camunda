@@ -29,7 +29,7 @@ import {
   getSharedReport
 } from './service';
 
-import {loadProcessDefinitions, checkDeleteConflict} from 'services';
+import {loadProcessDefinitions, checkDeleteConflict, incompatibleFilters} from 'services';
 import ReportControlPanel from './ReportControlPanel';
 import CombinedReportPanel from './CombinedReportPanel';
 
@@ -58,8 +58,7 @@ export default withErrorHandling(
         serverError: null,
         reportType: null,
         redirectToReport: false,
-        conflict: null,
-        filtersWarning: false
+        conflict: null
       };
     }
 
@@ -117,8 +116,7 @@ export default withErrorHandling(
               originalData: {...stateData},
               reportResult: reportResult || {reportType, data: stateData},
               originalName: name,
-              reportType,
-              filtersWarning: stateData.filter && this.incompatibleFilters(stateData.filter)
+              reportType
             },
             () => {
               if (isNew) {
@@ -149,16 +147,6 @@ export default withErrorHandling(
       this.setState({
         name: evt.target.value
       });
-    };
-
-    incompatibleFilters = filterData => {
-      const filters = filterData.map(filter => filter.type);
-
-      return (
-        ['completedInstancesOnly', 'canceledInstancesOnly'].every(val => filters.includes(val)) ||
-        ['completedInstancesOnly', 'runningInstancesOnly'].every(val => filters.includes(val)) ||
-        ['canceledInstancesOnly', 'runningInstancesOnly'].every(val => filters.includes(val))
-      );
     };
 
     updateReport = async updates => {
@@ -194,10 +182,7 @@ export default withErrorHandling(
         data.configuration = {targetValue: {}};
       }
 
-      this.setState({
-        data,
-        filtersWarning: updates.filter && this.incompatibleFilters(updates.filter)
-      });
+      this.setState({data});
 
       this.updateReportResult(updates, data);
     };
@@ -387,8 +372,7 @@ export default withErrorHandling(
         reportResult,
         loadingReportData,
         reportType,
-        redirectToReport,
-        filtersWarning
+        redirectToReport
       } = this.state;
       return (
         <div className="Report">
@@ -449,11 +433,13 @@ export default withErrorHandling(
             </Message>
           )}
 
-          {filtersWarning && (
-            <Message type="warning">
-              No data is shown since the combination of filters is incompatible with each other
-            </Message>
-          )}
+          {data &&
+            data.filter &&
+            incompatibleFilters(data.filter) && (
+              <Message type="warning">
+                No data is shown since the combination of filters is incompatible with each other
+              </Message>
+            )}
 
           <div className="reportViewWrapper">
             <div className="Report__view">

@@ -5,12 +5,17 @@ import {loadProcessDefinitionXml, loadFrequencyData} from './service';
 
 import Analysis from './Analysis';
 
+import {incompatibleFilters} from 'services';
+
 jest.mock('./AnalysisControlPanel', () => () => <div>ControlPanel</div>);
+
 jest.mock('components', () => {
   return {
-    BPMNDiagram: () => <div>BPMNDiagram</div>
+    BPMNDiagram: () => <div>BPMNDiagram</div>,
+    Message: () => <div>Message</div>
   };
 });
+
 jest.mock('./service', () => {
   return {
     loadProcessDefinitionXml: jest.fn(),
@@ -20,7 +25,8 @@ jest.mock('./service', () => {
 
 jest.mock('services', () => {
   return {
-    loadProcessDefinitions: () => [{key: 'key', versions: [{version: 2}, {version: 1}]}]
+    loadProcessDefinitions: () => [{key: 'key', versions: [{version: 2}, {version: 1}]}],
+    incompatibleFilters: jest.fn()
   };
 });
 
@@ -117,4 +123,11 @@ it("should pre-select the only available procDef and it's latest version", async
 
   expect(node.state().config.processDefinitionKey).toBe('key');
   expect(node.state().config.processDefinitionVersion).toBe(2);
+});
+
+it('should show a warning message when there are incompatible filters', async () => {
+  incompatibleFilters.mockReturnValue(true);
+  const node = await mount(<Analysis />);
+  await node.update();
+  expect(node.find('Message')).toBePresent();
 });

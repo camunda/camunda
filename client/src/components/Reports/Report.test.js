@@ -10,7 +10,7 @@ import {
   loadProcessDefinitionXml
 } from './service';
 
-import {checkDeleteConflict} from 'services';
+import {checkDeleteConflict, incompatibleFilters} from 'services';
 
 console.error = jest.fn();
 
@@ -73,7 +73,8 @@ jest.mock('./ColumnRearrangement', () => props => <div>ColumnRearrangement: {pro
 jest.mock('services', () => {
   return {
     loadProcessDefinitions: () => [{key: 'key', versions: [{version: 2}, {version: 1}]}],
-    checkDeleteConflict: jest.fn()
+    checkDeleteConflict: jest.fn(),
+    incompatibleFilters: jest.fn()
   };
 });
 
@@ -694,27 +695,24 @@ describe('edit mode', async () => {
     expect(node.find('.Message')).toBePresent();
   });
 
-  it('should show a warning message when user selects incompatible filter combination', async () => {
+  it('should show a warning message when there are incompatible filter ', async () => {
     props.match.params.viewMode = 'edit';
     const node = mount(shallow(<Report {...props} />).get(0));
     await node.instance().componentDidMount();
 
-    node.instance().updateReport({
-      filter: [{type: 'completedInstancesOnly', data: null}]
+    incompatibleFilters.mockReturnValue(true);
+
+    node.setState({
+      data: {
+        visualization: 'table',
+        view: {
+          operation: 'rawData'
+        },
+        filter: ['some data']
+      }
     });
 
-    expect(node.state().filtersWarning).toBe(false);
-
-    node.instance().updateReport({
-      filter: [
-        {type: 'completedInstancesOnly', data: null},
-        {type: 'runningInstancesOnly', data: null}
-      ]
-    });
-
-    await node.update();
-    expect(node.state().filtersWarning).toBe(true);
-    expect(node.find('.Message')).toIncludeText('No data is shown');
+    expect(node.find('.Message')).toBePresent();
   });
 
   it('should set conflict state when conflict happens on delete button click', async () => {

@@ -7,6 +7,7 @@ export {loadProcessDefinitions} from './LoadProcessDefinitions';
 export {default as processRawData} from './processRawData';
 export {numberParser} from './NumberParser';
 export {isDurationValue} from './isDurationValue';
+export {incompatibleFilters} from './incompatibleFilters';
 export {loadEntity, checkDeleteConflict} from './entityServices';
 
 export {getDiagramElementsBetween} from './diagramServices';

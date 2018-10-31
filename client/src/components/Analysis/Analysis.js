@@ -1,10 +1,10 @@
 import React from 'react';
 
 import AnalysisControlPanel from './AnalysisControlPanel';
-import {BPMNDiagram} from 'components';
+import {BPMNDiagram, Message} from 'components';
 
 import {loadProcessDefinitionXml, loadFrequencyData} from './service';
-import {loadProcessDefinitions} from 'services';
+import {loadProcessDefinitions, incompatibleFilters} from 'services';
 import DiagramBehavior from './DiagramBehavior';
 import Statistics from './Statistics';
 
@@ -62,6 +62,12 @@ export default class Analysis extends React.Component {
           updateSelection={this.updateSelection}
           xml={xml}
         />
+        {config.filter &&
+          incompatibleFilters(config.filter) && (
+            <Message type="warning">
+              No data is shown since the combination of filters is incompatible with each other
+            </Message>
+          )}
         <div className="content">
           <div className="Analysis__diagram">
             {xml && (
