@@ -12,13 +12,20 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 public class WorkflowInstanceEntity extends OperateZeebeEntity {
 
   private String workflowId;
+  private String workflowName;
+  private Integer workflowVersion;
 
   private OffsetDateTime startDate;
   private OffsetDateTime endDate;
 
   private WorkflowInstanceState state;
 
+  //TODO remove me
   private String businessKey;
+
+  private long position;
+
+  private String topicName;
 
   private List<IncidentEntity> incidents = new ArrayList<>();
 
@@ -36,16 +43,28 @@ public class WorkflowInstanceEntity extends OperateZeebeEntity {
 
   private List<SequenceFlowEntity> sequenceFlows = new ArrayList<>();
 
-  private long position;
-
-  private String topicName;
-
   public String getWorkflowId() {
     return workflowId;
   }
 
   public void setWorkflowId(String workflowId) {
     this.workflowId = workflowId;
+  }
+
+  public String getWorkflowName() {
+    return workflowName;
+  }
+
+  public void setWorkflowName(String workflowName) {
+    this.workflowName = workflowName;
+  }
+
+  public Integer getWorkflowVersion() {
+    return workflowVersion;
+  }
+
+  public void setWorkflowVersion(Integer workflowVersion) {
+    this.workflowVersion = workflowVersion;
   }
 
   public OffsetDateTime getStartDate() {
@@ -180,6 +199,10 @@ public class WorkflowInstanceEntity extends OperateZeebeEntity {
       return false;
     if (workflowId != null ? !workflowId.equals(that.workflowId) : that.workflowId != null)
       return false;
+    if (workflowName != null ? !workflowName.equals(that.workflowName) : that.workflowName != null)
+      return false;
+    if (workflowVersion != null ? !workflowVersion.equals(that.workflowVersion) : that.workflowVersion != null)
+      return false;
     if (startDate != null ? !startDate.equals(that.startDate) : that.startDate != null)
       return false;
     if (endDate != null ? !endDate.equals(that.endDate) : that.endDate != null)
@@ -187,6 +210,8 @@ public class WorkflowInstanceEntity extends OperateZeebeEntity {
     if (state != that.state)
       return false;
     if (businessKey != null ? !businessKey.equals(that.businessKey) : that.businessKey != null)
+      return false;
+    if (topicName != null ? !topicName.equals(that.topicName) : that.topicName != null)
       return false;
     if (incidents != null ? !incidents.equals(that.incidents) : that.incidents != null)
       return false;
@@ -202,19 +227,21 @@ public class WorkflowInstanceEntity extends OperateZeebeEntity {
       return false;
     if (booleanVariables != null ? !booleanVariables.equals(that.booleanVariables) : that.booleanVariables != null)
       return false;
-    if (sequenceFlows != null ? !sequenceFlows.equals(that.sequenceFlows) : that.sequenceFlows != null)
-      return false;
-    return topicName != null ? topicName.equals(that.topicName) : that.topicName == null;
+    return sequenceFlows != null ? sequenceFlows.equals(that.sequenceFlows) : that.sequenceFlows == null;
   }
 
   @Override
   public int hashCode() {
     int result = super.hashCode();
     result = 31 * result + (workflowId != null ? workflowId.hashCode() : 0);
+    result = 31 * result + (workflowName != null ? workflowName.hashCode() : 0);
+    result = 31 * result + (workflowVersion != null ? workflowVersion.hashCode() : 0);
     result = 31 * result + (startDate != null ? startDate.hashCode() : 0);
     result = 31 * result + (endDate != null ? endDate.hashCode() : 0);
     result = 31 * result + (state != null ? state.hashCode() : 0);
     result = 31 * result + (businessKey != null ? businessKey.hashCode() : 0);
+    result = 31 * result + (int) (position ^ (position >>> 32));
+    result = 31 * result + (topicName != null ? topicName.hashCode() : 0);
     result = 31 * result + (incidents != null ? incidents.hashCode() : 0);
     result = 31 * result + (activities != null ? activities.hashCode() : 0);
     result = 31 * result + (operations != null ? operations.hashCode() : 0);
@@ -223,8 +250,6 @@ public class WorkflowInstanceEntity extends OperateZeebeEntity {
     result = 31 * result + (doubleVariables != null ? doubleVariables.hashCode() : 0);
     result = 31 * result + (booleanVariables != null ? booleanVariables.hashCode() : 0);
     result = 31 * result + (sequenceFlows != null ? sequenceFlows.hashCode() : 0);
-    result = 31 * result + (int) (position ^ (position >>> 32));
-    result = 31 * result + (topicName != null ? topicName.hashCode() : 0);
     return result;
   }
 }

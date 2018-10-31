@@ -10,20 +10,15 @@ import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.es.reader.EventReader;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.rest.dto.EventQueryDto;
-import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeUtil;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import static org.assertj.core.api.Assertions.assertThat;
 
 public class EventIT extends OperateZeebeIntegrationTest {
-
-  @Rule
-  public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
 
   @Autowired
   private EventReader eventReader;

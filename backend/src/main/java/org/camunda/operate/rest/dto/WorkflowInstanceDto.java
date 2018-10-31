@@ -12,6 +12,8 @@ public class WorkflowInstanceDto {
   private String id;
 
   private String workflowId;
+  private String workflowName;
+  private Integer workflowVersion;
 
   private OffsetDateTime startDate;
   private OffsetDateTime endDate;
@@ -42,6 +44,22 @@ public class WorkflowInstanceDto {
 
   public void setWorkflowId(String workflowId) {
     this.workflowId = workflowId;
+  }
+
+  public String getWorkflowName() {
+    return workflowName;
+  }
+
+  public void setWorkflowName(String workflowName) {
+    this.workflowName = workflowName;
+  }
+
+  public Integer getWorkflowVersion() {
+    return workflowVersion;
+  }
+
+  public void setWorkflowVersion(Integer workflowVersion) {
+    this.workflowVersion = workflowVersion;
   }
 
   public OffsetDateTime getStartDate() {
@@ -119,6 +137,8 @@ public class WorkflowInstanceDto {
     workflowInstance.setEndDate(workflowInstanceEntity.getEndDate());
     workflowInstance.setState(workflowInstanceEntity.getState());
     workflowInstance.setWorkflowId(workflowInstanceEntity.getWorkflowId());
+    workflowInstance.setWorkflowName(workflowInstanceEntity.getWorkflowName());
+    workflowInstance.setWorkflowVersion(workflowInstanceEntity.getWorkflowVersion());
     workflowInstance.setIncidents(IncidentDto.createFrom(workflowInstanceEntity.getIncidents()));
     workflowInstance.setActivities(ActivityInstanceDto.createFrom(workflowInstanceEntity.getActivities()));
     workflowInstance.setOperations(OperationDto.createFrom(workflowInstanceEntity.getOperations()));
@@ -151,6 +171,10 @@ public class WorkflowInstanceDto {
       return false;
     if (workflowId != null ? !workflowId.equals(that.workflowId) : that.workflowId != null)
       return false;
+    if (workflowName != null ? !workflowName.equals(that.workflowName) : that.workflowName != null)
+      return false;
+    if (workflowVersion != null ? !workflowVersion.equals(that.workflowVersion) : that.workflowVersion != null)
+      return false;
     if (startDate != null ? !startDate.equals(that.startDate) : that.startDate != null)
       return false;
     if (endDate != null ? !endDate.equals(that.endDate) : that.endDate != null)
@@ -172,6 +196,8 @@ public class WorkflowInstanceDto {
   public int hashCode() {
     int result = id != null ? id.hashCode() : 0;
     result = 31 * result + (workflowId != null ? workflowId.hashCode() : 0);
+    result = 31 * result + (workflowName != null ? workflowName.hashCode() : 0);
+    result = 31 * result + (workflowVersion != null ? workflowVersion.hashCode() : 0);
     result = 31 * result + (startDate != null ? startDate.hashCode() : 0);
     result = 31 * result + (endDate != null ? endDate.hashCode() : 0);
     result = 31 * result + (state != null ? state.hashCode() : 0);

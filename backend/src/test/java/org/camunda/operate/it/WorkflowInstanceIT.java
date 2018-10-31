@@ -15,13 +15,13 @@ import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.types.WorkflowInstanceType;
 import org.camunda.operate.rest.dto.EventQueryDto;
-import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeUtil;
+import org.camunda.operate.zeebeimport.cache.WorkflowCache;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.subscription.JobWorker;
@@ -32,11 +32,11 @@ import static org.assertj.core.api.Assertions.fail;
 
 public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
 
-  @Rule
-  public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
-
   @Autowired
   private WorkflowInstanceReader workflowInstanceReader;
+
+  @Autowired
+  private WorkflowCache workflowCache;
 
   private ZeebeClient zeebeClient;
 
@@ -47,6 +47,11 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     super.before();
     testStartTime = OffsetDateTime.now();
     zeebeClient = super.getClient();
+    try {
+      FieldSetter.setField(workflowCache, WorkflowCache.class.getDeclaredField("zeebeClient"), super.getClient());
+    } catch (NoSuchFieldException e) {
+      fail("Failed to inject ZeebeClient into some of the beans");
+    }
   }
 
   @After
@@ -67,6 +72,8 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     //then
     final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
     assertThat(workflowInstanceEntity.getWorkflowId()).isEqualTo(workflowId);
+    assertThat(workflowInstanceEntity.getWorkflowName()).isEqualTo("Demo process");
+    assertThat(workflowInstanceEntity.getWorkflowVersion()).isEqualTo(1);
     assertThat(workflowInstanceEntity.getId()).isEqualTo(workflowInstanceId);
     assertThat(workflowInstanceEntity.getState()).isEqualTo(WorkflowInstanceState.ACTIVE);
     assertThat(workflowInstanceEntity.getEndDate()).isNull();
@@ -95,15 +102,16 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, null);
     elasticsearchTestRule.processAllEvents(10);
 
-    super.setJobWorker(ZeebeUtil.completeTask(zeebeClient, "taskA", super.getWorkerName(), null));
+    super.setJobWorker(ZeebeUtil.completeTask(zeebeClient, "task1", super.getWorkerName(), null));
     elasticsearchTestRule.processAllEvents(10);
 
     //then
     final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
-    assertThat(workflowInstanceEntity.getState()).isEqualTo(WorkflowInstanceState.ACTIVE);
+    assertThat(workflowInstanceEntity.getState()).isEqualTo(WorkflowInstanceState.COMPLETED);
 
     //assert activity completed
-    assertThat(workflowInstanceEntity.getActivities()).filteredOn(a -> a.getActivityId().equals("taskA"))
+    assertThat(workflowInstanceEntity.getActivities()).filteredOn(a -> a.getActivityId().equals("task1"))
+      .hasSize(1)
       .allMatch(a -> a.getState().equals(ActivityState.COMPLETED) && !a.getEndDate().isBefore(testStartTime));
 
   }
@@ -436,14 +444,6 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     assertThat(activity.getState()).isEqualTo(ActivityState.INCIDENT);
     assertThat(activity.getStartDate()).isAfterOrEqualTo(testStartTime);
     assertThat(activity.getStartDate()).isBeforeOrEqualTo(OffsetDateTime.now());
-  }
-
-
-  private void failTaskWithNoRetriesLeft(String taskName) {
-    super.setJobWorker(ZeebeUtil.failTask(zeebeClient, taskName, super.getWorkerName(), 3));
-    elasticsearchTestRule.processAllEvents(20);
-    super.getJobWorker().close();
-    super.setJobWorker(null);
   }
 
 }

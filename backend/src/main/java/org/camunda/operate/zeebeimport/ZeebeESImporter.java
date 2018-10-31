@@ -192,28 +192,33 @@ public class ZeebeESImporter extends Thread {
     Integer processedEntities = 0;
 
     for (ImportValueType importValueType : IMPORT_VALUE_TYPES) {
-      try {
-        String aliasName = importValueType.getAliasName(operateProperties.getZeebeElasticsearch().getPrefix());
-
-        for (Integer partitionId : partitionIds) {
-          final long latestLoadedPosition = getLatestLoadedPosition(aliasName, partitionId);
-          List<RecordImpl> nextBatch = getNextBatch(aliasName, partitionId, latestLoadedPosition, importValueType.getRecordValueClass());
-          if (nextBatch.size() > 0) {
-
-            elasticsearchBulkProcessor.persistZeebeRecords(nextBatch);
-
-            final long lastProcessedPosition = nextBatch.get(nextBatch.size() - 1).getPosition();
-            recordLatestLoadedPosition(aliasName, partitionId, lastProcessedPosition);
-            processedEntities += nextBatch.size();
-          }
-        }
-      } catch (IndexNotFoundException ex) {
-        logger.warn("Elasticsearch index for ValueType {} was not found. Skipping.", importValueType.getValueType());
-      } catch (SearchPhaseExecutionException ex) {
-        logger.error(ex.getMessage(), ex);
-      }
+      processedEntities = processNextEntitiesBatch(processedEntities, importValueType);
     }
 
+    return processedEntities;
+  }
+
+  public Integer processNextEntitiesBatch(Integer processedEntities, ImportValueType importValueType) throws PersistenceException {
+    try {
+      String aliasName = importValueType.getAliasName(operateProperties.getZeebeElasticsearch().getPrefix());
+
+      for (Integer partitionId : partitionIds) {
+        final long latestLoadedPosition = getLatestLoadedPosition(aliasName, partitionId);
+        List<RecordImpl> nextBatch = getNextBatch(aliasName, partitionId, latestLoadedPosition, importValueType.getRecordValueClass());
+        if (nextBatch.size() > 0) {
+
+          elasticsearchBulkProcessor.persistZeebeRecords(nextBatch);
+
+          final long lastProcessedPosition = nextBatch.get(nextBatch.size() - 1).getPosition();
+          recordLatestLoadedPosition(aliasName, partitionId, lastProcessedPosition);
+          processedEntities += nextBatch.size();
+        }
+      }
+    } catch (IndexNotFoundException ex) {
+      logger.warn("Elasticsearch index for ValueType {} was not found. Skipping.", importValueType.getValueType());
+    } catch (SearchPhaseExecutionException ex) {
+      logger.error(ex.getMessage(), ex);
+    }
     return processedEntities;
   }
 

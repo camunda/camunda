@@ -17,11 +17,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.camunda.operate.entities.OperateZeebeEntity;
 import org.camunda.operate.entities.WorkflowEntity;
-import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.zeebeimport.record.value.DeploymentRecordValueImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.stereotype.Component;
 import org.xml.sax.Attributes;
@@ -39,9 +37,6 @@ public class DeploymentEventTransformer implements AbstractRecordTransformer {
   private static final Logger logger = LoggerFactory.getLogger(DeploymentEventTransformer.class);
 
   private final static Set<String> STATES = new HashSet<>();
-
-  @Autowired
-  private OperateProperties operateProperties;
 
   static {
     STATES.add(DeploymentIntent.CREATED.name());
@@ -110,7 +105,7 @@ public class DeploymentEventTransformer implements AbstractRecordTransformer {
     return resources.stream().collect(Collectors.toMap(DeploymentResource::getResourceName, Function.identity()));
   }
 
-  private String extractWorkflowName(InputStream xmlInputStream) {
+  public String extractWorkflowName(InputStream xmlInputStream) {
     SAXParser saxParser = getSAXParser();
     ExtractNameSaxHandler handler = new ExtractNameSaxHandler();
 

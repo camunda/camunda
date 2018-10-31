@@ -30,6 +30,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.commands.Workflow;
+import io.zeebe.client.api.commands.WorkflowResource;
+import io.zeebe.client.api.commands.Workflows;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ProcessBuilder;
@@ -42,9 +45,6 @@ public class WorkflowIT extends OperateZeebeIntegrationTest {
 
   private static final String QUERY_WORKFLOWS_GROUPED_URL = "/api/workflows/grouped";
   private static final String QUERY_WORKFLOW_XML_URL = "/api/workflows/%s/xml";
-
-  @Rule
-  public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
 
   @Rule
   public MockMvcTestRule mockMvcTestRule = new MockMvcTestRule();

@@ -3,6 +3,7 @@ package org.camunda.operate.es.reader;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -23,7 +24,6 @@ import org.camunda.operate.rest.dto.WorkflowInstanceResponseDto;
 import org.camunda.operate.rest.exception.InvalidRequestException;
 import org.camunda.operate.rest.exception.NotFoundException;
 import org.camunda.operate.util.ElasticsearchUtil;
-import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.transport.TransportClient;
@@ -112,6 +112,29 @@ public class WorkflowInstanceReader {
   private DateTimeFormatter dateTimeFormatter;
 
   /**
+   *
+   * @param workflowId
+   * @return
+   */
+  public List<String> queryWorkflowInstancesWithEmptyWorkflowVersion(long workflowId) {
+
+    final QueryBuilder queryBuilder =
+      joinWithAnd(
+        termQuery(WorkflowInstanceType.WORKFLOW_ID, workflowId),
+        boolQuery()
+          .mustNot(existsQuery(WorkflowInstanceType.WORKFLOW_VERSION)));
+    //workflow name can be null, as some workflows does not have name
+
+
+    final SearchRequestBuilder searchRequestBuilder =
+      esClient.prepareSearch(workflowInstanceType.getAlias())
+        .setQuery(constantScoreQuery(queryBuilder))
+        .setFetchSource(false);
+
+    return scrollIds(searchRequestBuilder);
+  }
+
+  /**
    * Queries workflow instances by different criteria (with pagination).
    * @param workflowInstanceRequest
    * @param firstResult
@@ -126,7 +149,7 @@ public class WorkflowInstanceReader {
       return paginate(searchRequest, firstResult, maxResults);
     }
     else {
-      return scroll(searchRequest);
+      return getAllResults(searchRequest);
     }
   }
 
@@ -303,17 +326,22 @@ public class WorkflowInstanceReader {
     return responseDto;
   }
 
-  protected WorkflowInstanceResponseDto scroll(SearchRequestBuilder builder) {
-    TimeValue keepAlive = new TimeValue(60000);
+  protected WorkflowInstanceResponseDto getAllResults(SearchRequestBuilder builder) {
+    List<WorkflowInstanceEntity> result = scroll(builder);
 
+    WorkflowInstanceResponseDto responseDto = new WorkflowInstanceResponseDto();
+    responseDto.setWorkflowInstances(WorkflowInstanceDto.createFrom(result));
+    responseDto.setTotalCount(result.size());
+    return responseDto;
+  }
+
+  private List<WorkflowInstanceEntity> scroll(SearchRequestBuilder builder) {
+    List<WorkflowInstanceEntity> result = new ArrayList<>();
+    TimeValue keepAlive = new TimeValue(5000);
     SearchResponse response = builder
       .setScroll(keepAlive)
       .get();
-
-    List<WorkflowInstanceEntity> result = new ArrayList<>();
-
     do {
-
       SearchHits hits = response.getHits();
       String scrollId = response.getScrollId();
 
@@ -325,11 +353,28 @@ public class WorkflowInstanceReader {
           .get();
 
     } while (response.getHits().getHits().length != 0);
+    return result;
+  }
 
-    WorkflowInstanceResponseDto responseDto = new WorkflowInstanceResponseDto();
-    responseDto.setWorkflowInstances(WorkflowInstanceDto.createFrom(result));
-    responseDto.setTotalCount(response.getHits().getTotalHits());
-    return responseDto;
+  private List<String> scrollIds(SearchRequestBuilder builder) {
+    List<String> result = new ArrayList<>();
+    TimeValue keepAlive = new TimeValue(5000);
+    SearchResponse response = builder
+      .setScroll(keepAlive)
+      .get();
+    do {
+      SearchHits hits = response.getHits();
+      String scrollId = response.getScrollId();
+
+      result.addAll(Arrays.stream(hits.getHits()).collect(ArrayList::new, (list, hit) -> list.add(hit.getId()), (list1, list2) -> list1.addAll(list2)));
+
+      response = esClient
+          .prepareSearchScroll(scrollId)
+          .setScroll(keepAlive)
+          .get();
+
+    } while (response.getHits().getHits().length != 0);
+    return result;
   }
 
   /**

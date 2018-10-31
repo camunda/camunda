@@ -36,6 +36,9 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   @Rule
   public RuleChain chain;
 
+  @Rule
+  public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
+
   @Autowired
   protected OperateProperties operateProperties;
 
@@ -96,6 +99,13 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
 
   public void setJobWorker(JobWorker jobWorker) {
     this.jobWorker = jobWorker;
+  }
+
+  public void failTaskWithNoRetriesLeft(String taskName) {
+    setJobWorker(ZeebeUtil.failTask(getClient(), taskName, getWorkerName(), 3));
+    elasticsearchTestRule.processAllEvents(20);
+    getJobWorker().close();
+    setJobWorker(null);
   }
 
 }

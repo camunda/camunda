@@ -2,6 +2,7 @@ package org.camunda.operate.zeebeimport;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.ActivityState;
@@ -15,6 +16,7 @@ import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.SequenceFlowEntity;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
+import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.types.EventType;
 import org.camunda.operate.es.types.StrictTypeMappingCreator;
 import org.camunda.operate.es.types.WorkflowInstanceType;
@@ -62,6 +64,9 @@ public class ElasticsearchRequestCreatorsHolder {
   @Autowired
   private BatchOperationWriter batchOperationWriter;
 
+  @Autowired
+  private WorkflowInstanceReader workflowInstanceReader;
+
   /**
    * Insert or update workflow instance (UPSERT).
    * @return
@@ -78,6 +83,8 @@ public class ElasticsearchRequestCreatorsHolder {
           updateFields.put(WorkflowInstanceType.END_DATE, entity.getEndDate());
         }
         updateFields.put(WorkflowInstanceType.WORKFLOW_ID, entity.getWorkflowId());
+        updateFields.put(WorkflowInstanceType.WORKFLOW_NAME, entity.getWorkflowName());
+        updateFields.put(WorkflowInstanceType.WORKFLOW_VERSION, entity.getWorkflowVersion());
         updateFields.put(WorkflowInstanceType.STATE, entity.getState());
         updateFields.put(StrictTypeMappingCreator.PARTITION_ID, entity.getPartitionId());
         updateFields.put(StrictTypeMappingCreator.POSITION, entity.getPosition());
@@ -259,6 +266,17 @@ public class ElasticsearchRequestCreatorsHolder {
     return (bulkRequestBuilder, entity) -> {
       try {
         logger.debug("Workflow: id {}, bpmnProcessId {}", entity.getId(), entity.getBpmnProcessId());
+
+        //find workflow instances with empty workflow name and version
+        final List<String> workflowInstanceIds = workflowInstanceReader.queryWorkflowInstancesWithEmptyWorkflowVersion(entity.getKey());
+        for (String workflowInstanceId : workflowInstanceIds) {
+          Map<String, Object> updateFields = new HashMap<>();
+          updateFields.put(WorkflowInstanceType.WORKFLOW_NAME, entity.getName());
+          updateFields.put(WorkflowInstanceType.WORKFLOW_VERSION, entity.getVersion());
+          bulkRequestBuilder.add(esClient
+            .prepareUpdate(workflowInstanceType.getAlias(), ElasticsearchUtil.ES_INDEX_TYPE, workflowInstanceId)
+            .setDoc(updateFields));
+        }
 
         return bulkRequestBuilder.add(
           esClient

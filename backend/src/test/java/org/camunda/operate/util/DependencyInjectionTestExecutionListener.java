@@ -24,15 +24,22 @@ public class DependencyInjectionTestExecutionListener extends AbstractTestExecut
   private void injectDependenciesInRules(final TestContext testContext) throws Exception {
     Object bean = testContext.getTestInstance();
     AutowireCapableBeanFactory beanFactory = testContext.getApplicationContext().getAutowireCapableBeanFactory();
-    for(Field field: bean.getClass().getDeclaredFields())
-    {
-      if (field.isAnnotationPresent(Rule.class)) {
-        try {
-          field.setAccessible(true);
-          beanFactory.autowireBeanProperties(field.get(bean), AutowireCapableBeanFactory.AUTOWIRE_NO, false);
-        } catch (IllegalAccessException e) {
-          logger.debug("Unable to inject beans into rule field: " + field.getName());
-        }
+    Class<?> aClass = bean.getClass();
+    do {
+      for(Field field: aClass.getDeclaredFields()) {
+        autowireBeansInRules(bean, beanFactory, field);
+      }
+      aClass = aClass.getSuperclass();
+    } while (aClass != null);
+  }
+
+  private void autowireBeansInRules(Object bean, AutowireCapableBeanFactory beanFactory, Field field) {
+    if (field.isAnnotationPresent(Rule.class)) {
+      try {
+        field.setAccessible(true);
+        beanFactory.autowireBeanProperties(field.get(bean), AutowireCapableBeanFactory.AUTOWIRE_NO, false);
+      } catch (IllegalAccessException e) {
+        logger.debug("Unable to inject beans into rule field: " + field.getName());
       }
     }
   }

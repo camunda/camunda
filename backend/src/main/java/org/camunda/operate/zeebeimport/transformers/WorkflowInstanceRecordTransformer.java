@@ -17,13 +17,13 @@ import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.util.DateUtil;
 import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.zeebe.payload.PayloadUtil;
+import org.camunda.operate.zeebeimport.cache.WorkflowCache;
 import org.camunda.operate.zeebeimport.record.value.WorkflowInstanceRecordValueImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import io.zeebe.exporter.record.Record;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.CREATED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_ACTIVATED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETING;
@@ -40,42 +40,47 @@ public class WorkflowInstanceRecordTransformer implements AbstractRecordTransfor
   private static final Logger logger = LoggerFactory.getLogger(WorkflowInstanceRecordTransformer.class);
 
   //these event states end up in changes in workflow instance entity
-  private static final Set<String> WORKFLOW_INSTANCE_STATES = new HashSet<>();
+  private static final Set<String> WI_STATES = new HashSet<>();
+  private static final String WI_START_STATE;
+  private static final Set<String> WI_FINISH_STATES = new HashSet<>();
+
   //these event states end up in changes in activity instance entity
-  private static final Set<String> ACTIVITY_INSTANCE_STATES = new HashSet<>();
-  //these event states mean that workflow instance was finished
-  private static final Set<String> WORKFLOW_INSTANCE_FINISH_STATES = new HashSet<>();
-  //these event states mean that activity instance was finished
-  private static final Set<String> ACTIVITY_INSTANCE_FINISH_STATES = new HashSet<>();
+  private static final Set<String> AI_STATES = new HashSet<>();
+  private static final Set<String> AI_FINISH_STATES = new HashSet<>();
   //these event states mean that activities startDate and endDate should be recorded at once
-  private static final Set<String> ACTIVITY_INSTANCE_START_END_STATES = new HashSet<>();
+  private static final Set<String> AI_START_END_STATES = new HashSet<>();
 
   static {
-    WORKFLOW_INSTANCE_FINISH_STATES.add(ELEMENT_COMPLETED.name());
-    WORKFLOW_INSTANCE_FINISH_STATES.add(ELEMENT_TERMINATED.name());
+    WI_START_STATE = ELEMENT_ACTIVATED.name();
 
-    ACTIVITY_INSTANCE_FINISH_STATES.add(ELEMENT_COMPLETED.name());
-    ACTIVITY_INSTANCE_FINISH_STATES.add(ELEMENT_TERMINATED.name());
+    WI_FINISH_STATES.add(ELEMENT_COMPLETED.name());
+    WI_FINISH_STATES.add(ELEMENT_TERMINATED.name());
 
-    ACTIVITY_INSTANCE_START_END_STATES.add(START_EVENT_OCCURRED.name());
-    ACTIVITY_INSTANCE_START_END_STATES.add(END_EVENT_OCCURRED.name());
-    ACTIVITY_INSTANCE_START_END_STATES.add(GATEWAY_ACTIVATED.name());
+    //    WI_STATES.add(PAYLOAD_UPDATED);        //to record changed payload
 
-    WORKFLOW_INSTANCE_STATES.add(CREATED.name());
-    WORKFLOW_INSTANCE_STATES.add(ELEMENT_COMPLETED.name());     //to record changed payload
-    WORKFLOW_INSTANCE_STATES.add(ELEMENT_ACTIVATED.name());     //to record changed payload
-//    WORKFLOW_INSTANCE_STATES.add(PAYLOAD_UPDATED);        //to record changed payload
-    WORKFLOW_INSTANCE_STATES.addAll(WORKFLOW_INSTANCE_FINISH_STATES);
+    WI_STATES.add(WI_START_STATE);
+    WI_STATES.addAll(WI_FINISH_STATES);
 
-    ACTIVITY_INSTANCE_STATES.add(ELEMENT_READY.name());
-    ACTIVITY_INSTANCE_STATES.add(ELEMENT_ACTIVATED.name());
-    ACTIVITY_INSTANCE_STATES.add(ELEMENT_COMPLETING.name());
-    ACTIVITY_INSTANCE_STATES.addAll(ACTIVITY_INSTANCE_FINISH_STATES);
-    ACTIVITY_INSTANCE_STATES.addAll(ACTIVITY_INSTANCE_START_END_STATES);
+    AI_FINISH_STATES.add(ELEMENT_COMPLETED.name());
+    AI_FINISH_STATES.add(ELEMENT_TERMINATED.name());
+
+    AI_START_END_STATES.add(START_EVENT_OCCURRED.name());
+    AI_START_END_STATES.add(END_EVENT_OCCURRED.name());
+    AI_START_END_STATES.add(GATEWAY_ACTIVATED.name());
+
+    AI_STATES.add(ELEMENT_READY.name());
+    AI_STATES.add(ELEMENT_ACTIVATED.name());
+    AI_STATES.add(ELEMENT_COMPLETING.name());
+
+    AI_STATES.addAll(AI_FINISH_STATES);
+    AI_STATES.addAll(AI_START_END_STATES);
   }
 
   @Autowired
   private PayloadUtil payloadUtil;
+
+  @Autowired
+  private WorkflowCache workflowCache;
 
   @Override
   public List<OperateZeebeEntity> convert(Record record) {
@@ -86,7 +91,7 @@ public class WorkflowInstanceRecordTransformer implements AbstractRecordTransfor
 
     final String intentStr = record.getMetadata().getIntent().name();
 
-//    if (WORKFLOW_INSTANCE_STATES.contains(intentStr) || ACTIVITY_INSTANCE_STATES.contains(intentStr)) {
+//    if (WI_STATES.contains(intentStr) || AI_STATES.contains(intentStr)) {
       final OperateZeebeEntity event = convertEvent(record);
       if (event != null) {
         entitiesToPersist.add(event);
@@ -95,18 +100,15 @@ public class WorkflowInstanceRecordTransformer implements AbstractRecordTransfor
 
     WorkflowInstanceRecordValueImpl recordValue = (WorkflowInstanceRecordValueImpl)record.getValue();
 
-
-
-    if (WORKFLOW_INSTANCE_STATES.contains(intentStr)) {
-
+    if (WI_STATES.contains(intentStr) && record.getKey() == recordValue.getWorkflowInstanceKey()
+      //we also need 2 activity events to record payload
+      || intentStr.equals(ELEMENT_ACTIVATED.name()) || intentStr.equals(ELEMENT_COMPLETED.name())) {
       entitiesToPersist.add(convertWorkflowInstanceRecord(record));
-
     }
-    if (ACTIVITY_INSTANCE_STATES.contains(intentStr) && record.getKey() != recordValue.getWorkflowInstanceKey()) {
-
+    if (AI_STATES.contains(intentStr) && record.getKey() != recordValue.getWorkflowInstanceKey()) {
       entitiesToPersist.add(convertActivityInstanceEvent(record));
-
     }
+
     if (intentStr.equals(SEQUENCE_FLOW_TAKEN.name())) {
       entitiesToPersist.add(convertSequenceFlowTakenEvent(record));
     }
@@ -168,18 +170,20 @@ public class WorkflowInstanceRecordTransformer implements AbstractRecordTransfor
     activityInstanceEntity.setActivityId(recordValue.getActivityId());
     activityInstanceEntity.setWorkflowInstanceId(IdUtil.createId(recordValue.getWorkflowInstanceKey(), record.getMetadata().getPartitionId()));
     final String intentStr = record.getMetadata().getIntent().name();
-    if (ACTIVITY_INSTANCE_FINISH_STATES.contains(intentStr)) {
+    if (AI_FINISH_STATES.contains(intentStr)) {
       activityInstanceEntity.setEndDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
       if (intentStr.equals(ELEMENT_TERMINATED.name())) {
         activityInstanceEntity.setState(ActivityState.TERMINATED);
       } else {
         activityInstanceEntity.setState(ActivityState.COMPLETED);
       }
-    } else if (ACTIVITY_INSTANCE_START_END_STATES.contains(intentStr)) {
+    } else if (AI_START_END_STATES.contains(intentStr)) {
       activityInstanceEntity.setStartDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
       activityInstanceEntity.setEndDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
       activityInstanceEntity.setState(ActivityState.COMPLETED);
     } else {
+      //we can set start date without checking, which specific event it is, because when persisting to ELS, we do not UPDATE stard date field, only INSERT
+      //-> 1st event to come will persist start date for the activity
       activityInstanceEntity.setStartDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
       activityInstanceEntity.setState(ActivityState.ACTIVE);
     }
@@ -206,18 +210,25 @@ public class WorkflowInstanceRecordTransformer implements AbstractRecordTransfor
     entity.setPartitionId(record.getMetadata().getPartitionId());
     entity.setWorkflowId(String.valueOf(recordValue.getWorkflowKey()));
     entity.setBusinessKey(recordValue.getBpmnProcessId());
+
     final String intentStr = record.getMetadata().getIntent().name();
-    if (WORKFLOW_INSTANCE_FINISH_STATES.contains(intentStr) && recordValue.getWorkflowInstanceKey() == record.getKey()) {
+    if (WI_FINISH_STATES.contains(intentStr) && recordValue.getWorkflowInstanceKey() == record.getKey()) {   //TODO
       entity.setEndDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
       if (intentStr.equals(ELEMENT_TERMINATED.name())) {
         entity.setState(WorkflowInstanceState.CANCELED);
       } else {
         entity.setState(WorkflowInstanceState.COMPLETED);
       }
-    } else {
+    } else if (WI_START_STATE.equals(intentStr)){
       entity.setState(WorkflowInstanceState.ACTIVE);
       entity.setStartDate(DateUtil.toOffsetDateTime(record.getTimestamp()));
+    } else {
+      entity.setState(WorkflowInstanceState.ACTIVE);
     }
+
+    //find out workflow name and version
+    entity.setWorkflowName(workflowCache.getWorkflowName(entity.getWorkflowId(), recordValue.getBpmnProcessId()));
+    entity.setWorkflowVersion(workflowCache.getWorkflowVersion(entity.getWorkflowId(), recordValue.getBpmnProcessId()));
 
     entity.setPosition(record.getPosition());
 

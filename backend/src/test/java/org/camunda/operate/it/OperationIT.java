@@ -59,9 +59,6 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   private static final String QUERY_INSTANCES_URL = WORKFLOW_INSTANCE_URL;
 
   @Rule
-  public ElasticsearchTestRule elasticsearchTestRule = new ElasticsearchTestRule();
-
-  @Rule
   public MockMvcTestRule mockMvcTestRule = new MockMvcTestRule();
 
   private MockMvc mockMvc;
@@ -367,11 +364,6 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     batchOperationDto.getQueries().add(query);
     batchOperationDto.setOperationType(operationType);
     return batchOperationDto;
-  }
-
-  private void failTaskWithNoRetriesLeft(String taskName) {
-    super.setJobWorker(ZeebeUtil.failTask(super.getClient(), taskName, super.getWorkerName(), 3));
-    elasticsearchTestRule.processAllEvents(20);
   }
 
   private String startDemoWorkflowInstance() {

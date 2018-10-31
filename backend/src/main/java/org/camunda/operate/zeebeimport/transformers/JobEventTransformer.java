@@ -28,17 +28,10 @@ import io.zeebe.exporter.record.value.job.Headers;
 @Component
 public class JobEventTransformer implements AbstractRecordTransformer {
 
-  public static final String WORKFLOW_KEY_HEADER = "workflowKey";
-  public static final String WORKFLOW_INSTANCE_KEY_HEADER = "workflowInstanceKey";
-  public static final String BPMN_PROCESS_ID_HEADER = "bpmnProcessId";
-  public static final String ACTIVITY_ID_HEADER = "activityId";
-  public static final String ACTIVITY_INSTANCE_KEY_HEADER = "activityInstanceKey";
-
   @Override
   public List<OperateZeebeEntity> convert(Record record) {
 
 //    ZeebeUtil.ALL_EVENTS_LOGGER.debug(event.toJson());
-
 
     List<OperateZeebeEntity> result = new ArrayList<>();
 

@@ -148,6 +148,26 @@ public class ElasticsearchTestRule extends ExternalResource {
     }
   }
 
+  public void processAllEvents(int expectedMinEventsCount, ZeebeESImporter.ImportValueType importValueType) {
+    try {
+      int entitiesCount;
+      int totalCount = 0;
+      int emptyAttempts = 0;
+      do {
+        Thread.sleep(1000L);
+        entitiesCount = zeebeESImporter.processNextEntitiesBatch(0, importValueType);
+        totalCount += entitiesCount;
+        if (entitiesCount > 0) {
+          emptyAttempts = 0;
+        } else {
+          emptyAttempts++;
+        }
+      } while(totalCount < expectedMinEventsCount && emptyAttempts < 3);
+    } catch (Exception e) {
+      logger.error(e.getMessage(), e);
+    }
+  }
+
   public void persist(OperateEntity... entitiesToPersist) {
     try {
       elasticsearchBulkProcessor.persistOperateEntities(Arrays.asList(entitiesToPersist));
