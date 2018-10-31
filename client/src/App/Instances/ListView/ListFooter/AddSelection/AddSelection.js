@@ -59,7 +59,7 @@ class AddSelection extends React.Component {
       <Dropdown
         placement={DROPDOWN_PLACEMENT.TOP}
         label="Add to Selection..."
-        buttonStyles={Styled.DropdownButtonStyles}
+        buttonStyles={Styled.dropdownButtonStyles}
         disabled={!isAnyInstanceSelected(this.props.selection)}
         onOpen={this.openSelectionsPanel}
       >

@@ -73,7 +73,7 @@ export default class Selection extends React.Component {
       <Styled.DropdownTrigger onClick={this.stopClickPropagation}>
         <Dropdown
           label={<Styled.BatchIcon />}
-          buttonStyles={{color: '#ffffff'}}
+          buttonStyles={Styled.dropDownButtonStyles}
         >
           <Dropdown.Option
             data-test="cancel-dropdown-option"

@@ -1,17 +1,6 @@
-import styled from 'styled-components';
+import styled, {css} from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
 import Dropdown from 'modules/components/Dropdown';
-
-export const DropdownButtonStyles = {
-  fontSize: '13px',
-  fontWeight: 600,
-  background: Colors.selections,
-  height: '26px',
-  borderRadius: '13px',
-  border: 'none',
-  padding: '4px 11px 5px 11px',
-  color: 'rgba(255, 255, 255, 1)'
-};
 
 export const Wrapper = themed(styled.div`
   padding: 0 10px;
@@ -21,12 +10,19 @@ export const DropdownOption = styled(Dropdown.Option)`
   padding: 0px;
 `;
 
+const disabledStyles = css`
+  &:disabled {
+    cursor: not-allowed;
+    color: rgba(255, 255, 255, 0.6);
+    box-shadow: none;
+  }
+`;
+
 export const SelectionButton = themed(styled.button`
   font-family: IBMPlexSans;
   font-size: 13px;
   font-weight: 600;
 
-  border: none;
   outline: none;
 
   height: 26px;
@@ -35,15 +31,17 @@ export const SelectionButton = themed(styled.button`
 
   /* Color */
   background: ${Colors.selections};
-  color: rgba(255, 255, 255, 1);
+  color: rgba(255; 255, 255, 1);
 
   border-radius: 13px;
-  border: none;
+  border-color: ${Colors.primaryButton01};
 
   & > svg {
     vertical-align: text-bottom;
     margin-right: 8px;
   }
+
+  ${disabledStyles}
 
   &:focus {
     box-shadow: ${themeStyle({
@@ -53,3 +51,16 @@ export const SelectionButton = themed(styled.button`
       }`
     })}
 `);
+
+export const dropdownButtonStyles = css`
+  font-size: 13px;
+  font-weight: 600;
+  background-color: ${Colors.selections};
+  height: 26px;
+  border-radius: 13px;
+  border: none;
+  padding: 4px 11px 5px 11px;
+  color: rgba(255, 255, 255, 1);
+
+  ${disabledStyles};
+`;

@@ -50,6 +50,8 @@ export const Button = themed(styled.button`
   & > svg {
     vertical-align: text-bottom;
   }
+
+  ${props => props.buttonStyles};
 `);
 
 export const LabelWrapper = styled.div`

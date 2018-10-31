@@ -23,7 +23,7 @@ export default class Dropdown extends React.Component {
       PropTypes.arrayOf(PropTypes.node),
       PropTypes.node
     ]),
-    buttonStyles: PropTypes.object,
+    buttonStyles: PropTypes.array,
     disabled: PropTypes.bool,
     onOpen: PropTypes.func
   };
@@ -110,7 +110,7 @@ export default class Dropdown extends React.Component {
       <Styled.Dropdown innerRef={this.setRef}>
         <Styled.Button
           onKeyDown={this.handleKeyPress}
-          style={this.props.buttonStyles}
+          buttonStyles={this.props.buttonStyles}
           disabled={this.props.disabled}
           onClick={() => this.handleOnClick()}
         >

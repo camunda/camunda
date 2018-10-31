@@ -164,3 +164,7 @@ export const Footer = styled.div`
 export const MoreInstances = styled.div`
   font-size: 13px;
 `;
+
+export const dropDownButtonStyles = css`
+  color: #fff;
+`;

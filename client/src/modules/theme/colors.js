@@ -51,7 +51,9 @@ const Colors = {
 
   // Badge Colors
   badge01: '#d7d7d9',
-  badge02: '#88888d'
+  badge02: '#88888d',
+
+  primaryButton01: '#2b7bff'
 };
 
 export default Colors;
