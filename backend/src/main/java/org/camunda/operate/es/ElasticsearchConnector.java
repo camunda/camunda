@@ -42,12 +42,16 @@ public class ElasticsearchConnector {
 
   @Bean
   public TransportClient esClient() {
+    //some weird error when ELS sets available processors number for Netty - see https://discuss.elastic.co/t/elasticsearch-5-4-1-availableprocessors-is-already-set/88036/3
+    System.setProperty("es.set.netty.runtime.available.processors", "false");
     return createEsClient(operateProperties.getElasticsearch().getHost(), operateProperties.getElasticsearch().getPort(),
       operateProperties.getElasticsearch().getClusterName());
   }
 
   @Bean("zeebeEsClient")
   public TransportClient zeebeEsClient() {
+    //some weird error when ELS sets available processors number for Netty - see https://discuss.elastic.co/t/elasticsearch-5-4-1-availableprocessors-is-already-set/88036/3
+    System.setProperty("es.set.netty.runtime.available.processors", "false");
     return createEsClient(operateProperties.getZeebeElasticsearch().getHost(), operateProperties.getZeebeElasticsearch().getPort(),
       operateProperties.getZeebeElasticsearch().getClusterName());
   }
