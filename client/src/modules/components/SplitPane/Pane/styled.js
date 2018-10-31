@@ -3,10 +3,18 @@ import styled, {css} from 'styled-components';
 import Panel from 'modules/components/Panel';
 import ExpandButton from 'modules/components/ExpandButton';
 import {EXPAND_STATE} from 'modules/constants';
+import withStrippedProps from 'modules/utils/withStrippedProps';
 
 const isCollapsed = expandState => expandState === EXPAND_STATE.COLLAPSED;
 
-export const Pane = styled(Panel)`
+export const Pane = styled(
+  withStrippedProps([
+    'onAddToOpenSelection',
+    'onAddNewSelection',
+    'onAddToSpecificSelection',
+    'onUpdateSelection'
+  ])(Panel)
+)`
   ${({expandState}) => (isCollapsed(expandState) ? '' : `flex-grow: 1;`)};
 `;
 

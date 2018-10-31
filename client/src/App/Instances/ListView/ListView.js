@@ -92,11 +92,11 @@ export default class ListView extends React.Component {
       selection,
       filter,
       expandState,
-      onUpdateSelection,
       filterCount,
       onAddToOpenSelection,
       onAddNewSelection,
-      onAddToSpecificSelection
+      onAddToSpecificSelection,
+      onUpdateSelection
     } = this.props;
 
     const isListEmpty = this.state.instances.length === 0;
