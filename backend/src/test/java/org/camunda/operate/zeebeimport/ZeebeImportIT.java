@@ -81,7 +81,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     //when
     //1st load incident and then workflow instance events
     elasticsearchTestRule.processAllEvents(1, ZeebeESImporter.ImportValueType.INCIDENT);
-    elasticsearchTestRule.processAllEvents(1, ZeebeESImporter.ImportValueType.WORKFLOW_INSTANCE);
+    elasticsearchTestRule.processAllEvents(8, ZeebeESImporter.ImportValueType.WORKFLOW_INSTANCE);
 
     //then
     final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
