@@ -26,7 +26,7 @@ export default class Menu extends React.Component {
             onKeyDown={onKeyDown}
             placement={placement}
             key={index}
-            tabindex={index + 1}
+            tabIndex={index + 1}
           >
             {child}
           </Styled.Li>
