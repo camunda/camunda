@@ -43,7 +43,10 @@ public abstract class TestUtil {
   public static WorkflowInstanceEntity createWorkflowInstance(WorkflowInstanceState state, String workflowId) {
     WorkflowInstanceEntity workflowInstance = new WorkflowInstanceEntity();
     workflowInstance.setId(UUID.randomUUID().toString());
-    workflowInstance.setBusinessKey("testProcess" + random.nextInt(10));
+    final int i = random.nextInt(10);
+    workflowInstance.setBpmnProcessId("testProcess" + i);
+    workflowInstance.setWorkflowName("Test process" + i);
+    workflowInstance.setWorkflowVersion(i);
     workflowInstance.setStartDate(DateUtil.getRandomStartDate());
     if (state.equals(WorkflowInstanceState.COMPLETED) || state.equals(WorkflowInstanceState.CANCELED)) {
       final OffsetDateTime endDate = DateUtil.getRandomEndDate();
@@ -57,7 +60,10 @@ public abstract class TestUtil {
   public static WorkflowInstanceEntity createWorkflowInstance(OffsetDateTime startDate, OffsetDateTime endDate) {
     WorkflowInstanceEntity workflowInstance = new WorkflowInstanceEntity();
     workflowInstance.setId(UUID.randomUUID().toString());
-    workflowInstance.setBusinessKey("testProcess" + random.nextInt(10));
+    final int i = random.nextInt(10);
+    workflowInstance.setBpmnProcessId("testProcess" + i);
+    workflowInstance.setWorkflowName("Test process" + i);
+    workflowInstance.setWorkflowVersion(i);
     workflowInstance.setStartDate(startDate);
     workflowInstance.setState(WorkflowInstanceState.ACTIVE);
     if (endDate != null) {

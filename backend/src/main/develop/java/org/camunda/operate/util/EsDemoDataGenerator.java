@@ -50,7 +50,7 @@ public class EsDemoDataGenerator {
 
         WorkflowInstanceEntity workflowInstance = new WorkflowInstanceEntity();
         workflowInstance.setId(UUID.randomUUID().toString());
-        workflowInstance.setBusinessKey("process" + random.nextInt(10));
+        workflowInstance.setBpmnProcessId("process" + random.nextInt(10));
         workflowInstance.setStartDate(DateUtil.getRandomStartDate());
         final OffsetDateTime endDate = DateUtil.getRandomEndDate(true);
         workflowInstance.setEndDate(endDate);

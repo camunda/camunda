@@ -26,7 +26,7 @@ public class WorkflowInstanceType extends StrictTypeMappingCreator {
   public static final String ERROR_MSG = "errorMessage";
   public static final String STATE = "state";
   public static final String TYPE = "type";
-  public static final String BUSINESS_KEY = "businessKey";
+  public static final String BPMN_PROCESS_ID = "bpmnProcessId";
   public static final String ACTIVITIES = "activities";
   public static final String LOCK_EXPIRATION_TIME = "lockExpirationTime";
   public static final String LOCK_OWNER = "lockOwner";
@@ -67,7 +67,7 @@ public class WorkflowInstanceType extends StrictTypeMappingCreator {
       .startObject(WORKFLOW_VERSION)
         .field("type", "long")
       .endObject()
-      .startObject(BUSINESS_KEY)
+      .startObject(BPMN_PROCESS_ID)
         .field("type", "keyword")
       .endObject()
       .startObject(STATE)

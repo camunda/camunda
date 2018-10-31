@@ -118,7 +118,7 @@ public class OperationExecutorIT extends OperateIntegrationTest {
   private WorkflowInstanceEntity createWorkflowInstance() {
     WorkflowInstanceEntity workflowInstance = new WorkflowInstanceEntity();
     workflowInstance.setId(UUID.randomUUID().toString());
-    workflowInstance.setBusinessKey("testProcess" + random.nextInt(10));
+    workflowInstance.setBpmnProcessId("testProcess" + random.nextInt(10));
     workflowInstance.setStartDate(DateUtil.getRandomStartDate());
     workflowInstance.setState(WorkflowInstanceState.ACTIVE);
     workflowInstance.getOperations().add(createOperation(OperationState.SCHEDULED));

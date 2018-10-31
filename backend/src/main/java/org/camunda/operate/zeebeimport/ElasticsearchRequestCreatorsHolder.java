@@ -83,6 +83,7 @@ public class ElasticsearchRequestCreatorsHolder {
           updateFields.put(WorkflowInstanceType.END_DATE, entity.getEndDate());
         }
         updateFields.put(WorkflowInstanceType.WORKFLOW_ID, entity.getWorkflowId());
+        updateFields.put(WorkflowInstanceType.BPMN_PROCESS_ID, entity.getBpmnProcessId());
         updateFields.put(WorkflowInstanceType.WORKFLOW_NAME, entity.getWorkflowName());
         updateFields.put(WorkflowInstanceType.WORKFLOW_VERSION, entity.getWorkflowVersion());
         updateFields.put(WorkflowInstanceType.STATE, entity.getState());

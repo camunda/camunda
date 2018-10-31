@@ -209,7 +209,7 @@ public class WorkflowInstanceRecordTransformer implements AbstractRecordTransfor
     entity.setKey(recordValue.getWorkflowInstanceKey());
     entity.setPartitionId(record.getMetadata().getPartitionId());
     entity.setWorkflowId(String.valueOf(recordValue.getWorkflowKey()));
-    entity.setBusinessKey(recordValue.getBpmnProcessId());
+    entity.setBpmnProcessId(recordValue.getBpmnProcessId());
 
     final String intentStr = record.getMetadata().getIntent().name();
     if (WI_FINISH_STATES.contains(intentStr) && recordValue.getWorkflowInstanceKey() == record.getKey()) {   //TODO

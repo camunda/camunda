@@ -116,7 +116,9 @@ public class ZeebeDemoDataGenerator implements DataGenerator {
       cancelSomeInstances(),
       100, TimeUnit.SECONDS);
 
-    shutdownScheduler();
+    if (manuallyCalled) {
+      shutdownScheduler();
+    }
   }
 
   @PreDestroy

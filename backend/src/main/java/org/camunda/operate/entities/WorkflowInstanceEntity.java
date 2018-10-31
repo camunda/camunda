@@ -14,14 +14,12 @@ public class WorkflowInstanceEntity extends OperateZeebeEntity {
   private String workflowId;
   private String workflowName;
   private Integer workflowVersion;
+  private String bpmnProcessId;
 
   private OffsetDateTime startDate;
   private OffsetDateTime endDate;
 
   private WorkflowInstanceState state;
-
-  //TODO remove me
-  private String businessKey;
 
   private long position;
 
@@ -91,12 +89,12 @@ public class WorkflowInstanceEntity extends OperateZeebeEntity {
     this.state = state;
   }
 
-  public String getBusinessKey() {
-    return businessKey;
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
   }
 
-  public void setBusinessKey(String businessKey) {
-    this.businessKey = businessKey;
+  public void setBpmnProcessId(String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
   }
 
   public List<IncidentEntity> getIncidents() {
@@ -209,7 +207,7 @@ public class WorkflowInstanceEntity extends OperateZeebeEntity {
       return false;
     if (state != that.state)
       return false;
-    if (businessKey != null ? !businessKey.equals(that.businessKey) : that.businessKey != null)
+    if (bpmnProcessId != null ? !bpmnProcessId.equals(that.bpmnProcessId) : that.bpmnProcessId != null)
       return false;
     if (topicName != null ? !topicName.equals(that.topicName) : that.topicName != null)
       return false;
@@ -239,7 +237,7 @@ public class WorkflowInstanceEntity extends OperateZeebeEntity {
     result = 31 * result + (startDate != null ? startDate.hashCode() : 0);
     result = 31 * result + (endDate != null ? endDate.hashCode() : 0);
     result = 31 * result + (state != null ? state.hashCode() : 0);
-    result = 31 * result + (businessKey != null ? businessKey.hashCode() : 0);
+    result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
     result = 31 * result + (int) (position ^ (position >>> 32));
     result = 31 * result + (topicName != null ? topicName.hashCode() : 0);
     result = 31 * result + (incidents != null ? incidents.hashCode() : 0);

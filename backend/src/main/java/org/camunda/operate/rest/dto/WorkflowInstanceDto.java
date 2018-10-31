@@ -20,7 +20,7 @@ public class WorkflowInstanceDto {
 
   private WorkflowInstanceState state;
 
-  private String businessKey;
+  private String bpmnProcessId;
 
   private List<IncidentDto> incidents = new ArrayList<>();
 
@@ -86,12 +86,12 @@ public class WorkflowInstanceDto {
     this.state = state;
   }
 
-  public String getBusinessKey() {
-    return businessKey;
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
   }
 
-  public void setBusinessKey(String businessKey) {
-    this.businessKey = businessKey;
+  public void setBpmnProcessId(String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
   }
 
   public List<IncidentDto> getIncidents() {
@@ -132,11 +132,11 @@ public class WorkflowInstanceDto {
     }
     WorkflowInstanceDto workflowInstance = new WorkflowInstanceDto();
     workflowInstance.setId(workflowInstanceEntity.getId());
-    workflowInstance.setBusinessKey(workflowInstanceEntity.getBusinessKey());
     workflowInstance.setStartDate(workflowInstanceEntity.getStartDate());
     workflowInstance.setEndDate(workflowInstanceEntity.getEndDate());
     workflowInstance.setState(workflowInstanceEntity.getState());
     workflowInstance.setWorkflowId(workflowInstanceEntity.getWorkflowId());
+    workflowInstance.setBpmnProcessId(workflowInstanceEntity.getBpmnProcessId());
     workflowInstance.setWorkflowName(workflowInstanceEntity.getWorkflowName());
     workflowInstance.setWorkflowVersion(workflowInstanceEntity.getWorkflowVersion());
     workflowInstance.setIncidents(IncidentDto.createFrom(workflowInstanceEntity.getIncidents()));
@@ -181,7 +181,7 @@ public class WorkflowInstanceDto {
       return false;
     if (state != that.state)
       return false;
-    if (businessKey != null ? !businessKey.equals(that.businessKey) : that.businessKey != null)
+    if (bpmnProcessId != null ? !bpmnProcessId.equals(that.bpmnProcessId) : that.bpmnProcessId != null)
       return false;
     if (incidents != null ? !incidents.equals(that.incidents) : that.incidents != null)
       return false;
@@ -201,7 +201,7 @@ public class WorkflowInstanceDto {
     result = 31 * result + (startDate != null ? startDate.hashCode() : 0);
     result = 31 * result + (endDate != null ? endDate.hashCode() : 0);
     result = 31 * result + (state != null ? state.hashCode() : 0);
-    result = 31 * result + (businessKey != null ? businessKey.hashCode() : 0);
+    result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
     result = 31 * result + (incidents != null ? incidents.hashCode() : 0);
     result = 31 * result + (activities != null ? activities.hashCode() : 0);
     result = 31 * result + (operations != null ? operations.hashCode() : 0);
