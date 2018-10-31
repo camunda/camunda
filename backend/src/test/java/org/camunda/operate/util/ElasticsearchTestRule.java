@@ -17,7 +17,7 @@ import org.junit.rules.ExternalResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-
+import org.springframework.beans.factory.annotation.Qualifier;
 
 public class ElasticsearchTestRule extends ExternalResource {
 
@@ -25,6 +25,10 @@ public class ElasticsearchTestRule extends ExternalResource {
 
   @Autowired
   protected TransportClient esClient;
+
+  @Autowired
+  @Qualifier("zeebeEsClient")
+  protected TransportClient zeebeEsClient;
 
   @Autowired
   private List<TypeMappingCreator> typeMappingCreators;
@@ -118,6 +122,10 @@ public class ElasticsearchTestRule extends ExternalResource {
       esClient.admin().indices()
         .prepareRefresh()
         .get();
+
+      zeebeEsClient.admin().indices()
+        .prepareRefresh()
+        .get();
     } catch (IndexNotFoundException e) {
       logger.error(e.getMessage(), e);
       //      nothing to do
@@ -142,7 +150,7 @@ public class ElasticsearchTestRule extends ExternalResource {
         } else {
           emptyAttempts++;
         }
-      } while(totalCount < expectedMinEventsCount && emptyAttempts < 3);
+      } while(totalCount < expectedMinEventsCount && emptyAttempts < 5);
     } catch (Exception e) {
       logger.error(e.getMessage(), e);
     }
@@ -162,7 +170,7 @@ public class ElasticsearchTestRule extends ExternalResource {
         } else {
           emptyAttempts++;
         }
-      } while(totalCount < expectedMinEventsCount && emptyAttempts < 3);
+      } while(totalCount < expectedMinEventsCount && emptyAttempts < 5);
     } catch (Exception e) {
       logger.error(e.getMessage(), e);
     }
