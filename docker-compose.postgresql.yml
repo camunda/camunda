@@ -31,7 +31,7 @@ services:
       timeout: 5s
       retries: 3
   cambpm:
-    image: registry.camunda.cloud/camunda-bpm-platform-ee:${CAMBPM_VERSION:-7.10.0-alpha1}
+    image: registry.camunda.cloud/camunda-bpm-platform-ee:${CAMBPM_VERSION:-7.10.0-alpha5}
     container_name: cambpm
     environment:
       - DB_DRIVER=org.postgresql.Driver
@@ -39,12 +39,11 @@ services:
       - DB_PASSWORD=camunda
       - DB_URL=jdbc:postgresql://postgres:5432/engine
       - TZ=Europe/Berlin
-      - WAIT_FOR=postgres:5432
+      - JAVA_OPTS=-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m
     ports:
       - 8080:8080
     volumes:
       - "./backend/target/cambpm_logs:/camunda/logs"
-      - "./backend/src/it/resources/tomcat/setenv.sh:/camunda/bin/setenv.sh"
       - "./backend/src/it/resources/tomcat/bpm-platform.postgresql.xml:/camunda/conf/bpm-platform.xml"
       - "./backend/src/it/resources/tomcat/tomcat-users.xml:/camunda/conf/tomcat-users.xml"
       - "./backend/src/it/resources/tomcat/context.xml:/camunda/webapps/manager/META-INF/context.xml"
@@ -57,17 +56,17 @@ services:
       timeout: 5s
       retries: 3
     depends_on:
-      - postgres
+    - postgres
   postgres:
     image: postgres:9.6-alpine
     container_name: postgres
     environment:
-      - POSTGRES_USER=camunda
-      - POSTGRES_PASSWORD=camunda
-      - POSTGRES_DB=engine
-      - TZ=Europe/Berlin
+    - POSTGRES_USER=camunda
+    - POSTGRES_PASSWORD=camunda
+    - POSTGRES_DB=engine
+    - TZ=Europe/Berlin
     ports:
-      - 5432:5432
+    - 5432:5432
     restart: always
     cpu_count: 1
     mem_limit: 1g
@@ -76,4 +75,5 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+
 

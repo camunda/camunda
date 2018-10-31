@@ -101,8 +101,8 @@ spec:
         value: Europe/Berlin
       - name: WAIT_FOR
         value: localhost:5432
-    command: ["/bin/bash", "-c"]
-    args: ["/bin/echo 'export CATALINA_OPTS=-Xmx2g' > /camunda/bin/setenv.sh && /camunda/camunda.sh"]
+      - name: JAVA_OPTS
+        value: "-Xms2g -Xmx2g -XX:MaxMetaspaceSize=256m"
     resources:
       limits:
         cpu: 5
@@ -143,10 +143,10 @@ spec:
       protocol: TCP
     resources:
       limits:
-        cpu: 4
+        cpu: 12
         memory: 8Gi
       requests:
-        cpu: 4
+        cpu: 12
         memory: 8Gi
     volumeMounts:
       - name: es-storage

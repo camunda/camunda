@@ -31,10 +31,11 @@ services:
       timeout: 5s
       retries: 3
   cambpm:
-    image: registry.camunda.cloud/camunda-bpm-platform-ee:${CAMBPM_VERSION:-7.10.0-alpha1}
+    image: registry.camunda.cloud/camunda-bpm-platform-ee:${CAMBPM_VERSION:-7.10.0-alpha5}
     container_name: cambpm
     environment:
       - TZ=Europe/Berlin
+      - JAVA_OPTS=-Xms1g -Xmx1g -XX:MaxMetaspaceSize=256m
     ports:
       - 8080:8080
       - 9092:9092

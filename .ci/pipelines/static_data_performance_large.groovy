@@ -78,14 +78,14 @@ spec:
         value: Europe/Berlin
       - name: WAIT_FOR
         value: opt-ci-perf.db:5432
-    command: ["/bin/bash", "-c"]
-    args: ["/bin/echo 'export CATALINA_OPTS=-Xmx2g' > /camunda/bin/setenv.sh && /camunda/camunda.sh"]
+      - name: JAVA_OPTS
+        value: "-Xms2g -Xmx2g -XX:MaxMetaspaceSize=256m"
     resources:
       limits:
-        cpu: 2
+        cpu: 4
         memory: 3Gi
       requests:
-        cpu: 2
+        cpu: 4
         memory: 3Gi
     volumeMounts:
       - name: cambpm-storage
@@ -120,10 +120,10 @@ spec:
       protocol: TCP
     resources:
       limits:
-        cpu: 6
+        cpu: 12
         memory: 8Gi
       requests:
-        cpu: 6
+        cpu: 12
         memory: 8Gi
     volumeMounts:
       - name: es-storage
