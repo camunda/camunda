@@ -66,7 +66,7 @@ import org.slf4j.Logger;
 public class StateController implements AutoCloseable {
   private static final Logger LOG = Loggers.ROCKSDB_LOGGER;
 
-  private final MutableDirectBuffer dbLongBuffer = new UnsafeBuffer(new byte[Long.BYTES]);
+  protected final MutableDirectBuffer dbLongBuffer = new UnsafeBuffer(new byte[Long.BYTES]);
   private boolean isOpened = false;
   private RocksDB db;
   protected File dbDirectory;
@@ -280,12 +280,12 @@ public class StateController implements AutoCloseable {
     return db;
   }
 
-  private void setKey(final long key) {
+  protected void setLong(final long key) {
     dbLongBuffer.putLong(0, key, STATE_BYTE_ORDER);
   }
 
   public void put(final long key, final byte[] valueBuffer) {
-    setKey(key);
+    setLong(key);
     try {
       db.put(dbLongBuffer.byteArray(), valueBuffer);
     } catch (final RocksDBException e) {
@@ -299,7 +299,7 @@ public class StateController implements AutoCloseable {
       final byte[] value,
       final int valueOffset,
       final int valueLength) {
-    setKey(key);
+    setLong(key);
     put(
         handle,
         dbLongBuffer.byteArray(),
@@ -337,7 +337,7 @@ public class StateController implements AutoCloseable {
 
   public void put(
       final long key, final byte[] value, final int valueOffset, final int valueLength) {
-    setKey(key);
+    setLong(key);
     put(dbLongBuffer.byteArray(), 0, dbLongBuffer.capacity(), value, valueOffset, valueLength);
   }
 
@@ -363,7 +363,7 @@ public class StateController implements AutoCloseable {
    * @param valueWriter
    */
   public void put(final long key, final BufferWriter valueWriter) {
-    setKey(key);
+    setLong(key);
     final int length = valueWriter.getLength();
     final byte[] bytes = new byte[length];
     final UnsafeBuffer buffer = new UnsafeBuffer(bytes);
@@ -386,7 +386,7 @@ public class StateController implements AutoCloseable {
   }
 
   public void delete(final long key) {
-    setKey(key);
+    setLong(key);
     try {
       db.delete(dbLongBuffer.byteArray());
     } catch (final RocksDBException e) {
@@ -450,7 +450,7 @@ public class StateController implements AutoCloseable {
       final byte[] value,
       final int valueOffset,
       final int valueLength) {
-    setKey(key);
+    setLong(key);
 
     try {
       final long nativeHandle = (long) RocksDbInternal.columnFamilyHandle.get(columnFamilyHandle);
@@ -477,7 +477,7 @@ public class StateController implements AutoCloseable {
    * @return
    */
   public byte[] get(final long key) {
-    setKey(key);
+    setLong(key);
 
     byte[] bytes = null;
     try {
@@ -490,7 +490,7 @@ public class StateController implements AutoCloseable {
   }
 
   public boolean tryGet(final long key, final byte[] valueBuffer) {
-    setKey(key);
+    setLong(key);
 
     return tryGet(dbLongBuffer.byteArray(), valueBuffer);
   }
@@ -549,7 +549,7 @@ public class StateController implements AutoCloseable {
   }
 
   public void remove(final ColumnFamilyHandle handle, long key) {
-    setKey(key);
+    setLong(key);
     try {
       final long nativeHandle = (long) RocksDbInternal.columnFamilyHandle.get(handle);
       RocksDbInternal.removeWithHandle.invoke(
