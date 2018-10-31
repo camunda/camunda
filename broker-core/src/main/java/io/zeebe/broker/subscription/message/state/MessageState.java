@@ -20,14 +20,12 @@ package io.zeebe.broker.subscription.message.state;
 import static io.zeebe.broker.workflow.state.PersistenceHelper.EXISTENCE;
 import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
 
-import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.logstreams.rocksdb.ZbRocksDb;
 import io.zeebe.logstreams.rocksdb.ZbWriteBatch;
 import io.zeebe.logstreams.state.StateController;
 import io.zeebe.logstreams.state.StateLifecycleListener;
+import java.util.Arrays;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -86,14 +84,10 @@ public class MessageState implements StateLifecycleListener {
    * check if a message is correlated to a workflow instance */
   private ColumnFamilyHandle correlatedMessageColumnFamily;
 
-  private SubscriptionState<MessageSubscription> subscriptionState;
-
   private ZbRocksDb db;
 
   public static List<byte[]> getColumnFamilyNames() {
-    return Stream.of(COLUMN_FAMILY_NAMES, SubscriptionState.getColumnFamilyNames("Message"))
-        .flatMap(Stream::of)
-        .collect(Collectors.toList());
+    return Arrays.asList(COLUMN_FAMILY_NAMES);
   }
 
   @Override
@@ -106,9 +100,6 @@ public class MessageState implements StateLifecycleListener {
     messageIdColumnFamily = stateController.getColumnFamilyHandle(MESSAGE_ID_COLUMN_FAMILY_NAME);
     correlatedMessageColumnFamily =
         stateController.getColumnFamilyHandle(CORRELATED_MESSAGE_COLUMN_FAMILY_NAME);
-
-    subscriptionState =
-        new SubscriptionState<>(stateController, SUB_SUFFIX, MessageSubscription.class);
   }
 
   public void put(final Message message) {
@@ -322,53 +313,6 @@ public class MessageState implements StateLifecycleListener {
     } catch (RocksDBException e) {
       throw new RuntimeException(e);
     }
-  }
-
-  public void put(final MessageSubscription subscription) {
-    subscriptionState.put(subscription);
-  }
-
-  public void updateCommandSentTime(final MessageSubscription subscription) {
-    subscriptionState.updateCommandSentTime(subscription);
-  }
-
-  public List<MessageSubscription> findSubscriptions(
-      final DirectBuffer messageName, final DirectBuffer correlationKey) {
-    // ignore subscriptions for which a correlate command is already send for (i.e. pending
-    // subscription) - will be improved by #1421
-    return subscriptionState
-        .findSubscriptions(messageName, correlationKey)
-        .stream()
-        .filter(s -> s.getCommandSentTime() <= 0L)
-        .collect(Collectors.toList());
-  }
-
-  public List<MessageSubscription> findSubscriptionBefore(final long deadline) {
-    return subscriptionState.findSubscriptionBefore(deadline);
-  }
-
-  public boolean exist(final MessageSubscription subscription) {
-    return subscriptionState.exist(subscription);
-  }
-
-  public MessageSubscription findSubscription(MessageSubscriptionRecord record) {
-    final MessageSubscription messageSubscription =
-        new MessageSubscription(record.getWorkflowInstanceKey(), record.getElementInstanceKey());
-    return subscriptionState.getSubscription(messageSubscription);
-  }
-
-  public boolean remove(MessageSubscriptionRecord messageSubscriptionRecord) {
-    final MessageSubscription persistedSubscription = findSubscription(messageSubscriptionRecord);
-
-    final boolean exist = persistedSubscription != null;
-    if (exist) {
-      subscriptionState.remove(persistedSubscription);
-    }
-    return exist;
-  }
-
-  public void remove(MessageSubscription messageSubscription) {
-    subscriptionState.remove(messageSubscription);
   }
 
   @FunctionalInterface

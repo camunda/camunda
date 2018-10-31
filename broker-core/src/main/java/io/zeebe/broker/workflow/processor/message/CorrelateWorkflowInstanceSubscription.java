@@ -27,6 +27,7 @@ import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
+import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionState;
 import io.zeebe.broker.workflow.state.DeployedWorkflow;
 import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.broker.workflow.state.WorkflowState;
@@ -47,6 +48,7 @@ public final class CorrelateWorkflowInstanceSubscription
 
   private final TopologyManager topologyManager;
   private final WorkflowState workflowState;
+  private final WorkflowInstanceSubscriptionState subscriptionState;
   private final SubscriptionCommandSender subscriptionCommandSender;
 
   private TypedRecord<WorkflowInstanceSubscriptionRecord> record;
@@ -57,9 +59,11 @@ public final class CorrelateWorkflowInstanceSubscription
   public CorrelateWorkflowInstanceSubscription(
       TopologyManager topologyManager,
       WorkflowState workflowState,
+      WorkflowInstanceSubscriptionState subscriptionState,
       SubscriptionCommandSender subscriptionCommandSender) {
     this.topologyManager = topologyManager;
     this.workflowState = workflowState;
+    this.subscriptionState = subscriptionState;
     this.subscriptionCommandSender = subscriptionCommandSender;
   }
 
@@ -72,7 +76,7 @@ public final class CorrelateWorkflowInstanceSubscription
 
     final PendingWorkflowInstanceSubscriptionChecker pendingSubscriptionChecker =
         new PendingWorkflowInstanceSubscriptionChecker(
-            subscriptionCommandSender, workflowState, SUBSCRIPTION_TIMEOUT.toMillis());
+            subscriptionCommandSender, subscriptionState, SUBSCRIPTION_TIMEOUT.toMillis());
     actor.runAtFixedRate(SUBSCRIPTION_CHECK_INTERVAL, pendingSubscriptionChecker);
   }
 
@@ -112,7 +116,7 @@ public final class CorrelateWorkflowInstanceSubscription
 
   private void onWorkflowAvailable() {
     // remove subscription if pending
-    final boolean removed = workflowState.remove(subscription);
+    final boolean removed = subscriptionState.remove(subscription.getElementInstanceKey());
     if (!removed) {
       streamWriter.writeRejection(
           record, RejectionType.NOT_APPLICABLE, "subscription is already correlated");

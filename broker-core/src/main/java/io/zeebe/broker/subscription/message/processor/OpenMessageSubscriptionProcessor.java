@@ -27,6 +27,7 @@ import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.state.Message;
 import io.zeebe.broker.subscription.message.state.MessageState;
 import io.zeebe.broker.subscription.message.state.MessageSubscription;
+import io.zeebe.broker.subscription.message.state.MessageSubscriptionState;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import io.zeebe.util.sched.clock.ActorClock;
@@ -38,6 +39,7 @@ public class OpenMessageSubscriptionProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
 
   private final MessageState messageState;
+  private final MessageSubscriptionState subscriptionState;
   private final SubscriptionCommandSender commandSender;
 
   private final DirectBuffer messagePayload = new UnsafeBuffer(0, 0);
@@ -47,8 +49,11 @@ public class OpenMessageSubscriptionProcessor
   private MessageSubscription subscription;
 
   public OpenMessageSubscriptionProcessor(
-      MessageState messageState, SubscriptionCommandSender commandSender) {
+      MessageState messageState,
+      MessageSubscriptionState subscriptionState,
+      SubscriptionCommandSender commandSender) {
     this.messageState = messageState;
+    this.subscriptionState = subscriptionState;
     this.commandSender = commandSender;
   }
 
@@ -61,14 +66,8 @@ public class OpenMessageSubscriptionProcessor
     this.sideEffect = sideEffect;
     subscriptionRecord = record.getValue();
 
-    subscription =
-        new MessageSubscription(
-            subscriptionRecord.getWorkflowInstanceKey(),
-            subscriptionRecord.getElementInstanceKey(),
-            subscriptionRecord.getMessageName(),
-            subscriptionRecord.getCorrelationKey());
-
-    if (messageState.exist(subscription)) {
+    if (subscriptionState.existSubscriptionForElementInstance(
+        subscriptionRecord.getElementInstanceKey())) {
       sideEffect.accept(this::sendAcknowledgeCommand);
 
       streamWriter.writeRejection(
@@ -84,12 +83,18 @@ public class OpenMessageSubscriptionProcessor
 
     sideEffect.accept(this::sendAcknowledgeCommand);
 
+    subscription =
+        new MessageSubscription(
+            subscriptionRecord.getWorkflowInstanceKey(),
+            subscriptionRecord.getElementInstanceKey(),
+            subscriptionRecord.getMessageName(),
+            subscriptionRecord.getCorrelationKey());
+    subscriptionState.put(subscription);
+
     messageState.visitMessages(
         subscriptionRecord.getMessageName(),
         subscriptionRecord.getCorrelationKey(),
         this::correlateMessage);
-
-    messageState.put(subscription);
 
     streamWriter.writeFollowUpEvent(
         record.getKey(), MessageSubscriptionIntent.OPENED, subscriptionRecord);
@@ -103,13 +108,13 @@ public class OpenMessageSubscriptionProcessor
             message.getKey(), subscriptionRecord.getWorkflowInstanceKey());
 
     if (!isCorrelatedBefore) {
-      messagePayload.wrap(message.getPayload());
+
+      subscriptionState.updateToCorrelatingState(
+          subscription, message.getPayload(), ActorClock.currentTimeMillis());
 
       // send the correlate instead of acknowledge command
+      messagePayload.wrap(message.getPayload());
       sideEffect.accept(this::sendCorrelateCommand);
-
-      subscription.setMessagePayload(message.getPayload());
-      subscription.setCommandSentTime(ActorClock.currentTimeMillis());
 
       messageState.putMessageCorrelation(
           message.getKey(), subscriptionRecord.getWorkflowInstanceKey());

@@ -18,52 +18,50 @@
 package io.zeebe.broker.workflow.processor.message;
 
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
-import io.zeebe.broker.workflow.state.WorkflowState;
-import io.zeebe.broker.workflow.state.WorkflowSubscription;
+import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionState;
+import io.zeebe.broker.workflow.state.WorkflowInstanceSubscription;
 import io.zeebe.util.sched.clock.ActorClock;
-import java.util.List;
 
 public class PendingWorkflowInstanceSubscriptionChecker implements Runnable {
 
   private final SubscriptionCommandSender commandSender;
-  private final WorkflowState workflowState;
+  private final WorkflowInstanceSubscriptionState subscriptionState;
 
   private final long subscriptionTimeout;
 
   public PendingWorkflowInstanceSubscriptionChecker(
       SubscriptionCommandSender commandSender,
-      WorkflowState workflowState,
+      WorkflowInstanceSubscriptionState subscriptionState,
       long subscriptionTimeout) {
     this.commandSender = commandSender;
-    this.workflowState = workflowState;
+    this.subscriptionState = subscriptionState;
     this.subscriptionTimeout = subscriptionTimeout;
   }
 
   @Override
   public void run() {
 
-    final List<WorkflowSubscription> pendingSubscriptions =
-        workflowState.findSubscriptionsBefore(ActorClock.currentTimeMillis() - subscriptionTimeout);
-
-    for (WorkflowSubscription subscription : pendingSubscriptions) {
-      boolean success = true;
-
-      if (subscription.isOpening()) {
-        success = sendOpenCommand(subscription);
-        workflowState.updateCommandSendTime(subscription);
-
-      } else if (subscription.isClosing()) {
-        success = sendCloseCommand(subscription);
-        workflowState.updateCommandSendTime(subscription);
-      }
-
-      if (!success) {
-        return;
-      }
-    }
+    subscriptionState.visitSubscriptionBefore(
+        ActorClock.currentTimeMillis() - subscriptionTimeout, this::sendCommand);
   }
 
-  private boolean sendOpenCommand(WorkflowSubscription subscription) {
+  private boolean sendCommand(WorkflowInstanceSubscription subscription) {
+    boolean success = false;
+
+    if (subscription.isOpening()) {
+      success = sendOpenCommand(subscription);
+    } else {
+      success = sendCloseCommand(subscription);
+    }
+
+    if (success) {
+      subscriptionState.updateSentTime(subscription, ActorClock.currentTimeMillis());
+    }
+
+    return success;
+  }
+
+  private boolean sendOpenCommand(WorkflowInstanceSubscription subscription) {
     return commandSender.openMessageSubscription(
         subscription.getWorkflowInstanceKey(),
         subscription.getElementInstanceKey(),
@@ -71,7 +69,7 @@ public class PendingWorkflowInstanceSubscriptionChecker implements Runnable {
         subscription.getCorrelationKey());
   }
 
-  private boolean sendCloseCommand(WorkflowSubscription subscription) {
+  private boolean sendCloseCommand(WorkflowInstanceSubscription subscription) {
     return commandSender.closeMessageSubscription(
         subscription.getSubscriptionPartitionId(),
         subscription.getWorkflowInstanceKey(),

@@ -22,18 +22,19 @@ import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
-import io.zeebe.broker.workflow.state.WorkflowState;
-import io.zeebe.broker.workflow.state.WorkflowSubscription;
+import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionState;
+import io.zeebe.broker.workflow.state.WorkflowInstanceSubscription;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 
 public class OpenWorkflowInstanceSubscriptionProcessor
     implements TypedRecordProcessor<WorkflowInstanceSubscriptionRecord> {
 
-  private final WorkflowState workflowState;
+  private final WorkflowInstanceSubscriptionState subscriptionState;
 
-  public OpenWorkflowInstanceSubscriptionProcessor(WorkflowState workflowState) {
-    this.workflowState = workflowState;
+  public OpenWorkflowInstanceSubscriptionProcessor(
+      WorkflowInstanceSubscriptionState subscriptionState) {
+    this.subscriptionState = subscriptionState;
   }
 
   @Override
@@ -44,11 +45,12 @@ public class OpenWorkflowInstanceSubscriptionProcessor
 
     final WorkflowInstanceSubscriptionRecord subscriptionRecord = record.getValue();
 
-    final WorkflowSubscription subscription = workflowState.findSubscription(subscriptionRecord);
+    final WorkflowInstanceSubscription subscription =
+        subscriptionState.getSubscription(subscriptionRecord.getElementInstanceKey());
     if (subscription != null && subscription.isOpening()) {
-      subscription.setOpened();
-      subscription.setSubscriptionPartitionId(subscriptionRecord.getSubscriptionPartitionId());
-      workflowState.put(subscription);
+
+      subscriptionState.updateToOpenedState(
+          subscription, subscription.getSubscriptionPartitionId());
 
       streamWriter.writeFollowUpEvent(
           record.getKey(), WorkflowInstanceSubscriptionIntent.OPENED, subscriptionRecord);

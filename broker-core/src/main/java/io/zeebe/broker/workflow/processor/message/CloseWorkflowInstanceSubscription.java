@@ -22,17 +22,17 @@ import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
-import io.zeebe.broker.workflow.state.WorkflowState;
+import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionState;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 
 public final class CloseWorkflowInstanceSubscription
     implements TypedRecordProcessor<WorkflowInstanceSubscriptionRecord> {
 
-  private final WorkflowState workflowState;
+  private final WorkflowInstanceSubscriptionState subscriptionState;
 
-  public CloseWorkflowInstanceSubscription(WorkflowState workflowState) {
-    this.workflowState = workflowState;
+  public CloseWorkflowInstanceSubscription(WorkflowInstanceSubscriptionState subscriptionState) {
+    this.subscriptionState = subscriptionState;
   }
 
   @Override
@@ -41,10 +41,12 @@ public final class CloseWorkflowInstanceSubscription
       TypedResponseWriter responseWriter,
       TypedStreamWriter streamWriter) {
 
-    final boolean removed = workflowState.remove(record.getValue());
+    final WorkflowInstanceSubscriptionRecord subscription = record.getValue();
+
+    final boolean removed = subscriptionState.remove(subscription.getElementInstanceKey());
     if (removed) {
       streamWriter.writeFollowUpEvent(
-          record.getKey(), WorkflowInstanceSubscriptionIntent.CLOSED, record.getValue());
+          record.getKey(), WorkflowInstanceSubscriptionIntent.CLOSED, subscription);
 
     } else {
       streamWriter.writeRejection(
