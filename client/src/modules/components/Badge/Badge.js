@@ -14,5 +14,10 @@ Badge.propTypes = {
     PropTypes.arrayOf(PropTypes.node),
     PropTypes.node
   ]),
-  type: PropTypes.oneOf(Object.keys(BADGE_TYPE))
+  type: PropTypes.oneOf(Object.keys(BADGE_TYPE)),
+  isActive: PropTypes.bool
+};
+
+Badge.defaultProps = {
+  isActive: true
 };

@@ -7,7 +7,7 @@ import * as Styled from './styled';
 
 export default function ComboBadge(props) {
   const children = React.Children.map(props.children, child =>
-    React.cloneElement(child, {type: props.type})
+    React.cloneElement(child, {type: props.type, isActive: props.isActive})
   );
   return <Styled.ComboBadge {...props}> {children}</Styled.ComboBadge>;
 }
@@ -29,5 +29,10 @@ ComboBadge.propTypes = {
     PropTypes.arrayOf(PropTypes.node),
     PropTypes.node
   ]),
-  type: PropTypes.oneOf(Object.keys(COMBO_BADGE_TYPE))
+  type: PropTypes.oneOf(Object.keys(COMBO_BADGE_TYPE)),
+  isActive: PropTypes.bool
+};
+
+ComboBadge.defaultProps = {
+  isActive: true
 };

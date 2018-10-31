@@ -46,15 +46,26 @@ const badgeStyle = props => {
   }
 };
 
+const opacityStyle = props =>
+  props.isActive
+    ? ''
+    : css`
+        opacity: ${themeStyle({
+          dark: '0.8',
+          light: '0.7'
+        })};
+      `;
+
 export const Badge = themed(styled.div`
   display: inline-block;
   height: 17px;
   padding: 0 6px;
   min-width: 17px;
   margin-left: 7px;
-  border-radius: 10.5px;
+  border-radius: 8.5px;
   font-size: 12px;
   font-weight: 600;
   line-height: 1.5;
   ${badgeStyle};
+  ${opacityStyle};
 `);

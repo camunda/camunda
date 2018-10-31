@@ -5,9 +5,30 @@ import {Colors, themed, themeStyle} from 'modules/theme';
 
 import Badge from '../Badge';
 
+const selectionStyles = css`
+  opacity: 1;
+  color: ${themeStyle({
+    dark: 'rgba(255,255,255, 0.8)',
+    light: 'rgba(255,255,255, 0.9)'
+  })};
+  background-color: ${themeStyle({
+    dark: '#437AD3',
+    light: '#7FAEFC'
+  })};
+`;
+
 const selectionsRightStyle = css`
-  background-color: rgba(77, 144, 255, 0.75);
-  color: #ffffff;
+  ${props =>
+    props.isActive
+      ? 'background-color: rgba(77, 144, 255, 0.75)'
+      : selectionStyles};
+`;
+
+const selectionsLeftStyle = css`
+  ${props =>
+    props.isActive
+      ? `background-color: ${Colors.selections}`
+      : selectionStyles};
 `;
 
 export const ComboBadge = styled.div`
@@ -30,6 +51,8 @@ export const Left = themed(styled(Badge)`
     dark: Colors.uiDark03,
     light: Colors.uiLight02
   })};
+  ${props =>
+    props.type === COMBO_BADGE_TYPE.SELECTIONS ? selectionsLeftStyle : ''};
 `);
 
 export const Right = themed(styled(Badge)`

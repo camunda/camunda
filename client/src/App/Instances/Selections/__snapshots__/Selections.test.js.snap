@@ -22,6 +22,7 @@ exports[`Selections should render a CollapsablePanel 1`] = `
       label="Selections"
     >
       <Badge
+        isActive={true}
         type="SELECTIONS"
       >
         2
@@ -36,6 +37,7 @@ exports[`Selections should render a CollapsablePanel 1`] = `
       Selections
     </span>
     <ComboBadge
+      isActive={true}
       type="SELECTIONS"
     >
       <Left>

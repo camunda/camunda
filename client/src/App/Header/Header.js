@@ -152,7 +152,10 @@ class Header extends React.Component {
               onClick={this.props.expandFilters}
             >
               <span>Running Instances</span>
-              <Badge type={BADGE_TYPE.RUNNING_INSTANCES}>
+              <Badge
+                isActive={active === 'instances' && isRunningInstanceFilter}
+                type={BADGE_TYPE.RUNNING_INSTANCES}
+              >
                 {this.state.runningInstancesCount}
               </Badge>
             </Styled.ListLink>
@@ -167,7 +170,14 @@ class Header extends React.Component {
               onClick={this.props.expandFilters}
             >
               <span>Filters</span>
-              <Badge type={BADGE_TYPE.FILTERS}>{this.state.filterCount}</Badge>
+              <Badge
+                type={BADGE_TYPE.FILTERS}
+                isActive={
+                  active === 'instances' && !this.props.isFiltersCollapsed
+                }
+              >
+                {this.state.filterCount}
+              </Badge>
             </Styled.ListLink>
           </li>
           <li data-test="header-link-incidents">
@@ -178,24 +188,30 @@ class Header extends React.Component {
               onClick={this.props.expandFilters}
             >
               <span>Incidents</span>
-              <Badge type={BADGE_TYPE.INCIDENTS}>
+              <Badge
+                type={BADGE_TYPE.INCIDENTS}
+                isActive={active === 'instances' && isIncidentsFilter}
+              >
                 {this.state.incidentsCount}
               </Badge>
             </Styled.ListLink>
           </li>
           <li data-test="header-link-selections">
             <Styled.ListLink
-              to={`/instances${runningQuery}`}
-              title={`View ${this.state.selectionCount} ${
-                this.state.instancesInSelectionsCount
-              } Selections`}
+              to={`/instances${filterQuery}`}
+              title={`View ${this.state.selectionCount} Selections`}
               isActive={
                 active === 'instances' && !this.props.isSelectionsCollapsed
               }
               onClick={this.props.expandSelections}
             >
               <span>Selections</span>
-              <ComboBadge type={COMBO_BADGE_TYPE.SELECTIONS}>
+              <ComboBadge
+                type={COMBO_BADGE_TYPE.SELECTIONS}
+                isActive={
+                  active === 'instances' && !this.props.isSelectionsCollapsed
+                }
+              >
                 <Styled.SelectionBadgeLeft>
                   {this.state.selectionCount}
                 </Styled.SelectionBadgeLeft>

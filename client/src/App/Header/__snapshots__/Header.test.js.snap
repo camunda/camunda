@@ -30,6 +30,7 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
           Running Instances
         </span>
         <Badge
+          isActive={false}
           type="RUNNING_INSTANCES"
         >
           0
@@ -49,6 +50,7 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
           Filters
         </span>
         <Badge
+          isActive={false}
           type="FILTERS"
         >
           0
@@ -68,6 +70,7 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
           Incidents
         </span>
         <Badge
+          isActive={false}
           type="INCIDENTS"
         >
           0
@@ -80,13 +83,14 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
       <Themed(Styled(withStrippedProps(Link)))
         isActive={false}
         onClick={[MockFunction]}
-        title="View 0 0 Selections"
-        to="/instances?filter=%7B%22active%22%3Atrue%2C%22incidents%22%3Atrue%7D"
+        title="View 0 Selections"
+        to="/instances?filter=%7B%7D"
       >
         <span>
           Selections
         </span>
         <ComboBadge
+          isActive={false}
           type="SELECTIONS"
         >
           <Themed(Styled(Left))>

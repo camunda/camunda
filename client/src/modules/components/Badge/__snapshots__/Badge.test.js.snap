@@ -1,7 +1,9 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`Badge should contain passed number 1`] = `
-<Themed(styled.div)>
+<Themed(styled.div)
+  isActive={true}
+>
   123
 </Themed(styled.div)>
 `;
