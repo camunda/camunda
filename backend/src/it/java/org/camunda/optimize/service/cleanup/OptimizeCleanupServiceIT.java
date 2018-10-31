@@ -1,13 +1,16 @@
 package org.camunda.optimize.service.cleanup;
 
 import com.google.common.collect.Lists;
+import org.apache.commons.collections.ListUtils;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
+import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.VariableHelper;
 import org.camunda.optimize.service.util.configuration.CleanupMode;
 import org.camunda.optimize.service.util.configuration.OptimizeCleanupConfiguration;
+import org.camunda.optimize.service.util.configuration.ProcessDefinitionCleanupConfiguration;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
@@ -15,6 +18,8 @@ import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
 import org.camunda.optimize.test.util.VariableTestUtil;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.search.SearchHit;
+import org.hamcrest.CoreMatchers;
+import org.hamcrest.MatcherAssert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -29,6 +34,7 @@ import java.util.Map;
 
 import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.greaterThan;
 
@@ -64,7 +70,7 @@ public class OptimizeCleanupServiceIT {
     // given
     getCleanupConfiguration().setDefaultMode(CleanupMode.ALL);
     final List<String> clearedProcessDefinitionsIds = deployTwoProcessInstancesWithEndTimeLessThanTtl();
-    final List<String> uanffectedProcessDefinitionsIds = deployTwoProcessInstancesWithEndTime(OffsetDateTime.now());
+    final List<String> unaffectedProcessDefinitionsIds = deployTwoProcessInstancesWithEndTime(OffsetDateTime.now());
 
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -74,7 +80,7 @@ public class OptimizeCleanupServiceIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //then
-    assertProcessInstanceDataCompleteInEs(uanffectedProcessDefinitionsIds);
+    assertProcessInstanceDataCompleteInEs(unaffectedProcessDefinitionsIds);
   }
 
   @Test
@@ -99,7 +105,7 @@ public class OptimizeCleanupServiceIT {
     // given
     getCleanupConfiguration().setDefaultMode(CleanupMode.VARIABLES);
     final List<String> clearedProcessDefinitionsIds = deployTwoProcessInstancesWithEndTimeLessThanTtl();
-    final List<String> uanffectedProcessDefinitionsIds = deployTwoProcessInstancesWithEndTime(OffsetDateTime.now());
+    final List<String> unaffectedProcessDefinitionsIds = deployTwoProcessInstancesWithEndTime(OffsetDateTime.now());
 
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -110,7 +116,39 @@ public class OptimizeCleanupServiceIT {
 
     //then
     assertVariablesEmptyInProcessInstances(clearedProcessDefinitionsIds);
-    assertProcessInstanceDataCompleteInEs(uanffectedProcessDefinitionsIds);
+    assertProcessInstanceDataCompleteInEs(unaffectedProcessDefinitionsIds);
+  }
+
+  @Test
+  public void testFailCleanupOnSpecificKeyConfigWithNoMatchingProcessDefinitionNoInstancesCleaned()
+    throws SQLException {
+    // given I have a key specific config
+    final String configuredKey = "myMistypedKey";
+    getCleanupConfiguration().getProcessDefinitionSpecificConfiguration().put(
+      configuredKey,
+      new ProcessDefinitionCleanupConfiguration(CleanupMode.VARIABLES)
+    );
+    // and deploy processes with different keys
+    final List<String> processDefinitionsWithEndTimeLessThanTtl = deployTwoProcessInstancesWithEndTimeLessThanTtl();
+    final List<String> unaffectedProcessDefinitionsIds = deployTwoProcessInstancesWithEndTime(OffsetDateTime.now());
+
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    //when
+    OptimizeConfigurationException expectedException = null;
+    try {
+      embeddedOptimizeRule.getCleanupService().runCleanup();
+    } catch (OptimizeConfigurationException e) {
+      expectedException = e;
+    }
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // all data is still there
+    MatcherAssert.assertThat(expectedException, CoreMatchers.is((notNullValue())));
+    assertProcessInstanceDataCompleteInEs(
+      ListUtils.union(processDefinitionsWithEndTimeLessThanTtl, unaffectedProcessDefinitionsIds)
+    );
   }
 
   private ProcessInstanceEngineDto startNewProcessWithSameProcessDefinitionId(String processDefinitionId) {
@@ -186,7 +224,10 @@ public class OptimizeCleanupServiceIT {
       .camundaExpression("${true}")
       .endEvent()
       .done();
-    return engineRule.deployAndStartProcessWithVariables(processModel, VariableTestUtil.createAllPrimitiveTypeVariables());
+    return engineRule.deployAndStartProcessWithVariables(
+      processModel,
+      VariableTestUtil.createAllPrimitiveTypeVariables()
+    );
   }
 
 

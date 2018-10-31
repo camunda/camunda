@@ -6,8 +6,10 @@ import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 
 import java.time.Period;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.camunda.optimize.service.util.configuration.ConfigurationServiceConstants.HISTORY_CLEANUP;
 
@@ -24,6 +26,16 @@ public class OptimizeCleanupConfiguration {
   @JsonProperty("perProcessDefinitionConfig")
   private Map<String, ProcessDefinitionCleanupConfiguration> processDefinitionSpecificConfiguration = new HashMap<>();
 
+  protected OptimizeCleanupConfiguration() {
+  }
+
+  public OptimizeCleanupConfiguration(boolean enabled, String cronTrigger, Period defaultTtl, CleanupMode defaultMode) {
+    this.enabled = enabled;
+    this.cronTrigger = cronTrigger;
+    this.defaultTtl = defaultTtl;
+    this.defaultMode = defaultMode;
+  }
+
   public void validate() {
     if (cronTrigger == null || cronTrigger.isEmpty()) {
       throw new OptimizeConfigurationException(HISTORY_CLEANUP + ".cronTrigger must be set and not empty");
@@ -33,9 +45,6 @@ public class OptimizeCleanupConfiguration {
     }
     if (defaultMode == null) {
       throw new OptimizeConfigurationException(HISTORY_CLEANUP + ".mode must be set");
-    }
-    if (processDefinitionSpecificConfiguration == null) {
-      throw new OptimizeConfigurationException(HISTORY_CLEANUP + ".perProcessDefinitionConfig cannot be null");
     }
   }
 
@@ -59,9 +68,19 @@ public class OptimizeCleanupConfiguration {
     return processDefinitionSpecificConfiguration;
   }
 
-  public Optional<ProcessDefinitionCleanupConfiguration> getProcessDefinitionCleanupConfigurationForKey(final String processDefinitionKey) {
-    return Optional.ofNullable(processDefinitionSpecificConfiguration)
-      .flatMap(map -> Optional.ofNullable(map.get(processDefinitionKey)));
+  public Set<String> getAllProcessSpecificConfigurationKeys() {
+    return new HashSet<>(processDefinitionSpecificConfiguration.keySet());
+  }
+
+  public ProcessDefinitionCleanupConfiguration getProcessDefinitionCleanupConfigurationForKey(final String processDefinitionKey) {
+    final Optional<ProcessDefinitionCleanupConfiguration> keySpecificConfig =
+      Optional.ofNullable(processDefinitionSpecificConfiguration)
+        .flatMap(map -> Optional.ofNullable(map.get(processDefinitionKey)));
+
+    return new ProcessDefinitionCleanupConfiguration(
+      keySpecificConfig.flatMap(config -> Optional.ofNullable(config.getTtl())).orElse(getDefaultTtl()),
+      keySpecificConfig.flatMap(config -> Optional.ofNullable(config.getCleanupMode())).orElse(getDefaultMode())
+    );
   }
 
   public void setEnabled(boolean enabled) {
@@ -78,5 +97,9 @@ public class OptimizeCleanupConfiguration {
 
   public void setDefaultMode(CleanupMode defaultMode) {
     this.defaultMode = defaultMode;
+  }
+
+  public void setProcessDefinitionSpecificConfiguration(Map<String, ProcessDefinitionCleanupConfiguration> processDefinitionSpecificConfiguration) {
+    this.processDefinitionSpecificConfiguration = Optional.ofNullable(processDefinitionSpecificConfiguration).orElse(new HashMap<>());
   }
 }

@@ -4,7 +4,7 @@ import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
 import org.camunda.optimize.service.es.reader.ProcessDefinitionReader;
 import org.camunda.optimize.service.es.writer.FinishedProcessInstanceWriter;
 import org.camunda.optimize.service.es.writer.variable.VariableWriter;
-import org.camunda.optimize.service.util.configuration.CleanupMode;
+import org.camunda.optimize.service.exceptions.OptimizeConfigurationException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.OptimizeCleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.ProcessDefinitionCleanupConfiguration;
@@ -19,8 +19,7 @@ import org.springframework.stereotype.Component;
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 import java.time.OffsetDateTime;
-import java.time.Period;
-import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.stream.Collectors;
 
@@ -66,58 +65,75 @@ public class OptimizeCleanupService {
     }
   }
 
-  public void runCleanup() {
-    logger.info("Running optimize history cleanup...");
-    final OffsetDateTime startTime = OffsetDateTime.now();
-
-    processDefinitionReader.getProcessDefinitionsAsService()
-      .stream()
-      .map(ProcessDefinitionOptimizeDto::getKey)
-      .collect(Collectors.toSet())
-      .forEach(currentProcessDefinitionKey -> {
-        final Optional<ProcessDefinitionCleanupConfiguration> processDefinitionSpecificConfiguration = configuration
-          .getProcessDefinitionCleanupConfigurationForKey(currentProcessDefinitionKey);
-        final Period ttl = processDefinitionSpecificConfiguration.flatMap(ProcessDefinitionCleanupConfiguration::getTtl)
-          .orElse(configuration.getDefaultTtl());
-        final CleanupMode mode =
-          processDefinitionSpecificConfiguration.flatMap(ProcessDefinitionCleanupConfiguration::getCleanupMode)
-            .orElse(configuration.getDefaultMode());
-
-        logger.info(
-          "Performing cleanup on process instances for processDefinitionKey: {}, with ttl: {} and mode:{}",
-          currentProcessDefinitionKey,
-          ttl,
-          mode
-        );
-        final OffsetDateTime endDateFilter = startTime.minus(ttl);
-        switch (mode) {
-          case ALL:
-            processInstanceWriter.deleteProcessInstancesByProcessDefinitionKeyAndEndDateOlderThan(
-              currentProcessDefinitionKey,
-              endDateFilter
-            );
-            break;
-          case VARIABLES:
-            variableWriter.deleteAllInstanceVariablesByProcessDefinitionKeyAndEndDateOlderThan(
-              currentProcessDefinitionKey,
-              endDateFilter
-            );
-            break;
-          default:
-            throw new IllegalStateException("Unsupported cleanup mode " + mode);
-        }
-      });
-
-    final long durationSeconds = OffsetDateTime.now().minusSeconds(startTime.toEpochSecond()).toEpochSecond();
-    logger.info("Finished optimize history cleanup in {}s", durationSeconds);
-  }
-
   @PreDestroy
   public synchronized void stopCleanupScheduling() {
     if (scheduledTrigger != null) {
       this.scheduledTrigger.cancel(true);
       this.scheduledTrigger = null;
     }
+  }
+
+  public void runCleanup() {
+    logger.info("Running optimize history cleanup...");
+    final OffsetDateTime startTime = OffsetDateTime.now();
+    final Set<String> allOptimizeProcessDefinitionKeys = getAllOptimizeProcessDefinitionKeys();
+
+    enforceSpecificProcessKeyConfigurationsHaveMatchIn(allOptimizeProcessDefinitionKeys);
+
+    allOptimizeProcessDefinitionKeys
+      .forEach(currentProcessDefinitionKey -> performCleanupForKey(startTime, currentProcessDefinitionKey));
+
+    final long durationSeconds = OffsetDateTime.now().minusSeconds(startTime.toEpochSecond()).toEpochSecond();
+    logger.info("Finished optimize history cleanup in {}s", durationSeconds);
+  }
+
+  private void performCleanupForKey(OffsetDateTime startTime, String currentProcessDefinitionKey) {
+    final ProcessDefinitionCleanupConfiguration cleanupConfigurationForKey = configuration
+      .getProcessDefinitionCleanupConfigurationForKey(currentProcessDefinitionKey);
+
+    logger.info(
+      "Performing cleanup on process instances for processDefinitionKey: {}, with ttl: {} and mode:{}",
+      currentProcessDefinitionKey,
+      cleanupConfigurationForKey.getTtl(),
+      cleanupConfigurationForKey.getCleanupMode()
+    );
+    final OffsetDateTime endDateFilter = startTime.minus(cleanupConfigurationForKey.getTtl());
+    switch (cleanupConfigurationForKey.getCleanupMode()) {
+      case ALL:
+        processInstanceWriter.deleteProcessInstancesByProcessDefinitionKeyAndEndDateOlderThan(
+          currentProcessDefinitionKey,
+          endDateFilter
+        );
+        break;
+      case VARIABLES:
+        variableWriter.deleteAllInstanceVariablesByProcessDefinitionKeyAndEndDateOlderThan(
+          currentProcessDefinitionKey,
+          endDateFilter
+        );
+        break;
+      default:
+        throw new IllegalStateException("Unsupported cleanup mode " + cleanupConfigurationForKey.getCleanupMode());
+    }
+  }
+
+  private void enforceSpecificProcessKeyConfigurationsHaveMatchIn(Set<String> allOptimizeProcessDefinitionKeys) {
+    final Set<String> processSpecificConfigurationKeys = this.configuration.getAllProcessSpecificConfigurationKeys();
+    processSpecificConfigurationKeys.removeAll(allOptimizeProcessDefinitionKeys);
+    if (processSpecificConfigurationKeys.size() > 0) {
+      final String message =
+        "History Cleanup Configuration contains process definition keys for which there is no "
+          + "process definition imported yet, aborting this cleanup run to avoid unintended data loss."
+          + "The keys without a match in the database are: " + processSpecificConfigurationKeys;
+      logger.error(message);
+      throw new OptimizeConfigurationException(message);
+    }
+  }
+
+  private Set<String> getAllOptimizeProcessDefinitionKeys() {
+    return processDefinitionReader.getProcessDefinitionsAsService()
+      .stream()
+      .map(ProcessDefinitionOptimizeDto::getKey)
+      .collect(Collectors.toSet());
   }
 
   private CronTrigger getCronTrigger() {

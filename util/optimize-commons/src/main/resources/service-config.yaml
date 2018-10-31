@@ -274,8 +274,8 @@ historyCleanup:
   # 'variables' - only delete associated variables of a process instance
   mode: 'all'
   # process definition specific configuration parameters that will overwrite the general parameters (ttl, cleanupMode)
-  # for the specific processDefinition id given as key
+  # for the specific processDefinition key
   perProcessDefinitionConfig:
-    'myId':
-      ttl: 'P2M'
-      mode: 'variables'
+  # 'myProcessDefinitionKey':
+  #   ttl: 'P2M'
+  #    mode: 'variables'

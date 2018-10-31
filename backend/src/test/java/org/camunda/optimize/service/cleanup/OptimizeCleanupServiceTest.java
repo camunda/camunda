@@ -10,6 +10,8 @@ import org.camunda.optimize.service.util.configuration.CleanupMode;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.OptimizeCleanupConfiguration;
 import org.camunda.optimize.service.util.configuration.ProcessDefinitionCleanupConfiguration;
+import org.hamcrest.CoreMatchers;
+import org.hamcrest.MatcherAssert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -28,6 +30,8 @@ import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.toList;
 import static java.util.stream.Collectors.toMap;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
@@ -173,7 +177,7 @@ public class OptimizeCleanupServiceTest {
   }
 
   @Test
-  public void testCleanupRunOnceforEveryProcessDefinitionKey() {
+  public void testCleanupRunOnceForEveryProcessDefinitionKey() {
     // given
     final List<String> processDefinitionKeys = generateRandomProcessDefinitionsKeys(3);
     // mock returns keys twice (in reality they have different versions but that doesn't matter for the test)
@@ -185,6 +189,31 @@ public class OptimizeCleanupServiceTest {
 
     //then
     assertDeleteProcessInstancesExecutedFor(processDefinitionKeys, getCleanupConfig().getDefaultTtl());
+  }
+
+  @Test
+  public void testFailCleanupOnSpecificKeyConfigWithNoMatchingProcessDefinition() {
+    // given I have a key specific config
+    final String configuredKey = "myMistypedKey";
+    getCleanupConfig().getProcessDefinitionSpecificConfiguration().put(
+      configuredKey,
+      new ProcessDefinitionCleanupConfiguration(CleanupMode.VARIABLES)
+    );
+    // and this key is not present in the known process definition keys
+    generateRandomProcessDefinitionsKeys(3);
+
+    //when I run the cleanup
+    final OptimizeCleanupService underTest = createOptimizeCleanupServiceToTest();
+    OptimizeConfigurationException expectedException = null;
+    try {
+      underTest.runCleanup();
+    } catch (OptimizeConfigurationException e) {
+      expectedException = e;
+    }
+
+    //then it fails with an exception
+    MatcherAssert.assertThat(expectedException, CoreMatchers.is((notNullValue())));
+    MatcherAssert.assertThat(expectedException.getMessage(), containsString(configuredKey));
   }
 
   private void assertDeleteProcessInstancesExecutedFor(List<String> expectedProcessDefinitionKeys, Period expectedTtl) {

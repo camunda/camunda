@@ -108,3 +108,22 @@ serialization:
   # fetching date data from the engine(should be the same as in the engine)
   # Please note that engine prior to 7.8 use yyyy-MM-dd'T'HH:mm:ss as default date format
   engineDateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
+
+historyCleanup:
+  # switch for the cleanup, defaults to false
+  enabled: false
+  # cron expression for when the cleanup should run
+  cronTrigger: '0 1 * * *'
+  # time to live (ttl) for process instance data, from when reached the process instance will get cleaned up
+  # Format is ISO_8601 duration  https://en.wikipedia.org/wiki/ISO_8601#Durations
+  ttl: 'P2Y'
+  # type of cleanup to perform, possible values:
+  # 'all' - delete everything related to the process instance
+  # 'variables' - only delete associated variables of a process instance
+  mode: 'all'
+  # process definition specific configuration parameters that will overwrite the general parameters (ttl, cleanupMode)
+  # for the specific processDefinition key
+  perProcessDefinitionConfig:
+  # 'myProcessDefinitionKey':
+  #   ttl: 'P2M'
+  #    mode: 'variables'

@@ -61,7 +61,7 @@ public class FinishedProcessInstanceWriter {
 
   public void deleteProcessInstancesByProcessDefinitionKeyAndEndDateOlderThan(final String processDefinitionKey,
                                                                               final OffsetDateTime endDate) {
-    logger.debug(
+    logger.info(
       "Deleting process instances for processDefinitionKey {} and endDate past {}",
       processDefinitionKey,
       endDate

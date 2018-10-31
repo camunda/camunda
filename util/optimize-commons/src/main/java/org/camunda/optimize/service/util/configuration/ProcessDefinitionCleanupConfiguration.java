@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.Period;
-import java.util.Optional;
 
 @JsonIgnoreProperties(ignoreUnknown = false)
 public class ProcessDefinitionCleanupConfiguration {
@@ -29,11 +28,11 @@ public class ProcessDefinitionCleanupConfiguration {
     this.cleanupMode = cleanupMode;
   }
 
-  public Optional<Period> getTtl() {
-    return Optional.ofNullable(ttl);
+  public Period getTtl() {
+    return ttl;
   }
 
-  public Optional<CleanupMode> getCleanupMode() {
-    return Optional.ofNullable(cleanupMode);
+  public CleanupMode getCleanupMode() {
+    return cleanupMode;
   }
 }

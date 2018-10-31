@@ -2,6 +2,7 @@ package org.camunda.optimize.service.es.writer.variable;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.variable.VariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.value.BooleanVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.value.DateVariableDto;
@@ -33,6 +34,7 @@ import java.text.MessageFormat;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -48,7 +50,9 @@ import static org.camunda.optimize.service.util.VariableHelper.isStringType;
 import static org.camunda.optimize.service.util.VariableHelper.isVariableTypeSupported;
 import static org.camunda.optimize.service.util.VariableHelper.variableTypeToFieldLabel;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
+import static org.elasticsearch.index.query.QueryBuilders.scriptQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
 @Component
@@ -97,7 +101,7 @@ public abstract class VariableWriter {
 
   public void deleteAllInstanceVariablesByProcessDefinitionKeyAndEndDateOlderThan(final String processDefinitionKey,
                                                                                   final OffsetDateTime endDate) {
-    logger.debug(
+    logger.info(
       "Deleting variables of process instances for processDefinitionKey {} and endDate past {}",
       processDefinitionKey,
       endDate
@@ -106,6 +110,9 @@ public abstract class VariableWriter {
     final BoolQueryBuilder filterQuery = boolQuery()
       .filter(termQuery(ProcessInstanceType.PROCESS_DEFINITION_KEY, processDefinitionKey))
       .filter(rangeQuery(ProcessInstanceType.END_DATE).lt(dateTimeFormatter.format(endDate)));
+
+    addAtLeastOneVariableArrayNotEmptyNestedFilters(filterQuery);
+
     final BulkByScrollResponse response = UpdateByQueryAction.INSTANCE.newRequestBuilder(esClient)
       .source(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
       .script(createVariableClearScript(VariableHelper.getAllVariableTypeFieldLabels()))
@@ -121,7 +128,23 @@ public abstract class VariableWriter {
 
   }
 
-  protected Script createVariableClearScript(String[] variableFieldNames) {
+  protected static void addAtLeastOneVariableArrayNotEmptyNestedFilters(final BoolQueryBuilder queryBuilder) {
+    final BoolQueryBuilder innerBoolQuery = boolQuery();
+    innerBoolQuery.minimumShouldMatch(1);
+
+    Arrays.stream(VariableHelper.getAllVariableTypeFieldLabels())
+      .forEach(variableName -> innerBoolQuery.should(
+        nestedQuery(
+          variableName,
+          scriptQuery(new Script(MessageFormat.format("doc[''{0}.id''].length > 0", variableName))),
+          ScoreMode.None
+        )
+      ));
+
+    queryBuilder.filter(innerBoolQuery);
+  }
+
+  protected static Script createVariableClearScript(String[] variableFieldNames) {
     final StringBuilder builder = new StringBuilder();
     for (String variableField : variableFieldNames) {
       builder.append(
