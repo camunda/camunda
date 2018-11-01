@@ -14,9 +14,8 @@ import {
 } from 'modules/constants';
 
 import Actions from './Actions';
-import ActionSpinner from './ActionSpinner';
+import ActionStatus from './ActionStatus';
 import ActionItems from './ActionItems';
-import StatusItems from './StatusItems';
 
 import * as Styled from './styled';
 import * as service from './service';
@@ -55,39 +54,35 @@ describe('Actions', () => {
     expect(node).toMatchSnapshot();
   });
 
-  it('should render action buttons ', () => {
+  it('should pass props to the status component', () => {
     // when
-    mockInstance = createInstance({operations: []});
-
-    node = shallow(<Actions instance={mockInstance} />);
-    // then
-    expect(node.find(ActionItems)).toExist();
-  });
-
-  it('should pass the operationState to the spinner component', () => {
-    // when
-    mockOperation = createOperation({state: OPERATION_STATE.SCHEDULED});
+    mockOperation = createOperation({
+      state: OPERATION_STATE.SCHEDULED,
+      type: OPERATION_TYPE.CANCEL
+    });
     mockInstance = createInstance({operations: [mockOperation]});
     node = shallow(<Actions instance={mockInstance} />);
 
     //then
-    expect(node.find(ActionSpinner).props().operationState).toBe(
+    expect(node.find(ActionStatus).props().operationState).toBe(
       OPERATION_STATE.SCHEDULED
+    );
+
+    expect(node.find(ActionStatus).props().operationType).toBe(
+      OPERATION_TYPE.CANCEL
     );
   });
 
-  it('should render a failed action icon', () => {
-    // when
-    mockOperation = createOperation({state: OPERATION_STATE.FAILED});
-    mockInstance = createInstance({operations: [mockOperation]});
-    node = shallow(<Actions instance={mockInstance} />);
-
-    expect(node.find(StatusItems)).toExist();
-    expect(node.find(StatusItems.Item)).toExist();
-    expect(node.find(StatusItems.Item).props().type).toBe(mockOperation.type);
-  });
-
   describe('Action Buttons', () => {
+    it('should render action buttons ', () => {
+      // when
+      mockInstance = createInstance({operations: []});
+
+      node = shallow(<Actions instance={mockInstance} />);
+      // then
+      expect(node.find(ActionItems)).toExist();
+    });
+
     describe('retry', () => {
       beforeEach(() => {
         mockInstance = createInstance({state: INSTANCE_STATE.INCIDENT});

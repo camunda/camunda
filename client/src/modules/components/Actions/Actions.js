@@ -4,9 +4,8 @@ import PropTypes from 'prop-types';
 import {OPERATION_TYPE, OPERATION_STATE} from 'modules/constants';
 import {applyOperation} from 'modules/api/instances';
 
-import ActionSpinner from './ActionSpinner';
+import ActionStatus from './ActionStatus';
 import ActionItems from './ActionItems';
-import StatusItems from './StatusItems';
 
 import {
   wrapIdinQuery,
@@ -65,13 +64,6 @@ export default class Actions extends React.Component {
     );
   };
 
-  renderFailedStatus = () =>
-    this.state.operationState === OPERATION_STATE.FAILED && (
-      <StatusItems>
-        <StatusItems.Item type={this.state.operationType} />
-      </StatusItems>
-    );
-
   renderItem = operationType => (
     <ActionItems.Item
       type={operationType}
@@ -90,11 +82,11 @@ export default class Actions extends React.Component {
   render() {
     return (
       <Styled.Actions>
-        <ActionSpinner
+        <ActionStatus
           operationState={this.state.operationState}
+          operationType={this.state.operationType}
           selected={this.props.selected}
         />
-        {this.renderFailedStatus()}
         {this.renderActionButtons()}
       </Styled.Actions>
     );
