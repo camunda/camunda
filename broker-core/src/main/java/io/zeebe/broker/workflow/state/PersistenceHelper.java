@@ -21,6 +21,8 @@ import io.zeebe.broker.Loggers;
 import io.zeebe.logstreams.state.StateController;
 import io.zeebe.util.buffer.BufferReader;
 import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.rocksdb.ColumnFamilyHandle;
 
 public class PersistenceHelper {
@@ -28,9 +30,11 @@ public class PersistenceHelper {
   public static final byte[] EXISTENCE = new byte[] {1};
 
   private final StateController rocksDbWrapper;
+  private final MutableDirectBuffer valueBuffer;
 
   public PersistenceHelper(StateController rocksDbWrapper) {
     this.rocksDbWrapper = rocksDbWrapper;
+    this.valueBuffer = new ExpandableArrayBuffer();
   }
 
   public <T extends BufferReader> T getValueInstance(
@@ -38,8 +42,7 @@ public class PersistenceHelper {
       ColumnFamilyHandle handle,
       DirectBuffer keyBuffer,
       int keyOffset,
-      int keyLength,
-      DirectBuffer valueBuffer) {
+      int keyLength) {
     final int valueLength = valueBuffer.capacity();
     final int readBytes =
         rocksDbWrapper.get(
@@ -53,7 +56,7 @@ public class PersistenceHelper {
 
     if (readBytes >= valueLength) {
       valueBuffer.checkLimit(readBytes);
-      return getValueInstance(clazz, handle, keyBuffer, keyOffset, keyLength, valueBuffer);
+      return getValueInstance(clazz, handle, keyBuffer, keyOffset, keyLength);
     } else if (readBytes <= 0) {
       return null;
     } else {
@@ -65,6 +68,24 @@ public class PersistenceHelper {
         Loggers.STREAM_PROCESSING.error("Error in instantiating class " + clazz.getName(), ex);
         return null;
       }
+    }
+  }
+
+  public <T extends BufferReader> boolean readInto(
+      T valueReader, ColumnFamilyHandle handle, byte[] key, int keyOffset, int keyLength) {
+    final int valueLength = valueBuffer.capacity();
+    final int readBytes =
+        rocksDbWrapper.get(
+            handle, key, keyOffset, keyLength, valueBuffer.byteArray(), 0, valueLength);
+
+    if (readBytes >= valueLength) {
+      valueBuffer.checkLimit(readBytes);
+      return readInto(valueReader, handle, key, keyOffset, keyLength);
+    } else if (readBytes <= 0) {
+      return false;
+    } else {
+      valueReader.wrap(valueBuffer, 0, readBytes);
+      return true;
     }
   }
 }

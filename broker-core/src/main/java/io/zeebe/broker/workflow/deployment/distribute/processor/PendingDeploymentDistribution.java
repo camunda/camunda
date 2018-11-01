@@ -28,7 +28,6 @@ import org.agrona.MutableDirectBuffer;
 
 public class PendingDeploymentDistribution implements BufferReader, BufferWriter {
 
-  private static final int POSITION_OFFSET = 0;
   private static final int DEPLOYMENT_LENGTH_OFFSET = SIZE_OF_LONG;
   private static final int DEPLOYMENT_OFFSET = DEPLOYMENT_LENGTH_OFFSET + SIZE_OF_INT;
 
@@ -59,9 +58,13 @@ public class PendingDeploymentDistribution implements BufferReader, BufferWriter
 
   @Override
   public void wrap(DirectBuffer buffer, int offset, int length) {
-    this.sourcePosition = buffer.getLong(POSITION_OFFSET, STATE_BYTE_ORDER);
-    final int deploymentSize = buffer.getInt(DEPLOYMENT_LENGTH_OFFSET, STATE_BYTE_ORDER);
-    deployment.wrap(buffer, DEPLOYMENT_OFFSET, deploymentSize);
+    this.sourcePosition = buffer.getLong(offset, STATE_BYTE_ORDER);
+    offset += Long.BYTES;
+
+    final int deploymentSize = buffer.getInt(offset, STATE_BYTE_ORDER);
+    offset += Integer.BYTES;
+
+    deployment.wrap(buffer, offset, deploymentSize);
   }
 
   @Override
@@ -73,10 +76,17 @@ public class PendingDeploymentDistribution implements BufferReader, BufferWriter
 
   @Override
   public void write(MutableDirectBuffer buffer, int offset) {
-    final int deploymentSize = deployment.capacity();
+    final int startOffset = offset;
+    buffer.putLong(offset, sourcePosition, STATE_BYTE_ORDER);
+    offset += Long.BYTES;
 
-    buffer.putLong(offset + POSITION_OFFSET, sourcePosition, STATE_BYTE_ORDER);
-    buffer.putInt(offset + DEPLOYMENT_LENGTH_OFFSET, deploymentSize, STATE_BYTE_ORDER);
-    buffer.putBytes(offset + DEPLOYMENT_OFFSET, deployment, 0, deploymentSize);
+    final int deploymentSize = deployment.capacity();
+    buffer.putInt(offset, deploymentSize, STATE_BYTE_ORDER);
+    offset += Integer.BYTES;
+
+    buffer.putBytes(offset, deployment, 0, deploymentSize);
+    offset += deploymentSize;
+
+    assert (startOffset + getLength()) == offset;
   }
 }
