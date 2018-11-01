@@ -14,11 +14,6 @@
   .ProgressBar__range {
     border-left: 2px solid #3151af;
     border-right: 2px solid #91b5c1;
-
-    &.flippedColors {
-      border-left: 2px solid #91b5c1;
-      border-right: 2px solid #3151af;
-    }
   }
 
   .ProgressBar__range--belowBase {
@@ -40,7 +35,7 @@
     height: 100%;
     position: absolute;
     color: #b5152b;
-    background: lightBlue;
+    background: royalblue;
     z-index: 1;
 
     .goalLabel {
@@ -89,6 +84,10 @@
 .ProgressBar--filled {
   height: 100%;
   background-color: royalblue;
+
+  &.goalExceeded {
+    background-color: darkblue;
+  }
 }
 
 .ProgressBar__range {
@@ -100,9 +99,8 @@
   padding-right: 5px;
   font-size: 1.3em;
 
-  &.flippedColors {
-    border-left: 2px solid lightBlue;
-    border-right: 2px solid royalblue;
+  &.goalExceeded {
+    border-right: 2px solid darkblue;
   }
 }
 

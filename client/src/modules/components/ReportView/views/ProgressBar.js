@@ -23,17 +23,20 @@ export default function ProgressBar({min, max, value, formatter}) {
         </div>
       )}
       <div className="ProgressBar__label">{formatter(value)}</div>
-      <div className="ProgressBar--filled" style={{width: `${relative * 100}%`}} />
+      <div
+        className={classnames('ProgressBar--filled', {goalExceeded})}
+        style={{width: `${relative * 100}%`}}
+      />
       <div
         className={classnames('ProgressBar__range', {
           'ProgressBar__range--belowBase': value <= min,
           'ProgressBar__range--aboveTarget': value >= max,
-          flippedColors: goalExceeded
+          goalExceeded
         })}
       >
         {formatter(min)}
         <span className="ProgressBar__range--right">
-          {goalExceeded ? formatter(value) : 'Goal:' + max}
+          {goalExceeded ? formatter(value) : 'Goal: ' + max}
         </span>
       </div>
     </div>
