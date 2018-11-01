@@ -49,6 +49,12 @@ public class OptimizeCleanupServiceIT {
     .outerRule(elasticSearchRule).around(engineRule).around(embeddedOptimizeRule).around(engineDatabaseRule);
 
   @Test
+  public void verifyCleanupDisabledByDefault() {
+    assertThat(getCleanupConfiguration().getEnabled(), is(false));
+    assertThat(embeddedOptimizeRule.getCleanupService().isScheduledToRun(), is(false));
+  }
+
+  @Test
   public void testCleanupWithProcessInstanceDelete() throws SQLException {
     // given
     getCleanupConfiguration().setDefaultMode(CleanupMode.ALL);

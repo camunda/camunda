@@ -65,6 +65,10 @@ public class OptimizeCleanupService {
     }
   }
 
+  public boolean isScheduledToRun() {
+    return this.scheduledTrigger != null;
+  }
+
   @PreDestroy
   public synchronized void stopCleanupScheduling() {
     if (scheduledTrigger != null) {
