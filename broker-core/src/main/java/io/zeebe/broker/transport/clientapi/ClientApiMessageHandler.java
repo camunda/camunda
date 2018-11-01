@@ -37,6 +37,7 @@ import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.protocol.intent.Intent;
 import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerMessageHandler;
 import io.zeebe.transport.ServerOutput;
@@ -137,7 +138,7 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
     }
 
     eventMetadata.recordType(RecordType.COMMAND);
-    eventMetadata.intent(intent);
+    eventMetadata.intent(Intent.fromProtocolValue(eventType, intent));
     eventMetadata.valueType(eventType);
 
     logStreamWriter.wrap(partition.getLogStream());

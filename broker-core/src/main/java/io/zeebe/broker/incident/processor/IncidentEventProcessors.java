@@ -15,22 +15,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.processor.message;
+package io.zeebe.broker.incident.processor;
 
+import io.zeebe.broker.logstreams.processor.TypedEventStreamProcessorBuilder;
 import io.zeebe.broker.logstreams.state.ZeebeState;
-import io.zeebe.broker.workflow.model.element.ExecutableIntermediateCatchElement;
-import io.zeebe.broker.workflow.processor.BpmnStepContext;
-import io.zeebe.broker.workflow.processor.flownode.TerminateFlowNodeHandler;
+import io.zeebe.broker.workflow.processor.BpmnStepProcessor;
+import io.zeebe.protocol.clientapi.ValueType;
+import io.zeebe.protocol.intent.IncidentIntent;
 
-public class TerminateIntermediateMessageHandler
-    extends TerminateFlowNodeHandler<ExecutableIntermediateCatchElement> {
+public class IncidentEventProcessors {
 
-  public TerminateIntermediateMessageHandler(final ZeebeState zeebeState) {
-    super(zeebeState.getIncidentState());
-  }
-
-  @Override
-  protected void terminate(BpmnStepContext<ExecutableIntermediateCatchElement> context) {
-    context.getCatchEventOutput().unsubscribeFromMessageEvent(context);
+  public static void addProcessors(
+      TypedEventStreamProcessorBuilder typedEventStreamProcessorBuilder,
+      ZeebeState zeebeState,
+      BpmnStepProcessor bpmnStepProcessor) {
+    typedEventStreamProcessorBuilder
+        .onCommand(
+            ValueType.INCIDENT, IncidentIntent.CREATE, new CreateIncidentProcessor(zeebeState))
+        .onCommand(
+            ValueType.INCIDENT,
+            IncidentIntent.RESOLVE,
+            new ResolveIncidentProcessor(bpmnStepProcessor, zeebeState));
   }
 }

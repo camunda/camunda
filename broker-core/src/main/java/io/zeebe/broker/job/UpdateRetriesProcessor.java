@@ -36,11 +36,10 @@ public class UpdateRetriesProcessor implements CommandProcessor<JobRecord> {
     final long key = command.getKey();
     final int retries = command.getValue().getRetries();
 
-    if (state.isInState(command.getKey(), State.FAILED)) {
+    if (state.isInState(key, State.FAILED)) {
       if (retries > 0) {
-        final JobRecord failedJob = state.getJob(command.getKey());
+        final JobRecord failedJob = state.getJob(key);
         failedJob.setRetries(retries);
-        state.resolve(key, failedJob);
         commandControl.accept(JobIntent.RETRIES_UPDATED, failedJob);
       } else {
         commandControl.reject(RejectionType.BAD_VALUE, "Job retries must be positive");

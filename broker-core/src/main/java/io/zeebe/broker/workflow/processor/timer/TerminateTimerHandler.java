@@ -17,12 +17,18 @@
  */
 package io.zeebe.broker.workflow.processor.timer;
 
+import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.workflow.model.element.ExecutableIntermediateCatchElement;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.flownode.TerminateFlowNodeHandler;
 
 public class TerminateTimerHandler
     extends TerminateFlowNodeHandler<ExecutableIntermediateCatchElement> {
+
+  public TerminateTimerHandler(ZeebeState zeebeState) {
+    super(zeebeState.getIncidentState());
+  }
+
   @Override
   protected void terminate(BpmnStepContext<ExecutableIntermediateCatchElement> context) {
     context

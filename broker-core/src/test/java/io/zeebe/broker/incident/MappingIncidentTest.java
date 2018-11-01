@@ -23,6 +23,9 @@ import static io.zeebe.broker.incident.IncidentAssert.assertIncidentRecordValue;
 import static io.zeebe.broker.test.MsgPackConstants.MSGPACK_PAYLOAD;
 import static io.zeebe.broker.test.MsgPackConstants.NODE_STRING_PATH;
 import static io.zeebe.broker.workflow.WorkflowAssert.assertWorkflowInstancePayload;
+import static io.zeebe.protocol.intent.IncidentIntent.CREATED;
+import static io.zeebe.protocol.intent.IncidentIntent.RESOLVE;
+import static io.zeebe.protocol.intent.IncidentIntent.RESOLVED;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -219,11 +222,13 @@ public class MappingIncidentTest {
         testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
     assertWorkflowInstancePayload(followUpEvent, "{'foo':'bar'}");
 
-    final Record<IncidentRecordValue> incidentResolvedEvent =
-        testClient.receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
+    final Record incidentResolveCommand = testClient.receiveFirstIncidentCommand(RESOLVE);
+    final Record incidentResolvedEvent = testClient.receiveFirstIncidentEvent(RESOLVED);
     assertThat(incidentResolvedEvent.getKey()).isEqualTo(incidentEvent.getKey());
-    assertThat(incidentResolvedEvent.getSourceRecordPosition())
-        .isEqualTo((followUpEvent).getPosition());
+    assertThat(incidentResolveCommand.getPosition())
+        .isEqualTo(followUpEvent.getSourceRecordPosition());
+    assertThat(incidentResolveCommand.getPosition())
+        .isEqualTo(incidentResolvedEvent.getSourceRecordPosition());
 
     assertIOMappingIncidentWithNoData(workflowInstanceKey, followUpEvent, incidentResolvedEvent);
   }
@@ -249,11 +254,13 @@ public class MappingIncidentTest {
         testClient.receiveFirstWorkflowInstanceEvent(ELEMENT_COMPLETED);
     assertWorkflowInstancePayload(followUpEvent, "{'foo':'bar'}");
 
-    final Record incidentResolvedEvent =
-        testClient.receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
+    final Record incidentResolveCommand = testClient.receiveFirstIncidentCommand(RESOLVE);
+    final Record incidentResolvedEvent = testClient.receiveFirstIncidentEvent(RESOLVED);
     assertThat(incidentResolvedEvent.getKey()).isEqualTo(incidentEvent.getKey());
-    assertThat(incidentResolvedEvent.getSourceRecordPosition())
-        .isEqualTo(followUpEvent.getPosition());
+    assertThat(incidentResolveCommand.getPosition())
+        .isEqualTo(followUpEvent.getSourceRecordPosition());
+    assertThat(incidentResolveCommand.getPosition())
+        .isEqualTo(incidentResolvedEvent.getSourceRecordPosition());
 
     assertIOMappingIncidentWithNoData(workflowInstanceKey, followUpEvent, incidentResolvedEvent);
   }
@@ -305,7 +312,7 @@ public class MappingIncidentTest {
     assertWorkflowInstancePayload(followUpEvent, "{'obj':'test'}");
 
     final Record<IncidentRecordValue> incidentResolvedEvent =
-        testClient.receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
+        testClient.receiveFirstIncidentEvent(RESOLVED);
     assertThat(incidentResolvedEvent.getKey()).isEqualTo(incidentEvent.getKey());
     assertIncidentRecordValue(
         ErrorType.IO_MAPPING_ERROR.name(),
@@ -376,8 +383,7 @@ public class MappingIncidentTest {
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_COMPLETED);
     assertWorkflowInstancePayload(followUpEvent, "{'obj':'test'}");
 
-    final Record incidentResolvedEvent =
-        testClient.receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
+    final Record incidentResolvedEvent = testClient.receiveFirstIncidentEvent(RESOLVED);
     assertThat(incidentResolvedEvent.getKey()).isEqualTo(incidentEvent.getKey());
     assertIncidentRecordValue(
         ErrorType.IO_MAPPING_ERROR.name(),
@@ -446,8 +452,7 @@ public class MappingIncidentTest {
         testClient.receiveFirstWorkflowInstanceEvent(ELEMENT_COMPLETED);
     assertWorkflowInstancePayload(followUpEvent, "{'obj':'test'}");
 
-    final Record incidentResolvedEvent =
-        testClient.receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
+    final Record incidentResolvedEvent = testClient.receiveFirstIncidentEvent(RESOLVED);
     assertThat(incidentResolvedEvent.getKey()).isEqualTo(incidentEvent.getKey());
 
     assertIOMappingIncidentWithNoData(
@@ -502,8 +507,7 @@ public class MappingIncidentTest {
         testClient.receiveFirstWorkflowInstanceEvent(ELEMENT_COMPLETED);
     assertWorkflowInstancePayload(followUpEvent, "{'obj':'test'}");
 
-    final Record incidentResolvedEvent =
-        testClient.receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
+    final Record incidentResolvedEvent = testClient.receiveFirstIncidentEvent(RESOLVED);
     assertThat(incidentResolvedEvent.getKey()).isEqualTo(incidentEvent.getKey());
 
     assertIncidentRecordValue(
@@ -516,7 +520,7 @@ public class MappingIncidentTest {
   }
 
   @Test
-  public void shouldFailToResolveIncident() {
+  public void shouldCreateNewIncidentAfterResolvedFirstOne() {
     // given
     final BpmnModelInstance modelInstance =
         Bpmn.createExecutableProcess("process")
@@ -546,8 +550,14 @@ public class MappingIncidentTest {
 
     // then
     final Record<IncidentRecordValue> resolveFailedEvent =
-        testClient.receiveFirstIncidentEvent(IncidentIntent.RESOLVE_FAILED);
+        testClient.receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
     assertThat(resolveFailedEvent.getKey()).isEqualTo(incidentEvent.getKey());
+
+    testClient
+        .receiveIncidents()
+        .skipUntil(e -> e.getMetadata().getIntent() == RESOLVED)
+        .withIntent(IncidentIntent.CREATED)
+        .getFirst();
 
     assertIncidentRecordValue(
         ErrorType.IO_MAPPING_ERROR.name(),
@@ -567,24 +577,35 @@ public class MappingIncidentTest {
 
     final Record failureEvent =
         testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_READY);
-    final Record incidentEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
+    final Record firstIncident = testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
     testClient.updatePayload(failureEvent.getKey(), MsgPackHelper.EMTPY_OBJECT);
-    testClient.receiveFirstIncidentEvent(IncidentIntent.RESOLVE_FAILED);
+    testClient.receiveFirstIncidentEvent(RESOLVED);
+    testClient
+        .receiveIncidents()
+        .skipUntil(e -> e.getMetadata().getIntent() == RESOLVED)
+        .withIntent(IncidentIntent.CREATED)
+        .getFirst();
 
     // when
     testClient.updatePayload(failureEvent.getKey(), PAYLOAD);
 
     // then
-    final Record incidentResolvedEvent =
-        testClient.receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
-    assertThat(incidentResolvedEvent.getKey()).isEqualTo(incidentEvent.getKey());
+    final Record secondResolvedIncident =
+        testClient
+            .receiveIncidents()
+            .skipUntil(e -> e.getMetadata().getIntent() == RESOLVED)
+            .skipUntil(e -> e.getMetadata().getIntent() == CREATED)
+            .withIntent(RESOLVED)
+            .getFirst();
+
+    assertThat(secondResolvedIncident.getKey()).isGreaterThan(firstIncident.getKey());
     assertIncidentRecordValue(
         ErrorType.IO_MAPPING_ERROR.name(),
         "No data found for query $.foo.",
         workflowInstanceKey,
         "failingTask",
         failureEvent,
-        incidentEvent);
+        firstIncident);
   }
 
   @Test
@@ -611,12 +632,12 @@ public class MappingIncidentTest {
 
     // then
     final Record incidentResolvedEvent =
-        testClient.receiveFirstIncidentEvent(workflowInstanceKey, IncidentIntent.RESOLVED);
+        testClient.receiveFirstIncidentEvent(workflowInstanceKey, RESOLVED);
     assertThat(incidentResolvedEvent.getKey()).isEqualTo(incidentEvent.getKey());
   }
 
   @Test
-  public void shouldDeleteIncidentIfActivityTerminated() {
+  public void shouldResolveIncidentIfActivityTerminated() {
     // given
     testClient.deploy(WORKFLOW_INPUT_MAPPING);
 
@@ -629,26 +650,23 @@ public class MappingIncidentTest {
     testClient.cancelWorkflowInstance(workflowInstanceKey);
 
     // then
-    final Record activityTerminated =
-        testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_TERMINATED);
-    final Record deleteIncidentCommand =
-        testClient.receiveFirstIncidentCommand(IncidentIntent.DELETE);
-    final Record<IncidentRecordValue> incidentEvent =
-        testClient.receiveFirstIncidentEvent(IncidentIntent.DELETED);
+    final Record activityTerminating =
+        testClient.receiveFirstWorkflowInstanceEvent(
+            workflowInstanceKey, "failingTask", WorkflowInstanceIntent.ELEMENT_TERMINATING);
+    final Record<IncidentRecordValue> incidentResolvedEvent =
+        testClient.receiveFirstIncidentEvent(RESOLVED);
 
-    assertThat(incidentEvent.getKey()).isEqualTo(incidentCreatedEvent.getKey());
-    assertThat(deleteIncidentCommand.getSourceRecordPosition())
-        .isEqualTo(activityTerminated.getPosition());
-    assertThat(incidentEvent.getSourceRecordPosition())
-        .isEqualTo(deleteIncidentCommand.getPosition());
+    assertThat(incidentResolvedEvent.getKey()).isEqualTo(incidentCreatedEvent.getKey());
+    assertThat(activityTerminating.getPosition())
+        .isEqualTo(incidentResolvedEvent.getSourceRecordPosition());
 
     assertIncidentRecordValue(
         ErrorType.IO_MAPPING_ERROR.name(),
         "No data found for query $.foo.",
         workflowInstanceKey,
         "failingTask",
-        incidentEvent.getValue().getElementInstanceKey(),
-        incidentEvent);
+        incidentResolvedEvent.getValue().getElementInstanceKey(),
+        incidentResolvedEvent);
   }
 
   @Test
@@ -675,7 +693,7 @@ public class MappingIncidentTest {
 
     // then
     final Record<IncidentRecordValue> incidentEvent =
-        testClient.receiveFirstIncidentEvent(workflowInstanceKey, IncidentIntent.DELETED);
+        testClient.receiveFirstIncidentEvent(workflowInstanceKey, RESOLVED);
 
     assertThat(incidentEvent.getKey()).isEqualTo(incidentCreatedEvent.getKey());
     assertIncidentRecordValue(

@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.incident;
 
+import static io.zeebe.protocol.intent.IncidentIntent.RESOLVED;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.incident.data.ErrorType;
@@ -119,7 +120,7 @@ public class MessageIncidentTest {
   @Test
   public void shouldResolveIncidentIfCorrelationKeyNotFound() {
     // when
-    testClient.createWorkflowInstance(PROCESS_ID);
+    final long workflowInstance = testClient.createWorkflowInstance(PROCESS_ID);
 
     final Record<IncidentRecordValue> incidentCreatedRecord =
         RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst();
@@ -133,6 +134,8 @@ public class MessageIncidentTest {
                 WorkflowInstanceSubscriptionIntent.OPENED)
             .exists());
 
-    // note that the incident itself is not resolved
+    final Record incidentResolvedEvent =
+        testClient.receiveFirstIncidentEvent(workflowInstance, RESOLVED);
+    assertThat(incidentResolvedEvent.getKey()).isEqualTo(incidentCreatedRecord.getKey());
   }
 }

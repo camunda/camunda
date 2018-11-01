@@ -17,6 +17,8 @@
  */
 package io.zeebe.broker.workflow.processor.flownode;
 
+import io.zeebe.broker.incident.data.IncidentRecord;
+import io.zeebe.broker.incident.processor.IncidentState;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElement;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
@@ -26,12 +28,20 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class TerminateFlowNodeHandler<T extends ExecutableFlowElement>
     implements BpmnStepHandler<T> {
+
+  protected final IncidentState incidentState;
+
+  public TerminateFlowNodeHandler(IncidentState incidentState) {
+    this.incidentState = incidentState;
+  }
+
   @Override
   public void handle(BpmnStepContext<T> context) {
     final EventOutput output = context.getOutput();
     final ElementInstance elementInstance = context.getElementInstance();
     terminate(context);
 
+    resolveExistingIncident(context);
     if (elementInstance.isInterrupted()) {
       context
           .getCatchEventOutput()
@@ -50,4 +60,24 @@ public class TerminateFlowNodeHandler<T extends ExecutableFlowElement>
    * @param context current processor context
    */
   protected void terminate(BpmnStepContext<T> context) {}
+
+  public void resolveExistingIncident(BpmnStepContext<T> context) {
+    ElementInstance elementInstance = context.getElementInstance();
+    if (elementInstance == null) {
+      // only elements with multi state/lifecycle are represented in the zeebe state
+      // and have an corresponding element instance
+      elementInstance = context.getFlowScopeInstance();
+    }
+
+    final long elementInstanceKey = elementInstance.getKey();
+
+    final long workflowIncidentKey =
+        incidentState.getWorkflowInstanceIncidentKey(elementInstanceKey);
+
+    final boolean hasIncident = workflowIncidentKey != IncidentState.MISSING_INCIDENT;
+    if (hasIncident) {
+      final IncidentRecord incidentRecord = incidentState.getIncidentRecord(workflowIncidentKey);
+      context.getOutput().appendResolvedIncidentEvent(workflowIncidentKey, incidentRecord);
+    }
+  }
 }

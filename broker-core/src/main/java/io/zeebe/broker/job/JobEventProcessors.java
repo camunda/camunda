@@ -38,8 +38,10 @@ public class JobEventProcessors {
         .onCommand(ValueType.JOB, JobIntent.CREATE, new CreateProcessor(jobState))
         .onCommand(ValueType.JOB, JobIntent.COMPLETE, new CompleteProcessor(jobState))
         .onCommand(ValueType.JOB, JobIntent.FAIL, new FailProcessor(jobState))
+        .onEvent(ValueType.JOB, JobIntent.FAILED, new JobFailedProcessor())
         .onCommand(ValueType.JOB, JobIntent.TIME_OUT, new TimeOutProcessor(jobState))
         .onCommand(ValueType.JOB, JobIntent.UPDATE_RETRIES, new UpdateRetriesProcessor(jobState))
+        .onEvent(ValueType.JOB, JobIntent.RETRIES_UPDATED, new RetriesUpdated(zeebeState))
         .onCommand(ValueType.JOB, JobIntent.CANCEL, new CancelProcessor(jobState))
         .onCommand(
             ValueType.JOB_BATCH, JobBatchIntent.ACTIVATE, new JobBatchActivateProcessor(jobState))

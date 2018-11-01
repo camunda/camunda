@@ -397,7 +397,6 @@ public class ExporterStreamProcessorTest {
     // given
     final long elementInstanceKey = 34;
     final long workflowInstanceKey = 10;
-    final long failureEventPosition = 12;
     final String elementId = "activity";
     final String bpmnProcessId = "process";
     final String errorMessage = "error";
@@ -408,18 +407,15 @@ public class ExporterStreamProcessorTest {
         new IncidentRecord()
             .setElementInstanceKey(elementInstanceKey)
             .setWorkflowInstanceKey(workflowInstanceKey)
-            .setFailureEventPosition(failureEventPosition)
             .setElementId(wrapString(elementId))
             .setBpmnProcessId(wrapString(bpmnProcessId))
             .setErrorMessage(errorMessage)
             .setErrorType(errorType)
-            .setJobKey(jobKey)
-            .setPayload(PAYLOAD_MSGPACK);
+            .setJobKey(jobKey);
 
     final IncidentRecordValue recordValue =
         new IncidentRecordValueImpl(
             OBJECT_MAPPER,
-            PAYLOAD_JSON,
             errorType.name(),
             errorMessage,
             bpmnProcessId,

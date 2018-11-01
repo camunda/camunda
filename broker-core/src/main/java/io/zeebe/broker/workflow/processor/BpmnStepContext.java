@@ -23,7 +23,6 @@ import io.zeebe.broker.logstreams.processor.SideEffectProducer;
 import io.zeebe.broker.logstreams.processor.TypedCommandWriter;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
-import io.zeebe.broker.logstreams.processor.TypedStreamWriterImpl;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElement;
 import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.msgpack.mapping.MsgPackMergeTool;
@@ -136,18 +135,6 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
         .setErrorMessage(errorMessage);
 
     eventOutput.storeFailedToken(record);
-
-    if (!record.getMetadata().hasIncidentKey()) {
-      commandWriter.appendNewCommand(IncidentIntent.CREATE, incidentCommand);
-    } else {
-      // TODO: casting is ok for the moment; the problem is rather that we
-      // write an event (not command) for a different stream processor
-      // => https://github.com/zeebe-io/zeebe/issues/1033
-      ((TypedStreamWriterImpl) commandWriter)
-          .appendFollowUpEvent(
-              record.getMetadata().getIncidentKey(),
-              IncidentIntent.RESOLVE_FAILED,
-              incidentCommand);
-    }
+    commandWriter.appendNewCommand(IncidentIntent.CREATE, incidentCommand);
   }
 }

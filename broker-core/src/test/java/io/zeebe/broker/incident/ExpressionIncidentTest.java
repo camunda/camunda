@@ -244,7 +244,7 @@ public class ExpressionIncidentTest {
     List<Record> incidentRecords =
         testClient
             .receiveIncidents()
-            .limit(r -> r.getMetadata().getIntent() == IncidentIntent.RESOLVE_FAILED)
+            .limit(r -> r.getMetadata().getIntent() == IncidentIntent.RESOLVED)
             .collect(Collectors.toList());
 
     List<Record> workflowInstanceRecords =
@@ -259,7 +259,7 @@ public class ExpressionIncidentTest {
             RecordMetadata::getRecordType, RecordMetadata::getValueType, RecordMetadata::getIntent)
         .containsSubsequence(
             tuple(RecordType.COMMAND, ValueType.INCIDENT, IncidentIntent.RESOLVE),
-            tuple(RecordType.EVENT, ValueType.INCIDENT, IncidentIntent.RESOLVE_FAILED));
+            tuple(RecordType.EVENT, ValueType.INCIDENT, IncidentIntent.RESOLVED));
 
     assertThat(workflowInstanceRecords)
         .extracting(Record::getMetadata)
@@ -278,7 +278,8 @@ public class ExpressionIncidentTest {
     incidentRecords =
         testClient
             .receiveIncidents()
-            .skipUntil(r -> r.getMetadata().getIntent() == IncidentIntent.RESOLVE_FAILED)
+            .skipUntil(r -> r.getMetadata().getIntent() == IncidentIntent.RESOLVED)
+            .skipUntil(r -> r.getMetadata().getIntent() == IncidentIntent.CREATED)
             .limit(r -> r.getMetadata().getIntent() == IncidentIntent.RESOLVED)
             .collect(Collectors.toList());
 

@@ -26,13 +26,27 @@ import io.zeebe.util.ReflectUtil;
 
 public class CopiedTypedEvent extends TypedEventImpl {
   private final long key;
+  private final long position;
+  private final long sourcePosition;
   private final RecordMetadata metadata;
 
   CopiedTypedEvent(LoggedEvent event, UnpackedObject object) {
     this.value = object;
     this.key = event.getKey();
+    this.position = event.getPosition();
+    this.sourcePosition = event.getSourceEventPosition();
     this.metadata = new RecordMetadata();
     event.readMetadata(metadata);
+  }
+
+  @Override
+  public long getPosition() {
+    return position;
+  }
+
+  @Override
+  public long getSourceEventPosition() {
+    return sourcePosition;
   }
 
   @Override

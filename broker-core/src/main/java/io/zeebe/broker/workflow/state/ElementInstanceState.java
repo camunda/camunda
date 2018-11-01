@@ -291,6 +291,22 @@ public class ElementInstanceState {
     }
   }
 
+  public void updateFailedToken(IndexedRecord indexedRecord) {
+    final StoredRecord storedRecord = new StoredRecord(indexedRecord, Purpose.FAILED_TOKEN);
+
+    keyBuffer.putLong(0, indexedRecord.getKey(), STATE_BYTE_ORDER);
+    storedRecord.write(valueBuffer, 0);
+
+    rocksDbWrapper.put(
+        tokenEventHandle,
+        keyBuffer.byteArray(),
+        0,
+        Long.BYTES,
+        valueBuffer.byteArray(),
+        0,
+        storedRecord.getLength());
+  }
+
   public List<IndexedRecord> getFinishedTokens(long scopeKey) {
     return getTokenEvents(scopeKey, Purpose.FINISHED_TOKEN);
   }

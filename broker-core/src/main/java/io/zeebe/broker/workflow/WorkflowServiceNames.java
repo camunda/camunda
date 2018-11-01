@@ -21,8 +21,6 @@ import io.zeebe.broker.workflow.repository.WorkflowRepositoryService;
 import io.zeebe.servicecontainer.ServiceName;
 
 public class WorkflowServiceNames {
-  public static final ServiceName<WorkflowManagerService> WORKFLOW_MANAGER =
-      ServiceName.newServiceName("workflow.manager", WorkflowManagerService.class);
 
   public static final ServiceName<WorkflowRepositoryService> WORKFLOW_REPOSITORY_SERVICE =
       ServiceName.newServiceName("workflow.repository", WorkflowRepositoryService.class);

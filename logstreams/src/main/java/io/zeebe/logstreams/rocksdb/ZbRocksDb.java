@@ -26,6 +26,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -37,6 +38,7 @@ import org.rocksdb.ReadOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.RocksObject;
+import org.rocksdb.WriteOptions;
 
 /**
  * Extends {@link RocksDB} base class to expose a few protected methods, cuts down on the need for
@@ -326,6 +328,17 @@ public class ZbRocksDb extends RocksDB {
     return new ZbRocksIterator(
         this,
         iteratorCF(nativeHandle_, getNativeHandle(columnFamily), getNativeHandle(readOptions)));
+  }
+
+  public void batch(Consumer<ZbWriteBatch> batchConsumer) {
+    try (WriteOptions options = new WriteOptions();
+        ZbWriteBatch batch = new ZbWriteBatch()) {
+
+      batchConsumer.accept(batch);
+      write(options, batch);
+    } catch (RocksDBException e) {
+      throw new RuntimeException(e);
+    }
   }
 
   private void setKey(final long key) {

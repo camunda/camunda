@@ -18,12 +18,11 @@
 package io.zeebe.broker.exporter.record.value;
 
 import io.zeebe.broker.exporter.ExporterObjectMapper;
-import io.zeebe.broker.exporter.record.RecordValueWithPayloadImpl;
+import io.zeebe.broker.exporter.record.RecordValueImpl;
 import io.zeebe.exporter.record.value.IncidentRecordValue;
 import java.util.Objects;
 
-public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl
-    implements IncidentRecordValue {
+public class IncidentRecordValueImpl extends RecordValueImpl implements IncidentRecordValue {
   private final String errorType;
   private final String errorMessage;
   private final String bpmnProcessId;
@@ -34,7 +33,6 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl
 
   public IncidentRecordValueImpl(
       final ExporterObjectMapper objectMapper,
-      final String payload,
       final String errorType,
       final String errorMessage,
       final String bpmnProcessId,
@@ -42,7 +40,7 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl
       final long workflowInstanceKey,
       final long elementInstanceKey,
       final long jobKey) {
-    super(objectMapper, payload);
+    super(objectMapper);
     this.errorType = errorType;
     this.errorMessage = errorMessage;
     this.bpmnProcessId = bpmnProcessId;
@@ -95,9 +93,7 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl
     if (o == null || getClass() != o.getClass()) {
       return false;
     }
-    if (!super.equals(o)) {
-      return false;
-    }
+
     final IncidentRecordValueImpl that = (IncidentRecordValueImpl) o;
     return workflowInstanceKey == that.workflowInstanceKey
         && elementInstanceKey == that.elementInstanceKey
@@ -142,9 +138,6 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl
         + elementInstanceKey
         + ", jobKey="
         + jobKey
-        + ", payload='"
-        + payload
-        + '\''
         + '}';
   }
 }

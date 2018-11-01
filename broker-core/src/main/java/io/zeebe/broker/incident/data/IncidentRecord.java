@@ -19,7 +19,6 @@ package io.zeebe.broker.incident.data;
 
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.property.DocumentProperty;
 import io.zeebe.msgpack.property.EnumProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
@@ -37,8 +36,6 @@ public class IncidentRecord extends UnpackedObject {
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
   private final LongProperty jobKeyProp = new LongProperty("jobKey", -1L);
 
-  private final DocumentProperty payloadProp = new DocumentProperty("payload");
-
   public IncidentRecord() {
     this.declareProperty(errorTypeProp)
         .declareProperty(errorMessageProp)
@@ -46,8 +43,7 @@ public class IncidentRecord extends UnpackedObject {
         .declareProperty(workflowInstanceKeyProp)
         .declareProperty(elementIdProp)
         .declareProperty(elementInstanceKeyProp)
-        .declareProperty(jobKeyProp)
-        .declareProperty(payloadProp);
+        .declareProperty(jobKeyProp);
   }
 
   public ErrorType getErrorType() {
@@ -110,15 +106,6 @@ public class IncidentRecord extends UnpackedObject {
 
   public IncidentRecord setJobKey(long jobKey) {
     this.jobKeyProp.setValue(jobKey);
-    return this;
-  }
-
-  public DirectBuffer getPayload() {
-    return this.payloadProp.getValue();
-  }
-
-  public IncidentRecord setPayload(DirectBuffer payload) {
-    this.payloadProp.setValue(payload);
     return this;
   }
 

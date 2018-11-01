@@ -26,6 +26,7 @@ import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.IncidentRecordValue;
 import io.zeebe.exporter.record.value.JobRecordValue;
+import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.clientapi.RecordType;
@@ -109,7 +110,7 @@ public class JobFailIncidentTest {
   }
 
   @Test
-  public void shouldDeleteIncidentIfJobRetriesIncreased() {
+  public void shouldResolveIncidentIfJobRetriesIncreased() {
     // given
     testClient.deploy(WORKFLOW_INPUT_MAPPING);
 
@@ -125,7 +126,7 @@ public class JobFailIncidentTest {
     final Record jobUpdated = testClient.receiveFirstJobEvent(JobIntent.RETRIES_UPDATED);
     final Record activityEvent =
         testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
-    Record incidentEvent = testClient.receiveFirstIncidentCommand(IncidentIntent.DELETE);
+    Record incidentEvent = testClient.receiveFirstIncidentCommand(IncidentIntent.RESOLVE);
 
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
     assertThat(incidentEvent.getSourceRecordPosition()).isEqualTo(jobUpdated.getPosition());
@@ -139,7 +140,7 @@ public class JobFailIncidentTest {
         incidentEvent);
 
     final long lastPos = incidentEvent.getPosition();
-    incidentEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.DELETED);
+    incidentEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
 
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
     assertThat(incidentEvent.getSourceRecordPosition()).isEqualTo(lastPos);
@@ -169,32 +170,25 @@ public class JobFailIncidentTest {
     testClient.cancelWorkflowInstance(workflowInstanceKey);
 
     // then
-    final Record jobEvent = testClient.receiveFirstJobEvent(JobIntent.CANCELED);
-    Record<IncidentRecordValue> incidentEvent =
-        testClient.receiveFirstIncidentCommand(IncidentIntent.DELETE);
+    final Record<WorkflowInstanceRecordValue> terminatingTask =
+        testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_TERMINATING);
+    final Record jobCancelCommand = testClient.receiveFirstJobCommand(JobIntent.CANCEL);
+    final Record<IncidentRecordValue> resolvedIncidentEvent =
+        testClient.receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
 
-    assertThat(incidentEvent.getKey()).isEqualTo(incidentCreatedEvent.getKey());
-    assertThat(incidentEvent.getSourceRecordPosition()).isEqualTo(jobEvent.getPosition());
+    assertThat(resolvedIncidentEvent.getKey()).isEqualTo(incidentCreatedEvent.getKey());
+    assertThat(resolvedIncidentEvent.getSourceRecordPosition())
+        .isEqualTo(terminatingTask.getPosition());
+    assertThat(jobCancelCommand.getSourceRecordPosition()).isEqualTo(terminatingTask.getPosition());
+
     assertIncidentRecordValue(
         ErrorType.JOB_NO_RETRIES.name(),
         "No more retries left.",
         workflowInstanceKey,
         "failingTask",
-        incidentEvent.getValue().getElementInstanceKey(),
-        jobEvent.getKey(),
-        incidentEvent);
-
-    incidentEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.DELETED);
-
-    assertThat(incidentEvent.getKey()).isEqualTo(incidentCreatedEvent.getKey());
-    assertIncidentRecordValue(
-        ErrorType.JOB_NO_RETRIES.name(),
-        "No more retries left.",
-        workflowInstanceKey,
-        "failingTask",
-        incidentEvent.getValue().getElementInstanceKey(),
-        jobEvent.getKey(),
-        incidentEvent);
+        resolvedIncidentEvent.getValue().getElementInstanceKey(),
+        jobCancelCommand.getKey(),
+        resolvedIncidentEvent);
   }
 
   @Test
@@ -215,7 +209,7 @@ public class JobFailIncidentTest {
   }
 
   @Test
-  public void shouldDeleteStandaloneIncidentIfJobRetriesIncreased() {
+  public void shouldResolveStandaloneIncidentIfJobRetriesIncreased() {
     // given
     createStandaloneJob();
 
@@ -226,7 +220,7 @@ public class JobFailIncidentTest {
 
     // then
     final Record jobEvent = testClient.receiveFirstJobEvent(JobIntent.FAILED);
-    final Record incidentEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.DELETED);
+    final Record incidentEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.RESOLVE);
 
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
     assertIncidentOfStandaloneJob(incidentEvent, jobEvent.getKey());

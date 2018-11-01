@@ -160,27 +160,9 @@ public class RecordMetadata implements BufferWriter, BufferReader {
     return this;
   }
 
-  public long getIncidentKey() {
-    return incidentKey;
-  }
-
-  public RecordMetadata incidentKey(long incidentKey) {
-    this.incidentKey = incidentKey;
-    return this;
-  }
-
-  public boolean hasIncidentKey() {
-    return incidentKey != RecordMetadataDecoder.incidentKeyNullValue();
-  }
-
   public RecordMetadata intent(Intent intent) {
     this.intent = intent;
     this.intentValue = intent.value();
-    return this;
-  }
-
-  public RecordMetadata intent(short intent) {
-    this.intentValue = intent;
     return this;
   }
 
