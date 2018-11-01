@@ -91,6 +91,17 @@ public abstract class ElasticsearchUtil {
     }
   }
 
+  public static QueryBuilder addToBoolMust(BoolQueryBuilder boolQuery, QueryBuilder... queries) {
+    if (boolQuery.mustNot().size() != 0 || boolQuery.filter().size() != 0 || boolQuery.should().size() != 0) {
+      throw new IllegalArgumentException("BoolQuery with only must elements is expected here.");
+    }
+    List<QueryBuilder> notNullQueries = CollectionUtil.throwAwayNullElements(queries);
+    for (QueryBuilder query : notNullQueries) {
+      boolQuery.must(query);
+    }
+    return boolQuery;
+  }
+
   public static BoolQueryBuilder createMatchNoneQuery() {
     return boolQuery().must(QueryBuilders.wrapperQuery("{\"match_none\": {}}"));
   }

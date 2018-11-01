@@ -2,12 +2,15 @@ package org.camunda.operate.es;
 
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.List;
 import java.util.Random;
 import java.util.function.Consumer;
 import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.ActivityState;
+import org.camunda.operate.entities.ActivityType;
 import org.camunda.operate.entities.IncidentEntity;
 import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
@@ -235,34 +238,18 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
 
   @Test
   public void testQueryByActiveActivityId() throws Exception {
+
     final String activityId = "taskA";
 
-    //given we have 2 workflow instances: one with active activity with given id, another with completed activity with given id
-    final WorkflowInstanceEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
-
-    final ActivityInstanceEntity activeWithIdActivityInstance = createActivityInstance(ActivityState.ACTIVE);
-    activeWithIdActivityInstance.setActivityId(activityId);
-    workflowInstance1.getActivities().add(activeWithIdActivityInstance);
-
-    final ActivityInstanceEntity completedWithoutIdActivityInstance = createActivityInstance(ActivityState.COMPLETED);
-    completedWithoutIdActivityInstance.setActivityId("otherActivityId");
-    workflowInstance1.getActivities().add(completedWithoutIdActivityInstance);
-
-    final WorkflowInstanceEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
-
-    final ActivityInstanceEntity activeWithoutIdActivityInstance = createActivityInstance(ActivityState.ACTIVE);
-    activeWithoutIdActivityInstance.setActivityId("otherActivityId");
-    workflowInstance2.getActivities().add(activeWithoutIdActivityInstance);
-
-    final ActivityInstanceEntity completedWithIdActivityInstance = createActivityInstance(ActivityState.COMPLETED);
-    completedWithIdActivityInstance.setActivityId(activityId);
-    workflowInstance2.getActivities().add(completedWithIdActivityInstance);
-
-    elasticsearchTestRule.persist(workflowInstance1, workflowInstance2);
+    final WorkflowInstanceEntity[] data = createDataForActiveActivityIdQuery(activityId);
+    elasticsearchTestRule.persist(data);
 
     //when
-    WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(q ->
-      q.setActivityId(activityId));
+    WorkflowInstanceRequestDto query = createWorkflowInstanceQuery(q -> {
+      q.setRunning(true);
+      q.setActive(true);
+      q.setActivityId(activityId);
+    });
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
         .content(mockMvcTestRule.json(query))
@@ -278,18 +265,20 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     assertThat(response.getWorkflowInstances().size()).isEqualTo(1);
 
     assertThat(response.getWorkflowInstances().get(0).getId())
-      .isEqualTo(workflowInstance1.getId());
+      .isEqualTo(data[0].getId());
 
   }
 
-  @Test
-  public void testQueryByIncidentActivityId() throws Exception {
-    final String activityId = "taskA";
+  /**
+   * 1st entity must be selected
+   */
+  private WorkflowInstanceEntity[] createDataForActiveActivityIdQuery(String activityId) {
+    List<WorkflowInstanceEntity> entities = new ArrayList<>();
 
-    //given we have 2 workflow instances: one with active activity with given id, another with completed activity with given id
+    //wi 1: active with active activity with given id
     final WorkflowInstanceEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
 
-    final ActivityInstanceEntity activeWithIdActivityInstance = createActivityInstance(ActivityState.INCIDENT);
+    final ActivityInstanceEntity activeWithIdActivityInstance = createActivityInstance(ActivityState.ACTIVE);
     activeWithIdActivityInstance.setActivityId(activityId);
     workflowInstance1.getActivities().add(activeWithIdActivityInstance);
 
@@ -297,21 +286,278 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
     completedWithoutIdActivityInstance.setActivityId("otherActivityId");
     workflowInstance1.getActivities().add(completedWithoutIdActivityInstance);
 
+    entities.add(workflowInstance1);
+
+    //wi 2: active with active activity with another id
     final WorkflowInstanceEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
 
     final ActivityInstanceEntity activeWithoutIdActivityInstance = createActivityInstance(ActivityState.ACTIVE);
     activeWithoutIdActivityInstance.setActivityId("otherActivityId");
     workflowInstance2.getActivities().add(activeWithoutIdActivityInstance);
 
+    final ActivityInstanceEntity completedWithIdActivityInstance = createActivityInstance(ActivityState.INCIDENT);
+    completedWithIdActivityInstance.setActivityId(activityId);
+    workflowInstance2.getActivities().add(completedWithIdActivityInstance);
+
+    entities.add(workflowInstance2);
+    return entities.toArray(new WorkflowInstanceEntity[entities.size()]);
+  }
+
+  @Test
+  public void testQueryByIncidentActivityId() throws Exception {
+    final String activityId = "taskA";
+
+    final WorkflowInstanceEntity[] data = createDataForIncidentActivityIdQuery(activityId);
+    elasticsearchTestRule.persist(data);
+
+    //when
+    WorkflowInstanceRequestDto query = createWorkflowInstanceQuery(q -> {
+      q.setRunning(true);
+      q.setIncidents(true);
+      q.setActivityId(activityId);
+    });
+
+    MockHttpServletRequestBuilder request = post(query(0, 100))
+      .content(mockMvcTestRule.json(query))
+      .contentType(mockMvcTestRule.getContentType());
+    MvcResult mvcResult = mockMvc.perform(request)
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
+      .andReturn();
+
+    WorkflowInstanceResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<WorkflowInstanceResponseDto>() { });
+
+    //then
+    assertThat(response.getWorkflowInstances().size()).isEqualTo(1);
+
+    assertThat(response.getWorkflowInstances().get(0).getId())
+      .isEqualTo(data[0].getId());
+
+  }
+
+  /**
+   * 1st entity must be selected
+   */
+  private WorkflowInstanceEntity[] createDataForIncidentActivityIdQuery(String activityId) {
+    List<WorkflowInstanceEntity> entities = new ArrayList<>();
+
+    //wi1: active with activity in INCIDENT state with given id
+    final WorkflowInstanceEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
+
+    final ActivityInstanceEntity incidentWithIdActivityInstance = createActivityInstance(ActivityState.INCIDENT);
+    incidentWithIdActivityInstance.setActivityId(activityId);
+    workflowInstance1.getActivities().add(incidentWithIdActivityInstance);
+    workflowInstance1.getIncidents().add(createIncident(IncidentState.ACTIVE));
+
+    final ActivityInstanceEntity completedWithoutIdActivityInstance = createActivityInstance(ActivityState.COMPLETED);
+    completedWithoutIdActivityInstance.setActivityId("otherActivityId");
+    workflowInstance1.getActivities().add(completedWithoutIdActivityInstance);
+
+    entities.add(workflowInstance1);
+
+    //wi2: active with activity in INCIDENT state with another id
+    final WorkflowInstanceEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
+
+    final ActivityInstanceEntity incidentWithoutIdActivityInstance = createActivityInstance(ActivityState.INCIDENT);
+    incidentWithoutIdActivityInstance.setActivityId("otherActivityId");
+    workflowInstance2.getActivities().add(incidentWithoutIdActivityInstance);
+    workflowInstance2.getIncidents().add(createIncident(IncidentState.ACTIVE));
+
     final ActivityInstanceEntity completedWithIdActivityInstance = createActivityInstance(ActivityState.COMPLETED);
     completedWithIdActivityInstance.setActivityId(activityId);
     workflowInstance2.getActivities().add(completedWithIdActivityInstance);
 
-    elasticsearchTestRule.persist(workflowInstance1, workflowInstance2);
+    entities.add(workflowInstance2);
+
+    //wi3: active with activity in ACTIVE state with given id
+    final WorkflowInstanceEntity workflowInstance3 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
+
+    final ActivityInstanceEntity activeWithIdActivityInstance = createActivityInstance(ActivityState.ACTIVE);
+    activeWithIdActivityInstance.setActivityId(activityId);
+    workflowInstance3.getActivities().add(activeWithIdActivityInstance);
+
+    final ActivityInstanceEntity completedWithoutIdActivityInstance2 = createActivityInstance(ActivityState.COMPLETED);
+    completedWithoutIdActivityInstance2.setActivityId("otherActivityId");
+    workflowInstance3.getActivities().add(completedWithoutIdActivityInstance2);
+
+    entities.add(workflowInstance3);
+
+    return entities.toArray(new WorkflowInstanceEntity[entities.size()]);
+  }
+
+  @Test
+  public void testQueryByTerminatedActivityId() throws Exception {
+    final String activityId = "taskA";
+
+    final WorkflowInstanceEntity[] data = createDataForTerminatedActivityIdQuery(activityId);
+    elasticsearchTestRule.persist(data);
 
     //when
-    WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(q ->
-      q.setActivityId(activityId));
+    WorkflowInstanceRequestDto query = createWorkflowInstanceQuery(q -> {
+      q.setFinished(true);
+      q.setCanceled(true);
+      q.setActivityId(activityId);
+    });
+
+    MockHttpServletRequestBuilder request = post(query(0, 100))
+      .content(mockMvcTestRule.json(query))
+      .contentType(mockMvcTestRule.getContentType());
+    MvcResult mvcResult = mockMvc.perform(request)
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
+      .andReturn();
+
+    WorkflowInstanceResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<WorkflowInstanceResponseDto>() { });
+
+    //then
+    assertThat(response.getWorkflowInstances().size()).isEqualTo(1);
+
+    assertThat(response.getWorkflowInstances().get(0).getId())
+      .isEqualTo(data[0].getId());
+
+  }
+
+  /**
+   * 1st entity must be selected
+   */
+  private WorkflowInstanceEntity[] createDataForTerminatedActivityIdQuery(String activityId) {
+    List<WorkflowInstanceEntity> entities = new ArrayList<>();
+
+    //wi1: canceled with TERMINATED activity with given id
+    final WorkflowInstanceEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.CANCELED);
+
+    final ActivityInstanceEntity terminatedWithIdActivityInstance = createActivityInstance(ActivityState.TERMINATED);
+    terminatedWithIdActivityInstance.setActivityId(activityId);
+    workflowInstance1.getActivities().add(terminatedWithIdActivityInstance);
+
+    final ActivityInstanceEntity completedWithoutIdActivityInstance = createActivityInstance(ActivityState.COMPLETED);
+    completedWithoutIdActivityInstance.setActivityId("otherActivityId");
+    workflowInstance1.getActivities().add(completedWithoutIdActivityInstance);
+
+    entities.add(workflowInstance1);
+
+    //wi2: canceled with TERMINATED activity with another id
+    final WorkflowInstanceEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.CANCELED);
+
+    final ActivityInstanceEntity terminatedWithoutIdActivityInstance = createActivityInstance(ActivityState.TERMINATED);
+    terminatedWithoutIdActivityInstance.setActivityId("otherActivityId");
+    workflowInstance2.getActivities().add(terminatedWithoutIdActivityInstance);
+
+    final ActivityInstanceEntity completedWithIdActivityInstance = createActivityInstance(ActivityState.COMPLETED);
+    completedWithIdActivityInstance.setActivityId(activityId);
+    workflowInstance2.getActivities().add(completedWithIdActivityInstance);
+
+    entities.add(workflowInstance2);
+
+    //wi3: active with ACTIVE activity with given id
+    final WorkflowInstanceEntity workflowInstance3 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
+
+    final ActivityInstanceEntity activeWithIdActivityInstance = createActivityInstance(ActivityState.TERMINATED);
+    activeWithIdActivityInstance.setActivityId(activityId);
+    workflowInstance3.getActivities().add(activeWithIdActivityInstance);
+
+    final ActivityInstanceEntity completedWithoutIdActivityInstance2 = createActivityInstance(ActivityState.COMPLETED);
+    completedWithoutIdActivityInstance2.setActivityId("otherActivityId");
+    workflowInstance3.getActivities().add(completedWithoutIdActivityInstance2);
+
+    entities.add(workflowInstance3);
+
+    return entities.toArray(new WorkflowInstanceEntity[entities.size()]);
+  }
+
+  @Test
+  public void testQueryByCombinedStateActivityId() throws Exception {
+    final String activityId = "taskA";
+
+    List<String> selectedIds = new ArrayList<>();
+
+    WorkflowInstanceEntity[] data = createDataForActiveActivityIdQuery(activityId);
+    selectedIds.add(data[0].getId());
+    elasticsearchTestRule.persist(data);
+
+    data = createDataForIncidentActivityIdQuery(activityId);
+    selectedIds.add(data[0].getId());
+    selectedIds.add(data[2].getId());
+    elasticsearchTestRule.persist(data);
+
+    data = createDataForTerminatedActivityIdQuery(activityId);
+    selectedIds.add(data[0].getId());
+    elasticsearchTestRule.persist(data);
+
+    //when
+    WorkflowInstanceRequestDto query = createWorkflowInstanceQuery(q -> {
+      q.setRunning(true);
+      q.setIncidents(true);
+      q.setActive(true);
+      q.setFinished(true);
+      q.setCanceled(true);
+      q.setActivityId(activityId);
+    });
+
+    MockHttpServletRequestBuilder request = post(query(0, 100))
+      .content(mockMvcTestRule.json(query))
+      .contentType(mockMvcTestRule.getContentType());
+    MvcResult mvcResult = mockMvc.perform(request)
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
+      .andReturn();
+
+    WorkflowInstanceResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<WorkflowInstanceResponseDto>() { });
+
+    //then
+    assertThat(response.getWorkflowInstances().size()).isEqualTo(selectedIds.size());
+
+    assertThat(response.getWorkflowInstances()).extracting("id").containsExactlyInAnyOrder(selectedIds.toArray());
+
+  }
+
+  @Test
+  public void testQueryByCompletedActivityId() throws Exception {
+    final String activityId = "endEvent";
+
+    //wi 1: completed with completed end event
+    final WorkflowInstanceEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
+
+    final ActivityInstanceEntity completedEndEventWithIdActivityInstance = createActivityInstance(ActivityState.COMPLETED);
+    completedEndEventWithIdActivityInstance.setActivityId(activityId);
+    completedEndEventWithIdActivityInstance.setType(ActivityType.END_EVENT);
+    workflowInstance1.getActivities().add(completedEndEventWithIdActivityInstance);
+
+    final ActivityInstanceEntity completedWithoutIdActivityInstance = createActivityInstance(ActivityState.COMPLETED);
+    completedWithoutIdActivityInstance.setActivityId("otherActivityId");
+    workflowInstance1.getActivities().add(completedWithoutIdActivityInstance);
+
+    //wi 2: completed without completed end event
+    final WorkflowInstanceEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
+
+    final ActivityInstanceEntity activeEndEventWithIdActivityInstance = createActivityInstance(ActivityState.ACTIVE);
+    activeEndEventWithIdActivityInstance.setActivityId(activityId);
+    activeEndEventWithIdActivityInstance.setType(ActivityType.END_EVENT);
+    workflowInstance2.getActivities().add(activeEndEventWithIdActivityInstance);
+
+    //wi 3: completed with completed end event (but not of type END_EVENT)
+    final WorkflowInstanceEntity workflowInstance3 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
+
+    final ActivityInstanceEntity completedWithIdActivityInstance = createActivityInstance(ActivityState.COMPLETED);
+    completedWithIdActivityInstance.setActivityId(activityId);
+    workflowInstance3.getActivities().add(completedWithIdActivityInstance);
+
+    //wi 4: active with completed end event
+    final WorkflowInstanceEntity workflowInstance4 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
+
+    final ActivityInstanceEntity completedEndEventWithIdActivityInstance2 = createActivityInstance(ActivityState.COMPLETED);
+    completedEndEventWithIdActivityInstance2.setActivityId(activityId);
+    completedEndEventWithIdActivityInstance2.setType(ActivityType.END_EVENT);
+    workflowInstance4.getActivities().add(completedEndEventWithIdActivityInstance2);
+
+    elasticsearchTestRule.persist(workflowInstance1, workflowInstance2, workflowInstance3, workflowInstance4);
+
+    //when
+    WorkflowInstanceRequestDto query = createWorkflowInstanceQuery(q -> {
+      q.setFinished(true);
+      q.setCompleted(true);
+      q.setActivityId(activityId);
+    });
 
     MockHttpServletRequestBuilder request = post(query(0, 100))
       .content(mockMvcTestRule.json(query))
@@ -330,6 +576,7 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
       .isEqualTo(workflowInstance1.getId());
 
   }
+
 
   @Test
   public void testQueryByWorkflowInstanceIds() throws Exception {

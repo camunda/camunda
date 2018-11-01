@@ -86,8 +86,6 @@ public class WorkflowInstanceReader {
   private static final String ACTIVE_INCIDENT = ACTIVE.toString();
   private static final String INCIDENT_STATE_TERM = String.format("%s.%s", INCIDENTS, STATE);
   private static final String INCIDENT_ERRORMSG_TERM = String.format("%s.%s", INCIDENTS, ERROR_MSG);
-  private static final String ACTIVE_ACTIVITY = ActivityState.ACTIVE.toString();
-  private static final String ACTIVITY_WITH_INCIDENT = ActivityState.INCIDENT.toString();
   private static final String ACTIVITY_STATE_TERM = String.format("%s.%s", ACTIVITIES, STATE);
   private static final String ACTIVITY_TYPE_TERM = String.format("%s.%s", ACTIVITIES, WorkflowInstanceType.TYPE);
   private static final String ACTIVITY_ACTIVITYID_TERM = String.format("%s.%s", ACTIVITIES, ACTIVITY_ID);
@@ -204,11 +202,6 @@ public class WorkflowInstanceReader {
       errorMessageQuery = createErrorMessageQuery(query.getErrorMessage());
     }
 
-    QueryBuilder activityIdQuery = null;
-    if (query.getActivityId() != null) {
-      activityIdQuery = createActivityIdQuery(query.getActivityId());
-    }
-
     QueryBuilder createDateQuery = null;
     if (query.getStartDateAfter() != null || query.getStartDateBefore() != null) {
       createDateQuery = createStartDateQuery(query);
@@ -234,7 +227,7 @@ public class WorkflowInstanceReader {
       variablesQuery = createVariablesQuery(query.getVariablesQuery());
     }
 
-    return joinWithAnd(runningFinishedQuery, idsQuery, errorMessageQuery, activityIdQuery, createDateQuery, endDateQuery, workflowIdQuery, excludeIdsQuery, variablesQuery);
+    return joinWithAnd(runningFinishedQuery, idsQuery, errorMessageQuery, createDateQuery, endDateQuery, workflowIdQuery, excludeIdsQuery, variablesQuery);
   }
 
   private QueryBuilder createVariablesQuery(VariablesQueryDto variablesQuery) {
@@ -294,13 +287,6 @@ public class WorkflowInstanceReader {
     rangeQueryBuilder.format(operateProperties.getElasticsearch().getDateFormat());
 
     return rangeQueryBuilder;
-  }
-
-  private QueryBuilder createActivityIdQuery(String activityId) {
-    final QueryBuilder activeActivitiesQuery = termQuery(ACTIVITY_STATE_TERM, ACTIVE_ACTIVITY);
-    final QueryBuilder activeActivitiesWithIncidentsQuery = termQuery(ACTIVITY_STATE_TERM, ACTIVITY_WITH_INCIDENT);
-    final QueryBuilder activityIdQuery = termQuery(ACTIVITY_ACTIVITYID_TERM, activityId);
-    return nestedQuery(ACTIVITIES, joinWithAnd(joinWithOr(activeActivitiesQuery, activeActivitiesWithIncidentsQuery), activityIdQuery), None);
   }
 
   private QueryBuilder createErrorMessageQuery(String errorMessage) {
@@ -419,18 +405,18 @@ public class WorkflowInstanceReader {
       //running query
       runningQuery = boolQuery().mustNot(existsQuery(END_DATE));
 
-      QueryBuilder activeOrIncidentsQuery = null;
+      QueryBuilder activeQuery = createActiveQuery(query);
+      QueryBuilder activeActivityIdQuery = createActivityIdQuery(query.getActivityId(), ActivityState.ACTIVE, query.isActive());
+      QueryBuilder incidentsQuery = createIncidentsQuery(query);
+      QueryBuilder incidentActivityIdQuery = createActivityIdQuery(query.getActivityId(), ActivityState.INCIDENT, query.isIncidents());
 
-      if (active && !incidents) {
-        //active query
-        activeOrIncidentsQuery = boolQuery().mustNot(nestedQuery(INCIDENTS, termQuery(INCIDENT_STATE_TERM, ACTIVE_INCIDENT), None));
+      if (query.getActivityId() == null && query.isActive() && query.isIncidents()) {
+         //we request all running instances
+      } else {
+        //some of the queries may be null
+        runningQuery = joinWithAnd(runningQuery,
+          joinWithOr(joinWithAnd(activeQuery, activeActivityIdQuery), joinWithAnd(incidentsQuery, incidentActivityIdQuery)));
       }
-      else if (!active && incidents) {
-        //incidents query
-        activeOrIncidentsQuery = nestedQuery(INCIDENTS, termQuery(INCIDENT_STATE_TERM, ACTIVE_INCIDENT), None);
-      }
-
-      runningQuery = joinWithAnd(runningQuery, activeOrIncidentsQuery);
     }
 
     QueryBuilder finishedQuery = null;
@@ -440,18 +426,16 @@ public class WorkflowInstanceReader {
       //add finished query
       finishedQuery = existsQuery(END_DATE);
 
-      QueryBuilder canceledOrCompletedQ = null;
+      QueryBuilder completedQuery = createCompletedQuery(query);
+      QueryBuilder completedActivityIdQuery = createActivityIdQuery(query.getActivityId(), ActivityState.COMPLETED, query.isCompleted());
+      QueryBuilder canceledQuery = createCanceledQuery(query);
+      QueryBuilder canceledActivityIdQuery = createActivityIdQuery(query.getActivityId(), ActivityState.TERMINATED, query.isCanceled());
 
-      if (completed && !canceled) {
-        //completed query
-        canceledOrCompletedQ = termQuery(STATE, WorkflowInstanceState.COMPLETED.toString());
+      if (query.getActivityId() == null && query.isCompleted() && query.isCanceled()) {
+        //we request all finished instances
+      } else {
+        finishedQuery = joinWithAnd(finishedQuery, joinWithOr(joinWithAnd(completedQuery, completedActivityIdQuery), joinWithAnd(canceledQuery, canceledActivityIdQuery)));
       }
-      else if (!completed && canceled) {
-        //add canceled query
-        canceledOrCompletedQ = termQuery(STATE, WorkflowInstanceState.CANCELED.toString());
-      }
-
-      finishedQuery = joinWithAnd(finishedQuery, canceledOrCompletedQ);
     }
 
     final QueryBuilder workflowInstanceQuery = joinWithOr(runningQuery, finishedQuery);
@@ -462,6 +446,48 @@ public class WorkflowInstanceReader {
 
     return workflowInstanceQuery;
 
+  }
+
+  private QueryBuilder createCanceledQuery(WorkflowInstanceQueryDto query) {
+    if (query.isCanceled()) {
+      return termQuery(STATE, WorkflowInstanceState.CANCELED.toString());
+    }
+    return null;
+  }
+
+  private QueryBuilder createCompletedQuery(WorkflowInstanceQueryDto query) {
+    if (query.isCompleted()) {
+      return termQuery(STATE, WorkflowInstanceState.COMPLETED.toString());
+    }
+    return null;
+  }
+
+  private QueryBuilder createIncidentsQuery(WorkflowInstanceQueryDto query) {
+    if (query.isIncidents()) {
+      return nestedQuery(INCIDENTS, termQuery(INCIDENT_STATE_TERM, ACTIVE_INCIDENT), None);
+    }
+    return null;
+  }
+
+  private QueryBuilder createActiveQuery(WorkflowInstanceQueryDto query) {
+    if (query.isActive()) {
+      return boolQuery().mustNot(nestedQuery(INCIDENTS, termQuery(INCIDENT_STATE_TERM, ACTIVE_INCIDENT), None));
+    }
+    return null;
+
+  }
+
+  private QueryBuilder createActivityIdQuery(String activityId, ActivityState state, boolean createQuery) {
+    if (activityId == null || createQuery == false) {
+      return null;
+    }
+    final QueryBuilder activitiesQuery = termQuery(ACTIVITY_STATE_TERM, state.name());
+    final QueryBuilder activityIdQuery = termQuery(ACTIVITY_ACTIVITYID_TERM, activityId);
+    QueryBuilder activityIsEndNodeQuery = null;
+    if (state.equals(ActivityState.COMPLETED)) {
+      activityIsEndNodeQuery = termQuery(ACTIVITY_TYPE_TERM, ActivityType.END_EVENT.name());
+    }
+    return nestedQuery(ACTIVITIES, joinWithAnd(activitiesQuery, activityIdQuery, activityIsEndNodeQuery), None);
   }
 
   /**
