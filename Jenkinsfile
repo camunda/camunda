@@ -73,7 +73,7 @@ pipeline {
           // MaxRAMFraction = LIMITS_CPU because there are only maven build threads
           sh '''
             JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU))" \
-            mvn clean install -P -docker,skipFrontendBuild -DskipTests=true -B -T$LIMITS_CPU --fail-at-end \
+            mvn clean install -s settings.xml -P -docker,skipFrontendBuild -DskipTests=true -B -T$LIMITS_CPU --fail-at-end \
                 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
           '''
         }
@@ -86,9 +86,8 @@ pipeline {
             container('maven') {
               // MaxRAMFraction = LIMITS_CPU+1 because there are LIMITS_CPU surefire threads + one maven thread
               sh '''
-                cd ./backend
                 JAVA_TOOL_OPTIONS="$JAVA_TOOL_OPTIONS -XX:MaxRAMFraction=$((LIMITS_CPU+1))" \
-                mvn verify -P -docker -B -T$LIMITS_CPU --fail-at-end \
+                mvn verify -f backend/pom.xml -s settings.xml -P -docker -B -T$LIMITS_CPU --fail-at-end \
                     -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=warn
               '''
             }
