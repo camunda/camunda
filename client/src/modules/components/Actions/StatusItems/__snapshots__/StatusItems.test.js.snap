@@ -10,9 +10,9 @@ exports[`StatusItems should match snapshots 1`] = `
 `;
 
 exports[`StatusItems should match snapshots 2`] = `
-<Themed(styled.div)
+<Themed(styled.li)
   type="UPDATE_RETRIES"
 >
   <Themed(Styled(ReactComponent)) />
-</Themed(styled.div)>
+</Themed(styled.li)>
 `;
