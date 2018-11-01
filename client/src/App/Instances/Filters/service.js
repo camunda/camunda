@@ -1,4 +1,5 @@
 import {ALL_VERSIONS_OPTION, DEFAULT_CONTROLLED_VALUES} from './constants';
+import {sortBy} from 'lodash';
 
 /**
  * Creates an array of {value: String, label: String} objects
@@ -6,11 +7,12 @@ import {ALL_VERSIONS_OPTION, DEFAULT_CONTROLLED_VALUES} from './constants';
  */
 export const getOptionsForWorkflowName = (workflows = {}) => {
   let options = [];
-  Object.keys(workflows).forEach(item => {
-    options.push({value: item, label: workflows[item].name || item});
-  });
+  Object.keys(workflows).forEach(item =>
+    options.push({value: item, label: workflows[item].name || item})
+  );
 
-  return options;
+  // return case insensitive alphabetically sorted options by "label"
+  return sortBy(options, item => item.label.toLowerCase());
 };
 
 /**

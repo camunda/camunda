@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import {Colors, themed, themeStyle} from 'modules/theme';
+import {themed, themeStyle} from 'modules/theme';
 
 export const Dropdown = styled.div`
   position: relative;

@@ -206,7 +206,7 @@ class Instances extends Component {
           }
 
           this.setState({
-            activityIds: sortBy(activityIds, 'label'),
+            activityIds: sortBy(activityIds, item => item.label.toLowerCase()),
             workflow: getWorkflowByVersion(
               this.state.groupedWorkflowInstances[filter.workflow],
               filter.version
