@@ -1,5 +1,5 @@
 import React from 'react';
-import {mount} from 'enzyme';
+import {shallow} from 'enzyme';
 
 import ThemedChart from './Chart';
 import ChartRenderer from 'chart.js';
@@ -11,19 +11,10 @@ const {WrappedComponent: Chart} = ThemedChart;
 
 const {convertToMilliseconds} = formatters;
 
-jest.mock('chart.js', () =>
-  jest.fn(() => {
-    return {
-      destroy: jest.fn()
-    };
-  })
-);
-
 jest.mock('./service', () => {
   return {
     getRelativeValue: jest.fn(),
-    uniteResults: jest.fn().mockReturnValue([{a: 123, b: 5}]),
-    getLineTargetValues: jest.fn().mockReturnValue([null, 5, 5])
+    uniteResults: jest.fn().mockReturnValue([{a: 123, b: 5}])
   };
 });
 
@@ -34,48 +25,62 @@ jest.mock('services', () => {
 });
 
 it('should construct a Chart', () => {
-  mount(<Chart data={{foo: 123}} />);
+  shallow(<Chart data={{foo: 123}} />);
 
   expect(ChartRenderer).toHaveBeenCalled();
 });
 
 it('should display an error message for a non-object result (single number)', () => {
-  const node = mount(<Chart data={7} errorMessage="Error" />);
+  const node = shallow(<Chart data={7} errorMessage="Error" />);
 
-  expect(node).toIncludeText('Error');
+  expect(node.find('ReportBlankSlate').prop('message')).toBe('Error');
 });
 
 it('should display an error message if no data is provided', () => {
-  const node = mount(<Chart errorMessage="Error" />);
+  const node = shallow(<Chart errorMessage="Error" />);
 
-  expect(node).toIncludeText('Error');
+  expect(node.find('ReportBlankSlate').prop('message')).toBe('Error');
 });
 
 it('should use the provided type for the ChartRenderer', () => {
   ChartRenderer.mockClear();
 
-  mount(<Chart data={{foo: 123}} type="visualization_type" />);
+  shallow(<Chart data={{foo: 123}} type="visualization_type" />);
 
   expect(ChartRenderer.mock.calls[0][1].type).toBe('visualization_type');
+});
+
+it('should use the special targetLine type when target values are enabled on a line chart', () => {
+  ChartRenderer.mockClear();
+
+  shallow(
+    <Chart
+      data={{foo: 123}}
+      type="line"
+      targetValue={{active: true, values: {isBelow: true, value: 1}}}
+    />
+  );
+
+  expect(ChartRenderer.mock.calls[0][1].type).toBe('targetLine');
 });
 
 it('should change type for the ChartRenderer if props were updated', () => {
   ChartRenderer.mockClear();
 
-  const chart = mount(<Chart data={{foo: 123}} type="visualization_type" />);
+  const chart = shallow(<Chart data={{foo: 123}} type="visualization_type" />);
   chart.setProps({type: 'new_visualization_type'});
 
   expect(ChartRenderer.mock.calls[1][1].type).toBe('new_visualization_type');
 });
 
 it('should not display an error message if data is valid', () => {
-  const node = mount(<Chart data={{foo: 123}} errorMessage="Error" />);
+  const node = shallow(<Chart data={{foo: 123}} errorMessage="Error" />);
 
-  expect(node).not.toIncludeText('Error');
+  expect(node.find('ReportBlankSlate')).not.toBePresent();
 });
 
 it('should destroy chart if no data is provided', () => {
-  const node = mount(<Chart errorMessage="Error" />);
+  const node = shallow(<Chart errorMessage="Error" />);
 
   expect(node.chart).toBe(undefined);
 });
@@ -83,23 +88,23 @@ it('should destroy chart if no data is provided', () => {
 it('should render chart even if type does not change', () => {
   ChartRenderer.mockClear();
 
-  const chart = mount(<Chart data={{foo: 123}} type="visualization_type" />);
+  const chart = shallow(<Chart data={{foo: 123}} type="visualization_type" />);
   chart.setProps({type: 'visualization_type'});
 
   expect(ChartRenderer.mock.calls[1][1].type).toBe('visualization_type');
 });
 
 it('should display an error message if there was data and the second time no data is provided', () => {
-  const node = mount(<Chart data={{foo: 123}} errorMessage="Error" />);
+  const node = shallow(<Chart data={{foo: 123}} errorMessage="Error" />);
 
   node.setProps({data: null});
 
-  expect(node).toIncludeText('Error');
+  expect(node.find('ReportBlankSlate').prop('message')).toBe('Error');
 });
 
 it('should show nice ticks for duration formats on the y axis', () => {
   const data = {foo: 7 * 24 * 60 * 60 * 1000};
-  const node = mount(<Chart data={data} />);
+  const node = shallow(<Chart data={data} />);
 
   const config = node.instance().createDurationFormattingOptions(data, 0);
 
@@ -108,7 +113,7 @@ it('should show nice ticks for duration formats on the y axis', () => {
 });
 
 it('should generate colors', () => {
-  const node = mount(<Chart data={{foo: 123}} />);
+  const node = shallow(<Chart data={{foo: 123}} />);
 
   const colors = node.instance().createColors(7);
 
@@ -121,7 +126,7 @@ it('should include the relative value in tooltips', () => {
   getRelativeValue.mockReturnValue('12.3%');
 
   const data = {foo: 123};
-  const node = mount(
+  const node = shallow(
     <Chart
       data={data}
       processInstanceCount={5}
@@ -143,7 +148,7 @@ it('should include the relative value in tooltips', () => {
 
 it('should return the default bar color if targetvalue is not active', () => {
   const data = {foo: 123};
-  const node = mount(<Chart data={data} />);
+  const node = shallow(<Chart data={data} />);
 
   const value = node.instance().determineBarColor({active: false, values: null}, data, 'testColor');
   expect(value).toEqual('testColor');
@@ -151,7 +156,7 @@ it('should return the default bar color if targetvalue is not active', () => {
 
 it('should return red color for all bars below a target value', () => {
   const data = {foo: 123, bar: 5};
-  const node = mount(<Chart data={data} />);
+  const node = shallow(<Chart data={data} />);
 
   const value = node.instance().determineBarColor(
     {
@@ -170,21 +175,21 @@ it('should return red color for all bars below a target value', () => {
 
 it('should set LineAt option to 0 if the target value is not active', () => {
   const data = {foo: 123, bar: 5};
-  const node = mount(<Chart data={data} />);
+  const node = shallow(<Chart data={data} />);
   const value = node.instance().getFormattedTargetValue({active: false, values: {}});
   expect(value).toBe(0);
 });
 
 it('should set LineAt option to target value if it is active', () => {
   const data = {foo: 123, bar: 5};
-  const node = mount(<Chart data={data} />);
+  const node = shallow(<Chart data={data} />);
   const value = node.instance().getFormattedTargetValue({active: true, values: {target: 10}});
   expect(value).toBe(10);
 });
 
 it('should invoke convertToMilliSeconds when target value is set to Date Format', () => {
   const data = {foo: 123, bar: 5};
-  const node = mount(<Chart data={data} />);
+  const node = shallow(<Chart data={data} />);
   node
     .instance()
     .getFormattedTargetValue({active: true, values: {target: 10, dateFormat: 'millis'}});
@@ -193,7 +198,7 @@ it('should invoke convertToMilliSeconds when target value is set to Date Format'
 
 it('should create two datasets for line chart with target values', () => {
   const data = {foo: 123, bar: 5, dar: 5};
-  const node = mount(<Chart data={data} />);
+  const node = shallow(<Chart data={data} />);
   const targetValue = {values: {target: 10}};
   const lineChartData = node
     .instance()
@@ -203,7 +208,7 @@ it('should create two datasets for line chart with target values', () => {
 
 it('should create two datasets for each report in combined line charts with target values', () => {
   const data = {foo: 123, bar: 5, dar: 5};
-  const node = mount(<Chart data={data} reportsNames={['test1', 'test2']} />);
+  const node = shallow(<Chart data={data} reportsNames={['test1', 'test2']} />);
   const targetValue = {values: {target: 10}};
   const lineChartData = node
     .instance()
@@ -213,7 +218,7 @@ it('should create two datasets for each report in combined line charts with targ
 
 it('should return correct chart data object for a single report', () => {
   const data = {foo: 123, bar: 5};
-  const node = mount(<Chart data={data} />);
+  const node = shallow(<Chart data={data} />);
 
   const result = node.instance().createChartData(data, 'line');
 
@@ -223,10 +228,9 @@ it('should return correct chart data object for a single report', () => {
       {
         label: undefined,
         legendColor: '#1991c8',
-        lineTension: 0,
         data: [123, 5],
         borderColor: '#1991c8',
-        backgroundColor: '#e5f2f8',
+        backgroundColor: 'transparent',
         borderWidth: 2
       }
     ]
@@ -236,7 +240,7 @@ it('should return correct chart data object for a single report', () => {
 it('should return correct chart data object for a combined report', () => {
   const data = [{foo: 123, bar: 5}, {foo: 1, dar: 3}];
   uniteResults.mockReturnValue(data);
-  const node = mount(
+  const node = shallow(
     <Chart data={data} reportType="combined" reportsNames={['Report A', 'Report B']} />
   );
 
@@ -246,7 +250,6 @@ it('should return correct chart data object for a combined report', () => {
     datasets: [
       {
         label: 'Report A',
-        lineTension: 0,
         data: [123, 5],
         borderColor: '#1991c8',
         legendColor: '#1991c8',
@@ -255,7 +258,6 @@ it('should return correct chart data object for a combined report', () => {
       },
       {
         label: 'Report B',
-        lineTension: 0,
         data: [1, 3],
         legendColor: 'hsl(180, 65%, 50%)',
         borderColor: 'hsl(180, 65%, 50%)',
@@ -268,7 +270,7 @@ it('should return correct chart data object for a combined report', () => {
 
 it('should filter labels with undefined names and show correct label coloring', () => {
   const data = [{foo: 123, bar: 5}, {foo: 1, dar: 3}];
-  const node = mount(<Chart data={data} />);
+  const node = shallow(<Chart data={data} />);
 
   const datasets = node.instance().generateLegendLabels({
     data: {
@@ -284,7 +286,7 @@ it('should filter labels with undefined names and show correct label coloring', 
 
 it('should return correct colors for the tooltip label', () => {
   const data = {foo: 123};
-  const node = mount(<Chart data={data} />);
+  const node = shallow(<Chart data={data} />);
 
   const color = 'testColor';
 

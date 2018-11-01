@@ -1,4 +1,4 @@
-import {uniteResults, getFormattedLabels, getBodyRows, getLineTargetValues} from './service';
+import {uniteResults, getFormattedLabels, getBodyRows, calculateLinePosition} from './service';
 
 jest.mock('request', () => ({
   get: jest.fn()
@@ -26,9 +26,22 @@ it('should return correct table label structure', () => {
   ).toEqual([{label: 'Report A', columns: ['value']}, {label: 'Report B', columns: ['value']}]);
 });
 
-it('should get line chart target values from normal values', () => {
-  const data = {foo: 123, bar: 5, dar: 5};
-  const values = {target: 10};
-  const targetValues = getLineTargetValues(Object.values(data), values);
-  expect(targetValues).toEqual([null, 5, 5]);
+it('should calculate the correct position for the target value line', () => {
+  expect(
+    calculateLinePosition({
+      scales: {
+        test: {
+          max: 100,
+          height: 100,
+          top: 0
+        }
+      },
+      options: {
+        scales: {
+          yAxes: [{id: 'test'}]
+        },
+        lineAt: 20
+      }
+    })
+  ).toBe(80); // inverted y axis: height - lineAt = 100 - 20 = 80
 });

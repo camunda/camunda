@@ -2,7 +2,7 @@ export const visualization = {
   number: {data: 'number', label: 'Number'},
   table: {data: 'table', label: 'Table'},
   bar: {data: 'bar', label: 'Bar Chart'},
-  line: {data: 'line', label: 'Area Chart'},
+  line: {data: 'line', label: 'Line Chart'},
   pie: {data: 'pie', label: 'Pie Chart'},
   heat: {data: 'heat', label: 'Heatmap'}
 };

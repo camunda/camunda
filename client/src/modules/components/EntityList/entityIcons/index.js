@@ -26,7 +26,7 @@ const icons = {
     bar: {label: 'Bar Chart Report', Component: reportBar, CombinedComponent: CombinedReportBar},
     heat: {label: 'Heatmap Report', Component: reportHeat},
     line: {
-      label: 'Area Chart Report',
+      label: 'Line Chart Report',
       Component: reportLine,
       CombinedComponent: CombinedReportLine
     },

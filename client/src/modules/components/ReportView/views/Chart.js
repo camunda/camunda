@@ -2,13 +2,15 @@ import React from 'react';
 import ChartRenderer from 'chart.js';
 import ReportBlankSlate from '../ReportBlankSlate';
 
-import {getRelativeValue, uniteResults, getLineTargetValues} from './service';
+import {getRelativeValue, uniteResults, calculateLinePosition} from './service';
 import {formatters} from 'services';
 
 import {themed} from 'theme';
 
 import './Chart.scss';
 import {darkColors, lightColors, numberOfStripes} from './Chart.colors.js';
+
+import './TargetValueChart';
 
 const {convertToMilliseconds} = formatters;
 
@@ -58,13 +60,14 @@ export default themed(
 
       this.destroyChart();
 
+      const isTargetLine = targetValue && targetValue.active && type === 'line';
+
       this.chart = new ChartRenderer(this.container, {
-        type,
+        type: isTargetLine ? 'targetLine' : type,
         data: this.createChartData(data, type, targetValue),
         options: this.createChartOptions(type, data, targetValue),
         plugins: [
           {
-            id: 'horizontalLine',
             afterDraw: this.drawHorizentalLine
           }
         ]
@@ -127,26 +130,25 @@ export default themed(
     createSingleTargetLineDataset = (targetValue, data, datasetColor, reportName) => {
       const isCombined = this.props.reportType === 'combined';
       const allValues = Object.values(data);
-      const targetValues = getLineTargetValues(allValues, targetValue.values);
 
       const datasets = [
         {
-          data: targetValues,
+          data: allValues,
           borderColor: isCombined ? datasetColor : this.getColorFor('targetBar'),
           pointBorderColor: this.getColorFor('targetBar'),
-          backgroundColor: isCombined ? 'transparent' : this.getColorFor('targetArea'),
+          backgroundColor: 'transparent',
           legendColor: datasetColor,
           borderWidth: 2,
-          lineTension: 0
+          renderArea: targetValue.values.isBelow ? 'bottom' : 'top'
         },
         {
           label: reportName,
           data: allValues,
           borderColor: datasetColor,
-          backgroundColor: isCombined ? 'transparent' : this.getColorFor('area'),
+          backgroundColor: 'transparent',
           legendColor: datasetColor,
           borderWidth: 2,
-          lineTension: 0
+          renderArea: targetValue.values.isBelow ? 'top' : 'bottom'
         }
       ];
 
@@ -155,20 +157,19 @@ export default themed(
 
     drawHorizentalLine = chart => {
       if (chart.options.lineAt) {
-        let lineAt = chart.options.lineAt;
-        const ctxPlugin = chart.chart.ctx;
+        const ctx = chart.chart.ctx;
         const xAxe = chart.scales[chart.options.scales.xAxes[0].id];
-        const yAxe = chart.scales[chart.options.scales.yAxes[0].id];
+        const lineAt = calculateLinePosition(chart);
 
-        ctxPlugin.strokeStyle = this.getColorFor('targetBar');
-        ctxPlugin.beginPath();
-        // calculate the percentage position of the whole axis
-        lineAt = lineAt * 100 / yAxe.max;
-        // calulate the position in pixel from the top axis
-        lineAt = (100 - lineAt) / 100 * yAxe.height + yAxe.top;
-        ctxPlugin.moveTo(xAxe.left, lineAt);
-        ctxPlugin.lineTo(xAxe.right, lineAt);
-        ctxPlugin.stroke();
+        ctx.save();
+        ctx.strokeStyle = this.getColorFor('targetBar');
+        ctx.setLineDash([10, 10]);
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(xAxe.left, lineAt);
+        ctx.lineTo(xAxe.right, lineAt);
+        ctx.stroke();
+        ctx.restore();
       }
     };
 
@@ -186,10 +187,9 @@ export default themed(
         case 'line':
           return {
             borderColor: isCombined ? datasetColor : this.getColorFor('bar'),
-            backgroundColor: isCombined ? 'transparent' : this.getColorFor('area'),
+            backgroundColor: 'transparent',
             borderWidth: 2,
-            legendColor: datasetColor,
-            lineTension: 0
+            legendColor: datasetColor
           };
         case 'bar':
           const barColor = targetValue

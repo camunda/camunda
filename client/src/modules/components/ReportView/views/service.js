@@ -1,5 +1,4 @@
 import {get} from 'request';
-import {formatters} from 'services';
 
 export async function getCamundaEndpoints() {
   const response = await get('api/camunda');
@@ -52,17 +51,8 @@ export function getBodyRows(unitedResults, allKeys, formatter, isFrequency, proc
   return rows;
 }
 
-export function getLineTargetValues(allValues, values) {
-  const lineValue = values.dateFormat
-    ? formatters.convertToMilliseconds(values.target, values.dateFormat)
-    : values.target;
+export function calculateLinePosition(chart) {
+  const yAxis = chart.scales[chart.options.scales.yAxes[0].id];
 
-  return allValues.map(height => {
-    const checkCase = values.isBelow ? height < lineValue : height >= lineValue;
-    if (checkCase) {
-      return null;
-    } else {
-      return height;
-    }
-  });
+  return (1 - chart.options.lineAt / yAxis.max) * yAxis.height + yAxis.top;
 }
