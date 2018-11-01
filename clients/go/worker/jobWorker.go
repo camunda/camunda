@@ -21,14 +21,14 @@ type JobWorker interface {
 }
 
 type jobWorkerController struct {
-	closePoller     chan bool
-	closeDispatcher chan bool
+	closePoller     chan struct{}
+	closeDispatcher chan struct{}
 	closeWait       *sync.WaitGroup
 }
 
 func (controller jobWorkerController) Close() {
-	controller.closePoller <- true
-	controller.closeDispatcher <- true
+	close(controller.closePoller)
+	close(controller.closeDispatcher)
 	controller.AwaitClose()
 }
 

@@ -19,7 +19,7 @@ type jobPoller struct {
 
 	jobQueue       chan entities.Job
 	workerFinished chan bool
-	closeSignal    chan bool
+	closeSignal    chan struct{}
 	remaining      int
 	threshold      int
 }

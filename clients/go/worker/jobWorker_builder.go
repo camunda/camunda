@@ -115,8 +115,8 @@ func (builder *JobWorkerBuilder) PollThreshold(pollThreshold float64) JobWorkerB
 func (builder *JobWorkerBuilder) Open() JobWorker {
 	jobQueue := make(chan entities.Job, builder.bufferSize)
 	workerFinished := make(chan bool, builder.bufferSize)
-	closePoller := make(chan bool, 1)
-	closeDispatcher := make(chan bool, 1)
+	closePoller := make(chan struct{})
+	closeDispatcher := make(chan struct{})
 	var closeWait sync.WaitGroup
 	closeWait.Add(2)
 

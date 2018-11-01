@@ -8,23 +8,21 @@ import (
 type jobDispatcher struct {
 	jobQueue       chan entities.Job
 	workerFinished chan bool
-	closeSignal    chan bool
+	closeSignal    chan struct{}
 }
 
 func (dispatcher *jobDispatcher) run(client JobClient, handler JobHandler, concurrency int, closeWait *sync.WaitGroup) {
 	defer closeWait.Done()
 
 	// prepare for shutdown
-	closeWorkers := make(chan bool, concurrency)
+	closeWorkers := make(chan struct{})
 	var workersClosed sync.WaitGroup
 	workersClosed.Add(concurrency)
 
-	awaitClose := func() {
-		for i := 0; i < concurrency; i++ {
-			closeWorkers <- true
-		}
+	defer func() {
+		close(closeWorkers)
 		workersClosed.Wait()
-	}
+	}()
 
 	// start concurrent workers
 	workerQueue := make(chan chan entities.Job, concurrency)
@@ -33,6 +31,7 @@ func (dispatcher *jobDispatcher) run(client JobClient, handler JobHandler, concu
 			defer workersClosed.Done()
 
 			work := make(chan entities.Job, 1)
+		workerLoop:
 			for {
 				workerQueue <- work
 				select {
@@ -40,12 +39,13 @@ func (dispatcher *jobDispatcher) run(client JobClient, handler JobHandler, concu
 					handler(client, job)
 					dispatcher.workerFinished <- true
 				case <-closeWorkers:
-					return
+					break workerLoop
 				}
 			}
 		}()
 	}
 
+loop:
 	for {
 		// wait for job or close signal
 		select {
@@ -55,12 +55,10 @@ func (dispatcher *jobDispatcher) run(client JobClient, handler JobHandler, concu
 			case worker := <-workerQueue:
 				worker <- job
 			case <-dispatcher.closeSignal:
-				awaitClose()
-				return
+				break loop
 			}
 		case <-dispatcher.closeSignal:
-			awaitClose()
-			return
+			break loop
 		}
 	}
 }
