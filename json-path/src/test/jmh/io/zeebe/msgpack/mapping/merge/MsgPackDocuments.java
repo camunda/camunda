@@ -29,7 +29,7 @@ import org.openjdk.jmh.annotations.State;
 
 @State(Scope.Thread)
 public class MsgPackDocuments {
-  @Param({"100", "1000", "10000"})
+  @Param({"1000"})
   public int keyCount;
 
   private final int maxDepth = 0;
