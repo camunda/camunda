@@ -20,7 +20,7 @@ export default class DurationInputs extends React.Component {
   };
 
   componentDidMount() {
-    if (this.props.configuration.targetValue.values) {
+    if (this.props.configuration.targetValue && this.props.configuration.targetValue.values) {
       return this.props.setData({...this.props.configuration.targetValue.values});
     }
     return this.props.setData({
