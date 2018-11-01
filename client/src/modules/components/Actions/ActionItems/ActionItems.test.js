@@ -44,7 +44,7 @@ describe('ActionItems', () => {
       expect(node.find(Styled.RetryIcon)).toExist();
     });
 
-    it('should use the input type as title', () => {
+    it('should display title', () => {
       expect(node.find(Styled.Button).props().title).toBe('Retry instance 1');
     });
 
@@ -70,7 +70,7 @@ describe('ActionItems', () => {
       expect(node.find(Styled.CancelIcon)).toExist();
     });
 
-    it('should use the input type as aria label', () => {
+    it('should display title', () => {
       expect(node.find(Styled.Button).props().title).toBe('Cancel instance 1');
     });
 
