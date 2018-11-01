@@ -36,18 +36,20 @@ export default class DiagramPanel extends React.Component {
         <Styled.SplitPaneHeader>
           <Styled.Table>
             <tbody>
-              <tr>
-                <td>
+              <Styled.Tr>
+                <Styled.Td>
                   <StateIcon instance={instance} />
                   {getWorkflowName(instance)}
-                </td>
-                <td>{instance.id}</td>
-                <td>{formatDate(instance.startDate)}</td>
-                <td>{formatDate(instance.endDate)}</td>
-                <td>
-                  <Actions instance={instance} />
-                </td>
-              </tr>
+                </Styled.Td>
+                <Styled.Td>{instance.id}</Styled.Td>
+                <Styled.Td>{formatDate(instance.startDate)}</Styled.Td>
+                <Styled.Td>{formatDate(instance.endDate)}</Styled.Td>
+                <Styled.Td>
+                  <Styled.ActionsWrapper>
+                    <Actions instance={instance} />
+                  </Styled.ActionsWrapper>
+                </Styled.Td>
+              </Styled.Tr>
             </tbody>
           </Styled.Table>
         </Styled.SplitPaneHeader>

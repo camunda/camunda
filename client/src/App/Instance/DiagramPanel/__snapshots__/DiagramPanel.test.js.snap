@@ -20,8 +20,8 @@ exports[`DiagramPanel should render pane header and body 1`] = `
   <Styled(PanelHeader)>
     <styled.table>
       <tbody>
-        <tr>
-          <td>
+        <styled.tr>
+          <styled.td>
             <Themed(StateIcon)
               instance={
                 Object {
@@ -34,30 +34,32 @@ exports[`DiagramPanel should render pane header and body 1`] = `
               }
             />
             bar
-          </td>
-          <td>
+          </styled.td>
+          <styled.td>
             foo
-          </td>
-          <td>
+          </styled.td>
+          <styled.td>
             20 Jun 2018 08:57:20
-          </td>
-          <td>
+          </styled.td>
+          <styled.td>
             Invalid Date
-          </td>
-          <td>
-            <Actions
-              instance={
-                Object {
-                  "endDate": "--",
-                  "id": "foo",
-                  "startDate": "Wed Jun 20 2018 08:57:20",
-                  "state": "ACTIVE",
-                  "workflowId": "bar",
+          </styled.td>
+          <styled.td>
+            <styled.div>
+              <Actions
+                instance={
+                  Object {
+                    "endDate": "--",
+                    "id": "foo",
+                    "startDate": "Wed Jun 20 2018 08:57:20",
+                    "state": "ACTIVE",
+                    "workflowId": "bar",
+                  }
                 }
-              }
-            />
-          </td>
-        </tr>
+              />
+            </styled.div>
+          </styled.td>
+        </styled.tr>
       </tbody>
     </styled.table>
   </Styled(PanelHeader)>
