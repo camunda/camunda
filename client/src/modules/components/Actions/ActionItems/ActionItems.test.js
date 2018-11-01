@@ -32,6 +32,7 @@ describe('ActionItems', () => {
         <ActionItems.Item
           type={OPERATION_TYPE.UPDATE_RETRIES}
           onClick={() => mockOnClick()}
+          title={'Retry instance 1'}
         />
       );
     });
@@ -43,8 +44,8 @@ describe('ActionItems', () => {
       expect(node.find(Styled.RetryIcon)).toExist();
     });
 
-    it('should use the input type as aria label', () => {
-      expect(node.find(Styled.Button).props()['aria-label']).toBe('Retry');
+    it('should use the input type as title', () => {
+      expect(node.find(Styled.Button).props().title).toBe('Retry instance 1');
     });
 
     it('should execute the passed method when clicked', () => {
@@ -59,6 +60,7 @@ describe('ActionItems', () => {
         <ActionItems.Item
           type={OPERATION_TYPE.CANCEL}
           onClick={() => mockOnClick()}
+          title={'Cancel instance 1'}
         />
       );
     });
@@ -69,7 +71,7 @@ describe('ActionItems', () => {
     });
 
     it('should use the input type as aria label', () => {
-      expect(node.find(Styled.Button).props()['aria-label']).toBe('Cancel');
+      expect(node.find(Styled.Button).props().title).toBe('Cancel instance 1');
     });
 
     it('should execute the passed method when clicked', () => {

@@ -64,12 +64,22 @@ export default class Actions extends React.Component {
     );
   };
 
-  renderItem = operationType => (
-    <ActionItems.Item
-      type={operationType}
-      onClick={() => this.handleOnClick(operationType)}
-    />
-  );
+  renderItem = operationType => {
+    const ariaLabelMap = {
+      [OPERATION_TYPE.CANCEL]: 'Cancel',
+      [OPERATION_TYPE.UPDATE_RETRIES]: 'Retry'
+    };
+
+    return (
+      <ActionItems.Item
+        type={operationType}
+        onClick={() => this.handleOnClick(operationType)}
+        title={`${ariaLabelMap[operationType]} instance ${
+          this.props.instance.id
+        }`}
+      />
+    );
+  };
 
   renderActionButtons = () => (
     <ActionItems>

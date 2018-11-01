@@ -9,11 +9,6 @@ const iconsMap = {
   [OPERATION_TYPE.CANCEL]: Styled.CancelIcon
 };
 
-const ariaLabelMap = {
-  [OPERATION_TYPE.CANCEL]: 'Cancel',
-  [OPERATION_TYPE.UPDATE_RETRIES]: 'Retry'
-};
-
 export default function ActionItems(props) {
   return (
     <Styled.Ul {...props}>{React.Children.toArray(props.children)}</Styled.Ul>
@@ -24,16 +19,12 @@ ActionItems.propTypes = {
   children: PropTypes.node.isRequired
 };
 
-ActionItems.Item = function Item(props) {
-  const Icon = iconsMap[props.type];
+ActionItems.Item = function Item({title, onClick, type, ...rest}) {
+  const Icon = iconsMap[type];
 
   return (
     <li>
-      <Styled.Button
-        {...props}
-        aria-label={ariaLabelMap[props.type]}
-        onClick={props.onClick}
-      >
+      <Styled.Button {...rest} type={type} title={title} onClick={onClick}>
         <Icon />
       </Styled.Button>
     </li>
@@ -42,5 +33,6 @@ ActionItems.Item = function Item(props) {
 
 ActionItems.Item.propTypes = {
   type: PropTypes.oneOf(Object.keys(OPERATION_TYPE)).isRequired,
-  onClick: PropTypes.func
+  onClick: PropTypes.func,
+  title: PropTypes.string
 };
