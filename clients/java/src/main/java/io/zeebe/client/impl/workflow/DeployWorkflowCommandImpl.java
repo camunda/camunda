@@ -56,7 +56,7 @@ public class DeployWorkflowCommandImpl
 
     request.addWorkflows(
         WorkflowRequestObject.newBuilder()
-            .setType(getResourceType(resourceName))
+            .setType(WorkflowRequestObject.ResourceType.FILE)
             .setName(resourceName)
             .setDefinition(ByteString.copyFrom(resource)));
 
@@ -132,19 +132,6 @@ public class DeployWorkflowCommandImpl
     final ByteArrayOutputStream outStream = new ByteArrayOutputStream();
     Bpmn.writeModelToStream(outStream, workflowDefinition);
     return addResourceBytes(outStream.toByteArray(), resourceName);
-  }
-
-  private WorkflowRequestObject.ResourceType getResourceType(String resourceName) {
-    resourceName = resourceName.toLowerCase();
-
-    if (resourceName.endsWith(".yaml")) {
-      return WorkflowRequestObject.ResourceType.YAML;
-    } else if (resourceName.endsWith(".bpmn") || resourceName.endsWith(".bpmn20.xml")) {
-      return WorkflowRequestObject.ResourceType.BPMN;
-    } else {
-      throw new RuntimeException(
-          String.format("Cannot resolve type of resource '%s'.", resourceName));
-    }
   }
 
   @Override

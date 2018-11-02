@@ -26,17 +26,17 @@ func TestDeployCommand(t *testing.T) {
 		Workflows: []*pb.WorkflowRequestObject{
 			{
 				Name:       demoName,
-				Type:       pb.WorkflowRequestObject_BPMN,
+				Type:       pb.WorkflowRequestObject_FILE,
 				Definition: demoBytes,
 			},
 			{
 				Name:       anotherName,
-				Type:       pb.WorkflowRequestObject_BPMN,
+				Type:       pb.WorkflowRequestObject_FILE,
 				Definition: anotherBytes,
 			},
 			{
 				Name:       yamlName,
-				Type:       pb.WorkflowRequestObject_YAML,
+				Type:       pb.WorkflowRequestObject_FILE,
 				Definition: yamlBytes,
 			},
 		},

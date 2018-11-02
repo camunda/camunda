@@ -5,7 +5,6 @@ import (
 	"github.com/zeebe-io/zeebe/clients/go/pb"
 	"io/ioutil"
 	"log"
-	"strings"
 	"time"
 )
 
@@ -16,17 +15,12 @@ type DeployCommand struct {
 }
 
 func (cmd *DeployCommand) AddResourceFile(path string) *DeployCommand {
-	workflowType := pb.WorkflowRequestObject_BPMN
-	if strings.HasSuffix(path, ".yaml") || strings.HasSuffix(path, ".yml") {
-		workflowType = pb.WorkflowRequestObject_YAML
-	}
-
 	b, err := ioutil.ReadFile(path)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	cmd.request.Workflows = append(cmd.request.Workflows, &pb.WorkflowRequestObject{Definition: b, Name: path, Type: workflowType})
+	cmd.request.Workflows = append(cmd.request.Workflows, &pb.WorkflowRequestObject{Definition: b, Name: path, Type: pb.WorkflowRequestObject_FILE})
 	return cmd
 }
 

@@ -60,7 +60,8 @@ public class RequestMapper {
     final BrokerDeployWorkflowRequest brokerRequest = new BrokerDeployWorkflowRequest();
 
     for (WorkflowRequestObject workflow : grpcRequest.getWorkflowsList()) {
-      brokerRequest.addResource(workflow.getDefinition().toByteArray(), workflow.getName());
+      brokerRequest.addResource(
+          workflow.getDefinition().toByteArray(), workflow.getName(), workflow.getType());
     }
 
     return brokerRequest;
