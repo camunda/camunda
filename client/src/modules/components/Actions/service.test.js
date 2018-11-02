@@ -93,10 +93,10 @@ describe('Action services', () => {
       });
 
     describe('getLatestOperation', () => {
-      it('should return "" when no operations are available', () => {
+      it('should return {} when no operations are available', () => {
         mockOperations = [];
         createMockOperations(0, mockOperations);
-        expect(getLatestOperation(mockOperations)).toEqual('');
+        expect(getLatestOperation(mockOperations)).toEqual({});
       });
 
       it('should retrun operations sorted in ascending order by startDate', () => {

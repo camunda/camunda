@@ -15,24 +15,25 @@ const isOperationScheduled = operationState => {
 const isOperationFailed = operationState =>
   operationState === OPERATION_STATE.FAILED;
 
-const renderActionSpinner = (operationState, selected) =>
-  isOperationScheduled(operationState) && (
-    <Styled.ActionSpinner selected={selected} />
-  );
+const ActionStatus = ({operationState, operationType, selected}) => {
+  const isScheduled = isOperationScheduled(operationState);
+  const isFailed = isOperationFailed(operationState);
 
-const renderFailedStatus = (operationState, operationType) =>
-  isOperationFailed(operationState) && (
-    <StatusItems>
-      <StatusItems.Item type={operationType} />
-    </StatusItems>
-  );
+  if (!(isScheduled || isFailed)) {
+    return null;
+  }
 
-const ActionStatus = ({operationState, operationType, selected}) => (
-  <div>
-    {renderActionSpinner(operationState, selected)}
-    {renderFailedStatus(operationState, operationType)}
-  </div>
-);
+  return (
+    <div>
+      {isScheduled && <Styled.ActionSpinner selected={selected} />}
+      {isFailed && (
+        <StatusItems>
+          <StatusItems.Item type={operationType} />
+        </StatusItems>
+      )}
+    </div>
+  );
+};
 
 export default ActionStatus;
 
