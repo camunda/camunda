@@ -18,7 +18,7 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.ReportDataHelper;
+import org.camunda.optimize.test.util.ReportDataBuilderHelper;
 import org.quartz.JobKey;
 import org.quartz.SchedulerException;
 
@@ -36,7 +36,7 @@ import java.util.Map;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
 import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
-import static org.camunda.optimize.test.util.ReportDataHelper.createAvgPiDurationAsNumberGroupByNone;
+import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createAvgPiDurationAsNumberGroupByNone;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -192,7 +192,7 @@ public abstract class AbstractAlertIT {
 
   protected SingleReportDefinitionDto getReportDefinitionDto(String processDefinitionKey, String processDefinitionVersion) {
     SingleReportDataDto reportData =
-      ReportDataHelper.createPiFrequencyCountGroupedByNoneAsNumber(processDefinitionKey, processDefinitionVersion);
+      ReportDataBuilderHelper.createPiFrequencyCountGroupedByNoneAsNumber(processDefinitionKey, processDefinitionVersion);
     SingleReportDefinitionDto report = new SingleReportDefinitionDto();
     report.setData(reportData);
     report.setId("something");

@@ -10,7 +10,7 @@ import org.junit.Test;
 
 import java.util.List;
 
-import static org.camunda.optimize.test.util.ReportDataHelper.createReportDataViewRawAsTable;
+import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createReportDataViewRawAsTable;
 import static org.hamcrest.CoreMatchers.is;
 
 

@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.ALL_VERSIONS;
-import static org.camunda.optimize.test.util.ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode;
+import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNode;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;

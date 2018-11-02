@@ -11,7 +11,7 @@ import org.junit.runners.Parameterized;
 import java.util.Arrays;
 import java.util.Collection;
 
-import static org.camunda.optimize.test.util.ReportDataHelper.createReportDataViewRawAsTable;
+import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createReportDataViewRawAsTable;
 
 
 

@@ -18,8 +18,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,7 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import static org.camunda.optimize.test.util.ReportDataHelper.createReportDataViewRawAsTable;
+import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createReportDataViewRawAsTable;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 

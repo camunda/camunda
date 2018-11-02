@@ -11,13 +11,11 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.ReportDataHelper;
+import org.camunda.optimize.test.util.ReportDataBuilderHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.ByteArrayOutputStream;
 import java.io.InputStream;
@@ -51,7 +49,7 @@ public class UnsupportedReportExportServiceIT {
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    SingleReportDataDto currentReport = ReportDataHelper.createAvgPiDurationAsNumberGroupByNone(
+    SingleReportDataDto currentReport = ReportDataBuilderHelper.createAvgPiDurationAsNumberGroupByNone(
         processInstance.getProcessDefinitionKey(),processInstance.getProcessDefinitionVersion());
     String reportId = createAndStoreDefaultReportDefinition(currentReport);
 

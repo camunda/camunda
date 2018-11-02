@@ -12,13 +12,11 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.ReportDataHelper;
+import org.camunda.optimize.test.util.ReportDataBuilderHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.util.Collections;
 import java.util.List;
@@ -57,7 +55,7 @@ public class CanceledInstancesOnlyFilterIT {
 
     // when
     SingleReportDataDto reportData =
-            ReportDataHelper.createReportDataViewRawAsTable(userTaskProcess.getKey(), String.valueOf(userTaskProcess.getVersion()));
+            ReportDataBuilderHelper.createReportDataViewRawAsTable(userTaskProcess.getKey(), String.valueOf(userTaskProcess.getVersion()));
     reportData.setFilter(Collections.singletonList(new CanceledInstancesOnlyFilterDto()));
     RawDataSingleReportResultDto result = evaluateReport(reportData);
 
@@ -94,7 +92,7 @@ public class CanceledInstancesOnlyFilterIT {
 
     // when
     SingleReportDataDto reportData =
-            ReportDataHelper.createReportDataViewRawAsTable(userTaskProcess.getKey(), String.valueOf(userTaskProcess.getVersion()));
+            ReportDataBuilderHelper.createReportDataViewRawAsTable(userTaskProcess.getKey(), String.valueOf(userTaskProcess.getVersion()));
     reportData.setFilter(Collections.singletonList(new CanceledInstancesOnlyFilterDto()));
     RawDataSingleReportResultDto result = evaluateReport(reportData);
 
@@ -125,7 +123,7 @@ public class CanceledInstancesOnlyFilterIT {
 
     // when
     SingleReportDataDto reportData =
-            ReportDataHelper.createReportDataViewRawAsTable(userTaskProcess.getKey(), String.valueOf(userTaskProcess.getVersion()));
+            ReportDataBuilderHelper.createReportDataViewRawAsTable(userTaskProcess.getKey(), String.valueOf(userTaskProcess.getVersion()));
     reportData.setFilter(Collections.singletonList(new CanceledInstancesOnlyFilterDto()));
     RawDataSingleReportResultDto result = evaluateReport(reportData);
 

@@ -10,7 +10,7 @@ import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchDto;
 import org.camunda.optimize.dto.optimize.query.sharing.ShareSearchResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.exceptions.ReportEvaluationException;
-import org.camunda.optimize.test.util.ReportDataHelper;
+import org.camunda.optimize.test.util.ReportDataBuilderHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -21,7 +21,10 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 
-import static org.hamcrest.CoreMatchers.*;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class SharingServiceIT extends AbstractSharingIT {
@@ -634,7 +637,7 @@ public class SharingServiceIT extends AbstractSharingIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     String reportId = this.createNewReport();
-    SingleReportDataDto reportData = ReportDataHelper
+    SingleReportDataDto reportData = ReportDataBuilderHelper
       .createCountFlowNodeFrequencyGroupByFlowNodeNumber(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion()

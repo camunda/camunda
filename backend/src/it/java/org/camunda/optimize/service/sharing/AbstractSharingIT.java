@@ -17,12 +17,18 @@ import org.camunda.optimize.service.exceptions.ReportEvaluationException;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.ReportDataHelper;
+import org.camunda.optimize.test.util.ReportDataBuilderHelper;
 
 import javax.ws.rs.core.Response;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.*;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.ALL_PERMISSION;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.AUTHORIZATION_TYPE_GRANT;
+import static org.camunda.optimize.service.util.configuration.EngineConstantsUtil.RESOURCE_TYPE_PROCESS_DEFINITION;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -50,7 +56,7 @@ public abstract class AbstractSharingIT {
 
     String reportId = this.createNewReport();
     SingleReportDataDto reportData =
-      ReportDataHelper.createReportDataViewRawAsTable(
+      ReportDataBuilderHelper.createReportDataViewRawAsTable(
         processInstance.getProcessDefinitionKey(),
         processInstance.getProcessDefinitionVersion());
     SingleReportDefinitionDto report = new SingleReportDefinitionDto();

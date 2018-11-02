@@ -12,7 +12,7 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.ReportDataHelper;
+import org.camunda.optimize.test.util.ReportDataBuilderHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -154,7 +154,7 @@ public class ExportLimitsIT {
   private String createAndStoreDefaultReportDefinition(String processDefinitionKey,
                                                        String processDefinitionVersion) {
     String id = createNewReportHelper();
-    SingleReportDataDto reportData = ReportDataHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
+    SingleReportDataDto reportData = ReportDataBuilderHelper.createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
     SingleReportDefinitionDto report = new SingleReportDefinitionDto();
     report.setData(reportData);
     report.setId("something");

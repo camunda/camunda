@@ -22,10 +22,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.time.temporal.ChronoUnit;
@@ -38,7 +34,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.camunda.optimize.test.util.ReportDataHelper.createReportDataViewRawAsTable;
+import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createReportDataViewRawAsTable;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;

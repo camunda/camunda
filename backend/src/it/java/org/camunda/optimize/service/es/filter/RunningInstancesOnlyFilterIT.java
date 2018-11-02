@@ -14,16 +14,12 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
-
-import java.io.IOException;
 import java.util.Collections;
 
-import static org.camunda.optimize.test.util.ReportDataHelper.*;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createReportDataViewRawAsTable;
 import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 
 
 

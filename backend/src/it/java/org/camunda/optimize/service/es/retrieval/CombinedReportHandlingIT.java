@@ -38,10 +38,10 @@ import static org.camunda.optimize.service.es.report.command.util.ReportConstant
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.TABLE_VISUALIZATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_PROCESS_INSTANCE_ENTITY;
 import static org.camunda.optimize.test.it.rule.TestEmbeddedCamundaOptimize.DEFAULT_USERNAME;
-import static org.camunda.optimize.test.util.ReportDataHelper.createCombinedReport;
-import static org.camunda.optimize.test.util.ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode;
-import static org.camunda.optimize.test.util.ReportDataHelper.createPiFrequencyCountGroupedByNone;
-import static org.camunda.optimize.test.util.ReportDataHelper.createReportDataViewRawAsTable;
+import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createCombinedReport;
+import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNode;
+import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createPiFrequencyCountGroupedByNone;
+import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createReportDataViewRawAsTable;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;

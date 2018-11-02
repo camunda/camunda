@@ -21,7 +21,7 @@ import org.camunda.optimize.service.exceptions.ReportEvaluationException;
 import org.camunda.optimize.service.sharing.AbstractSharingIT;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.test.util.ReportDataHelper;
+import org.camunda.optimize.test.util.ReportDataBuilderHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
@@ -147,10 +147,10 @@ public class ReportRestServiceIT {
   public void updateSingleReportFailsWithConflictIfUsedInCombinedReportAndNotCombinableAnymoreWhenForceSet(Boolean force) {
     // given
     String firstSingleReportId = createAndStoreDefaultReportDefinition(
-      ReportDataHelper.createReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION)
+      ReportDataBuilderHelper.createReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION)
     );
     String secondSingleReportId = createAndStoreDefaultReportDefinition(
-      ReportDataHelper.createReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION)
+      ReportDataBuilderHelper.createReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION)
     );
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -161,7 +161,7 @@ public class ReportRestServiceIT {
     // when
     final SingleReportDefinitionDto firstSingleReport = (SingleReportDefinitionDto) getReport(firstSingleReportId);
     final SingleReportDefinitionDto reportUpdate = new SingleReportDefinitionDto();
-    reportUpdate.setData(ReportDataHelper.createAverageProcessInstanceDurationGroupByStartDateReport(
+    reportUpdate.setData(ReportDataBuilderHelper.createAverageProcessInstanceDurationGroupByStartDateReport(
       firstSingleReport.getData().getProcessDefinitionKey(),
       firstSingleReport.getData().getProcessDefinitionVersion(),
       ReportConstants.DATE_UNIT_DAY
@@ -183,7 +183,7 @@ public class ReportRestServiceIT {
   public void updateSingleReportFailsWithConflictIfUsedInAlertAndSuitableforAklertAnymoreWhenForceSet(Boolean force) {
     // given
     String reportId = createAndStoreDefaultReportDefinition(
-      ReportDataHelper.createPiFrequencyCountGroupedByNoneAsNumber(RANDOM_KEY, RANDOM_VERSION)
+      ReportDataBuilderHelper.createPiFrequencyCountGroupedByNoneAsNumber(RANDOM_KEY, RANDOM_VERSION)
     );
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -194,7 +194,7 @@ public class ReportRestServiceIT {
     // when
     final SingleReportDefinitionDto singleReport = (SingleReportDefinitionDto) getReport(reportId);
     final SingleReportDefinitionDto reportUpdate = new SingleReportDefinitionDto();
-    reportUpdate.setData(ReportDataHelper.createAverageProcessInstanceDurationGroupByStartDateReport(
+    reportUpdate.setData(ReportDataBuilderHelper.createAverageProcessInstanceDurationGroupByStartDateReport(
       singleReport.getData().getProcessDefinitionKey(),
       singleReport.getData().getProcessDefinitionVersion(),
       ReportConstants.DATE_UNIT_DAY
@@ -425,7 +425,7 @@ public class ReportRestServiceIT {
   public void evaluateReportById() {
     //given
     String id = createAndStoreDefaultReportDefinition(
-      ReportDataHelper.createReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION)
+      ReportDataBuilderHelper.createReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION)
     );
 
     // then
@@ -442,7 +442,7 @@ public class ReportRestServiceIT {
   public void evaluateInvalidReportById() {
     //given
     String id = createAndStoreDefaultReportDefinition(
-      ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNodeNumber(RANDOM_KEY, RANDOM_VERSION)
+      ReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNodeNumber(RANDOM_KEY, RANDOM_VERSION)
     );
 
     // then
@@ -471,7 +471,7 @@ public class ReportRestServiceIT {
   @Test
   public void evaluateUnsavedReport() {
     //given
-    SingleReportDataDto reportDataDto = ReportDataHelper.createReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION);
+    SingleReportDataDto reportDataDto = ReportDataBuilderHelper.createReportDataViewRawAsTable(RANDOM_KEY, RANDOM_VERSION);
 
     // then
     Response response = embeddedOptimizeRule
@@ -499,7 +499,7 @@ public class ReportRestServiceIT {
   @Test
   public void evaluateCombinedUnsavedReport() {
     // then
-    CombinedReportDataDto combinedReport = ReportDataHelper.createCombinedReport();
+    CombinedReportDataDto combinedReport = ReportDataBuilderHelper.createCombinedReport();
     Response response = embeddedOptimizeRule
       .getRequestExecutor()
       .buildEvaluateCombinedUnsavedReportRequest(combinedReport)
@@ -533,7 +533,7 @@ public class ReportRestServiceIT {
   @Test
   public void nullReportIdsThrowsReportEvaluationException() {
     // then
-    CombinedReportDataDto combinedReport = ReportDataHelper.createCombinedReport();
+    CombinedReportDataDto combinedReport = ReportDataBuilderHelper.createCombinedReport();
     combinedReport.setReportIds(null);
 
     ReportEvaluationException errorMessage = embeddedOptimizeRule
@@ -550,7 +550,7 @@ public class ReportRestServiceIT {
   public void evaluateReportWithoutViewById() {
     //given
     SingleReportDataDto countFlowNodeFrequencyGroupByFlowNoneNumber =
-      ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNodeNumber(RANDOM_KEY, RANDOM_VERSION);
+      ReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNodeNumber(RANDOM_KEY, RANDOM_VERSION);
     countFlowNodeFrequencyGroupByFlowNoneNumber.setView(null);
     String id = createAndStoreDefaultReportDefinition(
       countFlowNodeFrequencyGroupByFlowNoneNumber

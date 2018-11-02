@@ -13,22 +13,17 @@ import org.camunda.optimize.dto.optimize.query.report.single.filter.VariableFilt
 import org.camunda.optimize.dto.optimize.query.report.single.result.NumberSingleReportResultDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.service.es.report.command.util.ReportConstants;
-import org.camunda.optimize.service.es.report.util.creator.avg.AvgProcessInstanceDurationByNoneReportDataCreator;
-import org.camunda.optimize.service.es.report.util.creator.max.MaxProcessInstanceDurationByNoneReportDataCreator;
-import org.camunda.optimize.service.es.report.util.creator.median.MedianProcessInstanceDurationByNoneReportDataCreator;
-import org.camunda.optimize.service.es.report.util.creator.min.MinProcessInstanceDurationByNoneReportDataCreator;
-import org.camunda.optimize.service.es.report.util.creator.ReportDataCreator;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
+import org.camunda.optimize.test.util.ReportDataBuilder;
+import org.camunda.optimize.test.util.ReportDataType;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.Collections;
@@ -69,7 +64,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
   @Test
   @Parameters
-  public void reportEvaluationForOneProcess(ReportDataCreator creator, String operation) throws Exception {
+  public void reportEvaluationForOneProcess(ReportDataType reportDataType, String operation) throws Exception {
 
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
@@ -81,7 +76,13 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    SingleReportDataDto reportData = creator.create(processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion());
+    SingleReportDataDto reportData = ReportDataBuilder
+            .createReportData()
+            .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+            .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
+            .setReportDataType(reportDataType)
+            .build();
+
     NumberSingleReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -101,16 +102,16 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
   private Object[] parametersForReportEvaluationForOneProcess() {
     return new Object[]{
-      new Object[]{new AvgProcessInstanceDurationByNoneReportDataCreator(), VIEW_AVERAGE_OPERATION},
-      new Object[]{new MinProcessInstanceDurationByNoneReportDataCreator(), VIEW_MIN_OPERATION},
-      new Object[]{new MaxProcessInstanceDurationByNoneReportDataCreator(), VIEW_MAX_OPERATION},
-      new Object[]{new MedianProcessInstanceDurationByNoneReportDataCreator(), VIEW_MEDIAN_OPERATION}
+      new Object[]{ReportDataType.AVG_PROC_INST_DUR_GROUP_BY_NONE, VIEW_AVERAGE_OPERATION},
+      new Object[]{ReportDataType.MIN_PROC_INST_DUR_GROUP_BY_NONE, VIEW_MIN_OPERATION},
+      new Object[]{ReportDataType.MAX_PROC_INST_DUR_GROUP_BY_NONE, VIEW_MAX_OPERATION},
+      new Object[]{ReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_NONE, VIEW_MEDIAN_OPERATION}
     };
   }
 
   @Test
   @Parameters
-  public void reportEvaluationById(ReportDataCreator creator, String operation) throws Exception {
+  public void reportEvaluationById(ReportDataType reportDataType, String operation) throws Exception {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -119,8 +120,13 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
     engineDatabaseRule.changeProcessInstanceEndDate(processInstanceDto.getId(), startDate.plusSeconds(1));
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-    SingleReportDataDto reportDataDto =
-      creator.create(processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion());
+    SingleReportDataDto reportDataDto = ReportDataBuilder
+            .createReportData()
+            .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+            .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
+            .setReportDataType(reportDataType)
+            .build();
+
     String reportId = createAndStoreDefaultReportDefinition(reportDataDto);
 
     // when
@@ -142,16 +148,16 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
   private Object[] parametersForReportEvaluationById() {
     return new Object[]{
-      new Object[]{new AvgProcessInstanceDurationByNoneReportDataCreator(), VIEW_AVERAGE_OPERATION},
-      new Object[]{new MinProcessInstanceDurationByNoneReportDataCreator(), VIEW_MIN_OPERATION},
-      new Object[]{new MaxProcessInstanceDurationByNoneReportDataCreator(), VIEW_MAX_OPERATION},
-      new Object[]{new MedianProcessInstanceDurationByNoneReportDataCreator(), VIEW_MEDIAN_OPERATION}
+      new Object[]{ReportDataType.AVG_PROC_INST_DUR_GROUP_BY_NONE, VIEW_AVERAGE_OPERATION},
+      new Object[]{ReportDataType.MIN_PROC_INST_DUR_GROUP_BY_NONE, VIEW_MIN_OPERATION},
+      new Object[]{ReportDataType.MAX_PROC_INST_DUR_GROUP_BY_NONE, VIEW_MAX_OPERATION},
+      new Object[]{ReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_NONE, VIEW_MEDIAN_OPERATION}
     };
   }
 
   @Test
   @Parameters
-  public void evaluateReportForMultipleEvents(ReportDataCreator reportDataCreator, Long expectedDuration) throws Exception {
+  public void evaluateReportForMultipleEvents(ReportDataType reportDataType, Long expectedDuration) throws Exception {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -173,9 +179,13 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    SingleReportDataDto reportData =
-      reportDataCreator.create(processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion());
-    NumberSingleReportResultDto result = evaluateReport(reportData);
+    SingleReportDataDto reportDataDto = ReportDataBuilder
+            .createReportData()
+            .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+            .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
+            .setReportDataType(reportDataType)
+            .build();
+    NumberSingleReportResultDto result = evaluateReport(reportDataDto);
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
@@ -184,19 +194,24 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
   private Object[] parametersForEvaluateReportForMultipleEvents() {
     return new Object[]{
-      new Object[]{new AvgProcessInstanceDurationByNoneReportDataCreator(), 4000L},
-      new Object[]{new MinProcessInstanceDurationByNoneReportDataCreator(), 1000L},
-      new Object[]{new MaxProcessInstanceDurationByNoneReportDataCreator(), 9000L},
-      new Object[]{new MedianProcessInstanceDurationByNoneReportDataCreator(), 2000L}
+      new Object[]{ReportDataType.AVG_PROC_INST_DUR_GROUP_BY_NONE, 4000L},
+      new Object[]{ReportDataType.MIN_PROC_INST_DUR_GROUP_BY_NONE, 1000L},
+      new Object[]{ReportDataType.MAX_PROC_INST_DUR_GROUP_BY_NONE, 9000L},
+      new Object[]{ReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_NONE, 2000L}
     };
   }
 
   @Test
-  @Parameters(source = ReportDataCreatorProvider.class)
-  public void noAvailableProcessInstancesReturnsZero(ReportDataCreator reportDataCreator) {
+  @Parameters(source = ReportDataBuilderProvider.class)
+  public void noAvailableProcessInstancesReturnsZero(ReportDataType reportDataType) {
     // when
-    SingleReportDataDto reportData =
-      reportDataCreator.create("fooProcessDefinition", "1");
+    SingleReportDataDto reportData = ReportDataBuilder
+            .createReportData()
+            .setProcessDefinitionKey("fooProcDef")
+            .setProcessDefinitionVersion("1")
+            .setReportDataType(reportDataType)
+            .build();
+
     NumberSingleReportResultDto result = evaluateReport(reportData);
 
     // then
@@ -206,7 +221,7 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
   @Test
   @Parameters
-  public void reportAcrossAllVersions(ReportDataCreator reportDataCreator, Long expectedDuration) throws Exception {
+  public void reportAcrossAllVersions(ReportDataType reportDataType, Long expectedDuration) throws Exception {
     //given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -224,10 +239,14 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
 
     // when
-    SingleReportDataDto reportData = reportDataCreator.create(
-        processInstanceDto.getProcessDefinitionKey(), ReportConstants.ALL_VERSIONS
-    );
-    NumberSingleReportResultDto result = evaluateReport(reportData);
+    SingleReportDataDto reportDataDto = ReportDataBuilder
+            .createReportData()
+            .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+            .setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS)
+            .setReportDataType(reportDataType)
+            .build();
+
+    NumberSingleReportResultDto result = evaluateReport(reportDataDto);
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
@@ -236,16 +255,16 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
   private Object[] parametersForReportAcrossAllVersions() {
     return new Object[]{
-      new Object[]{new AvgProcessInstanceDurationByNoneReportDataCreator(), 4000L},
-      new Object[]{new MinProcessInstanceDurationByNoneReportDataCreator(), 1000L},
-      new Object[]{new MaxProcessInstanceDurationByNoneReportDataCreator(), 9000L},
-      new Object[]{new MedianProcessInstanceDurationByNoneReportDataCreator(), 2000L}
+      new Object[]{ReportDataType.AVG_PROC_INST_DUR_GROUP_BY_NONE, 4000L},
+      new Object[]{ReportDataType.MIN_PROC_INST_DUR_GROUP_BY_NONE, 1000L},
+      new Object[]{ReportDataType.MAX_PROC_INST_DUR_GROUP_BY_NONE, 9000L},
+      new Object[]{ReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_NONE, 2000L}
     };
   }
 
   @Test
   @Parameters
-  public void otherProcessDefinitionsDoNoAffectResult(ReportDataCreator reportDataCreator, Long expectedDuration) throws Exception {
+  public void otherProcessDefinitionsDoNoAffectResult(ReportDataType reportDataType, Long expectedDuration) throws Exception {
     // given
     OffsetDateTime startDate = OffsetDateTime.now();
     ProcessInstanceEngineDto processInstanceDto = deployAndStartSimpleServiceTaskProcess();
@@ -266,10 +285,14 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    SingleReportDataDto reportData = reportDataCreator.create(
-        processDefinitionKey, processDefinitionVersion
-    );
-    NumberSingleReportResultDto result = evaluateReport(reportData);
+    SingleReportDataDto reportDataDto = ReportDataBuilder
+            .createReportData()
+            .setProcessDefinitionKey(processDefinitionKey)
+            .setProcessDefinitionVersion(processDefinitionVersion)
+            .setReportDataType(reportDataType)
+            .build();
+
+    NumberSingleReportResultDto result = evaluateReport(reportDataDto);
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
@@ -278,16 +301,16 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
 
   private Object[] parametersForOtherProcessDefinitionsDoNoAffectResult() {
     return new Object[]{
-      new Object[]{new AvgProcessInstanceDurationByNoneReportDataCreator(), 4000L},
-      new Object[]{new MinProcessInstanceDurationByNoneReportDataCreator(), 1000L},
-      new Object[]{new MaxProcessInstanceDurationByNoneReportDataCreator(), 9000L},
-      new Object[]{new MedianProcessInstanceDurationByNoneReportDataCreator(), 2000L}
+      new Object[]{ReportDataType.AVG_PROC_INST_DUR_GROUP_BY_NONE, 4000L},
+      new Object[]{ReportDataType.MIN_PROC_INST_DUR_GROUP_BY_NONE, 1000L},
+      new Object[]{ReportDataType.MAX_PROC_INST_DUR_GROUP_BY_NONE, 9000L},
+      new Object[]{ReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_NONE, 2000L}
     };
   }
 
   @Test
-  @Parameters(source = ReportDataCreatorProvider.class)
-  public void filterInReportWorks(ReportDataCreator reportDataCreator) throws Exception {
+  @Parameters(source = ReportDataBuilderProvider.class)
+  public void filterInReportWorks(ReportDataType reportDataType) throws Exception {
     // given
     Map<String, Object> variables = new HashMap<>();
     variables.put("var", true);
@@ -301,9 +324,13 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    SingleReportDataDto reportData = reportDataCreator.create(
-        processInstanceDto.getProcessDefinitionKey(), processInstanceDto.getProcessDefinitionVersion()
-    );
+    SingleReportDataDto reportData = ReportDataBuilder
+            .createReportData()
+            .setProcessDefinitionKey(processInstanceDto.getProcessDefinitionKey())
+            .setProcessDefinitionVersion(processInstanceDto.getProcessDefinitionVersion())
+            .setReportDataType(reportDataType)
+            .build();
+
     reportData.setFilter(createVariableFilter("var", "true"));
     NumberSingleReportResultDto result = evaluateReport(reportData);
 
@@ -324,10 +351,16 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
   }
 
   @Test
-  @Parameters(source = ReportDataCreatorProvider.class)
-  public void optimizeExceptionOnViewPropertyIsNull(ReportDataCreator reportDataCreator) {
+  @Parameters(source = ReportDataBuilderProvider.class)
+  public void optimizeExceptionOnViewPropertyIsNull(ReportDataType reportDataType) {
     // given
-    SingleReportDataDto dataDto = reportDataCreator.create(PROCESS_DEFINITION_KEY, "1");
+    SingleReportDataDto dataDto = ReportDataBuilder
+            .createReportData()
+            .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
+            .setProcessDefinitionVersion("1")
+            .setReportDataType(reportDataType)
+            .build();
+
     dataDto.getView().setProperty(null);
 
     //when
@@ -338,10 +371,16 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
   }
 
   @Test
-  @Parameters(source = ReportDataCreatorProvider.class)
-  public void optimizeExceptionOnGroupByTypeIsNull(ReportDataCreator reportDataCreator) {
+  @Parameters(source = ReportDataBuilderProvider.class)
+  public void optimizeExceptionOnGroupByTypeIsNull(ReportDataType reportDataType) {
     // given
-    SingleReportDataDto dataDto = reportDataCreator.create(PROCESS_DEFINITION_KEY, "1");
+    SingleReportDataDto dataDto = ReportDataBuilder
+            .createReportData()
+            .setProcessDefinitionKey(PROCESS_DEFINITION_KEY)
+            .setProcessDefinitionVersion("1")
+            .setReportDataType(reportDataType)
+            .build();
+
     dataDto.getGroupBy().setType(null);
 
     //when
@@ -435,13 +474,13 @@ public class ProcessInstanceDurationByNoneReportEvaluationIT {
             .execute(NumberSingleReportResultDto.class, 200);
   }
 
-  public static class ReportDataCreatorProvider {
+  public static class ReportDataBuilderProvider {
     public static Object[] provideReportDataCreator() {
       return new Object[]{
-        new Object[]{new AvgProcessInstanceDurationByNoneReportDataCreator()},
-        new Object[]{new MinProcessInstanceDurationByNoneReportDataCreator()},
-        new Object[]{new MaxProcessInstanceDurationByNoneReportDataCreator()},
-        new Object[]{new MedianProcessInstanceDurationByNoneReportDataCreator()}
+        new Object[]{ReportDataType.AVG_PROC_INST_DUR_GROUP_BY_NONE},
+        new Object[]{ReportDataType.MIN_PROC_INST_DUR_GROUP_BY_NONE},
+        new Object[]{ReportDataType.MAX_PROC_INST_DUR_GROUP_BY_NONE},
+        new Object[]{ReportDataType.MEDIAN_PROC_INST_DUR_GROUP_BY_NONE}
       };
     }
   }

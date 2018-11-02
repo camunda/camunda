@@ -10,13 +10,11 @@ import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.ReportDataHelper;
+import org.camunda.optimize.test.util.ReportDataBuilderHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.util.Collections;
@@ -52,7 +50,7 @@ public class CompletedInstancesOnlyFilterIT {
 
     // when
     SingleReportDataDto reportData =
-      ReportDataHelper.createReportDataViewRawAsTable(userTaskProcess.getKey(), String.valueOf(userTaskProcess.getVersion()));
+      ReportDataBuilderHelper.createReportDataViewRawAsTable(userTaskProcess.getKey(), String.valueOf(userTaskProcess.getVersion()));
     reportData.setFilter(Collections.singletonList(new CompletedInstancesOnlyFilterDto()));
     RawDataSingleReportResultDto result = evaluateReport(reportData);
 

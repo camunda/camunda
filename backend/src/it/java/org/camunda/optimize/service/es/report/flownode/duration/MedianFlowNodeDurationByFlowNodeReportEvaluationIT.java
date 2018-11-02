@@ -16,14 +16,15 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.*;
-import static org.camunda.optimize.test.util.ReportDataHelper.createMedianFlowNodeDurationGroupByFlowNodeHeatmapReport;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_DURATION_PROPERTY;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FLOW_NODE_ENTITY;
+import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MEDIAN_OPERATION;
+import static org.camunda.optimize.test.util.ReportDataBuilderHelper
+  .createMedianFlowNodeDurationGroupByFlowNodeHeatmapReport;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;

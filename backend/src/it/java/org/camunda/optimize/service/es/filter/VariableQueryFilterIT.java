@@ -41,7 +41,7 @@ import static org.camunda.optimize.service.util.VariableHelper.DOUBLE_TYPE;
 import static org.camunda.optimize.service.util.VariableHelper.INTEGER_TYPE;
 import static org.camunda.optimize.service.util.VariableHelper.LONG_TYPE;
 import static org.camunda.optimize.service.util.VariableHelper.SHORT_TYPE;
-import static org.camunda.optimize.test.util.ReportDataHelper.createReportDataViewRawAsTable;
+import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createReportDataViewRawAsTable;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 

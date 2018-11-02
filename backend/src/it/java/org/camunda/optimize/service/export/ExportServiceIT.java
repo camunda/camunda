@@ -12,15 +12,13 @@ import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.test.util.ReportDataHelper;
+import org.camunda.optimize.test.util.ReportDataBuilderHelper;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
-import javax.ws.rs.client.Entity;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -49,7 +47,7 @@ public class ExportServiceIT {
   public static Collection<Object[]> data() {
     return Arrays.asList(new Object[][]{
       {
-        ReportDataHelper.createReportDataViewRawAsTable(
+        ReportDataBuilderHelper.createReportDataViewRawAsTable(
           FAKE,
           FAKE
         ),
@@ -57,7 +55,7 @@ public class ExportServiceIT {
         "Raw Data Grouped By None"
       },
       {
-        ReportDataHelper.createReportDataViewRawAsTable(
+        ReportDataBuilderHelper.createReportDataViewRawAsTable(
           FAKE,
           FAKE
         ),
@@ -65,7 +63,7 @@ public class ExportServiceIT {
         "Raw Data Grouped By Flow Nodes"
       },
       {
-        ReportDataHelper.createReportDataViewRawAsTable(
+        ReportDataBuilderHelper.createReportDataViewRawAsTable(
           FAKE,
           FAKE
         ),
@@ -73,7 +71,7 @@ public class ExportServiceIT {
         "Raw Data Grouped By PI Start Date"
       },
       {
-        ReportDataHelper.createCountProcessInstanceFrequencyGroupByStartDate(
+        ReportDataBuilderHelper.createCountProcessInstanceFrequencyGroupByStartDate(
           FAKE,
           FAKE,
           DATE_UNIT_DAY
@@ -82,7 +80,7 @@ public class ExportServiceIT {
         "Count PI Grouped By PI Start Date"
       },
       {
-        ReportDataHelper.createCountFlowNodeFrequencyGroupByFlowNode(
+        ReportDataBuilderHelper.createCountFlowNodeFrequencyGroupByFlowNode(
           FAKE,
           FAKE
         ),
@@ -90,7 +88,7 @@ public class ExportServiceIT {
         "Count Flow Nodes Grouped By Flow Node"
       },
       {
-        ReportDataHelper.createAverageProcessInstanceDurationGroupByStartDateReport(
+        ReportDataBuilderHelper.createAverageProcessInstanceDurationGroupByStartDateReport(
           FAKE,
           FAKE,
           DATE_UNIT_DAY
@@ -99,7 +97,7 @@ public class ExportServiceIT {
         "Avg PI Duration Grouped By PI Start Date"
       },
       {
-        ReportDataHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
+        ReportDataBuilderHelper.createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(
           FAKE,
           FAKE
         ),
