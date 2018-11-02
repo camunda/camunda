@@ -3,7 +3,6 @@ package commands
 import (
 	"context"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
-	"github.com/zeebe-io/zeebe/clients/go/utils"
 	"time"
 )
 
@@ -26,8 +25,9 @@ type DispatchGetWorkflowCommand interface {
 }
 
 type GetWorkflowCommand struct {
-	gateway pb.GatewayClient
-	request *pb.GetWorkflowRequest
+	gateway        pb.GatewayClient
+	request        *pb.GetWorkflowRequest
+	requestTimeout time.Duration
 }
 
 func (cmd *GetWorkflowCommand) BpmnProcessId(bpmnProcessId string) GetWorkflowStep2 {
@@ -46,19 +46,20 @@ func (cmd *GetWorkflowCommand) Version(version int32) GetWorkflowStep3 {
 }
 
 func (cmd *GetWorkflowCommand) LatestVersion() GetWorkflowStep3 {
-	return cmd.Version(utils.LatestVersion)
+	return cmd.Version(LatestVersion)
 }
 
 func (cmd *GetWorkflowCommand) Send() (*pb.GetWorkflowResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), utils.RequestTimeoutInSec*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
 	defer cancel()
 
 	return cmd.gateway.GetWorkflow(ctx, cmd.request)
 }
 
-func NewGetWorkflowCommand(gateway pb.GatewayClient) GetWorkflowStep1 {
+func NewGetWorkflowCommand(gateway pb.GatewayClient, requestTimeout time.Duration) GetWorkflowStep1 {
 	return &GetWorkflowCommand{
-		gateway: gateway,
-		request: &pb.GetWorkflowRequest{},
+		gateway:        gateway,
+		request:        &pb.GetWorkflowRequest{},
+		requestTimeout: requestTimeout,
 	}
 }

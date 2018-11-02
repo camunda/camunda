@@ -5,7 +5,6 @@ import (
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"github.com/zeebe-io/zeebe/clients/go"
-	"github.com/zeebe-io/zeebe/clients/go/utils"
 	"time"
 )
 
@@ -98,7 +97,7 @@ var _ = Describe("PublishMessage", func() {
 				TimeToLive(time.Duration(24 * time.Hour)).
 				MessageId("anotherId2").
 				PayloadFromString("not valid json")
-			Expect(err).To(Equal(utils.ErrNotValidJsonString))
+			Expect(err).NotTo(BeNil())
 			Expect(cmd).To(BeNil())
 		})
 
@@ -126,7 +125,7 @@ var _ = Describe("PublishMessage", func() {
 				MessageId("anotherID10").
 				PayloadFromStringer(payload)
 
-			Expect(err).To(Equal(utils.ErrNotValidJsonString))
+			Expect(err).NotTo(BeNil())
 			Expect(cmd).To(BeNil())
 		})
 
@@ -157,7 +156,7 @@ var _ = Describe("PublishMessage", func() {
 				MessageId("anotherID10").
 				PayloadFromObject(payload)
 
-			Expect(err.Error()).To(Equal("json: unsupported type: chan int"))
+			Expect(err.Error()).To(ContainSubstring("json: unsupported type: chan int"))
 			Expect(cmd).To(BeNil())
 		})
 
@@ -189,7 +188,7 @@ var _ = Describe("PublishMessage", func() {
 				MessageId("anotherID20").
 				PayloadFromMap(payload)
 
-			Expect(err.Error()).To(Equal("json: unsupported type: chan int"))
+			Expect(err.Error()).To(ContainSubstring("json: unsupported type: chan int"))
 			Expect(cmd).To(BeNil())
 		})
 

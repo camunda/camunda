@@ -2,14 +2,20 @@ package commands
 
 import (
 	"context"
+	"github.com/zeebe-io/zeebe/clients/go/entities"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
-	"github.com/zeebe-io/zeebe/clients/go/utils"
 	"io"
 	"time"
 )
 
+const (
+	DefaultJobTimeout     = time.Duration(5 * time.Minute)
+	DefaultJobTimeoutInMs = int64(DefaultJobTimeout / time.Millisecond)
+	DefaultJobWorkerName  = "default"
+)
+
 type DispatchActivateJobsCommand interface {
-	Send() ([]*pb.ActivatedJob, error)
+	Send() ([]entities.Job, error)
 }
 
 type ActivateJobsCommandStep1 interface {
@@ -28,8 +34,9 @@ type ActivateJobsCommandStep3 interface {
 }
 
 type ActivateJobsCommand struct {
-	request *pb.ActivateJobsRequest
-	gateway pb.GatewayClient
+	request        *pb.ActivateJobsRequest
+	gateway        pb.GatewayClient
+	requestTimeout time.Duration
 }
 
 func (cmd *ActivateJobsCommand) JobType(jobType string) ActivateJobsCommandStep2 {
@@ -52,8 +59,8 @@ func (cmd *ActivateJobsCommand) WorkerName(workerName string) ActivateJobsComman
 	return cmd
 }
 
-func (cmd *ActivateJobsCommand) Send() ([]*pb.ActivatedJob, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), utils.RequestTimeoutInSec*time.Second)
+func (cmd *ActivateJobsCommand) Send() ([]entities.Job, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
 	defer cancel()
 
 	stream, err := cmd.gateway.ActivateJobs(ctx, cmd.request)
@@ -61,7 +68,7 @@ func (cmd *ActivateJobsCommand) Send() ([]*pb.ActivatedJob, error) {
 		return nil, err
 	}
 
-	var activatedJobs []*pb.ActivatedJob
+	var activatedJobs []entities.Job
 
 	for {
 		response, err := stream.Recv()
@@ -71,18 +78,21 @@ func (cmd *ActivateJobsCommand) Send() ([]*pb.ActivatedJob, error) {
 		if err != nil {
 			return activatedJobs, err
 		}
-		activatedJobs = append(activatedJobs, response.Jobs...)
+		for _, activatedJob := range response.Jobs {
+			activatedJobs = append(activatedJobs, entities.Job{*activatedJob})
+		}
 	}
 
 	return activatedJobs, nil
 }
 
-func NewActivateJobsCommand(gateway pb.GatewayClient) ActivateJobsCommandStep1 {
+func NewActivateJobsCommand(gateway pb.GatewayClient, requestTimeout time.Duration) ActivateJobsCommandStep1 {
 	return &ActivateJobsCommand{
 		request: &pb.ActivateJobsRequest{
-			Timeout: utils.DefaultJobTimeoutInMs,
-			Worker:  utils.DefaultJobWorkerName,
+			Timeout: DefaultJobTimeoutInMs,
+			Worker:  DefaultJobWorkerName,
 		},
-		gateway: gateway,
+		gateway:        gateway,
+		requestTimeout: requestTimeout,
 	}
 }

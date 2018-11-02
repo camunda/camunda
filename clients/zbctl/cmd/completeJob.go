@@ -16,30 +16,34 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/zeebe-io/zeebe/clients/zbctl/utils"
 	"log"
 )
 
-var completeJobPayloadFlag string
+var (
+	completeJobKey         int64
+	completeJobPayloadFlag string
+)
 
-// completeJobCmd represents the completeJob command
 var completeJobCmd = &cobra.Command{
-	Use:    "job <jobKey>",
-	Short:  "Complete a job",
-	Args:   cobra.ExactArgs(1),
-	PreRun: initClient,
-	Run: func(cmd *cobra.Command, args []string) {
-		jobKey := convertToKey(args[0], "Expect job key as only positional argument, got")
-
-		request, err := client.NewCompleteJobCommand().JobKey(jobKey).PayloadFromString(completeJobPayloadFlag)
-		utils.CheckOrExit(err, utils.ExitCodeConfigurationError, defaultErrCtx)
+	Use:     "job <key>",
+	Short:   "Complete a job",
+	Args:    keyArg(&completeJobKey),
+	PreRunE: initClient,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		request, err := client.NewCompleteJobCommand().JobKey(completeJobKey).PayloadFromString(completeJobPayloadFlag)
+		if err != nil {
+			return err
+		}
 
 		_, err = request.Send()
-		log.Println("Completed job with key", jobKey, "and payload", completeJobPayloadFlag)
+		if err == nil {
+			log.Println("Completed job with key", completeJobKey, "and payload", completeJobPayloadFlag)
+		}
+		return err
 	},
 }
 
 func init() {
 	completeCmd.AddCommand(completeJobCmd)
-	completeJobCmd.Flags().StringVar(&completeJobPayloadFlag, "payload", utils.EmptyJsonObject, "Specify payload as JSON object string")
+	completeJobCmd.Flags().StringVar(&completeJobPayloadFlag, "payload", "{}", "Specify payload as JSON object string")
 }

@@ -16,20 +16,20 @@ package cmd
 import (
 	"fmt"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
-	"github.com/zeebe-io/zeebe/clients/zbctl/utils"
 
 	"github.com/spf13/cobra"
 )
 
-// deployWorkflowCmd implements cobra command for cli
 var statusCmd = &cobra.Command{
-	Use:    "status",
-	Short:  "Checks the current status of the cluster",
-	Args:   cobra.NoArgs,
-	PreRun: initClient,
-	Run: func(cmd *cobra.Command, args []string) {
+	Use:     "status",
+	Short:   "Checks the current status of the cluster",
+	Args:    cobra.NoArgs,
+	PreRunE: initClient,
+	RunE: func(cmd *cobra.Command, args []string) error {
 		response, err := client.NewTopologyCommand().Send()
-		utils.CheckOrExit(err, utils.ExitCodeIOError, defaultErrCtx)
+		if err != nil {
+			return err
+		}
 
 		for _, broker := range response.Brokers {
 			fmt.Println("Broker", broker.Host, ":", broker.Port)
@@ -37,6 +37,8 @@ var statusCmd = &cobra.Command{
 				fmt.Println("  Partition", partition.PartitionId, ":", roleToString(partition.Role))
 			}
 		}
+
+		return nil
 	},
 }
 

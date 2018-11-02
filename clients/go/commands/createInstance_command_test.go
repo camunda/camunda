@@ -33,9 +33,9 @@ func TestCreateWorkflowInstanceCommand(t *testing.T) {
 		WorkflowInstanceKey: 5632,
 	}
 
-	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCreateInstanceCommand(client)
+	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout)
 
 	response, err := command.WorkflowKey(123).Send()
 
@@ -56,7 +56,7 @@ func TestCreateWorkflowInstanceCommandByBpmnProcessId(t *testing.T) {
 
 	request := &pb.CreateWorkflowInstanceRequest{
 		BpmnProcessId: "foo",
-		Version:       utils.LatestVersion,
+		Version:       LatestVersion,
 	}
 	stub := &pb.CreateWorkflowInstanceResponse{
 		WorkflowKey:         123,
@@ -65,9 +65,9 @@ func TestCreateWorkflowInstanceCommandByBpmnProcessId(t *testing.T) {
 		WorkflowInstanceKey: 5632,
 	}
 
-	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCreateInstanceCommand(client)
+	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout)
 
 	response, err := command.BPMNProcessId("foo").LatestVersion().Send()
 
@@ -97,9 +97,9 @@ func TestCreateWorkflowInstanceCommandByBpmnProcessIdAndVersion(t *testing.T) {
 		WorkflowInstanceKey: 5632,
 	}
 
-	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCreateInstanceCommand(client)
+	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout)
 
 	response, err := command.BPMNProcessId("foo").Version(56).Send()
 
@@ -131,9 +131,9 @@ func TestCreateWorkflowInstanceCommandWithPayloadFromString(t *testing.T) {
 		WorkflowInstanceKey: 5632,
 	}
 
-	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCreateInstanceCommand(client)
+	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout)
 
 	payloadCommand, err := command.WorkflowKey(123).PayloadFromString(payload)
 	if err != nil {
@@ -170,9 +170,9 @@ func TestCreateWorkflowInstanceCommandWithPayloadFromStringer(t *testing.T) {
 		WorkflowInstanceKey: 5632,
 	}
 
-	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCreateInstanceCommand(client)
+	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout)
 
 	payloadCommand, err := command.WorkflowKey(123).PayloadFromStringer(DataType{Foo: "bar"})
 	if err != nil {
@@ -209,9 +209,9 @@ func TestCreateWorkflowInstanceCommandWithPayloadFromObject(t *testing.T) {
 		WorkflowInstanceKey: 5632,
 	}
 
-	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCreateInstanceCommand(client)
+	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout)
 
 	payloadCommand, err := command.WorkflowKey(123).PayloadFromObject(DataType{Foo: "bar"})
 	if err != nil {
@@ -250,9 +250,9 @@ func TestCreateWorkflowInstanceCommandWithPayloadFromMap(t *testing.T) {
 		WorkflowInstanceKey: 5632,
 	}
 
-	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().CreateWorkflowInstance(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCreateInstanceCommand(client)
+	command := NewCreateInstanceCommand(client, utils.DefaultTestTimeout)
 
 	payloadCommand, err := command.WorkflowKey(123).PayloadFromMap(payloadMap)
 	if err != nil {

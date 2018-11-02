@@ -4,6 +4,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/zeebe-io/zeebe/clients/go/mock_pb"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
+	"github.com/zeebe-io/zeebe/clients/go/utils"
 	"testing"
 )
 
@@ -49,9 +50,9 @@ func TestTopologyCommand(t *testing.T) {
 		},
 	}
 
-	client.EXPECT().Topology(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().Topology(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewTopologyCommand(client)
+	command := NewTopologyCommand(client, utils.DefaultTestTimeout)
 
 	response, err := command.Send()
 

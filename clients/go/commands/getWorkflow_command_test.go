@@ -25,9 +25,9 @@ func TestGetWorkflowCommandByWorkflowKey(t *testing.T) {
 		BpmnXml:       "<xml/>",
 	}
 
-	client.EXPECT().GetWorkflow(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().GetWorkflow(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewGetWorkflowCommand(client)
+	command := NewGetWorkflowCommand(client, utils.DefaultTestTimeout)
 
 	response, err := command.WorkflowKey(123).Send()
 
@@ -48,7 +48,7 @@ func TestGetWorkflowCommandByBpmnProcessId(t *testing.T) {
 
 	request := &pb.GetWorkflowRequest{
 		BpmnProcessId: "testProcess",
-		Version:       utils.LatestVersion,
+		Version:       LatestVersion,
 	}
 	stub := &pb.GetWorkflowResponse{
 		WorkflowKey:   123,
@@ -58,9 +58,9 @@ func TestGetWorkflowCommandByBpmnProcessId(t *testing.T) {
 		BpmnXml:       "<xml/>",
 	}
 
-	client.EXPECT().GetWorkflow(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().GetWorkflow(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewGetWorkflowCommand(client)
+	command := NewGetWorkflowCommand(client, utils.DefaultTestTimeout)
 
 	response, err := command.BpmnProcessId("testProcess").LatestVersion().Send()
 
@@ -91,9 +91,9 @@ func TestGetWorkflowCommandByBpmnProcessIdAndVersion(t *testing.T) {
 		BpmnXml:       "<xml/>",
 	}
 
-	client.EXPECT().GetWorkflow(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().GetWorkflow(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewGetWorkflowCommand(client)
+	command := NewGetWorkflowCommand(client, utils.DefaultTestTimeout)
 
 	response, err := command.BpmnProcessId("testProcess").Version(32).Send()
 

@@ -40,8 +40,9 @@ type DispatchPublishMessageCommand interface {
 type PublishMessageCommand struct {
 	utils.SerializerMixin
 
-	request *pb.PublishMessageRequest
-	gateway pb.GatewayClient
+	request        *pb.PublishMessageRequest
+	gateway        pb.GatewayClient
+	requestTimeout time.Duration
 }
 
 func (cmd *PublishMessageCommand) MessageId(messageId string) PublishMessageCommandStep3 {
@@ -50,11 +51,12 @@ func (cmd *PublishMessageCommand) MessageId(messageId string) PublishMessageComm
 }
 
 func (cmd *PublishMessageCommand) PayloadFromObject(payload interface{}) (PublishMessageCommandStep3, error) {
-	jsonStringPayload, err := cmd.ToString(payload)
+	value, err := cmd.AsJson("payload", payload)
 	if err != nil {
 		return nil, err
 	}
-	cmd.request.Payload = jsonStringPayload
+
+	cmd.request.Payload = value
 	return cmd, nil
 }
 
@@ -63,11 +65,13 @@ func (cmd *PublishMessageCommand) PayloadFromMap(payload map[string]interface{})
 }
 
 func (cmd *PublishMessageCommand) PayloadFromString(payload string) (PublishMessageCommandStep3, error) {
-	if cmd.Validate([]byte(payload)) {
-		cmd.request.Payload = payload
-		return cmd, nil
+	err := cmd.Validate("payload", payload)
+	if err != nil {
+		return nil, err
 	}
-	return nil, utils.ErrNotValidJsonString
+
+	cmd.request.Payload = payload
+	return cmd, nil
 }
 
 func (cmd *PublishMessageCommand) PayloadFromStringer(payload fmt.Stringer) (PublishMessageCommandStep3, error) {
@@ -90,16 +94,17 @@ func (cmd *PublishMessageCommand) MessageName(name string) PublishMessageCommand
 }
 
 func (cmd *PublishMessageCommand) Send() (*pb.PublishMessageResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), utils.StreamTimeoutInSec*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
 	defer cancel()
 
 	return cmd.gateway.PublishMessage(ctx, cmd.request)
 }
 
-func NewPublishMessageCommand(gateway pb.GatewayClient) PublishMessageCommandStep1 {
+func NewPublishMessageCommand(gateway pb.GatewayClient, requestTimeout time.Duration) PublishMessageCommandStep1 {
 	return &PublishMessageCommand{
 		SerializerMixin: utils.NewJsonStringSerializer(),
 		request:         &pb.PublishMessageRequest{},
 		gateway:         gateway,
+		requestTimeout:  requestTimeout,
 	}
 }

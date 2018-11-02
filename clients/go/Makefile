@@ -6,5 +6,7 @@ install-deps:
 
 .PHONY: test
 test:
-	cd commands/ && go test -v && cd ../
+	go test -v ./commands/
+	go test -v ./entities/
+	go test -v ./worker/
 	cd tests/integration/ && ginkgo && cd ../..

@@ -15,23 +15,21 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
-	"os"
-
-	"github.com/zeebe-io/zeebe/clients/zbctl/utils"
-
 	"github.com/spf13/cobra"
+	"os"
 )
 
-var completionShellFlag string
+var generateCompletionShellFlag string
 
-// completionCmd represents the completion command
-var completionCmd = &cobra.Command{
+var generateCompletionCmd = &cobra.Command{
 	Use:   "completion",
 	Short: "Generate shell completion for zbctl",
 	Args:  cobra.NoArgs,
-	Run: func(cmd *cobra.Command, args []string) {
-		switch completionShellFlag {
+	RunE: func(cmd *cobra.Command, args []string) error {
+		var err error
+		switch generateCompletionShellFlag {
 		case "bash":
 			rootCmd.GenBashCompletion(os.Stdout)
 			break
@@ -39,13 +37,13 @@ var completionCmd = &cobra.Command{
 			rootCmd.GenZshCompletion(os.Stdout)
 			break
 		default:
-			fmt.Println("Unsupported shell for completion generation", completionShellFlag)
-			os.Exit(utils.ExitCodeConfigurationError)
+			err = errors.New(fmt.Sprint("Generating completion for shell", generateCompletionShellFlag, "not supported"))
 		}
+		return err
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(completionCmd)
-	completionCmd.Flags().StringVar(&completionShellFlag, "shell", "bash", "Shell to generate completion for")
+	generateCmd.AddCommand(generateCompletionCmd)
+	generateCompletionCmd.Flags().StringVar(&generateCompletionShellFlag, "shell", "bash", "Specify shell to generate completion")
 }

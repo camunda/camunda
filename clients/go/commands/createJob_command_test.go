@@ -16,16 +16,16 @@ func TestCreateJobCommand(t *testing.T) {
 
 	request := &pb.CreateJobRequest{
 		JobType:       "foo",
-		Retries:       utils.DefaultRetries,
+		Retries:       DefaultJobRetries,
 		CustomHeaders: "{}",
 	}
 	stub := &pb.CreateJobResponse{
 		Key: 123,
 	}
 
-	client.EXPECT().CreateJob(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().CreateJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCreateJobCommand(client)
+	command := NewCreateJobCommand(client, utils.DefaultTestTimeout)
 
 	response, err := command.JobType("foo").Send()
 
@@ -53,9 +53,9 @@ func TestCreateJobCommandWithRetries(t *testing.T) {
 		Key: 123,
 	}
 
-	client.EXPECT().CreateJob(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().CreateJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCreateJobCommand(client)
+	command := NewCreateJobCommand(client, utils.DefaultTestTimeout)
 
 	response, err := command.JobType("foo").Retries(23).Send()
 
@@ -78,16 +78,16 @@ func TestCreateJobCommandAddingCustomHeaders(t *testing.T) {
 
 	request := &pb.CreateJobRequest{
 		JobType:       "foo",
-		Retries:       utils.DefaultRetries,
+		Retries:       DefaultJobRetries,
 		CustomHeaders: customHeaders,
 	}
 	stub := &pb.CreateJobResponse{
 		Key: 123,
 	}
 
-	client.EXPECT().CreateJob(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().CreateJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCreateJobCommand(client)
+	command := NewCreateJobCommand(client, utils.DefaultTestTimeout)
 
 	response, err := command.JobType("foo").AddCustomHeader("foo", "bar").AddCustomHeader("hello", 23).Send()
 
@@ -110,16 +110,16 @@ func TestCreateJobCommandWithCustomHeadersFromString(t *testing.T) {
 
 	request := &pb.CreateJobRequest{
 		JobType:       "foo",
-		Retries:       utils.DefaultRetries,
+		Retries:       DefaultJobRetries,
 		CustomHeaders: customHeaders,
 	}
 	stub := &pb.CreateJobResponse{
 		Key: 123,
 	}
 
-	client.EXPECT().CreateJob(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().CreateJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCreateJobCommand(client)
+	command := NewCreateJobCommand(client, utils.DefaultTestTimeout)
 
 	headersCommand, err := command.JobType("foo").SetCustomHeadersFromString(customHeaders)
 	if err != nil {
@@ -147,16 +147,16 @@ func TestCreateJobCommandWithCustomHeadersFromStringer(t *testing.T) {
 
 	request := &pb.CreateJobRequest{
 		JobType:       "foo",
-		Retries:       utils.DefaultRetries,
+		Retries:       DefaultJobRetries,
 		CustomHeaders: customHeaders,
 	}
 	stub := &pb.CreateJobResponse{
 		Key: 123,
 	}
 
-	client.EXPECT().CreateJob(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().CreateJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCreateJobCommand(client)
+	command := NewCreateJobCommand(client, utils.DefaultTestTimeout)
 
 	headersCommand, err := command.JobType("foo").SetCustomHeadersFromStringer(DataType{Foo: "bar"})
 	if err != nil {
@@ -184,16 +184,16 @@ func TestCreateJobCommandWithCustomHeadersFromObject(t *testing.T) {
 
 	request := &pb.CreateJobRequest{
 		JobType:       "foo",
-		Retries:       utils.DefaultRetries,
+		Retries:       DefaultJobRetries,
 		CustomHeaders: customHeaders,
 	}
 	stub := &pb.CreateJobResponse{
 		Key: 123,
 	}
 
-	client.EXPECT().CreateJob(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().CreateJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCreateJobCommand(client)
+	command := NewCreateJobCommand(client, utils.DefaultTestTimeout)
 
 	headersCommand, err := command.JobType("foo").SetCustomHeadersFromObject(DataType{Foo: "bar"})
 	if err != nil {
@@ -223,16 +223,16 @@ func TestCreateJobCommandWithCustomHeadersFromMap(t *testing.T) {
 
 	request := &pb.CreateJobRequest{
 		JobType:       "foo",
-		Retries:       utils.DefaultRetries,
+		Retries:       DefaultJobRetries,
 		CustomHeaders: customHeaders,
 	}
 	stub := &pb.CreateJobResponse{
 		Key: 123,
 	}
 
-	client.EXPECT().CreateJob(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().CreateJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCreateJobCommand(client)
+	command := NewCreateJobCommand(client, utils.DefaultTestTimeout)
 
 	headersCommand, err := command.JobType("foo").SetCustomHeadersFromMap(customHeadersMap)
 	if err != nil {
@@ -260,7 +260,7 @@ func TestCreateJobCommandWithPayloadFromString(t *testing.T) {
 
 	request := &pb.CreateJobRequest{
 		JobType:       "foo",
-		Retries:       utils.DefaultRetries,
+		Retries:       DefaultJobRetries,
 		CustomHeaders: "{}",
 		Payload:       payload,
 	}
@@ -268,9 +268,9 @@ func TestCreateJobCommandWithPayloadFromString(t *testing.T) {
 		Key: 123,
 	}
 
-	client.EXPECT().CreateJob(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().CreateJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCreateJobCommand(client)
+	command := NewCreateJobCommand(client, utils.DefaultTestTimeout)
 
 	payloadCommand, err := command.JobType("foo").PayloadFromString(payload)
 	if err != nil {
@@ -298,7 +298,7 @@ func TestCreateJobCommandWithPayloadFromStringer(t *testing.T) {
 
 	request := &pb.CreateJobRequest{
 		JobType:       "foo",
-		Retries:       utils.DefaultRetries,
+		Retries:       DefaultJobRetries,
 		CustomHeaders: "{}",
 		Payload:       payload,
 	}
@@ -306,9 +306,9 @@ func TestCreateJobCommandWithPayloadFromStringer(t *testing.T) {
 		Key: 123,
 	}
 
-	client.EXPECT().CreateJob(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().CreateJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCreateJobCommand(client)
+	command := NewCreateJobCommand(client, utils.DefaultTestTimeout)
 
 	payloadCommand, err := command.JobType("foo").PayloadFromStringer(DataType{Foo: "bar"})
 	if err != nil {
@@ -336,7 +336,7 @@ func TestCreateJobCommandWithPayloadFromObject(t *testing.T) {
 
 	request := &pb.CreateJobRequest{
 		JobType:       "foo",
-		Retries:       utils.DefaultRetries,
+		Retries:       DefaultJobRetries,
 		CustomHeaders: "{}",
 		Payload:       payload,
 	}
@@ -344,9 +344,9 @@ func TestCreateJobCommandWithPayloadFromObject(t *testing.T) {
 		Key: 123,
 	}
 
-	client.EXPECT().CreateJob(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().CreateJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCreateJobCommand(client)
+	command := NewCreateJobCommand(client, utils.DefaultTestTimeout)
 
 	payloadCommand, err := command.JobType("foo").PayloadFromObject(DataType{Foo: "bar"})
 	if err != nil {
@@ -376,7 +376,7 @@ func TestCreateJobCommandWithPayloadFromMap(t *testing.T) {
 
 	request := &pb.CreateJobRequest{
 		JobType:       "foo",
-		Retries:       utils.DefaultRetries,
+		Retries:       DefaultJobRetries,
 		CustomHeaders: "{}",
 		Payload:       payload,
 	}
@@ -384,9 +384,9 @@ func TestCreateJobCommandWithPayloadFromMap(t *testing.T) {
 		Key: 123,
 	}
 
-	client.EXPECT().CreateJob(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().CreateJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCreateJobCommand(client)
+	command := NewCreateJobCommand(client, utils.DefaultTestTimeout)
 
 	payloadCommand, err := command.JobType("foo").PayloadFromMap(payloadMap)
 	if err != nil {

@@ -16,13 +16,13 @@ func TestUpdateJobRetriesCommand(t *testing.T) {
 
 	request := &pb.UpdateJobRetriesRequest{
 		JobKey:  123,
-		Retries: utils.DefaultRetries,
+		Retries: DefaultJobRetries,
 	}
 	stub := &pb.UpdateJobRetriesResponse{}
 
-	client.EXPECT().UpdateJobRetries(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().UpdateJobRetries(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewUpdateJobRetriesCommand(client)
+	command := NewUpdateJobRetriesCommand(client, utils.DefaultTestTimeout)
 
 	response, err := command.JobKey(123).Send()
 
@@ -47,9 +47,9 @@ func TestUpdateJobRetriesCommandWithRetries(t *testing.T) {
 	}
 	stub := &pb.UpdateJobRetriesResponse{}
 
-	client.EXPECT().UpdateJobRetries(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().UpdateJobRetries(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewUpdateJobRetriesCommand(client)
+	command := NewUpdateJobRetriesCommand(client, utils.DefaultTestTimeout)
 
 	response, err := command.JobKey(123).Retries(23).Send()
 
