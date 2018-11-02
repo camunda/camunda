@@ -57,7 +57,11 @@ public class OptimizeCleanupServiceIT {
   @Test
   public void testCleanupIsScheduledSuccessfully() {
     embeddedOptimizeRule.getCleanupService().startCleanupScheduling();
-    assertThat(embeddedOptimizeRule.getCleanupService().isScheduledToRun(), is(true));
+    try {
+      assertThat(embeddedOptimizeRule.getCleanupService().isScheduledToRun(), is(true));
+    } finally {
+      embeddedOptimizeRule.getCleanupService().stopCleanupScheduling();
+    }
   }
 
   @Test
