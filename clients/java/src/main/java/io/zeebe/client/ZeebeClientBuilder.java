@@ -56,7 +56,10 @@ public interface ZeebeClientBuilder {
   /** The timeout which is used when none is provided for a job worker. Default is 5 minutes. */
   ZeebeClientBuilder defaultJobTimeout(Duration timeout);
 
-  /** The interval which a job worker is periodically polling for new jobs. Default is 5 seconds. */
+  /**
+   * The interval which a job worker is periodically polling for new jobs. Default is 100
+   * milliseconds.
+   */
   ZeebeClientBuilder defaultJobPollInterval(Duration pollInterval);
 
   /** The time-to-live which is used when none is provided for a message. Default is 1 hour. */
