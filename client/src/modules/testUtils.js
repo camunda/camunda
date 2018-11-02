@@ -108,6 +108,7 @@ export const createActivity = (options = {}) => {
  * @param {*} id num value to create unique instance;
  */
 export const createInstance = (options = {}) => {
+  const dateUTC = new Date(Date.UTC(2018, 6, 1, 10, 0));
   return {
     activities: [createActivity()],
     bpmnProcessId: 'someKey',
@@ -115,7 +116,7 @@ export const createInstance = (options = {}) => {
     id: randomIdIterator.next().value,
     incidents: [createIncident()],
     operations: [createOperation()],
-    startDate: '2018-06-21T11:13:31.094+0000',
+    startDate: dateUTC.toUTCString(),
     state: 'ACTIVE',
     workflowId: '2',
     workflowVersion: '1',

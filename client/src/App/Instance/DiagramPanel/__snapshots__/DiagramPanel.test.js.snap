@@ -56,7 +56,7 @@ exports[`DiagramPanel should render pane header and body 1`] = `
                       "type": "UPDATE_RETRIES",
                     },
                   ],
-                  "startDate": "2018-06-21T11:13:31.094+0000",
+                  "startDate": "Sun, 01 Jul 2018 10:00:00 GMT",
                   "state": "ACTIVE",
                   "workflowId": "2",
                   "workflowName": "someWorkflowName",
@@ -70,7 +70,7 @@ exports[`DiagramPanel should render pane header and body 1`] = `
             foo
           </styled.td>
           <styled.td>
-            21 Jun 2018 13:13:31
+            1 Jul 2018 12:00:00
           </styled.td>
           <styled.td>
             --
@@ -111,7 +111,7 @@ exports[`DiagramPanel should render pane header and body 1`] = `
                         "type": "UPDATE_RETRIES",
                       },
                     ],
-                    "startDate": "2018-06-21T11:13:31.094+0000",
+                    "startDate": "Sun, 01 Jul 2018 10:00:00 GMT",
                     "state": "ACTIVE",
                     "workflowId": "2",
                     "workflowName": "someWorkflowName",
@@ -160,7 +160,7 @@ exports[`DiagramPanel should render pane header and body 1`] = `
               "type": "UPDATE_RETRIES",
             },
           ],
-          "startDate": "2018-06-21T11:13:31.094+0000",
+          "startDate": "Sun, 01 Jul 2018 10:00:00 GMT",
           "state": "ACTIVE",
           "workflowId": "2",
           "workflowName": "someWorkflowName",
