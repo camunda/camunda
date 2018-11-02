@@ -25,6 +25,6 @@ export function getIncidentMessage({incidents}) {
   return (getActiveIncident(incidents) || {}).errorMessage;
 }
 
-export function getWorkflowName({workflowId, workflowName}) {
-  return workflowName || workflowId;
+export function getWorkflowName({bpmnProcessId, workflowName}) {
+  return workflowName || bpmnProcessId;
 }

@@ -167,6 +167,11 @@ export default class List extends React.Component {
                 />
               </Styled.CheckAll>
               Workflow
+              <HeaderSortIcon
+                sortKey="workflowName"
+                sorting={this.props.sorting}
+                handleSorting={this.props.onSort}
+              />
             </React.Fragment>
           </TH>
           <TH>

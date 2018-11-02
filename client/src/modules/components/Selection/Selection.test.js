@@ -14,7 +14,7 @@ const demoInstance = {
   startDate: '2018-07-10T08:58:58.073+0000',
   endDate: null,
   state: 'ACTIVE',
-  businessKey: 'demoProcess',
+  bpmnProcessId: 'demoProcess',
   incidents: [],
   activities: []
 };

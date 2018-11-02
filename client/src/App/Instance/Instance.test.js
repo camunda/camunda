@@ -26,7 +26,7 @@ const INSTANCE = {
   startDate: '2018-06-18T08:44:52.240+0000',
   endDate: null,
   state: INSTANCE_STATE.ACTIVE,
-  businessKey: 'demoProcess',
+  bpmnProcessId: 'demoProcess',
   incidents: [
     {
       id: '4295763008',

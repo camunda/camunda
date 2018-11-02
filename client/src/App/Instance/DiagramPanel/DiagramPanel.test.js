@@ -6,19 +6,13 @@ import Diagram from 'modules/components/Diagram';
 import StateIcon from 'modules/components/StateIcon';
 import {formatDate} from 'modules/utils/date';
 import {getWorkflowName} from 'modules/utils/instance';
-import {INSTANCE_STATE} from 'modules/constants';
+import {createInstance} from 'modules/testUtils';
 
 import DiagramPanel from './DiagramPanel';
 import * as Styled from './styled';
 import DiagramBar from './DiagramBar';
 
-const mockInstance = {
-  id: 'foo',
-  workflowId: 'bar',
-  startDate: 'Wed Jun 20 2018 08:57:20',
-  endDate: formatDate(null),
-  state: INSTANCE_STATE.ACTIVE
-};
+const mockInstance = createInstance({id: 'foo'});
 
 const mockProps = {
   instance: mockInstance,

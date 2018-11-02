@@ -2,14 +2,13 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import {getWorkflowName} from 'modules/utils/instance';
+import {createInstance} from 'modules/testUtils';
 
 import InstanceLog from './InstanceLog';
 import * as Styled from './styled';
 
 const mockProps = {
-  instance: {
-    workflowId: 'foo'
-  },
+  instance: createInstance(),
   activitiesDetails: {
     1: {
       state: 'someState1',

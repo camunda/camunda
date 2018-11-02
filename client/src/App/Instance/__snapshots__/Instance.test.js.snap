@@ -23,7 +23,7 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
                 "state": "INCIDENT",
               },
             ],
-            "businessKey": "demoProcess",
+            "bpmnProcessId": "demoProcess",
             "endDate": null,
             "id": "4294980768",
             "incidents": Array [
@@ -78,7 +78,7 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
                 "state": "INCIDENT",
               },
             ],
-            "businessKey": "demoProcess",
+            "bpmnProcessId": "demoProcess",
             "endDate": null,
             "id": "4294980768",
             "incidents": Array [
@@ -145,7 +145,7 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
                 "state": "INCIDENT",
               },
             ],
-            "businessKey": "demoProcess",
+            "bpmnProcessId": "demoProcess",
             "endDate": null,
             "id": "4294980768",
             "incidents": Array [

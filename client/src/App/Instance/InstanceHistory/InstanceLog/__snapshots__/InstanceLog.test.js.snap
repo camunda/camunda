@@ -20,7 +20,42 @@ exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
   }
   instance={
     Object {
-      "workflowId": "foo",
+      "activities": Array [
+        Object {
+          "activityId": "activityId 0",
+          "endDate": "2018-10-10T09:20:38.658Z",
+          "id": "id 0",
+          "startDate": "2018-10-10T09:20:38.658Z",
+          "state": "ACTIVE",
+        },
+      ],
+      "bpmnProcessId": "someKey",
+      "endDate": null,
+      "id": "id 1",
+      "incidents": Array [
+        Object {
+          "activityId": Object {},
+          "activityInstanceId": Object {},
+          "errorMessage": "",
+          "errorType": "",
+          "id": "id 2",
+          "jobId": "jobId 0",
+        },
+      ],
+      "operations": Array [
+        Object {
+          "endDate": "2018-10-10T09:20:38.661Z",
+          "errorMessage": "string",
+          "startDate": "2018-10-10T09:20:38.661Z",
+          "state": "SCHEDULED",
+          "type": "UPDATE_RETRIES",
+        },
+      ],
+      "startDate": "2018-06-21T11:13:31.094+0000",
+      "state": "ACTIVE",
+      "workflowId": "2",
+      "workflowName": "someWorkflowName",
+      "workflowVersion": "1",
     }
   }
   onActivityInstanceSelected={[MockFunction]}
@@ -38,7 +73,7 @@ exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
         <Themed(Styled(withStrippedProps(ReactComponent)))
           isSelected={true}
         />
-        foo
+        someWorkflowName
       </Themed(Styled(Themed(styled.button)))>
     </Themed(styled.li)>
     <Themed(styled.li)

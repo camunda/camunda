@@ -59,7 +59,10 @@ export const SORT_ORDER = {
   DESC: 'desc'
 };
 
-export const DEFAULT_SORTING = {sortBy: 'id', sortOrder: SORT_ORDER.DESC};
+export const DEFAULT_SORTING = {
+  sortBy: 'workflowName',
+  sortOrder: SORT_ORDER.DESC
+};
 
 export const PANE_ID = {
   TOP: 'TOP',

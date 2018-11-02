@@ -1,6 +1,7 @@
-import * as instanceUtils from './instance';
+import {createInstance} from 'modules/testUtils';
 import {INSTANCE_STATE} from 'modules/constants';
 
+import * as instanceUtils from './instance';
 const {ACTIVE, INCIDENT, COMPLETED, CANCELED} = INSTANCE_STATE;
 
 const active = {state: ACTIVE, incidents: []};
@@ -81,20 +82,20 @@ describe('instance utils', () => {
   describe('getWorkflowName', () => {
     it('should return workflowName when it exists', () => {
       // given
-      const instance = {workflowId: 'foo', workflowName: 'bar'};
+      const instance = createInstance();
       const instanceName = instanceUtils.getWorkflowName(instance);
 
       // then
       expect(instanceName).toBe(instance.workflowName);
     });
 
-    it('should fallback to workflowId', () => {
+    it('should fallback to bpmnProcessId', () => {
       // given
-      const instance = {workflowId: 'foo'};
+      const instance = createInstance({workflowName: null});
       const instanceName = instanceUtils.getWorkflowName(instance);
 
       // then
-      expect(instanceName).toBe(instance.workflowId);
+      expect(instanceName).toBe(instance.bpmnProcessId);
     });
   });
 });

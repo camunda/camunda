@@ -25,35 +25,97 @@ exports[`DiagramPanel should render pane header and body 1`] = `
             <Themed(StateIcon)
               instance={
                 Object {
-                  "endDate": "--",
+                  "activities": Array [
+                    Object {
+                      "activityId": "activityId 0",
+                      "endDate": "2018-10-10T09:20:38.658Z",
+                      "id": "id 0",
+                      "startDate": "2018-10-10T09:20:38.658Z",
+                      "state": "ACTIVE",
+                    },
+                  ],
+                  "bpmnProcessId": "someKey",
+                  "endDate": null,
                   "id": "foo",
-                  "startDate": "Wed Jun 20 2018 08:57:20",
+                  "incidents": Array [
+                    Object {
+                      "activityId": Object {},
+                      "activityInstanceId": Object {},
+                      "errorMessage": "",
+                      "errorType": "",
+                      "id": "id 2",
+                      "jobId": "jobId 0",
+                    },
+                  ],
+                  "operations": Array [
+                    Object {
+                      "endDate": "2018-10-10T09:20:38.661Z",
+                      "errorMessage": "string",
+                      "startDate": "2018-10-10T09:20:38.661Z",
+                      "state": "SCHEDULED",
+                      "type": "UPDATE_RETRIES",
+                    },
+                  ],
+                  "startDate": "2018-06-21T11:13:31.094+0000",
                   "state": "ACTIVE",
-                  "workflowId": "bar",
+                  "workflowId": "2",
+                  "workflowName": "someWorkflowName",
+                  "workflowVersion": "1",
                 }
               }
             />
-            bar
+            someWorkflowName
           </styled.td>
           <styled.td>
             foo
           </styled.td>
           <styled.td>
-            20 Jun 2018 08:57:20
+            21 Jun 2018 13:13:31
           </styled.td>
           <styled.td>
-            Invalid Date
+            --
           </styled.td>
           <styled.td>
             <styled.div>
               <Actions
                 instance={
                   Object {
-                    "endDate": "--",
+                    "activities": Array [
+                      Object {
+                        "activityId": "activityId 0",
+                        "endDate": "2018-10-10T09:20:38.658Z",
+                        "id": "id 0",
+                        "startDate": "2018-10-10T09:20:38.658Z",
+                        "state": "ACTIVE",
+                      },
+                    ],
+                    "bpmnProcessId": "someKey",
+                    "endDate": null,
                     "id": "foo",
-                    "startDate": "Wed Jun 20 2018 08:57:20",
+                    "incidents": Array [
+                      Object {
+                        "activityId": Object {},
+                        "activityInstanceId": Object {},
+                        "errorMessage": "",
+                        "errorType": "",
+                        "id": "id 2",
+                        "jobId": "jobId 0",
+                      },
+                    ],
+                    "operations": Array [
+                      Object {
+                        "endDate": "2018-10-10T09:20:38.661Z",
+                        "errorMessage": "string",
+                        "startDate": "2018-10-10T09:20:38.661Z",
+                        "state": "SCHEDULED",
+                        "type": "UPDATE_RETRIES",
+                      },
+                    ],
+                    "startDate": "2018-06-21T11:13:31.094+0000",
                     "state": "ACTIVE",
-                    "workflowId": "bar",
+                    "workflowId": "2",
+                    "workflowName": "someWorkflowName",
+                    "workflowVersion": "1",
                   }
                 }
               />
@@ -67,11 +129,42 @@ exports[`DiagramPanel should render pane header and body 1`] = `
     <DiagramBar
       instance={
         Object {
-          "endDate": "--",
+          "activities": Array [
+            Object {
+              "activityId": "activityId 0",
+              "endDate": "2018-10-10T09:20:38.658Z",
+              "id": "id 0",
+              "startDate": "2018-10-10T09:20:38.658Z",
+              "state": "ACTIVE",
+            },
+          ],
+          "bpmnProcessId": "someKey",
+          "endDate": null,
           "id": "foo",
-          "startDate": "Wed Jun 20 2018 08:57:20",
+          "incidents": Array [
+            Object {
+              "activityId": Object {},
+              "activityInstanceId": Object {},
+              "errorMessage": "",
+              "errorType": "",
+              "id": "id 2",
+              "jobId": "jobId 0",
+            },
+          ],
+          "operations": Array [
+            Object {
+              "endDate": "2018-10-10T09:20:38.661Z",
+              "errorMessage": "string",
+              "startDate": "2018-10-10T09:20:38.661Z",
+              "state": "SCHEDULED",
+              "type": "UPDATE_RETRIES",
+            },
+          ],
+          "startDate": "2018-06-21T11:13:31.094+0000",
           "state": "ACTIVE",
-          "workflowId": "bar",
+          "workflowId": "2",
+          "workflowName": "someWorkflowName",
+          "workflowVersion": "1",
         }
       }
     />
@@ -89,7 +182,7 @@ exports[`DiagramPanel should render pane header and body 1`] = `
         ]
       }
       selectedFlowNode="foo"
-      workflowId="bar"
+      workflowId="2"
     />
   </Styled(PanelBody)>
 </Pane>
