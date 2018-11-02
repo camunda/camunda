@@ -51,7 +51,7 @@ exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
           "type": "UPDATE_RETRIES",
         },
       ],
-      "startDate": "2018-06-21T11:13:31.094+0000",
+      "startDate": "2018-06-21",
       "state": "ACTIVE",
       "workflowId": "2",
       "workflowName": "someWorkflowName",

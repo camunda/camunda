@@ -111,11 +111,11 @@ export const createInstance = (options = {}) => {
   return {
     activities: [createActivity()],
     bpmnProcessId: 'someKey',
-    endDate: null,
     id: randomIdIterator.next().value,
     incidents: [createIncident()],
+    endDate: null,
     operations: [createOperation()],
-    startDate: '2018-06-21T11:13:31.094+0000',
+    startDate: '2018-06-21',
     state: 'ACTIVE',
     workflowId: '2',
     workflowVersion: '1',
