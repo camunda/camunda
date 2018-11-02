@@ -30,16 +30,16 @@ import org.openjdk.jmh.annotations.State;
 @State(Scope.Thread)
 public class ThroughputCtx {
 
-  @Param({"0", "3"})
+  @Param({"3"})
   public int maxDepth;
 
-  @Param({"3", "5"})
+  @Param({"5"})
   public int keyCount;
 
   @Param({"1"})
   public double mappingKeyPercentage;
 
-  @Param({"0", "0.5", "1"})
+  @Param({"1"})
   public double mappingDepthPercentage;
 
   UnsafeBuffer targetDocument;
