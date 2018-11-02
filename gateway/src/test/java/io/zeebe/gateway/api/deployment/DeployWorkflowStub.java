@@ -25,6 +25,8 @@ public class DeployWorkflowStub
     implements RequestStub<BrokerDeployWorkflowRequest, BrokerResponse<DeploymentRecord>> {
 
   private static final long KEY = 123;
+  private static final long WORKFLOW_KEY = 456;
+  private static final int WORKFLOW_VERSION = 789;
 
   @Override
   public void registerWith(StubbedGateway gateway) {
@@ -33,6 +35,14 @@ public class DeployWorkflowStub
 
   protected long getKey() {
     return KEY;
+  }
+
+  protected long getWorkflowKey() {
+    return WORKFLOW_KEY;
+  }
+
+  public int getWorkflowVersion() {
+    return WORKFLOW_VERSION;
   }
 
   @Override
@@ -49,8 +59,8 @@ public class DeployWorkflowStub
                   .add()
                   .setBpmnProcessId(r.getResourceName())
                   .setResourceName(r.getResourceName())
-                  .setVersion(r.getResourceType().ordinal())
-                  .setKey(r.getResourceType().ordinal());
+                  .setVersion(WORKFLOW_VERSION)
+                  .setKey(WORKFLOW_KEY);
             });
     return new BrokerResponse<>(deploymentRecord, 0, KEY);
   }

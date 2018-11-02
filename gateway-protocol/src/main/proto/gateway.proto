@@ -31,8 +31,10 @@ message TopologyResponse {
 message WorkflowRequestObject {
   string name = 1;
   enum ResourceType {
-    BPMN = 0;
-    YAML = 1;
+    // FILE type means the gateway will try to detect the resource type using the file extension of the name
+    FILE = 0;
+    BPMN = 1;
+    YAML = 2;
   }
   ResourceType type = 2;
   bytes definition = 3;
