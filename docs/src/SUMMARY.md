@@ -23,6 +23,8 @@
       * [Service Tasks](bpmn-workflows/service-tasks.md)
       * [Receive Tasks](bpmn-workflows/receive-tasks.md)
     * [Gateways](bpmn-workflows/gateways.md)
+    	 * [Exclusive Gateways](bpmn-workflows/exclusive-gateways.md)
+    	 * [Parallel Gateways](bpmn-workflows/parallel-gateways.md)
     * [Events](bpmn-workflows/events.md)
       * [None Events](bpmn-workflows/none-events.md)
       * [Message Events](bpmn-workflows/message-events.md)
