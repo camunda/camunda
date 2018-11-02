@@ -10,6 +10,17 @@ import static org.junit.Assert.assertThat;
 public class OptimizeCleanupConfigurationTest {
 
   @Test
+  public void testGetProcessDefinitionCleanupConfigurationNormalizeCronExpression() {
+    final CleanupMode defaultMode = CleanupMode.VARIABLES;
+    final Period defaultTtl = Period.parse("P1M");
+    final OptimizeCleanupConfiguration underTest = new OptimizeCleanupConfiguration(
+      true, "* * * * *", defaultTtl, defaultMode
+    );
+
+    assertThat(underTest.getCronTrigger(), is("* * * * * *"));
+  }
+
+  @Test
   public void testGetProcessDefinitionCleanupConfigurationDefaultsForUnknownKey() {
     final CleanupMode defaultMode = CleanupMode.VARIABLES;
     final Period defaultTtl = Period.parse("P1M");

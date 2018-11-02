@@ -59,6 +59,7 @@ public class OptimizeCleanupService {
     logger.info("Starting cleanup scheduling");
     if (taskScheduler == null) {
       this.taskScheduler = new ThreadPoolTaskScheduler();
+      ((ThreadPoolTaskScheduler) this.taskScheduler).initialize();
     }
     if (scheduledTrigger == null) {
       this.scheduledTrigger = taskScheduler.schedule(this::runCleanup, getCronTrigger());

@@ -31,7 +31,7 @@ public class OptimizeCleanupConfiguration {
 
   public OptimizeCleanupConfiguration(boolean enabled, String cronTrigger, Period defaultTtl, CleanupMode defaultMode) {
     this.enabled = enabled;
-    this.cronTrigger = cronTrigger;
+    setCronTrigger(cronTrigger);
     this.defaultTtl = defaultTtl;
     this.defaultMode = defaultMode;
   }
@@ -87,8 +87,17 @@ public class OptimizeCleanupConfiguration {
     this.enabled = enabled;
   }
 
-  public void setCronTrigger(String cronTrigger) {
-    this.cronTrigger = cronTrigger;
+  public final void setCronTrigger(String cronTrigger) {
+    this.cronTrigger = Optional.ofNullable(cronTrigger).map(this::normalizeToSixParts).orElse(null);
+  }
+
+  private String normalizeToSixParts(String cronTrigger) {
+    String[] cronParts = cronTrigger.split(" ");
+    if (cronParts.length < 6) {
+      return cronTrigger + " *";
+    } else {
+      return cronTrigger;
+    }
   }
 
   public void setDefaultTtl(Period defaultTtl) {

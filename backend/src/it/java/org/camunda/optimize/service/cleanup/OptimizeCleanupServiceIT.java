@@ -55,6 +55,19 @@ public class OptimizeCleanupServiceIT {
   }
 
   @Test
+  public void testCleanupIsScheduledSuccessfully() {
+    embeddedOptimizeRule.getCleanupService().startCleanupScheduling();
+    assertThat(embeddedOptimizeRule.getCleanupService().isScheduledToRun(), is(true));
+  }
+
+  @Test
+  public void testCleanupScheduledStoppedSuccessfully() {
+    embeddedOptimizeRule.getCleanupService().startCleanupScheduling();
+    embeddedOptimizeRule.getCleanupService().stopCleanupScheduling();
+    assertThat(embeddedOptimizeRule.getCleanupService().isScheduledToRun(), is(false));
+  }
+
+  @Test
   public void testCleanupWithProcessInstanceDelete() throws SQLException {
     // given
     getCleanupConfiguration().setDefaultMode(CleanupMode.ALL);
