@@ -31,7 +31,7 @@ export const SelectionButton = themed(styled.button`
 
   /* Color */
   background: ${Colors.selections};
-  color: rgba(255; 255, 255, 1);
+  color: rgba(255, 255, 255, 1);
 
   border-radius: 13px;
   border-color: ${Colors.primaryButton01};
