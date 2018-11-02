@@ -13,12 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package io.zeebe.broker.it.workflow;
+package io.zeebe.broker.it.workflow.message;
 
 import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertElementActivated;
 import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertElementCompleted;
 import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertWorkflowInstanceCompleted;
-import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setPartitionCount;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.entry;
@@ -26,9 +25,7 @@ import static org.assertj.core.api.Assertions.entry;
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.ZeebeFuture;
-import io.zeebe.client.api.clients.WorkflowClient;
 import io.zeebe.client.api.events.DeploymentEvent;
-import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.cmd.ClientException;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -39,82 +36,86 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-public class PublishMessageTest {
+public class MessageCorrelationTest {
+
+  private static final String PROCESS_ID = "process";
+
+  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
+  public GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
+
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   private static final BpmnModelInstance WORKFLOW =
-      Bpmn.createExecutableProcess("wf")
+      Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .intermediateCatchEvent("catch-event")
           .message(c -> c.name("order canceled").zeebeCorrelationKey("$.orderId"))
           .endEvent()
           .done();
-  public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule(setPartitionCount(3));
-  public GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
-
-  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
-
-  private WorkflowClient workflowClient;
 
   @Before
   public void init() {
-
-    workflowClient = clientRule.getClient().workflowClient();
-
     final DeploymentEvent deploymentEvent =
-        workflowClient.newDeployCommand().addWorkflowModel(WORKFLOW, "wf.bpmn").send().join();
+        clientRule
+            .getWorkflowClient()
+            .newDeployCommand()
+            .addWorkflowModel(WORKFLOW, "wf.bpmn")
+            .send()
+            .join();
 
     clientRule.waitUntilDeploymentIsDone(deploymentEvent.getKey());
   }
 
   @Test
-  public void shouldCorrelateMessageToAllSubscriptions() {
+  public void shouldCorrelateMessage() {
     // given
-    final WorkflowInstanceEvent wf =
-        workflowClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId("wf")
-            .latestVersion()
-            .payload("{\"orderId\":\"order-123\"}")
-            .send()
-            .join();
-
-    final WorkflowInstanceEvent wf2 =
-        workflowClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId("wf")
-            .latestVersion()
-            .payload("{\"orderId\":\"order-123\"}")
-            .send()
-            .join();
+    clientRule
+        .getWorkflowClient()
+        .newCreateInstanceCommand()
+        .bpmnProcessId(PROCESS_ID)
+        .latestVersion()
+        .payload(Collections.singletonMap("orderId", "order-123"))
+        .send()
+        .join();
 
     // when
-    workflowClient
+    clientRule
+        .getWorkflowClient()
         .newPublishMessageCommand()
         .messageName("order canceled")
         .correlationKey("order-123")
+        .payload(Collections.singletonMap("foo", "bar"))
         .send()
         .join();
 
     // then
-    assertWorkflowInstanceCompleted("wf", wf.getWorkflowInstanceKey());
-    assertWorkflowInstanceCompleted("wf", wf2.getWorkflowInstanceKey());
+    assertWorkflowInstanceCompleted(PROCESS_ID);
+
+    assertElementCompleted(
+        PROCESS_ID,
+        "catch-event",
+        (catchEventOccurredEvent) ->
+            assertThat(catchEventOccurredEvent.getPayloadAsMap())
+                .containsExactly(entry("orderId", "order-123"), entry("foo", "bar")));
   }
 
   @Test
   public void shouldCorrelateMessageWithZeroTTL() {
     // given
-    workflowClient
+    clientRule
+        .getWorkflowClient()
         .newCreateInstanceCommand()
-        .bpmnProcessId("wf")
+        .bpmnProcessId(PROCESS_ID)
         .latestVersion()
-        .payload("{\"orderId\":\"order-123\"}")
+        .payload(Collections.singletonMap("orderId", "order-123"))
         .send()
         .join();
 
     assertElementActivated("catch-event");
 
     // when
-    workflowClient
+    clientRule
+        .getWorkflowClient()
         .newPublishMessageCommand()
         .messageName("order canceled")
         .correlationKey("order-123")
@@ -123,13 +124,14 @@ public class PublishMessageTest {
         .join();
 
     // then
-    assertElementCompleted("wf", "catch-event");
+    assertElementCompleted(PROCESS_ID, "catch-event");
   }
 
   @Test
   public void shouldNotCorrelateMessageAfterTTL() {
     // given
-    workflowClient
+    clientRule
+        .getWorkflowClient()
         .newPublishMessageCommand()
         .messageName("order canceled")
         .correlationKey("order-123")
@@ -138,7 +140,8 @@ public class PublishMessageTest {
         .send()
         .join();
 
-    workflowClient
+    clientRule
+        .getWorkflowClient()
         .newPublishMessageCommand()
         .messageName("order canceled")
         .correlationKey("order-123")
@@ -148,68 +151,28 @@ public class PublishMessageTest {
         .join();
 
     // when
-    workflowClient
+    clientRule
+        .getWorkflowClient()
         .newCreateInstanceCommand()
-        .bpmnProcessId("wf")
+        .bpmnProcessId(PROCESS_ID)
         .latestVersion()
-        .payload("{\"orderId\":\"order-123\"}")
+        .payload(Collections.singletonMap("orderId", "order-123"))
         .send()
         .join();
 
     // then
-
     assertElementCompleted(
-        "wf",
+        PROCESS_ID,
         "catch-event",
         (catchEventOccurred) ->
             assertThat(catchEventOccurred.getPayloadAsMap()).contains(entry("msg", "expected")));
   }
 
   @Test
-  public void shouldCorrelateMessageOnDifferentPartitions() {
-    // given
-    workflowClient
-        .newPublishMessageCommand()
-        .messageName("order canceled")
-        .correlationKey("order-123")
-        .send()
-        .join();
-
-    workflowClient
-        .newPublishMessageCommand()
-        .messageName("order canceled")
-        .correlationKey("order-124")
-        .send()
-        .join();
-
-    // when
-    final WorkflowInstanceEvent wf =
-        workflowClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId("wf")
-            .latestVersion()
-            .payload("{\"orderId\":\"order-123\"}")
-            .send()
-            .join();
-
-    final WorkflowInstanceEvent wf2 =
-        workflowClient
-            .newCreateInstanceCommand()
-            .bpmnProcessId("wf")
-            .latestVersion()
-            .payload("{\"orderId\":\"order-124\"}")
-            .send()
-            .join();
-
-    // then
-    assertWorkflowInstanceCompleted("wf", wf.getWorkflowInstanceKey());
-    assertWorkflowInstanceCompleted("wf", wf2.getWorkflowInstanceKey());
-  }
-
-  @Test
   public void shouldRejectMessageWithSameId() {
     // given
-    workflowClient
+    clientRule
+        .getWorkflowClient()
         .newPublishMessageCommand()
         .messageName("order canceled")
         .correlationKey("order-123")
@@ -219,7 +182,8 @@ public class PublishMessageTest {
 
     // when
     final ZeebeFuture<Void> future =
-        workflowClient
+        clientRule
+            .getWorkflowClient()
             .newPublishMessageCommand()
             .messageName("order canceled")
             .correlationKey("order-123")

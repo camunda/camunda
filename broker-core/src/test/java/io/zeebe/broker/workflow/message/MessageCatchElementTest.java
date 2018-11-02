@@ -36,7 +36,6 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.impl.SubscriptionUtil;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
@@ -44,7 +43,6 @@ import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.record.RecordingExporter;
-import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
@@ -168,39 +166,6 @@ public class MessageCatchElementTest {
 
     assertMessageSubscription(
         workflowInstanceKey, "order-123", catchEventEntered, messageSubscription);
-  }
-
-  @Test
-  public void shouldOpenMessageSubscriptionsOnSamePartition() {
-    // given
-    final List<Integer> partitionIds = apiRule.getPartitionIds();
-
-    final String correlationKey = "order-123";
-
-    final PartitionTestClient workflowPartition = apiRule.partitionClient(partitionIds.get(0));
-    final PartitionTestClient subscriptionPartition =
-        apiRule.partitionClient(getPartitionId(correlationKey));
-
-    testClient.deploy(CATCH_EVENT_WORKFLOW);
-
-    // when
-    final long workflowInstanceKey1 =
-        workflowPartition.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", correlationKey));
-
-    final long workflowInstanceKey2 =
-        workflowPartition.createWorkflowInstance(PROCESS_ID, asMsgPack("orderId", correlationKey));
-
-    // then
-    final List<Record<MessageSubscriptionRecordValue>> subscriptions =
-        subscriptionPartition
-            .receiveMessageSubscriptions()
-            .withIntent(MessageSubscriptionIntent.OPENED)
-            .limit(2)
-            .collect(Collectors.toList());
-
-    assertThat(subscriptions)
-        .extracting(s -> s.getValue().getWorkflowInstanceKey())
-        .contains(workflowInstanceKey1, workflowInstanceKey2);
   }
 
   @Test
@@ -351,11 +316,5 @@ public class MessageCatchElementTest {
                 .withElementId("to-end")
                 .exists())
         .isTrue();
-  }
-
-  private int getPartitionId(final String correlationKey) {
-    final List<Integer> partitionIds = apiRule.getPartitionIds();
-    return SubscriptionUtil.getSubscriptionPartitionId(
-        BufferUtil.wrapString(correlationKey), partitionIds.size());
   }
 }
