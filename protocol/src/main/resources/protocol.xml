@@ -33,8 +33,6 @@
     <enum name="ValueType" encodingType="uint8" description="The type of a record value">
       <validValue name="JOB">0</validValue>
       <validValue name="RAFT">1</validValue>
-      <validValue name="SUBSCRIPTION">2</validValue>
-      <validValue name="SUBSCRIBER">3</validValue>
       <validValue name="DEPLOYMENT">4</validValue>
       <validValue name="WORKFLOW_INSTANCE">5</validValue>
       <validValue name="INCIDENT">6</validValue>
@@ -49,18 +47,9 @@
 
     <enum name="ControlMessageType" encodingType="uint8"
       description="The type of the control message.">
-      <validValue name="ADD_JOB_SUBSCRIPTION">0</validValue>
-      <validValue name="REMOVE_JOB_SUBSCRIPTION">1</validValue>
-      <validValue name="INCREASE_JOB_SUBSCRIPTION_CREDITS">2</validValue>
-      <validValue name="REMOVE_TOPIC_SUBSCRIPTION">3</validValue>
       <validValue name="REQUEST_TOPOLOGY">4</validValue>
       <validValue name="GET_WORKFLOW">5</validValue>
       <validValue name="LIST_WORKFLOWS">6</validValue>
-    </enum>
-
-    <enum name="SubscriptionType" encodingType="uint8" description="The type of the subscription.">
-      <validValue name="JOB_SUBSCRIPTION">0</validValue>
-      <validValue name="TOPIC_SUBSCRIPTION">1</validValue>
     </enum>
 
     <enum name="RecordType" encodingType="uint8">
@@ -125,31 +114,12 @@
     <data name="rejectionReason" id="11" type="varDataEncoding"/>
   </sbe:message>
 
-  <sbe:message name="SubscribedRecord" id="30">
-    <field name="partitionId" id="1" type="uint16"/>
-    <field name="position" id="2" type="uint64"/>
-    <field name="sourceRecordPosition" id="3" type="uint64" presence="optional"/>
-    <field name="key" id="4" type="uint64"/>
-    <field name="subscriberKey" id="5" type="uint64"/>
-    <field name="recordType" id="6" type="RecordType"/>
-    <field name="subscriptionType" id="7" type="SubscriptionType"/>
-    <field name="valueType" id="8" type="ValueType"/>
-    <field name="intent" id="9" type="uint8"/>
-    <field name="timestamp" id="10" type="uint64"/>
-    <!-- populated when RecordType is COMMAND_REJECTION -->
-    <field name="rejectionType" id="11" type="RejectionType"/>
-    <data name="value" id="12" type="varDataEncoding"/>
-    <!-- populated when RecordType is COMMAND_REJECTION; UTF-8 encoded String -->
-    <data name="rejectionReason" id="13" type="varDataEncoding"/>
-  </sbe:message>
-
   <!-- L2 Common Messages 200 - 399 -->
 
   <sbe:message name="RecordMetadata" id="200" description="Descriptor for Record Metadata">
     <field name="recordType" id="1" type="RecordType"/>
     <field name="requestStreamId" id="2" type="int32"/>
     <field name="requestId" id="3" type="uint64"/>
-    <field name="subscriptionId" id="4" type="uint64"/>
     <field name="protocolVersion" id="5" type="uint16"/>
     <field name="valueType" id="6" type="ValueType"/>
     <field name="intent" id="7" type="uint8"/>

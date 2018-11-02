@@ -17,6 +17,7 @@ package io.zeebe.broker.it.job;
 
 import static io.zeebe.exporter.record.Assertions.assertThat;
 import static io.zeebe.test.util.TestUtil.waitUntil;
+import static io.zeebe.test.util.record.RecordingExporter.jobBatchRecords;
 import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -29,6 +30,7 @@ import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.subscription.JobWorker;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.JobRecordValue;
+import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.util.TestUtil;
 import java.time.Duration;
@@ -162,7 +164,7 @@ public class JobWorkerTest {
   }
 
   @Test
-  public void shouldCloseSubscription() throws InterruptedException {
+  public void shouldCloseWorker() {
     // given
     final RecordingJobHandler jobHandler = new RecordingJobHandler();
 
@@ -186,7 +188,7 @@ public class JobWorkerTest {
     waitUntil(() -> jobRecords(JobIntent.CREATED).exists());
 
     assertThat(jobHandler.getHandledJobs()).isEmpty();
-    assertThat(jobRecords(JobIntent.ACTIVATE).exists()).isFalse();
+    assertThat(jobBatchRecords(JobBatchIntent.ACTIVATE).exists()).isFalse();
   }
 
   @Test

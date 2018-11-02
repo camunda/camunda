@@ -25,12 +25,6 @@ public class StreamProcessorIds {
 
   public static final int JOB_STREAM_PROCESSOR_ID = 10;
 
-  public static final int JOB_TIME_OUT_STREAM_PROCESSOR_ID = 30;
-
-  public static final int TOPIC_SUBSCRIPTION_PUSH_PROCESSOR_ID = 40;
-
-  public static final int TOPIC_SUBSCRIPTION_MANAGEMENT_PROCESSOR_ID = 50;
-
   public static final int DISTRIBUTE_PROCESSOR_ID = 60;
 
   public static final int WORKFLOW_INSTANCE_PROCESSOR_ID = 70;
