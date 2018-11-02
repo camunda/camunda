@@ -22,24 +22,24 @@ exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
     Object {
       "activities": Array [
         Object {
-          "activityId": "activityId 0",
+          "activityId": "activityId_0",
           "endDate": "2018-10-10T09:20:38.658Z",
-          "id": "id 0",
+          "id": "id_0",
           "startDate": "2018-10-10T09:20:38.658Z",
           "state": "ACTIVE",
         },
       ],
       "bpmnProcessId": "someKey",
       "endDate": null,
-      "id": "id 1",
+      "id": "id_1",
       "incidents": Array [
         Object {
           "activityId": Object {},
           "activityInstanceId": Object {},
           "errorMessage": "",
           "errorType": "",
-          "id": "id 2",
-          "jobId": "jobId 0",
+          "id": "id_2",
+          "jobId": "jobId_0",
         },
       ],
       "operations": Array [

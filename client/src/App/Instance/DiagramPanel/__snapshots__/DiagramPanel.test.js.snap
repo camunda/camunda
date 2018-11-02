@@ -27,9 +27,9 @@ exports[`DiagramPanel should render pane header and body 1`] = `
                 Object {
                   "activities": Array [
                     Object {
-                      "activityId": "activityId 0",
+                      "activityId": "activityId_0",
                       "endDate": "2018-10-10T09:20:38.658Z",
-                      "id": "id 0",
+                      "id": "id_0",
                       "startDate": "2018-10-10T09:20:38.658Z",
                       "state": "ACTIVE",
                     },
@@ -43,8 +43,8 @@ exports[`DiagramPanel should render pane header and body 1`] = `
                       "activityInstanceId": Object {},
                       "errorMessage": "",
                       "errorType": "",
-                      "id": "id 2",
-                      "jobId": "jobId 0",
+                      "id": "id_2",
+                      "jobId": "jobId_0",
                     },
                   ],
                   "operations": Array [
@@ -82,9 +82,9 @@ exports[`DiagramPanel should render pane header and body 1`] = `
                   Object {
                     "activities": Array [
                       Object {
-                        "activityId": "activityId 0",
+                        "activityId": "activityId_0",
                         "endDate": "2018-10-10T09:20:38.658Z",
-                        "id": "id 0",
+                        "id": "id_0",
                         "startDate": "2018-10-10T09:20:38.658Z",
                         "state": "ACTIVE",
                       },
@@ -98,8 +98,8 @@ exports[`DiagramPanel should render pane header and body 1`] = `
                         "activityInstanceId": Object {},
                         "errorMessage": "",
                         "errorType": "",
-                        "id": "id 2",
-                        "jobId": "jobId 0",
+                        "id": "id_2",
+                        "jobId": "jobId_0",
                       },
                     ],
                     "operations": Array [
@@ -131,9 +131,9 @@ exports[`DiagramPanel should render pane header and body 1`] = `
         Object {
           "activities": Array [
             Object {
-              "activityId": "activityId 0",
+              "activityId": "activityId_0",
               "endDate": "2018-10-10T09:20:38.658Z",
-              "id": "id 0",
+              "id": "id_0",
               "startDate": "2018-10-10T09:20:38.658Z",
               "state": "ACTIVE",
             },
@@ -147,8 +147,8 @@ exports[`DiagramPanel should render pane header and body 1`] = `
               "activityInstanceId": Object {},
               "errorMessage": "",
               "errorType": "",
-              "id": "id 2",
-              "jobId": "jobId 0",
+              "id": "id_2",
+              "jobId": "jobId_0",
             },
           ],
           "operations": Array [

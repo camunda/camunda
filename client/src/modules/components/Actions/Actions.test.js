@@ -42,7 +42,6 @@ describe('Actions', () => {
     mockInstance = createInstance({operations: [mockOperation]});
     node = shallow(<Actions instance={mockInstance} />);
     //then
-
     expect(node).toMatchSnapshot();
 
     // when

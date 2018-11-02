@@ -45,17 +45,17 @@ export const createSelection = id => {
   };
 };
 
-const createRandId = function* createRandId(type) {
+const createRandomId = function* createRandomId(type) {
   let idx = 0;
   while (true) {
-    yield `${type} ${idx}`;
+    yield `${type}_${idx}`;
     idx++;
   }
 };
 
-const randomIdIterator = createRandId('id');
-const randomActivityIdIterator = createRandId('activityId');
-const randomJobIdIterator = createRandId('jobId');
+const randomIdIterator = createRandomId('id');
+const randomActivityIdIterator = createRandomId('activityId');
+const randomJobIdIterator = createRandomId('jobId');
 
 /**
  * @returns a mocked incident Object
@@ -63,8 +63,8 @@ const randomJobIdIterator = createRandId('jobId');
  */
 export const createIncident = (options = {}) => {
   return {
-    activityId: createRandId(),
-    activityInstanceId: createRandId(),
+    activityId: createRandomId(),
+    activityInstanceId: createRandomId(),
     errorMessage: '',
     errorType: '',
     id: randomIdIterator.next().value,
