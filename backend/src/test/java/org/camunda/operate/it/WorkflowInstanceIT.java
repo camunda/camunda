@@ -63,7 +63,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
   public void testWorkflowInstanceCreated() {
     // having
     String processId = "demoProcess";
-    final String workflowId = ZeebeUtil.deployWorkflow(zeebeClient, "demoProcess_v_1.bpmn");
+    final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
 
     //when
     final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
@@ -96,7 +96,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
         .serviceTask("task1").zeebeTaskType("task1")
       .endEvent()
       .done();
-    ZeebeUtil.deployWorkflow(zeebeClient, workflow, "demoProcess_v_1.bpmn");
+    deployWorkflow(workflow, "demoProcess_v_1.bpmn");
 
     //when
     final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, null);
@@ -129,7 +129,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
       .sequenceFlowId("sf3")
       .endEvent()
       .done();
-    ZeebeUtil.deployWorkflow(zeebeClient, workflow, processId + ".bpmn");
+    deployWorkflow(workflow, processId + ".bpmn");
 
     final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, null);
     elasticsearchTestRule.processAllEvents(10);
@@ -161,7 +161,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
         .serviceTask("task3").zeebeTaskType("task3")
       .endEvent()
       .done();
-    final String workflowId = ZeebeUtil.deployWorkflow(zeebeClient, workflow, processId + ".bpmn");
+    deployWorkflow(workflow, processId + ".bpmn");
 
     //when workflow instance is started
     final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\", \"nullVar\": null}");
@@ -218,7 +218,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     // having
     String payload = new String(Files.readAllBytes(Paths.get(WorkflowInstanceIT.class.getResource("/payload.json").toURI())));
     String processId = "demoProcess";
-    ZeebeUtil.deployWorkflow(zeebeClient, "demoProcess_v_1.bpmn");
+    String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
 
     //when
     final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, payload);
@@ -280,7 +280,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     String activityId = "taskA";
 
     String processId = "demoProcess";
-    final String workflowId = ZeebeUtil.deployWorkflow(zeebeClient, "demoProcess_v_1.bpmn");
+    final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
     final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //create an incident
@@ -309,7 +309,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
 
 
     String processId = "demoProcess";
-    final String workflowId = ZeebeUtil.deployWorkflow(zeebeClient, "demoProcess_v_1.bpmn");
+    final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
     final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //when
@@ -350,7 +350,8 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
           .serviceTask("task2").zeebeTaskType("task2")
           .endEvent()
       .done();
-    final String workflowId = ZeebeUtil.deployWorkflow(zeebeClient, workflow, processId + ".bpmn");
+    final String resourceName = processId + ".bpmn";
+    deployWorkflow(workflow, resourceName);
 
     //when
     final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");      //wrong payload provokes incident
@@ -397,7 +398,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     final OffsetDateTime testStartTime = OffsetDateTime.now();
 
     String processId = "demoProcess";
-    final String workflowId = ZeebeUtil.deployWorkflow(zeebeClient, "demoProcess_v_1.bpmn");
+    final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
     final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //when

@@ -13,11 +13,12 @@
 package org.camunda.operate.zeebeimport;
 
 import javax.annotation.PostConstruct;
-import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.camunda.operate.entities.meta.ImportPositionEntity;
 import org.camunda.operate.es.types.ImportPositionType;
 import org.camunda.operate.es.types.StrictTypeMappingCreator;
@@ -46,6 +47,10 @@ import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.commands.BrokerInfo;
+import io.zeebe.client.api.commands.PartitionInfo;
+import io.zeebe.client.api.commands.Topology;
 import io.zeebe.exporter.record.RecordValue;
 import io.zeebe.protocol.clientapi.ValueType;
 import static org.camunda.operate.util.ElasticsearchUtil.joinWithAnd;
@@ -63,10 +68,13 @@ public class ZeebeESImporter extends Thread {
     ImportValueType.JOB,
     ImportValueType.INCIDENT};
 
-  private List<Integer> partitionIds = Arrays.asList(0); //TODO initialize the list on startup
+  private Set<Integer> partitionIds = new HashSet<>();
 
   @Autowired
   private OperateProperties operateProperties;
+
+  @Autowired
+  private ZeebeClient zeebeClient;
 
   @Autowired
   @Qualifier("zeebeEsClient")
@@ -164,6 +172,32 @@ public class ZeebeESImporter extends Thread {
     }
   }
 
+  private void initPartitionList() {
+    final Topology topology = zeebeClient.newTopologyRequest().send().join();
+    //TODO rewrite when Zeebe provides number of partitions in Topology (topology#getPartitionsCount)
+    if (topology != null) {
+      for (BrokerInfo brokerInfo : topology.getBrokers()) {
+        if (brokerInfo != null) {
+          for (PartitionInfo partitionInfo : brokerInfo.getPartitions()) {
+            partitionIds.add(partitionInfo.getPartitionId());
+          }
+        }
+      }
+    }
+    if (partitionIds.size() == 0) {
+      logger.warn("Partitions are not found. Import from Zeebe won't load any data.");
+    } else {
+      logger.debug("Following partition ids were found: {}", partitionIds);
+    }
+  }
+
+  private Set<Integer> getPartitionIds() {
+    if (partitionIds.size() == 0) {
+      initPartitionList();
+    }
+    return partitionIds;
+  }
+
   @Override
   public void run() {
     while (true) {
@@ -202,7 +236,7 @@ public class ZeebeESImporter extends Thread {
     try {
       String aliasName = importValueType.getAliasName(operateProperties.getZeebeElasticsearch().getPrefix());
 
-      for (Integer partitionId : partitionIds) {
+      for (Integer partitionId : getPartitionIds()) {
         final long latestLoadedPosition = getLatestLoadedPosition(aliasName, partitionId);
         List<RecordImpl> nextBatch = getNextBatch(aliasName, partitionId, latestLoadedPosition, importValueType.getRecordValueClass());
         if (nextBatch.size() > 0) {

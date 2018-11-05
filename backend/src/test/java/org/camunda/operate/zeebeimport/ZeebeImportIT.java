@@ -77,7 +77,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     // having
     String activityId = "taskA";
     String processId = "demoProcess";
-    final String workflowId = ZeebeUtil.deployWorkflow(zeebeClient, "demoProcess_v_1.bpmn");
+    final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
     final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     //create an incident
     ZeebeUtil.failTask(getClient(), activityId, getWorkerName(), 3);
@@ -126,7 +126,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
           .serviceTask(activityId).zeebeTaskType(activityId)
         .endEvent()
       .done();
-    final String workflowId = ZeebeUtil.deployWorkflow(zeebeClient, modelInstance, "demoProcess_v_1.bpmn");
+    final String workflowId = deployWorkflow(modelInstance, "demoProcess_v_1.bpmn");
     final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //create an incident
@@ -164,7 +164,7 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
         .serviceTask(activityId).zeebeTaskType(activityId)
         .endEvent()
         .done();
-    final String workflowId = ZeebeUtil.deployWorkflow(zeebeClient, modelInstance, "demoProcess_v_1.bpmn");
+    final String workflowId = deployWorkflow(modelInstance, "demoProcess_v_1.bpmn");
     final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //create an incident

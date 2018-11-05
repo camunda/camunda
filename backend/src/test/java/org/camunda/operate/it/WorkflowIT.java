@@ -17,7 +17,6 @@ import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.es.reader.WorkflowReader;
 import org.camunda.operate.es.types.WorkflowType;
 import org.camunda.operate.rest.dto.WorkflowGroupDto;
-import org.camunda.operate.util.ElasticsearchTestRule;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
 import org.camunda.operate.util.ZeebeUtil;
@@ -30,9 +29,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.commands.Workflow;
-import io.zeebe.client.api.commands.WorkflowResource;
-import io.zeebe.client.api.commands.Workflows;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ProcessBuilder;
@@ -66,7 +62,7 @@ public class WorkflowIT extends OperateZeebeIntegrationTest {
   @Test
   public void testWorkflowCreated() {
     //given
-    final String workflowId = ZeebeUtil.deployWorkflow(super.getClient(), "demoProcess_v_1.bpmn");
+    final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
 
     //when
     elasticsearchTestRule.processAllEvents(1);

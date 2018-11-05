@@ -2,13 +2,14 @@ package org.camunda.operate.util;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Predicate;
 import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.es.ElasticsearchSchemaManager;
 import org.camunda.operate.es.types.TypeMappingCreator;
-import org.camunda.operate.zeebeimport.ElasticsearchBulkProcessor;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.ElasticsearchProperties;
 import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.zeebeimport.ElasticsearchBulkProcessor;
 import org.camunda.operate.zeebeimport.ZeebeESImporter;
 import org.elasticsearch.action.admin.indices.delete.DeleteIndexRequest;
 import org.elasticsearch.client.transport.TransportClient;
@@ -171,6 +172,24 @@ public class ElasticsearchTestRule extends ExternalResource {
           emptyAttempts++;
         }
       } while(totalCount < expectedMinEventsCount && emptyAttempts < 4);
+    } catch (Exception e) {
+      logger.error(e.getMessage(), e);
+    }
+  }
+
+  public void processAllEventsAndWait(Predicate<Object[]> waitTill, Object... arguments) {
+    try {
+      int emptyAttempts = 0;
+      boolean found;
+      do {
+        Thread.sleep(200L);
+        zeebeESImporter.processNextEntitiesBatch();
+        found = waitTill.test(arguments);
+        if (!found) {
+          emptyAttempts++;
+          Thread.sleep(1000L);
+        }
+      } while(!found && emptyAttempts < 4);
     } catch (Exception e) {
       logger.error(e.getMessage(), e);
     }

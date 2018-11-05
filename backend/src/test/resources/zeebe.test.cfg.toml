@@ -1,3 +1,6 @@
+[cluster]
+partitionsCount = 2
+
 [[exporters]]
 id = "elasticsearch"
 className = "io.zeebe.exporter.ElasticsearchExporter"

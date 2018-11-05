@@ -12,17 +12,20 @@
  */
 package org.camunda.operate.util;
 
-import java.util.Properties;
-import java.util.function.Supplier;
+import java.util.function.Predicate;
 import org.camunda.operate.property.OperateProperties;
+import org.camunda.operate.zeebeimport.ZeebeESImporter;
 import org.junit.Rule;
 import org.junit.rules.RuleChain;
+import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.subscription.JobWorker;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.test.EmbeddedBrokerRule;
+import static org.assertj.core.api.Assertions.fail;
 
 public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest {
 
@@ -42,6 +45,12 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   @Autowired
   protected OperateProperties operateProperties;
 
+  @Autowired
+  private ZeebeESImporter zeebeESImporter;
+
+  @Autowired
+  private Predicate<Object[]> workflowIsDeployedCheck;
+
   private JobWorker jobWorker;
 
   private String workerName;
@@ -49,14 +58,11 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   protected void before() {
     workerName = TestUtil.createRandomString(10);
     operateProperties.getZeebe().setWorker(workerName);
-
     operateProperties.getZeebeElasticsearch().setPrefix(brokerRule.getPrefix());
-
     try {
-      //wait till topic is created
-      Thread.sleep(1000L);
-    } catch (InterruptedException e) {
-      //
+      FieldSetter.setField(zeebeESImporter, ZeebeESImporter.class.getDeclaredField("zeebeClient"), getClient());
+    } catch (NoSuchFieldException e) {
+      fail("Failed to inject ZeebeClient into some of the beans");
     }
   }
 
@@ -65,15 +71,14 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
       jobWorker.close();
       jobWorker = null;
     }
-
   }
 
   public OperateZeebeIntegrationTest() {
-    this(EmbeddedBrokerRule.DEFAULT_CONFIG_FILE, Properties::new);
+    this(EmbeddedBrokerRule.DEFAULT_CONFIG_FILE);
   }
 
   public OperateZeebeIntegrationTest(
-    final String configFileClasspathLocation, final Supplier<Properties> clientPropertiesProvider) {
+    final String configFileClasspathLocation) {
     brokerRule = new OperateZeebeBrokerRule(configFileClasspathLocation);
 
     clientRule = new ZeebeClientRule(brokerRule);
@@ -107,4 +112,15 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     return jobKey;
   }
 
+  protected String deployWorkflow(String... classpathResources) {
+    final String workflowId = ZeebeUtil.deployWorkflow(getClient(), classpathResources);
+    elasticsearchTestRule.processAllEventsAndWait(workflowIsDeployedCheck, workflowId);
+    return workflowId;
+  }
+
+  protected String deployWorkflow(BpmnModelInstance workflow, String resourceName) {
+    final String workflowId = ZeebeUtil.deployWorkflow(getClient(), workflow, resourceName);
+    elasticsearchTestRule.processAllEventsAndWait(workflowIsDeployedCheck, workflowId);
+    return workflowId;
+  }
 }

@@ -39,7 +39,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
     String processId = "processWithGateway";
     String taskA = "taskA";
     String taskC = "taskC";
-    final String workflowId = ZeebeUtil.deployWorkflow(super.getClient(), "processWithGateway.bpmn");
+    final String workflowId = deployWorkflow("processWithGateway.bpmn");
 
     final String initialPayload = "{\"a\": \"b\"}";
     final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(super.getClient(), processId, initialPayload);
@@ -130,7 +130,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
     String activityId = "taskA";
 
     String processId = "demoProcess";
-    final String workflowId = ZeebeUtil.deployWorkflow(super.getClient(), "demoProcess_v_1.bpmn");
+    final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
     final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(super.getClient(), processId, "{\"a\": \"b\"}");
     super.setJobWorker(ZeebeUtil.completeTask(super.getClient(), activityId, super.getWorkerName(), "{\"a\": \"b\"}"));
 
