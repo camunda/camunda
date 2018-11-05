@@ -23,10 +23,10 @@ export function parseQueryString(queryString = '') {
 
 export function getPayload({selectionId, state}) {
   const {selection, selections, filter} = state;
-  let selectiondata;
+  let selectionIndex;
 
   if (selectionId) {
-    selectiondata = getSelectionById(selections, selectionId);
+    selectionIndex = getSelectionById(selections, selectionId).index;
   }
 
   const query = {
@@ -40,10 +40,7 @@ export function getPayload({selectionId, state}) {
   }
 
   return {
-    queries: [
-      query,
-      ...(selectionId ? selections[selectiondata.index].queries : '')
-    ]
+    queries: [query, ...(selectionId ? selections[selectionIndex].queries : '')]
   };
 }
 
