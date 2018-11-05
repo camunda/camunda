@@ -14,6 +14,7 @@ package org.camunda.operate.it;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.function.Predicate;
 import org.apache.http.HttpStatus;
 import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.OperationState;
@@ -40,6 +41,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -74,6 +76,10 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   private UpdateRetriesHandler updateRetriesHandler;
+
+  @Autowired
+  @Qualifier("activityIsActiveCheck")
+  private Predicate<Object[]> activityIsActiveCheck;
 
   private Long initialBatchOperationMaxSize;
   private String workflowId;
@@ -126,7 +132,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   public void testUpdateRetriesExecutedOnOneInstance() throws Exception {
     // given
     final String workflowInstanceId = startDemoWorkflowInstance();
-    failTaskWithNoRetriesLeft("taskA");
+    failTaskWithNoRetriesLeft("taskA", workflowInstanceId);
 
     //when
     //we call UPDATE_RETRIES operation on instance
@@ -210,7 +216,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   public void testTwoOperationsOnOneInstance() throws Exception {
     // given
     final String workflowInstanceId = startDemoWorkflowInstance();
-    failTaskWithNoRetriesLeft("taskA");
+    failTaskWithNoRetriesLeft("taskA", workflowInstanceId);
 
     //when we call UPDATE_RETRIES operation two times on one instance
     final WorkflowInstanceQueryDto workflowInstanceQuery = createAllRunningQuery();
@@ -369,8 +375,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   private String startDemoWorkflowInstance() {
     String processId = "demoProcess";
     final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(super.getClient(), processId, "{\"a\": \"b\"}");
-
-    elasticsearchTestRule.processAllEvents(10);
+    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceId, "taskA");
     elasticsearchTestRule.refreshIndexesInElasticsearch();
     return workflowInstanceId;
   }

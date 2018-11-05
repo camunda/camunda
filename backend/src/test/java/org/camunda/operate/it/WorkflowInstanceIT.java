@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.function.Predicate;
 import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.IncidentEntity;
@@ -23,6 +24,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.subscription.JobWorker;
 import io.zeebe.model.bpmn.Bpmn;
@@ -37,6 +39,10 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   private WorkflowCache workflowCache;
+
+  @Autowired
+  @Qualifier("activityIsActiveCheck")
+  private Predicate<Object[]> activityIsActiveCheck;
 
   private ZeebeClient zeebeClient;
 
@@ -67,7 +73,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
 
     //when
     final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
-    elasticsearchTestRule.processAllEvents(10);
+    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceId, "taskA");
 
     //then
     final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
@@ -100,7 +106,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
 
     //when
     final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, null);
-    elasticsearchTestRule.processAllEvents(10);
+    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceId, "task1");
 
     super.setJobWorker(ZeebeUtil.completeTask(zeebeClient, "task1", super.getWorkerName(), null));
     elasticsearchTestRule.processAllEvents(10);
@@ -132,7 +138,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     deployWorkflow(workflow, processId + ".bpmn");
 
     final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, null);
-    elasticsearchTestRule.processAllEvents(10);
+    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceId, "task1");
 
     JobWorker jobWorker = ZeebeUtil.completeTask(zeebeClient, "task1", super.getWorkerName(), null);
     elasticsearchTestRule.processAllEvents(10);
@@ -165,7 +171,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
 
     //when workflow instance is started
     final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\", \"nullVar\": null}");
-    elasticsearchTestRule.processAllEvents(10);
+    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceId, "task1");
 
     //then
     WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
@@ -222,7 +228,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
 
     //when
     final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, payload);
-    elasticsearchTestRule.processAllEvents(10);
+    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceId, "taskA");
 
     //then
     final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
@@ -284,7 +290,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //create an incident
-    failTaskWithNoRetriesLeft(activityId);
+    failTaskWithNoRetriesLeft(activityId, workflowInstanceId);
 
     //when update retries
     final WorkflowInstanceEntity workflowInstance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
@@ -314,7 +320,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
 
     //when
     //create an incident
-    failTaskWithNoRetriesLeft(activityId);
+    failTaskWithNoRetriesLeft(activityId, workflowInstanceId);
 
     //then
     final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
@@ -355,7 +361,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
 
     //when
     final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");      //wrong payload provokes incident
-    elasticsearchTestRule.processAllEvents(16);
+    elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceId, "task1");
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //then incident created, activity in INCIDENT state

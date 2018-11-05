@@ -13,6 +13,7 @@
 package org.camunda.operate.it;
 
 import java.util.List;
+import java.util.function.Predicate;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.es.reader.WorkflowReader;
 import org.camunda.operate.es.types.WorkflowType;
@@ -25,6 +26,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -53,6 +55,10 @@ public class WorkflowIT extends OperateZeebeIntegrationTest {
   @Autowired
   private ElasticsearchBulkProcessor elasticsearchBulkProcessor;
 
+  @Autowired
+  @Qualifier("workflowIsDeployedCheck")
+  private Predicate<Object[]> workflowIsDeployedCheck;
+
   @Before
   public void starting() {
     super.before();
@@ -61,11 +67,8 @@ public class WorkflowIT extends OperateZeebeIntegrationTest {
 
   @Test
   public void testWorkflowCreated() {
-    //given
-    final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
-
     //when
-    elasticsearchTestRule.processAllEvents(1);
+    final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
 
     //then
     final WorkflowEntity workflowEntity = workflowReader.getWorkflow(workflowId);
@@ -80,10 +83,7 @@ public class WorkflowIT extends OperateZeebeIntegrationTest {
   @Test
   public void testWorkflowGetDiagram() throws Exception {
     //given
-    final String workflowId = ZeebeUtil.deployWorkflow(super.getClient(), "demoProcess_v_1.bpmn");
-
-    //when
-    elasticsearchTestRule.processAllEvents(1);
+    final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
 
     MockHttpServletRequestBuilder request = get(String.format(QUERY_WORKFLOW_XML_URL, workflowId));
 
@@ -115,7 +115,7 @@ public class WorkflowIT extends OperateZeebeIntegrationTest {
     final String loanProcessV1Id = createAndDeployProcess(super.getClient(), loanProcessId, null);
 
     //when
-    elasticsearchTestRule.processAllEvents(30);
+    elasticsearchTestRule.processAllEventsAndWait(workflowIsDeployedCheck, loanProcessV1Id);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //then

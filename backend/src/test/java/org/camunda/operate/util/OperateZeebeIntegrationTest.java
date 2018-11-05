@@ -19,6 +19,7 @@ import org.junit.Rule;
 import org.junit.rules.RuleChain;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.client.ZeebeClient;
@@ -49,7 +50,12 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   private ZeebeESImporter zeebeESImporter;
 
   @Autowired
+  @Qualifier("workflowIsDeployedCheck")
   private Predicate<Object[]> workflowIsDeployedCheck;
+
+  @Autowired
+  @Qualifier("incidentIsActiveCheck")
+  private Predicate<Object[]> incidentIsActiveCheck;
 
   private JobWorker jobWorker;
 
@@ -106,9 +112,9 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     this.jobWorker = jobWorker;
   }
 
-  public Long failTaskWithNoRetriesLeft(String taskName) {
+  public Long failTaskWithNoRetriesLeft(String taskName, String workflowInstanceId) {
     Long jobKey = ZeebeUtil.failTask(getClient(), taskName, getWorkerName(), 3);
-    elasticsearchTestRule.processAllEvents(20);
+    elasticsearchTestRule.processAllEventsAndWait(incidentIsActiveCheck, workflowInstanceId);
     return jobKey;
   }
 
