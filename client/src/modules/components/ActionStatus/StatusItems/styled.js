@@ -5,7 +5,7 @@ import {ReactComponent as Retry} from 'modules/components/Icon/retry.svg';
 import {ReactComponent as Stop} from 'modules/components/Icon/retry.svg';
 
 export const Ul = themed(styled.ul`
-   display: flex;
+  display: flex;
   flex-direction: row;
   align-items: center;
   padding: 0 0 0 2px;

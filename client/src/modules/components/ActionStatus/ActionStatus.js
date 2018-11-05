@@ -3,7 +3,7 @@ import PropTypes from 'prop-types';
 
 import {OPERATION_STATE} from 'modules/constants';
 
-import StatusItems from '../StatusItems';
+import StatusItems from './StatusItems';
 
 import * as Styled from './styled';
 

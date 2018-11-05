@@ -3,15 +3,16 @@ import PropTypes from 'prop-types';
 
 import {OPERATION_TYPE, OPERATION_STATE} from 'modules/constants';
 import {applyOperation} from 'modules/api/instances';
+import {getLatestOperation} from 'modules/utils/instance';
 
-import ActionStatus from './ActionStatus';
+import ActionStatus from 'modules/components/ActionStatus';
+
 import ActionItems from './ActionItems';
-
 import {
   wrapIdinQuery,
   isWithIncident,
-  isRunning,
-  getLatestOperation
+  isRunning
+  // getLatestOperation
 } from './service';
 
 import * as Styled from './styled';
@@ -26,7 +27,6 @@ export default class Actions extends React.Component {
 
   componentDidMount = () => {
     const {operations} = this.props.instance;
-
     if (operations.length > 0) {
       const {type, state} = getLatestOperation(operations);
 
@@ -39,7 +39,6 @@ export default class Actions extends React.Component {
 
   componentDidUpdate = prevProps => {
     const {operations} = this.props.instance;
-
     if (operations.length > prevProps.instance.operations.length) {
       // change operation state & failed operation icons when new page is loaded;
       const {state, type} = getLatestOperation(operations);
