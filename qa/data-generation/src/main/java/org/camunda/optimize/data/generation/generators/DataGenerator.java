@@ -56,7 +56,6 @@ public abstract class DataGenerator implements Runnable {
 
   @Override
   public void run() {
-    // TODO: add possible flag to remove all existing deployments
     logger.info("Start {}...", getClass().getSimpleName());
     BpmnModelInstance instance = retrieveDiagram();
     try {

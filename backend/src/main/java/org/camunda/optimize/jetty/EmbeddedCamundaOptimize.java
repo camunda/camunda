@@ -125,8 +125,6 @@ public class EmbeddedCamundaOptimize implements CamundaOptimize {
     SslContextFactory sslContextFactory = new SslContextFactory();
     sslContextFactory.setKeyStorePath(keystoreLocation);
     sslContextFactory.setKeyStorePassword(keystorePass);
-    sslContextFactory.setExcludeCipherSuites(
-            "");
     sslContextFactory.setKeyManagerPassword(keystorePass);
 
     ServerConnector sslConnector = new ServerConnector(server,
