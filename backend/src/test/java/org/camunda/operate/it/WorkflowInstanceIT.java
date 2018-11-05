@@ -108,8 +108,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, null);
     elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceId, "task1");
 
-    super.setJobWorker(ZeebeUtil.completeTask(zeebeClient, "task1", super.getWorkerName(), null));
-    elasticsearchTestRule.processAllEvents(10);
+    completeTask(workflowInstanceId, "task1", null);
 
     //then
     final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
@@ -140,13 +139,9 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, null);
     elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceId, "task1");
 
-    JobWorker jobWorker = ZeebeUtil.completeTask(zeebeClient, "task1", super.getWorkerName(), null);
-    elasticsearchTestRule.processAllEvents(10);
-    jobWorker.close();
+    completeTask(workflowInstanceId, "task1", null);
 
-    jobWorker = ZeebeUtil.completeTask(zeebeClient, "task2", super.getWorkerName(), null);
-    elasticsearchTestRule.processAllEvents(10);
-    jobWorker.close();
+    completeTask(workflowInstanceId, "task2", null);
 
     WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
     assertThat(workflowInstanceEntity.getSequenceFlows()).hasSize(3)
@@ -178,18 +173,14 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     assertVariable(workflowInstanceEntity, "a","b");
 
     //when activity with input mapping is activated
-    JobWorker jobWorker = ZeebeUtil.completeTask(zeebeClient, "task1", super.getWorkerName(), null);
-    elasticsearchTestRule.processAllEvents(8);
-    jobWorker.close();
+    completeTask(workflowInstanceId, "task1", null);
 
     //then
     workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
     assertVariable(workflowInstanceEntity, "foo","b");
 
     //when activity with output mapping is completed
-    jobWorker = ZeebeUtil.completeTask(zeebeClient, "task2", super.getWorkerName(), null);
-    elasticsearchTestRule.processAllEvents(11);
-    jobWorker.close();
+    completeTask(workflowInstanceId, "task2", null);
 
     //then
     workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
@@ -201,9 +192,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
 //    ZeebeUtil.updatePayload(zeebeClient, activityInstanceKey, workflowInstanceId, "{\"newVar\": 555 }", processId, workflowId);
 
     //when task is completed with new payload and workflow instance is finished
-    jobWorker = ZeebeUtil.completeTask(zeebeClient, "task3", super.getWorkerName(), "{\"task3Completed\": true}");
-    elasticsearchTestRule.processAllEvents(12);
-    jobWorker.close();
+    completeTask(workflowInstanceId, "task3", "{\"task3Completed\": true}");
 
     //then
     workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
@@ -362,7 +351,6 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     //when
     final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");      //wrong payload provokes incident
     elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceId, "task1");
-    elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //then incident created, activity in INCIDENT state
     WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
@@ -408,8 +396,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //when
-    ZeebeUtil.cancelWorkflowInstance(zeebeClient, workflowInstanceId);
-    elasticsearchTestRule.processAllEvents(15);
+    cancelWorkflowInstance(workflowInstanceId);
 
     //then
     final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);

@@ -20,6 +20,7 @@ import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.IncidentState;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
+import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.reader.WorkflowReader;
 import org.camunda.operate.rest.exception.NotFoundException;
@@ -79,6 +80,29 @@ public class ElasticsearchChecks {
     };
   }
 
+  @Bean(name = "activityIsCompletedCheck")
+  public Predicate<Object[]> getActivityIsCompletedCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(2);
+      assertThat(objects[0]).isInstanceOf(String.class);
+      assertThat(objects[1]).isInstanceOf(String.class);
+      String workflowInstanceId = (String)objects[0];
+      String activityId = (String)objects[1];
+      try {
+        final WorkflowInstanceEntity instance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
+        final List<ActivityInstanceEntity> activities = instance.getActivities().stream().filter(a -> a.getActivityId().equals(activityId))
+          .collect(Collectors.toList());
+        if (activities.size() == 0) {
+          return false;
+        } else {
+          return activities.get(0).getState().equals(ActivityState.COMPLETED);
+        }
+      } catch (NotFoundException ex) {
+        return false;
+      }
+    };
+  }
+
   @Bean(name = "incidentIsActiveCheck")
   public Predicate<Object[]> getIncidentIsActiveCheck() {
     return objects -> {
@@ -92,6 +116,21 @@ public class ElasticsearchChecks {
         } else {
           return instance.getIncidents().get(0).getState().equals(IncidentState.ACTIVE);
         }
+      } catch (NotFoundException ex) {
+        return false;
+      }
+    };
+  }
+
+  @Bean(name = "workflowInstanceIsCanceledCheck")
+  public Predicate<Object[]> getWorkflowInstanceIsCanceledCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(1);
+      assertThat(objects[0]).isInstanceOf(String.class);
+      String workflowInstanceId = (String)objects[0];
+      try {
+        final WorkflowInstanceEntity instance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
+        return instance.getState().equals(WorkflowInstanceState.CANCELED);
       } catch (NotFoundException ex) {
         return false;
       }

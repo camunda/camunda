@@ -54,10 +54,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
 
     //complete task A
     String taskAPayload = "{\"goToTaskC\":true}";
-    super.setJobWorker(ZeebeUtil.completeTask(super.getClient(), taskA, super.getWorkerName(), taskAPayload));
-    elasticsearchTestRule.processAllEvents(13);
-    super.getJobWorker().close();
-    super.setJobWorker(null);
+    completeTask(workflowInstanceId, taskA, taskAPayload);
 
     //update process payload
 //    final String updatedPayload = "{\"a\": \"c\"}";
@@ -66,10 +63,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
 
     //complete task C
     final String taskCPayload = "{\"b\": \"d\"}";
-    super.setJobWorker(ZeebeUtil.completeTask(super.getClient(), taskC, super.getWorkerName(), taskCPayload));
-    elasticsearchTestRule.processAllEvents(10);
-    super.getJobWorker().close();
-    super.setJobWorker(null);
+    completeTask(workflowInstanceId, taskC, taskCPayload);
 
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
@@ -134,9 +128,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
     final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(super.getClient(), processId, "{\"a\": \"b\"}");
     super.setJobWorker(ZeebeUtil.completeTask(super.getClient(), activityId, super.getWorkerName(), "{\"a\": \"b\"}"));
 
-    ZeebeUtil.cancelWorkflowInstance(super.getClient(), workflowInstanceId);
-    elasticsearchTestRule.processAllEvents(20);
-
+    cancelWorkflowInstance(workflowInstanceId);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //when

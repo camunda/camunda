@@ -57,6 +57,14 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   @Qualifier("incidentIsActiveCheck")
   private Predicate<Object[]> incidentIsActiveCheck;
 
+  @Autowired
+  @Qualifier("workflowInstanceIsCanceledCheck")
+  private Predicate<Object[]> workflowInstanceIsCanceledCheck;
+
+  @Autowired
+  @Qualifier("activityIsCompletedCheck")
+  private Predicate<Object[]> activityIsCompletedCheck;
+
   private JobWorker jobWorker;
 
   private String workerName;
@@ -128,5 +136,16 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     final String workflowId = ZeebeUtil.deployWorkflow(getClient(), workflow, resourceName);
     elasticsearchTestRule.processAllEventsAndWait(workflowIsDeployedCheck, workflowId);
     return workflowId;
+  }
+
+  protected void cancelWorkflowInstance(String workflowInstanceId) {
+    ZeebeUtil.cancelWorkflowInstance(getClient(), workflowInstanceId);
+    elasticsearchTestRule.processAllEventsAndWait(workflowInstanceIsCanceledCheck, workflowInstanceId);
+  }
+
+  protected void completeTask(String workflowInstanceId, String activityId, String payload) {
+    JobWorker jobWorker = ZeebeUtil.completeTask(getClient(), activityId, getWorkerName(), payload);
+    elasticsearchTestRule.processAllEventsAndWait(activityIsCompletedCheck, workflowInstanceId, activityId);
+    jobWorker.close();
   }
 }
