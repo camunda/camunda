@@ -16,7 +16,7 @@ const themedWith = (dark, light) => {
 
 export const iconStyle = css`
   position: relative;
-  top: 1px;
+  top: 3px;
   margin-right: 10px;
 `;
 

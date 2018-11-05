@@ -1,9 +1,14 @@
 import React, {Fragment} from 'react';
 import PropTypes from 'prop-types';
+
 import StateIcon from 'modules/components/StateIcon';
 import Dropdown from 'modules/components/Dropdown';
 
-import {getWorkflowName} from 'modules/utils/instance';
+import {OPERATION_STATE, OPERATION_TYPE} from 'modules/constants';
+
+import ActionStatus from 'modules/components/ActionStatus';
+
+import {getWorkflowName, getLatestOperation} from 'modules/utils/instance';
 import {ReactComponent as Down} from 'modules/components/Icon/down.svg';
 import {ReactComponent as Right} from 'modules/components/Icon/right.svg';
 import {BADGE_TYPE} from 'modules/constants';
@@ -28,20 +33,47 @@ export default class Selection extends React.Component {
     onDelete: PropTypes.func.isRequired
   };
 
+  constructor(props) {
+    super(props);
+    this.availableOperations = [
+      OPERATION_TYPE.CANCEL,
+      OPERATION_TYPE.UPDATE_RETRIES
+    ];
+    this.state = {operationState: ''};
+  }
+
   stopClickPropagation = evt => evt && evt.stopPropagation();
+
+  handleOnClick = optionType => {
+    const actionMap = {
+      [OPERATION_TYPE.UPDATE_RETRIES]: this.props.onRetry,
+      [OPERATION_TYPE.CANCEL]: this.props.onCancel
+    };
+    const callOperation = actionMap[optionType];
+
+    this.setState({operationState: OPERATION_STATE.SCHEDULED});
+    callOperation();
+  };
 
   renderArrowIcon = isOpen => (
     <Styled.ArrowIcon>{isOpen ? <Down /> : <Right />}</Styled.ArrowIcon>
   );
 
   renderBody = instances => {
-    return instances.map((instance, index) => (
-      <Styled.Instance key={index}>
-        <StateIcon {...{instance}} />
-        <Styled.WorkflowName>{getWorkflowName(instance)}</Styled.WorkflowName>
-        <Styled.InstanceId>{instance.id}</Styled.InstanceId>
-      </Styled.Instance>
-    ));
+    return instances.map((instance, index) => {
+      const {state, type} = getLatestOperation(instance.operations);
+      return (
+        <Styled.Instance key={index}>
+          <StateIcon {...{instance}} />
+          <Styled.WorkflowName>{getWorkflowName(instance)}</Styled.WorkflowName>
+          <Styled.InstanceId>{instance.id}</Styled.InstanceId>
+          <ActionStatus
+            operationState={this.state.operationState || state}
+            operationType={type}
+          />
+        </Styled.Instance>
+      );
+    });
   };
 
   renderFooter = (instanceCount, numberOfDisplayedInstances) => {
@@ -56,38 +88,46 @@ export default class Selection extends React.Component {
     );
   };
 
-  renderRetryLabel = () => (
-    <div>
-      <Styled.RetryIcon /> Retry
-    </div>
-  );
+  renderLabel = type => {
+    const labelMap = {
+      [OPERATION_TYPE.UPDATE_RETRIES]: 'Retry',
+      [OPERATION_TYPE.CANCEL]: 'Cancel'
+    };
+    const iconMap = {
+      [OPERATION_TYPE.UPDATE_RETRIES]: <Styled.RetryIcon />,
+      [OPERATION_TYPE.CANCEL]: <Styled.CancelIcon />
+    };
 
-  renderCancelLabel = () => (
-    <div>
-      <Styled.CancelIcon /> Cancel
-    </div>
-  );
+    return (
+      <div>
+        {iconMap[type]}
+        {labelMap[type]}
+      </div>
+    );
+  };
 
-  renderActions = (onRetry, onCancel, onDelete) => (
+  renderOption = operationType => {
+    return (
+      <Dropdown.Option
+        key={operationType}
+        data-test={`${operationType}-dropdown-option`}
+        onClick={() => this.handleOnClick(operationType)}
+        label={this.renderLabel(operationType)}
+      />
+    );
+  };
+
+  renderActions = () => (
     <Styled.Actions>
       <Styled.DropdownTrigger onClick={this.stopClickPropagation}>
         <Dropdown
           label={<Styled.BatchIcon />}
           buttonStyles={Styled.dropDownButtonStyles}
         >
-          <Dropdown.Option
-            data-test="cancel-dropdown-option"
-            onClick={onCancel}
-            label={this.renderCancelLabel()}
-          />
-          <Dropdown.Option
-            data-test="retry-dropdown-option"
-            onClick={onRetry}
-            label={this.renderRetryLabel()}
-          />
+          {this.availableOperations.map(this.renderOption)}
         </Dropdown>
       </Styled.DropdownTrigger>
-      <Styled.DeleteIcon onClick={onDelete} />
+      <Styled.DeleteIcon onClick={this.props.onDelete} />
     </Styled.Actions>
   );
 
@@ -95,9 +135,6 @@ export default class Selection extends React.Component {
     const {
       isOpen,
       selectionId,
-      onRetry,
-      onCancel,
-      onDelete,
       onToggle,
       instances,
       instanceCount
@@ -111,8 +148,7 @@ export default class Selection extends React.Component {
           <Styled.Badge isOpen={isOpen} type={BADGE_TYPE.SELECTIONS}>
             {instanceCount}
           </Styled.Badge>
-
-          {isOpen && renderActions(onRetry, onCancel, onDelete)}
+          {isOpen && renderActions()}
         </Styled.Header>
         {isOpen && (
           <Fragment>
