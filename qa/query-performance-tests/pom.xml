@@ -83,7 +83,7 @@
 
   <profiles>
     <profile>
-      <id>service-perf-tests</id>
+      <id>query-performance-tests</id>
 
       <build>
         <testResources>
