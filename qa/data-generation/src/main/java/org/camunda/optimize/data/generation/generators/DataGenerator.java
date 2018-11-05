@@ -4,15 +4,22 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.bpm.model.dmn.Dmn;
+import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.data.generation.generators.client.SimpleEngineClient;
 import org.camunda.optimize.rest.optimize.dto.ComplexVariableDto;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.io.InputStream;
-import java.util.*;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 
 public abstract class DataGenerator implements Runnable {
@@ -33,7 +40,7 @@ public abstract class DataGenerator implements Runnable {
 
   protected abstract BpmnModelInstance retrieveDiagram();
 
-  protected abstract Set<String> getPathVariableNames();
+  protected abstract Map<String, Object> createVariablesForProcess();
 
   public void setInstanceCountToGenerate(int instanceCountToGenerate) {
     this.instanceCountToGenerate = instanceCountToGenerate;
@@ -49,11 +56,13 @@ public abstract class DataGenerator implements Runnable {
 
   @Override
   public void run() {
+    // TODO: add possible flag to remove all existing deployments
     logger.info("Start {}...", getClass().getSimpleName());
     BpmnModelInstance instance = retrieveDiagram();
     try {
       startCorrelatingMessages();
       List<String> processDefinitionIds = engineClient.deployProcesses(instance, nVersions);
+      deployAdditionalDiagrams();
       List<Integer> processInstanceSizePerDefinition = createProcessInstanceSizePerDefinition();
       startProcessInstances(processInstanceSizePerDefinition, processDefinitionIds);
       messageEventCorrelater.correlateMessages();
@@ -63,6 +72,12 @@ public abstract class DataGenerator implements Runnable {
       stopCorrelatingMessages();
       logger.info("{} finished data generation!", getClass().getSimpleName());
     }
+  }
+
+  protected void deployAdditionalDiagrams() {
+    // this method allows the data generator to deploy
+    // more than the default diagram. For instance, if you call another
+    // diagram in you process by executing call activity or a dmn table.
   }
 
   private Map<String, Object> createSimpleVariables() {
@@ -80,7 +95,7 @@ public abstract class DataGenerator implements Runnable {
     complexVariableDto.setType("Object");
     complexVariableDto.setValue(personAsString);
     ComplexVariableDto.ValueInfo info = new ComplexVariableDto.ValueInfo();
-    info.setObjectTypeName("org.camunda.foo.Person");
+    info.setObjectTypeName("java.lang.Object");
     info.setSerializationDataFormat("application/json");
     complexVariableDto.setValueInfo(info);
 
@@ -174,17 +189,13 @@ public abstract class DataGenerator implements Runnable {
     return bulkSizes;
   }
 
-  private Map<String, Object> createVariablesForProcess() {
-    Map<String, Object> variables = new HashMap<>();
-    for (String variableName : getPathVariableNames()) {
-      variables.put(variableName, ThreadLocalRandom.current().nextDouble());
-    }
-    return variables;
-  }
-
-
-  public BpmnModelInstance readDiagramAsInstance(String diagramPath) throws IOException {
+  public BpmnModelInstance readProcessDiagramAsInstance(String diagramPath) {
     InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(diagramPath);
     return Bpmn.readModelFromStream(inputStream);
+  }
+
+  protected DmnModelInstance readDmnTableAsInstance(String dmnPath) {
+    InputStream inputStream = Thread.currentThread().getContextClassLoader().getResourceAsStream(dmnPath);
+    return Dmn.readModelFromStream(inputStream);
   }
 }

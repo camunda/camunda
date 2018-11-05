@@ -1,35 +1,45 @@
 package org.camunda.optimize.data.generation.generators.impl;
 
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.data.generation.generators.DataGenerator;
 import org.camunda.optimize.data.generation.generators.client.SimpleEngineClient;
 
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class InvoiceDataGenerator extends DataGenerator {
 
   private static final String DIAGRAM = "diagrams/invoice.bpmn";
+  private static final String DMN_DIAGRAM = "diagrams/invoiceBusinessDecisions.dmn";
 
   public InvoiceDataGenerator(SimpleEngineClient engineClient) {
     super(engineClient);
   }
 
   protected BpmnModelInstance retrieveDiagram() {
-    try {
-      return readDiagramAsInstance(DIAGRAM);
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-    return null;
+    return readProcessDiagramAsInstance(DIAGRAM);
   }
 
-  public Set<String> getPathVariableNames() {
-    Set<String> variableNames = new HashSet<>();
-    variableNames.add("approved");
-    variableNames.add("clarified");
-    return variableNames;
+  @Override
+  protected void deployAdditionalDiagrams() {
+    super.deployAdditionalDiagrams();
+    DmnModelInstance dmnModelInstance = readDmnTableAsInstance(DMN_DIAGRAM);
+    engineClient.deployDecisionAndGetId(dmnModelInstance);
+  }
+
+  @Override
+  protected Map<String, Object> createVariablesForProcess() {
+    String[] invoiceType = new String[]{"day-to-day expense", "budget", "exceptional"};
+    String[] invoiceCategory = new String[]{"Misc", "Travel Expenses", "Software License Costs"};
+    HashMap<String, Object> variables = new HashMap<>();
+    variables.put("invoiceClassification", invoiceType[ThreadLocalRandom.current().nextInt(0, 3)]);
+    variables.put("amount",ThreadLocalRandom.current().nextDouble(0, 2000));
+    variables.put("invoiceCategory",
+                  invoiceCategory[ThreadLocalRandom.current().nextInt(0, invoiceCategory.length)]
+    );
+    return variables;
   }
 
 }

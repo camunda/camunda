@@ -18,6 +18,8 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.bpm.model.dmn.Dmn;
+import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.data.generation.generators.client.dto.MessageCorrelationDto;
 import org.camunda.optimize.data.generation.generators.client.dto.TaskDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
@@ -117,13 +119,17 @@ public class SimpleEngineClient {
     return  engineRestEndpoint + "/process-definition";
   }
 
+  private String getDecisionDefinitionUri() {
+    return  engineRestEndpoint + "/decision-definition";
+  }
+
   private String getDeploymentUri() {
     return engineRestEndpoint + "/deployment/create";
   }
 
   private DeploymentDto deployProcess(BpmnModelInstance bpmnModelInstance) {
     String process = Bpmn.convertToString(bpmnModelInstance);
-    HttpPost deploymentRequest = createDeploymentRequest(process);
+    HttpPost deploymentRequest = createProcessDeploymentRequest(process);
     DeploymentDto deployment = new DeploymentDto();
     CloseableHttpResponse response = null;
     try {
@@ -137,6 +143,32 @@ public class SimpleEngineClient {
       response.close();
     } catch (IOException e) {
       logger.error("Error during deployment request! Could not deploy the given process model!", e);
+    } finally {
+      closeResponse(response);
+    }
+    return deployment;
+  }
+
+  public void deployDecisionAndGetId(DmnModelInstance modelInstance) {
+    deployDecisionDefinition(modelInstance);
+  }
+
+  private DeploymentDto deployDecisionDefinition(DmnModelInstance dmnModelInstance) {
+    String decision = Dmn.convertToString(dmnModelInstance);
+    HttpPost deploymentRequest = createDecisionDeploymentRequest(decision);
+    DeploymentDto deployment = new DeploymentDto();
+    CloseableHttpResponse response = null;
+    try {
+      response = client.execute(deploymentRequest);
+      if (response.getStatusLine().getStatusCode() != 200) {
+        throw new RuntimeException("Something really bad happened during deployment, " +
+          "could not create a deployment!");
+      }
+      String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+      deployment = objectMapper.readValue(responseString, DeploymentDto.class);
+      response.close();
+    } catch (IOException e) {
+      logger.error("Error during deployment request! Could not deploy the given dmn model!", e);
     } finally {
       closeResponse(response);
     }
@@ -186,7 +218,7 @@ public class SimpleEngineClient {
     return engineRestEndpoint +  "/process-definition/" + procDefId + "/start";
   }
 
-  private HttpPost createDeploymentRequest(String process) {
+  private HttpPost createProcessDeploymentRequest(String process) {
     HttpPost post = new HttpPost(getDeploymentUri());
     HttpEntity entity = MultipartEntityBuilder
       .create()
@@ -194,6 +226,19 @@ public class SimpleEngineClient {
       .addTextBody("enable-duplicate-filtering", "false")
       .addTextBody("deployment-source", "process application")
       .addBinaryBody("data", process.getBytes(StandardCharsets.UTF_8), ContentType.APPLICATION_OCTET_STREAM, "hiring_process.bpmn")
+      .build();
+    post.setEntity(entity);
+    return post;
+  }
+
+  private HttpPost createDecisionDeploymentRequest(String decision) {
+    HttpPost post = new HttpPost(getDeploymentUri());
+    HttpEntity entity = MultipartEntityBuilder
+      .create()
+      .addTextBody("deployment-name", "deployment")
+      .addTextBody("enable-duplicate-filtering", "false")
+      .addTextBody("deployment-source", "process application")
+      .addBinaryBody("data", decision.getBytes(StandardCharsets.UTF_8), ContentType.APPLICATION_OCTET_STREAM, "decision.dmn")
       .build();
     post.setEntity(entity);
     return post;

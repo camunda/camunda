@@ -4,9 +4,8 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.data.generation.generators.DataGenerator;
 import org.camunda.optimize.data.generation.generators.client.SimpleEngineClient;
 
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 public class ContactInterviewDataGenerator extends DataGenerator {
 
@@ -17,16 +16,12 @@ public class ContactInterviewDataGenerator extends DataGenerator {
   }
 
   protected BpmnModelInstance retrieveDiagram() {
-    try {
-      return readDiagramAsInstance(DIAGRAM);
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-    return null;
+    return readProcessDiagramAsInstance(DIAGRAM);
   }
 
-  public Set<String> getPathVariableNames() {
-    return new HashSet<>();
+  @Override
+  protected Map<String, Object> createVariablesForProcess() {
+    return new HashMap<>();
   }
 
 }

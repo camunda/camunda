@@ -21,7 +21,7 @@ import org.camunda.optimize.data.generation.generators.impl.OrderConfirmationDat
 import org.camunda.optimize.data.generation.generators.impl.PickUpHandlingDataGenerator;
 import org.camunda.optimize.data.generation.generators.impl.ProcessRequestDataGenerator;
 import org.camunda.optimize.data.generation.generators.impl.ReviewCaseDataGenerator;
-import org.camunda.optimize.data.generation.generators.impl.SimpleServiceTaskDataGenerator;
+import org.camunda.optimize.data.generation.generators.impl.DmnTableDataGenerator;
 import org.camunda.optimize.data.generation.generators.impl.TransshipmentArrangementDataGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -78,7 +78,7 @@ public class DataGenerationExecutor {
     dataGenerators.add(new HiringProcessDataGenerator(engineClient));
     dataGenerators.add(new ExtendedOrderDataGenerator(engineClient));
     dataGenerators.add(new ContactInterviewDataGenerator(engineClient));
-    dataGenerators.add(new SimpleServiceTaskDataGenerator(engineClient));
+    dataGenerators.add(new DmnTableDataGenerator(engineClient));
     dataGenerators.add(new LeadQualificationDataGenerator(engineClient));
     dataGenerators.add(new InvoiceDataGenerator(engineClient));
     dataGenerators.add(new OrderConfirmationDataGenerator(engineClient));

@@ -4,9 +4,9 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.data.generation.generators.DataGenerator;
 import org.camunda.optimize.data.generation.generators.client.SimpleEngineClient;
 
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class AuthorizationArrangementDataGenerator extends DataGenerator {
 
@@ -17,21 +17,17 @@ public class AuthorizationArrangementDataGenerator extends DataGenerator {
   }
 
   protected BpmnModelInstance retrieveDiagram() {
-    try {
-      return readDiagramAsInstance(DIAGRAM);
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-    return null;
+    return readProcessDiagramAsInstance(DIAGRAM);
   }
 
-  public Set<String> getPathVariableNames() {
-    Set<String> variableNames = new HashSet<>();
-    variableNames.add("shipmentFilePrepared");
-    variableNames.add("shippingAuthorizationRequiredConsignee");
-    variableNames.add("shippingAuthorizationRequiredCountry");
-    variableNames.add("shipmentAuthorizationRequiredCountryGateway");
-    return variableNames;
+  @Override
+  protected Map<String, Object> createVariablesForProcess() {
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("shipmentFilePrepared", ThreadLocalRandom.current().nextDouble());
+    variables.put("shippingAuthorizationRequiredConsignee", ThreadLocalRandom.current().nextDouble());
+    variables.put("shippingAuthorizationRequiredCountry", ThreadLocalRandom.current().nextDouble());
+    variables.put("shipmentAuthorizationRequiredCountryGateway", ThreadLocalRandom.current().nextDouble());
+    return variables;
   }
 
 }

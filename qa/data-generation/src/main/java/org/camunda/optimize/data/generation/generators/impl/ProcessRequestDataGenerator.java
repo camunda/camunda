@@ -4,9 +4,9 @@ import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.data.generation.generators.DataGenerator;
 import org.camunda.optimize.data.generation.generators.client.SimpleEngineClient;
 
-import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class ProcessRequestDataGenerator extends DataGenerator {
 
@@ -17,34 +17,28 @@ public class ProcessRequestDataGenerator extends DataGenerator {
   }
 
   protected BpmnModelInstance retrieveDiagram() {
-    try {
-      return readDiagramAsInstance(DIAGRAM);
-    } catch (IOException e) {
-      e.printStackTrace();
-    }
-    return null;
+    return readProcessDiagramAsInstance(DIAGRAM);
   }
 
-  public Set<String> getPathVariableNames() {
-    Set<String> variableNames = new HashSet<>();
-    variableNames.add("processAvailable");
-    variableNames.add("partnerIsNew");
-    variableNames.add("isBestehenderPartner");
-    variableNames.add("bestehendenPartnerAendern");
-    variableNames.add("isAdressaenderung");
-    variableNames.add("abweichenderPZVorhanden");
-    variableNames.add("andereRollenVorhanden");
-    variableNames.add("policeChanged");
-    variableNames.add("isSanierungBuendel");
-    variableNames.add("portalvertrag");
-    variableNames.add("isInkassoNummerFalschFehlt");
-    variableNames.add("errorOccured");
-    variableNames.add("processInformation");
-    variableNames.add("isVorversichererAnfrage");
-    variableNames.add("isAusstehendeDokumente");
-    variableNames.add("andereRollenVorhanden");
-    variableNames.add("abweichenderPZVorhanden");
-    return variableNames;
+  @Override
+  protected Map<String, Object> createVariablesForProcess() {
+    Map<String, Object> variables = new HashMap<>();
+    variables.put("processAvailable", ThreadLocalRandom.current().nextDouble());
+    variables.put("partnerIsNew", ThreadLocalRandom.current().nextDouble());
+    variables.put("isBestehenderPartner", ThreadLocalRandom.current().nextDouble());
+    variables.put("bestehendenPartnerAendern", ThreadLocalRandom.current().nextDouble());
+    variables.put("isAdressaenderung", ThreadLocalRandom.current().nextDouble());
+    variables.put("policeChanged", ThreadLocalRandom.current().nextDouble());
+    variables.put("isSanierungBuendel", ThreadLocalRandom.current().nextDouble());
+    variables.put("portalvertrag", ThreadLocalRandom.current().nextDouble());
+    variables.put("isInkassoNummerFalschFehlt", ThreadLocalRandom.current().nextDouble());
+    variables.put("errorOccured", ThreadLocalRandom.current().nextDouble());
+    variables.put("processInformation", ThreadLocalRandom.current().nextDouble());
+    variables.put("isVorversichererAnfrage", ThreadLocalRandom.current().nextDouble());
+    variables.put("isAusstehendeDokumente", ThreadLocalRandom.current().nextDouble());
+    variables.put("andereRollenVorhanden", ThreadLocalRandom.current().nextDouble());
+    variables.put("abweichenderPZVorhanden", ThreadLocalRandom.current().nextDouble());
+    return variables;
   }
 
 }

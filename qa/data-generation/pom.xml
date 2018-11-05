@@ -18,6 +18,12 @@
     </dependency>
 
     <dependency>
+      <groupId>org.camunda.bpm.model</groupId>
+      <artifactId>camunda-dmn-model</artifactId>
+      <version>${camunda.engine.version}</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.camunda.optimize</groupId>
       <artifactId>optimize-backend</artifactId>
       <version>${project.version}</version>

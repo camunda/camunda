@@ -21,7 +21,7 @@ public class Main {
     this.timeoutInHours = timeoutInHours;
   }
 
-  public static void main(String[] args) throws InterruptedException {
+  public static void main(String[] args) {
     // by default create 100 000 process instances
     Map<String, String> arguments = extractArguments(args);
     long numberOfProcessInstancesToGenerate =
@@ -74,7 +74,7 @@ public class Main {
     return args.length % 2 != 0;
   }
 
-  private void generateData() throws InterruptedException {
+  private void generateData() {
     DataGenerationExecutor dataGenerationExecutor =
       new DataGenerationExecutor(numberOfProcessInstancesToGenerate, engineRestEndpoint, timeoutInHours);
     dataGenerationExecutor.executeDataGeneration();
