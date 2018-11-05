@@ -101,11 +101,10 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
     this.jobWorker = jobWorker;
   }
 
-  public void failTaskWithNoRetriesLeft(String taskName) {
-    setJobWorker(ZeebeUtil.failTask(getClient(), taskName, getWorkerName(), 3));
+  public Long failTaskWithNoRetriesLeft(String taskName) {
+    Long jobKey = ZeebeUtil.failTask(getClient(), taskName, getWorkerName(), 3);
     elasticsearchTestRule.processAllEvents(20);
-    getJobWorker().close();
-    setJobWorker(null);
+    return jobKey;
   }
 
 }

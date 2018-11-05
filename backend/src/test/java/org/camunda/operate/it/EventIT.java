@@ -6,7 +6,6 @@ import java.util.function.Predicate;
 import org.camunda.operate.entities.EventEntity;
 import org.camunda.operate.entities.EventSourceType;
 import org.camunda.operate.entities.EventType;
-import org.camunda.operate.entities.WorkflowInstanceEntity;
 import org.camunda.operate.es.reader.EventReader;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.rest.dto.EventQueryDto;
@@ -46,15 +45,11 @@ public class EventIT extends OperateZeebeIntegrationTest {
     final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(super.getClient(), processId, initialPayload);
 
     //create an incident
-    super.setJobWorker(ZeebeUtil.failTask(super.getClient(), taskA, super.getWorkerName(), 3));
+    final Long jobKey = ZeebeUtil.failTask(super.getClient(), taskA, super.getWorkerName(), 3);
     elasticsearchTestRule.processAllEvents(30);
-    super.getJobWorker().close();
-    super.setJobWorker(null);
 
     //update retries to delete the incident
-    final WorkflowInstanceEntity workflowInstance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
-    assertThat(workflowInstance.getIncidents()).hasSize(1);
-    ZeebeUtil.resolveIncident(super.getClient(), Long.valueOf(workflowInstance.getIncidents().get(0).getJobId()));
+    ZeebeUtil.resolveIncident(super.getClient(), jobKey);
     elasticsearchTestRule.processAllEvents(10);
 
     //complete task A

@@ -102,13 +102,32 @@ public abstract class ZeebeUtil {
       .open();
   }
 
-  public static JobWorker failTask(ZeebeClient client, String jobType, String workerName, int numberOfFailures) {
-    return client.jobClient().newWorker()
+  /**
+   * Returns jobKey.
+   * @param client
+   * @param jobType
+   * @param workerName
+   * @param numberOfFailures
+   * @return
+   */
+  public static Long failTask(ZeebeClient client, String jobType, String workerName, int numberOfFailures) {
+    final FailJobHandler jobHandler = new FailJobHandler(numberOfFailures);
+    JobWorker jobWorker = client.jobClient().newWorker()
       .jobType(jobType)
-      .handler( new FailJobHandler(numberOfFailures))
+      .handler(jobHandler)
       .name(workerName)
       .timeout(Duration.ofSeconds(2))
       .open();
+    //wait till job will fail 3 times
+    while (jobHandler.failuresCount < jobHandler.numberOfFailures) {
+      try {
+        Thread.sleep(100L);
+      } catch (InterruptedException e) {
+        e.printStackTrace();
+      }
+    }
+    jobWorker.close();
+    return jobHandler.getJobKey();
   }
 
   private static class FailJobHandler implements JobHandler {
@@ -117,16 +136,27 @@ public abstract class ZeebeUtil {
 
     private int failuresCount = 0;
 
+    private Long jobKey;
+
     public FailJobHandler(int numberOfFailures) {
       this.numberOfFailures = numberOfFailures;
     }
 
     @Override
     public void handle(JobClient client, ActivatedJob job) {
+      this.jobKey = job.getKey();
       if (failuresCount < numberOfFailures) {
         client.newFailCommand(job.getKey()).retries(job.getRetries() - 1).send().join();
         failuresCount++;
       }
+    }
+
+    public Long getJobKey() {
+      return jobKey;
+    }
+
+    public void setJobKey(Long jobKey) {
+      this.jobKey = jobKey;
     }
   }
 

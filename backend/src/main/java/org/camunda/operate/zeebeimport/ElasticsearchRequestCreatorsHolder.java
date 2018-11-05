@@ -16,6 +16,7 @@ import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.SequenceFlowEntity;
 import org.camunda.operate.entities.WorkflowEntity;
 import org.camunda.operate.entities.WorkflowInstanceEntity;
+import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.types.EventType;
 import org.camunda.operate.es.types.StrictTypeMappingCreator;
@@ -146,6 +147,7 @@ public class ElasticsearchRequestCreatorsHolder {
             //search for activity instance
             "for (int j = 0; j < ctx._source.activities.size(); j++) {" +
               "if (ctx._source.activities[j].id == params.incident.activityInstanceId) {" +
+              //incident is ACTIVE
                 "if (params.incident.state == '" + IncidentState.ACTIVE.toString() + "') {" +
                   "if (ctx._source.activities[j].type == '" + ActivityType.GATEWAY.toString() + "') {" +
                     "ctx._source.activities[j].state = '" + ActivityState.INCIDENT.toString() + "';" +
@@ -154,13 +156,22 @@ public class ElasticsearchRequestCreatorsHolder {
                     "ctx._source.activities[j].state = '" + ActivityState.INCIDENT.toString() + "';" +
 //                    "ctx._source.activities[j].endDate = null;" +   //TODO should be set by workflow instance event -> we need test case for this
                   "}" +
+              //incident is not ACTIVE and activity is GATEWAY
                 "} else if (ctx._source.activities[j].type == '" + ActivityType.GATEWAY.toString() + "') {" +
                   "ctx._source.activities[j].state = '" + ActivityState.COMPLETED.toString() + "';" +
-                "} else if (ctx._source.activities[j].state != '" + ActivityState.COMPLETED.toString() + "') {" +
-                  "if (ctx._source.activities[j].endDate == null) {" +    //TODO test case for this -> 1st come Activity activates (+ Activity completed) event(s) and then Incident Created and Resolved
+              //incident is not ACTIVE and activity is not finished
+                "} else if (ctx._source.activities[j].state != '" + ActivityState.COMPLETED.toString() + "'" +
+                  "&& ctx._source.activities[j].state != '" + ActivityState.TERMINATED.toString() + "') {" +
+                  //incident is resolved and activity does not have end date set -> activity must become active
+                  "if (ctx._source.activities[j].endDate == null) {" +
                     "ctx._source.activities[j].state = '" + ActivityState.ACTIVE.toString() + "';" +
+                  //else activity is completed or even terminated, depending on the state of the instance
                   "} else { " +
-                    "ctx._source.activities[j].state = '" + ActivityState.COMPLETED.toString() + "';" +
+                    "if (ctx._source.state == '" + WorkflowInstanceState.CANCELED + "') {" +
+                      "ctx._source.activities[j].state = '" + ActivityState.TERMINATED.toString() + "';" +
+                    "} else {" +
+                      "ctx._source.activities[j].state = '" + ActivityState.COMPLETED.toString() + "';" +
+                    "} " +
                   "}" +
                 "}" +
               "}" +

@@ -150,7 +150,7 @@ public class ElasticsearchTestRule extends ExternalResource {
         } else {
           emptyAttempts++;
         }
-      } while(totalCount < expectedMinEventsCount && emptyAttempts < 5);
+      } while(totalCount < expectedMinEventsCount && emptyAttempts < 4);
     } catch (Exception e) {
       logger.error(e.getMessage(), e);
     }
@@ -170,7 +170,7 @@ public class ElasticsearchTestRule extends ExternalResource {
         } else {
           emptyAttempts++;
         }
-      } while(totalCount < expectedMinEventsCount && emptyAttempts < 5);
+      } while(totalCount < expectedMinEventsCount && emptyAttempts < 4);
     } catch (Exception e) {
       logger.error(e.getMessage(), e);
     }
