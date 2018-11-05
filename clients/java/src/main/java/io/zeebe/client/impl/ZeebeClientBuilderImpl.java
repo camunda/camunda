@@ -32,7 +32,7 @@ public class ZeebeClientBuilderImpl implements ZeebeClientBuilder, ZeebeClientCo
   private String defaultJobWorkerName = "default";
   private Duration defaultJobTimeout = Duration.ofMinutes(5);
   private Duration defaultJobPollInterval = Duration.ofSeconds(5);
-  private Duration defaultMessageTimeToLive = Duration.ofHours(1);
+  private Duration defaultMessageTimeToLive = Duration.ofMillis(100);
 
   @Override
   public String getBrokerContactPoint() {

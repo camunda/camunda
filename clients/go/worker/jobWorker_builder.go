@@ -13,7 +13,7 @@ import (
 const (
 	DefaultJobWorkerBufferSize    = 32
 	DefaultJobWorkerConcurrency   = 4
-	DefaultJobWorkerPollInterval  = 5 * time.Second
+	DefaultJobWorkerPollInterval  = 100 * time.Millisecond
 	DefaultJobWorkerPollThreshold = 0.3
 )
 
