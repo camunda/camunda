@@ -1,41 +1,23 @@
 .dark {
-  .ProgressBar {
-    background-color: #91b5c1;
-  }
-
-  .ProgressBar--filled {
-    background-color: #3151af;
-  }
-
   .ProgressBar__label {
     color: #ddd;
-  }
-
-  .ProgressBar__range {
-    border-left: 2px solid #3151af;
-    border-right: 2px solid #91b5c1;
-  }
-
-  .ProgressBar__range--belowBase {
-    border-left: 2px solid #91b5c1;
-  }
-
-  .ProgressBar__range--aboveTarget {
-    border-left: 2px solid #3151af;
   }
 }
 
 .ProgressBar {
   height: 65px;
   position: relative;
-  background-color: #add8e6;
+  border-radius: 4px;
+  background-color: #eee;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25) inset;
   margin-top: 20px;
 
   .goalOverlay {
     height: 100%;
     position: absolute;
     color: #b5152b;
-    background: royalblue;
+    border-radius: 4px;
+    background: linear-gradient(to bottom, #00a8ff 0%, #0082c4 100%);
     z-index: 1;
 
     .goalLabel {
@@ -43,7 +25,7 @@
       height: 100%;
       text-align: right;
       margin-left: 100%;
-      margin-top: -25px;
+      margin-top: -28px;
       padding-right: 10px;
       padding-left: 10px;
       white-space: nowrap;
@@ -52,17 +34,17 @@
       &.rightSide {
         margin-left: 0%;
       }
-    }
 
-    .goalLabel:after {
-      content: '';
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      height: 135%;
-      border-right: 2px solid #b5152b;
-      z-index: -1;
+      &:after {
+        content: '';
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 135%;
+        border-right: 2px solid #b5152b;
+        z-index: -1;
+      }
     }
   }
 }
@@ -83,33 +65,19 @@
 
 .ProgressBar--filled {
   height: 100%;
-  background-color: royalblue;
+  background: linear-gradient(to bottom, #00a8ff 0%, #0082c4 100%);
+  border-radius: 4px;
+  min-width: 5px;
 
   &.goalExceeded {
-    background-color: darkblue;
+    background: linear-gradient(to bottom, #005887 0%, #004568 100%);
   }
 }
 
 .ProgressBar__range {
-  border-left: 2px solid royalblue;
-  border-right: 2px solid lightBlue;
   height: 25px;
-  line-height: 25px;
-  padding-left: 5px;
-  padding-right: 5px;
+  line-height: 28px;
   font-size: 1.3em;
-
-  &.goalExceeded {
-    border-right: 2px solid darkblue;
-  }
-}
-
-.ProgressBar__range--belowBase {
-  border-left: 2px solid lightblue;
-}
-
-.ProgressBar__range--aboveTarget {
-  border-right: 2px solid royalblue;
 }
 
 .ProgressBar__range--right {

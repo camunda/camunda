@@ -18,7 +18,7 @@ export default function ProgressBar({min, max, value, formatter}) {
           }}
         >
           <span className={classnames('goalLabel', {rightSide: goalPercentage > 50})}>
-            Goal: {formatter(max)}
+            Goal {formatter(max)}
           </span>
         </div>
       )}
@@ -36,7 +36,7 @@ export default function ProgressBar({min, max, value, formatter}) {
       >
         {formatter(min)}
         <span className="ProgressBar__range--right">
-          {goalExceeded ? formatter(value) : 'Goal: ' + max}
+          {goalExceeded ? formatter(value) : 'Goal ' + max}
         </span>
       </div>
     </div>
