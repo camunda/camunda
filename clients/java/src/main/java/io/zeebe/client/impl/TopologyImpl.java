@@ -24,14 +24,35 @@ import java.util.stream.Collectors;
 public class TopologyImpl implements Topology {
 
   private final List<BrokerInfo> brokers;
+  private final int clusterSize;
+  private final int partitionsCount;
+  private final int replicationFactor;
 
   public TopologyImpl(final TopologyResponse response) {
     brokers =
         response.getBrokersList().stream().map(BrokerInfoImpl::new).collect(Collectors.toList());
+    clusterSize = response.getClusterSize();
+    partitionsCount = response.getPartitionsCount();
+    replicationFactor = response.getReplicationFactor();
   }
 
   @Override
   public List<BrokerInfo> getBrokers() {
     return brokers;
+  }
+
+  @Override
+  public int getClusterSize() {
+    return clusterSize;
+  }
+
+  @Override
+  public int getPartitionsCount() {
+    return partitionsCount;
+  }
+
+  @Override
+  public int getReplicationFactor() {
+    return replicationFactor;
   }
 }

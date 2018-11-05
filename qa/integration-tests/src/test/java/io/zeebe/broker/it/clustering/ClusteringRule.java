@@ -124,6 +124,18 @@ public class ClusteringRule extends ExternalResource {
     this.partitionIds = IntStream.range(0, partitionCount).boxed().collect(Collectors.toList());
   }
 
+  public int getPartitionCount() {
+    return partitionCount;
+  }
+
+  public int getReplicationFactor() {
+    return replicationFactor;
+  }
+
+  public int getClusterSize() {
+    return clusterSize;
+  }
+
   @Override
   public Statement apply(final Statement base, final Description description) {
     Statement statement = recordingExporterTestWatcher.apply(base, description);

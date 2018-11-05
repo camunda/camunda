@@ -23,6 +23,7 @@ import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.client.api.commands.BrokerInfo;
 import io.zeebe.client.api.commands.PartitionBrokerRole;
 import io.zeebe.client.api.commands.PartitionInfo;
+import io.zeebe.client.api.commands.Topology;
 import io.zeebe.client.api.events.JobEvent;
 import io.zeebe.client.api.subscription.JobWorker;
 import java.util.Optional;
@@ -45,6 +46,17 @@ public class BrokerLeaderChangeTest {
   @Rule
   public RuleChain ruleChain =
       RuleChain.outerRule(testTimeout).around(clusteringRule).around(clientRule);
+
+  @Test
+  public void shouldExposeClusterSettings() {
+    // when
+    final Topology topology = clientRule.getClient().newTopologyRequest().send().join();
+
+    // then
+    assertThat(topology.getClusterSize()).isEqualTo(clusteringRule.getClusterSize());
+    assertThat(topology.getPartitionsCount()).isEqualTo(clusteringRule.getPartitionCount());
+    assertThat(topology.getReplicationFactor()).isEqualTo(clusteringRule.getReplicationFactor());
+  }
 
   @Test
   public void shouldBecomeFollowerAfterRestartLeaderChange() {

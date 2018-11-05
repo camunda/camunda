@@ -36,6 +36,7 @@ public class BrokerClusterStateImpl implements BrokerClusterState {
   private final IntArrayList partitions = new IntArrayList(32, PARTITION_ID_NULL);
   private final int clusterSize;
   private final int partitionsCount;
+  private final int replicationFactor;
 
   private final Random randomBroker = new Random();
 
@@ -44,6 +45,7 @@ public class BrokerClusterStateImpl implements BrokerClusterState {
       final BiConsumer<Integer, SocketAddress> endpointRegistry) {
     clusterSize = topologyDto.getClusterSize();
     partitionsCount = topologyDto.getPartitionsCount();
+    replicationFactor = topologyDto.getReplicationFactor();
 
     topologyDto
         .brokers()
@@ -72,6 +74,10 @@ public class BrokerClusterStateImpl implements BrokerClusterState {
 
   public int getPartitionsCount() {
     return partitionsCount;
+  }
+
+  public int getReplicationFactor() {
+    return replicationFactor;
   }
 
   @Override
@@ -116,6 +122,8 @@ public class BrokerClusterStateImpl implements BrokerClusterState {
         + clusterSize
         + ", partitionsCount="
         + partitionsCount
+        + ", replicationFactor="
+        + replicationFactor
         + '}';
   }
 }

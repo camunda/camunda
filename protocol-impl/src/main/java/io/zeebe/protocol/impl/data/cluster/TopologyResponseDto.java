@@ -30,11 +30,13 @@ public class TopologyResponseDto extends UnpackedObject {
       new ArrayProperty<>("brokers", new BrokerDto());
   private final IntegerProperty clusterSizeProp = new IntegerProperty("clusterSize");
   private final IntegerProperty partitionsCountProp = new IntegerProperty("partitionsCount");
+  private final IntegerProperty replicationFactorProp = new IntegerProperty("replicationFactor");
 
   public TopologyResponseDto() {
     this.declareProperty(brokersProp)
         .declareProperty(clusterSizeProp)
-        .declareProperty(partitionsCountProp);
+        .declareProperty(partitionsCountProp)
+        .declareProperty(replicationFactorProp);
   }
 
   public ArrayProperty<BrokerDto> brokers() {
@@ -56,6 +58,15 @@ public class TopologyResponseDto extends UnpackedObject {
 
   public TopologyResponseDto setPartitionsCount(int partitionsCount) {
     this.partitionsCountProp.setValue(partitionsCount);
+    return this;
+  }
+
+  public int getReplicationFactor() {
+    return replicationFactorProp.getValue();
+  }
+
+  public TopologyResponseDto setReplicationFactor(int replicationFactor) {
+    replicationFactorProp.setValue(replicationFactor);
     return this;
   }
 

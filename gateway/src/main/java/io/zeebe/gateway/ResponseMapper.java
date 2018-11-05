@@ -74,6 +74,11 @@ public class ResponseMapper {
 
   public static TopologyResponse toTopologyResponse(long key, TopologyResponseDto brokerResponse) {
     final TopologyResponse.Builder topologyResponseBuilder = TopologyResponse.newBuilder();
+    topologyResponseBuilder
+        .setClusterSize(brokerResponse.getClusterSize())
+        .setPartitionsCount(brokerResponse.getPartitionsCount())
+        .setReplicationFactor(brokerResponse.getReplicationFactor());
+
     final ArrayList<BrokerInfo> infos = new ArrayList<>();
 
     brokerResponse

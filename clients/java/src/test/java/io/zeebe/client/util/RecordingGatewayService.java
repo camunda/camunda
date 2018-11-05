@@ -183,10 +183,17 @@ public class RecordingGatewayService extends GatewayImplBase {
         .build();
   }
 
-  public void onTopologyRequest(BrokerInfo... brokers) {
+  public void onTopologyRequest(
+      int clusterSize, int partitionsCount, int replicationFactor, BrokerInfo... brokers) {
     addRequestHandler(
         TopologyRequest.class,
-        request -> TopologyResponse.newBuilder().addAllBrokers(Arrays.asList(brokers)).build());
+        request ->
+            TopologyResponse.newBuilder()
+                .setClusterSize(clusterSize)
+                .setPartitionsCount(partitionsCount)
+                .setReplicationFactor(replicationFactor)
+                .addAllBrokers(Arrays.asList(brokers))
+                .build());
   }
 
   public static WorkflowMetadata deployedWorkflow(
