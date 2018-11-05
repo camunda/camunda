@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 public class OptimizeCleanupService {
   private final static Logger logger = LoggerFactory.getLogger(OptimizeCleanupService.class);
 
-  private final OptimizeCleanupConfiguration configuration;
+  private final ConfigurationService configurationService;
   private final ProcessDefinitionReader processDefinitionReader;
   private final FinishedProcessInstanceWriter processInstanceWriter;
   private final VariableWriter variableWriter;
@@ -40,7 +40,7 @@ public class OptimizeCleanupService {
                                 final ProcessDefinitionReader processDefinitionReader,
                                 final FinishedProcessInstanceWriter processInstanceWriter,
                                 final VariableWriter variableWriter) {
-    this.configuration = configurationService.getCleanupServiceConfiguration();
+    this.configurationService = configurationService;
     this.processDefinitionReader = processDefinitionReader;
     this.processInstanceWriter = processInstanceWriter;
     this.variableWriter = variableWriter;
@@ -49,8 +49,8 @@ public class OptimizeCleanupService {
   @PostConstruct
   public void init() {
     logger.info("Initializing OptimizeCleanupService");
-    this.configuration.validate();
-    if (configuration.getEnabled()) {
+    getCleanupConfiguration().validate();
+    if (getCleanupConfiguration().getEnabled()) {
       startCleanupScheduling();
     }
   }
@@ -93,7 +93,7 @@ public class OptimizeCleanupService {
   }
 
   private void performCleanupForKey(OffsetDateTime startTime, String currentProcessDefinitionKey) {
-    final ProcessDefinitionCleanupConfiguration cleanupConfigurationForKey = configuration
+    final ProcessDefinitionCleanupConfiguration cleanupConfigurationForKey = getCleanupConfiguration()
       .getProcessDefinitionCleanupConfigurationForKey(currentProcessDefinitionKey);
 
     logger.info(
@@ -122,7 +122,7 @@ public class OptimizeCleanupService {
   }
 
   private void enforceSpecificProcessKeyConfigurationsHaveMatchIn(Set<String> allOptimizeProcessDefinitionKeys) {
-    final Set<String> processSpecificConfigurationKeys = this.configuration.getAllProcessSpecificConfigurationKeys();
+    final Set<String> processSpecificConfigurationKeys = getCleanupConfiguration().getAllProcessSpecificConfigurationKeys();
     processSpecificConfigurationKeys.removeAll(allOptimizeProcessDefinitionKeys);
     if (processSpecificConfigurationKeys.size() > 0) {
       final String message =
@@ -141,7 +141,11 @@ public class OptimizeCleanupService {
       .collect(Collectors.toSet());
   }
 
+  private OptimizeCleanupConfiguration getCleanupConfiguration() {
+    return this.configurationService.getCleanupServiceConfiguration();
+  }
+
   private CronTrigger getCronTrigger() {
-    return new CronTrigger(configuration.getCronTrigger());
+    return new CronTrigger(getCleanupConfiguration().getCronTrigger());
   }
 }

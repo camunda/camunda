@@ -877,7 +877,10 @@ public class ConfigurationService {
 
   public OptimizeCleanupConfiguration getCleanupServiceConfiguration() {
     if (cleanupServiceConfiguration == null) {
-      cleanupServiceConfiguration = configJsonContext.read(ConfigurationServiceConstants.HISTORY_CLEANUP, OptimizeCleanupConfiguration.class);
+      cleanupServiceConfiguration = configJsonContext.read(
+        ConfigurationServiceConstants.HISTORY_CLEANUP,
+        OptimizeCleanupConfiguration.class
+      );
       cleanupServiceConfiguration.validate();
     }
     return cleanupServiceConfiguration;
@@ -1073,6 +1076,10 @@ public class ConfigurationService {
 
   public void setEngineImportActivityInstanceMaxPageSize(Long engineImportActivityInstanceMaxPageSize) {
     this.engineImportActivityInstanceMaxPageSize = engineImportActivityInstanceMaxPageSize;
+  }
+
+  public void setCleanupServiceConfiguration(OptimizeCleanupConfiguration cleanupServiceConfiguration) {
+    this.cleanupServiceConfiguration = cleanupServiceConfiguration;
   }
 
   public void setContainerHost(String containerHost) {

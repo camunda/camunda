@@ -13,6 +13,7 @@ import org.camunda.optimize.dto.optimize.query.variable.value.ShortVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.value.StringVariableDto;
 import org.camunda.optimize.dto.optimize.query.variable.value.VariableInstanceDto;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
+import org.camunda.optimize.service.util.NamedThreadFactory;
 import org.camunda.optimize.service.util.VariableHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
@@ -24,6 +25,7 @@ import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.UpdateByQueryAction;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
+import org.elasticsearch.tasks.TaskInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +41,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import static org.camunda.optimize.service.util.VariableHelper.isBooleanType;
 import static org.camunda.optimize.service.util.VariableHelper.isDateType;
@@ -107,25 +112,60 @@ public abstract class VariableWriter {
       endDate
     );
 
-    final BoolQueryBuilder filterQuery = boolQuery()
-      .filter(termQuery(ProcessInstanceType.PROCESS_DEFINITION_KEY, processDefinitionKey))
-      .filter(rangeQuery(ProcessInstanceType.END_DATE).lt(dateTimeFormatter.format(endDate)));
+    final ScheduledExecutorService scheduledExecutorService = startReportingUpdateByProgess();
+    try {
+      final BoolQueryBuilder filterQuery = boolQuery()
+        .filter(termQuery(ProcessInstanceType.PROCESS_DEFINITION_KEY, processDefinitionKey))
+        .filter(rangeQuery(ProcessInstanceType.END_DATE).lt(dateTimeFormatter.format(endDate)));
 
-    addAtLeastOneVariableArrayNotEmptyNestedFilters(filterQuery);
+      addAtLeastOneVariableArrayNotEmptyNestedFilters(filterQuery);
 
-    final BulkByScrollResponse response = UpdateByQueryAction.INSTANCE.newRequestBuilder(esClient)
-      .source(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
-      .script(createVariableClearScript(VariableHelper.getAllVariableTypeFieldLabels()))
-      .filter(filterQuery)
-      .get();
+      final BulkByScrollResponse response = UpdateByQueryAction.INSTANCE.newRequestBuilder(esClient)
+        .source(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
+        .script(createVariableClearScript(VariableHelper.getAllVariableTypeFieldLabels()))
+        .abortOnVersionConflict(false)
+        .filter(filterQuery)
+        .get();
 
-    logger.info(
-      "Deleted variables on {} process instances for processDefinitionKey {} and endDate past {}",
-      response.getUpdated(),
-      processDefinitionKey,
-      endDate
+      logger.debug(
+        "BulkByScrollResponse on deleting variables for processDefinitionKey {}: {}", processDefinitionKey, response
+      );
+      logger.info(
+        "Deleted variables on {} process instances for processDefinitionKey {} and endDate past {}",
+        response.getUpdated(),
+        processDefinitionKey,
+        endDate
+      );
+    } finally {
+      try {
+        scheduledExecutorService.shutdownNow();
+      } catch (Exception e) {
+        logger.error("Failed stopping progress reportign thread");
+      }
+    }
+  }
+
+  private ScheduledExecutorService startReportingUpdateByProgess() {
+    ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor(
+      new NamedThreadFactory(this.getClass().getSimpleName())
+    );
+    executorService.scheduleAtFixedRate(
+      () -> {
+        final List<TaskInfo> currentDeleteByTasks = esClient.admin()
+          .cluster()
+          .prepareCancelTasks()
+          .setActions(UpdateByQueryAction.NAME)
+          .get()
+          .getTasks();
+
+        currentDeleteByTasks.forEach(taskInfo -> logger.info("TaskInfo: ", taskInfo.toString()));
+      },
+      0,
+      10,
+      TimeUnit.SECONDS
     );
 
+    return executorService;
   }
 
   protected static void addAtLeastOneVariableArrayNotEmptyNestedFilters(final BoolQueryBuilder queryBuilder) {

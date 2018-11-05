@@ -1,1 +1,0 @@
-export CATALINA_OPTS="-Xms3g -Xmx3g"

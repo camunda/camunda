@@ -7,9 +7,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
+import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.CustomDeserializer;
 import org.camunda.optimize.service.util.CustomSerializer;
+import org.camunda.optimize.service.util.VariableHelper;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.util.PropertyUtil;
+import org.elasticsearch.action.search.SearchRequestBuilder;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.client.Client;
@@ -17,7 +21,10 @@ import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.common.transport.TransportAddress;
 import org.elasticsearch.common.xcontent.XContentType;
 import org.elasticsearch.index.IndexNotFoundException;
+import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.reindex.DeleteByQueryAction;
+import org.elasticsearch.search.aggregations.bucket.nested.Nested;
+import org.elasticsearch.search.aggregations.metrics.valuecount.ValueCount;
 import org.elasticsearch.transport.client.PreBuiltTransportClient;
 import org.junit.rules.TestWatcher;
 import org.junit.runner.Description;
@@ -28,9 +35,17 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder;
 import java.net.InetAddress;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
 
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
+import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VARIABLE_ID;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.count;
+import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -188,6 +203,72 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
       .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
       .setSource(objectMapper.writeValueAsString(user), XContentType.JSON)
       .get();
+  }
+
+  public Integer getImportedCountOf(String elasticsearchType, ConfigurationService configurationService) {
+    SearchResponse searchResponse = getClient()
+      .prepareSearch(configurationService.getOptimizeIndex(elasticsearchType))
+      .setTypes(elasticsearchType)
+      .setQuery(QueryBuilders.matchAllQuery())
+      .setSize(0)
+      .setFetchSource(false)
+      .get();
+    return Long.valueOf(searchResponse.getHits().getTotalHits()).intValue();
+  }
+
+  public Integer getActivityCount(ConfigurationService configurationService) {
+    SearchResponse response = getClient()
+      .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
+      .setTypes(configurationService.getProcessInstanceType())
+      .setQuery(QueryBuilders.matchAllQuery())
+      .setSize(0)
+      .addAggregation(
+        nested(EVENTS, EVENTS)
+          .subAggregation(
+            count(EVENTS + "_count")
+              .field(EVENTS + "." + ProcessInstanceType.EVENT_ID)
+          )
+      )
+      .setFetchSource(false)
+      .get();
+
+    Nested nested = response.getAggregations()
+      .get(EVENTS);
+    ValueCount countAggregator =
+      nested.getAggregations()
+        .get(EVENTS + "_count");
+    return Long.valueOf(countAggregator.getValue()).intValue();
+  }
+
+  public Integer getVariableInstanceCount(ConfigurationService configurationService) {
+    SearchRequestBuilder searchRequestBuilder = getClient()
+      .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
+      .setTypes(configurationService.getProcessInstanceType())
+      .setQuery(QueryBuilders.matchAllQuery())
+      .setSize(0)
+      .setFetchSource(false);
+
+    for (String variableTypeFieldLabel : VariableHelper.allVariableTypeFieldLabels) {
+      searchRequestBuilder.addAggregation(
+        nested(variableTypeFieldLabel, variableTypeFieldLabel)
+          .subAggregation(
+            count(variableTypeFieldLabel + "_count")
+              .field(variableTypeFieldLabel + "." + VARIABLE_ID)
+          )
+      );
+    }
+
+    SearchResponse response = searchRequestBuilder.get();
+
+    long totalVariableCount = 0L;
+    for (String variableTypeFieldLabel : VariableHelper.allVariableTypeFieldLabels) {
+      Nested nestedAgg = response.getAggregations().get(variableTypeFieldLabel);
+      ValueCount countAggregator = nestedAgg.getAggregations()
+        .get(variableTypeFieldLabel + "_count");
+      totalVariableCount += countAggregator.getValue();
+    }
+
+    return Long.valueOf(totalVariableCount).intValue();
   }
 
   private void addEntryToTracker(String type, String id) {
