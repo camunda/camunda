@@ -1,4 +1,16 @@
+import {orderBy} from 'lodash';
+
 import {INSTANCE_STATE} from 'modules/constants';
+
+/**
+ * @returns an array of operations sorted in ascending order by startDate
+ * @param {*} operations array of operations
+ */
+export const getLatestOperation = (operations = []) => {
+  return operations.length > 0
+    ? orderBy(operations, ['startDate'], ['desc'])[0]
+    : '';
+};
 
 export const getActiveIncident = (incidents = []) => {
   let activeIncident = null;

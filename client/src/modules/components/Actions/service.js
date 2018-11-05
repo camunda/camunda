@@ -38,13 +38,3 @@ export const isRunning = instance => {
     state !== INSTANCE_STATE.COMPLETED && state !== INSTANCE_STATE.CANCELED
   );
 };
-
-/**
- * @returns an array of operations sorted in ascending order by startDate
- * @param {*} operations array of operations
- */
-export const getLatestOperation = (operations = []) => {
-  return operations.length > 0
-    ? orderBy(operations, ['startDate'], ['desc'])[0]
-    : {};
-};

@@ -1,17 +1,5 @@
-import {
-  INSTANCE_STATE,
-  OPERATION_TYPE,
-  OPERATION_STATE
-} from 'modules/constants';
-import {
-  wrapIdinQuery,
-  isWithIncident,
-  isRunning,
-  getLatestOperation,
-  getLatestOperationState
-} from './service';
-
-import {xTimes, createOperation} from 'modules/testUtils';
+import {INSTANCE_STATE, OPERATION_TYPE} from 'modules/constants';
+import {wrapIdinQuery, isWithIncident, isRunning} from './service';
 
 const mockIncidentInstance = {
   id: '8590375632-2',
@@ -78,36 +66,6 @@ describe('Action services', () => {
 
         expect(isRunning(mockCompletedInstance)).toBe(false);
         expect(isRunning(mockCanceldInstance)).toBe(false);
-      });
-    });
-  });
-
-  describe('Action Status', () => {
-    let mockOperations;
-
-    const createMockOperations = (amount, array) =>
-      xTimes(amount)(counter => {
-        array.push(
-          createOperation({startDate: `2018-10-1${counter}T09:20:38.661Z`})
-        );
-      });
-
-    describe('getLatestOperation', () => {
-      it('should return {} when no operations are available', () => {
-        mockOperations = [];
-        createMockOperations(0, mockOperations);
-        expect(getLatestOperation(mockOperations)).toEqual({});
-      });
-
-      it('should retrun operations sorted in ascending order by startDate', () => {
-        // Create Mock Data
-        mockOperations = [];
-        createMockOperations(3, mockOperations);
-        const latestDate = `2018-10-13T09:20:38.661Z`;
-
-        expect(getLatestOperation(mockOperations)).toEqual(
-          createOperation({startDate: latestDate})
-        );
       });
     });
   });

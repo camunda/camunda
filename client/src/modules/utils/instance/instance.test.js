@@ -2,6 +2,8 @@ import {createInstance} from 'modules/testUtils';
 import {INSTANCE_STATE} from 'modules/constants';
 
 import * as instanceUtils from './instance';
+import {xTimes, createOperation} from 'modules/testUtils';
+
 const {ACTIVE, INCIDENT, COMPLETED, CANCELED} = INSTANCE_STATE;
 
 const active = {state: ACTIVE, incidents: []};
@@ -96,6 +98,34 @@ describe('instance utils', () => {
 
       // then
       expect(instanceName).toBe(instance.bpmnProcessId);
+    });
+  });
+
+  describe('getLatestOperation', () => {
+    let mockOperations;
+
+    const createMockOperations = (amount, array) =>
+      xTimes(amount)(counter => {
+        array.push(
+          createOperation({startDate: `2018-10-1${counter}T09:20:38.661Z`})
+        );
+      });
+
+    it('should return "" when no operations are available', () => {
+      mockOperations = [];
+      createMockOperations(0, mockOperations);
+      expect(instanceUtils.getLatestOperation(mockOperations)).toEqual('');
+    });
+
+    it('should retrun operations sorted in ascending order by startDate', () => {
+      // Create Mock Data
+      mockOperations = [];
+      createMockOperations(3, mockOperations);
+      const latestDate = `2018-10-13T09:20:38.661Z`;
+
+      expect(instanceUtils.getLatestOperation(mockOperations)).toEqual(
+        createOperation({startDate: latestDate})
+      );
     });
   });
 });
