@@ -85,8 +85,12 @@ public class OptimizeCleanupService {
 
     enforceSpecificProcessKeyConfigurationsHaveMatchIn(allOptimizeProcessDefinitionKeys);
 
-    allOptimizeProcessDefinitionKeys
-      .forEach(currentProcessDefinitionKey -> performCleanupForKey(startTime, currentProcessDefinitionKey));
+    int i = 1;
+    for (String currentProcessDefinitionKey : allOptimizeProcessDefinitionKeys) {
+      logger.info("History Cleanup step {}/{}", i, allOptimizeProcessDefinitionKeys.size());
+      performCleanupForKey(startTime, currentProcessDefinitionKey);
+      i++;
+    }
 
     final long durationSeconds = OffsetDateTime.now().minusSeconds(startTime.toEpochSecond()).toEpochSecond();
     logger.info("Finished optimize history cleanup in {}s", durationSeconds);
@@ -102,6 +106,7 @@ public class OptimizeCleanupService {
       cleanupConfigurationForKey.getTtl(),
       cleanupConfigurationForKey.getCleanupMode()
     );
+
     final OffsetDateTime endDateFilter = startTime.minus(cleanupConfigurationForKey.getTtl());
     switch (cleanupConfigurationForKey.getCleanupMode()) {
       case ALL:
@@ -119,6 +124,13 @@ public class OptimizeCleanupService {
       default:
         throw new IllegalStateException("Unsupported cleanup mode " + cleanupConfigurationForKey.getCleanupMode());
     }
+
+    logger.info(
+      "Finished cleanup on process instances for processDefinitionKey: {}, with ttl: {} and mode:{}",
+      currentProcessDefinitionKey,
+      cleanupConfigurationForKey.getTtl(),
+      cleanupConfigurationForKey.getCleanupMode()
+    );
   }
 
   private void enforceSpecificProcessKeyConfigurationsHaveMatchIn(Set<String> allOptimizeProcessDefinitionKeys) {

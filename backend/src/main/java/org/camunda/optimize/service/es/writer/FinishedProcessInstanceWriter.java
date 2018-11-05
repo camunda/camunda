@@ -3,8 +3,8 @@ package org.camunda.optimize.service.es.writer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.importing.ProcessInstanceDto;
+import org.camunda.optimize.service.es.EsBulkByScrollTaskActionProgressReporter;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
-import org.camunda.optimize.service.util.NamedThreadFactory;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.action.bulk.BulkRequestBuilder;
 import org.elasticsearch.action.bulk.BulkResponse;
@@ -15,7 +15,6 @@ import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.DeleteByQueryAction;
 import org.elasticsearch.script.Script;
 import org.elasticsearch.script.ScriptType;
-import org.elasticsearch.tasks.TaskInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,9 +25,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
@@ -72,8 +68,11 @@ public class FinishedProcessInstanceWriter {
       endDate
     );
 
-    final ScheduledExecutorService scheduledExecutorService = startReportingDeleteByProgess();
+    final EsBulkByScrollTaskActionProgressReporter progressReporter = new EsBulkByScrollTaskActionProgressReporter(
+      getClass().getName(), esClient, DeleteByQueryAction.NAME
+    );
     try {
+      progressReporter.start();
       final BoolQueryBuilder filterQuery = boolQuery()
         .filter(termQuery(ProcessInstanceType.PROCESS_DEFINITION_KEY, processDefinitionKey))
         .filter(rangeQuery(ProcessInstanceType.END_DATE).lt(dateTimeFormatter.format(endDate)));
@@ -95,32 +94,9 @@ public class FinishedProcessInstanceWriter {
         endDate
       );
     } finally {
-      scheduledExecutorService.shutdownNow();
+      progressReporter.stop();
     }
 
-  }
-
-  private ScheduledExecutorService startReportingDeleteByProgess() {
-    ScheduledExecutorService executorService = Executors.newSingleThreadScheduledExecutor(
-      new NamedThreadFactory(this.getClass().getSimpleName())
-    );
-    executorService.scheduleAtFixedRate(
-      () -> {
-        final List<TaskInfo> currentDeleteByTasks = esClient.admin()
-          .cluster()
-          .prepareCancelTasks()
-          .setActions(DeleteByQueryAction.NAME)
-          .get()
-          .getTasks();
-
-        currentDeleteByTasks.forEach(taskInfo -> logger.info("TaskInfo: ", taskInfo.toString()));
-      },
-      0,
-      10,
-      TimeUnit.SECONDS
-    );
-
-    return executorService;
   }
 
   private void addImportProcessInstanceRequest(BulkRequestBuilder bulkRequest, ProcessInstanceDto procInst) throws
