@@ -234,7 +234,9 @@ package main
 import (
 	"fmt"
 	"github.com/zeebe-io/zeebe/clients/go"
-	"time"
+	"github.com/zeebe-io/zeebe/clients/go/entities"
+	"github.com/zeebe-io/zeebe/clients/go/worker"
+	"log"
 )
 
 const brokerAddr = "0.0.0.0:26500"
@@ -269,22 +271,56 @@ func main() {
 
 	fmt.Println(result.String())
 
-	// sleep to allow job to be created
-	time.Sleep(1 * time.Second)
+	jobWorker := client.NewJobWorker().JobType("payment-service").Handler(handleJob).Open()
+	defer jobWorker.Close()
 
-	jobs, err := client.NewActivateJobsCommand().JobType("payment-service").Amount(1).WorkerName("sample-app").Timeout(1 * time.Minute).Send()
+	jobWorker.AwaitClose()
+}
+
+func handleJob(client worker.JobClient, job entities.Job) {
+	jobKey := job.GetKey()
+
+	headers, err := job.GetCustomHeadersAsMap()
 	if err != nil {
-		panic(err)
+		// failed to handle job as we require the custom job headers
+		failJob(client, job)
+		return
 	}
 
-	for _, job := range jobs {
-		client.NewCompleteJobCommand().JobKey(job.GetKey()).Send()
-		fmt.Println("Completed job", job.String())
+	payload, err := job.GetPayloadAsMap()
+	if err != nil {
+		// failed to handle job as we require the payload
+		failJob(client, job)
+		return
 	}
+
+	payload["totalPrice"] = 46.50;
+	request, err := client.NewCompleteJobCommand().JobKey(jobKey).PayloadFromMap(payload)
+	if err != nil {
+		// failed to set the updated payload
+		failJob(client, job)
+		return
+	}
+
+	log.Println("Complete job", jobKey, "of type", job.Type)
+	log.Println("Processing order:", payload["orderId"])
+	log.Println("Collect money using payment method:", headers["method"])
+
+	request.Send()
+}
+
+func failJob(client worker.JobClient, job entities.Job) {
+	log.Println("Failed to complete job", job.GetKey())
+	client.NewFailJobCommand().JobKey(job.GetKey()).Retries(job.Retries - 1).Send()
 }
 ```
 
-In this example we activate a job from the previously created workflow instance  and complete it.
+In this example we open a [job worker](/basics/job-workers.html) for jobs of type `payment-service`.
+The job worker will repeatedly poll for new jobs of the type `payment-service` and activate them
+subsequently. Each activated job will then be passed to the job handler which implements the business
+logic of the job worker. The handler will then complete the job with its result or fail the job if
+it encounters a problem while processing the job.
+
 When you have a look at the Zeebe Monitor, then you can see that the workflow instance moved from the first service task to the next one:
 
 ![zeebe-monitor-step-2](/go-client/zeebe-monitor-2.png)
@@ -292,9 +328,11 @@ When you have a look at the Zeebe Monitor, then you can see that the workflow in
 When you run the above example you should see similar output:
 
 ```
-key:26 workflows:<bpmnProcessId:"order-process" version:2 workflowKey:2 resourceName:"order-process.bpmn" >
-workflowKey:2 bpmnProcessId:"order-process" version:2 workflowInstanceKey:31
-Completed job key:2 type:"payment-service" jobHeaders:<workflowInstanceKey:31 bpmnProcessId:"order-process" workflowDefinitionVersion:2 workflowKey:2 activityId:"collect-money" activityInstanceKey:46 > customHeaders:"{\"method\":\"VISA\"}" worker:"sample-app" retries:3 deadline:1539603072292 payload:"{\"orderId\":\"31243\"}"
+key:26 workflows:<bpmnProcessId:"order-process" version:2 workflowKey:2 resourceName:"order-process.bpmn" > 
+workflowKey:2 bpmnProcessId:"order-process" version:2 workflowInstanceKey:31 
+2018/11/02 11:39:50 Complete job 2 of type payment-service
+2018/11/02 11:39:50 Processing order: 31243
+2018/11/02 11:39:50 Collect money using payment method: VISA
 ```
 
 
