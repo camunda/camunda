@@ -39,6 +39,9 @@ public class TopologyRequestTest extends ClientTest {
   public void shouldRequestTopology() {
     // given
     gatewayService.onTopologyRequest(
+        2,
+        10,
+        3,
         broker(0, "host1", 123, partition(0, LEADER), partition(1, FOLLOWER)),
         broker(1, "host2", 212, partition(0, FOLLOWER), partition(1, LEADER)),
         broker(2, "host3", 432, partition(0, FOLLOWER), partition(1, FOLLOWER)));
@@ -47,6 +50,10 @@ public class TopologyRequestTest extends ClientTest {
     final Topology topology = client.newTopologyRequest().send().join();
 
     // then
+    assertThat(topology.getClusterSize()).isEqualTo(2);
+    assertThat(topology.getPartitionsCount()).isEqualTo(10);
+    assertThat(topology.getReplicationFactor()).isEqualTo(3);
+
     final List<BrokerInfo> brokers = topology.getBrokers();
     assertThat(brokers).hasSize(3);
 

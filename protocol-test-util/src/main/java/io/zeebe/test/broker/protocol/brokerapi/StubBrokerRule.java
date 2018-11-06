@@ -45,6 +45,7 @@ public class StubBrokerRule extends ExternalResource {
   protected final SocketAddress socketAddress;
   private final int clusterSize;
   private final int partitionCount;
+  private final int replicationFactor;
 
   protected ServerTransport transport;
 
@@ -58,14 +59,19 @@ public class StubBrokerRule extends ExternalResource {
   }
 
   public StubBrokerRule(final int nodeId) {
-    this(nodeId, 1, 1);
+    this(nodeId, 1, 1, 1);
   }
 
-  public StubBrokerRule(final int nodeId, final int clusterSize, final int partitionCount) {
+  private StubBrokerRule(
+      final int nodeId,
+      final int clusterSize,
+      final int partitionCount,
+      final int replicationFactor) {
     this.nodeId = nodeId;
     this.socketAddress = SocketUtil.getNextAddress();
     this.clusterSize = clusterSize;
     this.partitionCount = partitionCount;
+    this.replicationFactor = replicationFactor;
   }
 
   @Override
@@ -196,6 +202,7 @@ public class StubBrokerRule extends ExternalResource {
         .put("brokers", r -> currentTopology.get().getBrokers())
         .put("clusterSize", clusterSize)
         .put("partitionsCount", partitionCount)
+        .put("replicationFactor", replicationFactor)
         .done()
         .register();
   }

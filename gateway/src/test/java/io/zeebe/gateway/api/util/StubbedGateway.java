@@ -128,6 +128,7 @@ public class StubbedGateway extends Gateway {
       defaultTopology
           .setPartitionsCount(1)
           .setClusterSize(1)
+          .setReplicationFactor(1)
           .brokers()
           .add()
           .setHost("localhost")

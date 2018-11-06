@@ -20,4 +20,13 @@ import java.util.List;
 public interface Topology {
   /** @return all (known) brokers of the cluster */
   List<BrokerInfo> getBrokers();
+
+  /** @return the size of the Zeebe broker cluster */
+  int getClusterSize();
+
+  /** @return the configured number of partitions */
+  int getPartitionsCount();
+
+  /** @return the configured replication factor for every partition */
+  int getReplicationFactor();
 }

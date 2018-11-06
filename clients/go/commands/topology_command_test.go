@@ -16,6 +16,9 @@ func TestTopologyCommand(t *testing.T) {
 
 	request := &pb.TopologyRequest{}
 	stub := &pb.TopologyResponse{
+		ClusterSize:       12,
+		PartitionsCount:   23,
+		ReplicationFactor: 3,
 		Brokers: []*pb.BrokerInfo{
 			{
 				NodeId: 0,

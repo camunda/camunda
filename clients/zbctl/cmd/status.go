@@ -15,10 +15,22 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/zeebe-io/zeebe/clients/go/pb"
-
 	"github.com/spf13/cobra"
+	"github.com/zeebe-io/zeebe/clients/go/pb"
+	"sort"
 )
+
+type ByNodeId []*pb.BrokerInfo
+
+func (a ByNodeId) Len() int           { return len(a) }
+func (a ByNodeId) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByNodeId) Less(i, j int) bool { return a[i].NodeId < a[j].NodeId }
+
+type ByPartitionId []*pb.Partition
+
+func (a ByPartitionId) Len() int           { return len(a) }
+func (a ByPartitionId) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByPartitionId) Less(i, j int) bool { return a[i].PartitionId < a[j].PartitionId }
 
 var statusCmd = &cobra.Command{
 	Use:     "status",
@@ -31,10 +43,18 @@ var statusCmd = &cobra.Command{
 			return err
 		}
 
+		fmt.Println("Cluster size:", response.ClusterSize)
+		fmt.Println("Partitions count:", response.PartitionsCount)
+		fmt.Println("Replication factor:", response.ReplicationFactor)
+		fmt.Println("Brokers:")
+
+		sort.Sort(ByNodeId(response.Brokers))
+
 		for _, broker := range response.Brokers {
-			fmt.Println("Broker", broker.Host, ":", broker.Port)
+			fmt.Println("  Broker", broker.NodeId, "-", fmt.Sprintf("%s:%d", broker.Host, broker.Port))
+			sort.Sort(ByPartitionId(broker.Partitions))
 			for _, partition := range broker.Partitions {
-				fmt.Println("  Partition", partition.PartitionId, ":", roleToString(partition.Role))
+				fmt.Println("    Partition", partition.PartitionId, ":", roleToString(partition.Role))
 			}
 		}
 

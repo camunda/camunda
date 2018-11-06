@@ -26,6 +26,9 @@ message BrokerInfo {
 
 message TopologyResponse {
   repeated BrokerInfo brokers = 1;
+  int32 clusterSize = 2;
+  int32 partitionsCount = 3;
+  int32 replicationFactor = 4;
 }
 
 message WorkflowRequestObject {
