@@ -96,6 +96,7 @@ public abstract class ZeebeUtil {
         } else {
           jobClient.newCompleteCommand(job.getKey()).payload(payload).send().join();
         }
+        logger.debug("Complete task command was sent to Zeebe for jobKey [{}]", job.getKey());
       })
       .name(workerName)
       .timeout(Duration.ofSeconds(2))
