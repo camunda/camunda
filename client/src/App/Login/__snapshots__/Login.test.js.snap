@@ -25,9 +25,9 @@ exports[`Login should display an error if any field is empty 1`] = `
     </Themed(styled.span)>
   </Themed(styled.div)>
   <styled.form>
-    <styled.span>
+    <styled.div>
       Username and Password are both required
-    </styled.span>
+    </styled.div>
     <Themed(Styled(Styled(TextInput)))
       aria-label="User Name"
       name="username"
@@ -66,9 +66,9 @@ exports[`Login should display an error on unsuccessful login 1`] = `
     </Themed(styled.span)>
   </Themed(styled.div)>
   <styled.form>
-    <styled.span>
+    <styled.div>
       Username and Password do not match
-    </styled.span>
+    </styled.div>
     <Themed(Styled(Styled(TextInput)))
       aria-label="User Name"
       name="username"
@@ -107,6 +107,7 @@ exports[`Login should render login form by default 1`] = `
     </Themed(styled.span)>
   </Themed(styled.div)>
   <styled.form>
+    <styled.div />
     <Themed(Styled(Styled(TextInput)))
       aria-label="User Name"
       name="username"

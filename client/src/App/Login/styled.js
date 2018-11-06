@@ -47,11 +47,12 @@ export const LoginForm = styled.form`
   margin-top: 104px;
 `;
 
-export const FormError = styled.span`
+export const FormError = styled.div`
   font-size: 15px;
   font-weight: 500;
   color: ${Colors.incidentsAndErrors};
   margin-bottom: 10px;
+  height: 15px;
 `;
 
 const LoginInput = styled(TextInput)`
