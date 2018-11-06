@@ -4,17 +4,17 @@
 
 #### Bug Fixes
 
-* **broker:**  exclusive split when default flow is first in XML ([75cd1539](https://github.com/zeebe-io/zeebe/commit/75cd1539c730440a87c2fefeaa96c253b5e856ac))
 * **broker-core:**
+  *  exclusive split when default flow is first in XML ([75cd1539](https://github.com/zeebe-io/zeebe/commit/75cd1539c730440a87c2fefeaa96c253b5e856ac))
   *  add null check in job state controller ([10496ae7](https://github.com/zeebe-io/zeebe/commit/10496ae7b32f89e50c43896039fdc74a0c3f8b4d))
   *  correlate a message only once per wf instance ([892357cc](https://github.com/zeebe-io/zeebe/commit/892357cc35dd21d4d50c27ecf3edb5005f9d9809))
   *  fix concurrency problems with request metadata ([34b6b6fa](https://github.com/zeebe-io/zeebe/commit/34b6b6fa28e4552bfddf38f1c1e45457bb7a08ca))
 * **exporters/elasticsearch:**  use correct index delimiter in root template ([e6c62be8](https://github.com/zeebe-io/zeebe/commit/e6c62be8df476cbd55ac5be0673633f4f35b3ec0))
-* **gateway:**  use resource type provided in request instead of detecting ([9fbaccb5](https://github.com/zeebe-io/zeebe/commit/9fbaccb5965b211db6716ee8b2e1a81741708aa6), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+* **gateway:**  use resource type provided in request instead of detecting ([9fbaccb5](https://github.com/zeebe-io/zeebe/commit/9fbaccb5965b211db6716ee8b2e1a81741708aa6)))
 
 #### Breaking Changes
 
-* **gateway:**  use resource type provided in request instead of detecting ([9fbaccb5](https://github.com/zeebe-io/zeebe/commit/9fbaccb5965b211db6716ee8b2e1a81741708aa6), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+* **gateway:**  use resource type provided in request instead of detecting ([9fbaccb5](https://github.com/zeebe-io/zeebe/commit/9fbaccb5965b211db6716ee8b2e1a81741708aa6))
 
 #### Features
 
