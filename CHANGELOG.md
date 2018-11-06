@@ -1,3 +1,39 @@
+<a name="0.13.0"></a>
+## 0.13.0 (2018-11-06)
+
+
+#### Bug Fixes
+
+* **broker:**  exclusive split when default flow is first in XML ([75cd1539](https://github.com/zeebe-io/zeebe/commit/75cd1539c730440a87c2fefeaa96c253b5e856ac))
+* **broker-core:**
+  *  add null check in job state controller ([10496ae7](https://github.com/zeebe-io/zeebe/commit/10496ae7b32f89e50c43896039fdc74a0c3f8b4d))
+  *  correlate a message only once per wf instance ([892357cc](https://github.com/zeebe-io/zeebe/commit/892357cc35dd21d4d50c27ecf3edb5005f9d9809))
+  *  fix concurrency problems with request metadata ([34b6b6fa](https://github.com/zeebe-io/zeebe/commit/34b6b6fa28e4552bfddf38f1c1e45457bb7a08ca))
+* **exporters/elasticsearch:**  use correct index delimiter in root template ([e6c62be8](https://github.com/zeebe-io/zeebe/commit/e6c62be8df476cbd55ac5be0673633f4f35b3ec0))
+* **gateway:**  use resource type provided in request instead of detecting ([9fbaccb5](https://github.com/zeebe-io/zeebe/commit/9fbaccb5965b211db6716ee8b2e1a81741708aa6), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+
+#### Breaking Changes
+
+* **gateway:**  use resource type provided in request instead of detecting ([9fbaccb5](https://github.com/zeebe-io/zeebe/commit/9fbaccb5965b211db6716ee8b2e1a81741708aa6), breaks [#](https://github.com/zeebe-io/zeebe/issues/))
+
+#### Features
+
+* **broker-core:**
+  *  add debug http exporter ([ef2d0203](https://github.com/zeebe-io/zeebe/commit/ef2d02035c09bdc4577551651aace7a20fb07450))
+  *  handle intermediate timer catch event ([62111c35](https://github.com/zeebe-io/zeebe/commit/62111c3549357401bf20c1dec8620375837ebafe))
+* **clients/go:**
+  *  implement polling job worker ([09a21788](https://github.com/zeebe-io/zeebe/commit/09a21788b6c794c7ae1448230edfb0adc83d69ba))
+  *  implement list workflows and get workflow ([5169ac27](https://github.com/zeebe-io/zeebe/commit/5169ac27c6448d083540dc7fe92c26a40b315711))
+* **clients/zbctl:**
+  *  add create worker command ([68d17600](https://github.com/zeebe-io/zeebe/commit/68d176008a9d22ad3e703bc43f1a241698ee47af))
+  *  implement list workflows and get workflow ([429bdc47](https://github.com/zeebe-io/zeebe/commit/429bdc472de68d55ebdf43b7ad8bdc52d0ddd525))
+  *  allow to configure the address to connect to ([0a3a4010](https://github.com/zeebe-io/zeebe/commit/0a3a401059b5f8128f9c746f9fa0b403f1ff6875))
+* **dist:**  add standalone gateway script and configuration ([df212f12](https://github.com/zeebe-io/zeebe/commit/df212f12492d187d749382b67da346b29f4a694d))
+* **gateway:**  add gateway configuration readable from toml file ([08b66441](https://github.com/zeebe-io/zeebe/commit/08b6644132e41b398d850408a35de78dbf654f98))
+* **gateway-protocol:**  expose cluster settings in gateway protocol ([0035d39d](https://github.com/zeebe-io/zeebe/commit/0035d39d1bd2c3dce577551d19394ba484f58ade))
+
+
+
 <a name="0.12.1"></a>
 ## 0.12.1 (2018-10-26)
 
