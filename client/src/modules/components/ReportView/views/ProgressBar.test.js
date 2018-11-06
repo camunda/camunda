@@ -19,7 +19,7 @@ it('should use the provided formatter', () => {
 it('should fill according to the provided value, min and max properties', () => {
   const node = shallow(<ProgressBar {...props} />);
 
-  expect(node.find('.ProgressBar--filled')).toHaveProp('style', {width: '20%'});
+  expect(node.find('.filledOverlay')).toHaveProp('style', {width: '20%'});
 });
 
 it('should show the overlay with the goal value when the goal value is exceeded', () => {

@@ -1,5 +1,5 @@
 .dark {
-  .ProgressBar__label {
+  .progressLabel {
     color: #ddd;
   }
 }
@@ -10,7 +10,7 @@
   border-radius: 4px;
   background-color: #eee;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25) inset;
-  margin-top: 20px;
+  margin-top: 24px;
 
   .goalOverlay {
     height: 100%;
@@ -47,39 +47,39 @@
       }
     }
   }
-}
 
-.ProgressBar__label {
-  position: absolute;
-  width: 100%;
-  text-align: center;
-  line-height: 65px;
-  font-size: 2.5em;
-  color: white;
-  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
-  padding: 0 0.5em;
-  text-overflow: ellipsis;
-  overflow: hidden;
-  z-index: 2;
-}
-
-.ProgressBar--filled {
-  height: 100%;
-  background: linear-gradient(to bottom, #00a8ff 0%, #0082c4 100%);
-  border-radius: 4px;
-  min-width: 5px;
-
-  &.goalExceeded {
-    background: linear-gradient(to bottom, #005887 0%, #004568 100%);
+  .progressLabel {
+    position: absolute;
+    width: 100%;
+    text-align: center;
+    line-height: 65px;
+    font-size: 2.5em;
+    color: white;
+    text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+    padding: 0 0.5em;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    z-index: 2;
   }
-}
 
-.ProgressBar__range {
-  height: 25px;
-  line-height: 28px;
-  font-size: 1.3em;
-}
+  .filledOverlay {
+    height: 100%;
+    background: linear-gradient(to bottom, #00a8ff 0%, #0082c4 100%);
+    border-radius: 4px;
+    min-width: 5px;
 
-.ProgressBar__range--right {
-  float: right;
+    &.goalExceeded {
+      background: linear-gradient(to bottom, #005887 0%, #004568 100%);
+    }
+  }
+
+  .rangeLabels {
+    height: 25px;
+    line-height: 28px;
+    font-size: 1.3em;
+
+    .rightLabel {
+      float: right;
+    }
+  }
 }

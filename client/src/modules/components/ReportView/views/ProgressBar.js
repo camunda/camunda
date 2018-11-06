@@ -22,22 +22,14 @@ export default function ProgressBar({min, max, value, formatter}) {
           </span>
         </div>
       )}
-      <div className="ProgressBar__label">{formatter(value)}</div>
+      <div className="progressLabel">{formatter(value)}</div>
       <div
-        className={classnames('ProgressBar--filled', {goalExceeded})}
+        className={classnames('filledOverlay', {goalExceeded})}
         style={{width: `${relative * 100}%`}}
       />
-      <div
-        className={classnames('ProgressBar__range', {
-          'ProgressBar__range--belowBase': value <= min,
-          'ProgressBar__range--aboveTarget': value >= max,
-          goalExceeded
-        })}
-      >
+      <div className={classnames('rangeLabels')}>
         {formatter(min)}
-        <span className="ProgressBar__range--right">
-          {goalExceeded ? formatter(value) : 'Goal ' + max}
-        </span>
+        <span className="rightLabel">{goalExceeded ? formatter(value) : 'Goal ' + max}</span>
       </div>
     </div>
   );
