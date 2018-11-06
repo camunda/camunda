@@ -82,8 +82,12 @@ We can now check the status of the Zeebe broker.
 ./bin/zbctl status
 ```
 ```
-Broker 0.0.0.0 : 26501
-  Partition 0 : Leader
+Cluster size: 1
+Partitions count: 1
+Replication factor: 1
+Brokers:
+  Broker 0 - 0.0.0.0:26501
+    Partition 0 : Leader
 ```
 
 ## Step 3: Create a job

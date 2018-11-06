@@ -80,7 +80,7 @@ func roleToString(role pb.Partition_PartitionBrokerRole) string {
 	switch role {
 	case  pb.Partition_LEADER:
 		return "Leader"
-	case pb.Partition_FOLLOW:
+	case pb.Partition_FOLLOWER:
 		return "Follower"
 	default:
 		return "Unknown"
@@ -98,7 +98,6 @@ You should see similar output:
 ```
 Broker 0.0.0.0 : 26501
   Partition 0 : Leader
-}
 ```
 
 ## Model a workflow
