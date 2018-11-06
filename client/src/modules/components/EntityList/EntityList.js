@@ -187,20 +187,9 @@ class EntityList extends React.Component {
         <ul className="list">
           <li className="item noEntities">
             {`There are no ${this.props.label}s configured.`}
-            {/* eslint-disable-next-line jsx-a11y/anchor-is-valid */}
-            <a
-              className="createLink"
-              role="button"
-              onClick={this.createEntity('single')}
-              onKeyDown={evt => {
-                if (evt.key === 'Enter') {
-                  evt.target.click();
-                }
-              }}
-              tabIndex="0"
-            >
+            <Button className="createLink" onClick={this.createEntity('single')} link>
               Create a new {this.props.label}…
-            </a>
+            </Button>
           </li>
         </ul>
       ) : (

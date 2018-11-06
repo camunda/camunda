@@ -161,3 +161,27 @@ a.Button--green[disabled='disabled']:hover {
     margin-right: 0.65em;
   }
 }
+
+.Button.link {
+  display: inline;
+  align-items: normal;
+  background-color: transparent;
+  color: #00a8ff;
+  border-color: #00a8ff;
+  border-style: none;
+  font: inherit;
+  padding: 0;
+  perspective-origin: 0 0;
+  transform-origin: 0 0;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:focus {
+    border: none;
+    box-shadow: none;
+    outline: 1px dotted #212121;
+    outline: 5px auto -webkit-focus-ring-color;
+  }
+}

@@ -73,7 +73,7 @@ jest.mock('components', () => {
   return {
     Modal,
     Message: props => <p>{props.children}</p>,
-    Button: props => <button {...props}>{props.children}</button>,
+    Button: ({link, ...props}) => <button {...props}>{props.children}</button>,
     Input: props => <input {...props} type="text" />,
     LoadingIndicator: props => (
       <div className="sk-circle" {...props}>
@@ -428,7 +428,7 @@ it('should invoke openNewContentPanel when click on create new button', async ()
     loaded: true
   });
 
-  node.find('a').simulate('click');
+  node.find('.item Button.createLink').simulate('click');
   expect(spy).toHaveBeenCalled();
 });
 
