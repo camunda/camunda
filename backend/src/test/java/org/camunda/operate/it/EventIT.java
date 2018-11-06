@@ -45,8 +45,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
     final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(super.getClient(), processId, initialPayload);
 
     //create an incident
-    final Long jobKey = ZeebeUtil.failTask(super.getClient(), taskA, super.getWorkerName(), 3);
-    elasticsearchTestRule.processAllEvents(30);
+    final Long jobKey = failTaskWithNoRetriesLeft(taskA, workflowInstanceId);
 
     //update retries to delete the incident
     ZeebeUtil.resolveIncident(super.getClient(), jobKey);

@@ -1,5 +1,5 @@
 [cluster]
-partitionsCount = 1
+partitionsCount = 2
 
 [[exporters]]
 id = "elasticsearch"
