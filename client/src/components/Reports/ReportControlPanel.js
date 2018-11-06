@@ -9,6 +9,8 @@ import {ProcessPart} from './ProcessPart';
 
 import {loadVariables} from './service';
 
+import {Configuration} from './Configuration';
+
 import './ReportControlPanel.scss';
 
 const {view, groupBy, visualization, getLabelFor, isAllowed, getNext} = reportConfig;
@@ -145,6 +147,11 @@ export default class ReportControlPanel extends React.Component {
               onChange={this.props.updateReport}
             />
           </li>
+          <Configuration
+            type={this.props.visualization}
+            configuration={this.props.configuration}
+            onChange={this.props.updateConfiguration}
+          />
           {this.props.visualization === 'heat' && (
             <li>
               <Button

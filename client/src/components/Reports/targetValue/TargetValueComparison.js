@@ -4,8 +4,7 @@ import TargetValueModal from './TargetValueModal';
 
 import {isSingleNumber, isDurationHeatmap, isChart} from './service';
 
-import {ButtonGroup, Button} from 'components';
-import settingsIcon from './settings.svg';
+import {ButtonGroup, Button, Icon} from 'components';
 
 import './TargetValueComparison.scss';
 
@@ -107,7 +106,7 @@ export default class TargetValueComparison extends React.Component {
           disabled={!isEnabled}
           onClick={this.openModal}
         >
-          <img src={settingsIcon} alt="settings" className="TargetValueComparison__settingsIcon" />
+          <Icon type="settings" />
         </Button>
         <TargetValueModal
           open={this.state.modalOpen}

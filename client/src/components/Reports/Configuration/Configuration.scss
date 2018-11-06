@@ -1,0 +1,22 @@
+.Configuration {
+  .Popover {
+    .Icon {
+      margin-right: 0;
+    }
+  }
+
+  .content {
+    min-width: 300px;
+    padding: 0.5em;
+
+    .resetButton {
+      margin: 1em 0;
+      float: right;
+    }
+
+    .Switch {
+      transform: scale(0.75);
+      vertical-align: middle;
+    }
+  }
+}

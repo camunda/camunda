@@ -1,5 +1,5 @@
 import React from 'react';
-import {mount} from 'enzyme';
+import {shallow} from 'enzyme';
 
 import ReportControlPanel from './ReportControlPanel';
 import {extractProcessDefinitionName, reportConfig, getFlowNodeNames} from 'services';
@@ -7,36 +7,6 @@ import {extractProcessDefinitionName, reportConfig, getFlowNodeNames} from 'serv
 import {loadVariables} from './service';
 
 const flushPromises = () => new Promise(resolve => setImmediate(resolve));
-
-jest.mock('./filter', () => {
-  return {
-    Filter: () => 'Filter'
-  };
-});
-
-jest.mock('components', () => {
-  const Dropdown = props => <div {...props}>{props.children}</div>;
-  Dropdown.Option = props => <button {...props}>{props.children}</button>;
-  Dropdown.Submenu = ({onOpen, ...props}) => <div {...props} />;
-
-  return {
-    Dropdown,
-    Popover: ({title, children}) => (
-      <div>
-        {title} {children}
-      </div>
-    ),
-    Labeled: props => (
-      <div>
-        <label id={props.id}>{props.label}</label>
-        {props.children}
-      </div>
-    ),
-    ProcessDefinitionSelection: props => <div>ProcessDefinitionSelection</div>,
-    Button: props => <button {...props} />,
-    Input: props => <input {...props} />
-  };
-});
 
 jest.mock('services', () => {
   return {
@@ -62,14 +32,6 @@ jest.mock('services', () => {
   };
 });
 
-jest.mock('./ProcessPart', () => {
-  return {ProcessPart: () => <div>ProcessPart</div>};
-});
-
-jest.mock('./targetValue', () => {
-  return {TargetValueComparison: () => <div>TargetValueComparison</div>};
-});
-
 jest.mock('./service', () => {
   return {
     loadVariables: jest.fn().mockReturnValue([])
@@ -90,7 +52,7 @@ extractProcessDefinitionName.mockReturnValue('foo');
 const spy = jest.fn();
 
 it('should call the provided updateReport property function when a setting changes', () => {
-  const node = mount(<ReportControlPanel {...data} updateReport={spy} />);
+  const node = shallow(<ReportControlPanel {...data} updateReport={spy} />);
 
   node.instance().update('visualization', 'someTestVis');
 
@@ -99,7 +61,7 @@ it('should call the provided updateReport property function when a setting chang
 });
 
 it('should toggle target value view mode off when a setting changes', () => {
-  const node = mount(<ReportControlPanel {...data} updateReport={spy} />);
+  const node = shallow(<ReportControlPanel {...data} updateReport={spy} />);
 
   node.instance().update('visualization', 'someTestVis');
 
@@ -107,21 +69,21 @@ it('should toggle target value view mode off when a setting changes', () => {
 });
 
 it('should disable the groupBy and visualization Selects if view is not selected', () => {
-  const node = mount(<ReportControlPanel {...data} view="" />);
+  const node = shallow(<ReportControlPanel {...data} view="" />);
 
+  expect(node.find('.configDropdown').at(1)).toBeDisabled();
   expect(node.find('.configDropdown').at(2)).toBeDisabled();
-  expect(node.find('.configDropdown').at(3)).toBeDisabled();
 });
 
 it('should not disable the groupBy and visualization Selects if view is selected', () => {
-  const node = mount(<ReportControlPanel {...data} />);
+  const node = shallow(<ReportControlPanel {...data} />);
 
+  expect(node.find('.configDropdown').at(1)).not.toBeDisabled();
   expect(node.find('.configDropdown').at(2)).not.toBeDisabled();
-  expect(node.find('.configDropdown').at(3)).not.toBeDisabled();
 });
 
 it('should set or reset following selects according to the getNext function', () => {
-  const node = mount(<ReportControlPanel {...data} updateReport={spy} />);
+  const node = shallow(<ReportControlPanel {...data} updateReport={spy} />);
 
   reportConfig.getNext.mockReturnValueOnce('next');
   node.instance().update('view', 'foo');
@@ -135,36 +97,36 @@ it('should set or reset following selects according to the getNext function', ()
 
 it('should disable options, which would create wrong combination', () => {
   reportConfig.isAllowed.mockReturnValue(false);
-  const node = mount(<ReportControlPanel {...data} onChange={spy} />);
+  const node = shallow(<ReportControlPanel {...data} onChange={spy} />);
   node.setProps({view: 'baz'});
 
   expect(
     node
       .find('Dropdown')
       .at(1)
-      .find('button')
+      .find('DropdownOption')
   ).toBeDisabled();
 });
 
 it('should show process definition name', async () => {
   extractProcessDefinitionName.mockReturnValue('aName');
 
-  const node = await mount(<ReportControlPanel {...data} />);
+  const node = await shallow(<ReportControlPanel {...data} />);
 
-  expect(node.find('.processDefinitionPopover')).toIncludeText('aName');
+  expect(node.find('.processDefinitionPopover').prop('title')).toContain('aName');
 });
 
 it('should change process definition name if process definition is updated', async () => {
-  const node = await mount(<ReportControlPanel {...data} />);
+  const node = await shallow(<ReportControlPanel {...data} />);
 
   extractProcessDefinitionName.mockReturnValue('aName');
   node.setProps({processDefinitionKey: 'bar'});
 
-  expect(node.find('.processDefinitionPopover')).toIncludeText('aName');
+  expect(node.find('.processDefinitionPopover').prop('title')).toContain('aName');
 });
 
 it('should load the variables of the process', () => {
-  const node = mount(<ReportControlPanel {...data} />);
+  const node = shallow(<ReportControlPanel {...data} />);
 
   node.setProps({processDefinitionKey: 'bar', processDefinitionVersion: 'ALL'});
 
@@ -172,29 +134,33 @@ it('should load the variables of the process', () => {
 });
 
 it('should include variables in the groupby options', () => {
-  const node = mount(<ReportControlPanel {...data} />);
+  const node = shallow(<ReportControlPanel {...data} />);
 
   node.setState({variables: [{name: 'Var1'}, {name: 'Var2'}]});
 
-  expect(node).toIncludeText('Var1');
-  expect(node).toIncludeText('Var2');
+  const varDropdown = node.find('[label="Group by"] Submenu DropdownOption');
+
+  expect(varDropdown.at(0).prop('children')).toBe('Var1');
+  expect(varDropdown.at(1).prop('children')).toBe('Var2');
 });
 
 it('should only include variables that match the typeahead', () => {
-  const node = mount(<ReportControlPanel {...data} />);
+  const node = shallow(<ReportControlPanel {...data} />);
 
   node.setState({
     variables: [{name: 'Foo'}, {name: 'Bar'}, {name: 'Foobar'}],
     variableTypeaheadValue: 'foo'
   });
 
-  expect(node).toIncludeText('Foo');
-  expect(node).toIncludeText('Foobar');
-  expect(node).not.toIncludeText('Bar');
+  const varDropdown = node.find('[label="Group by"] Submenu DropdownOption');
+
+  expect(varDropdown).toHaveLength(2);
+  expect(varDropdown.at(0).prop('children')).toBe('Foo');
+  expect(varDropdown.at(1).prop('children')).toBe('Foobar');
 });
 
 it('should show pagination for many variables', () => {
-  const node = mount(<ReportControlPanel {...data} />);
+  const node = shallow(<ReportControlPanel {...data} />);
 
   node.setState({
     variables: [
@@ -208,31 +174,26 @@ it('should show pagination for many variables', () => {
     ]
   });
 
-  expect(node).toIncludeText('varA');
-  expect(node).toIncludeText('varB');
-  expect(node).toIncludeText('varC');
-  expect(node).toIncludeText('varD');
-  expect(node).toIncludeText('varE');
-  expect(node).not.toIncludeText('varF');
-  expect(node).not.toIncludeText('varG');
-  expect(node).toIncludeText('2 more items');
-  expect(node).toIncludeText('Load More');
+  const varDropdown = node.find('[label="Group by"] Submenu DropdownOption');
+
+  expect(varDropdown).toHaveLength(5);
+  expect(node.find('.loadMore')).toBePresent();
 });
 
 it('should show an "Always show tooltips" button for heatmaps', () => {
-  const node = mount(<ReportControlPanel {...data} visualization="heat" />);
+  const node = shallow(<ReportControlPanel {...data} visualization="heat" />);
 
   expect(node).toIncludeText('Always show tooltips');
 });
 
 it('should not show an "Always show tooltips" button for other visualizations', () => {
-  const node = mount(<ReportControlPanel {...data} visualization="something" />);
+  const node = shallow(<ReportControlPanel {...data} visualization="something" />);
 
   expect(node).not.toIncludeText('Always show tooltips');
 });
 
 it('should load the flownode names and hand them to the filter and process part', async () => {
-  const node = mount(
+  const node = shallow(
     <ReportControlPanel {...data} view={{entity: 'processInstance', property: 'duration'}} />
   );
 
@@ -245,7 +206,7 @@ it('should load the flownode names and hand them to the filter and process part'
 });
 
 it('should only display process part button if view is process instance duration', () => {
-  const node = mount(
+  const node = shallow(
     <ReportControlPanel {...data} view={{entity: 'processInstance', property: 'duration'}} />
   );
 
@@ -258,7 +219,7 @@ it('should only display process part button if view is process instance duration
 
 it('should not update the target value when changing from line chart to barchart or the reverse', () => {
   const spy = jest.fn();
-  const node = mount(
+  const node = shallow(
     <ReportControlPanel
       {...data}
       visualization="bar"
@@ -276,7 +237,7 @@ it('should not update the target value when changing from line chart to barchart
 
 it('should reset the target value when changing from line chart or barchart to something else', () => {
   const spy = jest.fn();
-  const node = mount(
+  const node = shallow(
     <ReportControlPanel
       {...data}
       visualization="bar"

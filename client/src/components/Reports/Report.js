@@ -423,6 +423,7 @@ export default withErrorHandling(
               {...data}
               reportResult={reportResult}
               updateReport={this.updateReport}
+              updateConfiguration={this.updateConfiguration}
             />
           )}
 

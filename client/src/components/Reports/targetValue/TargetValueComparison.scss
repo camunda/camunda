@@ -1,7 +1,9 @@
 .TargetValueComparison {
   display: inline;
-}
 
-.TargetValueComparison__settingsIcon {
-  vertical-align: bottom;
+  .Button {
+    .Icon {
+      margin-right: 0;
+    }
+  }
 }

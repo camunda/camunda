@@ -20,6 +20,7 @@ import {ReactComponent as left} from './left.svg';
 import {ReactComponent as up} from './up.svg';
 import {ReactComponent as right} from './right.svg';
 import {ReactComponent as down} from './down.svg';
+import {ReactComponent as settings} from './settings.svg';
 
 const icons = {
   autorefresh,
@@ -43,7 +44,8 @@ const icons = {
   left,
   up,
   right,
-  down
+  down,
+  settings
 };
 
 export default icons;
