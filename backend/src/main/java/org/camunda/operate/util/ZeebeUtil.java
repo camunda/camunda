@@ -12,6 +12,7 @@ import io.zeebe.client.api.events.WorkflowInstanceEvent;
 import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.subscription.JobHandler;
 import io.zeebe.client.api.subscription.JobWorker;
+import io.zeebe.client.cmd.ClientException;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
 
@@ -73,10 +74,24 @@ public abstract class ZeebeUtil {
     if (payload != null) {
       createWorkflowInstanceCommandStep3.payload(payload);
     }
-    final WorkflowInstanceEvent workflowInstanceEvent =
-      createWorkflowInstanceCommandStep3
-      .send().join();
-    logger.debug("Workflow instance created for workflow [{}]", bpmnProcessId);
+    WorkflowInstanceEvent workflowInstanceEvent = null;
+    try {
+      workflowInstanceEvent =
+        createWorkflowInstanceCommandStep3
+        .send().join();
+      logger.debug("Workflow instance created for workflow [{}]", bpmnProcessId);
+    } catch (ClientException ex) {
+      //retry once
+      try {
+        Thread.sleep(300L);
+      } catch (InterruptedException e) {
+        logger.error(String.format("Error occurred when starting workflow instance for bpmnProcessId [%s]: [%s]. Retrying...", bpmnProcessId, ex.getMessage()), ex);
+      }
+      workflowInstanceEvent =
+        createWorkflowInstanceCommandStep3
+          .send().join();
+      logger.debug("Workflow instance created for workflow [{}]", bpmnProcessId);
+    }
     return IdUtil.createId(workflowInstanceEvent.getWorkflowInstanceKey(), Protocol.decodePartitionId(workflowInstanceEvent.getWorkflowInstanceKey()));
   }
 
