@@ -27,11 +27,9 @@ public class KeyGenerator extends UnpackedObject {
   /*
    * Making sure these entities get unique keys on the same partition
    */
-  private static final int STEP_SIZE = 5;
+  private static final int STEP_SIZE = 2;
   private static final int WF_OFFSET = 1;
-  private static final int JOB_OFFSET = 2;
-  private static final int INCIDENT_OFFSET = 3;
-  private static final int MESSAGE_OFFSET = 4;
+  private static final int INCIDENT_OFFSET = 2;
 
   private final LongProperty nextKey;
   private final int stepSize;
@@ -88,22 +86,12 @@ public class KeyGenerator extends UnpackedObject {
     }
   }
 
-  public static KeyGenerator createWorkflowInstanceKeyGenerator(
+  public static KeyGenerator createKeyGenerator(
       int partitionId, final KeyStateController controller) {
     return new KeyGenerator(partitionId, WF_OFFSET, STEP_SIZE, controller);
   }
 
-  public static KeyGenerator createJobKeyGenerator(
-      int partitionId, final KeyStateController keyStateController) {
-    return new KeyGenerator(partitionId, JOB_OFFSET, STEP_SIZE, keyStateController);
-  }
-
   public static KeyGenerator createIncidentKeyGenerator(int partitionId) {
     return new KeyGenerator(partitionId, INCIDENT_OFFSET, STEP_SIZE);
-  }
-
-  public static KeyGenerator createMessageKeyGenerator(
-      int partitionId, KeyStateController keyStateController) {
-    return new KeyGenerator(partitionId, MESSAGE_OFFSET, STEP_SIZE, keyStateController);
   }
 }

@@ -17,7 +17,10 @@
  */
 package io.zeebe.broker.util;
 
+import io.zeebe.broker.logstreams.processor.KeyGenerator;
+import io.zeebe.broker.logstreams.processor.TypedEventStreamProcessorBuilder;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
+import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.transport.clientapi.BufferingServerOutput;
 import io.zeebe.broker.util.TestStreams.FluentLogWriter;
 import io.zeebe.logstreams.log.LogStream;
@@ -29,6 +32,7 @@ import io.zeebe.servicecontainer.testing.ServiceContainerRule;
 import io.zeebe.test.util.AutoCloseableRule;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import io.zeebe.util.sched.testing.ActorSchedulerRule;
+import java.util.function.BiFunction;
 import java.util.function.Function;
 import org.junit.rules.ExternalResource;
 import org.junit.rules.RuleChain;
@@ -85,9 +89,32 @@ public class StreamProcessorRule implements TestRule {
     return control;
   }
 
+  public StreamProcessorControl runStreamProcessor(
+      BiFunction<TypedEventStreamProcessorBuilder, ZeebeState, StreamProcessor> factory) {
+    final StreamProcessorControl control = initStreamProcessor(factory);
+    control.start();
+    return control;
+  }
+
   public StreamProcessorControl initStreamProcessor(
       Function<TypedStreamEnvironment, StreamProcessor> factory) {
     return streams.initStreamProcessor(STREAM_NAME, 0, () -> factory.apply(streamEnvironment));
+  }
+
+  public StreamProcessorControl initStreamProcessor(
+      BiFunction<TypedEventStreamProcessorBuilder, ZeebeState, StreamProcessor> factory) {
+    return streams.initStreamProcessor(
+        STREAM_NAME,
+        0,
+        () -> {
+          final ZeebeState zeebeState = new ZeebeState();
+          final TypedEventStreamProcessorBuilder processorBuilder =
+              streamEnvironment
+                  .newStreamProcessor()
+                  .keyGenerator(KeyGenerator.createKeyGenerator(0, zeebeState))
+                  .withStateController(zeebeState);
+          return factory.apply(processorBuilder, zeebeState);
+        });
   }
 
   public ControlledActorClock getClock() {

@@ -26,7 +26,6 @@ import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElement;
 import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
-import io.zeebe.broker.workflow.processor.timer.DueDateTimerChecker;
 import io.zeebe.broker.workflow.state.DeployedWorkflow;
 import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.broker.workflow.state.ElementInstanceState;
@@ -48,13 +47,10 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
   private ElementInstanceState elementInstanceState;
 
   public BpmnStepProcessor(
-      WorkflowEngineState state,
-      SubscriptionCommandSender subscriptionCommandSender,
-      DueDateTimerChecker timerChecker) {
+      WorkflowEngineState state, SubscriptionCommandSender subscriptionCommandSender) {
     this.state = state;
     this.workflowState = state.getWorkflowState();
-    this.stepHandlers =
-        new BpmnStepHandlers(subscriptionCommandSender, workflowState, timerChecker);
+    this.stepHandlers = new BpmnStepHandlers(subscriptionCommandSender, workflowState);
     this.stepGuards = new BpmnStepGuards();
     final EventOutput eventOutput = new EventOutput(state);
     this.context = new BpmnStepContext<>(eventOutput);

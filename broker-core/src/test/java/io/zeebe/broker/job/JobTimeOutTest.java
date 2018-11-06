@@ -122,7 +122,7 @@ public class JobTimeOutTest {
 
     apiRule.activateJobs(apiRule.getDefaultPartitionId(), jobType, timeout);
     client.receiveFirstJobEvent(ACTIVATED);
-    brokerRule.getClock().addTime(JobStreamProcessor.TIME_OUT_POLLING_INTERVAL);
+    brokerRule.getClock().addTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
 
     // when expired
     client.receiveFirstJobEvent(TIME_OUT);
@@ -153,7 +153,7 @@ public class JobTimeOutTest {
     final long timeout = 10L;
     apiRule.activateJobs(apiRule.getDefaultPartitionId(), jobType, timeout);
     client.receiveFirstJobEvent(ACTIVATED);
-    brokerRule.getClock().addTime(JobStreamProcessor.TIME_OUT_POLLING_INTERVAL);
+    brokerRule.getClock().addTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
 
     // when expired
     client.receiveFirstJobEvent(TIME_OUT);
@@ -196,7 +196,7 @@ public class JobTimeOutTest {
 
     // when
     client.receiveJobs().withIntent(ACTIVATED).limit(2).count();
-    brokerRule.getClock().addTime(JobStreamProcessor.TIME_OUT_POLLING_INTERVAL);
+    brokerRule.getClock().addTime(JobTimeoutTrigger.TIME_OUT_POLLING_INTERVAL);
     client.receiveFirstJobEvent(JobIntent.TIMED_OUT);
     apiRule.activateJobs(jobType);
 

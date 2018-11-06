@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.workflow.processor;
 
+import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
@@ -67,6 +68,10 @@ public class WorkflowInstanceCommandContext {
 
   public void setResponseWriter(TypedResponseWriter responseWriter) {
     this.responseWriter = responseWriter;
+  }
+
+  public KeyGenerator getKeyGenerator() {
+    return streamWriter.getKeyGenerator();
   }
 
   public void setStreamWriter(TypedStreamWriter writer) {

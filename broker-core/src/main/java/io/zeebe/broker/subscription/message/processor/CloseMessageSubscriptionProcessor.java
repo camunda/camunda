@@ -24,7 +24,7 @@ import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
-import io.zeebe.broker.subscription.message.state.MessageStateController;
+import io.zeebe.broker.subscription.message.state.MessageState;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import java.util.function.Consumer;
@@ -32,14 +32,14 @@ import java.util.function.Consumer;
 public class CloseMessageSubscriptionProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
 
-  private final MessageStateController messageStateController;
+  private final MessageState messageState;
   private final SubscriptionCommandSender commandSender;
 
   private MessageSubscriptionRecord subscriptionRecord;
 
   public CloseMessageSubscriptionProcessor(
-      MessageStateController messageStateController, SubscriptionCommandSender commandSender) {
-    this.messageStateController = messageStateController;
+      MessageState messageState, SubscriptionCommandSender commandSender) {
+    this.messageState = messageState;
     this.commandSender = commandSender;
   }
 
@@ -51,7 +51,7 @@ public class CloseMessageSubscriptionProcessor
       Consumer<SideEffectProducer> sideEffect) {
     subscriptionRecord = record.getValue();
 
-    final boolean removed = messageStateController.remove(subscriptionRecord);
+    final boolean removed = messageState.remove(subscriptionRecord);
     if (removed) {
       streamWriter.writeFollowUpEvent(
           record.getKey(), MessageSubscriptionIntent.CLOSED, subscriptionRecord);

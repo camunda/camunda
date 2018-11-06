@@ -40,7 +40,6 @@ import io.zeebe.broker.workflow.processor.servicetask.TerminateServiceTaskHandle
 import io.zeebe.broker.workflow.processor.subprocess.TerminateContainedElementsHandler;
 import io.zeebe.broker.workflow.processor.subprocess.TriggerStartEventHandler;
 import io.zeebe.broker.workflow.processor.timer.CreateTimerHandler;
-import io.zeebe.broker.workflow.processor.timer.DueDateTimerChecker;
 import io.zeebe.broker.workflow.processor.timer.TerminateTimerHandler;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
@@ -52,9 +51,7 @@ public class BpmnStepHandlers {
   private final Map<BpmnStep, BpmnStepHandler> stepHandlers = new EnumMap<>(BpmnStep.class);
 
   public BpmnStepHandlers(
-      SubscriptionCommandSender subscriptionCommandSender,
-      WorkflowState workflowState,
-      DueDateTimerChecker timerChecker) {
+      SubscriptionCommandSender subscriptionCommandSender, WorkflowState workflowState) {
 
     // activity
     stepHandlers.put(BpmnStep.CREATE_JOB, new CreateJobHandler());

@@ -38,10 +38,13 @@ import org.rocksdb.ColumnFamilyHandle;
 public class ElementInstanceState {
 
   private static final byte[] ELEMENT_PARENT_CHILD_KEY_FAMILY_NAME =
-      "elementParentChild".getBytes();
-  private static final byte[] ELEMENT_INSTANCE_KEY_FAMILY_NAME = "elementInstanceKey".getBytes();
-  private static final byte[] TOKEN_EVENTS_KEY_FAMILY_NAME = "tokenEvents".getBytes();
-  private static final byte[] TOKEN_PARENT_CHILD_KEY_FAMILY_NAME = "tokenParentChild".getBytes();
+      "elementInstanceStateElementParentChild".getBytes();
+  private static final byte[] ELEMENT_INSTANCE_KEY_FAMILY_NAME =
+      "elementInstanceStateElementInstanceKey".getBytes();
+  private static final byte[] TOKEN_EVENTS_KEY_FAMILY_NAME =
+      "elementInstanceStateTokenEvents".getBytes();
+  private static final byte[] TOKEN_PARENT_CHILD_KEY_FAMILY_NAME =
+      "elementInstanceStateTokenParentChild".getBytes();
   private static final byte[] EMPTY_VALUE = new byte[1];
 
   public static final byte[][] COLUMN_FAMILY_NAMES = {

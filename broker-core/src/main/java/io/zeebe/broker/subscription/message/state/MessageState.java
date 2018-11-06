@@ -21,10 +21,10 @@ import static io.zeebe.broker.workflow.state.PersistenceHelper.EXISTENCE;
 import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
 
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
-import io.zeebe.broker.util.KeyStateController;
 import io.zeebe.logstreams.rocksdb.ZbRocksDb;
 import io.zeebe.logstreams.rocksdb.ZbWriteBatch;
-import java.io.File;
+import io.zeebe.logstreams.state.StateController;
+import io.zeebe.logstreams.state.StateLifecycleListener;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -33,25 +33,26 @@ import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.rocksdb.ColumnFamilyHandle;
-import org.rocksdb.DBOptions;
-import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.WriteOptions;
 
-public class MessageStateController extends KeyStateController {
+public class MessageState implements StateLifecycleListener {
 
-  private static final byte[] MESSAGE_COLUMN_FAMILY_NAME = "messages".getBytes();
-  private static final byte[] DEADLINE_COLUMN_FAMILY_NAME = "deadlines".getBytes();
-  private static final byte[] MESSAGE_ID_COLUMN_FAMILY_NAME = "messageIds".getBytes();
+  private static final byte[] MESSAGE_KEY_COLUMN_FAMILY_NAME = "messageStateMessageKey".getBytes();
+  private static final byte[] MESSAGE_COLUMN_FAMILY_NAME = "messageStateMessages".getBytes();
+  private static final byte[] DEADLINE_COLUMN_FAMILY_NAME = "messageStateDeadlines".getBytes();
+  private static final byte[] MESSAGE_ID_COLUMN_FAMILY_NAME = "messageStateMessageIds".getBytes();
   private static final byte[] CORRELATED_MESSAGE_COLUMN_FAMILY_NAME =
       "correlatedMessages".getBytes();
 
   public static final byte[][] COLUMN_FAMILY_NAMES = {
+    MESSAGE_KEY_COLUMN_FAMILY_NAME,
     MESSAGE_COLUMN_FAMILY_NAME,
     DEADLINE_COLUMN_FAMILY_NAME,
     MESSAGE_ID_COLUMN_FAMILY_NAME,
     CORRELATED_MESSAGE_COLUMN_FAMILY_NAME
   };
+  public static final String SUB_SUFFIX = "Message";
 
   private final ExpandableArrayBuffer keyBuffer = new ExpandableArrayBuffer();
   private final ExpandableArrayBuffer valueBuffer = new ExpandableArrayBuffer();
@@ -62,7 +63,7 @@ public class MessageStateController extends KeyStateController {
   /**
    * <pre>message key -> message
    */
-  private ColumnFamilyHandle defaultColumnFamily;
+  private ColumnFamilyHandle messageKeyColumnFamily;
   /**
    * <pre>name | correlation key | key -> []
    *
@@ -89,41 +90,34 @@ public class MessageStateController extends KeyStateController {
 
   private ZbRocksDb db;
 
-  @Override
-  public RocksDB open(final File dbDirectory, final boolean reopen) throws Exception {
-    final List<byte[]> columnFamilyNames =
-        Stream.of(COLUMN_FAMILY_NAMES, SubscriptionState.COLUMN_FAMILY_NAMES)
-            .flatMap(Stream::of)
-            .collect(Collectors.toList());
-
-    final RocksDB rocksDB = super.open(dbDirectory, reopen, columnFamilyNames);
-
-    defaultColumnFamily = rocksDB.getDefaultColumnFamily();
-    messageColumnFamily = getColumnFamilyHandle(MESSAGE_COLUMN_FAMILY_NAME);
-    deadlineColumnFamily = getColumnFamilyHandle(DEADLINE_COLUMN_FAMILY_NAME);
-    messageIdColumnFamily = getColumnFamilyHandle(MESSAGE_ID_COLUMN_FAMILY_NAME);
-    correlatedMessageColumnFamily = getColumnFamilyHandle(CORRELATED_MESSAGE_COLUMN_FAMILY_NAME);
-
-    subscriptionState = new SubscriptionState<>(this, MessageSubscription.class);
-
-    return rocksDB;
+  public static List<byte[]> getColumnFamilyNames() {
+    return Stream.of(COLUMN_FAMILY_NAMES, SubscriptionState.getColumnFamilyNames("Message"))
+        .flatMap(Stream::of)
+        .collect(Collectors.toList());
   }
 
   @Override
-  protected RocksDB openDb(DBOptions dbOptions) throws RocksDBException {
-    db =
-        ZbRocksDb.open(
-            dbOptions, dbDirectory.getAbsolutePath(), columnFamilyDescriptors, columnFamilyHandles);
-    return db;
+  public void onOpened(StateController stateController) {
+    db = stateController.getDb();
+
+    messageKeyColumnFamily = stateController.getColumnFamilyHandle(MESSAGE_KEY_COLUMN_FAMILY_NAME);
+    messageColumnFamily = stateController.getColumnFamilyHandle(MESSAGE_COLUMN_FAMILY_NAME);
+    deadlineColumnFamily = stateController.getColumnFamilyHandle(DEADLINE_COLUMN_FAMILY_NAME);
+    messageIdColumnFamily = stateController.getColumnFamilyHandle(MESSAGE_ID_COLUMN_FAMILY_NAME);
+    correlatedMessageColumnFamily =
+        stateController.getColumnFamilyHandle(CORRELATED_MESSAGE_COLUMN_FAMILY_NAME);
+
+    subscriptionState =
+        new SubscriptionState<>(stateController, SUB_SUFFIX, MessageSubscription.class);
   }
 
   public void put(final Message message) {
-    try (final WriteOptions options = new WriteOptions();
-        final ZbWriteBatch batch = new ZbWriteBatch()) {
+    try (WriteOptions options = new WriteOptions();
+        ZbWriteBatch batch = new ZbWriteBatch()) {
 
       message.write(valueBuffer, 0);
       batch.put(
-          defaultColumnFamily, message.getKey(), valueBuffer.byteArray(), message.getLength());
+          messageKeyColumnFamily, message.getKey(), valueBuffer.byteArray(), message.getLength());
 
       int length = writeMessageKey(keyBuffer, message);
       batch.put(messageColumnFamily, keyBuffer.byteArray(), length, EXISTENCE, EXISTENCE.length);
@@ -252,7 +246,7 @@ public class MessageStateController extends KeyStateController {
   }
 
   private boolean readMessage(long key, Message message) {
-    final int readBytes = db.get(defaultColumnFamily, key, valueBuffer);
+    final int readBytes = db.get(messageKeyColumnFamily, key, valueBuffer);
 
     if (readBytes > 0) {
       message.wrap(valueBuffer, 0, readBytes);
@@ -296,10 +290,10 @@ public class MessageStateController extends KeyStateController {
       return;
     }
 
-    try (final WriteOptions options = new WriteOptions();
-        final ZbWriteBatch batch = new ZbWriteBatch()) {
+    try (WriteOptions options = new WriteOptions();
+        ZbWriteBatch batch = new ZbWriteBatch()) {
 
-      batch.delete(defaultColumnFamily, key);
+      batch.delete(messageKeyColumnFamily, key);
 
       int length = writeMessageKey(keyBuffer, message);
       batch.delete(messageColumnFamily, keyBuffer.byteArray(), length);

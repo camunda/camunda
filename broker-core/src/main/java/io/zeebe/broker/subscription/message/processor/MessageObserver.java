@@ -18,73 +18,33 @@
 package io.zeebe.broker.subscription.message.processor;
 
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
-import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
-import io.zeebe.broker.subscription.message.state.MessageStateController;
+import io.zeebe.broker.subscription.message.state.MessageState;
 import io.zeebe.logstreams.log.LogStream;
-import io.zeebe.logstreams.state.StateSnapshotController;
-import io.zeebe.logstreams.state.StateStorage;
-import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.intent.MessageIntent;
-import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import io.zeebe.util.sched.ActorControl;
 import java.time.Duration;
 
-public class MessageStreamProcessor implements StreamProcessorLifecycleAware {
+public class MessageObserver implements StreamProcessorLifecycleAware {
 
   public static final Duration MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL = Duration.ofSeconds(60);
 
   public static final Duration SUBSCRIPTION_TIMEOUT = Duration.ofSeconds(10);
   public static final Duration SUBSCRIPTION_CHECK_INTERVAL = Duration.ofSeconds(30);
 
-  private final MessageStateController messageStateController = new MessageStateController();
-
   private final TopologyManager topologyManager;
   private final SubscriptionCommandSender subscriptionCommandSender;
+  private final MessageState messageState;
 
-  public MessageStreamProcessor(
-      SubscriptionCommandSender subscriptionCommandSender, TopologyManager topologyManager) {
+  public MessageObserver(
+      MessageState messageState,
+      SubscriptionCommandSender subscriptionCommandSender,
+      TopologyManager topologyManager) {
     this.subscriptionCommandSender = subscriptionCommandSender;
     this.topologyManager = topologyManager;
-  }
-
-  public TypedStreamProcessor createStreamProcessors(TypedStreamEnvironment env) {
-
-    return env.newStreamProcessor()
-        .keyGenerator(
-            KeyGenerator.createMessageKeyGenerator(
-                env.getStream().getPartitionId(), messageStateController))
-        .onCommand(
-            ValueType.MESSAGE,
-            MessageIntent.PUBLISH,
-            new PublishMessageProcessor(messageStateController, subscriptionCommandSender))
-        .onCommand(
-            ValueType.MESSAGE,
-            MessageIntent.DELETE,
-            new DeleteMessageProcessor(messageStateController))
-        .onCommand(
-            ValueType.MESSAGE_SUBSCRIPTION,
-            MessageSubscriptionIntent.OPEN,
-            new OpenMessageSubscriptionProcessor(messageStateController, subscriptionCommandSender))
-        .onCommand(
-            ValueType.MESSAGE_SUBSCRIPTION,
-            MessageSubscriptionIntent.CORRELATE,
-            new CorrelateMessageSubscriptionProcessor(messageStateController))
-        .onCommand(
-            ValueType.MESSAGE_SUBSCRIPTION,
-            MessageSubscriptionIntent.CLOSE,
-            new CloseMessageSubscriptionProcessor(
-                messageStateController, subscriptionCommandSender))
-        .withStateController(messageStateController)
-        .withListener(this)
-        .build();
-  }
-
-  public StateSnapshotController createStateSnapshotController(final StateStorage stateStorage) {
-    return new StateSnapshotController(messageStateController, stateStorage);
+    this.messageState = messageState;
   }
 
   @Override
@@ -97,14 +57,14 @@ public class MessageStreamProcessor implements StreamProcessorLifecycleAware {
     subscriptionCommandSender.init(topologyManager, actor, logStream);
 
     final MessageTimeToLiveChecker timeToLiveChecker =
-        new MessageTimeToLiveChecker(env.buildCommandWriter(), messageStateController);
+        new MessageTimeToLiveChecker(env.buildCommandWriter(), messageState);
     streamProcessor
         .getActor()
         .runAtFixedRate(MESSAGE_TIME_TO_LIVE_CHECK_INTERVAL, timeToLiveChecker);
 
     final PendingMessageSubscriptionChecker pendingSubscriptionChecker =
         new PendingMessageSubscriptionChecker(
-            subscriptionCommandSender, messageStateController, SUBSCRIPTION_TIMEOUT.toMillis());
+            subscriptionCommandSender, messageState, SUBSCRIPTION_TIMEOUT.toMillis());
     actor.runAtFixedRate(SUBSCRIPTION_CHECK_INTERVAL, pendingSubscriptionChecker);
   }
 }

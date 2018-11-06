@@ -88,4 +88,20 @@ public class PersistenceHelper {
       return true;
     }
   }
+
+  public <T extends BufferReader> boolean readInto(
+      T valueReader, ColumnFamilyHandle handle, long key) {
+    final int valueLength = valueBuffer.capacity();
+    final int readBytes = rocksDbWrapper.get(handle, key, valueBuffer.byteArray(), 0, valueLength);
+
+    if (readBytes >= valueLength) {
+      valueBuffer.checkLimit(readBytes);
+      return readInto(valueReader, handle, key);
+    } else if (readBytes <= 0) {
+      return false;
+    } else {
+      valueReader.wrap(valueBuffer, 0, readBytes);
+      return true;
+    }
+  }
 }

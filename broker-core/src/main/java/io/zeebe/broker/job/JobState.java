@@ -21,13 +21,13 @@ import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
 import static io.zeebe.util.StringUtil.getBytes;
 import static io.zeebe.util.buffer.BufferUtil.contentsEqual;
 
-import io.zeebe.broker.util.KeyStateController;
 import io.zeebe.logstreams.rocksdb.ZbRocksDb;
 import io.zeebe.logstreams.rocksdb.ZbRocksDb.IteratorControl;
 import io.zeebe.logstreams.rocksdb.ZbWriteBatch;
+import io.zeebe.logstreams.state.StateController;
+import io.zeebe.logstreams.state.StateLifecycleListener;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.util.buffer.BufferWriter;
-import java.io.File;
 import java.util.List;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -36,23 +36,26 @@ import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.rocksdb.ColumnFamilyHandle;
-import org.rocksdb.DBOptions;
 import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.WriteOptions;
 
-public class JobStateController extends KeyStateController {
-  private static final byte[] STATES_COLUMN_FAMILY_NAME = getBytes("states");
-  private static final byte[] DEADLINES_COLUMN_FAMILY_NAME = getBytes("deadlines");
-  private static final byte[] ACTIVATABLE_COLUMN_FAMILY_NAME = getBytes("activatable");
+public class JobState implements StateLifecycleListener {
+  private static final byte[] JOBS_COLUMN_FAMILY_NAME = getBytes("jobStateJobs");
+  private static final byte[] STATES_COLUMN_FAMILY_NAME = getBytes("jobStateStates");
+  private static final byte[] DEADLINES_COLUMN_FAMILY_NAME = getBytes("jobStateDeadlines");
+  private static final byte[] ACTIVATABLE_COLUMN_FAMILY_NAME = getBytes("jobStateActivatable");
   public static final byte[][] COLUMN_FAMILY_NAMES = {
-    STATES_COLUMN_FAMILY_NAME, ACTIVATABLE_COLUMN_FAMILY_NAME, DEADLINES_COLUMN_FAMILY_NAME
+    JOBS_COLUMN_FAMILY_NAME,
+    STATES_COLUMN_FAMILY_NAME,
+    ACTIVATABLE_COLUMN_FAMILY_NAME,
+    DEADLINES_COLUMN_FAMILY_NAME
   };
 
   private static final DirectBuffer NULL = new UnsafeBuffer(new byte[] {0});
 
   // key => job record value
-  private ColumnFamilyHandle defaultColumnFamily;
+  private ColumnFamilyHandle jobsColumnFamily;
   // key => job state
   private ColumnFamilyHandle statesColumnFamily;
   // type => [key]
@@ -65,29 +68,21 @@ public class JobStateController extends KeyStateController {
 
   private ZbRocksDb db;
 
-  @Override
-  public RocksDB open(final File dbDirectory, final boolean reopen) throws Exception {
-    final List<byte[]> columnFamilyNames =
-        Stream.of(COLUMN_FAMILY_NAMES).collect(Collectors.toList());
-
-    final RocksDB rocksDB = super.open(dbDirectory, reopen, columnFamilyNames);
-    keyBuffer = new ExpandableArrayBuffer();
-    valueBuffer = new ExpandableArrayBuffer();
-
-    defaultColumnFamily = rocksDB.getDefaultColumnFamily();
-    statesColumnFamily = getColumnFamilyHandle(STATES_COLUMN_FAMILY_NAME);
-    activatableColumnFamily = getColumnFamilyHandle(ACTIVATABLE_COLUMN_FAMILY_NAME);
-    deadlinesColumnFamily = getColumnFamilyHandle(DEADLINES_COLUMN_FAMILY_NAME);
-
-    return rocksDB;
+  public static List<byte[]> getColumnFamilyNames() {
+    return Stream.of(COLUMN_FAMILY_NAMES).collect(Collectors.toList());
   }
 
   @Override
-  protected RocksDB openDb(DBOptions dbOptions) throws RocksDBException {
-    db =
-        ZbRocksDb.open(
-            dbOptions, dbDirectory.getAbsolutePath(), columnFamilyDescriptors, columnFamilyHandles);
-    return db;
+  public void onOpened(StateController stateController) {
+    keyBuffer = new ExpandableArrayBuffer();
+    valueBuffer = new ExpandableArrayBuffer();
+
+    db = stateController.getDb();
+
+    jobsColumnFamily = stateController.getColumnFamilyHandle(JOBS_COLUMN_FAMILY_NAME);
+    statesColumnFamily = stateController.getColumnFamilyHandle(STATES_COLUMN_FAMILY_NAME);
+    activatableColumnFamily = stateController.getColumnFamilyHandle(ACTIVATABLE_COLUMN_FAMILY_NAME);
+    deadlinesColumnFamily = stateController.getColumnFamilyHandle(DEADLINES_COLUMN_FAMILY_NAME);
   }
 
   public void create(final long key, final JobRecord record) {
@@ -99,7 +94,7 @@ public class JobStateController extends KeyStateController {
         ZbWriteBatch batch = new ZbWriteBatch()) {
       keyBuffer = getDefaultKey(key);
       valueBuffer = writeValue(record);
-      batch.put(defaultColumnFamily, keyBuffer, valueBuffer);
+      batch.put(jobsColumnFamily, keyBuffer, valueBuffer);
 
       valueBuffer = writeStatesValue(State.ACTIVATABLE);
       batch.put(statesColumnFamily, keyBuffer, valueBuffer);
@@ -124,7 +119,7 @@ public class JobStateController extends KeyStateController {
         ZbWriteBatch batch = new ZbWriteBatch()) {
       keyBuffer = getDefaultKey(key);
       valueBuffer = writeValue(record);
-      batch.put(defaultColumnFamily, keyBuffer, valueBuffer);
+      batch.put(jobsColumnFamily, keyBuffer, valueBuffer);
 
       valueBuffer = writeStatesValue(State.ACTIVATED);
       batch.put(statesColumnFamily, keyBuffer, valueBuffer);
@@ -151,7 +146,7 @@ public class JobStateController extends KeyStateController {
 
       keyBuffer = getDefaultKey(key);
       valueBuffer = writeValue(record);
-      batch.put(defaultColumnFamily, keyBuffer, valueBuffer);
+      batch.put(jobsColumnFamily, keyBuffer, valueBuffer);
 
       valueBuffer = writeStatesValue(State.ACTIVATABLE);
       batch.put(statesColumnFamily, keyBuffer, valueBuffer);
@@ -175,7 +170,7 @@ public class JobStateController extends KeyStateController {
     try (WriteOptions options = new WriteOptions();
         ZbWriteBatch batch = new ZbWriteBatch()) {
       keyBuffer = getDefaultKey(key);
-      batch.delete(defaultColumnFamily, keyBuffer);
+      batch.delete(jobsColumnFamily, keyBuffer);
 
       batch.delete(statesColumnFamily, keyBuffer);
 
@@ -200,7 +195,7 @@ public class JobStateController extends KeyStateController {
         ZbWriteBatch batch = new ZbWriteBatch()) {
       keyBuffer = getDefaultKey(key);
       valueBuffer = writeValue(updatedValue);
-      batch.put(defaultColumnFamily, keyBuffer, valueBuffer);
+      batch.put(jobsColumnFamily, keyBuffer, valueBuffer);
 
       final State newState = updatedValue.getRetries() > 0 ? State.ACTIVATABLE : State.FAILED;
 
@@ -230,7 +225,7 @@ public class JobStateController extends KeyStateController {
         ZbWriteBatch batch = new ZbWriteBatch()) {
       keyBuffer = getDefaultKey(key);
       valueBuffer = writeValue(updatedValue);
-      batch.put(defaultColumnFamily, keyBuffer, valueBuffer);
+      batch.put(jobsColumnFamily, keyBuffer, valueBuffer);
 
       valueBuffer = writeStatesValue(State.ACTIVATABLE);
       batch.put(statesColumnFamily, keyBuffer, valueBuffer);
@@ -260,7 +255,7 @@ public class JobStateController extends KeyStateController {
 
   public boolean exists(long jobKey) {
     final DirectBuffer dbKey = getDefaultKey(jobKey);
-    return db.exists(defaultColumnFamily, dbKey);
+    return db.exists(jobsColumnFamily, dbKey);
   }
 
   public boolean isInState(long key, State state) {
@@ -304,7 +299,7 @@ public class JobStateController extends KeyStateController {
   }
 
   private JobRecord getJob(final DirectBuffer keyBuffer) {
-    final int bytesRead = db.get(defaultColumnFamily, keyBuffer, valueBuffer);
+    final int bytesRead = db.get(jobsColumnFamily, keyBuffer, valueBuffer);
 
     if (bytesRead == RocksDB.NOT_FOUND) {
       return null;
@@ -371,6 +366,6 @@ public class JobStateController extends KeyStateController {
 
   @FunctionalInterface
   public interface IteratorConsumer {
-    void accept(final long key, final JobRecord record, final IteratorControl control);
+    void accept(long key, JobRecord record, IteratorControl control);
   }
 }

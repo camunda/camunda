@@ -17,11 +17,21 @@
  */
 package io.zeebe.broker.logstreams;
 
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.LEADER_PARTITION_GROUP_NAME;
+import static io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames.TOPOLOGY_MANAGER_SERVICE;
 import static io.zeebe.broker.logstreams.LogStreamServiceNames.STREAM_PROCESSOR_SERVICE_FACTORY;
+import static io.zeebe.broker.logstreams.LogStreamServiceNames.ZB_STREAM_PROCESSOR_SERVICE_NAME;
+import static io.zeebe.broker.transport.TransportServiceNames.CLIENT_API_SERVER_NAME;
+import static io.zeebe.broker.transport.TransportServiceNames.MANAGEMENT_API_CLIENT_NAME;
+import static io.zeebe.broker.transport.TransportServiceNames.SUBSCRIPTION_API_CLIENT_NAME;
+import static io.zeebe.broker.transport.TransportServiceNames.clientTransport;
+import static io.zeebe.broker.transport.TransportServiceNames.serverTransport;
 
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
 import io.zeebe.broker.system.Component;
 import io.zeebe.broker.system.SystemContext;
+import io.zeebe.broker.system.configuration.BrokerCfg;
+import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.util.DurationUtil;
 import java.time.Duration;
@@ -30,13 +40,38 @@ public class LogStreamsComponent implements Component {
   @Override
   public void init(SystemContext context) {
     final ServiceContainer serviceContainer = context.getServiceContainer();
+    final BrokerCfg brokerConfiguration = context.getBrokerConfiguration();
 
     final Duration snapshotPeriod =
-        DurationUtil.parse(context.getBrokerConfiguration().getData().getSnapshotPeriod());
+        DurationUtil.parse(brokerConfiguration.getData().getSnapshotPeriod());
     final StreamProcessorServiceFactory streamProcessorFactory =
         new StreamProcessorServiceFactory(serviceContainer, snapshotPeriod);
     serviceContainer
         .createService(STREAM_PROCESSOR_SERVICE_FACTORY, streamProcessorFactory)
+        .install();
+
+    final ZbStreamProcessorService streamProcessorService =
+        new ZbStreamProcessorService(brokerConfiguration.getCluster());
+    serviceContainer
+        .createService(ZB_STREAM_PROCESSOR_SERVICE_NAME, streamProcessorService)
+        .dependency(
+            serverTransport(CLIENT_API_SERVER_NAME),
+            streamProcessorService.getClientApiTransportInjector())
+        .dependency(
+            TransportServiceNames.CONTROL_MESSAGE_HANDLER_MANAGER,
+            streamProcessorService.getControlMessageHandlerManagerServiceInjector())
+        .dependency(TOPOLOGY_MANAGER_SERVICE, streamProcessorService.getTopologyManagerInjector())
+        .dependency(
+            clientTransport(MANAGEMENT_API_CLIENT_NAME),
+            streamProcessorService.getManagementApiClientInjector())
+        .dependency(
+            clientTransport(SUBSCRIPTION_API_CLIENT_NAME),
+            streamProcessorService.getSubscriptionApiClientInjector())
+        .dependency(
+            STREAM_PROCESSOR_SERVICE_FACTORY,
+            streamProcessorService.getStreamProcessorServiceFactoryInjector())
+        .groupReference(
+            LEADER_PARTITION_GROUP_NAME, streamProcessorService.getPartitionsGroupReference())
         .install();
   }
 }

@@ -17,8 +17,8 @@
  */
 package io.zeebe.broker.workflow.processor;
 
-import static io.zeebe.broker.subscription.message.processor.MessageStreamProcessor.SUBSCRIPTION_CHECK_INTERVAL;
-import static io.zeebe.broker.subscription.message.processor.MessageStreamProcessor.SUBSCRIPTION_TIMEOUT;
+import static io.zeebe.broker.subscription.message.processor.MessageObserver.SUBSCRIPTION_CHECK_INTERVAL;
+import static io.zeebe.broker.subscription.message.processor.MessageObserver.SUBSCRIPTION_TIMEOUT;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;

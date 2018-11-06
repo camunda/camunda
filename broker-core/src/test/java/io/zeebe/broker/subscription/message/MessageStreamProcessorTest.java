@@ -32,7 +32,8 @@ import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
-import io.zeebe.broker.subscription.message.processor.MessageStreamProcessor;
+import io.zeebe.broker.subscription.message.processor.MessageEventProcessors;
+import io.zeebe.broker.subscription.message.processor.MessageObserver;
 import io.zeebe.broker.util.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
@@ -71,11 +72,13 @@ public class MessageStreamProcessorTest {
 
     streamProcessor =
         rule.runStreamProcessor(
-            env -> {
-              final MessageStreamProcessor streamProcessor =
-                  new MessageStreamProcessor(mockSubscriptionCommandSender, mockTopologyManager);
-
-              return streamProcessor.createStreamProcessors(env);
+            (typedEventStreamProcessorBuilder, zeebeState) -> {
+              MessageEventProcessors.addMessageProcessors(
+                  typedEventStreamProcessorBuilder,
+                  zeebeState,
+                  mockSubscriptionCommandSender,
+                  mockTopologyManager);
+              return typedEventStreamProcessorBuilder.build();
             });
   }
 
@@ -125,8 +128,7 @@ public class MessageStreamProcessorTest {
     // when
     rule.getClock()
         .addTime(
-            MessageStreamProcessor.SUBSCRIPTION_CHECK_INTERVAL.plus(
-                MessageStreamProcessor.SUBSCRIPTION_TIMEOUT));
+            MessageObserver.SUBSCRIPTION_CHECK_INTERVAL.plus(MessageObserver.SUBSCRIPTION_TIMEOUT));
 
     streamProcessor.unblock();
 
@@ -156,8 +158,7 @@ public class MessageStreamProcessorTest {
     // when
     rule.getClock()
         .addTime(
-            MessageStreamProcessor.SUBSCRIPTION_CHECK_INTERVAL.plus(
-                MessageStreamProcessor.SUBSCRIPTION_TIMEOUT));
+            MessageObserver.SUBSCRIPTION_CHECK_INTERVAL.plus(MessageObserver.SUBSCRIPTION_TIMEOUT));
 
     streamProcessor.unblock();
 

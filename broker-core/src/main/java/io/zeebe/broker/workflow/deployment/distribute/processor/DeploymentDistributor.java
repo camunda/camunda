@@ -23,7 +23,7 @@ import io.zeebe.broker.clustering.base.topology.TopologyPartitionListenerImpl;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.management.deployment.PushDeploymentRequest;
 import io.zeebe.broker.system.management.deployment.PushDeploymentResponse;
-import io.zeebe.broker.workflow.deployment.distribute.processor.state.DeploymentsStateController;
+import io.zeebe.broker.workflow.deployment.distribute.processor.state.DeploymentsState;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.transport.ClientResponse;
 import io.zeebe.transport.ClientTransport;
@@ -53,7 +53,7 @@ public class DeploymentDistributor {
 
   private final transient Long2ObjectHashMap<ActorFuture<Void>> pendingDeploymentFutures =
       new Long2ObjectHashMap<>();
-  private final DeploymentsStateController deploymentsStateController;
+  private final DeploymentsState deploymentsState;
 
   private final IntArrayList partitionsToDistributeTo;
 
@@ -61,12 +61,12 @@ public class DeploymentDistributor {
       final ClusterCfg clusterCfg,
       final ClientTransport managementApi,
       final TopologyPartitionListenerImpl partitionListener,
-      final DeploymentsStateController deploymentsStateController,
+      final DeploymentsState deploymentsState,
       final ActorControl actor) {
     this.managementApi = managementApi;
     this.partitionListener = partitionListener;
     this.actor = actor;
-    this.deploymentsStateController = deploymentsStateController;
+    this.deploymentsState = deploymentsState;
     partitionsToDistributeTo = partitionsToDistributeTo(clusterCfg);
   }
 
@@ -85,7 +85,7 @@ public class DeploymentDistributor {
 
     final PendingDeploymentDistribution pendingDeploymentDistribution =
         new PendingDeploymentDistribution(buffer, position);
-    deploymentsStateController.putPendingDeployment(key, pendingDeploymentDistribution);
+    deploymentsState.putPendingDeployment(key, pendingDeploymentDistribution);
     pendingDeploymentFutures.put(key, pushedFuture);
 
     pushDeploymentToPartitions(key);
@@ -94,7 +94,7 @@ public class DeploymentDistributor {
   }
 
   public PendingDeploymentDistribution removePendingDeployment(final long key) {
-    return deploymentsStateController.removePendingDeployment(key);
+    return deploymentsState.removePendingDeployment(key);
   }
 
   private void pushDeploymentToPartitions(final long key) {
@@ -111,7 +111,7 @@ public class DeploymentDistributor {
     LOG.trace("Distribute deployment to other partitions.");
 
     final PendingDeploymentDistribution pendingDeploymentDistribution =
-        deploymentsStateController.getPendingDeployment(key);
+        deploymentsState.getPendingDeployment(key);
     final DirectBuffer directBuffer = pendingDeploymentDistribution.getDeployment();
     pendingDeploymentDistribution.setDistributionCount(partitionsToDistributeTo.size());
 
@@ -195,7 +195,7 @@ public class DeploymentDistributor {
     pushDeploymentResponse.wrap(response.getResponseBuffer());
     final long deploymentKey = pushDeploymentResponse.deploymentKey();
     final PendingDeploymentDistribution pendingDeploymentDistribution =
-        deploymentsStateController.getPendingDeployment(deploymentKey);
+        deploymentsState.getPendingDeployment(deploymentKey);
 
     final long remainingPartitions = pendingDeploymentDistribution.decrementCount();
     if (remainingPartitions == 0) {

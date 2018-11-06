@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.workflow.processor;
 
-import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.workflow.processor.instance.CancelWorkflowInstanceHandler;
 import io.zeebe.broker.workflow.processor.instance.CreateWorkflowInstanceHandler;
 import io.zeebe.broker.workflow.processor.instance.UpdatePayloadHandler;
@@ -28,14 +27,13 @@ import java.util.Map;
 
 public class WorkflowInstanceCommandHandlers {
 
-  private Map<WorkflowInstanceIntent, WorkflowInstanceCommandHandler> handlers = new HashMap<>();
+  private final Map<WorkflowInstanceIntent, WorkflowInstanceCommandHandler> handlers =
+      new HashMap<>();
 
-  public WorkflowInstanceCommandHandlers(KeyGenerator keyGenerator, WorkflowState workflowState) {
+  public WorkflowInstanceCommandHandlers(WorkflowState workflowState) {
     handlers.put(WorkflowInstanceIntent.CANCEL, new CancelWorkflowInstanceHandler());
     handlers.put(WorkflowInstanceIntent.UPDATE_PAYLOAD, new UpdatePayloadHandler(workflowState));
-    handlers.put(
-        WorkflowInstanceIntent.CREATE,
-        new CreateWorkflowInstanceHandler(keyGenerator, workflowState));
+    handlers.put(WorkflowInstanceIntent.CREATE, new CreateWorkflowInstanceHandler(workflowState));
   }
 
   public void handle(WorkflowInstanceCommandContext context) {

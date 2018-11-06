@@ -21,16 +21,16 @@ import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
-import io.zeebe.broker.subscription.message.state.MessageStateController;
+import io.zeebe.broker.subscription.message.state.MessageState;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.intent.MessageIntent;
 
 public class DeleteMessageProcessor implements TypedRecordProcessor<MessageRecord> {
 
-  private final MessageStateController messageStateController;
+  private final MessageState messageState;
 
-  public DeleteMessageProcessor(MessageStateController messageStateController) {
-    this.messageStateController = messageStateController;
+  public DeleteMessageProcessor(MessageState messageState) {
+    this.messageState = messageState;
   }
 
   @Override
@@ -41,6 +41,6 @@ public class DeleteMessageProcessor implements TypedRecordProcessor<MessageRecor
 
     streamWriter.writeFollowUpEvent(record.getKey(), MessageIntent.DELETED, record.getValue());
 
-    messageStateController.remove(record.getKey());
+    messageState.remove(record.getKey());
   }
 }

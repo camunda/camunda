@@ -25,7 +25,7 @@ import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.state.Message;
-import io.zeebe.broker.subscription.message.state.MessageStateController;
+import io.zeebe.broker.subscription.message.state.MessageState;
 import io.zeebe.broker.subscription.message.state.MessageSubscription;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
@@ -37,7 +37,7 @@ import org.agrona.concurrent.UnsafeBuffer;
 public class OpenMessageSubscriptionProcessor
     implements TypedRecordProcessor<MessageSubscriptionRecord> {
 
-  private final MessageStateController messageStateController;
+  private final MessageState messageState;
   private final SubscriptionCommandSender commandSender;
 
   private final DirectBuffer messagePayload = new UnsafeBuffer(0, 0);
@@ -47,8 +47,8 @@ public class OpenMessageSubscriptionProcessor
   private MessageSubscription subscription;
 
   public OpenMessageSubscriptionProcessor(
-      MessageStateController messageStateController, SubscriptionCommandSender commandSender) {
-    this.messageStateController = messageStateController;
+      MessageState messageState, SubscriptionCommandSender commandSender) {
+    this.messageState = messageState;
     this.commandSender = commandSender;
   }
 
@@ -68,7 +68,7 @@ public class OpenMessageSubscriptionProcessor
             subscriptionRecord.getMessageName(),
             subscriptionRecord.getCorrelationKey());
 
-    if (messageStateController.exist(subscription)) {
+    if (messageState.exist(subscription)) {
       sideEffect.accept(this::sendAcknowledgeCommand);
 
       streamWriter.writeRejection(
@@ -84,12 +84,12 @@ public class OpenMessageSubscriptionProcessor
 
     sideEffect.accept(this::sendAcknowledgeCommand);
 
-    messageStateController.visitMessages(
+    messageState.visitMessages(
         subscriptionRecord.getMessageName(),
         subscriptionRecord.getCorrelationKey(),
         this::correlateMessage);
 
-    messageStateController.put(subscription);
+    messageState.put(subscription);
 
     streamWriter.writeFollowUpEvent(
         record.getKey(), MessageSubscriptionIntent.OPENED, subscriptionRecord);
@@ -99,7 +99,7 @@ public class OpenMessageSubscriptionProcessor
     // correlate the first message which is not correlated to the workflow instance yet
 
     final boolean isCorrelatedBefore =
-        messageStateController.existMessageCorrelation(
+        messageState.existMessageCorrelation(
             message.getKey(), subscriptionRecord.getWorkflowInstanceKey());
 
     if (!isCorrelatedBefore) {
@@ -111,7 +111,7 @@ public class OpenMessageSubscriptionProcessor
       subscription.setMessagePayload(message.getPayload());
       subscription.setCommandSentTime(ActorClock.currentTimeMillis());
 
-      messageStateController.putMessageCorrelation(
+      messageState.putMessageCorrelation(
           message.getKey(), subscriptionRecord.getWorkflowInstanceKey());
     }
     return isCorrelatedBefore;

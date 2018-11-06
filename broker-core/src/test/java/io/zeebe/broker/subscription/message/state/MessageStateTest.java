@@ -20,6 +20,7 @@ package io.zeebe.broker.subscription.message.state;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
+import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.util.ArrayList;
@@ -31,21 +32,23 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
-public class MessageStateControllerTest {
+public class MessageStateTest {
 
   @Rule public TemporaryFolder folder = new TemporaryFolder();
 
-  private MessageStateController stateController;
+  private MessageState stateController;
+  private ZeebeState zeebeState;
 
   @Before
   public void setUp() throws Exception {
-    stateController = new MessageStateController();
-    stateController.open(folder.newFolder("rocksdb"), false);
+    zeebeState = new ZeebeState();
+    zeebeState.open(folder.newFolder("rocksdb"), false);
+    stateController = zeebeState.getMessageState();
   }
 
   @After
   public void close() {
-    stateController.close();
+    zeebeState.close();
   }
 
   @Test

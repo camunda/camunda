@@ -19,7 +19,8 @@ package io.zeebe.broker.workflow.state;
 
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.subscription.message.state.SubscriptionState;
-import io.zeebe.broker.util.KeyStateController;
+import io.zeebe.logstreams.state.StateController;
+import io.zeebe.logstreams.state.StateLifecycleListener;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import java.io.File;
 import java.util.Collection;
@@ -28,16 +29,29 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import org.agrona.DirectBuffer;
 import org.rocksdb.ColumnFamilyHandle;
-import org.rocksdb.RocksDB;
 
-public class WorkflowState extends KeyStateController {
-  private static final byte[] WORKFLOW_KEY_FAMILY_NAME = "workflowKey".getBytes();
-  private static final byte[] WORKFLOW_VERSION_FAMILY_NAME = "workflowVersion".getBytes();
+public class WorkflowState implements StateLifecycleListener {
+
+  private static final byte[] WORKFLOW_KEY_FAMILY_NAME = "sorkflowStateWorkflowKey".getBytes();
+  private static final byte[] WORKFLOW_VERSION_FAMILY_NAME =
+      "workflowStateWorkflowVersion".getBytes();
   public static final byte[][] COLUMN_FAMILY_NAMES = {
     WORKFLOW_KEY_FAMILY_NAME, WORKFLOW_VERSION_FAMILY_NAME
   };
 
   private static final byte[] LATEST_WORKFLOW_KEY = "latestWorkflowKey".getBytes();
+  public static final String SUB_SUFFIX = "Workflow";
+
+  public static List<byte[]> getColumnFamilyNames() {
+    return Stream.of(
+            COLUMN_FAMILY_NAMES,
+            WorkflowPersistenceCache.COLUMN_FAMILY_NAMES,
+            ElementInstanceState.COLUMN_FAMILY_NAMES,
+            SubscriptionState.getColumnFamilyNames("Workflow"),
+            TimerInstanceState.COLUMN_FAMILY_NAMES)
+        .flatMap(Stream::of)
+        .collect(Collectors.toList());
+  }
 
   private ColumnFamilyHandle workflowKeyHandle;
   private ColumnFamilyHandle workflowVersionHandle;
@@ -48,29 +62,16 @@ public class WorkflowState extends KeyStateController {
   private ElementInstanceState elementInstanceState;
 
   @Override
-  public RocksDB open(final File dbDirectory, final boolean reopen) throws Exception {
-    final List<byte[]> columnFamilyNames =
-        Stream.of(
-                COLUMN_FAMILY_NAMES,
-                WorkflowPersistenceCache.COLUMN_FAMILY_NAMES,
-                ElementInstanceState.COLUMN_FAMILY_NAMES,
-                SubscriptionState.COLUMN_FAMILY_NAMES,
-                TimerInstanceState.COLUMN_FAMILY_NAMES)
-            .flatMap(Stream::of)
-            .collect(Collectors.toList());
+  public void onOpened(StateController stateController) {
+    workflowKeyHandle = stateController.getColumnFamilyHandle(WORKFLOW_KEY_FAMILY_NAME);
+    workflowVersionHandle = stateController.getColumnFamilyHandle(WORKFLOW_VERSION_FAMILY_NAME);
 
-    final RocksDB rocksDB = super.open(dbDirectory, reopen, columnFamilyNames);
-
-    workflowKeyHandle = this.getColumnFamilyHandle(WORKFLOW_KEY_FAMILY_NAME);
-    workflowVersionHandle = this.getColumnFamilyHandle(WORKFLOW_VERSION_FAMILY_NAME);
-
-    nextValueManager = new NextValueManager(this);
-    workflowPersistenceCache = new WorkflowPersistenceCache(this);
-    subscriptionState = new SubscriptionState<>(this, WorkflowSubscription.class);
-    timerInstanceState = new TimerInstanceState(this);
-    elementInstanceState = new ElementInstanceState(this);
-
-    return rocksDB;
+    nextValueManager = new NextValueManager(stateController);
+    workflowPersistenceCache = new WorkflowPersistenceCache(stateController);
+    subscriptionState =
+        new SubscriptionState<>(stateController, SUB_SUFFIX, WorkflowSubscription.class);
+    timerInstanceState = new TimerInstanceState(stateController);
+    elementInstanceState = new ElementInstanceState(stateController);
   }
 
   public long getNextWorkflowKey() {
