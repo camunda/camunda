@@ -17,15 +17,11 @@
  */
 package io.zeebe.broker.incident;
 
-import static io.zeebe.broker.incident.IncidentAssert.assertIOMappingIncidentWithNoData;
-import static io.zeebe.broker.incident.IncidentAssert.assertIncidentContainErrorDetails;
-import static io.zeebe.broker.incident.IncidentAssert.assertIncidentRecordValue;
+import static io.zeebe.broker.incident.IncidentAssert.*;
 import static io.zeebe.broker.test.MsgPackConstants.MSGPACK_PAYLOAD;
 import static io.zeebe.broker.test.MsgPackConstants.NODE_STRING_PATH;
 import static io.zeebe.broker.workflow.WorkflowAssert.assertWorkflowInstancePayload;
-import static io.zeebe.protocol.intent.IncidentIntent.CREATED;
-import static io.zeebe.protocol.intent.IncidentIntent.RESOLVE;
-import static io.zeebe.protocol.intent.IncidentIntent.RESOLVED;
+import static io.zeebe.protocol.intent.IncidentIntent.*;
 import static io.zeebe.protocol.intent.WorkflowInstanceIntent.ELEMENT_COMPLETED;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -343,7 +339,8 @@ public class MappingIncidentTest {
     testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 
     // when
-    testClient.completeJobOfType("external", MsgPackUtil.asMsgPack("{'testAttr':'test'}"));
+    testClient.completeJobOfType(
+        "external", MsgPackUtil.asMsgPackReturnArray("{'testAttr':'test'}"));
     testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     // then incident is created
@@ -370,7 +367,8 @@ public class MappingIncidentTest {
     final long workflowInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
 
     // when
-    testClient.completeJobOfType("external", MsgPackUtil.asMsgPack("{'testAttr':'test'}"));
+    testClient.completeJobOfType(
+        "external", MsgPackUtil.asMsgPackReturnArray("{'testAttr':'test'}"));
     testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.ELEMENT_ACTIVATED);
 
     // then incident is created

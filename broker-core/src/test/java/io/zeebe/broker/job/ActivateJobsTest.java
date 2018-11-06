@@ -22,9 +22,7 @@ import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_PAYLOAD;
 import static io.zeebe.test.broker.protocol.clientapi.PartitionTestClient.PROP_WORKFLOW_BPMN_PROCESS_ID;
 import static io.zeebe.test.util.TestUtil.waitUntil;
-import static io.zeebe.test.util.record.RecordingExporter.jobBatchRecords;
-import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
-import static io.zeebe.test.util.record.RecordingExporter.workflowInstanceRecords;
+import static io.zeebe.test.util.record.RecordingExporter.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.entry;
 
@@ -67,7 +65,7 @@ public class ActivateJobsTest {
 
   public static final String JOB_TYPE = "theJobType";
   public static final String JSON_PAYLOAD = "{\"foo\": \"bar\"}";
-  public static final byte[] PAYLOAD_MSG_PACK = MsgPackUtil.asMsgPack(JSON_PAYLOAD);
+  public static final byte[] PAYLOAD_MSG_PACK = MsgPackUtil.asMsgPackReturnArray(JSON_PAYLOAD);
   public static final String PROCESS_ID = "testProcess";
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
@@ -206,8 +204,9 @@ public class ActivateJobsTest {
             entry("retries", 3L),
             entry("worker", worker),
             entry("deadline", deadline.toEpochMilli()),
-            entry("type", JOB_TYPE),
-            entry("payload", PAYLOAD_MSG_PACK));
+            entry("type", JOB_TYPE));
+
+    MsgPackUtil.assertEquality((byte[]) jobs.get(0).get("payload"), JSON_PAYLOAD);
 
     final Record<JobRecordValue> jobRecord = jobRecords(JobIntent.ACTIVATED).getFirst();
     assertThat(jobRecord).hasKey(expectedJobKey);
@@ -356,6 +355,7 @@ public class ActivateJobsTest {
 
     // when
     final Job job = activateJobs(jobType, worker, timeout, 1).get(0);
+
     // then
     final Map<String, Object> value = job.getValue();
     assertThat(value)
@@ -363,8 +363,9 @@ public class ActivateJobsTest {
             entry("type", jobType),
             entry("worker", worker),
             entry("retries", 3L),
-            entry("deadline", deadline.toEpochMilli()),
-            entry("payload", PAYLOAD_MSG_PACK));
+            entry("deadline", deadline.toEpochMilli()));
+
+    MsgPackUtil.assertEquality((byte[]) value.get("payload"), "{'foo': 'bar'}");
 
     final Map<String, Object> headers = (Map<String, Object>) value.get("headers");
     final Headers jobRecordHeaders = jobRecord.getValue().getHeaders();

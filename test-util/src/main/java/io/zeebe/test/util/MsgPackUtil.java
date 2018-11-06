@@ -15,22 +15,23 @@
  */
 package io.zeebe.test.util;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import io.zeebe.test.util.collection.MapBuilder;
-import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Map;
-import java.util.function.Consumer;
 import org.agrona.DirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.msgpack.core.MessageBufferPacker;
 import org.msgpack.core.MessagePack;
 import org.msgpack.jackson.dataformat.MessagePackFactory;
+
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Map;
+import java.util.function.Consumer;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class MsgPackUtil {
 
@@ -120,11 +121,15 @@ public class MsgPackUtil {
     assertThat(msgPackNode).isEqualTo(jsonNode);
   }
 
-  public static byte[] asMsgPack(String json) {
+  public static byte[] asMsgPackReturnArray(String json) {
     try {
       return MSGPACK_MAPPER.writeValueAsBytes(JsonUtil.JSON_MAPPER.readTree(json));
     } catch (IOException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  public static DirectBuffer asMsgPack(String json) {
+    return new UnsafeBuffer(asMsgPackReturnArray(json));
   }
 }

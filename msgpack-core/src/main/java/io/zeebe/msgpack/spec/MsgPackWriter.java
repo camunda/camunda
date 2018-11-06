@@ -103,14 +103,33 @@ public class MsgPackWriter {
       buffer.putShort(offset, (short) size, MsgPackCodes.BYTE_ORDER);
       offset += SIZE_OF_SHORT;
     } else {
-      buffer.putByte(offset, MAP32);
-      ++offset;
-
-      buffer.putInt(offset, size, MsgPackCodes.BYTE_ORDER);
-      offset += SIZE_OF_INT;
+      offset = writeMap32Header(offset, size);
     }
 
     return this;
+  }
+
+  private int writeMap32Header(int offset, int size) {
+    buffer.putByte(offset, MAP32);
+    ++offset;
+
+    buffer.putInt(offset, size, MsgPackCodes.BYTE_ORDER);
+    offset += SIZE_OF_INT;
+
+    return offset;
+  }
+
+  /**
+   * use this method if the map size is not known upfront. Record the offset before calling this
+   * method and then use {@link #writeReservedMapHeader(int, int)} later.
+   */
+  public void reserveMapHeader() {
+    offset = writeMap32Header(offset, 0);
+  }
+
+  /** does not change the writer's offset */
+  public void writeReservedMapHeader(int offset, int size) {
+    writeMap32Header(offset, size);
   }
 
   public MsgPackWriter writeRaw(DirectBuffer buffer) {

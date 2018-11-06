@@ -37,6 +37,10 @@ public enum ZbColumnFamilies {
   TOKEN_EVENTS,
   TOKEN_PARENT_CHILD,
 
+  // variable state
+  ELEMENT_INSTANCE_CHILD_PARENT,
+  VARIABLES,
+
   // timer state
   TIMERS,
   TIMER_DUE_DATES,

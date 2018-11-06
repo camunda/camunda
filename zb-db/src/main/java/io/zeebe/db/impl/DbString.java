@@ -65,4 +65,8 @@ public class DbString implements DbKey, DbValue {
   public String toString() {
     return BufferUtil.bufferAsString(bytes);
   }
+
+  public DirectBuffer getBuffer() {
+    return bytes;
+  }
 }

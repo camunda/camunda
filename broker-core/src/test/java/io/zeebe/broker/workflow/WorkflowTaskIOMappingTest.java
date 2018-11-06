@@ -17,14 +17,7 @@
  */
 package io.zeebe.broker.workflow;
 
-import static io.zeebe.broker.test.MsgPackConstants.JSON_DOCUMENT;
-import static io.zeebe.broker.test.MsgPackConstants.MERGED_OTHER_WITH_JSON_DOCUMENT;
-import static io.zeebe.broker.test.MsgPackConstants.MSGPACK_PAYLOAD;
-import static io.zeebe.broker.test.MsgPackConstants.NODE_JSON_OBJECT_PATH;
-import static io.zeebe.broker.test.MsgPackConstants.NODE_ROOT_PATH;
-import static io.zeebe.broker.test.MsgPackConstants.NODE_STRING_PATH;
-import static io.zeebe.broker.test.MsgPackConstants.OTHER_DOCUMENT;
-import static io.zeebe.broker.test.MsgPackConstants.OTHER_PAYLOAD;
+import static io.zeebe.broker.test.MsgPackConstants.*;
 import static io.zeebe.broker.workflow.JobAssert.assertJobPayload;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -340,7 +333,7 @@ public class WorkflowTaskIOMappingTest {
     // when
     testClient.completeJobOfWorkflowInstance("external", firstWFInstanceKey, MSGPACK_PAYLOAD);
     testClient.completeJobOfWorkflowInstance(
-        "external", secondWFInstanceKey, MsgPackUtil.asMsgPack("{'foo':'bar'}"));
+        "external", secondWFInstanceKey, MsgPackUtil.asMsgPackReturnArray("{'foo':'bar'}"));
 
     // then first event payload is expected as
     assertRecordPayload(
@@ -369,12 +362,12 @@ public class WorkflowTaskIOMappingTest {
     final long firstWFInstanceKey = testClient.createWorkflowInstance("process", MSGPACK_PAYLOAD);
     final long secondWFInstanceKey =
         testClient.createWorkflowInstance(
-            "process", MsgPackUtil.asMsgPack("{'otherPayload':'value'}"));
+            "process", MsgPackUtil.asMsgPackReturnArray("{'otherPayload':'value'}"));
 
     // when
     testClient.completeJobOfWorkflowInstance("external", firstWFInstanceKey, MSGPACK_PAYLOAD);
     testClient.completeJobOfWorkflowInstance(
-        "external", secondWFInstanceKey, MsgPackUtil.asMsgPack("{'foo':'bar'}"));
+        "external", secondWFInstanceKey, MsgPackUtil.asMsgPackReturnArray("{'foo':'bar'}"));
 
     // then first event payload is expected as
     assertRecordPayload(
@@ -478,7 +471,7 @@ public class WorkflowTaskIOMappingTest {
     assertRecordPayload(JobIntent.CREATE, "{'testAttr':'test'}");
 
     // when
-    testClient.completeJobOfType("external", MsgPackUtil.asMsgPack("{'testAttr':123}"));
+    testClient.completeJobOfType("external", MsgPackUtil.asMsgPackReturnArray("{'testAttr':123}"));
 
     // then
     assertRecordPayload(

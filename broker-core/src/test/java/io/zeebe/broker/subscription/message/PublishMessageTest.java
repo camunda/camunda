@@ -19,9 +19,7 @@ package io.zeebe.broker.subscription.message;
 
 import static io.zeebe.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
 import static io.zeebe.protocol.intent.MessageIntent.PUBLISH;
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.assertj.core.api.Assertions.entry;
+import static org.assertj.core.api.Assertions.*;
 
 import io.zeebe.broker.subscription.message.processor.MessageObserver;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
@@ -83,7 +81,7 @@ public class PublishMessageTest {
     final Record<MessageRecordValue> publishedEvent =
         testClient.receiveFirstMessageEvent(MessageIntent.PUBLISHED);
     assertThat(publishedEvent.getKey()).isEqualTo(response.getKey());
-    assertThat(MsgPackUtil.asMsgPack(publishedEvent.getValue().getPayload()))
+    assertThat(MsgPackUtil.asMsgPackReturnArray(publishedEvent.getValue().getPayload()))
         .isEqualTo(EMTPY_OBJECT);
 
     Assertions.assertThat(publishedEvent.getValue())
@@ -281,7 +279,8 @@ public class PublishMessageTest {
     final Record<MessageRecordValue> deletedEvent =
         testClient.receiveFirstMessageEvent(MessageIntent.DELETED);
     assertThat(deletedEvent.getKey()).isEqualTo(response.getKey());
-    assertThat(MsgPackUtil.asMsgPack(deletedEvent.getValue().getPayload())).isEqualTo(EMTPY_OBJECT);
+    assertThat(MsgPackUtil.asMsgPackReturnArray(deletedEvent.getValue().getPayload()))
+        .isEqualTo(EMTPY_OBJECT);
 
     Assertions.assertThat(deletedEvent.getValue())
         .hasName("order canceled")
@@ -312,7 +311,8 @@ public class PublishMessageTest {
         testClient.receiveFirstMessageEvent(MessageIntent.DELETED);
 
     assertThat(deletedEvent.getKey()).isEqualTo(response.getKey());
-    assertThat(MsgPackUtil.asMsgPack(deletedEvent.getValue().getPayload())).isEqualTo(EMTPY_OBJECT);
+    assertThat(MsgPackUtil.asMsgPackReturnArray(deletedEvent.getValue().getPayload()))
+        .isEqualTo(EMTPY_OBJECT);
 
     Assertions.assertThat(deletedEvent.getValue())
         .hasName("order canceled")

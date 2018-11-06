@@ -15,43 +15,20 @@
  */
 package io.zeebe.test.broker.protocol.clientapi;
 
-import static io.zeebe.protocol.intent.JobIntent.ACTIVATED;
-import static io.zeebe.util.buffer.BufferUtil.bufferAsArray;
-import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
-import static org.assertj.core.api.Assertions.assertThat;
-
 import io.zeebe.exporter.record.Record;
-import io.zeebe.exporter.record.value.DeploymentRecordValue;
-import io.zeebe.exporter.record.value.IncidentRecordValue;
-import io.zeebe.exporter.record.value.JobRecordValue;
-import io.zeebe.exporter.record.value.MessageRecordValue;
-import io.zeebe.exporter.record.value.TimerRecordValue;
-import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
+import io.zeebe.exporter.record.value.*;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ServiceTaskBuilder;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
-import io.zeebe.protocol.intent.DeploymentIntent;
-import io.zeebe.protocol.intent.IncidentIntent;
-import io.zeebe.protocol.intent.Intent;
-import io.zeebe.protocol.intent.JobIntent;
-import io.zeebe.protocol.intent.MessageIntent;
-import io.zeebe.protocol.intent.TimerIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.intent.*;
 import io.zeebe.test.util.MsgPackUtil;
-import io.zeebe.test.util.record.DeploymentRecordStream;
-import io.zeebe.test.util.record.IncidentRecordStream;
-import io.zeebe.test.util.record.JobBatchRecordStream;
-import io.zeebe.test.util.record.JobRecordStream;
-import io.zeebe.test.util.record.MessageRecordStream;
-import io.zeebe.test.util.record.MessageSubscriptionRecordStream;
-import io.zeebe.test.util.record.RecordingExporter;
-import io.zeebe.test.util.record.TimerRecordStream;
-import io.zeebe.test.util.record.WorkflowInstanceRecordStream;
-import io.zeebe.test.util.record.WorkflowInstanceSubscriptionRecordStream;
+import io.zeebe.test.util.record.*;
 import io.zeebe.util.buffer.BufferUtil;
+import org.agrona.DirectBuffer;
+
 import java.io.ByteArrayOutputStream;
 import java.time.Duration;
 import java.util.Collections;
@@ -61,7 +38,11 @@ import java.util.Map;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import org.agrona.DirectBuffer;
+
+import static io.zeebe.protocol.intent.JobIntent.ACTIVATED;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsArray;
+import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
+import static org.assertj.core.api.Assertions.assertThat;
 
 public class PartitionTestClient {
   // workflow related properties
@@ -150,7 +131,7 @@ public class PartitionTestClient {
   }
 
   public long createWorkflowInstance(final String bpmnProcessId, final String jsonPayload) {
-    return createWorkflowInstance(bpmnProcessId, MsgPackUtil.asMsgPack(jsonPayload));
+    return createWorkflowInstance(bpmnProcessId, MsgPackUtil.asMsgPackReturnArray(jsonPayload));
   }
 
   public long createWorkflowInstance(final String bpmnProcessId, final DirectBuffer payload) {
@@ -187,7 +168,7 @@ public class PartitionTestClient {
   }
 
   public void updatePayload(final long elementInstanceKey, final String jsonPayload) {
-    updatePayload(elementInstanceKey, MsgPackUtil.asMsgPack(jsonPayload));
+    updatePayload(elementInstanceKey, MsgPackUtil.asMsgPackReturnArray(jsonPayload));
   }
 
   public void updatePayload(final long elementInstanceKey, final byte[] payload) {
@@ -239,7 +220,7 @@ public class PartitionTestClient {
   }
 
   public void completeJobOfType(final String jobType, final String jsonPayload) {
-    completeJob(jobType, MsgPackUtil.asMsgPack(jsonPayload), e -> true);
+    completeJob(jobType, MsgPackUtil.asMsgPackReturnArray(jsonPayload), e -> true);
   }
 
   public void completeJobOfWorkflowInstance(
@@ -251,7 +232,7 @@ public class PartitionTestClient {
   }
 
   public ExecuteCommandResponse completeJob(long key, String payload) {
-    return completeJob(key, MsgPackUtil.asMsgPack(payload));
+    return completeJob(key, MsgPackUtil.asMsgPackReturnArray(payload));
   }
 
   public ExecuteCommandResponse completeJob(long key, byte[] payload) {
