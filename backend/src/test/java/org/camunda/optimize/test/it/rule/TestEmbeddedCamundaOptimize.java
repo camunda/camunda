@@ -1,5 +1,7 @@
 package org.camunda.optimize.test.it.rule;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.apache.http.entity.mime.MIME;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
@@ -49,30 +51,24 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
 
   private static final Logger logger = LoggerFactory.getLogger(TestEmbeddedCamundaOptimize.class);
+  private static final ObjectMapper configObjectMapper = new ObjectMapper().registerModule(new JavaTimeModule());
 
-  private final static String DEFAULT_CONTEXT_LOCATION = "classpath:embeddedOptimizeContext.xml";
-  private final static String propertiesLocation = "integration-rules.properties";
   public static final String DEFAULT_USERNAME = "demo";
   private static final String DEFAULT_PASSWORD = "demo";
+  private static final String DEFAULT_CONTEXT_LOCATION = "classpath:embeddedOptimizeContext.xml";
+  private static final int MAX_LOGGED_BODY_SIZE = 10_000;
+  private static final String PROPERTIES_LOCATION = "integration-rules.properties";
 
   private static String authenticationToken;
-  private Properties properties;
-
   private static TestEmbeddedCamundaOptimize testOptimizeInstance;
-
   /**
    * This configuration is stored the first time optimize is started
    * and restored before each test, so you can adapt the test
    * to your custom configuration.
    */
-  private static ConfigurationService defaultConfiguration;
+  private static String serializedDefaultConfiguration;
 
-  /**
-   * This configuration keeps track which settings were changed
-   * even if optimize is destroyed during the test.
-   */
-  private static ConfigurationService perTestConfiguration;
-  public static final int MAX_LOGGED_BODY_SIZE = 10_000;
+  private Properties properties;
 
   /**
    * Uses the singleton pattern to ensure there is only one
@@ -101,7 +97,7 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
 
   private TestEmbeddedCamundaOptimize(String contextLocation) {
     super(contextLocation);
-    properties = PropertyUtil.loadProperties(propertiesLocation);
+    properties = PropertyUtil.loadProperties(PROPERTIES_LOCATION);
   }
 
   public void start() throws Exception {
@@ -110,12 +106,11 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
       storeAuthenticationToken();
       if (isThisTheFirstTimeOptimizeWasStarted()) {
         // store the default configuration to restore it later
-        defaultConfiguration = new ConfigurationService();
+        final ConfigurationService defaultConfiguration = new ConfigurationService();
         BeanUtils.copyProperties(testOptimizeInstance.getConfigurationService(), defaultConfiguration);
-        perTestConfiguration = new ConfigurationService();
-        BeanUtils.copyProperties(defaultConfiguration, perTestConfiguration);
+        serializedDefaultConfiguration = configObjectMapper.writeValueAsString(defaultConfiguration);
       }
-      BeanUtils.copyProperties(perTestConfiguration, testOptimizeInstance.getConfigurationService());
+      resetConfiguration();
       reloadConfiguration();
     }
   }
@@ -125,22 +120,22 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
   }
 
   private boolean isThisTheFirstTimeOptimizeWasStarted() {
-    return defaultConfiguration == null;
+    return serializedDefaultConfiguration == null;
   }
 
   public void destroy() throws Exception {
-    try {
-      BeanUtils.copyProperties(testOptimizeInstance.getConfigurationService(), perTestConfiguration);
-    } catch (Exception e) {
-      //nothing to do, optimize did not start correctly in a first place
-    }
     testOptimizeInstance.destroyOptimize();
     testOptimizeInstance = null;
   }
 
-  public void resetConfiguration() {
+  public void resetConfiguration() throws IOException {
+    logger.info("resetting config, parsing defaultconfig and copying properties");
     // copy all properties from the default configuration to the embedded optimize
-    BeanUtils.copyProperties(defaultConfiguration, testOptimizeInstance.getConfigurationService());
+    BeanUtils.copyProperties(
+      configObjectMapper.readValue(serializedDefaultConfiguration, ConfigurationService.class),
+      testOptimizeInstance.getConfigurationService()
+    );
+    logger.info("done resetting config");
   }
 
   public void reloadConfiguration() {

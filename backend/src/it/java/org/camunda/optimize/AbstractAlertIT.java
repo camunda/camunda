@@ -256,7 +256,7 @@ public abstract class AbstractAlertIT {
   }
 
   protected void setEmailConfiguration() {
-    embeddedOptimizeRule.getConfigurationService().setEmailsEnabled(true);
+    embeddedOptimizeRule.getConfigurationService().setEmailEnabled(true);
     embeddedOptimizeRule.getConfigurationService().setAlertEmailUsername("demo");
     embeddedOptimizeRule.getConfigurationService().setAlertEmailPassword("demo");
     embeddedOptimizeRule.getConfigurationService().setAlertEmailAddress("from@localhost.com");

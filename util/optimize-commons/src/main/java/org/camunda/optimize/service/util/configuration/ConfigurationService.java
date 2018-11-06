@@ -65,7 +65,6 @@ public class ConfigurationService {
   private String durationHeatmapTargetValueType;
   private String processInstanceType;
   private String licenseType;
-  private String dashboardType;
   private String alertType;
   private String reportShareType;
   private String dashboardShareType;
@@ -127,7 +126,7 @@ public class ConfigurationService {
   private Integer maxStatusConnections;
   private Boolean checkMetadata;
 
-  private Boolean emailsEnabled;
+  private Boolean emailEnabled;
   private String alertEmailUsername;
   private String alertEmailPassword;
   private String alertEmailAddress;
@@ -775,10 +774,10 @@ public class ConfigurationService {
   }
 
   public boolean isEmailEnabled() {
-    if (emailsEnabled == null) {
-      emailsEnabled = configJsonContext.read(ConfigurationServiceConstants.EMAIL_ENABLED);
+    if (emailEnabled == null) {
+      emailEnabled = configJsonContext.read(ConfigurationServiceConstants.EMAIL_ENABLED);
     }
-    return emailsEnabled;
+    return emailEnabled;
   }
 
   public String getAlertEmailAddress() {
@@ -916,20 +915,12 @@ public class ConfigurationService {
     return ENGINE_REST_PATH;
   }
 
-  public Logger getLogger() {
-    return logger;
-  }
-
   public String getElasticsearchSecuritySSLVerificationMode() {
     if (elasticsearchSecuritySSLVerificationMode == null) {
       elasticsearchSecuritySSLVerificationMode =
         configJsonContext.read(ConfigurationServiceConstants.ELASTIC_SEARCH_SECURITY_SSL_VERIFICATION_MODE);
     }
     return elasticsearchSecuritySSLVerificationMode;
-  }
-
-  public ReadContext getConfigJsonContext() {
-    return configJsonContext;
   }
 
   public void setConfigJsonContext(ReadContext configJsonContext) {
@@ -1072,10 +1063,6 @@ public class ConfigurationService {
     this.licenseType = licenseType;
   }
 
-  public void setDashboardType(String dashboardType) {
-    this.dashboardType = dashboardType;
-  }
-
   public void setSamplerInterval(Long samplerInterval) {
     this.samplerInterval = samplerInterval;
   }
@@ -1120,8 +1107,8 @@ public class ConfigurationService {
     this.alertEmailUsername = alertEmailUsername;
   }
 
-  public void setEmailsEnabled(Boolean emailsEnabled) {
-    this.emailsEnabled = emailsEnabled;
+  public void setEmailEnabled(Boolean emailEnabled) {
+    this.emailEnabled = emailEnabled;
   }
 
   public void setAlertEmailPassword(String alertEmailPassword) {

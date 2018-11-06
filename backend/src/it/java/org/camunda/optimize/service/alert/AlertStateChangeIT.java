@@ -151,7 +151,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
   @Test
   public void emailNotificationIsEnabled() {
     //given
-    embeddedOptimizeRule.getConfigurationService().setEmailsEnabled(true);
+    embeddedOptimizeRule.getConfigurationService().setEmailEnabled(true);
 
     // when
     EmailAlertEnabledDto emailEnabled = embeddedOptimizeRule
@@ -166,7 +166,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
   @Test
   public void emailNotificationIsDisabled() {
     //given
-    embeddedOptimizeRule.getConfigurationService().setEmailsEnabled(false);
+    embeddedOptimizeRule.getConfigurationService().setEmailEnabled(false);
 
     // when
     EmailAlertEnabledDto emailEnabled = embeddedOptimizeRule
