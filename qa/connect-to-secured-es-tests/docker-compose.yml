@@ -41,3 +41,19 @@ services:
     image: docker.elastic.co/elasticsearch/elasticsearch-platinum:${ES_VERSION:-6.0.0}
     command: /usr/bin/true
     depends_on: {"elasticsearch": {"condition": "service_healthy"}}
+
+  cambpm:
+    image: registry.camunda.cloud/camunda-bpm-platform-ee:${CAMBPM_VERSION:-7.10.0-alpha5}
+    container_name: cambpm
+    environment:
+    - TZ=Europe/Berlin
+    ports:
+    - 8080:8080
+    restart: always
+    cpu_count: 1
+    mem_limit: 2g
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O- http://localhost:8080/engine-rest/engine | grep -q default"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

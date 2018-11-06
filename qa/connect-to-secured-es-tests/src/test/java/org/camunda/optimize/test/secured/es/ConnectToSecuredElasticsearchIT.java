@@ -1,7 +1,5 @@
 package org.camunda.optimize.test.secured.es;
 
-import org.camunda.optimize.dto.optimize.query.OptimizeVersionDto;
-import org.camunda.optimize.service.metadata.MetadataService;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -30,19 +28,11 @@ public class ConnectToSecuredElasticsearchIT {
     // when I do a request against Optimize
     Response response = embeddedOptimizeRule
             .getRequestExecutor()
-            .buildGetOptimizeVersionRequest()
-            .withoutAuthentication()
+            .buildGetAllAlertsRequest()
             .execute();
 
-    // then Optimize should be able to perform a request against
-    // Elasticsearch and return the correct result.
+    // then Optimize should be able to successfully perform a request against elasticsearch
     assertThat(response.getStatus(), is(200));
-    OptimizeVersionDto optimizeVersionDto = response.readEntity(OptimizeVersionDto.class);
-    assertThat(
-      optimizeVersionDto.getOptimizeVersion(),
-      is(embeddedOptimizeRule.getApplicationContext().getBean(MetadataService.class).getVersion())
-    );
-
   }
 
 

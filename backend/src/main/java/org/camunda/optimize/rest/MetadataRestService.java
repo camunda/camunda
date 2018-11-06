@@ -26,7 +26,7 @@ public class MetadataRestService {
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.WILDCARD)
   public OptimizeVersionDto getOptimizeVersion() {
-    return new OptimizeVersionDto(metadataService.getVersion());
+    return new OptimizeVersionDto(metadataService.getRawVersion());
   }
 
 }

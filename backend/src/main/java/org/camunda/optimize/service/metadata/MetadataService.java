@@ -24,9 +24,11 @@ public class MetadataService {
   @Autowired
   private ConfigurationService configurationService;
 
+  private final String rawVersion;
   private final String version;
 
   public MetadataService() {
+    this.rawVersion = Version.RAW_VERSION;
     this.version = Version.VERSION;
   }
 
@@ -54,5 +56,9 @@ public class MetadataService {
 
   public String getVersion() {
     return version;
+  }
+
+  public String getRawVersion() {
+    return rawVersion;
   }
 }

@@ -1,7 +1,7 @@
 package org.camunda.optimize.rest;
 
 import org.camunda.optimize.dto.optimize.query.OptimizeVersionDto;
-import org.camunda.optimize.service.metadata.MetadataService;
+import org.camunda.optimize.service.metadata.Version;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -33,6 +33,6 @@ public class MetadataRestServiceIT {
             .execute(OptimizeVersionDto.class, 200);
 
     // then
-    assertThat(optimizeVersionDto.getOptimizeVersion(), is(embeddedOptimizeRule.getApplicationContext().getBean(MetadataService.class).getVersion()));
+    assertThat(optimizeVersionDto.getOptimizeVersion(), is(Version.RAW_VERSION));
   }
 }
