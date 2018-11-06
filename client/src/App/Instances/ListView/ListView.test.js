@@ -2,7 +2,11 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import * as api from 'modules/api/instances/instances';
-import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
+import {
+  mockResolvedAsyncFn,
+  flushPromises,
+  createSelection
+} from 'modules/testUtils';
 import {parseFilterForRequest} from 'modules/utils/filter';
 import {SORT_ORDER, DEFAULT_SORTING} from 'modules/constants';
 
@@ -11,10 +15,7 @@ import List from './List';
 import ListFooter from './ListFooter';
 import {DEFAULT_FILTER} from 'modules/constants';
 
-const selection = {
-  list: [],
-  isBlacklist: false
-};
+const selection = createSelection();
 
 const defaultFilter = {DEFAULT_FILTER};
 const filter = {
