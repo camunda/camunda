@@ -60,6 +60,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
   public static final String DEFAULT_CONFIG_FILE = "zeebe.test.cfg.toml";
 
   protected static final Logger LOG = new ZbLogger("io.zeebe.test");
+  public static final int DEFAULT_TIMEOUT = 25;
 
   protected final RecordingExporterTestWatcher recordingExporterTestWatcher =
       new RecordingExporterTestWatcher();
@@ -71,6 +72,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
 
   protected final Supplier<InputStream> configSupplier;
   protected final Consumer<BrokerCfg>[] configurators;
+  private final int timeout;
 
   @SafeVarargs
   public EmbeddedBrokerRule(Consumer<BrokerCfg>... configurators) {
@@ -85,14 +87,18 @@ public class EmbeddedBrokerRule extends ExternalResource {
             EmbeddedBrokerRule.class
                 .getClassLoader()
                 .getResourceAsStream(configFileClasspathLocation),
+        DEFAULT_TIMEOUT,
         configurators);
   }
 
   @SafeVarargs
   public EmbeddedBrokerRule(
-      final Supplier<InputStream> configSupplier, final Consumer<BrokerCfg>... configurators) {
+      final Supplier<InputStream> configSupplier,
+      int timeout,
+      final Consumer<BrokerCfg>... configurators) {
     this.configSupplier = configSupplier;
     this.configurators = configurators;
+    this.timeout = timeout;
   }
 
   protected long startTime;
@@ -206,12 +212,14 @@ public class EmbeddedBrokerRule extends ExternalResource {
           .dependency(
               TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME))
           .install()
-          .get(5, TimeUnit.SECONDS);
+          .get(timeout, TimeUnit.SECONDS);
 
     } catch (final InterruptedException | ExecutionException | TimeoutException e) {
       stopBroker();
       throw new RuntimeException(
-          "System patition not installed into the container withing 25 seconds.", e);
+          String.format(
+              "System partition not installed into the container withing %d seconds.", timeout),
+          e);
     }
 
     dataDirectories = broker.getBrokerContext().getBrokerConfiguration().getData().getDirectories();
