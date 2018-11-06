@@ -49,15 +49,18 @@
           .TypeaheadMultipleSelection__valueListItem {
             border-bottom: 1px solid #f2f3f4;
 
+            &.draggable:hover {
+              cursor: move;
+            }
+
+            &:hover {
+              background: #00a8ff;
+            }
+
             label {
               width: 100%;
               text-align: left;
               padding: 5px 5px;
-
-              &:hover {
-                background: #00a8ff;
-              }
-
               cursor: pointer;
               display: block;
             }

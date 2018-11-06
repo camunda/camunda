@@ -1,22 +1,39 @@
 import React from 'react';
 import {Input, LoadingIndicator} from 'components';
 import {formatters} from 'services';
+import classnames from 'classnames';
 
 import './TypeaheadMultipleSelection.scss';
 
 export default class TypeaheadMultipleSelection extends React.Component {
-  state = {
-    searchQuery: ''
-  };
+  constructor() {
+    super();
+    this.state = {
+      searchQuery: ''
+    };
+    this.dragPlaceHolder = document.createElement('li');
+    this.dragPlaceHolder.className = 'placeholder';
+  }
+
   mapSelectedValues = values => {
+    const isDraggable = !!this.props.onOrderChange;
     return (
       values.length > 0 && (
         <div className="TypeaheadMultipleSelection__labeled-valueList">
           <p>Selected {this.props.label}: </p>
-          <div className="TypeaheadMultipleSelection__values-sublist">
+          <div onDragOver={this.dragOver} className="TypeaheadMultipleSelection__values-sublist">
             {values.map((value, idx) => {
               return (
-                <li key={idx} className="TypeaheadMultipleSelection__valueListItem">
+                <li
+                  key={idx}
+                  data-id={idx}
+                  className={classnames('TypeaheadMultipleSelection__valueListItem', {
+                    draggable: isDraggable
+                  })}
+                  draggable={isDraggable}
+                  onDragEnd={this.dragEnd}
+                  onDragStart={this.dragStart}
+                >
                   <label>
                     <Input type="checkbox" checked value={idx} onChange={this.toggleSelected} />
                     {this.props.format(value)}
@@ -24,10 +41,46 @@ export default class TypeaheadMultipleSelection extends React.Component {
                 </li>
               );
             })}
+            <span className="endIndicator" data-id={values.length} />
           </div>
         </div>
       )
     );
+  };
+
+  dragStart = evt => {
+    this.dragged = evt.currentTarget;
+    this.cloneHeight = this.dragged.getBoundingClientRect().height;
+    this.dragPlaceHolder.style.height = this.cloneHeight + 'px';
+    evt.dataTransfer.effectAllowed = 'move';
+    evt.dataTransfer.setData('Text', this.dragged.id);
+  };
+
+  dragEnd = evt => {
+    this.dragged.style.display = 'block';
+    this.dragged.parentNode.removeChild(this.dragPlaceHolder);
+
+    // update props
+    let data = this.props.selectedValues;
+    const from = Number(this.dragged.dataset.id);
+    let to = Number(this.over.dataset.id);
+    if (from < to) to--;
+    data.splice(to, 0, data.splice(from, 1)[0]);
+    this.props.onOrderChange(data);
+  };
+
+  dragOver = evt => {
+    evt.preventDefault();
+    this.dragged.style.display = 'none';
+    if (evt.target.className === 'placeholder') return;
+    if (evt.target.nodeName === 'LI' || evt.target.className === 'endIndicator') {
+      this.over = evt.target;
+      evt.target.parentNode.insertBefore(this.dragPlaceHolder, evt.target);
+    } else if (evt.target.nodeName === 'LABEL') {
+      const listElement = evt.target.parentNode;
+      this.over = listElement;
+      listElement.parentNode.insertBefore(this.dragPlaceHolder, listElement);
+    }
   };
 
   toggleSelected = ({target: {value, checked}}) =>

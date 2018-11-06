@@ -11,6 +11,15 @@
   }
 }
 
+.placeholder {
+  background: #f4f4f4;
+}
+
+.endIndicator {
+  height: 20px;
+  display: block;
+}
+
 .TypeaheadMultipleSelection__values-sublist {
   min-width: 220px;
   word-break: break-all;
@@ -52,4 +61,20 @@
 .TypeaheadMultipleSelection__valueListItem {
   margin-bottom: 8px;
   display: flex;
+  position: relative;
+
+  &.draggable {
+    padding-left: 20px;
+
+    &:before {
+      content: '.';
+      position: absolute;
+      left: 5px;
+      top: 0px;
+      font-size: 20px;
+      line-height: 10px;
+      color: #707070;
+      text-shadow: 0 5px #707070, 0 10px #707070, 5px 0 #707070, 5px 5px #707070, 5px 10px #707070;
+    }
+  }
 }

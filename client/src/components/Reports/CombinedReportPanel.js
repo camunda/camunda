@@ -73,6 +73,19 @@ export default class CombinedReportPanel extends React.Component {
     );
   };
 
+  updateReportsOrder = selectedReports => {
+    this.setState(
+      {
+        selectedReports
+      },
+      () => {
+        this.props.updateReport({
+          reportIds: this.state.selectedReports.map(report => report.id)
+        });
+      }
+    );
+  };
+
   isCompatible = report => {
     const {referenceReport} = this.state;
     return (
@@ -122,6 +135,7 @@ export default class CombinedReportPanel extends React.Component {
           toggleValue={this.update}
           label="reports"
           loading={false}
+          onOrderChange={this.updateReportsOrder}
           format={v => v.name}
         />
       </div>

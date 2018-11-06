@@ -117,3 +117,92 @@ it('should request the values filtered by filter entered in the input', () => {
   expect(node.props().availableValues.length).toBe(1);
   expect(node.props().availableValues[0]).toBe('thdfhr');
 });
+
+it('make the list items draggable when adding a drag handler', () => {
+  const setFilter = jest.fn();
+  const allValues = ['dhdf', 'fefwf', 'aaf', 'thdfhr'];
+  const node = mount(
+    <TypeaheadMultipleSelection
+      setFilter={setFilter}
+      selectedValues={['a']}
+      availableValues={allValues}
+      toggleValue={() => {}}
+      onOrderChange={() => {}}
+    />
+  );
+  setFilter.mockImplementation(({target: {value}}) =>
+    node.setProps({
+      availableValues: allValues.filter(v => v.slice(0, value.length) === value)
+    })
+  );
+
+  expect(
+    node
+      .find('.TypeaheadMultipleSelection__valueListItem')
+      .first()
+      .props().draggable
+  ).toBe(true);
+
+  expect(node.find('.TypeaheadMultipleSelection__valueListItem').first()).toHaveClassName(
+    'draggable'
+  );
+});
+
+it('make invok onOrderChange with the new selectedvalues data on drag end', () => {
+  const setFilter = jest.fn();
+  const allValues = ['dhdf', 'fefwf', 'aaf', 'thdfhr'];
+  const spy = jest.fn();
+  const node = mount(
+    <TypeaheadMultipleSelection
+      setFilter={setFilter}
+      selectedValues={['a', 'b']}
+      availableValues={allValues}
+      toggleValue={() => {}}
+      onOrderChange={spy}
+    />
+  );
+  setFilter.mockImplementation(({target: {value}}) =>
+    node.setProps({
+      availableValues: allValues.filter(v => v.slice(0, value.length) === value)
+    })
+  );
+
+  const dragStartEvt = {
+    currentTarget: {
+      getBoundingClientRect: () => ({height: '30px'}),
+      parentNode: {
+        removeChild: () => {}
+      },
+      dataset: {
+        id: 1
+      },
+      style: {
+        display: ''
+      }
+    },
+    dataTransfer: {
+      effectAllowed: '',
+      setData: () => {}
+    }
+  };
+
+  const dragOverEvt = {
+    preventDefault: () => {},
+    target: {
+      className: 'test',
+      nodeName: 'LI',
+      parentNode: {
+        insertBefore: () => {}
+      },
+      dataset: {
+        id: 0
+      }
+    }
+  };
+
+  node.instance().dragStart(dragStartEvt);
+  node.instance().dragOver(dragOverEvt);
+  node.instance().dragEnd();
+
+  expect(spy).toHaveBeenCalledWith(['b', 'a']);
+});
