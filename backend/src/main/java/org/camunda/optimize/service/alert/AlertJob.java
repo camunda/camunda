@@ -103,7 +103,7 @@ public class AlertJob implements Job {
 
   private String createViewLink(AlertDefinitionDto alert) {
     return HTTP_PREFIX + configurationService.getContainerHost() + ":" +
-        configurationService.getContainerHttpPort() + "/report/" + alert.getReportId();
+        configurationService.getContainerHttpPort() + "/#/report/" + alert.getReportId();
   }
 
   private AlertJobResult notifyIfNeeded(

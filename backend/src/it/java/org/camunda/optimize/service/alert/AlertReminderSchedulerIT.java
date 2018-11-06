@@ -152,10 +152,10 @@ public class AlertReminderSchedulerIT extends AbstractAlertIT {
     // when
     String reportId =
       createAndStoreDurationNumberReport(processInstance);
-    AlertCreationDto simpleAlert = createSimpleAlert(reportId);
+    AlertCreationDto simpleAlert = createSimpleAlert(reportId, 10,"Seconds");
     AlertInterval reminderInterval = new AlertInterval();
     reminderInterval.setValue(1);
-    reminderInterval.setUnit("Seconds");
+    reminderInterval.setUnit("Minutes");
     simpleAlert.setReminder(reminderInterval);
 
     simpleAlert.setThreshold(1500);

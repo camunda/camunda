@@ -145,7 +145,7 @@ public class AlertStateChangeIT extends AbstractAlertIT {
     String content = emails[0].getContent().toString();
     assertThat(content, containsString(simpleAlert.getName()));
     assertThat(content, containsString("is not exceeded anymore."));
-    assertThat(content, containsString("http://localhost:8090/report/" + reportId));
+    assertThat(content, containsString("http://localhost:8090/#/report/" + reportId));
   }
 
   @Test
