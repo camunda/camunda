@@ -64,6 +64,7 @@ public class ElementInstanceState {
 
   private final ColumnFamilyHandle elementParentChildHandle;
   private final ColumnFamilyHandle elementInstanceHandle;
+
   // key => record
   private final ColumnFamilyHandle tokenEventHandle;
   // (element instance key, purpose) => token event key
@@ -241,7 +242,6 @@ public class ElementInstanceState {
             record.getKey(),
             (WorkflowInstanceIntent) record.getMetadata().getIntent(),
             record.getValue());
-
     final StoredRecord storedRecord = new StoredRecord(indexedRecord, purpose);
 
     final int keyLength =

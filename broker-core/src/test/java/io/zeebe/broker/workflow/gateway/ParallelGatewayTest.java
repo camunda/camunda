@@ -20,20 +20,16 @@ package io.zeebe.broker.workflow.gateway;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
-import com.fasterxml.jackson.databind.JsonNode;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.ServiceTask;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeMappingType;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
-import io.zeebe.test.util.JsonUtil;
 import io.zeebe.test.util.MsgPackUtil;
-import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -363,175 +359,6 @@ public class ParallelGatewayTest {
     assertThat(elementInstances)
         .extracting(e -> e.getValue().getElementId())
         .contains(PROCESS_ID, "task1", "task2");
-  }
-
-  @Test
-  public void shouldMergePayloadsWithInstructions() {
-    // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .parallelGateway("fork")
-            .sequenceFlow(b -> b.payloadMapping("$.key1", "$.mappedKey1"))
-            .parallelGateway("join")
-            .moveToNode("fork")
-            .sequenceFlow(b -> b.payloadMapping("$.key2", "$.mappedKey2"))
-            .connectTo("join")
-            .endEvent()
-            .done();
-
-    testClient.deploy(process);
-
-    final String payload = "{'key1': 'val1', 'key2': 'val2'}";
-
-    // when
-    testClient.createWorkflowInstance(PROCESS_ID, MsgPackUtil.asMsgPack(payload));
-
-    // then
-    final io.zeebe.exporter.record.Record<WorkflowInstanceRecordValue> completedEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withElementId(PROCESS_ID)
-            .getFirst();
-
-    final String actualPayload = completedEvent.getValue().getPayload();
-    final String expectedPayload =
-        "{'key1': 'val1', 'key2': 'val2', 'mappedKey1': 'val1', 'mappedKey2': 'val2'}";
-
-    JsonUtil.assertEquality(actualPayload, expectedPayload);
-  }
-
-  @Test
-  public void shouldMergePayloadsWithCollectInstructions() {
-    // given
-    final BpmnModelInstance process =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .parallelGateway("fork")
-            .sequenceFlow(b -> b.payloadMapping("$.key1", "$.array", ZeebeMappingType.COLLECT))
-            .parallelGateway("join")
-            .moveToNode("fork")
-            .sequenceFlow(b -> b.payloadMapping("$.key2", "$.array", ZeebeMappingType.COLLECT))
-            .connectTo("join")
-            .endEvent()
-            .done();
-
-    testClient.deploy(process);
-
-    final String payload = "{'key1': 'val1', 'key2': 'val2'}";
-
-    // when
-    testClient.createWorkflowInstance(PROCESS_ID, MsgPackUtil.asMsgPack(payload));
-
-    // then
-    final io.zeebe.exporter.record.Record<WorkflowInstanceRecordValue> completedEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withElementId(PROCESS_ID)
-            .getFirst();
-
-    final String actualPayload = completedEvent.getValue().getPayload();
-    final JsonNode jsonPayload = JsonUtil.asJsonNode(actualPayload);
-
-    final JsonNode arrayValue = jsonPayload.get("array");
-    assertThat(arrayValue).isNotNull();
-    assertThat(arrayValue.isArray()).isTrue();
-    assertThat(arrayValue.elements())
-        .hasSize(2)
-        .extracting(n -> n.textValue())
-        .containsExactlyInAnyOrder("val1", "val2");
-  }
-
-  /** In case no mapping is defined */
-  @Test
-  public void shouldMergePayloads() {
-    // given
-    final BpmnModelInstance modelInstance =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .parallelGateway("fork")
-            .serviceTask("task1", b -> b.zeebeTaskType("task1"))
-            .parallelGateway("join")
-            .moveToNode("fork")
-            .serviceTask("task2", b -> b.zeebeTaskType("task2"))
-            .connectTo("join")
-            .endEvent()
-            .done();
-
-    testClient.deploy(modelInstance);
-    testClient.createWorkflowInstance(PROCESS_ID);
-
-    // when
-    testClient.completeJobOfType("task1", MsgPackUtil.asMsgPack("{'key1': 'val1'}"));
-    testClient.completeJobOfType("task2", MsgPackUtil.asMsgPack("{'key2': 'val2'}"));
-
-    // then
-    final io.zeebe.exporter.record.Record<WorkflowInstanceRecordValue> completedEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withElementId(PROCESS_ID)
-            .getFirst();
-
-    final String actualPayload = completedEvent.getValue().getPayload();
-    final String expectedPayload = "{'key1': 'val1', 'key2': 'val2'}";
-
-    JsonUtil.assertEquality(actualPayload, expectedPayload);
-  }
-
-  @Test
-  public void shouldMergeNullValueIfMappingHasNoResult() {
-    // given
-    final BpmnModelInstance modelInstance =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .parallelGateway("fork")
-            .sequenceFlow(b -> b.payloadMapping("$.notAValidKey", "$.newKey"))
-            .parallelGateway("join")
-            .moveToNode("fork")
-            .connectTo("join")
-            .endEvent()
-            .done();
-
-    testClient.deploy(modelInstance);
-
-    // when
-    testClient.createWorkflowInstance(PROCESS_ID, MsgPackUtil.asMsgPack("{'getKey': 'val'}"));
-
-    // then
-    final io.zeebe.exporter.record.Record<WorkflowInstanceRecordValue> completedEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withElementId(PROCESS_ID)
-            .getFirst();
-
-    final String actualPayload = completedEvent.getValue().getPayload();
-    JsonUtil.assertEquality(actualPayload, "{'getKey': 'val', 'newKey': null}");
-  }
-
-  @Test
-  public void shouldCollectNullValueIfMappingHasNoResult() {
-    // given
-    final BpmnModelInstance modelInstance =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .parallelGateway("fork")
-            .sequenceFlow(
-                b -> b.payloadMapping("$.notAValidKey", "$.arr", ZeebeMappingType.COLLECT))
-            .parallelGateway("join")
-            .moveToNode("fork")
-            .connectTo("join")
-            .endEvent()
-            .done();
-
-    testClient.deploy(modelInstance);
-
-    // when
-    testClient.createWorkflowInstance(PROCESS_ID, MsgPackUtil.asMsgPack("{'getKey': 'val'}"));
-
-    // then
-    final io.zeebe.exporter.record.Record<WorkflowInstanceRecordValue> completedEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withElementId(PROCESS_ID)
-            .getFirst();
-
-    final String actualPayload = completedEvent.getValue().getPayload();
-    JsonUtil.assertEquality(actualPayload, "{'getKey': 'val', 'arr': [null]}");
   }
 
   @Test

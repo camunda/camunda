@@ -136,11 +136,6 @@ public class WorkflowEngineState implements StreamProcessorLifecycleAware {
     elementInstanceState.spawnToken(scopeKey); // the token remains active
   }
 
-  public void storeFinishedToken(TypedRecord<WorkflowInstanceRecord> event) {
-    final long scopeKey = event.getValue().getScopeInstanceKey();
-    elementInstanceState.storeTokenEvent(scopeKey, event, Purpose.FINISHED_TOKEN);
-  }
-
   public void storeFailedToken(TypedRecord<WorkflowInstanceRecord> event) {
     final long scopeKey = event.getValue().getScopeInstanceKey();
     elementInstanceState.storeTokenEvent(scopeKey, event, Purpose.FAILED_TOKEN);

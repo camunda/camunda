@@ -112,8 +112,6 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
     final DirectBuffer currentElementId = value.getElementId();
 
     final ExecutableWorkflow workflow = deployedWorkflow.getWorkflow();
-    context.setWorkflow(workflow);
-
     final ExecutableFlowElement flowElement = workflow.getElementById(currentElementId);
     context.setElement(flowElement);
   }

@@ -17,30 +17,14 @@
  */
 package io.zeebe.broker.workflow.processor.flownode;
 
-import io.zeebe.broker.workflow.model.element.ExecutableEndEvent;
-import io.zeebe.broker.workflow.model.element.ExecutableFlowElement;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
-import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
-import io.zeebe.broker.workflow.processor.EventOutput;
 import io.zeebe.broker.workflow.state.ElementInstance;
-import io.zeebe.broker.workflow.state.IndexedRecord;
-import io.zeebe.broker.workflow.state.WorkflowState;
-import io.zeebe.msgpack.mapping.Mapping;
-import io.zeebe.msgpack.mapping.MsgPackMergeTool;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import java.util.List;
-import org.agrona.DirectBuffer;
 
 public class ConsumeTokenHandler implements BpmnStepHandler<ExecutableFlowNode> {
-
-  private final WorkflowState workflowState;
-
-  public ConsumeTokenHandler(WorkflowState workflowState) {
-    this.workflowState = workflowState;
-  }
 
   @Override
   public void handle(BpmnStepContext<ExecutableFlowNode> context) {
@@ -50,46 +34,13 @@ public class ConsumeTokenHandler implements BpmnStepHandler<ExecutableFlowNode> 
     final ElementInstance scopeInstance = context.getFlowScopeInstance();
     final WorkflowInstanceRecord scopeInstanceValue = scopeInstance.getValue();
 
-    final EventOutput output = context.getOutput();
-    output.storeFinishedToken(context.getRecord());
-
     if (scopeInstance.getNumberOfActiveExecutionPaths() == 0) {
-      final MsgPackMergeTool payloadMergeTool = context.getMergeTool();
-      final List<IndexedRecord> finishedTokens =
-          workflowState.getElementInstanceState().getFinishedTokens(scopeInstanceKey);
+      scopeInstanceValue.setPayload(value.getPayload());
 
-      final DirectBuffer mergedPayload =
-          mergePayloads(payloadMergeTool, finishedTokens, context.getWorkflow());
-      scopeInstanceValue.setPayload(mergedPayload);
-
-      output.writeFollowUpEvent(
-          scopeInstanceKey, WorkflowInstanceIntent.ELEMENT_COMPLETING, scopeInstanceValue);
+      context
+          .getOutput()
+          .writeFollowUpEvent(
+              scopeInstanceKey, WorkflowInstanceIntent.ELEMENT_COMPLETING, scopeInstanceValue);
     }
-  }
-
-  private DirectBuffer mergePayloads(
-      final MsgPackMergeTool payloadMergeTool,
-      final List<IndexedRecord> finishedTokens,
-      ExecutableWorkflow workflow) {
-
-    payloadMergeTool.reset();
-
-    for (IndexedRecord record : finishedTokens) {
-      payloadMergeTool.mergeDocument(record.getValue().getPayload());
-    }
-
-    for (IndexedRecord record : finishedTokens) {
-      final WorkflowInstanceRecord mergingValue = record.getValue();
-      final ExecutableFlowElement element = workflow.getElementById(mergingValue.getElementId());
-      if (element instanceof ExecutableEndEvent) {
-        final Mapping[] mappings = ((ExecutableEndEvent) element).getPayloadMappings();
-
-        if (mappings.length > 0) {
-          payloadMergeTool.mergeDocument(mergingValue.getPayload(), mappings);
-        }
-      }
-    }
-
-    return payloadMergeTool.writeResultToBuffer();
   }
 }

@@ -21,7 +21,6 @@ import io.zeebe.broker.workflow.model.BpmnStep;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
 import io.zeebe.broker.workflow.model.element.ExecutableSequenceFlow;
 import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
-import io.zeebe.broker.workflow.model.transformation.MappingCompiler;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.Activity;
@@ -32,23 +31,11 @@ import io.zeebe.model.bpmn.instance.FlowNode;
 import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.zeebe.model.bpmn.instance.ParallelGateway;
 import io.zeebe.model.bpmn.instance.SequenceFlow;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeMappingType;
 import io.zeebe.msgpack.el.CompiledJsonCondition;
 import io.zeebe.msgpack.el.JsonConditionFactory;
-import io.zeebe.msgpack.mapping.Mapping;
-import io.zeebe.msgpack.mapping.Mapping.Type;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import java.util.EnumMap;
 
 public class SequenceFlowHandler implements ModelElementTransformer<SequenceFlow> {
-
-  private static final EnumMap<ZeebeMappingType, Mapping.Type> TYPE_MAP =
-      new EnumMap<>(ZeebeMappingType.class);
-
-  static {
-    TYPE_MAP.put(ZeebeMappingType.PUT, Type.PUT);
-    TYPE_MAP.put(ZeebeMappingType.COLLECT, Type.COLLECT);
-  }
 
   @Override
   public Class<SequenceFlow> getType() {
@@ -62,7 +49,6 @@ public class SequenceFlowHandler implements ModelElementTransformer<SequenceFlow
         workflow.getElementById(element.getId(), ExecutableSequenceFlow.class);
 
     compileCondition(element, sequenceFlow);
-    compilePayloadMappings(element, sequenceFlow, context);
     connectWithFlowNodes(element, workflow, sequenceFlow);
     bindLifecycle(element, sequenceFlow);
   }
@@ -115,13 +101,5 @@ public class SequenceFlowHandler implements ModelElementTransformer<SequenceFlow
           JsonConditionFactory.createCondition(rawExpression);
       sequenceFlow.setCondition(compiledExpression);
     }
-  }
-
-  private void compilePayloadMappings(
-      SequenceFlow element, ExecutableSequenceFlow sequenceFlow, TransformContext context) {
-
-    final MappingCompiler mappingCompiler = context.getMappingCompiler();
-    final Mapping[] mappings = mappingCompiler.compilePayloadMappings(element);
-    sequenceFlow.setPayloadMappings(mappings);
   }
 }

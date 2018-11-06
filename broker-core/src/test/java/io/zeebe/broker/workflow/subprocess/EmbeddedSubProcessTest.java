@@ -32,9 +32,7 @@ import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
-import io.zeebe.test.util.JsonUtil;
 import io.zeebe.test.util.MsgPackUtil;
-import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
 import java.util.List;
@@ -358,43 +356,5 @@ public class EmbeddedSubProcessTest {
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "innerSubProcess"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "outerSubProcess"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "outerSubProcess"));
-  }
-
-  @Test
-  public void shouldMergePayloadsOnCompletion() {
-    // given
-    final BpmnModelInstance model =
-        Bpmn.createExecutableProcess(PROCESS_ID)
-            .startEvent()
-            .subProcess("subProcess")
-            .embeddedSubProcess()
-            .startEvent()
-            .parallelGateway()
-            .serviceTask("task1", b -> b.zeebeTaskType("type1"))
-            .endEvent()
-            .moveToLastGateway()
-            .serviceTask("task2", b -> b.zeebeTaskType("type2"))
-            .endEvent()
-            .subProcessDone()
-            .endEvent()
-            .done();
-
-    testClient.deploy(model);
-    testClient.createWorkflowInstance(PROCESS_ID);
-
-    // when
-    testClient.completeJobOfType("type1", "{'key1': 'val1'}");
-    testClient.completeJobOfType("type2", "{'key2': 'val2'}");
-
-    // then
-    final Record<WorkflowInstanceRecordValue> completedEvent =
-        RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETING)
-            .withElementId("subProcess")
-            .getFirst();
-
-    final String actualPayload = completedEvent.getValue().getPayload();
-    final String expectedPayload = "{'key1': 'val1', 'key2': 'val2'}";
-
-    JsonUtil.assertEquality(actualPayload, expectedPayload);
   }
 }

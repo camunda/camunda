@@ -18,7 +18,6 @@
 package io.zeebe.broker.workflow;
 
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setPartitionCount;
-import static io.zeebe.broker.test.MsgPackConstants.MSGPACK_PAYLOAD;
 import static io.zeebe.broker.workflow.WorkflowAssert.assertWorkflowInstanceRecord;
 import static io.zeebe.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
 import static io.zeebe.msgpack.spec.MsgPackHelper.NIL;
@@ -32,6 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
+import io.zeebe.broker.test.MsgPackConstants;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
@@ -270,7 +270,7 @@ public class CreateWorkflowInstanceTest {
             .type(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
             .command()
             .put(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
-            .put(PROP_WORKFLOW_PAYLOAD, MSGPACK_PAYLOAD)
+            .put(PROP_WORKFLOW_PAYLOAD, MsgPackConstants.MSGPACK_PAYLOAD)
             .done()
             .sendAndAwait();
 
@@ -287,7 +287,7 @@ public class CreateWorkflowInstanceTest {
         .containsEntry(PROP_WORKFLOW_BPMN_PROCESS_ID, "process")
         .containsEntry(PROP_WORKFLOW_INSTANCE_KEY, resp.getKey())
         .containsEntry(PROP_WORKFLOW_VERSION, 1L)
-        .containsEntry(PROP_WORKFLOW_PAYLOAD, MSGPACK_PAYLOAD);
+        .containsEntry(PROP_WORKFLOW_PAYLOAD, MsgPackConstants.MSGPACK_PAYLOAD);
   }
 
   @Test

@@ -65,7 +65,7 @@ public class BpmnStepHandlers {
     stepHandlers.put(BpmnStep.EXCLUSIVE_SPLIT, new ExclusiveSplitHandler());
 
     // flow node
-    stepHandlers.put(BpmnStep.CONSUME_TOKEN, new ConsumeTokenHandler(workflowState));
+    stepHandlers.put(BpmnStep.CONSUME_TOKEN, new ConsumeTokenHandler());
     stepHandlers.put(BpmnStep.TAKE_SEQUENCE_FLOW, new TakeSequenceFlowHandler());
 
     // sequence flow
