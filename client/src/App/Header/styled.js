@@ -85,7 +85,6 @@ export const Detail = themed(styled.span`
 export const ProfileDropdown = styled.span`
   margin-right: 20px;
   float: right;
-  opacity: 0.9;
 `;
 
 export const Menu = styled.ul`
