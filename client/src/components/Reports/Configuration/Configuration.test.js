@@ -38,15 +38,10 @@ it('should contain the Component from the visualizations based on the type', () 
 });
 
 it('should reset to defaults based on the defaults provided by the visualization', () => {
-  const innerSpy = jest.fn();
-  const spy = jest.fn().mockReturnValue(innerSpy);
-  const node = shallow(<Configuration type="typeA" onChange={spy} />);
+  const spy = jest.fn();
+  const node = shallow(<Configuration type="typeA" onChange={spy} configuration={{}} />);
 
   node.find(Button).simulate('click');
 
-  expect(spy).toHaveBeenCalledWith('propA');
-  expect(innerSpy).toHaveBeenCalledWith('abc');
-
-  expect(spy).toHaveBeenCalledWith('propB');
-  expect(innerSpy).toHaveBeenCalledWith(1);
+  expect(spy).toHaveBeenCalledWith({configuration: {propA: 'abc', propB: 1}});
 });

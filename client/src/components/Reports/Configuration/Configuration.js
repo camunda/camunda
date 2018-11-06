@@ -9,10 +9,22 @@ export default class Configuration extends React.Component {
   resetToDefaults = () => {
     const {defaults} = visualizations[this.props.type];
     if (defaults) {
-      Object.keys(defaults).forEach(prop => {
-        this.props.onChange(prop)(defaults[prop]);
+      this.props.onChange({
+        configuration: {
+          ...this.props.configuration,
+          ...defaults
+        }
       });
     }
+  };
+
+  updateConfiguration = (prop, value) => {
+    this.props.onChange({
+      configuration: {
+        ...this.props.configuration,
+        [prop]: value
+      }
+    });
   };
 
   render() {
@@ -22,7 +34,10 @@ export default class Configuration extends React.Component {
         <Popover title={<Icon type="settings" />} disabled={!this.props.type}>
           <div className="content">
             {Component && (
-              <Component configuration={this.props.configuration} onChange={this.props.onChange} />
+              <Component
+                configuration={this.props.configuration}
+                onChange={this.updateConfiguration}
+              />
             )}
             <Button className="resetButton" onClick={this.resetToDefaults}>
               Reset to Defaults

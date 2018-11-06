@@ -150,7 +150,7 @@ export default class ReportControlPanel extends React.Component {
           <Configuration
             type={this.props.visualization}
             configuration={this.props.configuration}
-            onChange={this.props.updateConfiguration}
+            onChange={this.props.updateReport}
           />
           {this.props.visualization === 'heat' && (
             <li>

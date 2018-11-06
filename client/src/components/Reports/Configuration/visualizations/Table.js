@@ -3,7 +3,7 @@ import {Switch} from 'components';
 
 export default class Table extends React.Component {
   updateProp = evt => {
-    this.props.onChange('customProp')(evt.target.checked);
+    this.props.onChange('customProp', evt.target.checked);
   };
 
   render() {
@@ -22,5 +22,7 @@ export default class Table extends React.Component {
 }
 
 Table.defaults = {
-  customProp: false
+  customProp: false,
+  propA: 12,
+  propB: 'abc'
 };
