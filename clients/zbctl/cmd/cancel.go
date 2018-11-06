@@ -17,7 +17,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// cancelCmd represents the cancel command
 var cancelCmd = &cobra.Command{
 	Use:   "cancel",
 	Short: "Cancel resource",

@@ -46,8 +46,7 @@ public class KeyGenerator extends UnpackedObject {
       final long initialValue,
       final int stepSize,
       final KeyStateController keyStateController) {
-    long startValue = (long) partitionId << Protocol.KEY_BITS;
-    startValue += initialValue;
+    final long startValue = Protocol.encodePartitionId(partitionId, initialValue);
 
     nextKey = new LongProperty("nextKey", startValue);
     this.stepSize = stepSize;

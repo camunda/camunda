@@ -15,21 +15,19 @@
  */
 package io.zeebe.broker.it.clustering;
 
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertJobCompleted;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.it.ClientRule;
-import io.zeebe.gateway.api.commands.BrokerInfo;
-import io.zeebe.gateway.api.commands.PartitionBrokerRole;
-import io.zeebe.gateway.api.commands.PartitionInfo;
-import io.zeebe.gateway.api.events.JobEvent;
-import io.zeebe.gateway.api.events.JobState;
-import io.zeebe.gateway.api.subscription.JobWorker;
-import io.zeebe.gateway.api.subscription.TopicSubscription;
-import java.util.Objects;
+import io.zeebe.broker.it.GrpcClientRule;
+import io.zeebe.client.api.commands.BrokerInfo;
+import io.zeebe.client.api.commands.PartitionBrokerRole;
+import io.zeebe.client.api.commands.PartitionInfo;
+import io.zeebe.client.api.events.JobEvent;
+import io.zeebe.client.api.subscription.JobWorker;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -40,9 +38,9 @@ public class BrokerLeaderChangeTest {
   public static final String NULL_PAYLOAD = null;
   public static final String JOB_TYPE = "testTask";
 
-  public Timeout testTimeout = Timeout.seconds(90);
+  public Timeout testTimeout = Timeout.seconds(60);
   public ClusteringRule clusteringRule = new ClusteringRule();
-  public ClientRule clientRule = new ClientRule(clusteringRule);
+  public GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
   @Rule
   public RuleChain ruleChain =
@@ -79,13 +77,12 @@ public class BrokerLeaderChangeTest {
   public void shouldChangeLeaderAfterLeaderDies() {
     // given
     final BrokerInfo leaderForPartition = clusteringRule.getLeaderForPartition(1);
-    final String leaderAddress = leaderForPartition.getAddress();
 
     final JobEvent jobEvent =
         clientRule.getJobClient().newCreateCommand().jobType(JOB_TYPE).send().join();
 
     // when
-    clusteringRule.stopBroker(leaderAddress);
+    clusteringRule.stopBroker(leaderForPartition.getNodeId());
     final JobCompleter jobCompleter = new JobCompleter(jobEvent);
 
     // then
@@ -95,61 +92,39 @@ public class BrokerLeaderChangeTest {
   }
 
   class JobCompleter {
-
-    private final AtomicBoolean isJobCompleted = new AtomicBoolean(false);
-    private final JobWorker jobSubscription;
-    private final TopicSubscription topicSubscription;
+    private final JobWorker jobWorker;
+    private final CountDownLatch latch = new CountDownLatch(1);
 
     JobCompleter(final JobEvent jobEvent) {
-      final long eventKey = jobEvent.getMetadata().getKey();
+      final long eventKey = jobEvent.getKey();
 
-      jobSubscription =
-          doRepeatedly(
-                  () ->
-                      clientRule
-                          .getJobClient()
-                          .newWorker()
-                          .jobType(JOB_TYPE)
-                          .handler(
-                              (client, job) -> {
-                                if (job.getMetadata().getKey() == eventKey) {
-                                  client.newCompleteCommand(job).payload(NULL_PAYLOAD).send();
-                                }
-                              })
-                          .open())
-              .until(Objects::nonNull, "Failed to open job subscription for job completion");
-
-      topicSubscription =
-          doRepeatedly(
-                  () ->
-                      clientRule
-                          .getClient()
-                          .newSubscription()
-                          .name("jobObserver")
-                          .jobEventHandler(
-                              e -> {
-                                if (JOB_TYPE.equals(e.getType())
-                                    && e.getState() == JobState.COMPLETED) {
-                                  isJobCompleted.set(true);
-                                }
-                              })
-                          .startAtHead()
-                          .forcedStart()
-                          .open())
-              .until(Objects::nonNull, "Failed to open topic subscription for job completion");
+      jobWorker =
+          clientRule
+              .getJobClient()
+              .newWorker()
+              .jobType(JOB_TYPE)
+              .handler(
+                  (client, job) -> {
+                    if (job.getKey() == eventKey) {
+                      client.newCompleteCommand(job.getKey()).payload(NULL_PAYLOAD).send();
+                      latch.countDown();
+                    }
+                  })
+              .open();
     }
 
     void waitForJobCompletion() {
-      waitUntil(isJobCompleted::get, 100, "Failed to wait for job completion");
+      try {
+        latch.await(10, TimeUnit.SECONDS);
+      } catch (Exception e) {
+        throw new RuntimeException(e);
+      }
+      assertJobCompleted();
     }
 
     void close() {
-      if (!jobSubscription.isClosed()) {
-        jobSubscription.close();
-      }
-
-      if (!topicSubscription.isClosed()) {
-        topicSubscription.close();
+      if (!jobWorker.isClosed()) {
+        jobWorker.close();
       }
     }
   }

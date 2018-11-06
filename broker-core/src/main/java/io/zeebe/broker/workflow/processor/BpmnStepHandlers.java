@@ -19,16 +19,17 @@ package io.zeebe.broker.workflow.processor;
 
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.workflow.model.BpmnStep;
-import io.zeebe.broker.workflow.model.ExecutableFlowElement;
+import io.zeebe.broker.workflow.model.element.ExecutableFlowElement;
 import io.zeebe.broker.workflow.processor.activity.InputMappingHandler;
 import io.zeebe.broker.workflow.processor.activity.OutputMappingHandler;
 import io.zeebe.broker.workflow.processor.activity.PropagateTerminationHandler;
-import io.zeebe.broker.workflow.processor.catchevent.SubscribeMessageHandler;
 import io.zeebe.broker.workflow.processor.flownode.ConsumeTokenHandler;
 import io.zeebe.broker.workflow.processor.flownode.TakeSequenceFlowHandler;
 import io.zeebe.broker.workflow.processor.flownode.TerminateElementHandler;
 import io.zeebe.broker.workflow.processor.gateway.ExclusiveSplitHandler;
 import io.zeebe.broker.workflow.processor.gateway.ParallelSplitHandler;
+import io.zeebe.broker.workflow.processor.message.MessageCatchElementHandler;
+import io.zeebe.broker.workflow.processor.message.TerminateIntermediateMessageHandler;
 import io.zeebe.broker.workflow.processor.process.CompleteProcessHandler;
 import io.zeebe.broker.workflow.processor.sequenceflow.ActivateGatewayHandler;
 import io.zeebe.broker.workflow.processor.sequenceflow.ParallelMergeHandler;
@@ -38,6 +39,9 @@ import io.zeebe.broker.workflow.processor.servicetask.CreateJobHandler;
 import io.zeebe.broker.workflow.processor.servicetask.TerminateServiceTaskHandler;
 import io.zeebe.broker.workflow.processor.subprocess.TerminateContainedElementsHandler;
 import io.zeebe.broker.workflow.processor.subprocess.TriggerStartEventHandler;
+import io.zeebe.broker.workflow.processor.timer.CreateTimerHandler;
+import io.zeebe.broker.workflow.processor.timer.DueDateTimerChecker;
+import io.zeebe.broker.workflow.processor.timer.TerminateTimerHandler;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.EnumMap;
@@ -48,7 +52,9 @@ public class BpmnStepHandlers {
   private final Map<BpmnStep, BpmnStepHandler> stepHandlers = new EnumMap<>(BpmnStep.class);
 
   public BpmnStepHandlers(
-      SubscriptionCommandSender subscriptionCommandSender, WorkflowState workflowState) {
+      SubscriptionCommandSender subscriptionCommandSender,
+      WorkflowState workflowState,
+      DueDateTimerChecker timerChecker) {
 
     // activity
     stepHandlers.put(BpmnStep.CREATE_JOB, new CreateJobHandler());
@@ -77,6 +83,10 @@ public class BpmnStepHandlers {
     // termination
     stepHandlers.put(BpmnStep.TERMINATE_ELEMENT, new TerminateElementHandler());
     stepHandlers.put(BpmnStep.TERMINATE_JOB_TASK, new TerminateServiceTaskHandler());
+    stepHandlers.put(BpmnStep.TERMINATE_TIMER, new TerminateTimerHandler(workflowState));
+    stepHandlers.put(
+        BpmnStep.TERMINATE_INTERMEDIATE_MESSAGE,
+        new TerminateIntermediateMessageHandler(workflowState, subscriptionCommandSender));
     stepHandlers.put(
         BpmnStep.TERMINATE_CONTAINED_INSTANCES,
         new TerminateContainedElementsHandler(workflowState));
@@ -85,7 +95,8 @@ public class BpmnStepHandlers {
     // intermediate catch event
     stepHandlers.put(
         BpmnStep.SUBSCRIBE_TO_INTERMEDIATE_MESSAGE,
-        new SubscribeMessageHandler(subscriptionCommandSender, workflowState));
+        new MessageCatchElementHandler(subscriptionCommandSender, workflowState));
+    stepHandlers.put(BpmnStep.CREATE_TIMER, new CreateTimerHandler());
 
     // process
     stepHandlers.put(BpmnStep.COMPLETE_PROCESS, new CompleteProcessHandler());

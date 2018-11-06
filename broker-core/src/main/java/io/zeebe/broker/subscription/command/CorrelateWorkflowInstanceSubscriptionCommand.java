@@ -17,12 +17,11 @@
  */
 package io.zeebe.broker.subscription.command;
 
-import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.activityInstanceKeyNullValue;
+import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.elementInstanceKeyNullValue;
 import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.messageNameHeaderLength;
 import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.payloadHeaderLength;
 import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.subscriptionPartitionIdNullValue;
 import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.workflowInstanceKeyNullValue;
-import static io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder.workflowInstancePartitionIdNullValue;
 
 import io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionDecoder;
 import io.zeebe.broker.subscription.CorrelateWorkflowInstanceSubscriptionEncoder;
@@ -42,9 +41,8 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
       new CorrelateWorkflowInstanceSubscriptionDecoder();
 
   private int subscriptionPartitionId;
-  private int workflowInstancePartitionId;
   private long workflowInstanceKey;
-  private long activityInstanceKey;
+  private long elementInstanceKey;
 
   private final UnsafeBuffer messageName = new UnsafeBuffer(0, 0);
   private final UnsafeBuffer payload = new UnsafeBuffer(0, 0);
@@ -74,9 +72,8 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
 
     encoder
         .subscriptionPartitionId(subscriptionPartitionId)
-        .workflowInstancePartitionId(workflowInstancePartitionId)
         .workflowInstanceKey(workflowInstanceKey)
-        .activityInstanceKey(activityInstanceKey)
+        .elementInstanceKey(elementInstanceKey)
         .putMessageName(messageName, 0, messageName.capacity())
         .putPayload(payload, 0, payload.capacity());
   }
@@ -86,9 +83,8 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
     super.wrap(buffer, offset, length);
 
     subscriptionPartitionId = decoder.subscriptionPartitionId();
-    workflowInstancePartitionId = decoder.workflowInstancePartitionId();
     workflowInstanceKey = decoder.workflowInstanceKey();
-    activityInstanceKey = decoder.activityInstanceKey();
+    elementInstanceKey = decoder.elementInstanceKey();
 
     offset = decoder.limit();
 
@@ -108,9 +104,8 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
   @Override
   public void reset() {
     subscriptionPartitionId = subscriptionPartitionIdNullValue();
-    workflowInstancePartitionId = workflowInstancePartitionIdNullValue();
     workflowInstanceKey = workflowInstanceKeyNullValue();
-    activityInstanceKey = activityInstanceKeyNullValue();
+    elementInstanceKey = elementInstanceKeyNullValue();
     messageName.wrap(0, 0);
     payload.wrap(0, 0);
   }
@@ -123,14 +118,6 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
     this.subscriptionPartitionId = subscriptionPartitionId;
   }
 
-  public int getWorkflowInstancePartitionId() {
-    return workflowInstancePartitionId;
-  }
-
-  public void setWorkflowInstancePartitionId(int workflowInstancePartitionId) {
-    this.workflowInstancePartitionId = workflowInstancePartitionId;
-  }
-
   public long getWorkflowInstanceKey() {
     return workflowInstanceKey;
   }
@@ -139,12 +126,12 @@ public class CorrelateWorkflowInstanceSubscriptionCommand
     this.workflowInstanceKey = workflowInstanceKey;
   }
 
-  public long getActivityInstanceKey() {
-    return activityInstanceKey;
+  public long getElementInstanceKey() {
+    return elementInstanceKey;
   }
 
-  public void setActivityInstanceKey(long activityInstanceKey) {
-    this.activityInstanceKey = activityInstanceKey;
+  public void setElementInstanceKey(long elementInstanceKey) {
+    this.elementInstanceKey = elementInstanceKey;
   }
 
   public DirectBuffer getMessageName() {

@@ -17,18 +17,22 @@
  */
 package io.zeebe.broker.workflow.model.transformation.handler;
 
-import io.zeebe.broker.workflow.model.ExecutableMessageCatchElement;
-import io.zeebe.broker.workflow.model.ExecutableWorkflow;
+import io.zeebe.broker.workflow.model.BpmnStep;
+import io.zeebe.broker.workflow.model.element.ExecutableIntermediateCatchElement;
+import io.zeebe.broker.workflow.model.element.ExecutableMessage;
+import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
+import io.zeebe.model.bpmn.instance.EventDefinition;
 import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.zeebe.model.bpmn.instance.Message;
 import io.zeebe.model.bpmn.instance.MessageEventDefinition;
+import io.zeebe.model.bpmn.instance.TimerEventDefinition;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import java.time.Duration;
 
 public class IntermediateCatchEventHandler
     implements ModelElementTransformer<IntermediateCatchEvent> {
-
-  private final MessageCatchElementHandler messageCatchHandler = new MessageCatchElementHandler();
 
   @Override
   public Class<IntermediateCatchEvent> getType() {
@@ -38,16 +42,62 @@ public class IntermediateCatchEventHandler
   @Override
   public void transform(IntermediateCatchEvent element, TransformContext context) {
 
-    // only message supported at this point
-
     final ExecutableWorkflow workflow = context.getCurrentWorkflow();
-    final ExecutableMessageCatchElement executableElement =
-        workflow.getElementById(element.getId(), ExecutableMessageCatchElement.class);
+    final ExecutableIntermediateCatchElement executableElement =
+        workflow.getElementById(element.getId(), ExecutableIntermediateCatchElement.class);
 
-    final MessageEventDefinition eventDefinition =
-        (MessageEventDefinition) element.getEventDefinitions().iterator().next();
-    final Message message = eventDefinition.getMessage();
+    final EventDefinition eventDefinition = element.getEventDefinitions().iterator().next();
 
-    messageCatchHandler.transform(executableElement, message, context);
+    bindDefaultLifecycle(context, executableElement);
+
+    if (eventDefinition instanceof MessageEventDefinition) {
+      transformMessageEventDefinition(
+          context, executableElement, (MessageEventDefinition) eventDefinition);
+
+    } else if (eventDefinition instanceof TimerEventDefinition) {
+      transformTimerEventDefinition(executableElement, (TimerEventDefinition) eventDefinition);
+    }
+  }
+
+  private void transformMessageEventDefinition(
+      TransformContext context,
+      final ExecutableIntermediateCatchElement executableElement,
+      final MessageEventDefinition messageEventDefinition) {
+
+    final Message message = messageEventDefinition.getMessage();
+    final ExecutableMessage executableMessage = context.getMessage(message.getId());
+    executableElement.setMessage(executableMessage);
+
+    executableElement.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.SUBSCRIBE_TO_INTERMEDIATE_MESSAGE);
+    executableElement.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.TERMINATE_INTERMEDIATE_MESSAGE);
+  }
+
+  private void transformTimerEventDefinition(
+      final ExecutableIntermediateCatchElement executableElement,
+      final TimerEventDefinition timerEventDefinition) {
+
+    final String timeDuration = timerEventDefinition.getTimeDuration().getTextContent();
+    final Duration duration = Duration.parse(timeDuration);
+    executableElement.setDuration(duration);
+
+    executableElement.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.CREATE_TIMER);
+    executableElement.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.TERMINATE_TIMER);
+  }
+
+  private void bindDefaultLifecycle(
+      TransformContext context, final ExecutableIntermediateCatchElement executableElement) {
+
+    executableElement.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_READY, BpmnStep.APPLY_INPUT_MAPPING);
+    executableElement.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.APPLY_OUTPUT_MAPPING);
+    executableElement.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_COMPLETED, context.getCurrentFlowNodeOutgoingStep());
+    executableElement.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.PROPAGATE_TERMINATION);
   }
 }

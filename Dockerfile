@@ -4,6 +4,7 @@ ARG DISTBALL
 
 ENV ZB_HOME=/usr/local/zeebe \
     ZEEBE_LOG_LEVEL=info \
+    ZEEBE_GATEWAY_HOST=0.0.0.0 \
     DEPLOY_ON_KUBERNETES=false \
     BOOTSTRAP=1
 ENV PATH "${ZB_HOME}/bin:${PATH}"

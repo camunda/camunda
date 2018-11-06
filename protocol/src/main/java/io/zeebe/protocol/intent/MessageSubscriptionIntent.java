@@ -20,7 +20,10 @@ public enum MessageSubscriptionIntent implements Intent {
   OPENED((short) 1),
 
   CORRELATE((short) 2),
-  CORRELATED((short) 3);
+  CORRELATED((short) 3),
+
+  CLOSE((short) 4),
+  CLOSED((short) 5);
 
   private short value;
 
@@ -43,6 +46,10 @@ public enum MessageSubscriptionIntent implements Intent {
         return CORRELATE;
       case 3:
         return CORRELATED;
+      case 4:
+        return CLOSE;
+      case 5:
+        return CLOSED;
       default:
         return Intent.UNKNOWN;
     }

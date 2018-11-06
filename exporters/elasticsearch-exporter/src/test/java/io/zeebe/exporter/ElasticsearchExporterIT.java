@@ -74,7 +74,7 @@ public class ElasticsearchExporterIT {
     zeebeClient =
         ZeebeClient.newClientBuilder()
             .brokerContactPoint(
-                testRule.getBrokerCfg().getNetwork().getGateway().toSocketAddress().toString())
+                testRule.getBrokerCfg().getGateway().getNetwork().toSocketAddress().toString())
             .build();
     esClient = createElasticsearchClient();
   }

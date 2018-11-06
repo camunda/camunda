@@ -71,7 +71,11 @@ public class TopologyManagerImpl extends Actor implements TopologyManager, RaftS
   public TopologyManagerImpl(Gossip gossip, NodeInfo localBroker, ClusterCfg clusterCfg) {
     this.gossip = gossip;
     this.topology =
-        new Topology(localBroker, clusterCfg.getClusterSize(), clusterCfg.getPartitionsCount());
+        new Topology(
+            localBroker,
+            clusterCfg.getClusterSize(),
+            clusterCfg.getPartitionsCount(),
+            clusterCfg.getReplicationFactor());
   }
 
   @Override

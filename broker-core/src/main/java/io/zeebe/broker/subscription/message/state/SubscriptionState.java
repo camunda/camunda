@@ -105,8 +105,7 @@ public class SubscriptionState<T extends Subscription> {
   }
 
   private T getSubscription(final DirectBuffer buffer, final int offset, final int length) {
-    return persistenceHelper.getValueInstance(
-        clazz, subscriptionHandle, buffer, offset, length, valueBuffer);
+    return persistenceHelper.getValueInstance(clazz, subscriptionHandle, buffer, offset, length);
   }
 
   public List<T> findSubscriptions(

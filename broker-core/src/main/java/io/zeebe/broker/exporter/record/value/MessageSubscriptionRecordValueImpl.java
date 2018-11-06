@@ -26,23 +26,20 @@ public class MessageSubscriptionRecordValueImpl extends RecordValueImpl
     implements MessageSubscriptionRecordValue {
   private final String messageName;
   private final String correlationKey;
-  private final int workflowInstancePartitionId;
   private final long workflowInstanceKey;
-  private final long activityInstanceKey;
+  private final long elementInstanceKey;
 
   public MessageSubscriptionRecordValueImpl(
       final ExporterObjectMapper objectMapper,
       final String messageName,
       final String correlationKey,
-      final int workflowInstancePartitionId,
       final long workflowInstanceKey,
-      final long activityInstanceKey) {
+      final long elementInstanceKey) {
     super(objectMapper);
     this.messageName = messageName;
     this.correlationKey = correlationKey;
-    this.workflowInstancePartitionId = workflowInstancePartitionId;
     this.workflowInstanceKey = workflowInstanceKey;
-    this.activityInstanceKey = activityInstanceKey;
+    this.elementInstanceKey = elementInstanceKey;
   }
 
   @Override
@@ -56,18 +53,13 @@ public class MessageSubscriptionRecordValueImpl extends RecordValueImpl
   }
 
   @Override
-  public int getWorkflowInstancePartitionId() {
-    return workflowInstancePartitionId;
-  }
-
-  @Override
   public long getWorkflowInstanceKey() {
     return workflowInstanceKey;
   }
 
   @Override
-  public long getActivityInstanceKey() {
-    return activityInstanceKey;
+  public long getElementInstanceKey() {
+    return elementInstanceKey;
   }
 
   @Override
@@ -79,21 +71,15 @@ public class MessageSubscriptionRecordValueImpl extends RecordValueImpl
       return false;
     }
     final MessageSubscriptionRecordValueImpl that = (MessageSubscriptionRecordValueImpl) o;
-    return workflowInstancePartitionId == that.workflowInstancePartitionId
-        && workflowInstanceKey == that.workflowInstanceKey
-        && activityInstanceKey == that.activityInstanceKey
+    return workflowInstanceKey == that.workflowInstanceKey
+        && elementInstanceKey == that.elementInstanceKey
         && Objects.equals(messageName, that.messageName)
         && Objects.equals(correlationKey, that.correlationKey);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(
-        messageName,
-        correlationKey,
-        workflowInstancePartitionId,
-        workflowInstanceKey,
-        activityInstanceKey);
+    return Objects.hash(messageName, correlationKey, workflowInstanceKey, elementInstanceKey);
   }
 
   @Override
@@ -105,12 +91,10 @@ public class MessageSubscriptionRecordValueImpl extends RecordValueImpl
         + ", correlationKey='"
         + correlationKey
         + '\''
-        + ", workflowInstancePartitionId="
-        + workflowInstancePartitionId
         + ", workflowInstanceKey="
         + workflowInstanceKey
-        + ", activityInstanceKey="
-        + activityInstanceKey
+        + ", elementInstanceKey="
+        + elementInstanceKey
         + '}';
   }
 }

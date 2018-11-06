@@ -15,23 +15,25 @@
  */
 package io.zeebe.broker.it.incident;
 
-import static io.zeebe.broker.it.util.TopicEventRecorder.state;
-import static io.zeebe.test.util.TestUtil.waitUntil;
+import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertIncidentCreated;
+import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertIncidentDeleted;
+import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertIncidentResolved;
+import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertJobCreated;
 
-import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.gateway.api.clients.JobClient;
-import io.zeebe.gateway.api.clients.WorkflowClient;
-import io.zeebe.gateway.api.events.DeploymentEvent;
-import io.zeebe.gateway.api.events.IncidentState;
-import io.zeebe.gateway.api.events.JobEvent;
-import io.zeebe.gateway.api.events.JobState;
-import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
-import io.zeebe.gateway.api.events.WorkflowInstanceState;
-import io.zeebe.gateway.api.subscription.JobHandler;
+import io.zeebe.client.api.clients.JobClient;
+import io.zeebe.client.api.clients.WorkflowClient;
+import io.zeebe.client.api.events.DeploymentEvent;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.response.ActivatedJob;
+import io.zeebe.client.api.subscription.JobHandler;
+import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.value.IncidentRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.intent.IncidentIntent;
+import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
 import org.junit.Before;
 import org.junit.Rule;
@@ -48,12 +50,9 @@ public class IncidentTest {
   private static final String PAYLOAD = "{\"foo\": \"bar\"}";
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientRule clientRule = new ClientRule(brokerRule);
-  public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
+  public GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
 
-  @Rule
-  public RuleChain ruleChain =
-      RuleChain.outerRule(brokerRule).around(clientRule).around(eventRecorder);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   private WorkflowClient workflowClient;
   private JobClient jobClient;
@@ -76,17 +75,19 @@ public class IncidentTest {
         .send()
         .join();
 
-    waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.CREATED));
-
-    final WorkflowInstanceEvent activityInstanceEvent =
-        eventRecorder.getElementInState("failingTask", WorkflowInstanceState.ELEMENT_READY);
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst();
 
     // when
-    workflowClient.newUpdatePayloadCommand(activityInstanceEvent).payload(PAYLOAD).send().join();
+    workflowClient
+        .newUpdatePayloadCommand(incident.getValue().getElementInstanceKey())
+        .payload(PAYLOAD)
+        .send()
+        .join();
 
     // then
-    waitUntil(() -> eventRecorder.hasJobEvent(state(JobState.CREATED)));
-    waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.RESOLVED));
+    assertJobCreated("test");
+    assertIncidentResolved();
   }
 
   @Test
@@ -102,13 +103,16 @@ public class IncidentTest {
             .send()
             .join();
 
-    waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.CREATED));
+    assertIncidentCreated();
 
     // when
-    workflowClient.newCancelInstanceCommand(workflowInstance).send().join();
+    workflowClient
+        .newCancelInstanceCommand(workflowInstance.getWorkflowInstanceKey())
+        .send()
+        .join();
 
     // then
-    waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.DELETED));
+    assertIncidentDeleted();
   }
 
   @Test
@@ -138,17 +142,17 @@ public class IncidentTest {
         .open();
 
     // then an incident is created
-    waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.CREATED));
+    assertIncidentCreated();
 
     // when the job retries are increased
     jobHandler.failJob = false;
 
-    final JobEvent job = jobHandler.job;
+    final ActivatedJob job = jobHandler.job;
 
-    jobClient.newUpdateRetriesCommand(job).retries(3).send().join();
+    jobClient.newUpdateRetriesCommand(job.getKey()).retries(3).send().join();
 
     // then the incident is deleted
-    waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.DELETED));
+    assertIncidentDeleted();
   }
 
   private void deploy() {
@@ -160,16 +164,16 @@ public class IncidentTest {
 
   private static final class ControllableJobHandler implements JobHandler {
     boolean failJob = false;
-    JobEvent job;
+    ActivatedJob job;
 
     @Override
-    public void handle(final JobClient client, final JobEvent job) {
+    public void handle(final JobClient client, final ActivatedJob job) {
       this.job = job;
 
       if (failJob) {
         throw new RuntimeException("expected failure");
       } else {
-        client.newCompleteCommand(job).payload((String) null).send().join();
+        client.newCompleteCommand(job.getKey()).payload("{}").send().join();
       }
     }
   }

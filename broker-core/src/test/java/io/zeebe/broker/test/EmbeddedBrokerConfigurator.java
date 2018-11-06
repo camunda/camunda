@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.test;
 
-import io.zeebe.broker.exporter.DebugExporter;
+import io.zeebe.broker.exporter.debug.DebugLogExporter;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.ExporterCfg;
@@ -30,7 +30,7 @@ public class EmbeddedBrokerConfigurator {
   public static final Consumer<BrokerCfg> NOOP = cfg -> {};
 
   public static final Consumer<BrokerCfg> DEBUG_EXPORTER =
-      cfg -> cfg.getExporters().add(DebugExporter.defaultConfig(false));
+      cfg -> cfg.getExporters().add(DebugLogExporter.defaultConfig(false));
 
   public static final Consumer<BrokerCfg> TEST_RECORDER =
       cfg -> {
@@ -39,6 +39,9 @@ public class EmbeddedBrokerConfigurator {
         exporterCfg.setClassName(RecordingExporter.class.getName());
         cfg.getExporters().add(exporterCfg);
       };
+
+  public static final Consumer<BrokerCfg> DISABLE_EMBEDDED_GATEWAY =
+      cfg -> cfg.getGateway().setEnable(false);
 
   public static Consumer<BrokerCfg> setPartitionCount(final int partitionCount) {
     return cfg -> cfg.getCluster().setPartitionsCount(partitionCount);
@@ -63,7 +66,7 @@ public class EmbeddedBrokerConfigurator {
   }
 
   public static Consumer<BrokerCfg> setGatewayApiPort(final int port) {
-    return cfg -> cfg.getNetwork().getGateway().setPort(port);
+    return cfg -> cfg.getGateway().getNetwork().setPort(port);
   }
 
   public static Consumer<BrokerCfg> setClientApiPort(final int port) {

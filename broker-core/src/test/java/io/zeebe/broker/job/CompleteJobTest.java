@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.job;
 
-import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.entry;
@@ -33,11 +32,8 @@ import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
-import io.zeebe.test.broker.protocol.clientapi.TestPartitionClient;
+import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.record.RecordingExporter;
-import java.util.HashMap;
-import java.util.Map;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -49,13 +45,13 @@ public class CompleteJobTest {
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
   public ClientApiRule apiRule = new ClientApiRule(brokerRule::getClientAddress);
 
-  private TestPartitionClient testClient;
+  private PartitionTestClient testClient;
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
   @Before
   public void setUp() {
-    testClient = apiRule.partition();
+    testClient = apiRule.partitionClient();
   }
 
   @Test
@@ -63,23 +59,29 @@ public class CompleteJobTest {
     // given
     createJob(JOB_TYPE);
 
-    apiRule.openJobSubscription(JOB_TYPE).await();
+    apiRule.activateJobs(JOB_TYPE).await();
 
-    final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
+    final Record<JobRecordValue> jobEvent = receiveSingleJobEvent();
 
     // when
+    final JobRecordValue jobEventValue = jobEvent.getValue();
     final ExecuteCommandResponse response =
-        completeJob(subscribedEvent.key(), (byte[]) subscribedEvent.value().get("payload"));
+        testClient.completeJob(jobEvent.getKey(), jobEventValue.getPayload());
 
     // then
-    final SubscribedRecord completeEvent = testClient.receiveFirstJobCommand(JobIntent.COMPLETE);
+    final Record<JobRecordValue> completeEvent =
+        testClient.receiveFirstJobCommand(JobIntent.COMPLETE);
 
-    assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(response.sourceRecordPosition()).isEqualTo(completeEvent.position());
-    assertThat(response.intent()).isEqualTo(JobIntent.COMPLETED);
+    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(response.getSourceRecordPosition()).isEqualTo(completeEvent.getPosition());
+    assertThat(response.getIntent()).isEqualTo(JobIntent.COMPLETED);
 
-    final Map<String, Object> expectedValue = new HashMap<>(subscribedEvent.value());
-    assertThat(response.getValue()).containsAllEntriesOf(expectedValue);
+    assertThat(response.getValue())
+        .contains(
+            entry("worker", jobEventValue.getWorker()),
+            entry("type", jobEventValue.getType()),
+            entry("retries", (long) jobEventValue.getRetries()),
+            entry("deadline", jobEventValue.getDeadline().toEpochMilli()));
 
     final Record<JobRecordValue> loggedEvent =
         RecordingExporter.jobRecords(JobIntent.COMPLETED).getFirst();
@@ -93,16 +95,18 @@ public class CompleteJobTest {
     final int key = 123;
 
     // when
-    final ExecuteCommandResponse response = completeJob(key, MsgPackConstants.MSGPACK_PAYLOAD);
+    final ExecuteCommandResponse response =
+        testClient.completeJob(key, MsgPackConstants.MSGPACK_PAYLOAD);
 
     // then
-    final SubscribedRecord completeEvent = testClient.receiveFirstJobCommand(JobIntent.COMPLETE);
+    final Record<JobRecordValue> completeEvent =
+        testClient.receiveFirstJobCommand(JobIntent.COMPLETE);
 
-    assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(response.intent()).isEqualTo(JobIntent.COMPLETE);
-    assertThat(response.sourceRecordPosition()).isEqualTo(completeEvent.position());
-    assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.rejectionReason()).isEqualTo("Job does not exist");
+    assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(response.getIntent()).isEqualTo(JobIntent.COMPLETE);
+    assertThat(response.getSourceRecordPosition()).isEqualTo(completeEvent.getPosition());
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
+    assertThat(response.getRejectionReason()).isEqualTo("Job does not exist");
   }
 
   @Test
@@ -110,17 +114,17 @@ public class CompleteJobTest {
     // given
     createJob(JOB_TYPE);
 
-    apiRule.openJobSubscription(JOB_TYPE).await();
+    apiRule.activateJobs(JOB_TYPE).await();
 
-    final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
+    final Record<JobRecordValue> jobEvent = receiveSingleJobEvent();
 
     // when
     final ExecuteCommandResponse response =
-        completeJob(subscribedEvent.key(), MsgPackConstants.MSGPACK_PAYLOAD);
+        testClient.completeJob(jobEvent.getKey(), MsgPackConstants.MSGPACK_PAYLOAD);
 
     // then
-    assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(response.intent()).isEqualTo(JobIntent.COMPLETED);
+    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(response.getIntent()).isEqualTo(JobIntent.COMPLETED);
     assertThat(response.getValue()).contains(entry("payload", MsgPackConstants.MSGPACK_PAYLOAD));
   }
 
@@ -128,17 +132,16 @@ public class CompleteJobTest {
   public void shouldCompleteJobWithNilPayload() {
     // given
     createJob(JOB_TYPE);
-
-    apiRule.openJobSubscription(JOB_TYPE).await();
-
-    final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
+    apiRule.activateJobs(JOB_TYPE).await();
+    final Record<JobRecordValue> jobEvent = receiveSingleJobEvent();
 
     // when
-    final ExecuteCommandResponse response = completeJob(subscribedEvent.key(), MsgPackHelper.NIL);
+    final ExecuteCommandResponse response =
+        testClient.completeJob(jobEvent.getKey(), MsgPackHelper.NIL);
 
     // then
-    assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(response.intent()).isEqualTo(JobIntent.COMPLETED);
+    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(response.getIntent()).isEqualTo(JobIntent.COMPLETED);
     assertThat(response.getValue()).contains(entry("payload", MsgPackHelper.EMTPY_OBJECT));
   }
 
@@ -147,16 +150,16 @@ public class CompleteJobTest {
     // given
     createJob(JOB_TYPE);
 
-    apiRule.openJobSubscription(JOB_TYPE).await();
+    apiRule.activateJobs(JOB_TYPE).await();
 
-    final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
+    final Record<JobRecordValue> jobEvent = receiveSingleJobEvent();
 
     // when
-    final ExecuteCommandResponse response = completeJob(subscribedEvent.key(), new byte[0]);
+    final ExecuteCommandResponse response = testClient.completeJob(jobEvent.getKey(), new byte[0]);
 
     // then
-    assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(response.intent()).isEqualTo(JobIntent.COMPLETED);
+    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(response.getIntent()).isEqualTo(JobIntent.COMPLETED);
     assertThat(response.getValue()).contains(entry("payload", MsgPackHelper.EMTPY_OBJECT));
   }
 
@@ -164,18 +167,17 @@ public class CompleteJobTest {
   public void shouldCompleteJobWithNoPayload() {
     // given
     createJob(JOB_TYPE);
+    apiRule.activateJobs(JOB_TYPE).await();
 
-    apiRule.openJobSubscription(JOB_TYPE).await();
-
-    final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
+    final Record<JobRecordValue> jobEvent = receiveSingleJobEvent();
 
     // when
     final ExecuteCommandResponse response =
-        completeJob(subscribedEvent.key(), (byte[]) subscribedEvent.value().get("payload"));
+        testClient.completeJob(jobEvent.getKey(), jobEvent.getValue().getPayload());
 
     // then
-    assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(response.intent()).isEqualTo(JobIntent.COMPLETED);
+    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(response.getIntent()).isEqualTo(JobIntent.COMPLETED);
     assertThat(response.getValue()).contains(entry("payload", MsgPackHelper.EMTPY_OBJECT));
   }
 
@@ -183,15 +185,14 @@ public class CompleteJobTest {
   public void shouldThrowExceptionOnCompletionIfPayloadIsInvalid() {
     // given
     createJob(JOB_TYPE);
+    apiRule.activateJobs(JOB_TYPE).await();
 
-    apiRule.openJobSubscription(JOB_TYPE).await();
-
-    final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
+    final Record<JobRecordValue> jobEvent = receiveSingleJobEvent();
     final byte[] invalidPayload = new byte[] {1}; // positive fixnum, i.e. no object
 
     // when
     final Throwable throwable =
-        catchThrowable(() -> completeJob(subscribedEvent.key(), invalidPayload));
+        catchThrowable(() -> testClient.completeJob(jobEvent.getKey(), invalidPayload));
 
     // then
     assertThat(throwable).isInstanceOf(RuntimeException.class);
@@ -204,42 +205,43 @@ public class CompleteJobTest {
   public void shouldRejectCompletionIfJobIsCompleted() {
     // given
     final ExecuteCommandResponse response2 = createJob(JOB_TYPE);
-    assertThat(response2.recordType()).isEqualTo(RecordType.EVENT);
+    assertThat(response2.getRecordType()).isEqualTo(RecordType.EVENT);
 
-    apiRule.openJobSubscription(JOB_TYPE).await();
+    apiRule.activateJobs(JOB_TYPE).await();
 
-    final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
-    completeJob(subscribedEvent.key(), (byte[]) subscribedEvent.value().get("payload"));
+    final Record<JobRecordValue> jobEvent = receiveSingleJobEvent();
+    testClient.completeJob(jobEvent.getKey(), jobEvent.getValue().getPayload());
 
     // when
+
     final ExecuteCommandResponse response =
-        completeJob(subscribedEvent.key(), (byte[]) subscribedEvent.value().get("payload"));
+        testClient.completeJob(jobEvent.getKey(), jobEvent.getValue().getPayload());
 
     // then
-    assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.rejectionReason()).isEqualTo("Job does not exist");
-    assertThat(response.intent()).isEqualTo(JobIntent.COMPLETE);
+    assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
+    assertThat(response.getRejectionReason()).isEqualTo("Job does not exist");
+    assertThat(response.getIntent()).isEqualTo(JobIntent.COMPLETE);
   }
 
   @Test
   public void shouldRejectCompletionIfJobIsFailed() {
     // given
     final ExecuteCommandResponse job = createJob(JOB_TYPE);
-    assertThat(job.recordType()).isEqualTo(RecordType.EVENT);
+    assertThat(job.getRecordType()).isEqualTo(RecordType.EVENT);
 
     // when
-    apiRule.openJobSubscription(JOB_TYPE).await();
-    final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
-    failJob(subscribedEvent.key());
+    apiRule.activateJobs(JOB_TYPE).await();
+    final Record<JobRecordValue> jobEvent = receiveSingleJobEvent();
+    failJob(jobEvent.getKey());
     final ExecuteCommandResponse response =
-        completeJob(subscribedEvent.key(), (byte[]) subscribedEvent.value().get("payload"));
+        testClient.completeJob(jobEvent.getKey(), jobEvent.getValue().getPayload());
 
     // then
-    assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.rejectionReason()).isEqualTo("Job is failed and must be resolved first");
-    assertThat(response.intent()).isEqualTo(JobIntent.COMPLETE);
+    assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
+    assertThat(response.getRejectionReason()).isEqualTo("Job is failed and must be resolved first");
+    assertThat(response.getIntent()).isEqualTo(JobIntent.COMPLETE);
   }
 
   private ExecuteCommandResponse createJob(final String type) {
@@ -249,17 +251,6 @@ public class CompleteJobTest {
         .command()
         .put("type", type)
         .put("retries", 3)
-        .done()
-        .sendAndAwait();
-  }
-
-  private ExecuteCommandResponse completeJob(final long key, final byte[] payload) {
-    return apiRule
-        .createCmdRequest()
-        .type(ValueType.JOB, JobIntent.COMPLETE)
-        .key(key)
-        .command()
-        .put("payload", payload)
         .done()
         .sendAndAwait();
   }
@@ -275,8 +266,7 @@ public class CompleteJobTest {
         .sendAndAwait();
   }
 
-  private SubscribedRecord receiveSingleSubscribedEvent() {
-    waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 1);
-    return apiRule.subscribedEvents().findFirst().get();
+  private Record<JobRecordValue> receiveSingleJobEvent() {
+    return testClient.receiveFirstJobEvent(JobIntent.ACTIVATED);
   }
 }

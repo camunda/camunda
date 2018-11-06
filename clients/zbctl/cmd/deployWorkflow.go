@@ -14,27 +14,26 @@
 package cmd
 
 import (
-	"github.com/zeebe-io/zeebe/clients/zbctl/utils"
-
 	"github.com/spf13/cobra"
 )
 
-// deployWorkflowCmd implements cobra command for cli
 var deployWorkflowCmd = &cobra.Command{
-	Use:    "deploy <workflowPath>",
-	Short:  "Creates new workflow defined by provided bpmn or yaml file as workflowPath",
-	Args:   cobra.MinimumNArgs(1),
-	PreRun: initBroker,
-	Run: func(cmd *cobra.Command, args []string) {
+	Use:     "deploy <workflowPath>",
+	Short:   "Creates new workflow defined by provided BPMN or YAML file as workflowPath",
+	Args:    cobra.MinimumNArgs(1),
+	PreRunE: initClient,
+	RunE: func(cmd *cobra.Command, args []string) error {
 		zbCmd := client.NewDeployWorkflowCommand().AddResourceFile(args[0])
 		for i := 1; i < len(args); i++ {
 			zbCmd = zbCmd.AddResourceFile(args[i])
 		}
 
 		response, err := zbCmd.Send()
-		utils.CheckOrExit(err, utils.ExitCodeIOError, defaultErrCtx)
+		if err != nil {
+			return err
+		}
 
-		out.Serialize(response).Flush()
+		return printJson(response)
 	},
 }
 

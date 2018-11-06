@@ -21,98 +21,102 @@ import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
 
 import io.zeebe.broker.util.KeyStateController;
 import io.zeebe.broker.workflow.deployment.distribute.processor.PendingDeploymentDistribution;
+import io.zeebe.broker.workflow.state.PersistenceHelper;
+import io.zeebe.logstreams.rocksdb.ZbRocksDb;
+import java.io.File;
+import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
+import org.agrona.DirectBuffer;
+import org.agrona.ExpandableArrayBuffer;
+import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.rocksdb.RocksIterator;
+import org.rocksdb.ColumnFamilyHandle;
+import org.rocksdb.DBOptions;
+import org.rocksdb.RocksDB;
+import org.rocksdb.RocksDBException;
 
 public class DeploymentsStateController extends KeyStateController {
+  private static final byte[] PENDING_DEPLOYMENT_COLUMN_FAMILY_NAME =
+      "pendingDeployment".getBytes();
 
-  public static final byte[] DEPLOYMENT_KEY_PREFIX = "deployment".getBytes();
-
-  private static final int DEPLOYMENT_KEY_OFFSET = DEPLOYMENT_KEY_PREFIX.length;
-  private static final int DEPLOYMENT_COMPLETE_KEY_LENGTH = DEPLOYMENT_KEY_OFFSET + Long.BYTES;
-
-  private final UnsafeBuffer deploymentKeyBuffer;
+  public static final byte[][] COLUMN_FAMILY_NAMES = {PENDING_DEPLOYMENT_COLUMN_FAMILY_NAME};
 
   private final PendingDeploymentDistribution pendingDeploymentDistribution;
-  private final UnsafeBuffer buffer;
+  private final MutableDirectBuffer valueBuffer;
+  private final PersistenceHelper persistenceHelper;
+
+  private ZbRocksDb db;
+  private ColumnFamilyHandle pendingDeploymentColumnFamily;
 
   public DeploymentsStateController() {
+    persistenceHelper = new PersistenceHelper(this);
     pendingDeploymentDistribution = new PendingDeploymentDistribution(new UnsafeBuffer(0, 0), -1);
-    buffer = new UnsafeBuffer(0, 0);
+    valueBuffer = new ExpandableArrayBuffer();
+  }
 
-    deploymentKeyBuffer = new UnsafeBuffer(new byte[DEPLOYMENT_COMPLETE_KEY_LENGTH]);
-    deploymentKeyBuffer.putBytes(0, DEPLOYMENT_KEY_PREFIX);
+  @Override
+  public RocksDB open(final File dbDirectory, final boolean reopen) throws Exception {
+    final List<byte[]> columnFamilyNames =
+        Stream.of(COLUMN_FAMILY_NAMES).flatMap(Stream::of).collect(Collectors.toList());
+
+    final RocksDB rocksDB = super.open(dbDirectory, reopen, columnFamilyNames);
+    pendingDeploymentColumnFamily = getColumnFamilyHandle(PENDING_DEPLOYMENT_COLUMN_FAMILY_NAME);
+
+    return rocksDB;
+  }
+
+  @Override
+  protected RocksDB openDb(DBOptions dbOptions) throws RocksDBException {
+    db =
+        ZbRocksDb.open(
+            dbOptions, dbDirectory.getAbsolutePath(), columnFamilyDescriptors, columnFamilyHandles);
+    return db;
   }
 
   public void putPendingDeployment(
       final long key, final PendingDeploymentDistribution pendingDeploymentDistribution) {
-    ensureIsOpened("putPendingDeployment");
 
     final int length = pendingDeploymentDistribution.getLength();
-    final byte[] bytes = new byte[length];
-    buffer.wrap(bytes);
-    pendingDeploymentDistribution.write(buffer, 0);
+    pendingDeploymentDistribution.write(valueBuffer, 0);
 
-    put(key, bytes);
+    put(pendingDeploymentColumnFamily, key, valueBuffer.byteArray(), 0, length);
   }
 
   private PendingDeploymentDistribution getPending(final long key) {
-    final byte[] bytes = get(key);
-    PendingDeploymentDistribution pending = null;
-    if (bytes != null) {
-      buffer.wrap(bytes);
-      pendingDeploymentDistribution.wrap(buffer, 0, bytes.length);
-      pending = pendingDeploymentDistribution;
-    }
+    setLong(key);
+    final boolean successfulRead =
+        persistenceHelper.readInto(
+            pendingDeploymentDistribution,
+            pendingDeploymentColumnFamily,
+            dbLongBuffer.byteArray(),
+            0,
+            Long.BYTES);
 
-    return pending;
+    return successfulRead ? pendingDeploymentDistribution : null;
   }
 
   public PendingDeploymentDistribution getPendingDeployment(final long key) {
-    ensureIsOpened("getPendingDeployment");
     return getPending(key);
   }
 
   public PendingDeploymentDistribution removePendingDeployment(final long key) {
-    ensureIsOpened("removePendingDeployment");
-
     final PendingDeploymentDistribution pending = getPending(key);
     if (pending != null) {
       delete(key);
     }
-
     return pending;
   }
 
   public void foreachPending(final BiConsumer<Long, PendingDeploymentDistribution> consumer) {
-    ensureIsOpened("foreachPending");
-
-    try (RocksIterator rocksIterator = getDb().newIterator()) {
-      rocksIterator.seekToFirst();
-
-      final UnsafeBuffer readBuffer = new UnsafeBuffer();
-      while (rocksIterator.isValid()) {
-
-        final byte[] keyBytes = rocksIterator.key();
-        readBuffer.wrap(keyBytes);
-
-        if (keyBytes.length == Long.BYTES) {
-          final long longKey = readBuffer.getLong(0, STATE_BYTE_ORDER);
-
-          final byte[] valueBytes = rocksIterator.value();
-          readBuffer.wrap(valueBytes);
-
-          try {
-            pendingDeploymentDistribution.wrap(readBuffer, 0, valueBytes.length);
-
-            consumer.accept(longKey, pendingDeploymentDistribution);
-          } catch (final Exception ex) {
-            // ignore
-          }
-        }
-        rocksIterator.next();
-      }
-    }
+    db.forEach(
+        pendingDeploymentColumnFamily,
+        (zbRocksEntry, iteratorControl) -> {
+          final DirectBuffer value = zbRocksEntry.getValue();
+          pendingDeploymentDistribution.wrap(value, 0, value.capacity());
+          consumer.accept(
+              zbRocksEntry.getKey().getLong(0, STATE_BYTE_ORDER), pendingDeploymentDistribution);
+        });
   }
 }

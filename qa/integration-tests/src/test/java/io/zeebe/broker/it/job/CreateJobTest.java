@@ -15,17 +15,16 @@
  */
 package io.zeebe.broker.it.job;
 
+import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertJobCreated;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchThrowable;
 import static org.assertj.core.api.Assertions.entry;
 
-import io.zeebe.broker.it.ClientRule;
+import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.gateway.api.clients.JobClient;
-import io.zeebe.gateway.api.events.JobEvent;
-import io.zeebe.gateway.api.events.JobState;
-import io.zeebe.gateway.cmd.BrokerErrorException;
-import java.time.Duration;
+import io.zeebe.client.api.clients.JobClient;
+import io.zeebe.client.api.events.JobEvent;
+import io.zeebe.client.cmd.ClientException;
 import java.util.Collections;
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,8 +36,7 @@ public class CreateJobTest {
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
-  public ClientRule clientRule =
-      new ClientRule(brokerRule, builder -> builder.requestTimeout(Duration.ofSeconds(3)));
+  public GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
@@ -52,7 +50,7 @@ public class CreateJobTest {
     final JobClient jobClient = clientRule.getClient().jobClient();
 
     // when
-    final JobEvent job =
+    final JobEvent jobEvent =
         jobClient
             .newCreateCommand()
             .jobType("foo")
@@ -62,18 +60,21 @@ public class CreateJobTest {
             .join();
 
     // then
-    assertThat(job).isNotNull();
+    assertThat(jobEvent).isNotNull();
+    assertThat(jobEvent.getKey()).isGreaterThanOrEqualTo(0);
 
-    assertThat(job.getKey()).isGreaterThanOrEqualTo(0);
-    assertThat(job.getType()).isEqualTo("foo");
-    assertThat(job.getState()).isEqualTo(JobState.CREATED);
-    assertThat(job.getCustomHeaders()).containsOnly(entry("k1", "a"), entry("k2", "b"));
-    assertThat(job.getWorker()).isEmpty();
-    assertThat(job.getDeadline()).isNull();
-    assertThat(job.getRetries()).isEqualTo(3);
+    assertJobCreated(
+        "foo",
+        (job) -> {
+          assertThat(job.getType()).isEqualTo("foo");
+          assertThat(job.getCustomHeaders()).containsOnly(entry("k1", "a"), entry("k2", "b"));
+          assertThat(job.getWorker()).isEmpty();
+          assertThat(job.getDeadline()).isNull();
+          assertThat(job.getRetries()).isEqualTo(3);
 
-    assertThat(job.getPayload()).isEqualTo("{}");
-    assertThat(job.getPayloadAsMap()).isEmpty();
+          assertThat(job.getPayload()).isEqualTo("{}");
+          assertThat(job.getPayloadAsMap()).isEmpty();
+        });
   }
 
   @Test
@@ -82,12 +83,15 @@ public class CreateJobTest {
     final JobClient jobClient = clientRule.getClient().jobClient();
 
     // when
-    final JobEvent job = jobClient.newCreateCommand().jobType("foo").payload("null").send().join();
+    jobClient.newCreateCommand().jobType("foo").payload("null").send().join();
 
     // then
-    assertThat(job.getState()).isEqualTo(JobState.CREATED);
-    assertThat(job.getPayload()).isEqualTo("{}");
-    assertThat(job.getPayloadAsMap()).isEmpty();
+    assertJobCreated(
+        "foo",
+        (job) -> {
+          assertThat(job.getPayload()).isEqualTo("{}");
+          assertThat(job.getPayloadAsMap()).isEmpty();
+        });
   }
 
   @Test
@@ -96,12 +100,15 @@ public class CreateJobTest {
     final JobClient jobClient = clientRule.getClient().jobClient();
 
     // when
-    final JobEvent job =
-        jobClient.newCreateCommand().jobType("foo").payload("{\"foo\":\"bar\"}").send().join();
+    jobClient.newCreateCommand().jobType("foo").payload("{\"foo\":\"bar\"}").send().join();
 
     // then
-    assertThat(job.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
-    assertThat(job.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+    assertJobCreated(
+        "foo",
+        (job) -> {
+          assertThat(job.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
+          assertThat(job.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+        });
   }
 
   @Test
@@ -115,8 +122,7 @@ public class CreateJobTest {
             () -> jobClient.newCreateCommand().jobType("foo").payload("[]").send().join());
 
     // then
-    assertThat(throwable).isInstanceOf(BrokerErrorException.class);
-    assertThat(throwable.getMessage()).contains("Could not read property 'payload'.");
+    assertThat(throwable).isInstanceOf(ClientException.class);
     assertThat(throwable.getMessage())
         .contains("Document has invalid format. On root level an object is only allowed.");
   }
@@ -127,17 +133,20 @@ public class CreateJobTest {
     final JobClient jobClient = clientRule.getClient().jobClient();
 
     // when
-    final JobEvent job =
-        jobClient
-            .newCreateCommand()
-            .jobType("foo")
-            .payload(Collections.singletonMap("foo", "bar"))
-            .send()
-            .join();
+    jobClient
+        .newCreateCommand()
+        .jobType("foo")
+        .payload(Collections.singletonMap("foo", "bar"))
+        .send()
+        .join();
 
     // then
-    assertThat(job.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
-    assertThat(job.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+    assertJobCreated(
+        "foo",
+        (job) -> {
+          assertThat(job.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
+          assertThat(job.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+        });
   }
 
   @Test
@@ -149,11 +158,15 @@ public class CreateJobTest {
     payload.foo = "bar";
 
     // when
-    final JobEvent job = jobClient.newCreateCommand().jobType("foo").payload(payload).send().join();
+    jobClient.newCreateCommand().jobType("foo").payload(payload).send().join();
 
     // then
-    assertThat(job.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
-    assertThat(job.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+    assertJobCreated(
+        "foo",
+        (job) -> {
+          assertThat(job.getPayload()).isEqualTo("{\"foo\":\"bar\"}");
+          assertThat(job.getPayloadAsMap()).containsOnly(entry("foo", "bar"));
+        });
   }
 
   public static class PayloadObject {

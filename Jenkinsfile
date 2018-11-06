@@ -47,7 +47,7 @@ pipeline {
             steps {
                 withMaven(jdk: jdkVersion, maven: mavenVersion, mavenSettingsConfig: mavenSettingsConfig) {
                     sh setupGoPath()
-                    sh 'mvn -B -T 1C clean com.mycila:license-maven-plugin:check com.coveo:fmt-maven-plugin:check install -DskipTests'
+                    sh 'mvn -B -T 1C clean com.mycila:license-maven-plugin:check com.coveo:fmt-maven-plugin:check install -DskipTests -Dskip-zbctl=false'
                 }
 
                 stash name: "zeebe-dist", includes: "dist/target/zeebe-broker/**/*"
@@ -66,6 +66,25 @@ pipeline {
                     post {
                         failure {
                             archiveArtifacts artifacts: '**/target/*-reports/**/*-output.txt,**/**/*.dumpstream,**/**/hs_err_*.log', allowEmptyArchive: true
+                        }
+                    }
+                }
+
+                stage('2 - JMH') {
+                    // delete this line to also run JMH on feature branch
+                    when { anyOf { branch 'master'; branch 'develop' } }
+                    agent { node { label 'ubuntu' } }
+
+                    steps {
+                        withMaven(jdk: jdkVersion, maven: mavenVersion, mavenSettingsConfig: mavenSettingsConfig) {
+                            sh 'mvn -B integration-test -DskipTests -P jmh'
+                        }
+                    }
+
+                    post {
+                        success {
+                            sh joinJmhResults
+                            jmhReport 'target/jmh-result.json'
                         }
                     }
                 }
@@ -91,6 +110,22 @@ pipeline {
             }
         }
 
+        stage('Build Docker Image') {
+            when { branch 'develop' }
+            steps {
+                build job: 'zeebe-DISTRO-docker', parameters: [
+                    string(name: 'RELEASE_VERSION', value: "SNAPSHOT"),
+                    booleanParam(name: 'IS_LATEST', value: false)
+                ]
+            }
+        }
+
+        stage('Trigger Performance Tests') {
+            when { branch 'develop' }
+            steps {
+                build job: 'zeebe-cluster-performance-tests', wait: false
+            }
+        }
     }
 
     post {

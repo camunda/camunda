@@ -17,6 +17,7 @@ package io.zeebe.gateway.impl.broker.request;
 
 import static io.zeebe.protocol.impl.record.value.deployment.ResourceType.getResourceType;
 
+import io.zeebe.gateway.protocol.GatewayOuterClass.WorkflowRequestObject.ResourceType;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -32,15 +33,28 @@ public class BrokerDeployWorkflowRequest extends BrokerExecuteCommand<Deployment
     setPartitionId(Protocol.DEPLOYMENT_PARTITION);
   }
 
-  public BrokerDeployWorkflowRequest addResource(final byte[] resource, final String resourceName) {
+  public BrokerDeployWorkflowRequest addResource(
+      final byte[] resource, final String resourceName, ResourceType resourceType) {
     requestDto
         .resources()
         .add()
         .setResource(resource)
         .setResourceName(resourceName)
-        .setResourceType(getResourceType(resourceName));
+        .setResourceType(determineResourceType(resourceName, resourceType));
 
     return this;
+  }
+
+  private io.zeebe.protocol.impl.record.value.deployment.ResourceType determineResourceType(
+      String resourceName, ResourceType resourceType) {
+    switch (resourceType) {
+      case BPMN:
+        return io.zeebe.protocol.impl.record.value.deployment.ResourceType.BPMN_XML;
+      case YAML:
+        return io.zeebe.protocol.impl.record.value.deployment.ResourceType.YAML_WORKFLOW;
+      default:
+        return getResourceType(resourceName);
+    }
   }
 
   @Override

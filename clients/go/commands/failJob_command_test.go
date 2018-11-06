@@ -4,6 +4,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/zeebe-io/zeebe/clients/go/mock_pb"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
+	"github.com/zeebe-io/zeebe/clients/go/utils"
 	"testing"
 )
 
@@ -19,9 +20,9 @@ func TestFailJobCommand(t *testing.T) {
 	}
 	stub := &pb.FailJobResponse{}
 
-	client.EXPECT().FailJob(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().FailJob(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewFailJobCommand(client)
+	command := NewFailJobCommand(client, utils.DefaultTestTimeout)
 
 	response, err := command.JobKey(123).Retries(12).Send()
 

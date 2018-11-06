@@ -17,7 +17,7 @@ package io.zeebe.broker.it.startup;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import io.zeebe.broker.it.ClientRule;
+import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.it.clustering.ClusteringRule;
 import java.util.List;
 import org.junit.Rule;
@@ -29,7 +29,7 @@ public class BootstrapPartitionsTest {
 
   private final Timeout testTimeout = Timeout.seconds(30);
   private final ClusteringRule clusteringRule = new ClusteringRule(2, 2, 2);
-  private final ClientRule clientRule = new ClientRule(clusteringRule);
+  private final GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
   @Rule
   public RuleChain ruleChain =

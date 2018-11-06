@@ -1,0 +1,11 @@
+[network]
+host = "192.168.0.1"
+port = 123
+
+[cluster]
+contactPoint = "foobar:1234"
+transportBuffer = "4K"
+requestTimeout = "123h"
+
+[threads]
+managementThreads = 100

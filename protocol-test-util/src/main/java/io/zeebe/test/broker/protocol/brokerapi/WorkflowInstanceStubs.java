@@ -38,7 +38,7 @@ public class WorkflowInstanceStubs {
             .onExecuteCommandRequest(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CREATE)
             .respondWith()
             .event()
-            .intent(WorkflowInstanceIntent.CREATED)
+            .intent(WorkflowInstanceIntent.ELEMENT_READY)
             .value()
             .allOf(r -> r.getCommand())
             .done();
@@ -58,7 +58,7 @@ public class WorkflowInstanceStubs {
             .onExecuteCommandRequest(ValueType.WORKFLOW_INSTANCE, WorkflowInstanceIntent.CANCEL)
             .respondWith()
             .event()
-            .intent(WorkflowInstanceIntent.CANCELING)
+            .intent(WorkflowInstanceIntent.ELEMENT_TERMINATING)
             .value()
             .allOf(r -> r.getCommand())
             .done();

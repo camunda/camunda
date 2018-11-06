@@ -18,8 +18,8 @@
 package io.zeebe.broker.workflow.processor.gateway;
 
 import io.zeebe.broker.incident.data.ErrorType;
-import io.zeebe.broker.workflow.model.ExecutableExclusiveGateway;
-import io.zeebe.broker.workflow.model.ExecutableSequenceFlow;
+import io.zeebe.broker.workflow.model.element.ExecutableExclusiveGateway;
+import io.zeebe.broker.workflow.model.element.ExecutableSequenceFlow;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 import io.zeebe.broker.workflow.state.ElementInstance;
@@ -43,7 +43,7 @@ public class ExclusiveSplitHandler implements BpmnStepHandler<ExecutableExclusiv
           getSequenceFlowWithFulfilledCondition(context.getElement(), value.getPayload());
 
       if (sequenceFlow != null) {
-        value.setActivityId(sequenceFlow.getId());
+        value.setElementId(sequenceFlow.getId());
         context.getOutput().writeNewEvent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, value);
       } else {
         final String errorMessage = "All conditions evaluated to false and no default flow is set.";

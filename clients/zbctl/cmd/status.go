@@ -15,28 +15,50 @@ package cmd
 
 import (
 	"fmt"
-	"github.com/zeebe-io/zeebe/clients/go/pb"
-	"github.com/zeebe-io/zeebe/clients/zbctl/utils"
-
 	"github.com/spf13/cobra"
+	"github.com/zeebe-io/zeebe/clients/go/pb"
+	"sort"
 )
 
-// deployWorkflowCmd implements cobra command for cli
+type ByNodeId []*pb.BrokerInfo
+
+func (a ByNodeId) Len() int           { return len(a) }
+func (a ByNodeId) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByNodeId) Less(i, j int) bool { return a[i].NodeId < a[j].NodeId }
+
+type ByPartitionId []*pb.Partition
+
+func (a ByPartitionId) Len() int           { return len(a) }
+func (a ByPartitionId) Swap(i, j int)      { a[i], a[j] = a[j], a[i] }
+func (a ByPartitionId) Less(i, j int) bool { return a[i].PartitionId < a[j].PartitionId }
+
 var statusCmd = &cobra.Command{
-	Use:    "status",
-	Short:  "Checks the current status of the cluster",
-	Args:   cobra.NoArgs,
-	PreRun: initBroker,
-	Run: func(cmd *cobra.Command, args []string) {
+	Use:     "status",
+	Short:   "Checks the current status of the cluster",
+	Args:    cobra.NoArgs,
+	PreRunE: initClient,
+	RunE: func(cmd *cobra.Command, args []string) error {
 		response, err := client.NewTopologyCommand().Send()
-		utils.CheckOrExit(err, utils.ExitCodeIOError, defaultErrCtx)
+		if err != nil {
+			return err
+		}
+
+		fmt.Println("Cluster size:", response.ClusterSize)
+		fmt.Println("Partitions count:", response.PartitionsCount)
+		fmt.Println("Replication factor:", response.ReplicationFactor)
+		fmt.Println("Brokers:")
+
+		sort.Sort(ByNodeId(response.Brokers))
 
 		for _, broker := range response.Brokers {
-			fmt.Println("Broker", broker.Host, ":", broker.Port)
+			fmt.Println("  Broker", broker.NodeId, "-", fmt.Sprintf("%s:%d", broker.Host, broker.Port))
+			sort.Sort(ByPartitionId(broker.Partitions))
 			for _, partition := range broker.Partitions {
-				fmt.Println("  Partition", partition.PartitionId, ":", roleToString(partition.Role))
+				fmt.Println("    Partition", partition.PartitionId, ":", roleToString(partition.Role))
 			}
 		}
+
+		return nil
 	},
 }
 
@@ -48,7 +70,7 @@ func roleToString(role pb.Partition_PartitionBrokerRole) string {
 	switch role {
 	case pb.Partition_LEADER:
 		return "Leader"
-	case pb.Partition_FOLLOW:
+	case pb.Partition_FOLLOWER:
 		return "Follower"
 	default:
 		return "Unknown"

@@ -3,7 +3,6 @@ package commands
 import (
 	"context"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
-	"github.com/zeebe-io/zeebe/clients/go/utils"
 	"time"
 )
 
@@ -22,8 +21,9 @@ type UpdateJobRetriesCommandStep2 interface {
 }
 
 type UpdateJobRetriesCommand struct {
-	request *pb.UpdateJobRetriesRequest
-	gateway pb.GatewayClient
+	request        *pb.UpdateJobRetriesRequest
+	gateway        pb.GatewayClient
+	requestTimeout time.Duration
 }
 
 func (cmd *UpdateJobRetriesCommand) GetRequest() *pb.UpdateJobRetriesRequest {
@@ -41,17 +41,18 @@ func (cmd *UpdateJobRetriesCommand) Retries(retries int32) DispatchUpdateJobRetr
 }
 
 func (cmd *UpdateJobRetriesCommand) Send() (*pb.UpdateJobRetriesResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), utils.RequestTimeoutInSec*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
 	defer cancel()
 
 	return cmd.gateway.UpdateJobRetries(ctx, cmd.request)
 }
 
-func NewUpdateJobRetriesCommand(gateway pb.GatewayClient) UpdateJobRetriesCommandStep1 {
+func NewUpdateJobRetriesCommand(gateway pb.GatewayClient, requestTimeout time.Duration) UpdateJobRetriesCommandStep1 {
 	return &UpdateJobRetriesCommand{
 		request: &pb.UpdateJobRetriesRequest{
-			Retries: utils.DefaultRetries,
+			Retries: DefaultJobRetries,
 		},
-		gateway: gateway,
+		gateway:        gateway,
+		requestTimeout: requestTimeout,
 	}
 }

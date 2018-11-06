@@ -16,30 +16,32 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/zeebe-io/zeebe/clients/zbctl/utils"
+	"github.com/zeebe-io/zeebe/clients/go/commands"
 	"log"
 )
 
-var updateRetriesFlag int32
+var (
+	updateRetriesKey  int64
+	updateRetriesFlag int32
+)
 
-// updateRetriesCmd represents the updateRetries command
 var updateRetriesCmd = &cobra.Command{
-	Use:    "retries <jobKey>",
-	Short:  "Update retries of a job",
-	Args:   cobra.ExactArgs(1),
-	PreRun: initBroker,
-	Run: func(cmd *cobra.Command, args []string) {
-		jobKey := convertToKey(args[0], "Expect job key as only positional argument, got")
+	Use:     "retries <key>",
+	Short:   "Update retries of a job",
+	Args:    keyArg(&updateRetriesKey),
+	PreRunE: initClient,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		_, err := client.NewUpdateJobRetriesCommand().JobKey(updateRetriesKey).Retries(updateRetriesFlag).Send()
+		if err == nil {
+			log.Println("Updated the retries of job with key", updateRetriesKey, "to", updateRetriesFlag)
+		}
 
-		_, err := client.NewUpdateJobRetriesCommand().JobKey(jobKey).Retries(updateRetriesFlag).Send()
-		utils.CheckOrExit(err, utils.ExitCodeIOError, defaultErrCtx)
-
-		log.Println("Update the retries of job with key", jobKey, "to", updateRetriesFlag)
+		return err
 	},
 }
 
 func init() {
 	updateCmd.AddCommand(updateRetriesCmd)
-	updateRetriesCmd.Flags().Int32Var(&updateRetriesFlag, "retries", utils.DefaultJobRetries, "Specify retries of job")
+	updateRetriesCmd.Flags().Int32Var(&updateRetriesFlag, "retries", commands.DefaultJobRetries, "Specify retries of job")
 	updateRetriesCmd.MarkFlagRequired("retries")
 }

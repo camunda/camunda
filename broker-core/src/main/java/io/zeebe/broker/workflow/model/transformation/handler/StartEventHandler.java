@@ -17,9 +17,9 @@
  */
 package io.zeebe.broker.workflow.model.transformation.handler;
 
-import io.zeebe.broker.workflow.model.ExecutableFlowElementContainer;
-import io.zeebe.broker.workflow.model.ExecutableFlowNode;
-import io.zeebe.broker.workflow.model.ExecutableWorkflow;
+import io.zeebe.broker.workflow.model.element.ExecutableFlowElementContainer;
+import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
+import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.FlowNode;

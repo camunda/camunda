@@ -19,25 +19,24 @@ public enum JobIntent implements Intent {
   CREATE((short) 0),
   CREATED((short) 1),
 
-  ACTIVATE((short) 2),
-  ACTIVATED((short) 3),
+  ACTIVATED((short) 2),
 
-  COMPLETE((short) 4),
-  COMPLETED((short) 5),
+  COMPLETE((short) 3),
+  COMPLETED((short) 4),
 
-  TIME_OUT((short) 6),
-  TIMED_OUT((short) 7),
+  TIME_OUT((short) 5),
+  TIMED_OUT((short) 6),
 
-  FAIL((short) 8),
-  FAILED((short) 9),
+  FAIL((short) 7),
+  FAILED((short) 8),
 
-  UPDATE_RETRIES((short) 10),
-  RETRIES_UPDATED((short) 11),
+  UPDATE_RETRIES((short) 9),
+  RETRIES_UPDATED((short) 10),
 
-  CANCEL((short) 12),
-  CANCELED((short) 13);
+  CANCEL((short) 11),
+  CANCELED((short) 12);
 
-  private short value;
+  private final short value;
 
   JobIntent(short value) {
     this.value = value;
@@ -54,28 +53,26 @@ public enum JobIntent implements Intent {
       case 1:
         return CREATED;
       case 2:
-        return ACTIVATE;
-      case 3:
         return ACTIVATED;
-      case 4:
+      case 3:
         return COMPLETE;
-      case 5:
+      case 4:
         return COMPLETED;
-      case 6:
+      case 5:
         return TIME_OUT;
-      case 7:
+      case 6:
         return TIMED_OUT;
-      case 8:
+      case 7:
         return FAIL;
-      case 9:
+      case 8:
         return FAILED;
-      case 10:
+      case 9:
         return UPDATE_RETRIES;
-      case 11:
+      case 10:
         return RETRIES_UPDATED;
-      case 12:
+      case 11:
         return CANCEL;
-      case 13:
+      case 12:
         return CANCELED;
       default:
         return Intent.UNKNOWN;

@@ -30,9 +30,9 @@ public interface JobHeaders {
   /** @return key of the workflow */
   long getWorkflowKey();
 
-  /** @return id of the activity */
-  String getActivityId();
+  /** @return id of the workflow element */
+  String getElementId();
 
-  /** @return key of the activity instance */
-  long getActivityInstanceKey();
+  /** @return key of the element instance */
+  long getElementInstanceKey();
 }

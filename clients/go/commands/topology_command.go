@@ -3,24 +3,25 @@ package commands
 import (
 	"context"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
-	"github.com/zeebe-io/zeebe/clients/go/utils"
 	"time"
 )
 
 type TopologyCommand struct {
-	gateway pb.GatewayClient
+	gateway        pb.GatewayClient
+	requestTimeout time.Duration
 }
 
 func (cmd *TopologyCommand) Send() (*pb.TopologyResponse, error) {
-	request := &pb.TopologyRequest{}
-	ctx, cancel := context.WithTimeout(context.Background(), utils.RequestTimeoutInSec*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
 	defer cancel()
 
+	request := &pb.TopologyRequest{}
 	return cmd.gateway.Topology(ctx, request)
 }
 
-func NewTopologyCommand(gateway pb.GatewayClient) *TopologyCommand {
+func NewTopologyCommand(gateway pb.GatewayClient, requestTimeout time.Duration) *TopologyCommand {
 	return &TopologyCommand{
-		gateway: gateway,
+		gateway:        gateway,
+		requestTimeout: requestTimeout,
 	}
 }

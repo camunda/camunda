@@ -18,7 +18,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// failCmd represents the fail command
 var failCmd = &cobra.Command{
 	Use:   "fail",
 	Short: "Fail a resource",

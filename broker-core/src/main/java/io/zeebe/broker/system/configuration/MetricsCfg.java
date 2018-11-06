@@ -18,6 +18,7 @@
 package io.zeebe.broker.system.configuration;
 
 import io.zeebe.util.DurationUtil;
+import io.zeebe.util.Environment;
 import java.time.Duration;
 
 public class MetricsCfg implements ConfigurationEntry {

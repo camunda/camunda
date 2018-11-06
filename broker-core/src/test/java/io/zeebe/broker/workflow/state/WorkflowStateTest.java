@@ -22,8 +22,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.workflow.deployment.transform.DeploymentTransformer;
-import io.zeebe.broker.workflow.model.ExecutableFlowElement;
-import io.zeebe.broker.workflow.model.ExecutableWorkflow;
+import io.zeebe.broker.workflow.model.element.AbstractFlowElement;
+import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -228,7 +228,7 @@ public class WorkflowStateTest {
     assertThat(deployedWorkflow).isNotNull();
     assertThat(secondWorkflow).isNotNull();
 
-    // key's should increase
+    // getKey's should increase
     assertThat(deployedWorkflow.getKey()).isEqualTo(1L);
     assertThat(secondWorkflow.getKey()).isEqualTo(2L);
 
@@ -310,7 +310,7 @@ public class WorkflowStateTest {
     // then
     final ExecutableWorkflow workflow = deployedWorkflow.getWorkflow();
     assertThat(workflow).isNotNull();
-    final ExecutableFlowElement serviceTask = workflow.getElementById(wrapString("test"));
+    final AbstractFlowElement serviceTask = workflow.getElementById(wrapString("test"));
     assertThat(serviceTask).isNotNull();
   }
 
@@ -328,7 +328,7 @@ public class WorkflowStateTest {
     // then
     final ExecutableWorkflow workflow = deployedWorkflow.getWorkflow();
     assertThat(workflow).isNotNull();
-    final ExecutableFlowElement serviceTask = workflow.getElementById(wrapString("test"));
+    final AbstractFlowElement serviceTask = workflow.getElementById(wrapString("test"));
     assertThat(serviceTask).isNotNull();
   }
 
@@ -346,7 +346,7 @@ public class WorkflowStateTest {
     // then
     final ExecutableWorkflow workflow = deployedWorkflow.getWorkflow();
     assertThat(workflow).isNotNull();
-    final ExecutableFlowElement serviceTask = workflow.getElementById(wrapString("test"));
+    final AbstractFlowElement serviceTask = workflow.getElementById(wrapString("test"));
     assertThat(serviceTask).isNotNull();
   }
 
@@ -411,8 +411,7 @@ public class WorkflowStateTest {
     // given
     final WorkflowSubscription workflowSubscription =
         new WorkflowSubscription("message", "correlation", 1, 2, 100);
-    workflowSubscription.setOpen(true);
-
+    workflowSubscription.setOpened();
     // when
     workflowState.put(workflowSubscription);
 
@@ -421,7 +420,7 @@ public class WorkflowStateTest {
         new WorkflowInstanceSubscriptionRecord();
     workflowInstanceSubscriptionRecord.setMessageName(wrapString("message"));
     workflowInstanceSubscriptionRecord.setWorkflowInstanceKey(1);
-    workflowInstanceSubscriptionRecord.setActivityInstanceKey(2);
+    workflowInstanceSubscriptionRecord.setElementInstanceKey(2);
 
     final WorkflowSubscription subscription =
         workflowState.findSubscription(workflowInstanceSubscriptionRecord);
@@ -431,9 +430,9 @@ public class WorkflowStateTest {
     assertThat(subscription.getMessageName()).isEqualTo(wrapString("message"));
     assertThat(subscription.getCorrelationKey()).isEqualTo(wrapString("correlation"));
     assertThat(subscription.getWorkflowInstanceKey()).isEqualTo(1);
-    assertThat(subscription.getActivityInstanceKey()).isEqualTo(2);
+    assertThat(subscription.getElementInstanceKey()).isEqualTo(2);
     assertThat(subscription.getCommandSentTime()).isEqualTo(100);
-    assertThat(subscription.isNotOpen()).isFalse();
+    assertThat(subscription.isOpening()).isFalse();
   }
 
   @Test
@@ -448,7 +447,7 @@ public class WorkflowStateTest {
         new WorkflowInstanceSubscriptionRecord();
     workflowInstanceSubscriptionRecord.setMessageName(wrapString("message"));
     workflowInstanceSubscriptionRecord.setWorkflowInstanceKey(1);
-    workflowInstanceSubscriptionRecord.setActivityInstanceKey(2);
+    workflowInstanceSubscriptionRecord.setElementInstanceKey(2);
 
     final WorkflowSubscription subscription =
         workflowState.findSubscription(workflowInstanceSubscriptionRecord);
@@ -459,7 +458,7 @@ public class WorkflowStateTest {
     assertThat(subscription.getMessageName()).isEqualTo(wrapString("message"));
     assertThat(subscription.getCorrelationKey()).isEqualTo(wrapString("correlation"));
     assertThat(subscription.getWorkflowInstanceKey()).isEqualTo(1);
-    assertThat(subscription.getActivityInstanceKey()).isEqualTo(2);
+    assertThat(subscription.getElementInstanceKey()).isEqualTo(2);
     assertThat(subscription.getCommandSentTime()).isEqualTo(100);
   }
 
@@ -498,7 +497,7 @@ public class WorkflowStateTest {
         .extracting(w -> w.getWorkflowInstanceKey())
         .containsExactly(1L);
     assertThat(workflowSubscriptions)
-        .extracting(w -> w.getActivityInstanceKey())
+        .extracting(w -> w.getElementInstanceKey())
         .containsExactly(2L);
     assertThat(workflowSubscriptions).extracting(w -> w.getCommandSentTime()).containsExactly(100L);
   }
@@ -542,7 +541,7 @@ public class WorkflowStateTest {
         .extracting(w -> w.getWorkflowInstanceKey())
         .containsExactlyInAnyOrder(1L, 3L);
     assertThat(workflowSubscriptions)
-        .extracting(w -> w.getActivityInstanceKey())
+        .extracting(w -> w.getElementInstanceKey())
         .containsExactlyInAnyOrder(2L, 4L);
     assertThat(workflowSubscriptions)
         .extracting(w -> w.getCommandSentTime())
@@ -564,7 +563,7 @@ public class WorkflowStateTest {
         new WorkflowInstanceSubscriptionRecord();
     workflowInstanceSubscriptionRecord.setMessageName(wrapString("message"));
     workflowInstanceSubscriptionRecord.setWorkflowInstanceKey(1);
-    workflowInstanceSubscriptionRecord.setActivityInstanceKey(2);
+    workflowInstanceSubscriptionRecord.setElementInstanceKey(2);
 
     final WorkflowSubscription subscription =
         workflowState.findSubscription(workflowInstanceSubscriptionRecord);
@@ -589,7 +588,7 @@ public class WorkflowStateTest {
         new WorkflowInstanceSubscriptionRecord();
     workflowInstanceSubscriptionRecord.setMessageName(wrapString("message"));
     workflowInstanceSubscriptionRecord.setWorkflowInstanceKey(1);
-    workflowInstanceSubscriptionRecord.setActivityInstanceKey(2);
+    workflowInstanceSubscriptionRecord.setElementInstanceKey(2);
     workflowState.remove(workflowInstanceSubscriptionRecord);
 
     // then

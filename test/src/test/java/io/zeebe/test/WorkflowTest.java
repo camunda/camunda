@@ -15,14 +15,10 @@
  */
 package io.zeebe.test;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import io.zeebe.gateway.ZeebeClient;
-import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
-import io.zeebe.gateway.api.record.RecordType;
-import io.zeebe.gateway.api.record.ValueType;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.TimeUnit;
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.test.util.record.RecordingExporter;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -33,7 +29,7 @@ public class WorkflowTest {
   private ZeebeClient client;
 
   @Before
-  public void deploy() throws Exception {
+  public void deploy() {
     client = testRule.getClient();
 
     client
@@ -43,24 +39,7 @@ public class WorkflowTest {
         .send()
         .join();
 
-    final CountDownLatch latch = new CountDownLatch(1);
-    client
-        .newSubscription()
-        .name("deploy")
-        .recordHandler(
-            r -> {
-              final ValueType valueType = r.getMetadata().getValueType();
-              final RecordType recordType = r.getMetadata().getRecordType();
-              final String intent = r.getMetadata().getIntent();
-              if (recordType == RecordType.EVENT
-                  && valueType == ValueType.DEPLOYMENT
-                  && intent.equals("CREATED")) {
-                latch.countDown();
-              }
-            })
-        .open();
-
-    assertThat(latch.await(5, TimeUnit.SECONDS)).isTrue();
+    RecordingExporter.deploymentRecords(DeploymentIntent.CREATED).getFirst();
   }
 
   @Test
@@ -78,7 +57,7 @@ public class WorkflowTest {
         .jobClient()
         .newWorker()
         .jobType("task")
-        .handler((c, j) -> c.newCompleteCommand(j).payload((String) null).send().join())
+        .handler((c, j) -> c.newCompleteCommand(j.getKey()).send().join())
         .name("test")
         .open();
 

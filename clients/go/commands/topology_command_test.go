@@ -4,6 +4,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/zeebe-io/zeebe/clients/go/mock_pb"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
+	"github.com/zeebe-io/zeebe/clients/go/utils"
 	"testing"
 )
 
@@ -15,10 +16,14 @@ func TestTopologyCommand(t *testing.T) {
 
 	request := &pb.TopologyRequest{}
 	stub := &pb.TopologyResponse{
+		ClusterSize:       12,
+		PartitionsCount:   23,
+		ReplicationFactor: 3,
 		Brokers: []*pb.BrokerInfo{
 			{
-				Host: "foo",
-				Port: 12,
+				NodeId: 0,
+				Host:   "foo",
+				Port:   12,
 				Partitions: []*pb.Partition{
 					{
 						PartitionId: 0,
@@ -26,13 +31,14 @@ func TestTopologyCommand(t *testing.T) {
 					},
 					{
 						PartitionId: 1,
-						Role:        pb.Partition_FOLLOW,
+						Role:        pb.Partition_FOLLOWER,
 					},
 				},
 			},
 			{
-				Host: "bar",
-				Port: 9237,
+				NodeId: 1,
+				Host:   "bar",
+				Port:   9237,
 				Partitions: []*pb.Partition{
 					{
 						PartitionId: 1,
@@ -40,16 +46,16 @@ func TestTopologyCommand(t *testing.T) {
 					},
 					{
 						PartitionId: 0,
-						Role:        pb.Partition_FOLLOW,
+						Role:        pb.Partition_FOLLOWER,
 					},
 				},
 			},
 		},
 	}
 
-	client.EXPECT().Topology(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().Topology(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewTopologyCommand(client)
+	command := NewTopologyCommand(client, utils.DefaultTestTimeout)
 
 	response, err := command.Send()
 

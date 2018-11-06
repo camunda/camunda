@@ -42,16 +42,16 @@ public interface IncidentRecordValue extends RecordValueWithPayload {
   long getWorkflowInstanceKey();
 
   /**
-   * @return the id of the activity this incident belongs to. Can be <code>null</code> if the
-   *     incident belongs to no activity or workflow instance.
+   * @return the id of the element this incident belongs to. Can be <code>null</code> if the
+   *     incident belongs to no element or workflow instance.
    */
-  String getActivityId();
+  String getElementId();
 
   /**
-   * @return the key of the activity instance this incident belongs to. Can be <code>null</code> if
-   *     the incident belongs to no activity or workflow instance.
+   * @return the key of the element instance this incident belongs to. Can be <code>null</code> if
+   *     the incident belongs to no workflow element or workflow instance.
    */
-  long getActivityInstanceKey();
+  long getElementInstanceKey();
 
   /**
    * @return the key of the job this incident belongs to. Can be <code>null</code> if the incident

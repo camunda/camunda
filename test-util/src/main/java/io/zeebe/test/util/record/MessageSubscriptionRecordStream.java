@@ -33,17 +33,12 @@ public class MessageSubscriptionRecordStream
     return new MessageSubscriptionRecordStream(wrappedStream);
   }
 
-  public MessageSubscriptionRecordStream withWorkflowInstancePartitionId(
-      final int workflowInstancePartitionId) {
-    return valueFilter(v -> v.getWorkflowInstancePartitionId() == workflowInstancePartitionId);
-  }
-
   public MessageSubscriptionRecordStream withWorkflowInstanceKey(final long workflowInstanceKey) {
     return valueFilter(v -> v.getWorkflowInstanceKey() == workflowInstanceKey);
   }
 
-  public MessageSubscriptionRecordStream withActivityInstanceKey(final long activityInstanceKey) {
-    return valueFilter(v -> v.getActivityInstanceKey() == activityInstanceKey);
+  public MessageSubscriptionRecordStream withElementInstanceKey(final long elementInstanceKey) {
+    return valueFilter(v -> v.getElementInstanceKey() == elementInstanceKey);
   }
 
   public MessageSubscriptionRecordStream withMessageName(final String messageName) {

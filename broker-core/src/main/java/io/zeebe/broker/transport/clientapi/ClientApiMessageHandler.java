@@ -18,8 +18,6 @@
 package io.zeebe.broker.transport.clientapi;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
-import io.zeebe.broker.event.processor.TopicSubscriberEvent;
-import io.zeebe.broker.event.processor.TopicSubscriptionEvent;
 import io.zeebe.broker.transport.controlmessage.ControlMessageRequestHeaderDescriptor;
 import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.dispatcher.Dispatcher;
@@ -81,8 +79,6 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
     recordsByType.put(ValueType.DEPLOYMENT, new DeploymentRecord());
     recordsByType.put(ValueType.JOB, new JobRecord());
     recordsByType.put(ValueType.WORKFLOW_INSTANCE, new WorkflowInstanceRecord());
-    recordsByType.put(ValueType.SUBSCRIBER, new TopicSubscriberEvent());
-    recordsByType.put(ValueType.SUBSCRIPTION, new TopicSubscriptionEvent());
     recordsByType.put(ValueType.MESSAGE, new MessageRecord());
     recordsByType.put(ValueType.JOB_BATCH, new JobBatchRecord());
   }

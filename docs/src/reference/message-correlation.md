@@ -14,7 +14,7 @@ An instance of the order workflow is created and wait at the message catch event
 
 A message is published by the payment service using one of the Zeebe clients. It has the name `Money collected` and the correlation key `order-123`. Since the correlation information matches, the message is correlated to the workflow instance. That means its payload is merged into the workflow instance payload and the message catch event is left.
 
-> Note that a message can be correlated to multiple workflow instances if they share the same correlation information.
+> Note that a message can be correlated to multiple workflow instances if they share the same correlation information. But it can be correlated only once per workflow instance.
 
 ## Message Buffering
 

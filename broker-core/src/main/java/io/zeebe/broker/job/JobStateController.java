@@ -288,7 +288,10 @@ public class JobStateController extends KeyStateController {
           if (contentsEqual(type, typeBuffer)) {
             final DirectBuffer keyBuffer =
                 new UnsafeBuffer(entryKey, typeBuffer.capacity(), Long.BYTES);
-            callback.accept(keyBuffer.getLong(0, STATE_BYTE_ORDER), getJob(keyBuffer), c);
+            final JobRecord job = getJob(keyBuffer);
+            if (job != null) {
+              callback.accept(keyBuffer.getLong(0, STATE_BYTE_ORDER), job, c);
+            }
           } else {
             c.stop();
           }

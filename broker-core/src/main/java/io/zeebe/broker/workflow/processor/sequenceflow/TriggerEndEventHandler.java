@@ -17,8 +17,8 @@
  */
 package io.zeebe.broker.workflow.processor.sequenceflow;
 
-import io.zeebe.broker.workflow.model.ExecutableFlowNode;
-import io.zeebe.broker.workflow.model.ExecutableSequenceFlow;
+import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
+import io.zeebe.broker.workflow.model.element.ExecutableSequenceFlow;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
@@ -33,7 +33,7 @@ public class TriggerEndEventHandler implements BpmnStepHandler<ExecutableSequenc
     final ExecutableFlowNode targetNode = sequenceFlow.getTarget();
 
     final WorkflowInstanceRecord value = context.getValue();
-    value.setActivityId(targetNode.getId());
+    value.setElementId(targetNode.getId());
 
     context.getOutput().writeNewEvent(WorkflowInstanceIntent.END_EVENT_OCCURRED, value);
   }

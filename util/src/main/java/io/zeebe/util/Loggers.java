@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 
 public class Loggers {
 
+  public static final Logger CONFIG_LOGGER = new ZbLogger("io.zeebe.util.config");
   public static final Logger ACTOR_LOGGER = new ZbLogger("io.zeebe.util.actor");
   public static final Logger IO_LOGGER = new ZbLogger("io.zeebe.util.buffer");
   public static final Logger FILE_LOGGER = new ZbLogger("io.zeebe.util.fs");

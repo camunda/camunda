@@ -15,7 +15,16 @@
  */
 package io.zeebe.broker.it.startup;
 
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
+import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertElementActivated;
+import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertElementCompleted;
+import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertElementReady;
+import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertIncidentCreated;
+import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertIncidentResolveFailed;
+import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertIncidentResolved;
+import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertJobCompleted;
+import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertJobCreated;
+import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertWorkflowInstanceCompleted;
+import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertWorkflowInstanceCreated;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static java.util.Collections.singletonMap;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -23,31 +32,32 @@ import static org.assertj.core.api.Assertions.entry;
 import static org.junit.Assert.fail;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
-import io.zeebe.broker.it.ClientRule;
+import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.it.util.RecordingJobHandler;
-import io.zeebe.broker.it.util.TopicEventRecorder;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.gateway.api.events.DeploymentEvent;
-import io.zeebe.gateway.api.events.IncidentEvent;
-import io.zeebe.gateway.api.events.IncidentState;
-import io.zeebe.gateway.api.events.JobEvent;
-import io.zeebe.gateway.api.events.JobState;
-import io.zeebe.gateway.api.events.MessageEvent;
-import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
-import io.zeebe.gateway.api.events.WorkflowInstanceState;
-import io.zeebe.gateway.api.subscription.JobWorker;
+import io.zeebe.client.api.events.DeploymentEvent;
+import io.zeebe.client.api.events.JobEvent;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.response.ActivatedJob;
+import io.zeebe.client.api.subscription.JobWorker;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.protocol.intent.IncidentIntent;
+import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.intent.TimerIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.raft.Raft;
 import io.zeebe.raft.RaftServiceNames;
 import io.zeebe.raft.state.RaftState;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.test.util.TestUtil;
+import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
-import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -59,7 +69,9 @@ import org.junit.runners.Parameterized.Parameters;
 
 @RunWith(Parameterized.class)
 public class BrokerReprocessingTest {
-  private static final String NULL_PAYLOAD = null;
+
+  private static final String PROCESS_ID = "process";
+  private static final String NULL_PAYLOAD = "{}";
 
   @Parameters(name = "{index}: {1}")
   public static Object[][] reprocessingTriggers() {
@@ -92,14 +104,14 @@ public class BrokerReprocessingTest {
   public String name;
 
   private static final BpmnModelInstance WORKFLOW =
-      Bpmn.createExecutableProcess("process")
+      Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent("start")
           .serviceTask("task", t -> t.zeebeTaskType("foo"))
           .endEvent("end")
           .done();
 
   private static final BpmnModelInstance WORKFLOW_TWO_TASKS =
-      Bpmn.createExecutableProcess("process")
+      Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent("start")
           .serviceTask("task1", t -> t.zeebeTaskType("foo"))
           .serviceTask("task2", t -> t.zeebeTaskType("bar"))
@@ -107,14 +119,14 @@ public class BrokerReprocessingTest {
           .done();
 
   private static final BpmnModelInstance WORKFLOW_INCIDENT =
-      Bpmn.createExecutableProcess("process")
+      Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent("start")
           .serviceTask("task", t -> t.zeebeTaskType("test").zeebeInput("$.foo", "$.foo"))
           .endEvent("end")
           .done();
 
   private static final BpmnModelInstance WORKFLOW_MESSAGE =
-      Bpmn.createExecutableProcess("process")
+      Bpmn.createExecutableProcess(PROCESS_ID)
           .startEvent()
           .intermediateCatchEvent("catch-event")
           .message(m -> m.name("order canceled").zeebeCorrelationKey("$.orderId"))
@@ -122,17 +134,22 @@ public class BrokerReprocessingTest {
           .endEvent()
           .done();
 
+  private static final BpmnModelInstance WORKFLOW_TIMER =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent()
+          .intermediateCatchEvent("timer", c -> c.timerWithDuration("PT10S"))
+          .endEvent()
+          .done();
+
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
 
-  public ClientRule clientRule = new ClientRule(brokerRule);
+  public GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
 
-  public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
-
-  @Rule
-  public RuleChain ruleChain =
-      RuleChain.outerRule(brokerRule).around(clientRule).around(eventRecorder);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   @Rule public ExpectedException exception = ExpectedException.none();
+
+  private Runnable restartAction = () -> {};
 
   @Test
   public void shouldCreateWorkflowInstanceAfterRestart() {
@@ -145,13 +162,13 @@ public class BrokerReprocessingTest {
     clientRule
         .getWorkflowClient()
         .newCreateInstanceCommand()
-        .bpmnProcessId("process")
+        .bpmnProcessId(PROCESS_ID)
         .latestVersion()
         .send()
         .join();
 
     // then
-    waitUntil(() -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.CREATED));
+    assertWorkflowInstanceCreated();
   }
 
   @Test
@@ -162,12 +179,12 @@ public class BrokerReprocessingTest {
     clientRule
         .getWorkflowClient()
         .newCreateInstanceCommand()
-        .bpmnProcessId("process")
+        .bpmnProcessId(PROCESS_ID)
         .latestVersion()
         .send()
         .join();
 
-    waitUntil(() -> eventRecorder.hasJobEvent(JobState.CREATED));
+    assertJobCreated("foo");
 
     // when
     reprocessingTrigger.accept(this);
@@ -176,16 +193,17 @@ public class BrokerReprocessingTest {
         .getJobClient()
         .newWorker()
         .jobType("foo")
-        .handler((client, job) -> client.newCompleteCommand(job).payload(NULL_PAYLOAD).send())
+        .handler(
+            (client, job) -> client.newCompleteCommand(job.getKey()).payload(NULL_PAYLOAD).send())
         .open();
 
     // then
-    waitUntil(() -> eventRecorder.hasJobEvent(JobState.COMPLETED));
-    waitUntil(
-        () -> eventRecorder.hasElementInState("process", WorkflowInstanceState.ELEMENT_COMPLETED));
+    assertJobCompleted();
+    assertWorkflowInstanceCompleted(PROCESS_ID);
   }
 
   @Test
+  @Ignore("https://github.com/zeebe-io/zeebe/issues/1518")
   public void shouldContinueWorkflowInstanceWithLockedTaskAfterRestart() {
     // given
     deploy(WORKFLOW, "workflow.bpmn");
@@ -193,7 +211,7 @@ public class BrokerReprocessingTest {
     clientRule
         .getWorkflowClient()
         .newCreateInstanceCommand()
-        .bpmnProcessId("process")
+        .bpmnProcessId(PROCESS_ID)
         .latestVersion()
         .send()
         .join();
@@ -206,25 +224,25 @@ public class BrokerReprocessingTest {
     // when
     reprocessingTrigger.accept(this);
 
-    final JobEvent jobEvent = recordingJobHandler.getHandledJobs().get(0);
+    final ActivatedJob jobEvent = recordingJobHandler.getHandledJobs().get(0);
 
-    clientRule.getJobClient().newCompleteCommand(jobEvent).send().join();
+    clientRule.getJobClient().newCompleteCommand(jobEvent.getKey()).send().join();
 
     // then
-    waitUntil(() -> eventRecorder.hasJobEvent(JobState.COMPLETED));
-    waitUntil(
-        () -> eventRecorder.hasElementInState("process", WorkflowInstanceState.ELEMENT_COMPLETED));
+    assertJobCompleted();
+    assertWorkflowInstanceCompleted(PROCESS_ID);
   }
 
   @Test
-  public void shouldContinueWorkflowInstanceAtSecondTaskAfterRestart() {
+  @Ignore("https://github.com/zeebe-io/zeebe/issues/1518")
+  public void shouldContinueWorkflowInstanceAtSecondTaskAfterRestart() throws Exception {
     // given
     deploy(WORKFLOW_TWO_TASKS, "two-tasks.bpmn");
 
     clientRule
         .getWorkflowClient()
         .newCreateInstanceCommand()
-        .bpmnProcessId("process")
+        .bpmnProcessId(PROCESS_ID)
         .latestVersion()
         .send()
         .join();
@@ -233,10 +251,18 @@ public class BrokerReprocessingTest {
         .getJobClient()
         .newWorker()
         .jobType("foo")
-        .handler((client, job) -> client.newCompleteCommand(job).payload(NULL_PAYLOAD).send())
+        .handler(
+            (client, job) -> client.newCompleteCommand(job.getKey()).payload(NULL_PAYLOAD).send())
         .open();
 
-    waitUntil(() -> eventRecorder.getJobEvents(JobState.CREATED).size() > 1);
+    final CountDownLatch latch = new CountDownLatch(1);
+    clientRule
+        .getJobClient()
+        .newWorker()
+        .jobType("bar")
+        .handler((client, job) -> latch.countDown())
+        .open();
+    latch.await();
 
     // when
     reprocessingTrigger.accept(this);
@@ -245,13 +271,14 @@ public class BrokerReprocessingTest {
         .getJobClient()
         .newWorker()
         .jobType("bar")
-        .handler((client, job) -> client.newCompleteCommand(job).payload(NULL_PAYLOAD).send())
+        .handler(
+            (client, job) -> client.newCompleteCommand(job.getKey()).payload(NULL_PAYLOAD).send())
         .open();
 
     // then
-    waitUntil(() -> eventRecorder.getJobEvents(JobState.COMPLETED).size() > 1);
-    waitUntil(
-        () -> eventRecorder.hasElementInState("process", WorkflowInstanceState.ELEMENT_COMPLETED));
+    assertJobCompleted("foo");
+    assertJobCreated("bar");
+    assertWorkflowInstanceCompleted(PROCESS_ID);
   }
 
   @Test
@@ -277,7 +304,7 @@ public class BrokerReprocessingTest {
         clientRule
             .getWorkflowClient()
             .newCreateInstanceCommand()
-            .bpmnProcessId("process")
+            .bpmnProcessId(PROCESS_ID)
             .version(1)
             .send()
             .join();
@@ -286,8 +313,8 @@ public class BrokerReprocessingTest {
         clientRule
             .getWorkflowClient()
             .newCreateInstanceCommand()
-            .bpmnProcessId("process")
-            .latestVersionForce()
+            .bpmnProcessId(PROCESS_ID)
+            .latestVersion()
             .send()
             .join();
 
@@ -300,8 +327,7 @@ public class BrokerReprocessingTest {
   public void shouldLockAndCompleteStandaloneJobAfterRestart() {
     // given
     clientRule.getJobClient().newCreateCommand().jobType("foo").send().join();
-
-    waitUntil(() -> eventRecorder.hasJobEvent(JobState.CREATED));
+    assertJobCreated("foo");
 
     // when
     reprocessingTrigger.accept(this);
@@ -310,14 +336,16 @@ public class BrokerReprocessingTest {
         .getJobClient()
         .newWorker()
         .jobType("foo")
-        .handler((client, job) -> client.newCompleteCommand(job).payload(NULL_PAYLOAD).send())
+        .handler(
+            (client, job) -> client.newCompleteCommand(job.getKey()).payload(NULL_PAYLOAD).send())
         .open();
 
     // then
-    waitUntil(() -> eventRecorder.hasJobEvent(JobState.COMPLETED));
+    assertJobCompleted("foo");
   }
 
   @Test
+  @Ignore("https://github.com/zeebe-io/zeebe/issues/1518")
   public void shouldCompleteStandaloneJobAfterRestart() {
     // given
     clientRule.getJobClient().newCreateCommand().jobType("foo").send().join();
@@ -330,14 +358,15 @@ public class BrokerReprocessingTest {
     // when
     reprocessingTrigger.accept(this);
 
-    final JobEvent jobEvent = recordingJobHandler.getHandledJobs().get(0);
-    clientRule.getJobClient().newCompleteCommand(jobEvent).send().join();
+    final ActivatedJob jobEvent = recordingJobHandler.getHandledJobs().get(0);
+    clientRule.getJobClient().newCompleteCommand(jobEvent.getKey()).send().join();
 
     // then
-    waitUntil(() -> eventRecorder.hasJobEvent(JobState.COMPLETED));
+    assertJobCompleted("foo");
   }
 
   @Test
+  @Ignore("https://github.com/zeebe-io/zeebe/issues/1518")
   public void shouldNotReceiveLockedJobAfterRestart() {
     // given
     clientRule.getJobClient().newCreateCommand().jobType("foo").send().join();
@@ -362,6 +391,7 @@ public class BrokerReprocessingTest {
   }
 
   @Test
+  @Ignore("https://github.com/zeebe-io/zeebe/issues/1518")
   public void shouldReceiveLockExpiredJobAfterRestart() {
     // given
     clientRule.getJobClient().newCreateCommand().jobType("foo").send().join();
@@ -374,16 +404,11 @@ public class BrokerReprocessingTest {
     subscription.close();
 
     // when
+    restartAction = () -> brokerRule.getClock().addTime(Duration.ofSeconds(60));
     reprocessingTrigger.accept(this);
 
-    doRepeatedly(
-            () -> {
-              brokerRule
-                  .getClock()
-                  .addTime(Duration.ofSeconds(60)); // retriggers lock expiration check in broker
-              return null;
-            })
-        .until(t -> eventRecorder.hasJobEvent(JobState.TIMED_OUT));
+    assertThat(RecordingExporter.jobRecords(JobIntent.TIMED_OUT).exists()).isTrue();
+
     jobHandler.clear();
 
     clientRule.getJobClient().newWorker().jobType("foo").handler(jobHandler).open();
@@ -391,85 +416,85 @@ public class BrokerReprocessingTest {
     // then
     waitUntil(() -> !jobHandler.getHandledJobs().isEmpty());
 
-    final JobEvent jobEvent = jobHandler.getHandledJobs().get(0);
-    clientRule.getJobClient().newCompleteCommand(jobEvent).send().join();
+    final ActivatedJob jobEvent = jobHandler.getHandledJobs().get(0);
+    clientRule.getJobClient().newCompleteCommand(jobEvent.getKey()).send().join();
 
-    waitUntil(() -> eventRecorder.hasJobEvent(JobState.COMPLETED));
+    assertJobCompleted();
   }
 
   @Test
+  @Ignore("https://github.com/zeebe-io/zeebe/issues/1033")
   public void shouldResolveIncidentAfterRestart() {
     // given
     deploy(WORKFLOW_INCIDENT, "incident.bpmn");
 
-    clientRule
-        .getWorkflowClient()
-        .newCreateInstanceCommand()
-        .bpmnProcessId("process")
-        .latestVersion()
-        .send()
-        .join();
+    final WorkflowInstanceEvent instance =
+        clientRule
+            .getWorkflowClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId(PROCESS_ID)
+            .latestVersion()
+            .send()
+            .join();
 
-    waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.CREATED));
-
-    final WorkflowInstanceEvent activityInstance =
-        eventRecorder.getElementInState("task", WorkflowInstanceState.ELEMENT_READY);
+    assertIncidentCreated();
+    assertElementReady("task");
 
     // when
     reprocessingTrigger.accept(this);
 
     clientRule
         .getWorkflowClient()
-        .newUpdatePayloadCommand(activityInstance)
+        .newUpdatePayloadCommand(instance.getWorkflowInstanceKey())
         .payload("{\"foo\":\"bar\"}")
         .send()
         .join();
 
     // then
-    waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.RESOLVED));
-    waitUntil(() -> eventRecorder.hasJobEvent(JobState.CREATED));
+    assertIncidentResolved();
+    assertJobCreated("test");
   }
 
   @Test
+  @Ignore("https://github.com/zeebe-io/zeebe/issues/1033")
   public void shouldResolveFailedIncidentAfterRestart() {
     // given
     deploy(WORKFLOW_INCIDENT, "incident.bpmn");
 
+    final WorkflowInstanceEvent instanceEvent =
+        clientRule
+            .getWorkflowClient()
+            .newCreateInstanceCommand()
+            .bpmnProcessId(PROCESS_ID)
+            .latestVersion()
+            .send()
+            .join();
+
+    assertIncidentCreated();
+    assertElementReady("task");
+
     clientRule
         .getWorkflowClient()
-        .newCreateInstanceCommand()
-        .bpmnProcessId("process")
-        .latestVersion()
-        .send()
-        .join();
-
-    waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.CREATED));
-
-    final WorkflowInstanceEvent activityInstance =
-        eventRecorder.getElementInState("task", WorkflowInstanceState.ELEMENT_READY);
-
-    clientRule
-        .getWorkflowClient()
-        .newUpdatePayloadCommand(activityInstance)
+        .newUpdatePayloadCommand(instanceEvent.getWorkflowInstanceKey())
         .payload("{\"x\":\"y\"}")
         .send()
         .join();
 
-    waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.RESOLVE_FAILED));
+    assertIncidentResolveFailed();
 
     // when
     reprocessingTrigger.accept(this);
 
     clientRule
         .getWorkflowClient()
-        .newUpdatePayloadCommand(activityInstance)
+        .newUpdatePayloadCommand(instanceEvent.getWorkflowInstanceKey())
         .payload("{\"foo\":\"bar\"}")
         .send()
         .join();
 
     // then
-    waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.RESOLVED));
-    waitUntil(() -> eventRecorder.hasJobEvent(JobState.CREATED));
+    assertIncidentResolved();
+    assertJobCreated("test");
   }
 
   @Test
@@ -503,12 +528,12 @@ public class BrokerReprocessingTest {
     // given
     deploy(WORKFLOW, "workflow.bpmn");
 
-    final long workflowInstance1Key = startWorkflowInstance("process").getKey();
+    final long workflowInstance1Key = startWorkflowInstance(PROCESS_ID).getWorkflowInstanceKey();
 
     // when
     reprocessingTrigger.accept(this);
 
-    final long workflowInstance2Key = startWorkflowInstance("process").getKey();
+    final long workflowInstance2Key = startWorkflowInstance(PROCESS_ID).getWorkflowInstanceKey();
 
     // then
     assertThat(workflowInstance2Key).isGreaterThan(workflowInstance1Key);
@@ -538,24 +563,30 @@ public class BrokerReprocessingTest {
     // given
     deploy(WORKFLOW_INCIDENT, "incident.bpmn");
 
-    startWorkflowInstance("process");
-
-    waitUntil(() -> eventRecorder.hasIncidentEvent(IncidentState.CREATED));
+    final long workflowInstanceKey = startWorkflowInstance(PROCESS_ID).getWorkflowInstanceKey();
+    assertIncidentCreated();
 
     // when
     reprocessingTrigger.accept(this);
 
-    startWorkflowInstance("process");
+    final long workflowInstanceKey2 = startWorkflowInstance(PROCESS_ID).getWorkflowInstanceKey();
 
     // then
-    final List<IncidentEvent> incidents =
-        doRepeatedly(() -> eventRecorder.getIncidentEvents(IncidentState.CREATED))
-            .until(l -> l.size() == 2);
+    final long firstIncidentKey =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withWorkflowInstanceKey(workflowInstanceKey)
+            .findFirst()
+            .get()
+            .getKey();
 
-    final long incident1Key = incidents.get(0).getKey();
-    final long incident2Key = incidents.get(1).getKey();
+    final long secondIncidentKey =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED)
+            .withWorkflowInstanceKey(workflowInstanceKey2)
+            .findFirst()
+            .get()
+            .getKey();
 
-    assertThat(incident2Key).isGreaterThan(incident1Key);
+    assertThat(firstIncidentKey).isLessThan(secondIncidentKey);
   }
 
   @Test
@@ -588,21 +619,20 @@ public class BrokerReprocessingTest {
   }
 
   @Test
-  public void shouldCorrelateMessageAfterRestartIfEnteredBeforeA() throws Exception {
+  public void shouldCorrelateMessageAfterRestartIfEnteredBefore() throws Exception {
     // given
-    clientRule
-        .getWorkflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(WORKFLOW_MESSAGE, "message.bpmn")
-        .send()
-        .join();
+    deploy(WORKFLOW_MESSAGE, "message.bpmn");
 
     final long workflowInstanceKey =
-        startWorkflowInstance("process", singletonMap("orderId", "order-123"))
+        startWorkflowInstance(PROCESS_ID, singletonMap("orderId", "order-123"))
             .getWorkflowInstanceKey();
 
-    waitUntil(
-        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_ACTIVATED));
+    assertElementActivated("catch-event");
+
+    assertThat(
+        RecordingExporter.workflowInstanceSubscriptionRecords(
+                WorkflowInstanceSubscriptionIntent.OPENED)
+            .exists());
 
     reprocessingTrigger.accept(this);
 
@@ -610,47 +640,55 @@ public class BrokerReprocessingTest {
     publishMessage("order canceled", "order-123", singletonMap("foo", "bar"));
 
     // then
-    waitUntil(
-        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED));
-
-    final WorkflowInstanceEvent event =
-        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED);
-
-    assertThat(event.getWorkflowInstanceKey()).isEqualTo(workflowInstanceKey);
-    assertThat(event.getActivityId()).isEqualTo("catch-event");
-    assertThat(event.getPayloadAsMap())
-        .containsOnly(entry("orderId", "order-123"), entry("foo", "bar"));
+    assertElementCompleted(PROCESS_ID, "catch-event");
+    assertWorkflowInstanceCompleted(
+        PROCESS_ID,
+        (workflowInstance) -> {
+          assertThat(workflowInstance.getWorkflowInstanceKey()).isEqualTo(workflowInstanceKey);
+          assertThat(workflowInstance.getPayloadAsMap())
+              .containsOnly(entry("orderId", "order-123"), entry("foo", "bar"));
+        });
   }
 
   @Test
   public void shouldCorrelateMessageAfterRestartIfPublishedBefore() throws Exception {
     // given
-    clientRule
-        .getWorkflowClient()
-        .newDeployCommand()
-        .addWorkflowModel(WORKFLOW_MESSAGE, "message.bpmn")
-        .send()
-        .join();
+    deploy(WORKFLOW_MESSAGE, "message.bpmn");
 
     publishMessage("order canceled", "order-123", singletonMap("foo", "bar"));
     reprocessingTrigger.accept(this);
 
     // when
     final long workflowInstanceKey =
-        startWorkflowInstance("process", singletonMap("orderId", "order-123"))
+        startWorkflowInstance(PROCESS_ID, singletonMap("orderId", "order-123"))
             .getWorkflowInstanceKey();
-
-    waitUntil(
-        () -> eventRecorder.hasWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED));
+    assertElementCompleted(PROCESS_ID, "catch-event");
 
     // then
-    final WorkflowInstanceEvent event =
-        eventRecorder.getSingleWorkflowInstanceEvent(WorkflowInstanceState.ELEMENT_COMPLETED);
+    assertWorkflowInstanceCompleted(
+        PROCESS_ID,
+        (workflowInstance) -> {
+          assertThat(workflowInstance.getWorkflowInstanceKey()).isEqualTo(workflowInstanceKey);
+          assertThat(workflowInstance.getPayloadAsMap())
+              .containsOnly(entry("orderId", "order-123"), entry("foo", "bar"));
+        });
+  }
 
-    assertThat(event.getWorkflowInstanceKey()).isEqualTo(workflowInstanceKey);
-    assertThat(event.getActivityId()).isEqualTo("catch-event");
-    assertThat(event.getPayloadAsMap())
-        .containsOnly(entry("orderId", "order-123"), entry("foo", "bar"));
+  @Test
+  public void shouldTriggerTimerAfterRestart() {
+    // given
+    deploy(WORKFLOW_TIMER, "timer.bpmn");
+
+    startWorkflowInstance(PROCESS_ID);
+
+    assertThat(RecordingExporter.timerRecords(TimerIntent.CREATED).exists()).isTrue();
+
+    // when
+    restartAction = () -> brokerRule.getClock().addTime(Duration.ofSeconds(10));
+    reprocessingTrigger.accept(this);
+
+    // then
+    assertElementCompleted(PROCESS_ID, "timer");
   }
 
   private WorkflowInstanceEvent startWorkflowInstance(final String bpmnProcessId) {
@@ -675,9 +713,9 @@ public class BrokerReprocessingTest {
         .join();
   }
 
-  protected MessageEvent publishMessage(
+  protected void publishMessage(
       final String messageName, final String correlationKey, final Map<String, Object> payload) {
-    return clientRule
+    clientRule
         .getWorkflowClient()
         .newPublishMessageCommand()
         .messageName(messageName)
@@ -688,19 +726,7 @@ public class BrokerReprocessingTest {
   }
 
   protected void deleteSnapshotsAndRestart() {
-    deleteSnapshotsAndRestart(() -> {});
-  }
-
-  protected void deleteSnapshotsAndRestart(final Runnable onStop) {
-    eventRecorder.stopRecordingEvents();
-
-    final List<String> dataDirectories =
-        brokerRule
-            .getBroker()
-            .getBrokerContext()
-            .getBrokerConfiguration()
-            .getData()
-            .getDirectories();
+    brokerRule.getBroker().getBrokerContext().getBrokerConfiguration().getData().getDirectories();
 
     brokerRule.stopBroker();
 
@@ -712,30 +738,17 @@ public class BrokerReprocessingTest {
       fail(e.getMessage());
     }
 
-    onStop.run();
+    restartAction.run();
 
     brokerRule.startBroker();
-    doRepeatedly(
-            () -> {
-              eventRecorder.startRecordingEvents();
-              return true;
-            })
-        .until(t -> t == Boolean.TRUE, e -> e == null);
-    // this can fail immediately after restart due to https://github.com/zeebe-io/zeebe/issues/590
   }
 
   protected void restartBroker() {
-    restartBroker(() -> {});
-  }
-
-  protected void restartBroker(final Runnable onStop) {
-    eventRecorder.stopRecordingEvents();
     brokerRule.stopBroker();
 
-    onStop.run();
+    restartAction.run();
 
     brokerRule.startBroker();
-    eventRecorder.startRecordingEvents();
   }
 
   private void deploy(final BpmnModelInstance workflowTwoTasks, final String s) {

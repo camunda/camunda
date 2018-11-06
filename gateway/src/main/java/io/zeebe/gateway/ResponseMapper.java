@@ -62,7 +62,7 @@ public class ResponseMapper {
       case LEADER:
         return PartitionBrokerRole.LEADER;
       case FOLLOWER:
-        return PartitionBrokerRole.FOLLOW;
+        return PartitionBrokerRole.FOLLOWER;
       default:
         throw new ClientException(
             "Unknown broker role in response for partition "
@@ -74,15 +74,22 @@ public class ResponseMapper {
 
   public static TopologyResponse toTopologyResponse(long key, TopologyResponseDto brokerResponse) {
     final TopologyResponse.Builder topologyResponseBuilder = TopologyResponse.newBuilder();
+    topologyResponseBuilder
+        .setClusterSize(brokerResponse.getClusterSize())
+        .setPartitionsCount(brokerResponse.getPartitionsCount())
+        .setReplicationFactor(brokerResponse.getReplicationFactor());
+
     final ArrayList<BrokerInfo> infos = new ArrayList<>();
 
     brokerResponse
         .brokers()
         .forEach(
             broker -> {
-              final Builder brokerInfo = BrokerInfo.newBuilder();
-              brokerInfo.setHost(bufferAsString(broker.getHost()));
-              brokerInfo.setPort(broker.getPort());
+              final Builder brokerInfo =
+                  BrokerInfo.newBuilder()
+                      .setNodeId(broker.getNodeId())
+                      .setHost(bufferAsString(broker.getHost()))
+                      .setPort(broker.getPort());
 
               broker
                   .partitionStates()
@@ -167,15 +174,14 @@ public class ResponseMapper {
     brokerResponse
         .getWorkflows()
         .forEach(
-            workflowMetadata -> {
-              builder
-                  .addWorkflowsBuilder()
-                  .setBpmnProcessId(bufferAsString(workflowMetadata.getBpmnProcessId()))
-                  .setVersion(workflowMetadata.getVersion())
-                  .setWorkflowKey(workflowMetadata.getWorkflowKey())
-                  .setResourceName(bufferAsString(workflowMetadata.getResourceName()))
-                  .build();
-            });
+            workflowMetadata ->
+                builder
+                    .addWorkflowsBuilder()
+                    .setBpmnProcessId(bufferAsString(workflowMetadata.getBpmnProcessId()))
+                    .setVersion(workflowMetadata.getVersion())
+                    .setWorkflowKey(workflowMetadata.getWorkflowKey())
+                    .setResourceName(bufferAsString(workflowMetadata.getResourceName()))
+                    .build());
 
     return builder.build();
   }
@@ -226,8 +232,8 @@ public class ResponseMapper {
         .setBpmnProcessId(bufferAsString(headers.getBpmnProcessId()))
         .setWorkflowDefinitionVersion(headers.getWorkflowDefinitionVersion())
         .setWorkflowKey(headers.getWorkflowKey())
-        .setActivityId(bufferAsString(headers.getActivityId()))
-        .setActivityInstanceKey(headers.getActivityInstanceKey())
+        .setElementId(bufferAsString(headers.getElementId()))
+        .setElementInstanceKey(headers.getElementInstanceKey())
         .build();
   }
 

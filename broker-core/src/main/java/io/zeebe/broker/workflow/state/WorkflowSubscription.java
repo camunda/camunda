@@ -28,32 +28,34 @@ import org.agrona.concurrent.UnsafeBuffer;
 
 public class WorkflowSubscription implements Subscription {
 
+  private static final int STATE_OPENING = 0;
+  private static final int STATE_OPENED = 1;
+  private static final int STATE_CLOSING = 2;
+
   private final DirectBuffer messageName = new UnsafeBuffer();
   private final DirectBuffer correlationKey = new UnsafeBuffer();
 
   private long workflowInstanceKey;
-  private long activityInstanceKey;
+  private long elementInstanceKey;
+  private int subscriptionPartitionId;
   private long commandSentTime;
 
-  private boolean isOpen;
+  private int state = STATE_OPENING;
 
   public WorkflowSubscription() {}
 
-  public WorkflowSubscription(
-      long workflowInstanceKey, long activityInstanceKey, DirectBuffer messageName) {
+  public WorkflowSubscription(long workflowInstanceKey, long elementInstanceKey) {
     this.workflowInstanceKey = workflowInstanceKey;
-    this.activityInstanceKey = activityInstanceKey;
-
-    this.messageName.wrap(messageName);
+    this.elementInstanceKey = elementInstanceKey;
   }
 
   public WorkflowSubscription(
       long workflowInstanceKey,
-      long activityInstanceKey,
+      long elementInstanceKey,
       DirectBuffer messageName,
       DirectBuffer correlationKey) {
     this.workflowInstanceKey = workflowInstanceKey;
-    this.activityInstanceKey = activityInstanceKey;
+    this.elementInstanceKey = elementInstanceKey;
 
     this.messageName.wrap(messageName);
     this.correlationKey.wrap(correlationKey);
@@ -63,21 +65,23 @@ public class WorkflowSubscription implements Subscription {
       final String messageName,
       final String correlationKey,
       final long workflowInstanceKey,
-      final long activityInstanceKey,
+      final long elementInstanceKey,
       final long commandSentTime) {
     this(
         workflowInstanceKey,
-        activityInstanceKey,
+        elementInstanceKey,
         new UnsafeBuffer(messageName.getBytes()),
         new UnsafeBuffer(correlationKey.getBytes()));
 
     setCommandSentTime(commandSentTime);
   }
 
+  @Override
   public DirectBuffer getMessageName() {
     return messageName;
   }
 
+  @Override
   public DirectBuffer getCorrelationKey() {
     return correlationKey;
   }
@@ -86,24 +90,41 @@ public class WorkflowSubscription implements Subscription {
     return workflowInstanceKey;
   }
 
-  public long getActivityInstanceKey() {
-    return activityInstanceKey;
+  public long getElementInstanceKey() {
+    return elementInstanceKey;
   }
 
   public long getCommandSentTime() {
     return commandSentTime;
   }
 
+  @Override
   public void setCommandSentTime(long commandSentTime) {
     this.commandSentTime = commandSentTime;
   }
 
-  public boolean isNotOpen() {
-    return !isOpen;
+  public int getSubscriptionPartitionId() {
+    return subscriptionPartitionId;
   }
 
-  public void setOpen(boolean open) {
-    isOpen = open;
+  public void setSubscriptionPartitionId(int subscriptionPartitionId) {
+    this.subscriptionPartitionId = subscriptionPartitionId;
+  }
+
+  public boolean isOpening() {
+    return state == STATE_OPENING;
+  }
+
+  public boolean isClosing() {
+    return state == STATE_CLOSING;
+  }
+
+  public void setOpened() {
+    state = STATE_OPENED;
+  }
+
+  public void setClosing() {
+    state = STATE_CLOSING;
   }
 
   @Override
@@ -111,14 +132,17 @@ public class WorkflowSubscription implements Subscription {
     this.workflowInstanceKey = buffer.getLong(offset, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
-    this.activityInstanceKey = buffer.getLong(offset, STATE_BYTE_ORDER);
+    this.elementInstanceKey = buffer.getLong(offset, STATE_BYTE_ORDER);
     offset += Long.BYTES;
+
+    this.subscriptionPartitionId = buffer.getInt(offset, STATE_BYTE_ORDER);
+    offset += Integer.BYTES;
 
     this.commandSentTime = buffer.getLong(offset, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
-    this.isOpen = buffer.getByte(offset) == 1;
-    offset += Byte.BYTES;
+    this.state = buffer.getInt(offset, STATE_BYTE_ORDER);
+    offset += Integer.BYTES;
 
     offset = readIntoBuffer(buffer, offset, messageName);
     readIntoBuffer(buffer, offset, correlationKey);
@@ -126,11 +150,7 @@ public class WorkflowSubscription implements Subscription {
 
   @Override
   public int getLength() {
-    return Long.BYTES * 3
-        + Byte.BYTES
-        + Integer.BYTES * 2
-        + messageName.capacity()
-        + correlationKey.capacity();
+    return Long.BYTES * 3 + Integer.BYTES * 4 + messageName.capacity() + correlationKey.capacity();
   }
 
   @Override
@@ -138,27 +158,31 @@ public class WorkflowSubscription implements Subscription {
     buffer.putLong(offset, workflowInstanceKey, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
-    buffer.putLong(offset, activityInstanceKey, STATE_BYTE_ORDER);
+    buffer.putLong(offset, elementInstanceKey, STATE_BYTE_ORDER);
     offset += Long.BYTES;
+
+    buffer.putInt(offset, subscriptionPartitionId, STATE_BYTE_ORDER);
+    offset += Integer.BYTES;
 
     buffer.putLong(offset, commandSentTime, STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
-    buffer.putByte(offset, (byte) (isOpen ? 1 : 0));
-    offset += Byte.BYTES;
+    buffer.putInt(offset, state, STATE_BYTE_ORDER);
+    offset += Integer.BYTES;
 
     offset = writeIntoBuffer(buffer, offset, messageName);
     offset = writeIntoBuffer(buffer, offset, correlationKey);
     assert offset == getLength() : "End offset differs with getLength()";
   }
 
+  @Override
   public void writeCommandSentTime(MutableDirectBuffer keyBuffer, int offset) {
     keyBuffer.putLong(offset, commandSentTime, STATE_BYTE_ORDER);
   }
 
   @Override
   public int getKeyLength() {
-    return 2 * Long.BYTES + messageName.capacity();
+    return 2 * Long.BYTES;
   }
 
   @Override
@@ -166,11 +190,8 @@ public class WorkflowSubscription implements Subscription {
     final int startOffset = offset;
     keyBuffer.putLong(offset, workflowInstanceKey, STATE_BYTE_ORDER);
     offset += Long.BYTES;
-    keyBuffer.putLong(offset, activityInstanceKey, STATE_BYTE_ORDER);
+    keyBuffer.putLong(offset, elementInstanceKey, STATE_BYTE_ORDER);
     offset += Long.BYTES;
-    final int nameLength = messageName.capacity();
-    keyBuffer.putBytes(offset, messageName.byteArray(), 0, nameLength);
-    offset += nameLength;
 
     assert (offset - startOffset) == getKeyLength()
         : "Offset problem: offset is not equal to expected key length";

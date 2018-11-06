@@ -71,7 +71,7 @@ public class WorkflowInstanceAssert
             .filter(
                 r ->
                     r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_TERMINATING
-                        && elementIdBuffer.equals(r.getValue().getActivityId()))
+                        && elementIdBuffer.equals(r.getValue().getElementId()))
             .findFirst();
 
     if (!terminatingRecordOptional.isPresent()) {
@@ -86,7 +86,8 @@ public class WorkflowInstanceAssert
         new Long2ObjectHashMap<>();
     actual.forEach(r -> recordsByPosition.put(r.getPosition(), r));
 
-    // - once a terminating record is written, there shall be no record with a greater position that
+    // - once a terminating record is written, there shall be no record with a greater getPosition
+    // that
     //   - was handled (has a follow-up event)
     //   - is in an event in the terminating flow scope
     //   - is a non-terminating event

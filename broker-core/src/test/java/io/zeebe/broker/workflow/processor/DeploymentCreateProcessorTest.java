@@ -24,9 +24,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
-import io.zeebe.broker.topic.StreamProcessorControl;
+import io.zeebe.broker.util.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
 import io.zeebe.broker.workflow.deployment.transform.DeploymentTransformer;
+import io.zeebe.broker.workflow.processor.timer.DueDateTimerChecker;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -49,19 +50,20 @@ public class DeploymentCreateProcessorTest {
 
   @Mock TopologyManager topologyManager;
   @Mock private SubscriptionCommandSender mockSubscriptionCommandSender;
+  @Mock private DueDateTimerChecker mockTimerEventScheduler;
 
   private StreamProcessorControl streamProcessor;
   private WorkflowInstanceStreamProcessor workflowInstanceStreamProcessor;
   private WorkflowState workflowState;
 
   @Before
-  public void setUp() throws Exception {
+  public void setUp() {
     MockitoAnnotations.initMocks(this);
 
     workflowState = new WorkflowState();
     workflowInstanceStreamProcessor =
         new WorkflowInstanceStreamProcessor(
-            workflowState, mockSubscriptionCommandSender, topologyManager);
+            workflowState, mockSubscriptionCommandSender, topologyManager, mockTimerEventScheduler);
 
     streamProcessor =
         rule.initStreamProcessor(env -> workflowInstanceStreamProcessor.createStreamProcessor(env));

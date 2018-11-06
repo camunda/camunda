@@ -15,13 +15,10 @@
  */
 package io.zeebe.broker.it.clustering;
 
-import static org.assertj.core.api.Assertions.assertThat;
-
-import io.zeebe.broker.it.ClientRule;
-import io.zeebe.gateway.ZeebeClient;
-import io.zeebe.gateway.api.commands.BrokerInfo;
-import io.zeebe.gateway.api.events.JobEvent;
-import io.zeebe.gateway.api.events.JobState;
+import io.zeebe.broker.it.GrpcClientRule;
+import io.zeebe.broker.it.util.ZeebeAssertHelper;
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.client.api.commands.BrokerInfo;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -29,7 +26,7 @@ import org.junit.rules.RuleChain;
 
 public class TaskEventClusteredTest {
   public ClusteringRule clusteringRule = new ClusteringRule();
-  public ClientRule clientRule = new ClientRule(clusteringRule);
+  public GrpcClientRule clientRule = new GrpcClientRule(clusteringRule);
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(clusteringRule).around(clientRule);
 
@@ -43,12 +40,12 @@ public class TaskEventClusteredTest {
 
     // choosing a new leader in a raft group where the previously leading broker is no longer
     // available
-    clusteringRule.stopBroker(leader.getAddress());
+    clusteringRule.stopBroker(leader.getNodeId());
 
     // when
-    final JobEvent jobEvent = client.jobClient().newCreateCommand().jobType("bar").send().join();
+    client.jobClient().newCreateCommand().jobType("bar").send().join();
 
     // then
-    assertThat(jobEvent.getState()).isEqualTo(JobState.CREATED);
+    ZeebeAssertHelper.assertJobCreated("bar");
   }
 }

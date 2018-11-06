@@ -16,10 +16,9 @@
 package io.zeebe.gateway.impl.job;
 
 import io.grpc.stub.StreamObserver;
-import io.zeebe.gateway.PartitionIdIterator;
+import io.zeebe.gateway.Loggers;
 import io.zeebe.gateway.RequestMapper;
 import io.zeebe.gateway.ResponseMapper;
-import io.zeebe.gateway.impl.Loggers;
 import io.zeebe.gateway.impl.broker.BrokerClient;
 import io.zeebe.gateway.impl.broker.request.BrokerActivateJobsRequest;
 import io.zeebe.gateway.protocol.GatewayOuterClass.ActivateJobsRequest;
@@ -75,7 +74,7 @@ public class ActivateJobsHandler {
                 responseObserver);
           },
           error -> {
-            Loggers.BROKER_CLIENT_LOGGER.warn(
+            Loggers.GATEWAY_LOGGER.warn(
                 "Failed to activate jobs for type {} from partition {}",
                 jobType,
                 partitionIdIterator.getCurrentPartitionId(),

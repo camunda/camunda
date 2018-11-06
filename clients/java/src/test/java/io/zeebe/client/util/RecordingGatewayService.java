@@ -174,18 +174,26 @@ public class RecordingGatewayService extends GatewayImplBase {
     return Partition.newBuilder().setPartitionId(partitionId).setRole(role).build();
   }
 
-  public static BrokerInfo broker(String host, int port, Partition... partitions) {
+  public static BrokerInfo broker(int nodeId, String host, int port, Partition... partitions) {
     return BrokerInfo.newBuilder()
+        .setNodeId(nodeId)
         .setHost(host)
         .setPort(port)
         .addAllPartitions(Arrays.asList(partitions))
         .build();
   }
 
-  public void onTopologyRequest(BrokerInfo... brokers) {
+  public void onTopologyRequest(
+      int clusterSize, int partitionsCount, int replicationFactor, BrokerInfo... brokers) {
     addRequestHandler(
         TopologyRequest.class,
-        request -> TopologyResponse.newBuilder().addAllBrokers(Arrays.asList(brokers)).build());
+        request ->
+            TopologyResponse.newBuilder()
+                .setClusterSize(clusterSize)
+                .setPartitionsCount(partitionsCount)
+                .setReplicationFactor(replicationFactor)
+                .addAllBrokers(Arrays.asList(brokers))
+                .build());
   }
 
   public static WorkflowMetadata deployedWorkflow(

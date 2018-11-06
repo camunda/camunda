@@ -18,9 +18,9 @@
 package io.zeebe.broker.workflow.model.transformation.handler;
 
 import io.zeebe.broker.workflow.model.BpmnStep;
-import io.zeebe.broker.workflow.model.ExecutableExclusiveGateway;
-import io.zeebe.broker.workflow.model.ExecutableSequenceFlow;
-import io.zeebe.broker.workflow.model.ExecutableWorkflow;
+import io.zeebe.broker.workflow.model.element.ExecutableExclusiveGateway;
+import io.zeebe.broker.workflow.model.element.ExecutableSequenceFlow;
+import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.ExclusiveGateway;

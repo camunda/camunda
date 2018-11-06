@@ -15,7 +15,6 @@
  */
 package io.zeebe.gateway.impl.broker.cluster;
 
-import io.zeebe.gateway.impl.Loggers;
 import io.zeebe.gateway.impl.broker.request.BrokerTopologyRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
 import io.zeebe.protocol.impl.data.cluster.TopologyResponseDto;
@@ -33,11 +32,8 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
-import org.slf4j.Logger;
 
 public class BrokerTopologyManagerImpl extends Actor implements BrokerTopologyManager {
-  public static final Logger LOG = Loggers.BROKER_CLIENT_LOGGER;
-
   /** Interval in which the topology is refreshed even if the client is idle */
   public static final Duration MAX_REFRESH_INTERVAL_MILLIS = Duration.ofSeconds(10);
 

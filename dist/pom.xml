@@ -8,9 +8,13 @@
   <parent>
     <groupId>io.zeebe</groupId>
     <artifactId>zb-parent</artifactId>
-    <version>0.13.0-SNAPSHOT</version>
+    <version>0.14.0-SNAPSHOT</version>
     <relativePath>../parent</relativePath>
   </parent>
+
+  <properties>
+    <skip-zbctl>true</skip-zbctl>
+  </properties>
 
   <dependencies>
     <dependency>
@@ -61,6 +65,13 @@
                 <commandLineArgument>conf/zeebe.cfg.toml</commandLineArgument>
               </commandLineArguments>
             </program>
+            <program>
+              <mainClass>io.zeebe.gateway.StandaloneGateway</mainClass>
+              <id>gateway</id>
+              <commandLineArguments>
+                <commandLineArgument>conf/gateway.cfg.toml</commandLineArgument>
+              </commandLineArguments>
+            </program>
           </programs>
         </configuration>
         <executions>
@@ -92,6 +103,7 @@
                 <copy file="${maven.multiModuleProjectDirectory}/clients/zbctl/dist/zbctl.darwin" tofile="${project.build.directory}/zeebe-broker/bin/zbctl.darwin" failonerror="false" />
                 <chmod dir="${project.build.directory}/zeebe-broker/bin" perm="ugo+rx" includes="zbctl*" />
               </target>
+              <skip>${skip-zbctl}</skip>
             </configuration>
           </execution>
         </executions>

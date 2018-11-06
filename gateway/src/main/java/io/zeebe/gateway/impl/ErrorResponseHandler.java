@@ -22,7 +22,7 @@ import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
 public class ErrorResponseHandler {
-  protected ErrorResponseDecoder decoder = new ErrorResponseDecoder();
+  protected final ErrorResponseDecoder decoder = new ErrorResponseDecoder();
 
   protected DirectBuffer errorMessage;
 

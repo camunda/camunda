@@ -42,13 +42,16 @@ public class OpenWorkflowInstanceSubscriptionProcessor
       TypedResponseWriter responseWriter,
       TypedStreamWriter streamWriter) {
 
-    final WorkflowSubscription subscription = workflowState.findSubscription(record.getValue());
-    if (subscription != null && subscription.isNotOpen()) {
-      subscription.setOpen(true);
+    final WorkflowInstanceSubscriptionRecord subscriptionRecord = record.getValue();
+
+    final WorkflowSubscription subscription = workflowState.findSubscription(subscriptionRecord);
+    if (subscription != null && subscription.isOpening()) {
+      subscription.setOpened();
+      subscription.setSubscriptionPartitionId(subscriptionRecord.getSubscriptionPartitionId());
       workflowState.put(subscription);
 
       streamWriter.writeFollowUpEvent(
-          record.getKey(), WorkflowInstanceSubscriptionIntent.OPENED, record.getValue());
+          record.getKey(), WorkflowInstanceSubscriptionIntent.OPENED, subscriptionRecord);
 
     } else {
       streamWriter.writeRejection(

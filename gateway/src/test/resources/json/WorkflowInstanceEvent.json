@@ -16,7 +16,7 @@
   "workflowKey": 1,
   "workflowInstanceKey": 4294967408,
   "scopeInstanceKey": 123456,
-  "activityId": "start",
+  "elementId": "start",
   "payload": {
     "foo": "bar"
   }

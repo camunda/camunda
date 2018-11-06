@@ -25,6 +25,7 @@ import static io.zeebe.broker.system.configuration.ClusterCfg.DEFAULT_REPLICATIO
 import static io.zeebe.broker.system.configuration.DataCfg.DEFAULT_DIRECTORY;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_CLUSTER_SIZE;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_DIRECTORIES;
+import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_EMBED_GATEWAY;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_HOST;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_INITIAL_CONTACT_POINTS;
 import static io.zeebe.broker.system.configuration.EnvironmentConstants.ENV_NODE_ID;
@@ -37,14 +38,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import io.zeebe.broker.system.configuration.BrokerCfg;
 import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.system.configuration.DataCfg;
-import io.zeebe.broker.system.configuration.Environment;
+import io.zeebe.broker.system.configuration.EmbeddedGatewayCfg;
 import io.zeebe.broker.system.configuration.ExporterCfg;
 import io.zeebe.broker.system.configuration.NetworkCfg;
 import io.zeebe.broker.system.configuration.SocketBindingClientApiCfg;
 import io.zeebe.broker.system.configuration.SocketBindingManagementCfg;
 import io.zeebe.broker.system.configuration.SocketBindingReplicationCfg;
 import io.zeebe.broker.system.configuration.SocketBindingSubscriptionCfg;
-import io.zeebe.broker.system.configuration.TomlConfigurationReader;
+import io.zeebe.util.Environment;
+import io.zeebe.util.TomlConfigurationReader;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.nio.file.Paths;
@@ -171,7 +173,7 @@ public class ConfigurationTest {
                     + "[[exporters]]\n"
                     + "id=\"internal-2\"")
                 .getBytes());
-    final BrokerCfg config = TomlConfigurationReader.read(input);
+    final BrokerCfg config = TomlConfigurationReader.read(input, BrokerCfg.class);
     final String base = temporaryFolder.getRoot().getAbsolutePath();
     final String jarFile = Paths.get(base, "exporters", "exporter.jar").toAbsolutePath().toString();
 
@@ -406,6 +408,36 @@ public class ConfigurationTest {
     assertThat(cfgCluster.getNodeId()).isEqualTo(4);
   }
 
+  @Test
+  public void shouldReadDefaultEmbedGateway() {
+    // when
+    final EmbeddedGatewayCfg gatewayCfg = readConfig("default").getGateway();
+
+    // then
+    assertThat(gatewayCfg.isEnable()).isTrue();
+  }
+
+  @Test
+  public void shouldReadEmbedGateway() {
+    // when
+    final EmbeddedGatewayCfg gatewayCfg = readConfig("disabled-gateway").getGateway();
+
+    // then
+    assertThat(gatewayCfg.isEnable()).isFalse();
+  }
+
+  @Test
+  public void shouldSetEmbedGatewayViaEnvironment() {
+    // given
+    environment.put(ENV_EMBED_GATEWAY, "true");
+
+    // when
+    final EmbeddedGatewayCfg gatewayCfg = readConfig("disabled-gateway").getGateway();
+
+    // then
+    assertThat(gatewayCfg.isEnable()).isTrue();
+  }
+
   private BrokerCfg readConfig(final String name) {
     final String configPath = "/system/" + name + ".toml";
     final InputStream resourceAsStream = ConfigurationTest.class.getResourceAsStream(configPath);
@@ -413,7 +445,7 @@ public class ConfigurationTest {
         .withFailMessage("Unable to read configuration file %s", configPath)
         .isNotNull();
 
-    final BrokerCfg config = TomlConfigurationReader.read(resourceAsStream);
+    final BrokerCfg config = TomlConfigurationReader.read(resourceAsStream, BrokerCfg.class);
     config.init(BROKER_BASE, new Environment(environment));
     return config;
   }
@@ -448,13 +480,14 @@ public class ConfigurationTest {
       final String management,
       final String replication,
       final String subscription) {
-    final NetworkCfg cfg = readConfig(configFileName).getNetwork();
-    assertThat(cfg.getHost()).isEqualTo(host);
-    assertThat(cfg.getGateway().getHost()).isEqualTo(gateway);
-    assertThat(cfg.getClient().getHost()).isEqualTo(client);
-    assertThat(cfg.getManagement().getHost()).isEqualTo(management);
-    assertThat(cfg.getReplication().getHost()).isEqualTo(replication);
-    assertThat(cfg.getSubscription().getHost()).isEqualTo(subscription);
+    final BrokerCfg brokerCfg = readConfig(configFileName);
+    final NetworkCfg networkCfg = brokerCfg.getNetwork();
+    assertThat(networkCfg.getHost()).isEqualTo(host);
+    assertThat(brokerCfg.getGateway().getNetwork().getHost()).isEqualTo(gateway);
+    assertThat(networkCfg.getClient().getHost()).isEqualTo(client);
+    assertThat(networkCfg.getManagement().getHost()).isEqualTo(management);
+    assertThat(networkCfg.getReplication().getHost()).isEqualTo(replication);
+    assertThat(networkCfg.getSubscription().getHost()).isEqualTo(subscription);
   }
 
   private void assertContactPoints(final String configFileName, final String... contactPoints) {

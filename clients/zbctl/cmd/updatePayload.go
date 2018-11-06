@@ -16,34 +16,37 @@ package cmd
 
 import (
 	"github.com/spf13/cobra"
-	"github.com/zeebe-io/zeebe/clients/zbctl/utils"
 	"log"
 )
 
-var updatePayloadFlag string
+var (
+	updatePayloadKey  int64
+	updatePayloadFlag string
+)
 
-// updatePayloadCmd represents the updatePayload command
 var updatePayloadCmd = &cobra.Command{
-	Use:    "payload <activityInstanceKey>",
-	Short:  "Update the payload of a workflow instance",
-	Args:   cobra.ExactArgs(1),
-	PreRun: initBroker,
-	Run: func(cmd *cobra.Command, args []string) {
-		activityInstanceKey := convertToKey(args[0], "Expect activity instance id as only positional argument, got")
-
-		request, err := client.NewUpdatePayloadCommand().ActivityInstanceKey(activityInstanceKey).PayloadFromString(updatePayloadFlag)
-		utils.CheckOrExit(err, utils.ExitCodeConfigurationError, defaultErrCtx)
+	Use:     "payload <key>",
+	Short:   "Update the payload of a workflow instance",
+	Args:    keyArg(&updatePayloadKey),
+	PreRunE: initClient,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		request, err := client.NewUpdatePayloadCommand().ElementInstanceKey(updatePayloadKey).PayloadFromString(updatePayloadFlag)
+		if err != nil {
+			return err
+		}
 
 		_, err = request.Send()
-		utils.CheckOrExit(err, utils.ExitCodeIOError, defaultErrCtx)
+		if err == nil {
+			log.Println("Updated the payload of element instance with key", updatePayloadKey, "to", updatePayloadFlag)
+		}
 
-		log.Println("Update the payload of activity instance with key", activityInstanceKey, "to", updatePayloadFlag)
+		return err
 	},
 }
 
 func init() {
 	updateCmd.AddCommand(updatePayloadCmd)
 
-	updatePayloadCmd.Flags().StringVar(&updatePayloadFlag, "payload", utils.EmptyJsonObject, "Specify payload as JSON object string")
+	updatePayloadCmd.Flags().StringVar(&updatePayloadFlag, "payload", "{}", "Specify payload as JSON object string")
 	updatePayloadCmd.MarkFlagRequired("payload")
 }

@@ -32,8 +32,10 @@ import io.zeebe.broker.subscription.message.state.MessageSubscription;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.impl.record.value.message.MessageRecord;
 import io.zeebe.protocol.intent.MessageIntent;
+import io.zeebe.util.sched.clock.ActorClock;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 public class PublishMessageProcessor implements TypedRecordProcessor<MessageRecord> {
 
@@ -74,35 +76,60 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
       responseWriter.writeRejectionOnCommand(command, RejectionType.BAD_VALUE, rejectionReason);
 
     } else {
-      final TypedBatchWriter batchWriter = streamWriter.newBatch();
-      final long key = batchWriter.addNewEvent(MessageIntent.PUBLISHED, command.getValue());
-      responseWriter.writeEventOnCommand(key, MessageIntent.PUBLISHED, command.getValue(), command);
+      handleNewMessage(command, responseWriter, streamWriter, sideEffect);
+    }
+  }
 
-      matchingSubscriptions =
-          messageStateController.findSubscriptions(
-              messageRecord.getName(), messageRecord.getCorrelationKey());
+  private void handleNewMessage(
+      final TypedRecord<MessageRecord> command,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter,
+      final Consumer<SideEffectProducer> sideEffect) {
 
-      for (final MessageSubscription sub : matchingSubscriptions) {
-        sub.setMessagePayload(messageRecord.getPayload());
+    final TypedBatchWriter batchWriter = streamWriter.newBatch();
+    final long key = batchWriter.addNewEvent(MessageIntent.PUBLISHED, command.getValue());
+    responseWriter.writeEventOnCommand(key, MessageIntent.PUBLISHED, command.getValue(), command);
+
+    // correlate the message only once per workflow instance
+    // - will be improved by #1421
+    matchingSubscriptions =
+        messageStateController
+            .findSubscriptions(messageRecord.getName(), messageRecord.getCorrelationKey())
+            .stream()
+            .collect(Collectors.groupingBy(MessageSubscription::getWorkflowInstanceKey))
+            .values()
+            .stream()
+            .map(sub -> sub.get(0))
+            .collect(Collectors.toList());
+
+    for (final MessageSubscription sub : matchingSubscriptions) {
+      sub.setMessagePayload(messageRecord.getPayload());
+
+      messageStateController.updateCommandSentTime(sub);
+    }
+
+    sideEffect.accept(this::correlateMessage);
+
+    if (messageRecord.getTimeToLive() > 0L) {
+      final Message message =
+          new Message(
+              key,
+              messageRecord.getName(),
+              messageRecord.getCorrelationKey(),
+              messageRecord.getPayload(),
+              messageRecord.getMessageId(),
+              messageRecord.getTimeToLive(),
+              messageRecord.getTimeToLive() + ActorClock.currentTimeMillis());
+      messageStateController.put(message);
+
+      for (MessageSubscription sub : matchingSubscriptions) {
+        messageStateController.putMessageCorrelation(
+            message.getKey(), sub.getWorkflowInstanceKey());
       }
 
-      sideEffect.accept(this::correlateMessage);
-
-      if (messageRecord.getTimeToLive() > 0L) {
-        final Message message =
-            new Message(
-                key,
-                messageRecord.getName(),
-                messageRecord.getCorrelationKey(),
-                messageRecord.getPayload(),
-                messageRecord.getMessageId(),
-                messageRecord.getTimeToLive());
-        messageStateController.put(message);
-
-      } else {
-        // don't add the message to the store to avoid that it can be correlated afterwards
-        batchWriter.addFollowUpEvent(key, MessageIntent.DELETED, messageRecord);
-      }
+    } else {
+      // don't add the message to the store to avoid that it can be correlated afterwards
+      batchWriter.addFollowUpEvent(key, MessageIntent.DELETED, messageRecord);
     }
   }
 
@@ -110,9 +137,8 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
     for (final MessageSubscription sub : matchingSubscriptions) {
       final boolean success =
           commandSender.correlateWorkflowInstanceSubscription(
-              sub.getWorkflowInstancePartitionId(),
               sub.getWorkflowInstanceKey(),
-              sub.getActivityInstanceKey(),
+              sub.getElementInstanceKey(),
               messageRecord.getName(),
               messageRecord.getPayload());
 
@@ -120,8 +146,6 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
         // try again later
         return false;
       }
-
-      messageStateController.updateCommandSentTime(sub);
     }
 
     return responseWriter.flush();

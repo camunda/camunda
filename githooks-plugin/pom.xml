@@ -4,13 +4,13 @@
 
   <name>Zeebe Git Hooks Maven Plugin</name>
   <artifactId>zb-githooks-plugin</artifactId>
-  <version>0.13.0-SNAPSHOT</version>
+  <version>0.14.0-SNAPSHOT</version>
   <packaging>maven-plugin</packaging>
 
   <parent>
     <artifactId>zb-bom</artifactId>
     <groupId>io.zeebe</groupId>
-    <version>0.13.0-SNAPSHOT</version>
+    <version>0.14.0-SNAPSHOT</version>
     <relativePath>../bom</relativePath>
   </parent>
 
@@ -26,12 +26,12 @@
     <dependency>
       <groupId>org.apache.maven</groupId>
       <artifactId>maven-plugin-api</artifactId>
-      <version>3.5.4</version>
+      <version>3.6.0</version>
     </dependency>
     <dependency>
       <groupId>org.apache.maven.plugin-tools</groupId>
       <artifactId>maven-plugin-annotations</artifactId>
-      <version>3.5.2</version>
+      <version>3.6.0</version>
       <scope>provided</scope>
     </dependency>
   </dependencies>
@@ -41,7 +41,7 @@
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-plugin-plugin</artifactId>
-        <version>3.5.2</version>
+        <version>3.6.0</version>
         <configuration>
           <goalPrefix>zb-githooks</goalPrefix>
           <skipErrorNoDescriptorsFound>true</skipErrorNoDescriptorsFound>

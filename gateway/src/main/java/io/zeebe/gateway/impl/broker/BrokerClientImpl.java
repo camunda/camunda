@@ -17,12 +17,12 @@ package io.zeebe.gateway.impl.broker;
 
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.Dispatchers;
-import io.zeebe.gateway.ZeebeClientConfiguration;
-import io.zeebe.gateway.impl.Loggers;
+import io.zeebe.gateway.Loggers;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManager;
 import io.zeebe.gateway.impl.broker.cluster.BrokerTopologyManagerImpl;
 import io.zeebe.gateway.impl.broker.request.BrokerRequest;
 import io.zeebe.gateway.impl.broker.response.BrokerResponse;
+import io.zeebe.gateway.impl.configuration.GatewayCfg;
 import io.zeebe.transport.ClientTransport;
 import io.zeebe.transport.ClientTransportBuilder;
 import io.zeebe.transport.RemoteAddress;
@@ -41,16 +41,8 @@ import java.util.function.Consumer;
 import org.slf4j.Logger;
 
 public class BrokerClientImpl implements BrokerClient {
-  public static final Logger LOG = Loggers.BROKER_CLIENT_LOGGER;
+  public static final Logger LOG = Loggers.GATEWAY_LOGGER;
 
-  public static final String VERSION;
-
-  static {
-    final String version = BrokerClientImpl.class.getPackage().getImplementationVersion();
-    VERSION = version != null ? version : "development";
-  }
-
-  protected final ZeebeClientConfiguration configuration;
   protected final ActorScheduler actorScheduler;
   private final Dispatcher dataFrameReceiveBuffer;
   protected final ClientTransport transport;
@@ -60,29 +52,26 @@ public class BrokerClientImpl implements BrokerClient {
 
   protected boolean isClosed;
 
-  public BrokerClientImpl(final ZeebeClientConfiguration configuration) {
+  public BrokerClientImpl(final GatewayCfg configuration) {
     this(configuration, null);
   }
 
-  public BrokerClientImpl(
-      final ZeebeClientConfiguration configuration, final ActorClock actorClock) {
-    this.configuration = configuration;
+  public BrokerClientImpl(final GatewayCfg configuration, final ActorClock actorClock) {
 
     this.actorScheduler =
         ActorScheduler.newActorScheduler()
-            .setCpuBoundActorThreadCount(configuration.getNumManagementThreads())
+            .setCpuBoundActorThreadCount(configuration.getThreads().getManagementThreads())
             .setIoBoundActorThreadCount(0)
             .setActorClock(actorClock)
-            .setSchedulerName("client")
+            .setSchedulerName("gateway")
             .build();
     this.actorScheduler.start();
 
-    final ByteValue sendBufferSize = ByteValue.ofMegabytes(configuration.getSendBufferSize());
-    final long requestBlockTimeMs = configuration.getRequestBlocktime().toMillis();
+    final ByteValue transportBufferSize = configuration.getCluster().getTransportBuffer();
 
     dataFrameReceiveBuffer =
-        Dispatchers.create("receive-buffer")
-            .bufferSize(sendBufferSize)
+        Dispatchers.create("gateway-receive-buffer")
+            .bufferSize(transportBufferSize)
             .modePubSub()
             .frameMaxLength(1024 * 1024)
             .actorScheduler(actorScheduler)
@@ -94,7 +83,7 @@ public class BrokerClientImpl implements BrokerClient {
             .messageReceiveBuffer(dataFrameReceiveBuffer)
             .messageMemoryPool(
                 new UnboundedMemoryPool()) // Client is not sending any heavy messages
-            .requestMemoryPool(new NonBlockingMemoryPool(sendBufferSize))
+            .requestMemoryPool(new NonBlockingMemoryPool(transportBufferSize))
             .scheduler(actorScheduler);
 
     // internal transport is used for topology request
@@ -104,11 +93,6 @@ public class BrokerClientImpl implements BrokerClient {
             .messageMemoryPool(new UnboundedMemoryPool())
             .requestMemoryPool(new UnboundedMemoryPool())
             .scheduler(actorScheduler);
-
-    if (configuration.getTcpChannelKeepAlivePeriod() != null) {
-      transportBuilder.keepAlivePeriod(configuration.getTcpChannelKeepAlivePeriod());
-      internalTransportBuilder.keepAlivePeriod(configuration.getTcpChannelKeepAlivePeriod());
-    }
 
     transport = transportBuilder.build();
     internalTransport = internalTransportBuilder.build();
@@ -122,10 +106,11 @@ public class BrokerClientImpl implements BrokerClient {
             transport.getOutput(),
             topologyManager,
             new RoundRobinDispatchStrategy(topologyManager),
-            configuration.getRequestTimeout());
+            configuration.getCluster().getRequestTimeout());
     actorScheduler.submitActor(requestManager);
 
-    final SocketAddress contactPoint = SocketAddress.from(configuration.getBrokerContactPoint());
+    final SocketAddress contactPoint =
+        SocketAddress.from(configuration.getCluster().getContactPoint());
     registerEndpoint(ClientTransport.UNKNOWN_NODE_ID, contactPoint);
   }
 
@@ -196,10 +181,6 @@ public class BrokerClientImpl implements BrokerClient {
 
   public BrokerTopologyManager getTopologyManager() {
     return topologyManager;
-  }
-
-  public ZeebeClientConfiguration getConfiguration() {
-    return configuration;
   }
 
   public ClientTransport getTransport() {

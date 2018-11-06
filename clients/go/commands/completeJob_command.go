@@ -28,8 +28,9 @@ type CompleteJobCommandStep2 interface {
 type CompleteJobCommand struct {
 	utils.SerializerMixin
 
-	request *pb.CompleteJobRequest
-	gateway pb.GatewayClient
+	request        *pb.CompleteJobRequest
+	gateway        pb.GatewayClient
+	requestTimeout time.Duration
 }
 
 func (cmd *CompleteJobCommand) JobKey(jobKey int64) CompleteJobCommandStep2 {
@@ -38,11 +39,13 @@ func (cmd *CompleteJobCommand) JobKey(jobKey int64) CompleteJobCommandStep2 {
 }
 
 func (cmd *CompleteJobCommand) PayloadFromString(payload string) (DispatchCompleteJobCommand, error) {
-	if cmd.Validate([]byte(payload)) {
-		cmd.request.Payload = payload
-		return cmd, nil
+	err := cmd.Validate("payload", payload)
+	if err != nil {
+		return nil, err
 	}
-	return nil, utils.ErrNotValidJsonString
+
+	cmd.request.Payload = payload
+	return cmd, nil
 }
 
 func (cmd *CompleteJobCommand) PayloadFromStringer(payload fmt.Stringer) (DispatchCompleteJobCommand, error) {
@@ -50,11 +53,12 @@ func (cmd *CompleteJobCommand) PayloadFromStringer(payload fmt.Stringer) (Dispat
 }
 
 func (cmd *CompleteJobCommand) PayloadFromObject(payload interface{}) (DispatchCompleteJobCommand, error) {
-	jsonString, err := cmd.ToString(payload)
+	value, err := cmd.AsJson("payload", payload)
 	if err != nil {
 		return nil, err
 	}
-	cmd.request.Payload = jsonString
+
+	cmd.request.Payload = value
 	return cmd, nil
 }
 
@@ -63,16 +67,17 @@ func (cmd *CompleteJobCommand) PayloadFromMap(payload map[string]interface{}) (D
 }
 
 func (cmd *CompleteJobCommand) Send() (*pb.CompleteJobResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), utils.RequestTimeoutInSec*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
 	defer cancel()
 
 	return cmd.gateway.CompleteJob(ctx, cmd.request)
 }
 
-func NewCompleteJobCommand(gateway pb.GatewayClient) CompleteJobCommandStep1 {
+func NewCompleteJobCommand(gateway pb.GatewayClient, requestTimeout time.Duration) CompleteJobCommandStep1 {
 	return &CompleteJobCommand{
 		SerializerMixin: utils.NewJsonStringSerializer(),
 		request:         &pb.CompleteJobRequest{},
 		gateway:         gateway,
+		requestTimeout:  requestTimeout,
 	}
 }

@@ -26,6 +26,10 @@ var _ = Describe("should send TopologyRequest to Gateway and receive TopologyRes
 		It("request with correct response", func() {
 			response, err := client.NewTopologyCommand().Send()
 
+			Expect(response.ClusterSize).To(Equal(int32(1)))
+			Expect(response.PartitionsCount).To(Equal(int32(1)))
+			Expect(response.ReplicationFactor).To(Equal(int32(1)))
+
 			Expect(len(response.Brokers)).To(Equal(1))
 			Expect(len(response.Brokers[0].Partitions)).To(Equal(1))
 			Expect(response.Brokers[0].Partitions[0].PartitionId).To(Equal(int32(0)))

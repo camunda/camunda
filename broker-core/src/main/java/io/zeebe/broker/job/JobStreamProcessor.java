@@ -20,12 +20,8 @@ package io.zeebe.broker.job;
 import static io.zeebe.util.sched.clock.ActorClock.currentTimeMillis;
 
 import io.zeebe.broker.job.JobStateController.State;
-import io.zeebe.broker.job.old.CreditsRequest;
-import io.zeebe.broker.job.old.JobSubscriptionManager;
-import io.zeebe.broker.job.old.JobSubscriptionProcessor;
 import io.zeebe.broker.logstreams.processor.CommandProcessor;
 import io.zeebe.broker.logstreams.processor.KeyGenerator;
-import io.zeebe.broker.logstreams.processor.SideEffectProducer;
 import io.zeebe.broker.logstreams.processor.StreamProcessorLifecycleAware;
 import io.zeebe.broker.logstreams.processor.TypedBatchWriter;
 import io.zeebe.broker.logstreams.processor.TypedCommandWriter;
@@ -35,12 +31,9 @@ import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
-import io.zeebe.broker.transport.clientapi.SubscribedRecordWriter;
 import io.zeebe.logstreams.state.StateSnapshotController;
 import io.zeebe.logstreams.state.StateStorage;
-import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
-import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.impl.record.value.job.JobBatchRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -49,25 +42,17 @@ import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.util.sched.ScheduledTimer;
 import java.time.Duration;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.function.Consumer;
 import org.agrona.ExpandableArrayBuffer;
 
 public class JobStreamProcessor implements StreamProcessorLifecycleAware {
   public static final Duration TIME_OUT_POLLING_INTERVAL = Duration.ofSeconds(30);
-  private final JobSubscriptionManager subscriptionManager;
   private final JobStateController state = new JobStateController();
 
-  private SubscribedRecordWriter subscribedEventWriter;
   private int partitionId;
 
   private ScheduledTimer timer;
   private TypedCommandWriter writer;
-  private JobSubscriptionProcessor jobSubscriptionProcessor;
   private KeyGenerator jobKeyGenerator;
-
-  public JobStreamProcessor(final JobSubscriptionManager subscriptionManager) {
-    this.subscriptionManager = subscriptionManager;
-  }
 
   @Override
   public void onRecovered(TypedStreamProcessor streamProcessor) {
@@ -76,7 +61,6 @@ public class JobStreamProcessor implements StreamProcessorLifecycleAware {
             .getActor()
             .runAtFixedRate(TIME_OUT_POLLING_INTERVAL, this::deactivateTimedOutJobs);
     writer = streamProcessor.getEnvironment().buildCommandWriter();
-    subscriptionManager.addPartition(partitionId, jobSubscriptionProcessor);
   }
 
   @Override
@@ -85,36 +69,24 @@ public class JobStreamProcessor implements StreamProcessorLifecycleAware {
       timer.cancel();
       timer = null;
     }
-
-    subscriptionManager.removePartition(partitionId);
   }
 
   public TypedStreamProcessor createStreamProcessor(TypedStreamEnvironment environment) {
-    jobSubscriptionProcessor = new JobSubscriptionProcessor(state);
     this.partitionId = environment.getStream().getPartitionId();
-    this.subscribedEventWriter = new SubscribedRecordWriter(environment.getOutput());
     jobKeyGenerator = KeyGenerator.createJobKeyGenerator(this.partitionId, state);
 
     return environment
         .newStreamProcessor()
         .keyGenerator(jobKeyGenerator)
         .onCommand(ValueType.JOB, JobIntent.CREATE, new CreateProcessor())
-        .onCommand(ValueType.JOB, JobIntent.ACTIVATE, new ActivateProcessor())
         .onCommand(ValueType.JOB, JobIntent.COMPLETE, new CompleteProcessor())
         .onCommand(ValueType.JOB, JobIntent.FAIL, new FailProcessor())
         .onCommand(ValueType.JOB, JobIntent.TIME_OUT, new TimeOutProcessor())
         .onCommand(ValueType.JOB, JobIntent.UPDATE_RETRIES, new UpdateRetriesProcessor())
         .onCommand(ValueType.JOB, JobIntent.CANCEL, new CancelProcessor())
         .onCommand(ValueType.JOB_BATCH, JobBatchIntent.ACTIVATE, new JobBatchActivateProcessor())
-
-        // subscription handling
-        .onEvent(ValueType.JOB, JobIntent.CREATED, jobSubscriptionProcessor)
-        .onEvent(ValueType.JOB, JobIntent.FAILED, jobSubscriptionProcessor)
-        .onEvent(ValueType.JOB, JobIntent.TIMED_OUT, jobSubscriptionProcessor)
-        .onEvent(ValueType.JOB, JobIntent.RETRIES_UPDATED, jobSubscriptionProcessor)
         .withStateController(state)
         .withListener(this)
-        .withListener(jobSubscriptionProcessor)
         .build();
   }
 
@@ -141,62 +113,6 @@ public class JobStreamProcessor implements StreamProcessorLifecycleAware {
         TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
       final long key = commandControl.accept(JobIntent.CREATED, command.getValue());
       state.create(key, command.getValue());
-    }
-  }
-
-  private class ActivateProcessor implements TypedRecordProcessor<JobRecord> {
-    protected final CreditsRequest creditsRequest = new CreditsRequest();
-
-    private int requestStreamId;
-
-    private final SideEffectProducer returnCredits =
-        () -> subscriptionManager.increaseSubscriptionCreditsAsync(creditsRequest);
-
-    private final SideEffectProducer pushRecord =
-        () -> subscribedEventWriter.tryWriteMessage(requestStreamId);
-
-    @Override
-    public void processRecord(
-        TypedRecord<JobRecord> record,
-        TypedResponseWriter responseWriter,
-        TypedStreamWriter streamWriter,
-        Consumer<SideEffectProducer> sideEffect) {
-      if (state.isInState(record.getKey(), State.ACTIVATABLE)) {
-        state.activate(record.getKey(), record.getValue());
-        streamWriter.writeFollowUpEvent(record.getKey(), JobIntent.ACTIVATED, record.getValue());
-        pushToSubscription(record, sideEffect);
-      } else {
-        streamWriter.writeRejection(
-            record, RejectionType.NOT_APPLICABLE, "Job not currently activatable");
-        updateCredits(record, sideEffect);
-      }
-    }
-
-    private void updateCredits(
-        TypedRecord<JobRecord> record, Consumer<SideEffectProducer> sideEffect) {
-      creditsRequest.setSubscriberKey(record.getMetadata().getSubscriberKey());
-      creditsRequest.setCredits(1);
-      sideEffect.accept(returnCredits);
-    }
-
-    private void pushToSubscription(
-        TypedRecord<JobRecord> record, Consumer<SideEffectProducer> sideEffect) {
-      subscribedEventWriter
-          .recordType(RecordType.EVENT)
-          .intent(JobIntent.ACTIVATED)
-          .partitionId(partitionId)
-          .position(record.getPosition())
-          .sourceRecordPosition(record.getPosition())
-          .key(record.getKey())
-          .timestamp(record.getTimestamp())
-          .subscriberKey(record.getMetadata().getSubscriberKey())
-          .subscriptionType(SubscriptionType.JOB_SUBSCRIPTION)
-          .valueType(ValueType.JOB)
-          .valueWriter(record.getValue());
-
-      requestStreamId = record.getMetadata().getRequestStreamId();
-
-      sideEffect.accept(pushRecord);
     }
   }
 

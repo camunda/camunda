@@ -21,7 +21,6 @@ import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRec
 import io.zeebe.broker.subscription.message.state.SubscriptionState;
 import io.zeebe.broker.util.KeyStateController;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
-import io.zeebe.util.buffer.BufferUtil;
 import java.io.File;
 import java.util.Collection;
 import java.util.List;
@@ -45,6 +44,7 @@ public class WorkflowState extends KeyStateController {
   private NextValueManager nextValueManager;
   private WorkflowPersistenceCache workflowPersistenceCache;
   private SubscriptionState<WorkflowSubscription> subscriptionState;
+  private TimerInstanceState timerInstanceState;
   private ElementInstanceState elementInstanceState;
 
   @Override
@@ -54,7 +54,8 @@ public class WorkflowState extends KeyStateController {
                 COLUMN_FAMILY_NAMES,
                 WorkflowPersistenceCache.COLUMN_FAMILY_NAMES,
                 ElementInstanceState.COLUMN_FAMILY_NAMES,
-                SubscriptionState.COLUMN_FAMILY_NAMES)
+                SubscriptionState.COLUMN_FAMILY_NAMES,
+                TimerInstanceState.COLUMN_FAMILY_NAMES)
             .flatMap(Stream::of)
             .collect(Collectors.toList());
 
@@ -66,6 +67,7 @@ public class WorkflowState extends KeyStateController {
     nextValueManager = new NextValueManager(this);
     workflowPersistenceCache = new WorkflowPersistenceCache(this);
     subscriptionState = new SubscriptionState<>(this, WorkflowSubscription.class);
+    timerInstanceState = new TimerInstanceState(this);
     elementInstanceState = new ElementInstanceState(this);
 
     return rocksDB;
@@ -113,11 +115,12 @@ public class WorkflowState extends KeyStateController {
   }
 
   public WorkflowSubscription findSubscription(WorkflowInstanceSubscriptionRecord record) {
+    return findSubscription(record.getWorkflowInstanceKey(), record.getElementInstanceKey());
+  }
+
+  public WorkflowSubscription findSubscription(long workflowInstanceKey, long elementInstanceKey) {
     final WorkflowSubscription workflowSubscription =
-        new WorkflowSubscription(
-            record.getWorkflowInstanceKey(),
-            record.getActivityInstanceKey(),
-            BufferUtil.cloneBuffer(record.getMessageName()));
+        new WorkflowSubscription(workflowInstanceKey, elementInstanceKey);
     return subscriptionState.getSubscription(workflowSubscription);
   }
 
@@ -137,6 +140,10 @@ public class WorkflowState extends KeyStateController {
 
   public void remove(WorkflowSubscription workflowSubscription) {
     subscriptionState.remove(workflowSubscription);
+  }
+
+  public TimerInstanceState getTimerState() {
+    return timerInstanceState;
   }
 
   /**

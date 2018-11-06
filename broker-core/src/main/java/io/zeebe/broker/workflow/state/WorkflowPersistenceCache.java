@@ -19,7 +19,7 @@ package io.zeebe.broker.workflow.state;
 
 import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
 
-import io.zeebe.broker.workflow.model.ExecutableWorkflow;
+import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.BpmnTransformer;
 import io.zeebe.logstreams.state.StateController;
 import io.zeebe.model.bpmn.Bpmn;
@@ -68,7 +68,7 @@ public class WorkflowPersistenceCache {
   private final Long2ObjectHashMap<DeployedWorkflow> workflowsByKey;
   private final PersistenceHelper persistenceHelper;
 
-  public WorkflowPersistenceCache(StateController rocksDbWrapper) throws Exception {
+  public WorkflowPersistenceCache(StateController rocksDbWrapper) {
     this.rocksDbWrapper = rocksDbWrapper;
     persistenceHelper = new PersistenceHelper(rocksDbWrapper);
 
@@ -180,12 +180,7 @@ public class WorkflowPersistenceCache {
     final int keyLength = PersistedWorkflow.writeWorkflowKey(keyBuffer, 0, processId, -1);
     final PersistedInt latestVersion =
         persistenceHelper.getValueInstance(
-            PersistedInt.class,
-            latestWorkflowsHandle,
-            keyBuffer,
-            0,
-            keyLength - Integer.BYTES,
-            valueBuffer);
+            PersistedInt.class, latestWorkflowsHandle, keyBuffer, 0, keyLength - Integer.BYTES);
 
     DeployedWorkflow deployedWorkflow;
     if (versionMap == null) {
@@ -206,12 +201,7 @@ public class WorkflowPersistenceCache {
         PersistedWorkflow.writeWorkflowKey(keyBuffer, 0, processId, latestVersion);
     final PersistedWorkflow persistedWorkflow =
         persistenceHelper.getValueInstance(
-            PersistedWorkflow.class,
-            workflowsByIdAndVersionHandle,
-            keyBuffer,
-            0,
-            keyLength,
-            valueBuffer);
+            PersistedWorkflow.class, workflowsByIdAndVersionHandle, keyBuffer, 0, keyLength);
 
     if (persistedWorkflow != null) {
       final DeployedWorkflow deployedWorkflow = updateInMemoryState(persistedWorkflow);
@@ -239,12 +229,7 @@ public class WorkflowPersistenceCache {
     final int keyLength = PersistedWorkflow.writeWorkflowKey(keyBuffer, 0, processId, version);
     final PersistedWorkflow persistedWorkflow =
         persistenceHelper.getValueInstance(
-            PersistedWorkflow.class,
-            workflowsByIdAndVersionHandle,
-            keyBuffer,
-            0,
-            keyLength,
-            valueBuffer);
+            PersistedWorkflow.class, workflowsByIdAndVersionHandle, keyBuffer, 0, keyLength);
 
     if (persistedWorkflow != null) {
       updateInMemoryState(persistedWorkflow);
@@ -274,7 +259,7 @@ public class WorkflowPersistenceCache {
     keyBuffer.putLong(0, workflowKey, STATE_BYTE_ORDER);
     final PersistedWorkflow persistedWorkflow =
         persistenceHelper.getValueInstance(
-            PersistedWorkflow.class, workflowsHandle, keyBuffer, 0, Long.BYTES, valueBuffer);
+            PersistedWorkflow.class, workflowsHandle, keyBuffer, 0, Long.BYTES);
 
     if (persistedWorkflow != null) {
       updateInMemoryState(persistedWorkflow);

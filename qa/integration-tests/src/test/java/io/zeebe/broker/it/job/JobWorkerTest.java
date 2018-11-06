@@ -17,11 +17,12 @@ package io.zeebe.broker.it.job;
 
 import static io.zeebe.exporter.record.Assertions.assertThat;
 import static io.zeebe.test.util.TestUtil.waitUntil;
+import static io.zeebe.test.util.record.RecordingExporter.jobBatchRecords;
 import static io.zeebe.test.util.record.RecordingExporter.jobRecords;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.GrpcClientRule;
-import io.zeebe.broker.it.util.GrpcRecordingJobHandler;
+import io.zeebe.broker.it.util.RecordingJobHandler;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.client.api.clients.JobClient;
 import io.zeebe.client.api.events.JobEvent;
@@ -29,6 +30,7 @@ import io.zeebe.client.api.response.ActivatedJob;
 import io.zeebe.client.api.subscription.JobWorker;
 import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.JobRecordValue;
+import io.zeebe.protocol.intent.JobBatchIntent;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.util.TestUtil;
 import java.time.Duration;
@@ -66,7 +68,7 @@ public class JobWorkerTest {
     final JobEvent job = createJobOfType("foo");
 
     // when
-    final GrpcRecordingJobHandler jobHandler = new GrpcRecordingJobHandler();
+    final RecordingJobHandler jobHandler = new RecordingJobHandler();
 
     jobClient
         .newWorker()
@@ -89,7 +91,7 @@ public class JobWorkerTest {
     // given
     createJobOfType("foo");
 
-    final GrpcRecordingJobHandler jobHandler = new GrpcRecordingJobHandler();
+    final RecordingJobHandler jobHandler = new RecordingJobHandler();
 
     jobClient
         .newWorker()
@@ -132,8 +134,8 @@ public class JobWorkerTest {
             .join();
 
     // when
-    final GrpcRecordingJobHandler jobHandler =
-        new GrpcRecordingJobHandler(
+    final RecordingJobHandler jobHandler =
+        new RecordingJobHandler(
             (c, t) -> c.newCompleteCommand(t.getKey()).payload("{\"a\":3}").send());
 
     jobClient
@@ -162,9 +164,9 @@ public class JobWorkerTest {
   }
 
   @Test
-  public void shouldCloseSubscription() throws InterruptedException {
+  public void shouldCloseWorker() {
     // given
-    final GrpcRecordingJobHandler jobHandler = new GrpcRecordingJobHandler();
+    final RecordingJobHandler jobHandler = new RecordingJobHandler();
 
     final JobWorker subscription =
         jobClient
@@ -186,7 +188,7 @@ public class JobWorkerTest {
     waitUntil(() -> jobRecords(JobIntent.CREATED).exists());
 
     assertThat(jobHandler.getHandledJobs()).isEmpty();
-    assertThat(jobRecords(JobIntent.ACTIVATE).exists()).isFalse();
+    assertThat(jobBatchRecords(JobBatchIntent.ACTIVATE).exists()).isFalse();
   }
 
   @Test
@@ -197,8 +199,8 @@ public class JobWorkerTest {
       createJobOfType("foo");
     }
 
-    final GrpcRecordingJobHandler handler =
-        new GrpcRecordingJobHandler(
+    final RecordingJobHandler handler =
+        new RecordingJobHandler(
             (c, j) -> {
               c.newCompleteCommand(j.getKey()).send().join();
             });
@@ -220,12 +222,33 @@ public class JobWorkerTest {
   }
 
   @Test
+  public void shouldFailJobManuallyAndRetry() {
+    // given
+    createJobOfType("foo");
+
+    final RecordingJobHandler jobHandler =
+        new RecordingJobHandler(
+            (c, j) -> c.newFailCommand(j.getKey()).retries(1).send(),
+            (c, j) -> c.newCompleteCommand(j.getKey()).send().join());
+
+    // when
+    jobClient.newWorker().jobType("foo").handler(jobHandler).name("myWorker").open();
+
+    // then
+    waitUntil(() -> jobHandler.getHandledJobs().size() == 2);
+    Record<JobRecordValue> record = jobRecords(JobIntent.FAILED).getFirst();
+    assertThat(record.getValue()).hasType("foo").hasWorker("myWorker").hasRetries(1);
+    record = jobRecords(JobIntent.COMPLETED).getFirst();
+    assertThat(record.getValue()).hasType("foo").hasWorker("myWorker");
+  }
+
+  @Test
   public void shouldMarkJobAsFailedAndRetryIfHandlerThrowsException() {
     // given
     final JobEvent job = createJobOfType("foo");
 
-    final GrpcRecordingJobHandler jobHandler =
-        new GrpcRecordingJobHandler(
+    final RecordingJobHandler jobHandler =
+        new RecordingJobHandler(
             (c, j) -> {
               throw new RuntimeException("expected failure");
             },
@@ -256,8 +279,8 @@ public class JobWorkerTest {
     // given
     jobClient.newCreateCommand().jobType("foo").retries(1).send().join();
 
-    final GrpcRecordingJobHandler jobHandler =
-        new GrpcRecordingJobHandler(
+    final RecordingJobHandler jobHandler =
+        new RecordingJobHandler(
             (c, t) -> {
               throw new RuntimeException("expected failure");
             });
@@ -281,8 +304,8 @@ public class JobWorkerTest {
     // given
     final JobEvent job = jobClient.newCreateCommand().jobType("foo").retries(1).send().join();
 
-    final GrpcRecordingJobHandler jobHandler =
-        new GrpcRecordingJobHandler(
+    final RecordingJobHandler jobHandler =
+        new RecordingJobHandler(
             (c, j) -> {
               throw new RuntimeException("expected failure");
             },
@@ -312,8 +335,8 @@ public class JobWorkerTest {
     // given
     final JobEvent job = createJobOfType("foo");
 
-    final GrpcRecordingJobHandler jobHandler =
-        new GrpcRecordingJobHandler(
+    final RecordingJobHandler jobHandler =
+        new RecordingJobHandler(
             (c, t) -> {
               // don't complete the job - just wait for lock expiration
             });
@@ -344,8 +367,8 @@ public class JobWorkerTest {
   @Test
   public void shouldGiveJobToSingleSubscription() {
     // given
-    final GrpcRecordingJobHandler jobHandler =
-        new GrpcRecordingJobHandler((c, t) -> c.newCompleteCommand(t.getKey()).send().join());
+    final RecordingJobHandler jobHandler =
+        new RecordingJobHandler((c, t) -> c.newCompleteCommand(t.getKey()).send().join());
 
     jobClient
         .newWorker()
@@ -378,7 +401,7 @@ public class JobWorkerTest {
     createJobOfType("foo");
     createJobOfType("bar");
 
-    final GrpcRecordingJobHandler jobHandler = new GrpcRecordingJobHandler();
+    final RecordingJobHandler jobHandler = new RecordingJobHandler();
 
     jobClient
         .newWorker()
@@ -407,7 +430,7 @@ public class JobWorkerTest {
     for (int i = 0; i < subscriptionCapacity + 1; i++) {
       createJobOfType("foo");
     }
-    final GrpcRecordingJobHandler jobHandler = new GrpcRecordingJobHandler();
+    final RecordingJobHandler jobHandler = new RecordingJobHandler();
 
     // when
     jobClient

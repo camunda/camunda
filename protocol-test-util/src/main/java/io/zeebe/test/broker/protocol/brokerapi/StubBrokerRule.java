@@ -19,28 +19,18 @@ import static io.zeebe.protocol.Protocol.DEPLOYMENT_PARTITION;
 
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.ControlMessageType;
-import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.Intent;
-import io.zeebe.protocol.intent.JobIntent;
-import io.zeebe.protocol.intent.SubscriberIntent;
-import io.zeebe.protocol.intent.SubscriptionIntent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.test.broker.protocol.brokerapi.data.Topology;
-import io.zeebe.transport.RemoteAddress;
 import io.zeebe.transport.ServerTransport;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.Transports;
 import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.sched.ActorScheduler;
 import io.zeebe.util.sched.clock.ControlledActorClock;
-import java.time.Instant;
-import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import org.junit.rules.ExternalResource;
@@ -55,6 +45,7 @@ public class StubBrokerRule extends ExternalResource {
   protected final SocketAddress socketAddress;
   private final int clusterSize;
   private final int partitionCount;
+  private final int replicationFactor;
 
   protected ServerTransport transport;
 
@@ -68,14 +59,19 @@ public class StubBrokerRule extends ExternalResource {
   }
 
   public StubBrokerRule(final int nodeId) {
-    this(nodeId, 1, 1);
+    this(nodeId, 1, 1, 1);
   }
 
-  public StubBrokerRule(final int nodeId, final int clusterSize, final int partitionCount) {
+  private StubBrokerRule(
+      final int nodeId,
+      final int clusterSize,
+      final int partitionCount,
+      final int replicationFactor) {
     this.nodeId = nodeId;
     this.socketAddress = SocketUtil.getNextAddress();
     this.clusterSize = clusterSize;
     this.partitionCount = partitionCount;
+    this.replicationFactor = replicationFactor;
   }
 
   @Override
@@ -199,10 +195,6 @@ public class StubBrokerRule extends ExternalResource {
     return channelHandler.getAllReceivedRequests();
   }
 
-  public SubscribedRecordBuilder newSubscribedEvent() {
-    return new SubscribedRecordBuilder(msgPackHelper, transport);
-  }
-
   public void stubTopologyRequest() {
     onTopologyRequest()
         .respondWith()
@@ -210,6 +202,7 @@ public class StubBrokerRule extends ExternalResource {
         .put("brokers", r -> currentTopology.get().getBrokers())
         .put("clusterSize", clusterSize)
         .put("partitionsCount", partitionCount)
+        .put("replicationFactor", replicationFactor)
         .done()
         .register();
   }
@@ -231,166 +224,6 @@ public class StubBrokerRule extends ExternalResource {
 
   public void clearTopology() {
     currentTopology.set(new Topology());
-  }
-
-  public void stubTopicSubscriptionApi(final long initialSubscriberKey) {
-    final AtomicLong subscriberKeyProvider = new AtomicLong(initialSubscriberKey);
-    final AtomicLong subscriptionKeyProvider = new AtomicLong(0);
-
-    onExecuteCommandRequest(ValueType.SUBSCRIBER, SubscriberIntent.SUBSCRIBE)
-        .respondWith()
-        .event()
-        .intent(SubscriberIntent.SUBSCRIBED)
-        .key((r) -> subscriberKeyProvider.getAndIncrement())
-        .value()
-        .allOf((r) -> r.getCommand())
-        .done()
-        .register();
-
-    onControlMessageRequest((r) -> r.messageType() == ControlMessageType.REMOVE_TOPIC_SUBSCRIPTION)
-        .respondWith()
-        .data()
-        .allOf((r) -> r.getData())
-        .done()
-        .register();
-
-    onExecuteCommandRequest(ValueType.SUBSCRIPTION, SubscriptionIntent.ACKNOWLEDGE)
-        .respondWith()
-        .event()
-        .intent(SubscriptionIntent.ACKNOWLEDGED)
-        .key((r) -> subscriptionKeyProvider.getAndIncrement())
-        .partitionId((r) -> r.partitionId())
-        .value()
-        .allOf((r) -> r.getCommand())
-        .done()
-        .register();
-  }
-
-  public void stubJobSubscriptionApi(final long initialSubscriberKey) {
-    final AtomicLong subscriberKeyProvider = new AtomicLong(initialSubscriberKey);
-
-    onControlMessageRequest((r) -> r.messageType() == ControlMessageType.ADD_JOB_SUBSCRIPTION)
-        .respondWith()
-        .data()
-        .allOf((r) -> r.getData())
-        .put("subscriberKey", (r) -> subscriberKeyProvider.getAndIncrement())
-        .done()
-        .register();
-
-    onControlMessageRequest((r) -> r.messageType() == ControlMessageType.REMOVE_JOB_SUBSCRIPTION)
-        .respondWith()
-        .data()
-        .allOf((r) -> r.getData())
-        .done()
-        .register();
-
-    onControlMessageRequest(
-            (r) -> r.messageType() == ControlMessageType.INCREASE_JOB_SUBSCRIPTION_CREDITS)
-        .respondWith()
-        .data()
-        .allOf((r) -> r.getData())
-        .done()
-        .register();
-  }
-
-  public void pushRaftEvent(
-      final RemoteAddress remote, final long subscriberKey, final long key, final long position) {
-    pushRecord(
-        remote, subscriberKey, key, position, RecordType.EVENT, ValueType.RAFT, Intent.UNKNOWN);
-  }
-
-  public void pushRecord(
-      final RemoteAddress remote,
-      final long subscriberKey,
-      final long key,
-      final long position,
-      final RecordType recordType,
-      final ValueType valueType,
-      final Intent intent) {
-    pushRecord(
-        remote,
-        subscriberKey,
-        key,
-        position,
-        clock.getCurrentTime(),
-        recordType,
-        valueType,
-        intent);
-  }
-
-  public void pushRecord(
-      final RemoteAddress remote,
-      final long subscriberKey,
-      final long key,
-      final long position,
-      final Instant timestamp,
-      final RecordType recordType,
-      final ValueType valueType,
-      final Intent intent) {
-    newSubscribedEvent()
-        .partitionId(TEST_PARTITION_ID)
-        .key(key)
-        .sourceRecordPosition(position - 1L)
-        .position(position)
-        .recordType(recordType)
-        .valueType(valueType)
-        .intent(intent)
-        .subscriberKey(subscriberKey)
-        .subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION)
-        .timestamp(timestamp)
-        .value()
-        .done()
-        .push(remote);
-  }
-
-  public void pushTopicEvent(
-      final RemoteAddress remote, final Consumer<SubscribedRecordBuilder> eventConfig) {
-    final SubscribedRecordBuilder builder =
-        newSubscribedEvent().subscriptionType(SubscriptionType.TOPIC_SUBSCRIPTION);
-
-    // defaults that the config can override
-    builder.recordType(RecordType.EVENT);
-    builder.intent(Intent.UNKNOWN);
-    builder.key(0);
-    builder.position(0);
-    builder.valueType(ValueType.RAFT);
-    builder.subscriberKey(0);
-    builder.timestamp(clock.getCurrentTime());
-    builder.partitionId(TEST_PARTITION_ID);
-    builder.value().done();
-
-    eventConfig.accept(builder);
-
-    builder.push(remote);
-  }
-
-  public void pushActivatedJob(
-      final RemoteAddress remote,
-      final long subscriberKey,
-      final long key,
-      final long position,
-      final String worker,
-      final String jobType) {
-    newSubscribedEvent()
-        .partitionId(TEST_PARTITION_ID)
-        .key(key)
-        .sourceRecordPosition(position - 1)
-        .position(position)
-        .recordType(RecordType.EVENT)
-        .valueType(ValueType.JOB)
-        .intent(JobIntent.ACTIVATED)
-        .subscriberKey(subscriberKey)
-        .subscriptionType(SubscriptionType.JOB_SUBSCRIPTION)
-        .timestamp(clock.getCurrentTime())
-        .value()
-        .put("type", jobType)
-        .put("deadline", 1000L)
-        .put("worker", worker)
-        .put("retries", 3)
-        .put("payload", msgPackHelper.encodeAsMsgPack(new HashMap<>()))
-        .put("state", "LOCKED")
-        .done()
-        .push(remote);
   }
 
   public JobStubs jobs() {

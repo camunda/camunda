@@ -12,26 +12,32 @@ message Partition {
   int32 partitionId = 1;
   enum PartitionBrokerRole {
     LEADER = 0;
-    FOLLOW = 1;
+    FOLLOWER = 1;
   }
   PartitionBrokerRole role = 3;
 }
 
 message BrokerInfo {
-  string host = 1;
-  int32 port = 2;
-  repeated Partition partitions = 3;
+  int32 nodeId = 1;
+  string host = 2;
+  int32 port = 3;
+  repeated Partition partitions = 4;
 }
 
 message TopologyResponse {
   repeated BrokerInfo brokers = 1;
+  int32 clusterSize = 2;
+  int32 partitionsCount = 3;
+  int32 replicationFactor = 4;
 }
 
 message WorkflowRequestObject {
   string name = 1;
   enum ResourceType {
-    BPMN = 0;
-    YAML = 1;
+    // FILE type means the gateway will try to detect the resource type using the file extension of the name
+    FILE = 0;
+    BPMN = 1;
+    YAML = 2;
   }
   ResourceType type = 2;
   bytes definition = 3;
@@ -127,7 +133,7 @@ message CancelWorkflowInstanceResponse {
 }
 
 message UpdateWorkflowInstancePayloadRequest {
-  int64 activityInstanceKey = 1;
+  int64 elementInstanceKey = 1;
   /* payload has to be a valid json object as string */
   string payload = 2;
 }
@@ -172,8 +178,8 @@ message JobHeaders {
   string bpmnProcessId = 2;
   int32 workflowDefinitionVersion = 3;
   int64 workflowKey = 4;
-  string activityId = 5;
-  int64 activityInstanceKey = 6;
+  string elementId = 5;
+  int64 elementInstanceKey = 6;
 }
 
 message ActivatedJob {

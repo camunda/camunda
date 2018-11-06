@@ -18,6 +18,9 @@ package io.zeebe.client.api.commands;
 import java.util.List;
 
 public interface BrokerInfo {
+  /** @return the node if of the broker */
+  int getNodeId();
+
   /** @return the address host of the broker */
   String getHost();
 

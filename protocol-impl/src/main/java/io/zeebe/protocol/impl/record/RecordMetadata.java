@@ -46,13 +46,12 @@ public class RecordMetadata implements BufferWriter, BufferReader {
   private Intent intent = null;
   protected int requestStreamId;
   protected long requestId;
-  protected long subscriberKey;
   protected int protocolVersion =
       Protocol.PROTOCOL_VERSION; // always the current version by default
   protected ValueType valueType = ValueType.NULL_VAL;
   protected long incidentKey;
   private RejectionType rejectionType;
-  private UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
+  private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
 
   public RecordMetadata() {
     reset();
@@ -71,7 +70,6 @@ public class RecordMetadata implements BufferWriter, BufferReader {
     recordType = decoder.recordType();
     requestStreamId = decoder.requestStreamId();
     requestId = decoder.requestId();
-    subscriberKey = decoder.subscriptionId();
     protocolVersion = decoder.protocolVersion();
     valueType = decoder.valueType();
     intent = Intent.fromProtocolValue(valueType, decoder.intent());
@@ -111,7 +109,6 @@ public class RecordMetadata implements BufferWriter, BufferReader {
         .recordType(recordType)
         .requestStreamId(requestStreamId)
         .requestId(requestId)
-        .subscriptionId(subscriberKey)
         .protocolVersion(protocolVersion)
         .valueType(valueType)
         .intent(intentValue)
@@ -142,15 +139,6 @@ public class RecordMetadata implements BufferWriter, BufferReader {
 
   public RecordMetadata requestStreamId(int requestStreamId) {
     this.requestStreamId = requestStreamId;
-    return this;
-  }
-
-  public long getSubscriberKey() {
-    return subscriberKey;
-  }
-
-  public RecordMetadata subscriberKey(long subscriberKey) {
-    this.subscriberKey = subscriberKey;
     return this;
   }
 
@@ -237,7 +225,6 @@ public class RecordMetadata implements BufferWriter, BufferReader {
     recordType = RecordType.NULL_VAL;
     requestId = RecordMetadataEncoder.requestIdNullValue();
     requestStreamId = RecordMetadataEncoder.requestStreamIdNullValue();
-    subscriberKey = RecordMetadataEncoder.subscriptionIdNullValue();
     protocolVersion = Protocol.PROTOCOL_VERSION;
     valueType = ValueType.NULL_VAL;
     incidentKey = RecordMetadataEncoder.incidentKeyNullValue();
@@ -270,8 +257,6 @@ public class RecordMetadata implements BufferWriter, BufferReader {
         + requestStreamId
         + ", requestId="
         + requestId
-        + ", subscriberKey="
-        + subscriberKey
         + ", valueType="
         + valueType
         + ", incidentKey="

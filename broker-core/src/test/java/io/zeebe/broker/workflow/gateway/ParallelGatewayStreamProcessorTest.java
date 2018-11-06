@@ -21,7 +21,7 @@ import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.logstreams.processor.TypedRecord;
-import io.zeebe.broker.topic.StreamProcessorControl;
+import io.zeebe.broker.util.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
 import io.zeebe.broker.workflow.processor.WorkflowInstanceStreamProcessorRule;
 import io.zeebe.model.bpmn.Bpmn;
@@ -108,7 +108,7 @@ public class ParallelGatewayStreamProcessorTest {
             .events()
             .onlyWorkflowInstanceRecords()
             .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETING)
-            .filter(r -> PROCESS_ID_BUFFER.equals(r.getValue().getActivityId()))
+            .filter(r -> PROCESS_ID_BUFFER.equals(r.getValue().getElementId()))
             .findFirst();
 
     assertThat(processCompleting).isNotPresent();

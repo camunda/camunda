@@ -20,7 +20,7 @@ package io.zeebe.broker.util;
 import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
-import io.zeebe.broker.topic.Records;
+import io.zeebe.broker.workflow.data.TimerRecord;
 import io.zeebe.logstreams.log.LoggedEvent;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -50,7 +50,7 @@ public class RecordStream extends StreamWrapper<LoggedEvent, RecordStream> {
   public LoggedEvent withPosition(final long position) {
     return filter(e -> e.getPosition() == position)
         .findFirst()
-        .orElseThrow(() -> new AssertionError("No event found with position " + position));
+        .orElseThrow(() -> new AssertionError("No event found with getPosition " + position));
   }
 
   public TypedRecordStream<JobRecord> onlyJobRecords() {
@@ -89,6 +89,12 @@ public class RecordStream extends StreamWrapper<LoggedEvent, RecordStream> {
             .map(e -> CopiedTypedEvent.toTypedEvent(e, WorkflowInstanceSubscriptionRecord.class)));
   }
 
+  public TypedRecordStream<TimerRecord> onlyTimerRecords() {
+    return new TypedRecordStream<>(
+        filter(Records::isTimerRecord)
+            .map(e -> CopiedTypedEvent.toTypedEvent(e, TimerRecord.class)));
+  }
+
   /**
    * This method makes only sense when the stream contains only entries of one workflow instance and
    * the element is only instantiated once within that instance.
@@ -98,7 +104,7 @@ public class RecordStream extends StreamWrapper<LoggedEvent, RecordStream> {
 
     return onlyWorkflowInstanceRecords()
         .onlyEvents()
-        .filter(r -> elementIdBuffer.equals(r.getValue().getActivityId()))
+        .filter(r -> elementIdBuffer.equals(r.getValue().getElementId()))
         .map(r -> (WorkflowInstanceIntent) r.getMetadata().getIntent());
   }
 }

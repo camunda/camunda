@@ -29,8 +29,10 @@ import static org.mockito.Mockito.when;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
-import io.zeebe.broker.topic.StreamProcessorControl;
+import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
+import io.zeebe.broker.util.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
+import io.zeebe.broker.workflow.processor.timer.DueDateTimerChecker;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -57,6 +59,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
 
   private SubscriptionCommandSender mockSubscriptionCommandSender;
   private TopologyManager mockTopologyManager;
+  private DueDateTimerChecker mockTimerEventScheduler;
 
   private StreamProcessorControl streamProcessor;
   private WorkflowState workflowState;
@@ -70,10 +73,12 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
   }
 
   @Override
-  protected void before() throws Throwable {
+  protected void before() {
+    workflowState = new WorkflowState();
+
     mockSubscriptionCommandSender = mock(SubscriptionCommandSender.class);
     mockTopologyManager = mock(TopologyManager.class);
-    workflowState = new WorkflowState();
+    mockTimerEventScheduler = mock(DueDateTimerChecker.class);
 
     when(mockSubscriptionCommandSender.hasPartitionIds()).thenReturn(true);
     when(mockSubscriptionCommandSender.openMessageSubscription(anyLong(), anyLong(), any(), any()))
@@ -81,13 +86,18 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
     when(mockSubscriptionCommandSender.correlateMessageSubscription(
             anyInt(), anyLong(), anyLong(), any()))
         .thenReturn(true);
+    when(mockSubscriptionCommandSender.closeMessageSubscription(anyInt(), anyLong(), anyLong()))
+        .thenReturn(true);
 
     streamProcessor =
         environmentRule.runStreamProcessor(
             env -> {
               final WorkflowInstanceStreamProcessor streamProcessor =
                   new WorkflowInstanceStreamProcessor(
-                      workflowState, mockSubscriptionCommandSender, mockTopologyManager);
+                      workflowState,
+                      mockSubscriptionCommandSender,
+                      mockTopologyManager,
+                      mockTimerEventScheduler);
 
               return streamProcessor.createStreamProcessor(env);
             });
@@ -95,12 +105,6 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
 
   public StreamProcessorControl getStreamProcessor() {
     return streamProcessor;
-  }
-
-  @Override
-  protected void after() {
-    // TODO Auto-generated method stub
-    super.after();
   }
 
   public void deploy(final BpmnModelInstance modelInstance) {
@@ -141,7 +145,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
         WorkflowInstanceIntent.CREATE,
         workflowInstanceRecord(BufferUtil.wrapString(processId), payload));
     final TypedRecord<WorkflowInstanceRecord> createdEvent =
-        awaitAndGetFirstRecordInState(WorkflowInstanceIntent.CREATED);
+        awaitAndGetFirstRecordInState(WorkflowInstanceIntent.ELEMENT_READY);
     return createdEvent;
   }
 
@@ -182,6 +186,24 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
     waitUntil(() -> environmentRule.events().withIntent(state).findFirst().isPresent());
   }
 
+  public TypedRecord<WorkflowInstanceSubscriptionRecord> awaitAndGetFirstSubscriptionRejection() {
+    waitUntil(
+        () ->
+            environmentRule
+                .events()
+                .onlyWorkflowInstanceSubscriptionRecords()
+                .onlyRejections()
+                .findFirst()
+                .isPresent());
+
+    return environmentRule
+        .events()
+        .onlyWorkflowInstanceSubscriptionRecords()
+        .onlyRejections()
+        .findFirst()
+        .get();
+  }
+
   public TypedRecord<WorkflowInstanceRecord> awaitElementInState(
       final String elementId, final WorkflowInstanceIntent intent) {
     final DirectBuffer elementIdAsBuffer = BufferUtil.wrapString(elementId);
@@ -192,7 +214,7 @@ public class WorkflowInstanceStreamProcessorRule extends ExternalResource {
                     .events()
                     .onlyWorkflowInstanceRecords()
                     .withIntent(intent)
-                    .filter(r -> elementIdAsBuffer.equals(r.getValue().getActivityId()))
+                    .filter(r -> elementIdAsBuffer.equals(r.getValue().getElementId()))
                     .findFirst())
         .until(o -> o.isPresent())
         .get();

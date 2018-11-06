@@ -3,7 +3,6 @@ package commands
 import (
 	"context"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
-	"github.com/zeebe-io/zeebe/clients/go/utils"
 	"time"
 )
 
@@ -16,12 +15,13 @@ type DispatchCancelWorkflowInstanceCommand interface {
 }
 
 type CancelWorkflowInstanceCommand struct {
-	request *pb.CancelWorkflowInstanceRequest
-	gateway pb.GatewayClient
+	request        *pb.CancelWorkflowInstanceRequest
+	gateway        pb.GatewayClient
+	requestTimeout time.Duration
 }
 
 func (cmd CancelWorkflowInstanceCommand) Send() (*pb.CancelWorkflowInstanceResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), utils.RequestTimeoutInSec*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
 	defer cancel()
 
 	return cmd.gateway.CancelWorkflowInstance(ctx, cmd.request)
@@ -32,8 +32,9 @@ func (cmd CancelWorkflowInstanceCommand) WorkflowInstanceKey(key int64) Dispatch
 	return cmd
 }
 
-func NewCancelInstanceCommand(gateway pb.GatewayClient) CancelInstanceStep1 {
+func NewCancelInstanceCommand(gateway pb.GatewayClient, requestTimeout time.Duration) CancelInstanceStep1 {
 	return &CancelWorkflowInstanceCommand{
-		gateway: gateway,
+		gateway:        gateway,
+		requestTimeout: requestTimeout,
 	}
 }

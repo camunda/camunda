@@ -92,7 +92,7 @@ public final class CorrelateWorkflowInstanceSubscription
     this.sideEffect = sideEffect;
 
     final ElementInstance eventInstance =
-        workflowState.getElementInstanceState().getInstance(subscription.getActivityInstanceKey());
+        workflowState.getElementInstanceState().getInstance(subscription.getElementInstanceKey());
 
     if (eventInstance == null) {
       streamWriter.writeRejection(
@@ -122,7 +122,7 @@ public final class CorrelateWorkflowInstanceSubscription
     }
 
     final ElementInstance eventInstance =
-        workflowState.getElementInstanceState().getInstance(subscription.getActivityInstanceKey());
+        workflowState.getElementInstanceState().getInstance(subscription.getElementInstanceKey());
 
     final WorkflowInstanceRecord value = eventInstance.getValue();
     value.setPayload(subscription.getPayload());
@@ -131,7 +131,7 @@ public final class CorrelateWorkflowInstanceSubscription
     batchWriter.addFollowUpEvent(
         record.getKey(), WorkflowInstanceSubscriptionIntent.CORRELATED, subscription);
     batchWriter.addFollowUpEvent(
-        subscription.getActivityInstanceKey(), WorkflowInstanceIntent.ELEMENT_COMPLETING, value);
+        subscription.getElementInstanceKey(), WorkflowInstanceIntent.ELEMENT_COMPLETING, value);
 
     sideEffect.accept(this::sendAcknowledgeCommand);
 
@@ -143,7 +143,7 @@ public final class CorrelateWorkflowInstanceSubscription
     return subscriptionCommandSender.correlateMessageSubscription(
         subscription.getSubscriptionPartitionId(),
         subscription.getWorkflowInstanceKey(),
-        subscription.getActivityInstanceKey(),
+        subscription.getElementInstanceKey(),
         subscription.getMessageName());
   }
 }

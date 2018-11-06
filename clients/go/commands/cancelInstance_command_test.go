@@ -1,30 +1,12 @@
 package commands
 
 import (
-	"fmt"
 	"github.com/golang/mock/gomock"
-	"github.com/golang/protobuf/proto"
 	"github.com/zeebe-io/zeebe/clients/go/mock_pb"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
+	"github.com/zeebe-io/zeebe/clients/go/utils"
 	"testing"
 )
-
-// rpcMsg implements the gomock.Matcher interface
-type rpcMsg struct {
-	msg proto.Message
-}
-
-func (r *rpcMsg) Matches(msg interface{}) bool {
-	m, ok := msg.(proto.Message)
-	if !ok {
-		return false
-	}
-	return proto.Equal(m, r.msg)
-}
-
-func (r *rpcMsg) String() string {
-	return fmt.Sprintf("is %s", r.msg)
-}
 
 func TestCancelWorkflowInstanceCommand(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -37,9 +19,9 @@ func TestCancelWorkflowInstanceCommand(t *testing.T) {
 	}
 	stub := &pb.CancelWorkflowInstanceResponse{}
 
-	client.EXPECT().CancelWorkflowInstance(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().CancelWorkflowInstance(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewCancelInstanceCommand(client)
+	command := NewCancelInstanceCommand(client, utils.DefaultTestTimeout)
 
 	response, err := command.WorkflowInstanceKey(123).Send()
 

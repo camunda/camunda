@@ -36,10 +36,10 @@
                 },
                 "headers": {
                   "properties": {
-                    "activityId": {
+                    "elementId": {
                       "type": "keyword"
                     },
-                    "activityInstanceKey": {
+                    "elementInstanceKey": {
                       "type": "long"
                     },
                     "bpmnProcessId": {

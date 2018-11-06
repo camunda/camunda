@@ -4,6 +4,7 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/zeebe-io/zeebe/clients/go/mock_pb"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
+	"github.com/zeebe-io/zeebe/clients/go/utils"
 	"testing"
 	"time"
 )
@@ -20,9 +21,9 @@ func TestPublishMessageCommand(t *testing.T) {
 	}
 	stub := &pb.PublishMessageResponse{}
 
-	client.EXPECT().PublishMessage(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().PublishMessage(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewPublishMessageCommand(client)
+	command := NewPublishMessageCommand(client, utils.DefaultTestTimeout)
 
 	response, err := command.MessageName("foo").CorrelationKey("bar").Send()
 
@@ -48,9 +49,9 @@ func TestPublishMessageCommandWithMessageId(t *testing.T) {
 	}
 	stub := &pb.PublishMessageResponse{}
 
-	client.EXPECT().PublishMessage(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().PublishMessage(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewPublishMessageCommand(client)
+	command := NewPublishMessageCommand(client, utils.DefaultTestTimeout)
 
 	response, err := command.MessageName("foo").CorrelationKey("bar").MessageId("hello").Send()
 
@@ -76,9 +77,9 @@ func TestPublishMessageCommandWithTimeToLive(t *testing.T) {
 	}
 	stub := &pb.PublishMessageResponse{}
 
-	client.EXPECT().PublishMessage(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().PublishMessage(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewPublishMessageCommand(client)
+	command := NewPublishMessageCommand(client, utils.DefaultTestTimeout)
 
 	response, err := command.MessageName("foo").CorrelationKey("bar").TimeToLive(time.Duration(6 * time.Minute)).Send()
 
@@ -106,9 +107,9 @@ func TestPublishMessageCommandWithPayloadFromString(t *testing.T) {
 	}
 	stub := &pb.PublishMessageResponse{}
 
-	client.EXPECT().PublishMessage(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().PublishMessage(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewPublishMessageCommand(client)
+	command := NewPublishMessageCommand(client, utils.DefaultTestTimeout)
 
 	payloadCommand, err := command.MessageName("foo").CorrelationKey("bar").PayloadFromString(payload)
 	if err != nil {
@@ -141,9 +142,9 @@ func TestPublishMessageCommandWithPayloadFromStringer(t *testing.T) {
 	}
 	stub := &pb.PublishMessageResponse{}
 
-	client.EXPECT().PublishMessage(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().PublishMessage(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewPublishMessageCommand(client)
+	command := NewPublishMessageCommand(client, utils.DefaultTestTimeout)
 
 	payloadCommand, err := command.MessageName("foo").CorrelationKey("bar").PayloadFromStringer(DataType{Foo: "bar"})
 	if err != nil {
@@ -176,9 +177,9 @@ func TestPublishMessageCommandWithPayloadFromObject(t *testing.T) {
 	}
 	stub := &pb.PublishMessageResponse{}
 
-	client.EXPECT().PublishMessage(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().PublishMessage(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewPublishMessageCommand(client)
+	command := NewPublishMessageCommand(client, utils.DefaultTestTimeout)
 
 	payloadCommand, err := command.MessageName("foo").CorrelationKey("bar").PayloadFromObject(DataType{Foo: "bar"})
 	if err != nil {
@@ -213,9 +214,9 @@ func TestPublishMessageCommandWithPayloadFromMap(t *testing.T) {
 	}
 	stub := &pb.PublishMessageResponse{}
 
-	client.EXPECT().PublishMessage(gomock.Any(), &rpcMsg{msg: request}).Return(stub, nil)
+	client.EXPECT().PublishMessage(gomock.Any(), &utils.RpcTestMsg{Msg: request}).Return(stub, nil)
 
-	command := NewPublishMessageCommand(client)
+	command := NewPublishMessageCommand(client, utils.DefaultTestTimeout)
 
 	payloadCommand, err := command.MessageName("foo").CorrelationKey("bar").PayloadFromMap(payloadMap)
 	if err != nil {

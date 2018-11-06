@@ -142,7 +142,7 @@ public class ElementInstanceState {
         k -> {
           keyBuffer.putLong(0, key, STATE_BYTE_ORDER);
           return helper.getValueInstance(
-              ElementInstance.class, elementInstanceHandle, keyBuffer, 0, Long.BYTES, valueBuffer);
+              ElementInstance.class, elementInstanceHandle, keyBuffer, 0, Long.BYTES);
         });
   }
 
@@ -181,8 +181,7 @@ public class ElementInstanceState {
 
   public StoredRecord getTokenEvent(long key) {
     keyBuffer.putLong(0, key, STATE_BYTE_ORDER);
-    return helper.getValueInstance(
-        StoredRecord.class, tokenEventHandle, keyBuffer, 0, Long.BYTES, valueBuffer);
+    return helper.getValueInstance(StoredRecord.class, tokenEventHandle, keyBuffer, 0, Long.BYTES);
   }
 
   void updateInstance(ElementInstance scopeInstance) {

@@ -207,7 +207,7 @@ Elements marked in orange are currently implemented by Zeebe.
   <div>
     <div class="bpmn-symbol-group">
       <h3>Gateways</h3>
-      <a href="/bpmn-workflows/gateways.html">
+      <a href="/bpmn-workflows/exclusive-gateways.html">
         <div class="bpmn-symbol-container implemented">
           <svg height="60" version="1.1" width="60" xmlns="http://www.w3.org/2000/svg">
             <path fill="#ffffff" stroke="#333333" d="M5,25L25,5L45,25L25,45L5,25" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="1" style="stroke-linecap: round; stroke-linejoin: round; stroke-opacity: 1;"></path>
@@ -231,7 +231,7 @@ Elements marked in orange are currently implemented by Zeebe.
           <span class="glyphicon glyphicon-eye-open"></span>
         </a>
       </div>
-      <a href="/bpmn-workflows/gateways.html">
+      <a href="/bpmn-workflows/parallel-gateways.html">
         <div class="bpmn-symbol-container implemented">
           <svg height="60" version="1.1" width="60" xmlns="http://www.w3.org/2000/svg" style="overflow: hidden; position: relative; left: -0.75px;">
             <path fill="#ffffff" stroke="#333333" d="M5,25L25,5L45,25L25,45L5,25" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="1" style="stroke-linecap: round; stroke-linejoin: round; stroke-opacity: 1;"></path>
@@ -429,7 +429,7 @@ Elements marked in orange are currently implemented by Zeebe.
       </td>
     </tr>
     <tr>
-      <td>Timer</td>
+      <td><a href="/bpmn-workflows/timer-events.html">Timer</a></td>
       <td>
           <svg height="40" version="1.1" width="40" xmlns="http://www.w3.org/2000/svg">
             <g class="djs-visual">
@@ -457,7 +457,7 @@ Elements marked in orange are currently implemented by Zeebe.
             </g>
           </svg>
       </td>
-      <td>
+      <td class="implemented">
           <svg height="40" version="1.1" width="40" xmlns="http://www.w3.org/2000/svg">
             <circle cx="20" cy="20" r="15" fill="#ffffff" stroke="#333333" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="1" id="svg_1" style="stroke-linecap: round; stroke-linejoin: round; stroke-opacity: 1;"></circle>
             <circle cx="20" cy="20" r="12" fill="none" stroke="#333333" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" stroke-opacity="1" style="stroke-linecap: round; stroke-linejoin: round; stroke-opacity: 1;"></circle>

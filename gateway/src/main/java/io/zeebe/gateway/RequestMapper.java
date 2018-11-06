@@ -60,7 +60,8 @@ public class RequestMapper {
     final BrokerDeployWorkflowRequest brokerRequest = new BrokerDeployWorkflowRequest();
 
     for (WorkflowRequestObject workflow : grpcRequest.getWorkflowsList()) {
-      brokerRequest.addResource(workflow.getDefinition().toByteArray(), workflow.getName());
+      brokerRequest.addResource(
+          workflow.getDefinition().toByteArray(), workflow.getName(), workflow.getType());
     }
 
     return brokerRequest;
@@ -134,7 +135,7 @@ public class RequestMapper {
     final BrokerUpdateWorkflowInstancePayloadRequest brokerRequest =
         new BrokerUpdateWorkflowInstancePayloadRequest();
 
-    brokerRequest.setActivityInstanceKey(grpcRequest.getActivityInstanceKey());
+    brokerRequest.setElementInstanceKey(grpcRequest.getElementInstanceKey());
     brokerRequest.setPayload(ensureJsonSet(grpcRequest.getPayload()));
 
     return brokerRequest;
@@ -163,7 +164,6 @@ public class RequestMapper {
     if (value == null || value.trim().isEmpty()) {
       return DocumentValue.EMPTY_DOCUMENT;
     } else {
-      // TODO(menski): is msgpack convert thread safe? maybe one instance per thread local?
       return new UnsafeBuffer(MSG_PACK_CONVERTER.convertToMsgPack(value));
     }
   }

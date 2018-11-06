@@ -15,19 +15,24 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/zeebe-io/zeebe/clients/go"
-	"github.com/zeebe-io/zeebe/clients/zbctl/utils"
 	"os"
 	"strconv"
+	"strings"
 
 	"github.com/spf13/cobra"
 )
 
+const (
+	DefaultAddressHost = "127.0.0.1"
+	DefaultAddressPort = 26500
+)
+
 var client zbc.ZBClient
 
-var out *utils.OutputWriter
-var defaultErrCtx *utils.ErrorContext
+var addressFlag string
 
 var rootCmd = &cobra.Command{
 	Use:   "zbctl",
@@ -45,41 +50,63 @@ It is designed for regular maintenance jobs such as:
 // This is called by main.main(). It only needs to happen once to the rootCmd.
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(err)
-		os.Exit(utils.ExitCodeCommandNotFound)
+		os.Exit(1)
 	}
 }
 
 func init() {
-	out = utils.NewOutputWriter()
-	defaultErrCtx = new(utils.ErrorContext)
+	rootCmd.PersistentFlags().StringVar(&addressFlag, "address", "", "Specify the Zeebe addressFlag")
 }
 
-// initBroker will create a client with the broker address in the following precedence: flag, environment variable, default address
-var initBroker = func(cmd *cobra.Command, args []string) {
-	brokerAddr := utils.DefaultBrokerAddress
+// initClient will create a client with in the following precedence: address flag, environment variable, default address
+var initClient = func(cmd *cobra.Command, args []string) error {
+	address := DefaultAddressHost
 
-	brokerAddrEnv := os.Getenv("ZB_BROKER_ADDR")
-	if len(brokerAddrEnv) > 0 {
-		brokerAddr = brokerAddrEnv
+	addressEnv := os.Getenv("ZEEBE_ADDRESS")
+	if len(addressEnv) > 0 {
+		address = addressEnv
 	}
 
-	if cmd.Flag("broker") != nil {
-		brokerAddr = cmd.Flag("broker").Value.String()
+	if len(addressFlag) > 0 {
+		address = addressFlag
 	}
 
-	defaultErrCtx.BrokerAddr = brokerAddr
+	address = appendPort(address)
 
 	var err error
-	client, err = zbc.NewZBClient(brokerAddr)
-	utils.CheckOrExit(err, utils.ExitCodeConfigurationError, defaultErrCtx)
+	client, err = zbc.NewZBClient(address)
+	return err
 }
 
-func convertToKey(arg string, errorMsg string) int64 {
-	key, err := strconv.ParseInt(arg, 10, 64)
-	if err != nil {
-		fmt.Println(errorMsg, arg)
-		utils.CheckOrExit(err, utils.ExitCodeIOError, defaultErrCtx)
+func keyArg(key *int64) cobra.PositionalArgs {
+	return func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("expects key as only positional argument")
+		}
+
+		value, err := strconv.ParseInt(args[0], 10, 64)
+		if err != nil {
+			return fmt.Errorf("invalid argument %q for %q: %s", args[0], "key", err)
+		}
+
+		*key = value
+
+		return nil
 	}
-	return key
+}
+
+func printJson(value interface{}) error {
+	valueJson, err := json.MarshalIndent(value, "", "  ")
+	if err == nil {
+		fmt.Println(string(valueJson))
+	}
+	return err
+}
+
+func appendPort(address string) string {
+	if strings.Contains(address, ":") {
+		return address
+	} else {
+		return fmt.Sprintf("%s:%d", address, DefaultAddressPort)
+	}
 }

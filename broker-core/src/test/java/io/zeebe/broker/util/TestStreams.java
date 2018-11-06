@@ -25,8 +25,7 @@ import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.state.StateStorageFactory;
 import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
-import io.zeebe.broker.topic.Records;
-import io.zeebe.broker.topic.StreamProcessorControl;
+import io.zeebe.broker.workflow.data.TimerRecord;
 import io.zeebe.logstreams.LogStreams;
 import io.zeebe.logstreams.impl.service.StreamProcessorService;
 import io.zeebe.logstreams.impl.snapshot.fs.FsSnapshotController;
@@ -89,6 +88,7 @@ public class TestStreams {
     VALUE_TYPES.put(ExporterRecord.class, ValueType.EXPORTER);
     VALUE_TYPES.put(RaftConfigurationEvent.class, ValueType.RAFT);
     VALUE_TYPES.put(JobBatchRecord.class, ValueType.JOB_BATCH);
+    VALUE_TYPES.put(TimerRecord.class, ValueType.TIMER);
 
     VALUE_TYPES.put(UnpackedObject.class, ValueType.NOOP);
   }
@@ -159,8 +159,8 @@ public class TestStreams {
   }
 
   /**
-   * Truncates events with position greater than the argument. Includes committed events. Resets
-   * commit position to the argument position.
+   * Truncates events with getPosition greater than the argument. Includes committed events. Resets
+   * commit getPosition to the argument getPosition.
    *
    * @param position exclusive (unlike {@link LogStream#truncate(long)}!)
    */
@@ -345,6 +345,14 @@ public class TestStreams {
     }
 
     @Override
+    public void blockAfterTimerEvent(final Predicate<TypedRecord<TimerRecord>> test) {
+      blockAfterEvent(
+          e ->
+              Records.isTimerRecord(e)
+                  && test.test(CopiedTypedEvent.toTypedEvent(e, TimerRecord.class)));
+    }
+
+    @Override
     public void close() {
       if (currentController != null && currentController.isOpened()) {
         currentStreamProcessorService.close();
@@ -456,7 +464,7 @@ public class TestStreams {
 
         @Override
         public boolean executeSideEffects() {
-          return actualProcessor != null ? actualProcessor.executeSideEffects() : true;
+          return actualProcessor == null || actualProcessor.executeSideEffects();
         }
 
         @Override
@@ -531,7 +539,7 @@ public class TestStreams {
     public TestStreams.FluentLogWriter event(final UnpackedObject event) {
       final ValueType eventType = VALUE_TYPES.get(event.getClass());
       if (eventType == null) {
-        throw new RuntimeException("No event type registered for value " + event.getClass());
+        throw new RuntimeException("No event type registered for getValue " + event.getClass());
       }
 
       this.metadata.valueType(eventType);

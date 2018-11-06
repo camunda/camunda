@@ -42,7 +42,7 @@ public class UpdateWorkflowInstancePayloadTest extends ClientTest {
 
     // then
     final UpdateWorkflowInstancePayloadRequest request = gatewayService.getLastRequest();
-    assertThat(request.getActivityInstanceKey()).isEqualTo(123);
+    assertThat(request.getElementInstanceKey()).isEqualTo(123);
     assertThat(fromJsonAsMap(request.getPayload())).containsOnly(entry("key", "val"));
   }
 

@@ -40,8 +40,8 @@ public class ActivateJobsTest extends ClientTest {
             .setBpmnProcessId("test1")
             .setWorkflowDefinitionVersion(2)
             .setWorkflowKey(23)
-            .setActivityId("foo")
-            .setActivityInstanceKey(23213)
+            .setElementId("foo")
+            .setElementInstanceKey(23213)
             .build();
     final ActivatedJob activatedJob1 =
         ActivatedJob.newBuilder()
@@ -61,8 +61,8 @@ public class ActivateJobsTest extends ClientTest {
             .setBpmnProcessId("test3")
             .setWorkflowDefinitionVersion(23)
             .setWorkflowKey(11)
-            .setActivityId("bar")
-            .setActivityInstanceKey(111)
+            .setElementId("bar")
+            .setElementInstanceKey(111)
             .build();
     final ActivatedJob activatedJob2 =
         ActivatedJob.newBuilder()

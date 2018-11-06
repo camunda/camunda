@@ -27,7 +27,6 @@ import io.zeebe.client.api.commands.PartitionInfo;
 import io.zeebe.client.api.commands.Topology;
 import io.zeebe.protocol.intent.DeploymentIntent;
 import io.zeebe.test.util.record.RecordingExporter;
-import java.time.Duration;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -53,7 +52,7 @@ public class GrpcClientRule extends ExternalResource {
   }
 
   public GrpcClientRule(final ClusteringRule clusteringRule) {
-    this(config -> config.brokerContactPoint(clusteringRule.getClientAddress().toString()));
+    this(config -> config.brokerContactPoint(clusteringRule.getGatewayAddress().toString()));
   }
 
   private GrpcClientRule(final Consumer<ZeebeClientBuilder> configurator) {
@@ -63,7 +62,6 @@ public class GrpcClientRule extends ExternalResource {
   @Override
   protected void before() {
     final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder();
-    builder.defaultJobPollInterval(Duration.ofMillis(100));
     configurator.accept(builder);
     client = builder.build();
   }
@@ -81,7 +79,7 @@ public class GrpcClientRule extends ExternalResource {
   public void waitUntilDeploymentIsDone(final long key) {
     waitUntil(
         () ->
-            RecordingExporter.deploymentRecordStream(DeploymentIntent.DISTRIBUTED)
+            RecordingExporter.deploymentRecords(DeploymentIntent.DISTRIBUTED)
                 .withKey(key)
                 .exists());
   }

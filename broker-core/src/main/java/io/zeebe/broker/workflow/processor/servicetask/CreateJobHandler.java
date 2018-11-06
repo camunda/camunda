@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.workflow.processor.servicetask;
 
-import io.zeebe.broker.workflow.model.ExecutableServiceTask;
+import io.zeebe.broker.workflow.model.element.ExecutableServiceTask;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -46,8 +46,8 @@ public class CreateJobHandler implements BpmnStepHandler<ExecutableServiceTask> 
         .setWorkflowDefinitionVersion(value.getVersion())
         .setWorkflowKey(value.getWorkflowKey())
         .setWorkflowInstanceKey(value.getWorkflowInstanceKey())
-        .setActivityId(serviceTask.getId())
-        .setActivityInstanceKey(context.getRecord().getKey());
+        .setElementId(serviceTask.getId())
+        .setElementInstanceKey(context.getRecord().getKey());
 
     final DirectBuffer headers = serviceTask.getEncodedHeaders();
     jobCommand.setCustomHeaders(headers);

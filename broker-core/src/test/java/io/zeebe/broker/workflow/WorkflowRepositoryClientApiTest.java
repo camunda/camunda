@@ -55,7 +55,7 @@ public class WorkflowRepositoryClientApiTest {
   @Test
   public void shouldRequestWorkflowByKey() {
     final ExecuteCommandResponse deployment =
-        apiRule.partition().deployWithResponse(WORKFLOW, "wf.bpmn");
+        apiRule.partitionClient().deployWithResponse(WORKFLOW, "wf.bpmn");
 
     final Map<String, Object> deployedWorkflow = getDeployedWorkflow(deployment, 0);
 
@@ -133,7 +133,7 @@ public class WorkflowRepositoryClientApiTest {
 
   @Test
   public void shouldNotGetWorkflowByExistingBpmnProcessKeyAndNonExistingVersion() {
-    apiRule.partition().deployWithResponse(WORKFLOW);
+    apiRule.partitionClient().deployWithResponse(WORKFLOW);
 
     expectedException.expect(RuntimeException.class);
     expectedException.expectMessage(
@@ -153,7 +153,8 @@ public class WorkflowRepositoryClientApiTest {
   @Test
   public void shouldRequestLatestWorkflowBpmnProcessId() {
     // given
-    final ExecuteCommandResponse deployment1 = apiRule.partition().deployWithResponse(WORKFLOW);
+    final ExecuteCommandResponse deployment1 =
+        apiRule.partitionClient().deployWithResponse(WORKFLOW);
 
     final Map<String, Object> deployedWorkflow = getDeployedWorkflow(deployment1, 0);
 
@@ -177,7 +178,8 @@ public class WorkflowRepositoryClientApiTest {
 
     // and when
 
-    final ExecuteCommandResponse deployment2 = apiRule.partition().deployWithResponse(WORKFLOW);
+    final ExecuteCommandResponse deployment2 =
+        apiRule.partitionClient().deployWithResponse(WORKFLOW);
 
     final Map<String, Object> deployedWorkflow2 = getDeployedWorkflow(deployment2, 0);
 
@@ -200,7 +202,8 @@ public class WorkflowRepositoryClientApiTest {
   @Test
   public void shouldGetWorkflowVersionBpmnProcessId() {
     // given
-    final ExecuteCommandResponse deployment1 = apiRule.partition().deployWithResponse(WORKFLOW);
+    final ExecuteCommandResponse deployment1 =
+        apiRule.partitionClient().deployWithResponse(WORKFLOW);
 
     final Map<String, Object> deployedWorkflow = getDeployedWorkflow(deployment1, 0);
 
@@ -224,7 +227,8 @@ public class WorkflowRepositoryClientApiTest {
 
     // and when
 
-    final ExecuteCommandResponse deployment2 = apiRule.partition().deployWithResponse(WORKFLOW);
+    final ExecuteCommandResponse deployment2 =
+        apiRule.partitionClient().deployWithResponse(WORKFLOW);
 
     final Map<String, Object> deployedWorkflow2 = getDeployedWorkflow(deployment2, 0);
 
@@ -282,7 +286,7 @@ public class WorkflowRepositoryClientApiTest {
   @SuppressWarnings("unchecked")
   public void shouldListWorkflow() {
     final ExecuteCommandResponse deployment =
-        apiRule.partition().deployWithResponse(WORKFLOW, "wf.bpmn");
+        apiRule.partitionClient().deployWithResponse(WORKFLOW, "wf.bpmn");
 
     final Map<String, Object> deployedWorkflow = getDeployedWorkflow(deployment, 0);
 
@@ -315,8 +319,8 @@ public class WorkflowRepositoryClientApiTest {
   @Test
   @SuppressWarnings("unchecked")
   public void shouldListWorkflowsByBpmnProcessId() {
-    apiRule.partition().deployWithResponse(WORKFLOW);
-    apiRule.partition().deployWithResponse(WORKFLOW_2);
+    apiRule.partitionClient().deployWithResponse(WORKFLOW);
+    apiRule.partitionClient().deployWithResponse(WORKFLOW_2);
 
     ControlMessageResponse requestWorkflowResponse =
         apiRule
@@ -351,8 +355,8 @@ public class WorkflowRepositoryClientApiTest {
   @Test
   @SuppressWarnings("unchecked")
   public void shouldListWorkflowsByBpmnProcessIdNonExisting() {
-    apiRule.partition().deployWithResponse(WORKFLOW);
-    apiRule.partition().deployWithResponse(WORKFLOW_2);
+    apiRule.partitionClient().deployWithResponse(WORKFLOW);
+    apiRule.partitionClient().deployWithResponse(WORKFLOW_2);
 
     final ControlMessageResponse requestWorkflowResponse =
         apiRule
@@ -371,9 +375,9 @@ public class WorkflowRepositoryClientApiTest {
   @Test
   @SuppressWarnings("unchecked")
   public void shouldListMultipleWorkflows() {
-    apiRule.partition().deployWithResponse(WORKFLOW);
-    apiRule.partition().deployWithResponse(WORKFLOW);
-    apiRule.partition().deployWithResponse(WORKFLOW);
+    apiRule.partitionClient().deployWithResponse(WORKFLOW);
+    apiRule.partitionClient().deployWithResponse(WORKFLOW);
+    apiRule.partitionClient().deployWithResponse(WORKFLOW);
 
     final ControlMessageResponse requestWorkflowResponse =
         apiRule

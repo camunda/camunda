@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.workflow.gateway;
 
-import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_ACTIVITY_ID;
 import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -28,8 +27,7 @@ import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
-import io.zeebe.test.broker.protocol.clientapi.TestPartitionClient;
+import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.util.List;
@@ -46,11 +44,11 @@ public class ExclusiveGatewayTest {
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
-  private TestPartitionClient testClient;
+  private PartitionTestClient testClient;
 
   @Before
   public void init() {
-    testClient = apiRule.partition();
+    testClient = apiRule.partitionClient();
   }
 
   @Test
@@ -81,20 +79,20 @@ public class ExclusiveGatewayTest {
     final long workflowInstance3 =
         testClient.createWorkflowInstance("workflow", asMsgPack("foo", 12));
 
-    SubscribedRecord endEvent =
+    Record<WorkflowInstanceRecordValue> endEvent =
         testClient.receiveFirstWorkflowInstanceEvent(
             workflowInstance1, WorkflowInstanceIntent.END_EVENT_OCCURRED);
-    assertThat(endEvent.value()).containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "a");
+    assertThat(endEvent.getValue().getElementId()).isEqualTo("a");
 
     endEvent =
         testClient.receiveFirstWorkflowInstanceEvent(
             workflowInstance2, WorkflowInstanceIntent.END_EVENT_OCCURRED);
-    assertThat(endEvent.value()).containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "b");
+    assertThat(endEvent.getValue().getElementId()).isEqualTo("b");
 
     endEvent =
         testClient.receiveFirstWorkflowInstanceEvent(
             workflowInstance3, WorkflowInstanceIntent.END_EVENT_OCCURRED);
-    assertThat(endEvent.value()).containsEntry(PROP_WORKFLOW_ACTIVITY_ID, "c");
+    assertThat(endEvent.getValue().getElementId()).isEqualTo("c");
   }
 
   @Test
@@ -127,21 +125,21 @@ public class ExclusiveGatewayTest {
 
     List<String> takenSequenceFlows =
         testClient
-            .receiveEvents()
+            .receiveWorkflowInstances()
             .withIntent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN)
-            .filter(r -> (Long) r.value().get("workflowInstanceKey") == workflowInstance1)
+            .withWorkflowInstanceKey(workflowInstance1)
             .limit(3)
-            .map(s -> (String) s.value().get("activityId"))
+            .map(s -> s.getValue().getElementId())
             .collect(Collectors.toList());
     assertThat(takenSequenceFlows).contains("s1").doesNotContain("s2");
 
     takenSequenceFlows =
         testClient
-            .receiveEvents()
+            .receiveWorkflowInstances()
             .withIntent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN)
-            .filter(r -> (Long) r.value().get("workflowInstanceKey") == workflowInstance2)
+            .withWorkflowInstanceKey(workflowInstance2)
             .limit(3)
-            .map(s -> (String) s.value().get("activityId"))
+            .map(s -> s.getValue().getElementId())
             .collect(Collectors.toList());
     assertThat(takenSequenceFlows).contains("s2").doesNotContain("s1");
   }
@@ -173,23 +171,25 @@ public class ExclusiveGatewayTest {
     testClient.receiveElementInState(
         workflowInstance1, "workflow", WorkflowInstanceIntent.ELEMENT_COMPLETED);
 
-    List<SubscribedRecord> sequenceFlows =
+    List<Record<WorkflowInstanceRecordValue>> sequenceFlows =
         testClient
-            .receiveEvents()
+            .receiveWorkflowInstances()
             .withIntent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN)
             .limit(3)
             .collect(Collectors.toList());
 
-    List<SubscribedRecord> gateWays =
+    List<Record<WorkflowInstanceRecordValue>> gateWays =
         testClient
-            .receiveEvents()
+            .receiveWorkflowInstances()
             .withIntent(WorkflowInstanceIntent.GATEWAY_ACTIVATED)
             .limit(2)
             .collect(Collectors.toList());
 
-    assertThat(gateWays.get(0).sourceRecordPosition()).isEqualTo(sequenceFlows.get(0).position());
-    assertThat(sequenceFlows.get(1).value().get("activityId")).isEqualTo("s1");
-    assertThat(gateWays.get(1).sourceRecordPosition()).isEqualTo(sequenceFlows.get(1).position());
+    assertThat(gateWays.get(0).getSourceRecordPosition())
+        .isEqualTo(sequenceFlows.get(0).getPosition());
+    assertThat(sequenceFlows.get(1).getValue().getElementId()).isEqualTo("s1");
+    assertThat(gateWays.get(1).getSourceRecordPosition())
+        .isEqualTo(sequenceFlows.get(1).getPosition());
 
     // when
     final long workflowInstance2 =
@@ -201,23 +201,25 @@ public class ExclusiveGatewayTest {
 
     sequenceFlows =
         testClient
-            .receiveEvents()
+            .receiveWorkflowInstances()
             .withIntent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN)
-            .filter(r -> (Long) r.value().get("workflowInstanceKey") == workflowInstance2)
+            .withWorkflowInstanceKey(workflowInstance2)
             .limit(3)
             .collect(Collectors.toList());
 
     gateWays =
         testClient
-            .receiveEvents()
+            .receiveWorkflowInstances()
             .withIntent(WorkflowInstanceIntent.GATEWAY_ACTIVATED)
-            .filter(r -> (Long) r.value().get("workflowInstanceKey") == workflowInstance2)
+            .withWorkflowInstanceKey(workflowInstance2)
             .limit(2)
             .collect(Collectors.toList());
 
-    assertThat(gateWays.get(0).sourceRecordPosition()).isEqualTo(sequenceFlows.get(0).position());
-    assertThat(sequenceFlows.get(1).value().get("activityId")).isEqualTo("s2");
-    assertThat(gateWays.get(1).sourceRecordPosition()).isEqualTo(sequenceFlows.get(1).position());
+    assertThat(gateWays.get(0).getSourceRecordPosition())
+        .isEqualTo(sequenceFlows.get(0).getPosition());
+    assertThat(sequenceFlows.get(1).getValue().getElementId()).isEqualTo("s2");
+    assertThat(gateWays.get(1).getSourceRecordPosition())
+        .isEqualTo(sequenceFlows.get(1).getPosition());
   }
 
   @Test
@@ -239,17 +241,17 @@ public class ExclusiveGatewayTest {
     testClient.deploy(workflowDefinition);
 
     // when
-    testClient.createWorkflowInstance("workflow", MsgPackUtil.asMsgPack("foo", 4));
+    testClient.createWorkflowInstance("workflow", asMsgPack("foo", 4));
 
     // then
-    final List<SubscribedRecord> workflowEvents =
-        testClient.receiveRecords().ofTypeWorkflowInstance().limit(11).collect(Collectors.toList());
+    final List<Record> workflowEvents =
+        testClient.receiveWorkflowInstances().limit(10).collect(Collectors.toList());
 
     assertThat(workflowEvents)
-        .extracting(e -> e.intent())
+        .extracting(Record::getMetadata)
+        .extracting(e -> e.getIntent())
         .containsExactly(
             WorkflowInstanceIntent.CREATE,
-            WorkflowInstanceIntent.CREATED,
             WorkflowInstanceIntent.ELEMENT_READY,
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
             WorkflowInstanceIntent.START_EVENT_OCCURRED,
@@ -287,7 +289,7 @@ public class ExclusiveGatewayTest {
             .withIntent(WorkflowInstanceIntent.END_EVENT_OCCURRED)
             .collect(Collectors.toList());
 
-    assertThat(completedEvents).extracting(r -> r.getValue().getActivityId()).containsExactly("a");
+    assertThat(completedEvents).extracting(r -> r.getValue().getElementId()).containsExactly("a");
   }
 
   @Test
@@ -310,7 +312,6 @@ public class ExclusiveGatewayTest {
     assertThat(completedEvents)
         .extracting(r -> r.getMetadata().getIntent())
         .containsExactly(
-            WorkflowInstanceIntent.CREATED,
             WorkflowInstanceIntent.ELEMENT_READY,
             WorkflowInstanceIntent.ELEMENT_ACTIVATED,
             WorkflowInstanceIntent.START_EVENT_OCCURRED,

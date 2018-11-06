@@ -24,6 +24,7 @@ import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.exporter.record.value.MessageRecordValue;
 import io.zeebe.exporter.record.value.MessageSubscriptionRecordValue;
 import io.zeebe.exporter.record.value.RaftRecordValue;
+import io.zeebe.exporter.record.value.TimerRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceSubscriptionRecordValue;
 import io.zeebe.exporter.spi.Exporter;
@@ -35,6 +36,7 @@ import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
 import io.zeebe.protocol.intent.RaftIntent;
+import io.zeebe.protocol.intent.TimerIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import java.time.Duration;
@@ -51,7 +53,7 @@ public class RecordingExporter implements Exporter {
   private static final List<Record<?>> RECORDS = new CopyOnWriteArrayList<>();
 
   private static final Object EXPORT_MONITOR = new Object();
-  private static final long MAX_WAIT = Duration.ofSeconds(1).toMillis();
+  private static final long MAX_WAIT = Duration.ofSeconds(5).toMillis();
 
   @Override
   public void export(final Record record) {
@@ -101,7 +103,7 @@ public class RecordingExporter implements Exporter {
     return new DeploymentRecordStream(records(ValueType.DEPLOYMENT, DeploymentRecordValue.class));
   }
 
-  public static DeploymentRecordStream deploymentRecordStream(final DeploymentIntent intent) {
+  public static DeploymentRecordStream deploymentRecords(final DeploymentIntent intent) {
     return deploymentRecords().withIntent(intent);
   }
 
@@ -157,6 +159,14 @@ public class RecordingExporter implements Exporter {
   public static WorkflowInstanceRecordStream workflowInstanceRecords(
       final WorkflowInstanceIntent intent) {
     return workflowInstanceRecords().withIntent(intent);
+  }
+
+  public static TimerRecordStream timerRecords() {
+    return new TimerRecordStream(records(ValueType.TIMER, TimerRecordValue.class));
+  }
+
+  public static TimerRecordStream timerRecords(final TimerIntent intent) {
+    return timerRecords().withIntent(intent);
   }
 
   public static class RecordIterator implements Iterator<Record<?>> {

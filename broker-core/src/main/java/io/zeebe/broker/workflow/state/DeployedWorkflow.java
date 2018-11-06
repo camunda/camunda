@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.workflow.state;
 
-import io.zeebe.broker.workflow.model.ExecutableWorkflow;
+import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import org.agrona.DirectBuffer;
 
 public class DeployedWorkflow {

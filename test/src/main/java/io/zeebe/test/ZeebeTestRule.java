@@ -15,17 +15,15 @@
  */
 package io.zeebe.test;
 
-import static io.zeebe.test.TopicEventRecorder.jobKey;
-import static io.zeebe.test.TopicEventRecorder.wfInstanceKey;
 import static org.assertj.core.api.Assertions.fail;
 
 import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.gateway.ClientProperties;
-import io.zeebe.gateway.ZeebeClient;
-import io.zeebe.gateway.api.events.JobEvent;
-import io.zeebe.gateway.api.events.JobState;
-import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
-import io.zeebe.gateway.api.events.WorkflowInstanceState;
+import io.zeebe.client.ClientProperties;
+import io.zeebe.client.ZeebeClient;
+import io.zeebe.protocol.intent.JobIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.test.util.record.RecordingExporter;
+import io.zeebe.test.util.stream.StreamWrapperException;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Properties;
@@ -36,7 +34,6 @@ import org.junit.rules.ExternalResource;
 public class ZeebeTestRule extends ExternalResource {
   private final EmbeddedBrokerRule brokerRule;
   private final ClientRule clientRule;
-  private final TopicEventRecorder topicEventRecorder;
 
   public ZeebeTestRule() {
     this(EmbeddedBrokerRule.DEFAULT_CONFIG_FILE, Properties::new);
@@ -50,11 +47,9 @@ public class ZeebeTestRule extends ExternalResource {
             () -> {
               final Properties properties = propertiesProvider.get();
               properties.setProperty(
-                  ClientProperties.BROKER_CONTACTPOINT, brokerRule.getClientAddress().toString());
+                  ClientProperties.BROKER_CONTACTPOINT, brokerRule.getGatewayAddress().toString());
               return properties;
             });
-
-    topicEventRecorder = new TopicEventRecorder(clientRule);
   }
 
   public ZeebeClient getClient() {
@@ -69,50 +64,57 @@ public class ZeebeTestRule extends ExternalResource {
   protected void before() {
     brokerRule.before();
     clientRule.before();
-    topicEventRecorder.before();
   }
 
   @Override
   protected void after() {
-    topicEventRecorder.after();
     clientRule.after();
     brokerRule.after();
   }
 
   public void waitUntilWorkflowInstanceCompleted(final long key) {
-    waitUntil(
-        () -> !topicEventRecorder.getWorkflowInstanceEvents(wfInstanceKey(key)).isEmpty(),
-        "no workflow instance found with key " + key);
+    try {
+      RecordingExporter.workflowInstanceRecords().withWorkflowInstanceKey(key).getFirst();
+    } catch (StreamWrapperException swe) {
+      throw new RuntimeException(
+          String.format("Expected to find workflow instance with key %s.", key), swe);
+    }
 
-    waitUntil(
-        () -> {
-          final WorkflowInstanceEvent event =
-              topicEventRecorder.getLastWorkflowInstanceEvent(wfInstanceKey(key));
-          return event.getKey() == key
-              && event.getState().equals(WorkflowInstanceState.ELEMENT_COMPLETED);
-        },
-        "workflow instance is not completed");
+    try {
+      RecordingExporter.workflowInstanceRecords()
+          .withWorkflowInstanceKey(key)
+          .withKey(key)
+          .withIntent(WorkflowInstanceIntent.ELEMENT_COMPLETED)
+          .getFirst();
+    } catch (StreamWrapperException swe) {
+      throw new RuntimeException(
+          String.format(
+              "Expected to find workflow instance with key %s in state ELEMENT_COMPLETED.", key),
+          swe);
+    }
   }
 
   public void waitUntilJobCompleted(final long key) {
-    waitUntil(
-        () -> !topicEventRecorder.getJobEvents(jobKey(key)).isEmpty(),
-        "no job found with key " + key);
+    try {
+      RecordingExporter.jobRecords().withKey(key).getFirst();
+    } catch (StreamWrapperException swe) {
+      throw new RuntimeException(String.format("Expected to find job with key %s.", key), swe);
+    }
 
-    waitUntil(
-        () -> {
-          final JobEvent event = topicEventRecorder.getLastJobEvent(jobKey(key));
-          return event.getState().equals(JobState.COMPLETED);
-        },
-        "job is not completed");
+    try {
+      RecordingExporter.jobRecords(JobIntent.COMPLETED).withKey(key).getLast();
+    } catch (StreamWrapperException swe) {
+      throw new RuntimeException(
+          String.format("Expected to find job with key %s in state COMPLETED.", key), swe);
+    }
   }
 
   public void printWorkflowInstanceEvents(final long key) {
-    topicEventRecorder
-        .getWorkflowInstanceEvents(wfInstanceKey(key))
+    RecordingExporter.workflowInstanceRecords()
+        .withWorkflowInstanceKey(key)
         .forEach(
             event -> {
-              System.out.println("> " + event);
+              System.out.println("> " + event.toJson());
             });
   }
 

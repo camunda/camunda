@@ -30,7 +30,6 @@ import io.zeebe.broker.TestLoggers;
 import io.zeebe.broker.clustering.base.ClusterBaseLayerServiceNames;
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.system.configuration.BrokerCfg;
-import io.zeebe.broker.system.configuration.TomlConfigurationReader;
 import io.zeebe.broker.transport.TransportServiceNames;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.servicecontainer.Injector;
@@ -39,11 +38,11 @@ import io.zeebe.servicecontainer.ServiceContainer;
 import io.zeebe.servicecontainer.ServiceName;
 import io.zeebe.servicecontainer.ServiceStartContext;
 import io.zeebe.servicecontainer.ServiceStopContext;
-import io.zeebe.test.util.record.RecordingExporter;
 import io.zeebe.test.util.record.RecordingExporterTestWatcher;
 import io.zeebe.transport.SocketAddress;
 import io.zeebe.transport.impl.util.SocketUtil;
 import io.zeebe.util.FileUtil;
+import io.zeebe.util.TomlConfigurationReader;
 import io.zeebe.util.allocation.DirectBufferAllocator;
 import io.zeebe.util.sched.clock.ControlledActorClock;
 import java.io.File;
@@ -158,7 +157,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
   }
 
   public SocketAddress getGatewayAddress() {
-    return brokerCfg.getNetwork().getGateway().toSocketAddress();
+    return brokerCfg.getGateway().getNetwork().toSocketAddress();
   }
 
   public SocketAddress getManagementAddress() {
@@ -192,7 +191,7 @@ public class EmbeddedBrokerRule extends ExternalResource {
         if (configStream == null) {
           brokerCfg = new BrokerCfg();
         } else {
-          brokerCfg = TomlConfigurationReader.read(configStream);
+          brokerCfg = TomlConfigurationReader.read(configStream, BrokerCfg.class);
         }
         configureBroker(brokerCfg);
       } catch (final IOException e) {
@@ -200,7 +199,6 @@ public class EmbeddedBrokerRule extends ExternalResource {
       }
     }
 
-    RecordingExporter.reset();
     broker = new Broker(brokerCfg, newTemporaryFolder.getAbsolutePath(), controlledActorClock);
 
     final ServiceContainer serviceContainer = broker.getBrokerContext().getServiceContainer();
@@ -317,6 +315,11 @@ public class EmbeddedBrokerRule extends ExternalResource {
     setManagementApiPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
     setReplicationApiPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
     setSubscriptionApiPort(SocketUtil.getNextAddress().port()).accept(brokerCfg);
+  }
+
+  public void interruptClientConnections() {
+    getService(TransportServiceNames.serverTransport(TransportServiceNames.CLIENT_API_SERVER_NAME))
+        .interruptAllChannels();
   }
 
   static class TestService implements Service<TestService> {

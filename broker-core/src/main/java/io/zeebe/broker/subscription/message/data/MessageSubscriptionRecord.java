@@ -18,35 +18,22 @@
 package io.zeebe.broker.subscription.message.data;
 
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.property.IntegerProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
 import org.agrona.DirectBuffer;
 
 public class MessageSubscriptionRecord extends UnpackedObject {
 
-  private final IntegerProperty workflowInstancePartitionIdProp =
-      new IntegerProperty("workflowInstancePartitionId");
   private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey");
-  private final LongProperty activityInstanceKeyProp = new LongProperty("activityInstanceKey");
-  private final StringProperty messageNameProp = new StringProperty("messageName");
+  private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey");
+  private final StringProperty messageNameProp = new StringProperty("messageName", "");
   private final StringProperty correlationKeyProp = new StringProperty("correlationKey", "");
 
   public MessageSubscriptionRecord() {
-    this.declareProperty(workflowInstancePartitionIdProp)
-        .declareProperty(workflowInstanceKeyProp)
-        .declareProperty(activityInstanceKeyProp)
+    this.declareProperty(workflowInstanceKeyProp)
+        .declareProperty(elementInstanceKeyProp)
         .declareProperty(messageNameProp)
         .declareProperty(correlationKeyProp);
-  }
-
-  public int getWorkflowInstancePartitionId() {
-    return workflowInstancePartitionIdProp.getValue();
-  }
-
-  public MessageSubscriptionRecord setWorkflowInstancePartitionId(int partitionId) {
-    workflowInstancePartitionIdProp.setValue(partitionId);
-    return this;
   }
 
   public long getWorkflowInstanceKey() {
@@ -58,12 +45,12 @@ public class MessageSubscriptionRecord extends UnpackedObject {
     return this;
   }
 
-  public long getActivityInstanceKey() {
-    return activityInstanceKeyProp.getValue();
+  public long getElementInstanceKey() {
+    return elementInstanceKeyProp.getValue();
   }
 
-  public MessageSubscriptionRecord setActivityInstanceKey(long key) {
-    activityInstanceKeyProp.setValue(key);
+  public MessageSubscriptionRecord setElementInstanceKey(long key) {
+    elementInstanceKeyProp.setValue(key);
     return this;
   }
 

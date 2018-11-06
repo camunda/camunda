@@ -18,7 +18,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// completeCmd represents the complete command
 var completeCmd = &cobra.Command{
 	Use:   "complete",
 	Short: "Complete a resource",

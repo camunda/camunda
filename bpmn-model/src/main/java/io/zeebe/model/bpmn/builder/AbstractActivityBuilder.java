@@ -33,7 +33,7 @@ import java.util.Iterator;
 /** @author Sebastian Menski */
 public abstract class AbstractActivityBuilder<
         B extends AbstractActivityBuilder<B, E>, E extends Activity>
-    extends AbstractFlowNodeBuilder<B, E> {
+    extends AbstractFlowNodeBuilder<B, E> implements ZeebePayloadMappingBuilder<B> {
 
   protected AbstractActivityBuilder(BpmnModelInstance modelInstance, E element, Class<?> selfType) {
     super(modelInstance, element, selfType);
@@ -127,6 +127,7 @@ public abstract class AbstractActivityBuilder<
     boundaryBounds.setY(y);
   }
 
+  @Override
   public B zeebeOutputBehavior(ZeebeOutputBehavior outputBehavior) {
     final ZeebeIoMapping ioMapping = getCreateSingleExtensionElement(ZeebeIoMapping.class);
     ioMapping.setOutputBehavhior(outputBehavior);
@@ -134,6 +135,7 @@ public abstract class AbstractActivityBuilder<
     return myself;
   }
 
+  @Override
   public B zeebeInput(String source, String target) {
     final ZeebeIoMapping ioMapping = getCreateSingleExtensionElement(ZeebeIoMapping.class);
     final ZeebeInput input = createChild(ioMapping, ZeebeInput.class);
@@ -143,6 +145,7 @@ public abstract class AbstractActivityBuilder<
     return myself;
   }
 
+  @Override
   public B zeebeOutput(String source, String target) {
     final ZeebeIoMapping ioMapping = getCreateSingleExtensionElement(ZeebeIoMapping.class);
     final ZeebeOutput input = createChild(ioMapping, ZeebeOutput.class);

@@ -48,11 +48,14 @@ public class Topology implements ReadableTopology {
 
   private final int clusterSize;
   private final int partitionsCount;
+  private final int replicationFactor;
 
-  public Topology(NodeInfo localBroker, int clusterSize, int partitionsCount) {
+  public Topology(
+      NodeInfo localBroker, int clusterSize, int partitionsCount, int replicationFactor) {
     this.local = localBroker;
     this.clusterSize = clusterSize;
     this.partitionsCount = partitionsCount;
+    this.replicationFactor = replicationFactor;
     this.addMember(localBroker);
   }
 
@@ -67,6 +70,10 @@ public class Topology implements ReadableTopology {
 
   public int getPartitionsCount() {
     return partitionsCount;
+  }
+
+  public int getReplicationFactor() {
+    return replicationFactor;
   }
 
   public NodeInfo getMember(int nodeId) {
@@ -245,6 +252,7 @@ public class Topology implements ReadableTopology {
     final TopologyResponseDto dto = new TopologyResponseDto();
     dto.setClusterSize(clusterSize);
     dto.setPartitionsCount(partitionsCount);
+    dto.setReplicationFactor(replicationFactor);
 
     for (NodeInfo member : members) {
       final BrokerDto broker = dto.brokers().add();

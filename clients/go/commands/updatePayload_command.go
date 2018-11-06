@@ -13,7 +13,7 @@ type DispatchUpdatePayloadCommand interface {
 }
 
 type UpdatePayloadCommandStep1 interface {
-	ActivityInstanceKey(int64) UpdatePayloadCommandStep2
+	ElementInstanceKey(int64) UpdatePayloadCommandStep2
 }
 
 type UpdatePayloadCommandStep2 interface {
@@ -26,21 +26,24 @@ type UpdatePayloadCommandStep2 interface {
 type UpdatePayloadCommand struct {
 	utils.SerializerMixin
 
-	request *pb.UpdateWorkflowInstancePayloadRequest
-	gateway pb.GatewayClient
+	request        *pb.UpdateWorkflowInstancePayloadRequest
+	gateway        pb.GatewayClient
+	requestTimeout time.Duration
 }
 
-func (cmd *UpdatePayloadCommand) ActivityInstanceKey(activityInstanceKey int64) UpdatePayloadCommandStep2 {
-	cmd.request.ActivityInstanceKey = activityInstanceKey
+func (cmd *UpdatePayloadCommand) ElementInstanceKey(elementInstanceKey int64) UpdatePayloadCommandStep2 {
+	cmd.request.ElementInstanceKey = elementInstanceKey
 	return cmd
 }
 
 func (cmd *UpdatePayloadCommand) PayloadFromString(payload string) (DispatchUpdatePayloadCommand, error) {
-	if cmd.Validate([]byte(payload)) {
-		cmd.request.Payload = payload
-		return cmd, nil
+	err := cmd.Validate("payload", payload)
+	if err != nil {
+		return nil, err
 	}
-	return nil, utils.ErrNotValidJsonString
+
+	cmd.request.Payload = payload
+	return cmd, nil
 }
 
 func (cmd *UpdatePayloadCommand) PayloadFromStringer(payload fmt.Stringer) (DispatchUpdatePayloadCommand, error) {
@@ -48,11 +51,12 @@ func (cmd *UpdatePayloadCommand) PayloadFromStringer(payload fmt.Stringer) (Disp
 }
 
 func (cmd *UpdatePayloadCommand) PayloadFromObject(payload interface{}) (DispatchUpdatePayloadCommand, error) {
-	jsonString, err := cmd.ToString(payload)
+	value, err := cmd.AsJson("payload", payload)
 	if err != nil {
 		return nil, err
 	}
-	cmd.request.Payload = jsonString
+
+	cmd.request.Payload = value
 	return cmd, nil
 }
 
@@ -61,16 +65,17 @@ func (cmd *UpdatePayloadCommand) PayloadFromMap(payload map[string]interface{}) 
 }
 
 func (cmd *UpdatePayloadCommand) Send() (*pb.UpdateWorkflowInstancePayloadResponse, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), utils.RequestTimeoutInSec*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), cmd.requestTimeout)
 	defer cancel()
 
 	return cmd.gateway.UpdateWorkflowInstancePayload(ctx, cmd.request)
 }
 
-func NewUpdatePayloadCommand(gateway pb.GatewayClient) UpdatePayloadCommandStep1 {
+func NewUpdatePayloadCommand(gateway pb.GatewayClient, requestTimeout time.Duration) UpdatePayloadCommandStep1 {
 	return &UpdatePayloadCommand{
 		SerializerMixin: utils.NewJsonStringSerializer(),
 		request:         &pb.UpdateWorkflowInstancePayloadRequest{},
 		gateway:         gateway,
+		requestTimeout:  requestTimeout,
 	}
 }

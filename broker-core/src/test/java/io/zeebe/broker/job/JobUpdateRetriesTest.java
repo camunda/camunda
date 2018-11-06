@@ -17,9 +17,8 @@
  */
 package io.zeebe.broker.job;
 
-import static io.zeebe.test.util.TestUtil.doRepeatedly;
-import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
@@ -27,17 +26,12 @@ import io.zeebe.exporter.record.Record;
 import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.RejectionType;
-import io.zeebe.protocol.clientapi.SubscriptionType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
-import io.zeebe.test.broker.protocol.clientapi.SubscribedRecord;
-import io.zeebe.test.broker.protocol.clientapi.TestPartitionClient;
-import io.zeebe.test.util.record.RecordingExporter;
-import java.util.HashMap;
+import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.Rule;
@@ -53,11 +47,11 @@ public class JobUpdateRetriesTest {
 
   @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(apiRule);
 
-  private TestPartitionClient client;
+  private PartitionTestClient client;
 
   @Before
   public void setup() {
-    client = apiRule.partition();
+    client = apiRule.partitionClient();
   }
 
   @Test
@@ -65,30 +59,34 @@ public class JobUpdateRetriesTest {
     // given
     client.createJob(JOB_TYPE);
 
-    apiRule.openJobSubscription(JOB_TYPE).await();
+    apiRule.activateJobs(JOB_TYPE).await();
 
-    final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
+    final Record<JobRecordValue> jobEvent = client.receiveFirstJobEvent(JobIntent.ACTIVATED);
 
-    client.failJob(subscribedEvent.key(), 0);
+    client.failJob(jobEvent.getKey(), 0);
 
     // when
-    final ExecuteCommandResponse response =
-        client.updateJobRetries(subscribedEvent.key(), NEW_RETRIES);
+    final ExecuteCommandResponse response = client.updateJobRetries(jobEvent.getKey(), NEW_RETRIES);
 
     // then
-    final SubscribedRecord jobCommand =
-        apiRule.partition().receiveFirstJobCommand(JobIntent.UPDATE_RETRIES);
+    final Record jobCommand =
+        apiRule.partitionClient().receiveFirstJobCommand(JobIntent.UPDATE_RETRIES);
 
-    assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(response.sourceRecordPosition()).isEqualTo(jobCommand.position());
-    assertThat(response.intent()).isEqualTo(JobIntent.RETRIES_UPDATED);
+    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(response.getSourceRecordPosition()).isEqualTo(jobCommand.getPosition());
+    assertThat(response.getIntent()).isEqualTo(JobIntent.RETRIES_UPDATED);
 
-    final Map<String, Object> expectedValue = new HashMap<>(subscribedEvent.value());
-    expectedValue.put("retries", (long) NEW_RETRIES);
-    assertThat(response.getValue()).containsAllEntriesOf(expectedValue);
+    assertThat(response.getKey()).isEqualTo(jobEvent.getKey());
+    final JobRecordValue jobEventValue = jobEvent.getValue();
+    assertThat(response.getValue())
+        .contains(
+            entry("worker", jobEventValue.getWorker()),
+            entry("type", jobEventValue.getType()),
+            entry("retries", 20L),
+            entry("deadline", jobEventValue.getDeadline().toEpochMilli()));
 
     final Record<JobRecordValue> loggedEvent =
-        RecordingExporter.jobRecords(JobIntent.RETRIES_UPDATED).getFirst();
+        client.receiveFirstJobEvent(JobIntent.RETRIES_UPDATED);
 
     assertThat(loggedEvent.getValue().getType()).isEqualTo(JOB_TYPE);
   }
@@ -97,58 +95,46 @@ public class JobUpdateRetriesTest {
   public void shouldUpdateRetriesAndRetry() {
     // given
     client.createJob(JOB_TYPE);
+    apiRule.activateJobs(JOB_TYPE).await();
 
-    apiRule.openJobSubscription(JOB_TYPE).await();
+    final Record jobEvent = client.receiveFirstJobEvent(JobIntent.ACTIVATED);
 
-    final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
-
-    client.failJob(subscribedEvent.key(), 0);
+    client.failJob(jobEvent.getKey(), 0);
 
     // when
-    final ExecuteCommandResponse response =
-        client.updateJobRetries(subscribedEvent.key(), NEW_RETRIES);
+    final ExecuteCommandResponse response = client.updateJobRetries(jobEvent.getKey(), NEW_RETRIES);
+    apiRule.activateJobs(JOB_TYPE).await();
 
     // then
-    assertThat(response.recordType()).isEqualTo(RecordType.EVENT);
-    assertThat(response.intent()).isEqualTo(JobIntent.RETRIES_UPDATED);
+    assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
+    assertThat(response.getIntent()).isEqualTo(JobIntent.RETRIES_UPDATED);
 
     // and the job is published again
-    final SubscribedRecord republishedEvent = receiveSingleSubscribedEvent();
-    assertThat(republishedEvent.key()).isEqualTo(subscribedEvent.key());
-    assertThat(republishedEvent.position()).isNotEqualTo(subscribedEvent.position());
-    assertThat(republishedEvent.timestamp()).isGreaterThanOrEqualTo(subscribedEvent.timestamp());
+    final Record republishedEvent =
+        client
+            .receiveJobs()
+            .skipUntil(job -> job.getMetadata().getIntent() == JobIntent.RETRIES_UPDATED)
+            .withIntent(JobIntent.ACTIVATED)
+            .getFirst();
+    assertThat(republishedEvent.getKey()).isEqualTo(jobEvent.getKey());
+    assertThat(republishedEvent.getPosition()).isNotEqualTo(jobEvent.getPosition());
+    assertThat(republishedEvent.getTimestamp().toEpochMilli())
+        .isGreaterThanOrEqualTo(jobEvent.getTimestamp().toEpochMilli());
 
     // and the job lifecycle is correct
-    apiRule.openTopicSubscription("foo", 0).await();
-
-    final int expectedTopicEvents = 10;
-
-    final List<SubscribedRecord> jobEvents =
-        doRepeatedly(
-                () ->
-                    apiRule
-                        .moveMessageStreamToHead()
-                        .subscribedEvents()
-                        .filter(
-                            e ->
-                                e.subscriptionType() == SubscriptionType.TOPIC_SUBSCRIPTION
-                                    && e.valueType() == ValueType.JOB)
-                        .limit(expectedTopicEvents)
-                        .collect(Collectors.toList()))
-            .until(e -> e.size() == expectedTopicEvents);
+    final List<Record> jobEvents = client.receiveJobs().limit(8).collect(Collectors.toList());
 
     assertThat(jobEvents)
-        .extracting(e -> e.recordType(), e -> e.valueType(), e -> e.intent())
+        .extracting(Record::getMetadata)
+        .extracting(e -> e.getRecordType(), e -> e.getValueType(), e -> e.getIntent())
         .containsExactly(
             tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.CREATE),
             tuple(RecordType.EVENT, ValueType.JOB, JobIntent.CREATED),
-            tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.ACTIVATE),
             tuple(RecordType.EVENT, ValueType.JOB, JobIntent.ACTIVATED),
             tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.FAIL),
             tuple(RecordType.EVENT, ValueType.JOB, JobIntent.FAILED),
             tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.UPDATE_RETRIES),
             tuple(RecordType.EVENT, ValueType.JOB, JobIntent.RETRIES_UPDATED),
-            tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.ACTIVATE),
             tuple(RecordType.EVENT, ValueType.JOB, JobIntent.ACTIVATED));
   }
 
@@ -158,33 +144,29 @@ public class JobUpdateRetriesTest {
     final ExecuteCommandResponse response = client.updateJobRetries(123, NEW_RETRIES);
 
     // then
-    assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(response.intent()).isEqualTo(JobIntent.UPDATE_RETRIES);
-    assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.rejectionReason()).isEqualTo("Job is not failed");
+    assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(response.getIntent()).isEqualTo(JobIntent.UPDATE_RETRIES);
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
+    assertThat(response.getRejectionReason()).isEqualTo("Job is not failed");
   }
 
   @Test
   public void shouldRejectUpdateRetriesIfJobCompleted() {
     // given
     client.createJob(JOB_TYPE);
+    apiRule.activateJobs(JOB_TYPE).await();
 
-    apiRule.openJobSubscription(JOB_TYPE).await();
-
-    final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
-
-    final Map<String, Object> event = subscribedEvent.value();
-    client.completeJob(subscribedEvent.position(), subscribedEvent.key(), event);
+    final Record<JobRecordValue> jobEvent = client.receiveFirstJobEvent(JobIntent.ACTIVATED);
+    client.completeJob(jobEvent.getKey(), "{}");
 
     // when
-    final ExecuteCommandResponse response =
-        client.updateJobRetries(subscribedEvent.key(), NEW_RETRIES);
+    final ExecuteCommandResponse response = client.updateJobRetries(jobEvent.getKey(), NEW_RETRIES);
 
     // then
-    assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(response.intent()).isEqualTo(JobIntent.UPDATE_RETRIES);
-    assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.rejectionReason()).isEqualTo("Job is not failed");
+    assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(response.getIntent()).isEqualTo(JobIntent.UPDATE_RETRIES);
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
+    assertThat(response.getRejectionReason()).isEqualTo("Job is not failed");
   }
 
   @Test
@@ -192,19 +174,18 @@ public class JobUpdateRetriesTest {
     // given
     client.createJob(JOB_TYPE);
 
-    apiRule.openJobSubscription(JOB_TYPE).await();
+    apiRule.activateJobs(JOB_TYPE).await();
 
-    final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
+    final Record jobEvent = client.receiveFirstJobEvent(JobIntent.ACTIVATED);
 
     // when
-    final ExecuteCommandResponse response =
-        client.updateJobRetries(subscribedEvent.key(), NEW_RETRIES);
+    final ExecuteCommandResponse response = client.updateJobRetries(jobEvent.getKey(), NEW_RETRIES);
 
     // then
-    assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(response.intent()).isEqualTo(JobIntent.UPDATE_RETRIES);
-    assertThat(response.rejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
-    assertThat(response.rejectionReason()).isEqualTo("Job is not failed");
+    assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(response.getIntent()).isEqualTo(JobIntent.UPDATE_RETRIES);
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
+    assertThat(response.getRejectionReason()).isEqualTo("Job is not failed");
   }
 
   @Test
@@ -212,20 +193,20 @@ public class JobUpdateRetriesTest {
     // given
     client.createJob(JOB_TYPE);
 
-    apiRule.openJobSubscription(JOB_TYPE).await();
+    apiRule.activateJobs(JOB_TYPE).await();
 
-    final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
+    final Record jobEvent = client.receiveFirstJobEvent(JobIntent.ACTIVATED);
 
-    client.failJob(subscribedEvent.key(), 0);
+    client.failJob(jobEvent.getKey(), 0);
 
     // when
-    final ExecuteCommandResponse response = client.updateJobRetries(subscribedEvent.key(), 0);
+    final ExecuteCommandResponse response = client.updateJobRetries(jobEvent.getKey(), 0);
 
     // then
-    assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(response.intent()).isEqualTo(JobIntent.UPDATE_RETRIES);
-    assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(response.rejectionReason()).isEqualTo("Job retries must be positive");
+    assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(response.getIntent()).isEqualTo(JobIntent.UPDATE_RETRIES);
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+    assertThat(response.getRejectionReason()).isEqualTo("Job retries must be positive");
   }
 
   @Test
@@ -233,24 +214,19 @@ public class JobUpdateRetriesTest {
     // given
     client.createJob(JOB_TYPE);
 
-    apiRule.openJobSubscription(JOB_TYPE).await();
+    apiRule.activateJobs(JOB_TYPE).await();
 
-    final SubscribedRecord subscribedEvent = receiveSingleSubscribedEvent();
+    final Record jobEvent = client.receiveFirstJobEvent(JobIntent.ACTIVATED);
 
-    client.failJob(subscribedEvent.key(), 0);
+    client.failJob(jobEvent.getKey(), 0);
 
     // when
-    final ExecuteCommandResponse response = client.updateJobRetries(subscribedEvent.key(), -1);
+    final ExecuteCommandResponse response = client.updateJobRetries(jobEvent.getKey(), -1);
 
     // then
-    assertThat(response.recordType()).isEqualTo(RecordType.COMMAND_REJECTION);
-    assertThat(response.intent()).isEqualTo(JobIntent.UPDATE_RETRIES);
-    assertThat(response.rejectionType()).isEqualTo(RejectionType.BAD_VALUE);
-    assertThat(response.rejectionReason()).isEqualTo("Job retries must be positive");
-  }
-
-  private SubscribedRecord receiveSingleSubscribedEvent() {
-    waitUntil(() -> apiRule.numSubscribedEventsAvailable() == 1);
-    return apiRule.subscribedEvents().findFirst().get();
+    assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
+    assertThat(response.getIntent()).isEqualTo(JobIntent.UPDATE_RETRIES);
+    assertThat(response.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
+    assertThat(response.getRejectionReason()).isEqualTo("Job retries must be positive");
   }
 }

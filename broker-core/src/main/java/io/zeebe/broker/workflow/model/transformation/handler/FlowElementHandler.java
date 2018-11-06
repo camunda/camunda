@@ -17,15 +17,16 @@
  */
 package io.zeebe.broker.workflow.model.transformation.handler;
 
-import io.zeebe.broker.workflow.model.ExecutableEndEvent;
-import io.zeebe.broker.workflow.model.ExecutableExclusiveGateway;
-import io.zeebe.broker.workflow.model.ExecutableFlowElement;
-import io.zeebe.broker.workflow.model.ExecutableFlowElementContainer;
-import io.zeebe.broker.workflow.model.ExecutableFlowNode;
-import io.zeebe.broker.workflow.model.ExecutableMessageCatchElement;
-import io.zeebe.broker.workflow.model.ExecutableSequenceFlow;
-import io.zeebe.broker.workflow.model.ExecutableServiceTask;
-import io.zeebe.broker.workflow.model.ExecutableWorkflow;
+import io.zeebe.broker.workflow.model.element.AbstractFlowElement;
+import io.zeebe.broker.workflow.model.element.ExecutableEndEvent;
+import io.zeebe.broker.workflow.model.element.ExecutableExclusiveGateway;
+import io.zeebe.broker.workflow.model.element.ExecutableFlowElementContainer;
+import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
+import io.zeebe.broker.workflow.model.element.ExecutableIntermediateCatchElement;
+import io.zeebe.broker.workflow.model.element.ExecutableReceiveTask;
+import io.zeebe.broker.workflow.model.element.ExecutableSequenceFlow;
+import io.zeebe.broker.workflow.model.element.ExecutableServiceTask;
+import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.EndEvent;
@@ -44,18 +45,18 @@ import java.util.function.Function;
 
 public class FlowElementHandler implements ModelElementTransformer<FlowElement> {
 
-  private static final Map<Class<?>, Function<String, ExecutableFlowElement>> ELEMENT_FACTORIES;
+  private static final Map<Class<?>, Function<String, AbstractFlowElement>> ELEMENT_FACTORIES;
 
   static {
     ELEMENT_FACTORIES = new HashMap<>();
 
     ELEMENT_FACTORIES.put(EndEvent.class, ExecutableEndEvent::new);
     ELEMENT_FACTORIES.put(ExclusiveGateway.class, ExecutableExclusiveGateway::new);
-    ELEMENT_FACTORIES.put(IntermediateCatchEvent.class, ExecutableMessageCatchElement::new);
+    ELEMENT_FACTORIES.put(IntermediateCatchEvent.class, ExecutableIntermediateCatchElement::new);
     ELEMENT_FACTORIES.put(ParallelGateway.class, ExecutableFlowNode::new);
     ELEMENT_FACTORIES.put(SequenceFlow.class, ExecutableSequenceFlow::new);
     ELEMENT_FACTORIES.put(ServiceTask.class, ExecutableServiceTask::new);
-    ELEMENT_FACTORIES.put(ReceiveTask.class, ExecutableMessageCatchElement::new);
+    ELEMENT_FACTORIES.put(ReceiveTask.class, ExecutableReceiveTask::new);
     ELEMENT_FACTORIES.put(StartEvent.class, ExecutableFlowNode::new);
     ELEMENT_FACTORIES.put(SubProcess.class, ExecutableFlowElementContainer::new);
   }
@@ -70,9 +71,8 @@ public class FlowElementHandler implements ModelElementTransformer<FlowElement> 
     final ExecutableWorkflow workflow = context.getCurrentWorkflow();
     final Class<?> elemenType = element.getElementType().getInstanceType();
 
-    final Function<String, ExecutableFlowElement> elementFactory =
-        ELEMENT_FACTORIES.get(elemenType);
-    final ExecutableFlowElement executableElement = elementFactory.apply(element.getId());
+    final Function<String, AbstractFlowElement> elementFactory = ELEMENT_FACTORIES.get(elemenType);
+    final AbstractFlowElement executableElement = elementFactory.apply(element.getId());
 
     workflow.addFlowElement(executableElement);
   }

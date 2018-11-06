@@ -15,18 +15,17 @@
  */
 package io.zeebe.broker.it.workflow;
 
+import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertJobCanceled;
+import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertWorkflowInstanceCanceled;
 import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import io.zeebe.broker.it.ClientRule;
-import io.zeebe.broker.it.util.TopicEventRecorder;
+import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
-import io.zeebe.gateway.api.events.DeploymentEvent;
-import io.zeebe.gateway.api.events.JobEvent;
-import io.zeebe.gateway.api.events.JobState;
-import io.zeebe.gateway.api.events.WorkflowInstanceEvent;
-import io.zeebe.gateway.api.events.WorkflowInstanceState;
-import io.zeebe.gateway.cmd.ClientCommandRejectedException;
+import io.zeebe.client.api.events.DeploymentEvent;
+import io.zeebe.client.api.events.WorkflowInstanceEvent;
+import io.zeebe.client.api.response.ActivatedJob;
+import io.zeebe.client.cmd.ClientException;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import java.util.ArrayList;
@@ -46,12 +45,9 @@ public class CancelWorkflowInstanceTest {
           .done();
 
   public EmbeddedBrokerRule brokerRule = new EmbeddedBrokerRule();
-  public ClientRule clientRule = new ClientRule(brokerRule);
-  public TopicEventRecorder eventRecorder = new TopicEventRecorder(clientRule);
+  public GrpcClientRule clientRule = new GrpcClientRule(brokerRule);
 
-  @Rule
-  public RuleChain ruleChain =
-      RuleChain.outerRule(brokerRule).around(clientRule).around(eventRecorder);
+  @Rule public RuleChain ruleChain = RuleChain.outerRule(brokerRule).around(clientRule);
 
   @Rule public ExpectedException thrown = ExpectedException.none();
 
@@ -81,11 +77,14 @@ public class CancelWorkflowInstanceTest {
             .join();
 
     // when
-    clientRule.getWorkflowClient().newCancelInstanceCommand(workflowInstance).send().join();
+    clientRule
+        .getWorkflowClient()
+        .newCancelInstanceCommand(workflowInstance.getWorkflowInstanceKey())
+        .send()
+        .join();
 
     // then
-    waitUntil(
-        () -> eventRecorder.hasElementInState("process", WorkflowInstanceState.ELEMENT_TERMINATED));
+    assertWorkflowInstanceCanceled("process");
   }
 
   @Test
@@ -100,7 +99,7 @@ public class CancelWorkflowInstanceTest {
             .send()
             .join();
 
-    final List<JobEvent> jobEvents = new ArrayList<>();
+    final List<ActivatedJob> jobEvents = new ArrayList<>();
 
     clientRule
         .getJobClient()
@@ -111,18 +110,21 @@ public class CancelWorkflowInstanceTest {
 
     waitUntil(() -> jobEvents.size() > 0);
 
-    clientRule.getWorkflowClient().newCancelInstanceCommand(workflowInstance).send().join();
+    clientRule
+        .getWorkflowClient()
+        .newCancelInstanceCommand(workflowInstance.getWorkflowInstanceKey())
+        .send()
+        .join();
 
     // when
     assertThatThrownBy(
             () -> {
-              clientRule.getJobClient().newCompleteCommand(jobEvents.get(0)).send().join();
+              clientRule.getJobClient().newCompleteCommand(jobEvents.get(0).getKey()).send().join();
             })
-        .isInstanceOf(ClientCommandRejectedException.class);
+        .isInstanceOf(ClientException.class);
 
     // then
-    waitUntil(() -> eventRecorder.hasJobEvent(JobState.CANCELED));
-    waitUntil(
-        () -> eventRecorder.hasElementInState("process", WorkflowInstanceState.ELEMENT_TERMINATED));
+    assertJobCanceled();
+    assertWorkflowInstanceCanceled("process");
   }
 }

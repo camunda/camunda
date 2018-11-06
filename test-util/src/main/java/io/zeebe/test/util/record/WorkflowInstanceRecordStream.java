@@ -50,8 +50,8 @@ public class WorkflowInstanceRecordStream
     return valueFilter(v -> v.getWorkflowInstanceKey() == workflowInstanceKey);
   }
 
-  public WorkflowInstanceRecordStream withActivityId(final String activityId) {
-    return valueFilter(v -> activityId.equals(v.getActivityId()));
+  public WorkflowInstanceRecordStream withElementId(final String elementId) {
+    return valueFilter(v -> elementId.equals(v.getElementId()));
   }
 
   public WorkflowInstanceRecordStream withScopeInstanceKey(final long scopeInstanceKey) {
@@ -63,5 +63,12 @@ public class WorkflowInstanceRecordStream
         r ->
             r.getMetadata().getIntent() == WorkflowInstanceIntent.ELEMENT_COMPLETED
                 && r.getKey() == r.getValue().getWorkflowInstanceKey());
+  }
+
+  /**
+   * @return stream with only records for the workflow instance (i.e. root scope of the instance)
+   */
+  public WorkflowInstanceRecordStream filterRootScope() {
+    return filter(r -> r.getKey() == r.getValue().getWorkflowInstanceKey());
   }
 }

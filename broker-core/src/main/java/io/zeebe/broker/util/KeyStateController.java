@@ -26,8 +26,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
-import org.agrona.MutableDirectBuffer;
-import org.agrona.concurrent.UnsafeBuffer;
 import org.rocksdb.ColumnFamilyHandle;
 import org.rocksdb.RocksDB;
 
@@ -35,7 +33,6 @@ public class KeyStateController extends StateController {
   private static final byte[] KEY_HANDLE_NAME = getBytes("keyColumn");
   private static final byte[] NEXT_KEY_BUFFER = getBytes("nextKey");
 
-  private final MutableDirectBuffer dbLongBuffer = new UnsafeBuffer(new byte[Long.BYTES]);
   private final AtomicReference<Runnable> onOpenCallback = new AtomicReference<>();
   private ColumnFamilyHandle keyHandle;
 

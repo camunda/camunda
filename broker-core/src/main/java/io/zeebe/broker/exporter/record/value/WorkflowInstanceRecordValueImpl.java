@@ -25,7 +25,7 @@ import java.util.Objects;
 public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
     implements WorkflowInstanceRecordValue {
   private final String bpmnProcessId;
-  private final String activityId;
+  private final String elementId;
   private final int version;
   private final long workflowKey;
   private final long workflowInstanceKey;
@@ -35,14 +35,14 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
       final ExporterObjectMapper objectMapper,
       final String payload,
       final String bpmnProcessId,
-      final String activityId,
+      final String elementId,
       final int version,
       final long workflowKey,
       final long workflowInstanceKey,
       final long scopeInstanceKey) {
     super(objectMapper, payload);
     this.bpmnProcessId = bpmnProcessId;
-    this.activityId = activityId;
+    this.elementId = elementId;
     this.version = version;
     this.workflowKey = workflowKey;
     this.workflowInstanceKey = workflowInstanceKey;
@@ -55,8 +55,8 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
   }
 
   @Override
-  public String getActivityId() {
-    return activityId;
+  public String getElementId() {
+    return elementId;
   }
 
   @Override
@@ -96,7 +96,7 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
         && workflowInstanceKey == that.workflowInstanceKey
         && scopeInstanceKey == that.scopeInstanceKey
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
-        && Objects.equals(activityId, that.activityId);
+        && Objects.equals(elementId, that.elementId);
   }
 
   @Override
@@ -104,7 +104,7 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
     return Objects.hash(
         super.hashCode(),
         bpmnProcessId,
-        activityId,
+        elementId,
         version,
         workflowKey,
         workflowInstanceKey,
@@ -117,8 +117,8 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
         + "bpmnProcessId='"
         + bpmnProcessId
         + '\''
-        + ", activityId='"
-        + activityId
+        + ", elementId='"
+        + elementId
         + '\''
         + ", version="
         + version

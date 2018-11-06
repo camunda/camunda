@@ -23,14 +23,12 @@ import io.zeebe.exporter.record.RecordValue;
  * <p>See {@link io.zeebe.protocol.intent.MessageSubscriptionIntent} for intents.
  */
 public interface MessageSubscriptionRecordValue extends RecordValue {
-  /** @return the partition ID on which the workflow instance exists */
-  int getWorkflowInstancePartitionId();
 
   /** @return the workflow instance key tied to the subscription */
   long getWorkflowInstanceKey();
 
-  /** @return the activity instance key tied to the subscription */
-  long getActivityInstanceKey();
+  /** @return the element instance key tied to the subscription */
+  long getElementInstanceKey();
 
   /** @return the name of the message */
   String getMessageName();

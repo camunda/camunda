@@ -30,6 +30,43 @@
 
 # ----------------------------------------------------
 
+
+[gateway]
+# Enable the embedded gateway to start on broker startup.
+# This setting can also be overridden using the environment variable ZEEBE_EMBED_GATEWAY.
+# enable = true
+
+[gateway.network]
+# Sets the host the embedded gateway binds to.
+# This setting can be specified using the following precedence:
+# 1. setting the environment variable ZEEBE_GATEWAY_HOST
+# 2. setting gateway.network.host property in this file
+# 3. setting the environment variable ZEEBE__HOST
+# 4. setting network.host property in this file
+# host = "0.0.0.0"
+
+# Sets the port the embedded gateway binds to.
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_PORT.
+# port = 26500
+
+[gateway.cluster]
+# Sets the broker the gateway should initial contact.
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_CONTACT_POINT.
+# contactPoint = "127.0.0.1:26501"
+
+# Sets size of the transport buffer to send and received messages between gateway and broker cluster.
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_TRANSPORT_BUFFER.
+# transportBuffer = "2M"
+
+# Sets the timeout of requests send to the broker cluster
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_REQUEST_TIMEOUT.
+# requestTimeout = "15s"
+
+[gateway.threads]
+# Sets the number of threads the gateway will use to communicate with the broker cluster
+# This setting can also be overridden using the environment variable ZEEBE_GATEWAY_MANAGEMENT_THREADS.
+# managementThreads = 1
+
 [network]
 
 # This section contains the network configuration. Particularly, it allows to
@@ -60,17 +97,6 @@
 # messages. Can be overwritten on a per binding basis for client, management and
 # replication
 # defaultSendBufferSize = "16M"
-
-[network.gateway]
-
-# Enables embedded gateway to start
-# enabled = true
-#
-# Overrides the host the gateway binds to
-# host = "localhost"
-#
-# Sets the port the gateway binds to
-# port = 26500
 
 [network.client]
 
@@ -271,14 +297,24 @@
 # A nested table as [exporters.args] will allow you to inject arbitrary arguments into your
 # class through the use of annotations.
 #
-# Enable the following exporter to get debug output of the exporter records
+# Enable the following debug exporter to log the exported records to console
 #
 # [[exporters]]
-# id = "debug"
-# className = "io.zeebe.broker.exporter.DebugExporter"
+# id = "debug-log"
+# className = "io.zeebe.broker.exporter.debug.DebugLogExporter"
 # [exporters.args]
 #   logLevel = "debug"
 #   prettyPrint = false
+#
+# Enable the following debug exporter to start a http server to inspect the exported records
+#
+# [[exporters]]
+# id = "debug-http"
+# className = "io.zeebe.broker.exporter.debug.DebugHttpExporter"
+# [exporters.args]
+#   port = 8000
+#   limit = 1024
+#
 #
 # An example configuration for the elasticsearch exporter:
 #
