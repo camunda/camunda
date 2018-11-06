@@ -14,7 +14,8 @@ export default class Option extends React.Component {
     children: PropTypes.oneOfType([
       PropTypes.arrayOf(PropTypes.node),
       PropTypes.node
-    ])
+    ]),
+    className: PropTypes.string
   };
 
   handleOnClick = () => {
@@ -34,13 +35,14 @@ export default class Option extends React.Component {
     );
 
   render() {
-    const {children, disabled, label} = this.props;
+    const {children, disabled, label, className} = this.props;
 
     return (
       <Styled.Option
         label={label}
         disabled={disabled}
         onClick={() => this.handleOnClick()}
+        className={className}
       >
         {!children ? (
           <Styled.OptionButton disabled={disabled}>{label}</Styled.OptionButton>
