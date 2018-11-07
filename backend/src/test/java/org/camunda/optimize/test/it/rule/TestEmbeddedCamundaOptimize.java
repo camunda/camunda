@@ -106,9 +106,7 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
       storeAuthenticationToken();
       if (isThisTheFirstTimeOptimizeWasStarted()) {
         // store the default configuration to restore it later
-        final ConfigurationService defaultConfiguration = new ConfigurationService();
-        BeanUtils.copyProperties(testOptimizeInstance.getConfigurationService(), defaultConfiguration);
-        serializedDefaultConfiguration = configObjectMapper.writeValueAsString(defaultConfiguration);
+        serializedDefaultConfiguration = configObjectMapper.writeValueAsString(testOptimizeInstance.getConfigurationService());
       }
       resetConfiguration();
       reloadConfiguration();
