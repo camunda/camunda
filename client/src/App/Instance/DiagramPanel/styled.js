@@ -13,6 +13,7 @@ export const Table = styled.table`
 export const Tr = styled.tr`
   display: flex;
   justify-content: space-between;
+  align-items: center;
 `;
 
 export const Td = styled.td`

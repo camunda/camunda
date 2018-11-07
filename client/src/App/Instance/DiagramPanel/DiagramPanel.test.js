@@ -45,6 +45,9 @@ describe('DiagramPanel', () => {
     expect(StyledTableNode.text()).toContain(getWorkflowName(mockInstance));
     expect(node.find(Pane.Body)).toHaveLength(1);
     expect(StyledTableNode.text()).toContain(mockInstance.id);
+    expect(StyledTableNode.text()).toContain(
+      `Version ${mockInstance.workflowVersion}`
+    );
     expect(StyledTableNode.text()).toContain(formattedStartDate);
     expect(StyledTableNode.text()).toContain(formattedEndDate);
 

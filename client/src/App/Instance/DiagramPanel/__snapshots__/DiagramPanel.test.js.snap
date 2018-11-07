@@ -70,6 +70,9 @@ exports[`DiagramPanel should render pane header and body 1`] = `
             foo
           </styled.td>
           <styled.td>
+            Version 1
+          </styled.td>
+          <styled.td>
             21 Jun 2018 00:00:00
           </styled.td>
           <styled.td>

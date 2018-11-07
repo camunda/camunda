@@ -19,7 +19,8 @@ export default class DiagramPanel extends React.Component {
       startDate: PropTypes.string.isRequired,
       endDate: PropTypes.string,
       state: PropTypes.string.isRequired,
-      errorMessage: PropTypes.string
+      errorMessage: PropTypes.string,
+      workflowVersion: PropTypes.number
     }).isRequired,
     paneId: PropTypes.string,
     onFlowNodesDetailsReady: PropTypes.func,
@@ -42,6 +43,7 @@ export default class DiagramPanel extends React.Component {
                   {getWorkflowName(instance)}
                 </Styled.Td>
                 <Styled.Td>{instance.id}</Styled.Td>
+                <Styled.Td>{`Version ${instance.workflowVersion}`}</Styled.Td>
                 <Styled.Td>{formatDate(instance.startDate)}</Styled.Td>
                 <Styled.Td>{formatDate(instance.endDate)}</Styled.Td>
                 <Styled.Td>
