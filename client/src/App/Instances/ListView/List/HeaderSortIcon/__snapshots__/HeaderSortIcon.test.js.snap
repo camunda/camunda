@@ -1,7 +1,17 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
+exports[`HeaderSortIcon should not call handleSorting() if it is disabled  1`] = `
+<Styled(SortIcon)
+  disabled={true}
+  onClick={[Function]}
+  sortOrder={null}
+  title="Sort by foo"
+/>
+`;
+
 exports[`HeaderSortIcon should render SortIcon with sortOrder 1`] = `
 <Styled(SortIcon)
+  disabled={false}
   onClick={[Function]}
   sortOrder="asc"
   title="Sort by foo"
@@ -10,6 +20,7 @@ exports[`HeaderSortIcon should render SortIcon with sortOrder 1`] = `
 
 exports[`HeaderSortIcon should render SortIcon with sortOrder null 1`] = `
 <Styled(SortIcon)
+  disabled={false}
   onClick={[Function]}
   sortOrder={null}
   title="Sort by bar"

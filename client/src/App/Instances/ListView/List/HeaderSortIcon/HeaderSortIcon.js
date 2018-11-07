@@ -6,13 +6,15 @@ import * as Styled from './styled';
 export default function HeaderSortIcon({
   sorting: {sortBy, sortOrder},
   sortKey,
-  handleSorting
+  handleSorting,
+  disabled
 }) {
   return (
     <Styled.SortIcon
-      sortOrder={sortBy === sortKey ? sortOrder : null}
-      onClick={() => handleSorting(sortKey)}
+      sortOrder={!disabled && sortBy === sortKey ? sortOrder : null}
+      onClick={() => !disabled && handleSorting(sortKey)}
       title={`Sort by ${sortKey}`}
+      disabled={disabled}
     />
   );
 }
@@ -20,5 +22,10 @@ export default function HeaderSortIcon({
 HeaderSortIcon.propTypes = {
   sorting: PropTypes.object,
   sortKey: PropTypes.string.isRequired,
-  handleSorting: PropTypes.func
+  handleSorting: PropTypes.func,
+  disabled: PropTypes.bool
+};
+
+HeaderSortIcon.defaultProps = {
+  disabled: false
 };

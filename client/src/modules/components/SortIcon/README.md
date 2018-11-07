@@ -10,4 +10,7 @@ SortIcon:
 <div style={{marginBottom: '5px'}}>
   <SortIcon sortOrder='desc'/> {' '}  descending
 </div>
+<div style={{marginBottom: '5px'}}>
+  <SortIcon sortOrder={null} disabled /> {' '}  disabled
+</div>
 ```

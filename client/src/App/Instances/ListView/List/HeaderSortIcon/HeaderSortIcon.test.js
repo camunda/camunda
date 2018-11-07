@@ -53,4 +53,25 @@ describe('HeaderSortIcon', () => {
     // then
     expect(mockProps.handleSorting).toBeCalledWith(mockProps.sortKey);
   });
+
+  it('should not call handleSorting() if it is disabled ', () => {
+    // given
+    const mockProps = {
+      sorting: {sortBy: 'foo', sortOrder: 'asc'},
+      sortKey: 'foo',
+      handleSorting: jest.fn(),
+      disabled: true
+    };
+    const node = shallow(<HeaderSortIcon {...mockProps} />);
+    const SortIconNode = node.find(Styled.SortIcon);
+
+    // when
+    SortIconNode.simulate('click');
+
+    // then
+    expect(mockProps.handleSorting).not.toHaveBeenCalled();
+    expect(SortIconNode.prop('sortOrder')).toBe(null);
+    expect(SortIconNode.prop('disabled')).toBe(true);
+    expect(node).toMatchSnapshot();
+  });
 });

@@ -171,6 +171,7 @@ export default class List extends React.Component {
                 sortKey="workflowName"
                 sorting={this.props.sorting}
                 handleSorting={this.props.onSort}
+                disabled={isListEmpty}
               />
             </React.Fragment>
           </TH>
@@ -180,6 +181,7 @@ export default class List extends React.Component {
               sortKey="id"
               sorting={this.props.sorting}
               handleSorting={this.props.onSort}
+              disabled={isListEmpty}
             />
           </TH>
           <TH>
@@ -188,6 +190,7 @@ export default class List extends React.Component {
               sortKey="workflowVersion"
               sorting={this.props.sorting}
               handleSorting={this.props.onSort}
+              disabled={isListEmpty}
             />
           </TH>
           <TH>
@@ -196,6 +199,7 @@ export default class List extends React.Component {
               sortKey="startDate"
               sorting={this.props.sorting}
               handleSorting={this.props.onSort}
+              disabled={isListEmpty}
             />
           </TH>
           <TH>
@@ -204,6 +208,7 @@ export default class List extends React.Component {
               sortKey="endDate"
               sorting={this.props.sorting}
               handleSorting={this.props.onSort}
+              disabled={isListEmpty}
             />
           </TH>
           <Styled.Th>Actions</Styled.Th>
