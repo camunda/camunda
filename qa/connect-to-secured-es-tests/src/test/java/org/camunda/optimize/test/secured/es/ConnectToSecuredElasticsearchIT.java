@@ -8,6 +8,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.ws.rs.core.Response;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -24,16 +29,25 @@ public class ConnectToSecuredElasticsearchIT {
     .outerRule(embeddedOptimizeRule);
 
   @Test
-  public void connectToSecuredElasticsearch() {
-    // when I do a request against Optimize
-    Response response = embeddedOptimizeRule
-            .getRequestExecutor()
-            .buildGetAllAlertsRequest()
-            .execute();
+  public void connectToSecuredElasticsearch() throws IOException, URISyntaxException {
+    // given a license and a secured optimize -> es connection
+    String license = readFileToString("/license/ValidTestLicense.txt");
 
-    // then Optimize should be able to successfully perform a request against elasticsearch
+    // when doing a request to add the license to optimize
+    Response response =
+      embeddedOptimizeRule.getRequestExecutor()
+        .buildValidateAndStoreLicenseRequest(license)
+        .withoutAuthentication()
+        .execute();
+
+    // then Optimize should be able to successfully perform the underlying request to elasticsearch
     assertThat(response.getStatus(), is(200));
   }
+
+  private String readFileToString(String filePath) throws IOException, URISyntaxException {
+    return new String(Files.readAllBytes(Paths.get(getClass().getResource(filePath).toURI())), StandardCharsets.UTF_8);
+  }
+
 
 
 }
