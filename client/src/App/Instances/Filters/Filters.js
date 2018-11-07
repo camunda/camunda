@@ -36,7 +36,8 @@ export default class Filters extends React.Component {
       ids: PropTypes.string,
       incidents: PropTypes.bool,
       startDate: PropTypes.string,
-      version: PropTypes.string
+      version: PropTypes.string,
+      workflow: PropTypes.string
     }).isRequired,
     filterCount: PropTypes.number.isRequired,
     onFilterChange: PropTypes.func.isRequired,

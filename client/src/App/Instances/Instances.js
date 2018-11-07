@@ -35,7 +35,8 @@ import {
   parseQueryString,
   getPayload,
   decodeFields,
-  getEmptyDiagramMessage
+  getEmptyDiagramMessage,
+  getActivityIds
 } from './service';
 import * as Styled from './styled.js';
 
@@ -67,7 +68,7 @@ class Instances extends Component {
       selection: {all: false, ids: [], excludeIds: []},
       selectionCount: selectionCount || 0,
       selections: selections || [],
-      workflow: {},
+      diagramWorkflow: {},
       groupedWorkflowInstances: {},
       statistics: []
     };
@@ -78,34 +79,29 @@ class Instances extends Component {
     const groupedWorkflows = await fetchGroupedWorkflowInstances();
     this.setGroupedWorkflowInstances(groupedWorkflows);
 
-    //we read and clean the filter values from the url
-    await this.cleanFilterByWorkflowData();
-
-    this.setFilterFromUrl();
+    await this.validateAndSetUrlFilter();
+    await this.updateFilterRelatedState();
+    this.updateLocalStorageFilter();
   }
 
   async componentDidUpdate(prevProps, prevState) {
+    // filter in url has changed
     if (prevProps.location.search !== this.props.location.search) {
-      //we read clean the filter values from the url
-      await this.cleanFilterByWorkflowData();
-
-      this.setFilterFromUrl();
-
-      // fetch new statistics only if filter changes for the same diagram
-      // if the workflow changes, statistics are fetched onFlowNodesDetailsReady
-      if (
-        !isEqual(prevState.filter, this.state.filter) &&
-        isEqual(prevState.workflow, this.state.workflow)
-      ) {
-        this.fetchDiagramStatistics();
-      }
+      await this.validateAndSetUrlFilter();
+      await this.updateFilterRelatedState();
+      this.updateLocalStorageFilter();
     }
   }
+
+  updateLocalStorageFilter = () => {
+    // write current filter selection to local storage
+    this.props.storeStateLocally({filter: this.state.filter});
+  };
 
   fetchDiagramStatistics = async () => {
     let filter = Object.assign({}, this.state.filter);
 
-    if (isEmpty(filter) || !filter.workflow) {
+    if (isEmpty(this.state.diagramWorkflow)) {
       return;
     }
 
@@ -121,100 +117,118 @@ class Instances extends Component {
     this.setState({statistics});
   };
 
-  cleanFilterByWorkflowData = async () => {
-    let {filter} = parseQueryString(this.props.location.search);
-    const noWorkflowValues = {
-      workflow: '',
-      version: '',
-      activityId: ''
+  updateFilterRelatedState = async () => {
+    const {filter} = parseQueryString(this.props.location.search);
+    const {workflow, version} = filter;
+    // the url filter has fields that result in showing a diagram
+    const hasWorflowDiagramData =
+      Boolean(workflow) && Boolean(version) && version !== 'all';
+    const workflowDiagramNodes = hasWorflowDiagramData
+      ? await this.fetchDiagramNodes(
+          getFilterWithWorkflowIds(filter, this.state.groupedWorkflowInstances)
+            .workflowIds[0]
+        )
+      : [];
+
+    // fetch new statistics only if filter changes for the same diagram
+    // if the filter.workflow && filter.version change, statistics are fetched onFlowNodesDetailsReady
+    const shouldRefreshStatistics =
+      this.state.filter.workflow === filter.workflow &&
+      this.state.filter.version === filter.version &&
+      !isEqual(this.state.filter, filter);
+
+    const newState = {
+      filter: {...decodeFields(filter)},
+      diagramWorkflow: !hasWorflowDiagramData
+        ? {}
+        : getWorkflowByVersion(
+            this.state.groupedWorkflowInstances[workflow],
+            version
+          ),
+      activityIds: !hasWorflowDiagramData
+        ? []
+        : sortBy(getActivityIds(workflowDiagramNodes), item =>
+            item.label.toLowerCase()
+          )
     };
 
-    // if filter has no workflow data reset all workflow related state
-    if (filter && !Boolean(filter.workflow)) {
-      this.setState({
-        workflow: {},
-        activityIds: [],
-        statistics: []
-      });
+    // reset statistics to prevent sending outdated statistics to Diagram
+    if (!shouldRefreshStatistics) {
+      newState.statistics = [];
     }
 
-    if (filter && (filter.workflow || filter.version || filter.activityId)) {
-      let isWorkflowValid =
-        filter.workflow && this.state.groupedWorkflowInstances[filter.workflow];
-      let isWorkflowIdValid = true;
-
-      if (!isWorkflowValid || (isWorkflowValid && !filter.version)) {
-        // stop filter validation process
-        // clean workflow information from the filter
-        this.setFilterInURL({
-          ...filter,
-          ...noWorkflowValues
-        });
+    this.setState({...newState}, async () => {
+      if (shouldRefreshStatistics) {
+        await this.fetchDiagramStatistics();
       }
 
-      if (isWorkflowValid) {
-        // we have to check workflow & version
-        const filterWithWorkflowIds = getFilterWithWorkflowIds(
-          filter,
-          this.state.groupedWorkflowInstances
-        );
+      this.handleFilterCount();
+    });
+  };
 
-        // no valid combination of workflow + version was found
-        if (!Boolean(filterWithWorkflowIds.workflowIds)) {
-          // clean workflow information from the filter
-          this.setFilterInURL({
-            ...filter,
-            ...noWorkflowValues
-          });
+  validateAndSetUrlFilter = async () => {
+    const {filter} = parseQueryString(this.props.location.search);
+    const validFilter = await this.getValidFilter(filter);
 
-          isWorkflowIdValid = false;
-        }
-
-        if (isWorkflowIdValid) {
-          let activityIds = [];
-
-          if (filter.version === 'all') {
-            if (filter.activityId) {
-              this.setFilterInURL({...filter, ...{activityId: ''}});
-            }
-          } else {
-            // fetch xml to check validity of activity id
-            const xml = await fetchWorkflowXML(
-              filterWithWorkflowIds.workflowIds[0]
-            );
-
-            // check activity node in xml
-            const nodes = await getNodesFromXML(xml);
-
-            if (filter.activityId) {
-              //activityId is not valid and we remove it from url
-              if (!nodes[filterWithWorkflowIds.activityId]) {
-                this.setFilterInURL({...filter, ...{activityId: ''}});
-              }
-            }
-
-            // we set this.state.activityIds
-            // this allows Filter to prefill FlowNode value
-            for (let node in nodes) {
-              if (nodes[node].$type === 'bpmn:ServiceTask') {
-                activityIds.push({
-                  value: nodes[node].id,
-                  label: nodes[node].name || 'Unnamed task'
-                });
-              }
-            }
-          }
-
-          this.setState({
-            activityIds: sortBy(activityIds, item => item.label.toLowerCase()),
-            workflow: getWorkflowByVersion(
-              this.state.groupedWorkflowInstances[filter.workflow],
-              filter.version
-            )
-          });
-        }
-      }
+    // update URL with new valid filter
+    if (!isEqual(filter, validFilter)) {
+      this.setFilterInURL(validFilter);
     }
+  };
+
+  getValidFilter = async filter => {
+    if (!filter) {
+      return DEFAULT_FILTER;
+    }
+
+    let {workflow, version, activityId, ...otherFilters} = filter;
+
+    // stop validation
+    if (!workflow || (workflow && !version)) {
+      return otherFilters;
+    }
+
+    // validate workflow
+    const isWorkflowValid = Boolean(
+      this.state.groupedWorkflowInstances[workflow]
+    );
+
+    if (!isWorkflowValid) {
+      return otherFilters;
+    }
+
+    if (version === 'all') {
+      return {...otherFilters, workflow, version};
+    }
+
+    // check workflow & version combination
+    const workflowByVersion = getWorkflowByVersion(
+      this.state.groupedWorkflowInstances[workflow],
+      version
+    );
+
+    // version is not valid for workflow
+    if (!Boolean(workflowByVersion)) {
+      return otherFilters;
+    }
+
+    // check activityID
+    if (!activityId) {
+      return {...otherFilters, workflow, version};
+    } else {
+      const nodes = await this.fetchDiagramNodes(workflowByVersion.id);
+      const isActivityIdValid = Boolean(nodes[activityId]);
+      return isActivityIdValid
+        ? {...otherFilters, workflow, version, activityId}
+        : {...otherFilters, workflow, version};
+    }
+  };
+
+  fetchDiagramNodes = async workflowId => {
+    const xml = await fetchWorkflowXML(workflowId);
+    const nodes = await getNodesFromXML(xml);
+
+    return nodes;
   };
 
   setGroupedWorkflowInstances = workflows => {
@@ -320,24 +334,6 @@ class Instances extends Component {
     );
   };
 
-  setFilterFromUrl = () => {
-    let {filter} = parseQueryString(this.props.location.search);
-
-    // filter from URL was missing or invalid
-    if (!filter) {
-      // set default filter selection
-      filter = DEFAULT_FILTER;
-      this.setFilterInURL(filter);
-    }
-
-    // write current filter selection to local storage
-    this.props.storeStateLocally({filter: filter});
-
-    this.setState({filter: {...decodeFields(filter)}}, () => {
-      this.handleFilterCount();
-    });
-  };
-
   handleFilterCount = async () => {
     const filterCount = await fetchWorkflowInstancesCount(
       parseFilterForRequest(
@@ -386,7 +382,7 @@ class Instances extends Component {
 
     // reset diagram
     this.setState({
-      workflow: null
+      diagramWorkflow: {}
     });
 
     // reset filter in local storage
@@ -404,11 +400,9 @@ class Instances extends Component {
   };
 
   render() {
-    const currentWorkflow = this.state.groupedWorkflowInstances[
-      this.state.filter.workflow
-    ];
-    const workflowName = !isEmpty(currentWorkflow)
-      ? currentWorkflow.name || currentWorkflow.id
+    const workflowName = !isEmpty(this.state.diagramWorkflow)
+      ? this.state.diagramWorkflow.name ||
+        this.state.diagramWorkflow.bpmnProcessId
       : 'Workflow';
 
     return (
@@ -454,9 +448,9 @@ To see a diagram, select a Workflow in the Filters panel.`}
                       />
                     </Styled.EmptyMessageWrapper>
                   )}
-                  {!isEmpty(this.state.workflow) && (
+                  {!isEmpty(this.state.diagramWorkflow) && (
                     <Diagram
-                      workflowId={this.state.workflow.id}
+                      workflowId={this.state.diagramWorkflow.id}
                       onFlowNodesDetailsReady={this.fetchDiagramStatistics}
                       flowNodesStatisticsOverlay={this.state.statistics}
                       selectedFlowNode={this.state.filter.activityId}

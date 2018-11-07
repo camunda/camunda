@@ -62,3 +62,18 @@ export function getEmptyDiagramMessage(name) {
   return `There is more than one version selected for Workflow "${name}".\n
    To see a diagram, select a single version.`;
 }
+
+export function getActivityIds(nodes) {
+  let activityIds = [];
+
+  for (let node in nodes) {
+    if (nodes[node].$type === 'bpmn:ServiceTask') {
+      activityIds.push({
+        value: nodes[node].id,
+        label: nodes[node].name || 'Unnamed task'
+      });
+    }
+  }
+
+  return activityIds;
+}
