@@ -10,6 +10,10 @@ export const Panel = themed(styled.div`
     dark: Colors.uiDark02,
     light: Colors.uiLight04
   })};
+  box-shadow: ${themeStyle({
+    dark: '0 3px 6px 0 #000000',
+    light: '0 2px 3px 0 rgba(0, 0, 0, 0.1)'
+  })};
 `);
 
 export const Ul = themed(styled.ul`
