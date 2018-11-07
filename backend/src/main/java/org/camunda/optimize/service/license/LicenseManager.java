@@ -144,4 +144,12 @@ public class LicenseManager {
     return validateOptimizeLicense(license);
   }
 
+  public void setLicenseFromFile(String licenseFromFile) {
+    this.licenseFromFile = licenseFromFile;
+  }
+
+  public void resetLicenseFromFile() {
+    this.licenseFromFile = null;
+  }
+
 }

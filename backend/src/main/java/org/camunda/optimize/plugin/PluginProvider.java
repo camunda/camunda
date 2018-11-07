@@ -1,5 +1,6 @@
 package org.camunda.optimize.plugin;
 
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -28,8 +29,7 @@ public abstract class PluginProvider <PluginType> {
 
   @Autowired
   private DefaultListableBeanFactory beanFactory;
-  @Resource
-  private List<PluginType> registeredPlugins;
+  private List<PluginType> registeredPlugins = new ArrayList<>();
   private boolean initializedOnce = false;
   private Set<BeanDefinition> loadedBeans;
   private Logger logger = LoggerFactory.getLogger(PluginProvider.class);
@@ -102,6 +102,10 @@ public abstract class PluginProvider <PluginType> {
     }
   
     return registeredPlugins;
+  }
+
+  public boolean hasPluginsConfigured() {
+    return !getPlugins().isEmpty();
   }
 
   public void resetPlugins() {

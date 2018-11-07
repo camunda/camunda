@@ -1,5 +1,3 @@
-import {getToken} from 'credentials';
-
 const handlers = [];
 
 export function put(url, body, options = {}) {
@@ -54,7 +52,6 @@ export async function request({url, method, body, query, headers}) {
     body: processBody(body),
     headers: {
       'Content-Type': 'application/json',
-      ...createAuthorizationHeader(),
       ...headers
     },
     mode: 'cors',
@@ -70,17 +67,6 @@ export async function request({url, method, body, query, headers}) {
   } else {
     throw response;
   }
-}
-
-function createAuthorizationHeader() {
-  const token = getToken();
-
-  if (token) {
-    return {
-      'X-Optimize-Authorization': `Bearer ${token}`
-    };
-  }
-  return {};
 }
 
 export function formatQuery(query) {

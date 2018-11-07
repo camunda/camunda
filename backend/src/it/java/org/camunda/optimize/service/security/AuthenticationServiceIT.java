@@ -43,7 +43,6 @@ public class AuthenticationServiceIT {
     assertThat(response.getStatus(),is(200));
   }
 
-
   //comment in back after stopping support of engine 7.8
 //  @Test
 //  public void authenticateLockedUser() {
@@ -80,8 +79,8 @@ public class AuthenticationServiceIT {
             .getRequestExecutor()
             .buildAuthTestRequest()
             .withoutAuthentication()
-            .addSingleHeader(AuthenticationUtil.OPTIMIZE_AUTHORIZATION, "Bearer " + token)
-            .addSingleHeader(HttpHeaders.AUTHORIZATION, "Basic ZGVtbzpkZW1v")
+            .addSingleCookie(AuthenticationUtil.OPTIMIZE_AUTHORIZATION, "Bearer " + token)
+            .addSingleCookie(HttpHeaders.AUTHORIZATION, "Basic ZGVtbzpkZW1v")
             .execute();
 
     //then

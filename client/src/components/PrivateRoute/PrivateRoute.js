@@ -1,6 +1,6 @@
 import React from 'react';
 import {Route, Redirect} from 'react-router-dom';
-import {destroy, getToken} from 'credentials';
+import {isLoggedIn} from 'credentials';
 import {addHandler, removeHandler} from 'request';
 
 export default class PrivateRoute extends React.Component {
@@ -18,7 +18,6 @@ export default class PrivateRoute extends React.Component {
 
   handleResponse = response => {
     if (response.status === 401) {
-      destroy();
       this.setState({
         forceRedirect: true
       });
@@ -33,7 +32,7 @@ export default class PrivateRoute extends React.Component {
       <Route
         {...rest}
         render={props => {
-          return getToken() && !this.state.forceRedirect ? (
+          return isLoggedIn() && !this.state.forceRedirect ? (
             <Component {...props} />
           ) : (
             <Redirect

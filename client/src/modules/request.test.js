@@ -1,11 +1,4 @@
 import {request, formatQuery, put, post, get, addHandler, removeHandler} from './request';
-import {getToken} from 'credentials';
-
-jest.mock('credentials', () => {
-  return {
-    getToken: jest.fn()
-  };
-});
 
 const successResponse = {
   status: 200,
@@ -15,12 +8,9 @@ const failedResponse = {
   status: 401,
   content: 'FAILED'
 };
-const token = 'token-23';
 
 global.fetch = jest.fn();
 global.fetch.mockReturnValue(Promise.resolve(successResponse));
-
-getToken.mockReturnValue(token);
 
 const url = 'https://example.com';
 
@@ -122,34 +112,6 @@ describe('request', () => {
     } catch (e) {
       expect(e).toBe(failedResponse);
     }
-  });
-
-  it('should add Authorization header', async () => {
-    await request({
-      url,
-      method
-    });
-
-    const Authorization = fetch.mock.calls[0][1].headers['X-Optimize-Authorization'];
-
-    expect(Authorization).toBe(`Bearer ${token}`);
-  });
-
-  it('should not add Authorization header when token is empty', () => {
-    getToken.mockReturnValueOnce(null);
-
-    request({
-      url,
-      method
-    });
-
-    const {headers} = fetch.mock.calls[0][1];
-
-    expect(headers).not.toBe(
-      expect.objectContaining({
-        'X-Optimize-Authorization': expect.any(String)
-      })
-    );
   });
 });
 

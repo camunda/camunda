@@ -34,7 +34,8 @@ public class AuthenticationService {
       boolean isValidUser = engineAuthenticationProvider.authenticate(credentials, engineContext);
 
       if (isValidUser) {
-        boolean isAuthorized = applicationAuthorizationService.isAuthorized(credentials, engineContext);
+        boolean isAuthorized =
+          applicationAuthorizationService.isAuthorizedToAccessOptimize(credentials.getUsername(), engineContext);
         if (isAuthorized) {
           return createUserSession(credentials, engineContext);
         } else {

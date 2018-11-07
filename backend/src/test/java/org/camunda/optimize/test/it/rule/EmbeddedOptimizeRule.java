@@ -5,6 +5,7 @@ import org.camunda.optimize.OptimizeRequestExecutor;
 import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
+import org.camunda.optimize.rest.util.AuthenticationUtil;
 import org.camunda.optimize.service.alert.AlertService;
 import org.camunda.optimize.service.cleanup.OptimizeCleanupService;
 import org.camunda.optimize.service.engine.importing.EngineImportScheduler;
@@ -187,7 +188,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
   }
 
   public String getAuthorizationHeader() {
-    return "Bearer " + getAuthenticationToken();
+    return AuthenticationUtil.createOptimizeAuthenticationHeader(getAuthenticationToken());
   }
 
   public String getNewAuthenticationToken() {
@@ -204,7 +205,7 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     return tokenResponse.readEntity(String.class);
   }
 
-  public Response authenticateDemoRequest() {
+  private Response authenticateDemoRequest() {
     return authenticateUserRequest("demo", "demo");
   }
 

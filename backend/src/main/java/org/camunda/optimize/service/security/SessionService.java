@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 
 import java.security.SecureRandom;
 import java.util.List;
+import java.util.Optional;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -34,15 +35,26 @@ public class SessionService {
   private ConfigurationService configurationService;
 
   public boolean isValidToken(String token) {
-    String username = getSessionIssuer(token);
-    if (username != null) {
-      Session session = userSessions.get(username);
+    Optional<String> username = getSessionIssuer(token);
+    if (username.isPresent()) {
+      Session session = userSessions.get(username.get());
       if (session != null) {
         return session.isTokenValid(token);
       }
     }
     logger.debug("Error while validating authentication token [{}]. " +
       "User [{}] is not logged in!", token, username);
+    return false;
+  }
+
+  public boolean hasTokenExpired(String token) {
+    Optional<String> username = getSessionIssuer(token);
+    if (username.isPresent()) {
+      Session session = userSessions.get(username.get());
+      if (session != null) {
+        return session.hasTokenExpired(token);
+      }
+    }
     return false;
   }
 
@@ -53,10 +65,18 @@ public class SessionService {
   }
 
   public void expireToken(String token) {
-    String username = getSessionIssuer(token);
-    if (username != null) {
-      userSessions.remove(username);
-    }
+    Optional<String> username = getSessionIssuer(token);
+    username.ifPresent(user -> userSessions.remove(user));
+  }
+
+  public void updateExpiryDate(String token) {
+    Optional<String> username = getSessionIssuer(token);
+    username.ifPresent(
+      user -> userSessions.computeIfPresent(user, (u, session) -> {
+        session.updateExpiryDate();
+        return session;
+      })
+    );
   }
 
   public boolean isAuthorizedToSeeDefinition(String username, String processDefinitionKey) {
@@ -84,6 +104,15 @@ public class SessionService {
     userSessions.put(username, session);
 
     return token;
+  }
+
+  public void updateDefinitionAuthorizations(String username, EngineContext engineContext) {
+
+    DefinitionAuthorizations definitionAuthorizations = retrieveDefinitionAuthorizations(username, engineContext);
+    userSessions.computeIfPresent(username, (__, session) -> {
+      session.updateDefinitionAuthorizations(definitionAuthorizations);
+      return session;
+    });
   }
 
   private DefinitionAuthorizations retrieveDefinitionAuthorizations(String username, EngineContext engineContext) {
@@ -122,6 +151,5 @@ public class SessionService {
   public void setConfigurationService(ConfigurationService configurationService) {
     this.configurationService = configurationService;
   }
-
 
 }

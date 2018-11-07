@@ -130,8 +130,8 @@ public class SharingRestService {
   }
 
   @POST
-  @Secured
   @Path("/status")
+  @Secured
   @Produces(MediaType.APPLICATION_JSON)
   @Consumes(MediaType.APPLICATION_JSON)
   public ShareSearchResultDto checkShareStatus(ShareSearchDto searchRequest) {

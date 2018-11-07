@@ -65,14 +65,14 @@ public class EngineContextFactory {
           )
       );
     }
-    for (EngineRestFilter engineRestFilter : engineRestFilterProvider.getPlugins()) {
+    for (EngineRestFilter engineRestFilter :  engineRestFilterProvider.getPlugins()) {
       client.register(new ClientRequestFilter() {
 
         @Override
         public void filter(ClientRequestContext requestContext) throws IOException {
           engineRestFilter.filter(requestContext, config.getKey(), config.getValue().getName());
         }
-        
+
       });
     }
     client.register(optimizeObjectMapperProvider);

@@ -14,7 +14,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-// TODO minor: evaluate making this a service to be injected instead of the plain Client
 public class ElasticsearchHelper {
 
   private static final Logger logger = LoggerFactory.getLogger(ElasticsearchHelper.class);

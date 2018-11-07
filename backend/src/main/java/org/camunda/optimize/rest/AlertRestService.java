@@ -49,8 +49,8 @@ public class AlertRestService {
       AlertCreationDto toCreate
   ) {
     ValidationHelper.ensureNotNull("creation object", toCreate);
-    String token = AuthenticationUtil.getToken(requestContext);
-    return alertService.createAlert(toCreate, token);
+    String user = AuthenticationUtil.getRequestUser(requestContext);
+    return alertService.createAlert(toCreate, user);
   }
 
   @PUT
@@ -63,8 +63,8 @@ public class AlertRestService {
       AlertCreationDto toCreate
   ) {
     ValidationHelper.ensureNotNull("creation object", toCreate);
-    String token = AuthenticationUtil.getToken(requestContext);
-    alertService.updateAlert(alertId, toCreate, token);
+    String user = AuthenticationUtil.getRequestUser(requestContext);
+    alertService.updateAlert(alertId, toCreate, user);
   }
 
   @DELETE

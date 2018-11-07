@@ -1,6 +1,5 @@
 import React from 'react';
 import {Redirect} from 'react-router-dom';
-import {destroy} from 'credentials';
 import {get} from 'request';
 import {withErrorHandling} from 'HOC';
 import {Button} from 'components';
@@ -17,7 +16,6 @@ export default withErrorHandling(
       this.props.mightFail(
         get('api/authentication/logout'),
         () => {
-          destroy();
           this.setState({
             redirect: true
           });

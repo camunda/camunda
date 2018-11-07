@@ -1,0 +1,176 @@
+package org.camunda.optimize.jetty;
+
+import org.camunda.optimize.plugin.AuthenticationExtractorProvider;
+import org.camunda.optimize.plugin.security.authentication.AuthenticationExtractor;
+import org.camunda.optimize.plugin.security.authentication.AuthenticationResult;
+import org.camunda.optimize.rest.engine.EngineContext;
+import org.camunda.optimize.rest.engine.EngineContextFactory;
+import org.camunda.optimize.service.security.ApplicationAuthorizationService;
+import org.camunda.optimize.service.security.SessionService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.core.HttpHeaders;
+import java.io.IOException;
+import java.util.Optional;
+
+import static org.camunda.optimize.rest.util.AuthenticationUtil.OPTIMIZE_AUTHORIZATION;
+import static org.camunda.optimize.rest.util.AuthenticationUtil.extractTokenFromAuthorizationValue;
+
+public class SingleSignOnFilter implements Filter {
+
+  private static final String NO_STORE = "no-store";
+  private Logger logger = LoggerFactory.getLogger(SingleSignOnFilter.class);
+  private SpringAwareServletConfiguration awareDelegate;
+
+  private AuthenticationExtractorProvider authenticationExtractorProvider;
+  private EngineContextFactory engineContextFactory;
+  private ApplicationAuthorizationService applicationAuthorizationService;
+  private SessionService sessionService;
+
+  public SingleSignOnFilter(SpringAwareServletConfiguration awareDelegate) {
+    this.awareDelegate = awareDelegate;
+  }
+
+  @Override
+  public void init(FilterConfig filterConfig) {
+    // nothing to do here
+  }
+
+  /**
+   * Before the user can access the login page a license check is performed.
+   * Whenever there is an invalid or no license, the user gets redirected to the license page.
+   */
+  @Override
+  public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws
+                                                                                            IOException,
+                                                                                            ServletException {
+    logger.trace("Received new request.");
+    initBeans();
+    HttpServletResponse servletResponse = (HttpServletResponse) response;
+    HttpServletRequest servletRequest = (HttpServletRequest) request;
+    String requestPath = servletRequest.getServletPath().toLowerCase();
+    servletResponse.addHeader(HttpHeaders.CACHE_CONTROL, NO_STORE);
+
+    if (authenticationExtractorProvider.hasPluginsConfigured()) {
+      provideAuthentication(servletResponse, servletRequest);
+    }
+    chain.doFilter(request, response);
+  }
+
+  private void initBeans() {
+    if (authenticationExtractorProvider == null) {
+      authenticationExtractorProvider = awareDelegate.getApplicationContext()
+        .getBean(AuthenticationExtractorProvider.class);
+    }
+    if (engineContextFactory == null) {
+      engineContextFactory = awareDelegate.getApplicationContext().getBean(EngineContextFactory.class);
+    }
+    if (applicationAuthorizationService == null) {
+      applicationAuthorizationService = awareDelegate.getApplicationContext()
+        .getBean(ApplicationAuthorizationService.class);
+    }
+    if (sessionService == null) {
+      sessionService = awareDelegate.getApplicationContext().getBean(SessionService.class);
+    }
+  }
+
+  private void provideAuthentication(HttpServletResponse servletResponse, HttpServletRequest servletRequest) {
+    boolean hasCookieWithActiveToken = hasCookieWithActiveToken(servletResponse, servletRequest);
+    if (!hasCookieWithActiveToken) {
+      logger.trace("Creating new auth header for the Optimize cookie.");
+      addTokenFromAuthenticationExtractorPlugins(servletRequest, servletResponse);
+    }
+  }
+
+  private boolean hasCookieWithActiveToken(HttpServletResponse servletResponse, HttpServletRequest servletRequest) {
+    boolean hasCookieWithActiveToken =
+      retrieveOptimizeAuthCookie(servletRequest)
+        .map(authCookie -> {
+          String token = extractTokenFromAuthorizationValue(authCookie.getValue());
+          return !sessionService.hasTokenExpired(token);
+        })
+        .orElse(false);
+    hasCookieWithActiveToken |= servletResponse.containsHeader("set-cookie");
+    return hasCookieWithActiveToken;
+  }
+
+  private void addTokenFromAuthenticationExtractorPlugins(HttpServletRequest servletRequest,
+                                                          HttpServletResponse servletResponse) {
+    for (AuthenticationExtractor plugin : authenticationExtractorProvider.getPlugins()) {
+      AuthenticationResult authenticationResult = plugin.extractAuthenticatedUser(servletRequest);
+      if (authenticationResult.isAuthenticated()) {
+        logger.trace("User [{}] could be authenticated.", authenticationResult.getAuthenticatedUser());
+        String userName = authenticationResult.getAuthenticatedUser();
+        createSessionIfIsAuthorizedToAccessOptimize(servletRequest, servletResponse, userName);
+      }
+    }
+  }
+
+  private void createSessionIfIsAuthorizedToAccessOptimize(HttpServletRequest servletRequest,
+                                                           HttpServletResponse servletResponse, String userName) {
+    for (EngineContext engineContext : engineContextFactory.getConfiguredEngines()) {
+      boolean isAuthorized =
+        applicationAuthorizationService.isAuthorizedToAccessOptimize(userName, engineContext);
+      if (isAuthorized) {
+        logger.trace(
+          "User [{}] was authorized from engine [{}] to access Optimize.",
+          userName,
+          engineContext.getEngineAlias()
+        );
+        manageUserSession(servletRequest, servletResponse, userName, engineContext);
+      }
+
+    }
+  }
+
+  private void manageUserSession(HttpServletRequest servletRequest, HttpServletResponse servletResponse,
+                                 String userName, EngineContext engineContext) {
+    Optional<Cookie> authCookie = retrieveOptimizeAuthCookie(servletRequest);
+    if (authCookie.isPresent()) {
+      String token = extractTokenFromAuthorizationValue(authCookie.get().getValue());
+      if (sessionService.hasTokenExpired(token)) {
+        logger.trace("Updating session information for {} with token {}", userName, token);
+        sessionService.updateExpiryDate(token);
+        sessionService.updateDefinitionAuthorizations(userName, engineContext);
+      }
+    } else {
+      logger.trace("Creating new session for {}", userName);
+      String securityToken =
+        sessionService.createSessionAndReturnSecurityToken(userName, engineContext);
+      setOptimizeAuthCookie(servletResponse, securityToken);
+    }
+  }
+
+  private void setOptimizeAuthCookie(HttpServletResponse servletResponse, String securityToken) {
+    servletResponse.addHeader(
+      "set-cookie",
+      OPTIMIZE_AUTHORIZATION + "=" + "\"Bearer " + securityToken + "\";Version=1;Path=/"
+    );
+  }
+
+  private Optional<Cookie> retrieveOptimizeAuthCookie(HttpServletRequest servletRequest) {
+    if (servletRequest.getCookies() != null) {
+      for (Cookie cookie : servletRequest.getCookies()) {
+        if (OPTIMIZE_AUTHORIZATION.equals(cookie.getName())) {
+          return Optional.of(cookie);
+        }
+      }
+    }
+    return Optional.empty();
+  }
+
+  @Override
+  public void destroy() {
+    // nothing to do here
+  }
+}

@@ -1,6 +1,9 @@
 package org.camunda.optimize.rest.providers;
 
+import org.camunda.optimize.plugin.AuthenticationExtractorProvider;
+import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.rest.util.AuthenticationUtil;
+import org.camunda.optimize.service.security.ApplicationAuthorizationService;
 import org.camunda.optimize.service.security.SessionService;
 import org.glassfish.jersey.server.ContainerRequest;
 import org.slf4j.Logger;
@@ -12,12 +15,12 @@ import javax.annotation.Priority;
 import javax.ws.rs.Priorities;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;
-import javax.ws.rs.container.ResourceInfo;
-import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.ext.Provider;
 import java.net.URI;
 import java.net.URISyntaxException;
+
+import static org.camunda.optimize.rest.util.AuthenticationUtil.createDeleteOptimizeAuthCookie;
 
 @Secured
 @Provider
@@ -34,16 +37,22 @@ public class AuthenticationFilter implements ContainerRequestFilter {
   @Autowired
   private SessionService sessionService;
 
-  @Context
-  private ResourceInfo resourceInfo;
+  @Autowired
+  private AuthenticationExtractorProvider authenticationExtractorProvider;
+
+  @Autowired
+  private EngineContextFactory engineContextFactory;
+
+  @Autowired
+  private ApplicationAuthorizationService applicationAuthorizationService;
 
   @Override
   public void filter(ContainerRequestContext requestContext) {
-    String path = retrievePath( requestContext);
+    String path = retrievePath(requestContext);
     if (path != null && path.toLowerCase().startsWith(STATUS)) {
+      // we need that for the status web socket requests to work
       return;
     }
-
     try {
       String token = AuthenticationUtil.getToken(requestContext);
       boolean isValidToken = sessionService.isValidToken(token);
@@ -62,11 +71,12 @@ public class AuthenticationFilter implements ContainerRequestFilter {
 
   private void handleInvalidToken(ContainerRequestContext requestContext) {
     String path = retrievePath(requestContext);
+
     if (isCSVRequest(path)) {
       redirectToLoginPage(requestContext);
     } else {
       requestContext.abortWith(
-        Response.status(Response.Status.UNAUTHORIZED).build());
+        Response.status(Response.Status.UNAUTHORIZED).cookie(createDeleteOptimizeAuthCookie()).build());
     }
   }
 
@@ -78,7 +88,7 @@ public class AuthenticationFilter implements ContainerRequestFilter {
       logger.debug("can't build URI to login", e);
     }
     requestContext.abortWith(
-      Response.temporaryRedirect(loginUri).build()
+      Response.temporaryRedirect(loginUri).cookie(createDeleteOptimizeAuthCookie()).build()
     );
   }
 

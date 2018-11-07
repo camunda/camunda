@@ -24,7 +24,7 @@ public class TokenVerifier {
     updateExpiryDate();
   }
 
-  private void updateExpiryDate() {
+  public void updateExpiryDate() {
     this.expiryDate = calculateExpiryDate();
   }
 
@@ -50,7 +50,7 @@ public class TokenVerifier {
     return isValid;
   }
 
-  private boolean hasExpired(String tokenKey) {
+  public boolean hasExpired(String tokenKey) {
     if (expiryDate == null || LocalDateUtil.getCurrentDateTime().isAfter(expiryDate)) {
       logger.debug("Error while validating authentication token [{}]" +
         "Date has expired!", tokenKey);

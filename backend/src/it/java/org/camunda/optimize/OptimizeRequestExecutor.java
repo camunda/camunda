@@ -18,7 +18,6 @@ import org.camunda.optimize.dto.optimize.rest.FlowNodeIdsToNamesRequestDto;
 import javax.ws.rs.client.Entity;
 import javax.ws.rs.client.Invocation;
 import javax.ws.rs.client.WebTarget;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
@@ -28,6 +27,8 @@ import java.util.Map;
 import java.util.Optional;
 
 import static org.camunda.optimize.AbstractAlertIT.ALERT;
+import static org.camunda.optimize.rest.util.AuthenticationUtil.OPTIMIZE_AUTHORIZATION;
+import static org.camunda.optimize.rest.util.AuthenticationUtil.createOptimizeAuthenticationHeader;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -37,20 +38,21 @@ public class OptimizeRequestExecutor {
   private static final String POST = "post";
   private static final String DELETE = "delete";
   private WebTarget client;
-  private String defaultAuthHeader;
-  private String authHeader;
+  private String defaultAuthCookie;
+  private String authCookie;
   private String path;
   private String requestType;
   private Entity body;
   private Map<String, Object> queryParams;
-  private Map<String, String> headers;
+  private Map<String, String> cookies = new HashMap<>();
+  private Map<String, String> requestHeaders = new HashMap<>();
 
   private ObjectMapper objectMapper;
 
   public OptimizeRequestExecutor(WebTarget client, String defaultAuthToken, ObjectMapper objectMapper) {
     this.client = client;
-    this.authHeader = defaultAuthToken;
-    this.defaultAuthHeader = defaultAuthToken;
+    this.authCookie = defaultAuthToken;
+    this.defaultAuthCookie = defaultAuthToken;
     this.objectMapper = objectMapper;
   }
 
@@ -74,29 +76,28 @@ public class OptimizeRequestExecutor {
     return this;
   }
 
+  public OptimizeRequestExecutor addSingleCookie(String key, String value) {
+    cookies.put(key, value);
+    return this;
+  }
+
   public OptimizeRequestExecutor addSingleHeader(String key, String value) {
-    if (this.headers != null && headers.size() != 0) {
-      this.headers.put(key, value);
-    } else {
-      HashMap<String, String> headers = new HashMap<>();
-      headers.put(key, value);
-      this.headers = headers;
-    }
+    requestHeaders.put(key, value);
     return this;
   }
 
   public OptimizeRequestExecutor withUserAuthentication(String username, String password) {
-    this.authHeader = authenticateUserRequest(username, password);
+    this.authCookie = authenticateUserRequest(username, password);
     return this;
   }
 
   public OptimizeRequestExecutor withoutAuthentication() {
-    this.authHeader = null;
+    this.authCookie = null;
     return this;
   }
 
   public OptimizeRequestExecutor withGivenAuthHeader(String header) {
-    this.authHeader = header;
+    this.authCookie = header;
     return this;
   }
 
@@ -136,14 +137,16 @@ public class OptimizeRequestExecutor {
 
     Invocation.Builder builder = webTarget.request();
 
-    if (headers != null && headers.size() != 0) {
-      for (Map.Entry<String, String> header : headers.entrySet()) {
-        builder = builder.header(header.getKey(), header.getValue());
-      }
+    for (Map.Entry<String, String> cookieEntry : cookies.entrySet()) {
+      builder = builder.cookie(cookieEntry.getKey(), cookieEntry.getValue());
     }
 
-    if (authHeader != null) {
-      builder.header(HttpHeaders.AUTHORIZATION, this.authHeader);
+    if (authCookie != null) {
+      builder = builder.cookie(OPTIMIZE_AUTHORIZATION, this.authCookie);
+    }
+
+    for (Map.Entry<String, String> headerEntry : requestHeaders.entrySet()) {
+      builder = builder.header(headerEntry.getKey(), headerEntry.getValue());
     }
     return builder;
   }
@@ -169,12 +172,13 @@ public class OptimizeRequestExecutor {
   }
 
   private void resetBuilder() {
-    this.authHeader = defaultAuthHeader;
+    this.authCookie = defaultAuthCookie;
     this.body = null;
     this.path = null;
     this.requestType = null;
     this.queryParams = null;
-    this.headers = null;
+    this.cookies.clear();
+    this.requestHeaders.clear();
   }
 
   public OptimizeRequestExecutor buildCreateAlertRequest(AlertCreationDto alert) {
@@ -490,6 +494,6 @@ public class OptimizeRequestExecutor {
     Response response = client.path("authentication")
             .request()
             .post(Entity.json(entity));
-    return "Bearer " + response.readEntity(String.class);
+    return createOptimizeAuthenticationHeader(response.readEntity(String.class));
   }
 }

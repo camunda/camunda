@@ -24,8 +24,20 @@ public class Session {
     this.definitionAuthorizations = definitionAuthorizations;
   }
 
+  public void updateDefinitionAuthorizations(org.camunda.optimize.service.security.DefinitionAuthorizations definitionAuthorizations) {
+    this.definitionAuthorizations = definitionAuthorizations;
+  }
+
+  public void updateExpiryDate() {
+    tokenVerifier.updateExpiryDate();
+  }
+
   public boolean isTokenValid(String token) {
     return tokenVerifier.isTokenValid(token);
+  }
+
+  public boolean hasTokenExpired(String token) {
+    return tokenVerifier.hasExpired(token);
   }
 
   public boolean isAuthorizedToSeeDefinition(String processDefinitionKey) {

@@ -619,7 +619,9 @@ public class EngineIntegrationRule extends TestWatcher {
 
       httpPost.setEntity(new StringEntity(objectMapper.writeValueAsString(userDto), ContentType.APPLICATION_JSON));
       CloseableHttpResponse response = client.execute(httpPost);
-      assertThat(response.getStatusLine().getStatusCode(),is(204));
+      if (response.getStatusLine().getStatusCode() != 204) {
+        throw new OptimizeIntegrationTestException("Wrong status code when trying to add user!");
+      }
       response.close();
     } catch (Exception e) {
       logger.error("error creating user", e);

@@ -5,11 +5,6 @@ import Login from './Login';
 
 import {login} from './service';
 
-jest.mock('credentials', () => {
-  return {
-    getToken: jest.fn()
-  };
-});
 jest.mock('./service', () => {
   return {
     login: jest.fn()

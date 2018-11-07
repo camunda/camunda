@@ -17,7 +17,6 @@ public class ReportEvaluationExceptionMapper implements ExceptionMapper<ReportEv
   public Response toResponse(ReportEvaluationException reportEvaluationException) {
     logger.debug("Mapping ReportEvaluationException: {}", reportEvaluationException.getMessage());
     return Response
-      // TODO reconsider usage of a 5xx here
       // as this is a valid state in the system and the user has to take action to fix the evaluation result
       .status(Response.Status.INTERNAL_SERVER_ERROR)
       .entity(mapToEvaluationErrorResponseDto(reportEvaluationException))

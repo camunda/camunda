@@ -224,6 +224,10 @@ plugin:
     #Look in the given base package list for engine rest filter plugins.
     #If empty, the REST calls are not influenced.
     basePackages: []
+  authenticationExtractor:
+    # Looks in the given base package list for authentication extractor plugins.
+    # If empty, the standard Optimize authentication mechanism is used.
+    basePackages: []
 
 serialization:
   # Define a custom date format that should be used for

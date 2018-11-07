@@ -79,19 +79,30 @@ public class SpringAwareServletConfiguration implements ApplicationContextAware 
     holderPwd.setInitParameter("dirAllowed", "true");
     context.addServlet(holderPwd, "/");
 
-    FilterHolder filterHolder = new FilterHolder();
-    filterHolder.setFilter(new LicenseFilter(this));
-    context.addFilter(
-          filterHolder,
-          "/*",
-          EnumSet.of(DispatcherType.REQUEST, DispatcherType.FORWARD, DispatcherType.ERROR)
-      );
+    addLicenseFilter(context);
+    addSingleSignOnFilter(context);
 
     NotFoundErrorHandler errorMapper = new NotFoundErrorHandler();
     context.setErrorHandler(errorMapper);
 
     initGzipFilterHolder(context);
     //initJSRewriteHandler(context);
+  }
+
+  private void addSingleSignOnFilter(ServletContextHandler context) {
+    FilterHolder singleSignOnFilterHolder = new FilterHolder();
+    singleSignOnFilterHolder.setFilter(new SingleSignOnFilter(this));
+    context.addFilter(singleSignOnFilterHolder, "/*", EnumSet.of(DispatcherType.REQUEST));
+  }
+
+  private void addLicenseFilter(ServletContextHandler context) {
+    FilterHolder licenseFilterHolder = new FilterHolder();
+    licenseFilterHolder.setFilter(new LicenseFilter(this));
+    context.addFilter(
+      licenseFilterHolder,
+      "/*",
+      EnumSet.of(DispatcherType.REQUEST, DispatcherType.FORWARD, DispatcherType.ERROR)
+    );
   }
 
   private void initJSRewriteHandler(ServletContextHandler context) {

@@ -114,6 +114,7 @@ public class ConfigurationService {
   private Long samplerInterval;
   private List<String> variableImportPluginBasePackages;
   private List<String> engineRestFilterPluginBasePackages;
+  private List<String> authenticationExtractorPluginBasePackages;
 
   private Integer numberOfRetriesOnConflict;
   private Long engineImportActivityInstanceMaxPageSize;
@@ -621,6 +622,16 @@ public class ConfigurationService {
     return engineRestFilterPluginBasePackages;
   }
 
+  public List<String> getAuthenticationExtractorPluginBasePackages() {
+    if (authenticationExtractorPluginBasePackages == null) {
+      TypeRef<List<String>> typeRef = new TypeRef<List<String>>() {
+      };
+      authenticationExtractorPluginBasePackages =
+        configJsonContext.read(ConfigurationServiceConstants.AUTHENTICATION_EXTRACTOR_BASE_PACKAGES, typeRef);
+    }
+    return authenticationExtractorPluginBasePackages;
+  }
+
   public int getNumberOfRetriesOnConflict() {
     if (numberOfRetriesOnConflict == null) {
       numberOfRetriesOnConflict = configJsonContext.read(ConfigurationServiceConstants.NUMBER_OF_RETRIES_ON_CONFLICT);
@@ -904,6 +915,10 @@ public class ConfigurationService {
 
   public void setEngineRestFilterPluginBasePackages(List<String> engineRestFilterPluginBasePackages) {
     this.engineRestFilterPluginBasePackages = engineRestFilterPluginBasePackages;
+  }
+
+  public void setAuthenticationExtractorPluginBasePackages(List<String> authenticationExtractorPluginBasePackages) {
+    this.authenticationExtractorPluginBasePackages = authenticationExtractorPluginBasePackages;
   }
 
   public void setConfiguredEngines(Map<String, EngineConfiguration> configuredEngines) {

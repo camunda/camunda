@@ -30,6 +30,7 @@ public interface ConfigurationServiceConstants {
 
   String VARIABLE_IMPORT_PLUGIN_BASE_PACKAGES = "$.plugin.variableImport.basePackages";
   String ENGINE_REST_FILTER_PLUGIN_BASE_PACKAGES = "$.plugin.engineRestFilter.basePackages";
+  String AUTHENTICATION_EXTRACTOR_BASE_PACKAGES = "$.plugin.authenticationExtractor.basePackages";
   String ELASTIC_SEARCH_HOST = "$.es.host";
   String ELASTIC_SEARCH_CLUSTER_NAME = "$.es.clusterName";
   String ELASTIC_SEARCH_TCP_PORT = "$.es.ports.tcp";

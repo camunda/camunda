@@ -3,15 +3,14 @@ import {mount} from 'enzyme';
 
 import PrivateRoute from './PrivateRoute';
 
-import {getToken, destroy} from 'credentials';
+import {isLoggedIn} from 'credentials';
 import {addHandler, removeHandler} from 'request';
 
 const TestComponent = () => <div>TestComponent</div>;
 
 jest.mock('credentials', () => {
   return {
-    getToken: jest.fn(),
-    destroy: jest.fn()
+    isLoggedIn: jest.fn()
   };
 });
 jest.mock('request', () => {
@@ -36,7 +35,7 @@ jest.mock('react-router-dom', () => {
 });
 
 it('should render the component if the user is logged in', () => {
-  getToken.mockReturnValueOnce(true);
+  isLoggedIn.mockReturnValueOnce(true);
 
   const node = mount(<PrivateRoute component={TestComponent} />);
 
@@ -44,7 +43,7 @@ it('should render the component if the user is logged in', () => {
 });
 
 it('should redirect to the login screen if the user is not logged in', () => {
-  getToken.mockReturnValueOnce(false);
+  isLoggedIn.mockReturnValueOnce(false);
 
   const node = mount(<PrivateRoute component={TestComponent} />);
 
@@ -52,7 +51,7 @@ it('should redirect to the login screen if the user is not logged in', () => {
 });
 
 it('should provide the login component with the requested route', () => {
-  getToken.mockReturnValueOnce(false);
+  isLoggedIn.mockReturnValueOnce(false);
 
   const node = mount(<PrivateRoute component={TestComponent} location="/private" />);
 
@@ -61,7 +60,7 @@ it('should provide the login component with the requested route', () => {
 });
 
 it('should register a response handler', () => {
-  getToken.mockReturnValueOnce(true);
+  isLoggedIn.mockReturnValueOnce(true);
 
   mount(<PrivateRoute component={TestComponent} location="/private" />);
 
@@ -69,7 +68,7 @@ it('should register a response handler', () => {
 });
 
 it('should unregister the response handler when it is destroyed', () => {
-  getToken.mockReturnValueOnce(true);
+  isLoggedIn.mockReturnValueOnce(true);
 
   const node = mount(<PrivateRoute component={TestComponent} location="/private" />);
   node.unmount();
@@ -78,7 +77,7 @@ it('should unregister the response handler when it is destroyed', () => {
 });
 
 it('should redirect to login screen when handler received unauthorized response', () => {
-  getToken.mockReturnValueOnce(true);
+  isLoggedIn.mockReturnValueOnce(true);
   addHandler.mockClear();
 
   const node = mount(<PrivateRoute component={TestComponent} location="/private" />);
@@ -86,14 +85,4 @@ it('should redirect to login screen when handler received unauthorized response'
 
   expect(node).toIncludeText('REDIRECT');
   expect(node).toIncludeText('from /private');
-});
-
-it('should remove login information when handler received unauthorized response', () => {
-  getToken.mockReturnValueOnce(true);
-  addHandler.mockClear();
-
-  mount(<PrivateRoute component={TestComponent} location="/private" />);
-  addHandler.mock.calls[0][0]({status: 401});
-
-  expect(destroy).toHaveBeenCalled();
 });

@@ -16,8 +16,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.RuleChain;
 
-import javax.ws.rs.core.GenericType;
-import javax.ws.rs.core.HttpHeaders;
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -302,11 +300,10 @@ public class CountFlowNodeFrequencyByFlowNodeReportEvaluationIT {
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
-    List<ProcessDefinitionOptimizeDto> definitions = embeddedOptimizeRule.target()
-        .path(embeddedOptimizeRule.getProcessDefinitionEndpoint())
-        .request()
-        .header(HttpHeaders.AUTHORIZATION,embeddedOptimizeRule.getAuthorizationHeader())
-        .get(new GenericType<List<ProcessDefinitionOptimizeDto>>(){});
+    List<ProcessDefinitionOptimizeDto> definitions = embeddedOptimizeRule
+      .getRequestExecutor()
+      .buildGetProcessDefinitionsRequest()
+      .executeAndReturnList(ProcessDefinitionOptimizeDto.class, 200);
     assertThat(definitions.size(),is(2));
 
     //when

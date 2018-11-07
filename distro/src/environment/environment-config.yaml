@@ -109,6 +109,20 @@ serialization:
   # Please note that engine prior to 7.8 use yyyy-MM-dd'T'HH:mm:ss as default date format
   engineDateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
 
+plugin:
+  variableImport:
+    #Look in the given base package list for variable import adaption plugins.
+    #If empty, the import is not influenced.
+    basePackages: []
+  engineRestFilter:
+    #Look in the given base package list for engine rest filter plugins.
+    #If empty, the REST calls are not influenced.
+    basePackages: []
+  authenticationExtractor:
+    # Looks in the given base package list for authentication extractor plugins.
+    # If empty, the standard Optimize authentication mechanism is used.
+    basePackages: []
+
 historyCleanup:
   # switch for the cleanup, defaults to false
   enabled: false

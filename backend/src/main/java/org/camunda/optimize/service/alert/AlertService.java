@@ -35,7 +35,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static org.camunda.optimize.rest.util.AuthenticationUtil.getSessionIssuer;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.GROUP_BY_NONE_TYPE;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.SINGLE_NUMBER_VISUALIZATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.SINGLE_REPORT_TYPE;
@@ -193,8 +192,7 @@ public class AlertService {
     return alertReader.findFirstAlertsForReport(reportId);
   }
 
-  public IdDto createAlert(AlertCreationDto toCreate, String token) {
-    String userId = getSessionIssuer(token);
+  public IdDto createAlert(AlertCreationDto toCreate, String userId) {
     validateAlert(toCreate, userId);
     String alertId = this.createAlertForUser(toCreate, userId).getId();
     IdDto result = new IdDto();
@@ -248,8 +246,7 @@ public class AlertService {
     return result;
   }
 
-  public void updateAlert(String alertId, AlertCreationDto toCreate, String token) {
-    String userId = getSessionIssuer(token);
+  public void updateAlert(String alertId, AlertCreationDto toCreate, String userId) {
     validateAlert(toCreate, userId);
     this.updateAlertForUser(alertId, toCreate, userId);
   }

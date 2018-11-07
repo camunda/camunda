@@ -17,6 +17,9 @@ import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.Response;
 
+import static org.camunda.optimize.rest.util.AuthenticationUtil.createDeleteOptimizeAuthCookie;
+import static org.camunda.optimize.rest.util.AuthenticationUtil.createNewOptimizeAuthCookie;
+
 /**
  * Basic implementation of authentication tokens creation based on user credentials.
  * Please note that authentication token validation/refresh is performed in request filters.
@@ -35,16 +38,16 @@ public class AuthenticationRestService {
    * Authenticate an user given his credentials.
    *
    * @param credentials the credentials of the user.
-   * @return Response code 200 (OK) if it was possible to authenticate the user, otherwise status code 401 (Unauthorized).
+   * @return Response code 200 (OK) if it was possible to authenticate the user, otherwise status code 401
+   * (Unauthorized).
    */
   @POST
   @Produces("application/json")
   @Consumes("application/json")
   public Response authenticateUser(CredentialsDto credentials) {
-    String token = authenticationService.authenticateUser(credentials);
-
+    String securityToken = authenticationService.authenticateUser(credentials);
     // Return the token on the response
-    return Response.ok(token).build();
+    return Response.ok(securityToken).cookie(createNewOptimizeAuthCookie(securityToken)).build();
   }
 
   /**
@@ -70,6 +73,6 @@ public class AuthenticationRestService {
   public Response logout(@Context ContainerRequestContext requestContext) {
     String token = AuthenticationUtil.getToken(requestContext);
     sessionService.expireToken(token);
-    return Response.status(200).entity("OK").build();
+    return Response.status(200).entity("OK").cookie(createDeleteOptimizeAuthCookie()).build();
   }
 }

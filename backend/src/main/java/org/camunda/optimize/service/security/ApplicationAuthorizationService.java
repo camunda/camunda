@@ -2,7 +2,6 @@ package org.camunda.optimize.service.security;
 
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.engine.GroupDto;
-import org.camunda.optimize.dto.optimize.query.security.CredentialsDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.springframework.stereotype.Component;
 
@@ -21,8 +20,8 @@ import static org.camunda.optimize.service.util.configuration.EngineConstantsUti
 @Component
 public class ApplicationAuthorizationService {
 
-  public boolean isAuthorized(CredentialsDto credentialsDto, EngineContext engineContext) {
-    return performAuthorizationCheck(credentialsDto.getUsername(), engineContext);
+  public boolean isAuthorizedToAccessOptimize(String username, EngineContext engineContext) {
+    return performAuthorizationCheck(username, engineContext);
   }
 
   private boolean performAuthorizationCheck(String username, EngineContext engineContext) {
