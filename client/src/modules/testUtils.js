@@ -118,7 +118,7 @@ export const createInstance = (options = {}) => {
     startDate: '2018-06-21',
     state: 'ACTIVE',
     workflowId: '2',
-    workflowVersion: '1',
+    workflowVersion: 1,
     workflowName: 'someWorkflowName',
     ...options
   };

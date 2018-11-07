@@ -55,7 +55,7 @@ exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
       "state": "ACTIVE",
       "workflowId": "2",
       "workflowName": "someWorkflowName",
-      "workflowVersion": "1",
+      "workflowVersion": 1,
     }
   }
   onActivityInstanceSelected={[MockFunction]}

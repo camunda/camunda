@@ -60,7 +60,7 @@ exports[`DiagramPanel should render pane header and body 1`] = `
                   "state": "ACTIVE",
                   "workflowId": "2",
                   "workflowName": "someWorkflowName",
-                  "workflowVersion": "1",
+                  "workflowVersion": 1,
                 }
               }
             />
@@ -118,7 +118,7 @@ exports[`DiagramPanel should render pane header and body 1`] = `
                     "state": "ACTIVE",
                     "workflowId": "2",
                     "workflowName": "someWorkflowName",
-                    "workflowVersion": "1",
+                    "workflowVersion": 1,
                   }
                 }
               />
@@ -167,7 +167,7 @@ exports[`DiagramPanel should render pane header and body 1`] = `
           "state": "ACTIVE",
           "workflowId": "2",
           "workflowName": "someWorkflowName",
-          "workflowVersion": "1",
+          "workflowVersion": 1,
         }
       }
     />
