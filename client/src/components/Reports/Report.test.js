@@ -67,7 +67,6 @@ jest.mock('./service', () => {
   };
 });
 
-jest.mock('./ColumnSelection', () => () => <div>ColumnSelection</div>);
 jest.mock('./ColumnRearrangement', () => props => <div>ColumnRearrangement: {props.children}</div>);
 
 jest.mock('services', () => {

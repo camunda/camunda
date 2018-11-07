@@ -33,7 +33,6 @@ import {loadProcessDefinitions, checkDeleteConflict, incompatibleFilters} from '
 import ReportControlPanel from './ReportControlPanel';
 import CombinedReportPanel from './CombinedReportPanel';
 
-import ColumnSelection from './ColumnSelection';
 import ColumnRearrangement from './ColumnRearrangement';
 
 import './Report.scss';
@@ -449,7 +448,7 @@ export default withErrorHandling(
               ) : (
                 <ReportView
                   report={reportResult}
-                  applyAddons={this.applyAddons(ColumnRearrangement, ColumnSelection)}
+                  applyAddons={this.applyAddons(ColumnRearrangement)}
                 />
               )}
             </div>

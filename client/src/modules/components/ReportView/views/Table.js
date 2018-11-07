@@ -36,15 +36,26 @@ export default withErrorHandling(
     }
 
     processSingleData(labels, data, processInstanceCount) {
-      const {formatter = v => v, property} = this.props;
-      const isFrequency = property === 'frequency';
+      const {
+        formatter = v => v,
+        property,
+        configuration: {hideAbsoluteValue, hideRelativeValue}
+      } = this.props;
+
+      const displayRelativeValue = property === 'frequency' && !hideRelativeValue;
+      const displayAbsoluteValue = !hideAbsoluteValue;
+
+      if (hideAbsoluteValue) {
+        labels.length = 1;
+      }
+
       // normal two-dimensional data
       return {
-        head: [...labels, ...(isFrequency ? ['Relative Frequency'] : [])],
+        head: [...labels, ...(displayRelativeValue ? ['Relative Frequency'] : [])],
         body: Object.keys(data).map(key => [
           key,
-          formatter(data[key]),
-          ...(isFrequency ? [getRelativeValue(data[key], processInstanceCount)] : [])
+          ...(displayAbsoluteValue ? [formatter(data[key])] : []),
+          ...(displayRelativeValue ? [getRelativeValue(data[key], processInstanceCount)] : [])
         ])
       };
     }

@@ -1,28 +1,31 @@
 import React from 'react';
-import {Switch} from 'components';
+import ColumnSelection from './ColumnSelection';
+import RelativeAbsoluteSelection from './RelativeAbsoluteSelection';
 
-export default class Table extends React.Component {
-  updateProp = evt => {
-    this.props.onChange('customProp', evt.target.checked);
-  };
-
-  render() {
-    return (
-      <div>
-        <p>I am a table!</p>
-        <Switch
-          type="checkbox"
-          onChange={this.updateProp}
-          checked={!!this.props.configuration.customProp}
-        />{' '}
-        Custom Prop
-      </div>
-    );
+export default function Table({report, configuration, onChange}) {
+  switch (report.data.view.operation) {
+    case 'rawData':
+      return <ColumnSelection report={report} onChange={onChange} />;
+    case 'count':
+      return <RelativeAbsoluteSelection configuration={configuration} onChange={onChange} />;
+    default:
+      return null;
   }
 }
 
 Table.defaults = {
-  customProp: false,
-  propA: 12,
-  propB: 'abc'
+  excludedColumns: [],
+  hideRelativeValue: false,
+  hideAbsoluteValue: false
+};
+
+Table.onUpdate = (prevProps, props) => {
+  // if the view operation changes, we need to reset to defaults
+  if (
+    prevProps.report.data.view &&
+    props.report.data.view &&
+    prevProps.report.data.view.operation !== props.report.data.view.operation
+  ) {
+    return Table.defaults;
+  }
 };

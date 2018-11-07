@@ -27,6 +27,21 @@ export default class Configuration extends React.Component {
     });
   };
 
+  componentDidUpdate(prevProps) {
+    const Component = visualizations[this.props.type];
+    if (Component && Component.onUpdate) {
+      const updates = Component.onUpdate(prevProps, this.props);
+      if (updates) {
+        this.props.onChange({
+          configuration: {
+            ...this.props.configuration,
+            ...updates
+          }
+        });
+      }
+    }
+  }
+
   render() {
     const Component = visualizations[this.props.type];
     return (
@@ -36,6 +51,7 @@ export default class Configuration extends React.Component {
             {Component && (
               <Component
                 configuration={this.props.configuration}
+                report={this.props.report}
                 onChange={this.updateConfiguration}
               />
             )}
