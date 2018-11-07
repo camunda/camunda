@@ -121,30 +121,30 @@ public abstract class OperateZeebeIntegrationTest extends OperateIntegrationTest
   }
 
   public Long failTaskWithNoRetriesLeft(String taskName, String workflowInstanceId) {
-    Long jobKey = ZeebeUtil.failTask(getClient(), taskName, getWorkerName(), 3);
+    Long jobKey = ZeebeTestUtil.failTask(getClient(), taskName, getWorkerName(), 3);
     elasticsearchTestRule.processAllEventsAndWait(incidentIsActiveCheck, workflowInstanceId);
     return jobKey;
   }
 
   protected String deployWorkflow(String... classpathResources) {
-    final String workflowId = ZeebeUtil.deployWorkflow(getClient(), classpathResources);
+    final String workflowId = ZeebeTestUtil.deployWorkflow(getClient(), classpathResources);
     elasticsearchTestRule.processAllEventsAndWait(workflowIsDeployedCheck, workflowId);
     return workflowId;
   }
 
   protected String deployWorkflow(BpmnModelInstance workflow, String resourceName) {
-    final String workflowId = ZeebeUtil.deployWorkflow(getClient(), workflow, resourceName);
+    final String workflowId = ZeebeTestUtil.deployWorkflow(getClient(), workflow, resourceName);
     elasticsearchTestRule.processAllEventsAndWait(workflowIsDeployedCheck, workflowId);
     return workflowId;
   }
 
   protected void cancelWorkflowInstance(String workflowInstanceId) {
-    ZeebeUtil.cancelWorkflowInstance(getClient(), workflowInstanceId);
+    ZeebeTestUtil.cancelWorkflowInstance(getClient(), workflowInstanceId);
     elasticsearchTestRule.processAllEventsAndWait(workflowInstanceIsCanceledCheck, workflowInstanceId);
   }
 
   protected void completeTask(String workflowInstanceId, String activityId, String payload) {
-    JobWorker jobWorker = ZeebeUtil.completeTask(getClient(), activityId, getWorkerName(), payload);
+    JobWorker jobWorker = ZeebeTestUtil.completeTask(getClient(), activityId, getWorkerName(), payload);
     elasticsearchTestRule.processAllEventsAndWait(activityIsCompletedCheck, workflowInstanceId, activityId);
     jobWorker.close();
   }

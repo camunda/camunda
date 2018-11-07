@@ -10,7 +10,7 @@ import org.camunda.operate.entities.WorkflowInstanceState;
 import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.types.WorkflowInstanceType;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
-import org.camunda.operate.util.ZeebeUtil;
+import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.zeebeimport.cache.WorkflowCache;
 import org.junit.After;
 import org.junit.Before;
@@ -56,8 +56,8 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
   public void testWorkflowNameAndVersionAreLoaded() {
     // having
     String processId = "demoProcess";
-    final String workflowId = ZeebeUtil.deployWorkflow(zeebeClient, "demoProcess_v_1.bpmn");
-    final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    final String workflowId = ZeebeTestUtil.deployWorkflow(zeebeClient, "demoProcess_v_1.bpmn");
+    final String workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //when
@@ -78,9 +78,9 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
     String activityId = "taskA";
     String processId = "demoProcess";
     final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
-    final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    final String workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     //create an incident
-    ZeebeUtil.failTask(getClient(), activityId, getWorkerName(), 3);
+    ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //when
@@ -127,15 +127,15 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
         .endEvent()
       .done();
     final String workflowId = deployWorkflow(modelInstance, "demoProcess_v_1.bpmn");
-    final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    final String workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //create an incident
-    final Long jobKey = ZeebeUtil.failTask(getClient(), activityId, getWorkerName(), 3);
+    final Long jobKey = ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3);
 
     //when update retries
-    ZeebeUtil.resolveIncident(zeebeClient, jobKey);
+    ZeebeTestUtil.resolveIncident(zeebeClient, jobKey);
 
-    setJobWorker(ZeebeUtil.completeTask(getClient(), activityId, getWorkerName(), "{}"));
+    setJobWorker(ZeebeTestUtil.completeTask(getClient(), activityId, getWorkerName(), "{}"));
 
     elasticsearchTestRule.processAllEvents(20, ZeebeESImporter.ImportValueType.WORKFLOW_INSTANCE);
     elasticsearchTestRule.processAllEvents(2, ZeebeESImporter.ImportValueType.INCIDENT);
@@ -165,15 +165,15 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
         .endEvent()
         .done();
     final String workflowId = deployWorkflow(modelInstance, "demoProcess_v_1.bpmn");
-    final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    final String workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //create an incident
-    final Long jobKey = ZeebeUtil.failTask(getClient(), activityId, getWorkerName(), 3);
+    final Long jobKey = ZeebeTestUtil.failTask(getClient(), activityId, getWorkerName(), 3);
 
     //when update retries
-    ZeebeUtil.resolveIncident(zeebeClient, jobKey);
+    ZeebeTestUtil.resolveIncident(zeebeClient, jobKey);
 
-    ZeebeUtil.cancelWorkflowInstance(getClient(), workflowInstanceId);
+    ZeebeTestUtil.cancelWorkflowInstance(getClient(), workflowInstanceId);
 
     elasticsearchTestRule.processAllEvents(20, ZeebeESImporter.ImportValueType.WORKFLOW_INSTANCE);
     elasticsearchTestRule.processAllEvents(2, ZeebeESImporter.ImportValueType.INCIDENT);

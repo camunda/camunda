@@ -11,7 +11,7 @@ import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.rest.dto.EventQueryDto;
 import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
-import org.camunda.operate.util.ZeebeUtil;
+import org.camunda.operate.util.ZeebeTestUtil;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,13 +42,13 @@ public class EventIT extends OperateZeebeIntegrationTest {
     final String workflowId = deployWorkflow("processWithGateway.bpmn");
 
     final String initialPayload = "{\"a\": \"b\"}";
-    final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(super.getClient(), processId, initialPayload);
+    final String workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(super.getClient(), processId, initialPayload);
 
     //create an incident
     final Long jobKey = failTaskWithNoRetriesLeft(taskA, workflowInstanceId);
 
     //update retries to delete the incident
-    ZeebeUtil.resolveIncident(super.getClient(), jobKey);
+    ZeebeTestUtil.resolveIncident(super.getClient(), jobKey);
     elasticsearchTestRule.processAllEvents(10);
 
     //complete task A
@@ -124,8 +124,8 @@ public class EventIT extends OperateZeebeIntegrationTest {
 
     String processId = "demoProcess";
     final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
-    final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(super.getClient(), processId, "{\"a\": \"b\"}");
-    super.setJobWorker(ZeebeUtil.completeTask(super.getClient(), activityId, super.getWorkerName(), "{\"a\": \"b\"}"));
+    final String workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(super.getClient(), processId, "{\"a\": \"b\"}");
+    super.setJobWorker(ZeebeTestUtil.completeTask(super.getClient(), activityId, super.getWorkerName(), "{\"a\": \"b\"}"));
 
     cancelWorkflowInstance(workflowInstanceId);
     elasticsearchTestRule.refreshIndexesInElasticsearch();

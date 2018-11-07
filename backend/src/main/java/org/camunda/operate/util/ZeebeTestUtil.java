@@ -16,9 +16,9 @@ import io.zeebe.client.cmd.ClientException;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.Protocol;
 
-public abstract class ZeebeUtil {
+public abstract class ZeebeTestUtil {
 
-  private static final Logger logger = LoggerFactory.getLogger(ZeebeUtil.class);
+  private static final Logger logger = LoggerFactory.getLogger(ZeebeTestUtil.class);
 
   public static final Logger ALL_EVENTS_LOGGER = LoggerFactory.getLogger("org.camunda.operate.ALL_EVENTS");
 

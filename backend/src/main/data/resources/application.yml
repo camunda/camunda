@@ -5,10 +5,8 @@ camunda.bpm.operate:
     host: localhost
     port: 9300
     dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
-    demoData: false
   zeebe:
     brokerContactPoint: localhost:26500
-    demoData: true
     topics:
       - new-topic
     worker: operate
@@ -30,10 +28,8 @@ camunda.bpm.operate:
     host: elasticsearch
     port: 9300
     dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
-    demoData: false
   zeebe:
     brokerContactPoint: zeebe:26500
-    demoData: true
     topics:
       - new-topic
     worker: operate

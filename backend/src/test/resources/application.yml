@@ -5,10 +5,8 @@ camunda.bpm.operate:
     host: localhost
     port: 9300
     dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
-    demoData: false
   zeebe:
     brokerContactPoint: localhost:26500
-    demoData: false
     topics:
     worker: operate
   operationExecutor:

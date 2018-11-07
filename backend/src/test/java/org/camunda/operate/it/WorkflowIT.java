@@ -20,7 +20,7 @@ import org.camunda.operate.es.types.WorkflowType;
 import org.camunda.operate.rest.dto.WorkflowGroupDto;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
-import org.camunda.operate.util.ZeebeUtil;
+import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.zeebeimport.ElasticsearchBulkProcessor;
 import org.junit.Before;
 import org.junit.Rule;
@@ -162,7 +162,7 @@ public class WorkflowIT extends OperateZeebeIntegrationTest {
     }
     final BpmnModelInstance demoProcess =
       executableProcess.startEvent().endEvent().done();
-    return ZeebeUtil.deployWorkflow(zeebeClient, demoProcess, "resource.bpmn");
+    return ZeebeTestUtil.deployWorkflow(zeebeClient, demoProcess, "resource.bpmn");
   }
 
 }

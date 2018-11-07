@@ -30,7 +30,7 @@ import org.camunda.operate.rest.dto.WorkflowInstanceRequestDto;
 import org.camunda.operate.rest.dto.WorkflowInstanceResponseDto;
 import org.camunda.operate.util.MockMvcTestRule;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
-import org.camunda.operate.util.ZeebeUtil;
+import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.zeebe.operation.CancelWorkflowInstanceHandler;
 import org.camunda.operate.zeebe.operation.OperationExecutor;
 import org.camunda.operate.zeebe.operation.UpdateRetriesHandler;
@@ -267,7 +267,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
   public void testFailCancelOnCanceledInstance() throws Exception {
     // given
     final String workflowInstanceId = startDemoWorkflowInstance();
-    ZeebeUtil.cancelWorkflowInstance(super.getClient(), workflowInstanceId);
+    ZeebeTestUtil.cancelWorkflowInstance(super.getClient(), workflowInstanceId);
     elasticsearchTestRule.processAllEvents(10);
 
     //when
@@ -301,7 +301,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
         .endEvent()
         .done();
     deployWorkflow(startEndProcess, "startEndProcess.bpmn");
-    final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(super.getClient(), bpmnProcessId, null);
+    final String workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(super.getClient(), bpmnProcessId, null);
     elasticsearchTestRule.processAllEvents(20);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
@@ -373,7 +373,7 @@ public class OperationIT extends OperateZeebeIntegrationTest {
 
   private String startDemoWorkflowInstance() {
     String processId = "demoProcess";
-    final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(super.getClient(), processId, "{\"a\": \"b\"}");
+    final String workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(super.getClient(), processId, "{\"a\": \"b\"}");
     elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceId, "taskA");
     elasticsearchTestRule.refreshIndexesInElasticsearch();
     return workflowInstanceId;

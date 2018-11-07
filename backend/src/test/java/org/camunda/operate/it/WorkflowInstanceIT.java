@@ -17,7 +17,7 @@ import org.camunda.operate.es.reader.WorkflowInstanceReader;
 import org.camunda.operate.es.types.WorkflowInstanceType;
 import org.camunda.operate.rest.dto.EventQueryDto;
 import org.camunda.operate.util.OperateZeebeIntegrationTest;
-import org.camunda.operate.util.ZeebeUtil;
+import org.camunda.operate.util.ZeebeTestUtil;
 import org.camunda.operate.zeebeimport.cache.WorkflowCache;
 import org.junit.After;
 import org.junit.Before;
@@ -26,7 +26,6 @@ import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
 import io.zeebe.client.ZeebeClient;
-import io.zeebe.client.api.subscription.JobWorker;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -72,7 +71,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
 
     //when
-    final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    final String workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
     elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceId, "taskA");
 
     //then
@@ -105,7 +104,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     deployWorkflow(workflow, "demoProcess_v_1.bpmn");
 
     //when
-    final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, null);
+    final String workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, null);
     elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceId, "task1");
 
     completeTask(workflowInstanceId, "task1", null);
@@ -136,7 +135,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
       .done();
     deployWorkflow(workflow, processId + ".bpmn");
 
-    final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, null);
+    final String workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, null);
     elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceId, "task1");
 
     completeTask(workflowInstanceId, "task1", null);
@@ -165,7 +164,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     deployWorkflow(workflow, processId + ".bpmn");
 
     //when workflow instance is started
-    final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\", \"nullVar\": null}");
+    final String workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\", \"nullVar\": null}");
     elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceId, "task1");
 
     //then
@@ -216,7 +215,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
 
     //when
-    final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, payload);
+    final String workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, payload);
     elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceId, "taskA");
 
     //then
@@ -276,7 +275,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
 
     String processId = "demoProcess";
     final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
-    final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    final String workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //create an incident
     failTaskWithNoRetriesLeft(activityId, workflowInstanceId);
@@ -284,7 +283,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     //when update retries
     final WorkflowInstanceEntity workflowInstance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
     assertThat(workflowInstance.getIncidents().size()).isEqualTo(1);
-    ZeebeUtil.resolveIncident(zeebeClient, Long.valueOf(workflowInstance.getIncidents().get(0).getJobId()));
+    ZeebeTestUtil.resolveIncident(zeebeClient, Long.valueOf(workflowInstance.getIncidents().get(0).getJobId()));
     elasticsearchTestRule.processAllEvents(19);
 
     //then
@@ -305,7 +304,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
 
     String processId = "demoProcess";
     final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
-    final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    final String workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //when
     //create an incident
@@ -349,7 +348,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     deployWorkflow(workflow, resourceName);
 
     //when
-    final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");      //wrong payload provokes incident
+    final String workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");      //wrong payload provokes incident
     elasticsearchTestRule.processAllEventsAndWait(activityIsActiveCheck, workflowInstanceId, "task1");
 
     //then incident created, activity in INCIDENT state
@@ -393,7 +392,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
 
     String processId = "demoProcess";
     final String workflowId = deployWorkflow("demoProcess_v_1.bpmn");
-    final String workflowInstanceId = ZeebeUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
+    final String workflowInstanceId = ZeebeTestUtil.startWorkflowInstance(zeebeClient, processId, "{\"a\": \"b\"}");
 
     //when
     cancelWorkflowInstance(workflowInstanceId);
