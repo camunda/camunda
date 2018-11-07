@@ -169,7 +169,7 @@ pipeline {
   options {
     buildDiscarder(logRotator(numToKeepStr: '50'))
     timestamps()
-    timeout(time: 300, unit: 'MINUTES')
+    timeout(time: 60, unit: 'MINUTES')
   }
 
   stages {
@@ -186,7 +186,6 @@ pipeline {
         container('maven') {
           sh 'mvn -T\$LIMITS_CPU -DskipTests -Dskip.fe.build -Dskip.docker -s settings.xml clean install -B'
           sh 'mvn -Pstatic-data-import-performance-test -f qa/import-performance-tests/pom.xml -s settings.xml clean test -Ddb.url=jdbc:postgresql://opt-ci-perf.db:5432/optimize-ci-performance -B'
-          sh 'mvn -Pcleanup-performance-test -f qa/cleanup-performance-tests/pom.xml -s settings.xml clean test -Ddb.url=jdbc:postgresql://opt-ci-perf.db:5432/optimize-ci-performance -B'
         }
       }
       post {

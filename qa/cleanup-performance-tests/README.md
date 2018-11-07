@@ -20,5 +20,5 @@ to be able to connect to the Elasticsearch and the engine.
 To start the tests use the following command
 
 ```
-mvn -Pcleanup-performance-test clean test -Ddb.url=jdbc:postgresql://<yourPostresDBUrl>
+mvn -Pcleanup-performance-test clean test -Ddb.url=jdbc:postgresql://<yourPostgresDbUrl>
 ```

@@ -1,20 +1,15 @@
 package org.camunda.optimize.test.performance;
 
 import org.camunda.optimize.service.util.configuration.CleanupMode;
-import org.camunda.optimize.test.util.PropertyUtil;
+import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.time.OffsetDateTime;
 import java.time.Period;
-import java.time.temporal.ChronoUnit;
-import java.util.Properties;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -22,23 +17,22 @@ import static org.hamcrest.MatcherAssert.assertThat;
 // fixed ordering for now to save import time, we first test clearing variables, then clear whole instances
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class CleanupPerformanceStaticDataTest extends AbstractCleanupTest {
-  private boolean imported;
+  protected static final Logger logger = LoggerFactory.getLogger(AbstractCleanupTest.class);
 
-  @Override
-  public Properties getProperties() {
-    return PropertyUtil.loadProperties("static-cleanup-test.properties");
+  @BeforeClass
+  public static void setUp() {
+    // given
+    importData();
   }
 
   @Test
   public void aCleanupModeVariablesPerformanceTest() throws Exception {
+    final ConfigurationService configurationService = getConfigurationService();
     //given TTL of 0
     embeddedOptimizeRule.getConfigurationService().getCleanupServiceConfiguration().setDefaultTtl(Period.parse("P0D"));
     embeddedOptimizeRule.getConfigurationService()
       .getCleanupServiceConfiguration()
       .setDefaultMode(CleanupMode.VARIABLES);
-
-    // when I import all data
-    importData();
     final int countProcessDefinitions = elasticSearchRule.getImportedCountOf(
       configurationService.getProcessDefinitionType(), configurationService
     );
@@ -60,7 +54,10 @@ public class CleanupPerformanceStaticDataTest extends AbstractCleanupTest {
     // and everything else is untouched
     assertThat(
       "processInstanceTypeCount",
-      elasticSearchRule.getImportedCountOf(configurationService.getProcessInstanceType(), configurationService),
+      elasticSearchRule.getImportedCountOf(
+        configurationService.getProcessInstanceType(),
+        configurationService
+      ),
       is(processInstanceCount)
     );
     assertThat(
@@ -70,19 +67,20 @@ public class CleanupPerformanceStaticDataTest extends AbstractCleanupTest {
     );
     assertThat(
       "processDefinitionCount",
-      elasticSearchRule.getImportedCountOf(configurationService.getProcessDefinitionType(), configurationService),
+      elasticSearchRule.getImportedCountOf(
+        configurationService.getProcessDefinitionType(),
+        configurationService
+      ),
       is(countProcessDefinitions)
     );
   }
 
   @Test
   public void bCleanupModeAllPerformanceTest() throws Exception {
+    final ConfigurationService configurationService = getConfigurationService();
     //given ttl of 0
     embeddedOptimizeRule.getConfigurationService().getCleanupServiceConfiguration().setDefaultTtl(Period.parse("P0D"));
     embeddedOptimizeRule.getConfigurationService().getCleanupServiceConfiguration().setDefaultMode(CleanupMode.ALL);
-
-    // when I import all data
-    importData();
     final int countProcessDefinitions = elasticSearchRule.getImportedCountOf(
       configurationService.getProcessDefinitionType(), configurationService
     );
@@ -94,7 +92,10 @@ public class CleanupPerformanceStaticDataTest extends AbstractCleanupTest {
     // then no process instances, no activity and no variables should be left in optimize
     assertThat(
       "processInstanceTypeCount",
-      elasticSearchRule.getImportedCountOf(configurationService.getProcessInstanceType(), configurationService),
+      elasticSearchRule.getImportedCountOf(
+        configurationService.getProcessInstanceType(),
+        configurationService
+      ),
       is(0)
     );
     assertThat(
@@ -110,46 +111,12 @@ public class CleanupPerformanceStaticDataTest extends AbstractCleanupTest {
     // and process definition count is untouched
     assertThat(
       "processDefinitionCount",
-      elasticSearchRule.getImportedCountOf(configurationService.getProcessDefinitionType(), configurationService),
+      elasticSearchRule.getImportedCountOf(
+        configurationService.getProcessDefinitionType(),
+        configurationService
+      ),
       is(countProcessDefinitions)
     );
-
-    // set imported to false, any following tests need to reimport
-    imported = false;
-  }
-
-  private void importData() {
-    // import once for all tests
-    if (!imported) {
-      final OffsetDateTime importStart = OffsetDateTime.now();
-      logger.info("Starting import of engine data to Optimize...");
-      final ScheduledExecutorService progressReporterExecutorService = reportImportProgress();
-      embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
-      progressReporterExecutorService.shutdown();
-      elasticSearchRule.refreshOptimizeIndexInElasticsearch();
-      OffsetDateTime afterImport = OffsetDateTime.now();
-      long importDurationInMinutes = ChronoUnit.MINUTES.between(importStart, afterImport);
-      logger.info("Import took [ " + importDurationInMinutes + " ] min");
-      imported = true;
-    } else {
-      logger.info("Data was already imported, skipping import");
-    }
-  }
-
-  private void runCleanupAndAssertFinishedWithinTimeout() throws InterruptedException, TimeoutException {
-    logger.info("Starting History Cleanup...");
-    final ExecutorService cleanupExecutorService = Executors.newSingleThreadExecutor();
-    cleanupExecutorService.execute(
-      () -> embeddedOptimizeRule.getCleanupService().runCleanup()
-    );
-    cleanupExecutorService.shutdown();
-    boolean wasAbleToFinishImportInTime = cleanupExecutorService.awaitTermination(
-      maxCleanupDurationInMin, TimeUnit.MINUTES
-    );
-    logger.info(".. History cleanup finished, timed out {} ", !wasAbleToFinishImportInTime);
-    if (!wasAbleToFinishImportInTime) {
-      throw new TimeoutException("Import was not able to finish import in " + maxCleanupDurationInMin + " minutes!");
-    }
   }
 
 }

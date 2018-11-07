@@ -1,11 +1,11 @@
-pipelineJob('performance-large-static-dataset') {
+pipelineJob('cleanup-data-performance') {
 
-  displayName 'Performance test on large static dataset'
-  description 'Test Optimize Performance against a large static dataset.'
+  displayName 'History Cleanup Performance test'
+  description 'Test Optimize History Cleanup Performance against a large static dataset.'
 
   definition {
     cps {
-      script(readFileFromWorkspace('.ci/pipelines/static_data_performance_large.groovy'))
+      script(readFileFromWorkspace('.ci/pipelines/cleanup_data_performance.groovy'))
       sandbox()
     }
   }
@@ -17,6 +17,6 @@ pipelineJob('performance-large-static-dataset') {
   }
 
   triggers {
-    cron('H 3 * * *')
+    cron('H 1 * * *')
   }
 }
