@@ -51,7 +51,7 @@ public abstract class AbstractCleanupTest {
         logger.info("Progress of engine import: {}%", computeImportProgress());
       },
       0,
-      5,
+      60,
       TimeUnit.SECONDS
     );
     return exec;
