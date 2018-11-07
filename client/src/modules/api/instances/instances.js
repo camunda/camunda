@@ -19,7 +19,7 @@ export async function fetchGroupedWorkflowInstances() {
   const response = await get('/api/workflows/grouped').catch(e => {
     return {error: e};
   });
-  return !response.error ? response.json() : [];
+  return !response.error ? await response.json() : [];
 }
 
 export async function fetchWorkflowInstancesCount(payload) {
