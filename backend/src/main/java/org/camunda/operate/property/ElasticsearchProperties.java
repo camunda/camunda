@@ -5,8 +5,6 @@ import java.time.format.DateTimeFormatter;
 
 public class ElasticsearchProperties {
 
-  private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
   public static final String IMPORT_POSITION_INDEX_PATTERN = "import-position";
 
   public static final String WORKFLOW_INSTANCE_INDEX_PATTERN = "workflow-instance";
@@ -27,13 +25,13 @@ public class ElasticsearchProperties {
 
   private int batchSize = 20;
 
-  private String importPositionIndexName = IMPORT_POSITION_INDEX_PATTERN + "_" + DATE_FORMATTER.format(LocalDate.now());
+  private String importPositionIndexName = IMPORT_POSITION_INDEX_PATTERN + "_operate";
 
-  private String eventIndexName = EVENT_INDEX_PATTERN + "_" + DATE_FORMATTER.format(LocalDate.now());
+  private String eventIndexName = EVENT_INDEX_PATTERN + "_operate";
 
-  private String workflowInstanceIndexName = WORKFLOW_INSTANCE_INDEX_PATTERN + "_" + DATE_FORMATTER.format(LocalDate.now());
+  private String workflowInstanceIndexName = WORKFLOW_INSTANCE_INDEX_PATTERN + "_operate";
 
-  private String workflowIndexName = WORKFLOW_INDEX_PATTERN + "_" + DATE_FORMATTER.format(LocalDate.now());
+  private String workflowIndexName = WORKFLOW_INDEX_PATTERN + "_operate";
 
   private String importPositionAlias = IMPORT_POSITION_INDEX_PATTERN;
 
