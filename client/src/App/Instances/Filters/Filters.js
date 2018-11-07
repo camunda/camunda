@@ -189,97 +189,95 @@ export default class Filters extends React.Component {
             </Styled.FiltersHeader>
             <CollapsablePanel.Body>
               <Styled.Filters>
-                {!isWorkflowsDataLoaded ? null : (
-                  <Fragment>
-                    <Styled.Field>
-                      <Styled.Select
-                        value={this.state.filter.workflow}
-                        disabled={isEmpty(this.props.groupedWorkflowInstances)}
-                        name="workflow"
-                        placeholder="Workflow"
-                        options={getOptionsForWorkflowName(
-                          this.props.groupedWorkflowInstances
-                        )}
-                        onChange={this.handleWorkflowNameChange}
-                      />
-                    </Styled.Field>
-                    <Styled.Field>
-                      <Styled.Select
-                        value={this.state.filter.version}
-                        disabled={this.state.filter.workflow === ''}
-                        name="version"
-                        placeholder="Workflow Version"
-                        options={workflowVersions}
-                        onChange={this.handleWorkflowVersionChange}
-                      />
-                    </Styled.Field>
-                    <Styled.Field>
-                      <Styled.Textarea
-                        value={this.state.filter.ids}
-                        name="ids"
-                        placeholder="Instance Id(s) separated by space or comma"
-                        onBlur={this.handleFieldChange}
-                        onChange={this.handleInputChange}
-                      />
-                    </Styled.Field>
-                    <Styled.Field>
-                      <Styled.TextInput
-                        value={this.state.filter.errorMessage}
-                        name="errorMessage"
-                        placeholder="Error Message"
-                        onBlur={this.handleFieldChange}
-                        onChange={this.handleInputChange}
-                      />
-                    </Styled.Field>
-                    <Styled.Field>
-                      <Styled.TextInput
-                        value={this.state.filter.startDate}
-                        name="startDate"
-                        placeholder="Start Date"
-                        onBlur={this.handleFieldChange}
-                        onChange={this.handleInputChange}
-                      />
-                    </Styled.Field>
-                    <Styled.Field>
-                      <Styled.TextInput
-                        value={this.state.filter.endDate}
-                        name="endDate"
-                        placeholder="End Date"
-                        onBlur={this.handleFieldChange}
-                        onChange={this.handleInputChange}
-                      />
-                    </Styled.Field>
-                    <Styled.Field>
-                      <Styled.Select
-                        value={this.state.filter.activityId}
-                        disabled={
-                          this.state.filter.version === '' ||
-                          this.state.filter.version === ALL_VERSIONS_OPTION
-                        }
-                        name="activityId"
-                        placeholder="Flow Node"
-                        options={this.props.activityIds}
-                        onChange={this.handleFieldChange}
-                      />
-                    </Styled.Field>
-                    <Styled.CheckboxGroup
-                      type={FILTER_TYPES.RUNNING}
-                      filter={{
-                        active,
-                        incidents
-                      }}
-                      onChange={this.props.onFilterChange}
+                <Fragment>
+                  <Styled.Field>
+                    <Styled.Select
+                      value={this.state.filter.workflow}
+                      disabled={isEmpty(this.props.groupedWorkflowInstances)}
+                      name="workflow"
+                      placeholder="Workflow"
+                      options={getOptionsForWorkflowName(
+                        this.props.groupedWorkflowInstances
+                      )}
+                      onChange={this.handleWorkflowNameChange}
                     />
-                    <Styled.CheckboxGroup
-                      type={FILTER_TYPES.FINISHED}
-                      filter={{
-                        completed,
-                        canceled
-                      }}
-                      onChange={this.props.onFilterChange}
+                  </Styled.Field>
+                  <Styled.Field>
+                    <Styled.Select
+                      value={this.state.filter.version}
+                      disabled={this.state.filter.workflow === ''}
+                      name="version"
+                      placeholder="Workflow Version"
+                      options={workflowVersions}
+                      onChange={this.handleWorkflowVersionChange}
                     />
-                  </Fragment>
-                )}
+                  </Styled.Field>
+                  <Styled.Field>
+                    <Styled.Textarea
+                      value={this.state.filter.ids}
+                      name="ids"
+                      placeholder="Instance Id(s) separated by space or comma"
+                      onBlur={this.handleFieldChange}
+                      onChange={this.handleInputChange}
+                    />
+                  </Styled.Field>
+                  <Styled.Field>
+                    <Styled.TextInput
+                      value={this.state.filter.errorMessage}
+                      name="errorMessage"
+                      placeholder="Error Message"
+                      onBlur={this.handleFieldChange}
+                      onChange={this.handleInputChange}
+                    />
+                  </Styled.Field>
+                  <Styled.Field>
+                    <Styled.TextInput
+                      value={this.state.filter.startDate}
+                      name="startDate"
+                      placeholder="Start Date"
+                      onBlur={this.handleFieldChange}
+                      onChange={this.handleInputChange}
+                    />
+                  </Styled.Field>
+                  <Styled.Field>
+                    <Styled.TextInput
+                      value={this.state.filter.endDate}
+                      name="endDate"
+                      placeholder="End Date"
+                      onBlur={this.handleFieldChange}
+                      onChange={this.handleInputChange}
+                    />
+                  </Styled.Field>
+                  <Styled.Field>
+                    <Styled.Select
+                      value={this.state.filter.activityId}
+                      disabled={
+                        this.state.filter.version === '' ||
+                        this.state.filter.version === ALL_VERSIONS_OPTION
+                      }
+                      name="activityId"
+                      placeholder="Flow Node"
+                      options={this.props.activityIds}
+                      onChange={this.handleFieldChange}
+                    />
+                  </Styled.Field>
+                  <Styled.CheckboxGroup
+                    type={FILTER_TYPES.RUNNING}
+                    filter={{
+                      active,
+                      incidents
+                    }}
+                    onChange={this.props.onFilterChange}
+                  />
+                  <Styled.CheckboxGroup
+                    type={FILTER_TYPES.FINISHED}
+                    filter={{
+                      completed,
+                      canceled
+                    }}
+                    onChange={this.props.onFilterChange}
+                  />
+                </Fragment>
               </Styled.Filters>
             </CollapsablePanel.Body>
             <Styled.ResetButtonContainer>
