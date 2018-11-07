@@ -117,24 +117,6 @@ describe('Filters', () => {
     resetSpy.mockClear();
   });
 
-  it('should not render fields if props.groupedWorkflowInstances is empty', () => {
-    // given
-    const node = shallow(
-      <Filters
-        groupedWorkflowInstances={{}}
-        {...mockProps}
-        filter={DEFAULT_FILTER}
-      />
-    )
-      .find('CollapsablePanelConsumer')
-      .dive();
-    const ResetButtonNode = node.find(Button);
-
-    expect(node.find({type: 'input'}).length).toBe(0);
-    expect(node.find({type: 'select'}).length).toBe(0);
-    expect(ResetButtonNode).toHaveLength(1);
-  });
-
   it('should render with the right initial state', () => {
     // given
     const node = shallow(
