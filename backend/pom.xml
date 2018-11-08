@@ -133,9 +133,6 @@
               <resources>
                 <resource>
                   <directory>src/main/data/resources</directory>
-                  <excludes>
-                    <exclude>application.yml</exclude>
-                  </excludes>
                 </resource>
               </resources>
             </configuration>
