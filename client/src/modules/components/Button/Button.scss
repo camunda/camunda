@@ -25,6 +25,34 @@ a.Button {
   border-radius: 3px;
   text-decoration: none;
   display: inline-block;
+
+  &.Button--link {
+    display: inline;
+    align-items: normal;
+    background-color: transparent;
+    color: #00a8ff;
+    border-color: #00a8ff;
+    border-style: none;
+    font: inherit;
+    padding: 0;
+    perspective-origin: 0 0;
+    transform-origin: 0 0;
+
+    &:hover {
+      background-color: transparent;
+      color: #00a8ff;
+      border-color: #00a8ff;
+      border-style: none;
+      text-decoration: underline;
+    }
+
+    &:focus {
+      border: none;
+      box-shadow: none;
+      outline: 1px dotted #212121;
+      outline: 5px auto -webkit-focus-ring-color;
+    }
+  }
 }
 
 .Button:hover,
@@ -159,29 +187,5 @@ a.Button--green[disabled='disabled']:hover {
 .Button {
   .Icon {
     margin-right: 0.65em;
-  }
-}
-
-.Button.link {
-  display: inline;
-  align-items: normal;
-  background-color: transparent;
-  color: #00a8ff;
-  border-color: #00a8ff;
-  border-style: none;
-  font: inherit;
-  padding: 0;
-  perspective-origin: 0 0;
-  transform-origin: 0 0;
-
-  &:hover {
-    text-decoration: underline;
-  }
-
-  &:focus {
-    border: none;
-    box-shadow: none;
-    outline: 1px dotted #212121;
-    outline: 5px auto -webkit-focus-ring-color;
   }
 }

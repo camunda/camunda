@@ -29,8 +29,7 @@ export default React.forwardRef(function Button(props, ref) {
         className={classnames(props.className, 'Button', {
           ['Button--' + props.type]: props.type,
           ['Button--' + props.color]: props.color,
-          'is-active': props.active,
-          link: props.link
+          'is-active': props.active
         })}
         ref={ref}
       >

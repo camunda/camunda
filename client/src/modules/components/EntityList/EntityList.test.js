@@ -73,7 +73,7 @@ jest.mock('components', () => {
   return {
     Modal,
     Message: props => <p>{props.children}</p>,
-    Button: ({link, ...props}) => <button {...props}>{props.children}</button>,
+    Button: props => <button {...props}>{props.children}</button>,
     Input: props => <input {...props} type="text" />,
     LoadingIndicator: props => (
       <div className="sk-circle" {...props}>

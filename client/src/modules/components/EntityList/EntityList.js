@@ -187,7 +187,7 @@ class EntityList extends React.Component {
         <ul className="list">
           <li className="item noEntities">
             {`There are no ${this.props.label}s configured.`}
-            <Button className="createLink" onClick={this.createEntity('single')} link>
+            <Button type="link" className="createLink" onClick={this.createEntity('single')}>
               Create a new {this.props.label}…
             </Button>
           </li>
