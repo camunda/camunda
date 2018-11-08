@@ -21,8 +21,16 @@ export default class TypeaheadMultipleSelection extends React.Component {
       values.length > 0 && (
         <div className="TypeaheadMultipleSelection__labeled-valueList">
           <p>Selected {this.props.label}: </p>
-          <div onDragOver={this.dragOver} className="TypeaheadMultipleSelection__values-sublist">
+          <div
+            onDragOver={isDraggable ? this.dragOver : undefined}
+            className="TypeaheadMultipleSelection__values-sublist"
+          >
             {values.map((value, idx) => {
+              const dragProps = {
+                draggable: true,
+                onDragEnd: this.dragEnd,
+                onDragStart: this.dragStart
+              };
               return (
                 <li
                   key={idx}
@@ -30,9 +38,7 @@ export default class TypeaheadMultipleSelection extends React.Component {
                   className={classnames('TypeaheadMultipleSelection__valueListItem', {
                     draggable: isDraggable
                   })}
-                  draggable={isDraggable}
-                  onDragEnd={this.dragEnd}
-                  onDragStart={this.dragStart}
+                  {...(isDraggable ? dragProps : {})}
                 >
                   <label>
                     <Input type="checkbox" checked value={idx} onChange={this.toggleSelected} />
@@ -41,7 +47,7 @@ export default class TypeaheadMultipleSelection extends React.Component {
                 </li>
               );
             })}
-            <span className="endIndicator" data-id={values.length} />
+            <li className="endIndicator" data-id={values.length} />
           </div>
         </div>
       )
@@ -50,35 +56,34 @@ export default class TypeaheadMultipleSelection extends React.Component {
 
   dragStart = evt => {
     this.dragged = evt.currentTarget;
-    this.cloneHeight = this.dragged.getBoundingClientRect().height;
-    this.dragPlaceHolder.style.height = this.cloneHeight + 'px';
     evt.dataTransfer.effectAllowed = 'move';
-    evt.dataTransfer.setData('Text', this.dragged.id);
   };
 
   dragEnd = evt => {
+    if (!this.over) this.over = evt.target;
     this.dragged.style.display = 'block';
-    this.dragged.parentNode.removeChild(this.dragPlaceHolder);
+
+    const container = this.dragged.parentNode;
+    if (container.contains(this.dragPlaceHolder)) container.removeChild(this.dragPlaceHolder);
 
     // update props
-    let data = this.props.selectedValues;
-    const from = Number(this.dragged.dataset.id);
-    let to = Number(this.over.dataset.id);
+    let data = [...this.props.selectedValues];
+    const from = +this.dragged.dataset.id;
+    let to = +this.over.dataset.id;
     if (from < to) to--;
     data.splice(to, 0, data.splice(from, 1)[0]);
     this.props.onOrderChange(data);
+    this.dragged = null;
   };
 
   dragOver = evt => {
     evt.preventDefault();
+    if (!this.dragged || evt.target.className === 'placeholder') return;
     this.dragged.style.display = 'none';
-    if (evt.target.className === 'placeholder') return;
-    if (evt.target.nodeName === 'LI' || evt.target.className === 'endIndicator') {
-      this.over = evt.target;
-      evt.target.parentNode.insertBefore(this.dragPlaceHolder, evt.target);
-    } else if (evt.target.nodeName === 'LABEL') {
-      const listElement = evt.target.parentNode;
-      this.over = listElement;
+    const listElement = evt.target.closest('li');
+    this.over = listElement;
+    const nodeName = evt.target.nodeName;
+    if (nodeName === 'LABEL' || nodeName === 'LI') {
       listElement.parentNode.insertBefore(this.dragPlaceHolder, listElement);
     }
   };

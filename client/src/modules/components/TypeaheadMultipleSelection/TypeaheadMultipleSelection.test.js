@@ -2,13 +2,13 @@ import React from 'react';
 
 import TypeaheadMultipleSelection from './TypeaheadMultipleSelection';
 
-import {mount} from 'enzyme';
+import {shallow} from 'enzyme';
 
 it('should still contain selected value after changing the filter', async () => {
   const allValues = ['asd', 'dhdf', 'fefwf', 'aaf', 'thdfhr'];
   const toggleValue = jest.fn();
   const setFilter = jest.fn();
-  const node = mount(
+  const node = shallow(
     <TypeaheadMultipleSelection
       toggleValue={toggleValue}
       setFilter={setFilter}
@@ -18,7 +18,7 @@ it('should still contain selected value after changing the filter', async () => 
   );
 
   toggleValue.mockImplementation(value => () =>
-    node.setProps({selectedValues: node.props().selectedValues.concat([value])})
+    node.setProps({selectedValues: node.instance().props.selectedValues.concat([value])})
   );
 
   setFilter.mockImplementation(filter =>
@@ -27,9 +27,9 @@ it('should still contain selected value after changing the filter', async () => 
     })
   );
 
-  node.props().setFilter('a');
-  node.props().toggleValue('asd')();
-  node.props().setFilter('f');
+  node.instance().props.setFilter('a');
+  node.instance().props.toggleValue('asd')();
+  node.instance().props.setFilter('f');
   expect(node).toIncludeText('asd');
   expect(node).toIncludeText('fefwf');
 });
@@ -38,7 +38,7 @@ it('it should not show the unselected value if it does not match the query', asy
   const allValues = ['asd', 'dhdf', 'fefwf', 'aaf', 'thdfhr'];
   const toggleValue = jest.fn();
   const setFilter = jest.fn();
-  const node = mount(
+  const node = shallow(
     <TypeaheadMultipleSelection
       toggleValue={toggleValue}
       setFilter={setFilter}
@@ -49,9 +49,9 @@ it('it should not show the unselected value if it does not match the query', asy
 
   toggleValue.mockImplementationOnce(value => () =>
     node.setProps({
-      selectedValues: node.props().selectedValues.includes(value)
-        ? node.props().selectedValues.filter(v => v !== value)
-        : node.props().selectedValues.concat([value])
+      selectedValues: node.instance().props.selectedValues.includes(value)
+        ? node.instance().props.selectedValues.filter(v => v !== value)
+        : node.instance().props.selectedValues.concat([value])
     })
   );
   setFilter.mockImplementation(filter =>
@@ -60,10 +60,10 @@ it('it should not show the unselected value if it does not match the query', asy
     })
   );
 
-  node.props().setFilter('a');
-  node.props().toggleValue('asd');
-  node.props().setFilter('f');
-  node.props().toggleValue('asd');
+  node.instance().props.setFilter('a');
+  node.instance().props.toggleValue('asd');
+  node.instance().props.setFilter('f');
+  node.instance().props.toggleValue('asd');
   expect(node).toIncludeText('fefwf');
   expect(node).not.toIncludeText('asd');
 });
@@ -71,31 +71,29 @@ it('it should not show the unselected value if it does not match the query', asy
 it('should add a value to the list of values when the checkbox is clicked', async () => {
   const toggleValue = value =>
     node.setProps({
-      selectedValues: node.props().selectedValues.includes(value)
-        ? node.props().selectedValues.filter(v => v !== value)
-        : node.props().selectedValues.concat([value])
+      selectedValues: node.instance().props.selectedValues.includes(value)
+        ? node.instance().props.selectedValues.filter(v => v !== value)
+        : node.instance().props.selectedValues.concat([value])
     });
 
   const allValues = ['asd', 'dhdf', 'fefwf', 'aaf', 'thdfhr'];
-  const node = mount(
+  const node = shallow(
     <TypeaheadMultipleSelection
       toggleValue={toggleValue}
       selectedValues={[]}
       availableValues={allValues}
     />
   );
-  node
-    .find('input[type="checkbox"]')
-    .at(1)
-    .simulate('change', {target: {checked: true, value: '1'}});
 
-  expect(node.props().selectedValues.includes('dhdf')).toBe(true);
+  node.instance().toggleAvailable({target: {checked: true, value: '1'}});
+
+  expect(node.instance().props.selectedValues.includes('dhdf')).toBe(true);
 });
 
 it('should request the values filtered by filter entered in the input', () => {
   const setFilter = jest.fn();
   const allValues = ['asd', 'dhdf', 'fefwf', 'aaf', 'thdfhr'];
-  const node = mount(
+  const node = shallow(
     <TypeaheadMultipleSelection
       setFilter={setFilter}
       selectedValues={[]}
@@ -114,14 +112,14 @@ it('should request the values filtered by filter entered in the input', () => {
     .first()
     .simulate('change', {target: {value: 't'}});
 
-  expect(node.props().availableValues.length).toBe(1);
-  expect(node.props().availableValues[0]).toBe('thdfhr');
+  expect(node.instance().props.availableValues.length).toBe(1);
+  expect(node.instance().props.availableValues[0]).toBe('thdfhr');
 });
 
 it('make the list items draggable when adding a drag handler', () => {
   const setFilter = jest.fn();
   const allValues = ['dhdf', 'fefwf', 'aaf', 'thdfhr'];
-  const node = mount(
+  const node = shallow(
     <TypeaheadMultipleSelection
       setFilter={setFilter}
       selectedValues={['a']}
@@ -152,7 +150,7 @@ it('make invok onOrderChange with the new selectedvalues data on drag end', () =
   const setFilter = jest.fn();
   const allValues = ['dhdf', 'fefwf', 'aaf', 'thdfhr'];
   const spy = jest.fn();
-  const node = mount(
+  const node = shallow(
     <TypeaheadMultipleSelection
       setFilter={setFilter}
       selectedValues={['a', 'b']}
@@ -171,7 +169,8 @@ it('make invok onOrderChange with the new selectedvalues data on drag end', () =
     currentTarget: {
       getBoundingClientRect: () => ({height: '30px'}),
       parentNode: {
-        removeChild: () => {}
+        removeChild: () => {},
+        contains: () => false
       },
       dataset: {
         id: 1
@@ -191,18 +190,20 @@ it('make invok onOrderChange with the new selectedvalues data on drag end', () =
     target: {
       className: 'test',
       nodeName: 'LI',
-      parentNode: {
-        insertBefore: () => {}
-      },
-      dataset: {
-        id: 0
-      }
+      closest: () => ({
+        parentNode: {
+          insertBefore: () => {}
+        },
+        dataset: {
+          id: 0
+        }
+      })
     }
   };
 
   node.instance().dragStart(dragStartEvt);
   node.instance().dragOver(dragOverEvt);
-  node.instance().dragEnd();
+  node.instance().dragEnd(dragOverEvt);
 
   expect(spy).toHaveBeenCalledWith(['b', 'a']);
 });
