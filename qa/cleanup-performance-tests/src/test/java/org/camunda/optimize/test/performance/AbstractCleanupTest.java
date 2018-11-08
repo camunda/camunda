@@ -86,7 +86,6 @@ public abstract class AbstractCleanupTest {
   }
 
   private static long computeImportProgress() {
-    // assumption: we know how many process instances have been generated
     Integer activityInstancesImported = elasticSearchRule.getActivityCount(getConfigurationService());
     Long totalInstances = null;
     try {
