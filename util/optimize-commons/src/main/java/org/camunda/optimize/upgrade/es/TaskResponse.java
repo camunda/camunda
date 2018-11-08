@@ -13,6 +13,18 @@ public class TaskResponse {
   @JsonProperty("task")
   private Task task;
 
+  @JsonProperty("error")
+  private Error error;
+
+  protected TaskResponse() {
+  }
+
+  public TaskResponse(boolean completed, Task task, Error error) {
+    this.completed = completed;
+    this.task = task;
+    this.error = error;
+  }
+
   public String getId() {
     return Optional.ofNullable(task).map(Task::getId).orElse(null);
   }
@@ -33,12 +45,24 @@ public class TaskResponse {
       .orElse(0.0D);
   }
 
+  public Error getError() {
+    return error;
+  }
+
   @JsonIgnoreProperties(ignoreUnknown = true)
   public static class Task {
     @JsonProperty("id")
     private String id;
     @JsonProperty("status")
     private Status status;
+
+    protected Task() {
+    }
+
+    public Task(String id, Status status) {
+      this.id = id;
+      this.status = status;
+    }
 
     public String getId() {
       return id;
@@ -51,6 +75,7 @@ public class TaskResponse {
 
   @JsonIgnoreProperties(ignoreUnknown = true)
   public static class Status {
+
     @JsonProperty("total")
     private Long total;
     @JsonProperty("updated")
@@ -59,5 +84,71 @@ public class TaskResponse {
     private Long created;
     @JsonProperty("deleted")
     private Long deleted;
+    public Long getTotal() {
+      return total;
+    }
+
+    protected Status() {
+    }
+
+    public Status(Long total, Long updated, Long created, Long deleted) {
+      this.total = total;
+      this.updated = updated;
+      this.created = created;
+      this.deleted = deleted;
+    }
+
+    public Long getUpdated() {
+      return updated;
+    }
+
+    public Long getCreated() {
+      return created;
+    }
+
+    public Long getDeleted() {
+      return deleted;
+    }
   }
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  public static class Error {
+    @JsonProperty("type")
+    private String type;
+    @JsonProperty("reason")
+    private String reason;
+    @JsonProperty("phase")
+    private String phase;
+
+    protected Error() {
+    }
+
+    public Error(String type, String reason, String phase) {
+      this.type = type;
+      this.reason = reason;
+      this.phase = phase;
+    }
+
+    public String getType() {
+      return type;
+    }
+
+    public String getReason() {
+      return reason;
+    }
+
+    public String getPhase() {
+      return phase;
+    }
+
+    @Override
+    public String toString() {
+      return "Error{" +
+        "type='" + type + '\'' +
+        ", reason='" + reason + '\'' +
+        ", phase='" + phase + '\'' +
+        '}';
+    }
+  }
+
 }

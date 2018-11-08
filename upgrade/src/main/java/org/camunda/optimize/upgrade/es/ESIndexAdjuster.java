@@ -174,6 +174,11 @@ public class ESIndexAdjuster {
         if (response.getStatusLine().getStatusCode() == 200) {
           TaskResponse taskResponse = objectMapper.readValue(response.getEntity().getContent(), TaskResponse.class);
 
+          if (taskResponse.getError() != null) {
+            logger.error("Reindex batch failed: {}", taskResponse.getError().toString());
+            throw new UpgradeRuntimeException(taskResponse.getError().toString());
+          }
+
           int currentProgress = new Double(taskResponse.getProgress() * 100.0).intValue();
           if (currentProgress != progress) {
             progress = currentProgress;
