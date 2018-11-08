@@ -109,7 +109,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
     assertThat(resultReportDataDto.getView().getEntity(), is(VIEW_PROCESS_INSTANCE_ENTITY));
     assertThat(resultReportDataDto.getView().getProperty(), is(VIEW_DURATION_PROPERTY));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(GROUP_BY_NONE_TYPE));
-    assertThat(resultReportDataDto.getProcessPart(), is(notNullValue()));
+    assertThat(resultReportDataDto.getParameters().getProcessPart(), is(notNullValue()));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult(), is(1000L));
   }
@@ -161,7 +161,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
     assertThat(resultReportDataDto.getView().getEntity(), is(VIEW_PROCESS_INSTANCE_ENTITY));
     assertThat(resultReportDataDto.getView().getProperty(), is(VIEW_DURATION_PROPERTY));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(GROUP_BY_NONE_TYPE));
-    assertThat(resultReportDataDto.getProcessPart(), is(notNullValue()));
+    assertThat(resultReportDataDto.getParameters().getProcessPart(), is(notNullValue()));
     assertThat(result.getResult(), is(notNullValue()));
     assertThat(result.getResult(), is(1000L));
   }

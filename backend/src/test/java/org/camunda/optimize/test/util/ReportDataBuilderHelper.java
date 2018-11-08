@@ -4,7 +4,8 @@ import org.camunda.optimize.dto.optimize.query.report.ViewDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.processpart.ProcessPartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.parameters.ParametersDto;
+import org.camunda.optimize.dto.optimize.query.report.single.parameters.ProcessPartDto;
 
 import java.util.Arrays;
 
@@ -20,15 +21,12 @@ import static org.camunda.optimize.service.es.report.command.util.ReportConstant
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FREQUENCY_PROPERTY;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_RAW_DATA_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createAverageFlowNodeDurationView;
-import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator
-  .createAverageProcessInstanceDurationView;
-import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator
-  .createCountProcessInstanceFrequencyView;
+import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createAverageProcessInstanceDurationView;
+import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createCountProcessInstanceFrequencyView;
 import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createMaxFlowNodeDurationView;
 import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createMaxProcessInstanceDurationView;
 import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createMedianFlowNodeDurationView;
-import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator
-  .createMedianProcessInstanceDurationView;
+import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createMedianProcessInstanceDurationView;
 import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createMinFlowNodeDurationView;
 import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator.createMinProcessInstanceDurationView;
 
@@ -260,7 +258,7 @@ public class ReportDataBuilderHelper {
     reportData.setVisualization(visualization);
     reportData.setView(viewDto);
     reportData.setGroupBy(groupByDto);
-    reportData.setProcessPart(processPartDto);
+    reportData.setParameters(new ParametersDto(processPartDto));
     return reportData;
   }
 
@@ -339,7 +337,7 @@ public class ReportDataBuilderHelper {
       variableName,
       variableType
     );
-    reportData.setProcessPart(createProcessPart(startFlowNodeId, endFlowNodeId));
+    reportData.getParameters().setProcessPart(createProcessPart(startFlowNodeId, endFlowNodeId));
     return reportData;
   }
 
@@ -377,7 +375,7 @@ public class ReportDataBuilderHelper {
       variableName,
       variableType
     );
-    reportData.setProcessPart(createProcessPart(startFlowNodeId, endFlowNodeId));
+    reportData.getParameters().setProcessPart(createProcessPart(startFlowNodeId, endFlowNodeId));
     return reportData;
   }
 
@@ -415,7 +413,7 @@ public class ReportDataBuilderHelper {
       variableName,
       variableType
     );
-    reportData.setProcessPart(createProcessPart(startFlowNodeId, endFlowNodeId));
+    reportData.getParameters().setProcessPart(createProcessPart(startFlowNodeId, endFlowNodeId));
     return reportData;
   }
 
@@ -454,7 +452,7 @@ public class ReportDataBuilderHelper {
       variableName,
       variableType
     );
-    reportData.setProcessPart(createProcessPart(startFlowNodeId, endFlowNodeId));
+    reportData.getParameters().setProcessPart(createProcessPart(startFlowNodeId, endFlowNodeId));
     return reportData;
   }
 
@@ -618,7 +616,7 @@ public class ReportDataBuilderHelper {
       view,
       groupByDto
     );
-    reportDataViewRaw.setProcessPart(processPartDto);
+    reportDataViewRaw.getParameters().setProcessPart(processPartDto);
     return reportDataViewRaw;
   }
 
@@ -657,7 +655,7 @@ public class ReportDataBuilderHelper {
       view,
       groupByDto
     );
-    reportDataViewRaw.setProcessPart(processPartDto);
+    reportDataViewRaw.getParameters().setProcessPart(processPartDto);
     return reportDataViewRaw;
   }
 
@@ -696,7 +694,7 @@ public class ReportDataBuilderHelper {
       view,
       groupByDto
     );
-    reportDataViewRaw.setProcessPart(processPartDto);
+    reportDataViewRaw.getParameters().setProcessPart(processPartDto);
     return reportDataViewRaw;
   }
 

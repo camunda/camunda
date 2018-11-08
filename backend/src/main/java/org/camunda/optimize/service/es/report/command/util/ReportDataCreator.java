@@ -3,7 +3,7 @@ package org.camunda.optimize.service.es.report.command.util;
 import org.camunda.optimize.dto.optimize.query.report.ViewDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.processpart.ProcessPartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.parameters.ProcessPartDto;
 
 import static org.camunda.optimize.service.es.report.command.util.GroupByDtoCreator.createGroupByFlowNode;
 import static org.camunda.optimize.service.es.report.command.util.GroupByDtoCreator.createGroupByNone;
@@ -80,7 +80,7 @@ public class ReportDataCreator {
     SingleReportDataDto reportData = new SingleReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
-    reportData.setProcessPart(new ProcessPartDto());
+    reportData.getParameters().setProcessPart(new ProcessPartDto());
     return reportData;
   }
 
@@ -101,7 +101,7 @@ public class ReportDataCreator {
     SingleReportDataDto reportData = new SingleReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
-    reportData.setProcessPart(new ProcessPartDto());
+    reportData.getParameters().setProcessPart(new ProcessPartDto());
     return reportData;
   }
 
@@ -122,7 +122,7 @@ public class ReportDataCreator {
     SingleReportDataDto reportData = new SingleReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
-    reportData.setProcessPart(new ProcessPartDto());
+    reportData.getParameters().setProcessPart(new ProcessPartDto());
     return reportData;
   }
 
@@ -143,7 +143,7 @@ public class ReportDataCreator {
     SingleReportDataDto reportData = new SingleReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
-    reportData.setProcessPart(new ProcessPartDto());
+    reportData.getParameters().setProcessPart(new ProcessPartDto());
     return reportData;
   }
 
@@ -164,7 +164,7 @@ public class ReportDataCreator {
     SingleReportDataDto reportData = new SingleReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
-    reportData.setProcessPart(new ProcessPartDto());
+    reportData.getParameters().setProcessPart(new ProcessPartDto());
     return reportData;
   }
 
@@ -185,7 +185,7 @@ public class ReportDataCreator {
     SingleReportDataDto reportData = new SingleReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
-    reportData.setProcessPart(new ProcessPartDto());
+    reportData.getParameters().setProcessPart(new ProcessPartDto());
     return reportData;
   }
 
@@ -206,7 +206,7 @@ public class ReportDataCreator {
     SingleReportDataDto reportData = new SingleReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
-    reportData.setProcessPart(new ProcessPartDto());
+    reportData.getParameters().setProcessPart(new ProcessPartDto());
     return reportData;
   }
 
@@ -227,7 +227,7 @@ public class ReportDataCreator {
     SingleReportDataDto reportData = new SingleReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
-    reportData.setProcessPart(new ProcessPartDto());
+    reportData.getParameters().setProcessPart(new ProcessPartDto());
     return reportData;
   }
 
@@ -243,7 +243,7 @@ public class ReportDataCreator {
 
   public static SingleReportDataDto createAverageProcessInstanceDurationGroupByVariableWithProcessPartReport() {
     SingleReportDataDto reportData = createAverageProcessInstanceDurationGroupByVariableReport();
-    reportData.setProcessPart(new ProcessPartDto());
+    reportData.getParameters().setProcessPart(new ProcessPartDto());
     return reportData;
   }
 
@@ -259,7 +259,7 @@ public class ReportDataCreator {
 
   public static SingleReportDataDto createMinProcessInstanceDurationGroupByVariableWithProcessPartReport() {
     SingleReportDataDto reportData = createMinProcessInstanceDurationGroupByVariableReport();
-    reportData.setProcessPart(new ProcessPartDto());
+    reportData.getParameters().setProcessPart(new ProcessPartDto());
     return reportData;
   }
 
@@ -275,7 +275,7 @@ public class ReportDataCreator {
 
   public static SingleReportDataDto createMaxProcessInstanceDurationGroupByVariableWithProcessPartReport() {
     SingleReportDataDto reportData = createMaxProcessInstanceDurationGroupByVariableReport();
-    reportData.setProcessPart(new ProcessPartDto());
+    reportData.getParameters().setProcessPart(new ProcessPartDto());
     return reportData;
   }
 
@@ -291,7 +291,7 @@ public class ReportDataCreator {
 
   public static SingleReportDataDto createMedianProcessInstanceDurationGroupByVariableWithProcessPartReport() {
     SingleReportDataDto reportData = createMedianProcessInstanceDurationGroupByVariableReport();
-    reportData.setProcessPart(new ProcessPartDto());
+    reportData.getParameters().setProcessPart(new ProcessPartDto());
     return reportData;
   }
 

@@ -12,7 +12,7 @@ import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto
 import org.camunda.optimize.dto.optimize.query.report.single.filter.CompletedInstancesOnlyFilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.FilterDto;
 import org.camunda.optimize.dto.optimize.query.report.single.filter.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.processpart.ProcessPartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.parameters.ProcessPartDto;
 import org.camunda.optimize.service.es.report.command.util.ReportConstants;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;

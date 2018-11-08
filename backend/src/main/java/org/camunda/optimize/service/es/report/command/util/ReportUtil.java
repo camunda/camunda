@@ -1,9 +1,9 @@
 package org.camunda.optimize.service.es.report.command.util;
 
 import org.camunda.optimize.dto.optimize.query.report.Combinable;
+import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.result.SingleReportResultDto;
 import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.elasticsearch.search.aggregations.bucket.histogram.DateHistogramInterval;
@@ -27,7 +27,7 @@ public class ReportUtil {
     reportDataDto.setView(from.getView());
     reportDataDto.setGroupBy(from.getGroupBy());
     reportDataDto.setFilter(from.getFilter());
-    reportDataDto.setProcessPart(from.getProcessPart());
+    reportDataDto.setParameters(from.getParameters());
     reportDataDto.setVisualization(from.getVisualization());
     reportDataDto.setConfiguration(from.getConfiguration());
     to.setData(reportDataDto);

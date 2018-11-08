@@ -1,4 +1,4 @@
-package org.camunda.optimize.dto.optimize.query.report.single.processpart;
+package org.camunda.optimize.dto.optimize.query.report.single.parameters;
 
 public class ProcessPartDto {
 

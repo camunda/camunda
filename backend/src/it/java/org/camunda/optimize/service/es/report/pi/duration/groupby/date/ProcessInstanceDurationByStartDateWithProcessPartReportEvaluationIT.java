@@ -126,7 +126,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
     assertThat(resultReportDataDto.getView().getEntity(), is(VIEW_PROCESS_INSTANCE_ENTITY));
     assertThat(resultReportDataDto.getView().getProperty(), is(VIEW_DURATION_PROPERTY));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(GROUP_BY_START_DATE_TYPE));
-    assertThat(resultReportDataDto.getProcessPart(), is(notNullValue()));
+    assertThat(resultReportDataDto.getParameters().getProcessPart(), is(notNullValue()));
     Map<String, Long> resultMap = result.getResult();
     OffsetDateTime startOfToday = new Date().toInstant().atOffset(ZoneOffset.UTC).truncatedTo(ChronoUnit.DAYS);
     assertThat(resultMap.containsKey(localDateTimeToString(startOfToday)), is(true));
@@ -184,7 +184,7 @@ public class ProcessInstanceDurationByStartDateWithProcessPartReportEvaluationIT
     assertThat(resultReportDataDto.getView().getEntity(), is(VIEW_PROCESS_INSTANCE_ENTITY));
     assertThat(resultReportDataDto.getView().getProperty(), is(VIEW_DURATION_PROPERTY));
     assertThat(resultReportDataDto.getGroupBy().getType(), is(GROUP_BY_START_DATE_TYPE));
-    assertThat(resultReportDataDto.getProcessPart(), is(notNullValue()));
+    assertThat(resultReportDataDto.getParameters().getProcessPart(), is(notNullValue()));
     assertThat(result.getResult(), is(notNullValue()));
     Map<String, Long> resultMap = result.getResult();
     OffsetDateTime startOfToday = new Date().toInstant().atOffset(ZoneOffset.UTC).truncatedTo(ChronoUnit.DAYS);
