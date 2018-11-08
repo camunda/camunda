@@ -5,11 +5,10 @@ import {parseFilterForRequest} from 'modules/utils/filter';
 export function parseQueryString(queryString = '') {
   var params = {};
 
-  const replacedQueryString = queryString.replace(/%22/g, '"').substring(1);
-
-  const decodedQueryString = decodeURIComponent(replacedQueryString);
-
-  const queries = decodedQueryString.split('&');
+  const queries = queryString
+    .replace(/%22/g, '"')
+    .substring(1)
+    .split('&');
 
   queries.forEach((item, index) => {
     const [paramKey, paramValue] = queries[index].split('=');

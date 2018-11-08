@@ -24,7 +24,7 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
         isActive={false}
         onClick={[MockFunction]}
         title="View 0 Running Instances"
-        to="/instances?filter=%7B%22active%22%3Atrue%2C%22incidents%22%3Atrue%7D"
+        to="/instances?filter={\\"active\\":true,\\"incidents\\":true}"
       >
         <span>
           Running Instances
@@ -44,7 +44,7 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
         isActive={false}
         onClick={[MockFunction]}
         title="View 0 Instances in Filters"
-        to="/instances?filter=%7B%7D"
+        to="/instances?filter={}"
       >
         <span>
           Filters
@@ -64,7 +64,7 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
         isActive={false}
         onClick={[MockFunction]}
         title="View 0 Incidents"
-        to="/instances?filter=%7B%22incidents%22%3Atrue%7D"
+        to="/instances?filter={\\"incidents\\":true}"
       >
         <span>
           Incidents
@@ -84,7 +84,7 @@ exports[`Header should contain links to dashboard and instances page 1`] = `
         isActive={false}
         onClick={[MockFunction]}
         title="View 0 Selections"
-        to="/instances?filter=%7B%7D"
+        to="/instances?filter={}"
       >
         <span>
           Selections

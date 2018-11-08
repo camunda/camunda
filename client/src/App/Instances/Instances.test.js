@@ -23,9 +23,7 @@ const storeStateLocallyMock = jest.fn();
 const InstancesWithRunningFilter = (
   <Instances
     location={{
-      search: `?filter=${encodeURIComponent(
-        '{"active": true, "incidents": true}'
-      )}`
+      search: '?filter={"active": false, "incidents": true}'
     }}
     getStateLocally={() => {
       return {filterCount: 0};
@@ -37,9 +35,8 @@ const InstancesWithRunningFilter = (
 const InstancesWithAllFilters = (
   <Instances
     location={{
-      search: `?filter=${encodeURIComponent(
-        '{"active":false,"incidents":true,"ids":"424242, 434343","errorMessage":"lorem  ipsum","startDate":"08 October 2018","endDate":"10-10-2018"}'
-      )}`
+      search:
+        '?filter={"active":false,"incidents":true,"ids":"424242, 434343","errorMessage":"lorem  ipsum","startDate":"08 October 2018","endDate":"10-10-2018"}'
     }}
     getStateLocally={() => {
       return {filterCount: 0};
@@ -51,11 +48,7 @@ const InstancesWithAllFilters = (
 
 const InstancesWithInvalidRunningFilter = (
   <Instances
-    location={{
-      search: `?filter=${encodeURIComponent(
-        '{"active": fallse, "incidents": tsrue}'
-      )}`
-    }}
+    location={{search: '?filter={"active": fallse, "incidents": tsrue}'}}
     getStateLocally={() => {
       return {filterCount: 0};
     }}
@@ -279,56 +272,6 @@ describe('Instances', () => {
         );
       });
 
-      describe('updating the url', () => {
-        it('should update the url with a new filter value', async () => {
-          // given
-          const node = shallow(InstancesWithRunningFilter);
-
-          //when
-          await flushPromises();
-          node.update();
-
-          const setFilterInURLSpy = jest.spyOn(
-            node.instance(),
-            'setFilterInURL'
-          );
-          const resetSelectionsSpy = jest.spyOn(
-            node.instance(),
-            'resetSelections'
-          );
-          node.instance().handleFilterChange({active: false});
-
-          // then
-          expect(setFilterInURLSpy).toHaveBeenCalledWith({
-            active: false,
-            incidents: true
-          });
-          expect(resetSelectionsSpy).toHaveBeenCalled();
-
-          setFilterInURLSpy.mockRestore();
-          resetSelectionsSpy.mockRestore();
-        });
-
-        it('should not update the url when a value is similar', async () => {
-          // given
-          const node = shallow(InstancesWithRunningFilter);
-
-          //when
-          await flushPromises();
-          node.update();
-
-          const setFilterInURLSpy = jest.spyOn(
-            node.instance(),
-            'setFilterInURL'
-          );
-          node.instance().handleFilterChange({active: true});
-
-          expect(setFilterInURLSpy).toHaveBeenCalledTimes(0);
-
-          setFilterInURLSpy.mockRestore();
-        });
-      });
-
       describe('resetFilter', () => {
         it('should reset filter & diagram to the default value', () => {
           // given
@@ -337,9 +280,7 @@ describe('Instances', () => {
             <Instances
               storeStateLocally={storeStateLocallyMock}
               location={{
-                search: `?filter=${encodeURIComponent(
-                  '{"active": false, "incidents": true}'
-                )}`
+                search: '?filter={"active": false, "incidents": true}'
               }}
               getStateLocally={() => {
                 return {filterCount: 0};
@@ -466,9 +407,7 @@ describe('Instances', () => {
           <Instances
             storeStateLocally={() => {}}
             location={{
-              search: `?filter=${encodeURIComponent(
-                '{"active": false, "incidents": true}'
-              )}`
+              search: '?filter={"active": false, "incidents": true}'
             }}
             getStateLocally={() => {
               return {filterCount: 0};
@@ -487,41 +426,13 @@ describe('Instances', () => {
         expect(api.fetchWorkflowInstancesStatistics).toHaveBeenCalledTimes(0);
       });
 
-      it('should set state with statistics when diagramWorkflow is set', async () => {
-        const node = shallow(
-          <Instances
-            storeStateLocally={() => {}}
-            location={{
-              search: `?filter=${encodeURIComponent(
-                '{"active": false, "incidents": true, "workflow": "demoProcess", "version": "3"}'
-              )}`
-            }}
-            getStateLocally={() => {
-              return {filterCount: 0};
-            }}
-            history={{push: () => {}}}
-          />
-        );
-        //when
-        await flushPromises();
-        node.update();
-
-        node.instance().fetchDiagramStatistics();
-        await flushPromises();
-        node.update();
-        expect(api.fetchWorkflowInstancesStatistics).toHaveBeenCalledTimes(1);
-        expect(node.state().statistics).toEqual(statistics);
-      });
-
       it('should fetch diagram statistics when instance state in filter changes', async () => {
         // given
         const node = shallow(
           <Instances
             storeStateLocally={() => {}}
             location={{
-              search: `?filter=${encodeURIComponent(
-                '{"active": false, "incidents": true}'
-              )}`
+              search: '?filter={"active": false, "incidents": true}'
             }}
             getStateLocally={() => {
               return {filterCount: 0};
@@ -536,9 +447,7 @@ describe('Instances', () => {
         // chage state filters in the url
         node.setProps({
           location: {
-            search: `?filter=${encodeURIComponent(
-              '{"active":true,"incidents":true}'
-            )}`
+            search: '?filter={"active":true,"incidents":true}'
           }
         });
         const fetchDiagramStatistics = jest.spyOn(
@@ -560,9 +469,7 @@ describe('Instances', () => {
           <Instances
             storeStateLocally={() => {}}
             location={{
-              search: `?filter=${encodeURIComponent(
-                '{"active": false, "incidents": true}'
-              )}`
+              search: '?filter={"active": false, "incidents": true}'
             }}
             getStateLocally={() => {
               return {filterCount: 0};
@@ -577,9 +484,8 @@ describe('Instances', () => {
         // chage state filters in the url
         node.setProps({
           location: {
-            search: `?filter=${encodeURIComponent(
-              '{"active":false,"incidents":true, "activityId": "x"}'
-            )}`
+            search:
+              '?filter={"active":false,"incidents":true, "activityId": "x"}'
           }
         });
         const fetchDiagramStatistics = jest.spyOn(

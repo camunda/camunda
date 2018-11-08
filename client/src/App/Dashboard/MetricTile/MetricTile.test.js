@@ -29,9 +29,7 @@ describe('<MetricTile>', () => {
 
   it('should return a link with the active filters in place', () => {
     const node = shallow(<MetricTile {...mockProps} />);
-    expect(node.props().to).toEqual(
-      `/instances?filter=${encodeURIComponent('{"active":true}')}`
-    );
+    expect(node.props().to).toEqual('/instances?filter={"active":true}');
   });
 
   it('should return a link with the running filters in place', () => {
@@ -39,9 +37,7 @@ describe('<MetricTile>', () => {
       <MetricTile {...mockProps} type="running" label="Running" />
     );
     expect(node.props().to).toEqual(
-      `/instances?filter=${encodeURIComponent(
-        '{"active":true,"incidents":true}'
-      )}`
+      '/instances?filter={"active":true,"incidents":true}'
     );
   });
 
@@ -49,8 +45,6 @@ describe('<MetricTile>', () => {
     const node = shallow(
       <MetricTile {...mockProps} type="incidents" label="Incidents" />
     );
-    expect(node.props().to).toEqual(
-      `/instances?filter=${encodeURIComponent('{"incidents":true}')}`
-    );
+    expect(node.props().to).toEqual('/instances?filter={"incidents":true}');
   });
 });
