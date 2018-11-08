@@ -1,24 +1,16 @@
 import React from 'react';
-import {mount, shallow} from 'enzyme';
+import {shallow} from 'enzyme';
 
-import Table from './Table';
+import WrappedTable from './Table';
 import {processRawData} from 'services';
 
 import {getCamundaEndpoints, getRelativeValue} from './service';
 
-jest.mock('components', () => {
-  return {
-    Table: ({head, body}) => <div>{JSON.stringify({head, body})}</div>,
-    LoadingIndicator: props => (
-      <div className="sk-circle" {...props}>
-        Loading...
-      </div>
-    )
-  };
-});
-
 jest.mock('services', () => {
+  const rest = jest.requireActual('services');
+
   return {
+    ...rest,
     processRawData: jest.fn()
   };
 });
@@ -55,23 +47,31 @@ jest.mock('./service', () => {
   };
 });
 
+const Table = WrappedTable.WrappedComponent;
+
+const props = {
+  mightFail: jest.fn().mockImplementation((a, b) => b(a)),
+  error: ''
+};
+
 it('should get the camunda endpoints for raw data', () => {
   getCamundaEndpoints.mockClear();
-  mount(<Table configuration={{}} data={[{}]} />);
+  shallow(<Table {...props} configuration={{}} data={[{}]} />);
 
   expect(getCamundaEndpoints).toHaveBeenCalled();
 });
 
 it('should not get the camunda endpoints for non-raw-data tables', () => {
   getCamundaEndpoints.mockClear();
-  mount(<Table configuration={{}} data={{}} />);
+  shallow(<Table {...props} configuration={{}} data={{}} />);
 
   expect(getCamundaEndpoints).not.toHaveBeenCalled();
 });
 
 it('should display data for key-value pairs', async () => {
-  const node = await mount(
+  const node = await shallow(
     <Table
+      {...props}
       data={{
         a: 1,
         b: 2,
@@ -82,20 +82,16 @@ it('should display data for key-value pairs', async () => {
     />
   );
 
-  expect(node).toIncludeText('a');
-  expect(node).toIncludeText('b');
-  expect(node).toIncludeText('c');
-  expect(node).toIncludeText('1');
-  expect(node).toIncludeText('2');
-  expect(node).toIncludeText('3');
+  expect(node.find('Table').prop('body')).toEqual([['a', 1], ['b', 2], ['c', 3]]);
 });
 
 it('should display the relative percentage for frequency views', () => {
   getRelativeValue.mockClear();
   getRelativeValue.mockReturnValue('12.3%');
 
-  const node = mount(
+  const node = shallow(
     <Table
+      {...props}
       data={{
         a: 1,
         b: 2,
@@ -113,12 +109,13 @@ it('should display the relative percentage for frequency views', () => {
   expect(getRelativeValue).toHaveBeenCalledWith(2, 5);
   expect(getRelativeValue).toHaveBeenCalledWith(3, 5);
 
-  expect(node).toIncludeText('12.3%');
+  expect(node.find('Table').prop('body')[0][2]).toBe('12.3%');
 });
 
 it('should process raw data', async () => {
-  await mount(
+  await shallow(
     <Table
+      {...props}
       data={[
         {prop1: 'foo', prop2: 'bar', variables: {innerProp: 'bla'}},
         {prop1: 'asdf', prop2: 'ghjk', variables: {innerProp: 'ruvnvr'}}
@@ -132,30 +129,36 @@ it('should process raw data', async () => {
 });
 
 it('should display an error message for a non-object result (single number)', async () => {
-  const node = await mount(
-    <Table data={7} errorMessage="Error" formatter={v => v} configuration={{}} />
+  const node = await shallow(
+    <Table {...props} data={7} errorMessage="Error" formatter={v => v} configuration={{}} />
   );
 
-  expect(node).toIncludeText('Error');
+  expect(node.find('ReportBlankSlate')).toBePresent();
+  expect(node.find('ReportBlankSlate').prop('message')).toBe('Error');
 });
 
 it('should display an error message if no data is provided', async () => {
-  const node = await mount(<Table errorMessage="Error" formatter={v => v} configuration={{}} />);
+  const node = await shallow(
+    <Table {...props} errorMessage="Error" formatter={v => v} configuration={{}} />
+  );
 
-  expect(node).toIncludeText('Error');
+  expect(node.find('ReportBlankSlate')).toBePresent();
+  expect(node.find('ReportBlankSlate').prop('message')).toBe('Error');
 });
 
 it('should display an error message if data is null', async () => {
-  const node = await mount(
-    <Table data={null} errorMessage="Error" formatter={v => v} configuration={{}} />
+  const node = await shallow(
+    <Table {...props} data={null} errorMessage="Error" formatter={v => v} configuration={{}} />
   );
 
-  expect(node).toIncludeText('Error');
+  expect(node.find('ReportBlankSlate')).toBePresent();
+  expect(node.find('ReportBlankSlate').prop('message')).toBe('Error');
 });
 
 it('should not display an error message if data is valid', async () => {
-  const node = await mount(
+  const node = await shallow(
     <Table
+      {...props}
       data={[
         {prop1: 'foo', prop2: 'bar', variables: {innerProp: 'bla'}},
         {prop1: 'asdf', prop2: 'ghjk', variables: {innerProp: 'ruvnvr'}}
@@ -166,12 +169,13 @@ it('should not display an error message if data is valid', async () => {
     />
   );
 
-  expect(node).not.toIncludeText('Error');
+  expect(node.find('ReportBlankSlate')).not.toBePresent();
 });
 
 it('should format data according to the provided formatter', async () => {
-  const node = await mount(
+  const node = await shallow(
     <Table
+      {...props}
       data={{
         a: 1,
         b: 2,
@@ -182,13 +186,11 @@ it('should format data according to the provided formatter', async () => {
     />
   );
 
-  expect(node).toIncludeText('2');
-  expect(node).toIncludeText('4');
-  expect(node).toIncludeText('6');
+  expect(node.find('Table').prop('body')).toEqual([['a', 2], ['b', 4], ['c', 6]]);
 });
 
 it('should return correct labels and body when combining to table report', async () => {
-  const props = {
+  const dataProps = {
     data: [
       {
         a: 1,
@@ -209,7 +211,7 @@ it('should return correct labels and body when combining to table report', async
     configuration: {}
   };
 
-  const node = await mount(shallow(<Table {...props} />).get(0));
+  const node = await shallow(<Table {...props} {...dataProps} />);
   expect(node.instance().processCombinedData()).toEqual({
     head: [
       'key',
@@ -222,4 +224,24 @@ it('should return correct labels and body when combining to table report', async
       ['c', 3, '12.3%', 3, '12.3%']
     ]
   });
+});
+
+it('should not include a column if it is hidden in the configuration', () => {
+  getRelativeValue.mockClear();
+  getRelativeValue.mockReturnValue('12.3%');
+
+  const node = shallow(
+    <Table
+      {...props}
+      data={{
+        a: 1,
+        b: 2,
+        c: 3
+      }}
+      configuration={{hideAbsoluteValue: true}}
+      property="frequency"
+    />
+  );
+
+  expect(node.find('Table').prop('body')).toEqual([['a', '12.3%'], ['b', '12.3%'], ['c', '12.3%']]);
 });

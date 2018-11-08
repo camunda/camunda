@@ -11,6 +11,7 @@ jest.mock('./visualizations', () => {
     propA: 'abc',
     propB: 1
   };
+  typeA.onUpdate = jest.fn().mockReturnValue({prop: 'updateValue'});
 
   const typeB = () => null;
   typeB.defaults = {
@@ -44,4 +45,14 @@ it('should reset to defaults based on the defaults provided by the visualization
   node.find(Button).simulate('click');
 
   expect(spy).toHaveBeenCalledWith({configuration: {propA: 'abc', propB: 1}});
+});
+
+it('should call the onUpdate method of the component and propagate changes', () => {
+  const spy = jest.fn();
+  const node = shallow(<Configuration type="typeA" onChange={spy} configuration={{}} />);
+
+  node.setProps({report: 'some new report'});
+
+  expect(typeA.onUpdate).toHaveBeenCalled();
+  expect(spy).toHaveBeenCalledWith({configuration: {prop: 'updateValue'}});
 });

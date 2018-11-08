@@ -39,5 +39,7 @@ export default Component => {
     Component.name ||
     'Component'}ErrorHandler`;
 
+  WithErrorHandling.WrappedComponent = Component;
+
   return WithErrorHandling;
 };

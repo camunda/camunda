@@ -1,0 +1,26 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should match snapshot 1`] = `
+<div
+  className="RelativeAbsoluteSelection"
+>
+  <div
+    className="entry"
+  >
+    <Switch
+      checked={true}
+      onChange={[Function]}
+    />
+    Show Absolute Value
+  </div>
+  <div
+    className="entry"
+  >
+    <Switch
+      checked={true}
+      onChange={[Function]}
+    />
+    Show Relative Value
+  </div>
+</div>
+`;
