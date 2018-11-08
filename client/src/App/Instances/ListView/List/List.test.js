@@ -1,7 +1,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {EXPAND_STATE, SORT_ORDER} from 'modules/constants';
+import {EXPAND_STATE, SORT_ORDER, DEFAULT_FILTER} from 'modules/constants';
 import Checkbox from 'modules/components/Checkbox';
 import Table from 'modules/components/Table';
 import StateIcon from 'modules/components/StateIcon';
@@ -295,6 +295,21 @@ describe('List', () => {
         // then
         expect(node.state().rowsToDisplay).toBe(expectedRows);
         expect(mockProps.onEntriesPerPageChange).toBeCalledWith(expectedRows);
+      });
+    });
+
+    describe('sorting', () => {
+      it('should reset sorting when endDate sort is active and has no finished instances', () => {
+        const mockPropsWithEndDateSorting = {
+          ...mockProps,
+          sorting: {sortBy: 'endDate', sortOrder: SORT_ORDER.ASC}
+        };
+
+        const node = shallow(<List {...mockPropsWithEndDateSorting} />);
+        node.setProps({filter: DEFAULT_FILTER});
+        node.update();
+
+        expect(mockProps.onSort).toHaveBeenCalledWith('workflowName');
       });
     });
   });

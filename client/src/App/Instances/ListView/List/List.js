@@ -47,15 +47,21 @@ export default class List extends React.Component {
     this.recalculateHeight();
   }
 
-  componentDidUpdate({expandState: prevExpandState}) {
-    const {expandState} = this.props;
+  componentDidUpdate(prevProps) {
+    const {filter, expandState} = this.props;
+    const listHasFinishedInstances = filter.canceled || filter.completed;
 
     // only call recalculateHeight if the expandedId changes and the pane is not collapsed
     if (
-      prevExpandState !== expandState &&
+      prevProps.expandState !== expandState &&
       expandState !== EXPAND_STATE.COLLAPSED
     ) {
       this.recalculateHeight();
+    }
+
+    // reset to default sorting, as endDate sorting is disabled
+    if (!listHasFinishedInstances && this.props.sorting.sortBy === 'endDate') {
+      this.props.onSort('workflowName');
     }
   }
 
@@ -153,6 +159,8 @@ export default class List extends React.Component {
 
   renderTableHead() {
     const isListEmpty = this.props.data.length === 0;
+    const listHasFinishedInstances =
+      this.props.filter.canceled || this.props.filter.completed;
     return (
       <THead>
         <TR>
@@ -208,7 +216,7 @@ export default class List extends React.Component {
               sortKey="endDate"
               sorting={this.props.sorting}
               handleSorting={this.props.onSort}
-              disabled={isListEmpty}
+              disabled={isListEmpty || !listHasFinishedInstances}
             />
           </TH>
           <Styled.Th>Actions</Styled.Th>
