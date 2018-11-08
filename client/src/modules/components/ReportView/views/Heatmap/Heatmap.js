@@ -28,7 +28,8 @@ const Heatmap = props => {
       <HeatmapOverlay
         key="heatmap"
         data={heat}
-        alwaysShow={props.alwaysShowTooltips}
+        hideAbsoluteValue={props.hideAbsoluteValue}
+        hideRelativeValue={props.hideRelativeValue}
         formatter={(_, id) => {
           const node = document.createElement('div');
 
@@ -62,13 +63,17 @@ const Heatmap = props => {
     heatmapComponent = (
       <HeatmapOverlay
         data={data}
-        alwaysShow={props.alwaysShowTooltips}
+        hideAbsoluteValue={props.hideAbsoluteValue}
+        hideRelativeValue={props.hideRelativeValue}
         formatter={data => {
-          if (props.property === 'frequency') {
-            return `${props.formatter(data)}\u00A0(${getRelativeValue(
-              data,
-              props.processInstanceCount
-            )})`;
+          const alwaysShow = !props.hideAbsoluteValue || !props.hideRelativeValue;
+
+          if (props.property === 'frequency' && (!props.hideRelativeValue || !alwaysShow)) {
+            const relativeOnly = props.hideAbsoluteValue && !props.hideRelativeValue;
+            const relativeValue = getRelativeValue(data, props.processInstanceCount);
+
+            if (relativeOnly) return relativeValue;
+            return `${props.formatter(data)}\u00A0(${relativeValue})`;
           } else {
             return props.formatter(data);
           }

@@ -153,16 +153,6 @@ export default class ReportControlPanel extends React.Component {
             onChange={this.props.updateReport}
             report={this.props.reportResult}
           />
-          {this.props.visualization === 'heat' && (
-            <li>
-              <Button
-                active={this.props.configuration.alwaysShowTooltips}
-                onClick={this.toggleAllTooltips}
-              >
-                Always show tooltips
-              </Button>
-            </li>
-          )}
           {this.shouldDisplayProcessPart() && (
             <li>
               <ProcessPart
@@ -181,15 +171,6 @@ export default class ReportControlPanel extends React.Component {
   shouldDisplayProcessPart = () => {
     const {view} = this.props;
     return view && view.entity === 'processInstance' && view.property === 'duration';
-  };
-
-  toggleAllTooltips = () => {
-    this.props.updateReport({
-      configuration: {
-        ...this.props.configuration,
-        alwaysShowTooltips: !this.props.configuration.alwaysShowTooltips
-      }
-    });
   };
 
   renderDropdown = (type, config) => {

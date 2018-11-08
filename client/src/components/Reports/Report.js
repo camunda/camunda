@@ -172,10 +172,6 @@ export default withErrorHandling(
         data.processPart = null;
       }
 
-      if (updates.visualization && updates.visualization !== this.state.data.visualization) {
-        data.configuration = {...data.configuration, alwaysShowTooltips: false};
-      }
-
       // if combined report has no reports then reset configuration
       if (this.state.reportType === 'combined' && updates.reportIds && !updates.reportIds.length) {
         data.configuration = {targetValue: null};

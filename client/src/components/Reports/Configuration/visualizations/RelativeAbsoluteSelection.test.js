@@ -20,3 +20,30 @@ it('should call the onChange method with the correct prop and value', () => {
 
   expect(spy).toHaveBeenCalledWith('hideAbsoluteValue', true);
 });
+
+it('disable the reltive selection when relativeDisabled is true', () => {
+  const node = shallow(
+    <RelativeAbsoluteSelection
+      relativeDisabled={true}
+      configuration={{
+        hideAbsoluteValue: false,
+        hideRelativeValue: false
+      }}
+      onchange={() => {}}
+    />
+  );
+
+  expect(
+    node
+      .find('Switch')
+      .at(1)
+      .props().disabled
+  ).toBe(true);
+
+  expect(
+    node
+      .find('Switch')
+      .at(1)
+      .props().title
+  ).toMatch('Relative values are only possible');
+});

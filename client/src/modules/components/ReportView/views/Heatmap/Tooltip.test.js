@@ -32,7 +32,15 @@ it('should create a tooltip', () => {
 
 it('should remove old tooltips on rerendering', () => {
   removeSpy.mockClear();
-  mount(<Tooltip viewer={viewer} data={data} formatter={v => v} />);
+  mount(
+    <Tooltip
+      viewer={viewer}
+      data={data}
+      formatter={v => v}
+      hideAbsoluteValue="true"
+      hideRelativeValue="true"
+    />
+  );
 
   expect(removeSpy).toHaveBeenCalledTimes(1);
 });

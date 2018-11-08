@@ -29,6 +29,14 @@ export default class Configuration extends React.Component {
 
   componentDidUpdate(prevProps) {
     const Component = visualizations[this.props.type];
+    // reset visualization options to default when visualization changes
+    if (
+      (this.props.type === 'heat' || this.props.type === 'table') &&
+      prevProps.type !== this.props.type
+    ) {
+      this.resetToDefaults();
+    }
+
     if (Component && Component.onUpdate) {
       const updates = Component.onUpdate(prevProps, this.props);
       if (updates) {

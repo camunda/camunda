@@ -6,9 +6,9 @@ import './Switch.scss';
 
 export default function Switch(props) {
   return (
-    <label className={classnames('Switch', props.className)}>
+    <label title={props.title} className={classnames('Switch', props.className)}>
       <Input type="checkbox" {...props} className="Switch__Input" />
-      <span className="Switch__Slider--round" />
+      <span className={classnames('Switch__Slider--round', {disabled: props.disabled})} />
     </label>
   );
 }

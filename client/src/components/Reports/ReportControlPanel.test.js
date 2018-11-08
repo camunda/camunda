@@ -180,12 +180,6 @@ it('should show pagination for many variables', () => {
   expect(node.find('.loadMore')).toBePresent();
 });
 
-it('should show an "Always show tooltips" button for heatmaps', () => {
-  const node = shallow(<ReportControlPanel {...data} visualization="heat" />);
-
-  expect(node).toIncludeText('Always show tooltips');
-});
-
 it('should not show an "Always show tooltips" button for other visualizations', () => {
   const node = shallow(<ReportControlPanel {...data} visualization="something" />);
 

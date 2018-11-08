@@ -22,6 +22,10 @@
   background-color: #ccc;
   -webkit-transition: 0.4s;
   transition: 0.4s;
+
+  &.disabled {
+    cursor: not-allowed;
+  }
 }
 
 .Switch__Slider--round:before {
