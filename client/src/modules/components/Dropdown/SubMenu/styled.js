@@ -18,7 +18,6 @@ export const SubMenuButton = themed(styled.button`
   height: 100%;
   padding: 0 10px;
 
-  outline: none;
   border: none;
   border-radius: 0 0 2px 2px;
 

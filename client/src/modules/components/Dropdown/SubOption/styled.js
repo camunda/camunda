@@ -12,7 +12,6 @@ export const OptionButton = themed(styled.button`
   width: 100%;
   padding: 0 10px;
   border: none;
-  outline: none;
 
   /* Color */
   background: none;

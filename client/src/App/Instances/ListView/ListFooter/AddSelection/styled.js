@@ -23,8 +23,6 @@ export const SelectionButton = themed(styled.button`
   font-size: 13px;
   font-weight: 600;
 
-  outline: none;
-
   height: 26px;
   padding: 4px 11px 5px 11px;
 

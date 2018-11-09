@@ -14,7 +14,6 @@ export const Button = themed(styled.button`
 
   /* Display & Box Model */
   border: none;
-  outline: none;
 
   /* Color */
   color: ${({disabled}) =>
