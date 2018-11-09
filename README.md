@@ -20,7 +20,7 @@ Zeebe scales orchestration of workers and microservices using visual workflows. 
 
 ## DISCLAIMER
 
-Zeebe is currently a tech preview and not meant for production use - See [Roadmap](https://github.com/zeebe-io/zeebe/blob/master/ROADMAP.md).
+Zeebe is currently a tech preview and not meant for production use - See [Roadmap](https://zeebe.io/roadmap).
 
 ## Links
 
