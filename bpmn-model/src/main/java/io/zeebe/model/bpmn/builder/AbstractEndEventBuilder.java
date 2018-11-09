@@ -19,9 +19,6 @@ package io.zeebe.model.bpmn.builder;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.EndEvent;
 import io.zeebe.model.bpmn.instance.ErrorEventDefinition;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeMappingType;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebePayloadMappings;
 
 /** @author Sebastian Menski */
 public abstract class AbstractEndEventBuilder<B extends AbstractEndEventBuilder<B>>
@@ -42,21 +39,6 @@ public abstract class AbstractEndEventBuilder<B extends AbstractEndEventBuilder<
   public B error(String errorCode) {
     final ErrorEventDefinition errorEventDefinition = createErrorEventDefinition(errorCode);
     element.getEventDefinitions().add(errorEventDefinition);
-
-    return myself;
-  }
-
-  public B payloadMapping(String source, String target) {
-    return payloadMapping(source, target, ZeebeMappingType.PUT);
-  }
-
-  public B payloadMapping(String source, String target, ZeebeMappingType type) {
-    final ZeebePayloadMappings mappings =
-        getCreateSingleExtensionElement(ZeebePayloadMappings.class);
-    final ZeebeMapping mapping = createChild(mappings, ZeebeMapping.class);
-    mapping.setSource(source);
-    mapping.setTarget(target);
-    mapping.setType(type);
 
     return myself;
   }

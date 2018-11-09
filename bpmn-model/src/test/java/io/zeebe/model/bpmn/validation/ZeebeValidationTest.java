@@ -89,15 +89,6 @@ public class ZeebeValidationTest extends AbstractZeebeValidationTest {
                 ZeebeIoMapping.class,
                 "Output behavior 'none' cannot be used in combination without zeebe:output elements"))
       },
-      {
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .sequenceFlow(b -> b.id("flow").payloadMapping("$.foo", "$.bar"))
-            .endEvent()
-            .done(),
-        singletonList(
-            expect("flow", "Must only have payload mappings if its target is a parallel gateway"))
-      },
     };
   }
 }

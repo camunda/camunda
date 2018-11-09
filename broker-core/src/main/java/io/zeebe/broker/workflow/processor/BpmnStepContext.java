@@ -25,9 +25,7 @@ import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriterImpl;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElement;
-import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.state.ElementInstance;
-import io.zeebe.msgpack.mapping.MsgPackMergeTool;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
@@ -36,7 +34,6 @@ import java.util.function.Consumer;
 public class BpmnStepContext<T extends ExecutableFlowElement> {
 
   private TypedRecord<WorkflowInstanceRecord> record;
-  private ExecutableWorkflow workflow;
   private ExecutableFlowElement element;
   private TypedCommandWriter commandWriter;
   private final EventOutput eventOutput;
@@ -46,11 +43,9 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
   private ElementInstance elementInstance;
 
   private final IncidentRecord incidentCommand = new IncidentRecord();
-  private final MsgPackMergeTool mergeTool;
 
   public BpmnStepContext(EventOutput eventOutput) {
     this.eventOutput = eventOutput;
-    this.mergeTool = new MsgPackMergeTool(4096);
   }
 
   public TypedRecord<WorkflowInstanceRecord> getRecord() {
@@ -75,14 +70,6 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
 
   public void setElement(ExecutableFlowElement element) {
     this.element = element;
-  }
-
-  public ExecutableWorkflow getWorkflow() {
-    return workflow;
-  }
-
-  public void setWorkflow(ExecutableWorkflow workflow) {
-    this.workflow = workflow;
   }
 
   public EventOutput getOutput() {
@@ -125,10 +112,6 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
 
   public Consumer<SideEffectProducer> getSideEffect() {
     return sideEffect;
-  }
-
-  public MsgPackMergeTool getMergeTool() {
-    return mergeTool;
   }
 
   public void raiseIncident(ErrorType errorType, String errorMessage) {

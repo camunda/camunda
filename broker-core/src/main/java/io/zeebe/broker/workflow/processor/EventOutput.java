@@ -91,15 +91,7 @@ public class EventOutput {
     materializedState.storeFailedToken(event);
   }
 
-  public void storeFinishedToken(final TypedRecord<WorkflowInstanceRecord> event) {
-    materializedState.storeFinishedToken(event);
-  }
-
   public void consumeDeferredEvent(long scopeKey, long key) {
     materializedState.consumeStoredRecord(scopeKey, key, Purpose.DEFERRED_TOKEN);
-  }
-
-  public void consumeFinishedToken(long scopeKey, long key) {
-    materializedState.consumeStoredRecord(scopeKey, key, Purpose.FINISHED_TOKEN);
   }
 }

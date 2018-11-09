@@ -33,7 +33,6 @@ public class TransformContext {
   private Map<DirectBuffer, ExecutableWorkflow> workflows = new HashMap<>();
   private Map<DirectBuffer, ExecutableMessage> messages = new HashMap<>();
   private JsonPathQueryCompiler jsonPathQueryCompiler;
-  private MappingCompiler mappingCompiler = new MappingCompiler();
 
   /*
    * set whenever parsing a workflow
@@ -87,9 +86,5 @@ public class TransformContext {
 
   public void setCurrentFlowNodeOutgoingStep(BpmnStep outgoingStep) {
     this.currentFlowNodeOutgoingStep = outgoingStep;
-  }
-
-  public MappingCompiler getMappingCompiler() {
-    return mappingCompiler;
   }
 }

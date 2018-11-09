@@ -25,7 +25,6 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.ConditionExpression;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeInput;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeIoMapping;
-import io.zeebe.model.bpmn.instance.zeebe.ZeebeMapping;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutput;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeSubscription;
 import io.zeebe.model.bpmn.traversal.ModelWalker;
@@ -164,30 +163,6 @@ public class ZeebeRuntimeValidationTest {
                 ZeebeSubscription.class,
                 "JSON path query is invalid: Unexpected json-path token LITERAL"))
       },
-      {
-        // invalid source
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .sequenceFlow(b -> b.id("flow").payloadMapping("notJsonPath", "$.foo"))
-            .endEvent()
-            .done(),
-        Arrays.asList(
-            expect(
-                ZeebeMapping.class,
-                "JSON path query is invalid: Unexpected json-path token LITERAL"))
-      },
-      {
-        // invalid target
-        Bpmn.createExecutableProcess("process")
-            .startEvent()
-            .sequenceFlow(b -> b.id("flow").payloadMapping("$.foo", "notJsonPath"))
-            .endEvent()
-            .done(),
-        Arrays.asList(
-            expect(
-                ZeebeMapping.class,
-                "JSON path query is invalid: Unexpected json-path token LITERAL"))
-      }
     };
   }
 

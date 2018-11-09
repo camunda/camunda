@@ -136,13 +136,6 @@ public abstract class AbstractFlowNodeBuilder<
     return myself;
   }
 
-  public B sequenceFlow(Consumer<SequenceFlowBuilder> builderConsumer) {
-    final SequenceFlowBuilder sequenceFlowBuilder = getCurrentSequenceFlowBuilder();
-    builderConsumer.accept(sequenceFlowBuilder);
-
-    return myself;
-  }
-
   private <T extends FlowNode> T createTarget(Class<T> typeClass) {
     return createTarget(typeClass, null);
   }
@@ -243,12 +236,6 @@ public abstract class AbstractFlowNodeBuilder<
 
   public EndEventBuilder endEvent(String id) {
     return createTarget(EndEvent.class, id).builder();
-  }
-
-  public EndEventBuilder endEvent(Consumer<EndEventBuilder> builderConsumer) {
-    final EndEventBuilder builder = endEvent();
-    builderConsumer.accept(builder);
-    return builder;
   }
 
   public ParallelGatewayBuilder parallelGateway() {

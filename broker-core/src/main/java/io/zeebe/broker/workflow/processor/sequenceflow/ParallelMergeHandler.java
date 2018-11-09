@@ -25,14 +25,10 @@ import io.zeebe.broker.workflow.processor.EventOutput;
 import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.broker.workflow.state.IndexedRecord;
 import io.zeebe.broker.workflow.state.WorkflowState;
-import io.zeebe.msgpack.mapping.Mapping;
-import io.zeebe.msgpack.mapping.MsgPackMergeTool;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import java.util.HashMap;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import org.agrona.DirectBuffer;
 
 public class ParallelMergeHandler implements BpmnStepHandler<ExecutableSequenceFlow> {
 
@@ -53,64 +49,36 @@ public class ParallelMergeHandler implements BpmnStepHandler<ExecutableSequenceF
     final ExecutableSequenceFlow sequenceFlow = context.getElement();
     final ExecutableFlowNode gateway = sequenceFlow.getTarget();
 
-    final Map<ExecutableSequenceFlow, IndexedRecord> mergeableRecords =
-        getMergeableRecords(gateway, scopeInstance);
+    final List<IndexedRecord> mergeableRecords = getMergeableRecords(gateway, scopeInstance);
 
     if (mergeableRecords.size() == gateway.getIncoming().size()) {
 
-      final DirectBuffer propagatedPayload =
-          mergePayloads(context.getMergeTool(), mergeableRecords);
-
-      mergeableRecords
-          .values()
-          .forEach(r -> eventOutput.consumeDeferredEvent(scopeInstance.getKey(), r.getKey()));
+      mergeableRecords.forEach(
+          r -> eventOutput.consumeDeferredEvent(scopeInstance.getKey(), r.getKey()));
 
       final WorkflowInstanceRecord value = context.getValue();
       value.setElementId(gateway.getId());
-      value.setPayload(propagatedPayload);
       context.getOutput().writeNewEvent(WorkflowInstanceIntent.GATEWAY_ACTIVATED, value);
     }
   }
 
-  private DirectBuffer mergePayloads(
-      MsgPackMergeTool mergeTool, Map<ExecutableSequenceFlow, IndexedRecord> records) {
-    // default merge
-    for (IndexedRecord record : records.values()) {
-      mergeTool.mergeDocument(record.getValue().getPayload());
-    }
-
-    // apply mappings
-    for (Map.Entry<ExecutableSequenceFlow, IndexedRecord> entry : records.entrySet()) {
-      final Mapping[] mappings = entry.getKey().getPayloadMappings();
-      final DirectBuffer payload = entry.getValue().getValue().getPayload();
-
-      // don't merge the document a second time
-      if (mappings.length > 0) {
-        mergeTool.mergeDocument(payload, mappings);
-      }
-    }
-
-    return mergeTool.writeResultToBuffer();
-  }
-
   /** @return the records that can be merged */
-  private Map<ExecutableSequenceFlow, IndexedRecord> getMergeableRecords(
+  private List<IndexedRecord> getMergeableRecords(
       ExecutableFlowNode parallelGateway, ElementInstance scopeInstance) {
-
     final List<ExecutableSequenceFlow> incomingFlows = parallelGateway.getIncoming();
-    final Map<ExecutableSequenceFlow, IndexedRecord> mergingRecords = new HashMap<>();
+    final List<IndexedRecord> mergingRecords = new ArrayList<>(incomingFlows.size());
 
-    final List<IndexedRecord> deferredTokens =
+    final List<IndexedRecord> storedRecords =
         workflowState.getElementInstanceState().getDeferredTokens(scopeInstance.getKey());
 
     for (int i = 0; i < incomingFlows.size(); i++) {
       final ExecutableSequenceFlow flow = incomingFlows.get(i);
 
-      for (int j = 0; j < deferredTokens.size(); j++) {
-        final IndexedRecord recordToMatch = deferredTokens.get(j);
+      for (int j = 0; j < storedRecords.size(); j++) {
+        final IndexedRecord recordToMatch = storedRecords.get(j);
 
         if (recordToMatch.getValue().getElementId().equals(flow.getId())) {
-          mergingRecords.put(flow, recordToMatch);
+          mergingRecords.add(recordToMatch);
           break;
         }
       }

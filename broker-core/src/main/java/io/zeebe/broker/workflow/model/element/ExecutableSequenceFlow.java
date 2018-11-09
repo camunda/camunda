@@ -18,14 +18,11 @@
 package io.zeebe.broker.workflow.model.element;
 
 import io.zeebe.msgpack.el.CompiledJsonCondition;
-import io.zeebe.msgpack.mapping.Mapping;
 
 public class ExecutableSequenceFlow extends AbstractFlowElement {
 
   private ExecutableFlowNode target;
   private CompiledJsonCondition condition;
-
-  private Mapping[] payloadMappings = new Mapping[0];
 
   public ExecutableSequenceFlow(String id) {
     super(id);
@@ -45,13 +42,5 @@ public class ExecutableSequenceFlow extends AbstractFlowElement {
 
   public CompiledJsonCondition getCondition() {
     return condition;
-  }
-
-  public void setPayloadMappings(Mapping[] payloadMappings) {
-    this.payloadMappings = payloadMappings;
-  }
-
-  public Mapping[] getPayloadMappings() {
-    return payloadMappings;
   }
 }
