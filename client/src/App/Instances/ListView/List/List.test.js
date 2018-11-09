@@ -12,7 +12,7 @@ import {formatDate} from 'modules/utils/date';
 import {xTimes, createInstance} from 'modules/testUtils';
 
 import List from './List';
-import HeaderSortIcon from './HeaderSortIcon';
+import ColumnHeader from './ColumnHeader';
 import * as Styled from './styled';
 
 const {THead, TBody, TH, TR, TD} = Table;
@@ -92,11 +92,17 @@ describe('List', () => {
       const THNodes = THeadNode.find(TH);
       expect(THNodes.length).toBe(5);
 
-      // Styled TH
-      expect(THeadNode.find(Styled.Th).length).toBe(1);
+      // Actions TH
+      const ActionsTHNode = THeadNode.find(Styled.ActionsTH);
+      expect(ActionsTHNode.length).toBe(1);
+      expect(ActionsTHNode.find(ColumnHeader).props().label).toBe('Actions');
 
       // Workflow Definition TH
-      expect(THNodes.at(0).contains('Workflow')).toBe(true);
+      expect(
+        THNodes.at(0)
+          .find('ColumnHeader')
+          .prop('label')
+      ).toBe('Workflow');
       const CheckboxNode = THNodes.at(0).find(Checkbox);
       expect(CheckboxNode).toHaveLength(1);
       expect(CheckboxNode.prop('isChecked')).toBe(
@@ -105,24 +111,22 @@ describe('List', () => {
 
       // Instance Id TH
       const InstanceIdTHNode = THNodes.at(1);
-      expect(InstanceIdTHNode.contains('Instance Id')).toBe(true);
 
-      // Instance Id HeaderSortIcon
-      const InstanceHeaderSortIconNode = InstanceIdTHNode.find(HeaderSortIcon);
-      expect(InstanceHeaderSortIconNode).toHaveLength(1);
-      expect(InstanceHeaderSortIconNode.prop('sortKey')).toBe('id');
-      expect(InstanceHeaderSortIconNode.prop('sorting')).toEqual(
+      // Instance Id ColumnHeader
+      const InstanceColumnHeaderNode = InstanceIdTHNode.find(ColumnHeader);
+      expect(InstanceColumnHeaderNode).toHaveLength(1);
+      expect(InstanceColumnHeaderNode.prop('sortKey')).toBe('id');
+      expect(InstanceColumnHeaderNode.prop('sorting')).toEqual(
         mockProps.sorting
       );
-      expect(InstanceHeaderSortIconNode.prop('handleSorting')).toBe(
-        mockProps.onSort
-      );
+      expect(InstanceColumnHeaderNode.prop('onSort')).toBe(mockProps.onSort);
+      expect(InstanceColumnHeaderNode.prop('label')).toBe('Instance Id');
 
       // Version TH
       const VersionTHNode = THNodes.at(2);
-      expect(VersionTHNode.contains('Version')).toBe(true);
-      // Version HeaderSortIcon
-      const InstanceHeaderSortVersionNode = VersionTHNode.find(HeaderSortIcon);
+
+      // Version ColumnHeader
+      const InstanceHeaderSortVersionNode = VersionTHNode.find(ColumnHeader);
       expect(InstanceHeaderSortVersionNode).toHaveLength(1);
       expect(InstanceHeaderSortVersionNode.prop('sortKey')).toBe(
         'workflowVersion'
@@ -130,38 +134,30 @@ describe('List', () => {
       expect(InstanceHeaderSortVersionNode.prop('sorting')).toEqual(
         mockProps.sorting
       );
-      expect(InstanceHeaderSortVersionNode.prop('handleSorting')).toBe(
+      expect(InstanceHeaderSortVersionNode.prop('onSort')).toBe(
         mockProps.onSort
       );
+      expect(InstanceHeaderSortVersionNode.prop('label')).toBe('Version');
 
       // Start Time TH
       const StartTimeTHNode = THNodes.at(3);
-      expect(StartTimeTHNode.contains('Start Time')).toBe(true);
-      // Start Time HeaderSortIcon
-      const STimeHeaderSortIconNode = StartTimeTHNode.find(HeaderSortIcon);
-      expect(STimeHeaderSortIconNode.prop('sortKey')).toBe('startDate');
-      expect(STimeHeaderSortIconNode.prop('sorting')).toEqual(
-        mockProps.sorting
-      );
-      expect(STimeHeaderSortIconNode.prop('handleSorting')).toBe(
-        mockProps.onSort
-      );
+
+      // Start Time ColumnHeader
+      const STimeColumnHeaderNode = StartTimeTHNode.find(ColumnHeader);
+      expect(STimeColumnHeaderNode.prop('sortKey')).toBe('startDate');
+      expect(STimeColumnHeaderNode.prop('sorting')).toEqual(mockProps.sorting);
+      expect(STimeColumnHeaderNode.prop('onSort')).toBe(mockProps.onSort);
+      expect(STimeColumnHeaderNode.prop('label')).toBe('Start Time');
 
       // End Time TH
       const EndTimeTHNode = THNodes.at(4);
-      expect(EndTimeTHNode.contains('End Time')).toBe(true);
-      // Start Time HeaderSortIcon
-      const ETimeHeaderSortIconNode = EndTimeTHNode.find(HeaderSortIcon);
-      expect(ETimeHeaderSortIconNode.prop('sortKey')).toBe('endDate');
-      expect(ETimeHeaderSortIconNode.prop('sorting')).toEqual(
-        mockProps.sorting
-      );
-      expect(ETimeHeaderSortIconNode.prop('handleSorting')).toBe(
-        mockProps.onSort
-      );
 
-      // Action TH
-      expect(THeadNode.find(Styled.Th).contains('Actions')).toBe(true);
+      // Start Time ColumnHeader
+      const ETimeColumnHeaderNode = EndTimeTHNode.find(ColumnHeader);
+      expect(ETimeColumnHeaderNode.prop('sortKey')).toBe('endDate');
+      expect(ETimeColumnHeaderNode.prop('sorting')).toEqual(mockProps.sorting);
+      expect(ETimeColumnHeaderNode.prop('onSort')).toBe(mockProps.onSort);
+      expect(ETimeColumnHeaderNode.prop('label')).toBe('End Time');
     });
 
     it('should render table body', () => {

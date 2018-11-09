@@ -13,7 +13,7 @@ import {EXPAND_STATE} from 'modules/constants';
 import {getWorkflowName} from 'modules/utils/instance';
 import {formatDate} from 'modules/utils/date';
 
-import HeaderSortIcon from './HeaderSortIcon';
+import ColumnHeader from './ColumnHeader';
 import * as Styled from './styled';
 
 const {THead, TBody, TH, TR, TD} = Table;
@@ -174,52 +174,59 @@ export default class List extends React.Component {
                   title="Select all instances"
                 />
               </Styled.CheckAll>
-              Workflow
-              <HeaderSortIcon
+              <ColumnHeader
+                active={this.props.sorting.sortBy === 'workflowName'}
+                disabled={isListEmpty}
+                onSort={this.props.onSort}
+                label="Workflow"
                 sortKey="workflowName"
                 sorting={this.props.sorting}
-                handleSorting={this.props.onSort}
-                disabled={isListEmpty}
               />
             </React.Fragment>
           </TH>
           <TH>
-            Instance Id
-            <HeaderSortIcon
+            <ColumnHeader
+              active={this.props.sorting.sortBy === 'id'}
+              disabled={isListEmpty}
+              label="Instance Id"
+              onSort={this.props.onSort}
               sortKey="id"
               sorting={this.props.sorting}
-              handleSorting={this.props.onSort}
-              disabled={isListEmpty}
             />
           </TH>
           <TH>
-            Version
-            <HeaderSortIcon
+            <ColumnHeader
+              active={this.props.sorting.sortBy === 'workflowVersion'}
+              disabled={isListEmpty}
+              label="Version"
+              onSort={this.props.onSort}
               sortKey="workflowVersion"
               sorting={this.props.sorting}
-              handleSorting={this.props.onSort}
-              disabled={isListEmpty}
             />
           </TH>
           <TH>
-            Start Time
-            <HeaderSortIcon
+            <ColumnHeader
+              active={this.props.sorting.sortBy === 'startDate'}
+              disabled={isListEmpty}
+              label="Start Time"
+              onSort={this.props.onSort}
               sortKey="startDate"
               sorting={this.props.sorting}
-              handleSorting={this.props.onSort}
-              disabled={isListEmpty}
             />
           </TH>
           <TH>
-            End Time
-            <HeaderSortIcon
+            <ColumnHeader
+              active={this.props.sorting.sortBy === 'endDate'}
+              disabled={isListEmpty || !listHasFinishedInstances}
+              label="End Time"
+              onSort={this.props.onSort}
               sortKey="endDate"
               sorting={this.props.sorting}
-              handleSorting={this.props.onSort}
-              disabled={isListEmpty || !listHasFinishedInstances}
             />
           </TH>
-          <Styled.Th>Actions</Styled.Th>
+          <Styled.ActionsTH>
+            <ColumnHeader disabled={isListEmpty} label="Actions" />
+          </Styled.ActionsTH>
         </TR>
       </THead>
     );

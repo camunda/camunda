@@ -5,9 +5,7 @@ import {ReactComponent as DefaultDown} from 'modules/components/Icon/down.svg';
 import {themed} from 'modules/theme';
 import withStrippedProps from 'modules/utils/withStrippedProps';
 
-export const SortIcon = styled.a`
-  cursor: ${({disabled}) => (disabled ? 'auto' : 'pointer')};
-`;
+export const SortIcon = styled.span``;
 
 const inactiveStyle = css`
   ${({sortOrder}) => (!sortOrder ? 'opacity: 0.4' : '')};

@@ -20,7 +20,7 @@ export const TableContainer = styled.div`
   top: 0;
 `;
 
-export const Th = styled(TH)`
+export const ActionsTH = styled(TH)`
   width: 90px;
 `;
 
