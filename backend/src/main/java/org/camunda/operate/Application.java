@@ -26,7 +26,12 @@ public class Application {
   @ConditionalOnMissingBean
   public AbstractDataGenerator stubDataGenerator() {
     logger.debug("Create Data generator stub");
-    return new AbstractDataGenerator() {};
+    return new AbstractDataGenerator() {
+      @Override
+      public void createZeebeData(boolean manuallyCalled) {
+        logger.debug("No demo data will be created");
+      }
+    };
   }
 
 }

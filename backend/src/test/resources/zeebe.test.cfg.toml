@@ -1,6 +1,13 @@
 [cluster]
 partitionsCount = 1
 
+#[[exporters]]
+#id = "debug"
+#className = "io.zeebe.broker.exporter.DebugExporter"
+#  [exporters.args]
+#  logLevel = "debug"
+#  prettyPrint = true
+
 [[exporters]]
 id = "elasticsearch"
 className = "io.zeebe.exporter.ElasticsearchExporter"

@@ -165,8 +165,7 @@ public class ZeebeESImporter extends Thread {
     return result;
   }
 
-  @PostConstruct
-  public void init() {
+  public void startImportingData() {
     if (operateProperties.isStartLoadingDataOnStartup()) {
       start();
     }
@@ -216,6 +215,11 @@ public class ZeebeESImporter extends Thread {
       } catch (Exception ex) {
         //retry
         logger.error("Error occurred while exporting Zeebe data. Will be retried.", ex);
+        try {
+          Thread.sleep(2000);
+        } catch (InterruptedException e) {
+
+        }
       }
 
     }

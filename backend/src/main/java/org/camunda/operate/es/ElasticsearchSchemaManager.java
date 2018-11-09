@@ -30,7 +30,6 @@ public class ElasticsearchSchemaManager {
   @Autowired
   private TransportClient esClient;
 
-  @PostConstruct
   public void initializeSchema() {
     if (!schemaAlreadyExists()) {
       logger.info("Elasticsearch schema is empty. Indices will be created.");

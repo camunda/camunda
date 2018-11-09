@@ -44,8 +44,6 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
   List<Long> workflowInstanceKeys = new ArrayList<>();
 
-
-  @PostConstruct
   private void createZeebeData() {
     logger.debug("User test data will be generated");
 

@@ -7,7 +7,7 @@ import java.util.List;
 
 public class ZeebeProperties {
 
-  private String brokerContactPoint = "localhost:51015";
+  private String brokerContactPoint = "localhost:26500";
 
   private List<String> topics = Collections.singletonList("default-topic");
 

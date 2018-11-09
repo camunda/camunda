@@ -15,7 +15,9 @@ import org.camunda.operate.util.ZeebeTestUtil;
 import org.junit.Before;
 import org.junit.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.Assert.fail;
 
 public class EventIT extends OperateZeebeIntegrationTest {
 
@@ -24,6 +26,11 @@ public class EventIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   private WorkflowInstanceReader workflowInstanceReader;
+
+  @Autowired
+  @Qualifier("workflowInstanceIsCompletedCheck")
+  private Predicate<Object[]> workflowInstanceIsCompletedCheck;
+
 
   private OffsetDateTime testStartTime;
 
@@ -63,6 +70,8 @@ public class EventIT extends OperateZeebeIntegrationTest {
     //complete task C
     final String taskCPayload = "{\"b\": \"d\"}";
     completeTask(workflowInstanceId, taskC, taskCPayload);
+
+    elasticsearchTestRule.processAllEventsAndWait(workflowInstanceIsCompletedCheck, workflowInstanceId);
 
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 

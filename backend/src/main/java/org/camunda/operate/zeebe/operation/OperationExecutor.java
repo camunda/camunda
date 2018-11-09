@@ -46,7 +46,6 @@ public class OperationExecutor extends Thread {
   @Autowired
   private OperateProperties operateProperties;
 
-  @PostConstruct
   public void startExecuting() {
     if (operateProperties.getOperationExecutor().isExecutorEnabled()) {
       start();
@@ -78,6 +77,12 @@ public class OperationExecutor extends Thread {
         logger.error("Something went wrong, while executing operations batch. Will be retried. Underlying exception: ", ex.getCause());
 
         logger.error(ex.getMessage(), ex);
+
+        try {
+          Thread.sleep(2000);
+        } catch (InterruptedException e) {
+
+        }
       }
     }
   }

@@ -137,4 +137,19 @@ public class ElasticsearchChecks {
     };
   }
 
+  @Bean(name = "workflowInstanceIsCompletedCheck")
+  public Predicate<Object[]> getWorkflowInstanceIsCompletedCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(1);
+      assertThat(objects[0]).isInstanceOf(String.class);
+      String workflowInstanceId = (String)objects[0];
+      try {
+        final WorkflowInstanceEntity instance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
+        return instance.getState().equals(WorkflowInstanceState.COMPLETED);
+      } catch (NotFoundException ex) {
+        return false;
+      }
+    };
+  }
+
 }

@@ -6,6 +6,8 @@ services:
       context: .
       dockerfile: Dockerfile.build
     container_name: operate
+    command:
+      - --spring.config.location=file:/usr/app/config/application.yml
     environment:
       - SPRING_PROFILES_ACTIVE=dev,dev-data
     image: camunda/operate:latest

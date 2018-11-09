@@ -41,12 +41,6 @@ public class DevelopDataGenerator extends AbstractDataGenerator {
 
   List<Long> workflowInstanceKeys = new ArrayList<>();
 
-
-  @PostConstruct
-  private void createZeebeData() {
-    createZeebeData(false);
-  }
-
   @Override
   public void createZeebeData(boolean manuallyCalled) {
     this.manuallyCalled = manuallyCalled;
