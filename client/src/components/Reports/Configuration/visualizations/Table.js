@@ -1,22 +1,36 @@
 import React from 'react';
 import ColumnSelection from './ColumnSelection';
 import RelativeAbsoluteSelection from './RelativeAbsoluteSelection';
+import ShowInstanceCount from './ShowInstanceCount';
 
 export default function Table({report, configuration, onChange}) {
+  let typeSpecificComponent = null;
   switch (report.data.view.operation) {
     case 'rawData':
-      return <ColumnSelection report={report} onChange={onChange} />;
+      typeSpecificComponent = <ColumnSelection report={report} onChange={onChange} />;
+      break;
     case 'count':
-      return <RelativeAbsoluteSelection configuration={configuration} onChange={onChange} />;
+      typeSpecificComponent = (
+        <RelativeAbsoluteSelection configuration={configuration} onChange={onChange} />
+      );
+      break;
     default:
-      return null;
+      typeSpecificComponent = null;
   }
+
+  return (
+    <>
+      <ShowInstanceCount configuration={configuration} onChange={onChange} />
+      {typeSpecificComponent}
+    </>
+  );
 }
 
 Table.defaults = {
   excludedColumns: [],
   hideRelativeValue: false,
-  hideAbsoluteValue: false
+  hideAbsoluteValue: false,
+  showInstanceCount: false
 };
 
 Table.onUpdate = (prevProps, props) => {

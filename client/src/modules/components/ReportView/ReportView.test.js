@@ -1,30 +1,14 @@
 import React from 'react';
-import {mount} from 'enzyme';
+import {shallow} from 'enzyme';
 
 import ReportView from './ReportView';
 import {Number} from './views';
 
-jest.mock('./views', () => {
-  return {
-    Number: props => <div>Number: {props.data}</div>,
-    Table: props => <div> Table: {JSON.stringify(props.data)}</div>,
-    Chart: props => <div> Chart: {JSON.stringify(props.data)}</div>
-  };
-});
-
-jest.mock('components', () => {
-  return {
-    ErrorBoundary: props => <div>{props.children}</div>,
-    LoadingIndicator: props => (
-      <div className="sk-circle" {...props}>
-        Loading...
-      </div>
-    )
-  };
-});
-
 jest.mock('services', () => {
+  const rest = jest.requireActual('services');
+
   return {
+    ...rest,
     getFlowNodeNames: jest.fn().mockReturnValue({
       a: 'foo',
       b: 'bar'
@@ -40,12 +24,6 @@ jest.mock('./service', () => {
       labels: ['a', 'b'],
       processInstanceCount
     })
-  };
-});
-
-jest.mock('./ReportBlankSlate', () => {
-  return props => {
-    return <div className="message">{props.message}</div>;
   };
 });
 
@@ -67,11 +45,13 @@ it('should display a number if visualization is number', () => {
     result: 1234
   };
 
-  const node = mount(<ReportView report={report} />);
+  const node = shallow(<ReportView report={report} />);
   node.setState({
     loaded: true
   });
-  expect(node).toIncludeText('Number: 1234');
+
+  expect(node.find(Number)).toBePresent();
+  expect(node.find(Number).prop('data')).toBe(1234);
 });
 
 it('should provide an errorMessage property to the component', () => {
@@ -92,7 +72,7 @@ it('should provide an errorMessage property to the component', () => {
     result: 1234
   };
 
-  const node = mount(<ReportView report={report} />);
+  const node = shallow(<ReportView report={report} />);
   node.setState({
     loaded: true
   });
@@ -116,11 +96,11 @@ it('should instruct to add a process definition key if not available', () => {
     result: 1234
   };
 
-  const node = mount(<ReportView report={report} />);
+  const node = shallow(<ReportView report={report} />);
   node.setState({
     loaded: true
   });
-  expect(node.find('.message')).toIncludeText('Process definition');
+  expect(node.find('ReportBlankSlate').prop('message')).toContain('Process definition');
 });
 
 it('should instruct to add a process definition version if not available', () => {
@@ -140,11 +120,11 @@ it('should instruct to add a process definition version if not available', () =>
     result: 1234
   };
 
-  const node = mount(<ReportView report={report} />);
+  const node = shallow(<ReportView report={report} />);
   node.setState({
     loaded: true
   });
-  expect(node.find('.message')).toIncludeText('Process definition');
+  expect(node.find('ReportBlankSlate').prop('message')).toContain('Process definition');
 });
 
 it('should instruct to add view option if not available', () => {
@@ -162,11 +142,11 @@ it('should instruct to add view option if not available', () => {
     result: 1234
   };
 
-  const node = mount(<ReportView report={report} />);
+  const node = shallow(<ReportView report={report} />);
   node.setState({
     loaded: true
   });
-  expect(node.find('.message')).toIncludeText('View');
+  expect(node.find('ReportBlankSlate').prop('message')).toContain('View');
 });
 
 it('should instruct to add group by option if not available', () => {
@@ -184,11 +164,11 @@ it('should instruct to add group by option if not available', () => {
     result: 1234
   };
 
-  const node = mount(<ReportView report={report} />);
+  const node = shallow(<ReportView report={report} />);
   node.setState({
     loaded: true
   });
-  expect(node.find('.message')).toIncludeText('Group by');
+  expect(node.find('ReportBlankSlate').prop('message')).toContain('Group by');
 });
 
 it('should instruct to add visualization option if not available', () => {
@@ -208,11 +188,11 @@ it('should instruct to add visualization option if not available', () => {
     result: 1234
   };
 
-  const node = mount(<ReportView report={report} />);
+  const node = shallow(<ReportView report={report} />);
   node.setState({
     loaded: true
   });
-  expect(node.find('.message')).toIncludeText('Visualize as');
+  expect(node.find('ReportBlankSlate').prop('message')).toContain('Visualize as');
 });
 
 it('should not add instruction for group by if operation is raw data', () => {
@@ -221,6 +201,7 @@ it('should not add instruction for group by if operation is raw data', () => {
     data: {
       processDefinitionKey: 'aKey',
       processDefinitionVersion: '1',
+      configuration: {},
       view: {
         operation: 'rawData'
       },
@@ -232,11 +213,12 @@ it('should not add instruction for group by if operation is raw data', () => {
     result: 1234
   };
 
-  const node = mount(<ReportView report={report} />);
+  const node = shallow(<ReportView report={report} />);
   node.setState({
     loaded: true
   });
-  expect(node).not.toIncludeText('Please choose an option for');
+
+  expect(node.find('ReportBlankSlate')).not.toBePresent();
 });
 
 const exampleDurationReport = {
@@ -262,7 +244,7 @@ const exampleDurationReport = {
 
 it('should call the applyAddons function if provided', () => {
   const spy = jest.fn();
-  const node = mount(<ReportView report={exampleDurationReport} applyAddons={spy} />);
+  const node = shallow(<ReportView report={exampleDurationReport} applyAddons={spy} />);
   node.setState({
     loaded: true
   });
@@ -271,7 +253,7 @@ it('should call the applyAddons function if provided', () => {
 });
 
 it('should return flownode Id if name is null when calling applyFlowNodeNames', async () => {
-  const node = mount(<ReportView report={exampleDurationReport} />);
+  const node = shallow(<ReportView report={exampleDurationReport} />);
   node.setState({
     loaded: true
   });
@@ -292,11 +274,39 @@ it('should instruct to select one or more reports if no reports are selected for
     }
   };
 
-  const node = mount(<ReportView report={report} />);
+  const node = shallow(<ReportView report={report} />);
   node.setState({
     loaded: true
   });
-  expect(node.find('.message')).toIncludeText('one or more reports');
+  expect(node.find('ReportBlankSlate').prop('message')).toContain('one or more reports');
+});
+
+it('should include the instance count if indicated in the config', () => {
+  const report = {
+    reportType: 'single',
+    data: {
+      processDefinitionKey: 'aKey',
+      processDefinitionVersion: '1',
+      configuration: {showInstanceCount: true},
+      view: {
+        operation: 'rawData'
+      },
+      groupBy: {
+        type: ''
+      },
+      visualization: 'table'
+    },
+    processInstanceCount: 723,
+    result: []
+  };
+
+  const node = shallow(<ReportView report={report} />);
+  node.setState({
+    loaded: true
+  });
+
+  expect(node.find('.additionalInfo')).toBePresent();
+  expect(node.find('.additionalInfo').text()).toContain('723');
 });
 
 describe('combined Report View', () => {
@@ -333,7 +343,7 @@ describe('combined Report View', () => {
   };
 
   it('should invok getConfig function when only one combined report is selected', () => {
-    const node = mount(<ReportView report={CombinedReport} />);
+    const node = shallow(<ReportView report={CombinedReport} />);
     const spy = jest.spyOn(node.instance(), 'getConfig');
     node.setState({
       loaded: true
@@ -353,7 +363,7 @@ describe('combined Report View', () => {
       result: 200
     };
 
-    const node = mount(<ReportView report={CombinedReport} />);
+    const node = shallow(<ReportView report={CombinedReport} />);
 
     const barData = node.instance().getCombinedNumberData({
       NumberReportA: NumberReportA,

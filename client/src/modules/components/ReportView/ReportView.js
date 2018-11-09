@@ -8,6 +8,8 @@ import {getTableProps, getChartProps} from './service';
 
 import {Number, Table, Heatmap, Chart} from './views';
 
+import './ReportView.scss';
+
 const defaultErrorMessage =
   'Cannot display data for the given report builder settings. Please choose another combination!';
 
@@ -262,17 +264,31 @@ export default class ReportView extends React.Component {
 
     config.props.errorMessage = defaultErrorMessage;
 
-    return this.getReportViewTemplate(config, config.component);
+    return this.getReportViewTemplate(
+      config,
+      config.component,
+      data.configuration.showInstanceCount && processInstanceCount
+    );
   };
 
-  getReportViewTemplate = (config, Component) => {
+  getReportViewTemplate = (config, Component, processInstanceCount) => {
     return (
       <ErrorBoundary>
-        {this.props.applyAddons ? (
-          this.props.applyAddons(Component, config.props)
-        ) : (
-          <Component {...config.props} />
-        )}
+        <div className="ReportView">
+          <div className="component">
+            {this.props.applyAddons ? (
+              this.props.applyAddons(Component, config.props)
+            ) : (
+              <Component {...config.props} />
+            )}
+          </div>
+          {typeof processInstanceCount === 'number' && (
+            <div className="additionalInfo">
+              Total Instance<br />Count:
+              <b>{formatters.frequency(processInstanceCount)}</b>
+            </div>
+          )}
+        </div>
       </ErrorBoundary>
     );
   };

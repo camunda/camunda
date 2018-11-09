@@ -437,8 +437,8 @@ export default withErrorHandling(
               </Message>
             )}
 
-          <div className="reportViewWrapper">
-            <div className="Report__view">
+          <div className="Report__view">
+            <div className="Report__content">
               {loadingReportData ? (
                 <LoadingIndicator />
               ) : (
@@ -462,7 +462,7 @@ export default withErrorHandling(
 
     applyAddons = (...addons) => (Component, props) => (
       <React.Fragment>
-        <div className="Report__content">{this.renderWrapperAddons(addons, Component, props)}</div>
+        {this.renderWrapperAddons(addons, Component, props)}
         {this.renderContentAddons(addons)}
       </React.Fragment>
     );
