@@ -1,5 +1,5 @@
 import React from 'react';
-import {BrowserRouter as Router, Route, Switch} from 'react-router-dom';
+import {HashRouter as Router, Route, Switch} from 'react-router-dom';
 
 import {ThemeProvider} from 'modules/contexts/ThemeContext';
 import {CollapsablePanelProvider} from 'modules/contexts/CollapsablePanelContext';
