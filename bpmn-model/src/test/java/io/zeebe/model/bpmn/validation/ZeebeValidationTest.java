@@ -89,6 +89,23 @@ public class ZeebeValidationTest extends AbstractZeebeValidationTest {
                 ZeebeIoMapping.class,
                 "Output behavior 'none' cannot be used in combination without zeebe:output elements"))
       },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("task", b -> b.zeebeTaskType("type"))
+            .boundaryEvent("msg1")
+            .message(m -> m.name("message").zeebeCorrelationKey("$.id"))
+            .endEvent()
+            .moveToActivity("task")
+            .boundaryEvent("msg2")
+            .message(m -> m.name("message").zeebeCorrelationKey("$.orderId"))
+            .endEvent()
+            .done(),
+        singletonList(
+            expect(
+                "task",
+                "Cannot have two message catch boundary events with the same name: message"))
+      },
     };
   }
 }

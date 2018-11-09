@@ -19,6 +19,8 @@ import static io.zeebe.model.bpmn.validation.ExpectedValidationResult.expect;
 import static java.util.Collections.singletonList;
 
 import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.instance.SignalEventDefinition;
+import java.util.Arrays;
 import org.junit.runners.Parameterized.Parameters;
 
 public class ZeebeBoundaryEventValidationTest extends AbstractZeebeValidationTest {
@@ -32,10 +34,12 @@ public class ZeebeBoundaryEventValidationTest extends AbstractZeebeValidationTes
             .serviceTask("task", b -> b.zeebeTaskType("type"))
             .boundaryEvent("boundary")
             .cancelActivity(true)
-            .message(b -> b.name("message").zeebeCorrelationKey("$.id"))
+            .signal("signal")
             .endEvent("end")
             .done(),
-        singletonList(expect("boundary", "Event definition must be one of: timer"))
+        Arrays.asList(
+            expect(SignalEventDefinition.class, "Event definition of this type is not supported"),
+            expect("boundary", "Event definition must be one of: timer, message"))
       },
       {
         Bpmn.createExecutableProcess("process")

@@ -17,6 +17,7 @@ package io.zeebe.model.bpmn.validation.zeebe;
 
 import io.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.zeebe.model.bpmn.instance.EventDefinition;
+import io.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.zeebe.model.bpmn.instance.TimerEventDefinition;
 import java.util.Arrays;
 import java.util.Collection;
@@ -26,7 +27,7 @@ import org.camunda.bpm.model.xml.validation.ValidationResultCollector;
 
 public class BoundaryEventValidator implements ModelElementValidator<BoundaryEvent> {
   private static final List<Class<? extends EventDefinition>> SUPPORTED_EVENTS =
-      Arrays.asList(TimerEventDefinition.class);
+      Arrays.asList(TimerEventDefinition.class, MessageEventDefinition.class);
 
   @Override
   public Class<BoundaryEvent> getElementType() {
@@ -65,7 +66,7 @@ public class BoundaryEventValidator implements ModelElementValidator<BoundaryEve
       final Class<? extends EventDefinition> type = eventDefinition.getClass();
 
       if (SUPPORTED_EVENTS.stream().noneMatch(c -> c.isAssignableFrom(type))) {
-        validationResultCollector.addError(0, "Event definition must be one of: timer");
+        validationResultCollector.addError(0, "Event definition must be one of: timer, message");
       }
     }
   }

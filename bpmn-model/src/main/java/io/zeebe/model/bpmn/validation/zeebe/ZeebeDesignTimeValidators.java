@@ -25,6 +25,7 @@ public class ZeebeDesignTimeValidators {
 
   static {
     VALIDATORS = new ArrayList<>();
+    VALIDATORS.add(new ActivityValidator());
     VALIDATORS.add(new BoundaryEventValidator());
     VALIDATORS.add(new CatchEventValidator());
     VALIDATORS.add(new DefinitionsValidator());
