@@ -2,15 +2,12 @@ package org.camunda.optimize.rest.engine;
 
 import org.camunda.optimize.plugin.EngineRestFilterProvider;
 import org.camunda.optimize.plugin.engine.rest.EngineRestFilter;
-import org.camunda.optimize.rest.providers.OptimizeObjectMapperProvider;
-import org.camunda.optimize.service.util.configuration.ConfigurationReloadable;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.service.util.configuration.EngineConfiguration;
 import org.glassfish.jersey.client.ClientProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
@@ -26,23 +23,26 @@ import java.util.Map;
 
 @Component
 public class EngineContextFactory {
+  private static final Logger logger = LoggerFactory.getLogger(EngineContextFactory.class);
 
-  protected Logger logger = LoggerFactory.getLogger(getClass());
+  private ConfigurationService configurationService;
+  private EngineObjectMapperContextResolver engineObjectMapperContextResolver;
+  private EngineRestFilterProvider engineRestFilterProvider;
 
   private List<EngineContext> configuredEngines;
 
   @Autowired
-  private ConfigurationService configurationService;
-
-  @Autowired
-  protected OptimizeObjectMapperProvider optimizeObjectMapperProvider;
-
-  @Autowired
-  private EngineRestFilterProvider engineRestFilterProvider;
+  public EngineContextFactory(ConfigurationService configurationService,
+                              EngineObjectMapperContextResolver engineObjectMapperContextResolver,
+                              EngineRestFilterProvider engineRestFilterProvider) {
+    this.configurationService = configurationService;
+    this.engineObjectMapperContextResolver = engineObjectMapperContextResolver;
+    this.engineRestFilterProvider = engineRestFilterProvider;
+  }
 
   @PostConstruct
   public void init() {
-    configuredEngines = new ArrayList();
+    this.configuredEngines = new ArrayList<>();
     for (Map.Entry<String, EngineConfiguration> config : configurationService.getConfiguredEngines().entrySet()) {
       configuredEngines.add(constructEngineContext(config));
     }
@@ -59,10 +59,10 @@ public class EngineContextFactory {
     client.register(new LoggingFilter());
     if (config.getValue().getAuthentication().isEnabled()) {
       client.register(
-          new BasicAccessAuthenticationFilter(
-            configurationService.getDefaultEngineAuthenticationUser(config.getKey()),
-            configurationService.getDefaultEngineAuthenticationPassword(config.getKey())
-          )
+        new BasicAccessAuthenticationFilter(
+          configurationService.getDefaultEngineAuthenticationUser(config.getKey()),
+          configurationService.getDefaultEngineAuthenticationPassword(config.getKey())
+        )
       );
     }
     for (EngineRestFilter engineRestFilter :  engineRestFilterProvider.getPlugins()) {
@@ -75,16 +75,15 @@ public class EngineContextFactory {
 
       });
     }
-    client.register(optimizeObjectMapperProvider);
+    client.register(engineObjectMapperContextResolver);
     return client;
   }
 
   public class LoggingFilter implements ClientRequestFilter {
-
     @Override
     public void filter(ClientRequestContext requestContext) {
-      String body = requestContext.getEntity() != null ? requestContext.getEntity().toString() : "";
-      logger.trace("sending request to [{}] with body [{}]", requestContext.getUri() , body);
+      Object body = requestContext.getEntity() != null ? requestContext.getEntity() : "";
+      logger.trace("sending request to [{}] with body [{}]", requestContext.getUri(), body);
     }
   }
 

@@ -32,11 +32,4 @@
 
   <util:list id="registeredPlugins" value-type="org.camunda.optimize.plugin.importing.variable.VariableImportAdapter"/>
 
-  <bean id="objectMapper"
-        class="com.fasterxml.jackson.databind.ObjectMapper"
-        factory-method="createOptimizeMapper"
-        factory-bean="objectMapperFactory"
-  />
-
-
 </beans>

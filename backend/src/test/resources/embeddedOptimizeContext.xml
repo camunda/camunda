@@ -35,11 +35,4 @@
 
   <bean id="transportClient"  class="org.camunda.optimize.service.es.TransportClientFactory"/>
 
-  <bean id="objectMapper"
-        class="com.fasterxml.jackson.databind.ObjectMapper"
-        factory-method="createOptimizeMapper"
-        factory-bean="objectMapperFactory"
-  />
-
-
 </beans>

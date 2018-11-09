@@ -9,7 +9,7 @@ import org.camunda.optimize.jetty.EmbeddedCamundaOptimize;
 import org.camunda.optimize.rest.engine.dto.UserCredentialsDto;
 import org.camunda.optimize.rest.engine.dto.UserDto;
 import org.camunda.optimize.rest.engine.dto.UserProfileDto;
-import org.camunda.optimize.rest.providers.OptimizeObjectMapperProvider;
+import org.camunda.optimize.rest.providers.OptimizeObjectMapperContextResolver;
 import org.camunda.optimize.service.cleanup.OptimizeCleanupService;
 import org.camunda.optimize.service.es.ElasticSearchSchemaInitializer;
 import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
@@ -303,8 +303,8 @@ public class TestEmbeddedCamundaOptimize extends EmbeddedCamundaOptimize {
 
   private Client getClient() {
     // register the default object provider for serialization/deserialization ob objects
-    OptimizeObjectMapperProvider provider = getApplicationContext()
-      .getBean(OptimizeObjectMapperProvider.class);
+    OptimizeObjectMapperContextResolver provider = getApplicationContext()
+      .getBean(OptimizeObjectMapperContextResolver.class);
 
     Client client = ClientBuilder.newClient()
       .register(provider);

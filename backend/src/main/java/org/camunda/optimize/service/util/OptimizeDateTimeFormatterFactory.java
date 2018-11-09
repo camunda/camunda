@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import java.time.format.DateTimeFormatter;
 
 @Component
-public class DateTimeFormatterFactory implements FactoryBean<DateTimeFormatter> {
+public class OptimizeDateTimeFormatterFactory implements FactoryBean<DateTimeFormatter> {
 
   @Autowired
   private ConfigurationService configurationService;
