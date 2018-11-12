@@ -82,8 +82,7 @@ export default class TypeaheadMultipleSelection extends React.Component {
     this.dragged.style.display = 'none';
     const listElement = evt.target.closest('li');
     this.over = listElement;
-    const nodeName = evt.target.nodeName;
-    if (nodeName === 'LABEL' || nodeName === 'LI') {
+    if (listElement) {
       listElement.parentNode.insertBefore(this.dragPlaceHolder, listElement);
     }
   };
