@@ -45,6 +45,7 @@ body {
 button {
   font-family: IBMPlexSans;
   cursor: pointer;
+  border-width: 0;
 }
 
 svg {
