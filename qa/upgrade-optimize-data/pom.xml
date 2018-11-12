@@ -1,0 +1,203 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+  <modelVersion>4.0.0</modelVersion>
+
+  <parent>
+    <groupId>org.camunda.optimize</groupId>
+    <artifactId>qa</artifactId>
+    <version>2.3.0-SNAPSHOT</version>
+  </parent>
+
+  <artifactId>upgrade-optimize-data</artifactId>
+  <!--<packaging>pom</packaging>-->
+
+  <dependencies>
+    <dependency>
+      <groupId>org.camunda.optimize</groupId>
+      <artifactId>optimize-backend</artifactId>
+      <version>${project.previousVersion}</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.camunda.optimize</groupId>
+      <artifactId>optimize-backend</artifactId>
+      <version>${project.previousVersion}</version>
+      <type>test-jar</type>
+    </dependency>
+
+    <dependency>
+      <groupId>junit</groupId>
+      <artifactId>junit</artifactId>
+      <version>${junit.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.hamcrest</groupId>
+      <artifactId>hamcrest-all</artifactId>
+      <version>${hamcrest.version}</version>
+      <scope>test</scope>
+    </dependency>
+  </dependencies>
+
+  <profiles>
+    <profile>
+      <id>upgrade-optimize-data</id>
+      <build>
+        <plugins>
+          <!-- add requirements check for required BINARIES and/or OS -->
+          <!-- 1. Download previous Optimize version -->
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-dependency-plugin</artifactId>
+            <executions>
+              <execution>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>unpack</goal>
+                </goals>
+                <configuration>
+                  <artifact>org.camunda.optimize:camunda-optimize:${project.previousVersion}:tar.gz:full</artifact>
+                  <outputDirectory>${project.build.directory}/prevVersion/</outputDirectory>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <!-- 2. Start CamBPM and ES through docker-compose -->
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>exec-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>docker-start</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>exec</goal>
+                </goals>
+                <configuration>
+                  <environmentVariables>
+                    <CAMBPM_VERSION>${camunda.engine.version}</CAMBPM_VERSION>
+                    <ES_VERSION>${elasticsearch.version}</ES_VERSION>
+                  </environmentVariables>
+                  <skip>${skip.docker}</skip>
+                  <executable>docker-compose</executable>
+                  <workingDirectory>../../</workingDirectory>
+                  <arguments>
+                    <argument>-f</argument>
+                    <argument>${docker.compose.file}</argument>
+                    <argument>up</argument>
+                    <argument>-d</argument>
+                    <argument>--force-recreate</argument>
+                    <argument>--renew-anon-volumes</argument>
+                  </arguments>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <executions>
+              <!-- 3. Make sure CamBPM and ES are up and running -->
+              <execution>
+                <id>check-cambpm-is-up</id>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <phase>pre-integration-test</phase>
+                <configuration>
+                  <skip>${skip.docker}</skip>
+                  <target name="check-cambpm-is-running" description="Check whether CamBPM is running">
+                    <echo message="Check ES is running..." />
+                    <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
+                      <socket server="localhost" port="9200" />
+                    </waitfor>
+                    <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
+                      <http url="http://localhost:9200/_cluster/state" />
+                    </waitfor>
+                    <echo message="ES is running." />
+                    <echo message="Check CamBPM is running..." />
+                    <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
+                      <socket server="localhost" port="8080" />
+                    </waitfor>
+                    <echo message="CamBPM is running." />
+                  </target>
+                </configuration>
+              </execution>
+              <!--4. Generate engine data-->
+              <execution>
+                <id>generate-engine-data</id>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <phase>pre-integration-test</phase>
+                <configuration>
+                  <skip>${skip.docker}</skip>
+                  <target name="generate-engine-data" description="Generate process instances">
+                    <echo message="Generating engine data..." />
+                    <exec dir="${project.build.directory}/../../../qa/data-generation" executable="/bin/bash" failonerror="true">
+                      <arg value="-c"/>
+                      <arg value="mvn clean compile exec:java -Dexec.args='--numberOfProcessInstances 10'" />
+                    </exec>
+                  </target>
+                </configuration>
+              </execution>
+              <!--5. Generate optimize data and run migration -->
+              <execution>
+                <id>run-migration</id>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+                <phase>pre-integration-test</phase>
+                <configuration>
+                  <target>
+                    <echo message="Starting Optimize ${project.previousVersion}..." />
+
+                    <exec dir="${project.build.directory}/prevVersion/" executable="${project.build.directory}/prevVersion/optimize-startup.sh" spawn="true" />
+
+                    <echo message="Waiting for Optimize to populate ES..." />
+
+                    <exec executable="/bin/bash">
+                      <arg value="-c" />
+                      <arg value="until test $(curl -s 'http://localhost:9200/optimize-metadata/_count' | jq '.count // 0') -eq 1; do sleep 2; done" />
+                    </exec>
+
+                    <echo message="Generating optimize data" />
+                    <exec executable="/bin/bash">
+                      <arg value="-c" />
+                      <arg value="mvn exec:java -Dexec.mainClass='org.camunda.optimize.data.upgrade.OptimizeDataGenerator'" />
+                    </exec>
+
+                    <echo message="Killing Optimize ${project.previousVersion}..." />
+
+                    <exec executable="/bin/bash">
+                      <arg value="-c" />
+                      <arg value="pkill -f org.camunda.optimize.Main" />
+                    </exec>
+
+                    <echo message="Running migration script from ${project.previousVersion} to ${project.version}..." />
+
+                    <!-- upgrade-optimize-from-${project.previousVersion}-to-${project.version}.jar must be executed within $OPTIMIZE_HOME/upgrade to reuse existing Optimize configuration -->
+                    <exec dir="${project.build.directory}/../../../" executable="/bin/bash">
+                      <arg value="-c" />
+                      <arg value="cp upgrade/target/upgrade-optimize-from-${project.previousVersion}-to-${project.version}.jar ${project.build.directory}/prevVersion/upgrade/upgrade-optimize.jar" />
+                    </exec>
+
+                    <exec executable="/bin/bash">
+                      <arg value="-c" />
+                      <arg value="java -jar ${project.build.directory}/prevVersion/upgrade/upgrade-optimize.jar --skip-warning" />
+                    </exec>
+
+                    <echo message="Not running integration tests tbh..." />
+                  </target>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+
+        </plugins>
+      </build>
+    </profile>
+  </profiles>
+
+</project>

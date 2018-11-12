@@ -22,6 +22,7 @@
         <module>upgrade-es-schema-tests</module>
         <module>connect-to-secured-es-tests</module>
         <module>cleanup-performance-tests</module>
+        <module>upgrade-optimize-data</module>
     </modules>
 
     <dependencyManagement>
