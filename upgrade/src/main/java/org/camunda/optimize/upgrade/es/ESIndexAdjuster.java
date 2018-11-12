@@ -175,7 +175,8 @@ public class ESIndexAdjuster {
           TaskResponse taskResponse = objectMapper.readValue(response.getEntity().getContent(), TaskResponse.class);
 
           if (taskResponse.getError() != null) {
-            logger.error("Reindex batch failed: {}", taskResponse.getError().toString());
+            logger.error("A reindex batch that is part of the upgrade failed. Elasticsearch reported the following error: {}.", taskResponse.getError().toString());
+            logger.error("The upgrade will be aborted. Please restore your Elasticsearch backup and try again.");
             throw new UpgradeRuntimeException(taskResponse.getError().toString());
           }
 
