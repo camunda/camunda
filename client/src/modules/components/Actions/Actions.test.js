@@ -14,10 +14,9 @@ import {
 } from 'modules/constants';
 
 import Actions from './Actions';
-import ActionStatus from './ActionStatus';
+import ActionStatus from 'modules/components/ActionStatus';
 import ActionItems from './ActionItems';
 
-import * as Styled from './styled';
 import * as service from './service';
 import * as api from 'modules/api/instances/instances';
 

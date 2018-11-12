@@ -1,5 +1,3 @@
-import {orderBy} from 'lodash';
-
 import {getInstanceState} from 'modules/utils/instance';
 import {INSTANCE_STATE, OPERATION_TYPE} from 'modules/constants';
 

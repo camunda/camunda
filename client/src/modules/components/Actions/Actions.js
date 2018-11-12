@@ -8,12 +8,7 @@ import {getLatestOperation} from 'modules/utils/instance';
 import ActionStatus from 'modules/components/ActionStatus';
 
 import ActionItems from './ActionItems';
-import {
-  wrapIdinQuery,
-  isWithIncident,
-  isRunning
-  // getLatestOperation
-} from './service';
+import {wrapIdinQuery, isWithIncident, isRunning} from './service';
 
 import * as Styled from './styled';
 
