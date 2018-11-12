@@ -32,19 +32,6 @@ export const xTimes = x => method => {
   }
 };
 
-/**
- * @returns a mocked Selection Object with a unique id
- * @param {*} id num value to create unique selection;
- */
-export const createSelection = id => {
-  return {
-    queries: [],
-    selectionId: id,
-    totalCount: 1,
-    workflowInstances: []
-  };
-};
-
 const createRandomId = function* createRandomId(type) {
   let idx = 0;
   while (true) {
@@ -56,6 +43,37 @@ const createRandomId = function* createRandomId(type) {
 const randomIdIterator = createRandomId('id');
 const randomActivityIdIterator = createRandomId('activityId');
 const randomJobIdIterator = createRandomId('jobId');
+
+/**
+ * @returns a mocked selection Object
+ * @param {*} customProps Obj with any type of custom property
+ */
+export const createQuery = (options = {}) => {
+  return {
+    active: true,
+    excludeIds: [],
+    ids: [],
+    incidents: true,
+    running: true,
+    ...options
+  };
+};
+
+/**
+ * @returns a mocked Selection Object with a unique id
+ * @param {*} id num value to create unique selection;
+ */
+export const createSelection = (options = {}) => {
+  const instanceId = randomIdIterator.next().value;
+
+  return {
+    queries: [createQuery()],
+    selectionId: 1,
+    totalCount: 1,
+    instancesMap: new Map([[instanceId, createInstance({id: instanceId})]]),
+    ...options
+  };
+};
 
 /**
  * @returns a mocked incident Object
