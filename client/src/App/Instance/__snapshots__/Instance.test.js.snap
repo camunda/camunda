@@ -46,7 +46,14 @@ exports[`Instance rendering should display a Header, DiagramPanel and Copyright 
     }
   />
   <styled.div>
-    <SplitPane>
+    <SplitPane
+      titles={
+        Object {
+          "bottom": "Instance Details",
+          "top": "Workflow",
+        }
+      }
+    >
       <DiagramPanel
         flowNodeStateOverlays={
           Array [

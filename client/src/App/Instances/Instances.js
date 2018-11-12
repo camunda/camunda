@@ -427,7 +427,7 @@ class Instances extends Component {
               />
             </Styled.Filters>
 
-            <Styled.Center>
+            <Styled.Center titles={{top: 'Workflow', bottom: 'Instances'}}>
               <Styled.Pane>
                 <Styled.PaneHeader>{workflowName}</Styled.PaneHeader>
                 <SplitPane.Pane.Body>

@@ -114,7 +114,7 @@ export default class Instance extends Component {
       <Fragment>
         <Header detail={<InstanceDetail instance={this.state.instance} />} />
         <Styled.Instance>
-          <SplitPane>
+          <SplitPane titles={{top: 'Workflow', bottom: 'Instance Details'}}>
             <DiagramPanel
               instance={this.state.instance}
               onFlowNodesDetailsReady={this.handleFlowNodesDetailsReady}

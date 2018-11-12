@@ -16,6 +16,12 @@ exports[`DiagramPanel should render pane header and body 1`] = `
     ]
   }
   selectedFlowNode="foo"
+  titles={
+    Object {
+      "bottom": "Bottom",
+      "top": "Top",
+    }
+  }
 >
   <Styled(PanelHeader)>
     <styled.table>

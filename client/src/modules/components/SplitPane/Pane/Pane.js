@@ -16,11 +16,13 @@ export default class Pane extends React.Component {
       PropTypes.arrayOf(PropTypes.node),
       PropTypes.node
     ]),
-    hasShiftableControls: PropTypes.bool
+    hasShiftableControls: PropTypes.bool,
+    titles: PropTypes.shape({top: PropTypes.string, bottom: PropTypes.string})
   };
 
   static defaultProps = {
-    hasShiftableControls: false
+    hasShiftableControls: false,
+    titles: {top: 'Top', bottom: 'Bottom'}
   };
 
   handleTopExpand = () => {
@@ -42,7 +44,10 @@ export default class Pane extends React.Component {
   };
 
   getBottomPaneButtons = () => {
-    const {expandState} = this.props;
+    const {
+      expandState,
+      titles: {top, bottom}
+    } = this.props;
 
     const isTopButtonVisible = expandState !== EXPAND_STATE.COLLAPSED;
     const isBottomButtonVisible = expandState !== EXPAND_STATE.EXPANDED;
@@ -61,14 +66,14 @@ export default class Pane extends React.Component {
               <Styled.PaneExpandButton
                 onClick={this.handleTopExpand}
                 direction={DIRECTION.DOWN}
-                title="Expand top pane"
+                title={`Expand ${top} pane`}
               />
             )}
             {isBottomButtonVisible && (
               <Styled.PaneExpandButton
                 onClick={this.handleBottomExpand}
                 direction={DIRECTION.UP}
-                title="Expand bottom pane"
+                title={`Expand ${bottom} pane`}
               />
             )}
           </Styled.ButtonsContainer>

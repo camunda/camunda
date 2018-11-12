@@ -1,4 +1,5 @@
 import React, {Children, cloneElement} from 'react';
+import PropTypes from 'prop-types';
 
 import {PANE_ID, EXPAND_STATE} from 'modules/constants';
 
@@ -10,7 +11,8 @@ const paneIds = [PANE_ID.TOP, PANE_ID.BOTTOM];
 
 export default class SplitPane extends React.Component {
   static propTypes = {
-    children: twoNodesPropType
+    children: twoNodesPropType,
+    titles: PropTypes.shape({top: PropTypes.string, bottom: PropTypes.string})
   };
 
   state = {
@@ -38,7 +40,8 @@ export default class SplitPane extends React.Component {
       return cloneElement(child, {
         paneId,
         expandState,
-        handleExpand: this.handleExpand
+        handleExpand: this.handleExpand,
+        titles: this.props.titles
       });
     });
   };

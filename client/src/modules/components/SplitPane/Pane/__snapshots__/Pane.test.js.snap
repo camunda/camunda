@@ -5,6 +5,12 @@ exports[`Pane bottom pane 'should render both ExpandButtons by default 1`] = `
   expandState="DEFAULT"
   handleExpand={[MockFunction]}
   paneId="BOTTOM"
+  titles={
+    Object {
+      "bottom": "Bottom",
+      "top": "Top",
+    }
+  }
 >
   <CollapsablePanelConsumer>
     <Component />
@@ -21,12 +27,12 @@ Array [
   <Styled(ExpandButton)
     direction="DOWN"
     onClick={[Function]}
-    title="Expand top pane"
+    title="Expand Top pane"
   />,
   <Styled(ExpandButton)
     direction="UP"
     onClick={[Function]}
-    title="Expand bottom pane"
+    title="Expand Bottom pane"
   />,
 ]
 `;
@@ -36,6 +42,12 @@ exports[`Pane bottom pane should render ExpandButton with DOWN icon if pane is e
   expandState="EXPANDED"
   handleExpand={[MockFunction]}
   paneId="BOTTOM"
+  titles={
+    Object {
+      "bottom": "Bottom",
+      "top": "Top",
+    }
+  }
 >
   <CollapsablePanelConsumer>
     <Component />
@@ -51,7 +63,7 @@ exports[`Pane bottom pane should render ExpandButton with DOWN icon if pane is e
 <Styled(ExpandButton)
   direction="DOWN"
   onClick={[Function]}
-  title="Expand top pane"
+  title="Expand Top pane"
 />
 `;
 
@@ -60,6 +72,12 @@ exports[`Pane bottom pane should render ExpandButton with UP icon if pane is col
   expandState="COLLAPSED"
   handleExpand={[MockFunction]}
   paneId="BOTTOM"
+  titles={
+    Object {
+      "bottom": "Bottom",
+      "top": "Top",
+    }
+  }
 >
   <CollapsablePanelConsumer>
     <Component />
@@ -75,7 +93,7 @@ exports[`Pane bottom pane should render ExpandButton with UP icon if pane is col
 <Styled(ExpandButton)
   direction="UP"
   onClick={[Function]}
-  title="Expand bottom pane"
+  title="Expand Bottom pane"
 />
 `;
 
@@ -84,6 +102,12 @@ exports[`Pane should render children with expandState 1`] = `
   expandState="EXPANDED"
   handleExpand={[MockFunction]}
   paneId="TOP"
+  titles={
+    Object {
+      "bottom": "Bottom",
+      "top": "Top",
+    }
+  }
 >
   <Foo
     expandState="EXPANDED"
@@ -97,6 +121,12 @@ exports[`Pane top pane should not render expand buttons 1`] = `
   expandState="COLLAPSED"
   handleExpand={[MockFunction]}
   paneId="TOP"
+  titles={
+    Object {
+      "bottom": "Bottom",
+      "top": "Top",
+    }
+  }
 >
   <Foo
     expandState="COLLAPSED"
