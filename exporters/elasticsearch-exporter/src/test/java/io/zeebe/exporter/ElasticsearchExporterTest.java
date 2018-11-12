@@ -16,7 +16,6 @@
 package io.zeebe.exporter;
 
 import static io.zeebe.exporter.ElasticsearchExporter.ZEEBE_RECORD_TEMPLATE_JSON;
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -32,7 +31,6 @@ import io.zeebe.exporter.record.RecordMetadata;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.util.ZbLogger;
-import java.time.Duration;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
@@ -42,13 +40,13 @@ public class ElasticsearchExporterTest {
 
   private ElasticsearchExporterConfiguration config;
   private ElasticsearchClient esClient;
-
-  private long lastExportedRecordPosition;
+  private Controller controller;
 
   @Before
   public void setUp() {
     config = new ElasticsearchExporterConfiguration();
     esClient = mockElasticsearchClient();
+    controller = mock(Controller.class);
   }
 
   @Test
@@ -241,7 +239,7 @@ public class ElasticsearchExporterTest {
     exporter.export(record);
 
     // then
-    assertThat(lastExportedRecordPosition).isEqualTo(position);
+    verify(controller).updateLastExportedRecordPosition(position);
   }
 
   @Test
@@ -266,7 +264,7 @@ public class ElasticsearchExporterTest {
           }
         };
     exporter.configure(createContext(configuration));
-    exporter.open(createController());
+    exporter.open(controller);
     return exporter;
   }
 
@@ -296,20 +294,6 @@ public class ElasticsearchExporterTest {
             return (T) configuration;
           }
         };
-      }
-    };
-  }
-
-  private Controller createController() {
-    return new Controller() {
-      @Override
-      public void updateLastExportedRecordPosition(long position) {
-        lastExportedRecordPosition = position;
-      }
-
-      @Override
-      public void scheduleTask(Duration delay, Runnable task) {
-        // ignore
       }
     };
   }
