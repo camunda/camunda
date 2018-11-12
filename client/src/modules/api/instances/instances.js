@@ -25,7 +25,7 @@ export async function fetchGroupedWorkflowInstances() {
 }
 
 export async function fetchWorkflowInstancesCount(payload) {
-  const url = `${URL}?firstResult=${0}&maxResults=${1}`;
+  const url = `${URL}?firstResult=${0}&maxResults=${0}`;
   const response = await post(url, {
     queries: [{...payload}]
   });

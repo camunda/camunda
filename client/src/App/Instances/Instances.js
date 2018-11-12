@@ -86,7 +86,6 @@ class Instances extends Component {
     document.title = PAGE_TITLE.INSTANCES;
     const groupedWorkflows = await fetchGroupedWorkflowInstances();
     this.setGroupedWorkflowInstances(groupedWorkflows);
-
     await this.validateAndSetUrlFilter();
     await this.updateFilterRelatedState();
     this.updateLocalStorageFilter();
@@ -99,7 +98,12 @@ class Instances extends Component {
 
   async componentDidUpdate(prevProps, prevState) {
     // filter in url has changed
-    if (prevProps.location.search !== this.props.location.search) {
+    if (
+      !isEqual(
+        parseQueryString(prevProps.location.search).filter,
+        parseQueryString(this.props.location.search).filter
+      )
+    ) {
       await this.validateAndSetUrlFilter();
       await this.updateFilterRelatedState();
       this.updateLocalStorageFilter();
@@ -446,15 +450,6 @@ class Instances extends Component {
 
   handleFilterReset = () => {
     this.setFilterInURL(DEFAULT_FILTER);
-
-    // reset diagram
-    this.setState({
-      diagramWorkflow: {}
-    });
-
-    // reset filter in local storage
-    this.props.storeStateLocally({filter: DEFAULT_FILTER});
-
     this.resetSelections();
   };
 
