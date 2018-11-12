@@ -3,7 +3,46 @@
 exports[`SelectionList should pass props to the Selection component 1`] = `
 Object {
   "instanceCount": 1,
-  "instances": Array [],
+  "instances": Map {
+    "id_56" => Object {
+      "activities": Array [
+        Object {
+          "activityId": "activityId_14",
+          "endDate": "2018-10-10T09:20:38.658Z",
+          "id": "id_57",
+          "startDate": "2018-10-10T09:20:38.658Z",
+          "state": "ACTIVE",
+        },
+      ],
+      "bpmnProcessId": "someKey",
+      "endDate": null,
+      "id": "id_56",
+      "incidents": Array [
+        Object {
+          "activityId": Object {},
+          "activityInstanceId": Object {},
+          "errorMessage": "",
+          "errorType": "",
+          "id": "id_59",
+          "jobId": "jobId_14",
+        },
+      ],
+      "operations": Array [
+        Object {
+          "endDate": "2018-10-10T09:20:38.661Z",
+          "errorMessage": "string",
+          "startDate": "2018-10-10T09:20:38.661Z",
+          "state": "SCHEDULED",
+          "type": "UPDATE_RETRIES",
+        },
+      ],
+      "startDate": "2018-06-21",
+      "state": "ACTIVE",
+      "workflowId": "2",
+      "workflowName": "someWorkflowName",
+      "workflowVersion": 1,
+    },
+  },
   "isOpen": false,
   "onCancel": [Function],
   "onDelete": [Function],
@@ -14,12 +53,7 @@ Object {
 `;
 
 exports[`SelectionList should render a message when no selection exists 1`] = `
-<Fragment>
-  <div />
-  <styled.ul>
-    <Themed(styled.div)>
-      To create a new Selection, select some instances from the list and click ”Create new Selection”.
-    </Themed(styled.div)>
-  </styled.ul>
-</Fragment>
+<Themed(styled.div)>
+  To create a new Selection, select some instances from the list and click ”Create new Selection”.
+</Themed(styled.div)>
 `;

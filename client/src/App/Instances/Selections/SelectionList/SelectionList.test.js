@@ -2,7 +2,6 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import SelectionList from './SelectionList';
-import ContextualMessage from 'modules/components/ContextualMessage';
 
 import {NO_SELECTIONS_MESSAGE} from './constants';
 
@@ -17,7 +16,13 @@ describe('SelectionList', () => {
   beforeEach(async () => {
     selections = [];
 
-    xTimes(1)(index => selections.push(createSelection(index)));
+    xTimes(1)(index =>
+      selections.push(
+        createSelection({
+          selectionId: index
+        })
+      )
+    );
 
     node = shallow(
       <SelectionList
@@ -39,7 +44,7 @@ describe('SelectionList', () => {
     const NoSelectionWrapper = node.find(Styled.NoSelectionWrapper);
     expect(NoSelectionWrapper).toHaveLength(1);
     expect(NoSelectionWrapper.contains(NO_SELECTIONS_MESSAGE)).toBe(true);
-    expect(node).toMatchSnapshot();
+    expect(NoSelectionWrapper).toMatchSnapshot();
   });
 
   it('should render contexual message when max. number of selections is reached', () => {
@@ -60,8 +65,11 @@ describe('SelectionList', () => {
   });
 
   it('should evaluate which Selection is currently open', () => {
+    //given
+    const SelectionId = 1;
+
     // when
-    node.setProps({openSelection: 1});
+    node.setProps({openSelection: SelectionId});
 
     // then
     expect(node.find('Selection').props().isOpen).toBe(true);

@@ -40,14 +40,14 @@ export default class SelectionList extends React.Component {
         <Styled.Ul>
           {selections.length ? (
             selections.map(selection => {
-              const {selectionId, workflowInstances, totalCount} = selection;
+              const {selectionId, instancesMap, totalCount} = selection;
 
               return (
                 <Styled.Li key={selectionId}>
                   <Selection
                     isOpen={openSelection === selectionId}
                     selectionId={selectionId}
-                    instances={workflowInstances}
+                    instances={instancesMap}
                     instanceCount={totalCount}
                     onRetry={() => onRetrySelection(openSelection)}
                     onCancel={() => onCancelSelection(openSelection)}
