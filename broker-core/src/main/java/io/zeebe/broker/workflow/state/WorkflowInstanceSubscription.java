@@ -21,12 +21,13 @@ import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
 import static io.zeebe.util.buffer.BufferUtil.readIntoBuffer;
 import static io.zeebe.util.buffer.BufferUtil.writeIntoBuffer;
 
-import io.zeebe.broker.subscription.message.state.Subscription;
+import io.zeebe.util.buffer.BufferReader;
+import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
-public class WorkflowSubscription implements Subscription {
+public class WorkflowInstanceSubscription implements BufferReader, BufferWriter {
 
   private static final int STATE_OPENING = 0;
   private static final int STATE_OPENED = 1;
@@ -42,46 +43,31 @@ public class WorkflowSubscription implements Subscription {
 
   private int state = STATE_OPENING;
 
-  public WorkflowSubscription() {}
+  public WorkflowInstanceSubscription() {}
 
-  public WorkflowSubscription(long workflowInstanceKey, long elementInstanceKey) {
+  public WorkflowInstanceSubscription(long workflowInstanceKey, long elementInstanceKey) {
     this.workflowInstanceKey = workflowInstanceKey;
     this.elementInstanceKey = elementInstanceKey;
   }
 
-  public WorkflowSubscription(
+  public WorkflowInstanceSubscription(
       long workflowInstanceKey,
       long elementInstanceKey,
       DirectBuffer messageName,
-      DirectBuffer correlationKey) {
+      DirectBuffer correlationKey,
+      final long commandSentTime) {
     this.workflowInstanceKey = workflowInstanceKey;
     this.elementInstanceKey = elementInstanceKey;
+    this.commandSentTime = commandSentTime;
 
     this.messageName.wrap(messageName);
     this.correlationKey.wrap(correlationKey);
   }
 
-  WorkflowSubscription(
-      final String messageName,
-      final String correlationKey,
-      final long workflowInstanceKey,
-      final long elementInstanceKey,
-      final long commandSentTime) {
-    this(
-        workflowInstanceKey,
-        elementInstanceKey,
-        new UnsafeBuffer(messageName.getBytes()),
-        new UnsafeBuffer(correlationKey.getBytes()));
-
-    setCommandSentTime(commandSentTime);
-  }
-
-  @Override
   public DirectBuffer getMessageName() {
     return messageName;
   }
 
-  @Override
   public DirectBuffer getCorrelationKey() {
     return correlationKey;
   }
@@ -98,7 +84,6 @@ public class WorkflowSubscription implements Subscription {
     return commandSentTime;
   }
 
-  @Override
   public void setCommandSentTime(long commandSentTime) {
     this.commandSentTime = commandSentTime;
   }
@@ -173,27 +158,5 @@ public class WorkflowSubscription implements Subscription {
     offset = writeIntoBuffer(buffer, offset, messageName);
     offset = writeIntoBuffer(buffer, offset, correlationKey);
     assert offset == getLength() : "End offset differs with getLength()";
-  }
-
-  @Override
-  public void writeCommandSentTime(MutableDirectBuffer keyBuffer, int offset) {
-    keyBuffer.putLong(offset, commandSentTime, STATE_BYTE_ORDER);
-  }
-
-  @Override
-  public int getKeyLength() {
-    return 2 * Long.BYTES;
-  }
-
-  @Override
-  public void writeKey(MutableDirectBuffer keyBuffer, int offset) {
-    final int startOffset = offset;
-    keyBuffer.putLong(offset, workflowInstanceKey, STATE_BYTE_ORDER);
-    offset += Long.BYTES;
-    keyBuffer.putLong(offset, elementInstanceKey, STATE_BYTE_ORDER);
-    offset += Long.BYTES;
-
-    assert (offset - startOffset) == getKeyLength()
-        : "Offset problem: offset is not equal to expected key length";
   }
 }

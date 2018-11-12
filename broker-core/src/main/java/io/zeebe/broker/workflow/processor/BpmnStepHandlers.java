@@ -18,6 +18,7 @@
 package io.zeebe.broker.workflow.processor;
 
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
+import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionState;
 import io.zeebe.broker.workflow.model.BpmnStep;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElement;
 import io.zeebe.broker.workflow.processor.activity.InputMappingHandler;
@@ -51,7 +52,9 @@ public class BpmnStepHandlers {
   private final Map<BpmnStep, BpmnStepHandler> stepHandlers = new EnumMap<>(BpmnStep.class);
 
   public BpmnStepHandlers(
-      SubscriptionCommandSender subscriptionCommandSender, WorkflowState workflowState) {
+      SubscriptionCommandSender subscriptionCommandSender,
+      WorkflowState workflowState,
+      WorkflowInstanceSubscriptionState subscriptionState) {
 
     // activity
     stepHandlers.put(BpmnStep.CREATE_JOB, new CreateJobHandler());
@@ -83,7 +86,7 @@ public class BpmnStepHandlers {
     stepHandlers.put(BpmnStep.TERMINATE_TIMER, new TerminateTimerHandler(workflowState));
     stepHandlers.put(
         BpmnStep.TERMINATE_INTERMEDIATE_MESSAGE,
-        new TerminateIntermediateMessageHandler(workflowState, subscriptionCommandSender));
+        new TerminateIntermediateMessageHandler(subscriptionState, subscriptionCommandSender));
     stepHandlers.put(
         BpmnStep.TERMINATE_CONTAINED_INSTANCES,
         new TerminateContainedElementsHandler(workflowState));
@@ -92,7 +95,7 @@ public class BpmnStepHandlers {
     // intermediate catch event
     stepHandlers.put(
         BpmnStep.SUBSCRIBE_TO_INTERMEDIATE_MESSAGE,
-        new MessageCatchElementHandler(subscriptionCommandSender, workflowState));
+        new MessageCatchElementHandler(subscriptionCommandSender, subscriptionState));
     stepHandlers.put(BpmnStep.CREATE_TIMER, new CreateTimerHandler());
 
     // process

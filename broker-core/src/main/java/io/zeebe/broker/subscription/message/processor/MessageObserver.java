@@ -23,6 +23,7 @@ import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.state.MessageState;
+import io.zeebe.broker.subscription.message.state.MessageSubscriptionState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.util.sched.ActorControl;
 import java.time.Duration;
@@ -37,14 +38,17 @@ public class MessageObserver implements StreamProcessorLifecycleAware {
   private final TopologyManager topologyManager;
   private final SubscriptionCommandSender subscriptionCommandSender;
   private final MessageState messageState;
+  private final MessageSubscriptionState subscriptionState;
 
   public MessageObserver(
       MessageState messageState,
+      MessageSubscriptionState subscriptionState,
       SubscriptionCommandSender subscriptionCommandSender,
       TopologyManager topologyManager) {
     this.subscriptionCommandSender = subscriptionCommandSender;
     this.topologyManager = topologyManager;
     this.messageState = messageState;
+    this.subscriptionState = subscriptionState;
   }
 
   @Override
@@ -64,7 +68,7 @@ public class MessageObserver implements StreamProcessorLifecycleAware {
 
     final PendingMessageSubscriptionChecker pendingSubscriptionChecker =
         new PendingMessageSubscriptionChecker(
-            subscriptionCommandSender, messageState, SUBSCRIPTION_TIMEOUT.toMillis());
+            subscriptionCommandSender, subscriptionState, SUBSCRIPTION_TIMEOUT.toMillis());
     actor.runAtFixedRate(SUBSCRIPTION_CHECK_INTERVAL, pendingSubscriptionChecker);
   }
 }

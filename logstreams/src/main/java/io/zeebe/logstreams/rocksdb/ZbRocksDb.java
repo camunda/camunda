@@ -212,6 +212,11 @@ public class ZbRocksDb extends RocksDB {
     return exists(columnFamily, key.byteArray(), key.wrapAdjustment(), key.capacity());
   }
 
+  public boolean exists(ColumnFamilyHandle columnFamily, long key) {
+    setKey(key);
+    return exists(columnFamily, longKeyBuffer, existsBuffer);
+  }
+
   /**
    * Allows doing an exist call and getting the value back (since it has to be read anyway) if it
    * does.

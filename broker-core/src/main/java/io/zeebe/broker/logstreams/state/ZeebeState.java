@@ -19,6 +19,8 @@ package io.zeebe.broker.logstreams.state;
 
 import io.zeebe.broker.job.JobState;
 import io.zeebe.broker.subscription.message.state.MessageState;
+import io.zeebe.broker.subscription.message.state.MessageSubscriptionState;
+import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionState;
 import io.zeebe.broker.util.KeyStateController;
 import io.zeebe.broker.workflow.deployment.distribute.processor.state.DeploymentsState;
 import io.zeebe.broker.workflow.state.WorkflowState;
@@ -32,6 +34,9 @@ public class ZeebeState extends KeyStateController {
   private final DeploymentsState deploymentState = new DeploymentsState();
   private final JobState jobState = new JobState();
   private final MessageState messageState = new MessageState();
+  private final MessageSubscriptionState messageSubscriptionState = new MessageSubscriptionState();
+  private final WorkflowInstanceSubscriptionState workflowInstanceSubscriptionState =
+      new WorkflowInstanceSubscriptionState();
 
   @Override
   public ZbRocksDb open(final File dbDirectory, final boolean reopen) throws Exception {
@@ -39,6 +44,8 @@ public class ZeebeState extends KeyStateController {
     columnFamilyNames.addAll(DeploymentsState.getColumnFamilyNames());
     columnFamilyNames.addAll(JobState.getColumnFamilyNames());
     columnFamilyNames.addAll(MessageState.getColumnFamilyNames());
+    columnFamilyNames.addAll(MessageSubscriptionState.getColumnFamilyNames());
+    columnFamilyNames.addAll(WorkflowInstanceSubscriptionState.getColumnFamilyNames());
 
     final ZbRocksDb rocksDB = super.open(dbDirectory, reopen, columnFamilyNames);
 
@@ -46,6 +53,8 @@ public class ZeebeState extends KeyStateController {
     deploymentState.onOpened(this);
     jobState.onOpened(this);
     messageState.onOpened(this);
+    messageSubscriptionState.onOpened(this);
+    workflowInstanceSubscriptionState.onOpened(this);
 
     return rocksDB;
   }
@@ -64,5 +73,13 @@ public class ZeebeState extends KeyStateController {
 
   public MessageState getMessageState() {
     return messageState;
+  }
+
+  public MessageSubscriptionState getMessageSubscriptionState() {
+    return messageSubscriptionState;
+  }
+
+  public WorkflowInstanceSubscriptionState getWorkflowInstanceSubscriptionState() {
+    return workflowInstanceSubscriptionState;
   }
 }

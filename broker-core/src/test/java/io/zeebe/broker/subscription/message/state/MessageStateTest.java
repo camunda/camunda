@@ -21,7 +21,6 @@ import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.logstreams.state.ZeebeState;
-import io.zeebe.broker.subscription.message.data.MessageSubscriptionRecord;
 import io.zeebe.util.sched.clock.ActorClock;
 import java.util.ArrayList;
 import java.util.List;
@@ -105,33 +104,6 @@ public class MessageStateTest {
     // when
     final boolean exist =
         stateController.exist(wrapString("name"), wrapString("correlationKey"), wrapString("id"));
-
-    // then
-    assertThat(exist).isTrue();
-  }
-
-  @Test
-  public void shouldNotExistIfSubscriptionNotStored() {
-    // given
-    final MessageSubscription subscription =
-        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 1234);
-
-    // when
-    final boolean exist = stateController.exist(subscription);
-
-    // then
-    assertThat(exist).isFalse();
-  }
-
-  @Test
-  public void shouldExistSubscription() {
-    // given
-    final MessageSubscription subscription =
-        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 1234);
-    stateController.put(subscription);
-
-    // when
-    final boolean exist = stateController.exist(subscription);
 
     // then
     assertThat(exist).isTrue();
@@ -226,117 +198,6 @@ public class MessageStateTest {
   }
 
   @Test
-  public void shouldFindSubscription() {
-    // given
-    final MessageSubscription subscription =
-        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 0);
-    stateController.put(subscription);
-
-    // when
-    final List<MessageSubscription> readSubscriptions =
-        stateController.findSubscriptions(wrapString("messageName"), wrapString("correlationKey"));
-
-    // then
-    assertThat(readSubscriptions.size()).isEqualTo(1);
-
-    final MessageSubscription readSubscription = readSubscriptions.get(0);
-    assertSubscription(subscription, readSubscription);
-  }
-
-  @Test
-  public void shouldFindMoreSubscriptions() {
-    // given
-    final MessageSubscription subscription =
-        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 0);
-    final MessageSubscription subscription2 =
-        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 2, 3, 0);
-    final MessageSubscription subscription3 =
-        new MessageSubscription("otherName", "correlationKey", "{\"foo\":\"bar\"}", 3, 4, 0);
-    stateController.put(subscription);
-    stateController.put(subscription2);
-    stateController.put(subscription3);
-
-    // when
-    final List<MessageSubscription> readSubscriptions =
-        stateController.findSubscriptions(wrapString("messageName"), wrapString("correlationKey"));
-
-    // then
-    assertThat(readSubscriptions.size()).isEqualTo(2);
-
-    MessageSubscription readSubscription = readSubscriptions.get(0);
-    assertSubscription(subscription, readSubscription, 0, 1, 2);
-    readSubscription = readSubscriptions.get(1);
-    assertSubscription(subscription2, readSubscription, 0, 2, 3);
-
-    // and
-    final List<MessageSubscription> otherSubscriptions =
-        stateController.findSubscriptions(wrapString("otherName"), wrapString("correlationKey"));
-
-    assertThat(otherSubscriptions.size()).isEqualTo(1);
-    assertSubscription(subscription3, otherSubscriptions.get(0), 0, 3, 4);
-  }
-
-  @Test
-  public void shouldFindSubscriptionWithMessageStored() {
-    // given
-    final MessageSubscription subscription =
-        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 0);
-    final Message message = createMessage(1L, "name", "correlationKey");
-
-    stateController.put(message);
-    stateController.put(subscription);
-
-    // when
-    final List<MessageSubscription> readSubscriptions =
-        stateController.findSubscriptions(wrapString("messageName"), wrapString("correlationKey"));
-
-    // then
-    assertThat(readSubscriptions.size()).isEqualTo(1);
-
-    final MessageSubscription readSubscription = readSubscriptions.get(0);
-    assertSubscription(subscription, readSubscription);
-  }
-
-  @Test
-  public void shouldFindOnlySubscriptionsWithoutSendTime() {
-    // given
-    final MessageSubscription subscription =
-        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 1234);
-    final MessageSubscription subscription2 =
-        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 3, 4, 0);
-    stateController.put(subscription);
-    stateController.put(subscription2);
-
-    // when
-    final List<MessageSubscription> readSubscriptions =
-        stateController.findSubscriptions(wrapString("messageName"), wrapString("correlationKey"));
-
-    // then
-    assertThat(readSubscriptions.size()).isEqualTo(1);
-    assertThat(readSubscriptions.get(0).getWorkflowInstanceKey()).isEqualTo(3);
-  }
-
-  private void assertSubscription(
-      MessageSubscription subscription, MessageSubscription readSubscription) {
-    assertSubscription(subscription, readSubscription, 0, 1, 2);
-  }
-
-  private void assertSubscription(
-      MessageSubscription subscription,
-      MessageSubscription readSubscription,
-      long sendTime,
-      int wfInstanceKey,
-      int actInstanceKey) {
-    assertThat(readSubscription.getMessageName()).isEqualTo(subscription.getMessageName());
-    assertThat(readSubscription.getCorrelationKey()).isEqualTo(subscription.getCorrelationKey());
-    assertThat(readSubscription.getMessagePayload()).isEqualTo(subscription.getMessagePayload());
-
-    assertThat(readSubscription.getCommandSentTime()).isEqualTo(sendTime);
-    assertThat(readSubscription.getWorkflowInstanceKey()).isEqualTo(wfInstanceKey);
-    assertThat(readSubscription.getElementInstanceKey()).isEqualTo(actInstanceKey);
-  }
-
-  @Test
   public void shouldNotVisitMessagesBeforeTime() {
     // given
     final Message message = createMessage(1L, "name", "correlationKey", "{}", "nr1", 1234);
@@ -350,28 +211,6 @@ public class MessageStateTest {
     stateController.visitMessagesWithDeadlineBefore(1_000, readMessage::add);
 
     assertThat(readMessage).isEmpty();
-  }
-
-  @Test
-  public void shouldNotFindMessageSubscriptionBeforeTime() {
-    // given
-    final MessageSubscription subscription =
-        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 1234);
-    final MessageSubscription subscription2 =
-        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 2, 3, 4567);
-    final Message message = createMessage(1L, "name", "correlationKey", "{}", "nr1", 1234);
-
-    stateController.put(message);
-    stateController.put(subscription);
-    stateController.put(subscription2);
-
-    // when
-    final long deadline = 1_000L;
-
-    // then
-    final List<MessageSubscription> readSubscriptions =
-        stateController.findSubscriptionBefore(deadline);
-    assertThat(readSubscriptions).isEmpty();
   }
 
   @Test
@@ -411,58 +250,6 @@ public class MessageStateTest {
 
     assertThat(readMessage.size()).isEqualTo(2);
     assertThat(readMessage).containsExactly(1L, 2L);
-  }
-
-  @Test
-  public void shouldFindMessageSubscriptionBeforeTime() {
-    // given
-    final MessageSubscription subscription =
-        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 1234);
-    final MessageSubscription subscription2 =
-        new MessageSubscription("otherName", "otherKey", "{\"foo\":\"bar\"}", 2, 3, 2000);
-    final Message message = createMessage(1L, "name", "correlationKey", "{}", "nr1", 1234);
-
-    stateController.put(message);
-    stateController.put(subscription);
-    stateController.put(subscription2);
-
-    // when
-    final long deadline = 2_000L;
-
-    // then
-    final List<MessageSubscription> readSubscriptions =
-        stateController.findSubscriptionBefore(deadline);
-    assertThat(readSubscriptions.size()).isEqualTo(1);
-    final MessageSubscription readSubscription = readSubscriptions.get(0);
-    assertThat(readSubscription.getMessageName()).isEqualTo(wrapString("messageName"));
-    assertThat(readSubscription.getCorrelationKey()).isEqualTo(wrapString("correlationKey"));
-    assertThat(readSubscription.getMessagePayload()).isEqualTo(wrapString("{\"foo\":\"bar\"}"));
-    assertThat(readSubscription.getCommandSentTime()).isEqualTo(1234);
-  }
-
-  @Test
-  public void shouldFindMessageSubscriptionBeforeTimeInOrder() {
-    // given
-    final MessageSubscription subscription =
-        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 1234);
-    final MessageSubscription subscription2 =
-        new MessageSubscription("otherName", "otherKey", "{\"foo\":\"bar\"}", 3, 4, 2000);
-    final Message message = createMessage(1L, "name", "correlationKey", "{}", "nr1", 1234);
-
-    stateController.put(message);
-    stateController.put(subscription);
-    stateController.put(subscription2);
-
-    // when
-    final long deadline = 3_000L;
-
-    // then
-    final List<MessageSubscription> readSubscriptions =
-        stateController.findSubscriptionBefore(deadline);
-    assertThat(readSubscriptions.size()).isEqualTo(2);
-    assertThat(readSubscriptions)
-        .extracting(s -> s.getWorkflowInstanceKey())
-        .containsExactly(1L, 3L);
   }
 
   @Test
@@ -603,101 +390,6 @@ public class MessageStateTest {
 
     assertThat(stateController.existMessageCorrelation(3L, 2L)).isFalse();
     assertThat(stateController.existMessageCorrelation(1L, 3L)).isFalse();
-  }
-
-  @Test
-  public void shouldRemoveSubscription() {
-    // given
-    final MessageSubscription subscription =
-        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 1234);
-
-    stateController.put(subscription);
-
-    // when
-    stateController.remove(subscription);
-
-    // then
-    List<MessageSubscription> readSubscriptions = stateController.findSubscriptionBefore(2000);
-    assertThat(readSubscriptions.size()).isEqualTo(0);
-
-    // and
-    readSubscriptions =
-        stateController.findSubscriptions(wrapString("messageName"), wrapString("correlationKey"));
-    assertThat(readSubscriptions.size()).isEqualTo(0);
-
-    // and
-    final boolean exist = stateController.exist(subscription);
-    assertThat(exist).isFalse();
-  }
-
-  @Test
-  public void shouldRemoveSubscriptionWithRecord() {
-    // given
-    final MessageSubscription subscription =
-        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 1234);
-
-    stateController.put(subscription);
-
-    // when
-    final MessageSubscriptionRecord messageSubscriptionRecord = new MessageSubscriptionRecord();
-    messageSubscriptionRecord.setWorkflowInstanceKey(1);
-    messageSubscriptionRecord.setElementInstanceKey(2);
-    final boolean removed = stateController.remove(messageSubscriptionRecord);
-
-    // then
-    assertThat(removed).isTrue();
-    List<MessageSubscription> readSubscriptions = stateController.findSubscriptionBefore(2000);
-    assertThat(readSubscriptions.size()).isEqualTo(0);
-
-    // and
-    readSubscriptions =
-        stateController.findSubscriptions(wrapString("messageName"), wrapString("correlationKey"));
-    assertThat(readSubscriptions.size()).isEqualTo(0);
-
-    // and
-    final boolean exist = stateController.exist(subscription);
-    assertThat(exist).isFalse();
-  }
-
-  @Test
-  public void shouldNotFailOnRemoveSubscriptionTwice() {
-    // given
-    final MessageSubscription subscription =
-        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 1234);
-
-    stateController.put(subscription);
-
-    // when
-    stateController.remove(subscription);
-    stateController.remove(subscription);
-
-    // then
-    List<MessageSubscription> readSubscriptions = stateController.findSubscriptionBefore(2000);
-    assertThat(readSubscriptions.size()).isEqualTo(0);
-
-    // and
-    readSubscriptions =
-        stateController.findSubscriptions(wrapString("messageName"), wrapString("correlationKey"));
-    assertThat(readSubscriptions.size()).isEqualTo(0);
-  }
-
-  @Test
-  public void shouldNotRemoveSubscriptionOnDifferentKey() {
-    // given
-    final MessageSubscription subscription =
-        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 1, 2, 0);
-    final MessageSubscription subscription2 =
-        new MessageSubscription("messageName", "correlationKey", "{\"foo\":\"bar\"}", 2, 3, 0);
-
-    stateController.put(subscription);
-
-    // when
-    stateController.remove(subscription2);
-
-    // then
-    final List<MessageSubscription> readSubscriptions =
-        stateController.findSubscriptions(wrapString("messageName"), wrapString("correlationKey"));
-    assertThat(readSubscriptions.size()).isEqualTo(1);
   }
 
   private Message createMessage(long key, String name, String correlationKey) {

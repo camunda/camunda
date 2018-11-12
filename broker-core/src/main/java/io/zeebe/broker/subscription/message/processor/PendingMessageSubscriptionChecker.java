@@ -18,47 +18,44 @@
 package io.zeebe.broker.subscription.message.processor;
 
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
-import io.zeebe.broker.subscription.message.state.MessageState;
 import io.zeebe.broker.subscription.message.state.MessageSubscription;
+import io.zeebe.broker.subscription.message.state.MessageSubscriptionState;
 import io.zeebe.util.sched.clock.ActorClock;
-import java.util.List;
 
 public class PendingMessageSubscriptionChecker implements Runnable {
 
   private final SubscriptionCommandSender commandSender;
-  private final MessageState messageState;
+  private final MessageSubscriptionState subscriptionState;
 
   private final long subscriptionTimeout;
 
   public PendingMessageSubscriptionChecker(
       SubscriptionCommandSender commandSender,
-      MessageState messageState,
+      MessageSubscriptionState subscriptionState,
       long subscriptionTimeout) {
     this.commandSender = commandSender;
-    this.messageState = messageState;
+    this.subscriptionState = subscriptionState;
     this.subscriptionTimeout = subscriptionTimeout;
   }
 
   @Override
   public void run() {
-
-    final List<MessageSubscription> pendingSubscriptions =
-        messageState.findSubscriptionBefore(ActorClock.currentTimeMillis() - subscriptionTimeout);
-
-    for (MessageSubscription subscription : pendingSubscriptions) {
-      if (sendCommand(subscription)) {
-        messageState.updateCommandSentTime(subscription);
-      } else {
-        return;
-      }
-    }
+    subscriptionState.visitSubscriptionBefore(
+        ActorClock.currentTimeMillis() - subscriptionTimeout, this::sendCommand);
   }
 
   private boolean sendCommand(MessageSubscription subscription) {
-    return commandSender.correlateWorkflowInstanceSubscription(
-        subscription.getWorkflowInstanceKey(),
-        subscription.getElementInstanceKey(),
-        subscription.getMessageName(),
-        subscription.getMessagePayload());
+    final boolean success =
+        commandSender.correlateWorkflowInstanceSubscription(
+            subscription.getWorkflowInstanceKey(),
+            subscription.getElementInstanceKey(),
+            subscription.getMessageName(),
+            subscription.getMessagePayload());
+
+    if (success) {
+      subscriptionState.updateSentTime(subscription, ActorClock.currentTimeMillis());
+    }
+
+    return success;
   }
 }

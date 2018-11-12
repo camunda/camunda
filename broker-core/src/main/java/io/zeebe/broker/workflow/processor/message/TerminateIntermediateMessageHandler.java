@@ -19,22 +19,24 @@ package io.zeebe.broker.workflow.processor.message;
 
 import io.zeebe.broker.logstreams.processor.TypedBatchWriter;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
+import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionState;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.flownode.TerminateElementHandler;
-import io.zeebe.broker.workflow.state.WorkflowState;
-import io.zeebe.broker.workflow.state.WorkflowSubscription;
+import io.zeebe.broker.workflow.state.WorkflowInstanceSubscription;
+import io.zeebe.util.sched.clock.ActorClock;
 
 public class TerminateIntermediateMessageHandler extends TerminateElementHandler {
 
-  private final WorkflowState workflowState;
+  private final WorkflowInstanceSubscriptionState subscriptionState;
   private final SubscriptionCommandSender subscriptionCommandSender;
 
-  private WorkflowSubscription subscription;
+  private WorkflowInstanceSubscription subscription;
 
   public TerminateIntermediateMessageHandler(
-      WorkflowState workflowState, SubscriptionCommandSender subscriptionCommandSender) {
-    this.workflowState = workflowState;
+      WorkflowInstanceSubscriptionState subscriptionState,
+      SubscriptionCommandSender subscriptionCommandSender) {
+    this.subscriptionState = subscriptionState;
     this.subscriptionCommandSender = subscriptionCommandSender;
   }
 
@@ -43,14 +45,14 @@ public class TerminateIntermediateMessageHandler extends TerminateElementHandler
       BpmnStepContext<ExecutableFlowNode> context, TypedBatchWriter batch) {
 
     final long elementInstanceKey = context.getElementInstance().getKey();
-    final long workflowInstanceKey = context.getValue().getWorkflowInstanceKey();
 
-    subscription = workflowState.findSubscription(workflowInstanceKey, elementInstanceKey);
+    subscription = subscriptionState.getSubscription(elementInstanceKey);
 
-    context.getSideEffect().accept(this::sendSubscriptionCommand);
+    if (subscription != null) {
+      context.getSideEffect().accept(this::sendSubscriptionCommand);
 
-    subscription.setClosing();
-    workflowState.updateCommandSendTime(subscription);
+      subscriptionState.updateToClosingState(subscription, ActorClock.currentTimeMillis());
+    }
   }
 
   private boolean sendSubscriptionCommand() {

@@ -22,6 +22,7 @@ import io.zeebe.broker.logstreams.processor.TypedEventStreamProcessorBuilder;
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.state.MessageState;
+import io.zeebe.broker.subscription.message.state.MessageSubscriptionState;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.protocol.intent.MessageIntent;
 import io.zeebe.protocol.intent.MessageSubscriptionIntent;
@@ -33,27 +34,32 @@ public class MessageEventProcessors {
       ZeebeState zeebeState,
       SubscriptionCommandSender subscriptionCommandSender,
       TopologyManager topologyManager) {
+
     final MessageState messageState = zeebeState.getMessageState();
+    final MessageSubscriptionState subscriptionState = zeebeState.getMessageSubscriptionState();
+
     typedProcessorBuilder
         .onCommand(
             ValueType.MESSAGE,
             MessageIntent.PUBLISH,
-            new PublishMessageProcessor(messageState, subscriptionCommandSender))
+            new PublishMessageProcessor(messageState, subscriptionState, subscriptionCommandSender))
         .onCommand(
             ValueType.MESSAGE, MessageIntent.DELETE, new DeleteMessageProcessor(messageState))
         .onCommand(
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.OPEN,
-            new OpenMessageSubscriptionProcessor(messageState, subscriptionCommandSender))
+            new OpenMessageSubscriptionProcessor(
+                messageState, subscriptionState, subscriptionCommandSender))
         .onCommand(
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.CORRELATE,
-            new CorrelateMessageSubscriptionProcessor(messageState))
+            new CorrelateMessageSubscriptionProcessor(subscriptionState))
         .onCommand(
             ValueType.MESSAGE_SUBSCRIPTION,
             MessageSubscriptionIntent.CLOSE,
-            new CloseMessageSubscriptionProcessor(messageState, subscriptionCommandSender))
+            new CloseMessageSubscriptionProcessor(subscriptionState, subscriptionCommandSender))
         .withListener(
-            new MessageObserver(messageState, subscriptionCommandSender, topologyManager));
+            new MessageObserver(
+                messageState, subscriptionState, subscriptionCommandSender, topologyManager));
   }
 }

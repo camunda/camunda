@@ -21,6 +21,7 @@ import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.logstreams.processor.TypedEventStreamProcessorBuilder;
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
+import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionState;
 import io.zeebe.broker.workflow.processor.message.CloseWorkflowInstanceSubscription;
 import io.zeebe.broker.workflow.processor.message.CorrelateWorkflowInstanceSubscription;
 import io.zeebe.broker.workflow.processor.message.OpenWorkflowInstanceSubscriptionProcessor;
@@ -44,6 +45,8 @@ public class WorkflowEventProcessors {
       TopologyManager topologyManager,
       DueDateTimerChecker timerChecker) {
     final WorkflowState workflowState = zeebeState.getWorkflowState();
+    final WorkflowInstanceSubscriptionState subscriptionState =
+        zeebeState.getWorkflowInstanceSubscriptionState();
 
     final WorkflowEngineState workflowEngineState = new WorkflowEngineState(workflowState);
     typedProcessorBuilder.withListener(workflowEngineState);
@@ -51,11 +54,15 @@ public class WorkflowEventProcessors {
     addWorkflowInstanceCommandProcessor(typedProcessorBuilder, workflowEngineState);
 
     final BpmnStepProcessor bpmnStepProcessor =
-        new BpmnStepProcessor(workflowEngineState, subscriptionCommandSender);
+        new BpmnStepProcessor(workflowEngineState, subscriptionState, subscriptionCommandSender);
     addBpmnStepProcessor(typedProcessorBuilder, bpmnStepProcessor);
 
     addMessageStreamProcessors(
-        typedProcessorBuilder, workflowState, topologyManager, subscriptionCommandSender);
+        typedProcessorBuilder,
+        workflowState,
+        subscriptionState,
+        topologyManager,
+        subscriptionCommandSender);
     addTimerStreamProcessors(typedProcessorBuilder, timerChecker, workflowState);
   }
 
@@ -119,22 +126,23 @@ public class WorkflowEventProcessors {
   private static void addMessageStreamProcessors(
       final TypedEventStreamProcessorBuilder streamProcessorBuilder,
       WorkflowState workflowState,
+      WorkflowInstanceSubscriptionState subscriptionState,
       TopologyManager topologyManager,
       SubscriptionCommandSender subscriptionCommandSender) {
     streamProcessorBuilder
         .onCommand(
             ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION,
             WorkflowInstanceSubscriptionIntent.OPEN,
-            new OpenWorkflowInstanceSubscriptionProcessor(workflowState))
+            new OpenWorkflowInstanceSubscriptionProcessor(subscriptionState))
         .onCommand(
             ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION,
             WorkflowInstanceSubscriptionIntent.CORRELATE,
             new CorrelateWorkflowInstanceSubscription(
-                topologyManager, workflowState, subscriptionCommandSender))
+                topologyManager, workflowState, subscriptionState, subscriptionCommandSender))
         .onCommand(
             ValueType.WORKFLOW_INSTANCE_SUBSCRIPTION,
             WorkflowInstanceSubscriptionIntent.CLOSE,
-            new CloseWorkflowInstanceSubscription(workflowState));
+            new CloseWorkflowInstanceSubscription(subscriptionState));
   }
 
   private static void addTimerStreamProcessors(

@@ -17,8 +17,6 @@
  */
 package io.zeebe.broker.workflow.state;
 
-import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
-import io.zeebe.broker.subscription.message.state.SubscriptionState;
 import io.zeebe.logstreams.state.StateController;
 import io.zeebe.logstreams.state.StateLifecycleListener;
 import io.zeebe.protocol.impl.record.value.deployment.DeploymentRecord;
@@ -47,7 +45,6 @@ public class WorkflowState implements StateLifecycleListener {
             COLUMN_FAMILY_NAMES,
             WorkflowPersistenceCache.COLUMN_FAMILY_NAMES,
             ElementInstanceState.COLUMN_FAMILY_NAMES,
-            SubscriptionState.getColumnFamilyNames("Workflow"),
             TimerInstanceState.COLUMN_FAMILY_NAMES)
         .flatMap(Stream::of)
         .collect(Collectors.toList());
@@ -57,7 +54,6 @@ public class WorkflowState implements StateLifecycleListener {
   private ColumnFamilyHandle workflowVersionHandle;
   private NextValueManager nextValueManager;
   private WorkflowPersistenceCache workflowPersistenceCache;
-  private SubscriptionState<WorkflowSubscription> subscriptionState;
   private TimerInstanceState timerInstanceState;
   private ElementInstanceState elementInstanceState;
 
@@ -68,8 +64,6 @@ public class WorkflowState implements StateLifecycleListener {
 
     nextValueManager = new NextValueManager(stateController);
     workflowPersistenceCache = new WorkflowPersistenceCache(stateController);
-    subscriptionState =
-        new SubscriptionState<>(stateController, SUB_SUFFIX, WorkflowSubscription.class);
     timerInstanceState = new TimerInstanceState(stateController);
     elementInstanceState = new ElementInstanceState(stateController);
   }
@@ -105,42 +99,6 @@ public class WorkflowState implements StateLifecycleListener {
 
   public Collection<DeployedWorkflow> getWorkflowsByBpmnProcessId(DirectBuffer processId) {
     return workflowPersistenceCache.getWorkflowsByBpmnProcessId(processId);
-  }
-
-  public void put(WorkflowSubscription workflowSubscription) {
-    subscriptionState.put(workflowSubscription);
-  }
-
-  public void updateCommandSendTime(WorkflowSubscription workflowSubscription) {
-    subscriptionState.updateCommandSentTime(workflowSubscription);
-  }
-
-  public WorkflowSubscription findSubscription(WorkflowInstanceSubscriptionRecord record) {
-    return findSubscription(record.getWorkflowInstanceKey(), record.getElementInstanceKey());
-  }
-
-  public WorkflowSubscription findSubscription(long workflowInstanceKey, long elementInstanceKey) {
-    final WorkflowSubscription workflowSubscription =
-        new WorkflowSubscription(workflowInstanceKey, elementInstanceKey);
-    return subscriptionState.getSubscription(workflowSubscription);
-  }
-
-  public List<WorkflowSubscription> findSubscriptionsBefore(long time) {
-    return subscriptionState.findSubscriptionBefore(time);
-  }
-
-  public boolean remove(WorkflowInstanceSubscriptionRecord record) {
-    final WorkflowSubscription persistedSubscription = findSubscription(record);
-
-    final boolean exist = persistedSubscription != null;
-    if (exist) {
-      subscriptionState.remove(persistedSubscription);
-    }
-    return exist;
-  }
-
-  public void remove(WorkflowSubscription workflowSubscription) {
-    subscriptionState.remove(workflowSubscription);
   }
 
   public TimerInstanceState getTimerState() {
