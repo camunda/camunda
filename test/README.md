@@ -20,11 +20,7 @@ Add `zeebe-test` as test dependency to your project.
 </dependencyManagement>
 
 <dependencies>
-  <dependency>
-    <groupId>io.zeebe</groupId>
-    <artifactId>zeebe-broker-core</artifactId>
-  </dependency>
-
+  
   <dependency>
     <groupId>io.zeebe</groupId>
     <artifactId>zeebe-client-java</artifactId>
@@ -35,6 +31,7 @@ Add `zeebe-test` as test dependency to your project.
     <artifactId>zeebe-test</artifactId>
     <scope>test</scope>
   </dependency>
+  
 </dependencies>
 ```
 
@@ -47,44 +44,45 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class WorkflowTest
-{
-    @Rule
-    public final ZeebeTestRule testRule = new ZeebeTestRule();
+public class WorkflowTest {
+  @Rule public final ZeebeTestRule testRule = new ZeebeTestRule();
 
-    private ZeebeClient client;
+  private ZeebeClient client;
 
-    @Before
-    public void deploy()
-    {
-        client = testRule.getClient();
+  @Before
+  public void deploy() {
+    client = testRule.getClient();
 
-        client.workflowClient()
-            .newDeployCommand()
-            .addResourceFromClasspath("process.bpmn")
-            .send()
-            .join();
-    }
+    client
+        .workflowClient()
+        .newDeployCommand()
+        .addResourceFromClasspath("process.bpmn")
+        .send()
+        .join();
+  }
 
-    @Test
-    public void shouldCompleteWorkflowInstance()
-    {
-        final WorkflowInstanceEvent workflowInstance = client.workflowClient()
+  @Test
+  public void shouldCompleteWorkflowInstance() {
+    final WorkflowInstanceEvent workflowInstance =
+        client
+            .workflowClient()
             .newCreateInstanceCommand()
             .bpmnProcessId("process")
             .latestVersion()
             .send()
             .join();
 
-        client.jobClient()
-            .newWorker()
-            .jobType("task")
-            .handler((c, j) -> c.newCompleteCommand(j).withoutPayload().send().join())
-            .name("test")
-            .open();
+    client
+        .jobClient()
+        .newWorker()
+        .jobType("task")
+        .handler((c, j) -> c.newCompleteCommand(j.getKey()).send().join())
+        .name("test")
+        .open();
 
-        testRule.waitUntilWorkflowInstanceCompleted(workflowInstance.getWorkflowInstanceKey());
-    }
-
+    ZeebeTestRule.assertThat(workflowInstance)
+        .isEnded()
+        .hasPassed("start", "task", "end");
+  }
 }
 ```
