@@ -18,6 +18,6 @@ pipelineJob('import-performance-dynamic-dataset') {
   }
 
   triggers {
-    cron('H 3 * * *')
+    cron('H 1 * * *')
   }
 }

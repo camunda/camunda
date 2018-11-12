@@ -20,6 +20,6 @@ pipelineJob('upgrade-performance-large-static-dataset') {
   }
 
   triggers {
-    cron('H 3 * * *')
+    cron('H 4 * * *')
   }
 }

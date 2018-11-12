@@ -17,6 +17,6 @@ pipelineJob('query-performance-tests') {
   }
 
   triggers {
-    cron('H 3 * * *')
+    cron('H 2 * * *')
   }
 }
