@@ -1,23 +1,16 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
+import {createInstance} from 'modules/testUtils';
+
 import StateIcon from 'modules/components/StateIcon';
 
 import Dropdown from 'modules/components/Dropdown';
 import Selection from './Selection';
 import * as Styled from './styled';
-// import {debug} from 'util';
 
-const demoInstance = {
-  id: '4294984040',
-  workflowId: '1',
-  startDate: '2018-07-10T08:58:58.073+0000',
-  endDate: null,
-  state: 'ACTIVE',
-  bpmnProcessId: 'demoProcess',
-  incidents: [],
-  activities: []
-};
+const mockInstance = createInstance();
+const mockMap = new Map([['1', mockInstance]]);
 
 const mockOnClick = jest.fn();
 const mockOnRetry = jest.fn();
@@ -31,8 +24,8 @@ describe('Selection', () => {
     node = shallow(
       <Selection
         isOpen={isOpen}
-        selectionId={0}
-        instances={[demoInstance]}
+        selectionId={1}
+        instances={mockMap}
         instanceCount={145}
         onToggle={mockOnClick}
         onRetry={mockOnRetry}
@@ -44,11 +37,13 @@ describe('Selection', () => {
 
   it('should contain a Header', () => {
     expect(node.find(Styled.Header)).toExist();
+    expect(node.find(Styled.Header)).toMatchSnapshot();
     expect(node.find(Styled.Header).props().isOpen).toBe(true);
   });
 
   it('should contain Instances', () => {
     expect(node.find(Styled.Instance)).toExist();
+    expect(node.find(Styled.Instance)).toMatchSnapshot();
     expect(node.find(StateIcon)).toExist();
     expect(node.find(Styled.WorkflowName)).toExist();
     expect(node.find(Styled.InstanceId)).toExist();
@@ -56,6 +51,7 @@ describe('Selection', () => {
 
   it('should contain a Footer', () => {
     expect(node.find(Styled.Footer)).toExist();
+    expect(node.find(Styled.Footer)).toMatchSnapshot();
     expect(node.find(Styled.MoreInstances)).toExist();
     expect(node.find(Styled.MoreInstances).contains('144 more Instances')).toBe(
       true
@@ -64,6 +60,7 @@ describe('Selection', () => {
 
   it('should contain Actions', () => {
     expect(node.find(Styled.Actions)).toExist();
+    expect(node.find(Styled.Actions)).toMatchSnapshot();
     expect(node.find(Styled.DropdownTrigger)).toExist();
     expect(node.find(Dropdown)).toExist();
     expect(node.find(Styled.DeleteIcon)).toExist();
@@ -97,13 +94,13 @@ describe('Selection', () => {
 
   it('should call the passed retry method', () => {
     node.find(Styled.DropdownTrigger).simulate('click');
-    node.find('[data-test="retry-dropdown-option"]').simulate('click');
+    node.find('[data-test="UPDATE_RETRIES-dropdown-option"]').simulate('click');
     expect(mockOnRetry).toHaveBeenCalled();
   });
 
   it('should call the passed cancel method', () => {
     node.find(Styled.DropdownTrigger).simulate('click');
-    node.find('[data-test="cancel-dropdown-option"]').simulate('click');
+    node.find('[data-test="CANCEL-dropdown-option"]').simulate('click');
     expect(mockOnCancel).toHaveBeenCalled();
   });
 });

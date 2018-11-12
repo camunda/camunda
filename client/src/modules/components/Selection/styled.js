@@ -139,12 +139,12 @@ export const Instance = themed(styled.div`
 `);
 
 export const WorkflowName = styled.div`
-  width: 97px;
+  width: 100px;
   margin: 0 64px 0 4px;
 `;
 
 export const InstanceId = styled.div`
-  /* margin: 0 171px 0 0; */
+  margin: 0 84px 0 4px;
 `;
 
 export const Footer = styled.div`

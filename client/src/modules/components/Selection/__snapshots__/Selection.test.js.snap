@@ -1,0 +1,175 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Selection should contain Actions 1`] = `
+<styled.div>
+  <styled.div
+    onClick={[Function]}
+  >
+    <Dropdown
+      buttonStyles={
+        Array [
+          "
+  color: #fff;
+",
+        ]
+      }
+      label={<ForwardRef />}
+      placement="bottom"
+    >
+      <Option
+        data-test="CANCEL-dropdown-option"
+        key="CANCEL"
+        label={
+          <div>
+            <ForwardRef />
+            Cancel
+          </div>
+        }
+        onClick={[Function]}
+      />
+      <Option
+        data-test="UPDATE_RETRIES-dropdown-option"
+        key="UPDATE_RETRIES"
+        label={
+          <div>
+            <ForwardRef />
+            Retry
+          </div>
+        }
+        onClick={[Function]}
+      />
+    </Dropdown>
+  </styled.div>
+  <Styled(ReactComponent)
+    onClick={[MockFunction]}
+  />
+</styled.div>
+`;
+
+exports[`Selection should contain Instances 1`] = `
+<Themed(styled.div)
+  key="0"
+>
+  <Themed(StateIcon)
+    instance={
+      Object {
+        "activities": Array [
+          Object {
+            "activityId": "activityId_0",
+            "endDate": "2018-10-10T09:20:38.658Z",
+            "id": "id_0",
+            "startDate": "2018-10-10T09:20:38.658Z",
+            "state": "ACTIVE",
+          },
+        ],
+        "bpmnProcessId": "someKey",
+        "endDate": null,
+        "id": "id_1",
+        "incidents": Array [
+          Object {
+            "activityId": Object {},
+            "activityInstanceId": Object {},
+            "errorMessage": "",
+            "errorType": "",
+            "id": "id_2",
+            "jobId": "jobId_0",
+          },
+        ],
+        "operations": Array [
+          Object {
+            "endDate": "2018-10-10T09:20:38.661Z",
+            "errorMessage": "string",
+            "startDate": "2018-10-10T09:20:38.661Z",
+            "state": "SCHEDULED",
+            "type": "UPDATE_RETRIES",
+          },
+        ],
+        "startDate": "2018-06-21",
+        "state": "ACTIVE",
+        "workflowId": "2",
+        "workflowName": "someWorkflowName",
+        "workflowVersion": 1,
+      }
+    }
+  />
+  <styled.div>
+    someWorkflowName
+  </styled.div>
+  <styled.div>
+    id_1
+  </styled.div>
+  <ActionStatus />
+</Themed(styled.div)>
+`;
+
+exports[`Selection should contain a Footer 1`] = `
+<styled.div>
+  <styled.div>
+    144 more Instances
+  </styled.div>
+</styled.div>
+`;
+
+exports[`Selection should contain a Header 1`] = `
+<Themed(styled.div)
+  isOpen={true}
+  onClick={[MockFunction]}
+>
+  <styled.div>
+    <ReactComponent />
+  </styled.div>
+  <styled.div>
+    Selection 
+    1
+  </styled.div>
+  <Styled(Badge)
+    isOpen={true}
+    type="SELECTIONS"
+  >
+    145
+  </Styled(Badge)>
+  <styled.div>
+    <styled.div
+      onClick={[Function]}
+    >
+      <Dropdown
+        buttonStyles={
+          Array [
+            "
+  color: #fff;
+",
+          ]
+        }
+        label={<ForwardRef />}
+        placement="bottom"
+      >
+        <Option
+          data-test="CANCEL-dropdown-option"
+          key="CANCEL"
+          label={
+            <div>
+              <ForwardRef />
+              Cancel
+            </div>
+          }
+          onClick={[Function]}
+        />
+        <Option
+          data-test="UPDATE_RETRIES-dropdown-option"
+          key="UPDATE_RETRIES"
+          label={
+            <div>
+              <ForwardRef />
+              Retry
+            </div>
+          }
+          onClick={[Function]}
+        />
+      </Dropdown>
+    </styled.div>
+    <Styled(ReactComponent)
+      onClick={[MockFunction]}
+    />
+  </styled.div>
+</Themed(styled.div)>
+`;

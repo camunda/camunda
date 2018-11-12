@@ -19,13 +19,6 @@ export default class Selection extends React.Component {
   static propTypes = {
     isOpen: PropTypes.bool.isRequired,
     selectionId: PropTypes.number.isRequired,
-    instances: PropTypes.arrayOf(
-      PropTypes.shape({
-        id: PropTypes.string.isRequired,
-        state: PropTypes.string.isRequired,
-        workflowId: PropTypes.string.isRequired
-      }).isRequired
-    ).isRequired,
     instanceCount: PropTypes.number.isRequired,
     onToggle: PropTypes.func.isRequired,
     onRetry: PropTypes.func.isRequired,
@@ -59,14 +52,20 @@ export default class Selection extends React.Component {
     <Styled.ArrowIcon>{isOpen ? <Down /> : <Right />}</Styled.ArrowIcon>
   );
 
-  renderBody = instances => {
+  renderBody = instancesMap => {
+    const instances = [...instancesMap];
+
     return instances.map((instance, index) => {
+      const instanceDetails = instance[1];
+
       const {state, type} = getLatestOperation(instance.operations);
       return (
         <Styled.Instance key={index}>
-          <StateIcon {...{instance}} />
-          <Styled.WorkflowName>{getWorkflowName(instance)}</Styled.WorkflowName>
-          <Styled.InstanceId>{instance.id}</Styled.InstanceId>
+          <StateIcon instance={instanceDetails} />
+          <Styled.WorkflowName>
+            {getWorkflowName(instanceDetails)}
+          </Styled.WorkflowName>
+          <Styled.InstanceId>{instanceDetails.id}</Styled.InstanceId>
           <ActionStatus
             operationState={this.state.operationState || state}
             operationType={type}
@@ -140,6 +139,7 @@ export default class Selection extends React.Component {
       instanceCount
     } = this.props;
     const {renderArrowIcon, renderBody, renderActions, renderFooter} = this;
+
     return (
       <Styled.Selection>
         <Styled.Header onClick={onToggle} {...{isOpen}}>
@@ -153,7 +153,8 @@ export default class Selection extends React.Component {
         {isOpen && (
           <Fragment>
             {renderBody(instances, instanceCount)}
-            {renderFooter(instanceCount, instances.length)}
+
+            {renderFooter(instanceCount, instances.size)}
           </Fragment>
         )}
       </Styled.Selection>
