@@ -285,6 +285,34 @@ public class ElasticsearchExporterTest {
     verify(esClient).flush();
   }
 
+  @Test
+  public void shouldUpdatePositionAfterDelayEvenIfNoRecordsAreExported() {
+    // given
+    // scenario: events are not exported but still their position should be recorded
+    config.index.event = false;
+    config.index.workflowInstance = false;
+
+    final ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
+
+    final ElasticsearchExporter exporter = createExporter(config);
+
+    final Record record = mockRecord(ValueType.WORKFLOW_INSTANCE, RecordType.EVENT);
+    when(record.getPosition()).thenReturn(1L, 2L, 3L);
+
+    exporter.export(record);
+    exporter.export(record);
+    exporter.export(record);
+
+    verify(controller).scheduleTask(any(), captor.capture());
+
+    // when
+    captor.getValue().run();
+
+    // then no record was indexed but the exporter record position was updated
+    verify(esClient, never()).index(any());
+    verify(controller).updateLastExportedRecordPosition(3L);
+  }
+
   private ElasticsearchExporter createExporter(
       final ElasticsearchExporterConfiguration configuration) {
     final ElasticsearchExporter exporter =
