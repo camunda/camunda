@@ -1,11 +1,11 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import Heatmap from './Heatmap';
+import HeatmapConfig from './HeatmapConfig';
 
-it('should not pass true to relativeDisabled proberty', () => {
+it('it should disable the relative switch when the view property is frequency', () => {
   const node = shallow(
-    <Heatmap
+    <HeatmapConfig
       report={{data: {view: {property: 'frequency'}}}}
       configuration={{}}
       onchange={() => {}}
@@ -15,9 +15,9 @@ it('should not pass true to relativeDisabled proberty', () => {
   expect(node.find('RelativeAbsoluteSelection').props().relativeDisabled).toBe(false);
 });
 
-it('should not pass the configuration to RelativeAbsoluteSelection', () => {
+it('should pass the configuration to RelativeAbsoluteSelection', () => {
   const node = shallow(
-    <Heatmap
+    <HeatmapConfig
       report={{data: {view: {property: 'frequency'}}}}
       configuration={{test: 'test'}}
       onchange={() => {}}

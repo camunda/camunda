@@ -1,15 +1,13 @@
 import React from 'react';
 import RelativeAbsoluteSelection from './RelativeAbsoluteSelection';
-import ShowInstanceCount from './ShowInstanceCount';
 
-import './Heatmap.scss';
+import './HeatmapConfig.scss';
 
-export default function Heatmap(props) {
+export default function HeatmapConfig(props) {
   const {report, configuration, onChange} = props;
   return (
-    <>
-      <ShowInstanceCount configuration={configuration} onChange={onChange} />
-      <fieldset className="alwaysShowTooltips">
+    <div className="HeatmapConfig">
+      <fieldset>
         <legend>Always show tooltips</legend>
         <RelativeAbsoluteSelection
           relativeDisabled={report.data.view.property !== 'frequency'}
@@ -17,12 +15,11 @@ export default function Heatmap(props) {
           onChange={onChange}
         />
       </fieldset>
-    </>
+    </div>
   );
 }
 
-Heatmap.defaults = {
+HeatmapConfig.defaults = {
   hideRelativeValue: true,
-  hideAbsoluteValue: true,
-  showInstanceCount: false
+  hideAbsoluteValue: true
 };

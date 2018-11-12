@@ -6,16 +6,15 @@ import * as visualizations from './visualizations';
 import './Configuration.scss';
 
 export default class Configuration extends React.Component {
-  resetToDefaults = () => {
-    const {defaults} = visualizations[this.props.type];
-    if (defaults) {
-      this.props.onChange({
-        configuration: {
-          ...this.props.configuration,
-          ...defaults
-        }
-      });
-    }
+  resetToDefaults = resetTargetValue => {
+    const Component = visualizations[this.props.type];
+    this.props.onChange({
+      configuration: {
+        ...this.props.configuration,
+        ...(resetTargetValue ? {targetValue: null} : {}),
+        ...(Component ? Component.defaults : {})
+      }
+    });
   };
 
   updateConfiguration = (prop, value) => {
@@ -30,11 +29,8 @@ export default class Configuration extends React.Component {
   componentDidUpdate(prevProps) {
     const Component = visualizations[this.props.type];
     // reset visualization options to default when visualization changes
-    if (
-      (this.props.type === 'heat' || this.props.type === 'table') &&
-      prevProps.type !== this.props.type
-    ) {
-      this.resetToDefaults();
+    if (prevProps.type !== this.props.type) {
+      this.resetToDefaults(!isBarOrLine(prevProps.type, this.props.type));
     }
 
     if (Component && Component.onUpdate) {
@@ -71,4 +67,9 @@ export default class Configuration extends React.Component {
       </li>
     );
   }
+}
+
+function isBarOrLine(currentVis, nextVis) {
+  const barOrLine = ['bar', 'line'];
+  return barOrLine.includes(currentVis) && barOrLine.includes(nextVis);
 }

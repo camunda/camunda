@@ -756,6 +756,29 @@ describe('edit mode', async () => {
     expect(node.state().conflict.items).toEqual(conflictedItems);
   });
 
+  it('should reset the target value when switching to heatmap', async () => {
+    props.match.params.viewMode = 'edit';
+    const node = mount(shallow(<Report {...props} />).get(0));
+
+    node.setState({
+      loaded: true,
+      reportResult: {
+        ...reportResult,
+        data: {
+          configuration: {
+            targetValue: {active: true}
+          }
+        }
+      },
+      ...{...sampleReport, data: {configuration: {targetValue: {active: true}}}}
+    });
+    await node.instance().componentDidMount();
+
+    await node.instance().updateReport({visualization: 'heat'});
+
+    expect(node.state().data.configuration).toEqual({targetValue: null});
+  });
+
   it('should reset the target value when reports get deselected', async () => {
     props.match.params.viewMode = 'edit';
 

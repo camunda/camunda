@@ -60,14 +60,6 @@ it('should call the provided updateReport property function when a setting chang
   expect(spy.mock.calls[0][0].visualization).toBe('someTestVis');
 });
 
-it('should toggle target value view mode off when a setting changes', () => {
-  const node = shallow(<ReportControlPanel {...data} updateReport={spy} />);
-
-  node.instance().update('visualization', 'someTestVis');
-
-  expect(spy.mock.calls[0][0].configuration.targetValue).toBe(null);
-});
-
 it('should disable the groupBy and visualization Selects if view is not selected', () => {
   const node = shallow(<ReportControlPanel {...data} view="" />);
 
@@ -89,7 +81,6 @@ it('should set or reset following selects according to the getNext function', ()
   node.instance().update('view', 'foo');
 
   expect(spy).toHaveBeenCalledWith({
-    configuration: {targetValue: null, xml: 'fooXml'},
     view: 'foo',
     groupBy: 'next'
   });
@@ -224,25 +215,6 @@ it('should not update the target value when changing from line chart to barchart
 
   node.instance().update('visualization', 'line');
   expect(spy).toHaveBeenCalledWith({
-    groupBy: null,
-    visualization: null
-  });
-});
-
-it('should reset the target value when changing from line chart or barchart to something else', () => {
-  const spy = jest.fn();
-  const node = shallow(
-    <ReportControlPanel
-      {...data}
-      visualization="bar"
-      view={{entity: 'processInstance', property: 'duration'}}
-      updateReport={spy}
-    />
-  );
-
-  node.instance().update('visualization', 'something else');
-  expect(spy).toHaveBeenCalledWith({
-    configuration: {targetValue: null, xml: 'fooXml'},
     groupBy: null,
     visualization: null
   });

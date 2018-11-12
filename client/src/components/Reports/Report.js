@@ -157,7 +157,6 @@ export default withErrorHandling(
       const processDefinitionWasUpdated =
         updates.processDefinitionKey || updates.processDefinitionVersion;
       if (processDefinitionWasUpdated) {
-        data.configuration = {...data.configuration, excludedColumns: [], targetValue: null};
         data.processPart = null;
 
         if (data.groupBy && data.groupBy.type === 'variable') {
@@ -172,9 +171,12 @@ export default withErrorHandling(
         data.processPart = null;
       }
 
-      // if combined report has no reports then reset configuration
-      if (this.state.reportType === 'combined' && updates.reportIds && !updates.reportIds.length) {
-        data.configuration = {targetValue: null};
+      // if combined report has no reports or switching to heatmap then reset configuration
+      if (
+        (this.state.reportType === 'combined' && updates.reportIds && !updates.reportIds.length) ||
+        (updates.visualization && updates.visualization === 'heat')
+      ) {
+        data.configuration = {...data.configuration, targetValue: null};
       }
 
       this.setState({data});
@@ -198,7 +200,18 @@ export default withErrorHandling(
         if (!newReportResult) {
           newReportResult = {reportType, data};
         }
-        this.setState({reportResult: newReportResult});
+        this.setState({
+          reportResult: {
+            ...newReportResult,
+            data: {
+              ...data,
+              // we get configuration from the state because the async request might return after a change to configuration
+              configuration: {
+                ...this.state.data.configuration
+              }
+            }
+          }
+        });
       } else {
         let newReportResult = reportResult || {reportType, data};
         this.setState({

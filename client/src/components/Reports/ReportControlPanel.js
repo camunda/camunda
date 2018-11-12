@@ -356,14 +356,6 @@ export default class ReportControlPanel extends React.Component {
       [type]: data
     };
 
-    if (!(type === 'visualization' && isBarOrLine(this.props.visualization, data))) {
-      // reset the target value
-      update.configuration = {
-        ...this.props.configuration,
-        targetValue: null
-      };
-    }
-
     const config = {
       view: this.props.view,
       groupBy: this.props.groupBy,
@@ -391,11 +383,6 @@ export default class ReportControlPanel extends React.Component {
 
     this.props.updateReport(update);
   };
-}
-
-function isBarOrLine(currentVis, nextVis) {
-  const barOrLine = ['bar', 'line'];
-  return barOrLine.includes(currentVis) && barOrLine.includes(nextVis);
 }
 
 function isChecked(data, current) {

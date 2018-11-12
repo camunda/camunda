@@ -18,7 +18,7 @@ jest.mock('./visualizations', () => {
     propC: false
   };
 
-  return {typeA, typeB};
+  return {typeA, typeB, bar: typeA, line: typeA};
 });
 
 it('should be disabled if no type is set', () => {
@@ -28,7 +28,7 @@ it('should be disabled if no type is set', () => {
 });
 
 it('should contain the Component from the visualizations based on the type', () => {
-  const node = shallow(<Configuration type="typeA" />);
+  const node = shallow(<Configuration type="typeA" onChange={() => {}} />);
 
   expect(node.find(typeA)).toBePresent();
 
@@ -55,4 +55,15 @@ it('should call the onUpdate method of the component and propagate changes', () 
 
   expect(typeA.onUpdate).toHaveBeenCalled();
   expect(spy).toHaveBeenCalledWith({configuration: {prop: 'updateValue'}});
+});
+
+it('should not reset target value  when changing from line chart to bar chart or the reverse', async () => {
+  const spy = jest.fn();
+  const node = shallow(<Configuration type="bar" onChange={spy} configuration={{}} />);
+  node.setProps({type: 'line'});
+  expect(spy).toHaveBeenCalledWith({configuration: {prop: 'updateValue'}});
+  spy.mockClear();
+  node.setProps({type: 'typeB'});
+  await node.update();
+  expect(spy).toHaveBeenCalledWith({configuration: {propC: false, targetValue: null}});
 });

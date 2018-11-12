@@ -9,11 +9,14 @@ export default class Tooltip extends React.Component {
 
   componentDidMount() {
     this.props.viewer.get('eventBus').on('element.hover', this.renderTooltip);
-    const alwaysShow = !this.props.hideAbsoluteValue || !this.props.hideRelativeValue;
-    if (alwaysShow) {
+    if (this.alwaysShow()) {
       this.addAllTooltips();
     }
   }
+
+  alwaysShow = () => {
+    return !this.props.hideAbsoluteValue || !this.props.hideRelativeValue;
+  };
 
   componentDidUpdate(prevProps) {
     const {viewer, hideAbsoluteValue, hideRelativeValue, data} = this.props;
@@ -24,7 +27,7 @@ export default class Tooltip extends React.Component {
       data !== prevProps.data
     ) {
       this.removeOverlays(viewer);
-      if (!hideAbsoluteValue || !hideRelativeValue) {
+      if (this.alwaysShow()) {
         this.addAllTooltips();
       }
     }
@@ -43,8 +46,7 @@ export default class Tooltip extends React.Component {
   }
 
   renderTooltip = ({element: {id}}) => {
-    const alwaysShow = !this.props.hideAbsoluteValue || !this.props.hideRelativeValue;
-    if (alwaysShow) {
+    if (this.alwaysShow()) {
       return;
     }
     const {viewer} = this.props;

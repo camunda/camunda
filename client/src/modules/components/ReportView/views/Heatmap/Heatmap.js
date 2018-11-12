@@ -66,17 +66,19 @@ const Heatmap = props => {
         hideAbsoluteValue={props.hideAbsoluteValue}
         hideRelativeValue={props.hideRelativeValue}
         formatter={data => {
-          const alwaysShow = !props.hideAbsoluteValue || !props.hideRelativeValue;
+          const allDisabled = props.hideAbsoluteValue && props.hideRelativeValue;
+          const allEnabled = !props.hideAbsoluteValue && !props.hideRelativeValue;
+          const relativeOnly = !props.hideRelativeValue && props.hideAbsoluteValue;
 
-          if (props.property === 'frequency' && (!props.hideRelativeValue || !alwaysShow)) {
-            const relativeOnly = props.hideAbsoluteValue && !props.hideRelativeValue;
+          let formattedValue = props.formatter(data);
+
+          if (props.property === 'frequency' && (relativeOnly || allDisabled || allEnabled)) {
             const relativeValue = getRelativeValue(data, props.processInstanceCount);
-
-            if (relativeOnly) return relativeValue;
-            return `${props.formatter(data)}\u00A0(${relativeValue})`;
-          } else {
-            return props.formatter(data);
+            if (relativeOnly) formattedValue = relativeValue;
+            else formattedValue += `\u00A0(${relativeValue})`;
           }
+
+          return formattedValue;
         }}
       />
     );

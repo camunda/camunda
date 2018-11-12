@@ -33,17 +33,11 @@ it('disable the reltive selection when relativeDisabled is true', () => {
     />
   );
 
-  expect(
-    node
-      .find('Switch')
-      .at(1)
-      .props().disabled
-  ).toBe(true);
+  const switchProps = node
+    .find('Switch')
+    .at(1)
+    .props();
 
-  expect(
-    node
-      .find('Switch')
-      .at(1)
-      .props().title
-  ).toMatch('Relative values are only possible');
+  expect(switchProps.disabled).toBe(true);
+  expect(switchProps.title).toMatch('Relative values are only possible');
 });
