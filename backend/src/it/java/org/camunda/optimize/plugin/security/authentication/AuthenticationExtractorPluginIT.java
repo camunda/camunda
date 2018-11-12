@@ -4,6 +4,7 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
 import org.camunda.optimize.dto.optimize.importing.ProcessDefinitionOptimizeDto;
+import org.camunda.optimize.exception.OptimizeIntegrationTestException;
 import org.camunda.optimize.plugin.AuthenticationExtractorProvider;
 import org.camunda.optimize.service.license.LicenseManager;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
@@ -81,9 +82,8 @@ public class AuthenticationExtractorPluginIT {
         StandardCharsets.UTF_8
       );
     } catch (IOException | URISyntaxException e) {
-      e.printStackTrace();
+      throw new OptimizeIntegrationTestException(e);
     }
-    return "";
   }
 
   @Test
@@ -102,6 +102,26 @@ public class AuthenticationExtractorPluginIT {
 
     // then
     assertThat(response.getStatus(), is(200));
+  }
+
+
+  @Test
+  public void signInWithCustomHeaderSetApiCall() {
+    // given
+    deployAndImportTestDefinition();
+    String basePackage = "org.camunda.optimize.plugin.security.authentication.util1";
+    addAuthenticationExtractorBasePackagesToConfiguration(basePackage);
+
+    // when
+    Response response = embeddedOptimizeRule.getRequestExecutor()
+      .buildGetAllAlertsRequest()
+      .addSingleHeader(CUSTOM_AUTH_HEADER, KERMIT_USER)
+      .withoutAuthentication()
+      .execute();
+
+    // then
+    assertThat(response.getStatus(), is(200));
+    assertThat(response.getCookies().get(OPTIMIZE_AUTHORIZATION), is(notNullValue()));
   }
 
   @Test

@@ -28,7 +28,7 @@ import java.util.Optional;
 
 import static org.camunda.optimize.AbstractAlertIT.ALERT;
 import static org.camunda.optimize.rest.util.AuthenticationUtil.OPTIMIZE_AUTHORIZATION;
-import static org.camunda.optimize.rest.util.AuthenticationUtil.createOptimizeAuthenticationHeader;
+import static org.camunda.optimize.rest.util.AuthenticationUtil.createOptimizeAuthCookieValue;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
@@ -494,6 +494,6 @@ public class OptimizeRequestExecutor {
     Response response = client.path("authentication")
             .request()
             .post(Entity.json(entity));
-    return createOptimizeAuthenticationHeader(response.readEntity(String.class));
+    return createOptimizeAuthCookieValue(response.readEntity(String.class));
   }
 }

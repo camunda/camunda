@@ -2,6 +2,14 @@ package org.camunda.optimize.plugin.security.authentication;
 
 public class AuthenticationResult {
 
+  public AuthenticationResult() {
+  }
+
+  public AuthenticationResult(boolean isAuthenticated, String authenticatedUser) {
+    this.isAuthenticated = isAuthenticated;
+    this.authenticatedUser = authenticatedUser;
+  }
+
   private boolean isAuthenticated;
   private String authenticatedUser;
 

@@ -29,7 +29,7 @@ import static org.camunda.optimize.rest.util.AuthenticationUtil.extractTokenFrom
 public class SingleSignOnFilter implements Filter {
 
   private static final String NO_STORE = "no-store";
-  private Logger logger = LoggerFactory.getLogger(SingleSignOnFilter.class);
+  private static final Logger logger = LoggerFactory.getLogger(SingleSignOnFilter.class);
   private SpringAwareServletConfiguration awareDelegate;
 
   private AuthenticationExtractorProvider authenticationExtractorProvider;
@@ -47,8 +47,10 @@ public class SingleSignOnFilter implements Filter {
   }
 
   /**
-   * Before the user can access the login page a license check is performed.
-   * Whenever there is an invalid or no license, the user gets redirected to the license page.
+   * Before the user can access the login page it is possible that
+   * plugins were defined to perform a custom authentication check, e.g.
+   * by reading the request headers. That allows the user to add the
+   * single sign on functionality to Optimize.
    */
   @Override
   public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws
@@ -58,7 +60,6 @@ public class SingleSignOnFilter implements Filter {
     initBeans();
     HttpServletResponse servletResponse = (HttpServletResponse) response;
     HttpServletRequest servletRequest = (HttpServletRequest) request;
-    String requestPath = servletRequest.getServletPath().toLowerCase();
     servletResponse.addHeader(HttpHeaders.CACHE_CONTROL, NO_STORE);
 
     if (authenticationExtractorProvider.hasPluginsConfigured()) {
@@ -100,7 +101,6 @@ public class SingleSignOnFilter implements Filter {
           return !sessionService.hasTokenExpired(token);
         })
         .orElse(false);
-    hasCookieWithActiveToken |= servletResponse.containsHeader("set-cookie");
     return hasCookieWithActiveToken;
   }
 
@@ -147,14 +147,19 @@ public class SingleSignOnFilter implements Filter {
       logger.trace("Creating new session for {}", userName);
       String securityToken =
         sessionService.createSessionAndReturnSecurityToken(userName, engineContext);
-      setOptimizeAuthCookie(servletResponse, securityToken);
+      setOptimizeAuthCookie(servletRequest, servletResponse, securityToken);
     }
   }
 
-  private void setOptimizeAuthCookie(HttpServletResponse servletResponse, String securityToken) {
+  private void setOptimizeAuthCookie(HttpServletRequest servletRequest,
+                                     HttpServletResponse servletResponse,
+                                     String securityToken) {
+    final String bearerTokenValue = "Bearer " + securityToken;
+    // for direct access by request filters
+    servletRequest.setAttribute(OPTIMIZE_AUTHORIZATION, bearerTokenValue);
     servletResponse.addHeader(
       "set-cookie",
-      OPTIMIZE_AUTHORIZATION + "=" + "\"Bearer " + securityToken + "\";Version=1;Path=/"
+      OPTIMIZE_AUTHORIZATION + "=" + "\"" + bearerTokenValue + "\";Version=1;Path=/"
     );
   }
 

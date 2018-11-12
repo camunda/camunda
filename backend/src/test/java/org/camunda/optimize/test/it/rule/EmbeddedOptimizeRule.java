@@ -173,9 +173,9 @@ public class EmbeddedOptimizeRule extends TestWatcher {
       startOptimize();
       requestExecutor =
         new OptimizeRequestExecutor(
-              getOptimize().target(),
-              getAuthorizationHeader(),
-              getApplicationContext().getBean(ObjectMapper.class)
+          getOptimize().target(),
+          getAuthorizationCookieValue(),
+          getApplicationContext().getBean(ObjectMapper.class)
         );
       resetImportStartIndexes();
     } catch (Exception e) {
@@ -187,8 +187,8 @@ public class EmbeddedOptimizeRule extends TestWatcher {
     return getOptimize().getAuthenticationToken();
   }
 
-  public String getAuthorizationHeader() {
-    return AuthenticationUtil.createOptimizeAuthenticationHeader(getAuthenticationToken());
+  public String getAuthorizationCookieValue() {
+    return AuthenticationUtil.createOptimizeAuthCookieValue(getAuthenticationToken());
   }
 
   public String getNewAuthenticationToken() {

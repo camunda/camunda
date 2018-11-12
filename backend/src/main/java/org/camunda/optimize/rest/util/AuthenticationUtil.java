@@ -14,11 +14,10 @@ import java.util.Optional;
 public class AuthenticationUtil {
 
   public static String OPTIMIZE_AUTHORIZATION = "X-Optimize-Authorization";
-  private static Logger logger = LoggerFactory.getLogger(AuthenticationUtil.class);
+  private final static Logger logger = LoggerFactory.getLogger(AuthenticationUtil.class);
 
   public static String getToken(ContainerRequestContext requestContext) {
-    String authorizationHeader =
-      extractAuthorizationHeader(requestContext);
+    String authorizationHeader = extractAuthorizationCookie(requestContext);
     return extractTokenFromAuthorizationValue(authorizationHeader);
   }
 
@@ -33,24 +32,21 @@ public class AuthenticationUtil {
     return Optional.empty();
   }
 
-  public static void addAuthorizationHeader(String securityToken, ContainerRequestContext requestContext) {
-    String authorizationHeader = createOptimizeAuthenticationHeader(securityToken);
-    Cookie cookie = new Cookie(OPTIMIZE_AUTHORIZATION, authorizationHeader);
-    requestContext.getCookies().put(OPTIMIZE_AUTHORIZATION, cookie);
-  }
-
   public static String getRequestUser(ContainerRequestContext requestContext) {
     String token = AuthenticationUtil.getToken(requestContext);
     Optional<String> sessionIssuer = getSessionIssuer(token);
     return sessionIssuer.orElseThrow(() -> new NotAuthorizedException("Could not extract request user!"));
   }
 
-  private static String extractAuthorizationHeader(ContainerRequestContext requestContext) {
-    String authorizationHeader = null;
-    /* Check cookies for optimize authorization header*/
-    for (Map.Entry<String, Cookie> c : requestContext.getCookies().entrySet()) {
-      if (OPTIMIZE_AUTHORIZATION.equals(c.getKey())) {
-        authorizationHeader = c.getValue().getValue();
+  private static String extractAuthorizationCookie(ContainerRequestContext requestContext) {
+    // load just issued token if set by previous filter
+    String authorizationHeader = (String) requestContext.getProperty(OPTIMIZE_AUTHORIZATION);
+    if (authorizationHeader == null) {
+      /* Check cookies for optimize authorization header*/
+      for (Map.Entry<String, Cookie> c : requestContext.getCookies().entrySet()) {
+        if (OPTIMIZE_AUTHORIZATION.equals(c.getKey())) {
+          authorizationHeader = c.getValue().getValue();
+        }
       }
     }
     return authorizationHeader;
@@ -67,14 +63,15 @@ public class AuthenticationUtil {
   }
 
   public static NewCookie createDeleteOptimizeAuthCookie() {
+    logger.trace("Deleting Optimize authentication cookie.");
     return new NewCookie(OPTIMIZE_AUTHORIZATION, "", "/", null, "delete cookie", 0, false);
   }
 
   public static NewCookie createNewOptimizeAuthCookie(String securityToken) {
-    logger.trace("Deleting Optimize authentication cookie.");
+    logger.trace("Creating Optimize authentication cookie.");
     return new NewCookie(
       OPTIMIZE_AUTHORIZATION,
-      createOptimizeAuthenticationHeader(securityToken),
+      createOptimizeAuthCookieValue(securityToken),
       "/",
       null,
       1,
@@ -86,8 +83,7 @@ public class AuthenticationUtil {
     );
   }
 
-  public static String createOptimizeAuthenticationHeader(String securityToken) {
-    logger.trace("Creating new Optimize authentication cookie.");
+  public static String createOptimizeAuthCookieValue(String securityToken) {
     return String.format("Bearer %s", securityToken);
   }
 
