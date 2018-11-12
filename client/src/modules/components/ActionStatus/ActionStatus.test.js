@@ -4,7 +4,7 @@ import {shallow} from 'enzyme';
 import {OPERATION_STATE, OPERATION_TYPE} from 'modules/constants';
 
 import ActionStatus from './ActionStatus';
-import StatusItems from '../StatusItems';
+import StatusItems from './StatusItems';
 
 import * as Styled from './styled';
 
