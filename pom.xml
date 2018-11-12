@@ -19,7 +19,7 @@
     <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
 
     <version.zeebe>0.12.1</version.zeebe>
-    <version.elasticsearch>6.4.2</version.elasticsearch>
+    <version.elasticsearch>6.4.3</version.elasticsearch>
     <version.spring.boot>2.0.5.RELEASE</version.spring.boot>
 
     <version.swagger>2.9.2</version.swagger>
