@@ -44,6 +44,55 @@ export function getPayload({selectionId, state}) {
   };
 }
 
+export function getPayloadtoFetchInstancesById(IdsOfInstancesInSelections) {
+  let query = {
+    ids: [...IdsOfInstancesInSelections],
+    running: true,
+    active: true,
+    canceled: true,
+    completed: true,
+    finished: true,
+    incidents: true
+  };
+
+  return {queries: [query]};
+}
+
+export function getStateUpdateForAddSelection(
+  selection,
+  rollingSelectionIndex,
+  instancesInSelectionsCount,
+  selectionCount,
+  prevState
+) {
+  const currentSelectionIndex = rollingSelectionIndex + 1;
+  const newCount = instancesInSelectionsCount + selection.totalCount;
+  return {
+    selections: [
+      {
+        selectionId: currentSelectionIndex,
+        ...selection
+      },
+      ...prevState.selections
+    ],
+    rollingSelectionIndex: currentSelectionIndex,
+    instancesInSelectionsCount: newCount,
+    selectionCount: selectionCount + 1,
+    openSelection: currentSelectionIndex,
+    selection: {all: false, ids: [], excludeIds: []}
+  };
+}
+
+export function createMapOfInstances(workflowInstances) {
+  const transformedInstances = workflowInstances.reduce((acc, instance) => {
+    return {
+      [instance.id]: instance,
+      ...acc
+    };
+  }, {});
+  return new Map(Object.entries(transformedInstances));
+}
+
 export function decodeFields(object) {
   let result = {};
 

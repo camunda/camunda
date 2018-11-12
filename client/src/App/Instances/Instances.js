@@ -9,6 +9,7 @@ import Diagram from 'modules/components/Diagram';
 import {DEFAULT_FILTER, PAGE_TITLE} from 'modules/constants';
 import {
   fetchWorkflowInstanceBySelection,
+  fetchWorkflowInstances,
   fetchWorkflowInstancesCount,
   fetchGroupedWorkflowInstances,
   fetchWorkflowInstancesStatistics
@@ -24,7 +25,11 @@ import {
 
 import {getNodesFromXML} from 'modules/utils/bpmn';
 
-import {getSelectionById} from 'modules/utils/selection';
+import {
+  getSelectionById,
+  serializeInstancesMaps,
+  deserializeInstancesMaps
+} from 'modules/utils/selection/selection';
 
 import Header from '../Header';
 import ListView from './ListView';
@@ -34,9 +39,11 @@ import Selections from './Selections';
 import {
   parseQueryString,
   getPayload,
+  getPayloadtoFetchInstancesById,
   decodeFields,
   getEmptyDiagramMessage,
-  getActivityIds
+  getActivityIds,
+  createMapOfInstances
 } from './service';
 import * as Styled from './styled.js';
 
@@ -67,8 +74,9 @@ class Instances extends Component {
       rollingSelectionIndex: rollingSelectionIndex || 0,
       selection: {all: false, ids: [], excludeIds: []},
       selectionCount: selectionCount || 0,
-      selections: selections || [],
+      selections: deserializeInstancesMaps(selections) || [],
       diagramWorkflow: {},
+      IdsOfInstancesInSelections: [],
       groupedWorkflowInstances: {},
       statistics: []
     };
@@ -82,6 +90,11 @@ class Instances extends Component {
     await this.validateAndSetUrlFilter();
     await this.updateFilterRelatedState();
     this.updateLocalStorageFilter();
+
+    if (this.state.selectionCount) {
+      this.getIdsOfInstancesInSelections();
+      this.updateInstancesInSelections();
+    }
   }
 
   async componentDidUpdate(prevProps, prevState) {
@@ -97,6 +110,42 @@ class Instances extends Component {
     // write current filter selection to local storage
     this.props.storeStateLocally({filter: this.state.filter});
   };
+  getIdsOfInstancesInSelections() {
+    let ids = new Set();
+    this.state.selections.map(
+      selection =>
+        (ids = new Set([...ids, ...[...selection.instancesMap.keys()]]))
+    );
+    this.setState({IdsOfInstancesInSelections: ids});
+  }
+
+  async updateInstancesInSelections() {
+    const workflowInstances = await this.fetchInstancesInSelection();
+    const updatedInstanceMap = createMapOfInstances(workflowInstances);
+    this.updateSelections(updatedInstanceMap);
+  }
+
+  async fetchInstancesInSelection() {
+    const {IdsOfInstancesInSelections: IdsOfInstances} = this.state;
+    const payload = getPayloadtoFetchInstancesById(IdsOfInstances);
+    const options = {
+      firstResult: 0,
+      maxResults: IdsOfInstances.size,
+      ...payload
+    };
+    const {workflowInstances} = await fetchWorkflowInstances(options);
+    return workflowInstances;
+  }
+
+  updateSelections(updatedInstanceMap) {
+    const {selections} = this.state;
+    selections.map(selection =>
+      selection.instancesMap.forEach(function(value, key) {
+        const newValue = updatedInstanceMap.get(key);
+        !isEqual(value, newValue) && selection.instancesMap.set(key, newValue);
+      })
+    );
+  }
 
   fetchDiagramStatistics = async () => {
     let filter = Object.assign({}, this.state.filter);
@@ -255,6 +304,7 @@ class Instances extends Component {
     } = this.state;
 
     const currentSelectionIndex = rollingSelectionIndex + 1;
+    const newCount = instancesInSelectionsCount + selection.totalCount;
 
     // Add Id for each selection
     this.setState(
@@ -267,8 +317,7 @@ class Instances extends Component {
           ...prevState.selections
         ],
         rollingSelectionIndex: currentSelectionIndex,
-        instancesInSelectionsCount:
-          instancesInSelectionsCount + selection.totalCount,
+        instancesInSelectionsCount: newCount,
         selectionCount: selectionCount + 1,
         openSelection: currentSelectionIndex,
         selection: {all: false, ids: [], excludeIds: []}
@@ -282,7 +331,7 @@ class Instances extends Component {
         } = this.state;
 
         this.props.storeStateLocally({
-          selections,
+          selections: serializeInstancesMaps(selections),
           rollingSelectionIndex,
           instancesInSelectionsCount,
           selectionCount
@@ -294,41 +343,59 @@ class Instances extends Component {
   handleAddNewSelection = async () => {
     const payload = getPayload({state: this.state});
     const instancesDetails = await fetchWorkflowInstanceBySelection(payload);
-    this.addSelectionToList({...payload, ...instancesDetails});
+
+    this.addNewSelection(payload, instancesDetails);
+  };
+
+  addNewSelection = (payload, instancesDetails) => {
+    const {workflowInstances, ...rest} = instancesDetails;
+    const instancesMap = createMapOfInstances(workflowInstances);
+
+    this.addSelectionToList({
+      instancesMap,
+      ...payload,
+      ...rest
+    });
   };
 
   handleAddToSelectionById = async selectionId => {
-    const {selections, instancesInSelectionsCount} = this.state;
-    const selectiondata = getSelectionById(selections, selectionId);
     const payload = getPayload({state: this.state, selectionId});
-    const previousTotalCount = selections[selectiondata.index].totalCount;
-
     const instancesDetails = await fetchWorkflowInstanceBySelection(payload);
+    this.addToSelectionById(instancesDetails, payload, selectionId);
+  };
+
+  addToSelectionById = (instancesDetails, payload, selectionId) => {
+    const {workflowInstances, ...rest} = instancesDetails;
+    const {selections, instancesInSelectionsCount} = this.state;
+
+    const newInstancesMap = createMapOfInstances(workflowInstances);
+    const {index: selectionIndex} = getSelectionById(selections, selectionId);
 
     const newSelection = {
-      ...selections[selectiondata.index],
+      ...selections[selectionIndex],
+      instancesMap: newInstancesMap,
       ...payload,
-      ...instancesDetails
+      ...rest
     };
 
-    selections[selectiondata.index] = newSelection;
+    selections[selectionIndex] = newSelection;
+
+    const {totalCount} = selections[selectionIndex];
+    const newCount =
+      instancesInSelectionsCount - totalCount + newSelection.totalCount;
 
     this.setState(
       {
         selections,
-        instancesInSelectionsCount:
-          instancesInSelectionsCount -
-          previousTotalCount +
-          newSelection.totalCount,
+        instancesInSelectionsCount: newCount,
         selection: {all: false, ids: [], excludeIds: []},
         openSelection: selectionId
       },
       () => {
         const {instancesInSelectionsCount, selections} = this.state;
-
         this.props.storeStateLocally({
           instancesInSelectionsCount,
-          selections
+          selections: serializeInstancesMaps(selections)
         });
       }
     );

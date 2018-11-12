@@ -1,7 +1,17 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
+import {
+  getSelectionById,
+  serializeInstancesMaps,
+  deserializeInstancesMaps
+} from 'modules/utils/selection/selection';
+
+import {
+  mockResolvedAsyncFn,
+  flushPromises,
+  createSelection
+} from 'modules/testUtils';
 
 import WrappedInstances from './Instances';
 import {DEFAULT_FILTER, PAGE_TITLE} from 'modules/constants';
@@ -127,7 +137,7 @@ const statistics = [
   }
 ];
 
-const selection = {selectionId: 'foo', totalCount: 21};
+const selection = createSelection({selectionId: 'foo', totalCount: 21});
 
 // mock api
 api.fetchWorkflowInstancesCount = mockResolvedAsyncFn(Count);
@@ -548,39 +558,6 @@ describe('Instances', () => {
           node.instance().handleFlowNodeSelection
         );
         expect(diagram.props().selectableFlowNodes).toEqual(['a', 'b']);
-      });
-    });
-
-    describe('addSelectionToList', () => {
-      it('should add selection to list of selections', () => {
-        // given
-        const node = shallow(InstancesWithRunningFilter);
-
-        // when
-        node.instance().addSelectionToList(selection);
-        node.update();
-
-        // then
-        const expectedSelections = [{selectionId: 1, ...selection}];
-        expect(node.state('selections')).toEqual(expectedSelections);
-        expect(node.state('rollingSelectionIndex')).toBe(1);
-        expect(node.state('instancesInSelectionsCount')).toBe(
-          selection.totalCount
-        );
-        expect(node.state('selectionCount')).toBe(1);
-        expect(node.state('openSelection')).toBe(1);
-        expect(node.state('selection')).toEqual({
-          all: false,
-          ids: [],
-          excludeIds: []
-        });
-        const storeStateLocallyCall = storeStateLocallyMock.mock.calls[0][0];
-        expect(storeStateLocallyCall.selections).toEqual(expectedSelections);
-        expect(storeStateLocallyCall.rollingSelectionIndex).toBe(1);
-        expect(storeStateLocallyCall.instancesInSelectionsCount).toBe(
-          selection.totalCount
-        );
-        expect(storeStateLocallyCall.selectionCount).toBe(1);
       });
     });
   });
