@@ -18,6 +18,7 @@ package io.zeebe.exporter;
 import static io.zeebe.exporter.ElasticsearchExporter.ZEEBE_RECORD_TEMPLATE_JSON;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -31,9 +32,11 @@ import io.zeebe.exporter.record.RecordMetadata;
 import io.zeebe.protocol.clientapi.RecordType;
 import io.zeebe.protocol.clientapi.ValueType;
 import io.zeebe.util.ZbLogger;
+import java.time.Duration;
 import java.util.Map;
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.slf4j.Logger;
 
 public class ElasticsearchExporterTest {
@@ -249,6 +252,34 @@ public class ElasticsearchExporterTest {
 
     // when
     exporter.close();
+
+    // then
+    verify(esClient).flush();
+  }
+
+  @Test
+  public void shouldFlushAfterDelay() {
+    // given
+    config.index.event = true;
+    config.index.workflowInstance = true;
+    config.bulk.delay = 10;
+
+    // scenario: bulk size is not reached still we want to flush
+    config.bulk.size = Integer.MAX_VALUE;
+    when(esClient.shouldFlush()).thenReturn(false);
+
+    final ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
+
+    final ElasticsearchExporter exporter = createExporter(config);
+
+    // when
+    exporter.export(mockRecord(ValueType.WORKFLOW_INSTANCE, RecordType.EVENT));
+
+    // then
+    verify(controller).scheduleTask(eq(Duration.ofSeconds(10)), captor.capture());
+
+    // when
+    captor.getValue().run();
 
     // then
     verify(esClient).flush();

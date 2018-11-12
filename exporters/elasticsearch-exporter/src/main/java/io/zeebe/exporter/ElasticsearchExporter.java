@@ -52,7 +52,7 @@ public class ElasticsearchExporter implements Exporter {
     this.controller = controller;
     client = createClient();
     createIndexTemplates();
-    flushAndReschedule();
+    scheduleDelayedFlush();
     log.info("Exporter opened");
   }
 
@@ -86,9 +86,11 @@ public class ElasticsearchExporter implements Exporter {
   }
 
   private void flushAndReschedule() {
-    if (client.shouldFlush()) {
-      flush();
-    }
+    flush();
+    scheduleDelayedFlush();
+  }
+
+  private void scheduleDelayedFlush() {
     controller.scheduleTask(Duration.ofSeconds(configuration.bulk.delay), this::flushAndReschedule);
   }
 
