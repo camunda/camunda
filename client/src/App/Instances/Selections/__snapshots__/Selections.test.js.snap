@@ -54,10 +54,50 @@ exports[`Selections should render a CollapsablePanel 1`] = `
       onDeleteSelection={[Function]}
       onRetrySelection={[Function]}
       onToggleSelection={[Function]}
-      openSelection={0}
+      openSelection={null}
       selections={
         Array [
           Object {
+            "instancesMap": Map {
+              "id_0" => Object {
+                "activities": Array [
+                  Object {
+                    "activityId": "activityId_0",
+                    "endDate": "2018-10-10T09:20:38.658Z",
+                    "id": "id_1",
+                    "startDate": "2018-10-10T09:20:38.658Z",
+                    "state": "ACTIVE",
+                  },
+                ],
+                "bpmnProcessId": "someKey",
+                "endDate": null,
+                "id": "id_0",
+                "incidents": Array [
+                  Object {
+                    "activityId": Object {},
+                    "activityInstanceId": Object {},
+                    "errorMessage": "",
+                    "errorType": "",
+                    "id": "id_3",
+                    "jobId": "jobId_0",
+                  },
+                ],
+                "operations": Array [
+                  Object {
+                    "endDate": "2018-10-10T09:20:38.661Z",
+                    "errorMessage": "string",
+                    "startDate": "2018-10-10T09:20:38.661Z",
+                    "state": "SCHEDULED",
+                    "type": "UPDATE_RETRIES",
+                  },
+                ],
+                "startDate": "2018-06-21",
+                "state": "ACTIVE",
+                "workflowId": "2",
+                "workflowName": "someWorkflowName",
+                "workflowVersion": 1,
+              },
+            },
             "queries": Array [
               Object {
                 "active": true,
@@ -67,43 +107,273 @@ exports[`Selections should render a CollapsablePanel 1`] = `
                 "running": true,
               },
             ],
-            "selectionId": 0,
+            "selectionId": 2,
             "totalCount": 3,
-            "workflowInstances": Array [
-              Object {
-                "id": 1,
-              },
-              Object {
-                "id": 2,
-              },
-              Object {
-                "id": 3,
-              },
-            ],
           },
           Object {
+            "instancesMap": Map {
+              "id_4" => Object {
+                "activities": Array [
+                  Object {
+                    "activityId": "activityId_1",
+                    "endDate": "2018-10-10T09:20:38.658Z",
+                    "id": "id_5",
+                    "startDate": "2018-10-10T09:20:38.658Z",
+                    "state": "ACTIVE",
+                  },
+                ],
+                "bpmnProcessId": "someKey",
+                "endDate": null,
+                "id": "id_4",
+                "incidents": Array [
+                  Object {
+                    "activityId": Object {},
+                    "activityInstanceId": Object {},
+                    "errorMessage": "",
+                    "errorType": "",
+                    "id": "id_7",
+                    "jobId": "jobId_1",
+                  },
+                ],
+                "operations": Array [
+                  Object {
+                    "endDate": "2018-10-10T09:20:38.661Z",
+                    "errorMessage": "string",
+                    "startDate": "2018-10-10T09:20:38.661Z",
+                    "state": "SCHEDULED",
+                    "type": "UPDATE_RETRIES",
+                  },
+                ],
+                "startDate": "2018-06-21",
+                "state": "ACTIVE",
+                "workflowId": "2",
+                "workflowName": "someWorkflowName",
+                "workflowVersion": 1,
+              },
+            },
             "queries": Array [
               Object {
                 "active": true,
                 "excludeIds": Array [],
                 "ids": Array [],
-                "incidents": false,
+                "incidents": true,
                 "running": true,
               },
             ],
             "selectionId": 1,
             "totalCount": 3,
-            "workflowInstances": Array [
-              Object {
-                "id": 1,
+          },
+          Object {
+            "instancesMap": Map {
+              "id_8" => Object {
+                "activities": Array [
+                  Object {
+                    "activityId": "activityId_2",
+                    "endDate": "2018-10-10T09:20:38.658Z",
+                    "id": "id_9",
+                    "startDate": "2018-10-10T09:20:38.658Z",
+                    "state": "ACTIVE",
+                  },
+                ],
+                "bpmnProcessId": "someKey",
+                "endDate": null,
+                "id": "id_8",
+                "incidents": Array [
+                  Object {
+                    "activityId": Object {},
+                    "activityInstanceId": Object {},
+                    "errorMessage": "",
+                    "errorType": "",
+                    "id": "id_11",
+                    "jobId": "jobId_2",
+                  },
+                ],
+                "operations": Array [
+                  Object {
+                    "endDate": "2018-10-10T09:20:38.661Z",
+                    "errorMessage": "string",
+                    "startDate": "2018-10-10T09:20:38.661Z",
+                    "state": "SCHEDULED",
+                    "type": "UPDATE_RETRIES",
+                  },
+                ],
+                "startDate": "2018-06-21",
+                "state": "ACTIVE",
+                "workflowId": "2",
+                "workflowName": "someWorkflowName",
+                "workflowVersion": 1,
               },
+            },
+            "queries": Array [
               Object {
-                "id": 2,
-              },
-              Object {
-                "id": 3,
+                "active": true,
+                "excludeIds": Array [],
+                "ids": Array [],
+                "incidents": true,
+                "running": true,
               },
             ],
+            "selectionId": 2,
+            "totalCount": 3,
+          },
+          Object {
+            "instancesMap": Map {
+              "id_12" => Object {
+                "activities": Array [
+                  Object {
+                    "activityId": "activityId_3",
+                    "endDate": "2018-10-10T09:20:38.658Z",
+                    "id": "id_13",
+                    "startDate": "2018-10-10T09:20:38.658Z",
+                    "state": "ACTIVE",
+                  },
+                ],
+                "bpmnProcessId": "someKey",
+                "endDate": null,
+                "id": "id_12",
+                "incidents": Array [
+                  Object {
+                    "activityId": Object {},
+                    "activityInstanceId": Object {},
+                    "errorMessage": "",
+                    "errorType": "",
+                    "id": "id_15",
+                    "jobId": "jobId_3",
+                  },
+                ],
+                "operations": Array [
+                  Object {
+                    "endDate": "2018-10-10T09:20:38.661Z",
+                    "errorMessage": "string",
+                    "startDate": "2018-10-10T09:20:38.661Z",
+                    "state": "SCHEDULED",
+                    "type": "UPDATE_RETRIES",
+                  },
+                ],
+                "startDate": "2018-06-21",
+                "state": "ACTIVE",
+                "workflowId": "2",
+                "workflowName": "someWorkflowName",
+                "workflowVersion": 1,
+              },
+            },
+            "queries": Array [
+              Object {
+                "active": true,
+                "excludeIds": Array [],
+                "ids": Array [],
+                "incidents": true,
+                "running": true,
+              },
+            ],
+            "selectionId": 1,
+            "totalCount": 3,
+          },
+          Object {
+            "instancesMap": Map {
+              "id_16" => Object {
+                "activities": Array [
+                  Object {
+                    "activityId": "activityId_4",
+                    "endDate": "2018-10-10T09:20:38.658Z",
+                    "id": "id_17",
+                    "startDate": "2018-10-10T09:20:38.658Z",
+                    "state": "ACTIVE",
+                  },
+                ],
+                "bpmnProcessId": "someKey",
+                "endDate": null,
+                "id": "id_16",
+                "incidents": Array [
+                  Object {
+                    "activityId": Object {},
+                    "activityInstanceId": Object {},
+                    "errorMessage": "",
+                    "errorType": "",
+                    "id": "id_19",
+                    "jobId": "jobId_4",
+                  },
+                ],
+                "operations": Array [
+                  Object {
+                    "endDate": "2018-10-10T09:20:38.661Z",
+                    "errorMessage": "string",
+                    "startDate": "2018-10-10T09:20:38.661Z",
+                    "state": "SCHEDULED",
+                    "type": "UPDATE_RETRIES",
+                  },
+                ],
+                "startDate": "2018-06-21",
+                "state": "ACTIVE",
+                "workflowId": "2",
+                "workflowName": "someWorkflowName",
+                "workflowVersion": 1,
+              },
+            },
+            "queries": Array [
+              Object {
+                "active": true,
+                "excludeIds": Array [],
+                "ids": Array [],
+                "incidents": true,
+                "running": true,
+              },
+            ],
+            "selectionId": 2,
+            "totalCount": 3,
+          },
+          Object {
+            "instancesMap": Map {
+              "id_20" => Object {
+                "activities": Array [
+                  Object {
+                    "activityId": "activityId_5",
+                    "endDate": "2018-10-10T09:20:38.658Z",
+                    "id": "id_21",
+                    "startDate": "2018-10-10T09:20:38.658Z",
+                    "state": "ACTIVE",
+                  },
+                ],
+                "bpmnProcessId": "someKey",
+                "endDate": null,
+                "id": "id_20",
+                "incidents": Array [
+                  Object {
+                    "activityId": Object {},
+                    "activityInstanceId": Object {},
+                    "errorMessage": "",
+                    "errorType": "",
+                    "id": "id_23",
+                    "jobId": "jobId_5",
+                  },
+                ],
+                "operations": Array [
+                  Object {
+                    "endDate": "2018-10-10T09:20:38.661Z",
+                    "errorMessage": "string",
+                    "startDate": "2018-10-10T09:20:38.661Z",
+                    "state": "SCHEDULED",
+                    "type": "UPDATE_RETRIES",
+                  },
+                ],
+                "startDate": "2018-06-21",
+                "state": "ACTIVE",
+                "workflowId": "2",
+                "workflowName": "someWorkflowName",
+                "workflowVersion": 1,
+              },
+            },
+            "queries": Array [
+              Object {
+                "active": true,
+                "excludeIds": Array [],
+                "ids": Array [],
+                "incidents": true,
+                "running": true,
+              },
+            ],
+            "selectionId": 1,
+            "totalCount": 3,
           },
         ]
       }

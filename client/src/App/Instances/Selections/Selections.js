@@ -7,13 +7,16 @@ import ComboBadge from 'modules/components/ComboBadge';
 import {CollapsablePanelConsumer} from 'modules/contexts/CollapsablePanelContext';
 
 import {applyOperation} from 'modules/api/instances';
+
+import {getSelectionById} from 'modules/utils/selection';
+import {serializeInstancesMaps} from 'modules/utils/selection/selection';
+
 import {
   DIRECTION,
   OPERATION_TYPE,
   BADGE_TYPE,
   COMBO_BADGE_TYPE
 } from 'modules/constants';
-import {getSelectionById} from 'modules/utils/selection';
 
 import SelectionList from './SelectionList';
 
@@ -49,11 +52,10 @@ export default class Selections extends React.Component {
     });
   };
 
-  handleDeleteSelection = async deleteId => {
+  handleDeleteSelection = async selectionId => {
     const {selections, instancesInSelectionsCount, selectionCount} = this.props;
 
-    const selectionToRemove = getSelectionById(selections, deleteId);
-
+    const selectionToRemove = getSelectionById(selections, selectionId);
     // remove the selection
     selections.splice(selectionToRemove.index, 1);
 
@@ -64,7 +66,7 @@ export default class Selections extends React.Component {
       selectionCount: selectionCount - 1 || 0
     });
     this.props.storeStateLocally({
-      selections,
+      selections: serializeInstancesMaps(selections),
       instancesInSelectionsCount: this.props.instancesInSelectionsCount,
       selectionCount: this.props.selectionCount
     });

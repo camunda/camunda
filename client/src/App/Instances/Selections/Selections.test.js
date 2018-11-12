@@ -1,7 +1,12 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 
-import {mockResolvedAsyncFn, flushPromises} from 'modules/testUtils';
+import {
+  mockResolvedAsyncFn,
+  xTimes,
+  flushPromises,
+  createSelection
+} from 'modules/testUtils';
 
 import {OPERATION_TYPE} from 'modules/constants';
 
@@ -13,50 +18,32 @@ import * as Styled from './styled';
 
 api.applyOperation = mockResolvedAsyncFn();
 
-const MockSelections = [
-  {
-    queries: [
-      {
-        active: true,
-        excludeIds: [],
-        ids: [],
-        incidents: true,
-        running: true
-      }
-    ],
-    selectionId: 0,
-    totalCount: 3,
-    workflowInstances: [{id: 1}, {id: 2}, {id: 3}]
-  },
-  {
-    queries: [
-      {
-        active: true,
-        excludeIds: [],
-        ids: [],
-        incidents: false,
-        running: true
-      }
-    ],
-    selectionId: 1,
-    totalCount: 3,
-    workflowInstances: [{id: 1}, {id: 2}, {id: 3}]
-  }
-];
+const mockSelections = [];
 
 describe('Selections', () => {
   let node;
   let mockonStateChange;
   let storeStateLocally;
-
+  let selectionId;
   beforeEach(() => {
     mockonStateChange = jest.fn();
     storeStateLocally = jest.fn();
 
+    xTimes(2)(index =>
+      mockSelections.push(
+        createSelection({
+          selectionId: index,
+          totalCount: 3
+        })
+      )
+    );
+
+    selectionId = mockSelections[0].selectionId;
+
     node = shallow(
       <Selections
-        openSelection={0}
-        selections={MockSelections}
+        openSelection={null}
+        selections={mockSelections}
         rollingSelectionIndex={1}
         selectionCount={2}
         instancesInSelectionsCount={6}
@@ -85,8 +72,10 @@ describe('Selections', () => {
   });
 
   it('should close a selection', () => {
+    //given
+    const defaultSelectionId = null;
     //when
-    node.instance().handleToggleSelection(0);
+    node.instance().handleToggleSelection(defaultSelectionId);
 
     //then
     expect(node.instance().props.onStateChange).toBeCalledWith({
@@ -97,43 +86,33 @@ describe('Selections', () => {
   it('should open a selection when non is open', () => {
     // given
     node.setProps({openSelection: null});
-
     // when
-    node.instance().handleToggleSelection(0);
+    node.instance().handleToggleSelection(selectionId);
 
     // then
     expect(node.instance().props.onStateChange).toBeCalledWith({
-      openSelection: 0
-    });
-  });
-
-  it('should only show one open selection', () => {
-    // given
-    node.setProps({openSelection: null});
-
-    //when
-    node.instance().handleToggleSelection(0);
-    // then
-    expect(node.instance().props.onStateChange).toBeCalledWith({
-      openSelection: 0
+      openSelection: selectionId
     });
   });
 
   it('should delete a selection', () => {
     //when
-    node.instance().handleDeleteSelection(0);
+    node.instance().handleDeleteSelection(selectionId);
 
     //then
     expect(node.instance().props.onStateChange).toBeCalledWith({
-      selections: MockSelections,
+      selections: mockSelections,
       instancesInSelectionsCount: 3,
       selectionCount: 1
     });
   });
 
   it('retry instances in a selection', async () => {
+    //given
+    node.setProps({openSelection: selectionId});
+
     //when
-    node.instance().handleRetrySelection(1);
+    node.instance().handleRetrySelection(selectionId);
 
     // when data fetched
     await flushPromises();
@@ -141,13 +120,13 @@ describe('Selections', () => {
     //then
     expect(api.applyOperation).toHaveBeenCalledWith(
       OPERATION_TYPE.UPDATE_RETRIES,
-      MockSelections[0].queries
+      mockSelections[0].queries
     );
   });
 
   it('cancel instances in a selection', async () => {
     //when
-    node.instance().handleCancelSelection(1);
+    node.instance().handleCancelSelection(selectionId);
 
     // when data fetched
     await flushPromises();
@@ -155,7 +134,7 @@ describe('Selections', () => {
     //then
     expect(api.applyOperation).toHaveBeenCalledWith(
       OPERATION_TYPE.CANCEL,
-      MockSelections[0].queries
+      mockSelections[0].queries
     );
   });
 });
