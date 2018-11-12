@@ -1,7 +1,7 @@
 #!/usr/bin/env groovy
 
 // general properties for CI execution
-def static NODE_POOL() { return "slaves" }
+def static NODE_POOL() { return "slaves-ssd" }
 def static MAVEN_DOCKER_IMAGE() { return "maven:3.5.3-jdk-8-slim" }
 def static POSTGRES_DOCKER_IMAGE(String postgresVersion) { return "postgres:${postgresVersion}" }
 def static CAMBPM_DOCKER_IMAGE(String cambpmVersion) { return "camunda/camunda-bpm-platform:${cambpmVersion}" }
@@ -21,7 +21,9 @@ spec:
     fsGroup: 1000
   volumes:
     - name: es-storage
-      emptyDir: {}
+      hostPath:
+        path: /mnt/disks/ssd0
+        type: Directory
     - name: cambpm-storage
       emptyDir: {}
   initContainers:
@@ -126,10 +128,6 @@ spec:
       value: false
     - name: bootstrap.memory_lock
       value: true
-    - name: path.repo
-      value: /es_snapshots
-    - name: path.logs
-      value: /usr/share/elasticsearch/logs
     securityContext:
       capabilities:
         add:
@@ -150,11 +148,11 @@ spec:
         memory: 8Gi
     volumeMounts:
       - name: es-storage
+        mountPath: /usr/share/elasticsearch/data
+        subPath: data
+      - name: es-storage
         mountPath: /usr/share/elasticsearch/logs
         subPath: logs
-      - name: es-storage
-        mountPath: /es_snapshots
-        subPath: snapshots
 """
 }
 
@@ -216,10 +214,10 @@ pipeline {
           container('maven') {
             sh 'curl localhost:9200/_cat/indices?v'
             sh ('''#!/bin/bash -ex
-              cp -R /es-storage /cambpm-storage .
+              cp -R --parents /es-storage/logs /cambpm-storage .
               chown -R 10000:1000 ./{es-storage,cambpm-storage}
             ''')
-            archiveArtifacts artifacts: 'es-storage/**/*,cambpm-storage/**/*', onlyIfSuccessful: false
+            archiveArtifacts artifacts: 'es-storage/logs/*,cambpm-storage/**/*', onlyIfSuccessful: false
           }
         }
       }
