@@ -27,12 +27,12 @@ Array [
   <Styled(ExpandButton)
     direction="DOWN"
     onClick={[Function]}
-    title="Expand Top pane"
+    title="Expand Top"
   />,
   <Styled(ExpandButton)
     direction="UP"
     onClick={[Function]}
-    title="Expand Bottom pane"
+    title="Expand Bottom"
   />,
 ]
 `;
@@ -63,7 +63,7 @@ exports[`Pane bottom pane should render ExpandButton with DOWN icon if pane is e
 <Styled(ExpandButton)
   direction="DOWN"
   onClick={[Function]}
-  title="Expand Top pane"
+  title="Expand Top"
 />
 `;
 
@@ -93,7 +93,7 @@ exports[`Pane bottom pane should render ExpandButton with UP icon if pane is col
 <Styled(ExpandButton)
   direction="UP"
   onClick={[Function]}
-  title="Expand Bottom pane"
+  title="Expand Bottom"
 />
 `;
 
