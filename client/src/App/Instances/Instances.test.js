@@ -285,7 +285,6 @@ describe('Instances', () => {
       describe('resetFilter', () => {
         it('should reset filter & diagram to the default value', () => {
           // given
-          const storeStateLocallyMock = jest.fn();
           const node = shallow(
             <Instances
               storeStateLocally={storeStateLocallyMock}
@@ -313,15 +312,9 @@ describe('Instances', () => {
           // then
           expect(setFilterInURLlSpy).toHaveBeenCalledWith(DEFAULT_FILTER);
           expect(resetSelectionsSpy).toHaveBeenCalled();
-          expect(storeStateLocallyMock).toHaveBeenCalledWith({
-            filter: DEFAULT_FILTER
-          });
-
-          expect(node.state().diagramWorkflow).toEqual({});
 
           resetSelectionsSpy.mockRestore();
           setFilterInURLlSpy.mockRestore();
-          storeStateLocallyMock.mockRestore();
         });
       });
 
