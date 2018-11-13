@@ -19,9 +19,6 @@ package io.zeebe.broker.transport.clientapi;
 
 import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.keyNullValue;
 import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.partitionIdNullValue;
-import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.positionNullValue;
-import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.sourceRecordPositionNullValue;
-import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.timestampNullValue;
 import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.valueHeaderLength;
 
 import io.zeebe.protocol.Protocol;
@@ -45,17 +42,14 @@ public class CommandResponseWriter implements BufferWriter {
       new ExecuteCommandResponseEncoder();
 
   protected int partitionId = partitionIdNullValue();
-  protected long position = positionNullValue();
-  private long sourceRecordPosition = sourceRecordPositionNullValue();
   protected long key = keyNullValue();
-  protected long timestamp = timestampNullValue();
   private RecordType recordType = RecordType.NULL_VAL;
   private ValueType valueType = ValueType.NULL_VAL;
   private short intent = Intent.NULL_VAL;
   private RejectionType rejectionType = RejectionType.NULL_VAL;
 
   protected BufferWriter valueWriter;
-  private UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
+  private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
 
   protected final ServerResponse response = new ServerResponse();
   protected final ServerOutput output;
@@ -84,11 +78,6 @@ public class CommandResponseWriter implements BufferWriter {
     return this;
   }
 
-  public CommandResponseWriter position(final long position) {
-    this.position = position;
-    return this;
-  }
-
   public CommandResponseWriter rejectionType(RejectionType rejectionType) {
     this.rejectionType = rejectionType;
     return this;
@@ -99,18 +88,8 @@ public class CommandResponseWriter implements BufferWriter {
     return this;
   }
 
-  public CommandResponseWriter sourcePosition(final long sourcePosition) {
-    this.sourceRecordPosition = sourcePosition;
-    return this;
-  }
-
   public CommandResponseWriter key(final long key) {
     this.key = key;
-    return this;
-  }
-
-  public CommandResponseWriter timestamp(final long timestamp) {
-    this.timestamp = timestamp;
     return this;
   }
 
@@ -148,12 +127,9 @@ public class CommandResponseWriter implements BufferWriter {
         .wrap(buffer, offset)
         .recordType(recordType)
         .partitionId(partitionId)
-        .position(position)
-        .sourceRecordPosition(sourceRecordPosition)
         .valueType(valueType)
         .intent(intent)
         .key(key)
-        .timestamp(timestamp)
         .rejectionType(rejectionType);
 
     offset = responseEncoder.limit();
@@ -183,13 +159,10 @@ public class CommandResponseWriter implements BufferWriter {
   protected void reset() {
     partitionId = partitionIdNullValue();
     key = keyNullValue();
-    position = positionNullValue();
-    sourceRecordPosition = sourceRecordPositionNullValue();
     valueWriter = null;
     recordType = RecordType.NULL_VAL;
     intent = Intent.NULL_VAL;
     valueType = ValueType.NULL_VAL;
-    timestamp = timestampNullValue();
     rejectionType = RejectionType.NULL_VAL;
     rejectionReason.wrap(0, 0);
   }

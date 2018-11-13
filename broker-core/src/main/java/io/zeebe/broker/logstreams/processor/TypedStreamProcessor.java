@@ -117,6 +117,7 @@ public class TypedStreamProcessor implements StreamProcessor {
 
   @Override
   public EventProcessor onEvent(final LoggedEvent event) {
+    final long position = event.getPosition();
     metadata.reset();
     event.readMetadata(metadata);
 
@@ -130,7 +131,7 @@ public class TypedStreamProcessor implements StreamProcessor {
       event.readValue(value);
 
       typedEvent.wrap(event, metadata, value);
-      eventProcessorWrapper.wrap(currentProcessor, typedEvent);
+      eventProcessorWrapper.wrap(currentProcessor, typedEvent, position);
       return eventProcessorWrapper;
     } else {
       return null;
@@ -156,6 +157,7 @@ public class TypedStreamProcessor implements StreamProcessor {
     protected TypedRecordProcessor<?> eventProcessor;
     protected TypedEventImpl event;
     private SideEffectProducer sideEffectProducer;
+    private long position;
 
     public DelegatingEventProcessor(
         final int streamProcessorId,
@@ -169,9 +171,13 @@ public class TypedStreamProcessor implements StreamProcessor {
       this.responseWriter = new TypedResponseWriterImpl(output, logStream.getPartitionId());
     }
 
-    public void wrap(final TypedRecordProcessor<?> eventProcessor, final TypedEventImpl event) {
+    public void wrap(
+        final TypedRecordProcessor<?> eventProcessor,
+        final TypedEventImpl event,
+        final long position) {
       this.eventProcessor = eventProcessor;
       this.event = event;
+      this.position = position;
     }
 
     @Override
@@ -179,12 +185,13 @@ public class TypedStreamProcessor implements StreamProcessor {
       writer.reset();
       responseWriter.reset();
 
-      this.writer.configureSourceContext(streamProcessorId, event.getPosition());
+      this.writer.configureSourceContext(streamProcessorId, position);
 
       // default side effect is responses; can be changed by processor
       sideEffectProducer = responseWriter;
 
-      eventProcessor.processRecord(event, responseWriter, writer, this::setSideEffectProducer);
+      eventProcessor.processRecord(
+          position, event, responseWriter, writer, this::setSideEffectProducer);
     }
 
     public void setSideEffectProducer(final SideEffectProducer sideEffectProducer) {

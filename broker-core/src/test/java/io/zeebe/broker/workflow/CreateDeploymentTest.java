@@ -84,11 +84,7 @@ public class CreateDeploymentTest {
             .sendAndAwait();
 
     // then
-    final Record<DeploymentRecordValue> createDeploymentCommand = getFirstDeploymentCreateCommand();
-
     assertThat(resp.getKey()).isGreaterThanOrEqualTo(0L);
-    assertThat(resp.getPosition()).isGreaterThanOrEqualTo(0L);
-    assertThat(resp.getSourceRecordPosition()).isEqualTo(createDeploymentCommand.getPosition());
     assertThat(resp.getPartitionId()).isEqualTo(DEPLOYMENT_PARTITION);
 
     assertThat(resp.getRecordType()).isEqualTo(RecordType.EVENT);
@@ -192,10 +188,7 @@ public class CreateDeploymentTest {
     final ExecuteCommandResponse resp = apiRule.partitionClient().deployWithResponse(resource);
 
     // then
-    final Record<DeploymentRecordValue> createDeploymentCommand = getFirstDeploymentCreateCommand();
-
     assertThat(resp.getKey()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
-    assertThat(resp.getSourceRecordPosition()).isEqualTo(createDeploymentCommand.getPosition());
     assertThat(resp.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(resp.getIntent()).isEqualTo(DeploymentIntent.CREATE);
     assertThat(resp.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
@@ -213,10 +206,7 @@ public class CreateDeploymentTest {
     final ExecuteCommandResponse resp = apiRule.partitionClient().deployWithResponse(resource);
 
     // then
-    final Record<DeploymentRecordValue> createDeploymentCommand = getFirstDeploymentCreateCommand();
-
     assertThat(resp.getKey()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
-    assertThat(resp.getSourceRecordPosition()).isEqualTo(createDeploymentCommand.getPosition());
     assertThat(resp.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(resp.getIntent()).isEqualTo(DeploymentIntent.CREATE);
     assertThat(resp.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
@@ -246,10 +236,7 @@ public class CreateDeploymentTest {
             .sendAndAwait();
 
     // then
-    final Record<DeploymentRecordValue> createDeploymentCommand = getFirstDeploymentCreateCommand();
-
     assertThat(resp.getKey()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
-    assertThat(resp.getSourceRecordPosition()).isEqualTo(createDeploymentCommand.getPosition());
     assertThat(resp.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(resp.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
     assertThat(resp.getRejectionReason())
@@ -272,10 +259,7 @@ public class CreateDeploymentTest {
             .sendAndAwait();
 
     // then
-    final Record<DeploymentRecordValue> createDeploymentCommand = getFirstDeploymentCreateCommand();
-
     assertThat(resp.getKey()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
-    assertThat(resp.getSourceRecordPosition()).isEqualTo(createDeploymentCommand.getPosition());
     assertThat(resp.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(resp.getIntent()).isEqualTo(DeploymentIntent.CREATE);
     assertThat(resp.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);

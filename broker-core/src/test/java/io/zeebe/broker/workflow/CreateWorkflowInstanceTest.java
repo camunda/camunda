@@ -22,7 +22,6 @@ import static io.zeebe.broker.workflow.WorkflowAssert.assertWorkflowInstanceReco
 import static io.zeebe.msgpack.spec.MsgPackHelper.EMTPY_OBJECT;
 import static io.zeebe.msgpack.spec.MsgPackHelper.NIL;
 import static io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord.PROP_WORKFLOW_BPMN_PROCESS_ID;
-import static io.zeebe.protocol.intent.WorkflowInstanceIntent.CREATE;
 import static io.zeebe.test.broker.protocol.clientapi.PartitionTestClient.PROP_WORKFLOW_INSTANCE_KEY;
 import static io.zeebe.test.broker.protocol.clientapi.PartitionTestClient.PROP_WORKFLOW_KEY;
 import static io.zeebe.test.broker.protocol.clientapi.PartitionTestClient.PROP_WORKFLOW_PAYLOAD;
@@ -86,11 +85,7 @@ public class CreateWorkflowInstanceTest {
             .sendAndAwait();
 
     // then
-    final Record<WorkflowInstanceRecordValue> createWorkflowCommand =
-        testClient.receiveFirstWorkflowInstanceCommand(CREATE);
-
     assertThat(resp.getKey()).isEqualTo(ExecuteCommandResponseDecoder.keyNullValue());
-    assertThat(resp.getSourceRecordPosition()).isEqualTo(createWorkflowCommand.getPosition());
     assertThat(resp.getPartitionId()).isEqualTo(apiRule.getDefaultPartitionId());
     assertThat(resp.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(resp.getRejectionType()).isEqualTo(RejectionType.BAD_VALUE);
@@ -115,11 +110,7 @@ public class CreateWorkflowInstanceTest {
             .sendAndAwait();
 
     // then
-    final Record<WorkflowInstanceRecordValue> createWorkflowCommand =
-        testClient.receiveFirstWorkflowInstanceCommand(CREATE);
-
     assertThat(resp.getKey()).isGreaterThanOrEqualTo(0L);
-    assertThat(resp.getSourceRecordPosition()).isEqualTo(createWorkflowCommand.getPosition());
     assertThat(resp.getPartitionId()).isEqualTo(apiRule.getDefaultPartitionId());
     assertThat(resp.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_READY);
     assertThat(resp.getValue())
@@ -275,12 +266,7 @@ public class CreateWorkflowInstanceTest {
             .sendAndAwait();
 
     // then
-
-    final Record<WorkflowInstanceRecordValue> createWorkflowCommand =
-        testClient.receiveFirstWorkflowInstanceCommand(CREATE);
-
     assertThat(resp.getKey()).isGreaterThanOrEqualTo(0L);
-    assertThat(resp.getSourceRecordPosition()).isEqualTo(createWorkflowCommand.getPosition());
     assertThat(resp.getPartitionId()).isEqualTo(apiRule.getDefaultPartitionId());
     assertThat(resp.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_READY);
     assertThat(resp.getValue())

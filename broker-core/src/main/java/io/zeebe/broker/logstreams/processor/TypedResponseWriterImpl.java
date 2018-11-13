@@ -55,9 +55,6 @@ public class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectP
         rejection.getKey(),
         rejection.getMetadata().getRejectionType(),
         rejection.getMetadata().getRejectionReason(),
-        rejection.getPosition(),
-        rejection.getSourcePosition(),
-        rejection.getTimestamp(),
         rejection.getMetadata(),
         rejection.getValue());
   }
@@ -73,9 +70,6 @@ public class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectP
         command.getKey(),
         type,
         stringWrapper,
-        0,
-        command.getPosition(),
-        command.getTimestamp(),
         command.getMetadata(),
         command.getValue());
   }
@@ -90,9 +84,6 @@ public class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectP
         command.getKey(),
         type,
         reason,
-        0,
-        command.getPosition(),
-        command.getTimestamp(),
         command.getMetadata(),
         command.getValue());
   }
@@ -107,9 +98,6 @@ public class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectP
         event.getKey(),
         RejectionType.NULL_VAL,
         stringWrapper,
-        event.getPosition(),
-        event.getSourcePosition(),
-        event.getTimestamp(),
         event.getMetadata(),
         event.getValue());
   }
@@ -125,10 +113,6 @@ public class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectP
         eventKey,
         RejectionType.NULL_VAL,
         stringWrapper,
-        0, // TODO: this depends on the value of written event =>
-        // https://github.com/zeebe-io/zeebe/issues/374
-        command.getPosition(),
-        command.getTimestamp(),
         command.getMetadata(),
         eventValue);
   }
@@ -139,17 +123,11 @@ public class TypedResponseWriterImpl implements TypedResponseWriter, SideEffectP
       long key,
       RejectionType rejectionType,
       DirectBuffer rejectionReason,
-      long position,
-      long sourcePosition,
-      long timestamp,
       RecordMetadata metadata,
       UnpackedObject value) {
     writer
         .partitionId(partitionId)
-        .position(position)
-        .sourcePosition(sourcePosition)
         .key(key)
-        .timestamp(timestamp)
         .intent(intent)
         .recordType(type)
         .valueType(metadata.getValueType())

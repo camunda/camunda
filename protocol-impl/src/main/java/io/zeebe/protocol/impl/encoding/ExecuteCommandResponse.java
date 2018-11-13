@@ -17,9 +17,6 @@ package io.zeebe.protocol.impl.encoding;
 
 import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.keyNullValue;
 import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.partitionIdNullValue;
-import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.positionNullValue;
-import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.sourceRecordPositionNullValue;
-import static io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder.timestampNullValue;
 
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseDecoder;
 import io.zeebe.protocol.clientapi.ExecuteCommandResponseEncoder;
@@ -44,13 +41,10 @@ public class ExecuteCommandResponse implements BufferReader, BufferWriter {
   private final ExecuteCommandResponseDecoder bodyDecoder = new ExecuteCommandResponseDecoder();
 
   private int partitionId;
-  private long position;
-  private long sourceRecordPosition;
   private long key;
   private RecordType recordType;
   private ValueType valueType;
   private Intent intent;
-  private long timestamp;
   private RejectionType rejectionType;
   private final DirectBuffer value = new UnsafeBuffer(0, 0);
   private final DirectBuffer rejectionReason = new UnsafeBuffer(0, 0);
@@ -61,13 +55,10 @@ public class ExecuteCommandResponse implements BufferReader, BufferWriter {
 
   public ExecuteCommandResponse reset() {
     partitionId = partitionIdNullValue();
-    position = positionNullValue();
-    sourceRecordPosition = sourceRecordPositionNullValue();
     key = keyNullValue();
     recordType = RecordType.NULL_VAL;
     valueType = ValueType.NULL_VAL;
     intent = Intent.UNKNOWN;
-    timestamp = timestampNullValue();
     rejectionType = RejectionType.NULL_VAL;
     value.wrap(0, 0);
     rejectionReason.wrap(0, 0);
@@ -81,24 +72,6 @@ public class ExecuteCommandResponse implements BufferReader, BufferWriter {
 
   public ExecuteCommandResponse setPartitionId(int partitionId) {
     this.partitionId = partitionId;
-    return this;
-  }
-
-  public long getPosition() {
-    return position;
-  }
-
-  public ExecuteCommandResponse setPosition(long position) {
-    this.position = position;
-    return this;
-  }
-
-  public long getSourceRecordPosition() {
-    return sourceRecordPosition;
-  }
-
-  public ExecuteCommandResponse setSourceRecordPosition(long sourceRecordPosition) {
-    this.sourceRecordPosition = sourceRecordPosition;
     return this;
   }
 
@@ -135,15 +108,6 @@ public class ExecuteCommandResponse implements BufferReader, BufferWriter {
 
   public ExecuteCommandResponse setIntent(Intent intent) {
     this.intent = intent;
-    return this;
-  }
-
-  public long getTimestamp() {
-    return timestamp;
-  }
-
-  public ExecuteCommandResponse setTimestamp(long timestamp) {
-    this.timestamp = timestamp;
     return this;
   }
 
@@ -187,13 +151,10 @@ public class ExecuteCommandResponse implements BufferReader, BufferWriter {
     bodyDecoder.wrap(buffer, offset, headerDecoder.blockLength(), headerDecoder.version());
 
     partitionId = bodyDecoder.partitionId();
-    position = bodyDecoder.position();
-    sourceRecordPosition = bodyDecoder.sourceRecordPosition();
     key = bodyDecoder.key();
     recordType = bodyDecoder.recordType();
     valueType = bodyDecoder.valueType();
     intent = Intent.fromProtocolValue(valueType, bodyDecoder.intent());
-    timestamp = bodyDecoder.timestamp();
     rejectionType = bodyDecoder.rejectionType();
 
     offset += bodyDecoder.sbeBlockLength();
@@ -248,13 +209,10 @@ public class ExecuteCommandResponse implements BufferReader, BufferWriter {
     bodyEncoder
         .wrap(buffer, offset)
         .partitionId(partitionId)
-        .position(position)
-        .sourceRecordPosition(sourceRecordPosition)
         .key(key)
         .recordType(recordType)
         .valueType(valueType)
         .intent(intent.value())
-        .timestamp(timestamp)
         .rejectionType(rejectionType)
         .putValue(value, 0, value.capacity())
         .putRejectionReason(rejectionReason, 0, rejectionReason.capacity());

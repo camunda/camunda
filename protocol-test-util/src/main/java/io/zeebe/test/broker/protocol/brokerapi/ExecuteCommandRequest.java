@@ -41,20 +41,12 @@ public class ExecuteCommandRequest implements BufferReader {
     this.msgPackHelper = msgPackHelper;
   }
 
-  public long sourceRecordPosition() {
-    return bodyDecoder.sourceRecordPosition();
-  }
-
   public long key() {
     return bodyDecoder.key();
   }
 
   public int partitionId() {
     return bodyDecoder.partitionId();
-  }
-
-  public long position() {
-    return bodyDecoder.position();
   }
 
   public ValueType valueType() {

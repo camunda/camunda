@@ -148,13 +148,10 @@ public class ClientApiMessageHandler implements ServerMessageHandler, ServerRequ
       logStreamWriter.keyNull();
     }
 
-    final long sourceRecordPosition = executeCommandRequestDecoder.sourceRecordPosition();
-
     final long eventPosition =
         logStreamWriter
             .metadataWriter(eventMetadata)
             .value(buffer, eventOffset, eventLength)
-            .sourceRecordPosition(sourceRecordPosition)
             .tryWrite();
 
     return eventPosition >= 0;

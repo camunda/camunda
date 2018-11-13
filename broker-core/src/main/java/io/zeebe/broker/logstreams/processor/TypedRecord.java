@@ -21,13 +21,8 @@ import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.impl.record.RecordMetadata;
 
 public interface TypedRecord<T extends UnpackedObject> {
-  long getPosition();
-
-  long getSourcePosition();
 
   long getKey();
-
-  long getTimestamp();
 
   RecordMetadata getMetadata();
 

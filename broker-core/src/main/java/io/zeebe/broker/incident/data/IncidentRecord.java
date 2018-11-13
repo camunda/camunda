@@ -31,8 +31,6 @@ public class IncidentRecord extends UnpackedObject {
       new EnumProperty<>("errorType", ErrorType.class, ErrorType.UNKNOWN);
   private final StringProperty errorMessageProp = new StringProperty("errorMessage", "");
 
-  private final LongProperty failureEventPosition = new LongProperty("failureEventPosition", -1L);
-
   private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
   private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey", -1L);
   private final StringProperty elementIdProp = new StringProperty("elementId", "");
@@ -44,7 +42,6 @@ public class IncidentRecord extends UnpackedObject {
   public IncidentRecord() {
     this.declareProperty(errorTypeProp)
         .declareProperty(errorMessageProp)
-        .declareProperty(failureEventPosition)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(workflowInstanceKeyProp)
         .declareProperty(elementIdProp)
@@ -68,15 +65,6 @@ public class IncidentRecord extends UnpackedObject {
 
   public IncidentRecord setErrorMessage(String errorMessage) {
     this.errorMessageProp.setValue(errorMessage);
-    return this;
-  }
-
-  public long getFailureEventPosition() {
-    return failureEventPosition.getValue();
-  }
-
-  public IncidentRecord setFailureEventPosition(long failureEventPosition) {
-    this.failureEventPosition.setValue(failureEventPosition);
     return this;
   }
 
@@ -138,7 +126,6 @@ public class IncidentRecord extends UnpackedObject {
       TypedRecord<WorkflowInstanceRecord> workflowInstanceEvent) {
     final WorkflowInstanceRecord value = workflowInstanceEvent.getValue();
 
-    setFailureEventPosition(workflowInstanceEvent.getPosition());
     setElementInstanceKey(workflowInstanceEvent.getKey());
     setBpmnProcessId(value.getBpmnProcessId());
     setWorkflowInstanceKey(value.getWorkflowInstanceKey());

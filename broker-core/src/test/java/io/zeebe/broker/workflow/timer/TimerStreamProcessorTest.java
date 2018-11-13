@@ -71,8 +71,7 @@ public class TimerStreamProcessorTest {
 
     envRule.writeCommand(timerRecord.getKey(), TimerIntent.CANCEL, timerRecord.getValue());
 
-    final long secondCommandPosition =
-        envRule.writeCommand(timerRecord.getKey(), TimerIntent.TRIGGER, timerRecord.getValue());
+    envRule.writeCommand(timerRecord.getKey(), TimerIntent.TRIGGER, timerRecord.getValue());
 
     streamProcessor.unblock();
 
@@ -80,7 +79,6 @@ public class TimerStreamProcessorTest {
     final TypedRecord<TimerRecord> rejection = findTimerCommandRejection();
 
     assertThat(rejection.getMetadata().getIntent()).isEqualTo(TimerIntent.TRIGGER);
-    assertThat(rejection.getSourcePosition()).isEqualTo(secondCommandPosition);
     assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
         .isEqualTo("timer is already triggered or canceled");
   }
@@ -90,11 +88,9 @@ public class TimerStreamProcessorTest {
     // when
     final TypedRecord<TimerRecord> timerRecord = timerRecordForActivity("timer");
 
-    final long firstCommandPosition =
-        envRule.writeCommand(timerRecord.getKey(), TimerIntent.TRIGGER, timerRecord.getValue());
+    envRule.writeCommand(timerRecord.getKey(), TimerIntent.TRIGGER, timerRecord.getValue());
 
-    final long secondCommandPosition =
-        envRule.writeCommand(timerRecord.getKey(), TimerIntent.TRIGGER, timerRecord.getValue());
+    envRule.writeCommand(timerRecord.getKey(), TimerIntent.TRIGGER, timerRecord.getValue());
 
     streamProcessor.unblock();
 
@@ -102,7 +98,6 @@ public class TimerStreamProcessorTest {
     final TypedRecord<TimerRecord> rejection = findTimerCommandRejection();
 
     assertThat(rejection.getMetadata().getIntent()).isEqualTo(TimerIntent.TRIGGER);
-    assertThat(rejection.getSourcePosition()).isEqualTo(secondCommandPosition);
     assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
         .isEqualTo("timer is already triggered or canceled");
   }
@@ -114,8 +109,7 @@ public class TimerStreamProcessorTest {
 
     envRule.writeCommand(timerRecord.getKey(), TimerIntent.TRIGGER, timerRecord.getValue());
 
-    final long secondCommandPosition =
-        envRule.writeCommand(timerRecord.getKey(), TimerIntent.CANCEL, timerRecord.getValue());
+    envRule.writeCommand(timerRecord.getKey(), TimerIntent.CANCEL, timerRecord.getValue());
 
     streamProcessor.unblock();
 
@@ -123,7 +117,6 @@ public class TimerStreamProcessorTest {
     final TypedRecord<TimerRecord> rejection = findTimerCommandRejection();
 
     assertThat(rejection.getMetadata().getIntent()).isEqualTo(TimerIntent.CANCEL);
-    assertThat(rejection.getSourcePosition()).isEqualTo(secondCommandPosition);
     assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
         .isEqualTo("timer is already triggered or canceled");
   }

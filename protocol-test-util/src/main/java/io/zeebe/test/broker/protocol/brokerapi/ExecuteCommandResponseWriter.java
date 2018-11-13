@@ -24,7 +24,6 @@ import io.zeebe.protocol.intent.Intent;
 import io.zeebe.test.broker.protocol.MsgPackHelper;
 import io.zeebe.util.EnsureUtil;
 import java.nio.charset.StandardCharsets;
-import java.time.Instant;
 import java.util.Map;
 import java.util.function.Function;
 import org.agrona.MutableDirectBuffer;
@@ -38,20 +37,14 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
   protected Function<ExecuteCommandRequest, Long> keyFunction = r -> r.key();
   protected Function<ExecuteCommandRequest, Integer> partitionIdFunction = r -> r.partitionId();
   protected Function<ExecuteCommandRequest, Map<String, Object>> eventFunction;
-  protected Function<ExecuteCommandRequest, Long> positionFunction = r -> r.position();
-  protected Function<ExecuteCommandRequest, Long> sourceRecordPositionFunction =
-      r -> r.sourceRecordPosition();
   private Function<ExecuteCommandRequest, Intent> intentFunction = r -> r.intent();
 
   protected long key;
   protected int partitionId;
   protected byte[] value;
-  protected long position;
-  private long sourceRecordPosition;
   private RecordType recordType;
   private Intent intent;
   private ValueType valueType;
-  private long timestamp = ExecuteCommandResponseEncoder.timestampNullValue();
   private RejectionType rejectionType = RejectionType.NULL_VAL;
   private UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
 
@@ -63,8 +56,6 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
   public void initializeFrom(ExecuteCommandRequest request) {
     key = keyFunction.apply(request);
     partitionId = partitionIdFunction.apply(request);
-    position = positionFunction.apply(request);
-    sourceRecordPosition = sourceRecordPositionFunction.apply(request);
     final Map<String, Object> deserializedEvent = eventFunction.apply(request);
     value = msgPackHelper.encodeAsMsgPack(deserializedEvent);
     this.valueType = request.valueType();
@@ -87,29 +78,8 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
     this.keyFunction = keyFunction;
   }
 
-  public void setPositionFunction(Function<ExecuteCommandRequest, Long> positionFunction) {
-    this.positionFunction = positionFunction;
-  }
-
-  public void setSourceRecordPositionFunction(
-      Function<ExecuteCommandRequest, Long> sourceRecordPositionFunction) {
-    this.sourceRecordPositionFunction = sourceRecordPositionFunction;
-  }
-
   public void setIntentFunction(Function<ExecuteCommandRequest, Intent> intentFunction) {
     this.intentFunction = intentFunction;
-  }
-
-  public void setTimestamp(Instant timestamp) {
-    final long epochMillis =
-        timestamp == null
-            ? ExecuteCommandResponseEncoder.timestampNullValue()
-            : timestamp.toEpochMilli();
-    setTimestamp(epochMillis);
-  }
-
-  public void setTimestamp(long timestamp) {
-    this.timestamp = timestamp;
   }
 
   public void setRejectionType(RejectionType rejectionType) {
@@ -155,11 +125,8 @@ public class ExecuteCommandResponseWriter extends AbstractMessageBuilder<Execute
         .intent(intent.value())
         .partitionId(partitionId)
         .key(key)
-        .timestamp(timestamp)
-        .position(position)
         .rejectionType(rejectionType)
         .putValue(value, 0, value.length)
-        .putRejectionReason(rejectionReason, 0, rejectionReason.capacity())
-        .sourceRecordPosition(sourceRecordPosition);
+        .putRejectionReason(rejectionReason, 0, rejectionReason.capacity());
   }
 }

@@ -21,7 +21,6 @@ import static io.zeebe.broker.workflow.JobAssert.assertJobHeaders;
 import static io.zeebe.broker.workflow.JobAssert.assertJobRecord;
 import static io.zeebe.broker.workflow.WorkflowAssert.assertWorkflowInstanceRecord;
 import static io.zeebe.broker.workflow.gateway.ParallelGatewayStreamProcessorTest.PROCESS_ID;
-import static io.zeebe.test.broker.protocol.brokerapi.DeploymentStubs.DEFAULT_PARTITION;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -83,10 +82,8 @@ public class WorkflowInstanceFunctionalTest {
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.START_EVENT_OCCURRED);
     final long workflowInstanceKey = response.getKey();
 
-    assertThat(response.getSourceRecordPosition()).isEqualTo(workflowCreateCmd.getPosition());
-
     assertThat(startEvent.getKey()).isGreaterThan(0).isNotEqualTo(workflowInstanceKey);
-    assertThat(startEvent.getPosition()).isGreaterThan(response.getPosition());
+    assertThat(startEvent.getPosition()).isGreaterThan(workflowCreateCmd.getPosition());
     assertWorkflowInstanceRecord(workflowInstanceKey, "foo", startEvent);
   }
 
@@ -358,7 +355,6 @@ public class WorkflowInstanceFunctionalTest {
     final ExecuteCommandResponse deploymentResp =
         apiRule
             .createCmdRequest()
-            .partitionId(DEFAULT_PARTITION)
             .type(ValueType.DEPLOYMENT, DeploymentIntent.CREATE)
             .command()
             .put("resources", Collections.singletonList(deploymentResource))

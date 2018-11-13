@@ -17,7 +17,6 @@ package io.zeebe.test.broker.protocol.clientapi;
 
 import static io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder.keyNullValue;
 import static io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder.partitionIdNullValue;
-import static io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder.sourceRecordPositionNullValue;
 
 import io.zeebe.protocol.clientapi.ErrorCode;
 import io.zeebe.protocol.clientapi.ExecuteCommandRequestEncoder;
@@ -45,7 +44,6 @@ public class ExecuteCommandRequest implements BufferWriter {
 
   protected int partitionId = partitionIdNullValue();
   protected long key = keyNullValue();
-  private long sourceRecordPosition = sourceRecordPositionNullValue();
   protected ValueType valueType = ValueType.NULL_VAL;
   private Intent intent = null;
   protected byte[] encodedCmd;
@@ -60,11 +58,6 @@ public class ExecuteCommandRequest implements BufferWriter {
 
   public ExecuteCommandRequest partitionId(final int partitionId) {
     this.partitionId = partitionId;
-    return this;
-  }
-
-  public ExecuteCommandRequest sourceRecordPosition(long sourceRecordPosition) {
-    this.sourceRecordPosition = sourceRecordPosition;
     return this;
   }
 
@@ -153,7 +146,6 @@ public class ExecuteCommandRequest implements BufferWriter {
     requestEncoder
         .wrap(buffer, offset + messageHeaderEncoder.encodedLength())
         .partitionId(partitionId)
-        .sourceRecordPosition(sourceRecordPosition)
         .key(key)
         .valueType(valueType)
         .intent(intent.value())

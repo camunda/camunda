@@ -92,7 +92,6 @@ public class UpdatePayloadTest {
         testClient.receiveFirstWorkflowInstanceEvent(WorkflowInstanceIntent.PAYLOAD_UPDATED);
 
     assertThat(updatedEvent.getSourceRecordPosition()).isEqualTo(updateCommand.getPosition());
-    assertThat(updatedEvent.getPosition()).isGreaterThan(response.getPosition());
     assertThat(updatedEvent.getKey()).isEqualTo(activityInstanceEvent.getKey());
     assertThat(updatedEvent.getValue().getWorkflowInstanceKey()).isEqualTo(workflowInstanceKey);
 
@@ -222,10 +221,6 @@ public class UpdatePayloadTest {
     final ExecuteCommandResponse response = updatePayload(-1L, MSGPACK_PAYLOAD);
 
     // then
-    final Record<WorkflowInstanceRecordValue> updateCommand =
-        testClient.receiveFirstWorkflowInstanceCommand(WorkflowInstanceIntent.UPDATE_PAYLOAD);
-
-    assertThat(response.getSourceRecordPosition()).isEqualTo(updateCommand.getPosition());
     assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
     assertThat(response.getRejectionReason()).isEqualTo("Workflow instance is not running");
@@ -262,10 +257,6 @@ public class UpdatePayloadTest {
         updatePayload(activityInstanceEvent.getKey(), MSGPACK_PAYLOAD);
 
     // then
-    final Record<WorkflowInstanceRecordValue> updateCommand =
-        testClient.receiveFirstWorkflowInstanceCommand(WorkflowInstanceIntent.UPDATE_PAYLOAD);
-
-    assertThat(response.getSourceRecordPosition()).isEqualTo(updateCommand.getPosition());
     assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
     assertThat(response.getRejectionReason()).isEqualTo("Workflow instance is not running");

@@ -69,11 +69,7 @@ public class CompleteJobTest {
         testClient.completeJob(jobEvent.getKey(), jobEventValue.getPayload());
 
     // then
-    final Record<JobRecordValue> completeEvent =
-        testClient.receiveFirstJobCommand(JobIntent.COMPLETE);
-
     assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
-    assertThat(response.getSourceRecordPosition()).isEqualTo(completeEvent.getPosition());
     assertThat(response.getIntent()).isEqualTo(JobIntent.COMPLETED);
 
     assertThat(response.getValue())
@@ -99,12 +95,8 @@ public class CompleteJobTest {
         testClient.completeJob(key, MsgPackConstants.MSGPACK_PAYLOAD);
 
     // then
-    final Record<JobRecordValue> completeEvent =
-        testClient.receiveFirstJobCommand(JobIntent.COMPLETE);
-
     assertThat(response.getRecordType()).isEqualTo(RecordType.COMMAND_REJECTION);
     assertThat(response.getIntent()).isEqualTo(JobIntent.COMPLETE);
-    assertThat(response.getSourceRecordPosition()).isEqualTo(completeEvent.getPosition());
     assertThat(response.getRejectionType()).isEqualTo(RejectionType.NOT_APPLICABLE);
     assertThat(response.getRejectionReason()).isEqualTo("Job does not exist");
   }
