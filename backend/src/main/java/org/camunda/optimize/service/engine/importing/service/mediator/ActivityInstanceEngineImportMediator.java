@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.engine.importing.service.mediator;
 
+import org.apache.commons.collections.ListUtils;
 import org.camunda.optimize.dto.engine.HistoricActivityInstanceEngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.ActivityInstanceFetcher;
@@ -19,13 +20,12 @@ import java.util.List;
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class ActivityInstanceEngineImportMediator
-    extends BackoffImportMediator<ActivityImportIndexHandler> {
+  extends BackoffImportMediator<ActivityImportIndexHandler> {
 
   private ActivityInstanceFetcher engineEntityFetcher;
 
   @Autowired
   private EventsWriter eventsWriter;
-
 
   private ActivityInstanceImportService activityInstanceImportService;
 
@@ -39,27 +39,30 @@ public class ActivityInstanceEngineImportMediator
     importIndexHandler = provider.getActivityImportIndexHandler(engineContext.getEngineAlias());
     engineEntityFetcher = beanHelper.getInstance(ActivityInstanceFetcher.class, engineContext);
     activityInstanceImportService = new ActivityInstanceImportService(
-        eventsWriter,
-        elasticsearchImportJobExecutor,
-        engineContext
-      );
+      eventsWriter, elasticsearchImportJobExecutor, engineContext
+    );
   }
 
   @Override
   public boolean importNextEnginePage() {
-    List<HistoricActivityInstanceEngineDto> entitiesOfLastTimestamp =
-      engineEntityFetcher.fetchHistoricActivityInstancesForTimestamp(importIndexHandler.getTimestampOfLastEntity());
+    final List<HistoricActivityInstanceEngineDto> entitiesOfLastTimestamp = engineEntityFetcher
+      .fetchHistoricActivityInstancesForTimestamp(importIndexHandler.getTimestampOfLastEntity());
 
-    TimestampBasedImportPage page = importIndexHandler.getNextPage();
-    List<HistoricActivityInstanceEngineDto> entities =
-      engineEntityFetcher.fetchHistoricActivityInstances(page);
-    if (!entities.isEmpty()) {
+    final TimestampBasedImportPage page = importIndexHandler.getNextPage();
+    final List<HistoricActivityInstanceEngineDto> nextPageEntities = engineEntityFetcher
+      .fetchHistoricActivityInstances(page);
 
-      OffsetDateTime timestamp = entities.get(entities.size() - 1).getEndTime();
+    if (!nextPageEntities.isEmpty()) {
+      OffsetDateTime timestamp = nextPageEntities.get(nextPageEntities.size() - 1).getEndTime();
       importIndexHandler.updateTimestampOfLastEntity(timestamp);
-      entities.addAll(entitiesOfLastTimestamp);
-      activityInstanceImportService.executeImport(entities);
     }
-    return entities.size() >= configurationService.getEngineImportActivityInstanceMaxPageSize();
+
+    if (!entitiesOfLastTimestamp.isEmpty() || !nextPageEntities.isEmpty()) {
+      final List<HistoricActivityInstanceEngineDto> allEntities =
+        ListUtils.union(entitiesOfLastTimestamp, nextPageEntities);
+      activityInstanceImportService.executeImport(allEntities);
+    }
+
+    return nextPageEntities.size() >= configurationService.getEngineImportActivityInstanceMaxPageSize();
   }
 }

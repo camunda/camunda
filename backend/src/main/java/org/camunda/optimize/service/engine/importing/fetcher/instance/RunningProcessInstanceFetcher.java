@@ -31,19 +31,19 @@ public class RunningProcessInstanceFetcher extends
     super(engineContext);
   }
 
-  public List<HistoricProcessInstanceDto> fetchHistoricFinishedProcessInstances(TimestampBasedImportPage page) {
-    return fetchHistoricFinishedProcessInstances(
+  public List<HistoricProcessInstanceDto> fetchRunningProcessInstances(TimestampBasedImportPage page) {
+    return fetchRunningProcessInstances(
       page.getTimestampOfLastEntity(),
       configurationService.getEngineImportProcessInstanceMaxPageSize()
     );
   }
 
-  private List<HistoricProcessInstanceDto> fetchHistoricFinishedProcessInstances(OffsetDateTime timeStamp,
-                                                                                 long pageSize) {
+  private List<HistoricProcessInstanceDto> fetchRunningProcessInstances(OffsetDateTime timeStamp,
+                                                                        long pageSize) {
     logger.debug("Fetching running historic process instances ...");
     long requestStart = System.currentTimeMillis();
     List<HistoricProcessInstanceDto> entries =
-      fetchWithRetry(() -> performFinishedHistoricProcessInstanceRequest(timeStamp, pageSize));
+      fetchWithRetry(() -> performRunningProcessInstanceRequest(timeStamp, pageSize));
     long requestEnd = System.currentTimeMillis();
     logger.debug(
       "Fetched [{}] running historic process instances which started after set timestamp with page size [{}] within [{}] ms",
@@ -54,7 +54,7 @@ public class RunningProcessInstanceFetcher extends
     return entries;
   }
 
-  private List<HistoricProcessInstanceDto> performFinishedHistoricProcessInstanceRequest(OffsetDateTime timeStamp, long pageSize) {
+  private List<HistoricProcessInstanceDto> performRunningProcessInstanceRequest(OffsetDateTime timeStamp, long pageSize) {
     return getEngineClient()
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
       .path(RUNNING_PROCESS_INSTANCE_ENDPOINT)
@@ -66,11 +66,11 @@ public class RunningProcessInstanceFetcher extends
       });
   }
 
-  public List<HistoricProcessInstanceDto> fetchHistoricFinishedProcessInstances(OffsetDateTime endTimeOfLastInstance) {
+  public List<HistoricProcessInstanceDto> fetchRunningProcessInstances(OffsetDateTime startTimeOfLastInstance) {
     logger.debug("Fetching running historic process instances ...");
     long requestStart = System.currentTimeMillis();
     List<HistoricProcessInstanceDto> secondEntries =
-      fetchWithRetry(() -> performFinishedHistoricProcessInstanceRequest(endTimeOfLastInstance));
+      fetchWithRetry(() -> performRunningProcessInstanceRequest(startTimeOfLastInstance));
     long requestEnd = System.currentTimeMillis();
     logger.debug(
       "Fetched [{}] running historic process instances for set start time within [{}] ms",
@@ -80,11 +80,11 @@ public class RunningProcessInstanceFetcher extends
     return secondEntries;
   }
 
-  private List<HistoricProcessInstanceDto> performFinishedHistoricProcessInstanceRequest(OffsetDateTime endTimeOfLastInstance) {
+  private List<HistoricProcessInstanceDto> performRunningProcessInstanceRequest(OffsetDateTime startTimeOfLastInstance) {
     return getEngineClient()
       .target(configurationService.getEngineRestApiEndpointOfCustomEngine(getEngineAlias()))
       .path(RUNNING_PROCESS_INSTANCE_ENDPOINT)
-      .queryParam(STARTED_AT, dateTimeFormatter.format(endTimeOfLastInstance))
+      .queryParam(STARTED_AT, dateTimeFormatter.format(startTimeOfLastInstance))
       .request(MediaType.APPLICATION_JSON)
       .acceptEncoding(UTF8)
       .get(new GenericType<List<HistoricProcessInstanceDto>>() {

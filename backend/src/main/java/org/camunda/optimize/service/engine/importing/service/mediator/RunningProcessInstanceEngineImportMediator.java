@@ -1,5 +1,6 @@
 package org.camunda.optimize.service.engine.importing.service.mediator;
 
+import org.apache.commons.collections.ListUtils;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.RunningProcessInstanceFetcher;
@@ -36,28 +37,30 @@ public class RunningProcessInstanceEngineImportMediator
     importIndexHandler = provider.getUnfinishedProcessInstanceImportIndexHandler(engineContext.getEngineAlias());
     engineEntityFetcher = beanHelper.getInstance(RunningProcessInstanceFetcher.class, engineContext);
     runningProcessInstanceImportService = new RunningProcessInstanceImportService(
-      runningProcessInstanceWriter,
-      elasticsearchImportJobExecutor,
-      engineContext
+      runningProcessInstanceWriter, elasticsearchImportJobExecutor, engineContext
     );
   }
 
   @Override
   protected boolean importNextEnginePage() {
-    List<HistoricProcessInstanceDto> entitiesOfLastTimestamp =
-      engineEntityFetcher.fetchHistoricFinishedProcessInstances(importIndexHandler.getTimestampOfLastEntity());
+    final List<HistoricProcessInstanceDto> entitiesOfLastTimestamp = engineEntityFetcher
+      .fetchRunningProcessInstances(importIndexHandler.getTimestampOfLastEntity());
 
-    TimestampBasedImportPage page = importIndexHandler.getNextPage();
-    List<HistoricProcessInstanceDto> entities =
-      engineEntityFetcher.fetchHistoricFinishedProcessInstances(page);
-    if (!entities.isEmpty()) {
+    final TimestampBasedImportPage page = importIndexHandler.getNextPage();
+    final List<HistoricProcessInstanceDto> nextPageEntities = engineEntityFetcher
+      .fetchRunningProcessInstances(page);
 
-      OffsetDateTime timestamp = entities.get(entities.size() - 1).getStartTime();
+    if (!nextPageEntities.isEmpty()) {
+      OffsetDateTime timestamp = nextPageEntities.get(nextPageEntities.size() - 1).getStartTime();
       importIndexHandler.updateTimestampOfLastEntity(timestamp);
-      entities.addAll(entitiesOfLastTimestamp);
-      runningProcessInstanceImportService.executeImport(entities);
     }
-    return entities.size() >= configurationService.getEngineImportProcessInstanceMaxPageSize();
+
+    if (!entitiesOfLastTimestamp.isEmpty() || !nextPageEntities.isEmpty()) {
+      final List<HistoricProcessInstanceDto> allEntities = ListUtils.union(entitiesOfLastTimestamp, nextPageEntities);
+      runningProcessInstanceImportService.executeImport(allEntities);
+    }
+
+    return nextPageEntities.size() >= configurationService.getEngineImportProcessInstanceMaxPageSize();
   }
 
 }
