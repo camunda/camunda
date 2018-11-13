@@ -47,4 +47,14 @@ export const Select = themed(styled.select`
     box-shadow: none;
     cursor: not-allowed;
   }
+
+  /* removes default dotted-line-focus in firefox*/
+  &:-moz-focusring {
+    color: transparent;
+    text-shadow: 0 0 0
+      ${themeStyle({
+        dark: '#ffffff',
+        light: Colors.uiDark06
+      })};
+  }
 `);
