@@ -4,7 +4,8 @@ import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.main.Upgrade;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
-import org.camunda.optimize.upgrade.steps.UpdateDataStep;
+import org.camunda.optimize.upgrade.steps.document.UpdateDataStep;
+import org.camunda.optimize.upgrade.steps.schema.CreateIndexAliasForExistingIndexStep;
 import org.elasticsearch.index.query.QueryBuilders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +35,33 @@ public class UpgradeFrom22To23 implements Upgrade {
       UpgradePlan upgradePlan = UpgradePlanBuilder.createUpgradePlan()
         .fromVersion(FROM_VERSION)
         .toVersion(TO_VERSION)
+        .addUpgradeStep(
+          new CreateIndexAliasForExistingIndexStep(configurationService.getAlertType(), TO_VERSION)
+        )
+        .addUpgradeStep(
+          new CreateIndexAliasForExistingIndexStep(configurationService.getDashboardShareType(), TO_VERSION)
+        )
+        .addUpgradeStep(
+          new CreateIndexAliasForExistingIndexStep(configurationService.getDurationHeatmapTargetValueType(), TO_VERSION)
+        )
+        .addUpgradeStep(
+          new CreateIndexAliasForExistingIndexStep(configurationService.getImportIndexType(), TO_VERSION)
+        )
+        .addUpgradeStep(
+          new CreateIndexAliasForExistingIndexStep(configurationService.getLicenseType(), TO_VERSION)
+        )
+        .addUpgradeStep(
+          new CreateIndexAliasForExistingIndexStep(configurationService.getMetaDataType(), TO_VERSION)
+        )
+        .addUpgradeStep(
+          new CreateIndexAliasForExistingIndexStep(configurationService.getProcessDefinitionType(), TO_VERSION)
+        )
+        .addUpgradeStep(
+          new CreateIndexAliasForExistingIndexStep(configurationService.getProcessInstanceType(), TO_VERSION)
+        )
+        .addUpgradeStep(
+          new CreateIndexAliasForExistingIndexStep(configurationService.getReportShareType(), TO_VERSION)
+        )
         .addUpgradeStep(relocateProcessPart())
         .build();
       upgradePlan.execute();
@@ -47,7 +75,7 @@ public class UpgradeFrom22To23 implements Upgrade {
     return new UpdateDataStep(
       "single-report",
       QueryBuilders.matchAllQuery(),
-        "ctx._source.data.parameters = [\"processPart\": ctx._source.data.processPart];" +
+      "ctx._source.data.parameters = [\"processPart\": ctx._source.data.processPart];" +
         "ctx._source.data.remove(\"processPart\");"
     );
   }

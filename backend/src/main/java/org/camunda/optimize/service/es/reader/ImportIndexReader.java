@@ -13,6 +13,8 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.Optional;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+
 @Component
 public class ImportIndexReader {
 
@@ -33,7 +35,7 @@ public class ImportIndexReader {
     try {
       getResponse = esclient
         .prepareGet(
-          configurationService.getOptimizeIndex(configurationService.getImportIndexType()),
+          getOptimizeIndexAliasForType(configurationService.getImportIndexType()),
           configurationService.getImportIndexType(),
           id)
         .setRealtime(false)

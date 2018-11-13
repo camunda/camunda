@@ -6,7 +6,6 @@ import org.camunda.optimize.dto.optimize.query.report.single.result.MapSingleRep
 import org.camunda.optimize.service.es.report.command.ReportCommand;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.BoolQueryBuilder;
-import org.elasticsearch.search.aggregations.Aggregation;
 import org.elasticsearch.search.aggregations.AggregationBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.aggregations.Aggregations;
@@ -19,7 +18,7 @@ import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilde
 import java.util.HashMap;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.DURATION;
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.util.VariableHelper.getNestedVariableNameFieldLabelForType;
 import static org.camunda.optimize.service.util.VariableHelper.getNestedVariableValueFieldLabelForType;
 import static org.camunda.optimize.service.util.VariableHelper.isDateType;
@@ -54,7 +53,7 @@ public abstract class AbstractProcessInstanceDurationByVariableCommand extends R
     VariableGroupByValueDto groupByVariable = ((VariableGroupByDto) reportData.getGroupBy()).getValue();
 
     SearchResponse response = esclient
-      .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
+      .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))
       .setTypes(configurationService.getProcessInstanceType())
       .setQuery(query)
       .setFetchSource(false)

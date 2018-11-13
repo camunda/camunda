@@ -22,6 +22,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.OffsetDateTime;
 import java.time.ZoneId;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.LicenseType.LICENSE;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
@@ -70,7 +71,7 @@ public class LicenseManager {
 
     IndexResponse response = esclient
       .prepareIndex(
-        configurationService.getOptimizeIndex(configurationService.getLicenseType()),
+        getOptimizeIndexAliasForType(configurationService.getLicenseType()),
         configurationService.getLicenseType(),
         licenseDocumentId
       )
@@ -94,7 +95,7 @@ public class LicenseManager {
   public String retrieveStoredOptimizeLicense() throws InvalidLicenseException {
     GetResponse response = esclient
       .prepareGet(
-        configurationService.getOptimizeIndex(configurationService.getLicenseType()),
+        getOptimizeIndexAliasForType(configurationService.getLicenseType()),
         configurationService.getLicenseType(),
         licenseDocumentId
       )

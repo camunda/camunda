@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.END_DATE;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
@@ -391,8 +392,7 @@ public class ImportIT  {
   @Test
   public void doNotSkipProcessInstancesWithSameEndTime() throws Exception {
     // given
-    int originalMaxPageSize =
-      embeddedOptimizeRule.getConfigurationService().getEngineImportProcessInstanceMaxPageSize();
+    int originalMaxPageSize = embeddedOptimizeRule.getConfigurationService().getEngineImportProcessInstanceMaxPageSize();
     embeddedOptimizeRule.getConfigurationService().setEngineImportProcessInstanceMaxPageSize(1);
     startTwoProcessInstancesWithSameEndTime();
 
@@ -408,7 +408,7 @@ public class ImportIT  {
   private Long getImportedActivityCount() {
     ConfigurationService configurationService = embeddedOptimizeRule.getConfigurationService();
     SearchResponse response = elasticSearchRule.getClient()
-      .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
+      .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))
       .setTypes(configurationService.getProcessInstanceType())
       .setQuery(QueryBuilders.matchAllQuery())
       .setSize(0)

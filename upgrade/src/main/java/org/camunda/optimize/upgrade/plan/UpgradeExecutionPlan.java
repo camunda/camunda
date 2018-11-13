@@ -152,7 +152,7 @@ public class UpgradeExecutionPlan implements UpgradePlan {
 
   private void updateOptimizeVersion(ESIndexAdjuster ESIndexAdjuster) {
     logger.info("Updating Elasticsearch data structure version tag from {} to {}.", fromVersion, toVersion);
-    ESIndexAdjuster.updateData(
+    ESIndexAdjuster.updateDataByTypeName(
       configurationService.getMetaDataType(),
       termQuery(METADATA_TYPE_SCHEMA_VERSION, fromVersion),
       String.format("ctx._source.schemaVersion = \"%s\"", toVersion)

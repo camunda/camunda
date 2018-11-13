@@ -16,6 +16,8 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.Optional;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+
 
 @Component
 public class MetadataReader {
@@ -33,7 +35,7 @@ public class MetadataReader {
 
     QueryBuilder allQuery = QueryBuilders.matchAllQuery();
     SearchResponse searchResponse = esclient.prepareSearch(
-      configurationService.getOptimizeIndex(configurationService.getMetaDataType())
+      getOptimizeIndexAliasForType(configurationService.getMetaDataType())
     )
       .setTypes(configurationService.getMetaDataType())
       .setQuery(allQuery)

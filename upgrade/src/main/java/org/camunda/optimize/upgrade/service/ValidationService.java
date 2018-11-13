@@ -14,6 +14,7 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Collections;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.METADATA_TYPE_SCHEMA_VERSION;
 
 
@@ -34,7 +35,7 @@ public class ValidationService {
   public void validateVersions(RestClient restClient, String fromVersion, String toVersion) {
 
     try {
-      String metaDataIndex = configurationService.getOptimizeIndex(configurationService.getMetaDataType());
+      String metaDataIndex = getOptimizeIndexAliasForType(configurationService.getMetaDataType());
       Response metadataResponse = restClient
         .performRequest("GET", metaDataIndex + "/_search", Collections.emptyMap());
 

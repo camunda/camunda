@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -77,7 +78,7 @@ public class FinishedProcessInstanceWriter {
         .filter(termQuery(ProcessInstanceType.PROCESS_DEFINITION_KEY, processDefinitionKey))
         .filter(rangeQuery(ProcessInstanceType.END_DATE).lt(dateTimeFormatter.format(endDate)));
       final BulkByScrollResponse response = DeleteByQueryAction.INSTANCE.newRequestBuilder(esClient)
-        .source(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
+        .source(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))
         .abortOnVersionConflict(false)
         .filter(filterQuery)
         .get();
@@ -132,7 +133,7 @@ public class FinishedProcessInstanceWriter {
 
     bulkRequest.add(esClient
                       .prepareUpdate(
-                        configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()),
+                        getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()),
                         configurationService.getProcessInstanceType(),
                         processInstanceId
                       )

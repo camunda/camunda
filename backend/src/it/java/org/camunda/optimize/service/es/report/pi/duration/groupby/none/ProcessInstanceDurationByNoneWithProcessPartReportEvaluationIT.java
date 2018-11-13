@@ -44,6 +44,7 @@ import static org.camunda.optimize.service.es.report.command.util.ReportConstant
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MEDIAN_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MIN_OPERATION;
 import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_PROCESS_INSTANCE_ENTITY;
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.test.util.VariableFilterUtilHelper.createBooleanVariableFilter;
 import static org.elasticsearch.script.Script.DEFAULT_SCRIPT_LANG;
 import static org.hamcrest.CoreMatchers.is;
@@ -287,7 +288,7 @@ public class ProcessInstanceDurationByNoneWithProcessPartReportEvaluationIT {
     UpdateByQueryRequestBuilder updateByQuery =
       UpdateByQueryAction.INSTANCE.newRequestBuilder(elasticSearchRule.getClient());
     ConfigurationService configurationService = embeddedOptimizeRule.getConfigurationService();
-    String processInstanceIndex = configurationService.getOptimizeIndex(configurationService.getProcessInstanceType());
+    String processInstanceIndex = getOptimizeIndexAliasForType(configurationService.getProcessInstanceType());
     Script setActivityStartDatesToNull = new Script(
       ScriptType.INLINE,
       DEFAULT_SCRIPT_LANG,

@@ -176,8 +176,6 @@ es:
       # Also decides if a secured connection is build up at all.
       enabled: false
 
-  #An index name used to create all Camunda Optimize types, shards, etc.
-  index: optimize
   licenseType: license
   dashboardType: dashboard
   alertType: alert

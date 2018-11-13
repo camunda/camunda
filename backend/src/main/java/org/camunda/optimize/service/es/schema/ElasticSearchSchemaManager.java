@@ -2,6 +2,7 @@ package org.camunda.optimize.service.es.schema;
 
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.ResourceAlreadyExistsException;
+import org.elasticsearch.action.admin.indices.alias.Alias;
 import org.elasticsearch.action.admin.indices.create.CreateIndexRequestBuilder;
 import org.elasticsearch.action.admin.indices.exists.indices.IndicesExistsResponse;
 import org.elasticsearch.client.Client;
@@ -14,6 +15,8 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
+
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 
 @Component
 public class ElasticSearchSchemaManager {
@@ -29,10 +32,10 @@ public class ElasticSearchSchemaManager {
   }
 
   public boolean schemaAlreadyExists() {
-    String[] optimizeIndex = new String [mappings.size()];
+    String[] optimizeIndex = new String[mappings.size()];
     int i = 0;
     for (TypeMappingCreator creator : mappings) {
-      optimizeIndex[i] = configurationService.getOptimizeIndex(creator.getType());
+      optimizeIndex[i] = getOptimizeIndexAliasForType(creator.getType());
       i = ++i;
     }
     IndicesExistsResponse response = esclient
@@ -45,10 +48,9 @@ public class ElasticSearchSchemaManager {
 
 
   /**
-   * NOTE: create one index per type
-   *
-   * https://www.elastic.co/guide/en/elasticsearch/reference/current/removal-of-types.html
-   *
+   * NOTE: create one alias and index per type
+   * <p>
+   * https://www.elastic.co/guide/en/elasticsearch/reference/6.0/indices-aliases.html
    */
   public void createOptimizeIndex() {
     Settings indexSettings = null;
@@ -59,18 +61,20 @@ public class ElasticSearchSchemaManager {
         logger.error("Could not create settings!", e);
       }
       try {
+        final String optimizeAliasForType = getOptimizeIndexAliasForType(mapping.getType());
         CreateIndexRequestBuilder createIndexRequestBuilder = esclient
-            .admin()
-            .indices()
-            .prepareCreate(configurationService.getOptimizeIndex(mapping.getType()))
-            .setSettings(indexSettings);
+          .admin()
+          .indices()
+          .prepareCreate(OptimizeIndexNameHelper.getCurrentVersionOptimizeIndexNameForAlias(optimizeAliasForType))
+          .addAlias(new Alias(optimizeAliasForType))
+          .setSettings(indexSettings);
 
         createIndexRequestBuilder = createIndexRequestBuilder.addMapping(
-            mapping.getType(),
-            mapping.getSource()
+          mapping.getType(),
+          mapping.getSource()
         );
         createIndexRequestBuilder
-            .get();
+          .get();
       } catch (ResourceAlreadyExistsException e) {
         logger.warn("Index for type [{}] already exists", mapping.getType());
       }
@@ -101,12 +105,12 @@ public class ElasticSearchSchemaManager {
 
   private void createSingleSchema(String type, XContentBuilder content) {
     esclient
-        .admin()
-        .indices()
-        .preparePutMapping(configurationService.getOptimizeIndex(type))
-        .setType(type)
-        .setSource(content)
-        .get();
+      .admin()
+      .indices()
+      .preparePutMapping(getOptimizeIndexAliasForType(type))
+      .setType(type)
+      .setSource(content)
+      .get();
   }
 
   public Client getEsclient() {

@@ -21,6 +21,7 @@ import javax.ws.rs.NotFoundException;
 import java.io.IOException;
 import java.util.List;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 
 @Component
@@ -38,7 +39,7 @@ public class DashboardReader {
     logger.debug("Fetching dashboard with id [{}]", dashboardId);
     GetResponse getResponse = esclient
       .prepareGet(
-        configurationService.getOptimizeIndex(ElasticsearchConstants.DASHBOARD_TYPE),
+        getOptimizeIndexAliasForType(ElasticsearchConstants.DASHBOARD_TYPE),
         ElasticsearchConstants.DASHBOARD_TYPE,
         dashboardId
       )
@@ -71,7 +72,7 @@ public class DashboardReader {
       ));
 
     SearchResponse searchResponse = esclient
-      .prepareSearch(configurationService.getOptimizeIndex(ElasticsearchConstants.DASHBOARD_TYPE))
+      .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.DASHBOARD_TYPE))
       .setTypes(ElasticsearchConstants.DASHBOARD_TYPE)
       .setQuery(getCombinedReportsBySimpleReportIdQuery)
       .setSize(LIST_FETCH_LIMIT)
@@ -83,7 +84,7 @@ public class DashboardReader {
   public List<DashboardDefinitionDto> getAllDashboards() {
     logger.debug("Fetching all available dashboards");
     SearchResponse scrollResp = esclient
-      .prepareSearch(configurationService.getOptimizeIndex(ElasticsearchConstants.DASHBOARD_TYPE))
+      .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.DASHBOARD_TYPE))
       .setTypes(ElasticsearchConstants.DASHBOARD_TYPE)
       .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
       .setQuery(QueryBuilders.matchAllQuery())

@@ -85,8 +85,6 @@ es:
       # used to enable or disable TLS/SSL and also decides if a secured connection is
       # build up at all.
       enabled: false
-  # An index name used to create all Camunda Optimize types, shards, etc.
-  index: optimize
   settings:
     index:
       # How often should the data replicated in case of node failure.

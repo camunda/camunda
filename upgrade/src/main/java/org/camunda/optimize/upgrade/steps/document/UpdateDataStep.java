@@ -1,6 +1,7 @@
-package org.camunda.optimize.upgrade.steps;
+package org.camunda.optimize.upgrade.steps.document;
 
 import org.camunda.optimize.upgrade.es.ESIndexAdjuster;
+import org.camunda.optimize.upgrade.steps.UpgradeStep;
 import org.elasticsearch.index.query.QueryBuilder;
 
 
@@ -17,7 +18,7 @@ public class UpdateDataStep implements UpgradeStep {
 
   @Override
   public void execute(ESIndexAdjuster ESIndexAdjuster) {
-    ESIndexAdjuster.updateData(typeName, query, updateScript);
+    ESIndexAdjuster.updateDataByTypeName(typeName, query, updateScript);
   }
 
 }

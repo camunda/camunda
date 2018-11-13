@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_VERSION;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
@@ -63,13 +64,10 @@ public class ProcessDefinitionReader {
     QueryBuilder query;
     query = QueryBuilders.matchAllQuery();
 
-    ArrayList<String> types = new ArrayList<>();
-    types.add(configurationService.getProcessDefinitionType());
-
     String[] fieldsToExclude = withXml ? null : new String[]{ProcessDefinitionType.PROCESS_DEFINITION_XML};
 
     SearchResponse scrollResp = esclient
-      .prepareSearch(configurationService.getOptimizeIndex(types))
+      .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessDefinitionType()))
       .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
       .setQuery(query)
       .setFetchSource(null, fieldsToExclude)
@@ -125,7 +123,7 @@ public class ProcessDefinitionReader {
                                                                    String processDefinitionVersion) {
     processDefinitionVersion = convertToValidVersion(processDefinitionKey, processDefinitionVersion);
     SearchResponse response = esclient.prepareSearch(
-      configurationService.getOptimizeIndex(configurationService.getProcessDefinitionType()))
+      getOptimizeIndexAliasForType(configurationService.getProcessDefinitionType()))
       .setQuery(
         QueryBuilders.boolQuery()
           .must(termQuery(PROCESS_DEFINITION_KEY, processDefinitionKey))
@@ -159,7 +157,7 @@ public class ProcessDefinitionReader {
 
   private String getLatestVersionToKey(String key) {
     SearchResponse response = esclient
-      .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessDefinitionType()))
+      .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessDefinitionType()))
       .setTypes(configurationService.getProcessDefinitionType())
       .setQuery(termQuery(PROCESS_DEFINITION_KEY, key))
       .addSort(PROCESS_DEFINITION_VERSION, SortOrder.DESC)

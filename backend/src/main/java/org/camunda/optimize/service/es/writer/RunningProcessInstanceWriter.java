@@ -21,6 +21,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+
 @Component
 public class RunningProcessInstanceWriter {
   private final Logger logger = LoggerFactory.getLogger(RunningProcessInstanceWriter.class);
@@ -75,7 +77,7 @@ public class RunningProcessInstanceWriter {
 
     bulkRequest.add(esclient
       .prepareUpdate(
-        configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()),
+        getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()),
         configurationService.getProcessInstanceType(),
         processInstanceId)
       .setScript(updateScript)

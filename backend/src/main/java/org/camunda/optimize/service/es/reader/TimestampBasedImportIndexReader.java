@@ -14,6 +14,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.Optional;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
 
 @Component
@@ -37,7 +38,7 @@ public class TimestampBasedImportIndexReader {
     try {
       getResponse = esclient
         .prepareGet(
-          configurationService.getOptimizeIndex(TIMESTAMP_BASED_IMPORT_INDEX_TYPE),
+          getOptimizeIndexAliasForType(TIMESTAMP_BASED_IMPORT_INDEX_TYPE),
           TIMESTAMP_BASED_IMPORT_INDEX_TYPE,
           EsHelper.constructKey(typeIndexComesFrom, engineAlias))
         .setFetchSource(true)
@@ -56,7 +57,7 @@ public class TimestampBasedImportIndexReader {
       logger.debug(
         "Was not able to retrieve definition based import index from [{}] " +
         "for type [{}] and engine [{}] from elasticsearch.",
-          configurationService.getOptimizeIndex(TIMESTAMP_BASED_IMPORT_INDEX_TYPE),
+          getOptimizeIndexAliasForType(TIMESTAMP_BASED_IMPORT_INDEX_TYPE),
           typeIndexComesFrom,
           engineAlias
       );

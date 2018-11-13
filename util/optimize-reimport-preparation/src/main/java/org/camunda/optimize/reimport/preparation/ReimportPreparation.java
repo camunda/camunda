@@ -4,6 +4,7 @@ import org.apache.http.HttpEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.nio.entity.NStringEntity;
 import org.camunda.optimize.jetty.util.LoggingConfigurationReader;
+import org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.upgrade.es.ElasticsearchRestClientBuilder;
@@ -58,7 +59,7 @@ public class ReimportPreparation {
 
     List<String> indexNames = types
       .stream()
-      .map(configurationService::getOptimizeIndex)
+      .map(OptimizeIndexNameHelper::getOptimizeIndexAliasForType)
       .collect(Collectors.toList());
 
     String commaSeparatedTypes = String.join(",", types);

@@ -24,8 +24,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.text.MessageFormat;
 import java.util.HashMap;
 import java.util.Map;
+
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 
 public class ESIndexAdjuster {
 
@@ -40,8 +43,8 @@ public class ESIndexAdjuster {
   private static final String REINDEX_OPERATION = "reindex";
   private static final String UPDATE_BY_QUERY_OPERATION = "/_update_by_query";
   private static final String MAPPING_OPERATION = "/_mapping";
+  private static final String ALIAS_OPERATION_TEMPLATE = "/_alias/{0}";
 
-  private static final String TEMP_SUFFIX = "-temp";
   private static final int ONE_SECOND = 1000;
   private final RestClient restClient;
   private final ObjectMapper objectMapper = new ObjectMapper();
@@ -66,8 +69,7 @@ public class ESIndexAdjuster {
     );
   }
 
-  public void deleteIndex(String typeName) {
-    String indexName = configurationService.getOptimizeIndex(typeName);
+  public void deleteIndex(String indexName) {
     logger.debug("Deleting index [{}].", indexName);
     try {
       restClient.performRequest(DELETE, indexName);
@@ -81,8 +83,7 @@ public class ESIndexAdjuster {
     }
   }
 
-  public String getIndexMappings(String typeName) {
-    String indexName = configurationService.getOptimizeIndex(typeName);
+  public String getIndexMappings(String indexName) {
     logger.debug("Retrieve index mapping for index [{}].", indexName);
     try {
       Response response = restClient.performRequest(GET, indexName + MAPPING_OPERATION);
@@ -103,13 +104,11 @@ public class ESIndexAdjuster {
     return objectMapper.writeValueAsString(read);
   }
 
-  public void reindex(String sourceTypeToConstructIndexFrom,
-                      String destinationTypeToConstructIndexFrom,
+  public void reindex(String sourceIndex,
+                      String destinationIndex,
                       String sourceType,
                       String destType,
                       String mappingScript) {
-    String sourceIndex = configurationService.getOptimizeIndex(sourceTypeToConstructIndexFrom);
-    String destinationIndex = configurationService.getOptimizeIndex(destinationTypeToConstructIndexFrom);
     logger.debug(
       "Reindexing from index [{}] to [{}] using the mapping script [{}].",
       sourceIndex,
@@ -175,7 +174,10 @@ public class ESIndexAdjuster {
           TaskResponse taskResponse = objectMapper.readValue(response.getEntity().getContent(), TaskResponse.class);
 
           if (taskResponse.getError() != null) {
-            logger.error("A reindex batch that is part of the upgrade failed. Elasticsearch reported the following error: {}.", taskResponse.getError().toString());
+            logger.error(
+              "A reindex batch that is part of the upgrade failed. Elasticsearch reported the following error: {}.",
+              taskResponse.getError().toString()
+            );
             logger.error("The upgrade will be aborted. Please restore your Elasticsearch backup and try again.");
             throw new UpgradeRuntimeException(taskResponse.getError().toString());
           }
@@ -231,10 +233,16 @@ public class ESIndexAdjuster {
   }
 
   public void createIndex(String typeName, String mappingAndSettings) {
-    String indexName = configurationService.getOptimizeIndex(typeName);
-    logger.debug("Creating index [{}] with mapping and settings [{}].", indexName, mappingAndSettings);
+    createIndex(typeName, null, mappingAndSettings);
+  }
 
-    HttpEntity entity = new NStringEntity(preProcess(mappingAndSettings), ContentType.APPLICATION_JSON);
+  public void createIndex(String indexName, String indexAlias, String mappingAndSettings) {
+    logger.debug(
+      "Creating index [{}] with alias [{}] and with mapping and settings [{}].",
+      indexName, indexAlias, mappingAndSettings
+    );
+
+    HttpEntity entity = new NStringEntity(preProcess(mappingAndSettings, indexAlias), ContentType.APPLICATION_JSON);
     try {
       restClient.performRequest(PUT, indexName, new HashMap<>(), entity);
     } catch (IOException e) {
@@ -243,15 +251,24 @@ public class ESIndexAdjuster {
     }
   }
 
-  public String getTempTypeName(String initialIndexName) {
-    return initialIndexName + TEMP_SUFFIX;
+  public void addAlias(String targetIndexName, String targetIndexAlias) {
+    logger.debug("Adding alias [{}] to index [{}].", targetIndexAlias, targetIndexName);
+
+    try {
+      restClient.performRequest(
+        PUT, targetIndexName + MessageFormat.format(ALIAS_OPERATION_TEMPLATE, targetIndexAlias)
+      );
+    } catch (IOException e) {
+      String errorMessage = String.format("Could not add alias to index [%s]!", targetIndexName);
+      throw new UpgradeRuntimeException(errorMessage, e);
+    }
   }
 
-  private String preProcess(String mappingAndSettings) {
-    return enhanceWithDefaults(mappingAndSettings);
+  private String preProcess(String mappingAndSettings, String indexAlias) {
+    return enhanceWithDefaults(mappingAndSettings, indexAlias);
   }
 
-  private String enhanceWithDefaults(String mappingAndSettings) {
+  private String enhanceWithDefaults(String mappingAndSettings, String indexAlias) {
     String result = mappingAndSettings;
     try {
       HashMap mapping = objectMapper.readValue(mappingAndSettings, HashMap.class);
@@ -269,6 +286,12 @@ public class ESIndexAdjuster {
       Map<String, Map> mappings = (Map) mapping.get("mappings");
       for (String key : mappings.keySet()) {
         mappings.get(key).putAll(dynamics);
+      }
+
+      if (indexAlias != null) {
+        final HashMap<String, HashMap<String, Object>> aliases = new HashMap<>();
+        aliases.put(indexAlias, new HashMap<>());
+        mapping.put("aliases", aliases);
       }
 
       result = objectMapper.writeValueAsString(mapping);
@@ -294,14 +317,14 @@ public class ESIndexAdjuster {
     return dynamicSettings;
   }
 
-  public void insertData(String type, String data) {
-    String indexName = configurationService.getOptimizeIndex(type);
-    logger.debug("Inserting data to index [{}]. Data payload is [{}]", indexName, data);
+  public void insertDataByTypeName(String typeName, String data) {
+    String aliasName = getOptimizeIndexAliasForType(typeName);
+    logger.debug("Inserting data to index [{}]. Data payload is [{}]", aliasName, data);
     HttpEntity entity = new NStringEntity(data, ContentType.APPLICATION_JSON);
     try {
-      restClient.performRequest(POST, getEndpointWithId(indexName, type), getParamsWithRefresh(), entity);
+      restClient.performRequest(POST, getEndpointWithId(aliasName, typeName), getParamsWithRefresh(), entity);
     } catch (IOException e) {
-      String errorMessage = String.format("Could not add data to index [%s]!", indexName);
+      String errorMessage = String.format("Could not add data to index [%s]!", aliasName);
       throw new UpgradeRuntimeException(errorMessage, e);
     }
   }
@@ -310,29 +333,28 @@ public class ESIndexAdjuster {
     return indexName + "/" + type;
   }
 
-  public void updateData(String typeName, QueryBuilder query, String updateScript) {
-    String indexName = configurationService.getOptimizeIndex(typeName);
+  public void updateDataByTypeName(String typeName, QueryBuilder query, String updateScript) {
+    String aliasName = getOptimizeIndexAliasForType(typeName);
     logger.debug(
-      "Updating data for index [{}] using script [{}] and query [{}].",
-      indexName,
-      updateScript,
-      query.toString()
+      "Updating data for index [{}] using script [{}] and query [{}].", aliasName, updateScript, query.toString()
     );
 
     try {
       HashMap<String, Object> data = new HashMap<>();
       ScriptWrapper scriptWrapper = new ScriptWrapper(updateScript);
 
-      data.put("script", objectMapper.convertValue(scriptWrapper, new TypeReference<HashMap<String, Object>>() {}));
+      data.put("script", objectMapper.convertValue(scriptWrapper, new TypeReference<HashMap<String, Object>>() {
+      }));
       // we need to wrap the query in a query object in order
       // to be confirm with Elasticsearch query syntax.
       String wrappedQuery = String.format("{ \"query\": %s }", query.toString());
-      data.putAll(objectMapper.readValue(wrappedQuery, new TypeReference<HashMap<String, Object>>() {}));
+      data.putAll(objectMapper.readValue(wrappedQuery, new TypeReference<HashMap<String, Object>>() {
+      }));
 
       HttpEntity entity = new NStringEntity(objectMapper.writeValueAsString(data), ContentType.APPLICATION_JSON);
-      restClient.performRequest(POST, indexName + UPDATE_BY_QUERY_OPERATION, getParamsWithRefresh(), entity);
+      restClient.performRequest(POST, aliasName + UPDATE_BY_QUERY_OPERATION, getParamsWithRefresh(), entity);
     } catch (IOException e) {
-      String errorMessage = String.format("Could not update data for index [%s]!", indexName);
+      String errorMessage = String.format("Could not update data for index [%s]!", aliasName);
       throw new UpgradeRuntimeException(errorMessage, e);
     }
   }

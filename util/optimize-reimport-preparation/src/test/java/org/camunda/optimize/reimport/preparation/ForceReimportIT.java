@@ -11,6 +11,7 @@ import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
+import org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
@@ -36,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -109,7 +111,7 @@ public class ForceReimportIT {
 
     List<String> indexNames = types
       .stream()
-      .map(configurationService::getOptimizeIndex)
+      .map(OptimizeIndexNameHelper::getOptimizeIndexAliasForType)
       .collect(Collectors.toList());
 
     SearchResponse response = elasticSearchRule.getClient()
@@ -124,7 +126,7 @@ public class ForceReimportIT {
   private boolean licenseExists() {
     ConfigurationService configurationService = embeddedOptimizeRule.getConfigurationService();
     GetResponse response = elasticSearchRule.getClient().prepareGet(
-      configurationService.getOptimizeIndex(configurationService.getLicenseType()),
+      getOptimizeIndexAliasForType(configurationService.getLicenseType()),
       configurationService.getLicenseType(),
       configurationService.getLicenseType()
     )

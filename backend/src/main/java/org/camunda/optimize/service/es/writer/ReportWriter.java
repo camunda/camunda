@@ -32,6 +32,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.SingleReportType.CREATED;
 import static org.camunda.optimize.service.es.schema.type.SingleReportType.ID;
 import static org.camunda.optimize.service.es.schema.type.SingleReportType.LAST_MODIFIED;
@@ -90,7 +91,7 @@ public class ReportWriter {
 
     esclient
       .prepareIndex(
-        configurationService.getOptimizeIndex(elasticsearchType),
+        getOptimizeIndexAliasForType(elasticsearchType),
         elasticsearchType,
         id
       )
@@ -118,7 +119,7 @@ public class ReportWriter {
     logger.debug("Updating report with id [{}] in Elasticsearch", updatedReport.getId());
     UpdateResponse updateResponse = esclient
       .prepareUpdate(
-        configurationService.getOptimizeIndex(elasticsearchType),
+        getOptimizeIndexAliasForType(elasticsearchType),
         elasticsearchType,
         updatedReport.getId()
       )
@@ -143,7 +144,7 @@ public class ReportWriter {
     logger.debug("Deleting single report with id [{}]", reportId);
 
     esclient.prepareDelete(
-      configurationService.getOptimizeIndex(ElasticsearchConstants.SINGLE_REPORT_TYPE),
+      getOptimizeIndexAliasForType(ElasticsearchConstants.SINGLE_REPORT_TYPE),
       ElasticsearchConstants.SINGLE_REPORT_TYPE,
       reportId
     )
@@ -160,7 +161,7 @@ public class ReportWriter {
       Collections.singletonMap("idToRemove", reportId)
     );
 
-    updateByQuery.source(configurationService.getOptimizeIndex(ElasticsearchConstants.COMBINED_REPORT_TYPE))
+    updateByQuery.source(getOptimizeIndexAliasForType(ElasticsearchConstants.COMBINED_REPORT_TYPE))
       .abortOnVersionConflict(false)
       .setMaxRetries(configurationService.getNumberOfRetriesOnConflict())
       .filter(
@@ -182,7 +183,7 @@ public class ReportWriter {
     logger.debug("Deleting combined report with id [{}]", reportId);
 
     esclient.prepareDelete(
-      configurationService.getOptimizeIndex(ElasticsearchConstants.COMBINED_REPORT_TYPE),
+      getOptimizeIndexAliasForType(ElasticsearchConstants.COMBINED_REPORT_TYPE),
       ElasticsearchConstants.COMBINED_REPORT_TYPE,
       reportId
     )

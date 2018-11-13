@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VARIABLE_ID;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
@@ -207,7 +208,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
   public Integer getImportedCountOf(String elasticsearchType, ConfigurationService configurationService) {
     SearchResponse searchResponse = getClient()
-      .prepareSearch(configurationService.getOptimizeIndex(elasticsearchType))
+      .prepareSearch(getOptimizeIndexAliasForType(elasticsearchType))
       .setTypes(elasticsearchType)
       .setQuery(QueryBuilders.matchAllQuery())
       .setSize(0)
@@ -218,7 +219,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
   public Integer getActivityCount(ConfigurationService configurationService) {
     SearchResponse response = getClient()
-      .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
+      .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))
       .setTypes(configurationService.getProcessInstanceType())
       .setQuery(QueryBuilders.matchAllQuery())
       .setSize(0)
@@ -242,7 +243,7 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
 
   public Integer getVariableInstanceCount(ConfigurationService configurationService) {
     SearchRequestBuilder searchRequestBuilder = getClient()
-      .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
+      .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))
       .setTypes(configurationService.getProcessInstanceType())
       .setQuery(QueryBuilders.matchAllQuery())
       .setSize(0)

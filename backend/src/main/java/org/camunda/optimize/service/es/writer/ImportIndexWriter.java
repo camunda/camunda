@@ -4,8 +4,8 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.importing.index.CombinedImportIndexesDto;
-import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.dto.optimize.importing.index.ImportIndexDto;
+import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.service.es.schema.type.index.ImportIndexType;
 import org.camunda.optimize.service.util.EsHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
 
 @Component
@@ -63,7 +64,7 @@ public class ImportIndexWriter {
     try {
       return esclient
         .prepareIndex(
-          configurationService.getOptimizeIndex(TIMESTAMP_BASED_IMPORT_INDEX_TYPE),
+          getOptimizeIndexAliasForType(TIMESTAMP_BASED_IMPORT_INDEX_TYPE),
           TIMESTAMP_BASED_IMPORT_INDEX_TYPE,
           getId(importIndex)
         )
@@ -97,7 +98,7 @@ public class ImportIndexWriter {
     try {
       return esclient
         .prepareIndex(
-          configurationService.getOptimizeIndex(configurationService.getImportIndexType()),
+          getOptimizeIndexAliasForType(configurationService.getImportIndexType()),
           configurationService.getImportIndexType(),
           getId(importIndex)
         )

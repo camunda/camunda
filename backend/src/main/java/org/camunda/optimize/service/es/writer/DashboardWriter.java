@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.DashboardType.CREATED;
 import static org.camunda.optimize.service.es.schema.type.DashboardType.ID;
 import static org.camunda.optimize.service.es.schema.type.DashboardType.LAST_MODIFIED;
@@ -69,7 +70,7 @@ public class DashboardWriter {
 
     esclient
       .prepareIndex(
-        configurationService.getOptimizeIndex(ElasticsearchConstants.DASHBOARD_TYPE),
+        getOptimizeIndexAliasForType(ElasticsearchConstants.DASHBOARD_TYPE),
         ElasticsearchConstants.DASHBOARD_TYPE,
         id
       )
@@ -89,7 +90,7 @@ public class DashboardWriter {
     logger.debug("Updating dashboard with id [{}] in Elasticsearch", id);
     UpdateResponse updateResponse = esclient
       .prepareUpdate(
-        configurationService.getOptimizeIndex(ElasticsearchConstants.DASHBOARD_TYPE),
+        getOptimizeIndexAliasForType(ElasticsearchConstants.DASHBOARD_TYPE),
         ElasticsearchConstants.DASHBOARD_TYPE,
         id
       )
@@ -117,7 +118,7 @@ public class DashboardWriter {
       Collections.singletonMap("idToRemove", reportId)
     );
 
-    updateByQuery.source(configurationService.getOptimizeIndex(ElasticsearchConstants.DASHBOARD_TYPE))
+    updateByQuery.source(getOptimizeIndexAliasForType(ElasticsearchConstants.DASHBOARD_TYPE))
       .abortOnVersionConflict(false)
       .setMaxRetries(configurationService.getNumberOfRetriesOnConflict())
       .filter(
@@ -139,7 +140,7 @@ public class DashboardWriter {
   public void deleteDashboard(String dashboardId) {
     logger.debug("Deleting dashboard with id [{}]", dashboardId);
     esclient.prepareDelete(
-      configurationService.getOptimizeIndex(ElasticsearchConstants.DASHBOARD_TYPE),
+      getOptimizeIndexAliasForType(ElasticsearchConstants.DASHBOARD_TYPE),
       ElasticsearchConstants.DASHBOARD_TYPE,
       dashboardId
     )

@@ -21,6 +21,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
 
@@ -42,7 +43,7 @@ public class AlertWriter {
     result.setId(id);
     esclient
         .prepareIndex(
-          configurationService.getOptimizeIndex(configurationService.getAlertType()),
+          getOptimizeIndexAliasForType(configurationService.getAlertType()),
           configurationService.getAlertType(),
           id
         )
@@ -60,7 +61,7 @@ public class AlertWriter {
     try {
       updateResponse = esclient
           .prepareUpdate(
-            configurationService.getOptimizeIndex(configurationService.getAlertType()),
+            getOptimizeIndexAliasForType(configurationService.getAlertType()),
             configurationService.getAlertType(),
             toUpdate.getId()
           )
@@ -87,7 +88,7 @@ public class AlertWriter {
   public void deleteAlert(String alertId) {
     logger.debug("Deleting alert with id [{}]", alertId);
     esclient.prepareDelete(
-      configurationService.getOptimizeIndex(configurationService.getAlertType()),
+      getOptimizeIndexAliasForType(configurationService.getAlertType()),
       configurationService.getAlertType(),
       alertId
     )
@@ -99,7 +100,7 @@ public class AlertWriter {
     try {
       esclient
         .prepareUpdate(
-          configurationService.getOptimizeIndex(configurationService.getAlertType()),
+          getOptimizeIndexAliasForType(configurationService.getAlertType()),
           configurationService.getAlertType(),
           alertId
         )
@@ -125,7 +126,7 @@ public class AlertWriter {
   public void deleteAlertsForReport(String reportId) {
     BulkByScrollResponse bulkByScrollResponse = DeleteByQueryAction.INSTANCE.newRequestBuilder(esclient)
         .filter(QueryBuilders.matchQuery(AlertType.REPORT_ID, reportId))
-        .source(configurationService.getOptimizeIndex(configurationService.getAlertType()))
+        .source(getOptimizeIndexAliasForType(configurationService.getAlertType()))
         .refresh(true)
         .get();
 

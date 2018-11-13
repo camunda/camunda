@@ -18,6 +18,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+
 @Component
 public class ProcessDefinitionWriter {
 
@@ -59,7 +61,7 @@ public class ProcessDefinitionWriter {
 
       bulkRequest.add(esclient
         .prepareUpdate(
-          configurationService.getOptimizeIndex(configurationService.getProcessDefinitionType()),
+          getOptimizeIndexAliasForType(configurationService.getProcessDefinitionType()),
           configurationService.getProcessDefinitionType(),
           id
         )

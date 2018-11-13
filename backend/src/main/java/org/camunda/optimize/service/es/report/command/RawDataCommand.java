@@ -13,6 +13,7 @@ import org.elasticsearch.search.sort.SortOrder;
 
 import java.util.Optional;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VARIABLE_NAME;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.VARIABLE_VALUE;
@@ -49,7 +50,7 @@ public class RawDataCommand extends ReportCommand<RawDataSingleReportResultDto> 
       .orElse(SortOrder.DESC);
 
     final SearchRequestBuilder searchRequestBuilder = esclient
-      .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
+      .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))
       .setTypes(configurationService.getProcessInstanceType())
       .setQuery(query)
       .setFetchSource(null, EVENTS)

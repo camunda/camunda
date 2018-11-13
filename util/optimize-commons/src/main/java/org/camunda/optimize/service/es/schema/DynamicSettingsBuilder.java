@@ -9,6 +9,7 @@ import java.io.IOException;
 public class DynamicSettingsBuilder {
 
   public static XContentBuilder createDynamicSettings(PropertiesAppender appender) throws IOException {
+    // @formatter:off
     XContentBuilder content = XContentFactory.jsonBuilder()
       .startObject()
         .field("dynamic", "strict")
@@ -31,6 +32,7 @@ public class DynamicSettingsBuilder {
           .endObject()
         .endArray()
       .endObject();
+    // @formatter:on
     return content;
   }
 

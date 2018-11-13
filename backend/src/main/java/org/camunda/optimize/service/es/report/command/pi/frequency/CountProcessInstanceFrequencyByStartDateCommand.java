@@ -20,6 +20,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 import static org.camunda.optimize.service.es.report.command.util.ReportUtil.getDateHistogramInterval;
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 
 public class CountProcessInstanceFrequencyByStartDateCommand extends ReportCommand<MapSingleReportResultDto> {
 
@@ -42,7 +43,7 @@ public class CountProcessInstanceFrequencyByStartDateCommand extends ReportComma
     StartDateGroupByValueDto groupByStartDate = ((StartDateGroupByDto) reportData.getGroupBy()).getValue();
 
     SearchResponse response = esclient
-      .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
+      .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))
       .setTypes(configurationService.getProcessInstanceType())
       .setQuery(query)
       .setFetchSource(false)

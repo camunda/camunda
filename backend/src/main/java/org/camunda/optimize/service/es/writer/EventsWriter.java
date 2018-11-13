@@ -22,6 +22,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+
 
 @Component
 public class EventsWriter {
@@ -86,7 +88,7 @@ public class EventsWriter {
 
     addEventToProcessInstanceBulkRequest.add(esclient
       .prepareUpdate(
-        configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()),
+        getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()),
         configurationService.getProcessInstanceType(),
         processInstanceId
       )

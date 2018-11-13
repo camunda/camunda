@@ -342,28 +342,6 @@ public class ConfigurationService {
     return elasticSearchHttpPort;
   }
 
-  public String getOptimizeIndex(String type) {
-    String original = this.getOptimizeIndex() + "-" + type;
-    return original.toLowerCase();
-  }
-
-  public String[] getOptimizeIndex(ArrayList<String> types) {
-    String[] result = new String[types.size()];
-    int i = 0;
-    for (String type : types) {
-      result[i] = this.getOptimizeIndex(type);
-      i = i + 1;
-    }
-    return result;
-  }
-
-  protected String getOptimizeIndex() {
-    if (optimizeIndex == null) {
-      optimizeIndex = configJsonContext.read(ConfigurationServiceConstants.OPTIMIZE_INDEX);
-    }
-    return optimizeIndex;
-  }
-
   public String getUserValidationEndpoint() {
     if (userValidationEndpoint == null) {
       userValidationEndpoint = cutTrailingSlash(

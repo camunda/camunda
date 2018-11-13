@@ -48,7 +48,6 @@ public interface ConfigurationServiceConstants {
   String ELASTIC_SEARCH_SECURITY_SSL_CERTIFICATE_AUTHORITIES = "$.es.security.ssl.certificate_authorities";
   String ELASTIC_SEARCH_SECURITY_SSL_VERIFICATION_MODE = "$.es.security.ssl.verification_mode";
 
-  String OPTIMIZE_INDEX = "$.es.index";
   String PROCESS_INSTANCE_TYPE = "$.import.data.process-instance.elasticsearchType";
   String DURATION_HEATMAP_TARGET_VALUE_TYPE = "$.es.heatmap.duration.targetValueType";
   String PROCESS_DEFINITION_TYPE = "$.import.data.process-definition.elasticsearchType";

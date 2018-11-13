@@ -21,11 +21,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 
 
 @Component
@@ -44,7 +45,7 @@ public class SharingReader {
     Optional<ReportShareDto> result = Optional.empty();
 
     SearchResponse scrollResp = esclient
-      .prepareSearch(configurationService.getOptimizeIndex(configurationService.getReportShareType()))
+      .prepareSearch(getOptimizeIndexAliasForType(configurationService.getReportShareType()))
       .setTypes(configurationService.getReportShareType())
       .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
       .setQuery(query)
@@ -71,7 +72,7 @@ public class SharingReader {
     logger.debug("Fetching share with id [{}]", shareId);
     GetResponse getResponse = esclient
       .prepareGet(
-          configurationService.getOptimizeIndex(configurationService.getReportShareType()),
+          getOptimizeIndexAliasForType(configurationService.getReportShareType()),
           configurationService.getReportShareType(),
           shareId
       )
@@ -95,7 +96,7 @@ public class SharingReader {
     logger.debug("Fetching share with id [{}]", shareId);
     GetResponse getResponse = esclient
       .prepareGet(
-          configurationService.getOptimizeIndex(configurationService.getDashboardShareType()),
+          getOptimizeIndexAliasForType(configurationService.getDashboardShareType()),
           configurationService.getDashboardShareType(),
           shareId
       )
@@ -131,7 +132,7 @@ public class SharingReader {
     Optional<DashboardShareDto> result = Optional.empty();
 
     SearchResponse scrollResp = esclient
-        .prepareSearch(configurationService.getOptimizeIndex(configurationService.getDashboardShareType()))
+        .prepareSearch(getOptimizeIndexAliasForType(configurationService.getDashboardShareType()))
         .setTypes(configurationService.getDashboardShareType())
         .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
         .setQuery(boolQueryBuilder)
@@ -156,7 +157,7 @@ public class SharingReader {
   private Map<String, ReportShareDto> findReportSharesByQuery(QueryBuilder query) {
     Map<String, ReportShareDto> result = new HashMap<>();
     SearchResponse scrollResp = esclient
-        .prepareSearch(configurationService.getOptimizeIndex(configurationService.getReportShareType()))
+        .prepareSearch(getOptimizeIndexAliasForType(configurationService.getReportShareType()))
         .setTypes(configurationService.getReportShareType())
         .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
         .setQuery(query)
@@ -198,7 +199,7 @@ public class SharingReader {
 
     Map<String, DashboardShareDto> result = new HashMap<>();
     SearchResponse scrollResp = esclient
-      .prepareSearch(configurationService.getOptimizeIndex(configurationService.getDashboardShareType()))
+      .prepareSearch(getOptimizeIndexAliasForType(configurationService.getDashboardShareType()))
       .setTypes(configurationService.getDashboardShareType())
       .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
       .setQuery(query)

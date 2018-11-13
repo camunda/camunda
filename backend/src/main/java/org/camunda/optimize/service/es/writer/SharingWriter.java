@@ -14,6 +14,8 @@ import org.springframework.stereotype.Component;
 
 import java.util.Map;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+
 @Component
 public class SharingWriter {
 
@@ -31,7 +33,7 @@ public class SharingWriter {
     createSharingDto.setId(id);
     esclient
       .prepareIndex(
-        configurationService.getOptimizeIndex(configurationService.getReportShareType()),
+        getOptimizeIndexAliasForType(configurationService.getReportShareType()),
         configurationService.getReportShareType(),
         id
       )
@@ -48,7 +50,7 @@ public class SharingWriter {
     createSharingDto.setId(id);
     esclient
       .prepareIndex(
-        configurationService.getOptimizeIndex(configurationService.getDashboardShareType()),
+        getOptimizeIndexAliasForType(configurationService.getDashboardShareType()),
         configurationService.getDashboardShareType(),
         id
       )
@@ -64,7 +66,7 @@ public class SharingWriter {
     String id = updatedShare.getId();
     esclient
       .prepareIndex(
-        configurationService.getOptimizeIndex(configurationService.getDashboardShareType()),
+        getOptimizeIndexAliasForType(configurationService.getDashboardShareType()),
         configurationService.getDashboardShareType(),
         id
       )
@@ -79,7 +81,7 @@ public class SharingWriter {
   public void deleteReportShare(String shareId) {
     logger.debug("Deleting report share with id [{}]", shareId);
     esclient.prepareDelete(
-      configurationService.getOptimizeIndex(configurationService.getReportShareType()),
+      getOptimizeIndexAliasForType(configurationService.getReportShareType()),
       configurationService.getReportShareType(),
       shareId
     )
@@ -90,7 +92,7 @@ public class SharingWriter {
   public void deleteDashboardShare(String shareId) {
     logger.debug("Deleting dashboard share with id [{}]", shareId);
     esclient.prepareDelete(
-      configurationService.getOptimizeIndex(configurationService.getDashboardShareType()),
+      getOptimizeIndexAliasForType(configurationService.getDashboardShareType()),
       configurationService.getDashboardShareType(),
       shareId
     )

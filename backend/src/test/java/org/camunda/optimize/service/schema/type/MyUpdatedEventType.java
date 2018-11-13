@@ -8,6 +8,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.MetadataType.SCHEMA_VERSION;
 import static org.elasticsearch.common.xcontent.XContentFactory.jsonBuilder;
 
@@ -45,7 +46,7 @@ public class MyUpdatedEventType implements TypeMappingCreator{
         .endObject();
       source = content;
     } catch (IOException e) {
-      String message = "Could not add mapping to the index '" + configurationService.getOptimizeIndex(getType()) +
+      String message = "Could not add mapping to the index '" + getOptimizeIndexAliasForType(getType()) +
         "' , type '" + getType() + "'!";
       logger.error(message, e);
     }

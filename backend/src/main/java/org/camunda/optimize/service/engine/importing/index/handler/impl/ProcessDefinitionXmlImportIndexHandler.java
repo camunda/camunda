@@ -17,9 +17,10 @@ import org.springframework.stereotype.Component;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.ENGINE;
-import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_XML;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_ID;
+import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_XML;
 import static org.elasticsearch.index.query.QueryBuilders.existsQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 
@@ -56,7 +57,7 @@ public class ProcessDefinitionXmlImportIndexHandler extends ScrollBasedImportInd
     esclient
       .admin()
       .indices()
-      .prepareRefresh(configurationService.getOptimizeIndex(configurationService.getProcessDefinitionType()))
+      .prepareRefresh(getOptimizeIndexAliasForType(configurationService.getProcessDefinitionType()))
       .get();
   }
 
@@ -76,7 +77,7 @@ public class ProcessDefinitionXmlImportIndexHandler extends ScrollBasedImportInd
     QueryBuilder query;
     query = buildBasicQuery();
     SearchResponse scrollResp = esclient
-        .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessDefinitionType()))
+        .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessDefinitionType()))
         .setTypes(configurationService.getProcessDefinitionType())
         .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
         .setQuery(query)

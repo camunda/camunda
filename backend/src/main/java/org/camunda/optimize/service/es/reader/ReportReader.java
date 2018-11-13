@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Optional;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 
 @Component
@@ -49,11 +50,11 @@ public class ReportReader {
     logger.debug("Fetching report with id [{}]", reportId);
     MultiGetResponse multiGetItemResponses = esclient.prepareMultiGet()
       .add(
-        configurationService.getOptimizeIndex(ElasticsearchConstants.SINGLE_REPORT_TYPE),
+        getOptimizeIndexAliasForType(ElasticsearchConstants.SINGLE_REPORT_TYPE),
         ElasticsearchConstants.SINGLE_REPORT_TYPE, reportId
       )
       .add(
-        configurationService.getOptimizeIndex(ElasticsearchConstants.COMBINED_REPORT_TYPE),
+        getOptimizeIndexAliasForType(ElasticsearchConstants.COMBINED_REPORT_TYPE),
         ElasticsearchConstants.COMBINED_REPORT_TYPE, reportId
       )
       .setRealtime(false)
@@ -82,8 +83,8 @@ public class ReportReader {
     logger.debug("Fetching all available reports");
     SearchResponse scrollResp = esclient
       .prepareSearch(
-        configurationService.getOptimizeIndex(ElasticsearchConstants.SINGLE_REPORT_TYPE),
-        configurationService.getOptimizeIndex(ElasticsearchConstants.COMBINED_REPORT_TYPE)
+        getOptimizeIndexAliasForType(ElasticsearchConstants.SINGLE_REPORT_TYPE),
+        getOptimizeIndexAliasForType(ElasticsearchConstants.COMBINED_REPORT_TYPE)
       )
       .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
       .setQuery(QueryBuilders.matchAllQuery())
@@ -110,7 +111,7 @@ public class ReportReader {
       ));
 
     SearchResponse searchResponse = esclient
-      .prepareSearch(configurationService.getOptimizeIndex(ElasticsearchConstants.COMBINED_REPORT_TYPE))
+      .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.COMBINED_REPORT_TYPE))
       .setQuery(getCombinedReportsBySimpleReportIdQuery)
       .setSize(LIST_FETCH_LIMIT)
       .get();

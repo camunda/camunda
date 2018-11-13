@@ -41,6 +41,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.util.VariableHelper.isBooleanType;
 import static org.camunda.optimize.service.util.VariableHelper.isDateType;
 import static org.camunda.optimize.service.util.VariableHelper.isDoubleType;
@@ -120,7 +121,7 @@ public abstract class VariableWriter {
       addAtLeastOneVariableArrayNotEmptyNestedFilters(filterQuery);
 
       final BulkByScrollResponse response = UpdateByQueryAction.INSTANCE.newRequestBuilder(esClient)
-        .source(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
+        .source(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))
         .script(createVariableClearScript(VariableHelper.getAllVariableTypeFieldLabels()))
         .abortOnVersionConflict(false)
         .filter(filterQuery)
@@ -212,7 +213,7 @@ public abstract class VariableWriter {
     if (newEntryIfAbsent != null) {
       addVariablesToProcessInstanceBulkRequest.add(esClient
                                                      .prepareUpdate(
-                                                       configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()),
+                                                       getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()),
                                                        configurationService.getProcessInstanceType(),
                                                        processInstanceId
                                                      )

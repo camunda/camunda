@@ -6,9 +6,9 @@ import java.util.stream.Collectors;
 public final class Version {
   public static final String RAW_VERSION = "${project.version}";
   public static final String VERSION = stripToPlainVersion(RAW_VERSION);
-  public static final String VERSION_MAJOR = VERSION.split("\\.")[0];
-  public static final String VERSION_MINOR = VERSION.split("\\.")[1];
-  public static final String VERSION_PATCH = VERSION.split("\\.")[2];
+  public static final String VERSION_MAJOR = getMajorVersionFrom(VERSION);
+  public static final String VERSION_MINOR = getMinorVersionFrom(VERSION);
+  public static final String VERSION_PATCH = getPatchVersionFrom(VERSION);
 
   public static final String stripToPlainVersion(final String rawVersion) {
     // extract plain <major>.<minor>.<patch> version, strip everything else
@@ -16,5 +16,17 @@ public final class Version {
       .limit(3)
       .filter(part -> part.chars().allMatch(Character::isDigit))
       .collect(Collectors.joining("."));
+  }
+
+  public static final String getMajorVersionFrom(String plainVersion) {
+    return plainVersion.split("\\.")[0];
+  }
+
+  public static final String getMinorVersionFrom(String plainVersion) {
+    return plainVersion.split("\\.")[1];
+  }
+
+  public static final String getPatchVersionFrom(String plainVersion) {
+    return plainVersion.split("\\.")[2];
   }
 }

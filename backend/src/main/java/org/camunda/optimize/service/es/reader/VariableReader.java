@@ -28,6 +28,7 @@ import org.springframework.stereotype.Component;
 import java.util.ArrayList;
 import java.util.List;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.DATE_VARIABLES;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_VERSION;
@@ -35,7 +36,10 @@ import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ST
 import static org.camunda.optimize.service.util.VariableHelper.getAllVariableTypeFieldLabels;
 import static org.camunda.optimize.service.util.VariableHelper.getNestedVariableNameFieldLabel;
 import static org.camunda.optimize.service.util.VariableHelper.getNestedVariableValueFieldLabel;
-import static org.elasticsearch.index.query.QueryBuilders.*;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.prefixQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.wildcardQuery;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.filter;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.nested;
 import static org.elasticsearch.search.aggregations.AggregationBuilders.terms;
@@ -69,7 +73,7 @@ public class VariableReader {
 
     SearchRequestBuilder requestBuilder =
       esclient
-          .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
+          .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))
           .setTypes(configurationService.getProcessInstanceType())
           .setQuery(query);
     addVariableAggregation(requestBuilder, namePrefix);
@@ -157,7 +161,7 @@ public class VariableReader {
 
     SearchResponse response =
       esclient
-          .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
+          .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))
           .setTypes(configurationService.getProcessInstanceType())
           .setQuery(query)
           .addAggregation(getVariableValueAggregation(name, variableFieldLabel, valueFilter))

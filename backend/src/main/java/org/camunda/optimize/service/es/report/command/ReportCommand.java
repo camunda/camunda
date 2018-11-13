@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Map;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.ENGINE;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.FLOW_NODE_NAMES;
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_ID;
@@ -73,7 +74,7 @@ public abstract class ReportCommand <T extends SingleReportResultDto>  implement
         .must(termQuery("processDefinitionKey", reportData.getProcessDefinitionKey()));
 
     SearchResponse scrollResp = esclient
-        .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
+        .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))
         .setTypes(configurationService.getProcessInstanceType())
         .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
         .setQuery(query)
@@ -88,7 +89,7 @@ public abstract class ReportCommand <T extends SingleReportResultDto>  implement
         String processDefinitionId = processInstanceDto.getProcessDefinitionId();
 
         GetResponse response = esclient.prepareGet(
-            configurationService.getOptimizeIndex(configurationService.getProcessDefinitionType()),
+            getOptimizeIndexAliasForType(configurationService.getProcessDefinitionType()),
             configurationService.getProcessDefinitionType(),
             processDefinitionId)
             .get();

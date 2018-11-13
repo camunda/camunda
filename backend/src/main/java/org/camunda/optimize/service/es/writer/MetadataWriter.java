@@ -12,6 +12,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+
 
 @Component
 public class MetadataWriter {
@@ -30,7 +32,7 @@ public class MetadataWriter {
       String source = objectMapper.writeValueAsString(metadataDto);
       esclient
         .prepareIndex(
-          configurationService.getOptimizeIndex(configurationService.getMetaDataType()),
+          getOptimizeIndexAliasForType(configurationService.getMetaDataType()),
           configurationService.getMetaDataType(),
           ID
         )

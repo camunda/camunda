@@ -16,6 +16,7 @@ import org.elasticsearch.search.aggregations.bucket.terms.Terms;
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ACTIVITY_ID;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.ACTIVITY_TYPE;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.DURATION;
@@ -49,7 +50,7 @@ public abstract class AbstractFlowNodeDurationByFlowNodeCommand<T extends Aggreg
     queryFilterEnhancer.addFilterToQuery(query, reportData.getFilter());
 
     SearchResponse response = esclient
-      .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
+      .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))
       .setTypes(configurationService.getProcessInstanceType())
       .setQuery(query)
       .setFetchSource(false)

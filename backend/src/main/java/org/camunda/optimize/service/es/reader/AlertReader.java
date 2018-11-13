@@ -19,6 +19,7 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 import java.util.List;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 
 
@@ -39,7 +40,7 @@ public class AlertReader {
     query = QueryBuilders.matchAllQuery();
 
     SearchResponse scrollResp = esclient
-        .prepareSearch(configurationService.getOptimizeIndex(configurationService.getAlertType()))
+        .prepareSearch(getOptimizeIndexAliasForType(configurationService.getAlertType()))
         .setTypes(configurationService.getAlertType())
         .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
         .setQuery(query)
@@ -59,7 +60,7 @@ public class AlertReader {
     logger.debug("Fetching alert with id [{}]", alertId);
     GetResponse getResponse = esclient
         .prepareGet(
-            configurationService.getOptimizeIndex(configurationService.getAlertType()),
+            getOptimizeIndexAliasForType(configurationService.getAlertType()),
             configurationService.getAlertType(),
             alertId
         )
@@ -86,7 +87,7 @@ public class AlertReader {
 
     final QueryBuilder query = QueryBuilders.termQuery(AlertType.REPORT_ID, reportId);
     final SearchResponse searchResponse = esclient
-        .prepareSearch(configurationService.getOptimizeIndex(configurationService.getAlertType()))
+        .prepareSearch(getOptimizeIndexAliasForType(configurationService.getAlertType()))
         .setTypes(configurationService.getAlertType())
         .setQuery(query)
       .setSize(limit)

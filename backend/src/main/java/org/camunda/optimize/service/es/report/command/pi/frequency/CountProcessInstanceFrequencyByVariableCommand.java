@@ -17,6 +17,7 @@ import org.elasticsearch.search.aggregations.bucket.terms.TermsAggregationBuilde
 import java.util.HashMap;
 import java.util.Map;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.util.VariableHelper.getNestedVariableNameFieldLabelForType;
 import static org.camunda.optimize.service.util.VariableHelper.getNestedVariableValueFieldLabelForType;
 import static org.camunda.optimize.service.util.VariableHelper.isDateType;
@@ -49,7 +50,7 @@ public class CountProcessInstanceFrequencyByVariableCommand extends ReportComman
     VariableGroupByValueDto groupByVariable = ((VariableGroupByDto) reportData.getGroupBy()).getValue();
 
     SearchResponse response = esclient
-      .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
+      .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))
       .setTypes(configurationService.getProcessInstanceType())
       .setQuery(query)
       .setFetchSource(false)

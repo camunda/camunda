@@ -26,8 +26,10 @@ import javax.annotation.PostConstruct;
 
 @Component
 public class ElasticSearchSchemaInitializer {
-  private boolean initialized = false;
-  private final Logger logger = LoggerFactory.getLogger(ElasticSearchSchemaInitializer.class);
+  private static final Logger logger = LoggerFactory.getLogger(ElasticSearchSchemaInitializer.class);
+
+  private volatile boolean initialized = false;
+
   @Autowired
   private ElasticSearchSchemaManager schemaManager;
 
@@ -70,7 +72,7 @@ public class ElasticSearchSchemaInitializer {
   @Autowired
   private MetadataType metadataType;
 
-  public void initializeSchema() {
+  public synchronized void initializeSchema() {
     if (!initialized) {
       try {
         if (!schemaManager.schemaAlreadyExists()) {

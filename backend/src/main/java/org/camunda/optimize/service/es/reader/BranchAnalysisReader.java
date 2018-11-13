@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.PROCESS_DEFINITION_VERSION;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
@@ -148,7 +149,7 @@ public class BranchAnalysisReader {
     queryFilterEnhancer.addFilterToQuery(query, request.getFilter());
 
     SearchResponse sr = esclient
-        .prepareSearch(configurationService.getOptimizeIndex(configurationService.getProcessInstanceType()))
+        .prepareSearch(getOptimizeIndexAliasForType(configurationService.getProcessInstanceType()))
         .setTypes(configurationService.getProcessInstanceType())
         .setQuery(query)
         .setFetchSource(false)
