@@ -8,7 +8,6 @@ import {
   getHighlightedText,
   camelCaseToLabel
 } from './formatters';
-const separator = '\u202F';
 const nbsp = '\u00A0';
 
 describe('frequencyFormatter', () => {
@@ -21,14 +20,21 @@ describe('frequencyFormatter', () => {
     expect(frequencyFormatter(0)).toBe('0');
   });
 
-  it('should add thousand separator at correct position', () => {
-    expect(frequencyFormatter(6934)).toBe(`6${separator}934`);
-    expect(frequencyFormatter(61934)).toBe(`61${separator}934`);
-    expect(frequencyFormatter(761934)).toBe(`761${separator}934`);
+  it('should format numbers', () => {
+    expect(frequencyFormatter(6934)).toBe(new Intl.NumberFormat().format(6934));
+    expect(frequencyFormatter(61934)).toBe(new Intl.NumberFormat().format(61934));
+    expect(frequencyFormatter(761934)).toBe(new Intl.NumberFormat().format(761934));
+    expect(frequencyFormatter(2349875982)).toBe(new Intl.NumberFormat().format(2349875982));
   });
 
-  it('should add multiple thousand separators', () => {
-    expect(frequencyFormatter(2349875982)).toBe(`2${separator}349${separator}875${separator}982`);
+  it('should use a precision', () => {
+    expect(frequencyFormatter(123, 1)).toBe(new Intl.NumberFormat().format(100));
+    expect(frequencyFormatter(12345, 2)).toBe(new Intl.NumberFormat().format(12) + ' Thousand');
+    expect(frequencyFormatter(12345, 9)).toBe(new Intl.NumberFormat().format(12.345) + ' Thousand');
+    expect(frequencyFormatter(12345678, 2)).toBe(new Intl.NumberFormat().format(12) + ' Million');
+    expect(frequencyFormatter(12345678, 4)).toBe(
+      new Intl.NumberFormat().format(12.35) + ' Million'
+    );
   });
 });
 
@@ -66,6 +72,13 @@ describe('durationFormatter', () => {
 
   it('should normalize a time object', () => {
     expect(durationFormatter({value: 15, unit: 'days'})).toBe(`2wk${nbsp}1d`);
+  });
+
+  it('should use a precision', () => {
+    expect(durationFormatter(123456789, 2)).toBe(`1 day${nbsp}10 hours`);
+    expect(durationFormatter(123456789, 4)).toBe(
+      `1 day${nbsp}10 hours${nbsp}17 minutes${nbsp}37 seconds`
+    );
   });
 });
 

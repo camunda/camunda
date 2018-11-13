@@ -1,0 +1,41 @@
+import React from 'react';
+import {shallow} from 'enzyme';
+
+import CountTargetInput from './CountTargetInput';
+
+const validProps = {
+  baseline: 10,
+  target: 200,
+  disabled: false
+};
+
+it('should display the current target values', () => {
+  const node = shallow(<CountTargetInput {...validProps} />);
+
+  expect(node.find('LabeledInput').first()).toHaveValue(10);
+  expect(node.find('LabeledInput').at(1)).toHaveValue(200);
+});
+
+it('should update target values', () => {
+  const spy = jest.fn();
+  const node = shallow(<CountTargetInput {...validProps} onChange={spy} />);
+
+  node
+    .find('LabeledInput')
+    .at(1)
+    .simulate('change', {target: {value: '73'}});
+
+  expect(spy).toHaveBeenCalledWith('target', '73');
+});
+
+it('should show an error message if an input field does not have a valid value', async () => {
+  const node = shallow(<CountTargetInput {...validProps} baseline={'notAValidValue'} />);
+
+  expect(node.find('ErrorMessage')).toBePresent();
+});
+
+it('should show an error message if target is below baseline', async () => {
+  const node = shallow(<CountTargetInput baseline={50} target={4} />);
+
+  expect(node.find('ErrorMessage')).toBePresent();
+});

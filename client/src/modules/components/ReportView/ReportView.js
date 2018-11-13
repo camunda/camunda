@@ -197,7 +197,11 @@ export default class ReportView extends React.Component {
         } else {
           config = {
             component: Number,
-            props: {data: result, targetValue: data.configuration.targetValue}
+            props: {
+              data: result,
+              targetValue: data.configuration.targetValue,
+              precision: data.configuration.precision
+            }
           };
         }
         break;

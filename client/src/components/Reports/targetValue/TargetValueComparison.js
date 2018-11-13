@@ -2,7 +2,7 @@ import React from 'react';
 
 import TargetValueModal from './TargetValueModal';
 
-import {isSingleNumber, isDurationHeatmap, isChart} from './service';
+import {isDurationHeatmap, isChart} from './service';
 
 import {ButtonGroup, Button, Icon} from 'components';
 
@@ -70,22 +70,8 @@ export default class TargetValueComparison extends React.Component {
     this.closeModal();
   };
 
-  isSingleNumber = () => {
-    const {
-      processDefinitionKey,
-      processDefinitionVersion,
-      visualization
-    } = this.props.reportResult.data;
-
-    return processDefinitionKey && processDefinitionVersion && visualization === 'number';
-  };
-
   isEnabled = () => {
-    return (
-      isDurationHeatmap(this.props.reportResult) ||
-      isSingleNumber(this.props.reportResult) ||
-      isChart(this.props.reportResult)
-    );
+    return isDurationHeatmap(this.props.reportResult) || isChart(this.props.reportResult);
   };
 
   render() {

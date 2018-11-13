@@ -23,11 +23,6 @@ export function isDurationHeatmap(reportResult) {
   );
 }
 
-export function isSingleNumber(reportResult) {
-  const {processDefinitionKey, processDefinitionVersion, visualization} = reportResult.data;
-  return processDefinitionKey && processDefinitionVersion && visualization === 'number';
-}
-
 export function isChart(reportResult) {
   const {reportType} = reportResult;
   let {

@@ -1,0 +1,25 @@
+.DurationTargetInput .LabeledInput {
+  margin-bottom: 12px;
+
+  .Labeled {
+    width: 50%;
+    display: inline-block;
+
+    label {
+      margin-bottom: 0;
+    }
+
+    .Input {
+      font-size: 14px;
+      border-top-right-radius: 0;
+      border-bottom-right-radius: 0;
+    }
+  }
+
+  .Select {
+    width: 50%;
+    border-top-right-radius: 3px;
+    border-bottom-right-radius: 3px;
+    border-left: none;
+  }
+}

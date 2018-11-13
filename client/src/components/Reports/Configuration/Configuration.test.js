@@ -2,7 +2,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import Configuration from './Configuration';
-import {typeA, typeB} from './visualizations';
+import {typeA, typeB, typeC} from './visualizations';
 import {Button} from 'components';
 
 jest.mock('./visualizations', () => {
@@ -18,7 +18,10 @@ jest.mock('./visualizations', () => {
     propC: false
   };
 
-  return {typeA, typeB, bar: typeA, line: typeA};
+  const typeC = () => null;
+  typeC.defaults = jest.fn().mockReturnValue({propD: 20});
+
+  return {typeA, typeB, typeC, bar: typeA, line: typeA};
 });
 
 it('should be disabled if no type is set', () => {
@@ -45,6 +48,16 @@ it('should reset to defaults based on the defaults provided by the visualization
   node.find(Button).simulate('click');
 
   expect(spy).toHaveBeenCalledWith({configuration: {propA: 'abc', propB: 1}});
+});
+
+it('should call a potential component defaults method to determine defaults', () => {
+  const spy = jest.fn();
+  const node = shallow(<Configuration type="typeC" onChange={spy} configuration={{}} />);
+
+  node.find(Button).simulate('click');
+
+  expect(typeC.defaults).toHaveBeenCalledWith(node.instance().props);
+  expect(spy).toHaveBeenCalledWith({configuration: {propD: 20}});
 });
 
 it('should call the onUpdate method of the component and propagate changes', () => {

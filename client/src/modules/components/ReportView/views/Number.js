@@ -6,7 +6,7 @@ import {formatters, isDurationValue} from 'services';
 
 import './Number.scss';
 
-export default function Number({data, formatter, errorMessage, targetValue}) {
+export default function Number({data, formatter, errorMessage, targetValue, precision}) {
   if (isDurationValue(data)) {
     return <ReportBlankSlate message={errorMessage} />;
   }
@@ -17,8 +17,10 @@ export default function Number({data, formatter, errorMessage, targetValue}) {
       min = formatters.convertDurationToSingleNumber(min);
       max = formatters.convertDurationToSingleNumber(max);
     }
-    return <ProgressBar min={min} max={max} value={data} formatter={formatter} />;
+    return (
+      <ProgressBar min={min} max={max} value={data} formatter={formatter} precision={precision} />
+    );
   }
 
-  return <span className="Number">{formatter(data)}</span>;
+  return <span className="Number">{formatter(data, precision)}</span>;
 }

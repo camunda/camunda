@@ -1,9 +1,9 @@
 import React from 'react';
-import ColumnSelection from './ColumnSelection';
-import RelativeAbsoluteSelection from './RelativeAbsoluteSelection';
-import ShowInstanceCount from './ShowInstanceCount';
+import ColumnSelection from './subComponents/ColumnSelection';
+import RelativeAbsoluteSelection from './subComponents/RelativeAbsoluteSelection';
+import ShowInstanceCount from './subComponents/ShowInstanceCount';
 
-export default function Table({report, configuration, onChange}) {
+export default function TableConfig({report, configuration, onChange}) {
   let typeSpecificComponent = null;
   switch (report.data.view.operation) {
     case 'rawData':
@@ -26,20 +26,20 @@ export default function Table({report, configuration, onChange}) {
   );
 }
 
-Table.defaults = {
+TableConfig.defaults = {
   excludedColumns: [],
   hideRelativeValue: false,
   hideAbsoluteValue: false,
   showInstanceCount: false
 };
 
-Table.onUpdate = (prevProps, props) => {
+TableConfig.onUpdate = (prevProps, props) => {
   // if the view operation changes, we need to reset to defaults
   if (
     prevProps.report.data.view &&
     props.report.data.view &&
     prevProps.report.data.view.operation !== props.report.data.view.operation
   ) {
-    return Table.defaults;
+    return TableConfig.defaults;
   }
 };

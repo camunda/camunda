@@ -1,32 +1,37 @@
 import React from 'react';
 
 const timeUnits = {
-  millis: {value: 1, abbreviation: 'ms'},
-  seconds: {value: 1000, abbreviation: 's'},
-  minutes: {value: 60 * 1000, abbreviation: 'min'},
-  hours: {value: 60 * 60 * 1000, abbreviation: 'h'},
-  days: {value: 24 * 60 * 60 * 1000, abbreviation: 'd'},
-  weeks: {value: 7 * 24 * 60 * 60 * 1000, abbreviation: 'wk'},
-  months: {value: 30 * 24 * 60 * 60 * 1000, abbreviation: 'm'},
-  years: {value: 12 * 30 * 24 * 60 * 60 * 1000, abbreviation: 'y'}
+  millis: {value: 1, abbreviation: 'ms', label: 'millisecond'},
+  seconds: {value: 1000, abbreviation: 's', label: 'second'},
+  minutes: {value: 60 * 1000, abbreviation: 'min', label: 'minute'},
+  hours: {value: 60 * 60 * 1000, abbreviation: 'h', label: 'hour'},
+  days: {value: 24 * 60 * 60 * 1000, abbreviation: 'd', label: 'day'},
+  weeks: {value: 7 * 24 * 60 * 60 * 1000, abbreviation: 'wk', label: 'week'},
+  months: {value: 30 * 24 * 60 * 60 * 1000, abbreviation: 'm', label: 'month'},
+  years: {value: 12 * 30 * 24 * 60 * 60 * 1000, abbreviation: 'y', label: 'year'}
 };
 
-export function frequency(number) {
-  const separator = '\u202F';
-  const numberString = '' + number;
-  const formattedNumberString = numberString
-    // first separators position depends on the total number of digits, add space as separator
-    .replace(new RegExp('^(\\d{' + numberString.length % 3 + '})', 'g'), '$1 ')
-    // any subsequent separators appear after three numbers, add space as separator
-    .replace(/(\d{3})+?/gi, '$1 ')
-    // remove potential last space (would be created for '123 ')
-    .trim();
+export function frequency(number, precision) {
+  const intl = new Intl.NumberFormat(undefined, {maximumFractionDigits: precision});
 
-  // replace placeholder thousand separator (space) with actual separator
-  return formattedNumberString.replace(/\s/g, separator);
+  if (precision) {
+    const digitsFactor = 10 ** ('' + number).length;
+    const precisionFactor = 10 ** precision;
+    const roundedToPrecision =
+      Math.round(number / digitsFactor * precisionFactor) / precisionFactor * digitsFactor;
+
+    if (roundedToPrecision >= 10 ** 6) {
+      return intl.format(roundedToPrecision / 10 ** 6) + ' Million';
+    }
+    if (roundedToPrecision >= 10 ** 3) {
+      return intl.format(roundedToPrecision / 10 ** 3) + ' Thousand';
+    }
+    return intl.format(roundedToPrecision);
+  }
+  return intl.format(number);
 }
 
-export function duration(timeObject) {
+export function duration(timeObject, precision) {
   const time =
     typeof timeObject === 'object'
       ? timeObject.value * timeUnits[timeObject.unit].value
@@ -38,11 +43,22 @@ export function duration(timeObject) {
 
   const timeSegments = [];
   let remainingTime = time;
+  let remainingPrecision = precision;
   Object.keys(timeUnits)
     .map(key => timeUnits[key])
     .sort((a, b) => b.value - a.value)
+    .filter(({value}) => value <= time)
     .forEach(currentUnit => {
-      if (remainingTime >= currentUnit.value) {
+      if (precision) {
+        if (remainingPrecision-- > 0) {
+          let number = Math.floor(remainingTime / currentUnit.value);
+          if (!remainingPrecision || currentUnit.abbreviation === 'ms') {
+            number = Math.round(remainingTime / currentUnit.value);
+          }
+          timeSegments.push(`${number} ${currentUnit.label}${number !== 1 ? 's' : ''}`);
+          remainingTime -= number * currentUnit.value;
+        }
+      } else if (remainingTime >= currentUnit.value) {
         let numberOfUnits = Math.floor(remainingTime / currentUnit.value);
         // allow numbers with ms abreviation to have floating numbers (avoid flooring)
         // e.g 1.2ms => 1.2 ms. On the other hand, 1.2 seconds => 1 seconds 200ms

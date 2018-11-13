@@ -7,12 +7,18 @@ import './Configuration.scss';
 
 export default class Configuration extends React.Component {
   resetToDefaults = resetTargetValue => {
-    const Component = visualizations[this.props.type];
+    const Component = visualizations[this.props.type] || {};
+
+    const defaults =
+      typeof Component.defaults === 'function'
+        ? Component.defaults(this.props)
+        : Component.defaults || {};
+
     this.props.onChange({
       configuration: {
         ...this.props.configuration,
         ...(resetTargetValue ? {targetValue: null} : {}),
-        ...(Component ? Component.defaults : {})
+        ...defaults
       }
     });
   };
