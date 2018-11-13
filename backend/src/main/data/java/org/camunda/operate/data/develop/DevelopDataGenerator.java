@@ -274,12 +274,11 @@ public class DevelopDataGenerator extends AbstractDataGenerator {
 
   private void deployVersion1() {
     //deploy workflows v.1
-    final String classpathResource = "demoProcess_v_1.bpmn";
-    ZeebeTestUtil.deployWorkflow(client, classpathResource);
+    ZeebeTestUtil.deployWorkflow(client, "develop/demoProcess_v_1.bpmn");
 
-    ZeebeTestUtil.deployWorkflow(client, "orderProcess_v_1.bpmn");
+    ZeebeTestUtil.deployWorkflow(client, "develop/orderProcess_v_1.bpmn");
 
-    ZeebeTestUtil.deployWorkflow(client, "loanProcess_v_1.bpmn");
+    ZeebeTestUtil.deployWorkflow(client, "develop/loanProcess_v_1.bpmn");
 
   }
 
@@ -314,7 +313,26 @@ public class DevelopDataGenerator extends AbstractDataGenerator {
         workflowInstanceKeys.add(IdUtil.extractKey(instanceId));
       }
       if (version < 3) {
-        instanceId = ZeebeTestUtil.startWorkflowInstance(client, "orderProcess", "{\"a\": \"b\"}");
+        instanceId = ZeebeTestUtil.startWorkflowInstance(client, "orderProcess", "{\n"
+          + "  \"clientNo\": \"CNT-1211132-02\",\n"
+          + "  \"orderNo\": \"CMD0001-01\",\n"
+          + "  \"items\": [\n"
+          + "    {\n"
+          + "      \"code\": \"123.135.625\",\n"
+          + "      \"name\": \"Laptop Lenovo ABC-001\",\n"
+          + "      \"quantity\": 1,\n"
+          + "      \"price\": \"699\"\n"
+          + "    },\n"
+          + "    {\n"
+          + "      \"code\": \"111.653.365\",\n"
+          + "      \"name\": \"Headset Sony QWE-23\",\n"
+          + "      \"quantity\": 2,\n"
+          + "      \"price\": \"12\"\n"
+          + "    }\n"
+          + "  ],\n"
+          + "  \"mwst\": \"13.51\",\n"
+          + "  \"total\": \"724.51\"\n"
+          + "}");
         workflowInstanceKeys.add(IdUtil.extractKey(instanceId));
       }
 
@@ -323,14 +341,14 @@ public class DevelopDataGenerator extends AbstractDataGenerator {
 
   private void deployVersion2() {
     //deploy workflows v.1
-    ZeebeTestUtil.deployWorkflow(client, "demoProcess_v_2.bpmn");
+    ZeebeTestUtil.deployWorkflow(client, "develop/demoProcess_v_2.bpmn");
 
-    ZeebeTestUtil.deployWorkflow(client, "orderProcess_v_2.bpmn");
+    ZeebeTestUtil.deployWorkflow(client, "develop/orderProcess_v_2.bpmn");
   }
 
   private void deployVersion3() {
     //deploy workflows v.1
-    ZeebeTestUtil.deployWorkflow(client, "demoProcess_v_3.bpmn");
+    ZeebeTestUtil.deployWorkflow(client, "develop/demoProcess_v_3.bpmn");
   }
 
   public void setClient(ZeebeClient client) {

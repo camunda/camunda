@@ -16,8 +16,7 @@ public abstract class AbstractDataGenerator {
   protected ZeebeClient client;
 
 
-  public void createZeebeData(boolean manuallyCalled) {
-  }
+  public abstract void createZeebeData(boolean manuallyCalled);
 
   public boolean shouldCreateData(boolean manuallyCalled) {
     if (!manuallyCalled) {    //when called manually, always create the data

@@ -1,8 +1,5 @@
 package org.camunda.operate.property;
 
-import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
-
 public class ElasticsearchProperties {
 
   public static final String IMPORT_POSITION_INDEX_PATTERN = "import-position";
