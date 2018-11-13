@@ -17,6 +17,8 @@
  */
 package io.zeebe.broker.workflow.processor;
 
+import io.zeebe.broker.job.JobState;
+import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionState;
 import io.zeebe.broker.workflow.model.BpmnStep;
@@ -54,7 +56,11 @@ public class BpmnStepHandlers {
   public BpmnStepHandlers(
       SubscriptionCommandSender subscriptionCommandSender,
       WorkflowState workflowState,
-      WorkflowInstanceSubscriptionState subscriptionState) {
+      ZeebeState zeebeState) {
+
+    final WorkflowInstanceSubscriptionState subscriptionState =
+        zeebeState.getWorkflowInstanceSubscriptionState();
+    final JobState jobState = zeebeState.getJobState();
 
     // activity
     stepHandlers.put(BpmnStep.CREATE_JOB, new CreateJobHandler());
@@ -82,7 +88,7 @@ public class BpmnStepHandlers {
 
     // termination
     stepHandlers.put(BpmnStep.TERMINATE_ELEMENT, new TerminateElementHandler());
-    stepHandlers.put(BpmnStep.TERMINATE_JOB_TASK, new TerminateServiceTaskHandler());
+    stepHandlers.put(BpmnStep.TERMINATE_JOB_TASK, new TerminateServiceTaskHandler(jobState));
     stepHandlers.put(BpmnStep.TERMINATE_TIMER, new TerminateTimerHandler(workflowState));
     stepHandlers.put(
         BpmnStep.TERMINATE_INTERMEDIATE_MESSAGE,

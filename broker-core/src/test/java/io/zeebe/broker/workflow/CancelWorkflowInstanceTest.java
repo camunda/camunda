@@ -125,10 +125,11 @@ public class CancelWorkflowInstanceTest {
         testClient
             .receiveWorkflowInstances()
             .skipUntil(r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.CANCEL)
-            .limit(6)
+            .limit(5)
             .collect(Collectors.toList());
 
     assertThat(workflowEvents)
+        .hasSize(5)
         .extracting(e -> e.getValue().getElementId(), e -> e.getMetadata().getIntent())
         .containsSequence(
             tuple("", WorkflowInstanceIntent.CANCEL),
@@ -153,10 +154,11 @@ public class CancelWorkflowInstanceTest {
         testClient
             .receiveWorkflowInstances()
             .skipUntil(r -> r.getMetadata().getIntent() == WorkflowInstanceIntent.CANCEL)
-            .limit(8)
+            .limit(7)
             .collect(Collectors.toList());
 
     assertThat(workflowEvents)
+        .hasSize(7)
         .extracting(e -> e.getValue().getElementId(), e -> e.getMetadata().getIntent())
         .containsSequence(
             tuple("", WorkflowInstanceIntent.CANCEL),
