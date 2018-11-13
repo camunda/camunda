@@ -187,7 +187,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     assertVariable(workflowInstanceEntity, "a","b");
 
     //when payload is explicitly updated
-//    final Long activityInstanceKey = workflowInstanceEntity.getActivities().stream().filter(ai -> ai.getActivityId().equals("task3")).findFirst().get().getKey();
+//    final Long activityInstanceKey = workflowInstanceEntity.getActivities().stream().filter(ai -> ai.getElementId().equals("task3")).findFirst().get().getKey();
 //    ZeebeUtil.updatePayload(zeebeClient, activityInstanceKey, workflowInstanceId, "{\"newVar\": 555 }", processId, workflowId);
 
     //when task is completed with new payload and workflow instance is finished
@@ -375,11 +375,11 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
 //TODO    workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
 //    assertThat(workflowInstanceEntity.getIncidents().size()).isEqualTo(1);
 //    incidentEntity = workflowInstanceEntity.getIncidents().get(0);
-//    assertThat(incidentEntity.getActivityId()).isEqualTo(activityId);
+//    assertThat(incidentEntity.getElementId()).isEqualTo(activityId);
 //    assertThat(incidentEntity.getState()).isEqualTo(IncidentState.RESOLVED);
 
     //assert activity fields
-//TODO    final ActivityInstanceEntity xorActivity = workflowInstanceEntity.getActivities().stream().filter(a -> a.getActivityId().equals("xor"))
+//TODO    final ActivityInstanceEntity xorActivity = workflowInstanceEntity.getActivities().stream().filter(a -> a.getElementId().equals("xor"))
 //      .findFirst().get();
 //    assertThat(xorActivity.getState()).isEqualTo(ActivityState.COMPLETED);
 //    assertThat(xorActivity.getEndDate()).isNotNull();

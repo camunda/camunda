@@ -69,14 +69,6 @@ public class ZeebeClientRule extends ExternalResource {
     return client;
   }
 
-  public void waitUntilDeploymentIsDone(final long key) {
-    waitUntil(
-      () ->
-        RecordingExporter.deploymentRecordStream(DeploymentIntent.DISTRIBUTED)
-          .withKey(key)
-          .exists());
-  }
-
   public List<Integer> getPartitions() {
     final Topology topology = client.newTopologyRequest().send().join();
 

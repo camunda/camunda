@@ -22,8 +22,8 @@ import io.zeebe.exporter.record.value.job.Headers;
 
 public class HeadersImpl implements Headers {
   private String bpmnProcessId;
-  private String activityId;
-  private long activityInstanceKey;
+  private String elementId;
+  private long elementInstanceKey;
   private long workflowInstanceKey;
   private long workflowKey;
   private int workflowDefinitionVersion;
@@ -37,13 +37,13 @@ public class HeadersImpl implements Headers {
   }
 
   @Override
-  public String getActivityId() {
-    return activityId;
+  public String getElementId() {
+    return elementId;
   }
 
   @Override
-  public long getActivityInstanceKey() {
-    return activityInstanceKey;
+  public long getElementInstanceKey() {
+    return elementInstanceKey;
   }
 
   @Override
@@ -65,12 +65,12 @@ public class HeadersImpl implements Headers {
     this.bpmnProcessId = bpmnProcessId;
   }
 
-  public void setActivityId(String activityId) {
-    this.activityId = activityId;
+  public void setElementId(String elementId) {
+    this.elementId = elementId;
   }
 
-  public void setActivityInstanceKey(long activityInstanceKey) {
-    this.activityInstanceKey = activityInstanceKey;
+  public void setElementInstanceKey(long elementInstanceKey) {
+    this.elementInstanceKey = elementInstanceKey;
   }
 
   public void setWorkflowInstanceKey(long workflowInstanceKey) {
@@ -94,20 +94,18 @@ public class HeadersImpl implements Headers {
       return false;
     }
     final HeadersImpl headers = (HeadersImpl) o;
-    return activityInstanceKey == headers.activityInstanceKey
+    return elementInstanceKey == headers.elementInstanceKey
         && workflowInstanceKey == headers.workflowInstanceKey
         && workflowKey == headers.workflowKey
         && workflowDefinitionVersion == headers.workflowDefinitionVersion
         && Objects.equals(bpmnProcessId, headers.bpmnProcessId)
-        && Objects.equals(activityId, headers.activityId);
+        && Objects.equals(elementId, headers.elementId);
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(
-        bpmnProcessId,
-        activityId,
-        activityInstanceKey,
+        bpmnProcessId, elementId, elementInstanceKey,
         workflowInstanceKey,
         workflowKey,
         workflowDefinitionVersion);
@@ -119,11 +117,11 @@ public class HeadersImpl implements Headers {
         + "bpmnProcessId='"
         + bpmnProcessId
         + '\''
-        + ", activityId='"
-        + activityId
+        + ", elementId='"
+        + elementId
         + '\''
-        + ", activityInstanceKey="
-        + activityInstanceKey
+        + ", elementInstanceKey="
+        + elementInstanceKey
         + ", workflowInstanceKey="
         + workflowInstanceKey
         + ", workflowKey="

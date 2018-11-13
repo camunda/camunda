@@ -187,16 +187,20 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       .jobType(jobType)
       .handler(completeJobHandler)
       .name("operate")
-      .timeout(Duration.ofSeconds(5))
+      .timeout(Duration.ofSeconds(3))
+      .pollInterval(Duration.ofMillis(100))
       .open();
     int attempts = 0;
     while (!completeJobHandler.isTaskCompleted() && attempts < 10) {
       try {
-        Thread.sleep(100);
+        Thread.sleep(200);
         attempts++;
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       }
+    }
+    if (attempts == 10) {
+      logger.debug("Could not complete the task {} for workflow instance id {}", jobType, workflowInstanceId);
     }
     jobWorker.close();
   }
@@ -207,16 +211,20 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       .jobType(jobType)
       .handler(failJobHandler)
       .name("operate")
-      .timeout(Duration.ofSeconds(5))
+      .timeout(Duration.ofSeconds(3))
+      .pollInterval(Duration.ofMillis(100))
       .open();
     int attempts = 0;
     while (!failJobHandler.isTaskFailed() && attempts < 10) {
       try {
-        Thread.sleep(100);
+        Thread.sleep(200);
         attempts++;
       } catch (InterruptedException e) {
         Thread.currentThread().interrupt();
       }
+    }
+    if (attempts == 10) {
+      logger.debug("Could not fail the task {} for workflow instance id {}", jobType, workflowInstanceId);
     }
     jobWorker.close();
   }

@@ -24,7 +24,7 @@ import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
     implements WorkflowInstanceRecordValue {
   private String bpmnProcessId;
-  private String activityId;
+  private String elementId;
   private int version;
   private long workflowKey;
   private long workflowInstanceKey;
@@ -39,8 +39,8 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
   }
 
   @Override
-  public String getActivityId() {
-    return activityId;
+  public String getElementId() {
+    return elementId;
   }
 
   @Override
@@ -80,15 +80,14 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
         && workflowInstanceKey == that.workflowInstanceKey
         && scopeInstanceKey == that.scopeInstanceKey
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
-        && Objects.equals(activityId, that.activityId);
+        && Objects.equals(elementId, that.elementId);
   }
 
   @Override
   public int hashCode() {
     return Objects.hash(
         super.hashCode(),
-        bpmnProcessId,
-        activityId,
+        bpmnProcessId, elementId,
         version,
         workflowKey,
         workflowInstanceKey,
@@ -101,8 +100,8 @@ public class WorkflowInstanceRecordValueImpl extends RecordValueWithPayloadImpl
         + "bpmnProcessId='"
         + bpmnProcessId
         + '\''
-        + ", activityId='"
-        + activityId
+        + ", elementId='"
+        + elementId
         + '\''
         + ", version="
         + version

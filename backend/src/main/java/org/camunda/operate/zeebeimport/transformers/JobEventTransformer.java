@@ -56,9 +56,9 @@ public class JobEventTransformer implements AbstractRecordTransformer {
 
     eventEntity.setBpmnProcessId(headers.getBpmnProcessId());
 
-    eventEntity.setActivityId(headers.getActivityId());
+    eventEntity.setActivityId(headers.getElementId());
 
-    final long activityInstanceKey = headers.getActivityInstanceKey();
+    final long activityInstanceKey = headers.getElementInstanceKey();
     if (activityInstanceKey != 0) {
       eventEntity.setActivityInstanceId(IdUtil.createId(activityInstanceKey, record.getMetadata().getPartitionId()));
     }

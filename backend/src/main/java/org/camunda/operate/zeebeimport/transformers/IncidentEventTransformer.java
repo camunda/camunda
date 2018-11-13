@@ -54,9 +54,9 @@ public class IncidentEventTransformer implements AbstractRecordTransformer {
       incidentEntity.setPartitionId(record.getMetadata().getPartitionId());
       incidentEntity.setErrorType(recordValue.getErrorType());
       incidentEntity.setErrorMessage(recordValue.getErrorMessage());
-      incidentEntity.setActivityId(recordValue.getActivityId());
-      if (recordValue.getActivityInstanceKey() != 0) {
-        incidentEntity.setActivityInstanceId(IdUtil.createId(recordValue.getActivityInstanceKey(), record.getMetadata().getPartitionId()));
+      incidentEntity.setActivityId(recordValue.getElementId());
+      if (recordValue.getElementInstanceKey() != 0) {
+        incidentEntity.setActivityInstanceId(IdUtil.createId(recordValue.getElementInstanceKey(), record.getMetadata().getPartitionId()));
       }
       if (recordValue.getJobKey() != 0) {
         incidentEntity.setJobId(String.valueOf(recordValue.getJobKey()));
@@ -88,9 +88,9 @@ public class IncidentEventTransformer implements AbstractRecordTransformer {
       eventEntity.setWorkflowInstanceId(IdUtil.createId(recordValue.getWorkflowInstanceKey(), record.getMetadata().getPartitionId()));
     }
     eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
-    eventEntity.setActivityId(recordValue.getActivityId());
-    if (recordValue.getActivityInstanceKey() != 0) {
-      eventEntity.setActivityInstanceId(IdUtil.createId(recordValue.getActivityInstanceKey(), record.getMetadata().getPartitionId()));
+    eventEntity.setActivityId(recordValue.getElementId());
+    if (recordValue.getElementInstanceKey() != 0) {
+      eventEntity.setActivityInstanceId(IdUtil.createId(recordValue.getElementInstanceKey(), record.getMetadata().getPartitionId()));
     }
 
     EventMetadataEntity eventMetadata = new EventMetadataEntity();

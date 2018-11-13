@@ -26,9 +26,9 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl
   private String errorType;
   private String errorMessage;
   private String bpmnProcessId;
-  private String activityId;
+  private String elementId;
   private long workflowInstanceKey;
-  private long activityInstanceKey;
+  private long elementInstanceKey;
   private long jobKey;
 
   public IncidentRecordValueImpl() {
@@ -50,8 +50,8 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl
   }
 
   @Override
-  public String getActivityId() {
-    return activityId;
+  public String getElementId() {
+    return elementId;
   }
 
   @Override
@@ -60,8 +60,8 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl
   }
 
   @Override
-  public long getActivityInstanceKey() {
-    return activityInstanceKey;
+  public long getElementInstanceKey() {
+    return elementInstanceKey;
   }
 
   @Override
@@ -81,16 +81,16 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl
     this.bpmnProcessId = bpmnProcessId;
   }
 
-  public void setActivityId(String activityId) {
-    this.activityId = activityId;
+  public void setElementId(String elementId) {
+    this.elementId = elementId;
   }
 
   public void setWorkflowInstanceKey(long workflowInstanceKey) {
     this.workflowInstanceKey = workflowInstanceKey;
   }
 
-  public void setActivityInstanceKey(long activityInstanceKey) {
-    this.activityInstanceKey = activityInstanceKey;
+  public void setElementInstanceKey(long elementInstanceKey) {
+    this.elementInstanceKey = elementInstanceKey;
   }
 
   public void setJobKey(long jobKey) {
@@ -110,12 +110,12 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl
     }
     final IncidentRecordValueImpl that = (IncidentRecordValueImpl) o;
     return workflowInstanceKey == that.workflowInstanceKey
-        && activityInstanceKey == that.activityInstanceKey
+        && elementInstanceKey == that.elementInstanceKey
         && jobKey == that.jobKey
         && Objects.equals(errorType, that.errorType)
         && Objects.equals(errorMessage, that.errorMessage)
         && Objects.equals(bpmnProcessId, that.bpmnProcessId)
-        && Objects.equals(activityId, that.activityId);
+        && Objects.equals(elementId, that.elementId);
   }
 
   @Override
@@ -124,10 +124,8 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl
         super.hashCode(),
         errorType,
         errorMessage,
-        bpmnProcessId,
-        activityId,
-        workflowInstanceKey,
-        activityInstanceKey,
+        bpmnProcessId, elementId,
+        workflowInstanceKey, elementInstanceKey,
         jobKey);
   }
 
@@ -143,13 +141,13 @@ public class IncidentRecordValueImpl extends RecordValueWithPayloadImpl
         + ", bpmnProcessId='"
         + bpmnProcessId
         + '\''
-        + ", activityId='"
-        + activityId
+        + ", elementId='"
+        + elementId
         + '\''
         + ", workflowInstanceKey="
         + workflowInstanceKey
-        + ", activityInstanceKey="
-        + activityInstanceKey
+        + ", elementInstanceKey="
+        + elementInstanceKey
         + ", jobKey="
         + jobKey
         + ", payload='"

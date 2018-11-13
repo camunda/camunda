@@ -123,7 +123,7 @@ public class WorkflowInstanceRecordTransformer implements AbstractRecordTransfor
     sequenceFlow.setKey(record.getKey());
     sequenceFlow.setPartitionId(record.getMetadata().getPartitionId());
     WorkflowInstanceRecordValueImpl recordValue = (WorkflowInstanceRecordValueImpl)record.getValue();
-    sequenceFlow.setActivityId(recordValue.getActivityId());
+    sequenceFlow.setActivityId(recordValue.getElementId());
     sequenceFlow.setWorkflowInstanceId(IdUtil.createId(recordValue.getWorkflowInstanceKey(), record.getMetadata().getPartitionId()));
     return sequenceFlow;
   }
@@ -145,8 +145,8 @@ public class WorkflowInstanceRecordTransformer implements AbstractRecordTransfor
       eventEntity.setWorkflowInstanceId(IdUtil.createId(recordValue.getWorkflowInstanceKey(), record.getMetadata().getPartitionId()));
       eventEntity.setBpmnProcessId(recordValue.getBpmnProcessId());
 
-      if (recordValue.getActivityId() != null) {
-        eventEntity.setActivityId(recordValue.getActivityId());
+      if (recordValue.getElementId() != null) {
+        eventEntity.setActivityId(recordValue.getElementId());
       }
 
       if (record.getKey() != recordValue.getWorkflowInstanceKey()) {
@@ -167,7 +167,7 @@ public class WorkflowInstanceRecordTransformer implements AbstractRecordTransfor
     activityInstanceEntity.setId(IdUtil.createId(record.getKey(), record.getMetadata().getPartitionId()));
     activityInstanceEntity.setKey(record.getKey());
     activityInstanceEntity.setPartitionId(record.getMetadata().getPartitionId());
-    activityInstanceEntity.setActivityId(recordValue.getActivityId());
+    activityInstanceEntity.setActivityId(recordValue.getElementId());
     activityInstanceEntity.setWorkflowInstanceId(IdUtil.createId(recordValue.getWorkflowInstanceKey(), record.getMetadata().getPartitionId()));
     final String intentStr = record.getMetadata().getIntent().name();
     if (AI_FINISH_STATES.contains(intentStr)) {
