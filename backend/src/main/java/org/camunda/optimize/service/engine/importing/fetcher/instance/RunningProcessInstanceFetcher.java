@@ -34,7 +34,7 @@ public class RunningProcessInstanceFetcher extends
   public List<HistoricProcessInstanceDto> fetchHistoricFinishedProcessInstances(TimestampBasedImportPage page) {
     return fetchHistoricFinishedProcessInstances(
       page.getTimestampOfLastEntity(),
-      configurationService.getEngineImportActivityInstanceMaxPageSize()
+      configurationService.getEngineImportProcessInstanceMaxPageSize()
     );
   }
 
