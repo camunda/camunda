@@ -161,6 +161,7 @@ export default class List extends React.Component {
     const isListEmpty = this.props.data.length === 0;
     const listHasFinishedInstances =
       this.props.filter.canceled || this.props.filter.completed;
+
     return (
       <THead>
         <TR>
@@ -175,7 +176,6 @@ export default class List extends React.Component {
                 />
               </Styled.CheckAll>
               <ColumnHeader
-                active={this.props.sorting.sortBy === 'workflowName'}
                 disabled={isListEmpty}
                 onSort={this.props.onSort}
                 label="Workflow"
@@ -186,7 +186,6 @@ export default class List extends React.Component {
           </TH>
           <TH>
             <ColumnHeader
-              active={this.props.sorting.sortBy === 'id'}
               disabled={isListEmpty}
               label="Instance Id"
               onSort={this.props.onSort}
@@ -196,7 +195,6 @@ export default class List extends React.Component {
           </TH>
           <TH>
             <ColumnHeader
-              active={this.props.sorting.sortBy === 'workflowVersion'}
               disabled={isListEmpty}
               label="Version"
               onSort={this.props.onSort}
@@ -206,7 +204,6 @@ export default class List extends React.Component {
           </TH>
           <TH>
             <ColumnHeader
-              active={this.props.sorting.sortBy === 'startDate'}
               disabled={isListEmpty}
               label="Start Time"
               onSort={this.props.onSort}
@@ -216,7 +213,6 @@ export default class List extends React.Component {
           </TH>
           <TH>
             <ColumnHeader
-              active={this.props.sorting.sortBy === 'endDate'}
               disabled={isListEmpty || !listHasFinishedInstances}
               label="End Time"
               onSort={this.props.onSort}

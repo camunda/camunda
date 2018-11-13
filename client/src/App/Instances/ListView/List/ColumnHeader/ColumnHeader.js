@@ -16,14 +16,16 @@ function ColumnHeader(props) {
       }
     : {disabled};
 
+  const isActive = isSortable && props.sorting.sortBy === props.sortKey;
+
   return (
     <Component {...componentProps}>
-      <Styled.Label active={props.active} disabled={props.disabled}>
+      <Styled.Label active={isActive} disabled={props.disabled}>
         {props.label}
       </Styled.Label>
       {isSortable && (
         <Styled.SortIcon
-          active={props.active}
+          active={isActive}
           disabled={props.disabled}
           sortOrder={
             !disabled && sorting.sortBy === sortKey ? sorting.sortOrder : null
@@ -35,7 +37,6 @@ function ColumnHeader(props) {
 }
 
 ColumnHeader.propTypes = {
-  active: PropTypes.bool,
   disabled: PropTypes.bool,
   label: PropTypes.string.isRequired,
   sortKey: PropTypes.string,
