@@ -22,12 +22,7 @@ export default class Menu extends React.Component {
     return (
       <Styled.Ul placement={placement}>
         {React.Children.map(children, (child, index) => (
-          <Styled.Li
-            onKeyDown={onKeyDown}
-            placement={placement}
-            key={index}
-            tabIndex={index + 1}
-          >
+          <Styled.Li onKeyDown={onKeyDown} placement={placement} key={index}>
             {child}
           </Styled.Li>
         ))}

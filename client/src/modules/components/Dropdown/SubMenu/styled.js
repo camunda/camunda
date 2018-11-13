@@ -53,15 +53,6 @@ export const SubMenuButton = themed(styled.button`
       light: Colors.lightActive
     })};
   }
-
-  &:focus {
-    box-shadow: ${themeStyle({
-      dark: `0 0 0 1px ${Colors.focusOuter},0 0 0 4px ${Colors.darkFocusInner}`,
-      light: `0 0 0 1px ${Colors.focusOuter}, 0 0 0 4px ${
-        Colors.lightFocusInner
-      }`
-    })};
-  }
 `);
 
 export const Ul = themed(styled.ul`
