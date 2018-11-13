@@ -25,6 +25,7 @@ Object {
           "errorType": "",
           "id": "id_59",
           "jobId": "jobId_14",
+          "state": "ACTIVE",
         },
       ],
       "operations": Array [
@@ -36,6 +37,7 @@ Object {
           "type": "UPDATE_RETRIES",
         },
       ],
+      "sequenceFlows": Array [],
       "startDate": "2018-06-21",
       "state": "ACTIVE",
       "workflowId": "2",

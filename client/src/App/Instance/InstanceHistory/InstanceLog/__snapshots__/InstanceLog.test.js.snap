@@ -40,6 +40,7 @@ exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
           "errorType": "",
           "id": "id_2",
           "jobId": "jobId_0",
+          "state": "ACTIVE",
         },
       ],
       "operations": Array [
@@ -51,6 +52,7 @@ exports[`InstanceLog should render entries if there are actvitiesDetails 1`] = `
           "type": "UPDATE_RETRIES",
         },
       ],
+      "sequenceFlows": Array [],
       "startDate": "2018-06-21",
       "state": "ACTIVE",
       "workflowId": "2",

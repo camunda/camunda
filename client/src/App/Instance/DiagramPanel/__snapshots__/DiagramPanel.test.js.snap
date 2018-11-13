@@ -51,6 +51,7 @@ exports[`DiagramPanel should render pane header and body 1`] = `
                       "errorType": "",
                       "id": "id_2",
                       "jobId": "jobId_0",
+                      "state": "ACTIVE",
                     },
                   ],
                   "operations": Array [
@@ -62,6 +63,7 @@ exports[`DiagramPanel should render pane header and body 1`] = `
                       "type": "UPDATE_RETRIES",
                     },
                   ],
+                  "sequenceFlows": Array [],
                   "startDate": "2018-06-21",
                   "state": "ACTIVE",
                   "workflowId": "2",
@@ -109,6 +111,7 @@ exports[`DiagramPanel should render pane header and body 1`] = `
                         "errorType": "",
                         "id": "id_2",
                         "jobId": "jobId_0",
+                        "state": "ACTIVE",
                       },
                     ],
                     "operations": Array [
@@ -120,6 +123,7 @@ exports[`DiagramPanel should render pane header and body 1`] = `
                         "type": "UPDATE_RETRIES",
                       },
                     ],
+                    "sequenceFlows": Array [],
                     "startDate": "2018-06-21",
                     "state": "ACTIVE",
                     "workflowId": "2",
@@ -158,6 +162,7 @@ exports[`DiagramPanel should render pane header and body 1`] = `
               "errorType": "",
               "id": "id_2",
               "jobId": "jobId_0",
+              "state": "ACTIVE",
             },
           ],
           "operations": Array [
@@ -169,6 +174,7 @@ exports[`DiagramPanel should render pane header and body 1`] = `
               "type": "UPDATE_RETRIES",
             },
           ],
+          "sequenceFlows": Array [],
           "startDate": "2018-06-21",
           "state": "ACTIVE",
           "workflowId": "2",

@@ -51,10 +51,24 @@ const randomJobIdIterator = createRandomId('jobId');
 export const createQuery = (options = {}) => {
   return {
     active: true,
+    activityId: 'string',
+    canceled: true,
+    completed: true,
+    endDateAfter: '2018-11-13T14:55:58.463Z',
+    endDateBefore: '2018-11-13T14:55:58.464Z',
+    errorMessage: 'string',
     excludeIds: [],
+    finished: true,
     ids: [],
     incidents: true,
     running: true,
+    startDateAfter: '2018-11-13T14:55:58.464Z',
+    startDateBefore: '2018-11-13T14:55:58.464Z',
+    variablesQuery: {
+      name: 'string',
+      value: {}
+    },
+    workflowIds: [],
     ...options
   };
 };
@@ -87,6 +101,7 @@ export const createIncident = (options = {}) => {
     errorType: '',
     id: randomIdIterator.next().value,
     jobId: randomJobIdIterator.next().value,
+    state: 'ACTIVE',
     ...options
   };
 };
@@ -129,15 +144,16 @@ export const createInstance = (options = {}) => {
   return {
     activities: [createActivity()],
     bpmnProcessId: 'someKey',
+    endDate: null,
     id: randomIdIterator.next().value,
     incidents: [createIncident()],
-    endDate: null,
     operations: [createOperation()],
+    sequenceFlows: [],
     startDate: '2018-06-21',
     state: 'ACTIVE',
     workflowId: '2',
-    workflowVersion: 1,
     workflowName: 'someWorkflowName',
+    workflowVersion: 1,
     ...options
   };
 };

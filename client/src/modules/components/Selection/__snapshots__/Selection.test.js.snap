@@ -73,6 +73,7 @@ exports[`Selection should contain Instances 1`] = `
             "errorType": "",
             "id": "id_2",
             "jobId": "jobId_0",
+            "state": "ACTIVE",
           },
         ],
         "operations": Array [
@@ -84,6 +85,7 @@ exports[`Selection should contain Instances 1`] = `
             "type": "UPDATE_RETRIES",
           },
         ],
+        "sequenceFlows": Array [],
         "startDate": "2018-06-21",
         "state": "ACTIVE",
         "workflowId": "2",
