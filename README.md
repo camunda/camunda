@@ -61,3 +61,9 @@ daemon.
 * **refactor** (refactoring production code, eg. renaming a variable)
 * **test** (adding missing tests, refactoring tests; no production code change)
 * **chore** (updating grunt tasks etc; no production code change)
+
+## Staging enviroment
+
+The staging environment is available here: https://stage.operate.camunda.cloud/ . Every commit to master (successfully built) will be published to stage automatically.
+
+Moreover, every branch that ends with `-deploy` (e.s. `amazing-feature-deploy`) will be deployed online at $branch_name.operate.camunda.cloud (e.s. `amazing-feature.operate.camunda.cloud`).
