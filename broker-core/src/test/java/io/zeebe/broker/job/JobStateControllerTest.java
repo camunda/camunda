@@ -19,6 +19,7 @@ package io.zeebe.broker.job;
 
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import io.zeebe.broker.job.JobStateController.State;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -28,6 +29,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -318,6 +320,48 @@ public class JobStateControllerTest {
     final JobRecord savedJob = stateController.getJob(key);
     assertJobRecordIsEqualTo(savedJob, jobRecord);
     assertThat(BufferUtil.bufferAsString(savedJob.getType())).isEqualTo("test");
+  }
+
+  @Test
+  public void testInvariants() {
+    final JobRecord jobWithoutType = newJobRecord().setType(new UnsafeBuffer(0, 0));
+    final JobRecord jobWithoutDeadline = newJobRecord().setDeadline(0L);
+
+    // create
+    assertThatThrownBy(() -> stateController.create(1L, jobWithoutType))
+        .hasMessage("type must not be empty");
+
+    // activate
+    assertThatThrownBy(() -> stateController.activate(1L, jobWithoutType))
+        .hasMessage("type must not be empty");
+    assertThatThrownBy(() -> stateController.activate(1L, jobWithoutDeadline))
+        .hasMessage("deadline must be greater than 0");
+
+    // fail
+    assertThatThrownBy(() -> stateController.fail(1L, jobWithoutType))
+        .hasMessage("type must not be empty");
+    assertThatThrownBy(() -> stateController.fail(1L, jobWithoutDeadline))
+        .hasMessage("deadline must be greater than 0");
+
+    // resolve
+    assertThatThrownBy(() -> stateController.resolve(1L, jobWithoutType))
+        .hasMessage("type must not be empty");
+
+    // timeout
+    assertThatThrownBy(() -> stateController.timeout(1L, jobWithoutType))
+        .hasMessage("type must not be empty");
+    assertThatThrownBy(() -> stateController.timeout(1L, jobWithoutDeadline))
+        .hasMessage("deadline must be greater than 0");
+
+    // delete
+    assertThatThrownBy(() -> stateController.delete(1L, jobWithoutType))
+        .hasMessage("type must not be empty");
+    assertThatThrownBy(
+            () -> {
+              stateController.activate(1L, newJobRecord());
+              stateController.delete(1L, jobWithoutDeadline);
+            })
+        .hasMessage("deadline must be greater than 0");
   }
 
   private void createAndActivateJobRecord(final long key, final JobRecord record) {

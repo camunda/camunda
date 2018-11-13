@@ -26,6 +26,7 @@ import io.zeebe.logstreams.rocksdb.ZbRocksDb;
 import io.zeebe.logstreams.rocksdb.ZbRocksDb.IteratorControl;
 import io.zeebe.logstreams.rocksdb.ZbWriteBatch;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
+import io.zeebe.util.EnsureUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import java.io.File;
 import java.util.List;
@@ -92,13 +93,11 @@ public class JobStateController extends KeyStateController {
 
   public void create(final long key, final JobRecord record) {
     final DirectBuffer type = record.getType();
-    DirectBuffer keyBuffer;
-    DirectBuffer valueBuffer;
 
     try (WriteOptions options = new WriteOptions();
         ZbWriteBatch batch = new ZbWriteBatch()) {
-      keyBuffer = getDefaultKey(key);
-      valueBuffer = writeValue(record);
+      DirectBuffer keyBuffer = getDefaultKey(key);
+      DirectBuffer valueBuffer = writeValue(record);
       batch.put(defaultColumnFamily, keyBuffer, valueBuffer);
 
       valueBuffer = writeStatesValue(State.ACTIVATABLE);
@@ -117,13 +116,10 @@ public class JobStateController extends KeyStateController {
     final DirectBuffer type = record.getType();
     final long deadline = record.getDeadline();
 
-    DirectBuffer keyBuffer;
-    DirectBuffer valueBuffer;
-
     try (WriteOptions options = new WriteOptions();
         ZbWriteBatch batch = new ZbWriteBatch()) {
-      keyBuffer = getDefaultKey(key);
-      valueBuffer = writeValue(record);
+      DirectBuffer keyBuffer = getDefaultKey(key);
+      DirectBuffer valueBuffer = writeValue(record);
       batch.put(defaultColumnFamily, keyBuffer, valueBuffer);
 
       valueBuffer = writeStatesValue(State.ACTIVATED);
@@ -143,14 +139,13 @@ public class JobStateController extends KeyStateController {
 
   public void timeout(final long key, final JobRecord record) {
     final DirectBuffer type = record.getType();
-    DirectBuffer valueBuffer;
-    DirectBuffer keyBuffer;
+    final long deadline = record.getDeadline();
 
     try (WriteOptions options = new WriteOptions();
         ZbWriteBatch batch = new ZbWriteBatch()) {
 
-      keyBuffer = getDefaultKey(key);
-      valueBuffer = writeValue(record);
+      DirectBuffer keyBuffer = getDefaultKey(key);
+      DirectBuffer valueBuffer = writeValue(record);
       batch.put(defaultColumnFamily, keyBuffer, valueBuffer);
 
       valueBuffer = writeStatesValue(State.ACTIVATABLE);
@@ -159,7 +154,7 @@ public class JobStateController extends KeyStateController {
       keyBuffer = getActivatableKey(key, type);
       batch.put(activatableColumnFamily, keyBuffer, NULL);
 
-      keyBuffer = getDeadlinesKey(key, record.getDeadline());
+      keyBuffer = getDeadlinesKey(key, deadline);
       batch.delete(deadlinesColumnFamily, keyBuffer);
 
       db.write(options, batch);
@@ -170,11 +165,11 @@ public class JobStateController extends KeyStateController {
 
   public void delete(long key, JobRecord record) {
     final DirectBuffer type = record.getType();
-    DirectBuffer keyBuffer;
+    final long deadline = record.getDeadline();
 
     try (WriteOptions options = new WriteOptions();
         ZbWriteBatch batch = new ZbWriteBatch()) {
-      keyBuffer = getDefaultKey(key);
+      DirectBuffer keyBuffer = getDefaultKey(key);
       batch.delete(defaultColumnFamily, keyBuffer);
 
       batch.delete(statesColumnFamily, keyBuffer);
@@ -182,8 +177,10 @@ public class JobStateController extends KeyStateController {
       final DirectBuffer activatableKey = getActivatableKey(key, type);
       batch.delete(activatableColumnFamily, activatableKey);
 
-      keyBuffer = getDeadlinesKey(key, record.getDeadline());
-      batch.delete(deadlinesColumnFamily, keyBuffer);
+      if (isInState(key, State.ACTIVATED)) {
+        keyBuffer = getDeadlinesKey(key, deadline);
+        batch.delete(deadlinesColumnFamily, keyBuffer);
+      }
 
       db.write(options, batch);
     } catch (RocksDBException e) {
@@ -193,13 +190,12 @@ public class JobStateController extends KeyStateController {
 
   public void fail(long key, JobRecord updatedValue) {
     final DirectBuffer type = updatedValue.getType();
-    DirectBuffer valueBuffer;
-    DirectBuffer keyBuffer;
+    final long deadline = updatedValue.getDeadline();
 
     try (WriteOptions options = new WriteOptions();
         ZbWriteBatch batch = new ZbWriteBatch()) {
-      keyBuffer = getDefaultKey(key);
-      valueBuffer = writeValue(updatedValue);
+      DirectBuffer keyBuffer = getDefaultKey(key);
+      DirectBuffer valueBuffer = writeValue(updatedValue);
       batch.put(defaultColumnFamily, keyBuffer, valueBuffer);
 
       final State newState = updatedValue.getRetries() > 0 ? State.ACTIVATABLE : State.FAILED;
@@ -212,7 +208,7 @@ public class JobStateController extends KeyStateController {
         batch.put(activatableColumnFamily, keyBuffer, NULL);
       }
 
-      keyBuffer = getDeadlinesKey(key, updatedValue.getDeadline());
+      keyBuffer = getDeadlinesKey(key, deadline);
       batch.delete(deadlinesColumnFamily, keyBuffer);
 
       db.write(options, batch);
@@ -223,13 +219,11 @@ public class JobStateController extends KeyStateController {
 
   public void resolve(long key, final JobRecord updatedValue) {
     final DirectBuffer type = updatedValue.getType();
-    DirectBuffer valueBuffer;
-    DirectBuffer keyBuffer;
 
     try (WriteOptions options = new WriteOptions();
         ZbWriteBatch batch = new ZbWriteBatch()) {
-      keyBuffer = getDefaultKey(key);
-      valueBuffer = writeValue(updatedValue);
+      DirectBuffer keyBuffer = getDefaultKey(key);
+      DirectBuffer valueBuffer = writeValue(updatedValue);
       batch.put(defaultColumnFamily, keyBuffer, valueBuffer);
 
       valueBuffer = writeStatesValue(State.ACTIVATABLE);
@@ -251,7 +245,15 @@ public class JobStateController extends KeyStateController {
           final long deadline = e.getKey().getLong(0, STATE_BYTE_ORDER);
           if (deadline < upperBound) {
             final DirectBuffer keyBuffer = new UnsafeBuffer(e.getKey(), Long.BYTES, Long.BYTES);
-            callback.accept(keyBuffer.getLong(0, STATE_BYTE_ORDER), getJob(keyBuffer), c);
+
+            final JobRecord job = getJob(keyBuffer);
+            final long jobKey = keyBuffer.getLong(0, STATE_BYTE_ORDER);
+            if (job == null) {
+              throw new IllegalStateException(
+                  String.format("Expected to find job with key %d, but no job found", jobKey));
+            }
+            callback.accept(jobKey, job, c);
+
           } else {
             c.stop();
           }
@@ -288,10 +290,15 @@ public class JobStateController extends KeyStateController {
           if (contentsEqual(type, typeBuffer)) {
             final DirectBuffer keyBuffer =
                 new UnsafeBuffer(entryKey, typeBuffer.capacity(), Long.BYTES);
+
             final JobRecord job = getJob(keyBuffer);
-            if (job != null) {
-              callback.accept(keyBuffer.getLong(0, STATE_BYTE_ORDER), job, c);
+            final long jobKey = keyBuffer.getLong(0, STATE_BYTE_ORDER);
+            if (job == null) {
+              throw new IllegalStateException(
+                  String.format("Expected to find job with key %d, but no job found", jobKey));
             }
+            callback.accept(jobKey, job, c);
+
           } else {
             c.stop();
           }
@@ -326,6 +333,7 @@ public class JobStateController extends KeyStateController {
   }
 
   private UnsafeBuffer getActivatableKey(final long key, final DirectBuffer type) {
+    EnsureUtil.ensureNotNullOrEmpty("type", type);
     final int typeLength = type.capacity();
     keyBuffer.putBytes(0, type, 0, typeLength);
     keyBuffer.putLong(typeLength, key, STATE_BYTE_ORDER);
@@ -334,6 +342,7 @@ public class JobStateController extends KeyStateController {
   }
 
   private UnsafeBuffer getActivatablePrefix(final DirectBuffer type) {
+    EnsureUtil.ensureNotNullOrEmpty("type", type);
     final int typeLength = type.capacity();
     keyBuffer.putBytes(0, type, 0, typeLength);
 
@@ -341,6 +350,7 @@ public class JobStateController extends KeyStateController {
   }
 
   private UnsafeBuffer getDeadlinesKey(final long key, final long deadline) {
+    EnsureUtil.ensureGreaterThan("deadline", deadline, 0);
     keyBuffer.putLong(0, deadline, STATE_BYTE_ORDER);
     keyBuffer.putLong(Long.BYTES, key, STATE_BYTE_ORDER);
 

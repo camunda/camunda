@@ -164,9 +164,11 @@ public class JobStreamProcessor implements StreamProcessorLifecycleAware {
         TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
       final long jobKey = command.getKey();
 
-      if (state.exists(jobKey)) {
-        state.delete(jobKey, command.getValue());
-        commandControl.accept(JobIntent.CANCELED, command.getValue());
+      final JobRecord job = state.getJob(jobKey);
+
+      if (job != null) {
+        state.delete(jobKey, job);
+        commandControl.accept(JobIntent.CANCELED, job);
       } else {
         commandControl.reject(RejectionType.NOT_APPLICABLE, "Job does not exist");
       }
