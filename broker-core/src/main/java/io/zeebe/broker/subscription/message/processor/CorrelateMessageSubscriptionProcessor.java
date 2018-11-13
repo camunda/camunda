@@ -33,26 +33,26 @@ public class CorrelateMessageSubscriptionProcessor
 
   private final MessageSubscriptionState subscriptionState;
 
-  public CorrelateMessageSubscriptionProcessor(MessageSubscriptionState subscriptionState) {
+  public CorrelateMessageSubscriptionProcessor(final MessageSubscriptionState subscriptionState) {
     this.subscriptionState = subscriptionState;
   }
 
   @Override
   public void processRecord(
-      TypedRecord<MessageSubscriptionRecord> record,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter,
-      Consumer<SideEffectProducer> sideEffect) {
+      final TypedRecord<MessageSubscriptionRecord> record,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter,
+      final Consumer<SideEffectProducer> sideEffect) {
 
     final MessageSubscriptionRecord subscriptionRecord = record.getValue();
 
     final boolean removed = subscriptionState.remove(subscriptionRecord.getElementInstanceKey());
 
     if (removed) {
-      streamWriter.writeFollowUpEvent(
+      streamWriter.appendFollowUpEvent(
           record.getKey(), MessageSubscriptionIntent.CORRELATED, subscriptionRecord);
     } else {
-      streamWriter.writeRejection(
+      streamWriter.appendRejection(
           record, RejectionType.NOT_APPLICABLE, "subscription is already correlated");
     }
   }

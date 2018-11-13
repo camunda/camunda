@@ -32,7 +32,7 @@ public class PropagateTerminationHandler implements BpmnStepHandler<ExecutableFl
     if (flowScopeInstance.getNumberOfActiveElementInstances() == 0) {
       context
           .getOutput()
-          .writeFollowUpEvent(
+          .appendFollowUpEvent(
               flowScopeInstance.getKey(),
               WorkflowInstanceIntent.ELEMENT_TERMINATED,
               flowScopeInstance.getValue());

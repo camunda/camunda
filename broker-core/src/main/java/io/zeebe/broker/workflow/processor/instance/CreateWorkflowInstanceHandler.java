@@ -56,7 +56,7 @@ public class CreateWorkflowInstanceHandler implements WorkflowInstanceCommandHan
           .setElementId(bpmnId);
 
       final EventOutput eventOutput = commandContext.getOutput();
-      eventOutput.writeFollowUpEvent(
+      eventOutput.appendFollowUpEvent(
           workflowInstanceKey, WorkflowInstanceIntent.ELEMENT_READY, command);
 
       responseWriter.writeEventOnCommand(

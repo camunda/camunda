@@ -43,11 +43,11 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
   private ScheduledTimer scheduledTimer;
   private long nextDueDate = -1L;
 
-  public DueDateTimerChecker(WorkflowState workflowState) {
+  public DueDateTimerChecker(final WorkflowState workflowState) {
     this.workflowState = workflowState;
   }
 
-  public void scheduleTimer(TimerInstance timer) {
+  public void scheduleTimer(final TimerInstance timer) {
 
     // We schedule only one runnable for all timers.
     // - The runnable is scheduled when the first timer is scheduled.
@@ -89,17 +89,17 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
     }
   }
 
-  private boolean triggerTimer(TimerInstance timer) {
+  private boolean triggerTimer(final TimerInstance timer) {
 
     timerRecord.setElementInstanceKey(timer.getElementInstanceKey()).setDueDate(timer.getDueDate());
 
-    streamWriter.writeFollowUpCommand(timer.getKey(), TimerIntent.TRIGGER, timerRecord);
+    streamWriter.appendFollowUpCommand(timer.getKey(), TimerIntent.TRIGGER, timerRecord);
 
     return streamWriter.flush() > 0;
   }
 
   @Override
-  public void onOpen(TypedStreamProcessor streamProcessor) {
+  public void onOpen(final TypedStreamProcessor streamProcessor) {
     this.actor = streamProcessor.getActor();
 
     final TypedStreamEnvironment env = streamProcessor.getEnvironment();
@@ -109,7 +109,7 @@ public class DueDateTimerChecker implements StreamProcessorLifecycleAware {
   }
 
   @Override
-  public void onRecovered(TypedStreamProcessor streamProcessor) {
+  public void onRecovered(final TypedStreamProcessor streamProcessor) {
     // check if timers are due after restart
     triggerTimers();
   }

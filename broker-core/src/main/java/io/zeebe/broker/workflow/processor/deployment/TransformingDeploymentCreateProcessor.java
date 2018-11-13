@@ -53,12 +53,12 @@ public class TransformingDeploymentCreateProcessor
       final long key = streamWriter.getKeyGenerator().nextKey();
       if (workflowState.putDeployment(key, deploymentEvent)) {
         responseWriter.writeEventOnCommand(key, DeploymentIntent.CREATED, deploymentEvent, command);
-        streamWriter.writeFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
+        streamWriter.appendFollowUpEvent(key, DeploymentIntent.CREATED, deploymentEvent);
       } else {
         // should not be possible
         responseWriter.writeRejectionOnCommand(
             command, RejectionType.NOT_APPLICABLE, "Deployment already exist");
-        streamWriter.writeRejection(
+        streamWriter.appendRejection(
             command, RejectionType.NOT_APPLICABLE, "Deployment already exist");
       }
     } else {
@@ -66,7 +66,7 @@ public class TransformingDeploymentCreateProcessor
           command,
           deploymentTransformer.getRejectionType(),
           deploymentTransformer.getRejectionReason());
-      streamWriter.writeRejection(
+      streamWriter.appendRejection(
           command,
           deploymentTransformer.getRejectionType(),
           deploymentTransformer.getRejectionReason());

@@ -20,7 +20,6 @@ package io.zeebe.broker.subscription.message.processor;
 import static io.zeebe.util.buffer.BufferUtil.bufferAsString;
 
 import io.zeebe.broker.logstreams.processor.SideEffectProducer;
-import io.zeebe.broker.logstreams.processor.TypedBatchWriter;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
@@ -49,8 +48,8 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
   private final LongArrayList correlatedElementInstances = new LongArrayList();
 
   public PublishMessageProcessor(
-      MessageState messageState,
-      MessageSubscriptionState subscriptionState,
+      final MessageState messageState,
+      final MessageSubscriptionState subscriptionState,
       final SubscriptionCommandSender commandSender) {
     this.messageState = messageState;
     this.subscriptionState = subscriptionState;
@@ -76,7 +75,7 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
               "message with id '%s' is already published",
               bufferAsString(messageRecord.getMessageId()));
 
-      streamWriter.writeRejection(command, RejectionType.BAD_VALUE, rejectionReason);
+      streamWriter.appendRejection(command, RejectionType.BAD_VALUE, rejectionReason);
       responseWriter.writeRejectionOnCommand(command, RejectionType.BAD_VALUE, rejectionReason);
 
     } else {
@@ -90,8 +89,7 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
       final TypedStreamWriter streamWriter,
       final Consumer<SideEffectProducer> sideEffect) {
 
-    final TypedBatchWriter batchWriter = streamWriter.newBatch();
-    final long key = batchWriter.addNewEvent(MessageIntent.PUBLISHED, command.getValue());
+    final long key = streamWriter.appendNewEvent(MessageIntent.PUBLISHED, command.getValue());
     responseWriter.writeEventOnCommand(key, MessageIntent.PUBLISHED, command.getValue(), command);
 
     correlatedWorkflowInstances.clear();
@@ -139,7 +137,7 @@ public class PublishMessageProcessor implements TypedRecordProcessor<MessageReco
 
     } else {
       // don't add the message to the store to avoid that it can be correlated afterwards
-      batchWriter.addFollowUpEvent(key, MessageIntent.DELETED, messageRecord);
+      streamWriter.appendFollowUpEvent(key, MessageIntent.DELETED, messageRecord);
     }
   }
 

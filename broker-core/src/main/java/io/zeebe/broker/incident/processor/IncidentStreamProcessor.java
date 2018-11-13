@@ -54,7 +54,7 @@ public class IncidentStreamProcessor {
   private final IncidentMap incidentMap = new IncidentMap();
   private final Long2LongZbMap resolvingEvents = new Long2LongZbMap();
 
-  public TypedStreamProcessor createStreamProcessor(TypedStreamEnvironment env) {
+  public TypedStreamProcessor createStreamProcessor(final TypedStreamEnvironment env) {
     TypedEventStreamProcessorBuilder builder =
         env.newStreamProcessor()
             .keyGenerator(KeyGenerator.createIncidentKeyGenerator(env.getStream().getPartitionId()))
@@ -129,7 +129,8 @@ public class IncidentStreamProcessor {
 
     @Override
     public void onCommand(
-        TypedRecord<IncidentRecord> command, CommandControl<IncidentRecord> commandControl) {
+        final TypedRecord<IncidentRecord> command,
+        final CommandControl<IncidentRecord> commandControl) {
       final IncidentRecord incidentEvent = command.getValue();
 
       final boolean isJobIncident = incidentEvent.getJobKey() > 0;
@@ -164,9 +165,9 @@ public class IncidentStreamProcessor {
 
     @Override
     public void processRecord(
-        TypedRecord<WorkflowInstanceRecord> event,
-        TypedResponseWriter responseWriter,
-        TypedStreamWriter streamWriter) {
+        final TypedRecord<WorkflowInstanceRecord> event,
+        final TypedResponseWriter responseWriter,
+        final TypedStreamWriter streamWriter) {
 
       final long incidentKey = activityInstanceMap.get(event.getKey(), -1L);
 
@@ -179,7 +180,7 @@ public class IncidentStreamProcessor {
             .setElementInstanceKey(event.getKey())
             .setPayload(workflowInstanceEvent.getPayload());
 
-        streamWriter.writeFollowUpCommand(incidentKey, IncidentIntent.RESOLVE, incidentEvent);
+        streamWriter.appendFollowUpCommand(incidentKey, IncidentIntent.RESOLVE, incidentEvent);
       }
     }
   }
@@ -191,15 +192,15 @@ public class IncidentStreamProcessor {
     private long incidentKey;
 
     @Override
-    public void onOpen(TypedStreamProcessor streamProcessor) {
+    public void onOpen(final TypedStreamProcessor streamProcessor) {
       reader = streamProcessor.getEnvironment().getStreamReader();
     }
 
     @Override
     public void processRecord(
-        TypedRecord<IncidentRecord> command,
-        TypedResponseWriter responseWriter,
-        TypedStreamWriter streamWriter) {
+        final TypedRecord<IncidentRecord> command,
+        final TypedResponseWriter responseWriter,
+        final TypedStreamWriter streamWriter) {
 
       incidentKey = command.getKey();
       incidentMap.wrapIncidentKey(incidentKey);
@@ -210,7 +211,7 @@ public class IncidentStreamProcessor {
             reader.readValue(incidentMap.getFailureEventPosition(), WorkflowInstanceRecord.class);
         failureEvent.getValue().setPayload(command.getValue().getPayload());
 
-        streamWriter.writeFollowUpEvent(
+        streamWriter.appendFollowUpEvent(
             failureEvent.getKey(),
             failureEvent.getMetadata().getIntent(),
             failureEvent.getValue(),
@@ -218,12 +219,12 @@ public class IncidentStreamProcessor {
 
         incidentMap.setState(STATE_RESOLVING).write();
       } else {
-        streamWriter.writeRejection(
+        streamWriter.appendRejection(
             command, RejectionType.NOT_APPLICABLE, "Incident is not in state CREATED");
       }
     }
 
-    private void setIncidentKey(RecordMetadata metadata) {
+    private void setIncidentKey(final RecordMetadata metadata) {
       metadata.incidentKey(incidentKey);
     }
   }
@@ -232,9 +233,9 @@ public class IncidentStreamProcessor {
 
     @Override
     public void processRecord(
-        TypedRecord<IncidentRecord> event,
-        TypedResponseWriter responseWriter,
-        TypedStreamWriter streamWriter) {
+        final TypedRecord<IncidentRecord> event,
+        final TypedResponseWriter responseWriter,
+        final TypedStreamWriter streamWriter) {
       incidentMap.wrapIncidentKey(event.getKey());
 
       if (incidentMap.getState() == STATE_RESOLVING) {
@@ -247,15 +248,15 @@ public class IncidentStreamProcessor {
     private TypedStreamReader reader;
 
     @Override
-    public void onOpen(TypedStreamProcessor streamProcessor) {
+    public void onOpen(final TypedStreamProcessor streamProcessor) {
       reader = streamProcessor.getEnvironment().getStreamReader();
     }
 
     @Override
     public void processRecord(
-        TypedRecord<IncidentRecord> command,
-        TypedResponseWriter responseWriter,
-        TypedStreamWriter streamWriter) {
+        final TypedRecord<IncidentRecord> command,
+        final TypedResponseWriter responseWriter,
+        final TypedStreamWriter streamWriter) {
 
       incidentMap.wrapIncidentKey(command.getKey());
 
@@ -265,12 +266,12 @@ public class IncidentStreamProcessor {
         final TypedRecord<IncidentRecord> priorIncidentEvent =
             reader.readValue(incidentEventPosition, IncidentRecord.class);
 
-        streamWriter.writeFollowUpEvent(
+        streamWriter.appendFollowUpEvent(
             command.getKey(), IncidentIntent.DELETED, priorIncidentEvent.getValue());
 
         incidentMap.remove(command.getKey());
       } else {
-        streamWriter.writeRejection(
+        streamWriter.appendRejection(
             command, RejectionType.NOT_APPLICABLE, "Incident does not exist");
       }
     }
@@ -281,9 +282,9 @@ public class IncidentStreamProcessor {
 
     @Override
     public void processRecord(
-        TypedRecord<WorkflowInstanceRecord> record,
-        TypedResponseWriter responseWriter,
-        TypedStreamWriter streamWriter) {
+        final TypedRecord<WorkflowInstanceRecord> record,
+        final TypedResponseWriter responseWriter,
+        final TypedStreamWriter streamWriter) {
       final long incidentKey = record.getMetadata().getIncidentKey();
       if (incidentKey > 0) {
         resolvingEvents.put(record.getPosition(), incidentKey);
@@ -296,15 +297,15 @@ public class IncidentStreamProcessor {
     private TypedStreamReader reader;
 
     @Override
-    public void onOpen(TypedStreamProcessor streamProcessor) {
+    public void onOpen(final TypedStreamProcessor streamProcessor) {
       reader = streamProcessor.getEnvironment().getStreamReader();
     }
 
     @Override
     public void processRecord(
-        TypedRecord<WorkflowInstanceRecord> event,
-        TypedResponseWriter responseWriter,
-        TypedStreamWriter streamWriter) {
+        final TypedRecord<WorkflowInstanceRecord> event,
+        final TypedResponseWriter responseWriter,
+        final TypedStreamWriter streamWriter) {
 
       final long incidentKey = resolvingEvents.get(event.getSourcePosition(), -1);
       if (incidentKey > 0) {
@@ -316,7 +317,7 @@ public class IncidentStreamProcessor {
           final TypedRecord<IncidentRecord> incidentEvent =
               reader.readValue(incidentPosition, IncidentRecord.class);
 
-          streamWriter.writeFollowUpEvent(
+          streamWriter.appendFollowUpEvent(
               incidentKey, IncidentIntent.RESOLVED, incidentEvent.getValue());
 
           incidentMap.remove(incidentEvent.getKey());
@@ -335,16 +336,16 @@ public class IncidentStreamProcessor {
 
     @Override
     public void processRecord(
-        TypedRecord<WorkflowInstanceRecord> event,
-        TypedResponseWriter responseWriter,
-        TypedStreamWriter streamWriter) {
+        final TypedRecord<WorkflowInstanceRecord> event,
+        final TypedResponseWriter responseWriter,
+        final TypedStreamWriter streamWriter) {
       final long incidentKey = activityInstanceMap.get(event.getKey(), -1L);
 
       if (incidentKey > 0) {
         incidentMap.wrapIncidentKey(incidentKey);
 
         if (incidentMap.getState() == STATE_CREATED || incidentMap.getState() == STATE_RESOLVING) {
-          streamWriter.writeFollowUpCommand(incidentKey, IncidentIntent.DELETE, incidentEvent);
+          streamWriter.appendFollowUpCommand(incidentKey, IncidentIntent.DELETE, incidentEvent);
 
           incidentMap.setState(STATE_DELETING).write();
           activityInstanceMap.remove(event.getKey(), -1L);
@@ -360,9 +361,9 @@ public class IncidentStreamProcessor {
 
     @Override
     public void processRecord(
-        TypedRecord<JobRecord> event,
-        TypedResponseWriter responseWriter,
-        TypedStreamWriter streamWriter) {
+        final TypedRecord<JobRecord> event,
+        final TypedResponseWriter responseWriter,
+        final TypedStreamWriter streamWriter) {
 
       final JobRecord value = event.getValue();
 
@@ -383,9 +384,9 @@ public class IncidentStreamProcessor {
         failedJobMap.put(event.getKey(), NON_PERSISTENT_INCIDENT);
 
         if (!event.getMetadata().hasIncidentKey()) {
-          streamWriter.writeNewCommand(IncidentIntent.CREATE, incidentEvent);
+          streamWriter.appendNewCommand(IncidentIntent.CREATE, incidentEvent);
         } else {
-          streamWriter.writeFollowUpEvent(
+          streamWriter.appendFollowUpEvent(
               event.getMetadata().getIncidentKey(), IncidentIntent.RESOLVE_FAILED, incidentEvent);
         }
       }
@@ -397,7 +398,7 @@ public class IncidentStreamProcessor {
     private TypedStreamReader reader;
 
     @Override
-    public void onOpen(TypedStreamProcessor streamProcessor) {
+    public void onOpen(final TypedStreamProcessor streamProcessor) {
       reader = streamProcessor.getEnvironment().getStreamReader();
     }
 
@@ -408,9 +409,9 @@ public class IncidentStreamProcessor {
 
     @Override
     public void processRecord(
-        TypedRecord<JobRecord> event,
-        TypedResponseWriter responseWriter,
-        TypedStreamWriter streamWriter) {
+        final TypedRecord<JobRecord> event,
+        final TypedResponseWriter responseWriter,
+        final TypedStreamWriter streamWriter) {
 
       final long incidentKey = failedJobMap.get(event.getKey(), -1L);
 
@@ -421,7 +422,7 @@ public class IncidentStreamProcessor {
           final TypedRecord<IncidentRecord> persistedIncident =
               reader.readValue(incidentMap.getIncidentEventPosition(), IncidentRecord.class);
 
-          streamWriter.writeFollowUpCommand(
+          streamWriter.appendFollowUpCommand(
               incidentKey, IncidentIntent.DELETE, persistedIncident.getValue());
           failedJobMap.remove(event.getKey(), -1L);
         } else {

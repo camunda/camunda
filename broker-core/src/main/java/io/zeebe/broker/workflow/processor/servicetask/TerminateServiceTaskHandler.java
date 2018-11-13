@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.workflow.processor.servicetask;
 
-import io.zeebe.broker.logstreams.processor.TypedBatchWriter;
+import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.flownode.TerminateElementHandler;
@@ -35,7 +35,7 @@ public class TerminateServiceTaskHandler extends TerminateElementHandler {
 
   @Override
   protected void addTerminatingRecords(
-      BpmnStepContext<ExecutableFlowNode> context, TypedBatchWriter batch) {
+      final BpmnStepContext<ExecutableFlowNode> context, final TypedStreamWriter batch) {
 
     final ElementInstance elementInstance = context.getElementInstance();
 
@@ -53,7 +53,7 @@ public class TerminateServiceTaskHandler extends TerminateElementHandler {
           .setElementId(elementInstanceEvent.getElementId())
           .setElementInstanceKey(elementInstance.getKey());
 
-      batch.addFollowUpCommand(jobKey, JobIntent.CANCEL, jobRecord);
+      batch.appendFollowUpCommand(jobKey, JobIntent.CANCEL, jobRecord);
     }
   }
 }

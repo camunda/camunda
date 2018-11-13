@@ -28,10 +28,11 @@ public class DeploymentCreatedProcessor implements TypedRecordProcessor<Deployme
 
   @Override
   public void processRecord(
-      TypedRecord<DeploymentRecord> event,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter) {
+      final TypedRecord<DeploymentRecord> event,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter) {
     final DeploymentRecord deploymentEvent = event.getValue();
-    streamWriter.writeFollowUpCommand(event.getKey(), DeploymentIntent.DISTRIBUTE, deploymentEvent);
+    streamWriter.appendFollowUpCommand(
+        event.getKey(), DeploymentIntent.DISTRIBUTE, deploymentEvent);
   }
 }

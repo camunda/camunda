@@ -19,7 +19,6 @@ package io.zeebe.broker.workflow.processor.message;
 
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
 import io.zeebe.broker.logstreams.processor.SideEffectProducer;
-import io.zeebe.broker.logstreams.processor.TypedBatchWriter;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
@@ -57,10 +56,10 @@ public final class CorrelateWorkflowInstanceSubscription
   private Consumer<SideEffectProducer> sideEffect;
 
   public CorrelateWorkflowInstanceSubscription(
-      TopologyManager topologyManager,
-      WorkflowState workflowState,
-      WorkflowInstanceSubscriptionState subscriptionState,
-      SubscriptionCommandSender subscriptionCommandSender) {
+      final TopologyManager topologyManager,
+      final WorkflowState workflowState,
+      final WorkflowInstanceSubscriptionState subscriptionState,
+      final SubscriptionCommandSender subscriptionCommandSender) {
     this.topologyManager = topologyManager;
     this.workflowState = workflowState;
     this.subscriptionState = subscriptionState;
@@ -68,7 +67,7 @@ public final class CorrelateWorkflowInstanceSubscription
   }
 
   @Override
-  public void onOpen(TypedStreamProcessor streamProcessor) {
+  public void onOpen(final TypedStreamProcessor streamProcessor) {
     final ActorControl actor = streamProcessor.getActor();
     final LogStream logStream = streamProcessor.getEnvironment().getStream();
 
@@ -85,10 +84,10 @@ public final class CorrelateWorkflowInstanceSubscription
 
   @Override
   public void processRecord(
-      TypedRecord<WorkflowInstanceSubscriptionRecord> record,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter,
-      Consumer<SideEffectProducer> sideEffect) {
+      final TypedRecord<WorkflowInstanceSubscriptionRecord> record,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter,
+      final Consumer<SideEffectProducer> sideEffect) {
 
     this.record = record;
     this.subscription = record.getValue();
@@ -99,7 +98,7 @@ public final class CorrelateWorkflowInstanceSubscription
         workflowState.getElementInstanceState().getInstance(subscription.getElementInstanceKey());
 
     if (eventInstance == null) {
-      streamWriter.writeRejection(
+      streamWriter.appendRejection(
           record, RejectionType.NOT_APPLICABLE, "activity is not active anymore");
 
     } else {
@@ -108,7 +107,7 @@ public final class CorrelateWorkflowInstanceSubscription
       if (workflow != null) {
         onWorkflowAvailable();
       } else {
-        streamWriter.writeRejection(
+        streamWriter.appendRejection(
             record, RejectionType.NOT_APPLICABLE, "workflow is not available");
       }
     }
@@ -118,7 +117,7 @@ public final class CorrelateWorkflowInstanceSubscription
     // remove subscription if pending
     final boolean removed = subscriptionState.remove(subscription.getElementInstanceKey());
     if (!removed) {
-      streamWriter.writeRejection(
+      streamWriter.appendRejection(
           record, RejectionType.NOT_APPLICABLE, "subscription is already correlated");
 
       sideEffect.accept(this::sendAcknowledgeCommand);
@@ -131,10 +130,9 @@ public final class CorrelateWorkflowInstanceSubscription
     final WorkflowInstanceRecord value = eventInstance.getValue();
     value.setPayload(subscription.getPayload());
 
-    final TypedBatchWriter batchWriter = streamWriter.newBatch();
-    batchWriter.addFollowUpEvent(
+    streamWriter.appendFollowUpEvent(
         record.getKey(), WorkflowInstanceSubscriptionIntent.CORRELATED, subscription);
-    batchWriter.addFollowUpEvent(
+    streamWriter.appendFollowUpEvent(
         subscription.getElementInstanceKey(), WorkflowInstanceIntent.ELEMENT_COMPLETING, value);
 
     sideEffect.accept(this::sendAcknowledgeCommand);

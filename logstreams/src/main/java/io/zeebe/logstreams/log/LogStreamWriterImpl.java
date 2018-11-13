@@ -32,7 +32,6 @@ import io.zeebe.dispatcher.ClaimedFragment;
 import io.zeebe.dispatcher.Dispatcher;
 import io.zeebe.dispatcher.impl.log.DataFrameDescriptor;
 import io.zeebe.logstreams.impl.LogEntryDescriptor;
-import io.zeebe.util.EnsureUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import io.zeebe.util.buffer.DirectBufferWriter;
 import io.zeebe.util.sched.clock.ActorClock;
@@ -61,12 +60,12 @@ public class LogStreamWriterImpl implements LogStreamRecordWriter {
 
   public LogStreamWriterImpl() {}
 
-  public LogStreamWriterImpl(LogStream log) {
+  public LogStreamWriterImpl(final LogStream log) {
     wrap(log);
   }
 
   @Override
-  public void wrap(LogStream log) {
+  public void wrap(final LogStream log) {
     this.logStream = log;
     reset();
   }
@@ -83,51 +82,53 @@ public class LogStreamWriterImpl implements LogStreamRecordWriter {
   }
 
   @Override
-  public LogStreamRecordWriter key(long key) {
+  public LogStreamRecordWriter key(final long key) {
     this.key = key;
     return this;
   }
 
-  public LogStreamRecordWriter sourceRecordPosition(long position) {
+  public LogStreamRecordWriter sourceRecordPosition(final long position) {
     this.sourceRecordPosition = position;
     return this;
   }
 
   @Override
-  public LogStreamRecordWriter producerId(int producerId) {
+  public LogStreamRecordWriter producerId(final int producerId) {
     this.producerId = producerId;
     return this;
   }
 
   @Override
-  public LogStreamRecordWriter metadata(DirectBuffer buffer, int offset, int length) {
+  public LogStreamRecordWriter metadata(
+      final DirectBuffer buffer, final int offset, final int length) {
     metadataWriterInstance.wrap(buffer, offset, length);
     return this;
   }
 
   @Override
-  public LogStreamRecordWriter metadata(DirectBuffer buffer) {
+  public LogStreamRecordWriter metadata(final DirectBuffer buffer) {
     return metadata(buffer, 0, buffer.capacity());
   }
 
   @Override
-  public LogStreamRecordWriter metadataWriter(BufferWriter writer) {
+  public LogStreamRecordWriter metadataWriter(final BufferWriter writer) {
     this.metadataWriter = writer;
     return this;
   }
 
   @Override
-  public LogStreamRecordWriter value(DirectBuffer value, int valueOffset, int valueLength) {
+  public LogStreamRecordWriter value(
+      final DirectBuffer value, final int valueOffset, final int valueLength) {
     return valueWriter(bufferWriterInstance.wrap(value, valueOffset, valueLength));
   }
 
   @Override
-  public LogStreamRecordWriter value(DirectBuffer value) {
+  public LogStreamRecordWriter value(final DirectBuffer value) {
     return value(value, 0, value.capacity());
   }
 
   @Override
-  public LogStreamRecordWriter valueWriter(BufferWriter writer) {
+  public LogStreamRecordWriter valueWriter(final BufferWriter writer) {
     this.valueWriter = writer;
     return this;
   }
@@ -147,7 +148,9 @@ public class LogStreamWriterImpl implements LogStreamRecordWriter {
 
   @Override
   public long tryWrite() {
-    EnsureUtil.ensureNotNull("value", valueWriter);
+    if (valueWriter == null) {
+      return 0;
+    }
 
     long result = -1;
 
@@ -182,7 +185,7 @@ public class LogStreamWriterImpl implements LogStreamRecordWriter {
 
         result = claimedPosition;
         claimedFragment.commit();
-      } catch (Exception e) {
+      } catch (final Exception e) {
         claimedFragment.abort();
         LangUtil.rethrowUnchecked(e);
       } finally {

@@ -58,7 +58,7 @@ public class ParallelMergeHandler implements BpmnStepHandler<ExecutableSequenceF
 
       final WorkflowInstanceRecord value = context.getValue();
       value.setElementId(gateway.getId());
-      context.getOutput().writeNewEvent(WorkflowInstanceIntent.GATEWAY_ACTIVATED, value);
+      context.getOutput().appendNewEvent(WorkflowInstanceIntent.GATEWAY_ACTIVATED, value);
     }
   }
 

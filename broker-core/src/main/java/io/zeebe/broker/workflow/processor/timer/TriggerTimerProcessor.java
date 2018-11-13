@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.workflow.processor.timer;
 
-import io.zeebe.broker.logstreams.processor.TypedBatchWriter;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
@@ -34,28 +33,27 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
 
   private final WorkflowState workflowState;
 
-  public TriggerTimerProcessor(WorkflowState workflowState) {
+  public TriggerTimerProcessor(final WorkflowState workflowState) {
     this.workflowState = workflowState;
   }
 
   @Override
   public void processRecord(
-      TypedRecord<TimerRecord> record,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter) {
+      final TypedRecord<TimerRecord> record,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter) {
 
     final TimerRecord timer = record.getValue();
     final long elementInstanceKey = timer.getElementInstanceKey();
 
     final TimerInstance timerInstance = workflowState.getTimerState().get(elementInstanceKey);
     if (timerInstance == null) {
-      streamWriter.writeRejection(
+      streamWriter.appendRejection(
           record, RejectionType.NOT_APPLICABLE, "timer is already triggered or canceled");
       return;
     }
 
-    final TypedBatchWriter batchWriter = streamWriter.newBatch();
-    batchWriter.addFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
+    streamWriter.appendFollowUpEvent(record.getKey(), TimerIntent.TRIGGERED, timer);
 
     final ElementInstance elementInstance =
         workflowState.getElementInstanceState().getInstance(elementInstanceKey);
@@ -63,7 +61,7 @@ public class TriggerTimerProcessor implements TypedRecordProcessor<TimerRecord> 
     if (elementInstance != null
         && elementInstance.getState() == WorkflowInstanceIntent.ELEMENT_ACTIVATED) {
 
-      batchWriter.addFollowUpEvent(
+      streamWriter.appendFollowUpEvent(
           elementInstanceKey,
           WorkflowInstanceIntent.ELEMENT_COMPLETING,
           elementInstance.getValue());

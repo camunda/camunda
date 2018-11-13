@@ -130,7 +130,7 @@ public class JobTimeOutTest {
 
     // then activated again
     final List<Record<JobRecordValue>> jobEvents =
-        client.receiveJobs().limit(8).collect(Collectors.toList());
+        client.receiveJobs().limit(6).collect(Collectors.toList());
 
     assertThat(jobEvents).extracting(e -> e.getKey()).contains(jobKey1);
     assertThat(jobEvents)
@@ -201,16 +201,26 @@ public class JobTimeOutTest {
     apiRule.activateJobs(jobType);
 
     // then
-    final List<Record> expiredEvents = client.receiveJobs().limit(16).collect(Collectors.toList());
+    final List<Record<JobRecordValue>> activiatedEvents =
+        client
+            .receiveJobs()
+            .filter(e -> e.getMetadata().getIntent() == JobIntent.ACTIVATED)
+            .limit(4)
+            .collect(Collectors.toList());
 
-    assertThat(expiredEvents)
-        .filteredOn(e -> e.getMetadata().getIntent() == JobIntent.ACTIVATED)
+    assertThat(activiatedEvents)
         .hasSize(4)
         .extracting(e -> e.getKey())
         .containsExactlyInAnyOrder(jobKey1, jobKey2, jobKey1, jobKey2);
 
+    final List<Record<JobRecordValue>> expiredEvents =
+        client
+            .receiveJobs()
+            .filter(e -> e.getMetadata().getIntent() == JobIntent.TIMED_OUT)
+            .limit(2)
+            .collect(Collectors.toList());
+
     assertThat(expiredEvents)
-        .filteredOn(e -> e.getMetadata().getIntent() == JobIntent.TIMED_OUT)
         .extracting(e -> e.getKey())
         .containsExactlyInAnyOrder(jobKey1, jobKey2);
   }

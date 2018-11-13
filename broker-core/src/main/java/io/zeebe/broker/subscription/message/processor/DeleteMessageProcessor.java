@@ -29,17 +29,17 @@ public class DeleteMessageProcessor implements TypedRecordProcessor<MessageRecor
 
   private final MessageState messageState;
 
-  public DeleteMessageProcessor(MessageState messageState) {
+  public DeleteMessageProcessor(final MessageState messageState) {
     this.messageState = messageState;
   }
 
   @Override
   public void processRecord(
-      TypedRecord<MessageRecord> record,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter) {
+      final TypedRecord<MessageRecord> record,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter) {
 
-    streamWriter.writeFollowUpEvent(record.getKey(), MessageIntent.DELETED, record.getValue());
+    streamWriter.appendFollowUpEvent(record.getKey(), MessageIntent.DELETED, record.getValue());
 
     messageState.remove(record.getKey());
   }

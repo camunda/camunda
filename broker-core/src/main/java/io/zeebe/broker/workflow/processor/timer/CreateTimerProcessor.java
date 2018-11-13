@@ -35,17 +35,18 @@ public class CreateTimerProcessor implements TypedRecordProcessor<TimerRecord> {
   private final WorkflowState workflowState;
   private final TimerInstance timerInstance = new TimerInstance();
 
-  public CreateTimerProcessor(DueDateTimerChecker timerChecker, WorkflowState workflowState) {
+  public CreateTimerProcessor(
+      final DueDateTimerChecker timerChecker, final WorkflowState workflowState) {
     this.timerChecker = timerChecker;
     this.workflowState = workflowState;
   }
 
   @Override
   public void processRecord(
-      TypedRecord<TimerRecord> record,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter,
-      Consumer<SideEffectProducer> sideEffect) {
+      final TypedRecord<TimerRecord> record,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter,
+      final Consumer<SideEffectProducer> sideEffect) {
 
     final TimerRecord timer = record.getValue();
 
@@ -57,7 +58,7 @@ public class CreateTimerProcessor implements TypedRecordProcessor<TimerRecord> {
 
     sideEffect.accept(this::scheduleTimer);
 
-    streamWriter.writeFollowUpEvent(timerKey, TimerIntent.CREATED, timer);
+    streamWriter.appendFollowUpEvent(timerKey, TimerIntent.CREATED, timer);
 
     workflowState.getTimerState().put(timerInstance);
   }
