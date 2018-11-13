@@ -2,6 +2,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
+  <properties>
+    <skipTests>true</skipTests>
+  </properties>
+
   <parent>
     <groupId>org.camunda.optimize</groupId>
     <artifactId>qa</artifactId>
@@ -9,7 +13,6 @@
   </parent>
 
   <artifactId>upgrade-optimize-data</artifactId>
-  <!--<packaging>pom</packaging>-->
 
   <dependencies>
     <dependency>
@@ -52,6 +55,18 @@
             <artifactId>maven-dependency-plugin</artifactId>
             <executions>
               <execution>
+                <id>unpackCurrent</id>
+                <phase>pre-integration-test</phase>
+                <goals>
+                  <goal>unpack</goal>
+                </goals>
+                <configuration>
+                  <artifact>org.camunda.optimize:camunda-optimize:${project.version}:tar.gz:full</artifact>
+                  <outputDirectory>${project.build.directory}/currVersion/</outputDirectory>
+                </configuration>
+              </execution>
+              <execution>
+                <id>unpackPrevious</id>
                 <phase>pre-integration-test</phase>
                 <goals>
                   <goal>unpack</goal>
@@ -155,6 +170,11 @@
 
                     <exec dir="${project.build.directory}/prevVersion/" executable="${project.build.directory}/prevVersion/optimize-startup.sh" spawn="true" />
 
+                    <echo message="Wait for Optimize to start..." />
+                    <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
+                      <socket server="localhost" port="8090" />
+                    </waitfor>
+
                     <echo message="Waiting for Optimize to populate ES..." />
 
                     <exec executable="/bin/bash">
@@ -163,7 +183,7 @@
                     </exec>
 
                     <echo message="Generating optimize data" />
-                    <exec executable="/bin/bash">
+                    <exec executable="/bin/bash" failonerror="true">
                       <arg value="-c" />
                       <arg value="mvn exec:java -Dexec.mainClass='org.camunda.optimize.data.upgrade.OptimizeDataGenerator'" />
                     </exec>
@@ -188,13 +208,30 @@
                       <arg value="java -jar ${project.build.directory}/prevVersion/upgrade/upgrade-optimize.jar --skip-warning" />
                     </exec>
 
-                    <echo message="Not running integration tests tbh..." />
+                    <echo message="Starting Optimize ${project.version}..." />
+                    <exec dir="${project.build.directory}/currVersion/" executable="${project.build.directory}/currVersion/optimize-startup.sh" spawn="true" />
+
+                    <echo message="Wait for Optimize to start..." />
+                    <waitfor maxwait="30" maxwaitunit="second" checkevery="1" checkeveryunit="second">
+                      <socket server="localhost" port="8090" />
+                    </waitfor>
+
+                    <echo message="Running post migration tests..." />
+                    <exec executable="/bin/bash" failonerror="true">
+                      <arg value="-c" />
+                      <arg value="mvn verify -DskipTests=false" />
+                    </exec>
+
+                    <echo message="Killing Optimize ${project.version}" />
+                    <exec executable="/bin/bash">
+                      <arg value="-c" />
+                      <arg value="pkill -f org.camunda.optimize.Main" />
+                    </exec>
                   </target>
                 </configuration>
               </execution>
             </executions>
           </plugin>
-
         </plugins>
       </build>
     </profile>
