@@ -23,6 +23,10 @@ describe('Dashboard', () => {
     expect(document.title).toBe(PAGE_TITLE.DASHBOARD);
   });
 
+  it('should render transparent heading', () => {
+    expect(node.contains('Camunda Operate Dashboard')).toBe(true);
+  });
+
   it('should render MetricPanel component', () => {
     expect(node.find(MetricPanel)).toHaveLength(1);
   });

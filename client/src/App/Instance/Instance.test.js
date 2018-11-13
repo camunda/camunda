@@ -222,6 +222,10 @@ describe('Instance', () => {
       node.update();
 
       // then
+      // Transparent Heading
+      expect(node.contains(`Camunda Operate Instance ${INSTANCE.id}`)).toBe(
+        true
+      );
       // HeaderNode
       const HeaderNode = node.find(Header);
       expect(HeaderNode).toHaveLength(1);

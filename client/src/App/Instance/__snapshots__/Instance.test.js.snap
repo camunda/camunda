@@ -2,6 +2,9 @@
 
 exports[`Instance rendering should display a Header, DiagramPanel and Copyright 1`] = `
 <Fragment>
+  <TransparentHeading>
+    Camunda Operate Instance 4294980768
+  </TransparentHeading>
   <HeaderSharedState
     detail={
       <InstanceDetail

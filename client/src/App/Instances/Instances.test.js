@@ -165,6 +165,14 @@ describe('Instances', () => {
       storeStateLocallyMock.mockClear();
     });
 
+    it('should render transparent heading', () => {
+      // given
+      const node = shallow(InstancesWithRunningFilter);
+
+      // then
+      expect(node.contains('Camunda Operate Instances')).toBe(true);
+    });
+
     describe('initial render', () => {
       it('should initially render with the right state', () => {
         const count = getRandomInt(20);

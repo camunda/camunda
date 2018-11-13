@@ -1,7 +1,8 @@
 import React, {Component, Fragment} from 'react';
 
-import Header from '../Header';
+import TransparentHeading from 'modules/components/TransparentHeading';
 
+import Header from '../Header';
 import MetricPanel from './MetricPanel';
 import MetricTile from './MetricTile';
 
@@ -47,6 +48,7 @@ class Dashboard extends Component {
     const tiles = ['running', 'active', 'incidents'];
     return (
       <Fragment>
+        <TransparentHeading>Camunda Operate Dashboard</TransparentHeading>
         <Header
           active="dashboard"
           runningInstancesCount={running}

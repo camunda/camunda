@@ -6,6 +6,7 @@ import {isEqual, sortBy, isEmpty} from 'lodash';
 import withSharedState from 'modules/components/withSharedState';
 import SplitPane from 'modules/components/SplitPane';
 import Diagram from 'modules/components/Diagram';
+import TransparentHeading from 'modules/components/TransparentHeading';
 import {DEFAULT_FILTER, PAGE_TITLE} from 'modules/constants';
 import {
   fetchWorkflowInstanceBySelection,
@@ -469,6 +470,7 @@ class Instances extends Component {
 
     return (
       <Fragment>
+        <TransparentHeading>Camunda Operate Instances</TransparentHeading>
         <Header
           active="instances"
           filter={this.state.filter}
