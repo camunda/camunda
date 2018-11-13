@@ -293,21 +293,6 @@ describe('List', () => {
         expect(mockProps.onEntriesPerPageChange).toBeCalledWith(expectedRows);
       });
     });
-
-    describe('sorting', () => {
-      it('should reset sorting when endDate sort is active and has no finished instances', () => {
-        const mockPropsWithEndDateSorting = {
-          ...mockProps,
-          sorting: {sortBy: 'endDate', sortOrder: SORT_ORDER.ASC}
-        };
-
-        const node = shallow(<List {...mockPropsWithEndDateSorting} />);
-        node.setProps({filter: DEFAULT_FILTER});
-        node.update();
-
-        expect(mockProps.onSort).toHaveBeenCalledWith('workflowName');
-      });
-    });
   });
 
   describe('Selection', () => {

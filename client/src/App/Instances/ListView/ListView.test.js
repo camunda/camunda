@@ -205,6 +205,26 @@ describe('ListView', () => {
         successResponse.workflowInstances
       );
     });
+
+    it('should reset sorting when endDate sort is active and has no finished instances', async () => {
+      // given
+      const node = shallow(Component);
+
+      // when data fetched
+      await flushPromises();
+      node.update();
+
+      node.setProps({filter: {completed: true}});
+      node.update();
+
+      node.setState({sortBy: 'endDate', sortOrder: SORT_ORDER.ASC});
+      node.update();
+
+      node.setProps({filter: DEFAULT_FILTER});
+      node.update();
+
+      expect(node.state().sorting).toEqual(DEFAULT_SORTING);
+    });
   });
 
   describe('display instances List', () => {

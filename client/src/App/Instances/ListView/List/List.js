@@ -48,8 +48,7 @@ export default class List extends React.Component {
   }
 
   componentDidUpdate(prevProps) {
-    const {filter, expandState} = this.props;
-    const listHasFinishedInstances = filter.canceled || filter.completed;
+    const {expandState} = this.props;
 
     // only call recalculateHeight if the expandedId changes and the pane is not collapsed
     if (
@@ -57,11 +56,6 @@ export default class List extends React.Component {
       expandState !== EXPAND_STATE.COLLAPSED
     ) {
       this.recalculateHeight();
-    }
-
-    // reset to default sorting, as endDate sorting is disabled
-    if (!listHasFinishedInstances && this.props.sorting.sortBy === 'endDate') {
-      this.props.onSort('workflowName');
     }
   }
 

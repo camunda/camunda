@@ -39,6 +39,14 @@ export default class ListView extends React.Component {
   }
 
   componentDidUpdate(prevProps, prevState) {
+    const listHasFinishedInstances =
+      this.props.filter.canceled || this.props.filter.completed;
+
+    // reset sorting  before fetching, if sortBy is endDate and list has no finished instances
+    if (!listHasFinishedInstances && this.state.sorting.sortBy === 'endDate') {
+      return this.setState({sorting: DEFAULT_SORTING});
+    }
+
     const hasFilterChanged = !isEqual(prevProps.filter, this.props.filter);
     const hasFirstElementChanged =
       prevState.firstElement !== this.state.firstElement;
