@@ -34,15 +34,19 @@ export async function fetchWorkflowInstancesCount(payload) {
 }
 
 export async function fetchWorkflowInstanceBySelection(payload) {
-  payload.queries[0] = {
-    ...payload.queries[0],
-    running: true,
-    active: true,
-    canceled: true,
-    completed: true,
-    finished: true,
-    incidents: true
-  };
+  let query = payload.queries[0];
+
+  if (query.ids) {
+    query = {
+      ...payload.queries[0],
+      running: true,
+      active: true,
+      canceled: true,
+      completed: true,
+      finished: true,
+      incidents: true
+    };
+  }
 
   const url = `${URL}?firstResult=${0}&maxResults=${10}`;
   const response = await post(url, {queries: [...payload.queries]});
