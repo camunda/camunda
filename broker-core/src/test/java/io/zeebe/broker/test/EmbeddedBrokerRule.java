@@ -18,6 +18,7 @@
 package io.zeebe.broker.test;
 
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.DEBUG_EXPORTER;
+import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.HTTP_EXPORTER;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.TEST_RECORDER;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setClientApiPort;
 import static io.zeebe.broker.test.EmbeddedBrokerConfigurator.setGatewayApiPort;
@@ -63,6 +64,7 @@ import org.slf4j.Logger;
 public class EmbeddedBrokerRule extends ExternalResource {
 
   private static final boolean ENABLE_DEBUG_EXPORTER = false;
+  private static final boolean ENABLE_HTTP_EXPORTER = false;
 
   private static final Consumer<BrokerCfg> DEFAULT_CONFIGURATOR = cfg -> {};
   private static final String SNAPSHOTS_DIRECTORY = "snapshots";
@@ -232,6 +234,11 @@ public class EmbeddedBrokerRule extends ExternalResource {
     if (ENABLE_DEBUG_EXPORTER) {
       DEBUG_EXPORTER.accept(brokerCfg);
     }
+
+    if (ENABLE_HTTP_EXPORTER) {
+      HTTP_EXPORTER.accept(brokerCfg);
+    }
+
     TEST_RECORDER.accept(brokerCfg);
 
     // custom configurators

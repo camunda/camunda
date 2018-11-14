@@ -54,7 +54,7 @@ public class WorkflowEventProcessors {
     addWorkflowInstanceCommandProcessor(typedProcessorBuilder, workflowEngineState);
 
     final BpmnStepProcessor bpmnStepProcessor =
-        new BpmnStepProcessor(workflowEngineState, subscriptionState, subscriptionCommandSender);
+        new BpmnStepProcessor(workflowEngineState, zeebeState, subscriptionCommandSender);
     addBpmnStepProcessor(typedProcessorBuilder, bpmnStepProcessor);
 
     addMessageStreamProcessors(

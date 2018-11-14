@@ -34,10 +34,12 @@ public class CancelProcessor implements CommandProcessor<JobRecord> {
   @Override
   public void onCommand(TypedRecord<JobRecord> command, CommandControl<JobRecord> commandControl) {
     final long jobKey = command.getKey();
+    final JobRecord job = command.getValue();
 
     if (state.exists(jobKey)) {
-      state.delete(jobKey, command.getValue());
-      commandControl.accept(JobIntent.CANCELED, command.getValue());
+      state.delete(jobKey, job);
+      commandControl.accept(JobIntent.CANCELED, job);
+
     } else {
       commandControl.reject(RejectionType.NOT_APPLICABLE, "Job does not exist");
     }

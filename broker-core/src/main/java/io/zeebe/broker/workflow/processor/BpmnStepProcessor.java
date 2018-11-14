@@ -23,8 +23,8 @@ import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
+import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
-import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionState;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElement;
 import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.state.DeployedWorkflow;
@@ -49,12 +49,11 @@ public class BpmnStepProcessor implements TypedRecordProcessor<WorkflowInstanceR
 
   public BpmnStepProcessor(
       WorkflowEngineState state,
-      WorkflowInstanceSubscriptionState subscriptionState,
+      ZeebeState zeebeState,
       SubscriptionCommandSender subscriptionCommandSender) {
     this.state = state;
     this.workflowState = state.getWorkflowState();
-    this.stepHandlers =
-        new BpmnStepHandlers(subscriptionCommandSender, workflowState, subscriptionState);
+    this.stepHandlers = new BpmnStepHandlers(subscriptionCommandSender, workflowState, zeebeState);
     this.stepGuards = new BpmnStepGuards();
     final EventOutput eventOutput = new EventOutput(state);
     this.context = new BpmnStepContext<>(eventOutput);
