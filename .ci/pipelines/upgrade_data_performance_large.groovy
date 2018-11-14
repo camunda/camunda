@@ -21,7 +21,7 @@ spec:
   volumes:
     - name: es-storage
       hostPath:
-        path: /mnt/disks/ssd0
+        path: /mnt/disks/array0
         type: Directory
     - name: cambpm-storage
       emptyDir: {}
