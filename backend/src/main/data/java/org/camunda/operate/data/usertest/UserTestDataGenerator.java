@@ -260,8 +260,6 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     jobWorkers.add(progressFlightRegistrationDetermineWeight());
     jobWorkers.add(progressSimpleTask("processPayment"));
 
-    //    final TopicSubscription updateRetriesIncidentSubscription = updateRetries();
-
     //start more instances after 1 minute
     scheduler = Executors.newScheduledThreadPool(2);
     scheduler.schedule(() ->
@@ -272,7 +270,6 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       for (JobWorker jobWorker: jobWorkers) {
         jobWorker.close();
       }
-      //      updateRetriesIncidentSubscription.close();
     }, 90, TimeUnit.SECONDS);
 
     //there is a bug in Zeebe, when cancel happens concurrently with job worker running -> we're canceling after the job workers are stopped

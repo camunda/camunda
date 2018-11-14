@@ -42,8 +42,6 @@ public class EventEntity extends OperateZeebeEntity {
    */
   private EventMetadataEntity metadata;
 
-  private String topicName;
-
   public String getWorkflowId() {
     return workflowId;
   }
@@ -124,14 +122,6 @@ public class EventEntity extends OperateZeebeEntity {
     this.metadata = metadata;
   }
 
-  public String getTopicName() {
-    return topicName;
-  }
-
-  public void setTopicName(String topicName) {
-    this.topicName = topicName;
-  }
-
   @Override
   public boolean equals(Object o) {
     if (this == o)
@@ -161,9 +151,7 @@ public class EventEntity extends OperateZeebeEntity {
       return false;
     if (payload != null ? !payload.equals(that.payload) : that.payload != null)
       return false;
-    if (metadata != null ? !metadata.equals(that.metadata) : that.metadata != null)
-      return false;
-    return topicName != null ? topicName.equals(that.topicName) : that.topicName == null;
+    return metadata != null ? metadata.equals(that.metadata) : that.metadata == null;
   }
 
   @Override
@@ -179,7 +167,6 @@ public class EventEntity extends OperateZeebeEntity {
     result = 31 * result + (dateTime != null ? dateTime.hashCode() : 0);
     result = 31 * result + (payload != null ? payload.hashCode() : 0);
     result = 31 * result + (metadata != null ? metadata.hashCode() : 0);
-    result = 31 * result + (topicName != null ? topicName.hashCode() : 0);
     return result;
   }
 }

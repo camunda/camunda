@@ -40,8 +40,6 @@ public class DevelopDataGenerator extends UserTestDataGenerator {
 
     sendMessages("clientMessage", "{\"messageVar\": \"someValue\"}", 50);
 
-    //    final TopicSubscription updateRetriesIncidentSubscription = updateRetries();
-
   }
 
   private void sendMessages(String messageName, String payload, int count) {

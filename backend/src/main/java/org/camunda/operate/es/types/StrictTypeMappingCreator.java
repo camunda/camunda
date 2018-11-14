@@ -14,7 +14,6 @@ public abstract class StrictTypeMappingCreator implements TypeMappingCreator {
 
   public static final String PARTITION_ID = "partitionId";
   public static final String POSITION = "position";
-  public static final String TOPIC_NAME = "topicName";
 
   @Override
   public XContentBuilder getSource() throws IOException {

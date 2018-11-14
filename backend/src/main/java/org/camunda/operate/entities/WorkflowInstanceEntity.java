@@ -23,8 +23,6 @@ public class WorkflowInstanceEntity extends OperateZeebeEntity {
 
   private long position;
 
-  private String topicName;
-
   private List<IncidentEntity> incidents = new ArrayList<>();
 
   private List<ActivityInstanceEntity> activities = new ArrayList<>();
@@ -174,14 +172,6 @@ public class WorkflowInstanceEntity extends OperateZeebeEntity {
     this.position = position;
   }
 
-  public String getTopicName() {
-    return topicName;
-  }
-
-  public void setTopicName(String topicName) {
-    this.topicName = topicName;
-  }
-
   @Override
   public boolean equals(Object o) {
     if (this == o)
@@ -208,8 +198,6 @@ public class WorkflowInstanceEntity extends OperateZeebeEntity {
     if (state != that.state)
       return false;
     if (bpmnProcessId != null ? !bpmnProcessId.equals(that.bpmnProcessId) : that.bpmnProcessId != null)
-      return false;
-    if (topicName != null ? !topicName.equals(that.topicName) : that.topicName != null)
       return false;
     if (incidents != null ? !incidents.equals(that.incidents) : that.incidents != null)
       return false;
@@ -239,7 +227,6 @@ public class WorkflowInstanceEntity extends OperateZeebeEntity {
     result = 31 * result + (state != null ? state.hashCode() : 0);
     result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
     result = 31 * result + (int) (position ^ (position >>> 32));
-    result = 31 * result + (topicName != null ? topicName.hashCode() : 0);
     result = 31 * result + (incidents != null ? incidents.hashCode() : 0);
     result = 31 * result + (activities != null ? activities.hashCode() : 0);
     result = 31 * result + (operations != null ? operations.hashCode() : 0);

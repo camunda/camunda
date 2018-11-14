@@ -6,7 +6,6 @@ camunda.bpm.operate:
     dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
   zeebe:
     brokerContactPoint: localhost:26500
-    topics:
     worker: operate
   zeebeElasticsearch:
     clusterName: elasticsearch

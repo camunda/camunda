@@ -7,8 +7,6 @@ camunda.bpm.operate:
     dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
   zeebe:
     brokerContactPoint: localhost:26500
-    topics:
-      - new-topic
     worker: operate
   zeebeElasticsearch:
     clusterName: docker-cluster
@@ -30,8 +28,6 @@ camunda.bpm.operate:
     dateFormat: yyyy-MM-dd'T'HH:mm:ss.SSSZ
   zeebe:
     brokerContactPoint: zeebe:26500
-    topics:
-      - new-topic
     worker: operate
   zeebeElasticsearch:
     clusterName: docker-cluster

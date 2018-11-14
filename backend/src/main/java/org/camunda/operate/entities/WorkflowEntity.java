@@ -9,7 +9,6 @@ public class WorkflowEntity extends OperateZeebeEntity {
   private String bpmnXml;
   private String resourceName;
   private long position;
-  private String topicName;
 
   public String getName() {
     return name;
@@ -59,14 +58,6 @@ public class WorkflowEntity extends OperateZeebeEntity {
     this.position = position;
   }
 
-  public String getTopicName() {
-    return topicName;
-  }
-
-  public void setTopicName(String topicName) {
-    this.topicName = topicName;
-  }
-
   @Override
   public boolean equals(Object o) {
     if (this == o)
@@ -88,9 +79,7 @@ public class WorkflowEntity extends OperateZeebeEntity {
       return false;
     if (bpmnXml != null ? !bpmnXml.equals(that.bpmnXml) : that.bpmnXml != null)
       return false;
-    if (resourceName != null ? !resourceName.equals(that.resourceName) : that.resourceName != null)
-      return false;
-    return topicName != null ? topicName.equals(that.topicName) : that.topicName == null;
+    return resourceName != null ? resourceName.equals(that.resourceName) : that.resourceName == null;
   }
 
   @Override
@@ -102,14 +91,13 @@ public class WorkflowEntity extends OperateZeebeEntity {
     result = 31 * result + (bpmnXml != null ? bpmnXml.hashCode() : 0);
     result = 31 * result + (resourceName != null ? resourceName.hashCode() : 0);
     result = 31 * result + (int) (position ^ (position >>> 32));
-    result = 31 * result + (topicName != null ? topicName.hashCode() : 0);
     return result;
   }
 
   @Override
   public String toString() {
     return "WorkflowEntity{" + "name='" + name + '\'' + ", version=" + version + ", bpmnProcessId='" + bpmnProcessId + '\'' + ", bpmnXml='" + bpmnXml + '\''
-      + ", resourceName='" + resourceName + '\'' + ", position=" + position + ", topicName='" + topicName + '\'' + "} " + super
+      + ", resourceName='" + resourceName + '\'' + ", position=" + position + "} " + super
       .toString();
   }
 }
