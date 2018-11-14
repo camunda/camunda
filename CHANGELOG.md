@@ -1,3 +1,15 @@
+<a name="0.13.1"></a>
+## 0.13.1 (2018-11-14)
+
+
+#### Bug Fixes
+
+* **broker-core:**  fix job state on cancel command ([2c469450](https://github.com/zeebe-io/zeebe/commit/2c4694508ff435a2d403dde8531b99ed71ac384e))
+* **clients/java:**  fix default job poll interval and message ttl ([c36fff84](https://github.com/zeebe-io/zeebe/commit/c36fff8437772fa8a7bd1d7600572607a7de9cb8))
+* **exporters/elasticsearch:**  delayed flush should ignore bulk size ([6a4947e2](https://github.com/zeebe-io/zeebe/commit/6a4947e2f652f9765d29c8c651e0a198523c7910))
+
+
+
 <a name="0.13.0"></a>
 ## 0.13.0 (2018-11-06)
 
