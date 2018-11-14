@@ -31,6 +31,9 @@ public class EventIT extends OperateZeebeIntegrationTest {
   @Qualifier("workflowInstanceIsCompletedCheck")
   private Predicate<Object[]> workflowInstanceIsCompletedCheck;
 
+  @Autowired
+  @Qualifier("activityIsCompletedCheck")
+  private Predicate<Object[]> activityIsCompletedCheck;
 
   private OffsetDateTime testStartTime;
 
@@ -72,6 +75,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
     completeTask(workflowInstanceId, taskC, taskCPayload);
 
     elasticsearchTestRule.processAllEventsAndWait(workflowInstanceIsCompletedCheck, workflowInstanceId);
+    elasticsearchTestRule.processAllEventsAndWait(activityIsCompletedCheck, workflowInstanceId, taskC);
 
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
