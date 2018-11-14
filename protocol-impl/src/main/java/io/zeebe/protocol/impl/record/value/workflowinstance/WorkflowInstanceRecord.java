@@ -144,4 +144,14 @@ public class WorkflowInstanceRecord extends UnpackedObject {
     payloadProp.setValue(payload, offset, length);
     return this;
   }
+
+  public void wrap(WorkflowInstanceRecord record) {
+    elementIdProp.setValue(record.getElementId());
+    bpmnProcessIdProp.setValue(record.getBpmnProcessId());
+    payloadProp.setValue(record.getPayload());
+    scopeInstanceKey.setValue(record.getScopeInstanceKey());
+    versionProp.setValue(record.getVersion());
+    workflowKeyProp.setValue(record.getWorkflowKey());
+    workflowInstanceKeyProp.setValue(record.getWorkflowInstanceKey());
+  }
 }

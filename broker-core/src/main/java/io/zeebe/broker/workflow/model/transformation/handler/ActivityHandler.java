@@ -18,7 +18,7 @@
 package io.zeebe.broker.workflow.model.transformation.handler;
 
 import io.zeebe.broker.workflow.model.BpmnStep;
-import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
+import io.zeebe.broker.workflow.model.element.ExecutableActivity;
 import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
@@ -26,7 +26,6 @@ import io.zeebe.model.bpmn.instance.Activity;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class ActivityHandler implements ModelElementTransformer<Activity> {
-
   @Override
   public Class<Activity> getType() {
     return Activity.class;
@@ -35,19 +34,16 @@ public class ActivityHandler implements ModelElementTransformer<Activity> {
   @Override
   public void transform(Activity element, TransformContext context) {
     final ExecutableWorkflow workflow = context.getCurrentWorkflow();
-    final ExecutableFlowNode activity =
-        workflow.getElementById(element.getId(), ExecutableFlowNode.class);
+    final ExecutableActivity activity =
+        workflow.getElementById(element.getId(), ExecutableActivity.class);
 
-    bindLifecycle(context, activity);
-  }
-
-  private void bindLifecycle(TransformContext context, final ExecutableFlowNode activity) {
-    activity.bindLifecycleState(WorkflowInstanceIntent.ELEMENT_READY, BpmnStep.APPLY_INPUT_MAPPING);
-    // ACTIVATED is bound per activity type
+    activity.bindLifecycleState(WorkflowInstanceIntent.ELEMENT_READY, BpmnStep.ACTIVATE_ACTIVITY);
     activity.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.APPLY_OUTPUT_MAPPING);
+        WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.COMPLETE_ACTIVITY);
     activity.bindLifecycleState(
         WorkflowInstanceIntent.ELEMENT_COMPLETED, context.getCurrentFlowNodeOutgoingStep());
+    activity.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.TERMINATE_ACTIVITY);
     activity.bindLifecycleState(
         WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.PROPAGATE_TERMINATION);
   }

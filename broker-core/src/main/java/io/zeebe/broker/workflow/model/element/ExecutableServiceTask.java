@@ -21,7 +21,7 @@ import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.util.buffer.BufferUtil;
 import org.agrona.DirectBuffer;
 
-public class ExecutableServiceTask extends ExecutableFlowNode {
+public class ExecutableServiceTask extends ExecutableActivity {
 
   private DirectBuffer type;
   private int retries;

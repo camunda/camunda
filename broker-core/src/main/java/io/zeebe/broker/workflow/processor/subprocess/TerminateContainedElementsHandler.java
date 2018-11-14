@@ -28,7 +28,6 @@ import java.util.List;
 
 public class TerminateContainedElementsHandler
     implements BpmnStepHandler<ExecutableFlowElementContainer> {
-
   private final WorkflowState workflowState;
 
   public TerminateContainedElementsHandler(final WorkflowState workflowState) {
@@ -36,28 +35,30 @@ public class TerminateContainedElementsHandler
   }
 
   @Override
-  public void handle(final BpmnStepContext<ExecutableFlowElementContainer> context) {
-    final ElementInstance subProcessInstance = context.getElementInstance();
-
+  public void handle(BpmnStepContext<ExecutableFlowElementContainer> context) {
+    final ElementInstance elementInstance = context.getElementInstance();
+    final EventOutput output = context.getOutput();
     final List<ElementInstance> children =
-        workflowState.getElementInstanceState().getChildren(subProcessInstance.getKey());
-    final EventOutput streamWriter = context.getOutput();
+        workflowState.getElementInstanceState().getChildren(elementInstance.getKey());
+
+    context.getCatchEventOutput().unsubscribeFromCatchEvents(context);
 
     if (children.isEmpty()) {
-      streamWriter.appendFollowUpEvent(
+      if (elementInstance.isInterrupted()) {
+        context
+            .getCatchEventOutput()
+            .triggerBoundaryEventFromInterruptedElement(elementInstance, output.getStreamWriter());
+      }
+
+      output.appendFollowUpEvent(
           context.getRecord().getKey(),
           WorkflowInstanceIntent.ELEMENT_TERMINATED,
           context.getValue());
     } else {
-
-      for (int i = 0; i < children.size(); i++) {
-        final ElementInstance child = children.get(i);
-
+      for (final ElementInstance child : children) {
         if (child.canTerminate()) {
-          context
-              .getOutput()
-              .appendFollowUpEvent(
-                  child.getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATING, child.getValue());
+          output.appendFollowUpEvent(
+              child.getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATING, child.getValue());
         }
       }
     }

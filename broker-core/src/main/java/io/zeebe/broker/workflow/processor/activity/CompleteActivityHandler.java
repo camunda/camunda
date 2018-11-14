@@ -15,10 +15,16 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.processor;
+package io.zeebe.broker.workflow.processor.activity;
 
-import io.zeebe.broker.workflow.model.element.ExecutableFlowElement;
+import io.zeebe.broker.workflow.model.element.ExecutableActivity;
+import io.zeebe.broker.workflow.processor.BpmnStepContext;
+import io.zeebe.broker.workflow.processor.flownode.CompleteFlowNodeHandler;
 
-public interface BpmnStepHandler<T extends ExecutableFlowElement> {
-  void handle(BpmnStepContext<T> context);
+public class CompleteActivityHandler extends CompleteFlowNodeHandler<ExecutableActivity> {
+  @Override
+  public void complete(BpmnStepContext<? extends ExecutableActivity> context) {
+    super.complete(context);
+    context.getCatchEventOutput().unsubscribeFromCatchEvents(context);
+  }
 }

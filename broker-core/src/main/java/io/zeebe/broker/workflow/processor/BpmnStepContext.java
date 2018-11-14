@@ -26,6 +26,7 @@ import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriterImpl;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElement;
 import io.zeebe.broker.workflow.state.ElementInstance;
+import io.zeebe.msgpack.mapping.MsgPackMergeTool;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
@@ -33,19 +34,23 @@ import java.util.function.Consumer;
 
 public class BpmnStepContext<T extends ExecutableFlowElement> {
 
+  private final IncidentRecord incidentCommand = new IncidentRecord();
+  private final EventOutput eventOutput;
+  private final MsgPackMergeTool mergeTool;
+  private final CatchEventOutput catchEventOutput;
+
   private TypedRecord<WorkflowInstanceRecord> record;
   private ExecutableFlowElement element;
   private TypedCommandWriter commandWriter;
-  private final EventOutput eventOutput;
   private Consumer<SideEffectProducer> sideEffect;
 
   private ElementInstance flowScopeInstance;
   private ElementInstance elementInstance;
 
-  private final IncidentRecord incidentCommand = new IncidentRecord();
-
-  public BpmnStepContext(final EventOutput eventOutput) {
+  public BpmnStepContext(EventOutput eventOutput, CatchEventOutput catchEventOutput) {
     this.eventOutput = eventOutput;
+    this.mergeTool = new MsgPackMergeTool(4096);
+    this.catchEventOutput = catchEventOutput;
   }
 
   public TypedRecord<WorkflowInstanceRecord> getRecord() {
@@ -81,8 +86,16 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
     this.commandWriter = streamWriter;
   }
 
+  public MsgPackMergeTool getMergeTool() {
+    return mergeTool;
+  }
+
   public TypedCommandWriter getCommandWriter() {
     return commandWriter;
+  }
+
+  public CatchEventOutput getCatchEventOutput() {
+    return catchEventOutput;
   }
 
   public ElementInstance getFlowScopeInstance() {
@@ -114,8 +127,7 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
     return sideEffect;
   }
 
-  public void raiseIncident(final ErrorType errorType, final String errorMessage) {
-
+  public void raiseIncident(ErrorType errorType, String errorMessage) {
     incidentCommand.reset();
 
     incidentCommand

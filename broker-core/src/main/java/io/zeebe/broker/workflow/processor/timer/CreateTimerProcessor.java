@@ -55,6 +55,7 @@ public class CreateTimerProcessor implements TypedRecordProcessor<TimerRecord> {
     timerInstance.setElementInstanceKey(timer.getElementInstanceKey());
     timerInstance.setDueDate(timer.getDueDate());
     timerInstance.setKey(timerKey);
+    timerInstance.setHandlerNodeId(timer.getHandlerNodeId());
 
     sideEffect.accept(this::scheduleTimer);
 

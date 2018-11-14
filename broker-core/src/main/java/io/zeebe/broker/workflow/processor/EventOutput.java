@@ -25,7 +25,6 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceReco
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class EventOutput {
-
   private final WorkflowEngineState materializedState;
 
   private TypedStreamWriter streamWriter;

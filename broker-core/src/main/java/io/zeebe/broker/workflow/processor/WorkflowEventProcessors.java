@@ -53,8 +53,10 @@ public class WorkflowEventProcessors {
 
     addWorkflowInstanceCommandProcessor(typedProcessorBuilder, workflowEngineState);
 
+    final CatchEventOutput catchEventOutput =
+        new CatchEventOutput(zeebeState, subscriptionCommandSender);
     final BpmnStepProcessor bpmnStepProcessor =
-        new BpmnStepProcessor(workflowEngineState, zeebeState, subscriptionCommandSender);
+        new BpmnStepProcessor(workflowEngineState, zeebeState, catchEventOutput);
     addBpmnStepProcessor(typedProcessorBuilder, bpmnStepProcessor);
 
     addMessageStreamProcessors(
@@ -120,6 +122,14 @@ public class WorkflowEventProcessors {
         .onEvent(
             ValueType.WORKFLOW_INSTANCE,
             WorkflowInstanceIntent.ELEMENT_TERMINATED,
+            bpmnStepProcessor)
+        .onEvent(
+            ValueType.WORKFLOW_INSTANCE,
+            WorkflowInstanceIntent.CATCH_EVENT_TRIGGERING,
+            bpmnStepProcessor)
+        .onEvent(
+            ValueType.WORKFLOW_INSTANCE,
+            WorkflowInstanceIntent.CATCH_EVENT_TRIGGERED,
             bpmnStepProcessor);
   }
 

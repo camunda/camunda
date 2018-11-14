@@ -17,48 +17,14 @@
  */
 package io.zeebe.broker.workflow.processor.message;
 
-import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
-import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
-import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionState;
-import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
+import io.zeebe.broker.workflow.model.element.ExecutableIntermediateCatchElement;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
-import io.zeebe.broker.workflow.processor.flownode.TerminateElementHandler;
-import io.zeebe.broker.workflow.state.WorkflowInstanceSubscription;
-import io.zeebe.util.sched.clock.ActorClock;
+import io.zeebe.broker.workflow.processor.flownode.TerminateFlowNodeHandler;
 
-public class TerminateIntermediateMessageHandler extends TerminateElementHandler {
-
-  private final WorkflowInstanceSubscriptionState subscriptionState;
-  private final SubscriptionCommandSender subscriptionCommandSender;
-
-  private WorkflowInstanceSubscription subscription;
-
-  public TerminateIntermediateMessageHandler(
-      final WorkflowInstanceSubscriptionState subscriptionState,
-      final SubscriptionCommandSender subscriptionCommandSender) {
-    this.subscriptionState = subscriptionState;
-    this.subscriptionCommandSender = subscriptionCommandSender;
-  }
-
+public class TerminateIntermediateMessageHandler
+    extends TerminateFlowNodeHandler<ExecutableIntermediateCatchElement> {
   @Override
-  protected void addTerminatingRecords(
-      final BpmnStepContext<ExecutableFlowNode> context, final TypedStreamWriter batch) {
-
-    final long elementInstanceKey = context.getElementInstance().getKey();
-
-    subscription = subscriptionState.getSubscription(elementInstanceKey);
-
-    if (subscription != null) {
-      context.getSideEffect().accept(this::sendSubscriptionCommand);
-
-      subscriptionState.updateToClosingState(subscription, ActorClock.currentTimeMillis());
-    }
-  }
-
-  private boolean sendSubscriptionCommand() {
-    return subscriptionCommandSender.closeMessageSubscription(
-        subscription.getSubscriptionPartitionId(),
-        subscription.getWorkflowInstanceKey(),
-        subscription.getElementInstanceKey());
+  protected void terminate(BpmnStepContext<ExecutableIntermediateCatchElement> context) {
+    context.getCatchEventOutput().unsubscribeFromMessageEvent(context);
   }
 }

@@ -15,31 +15,32 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.processor.gateway;
+package io.zeebe.broker.workflow.processor.boundary;
 
-import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
-import io.zeebe.broker.workflow.model.element.ExecutableSequenceFlow;
+import io.zeebe.broker.incident.data.ErrorType;
+import io.zeebe.broker.workflow.model.element.ExecutableBoundaryEvent;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.BpmnStepHandler;
-import io.zeebe.broker.workflow.processor.EventOutput;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
+import io.zeebe.broker.workflow.processor.flownode.IOMappingHelper;
+import io.zeebe.msgpack.mapping.MappingException;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import java.util.List;
 
-public class ParallelSplitHandler implements BpmnStepHandler<ExecutableFlowNode> {
+public class TriggerBoundaryEventHandler implements BpmnStepHandler<ExecutableBoundaryEvent> {
+  private final IOMappingHelper ioMappingHelper = new IOMappingHelper();
 
   @Override
-  public void handle(final BpmnStepContext<ExecutableFlowNode> context) {
-    final ExecutableFlowNode element = context.getElement();
-    final WorkflowInstanceRecord value = context.getValue();
+  public void handle(BpmnStepContext<ExecutableBoundaryEvent> context) {
+    try {
+      ioMappingHelper.applyOutputMappings(context);
 
-    final List<ExecutableSequenceFlow> outgoingFlows = element.getOutgoing();
-
-    final EventOutput eventOutput = context.getOutput();
-
-    for (final ExecutableSequenceFlow flow : outgoingFlows) {
-      value.setElementId(flow.getId());
-      eventOutput.appendNewEvent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, value);
+      context
+          .getOutput()
+          .appendFollowUpEvent(
+              context.getRecord().getKey(),
+              WorkflowInstanceIntent.CATCH_EVENT_TRIGGERED,
+              context.getValue());
+    } catch (MappingException e) {
+      context.raiseIncident(ErrorType.IO_MAPPING_ERROR, e.getMessage());
     }
   }
 }

@@ -17,25 +17,15 @@
  */
 package io.zeebe.broker.workflow.processor.activity;
 
-import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
+import io.zeebe.broker.workflow.model.element.ExecutableActivity;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
-import io.zeebe.broker.workflow.processor.BpmnStepHandler;
-import io.zeebe.broker.workflow.state.ElementInstance;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.broker.workflow.processor.flownode.TerminateFlowNodeHandler;
 
-public class PropagateTerminationHandler implements BpmnStepHandler<ExecutableFlowNode> {
-
+public class TerminateActivityHandler<T extends ExecutableActivity>
+    extends TerminateFlowNodeHandler<T> {
   @Override
-  public void handle(BpmnStepContext<ExecutableFlowNode> context) {
-    final ElementInstance flowScopeInstance = context.getFlowScopeInstance();
-
-    if (flowScopeInstance.getNumberOfActiveElementInstances() == 0) {
-      context
-          .getOutput()
-          .appendFollowUpEvent(
-              flowScopeInstance.getKey(),
-              WorkflowInstanceIntent.ELEMENT_TERMINATED,
-              flowScopeInstance.getValue());
-    }
+  protected void terminate(BpmnStepContext<T> context) {
+    super.terminate(context);
+    context.getCatchEventOutput().unsubscribeFromCatchEvents(context);
   }
 }
