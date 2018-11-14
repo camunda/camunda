@@ -186,13 +186,10 @@
       <version>${slf4j.version}</version>
     </dependency>
     <!-- needed for elasticsearch logs to be available over slf4j -->
-    <!-- Fix error message Status Log4j2 could not find a logging implementation.
-      The error comes from the elasticsearch java client. So this can be removed
-      as soon as this dependency is not needed anymore.-->
     <dependency>
-      <groupId>org.slf4j</groupId>
-      <artifactId>log4j-over-slf4j</artifactId>
-      <version>${slf4j.version}</version>
+      <groupId>org.apache.logging.log4j</groupId>
+      <artifactId>log4j-to-slf4j</artifactId>
+      <version>${elasticsearch.log4j.version}</version>
     </dependency>
 
     <dependency>
@@ -251,13 +248,6 @@
     </dependency>
 
     <!--testing-->
-    <dependency>
-      <groupId>org.apache.logging.log4j</groupId>
-      <artifactId>log4j-core</artifactId>
-      <version>${elasticsearch.log4j.version}</version>
-      <scope>test</scope>
-    </dependency>
-
     <dependency>
       <groupId>pl.pragmatists</groupId>
       <artifactId>JUnitParams</artifactId>

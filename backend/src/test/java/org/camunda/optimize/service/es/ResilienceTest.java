@@ -3,7 +3,6 @@ package org.camunda.optimize.service.es;
 
 import org.camunda.optimize.dto.optimize.query.status.ConnectionStatusDto;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
-import org.camunda.optimize.websocket.AssertHasChangedStatusClientSocket;
 import org.elasticsearch.cluster.health.ClusterHealthStatus;
 import org.elasticsearch.common.settings.Settings;
 import org.elasticsearch.node.InternalSettingsPreparer;
@@ -14,6 +13,7 @@ import org.elasticsearch.transport.Netty4Plugin;
 import org.glassfish.jersey.client.ClientProperties;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runners.model.TestTimedOutException;
 import org.slf4j.Logger;
@@ -25,7 +25,6 @@ import javax.ws.rs.core.Response;
 import java.io.File;
 import java.io.IOException;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -89,6 +88,8 @@ public class ResilienceTest {
     }
   }
 
+  // FIXME this test, see OPT-1627
+  @Ignore
   @Test
   public void testCrashOfEsDuringRuntime () throws Exception {
     //given
