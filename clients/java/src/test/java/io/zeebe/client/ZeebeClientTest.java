@@ -15,7 +15,10 @@
  */
 package io.zeebe.client;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import io.zeebe.client.util.ClientTest;
+import java.time.Duration;
 import org.junit.Test;
 
 public class ZeebeClientTest extends ClientTest {
@@ -24,5 +27,23 @@ public class ZeebeClientTest extends ClientTest {
   public void shouldNotFailIfClosedTwice() {
     client.close();
     client.close();
+  }
+
+  @Test
+  public void shouldHaveDefaultValues() {
+    // given
+    try (ZeebeClient client = ZeebeClient.newClient()) {
+      // when
+      final ZeebeClientConfiguration configuration = client.getConfiguration();
+
+      // then
+      assertThat(configuration.getBrokerContactPoint()).isEqualTo("0.0.0.0:26500");
+      assertThat(configuration.getDefaultJobWorkerBufferSize()).isEqualTo(32);
+      assertThat(configuration.getNumJobWorkerExecutionThreads()).isEqualTo(1);
+      assertThat(configuration.getDefaultJobWorkerName()).isEqualTo("default");
+      assertThat(configuration.getDefaultJobTimeout()).isEqualTo(Duration.ofMinutes(5));
+      assertThat(configuration.getDefaultJobPollInterval()).isEqualTo(Duration.ofMillis(100));
+      assertThat(configuration.getDefaultMessageTimeToLive()).isEqualTo(Duration.ofHours(1));
+    }
   }
 }
