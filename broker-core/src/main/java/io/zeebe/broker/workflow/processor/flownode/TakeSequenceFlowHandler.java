@@ -34,6 +34,6 @@ public class TakeSequenceFlowHandler implements BpmnStepHandler<ExecutableFlowNo
     final WorkflowInstanceRecord value = context.getValue();
     value.setElementId(sequenceFlow.getId());
 
-    context.getOutput().writeNewEvent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, value);
+    context.getOutput().appendNewEvent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, value);
   }
 }

@@ -49,9 +49,9 @@ public class OpenMessageSubscriptionProcessor
   private MessageSubscription subscription;
 
   public OpenMessageSubscriptionProcessor(
-      MessageState messageState,
-      MessageSubscriptionState subscriptionState,
-      SubscriptionCommandSender commandSender) {
+      final MessageState messageState,
+      final MessageSubscriptionState subscriptionState,
+      final SubscriptionCommandSender commandSender) {
     this.messageState = messageState;
     this.subscriptionState = subscriptionState;
     this.commandSender = commandSender;
@@ -59,10 +59,10 @@ public class OpenMessageSubscriptionProcessor
 
   @Override
   public void processRecord(
-      TypedRecord<MessageSubscriptionRecord> record,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter,
-      Consumer<SideEffectProducer> sideEffect) {
+      final TypedRecord<MessageSubscriptionRecord> record,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter,
+      final Consumer<SideEffectProducer> sideEffect) {
     this.sideEffect = sideEffect;
     subscriptionRecord = record.getValue();
 
@@ -70,7 +70,7 @@ public class OpenMessageSubscriptionProcessor
         subscriptionRecord.getElementInstanceKey())) {
       sideEffect.accept(this::sendAcknowledgeCommand);
 
-      streamWriter.writeRejection(
+      streamWriter.appendRejection(
           record, RejectionType.NOT_APPLICABLE, "subscription is already open");
       return;
     }
@@ -79,7 +79,7 @@ public class OpenMessageSubscriptionProcessor
   }
 
   private void handleNewSubscription(
-      TypedRecord<MessageSubscriptionRecord> record, TypedStreamWriter streamWriter) {
+      final TypedRecord<MessageSubscriptionRecord> record, final TypedStreamWriter streamWriter) {
 
     sideEffect.accept(this::sendAcknowledgeCommand);
 
@@ -96,11 +96,11 @@ public class OpenMessageSubscriptionProcessor
         subscriptionRecord.getCorrelationKey(),
         this::correlateMessage);
 
-    streamWriter.writeFollowUpEvent(
+    streamWriter.appendFollowUpEvent(
         record.getKey(), MessageSubscriptionIntent.OPENED, subscriptionRecord);
   }
 
-  private boolean correlateMessage(Message message) {
+  private boolean correlateMessage(final Message message) {
     // correlate the first message which is not correlated to the workflow instance yet
 
     final boolean isCorrelatedBefore =

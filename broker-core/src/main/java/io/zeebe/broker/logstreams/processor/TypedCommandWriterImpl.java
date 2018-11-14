@@ -19,10 +19,8 @@ package io.zeebe.broker.logstreams.processor;
 
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.logstreams.log.LogStreamBatchWriter;
+import io.zeebe.logstreams.log.LogStreamBatchWriter.LogEntryBuilder;
 import io.zeebe.logstreams.log.LogStreamBatchWriterImpl;
-import io.zeebe.logstreams.log.LogStreamRecordWriter;
-import io.zeebe.logstreams.log.LogStreamWriter;
-import io.zeebe.logstreams.log.LogStreamWriterImpl;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.protocol.Protocol;
 import io.zeebe.protocol.clientapi.RecordType;
@@ -41,30 +39,27 @@ public class TypedCommandWriterImpl implements TypedCommandWriter {
   protected final Map<Class<? extends UnpackedObject>, ValueType> typeRegistry;
   protected final LogStream stream;
 
-  protected LogStreamRecordWriter writer;
   protected LogStreamBatchWriter batchWriter;
 
   protected int producerId;
   protected long sourceRecordPosition = -1;
 
-  protected LogStreamWriter stagedWriter;
-
   public TypedCommandWriterImpl(
-      LogStream stream, Map<ValueType, Class<? extends UnpackedObject>> eventRegistry) {
+      final LogStream stream, final Map<ValueType, Class<? extends UnpackedObject>> eventRegistry) {
     this.stream = stream;
     metadata.protocolVersion(Protocol.PROTOCOL_VERSION);
-    this.writer = new LogStreamWriterImpl(stream);
     this.batchWriter = new LogStreamBatchWriterImpl(stream);
     this.typeRegistry = new HashMap<>();
     eventRegistry.forEach((e, c) -> typeRegistry.put(c, e));
   }
 
-  public void configureSourceContext(int producerId, long sourceRecordPosition) {
+  public void configureSourceContext(final int producerId, final long sourceRecordPosition) {
     this.producerId = producerId;
     this.sourceRecordPosition = sourceRecordPosition;
   }
 
-  protected void initMetadata(RecordType type, Intent intent, UnpackedObject value) {
+  protected void initMetadata(
+      final RecordType type, final Intent intent, final UnpackedObject value) {
     metadata.reset();
     final ValueType valueType = typeRegistry.get(value.getClass());
     if (valueType == null) {
@@ -77,31 +72,28 @@ public class TypedCommandWriterImpl implements TypedCommandWriter {
     metadata.intent(intent);
   }
 
-  protected void writeRecord(
-      long key,
-      RecordType type,
-      Intent intent,
-      UnpackedObject value,
-      Consumer<RecordMetadata> additionalMetadata) {
-    writeRecord(key, type, intent, RejectionType.NULL_VAL, "", value, additionalMetadata);
+  protected void appendRecord(
+      final long key,
+      final RecordType type,
+      final Intent intent,
+      final UnpackedObject value,
+      final Consumer<RecordMetadata> additionalMetadata) {
+    appendRecord(key, type, intent, RejectionType.NULL_VAL, "", value, additionalMetadata);
   }
 
-  protected void writeRecord(
-      long key,
-      RecordType type,
-      Intent intent,
-      RejectionType rejectionType,
-      String rejectionReason,
-      UnpackedObject value,
-      Consumer<RecordMetadata> additionalMetadata) {
-
-    stagedWriter = writer;
-
-    writer.reset();
-    writer.producerId(producerId);
+  protected void appendRecord(
+      final long key,
+      final RecordType type,
+      final Intent intent,
+      final RejectionType rejectionType,
+      final String rejectionReason,
+      final UnpackedObject value,
+      final Consumer<RecordMetadata> additionalMetadata) {
+    final LogEntryBuilder event = batchWriter.event();
+    batchWriter.producerId(producerId);
 
     if (sourceRecordPosition >= 0) {
-      writer.sourceRecordPosition(sourceRecordPosition);
+      batchWriter.sourceRecordPosition(sourceRecordPosition);
     }
 
     initMetadata(type, intent, value);
@@ -110,40 +102,44 @@ public class TypedCommandWriterImpl implements TypedCommandWriter {
     additionalMetadata.accept(metadata);
 
     if (key >= 0) {
-      writer.key(key);
+      event.key(key);
     } else {
-      writer.keyNull();
+      if (type == RecordType.EVENT) {
+        event.positionAsKey();
+      } else {
+        event.keyNull();
+      }
     }
 
-    writer.metadataWriter(metadata).valueWriter(value);
+    event.metadataWriter(metadata).valueWriter(value).done();
   }
 
   @Override
-  public void writeNewCommand(Intent intent, UnpackedObject value) {
-    writeRecord(-1, RecordType.COMMAND, intent, value, noop);
+  public void appendNewCommand(final Intent intent, final UnpackedObject value) {
+    appendRecord(-1, RecordType.COMMAND, intent, value, noop);
   }
 
   @Override
-  public void writeFollowUpCommand(long key, Intent intent, UnpackedObject value) {
-    writeRecord(key, RecordType.COMMAND, intent, value, noop);
+  public void appendFollowUpCommand(
+      final long key, final Intent intent, final UnpackedObject value) {
+    appendRecord(key, RecordType.COMMAND, intent, value, noop);
   }
 
   @Override
-  public void writeFollowUpCommand(
-      long key, Intent intent, UnpackedObject value, Consumer<RecordMetadata> metadata) {
-    writeRecord(key, RecordType.COMMAND, intent, value, metadata);
+  public void appendFollowUpCommand(
+      final long key,
+      final Intent intent,
+      final UnpackedObject value,
+      final Consumer<RecordMetadata> metadata) {
+    appendRecord(key, RecordType.COMMAND, intent, value, metadata);
   }
 
   public void reset() {
-    stagedWriter = null;
+    batchWriter.reset();
   }
 
   @Override
   public long flush() {
-    if (stagedWriter != null) {
-      return stagedWriter.tryWrite();
-    } else {
-      return 0L;
-    }
+    return batchWriter.tryWrite();
   }
 }

@@ -31,26 +31,26 @@ public class CancelTimerProcessor implements TypedRecordProcessor<TimerRecord> {
 
   private final WorkflowState workflowState;
 
-  public CancelTimerProcessor(WorkflowState workflowState) {
+  public CancelTimerProcessor(final WorkflowState workflowState) {
     this.workflowState = workflowState;
   }
 
   @Override
   public void processRecord(
-      TypedRecord<TimerRecord> record,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter) {
+      final TypedRecord<TimerRecord> record,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter) {
 
     final TimerRecord timer = record.getValue();
 
     final TimerInstance timerInstance =
         workflowState.getTimerState().get(timer.getElementInstanceKey());
     if (timerInstance == null) {
-      streamWriter.writeRejection(
+      streamWriter.appendRejection(
           record, RejectionType.NOT_APPLICABLE, "timer is already triggered or canceled");
 
     } else {
-      streamWriter.writeFollowUpEvent(record.getKey(), TimerIntent.CANCELED, timer);
+      streamWriter.appendFollowUpEvent(record.getKey(), TimerIntent.CANCELED, timer);
 
       workflowState.getTimerState().remove(timerInstance);
     }

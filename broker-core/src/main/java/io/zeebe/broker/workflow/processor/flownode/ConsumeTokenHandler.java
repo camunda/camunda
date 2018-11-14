@@ -39,7 +39,7 @@ public class ConsumeTokenHandler implements BpmnStepHandler<ExecutableFlowNode> 
 
       context
           .getOutput()
-          .writeFollowUpEvent(
+          .appendFollowUpEvent(
               scopeInstanceKey, WorkflowInstanceIntent.ELEMENT_COMPLETING, scopeInstanceValue);
     }
   }

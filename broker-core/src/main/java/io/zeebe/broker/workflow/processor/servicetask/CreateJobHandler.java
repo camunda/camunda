@@ -30,7 +30,7 @@ public class CreateJobHandler implements BpmnStepHandler<ExecutableServiceTask> 
   private final JobRecord jobCommand = new JobRecord();
 
   @Override
-  public void handle(BpmnStepContext<ExecutableServiceTask> context) {
+  public void handle(final BpmnStepContext<ExecutableServiceTask> context) {
 
     final WorkflowInstanceRecord value = context.getValue();
     final ExecutableServiceTask serviceTask = context.getElement();
@@ -52,6 +52,6 @@ public class CreateJobHandler implements BpmnStepHandler<ExecutableServiceTask> 
     final DirectBuffer headers = serviceTask.getEncodedHeaders();
     jobCommand.setCustomHeaders(headers);
 
-    context.getCommandWriter().writeNewCommand(JobIntent.CREATE, jobCommand);
+    context.getCommandWriter().appendNewCommand(JobIntent.CREATE, jobCommand);
   }
 }

@@ -44,7 +44,7 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
 
   private final IncidentRecord incidentCommand = new IncidentRecord();
 
-  public BpmnStepContext(EventOutput eventOutput) {
+  public BpmnStepContext(final EventOutput eventOutput) {
     this.eventOutput = eventOutput;
   }
 
@@ -60,7 +60,7 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
     return (WorkflowInstanceIntent) record.getMetadata().getIntent();
   }
 
-  public void setRecord(TypedRecord<WorkflowInstanceRecord> record) {
+  public void setRecord(final TypedRecord<WorkflowInstanceRecord> record) {
     this.record = record;
   }
 
@@ -68,7 +68,7 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
     return (T) element;
   }
 
-  public void setElement(ExecutableFlowElement element) {
+  public void setElement(final ExecutableFlowElement element) {
     this.element = element;
   }
 
@@ -76,7 +76,7 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
     return eventOutput;
   }
 
-  public void setStreamWriter(TypedStreamWriter streamWriter) {
+  public void setStreamWriter(final TypedStreamWriter streamWriter) {
     this.eventOutput.setStreamWriter(streamWriter);
     this.commandWriter = streamWriter;
   }
@@ -89,7 +89,7 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
     return flowScopeInstance;
   }
 
-  public void setFlowScopeInstance(ElementInstance flowScopeInstance) {
+  public void setFlowScopeInstance(final ElementInstance flowScopeInstance) {
     this.flowScopeInstance = flowScopeInstance;
   }
 
@@ -102,11 +102,11 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
     return elementInstance;
   }
 
-  public void setElementInstance(ElementInstance elementInstance) {
+  public void setElementInstance(final ElementInstance elementInstance) {
     this.elementInstance = elementInstance;
   }
 
-  public void setSideEffect(Consumer<SideEffectProducer> sideEffect) {
+  public void setSideEffect(final Consumer<SideEffectProducer> sideEffect) {
     this.sideEffect = sideEffect;
   }
 
@@ -114,7 +114,7 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
     return sideEffect;
   }
 
-  public void raiseIncident(ErrorType errorType, String errorMessage) {
+  public void raiseIncident(final ErrorType errorType, final String errorMessage) {
 
     incidentCommand.reset();
 
@@ -126,13 +126,13 @@ public class BpmnStepContext<T extends ExecutableFlowElement> {
     eventOutput.storeFailedToken(record);
 
     if (!record.getMetadata().hasIncidentKey()) {
-      commandWriter.writeNewCommand(IncidentIntent.CREATE, incidentCommand);
+      commandWriter.appendNewCommand(IncidentIntent.CREATE, incidentCommand);
     } else {
       // TODO: casting is ok for the moment; the problem is rather that we
       // write an event (not command) for a different stream processor
       // => https://github.com/zeebe-io/zeebe/issues/1033
       ((TypedStreamWriterImpl) commandWriter)
-          .writeFollowUpEvent(
+          .appendFollowUpEvent(
               record.getMetadata().getIncidentKey(),
               IncidentIntent.RESOLVE_FAILED,
               incidentCommand);

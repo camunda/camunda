@@ -35,6 +35,6 @@ public class TriggerEndEventHandler implements BpmnStepHandler<ExecutableSequenc
     final WorkflowInstanceRecord value = context.getValue();
     value.setElementId(targetNode.getId());
 
-    context.getOutput().writeNewEvent(WorkflowInstanceIntent.END_EVENT_OCCURRED, value);
+    context.getOutput().appendNewEvent(WorkflowInstanceIntent.END_EVENT_OCCURRED, value);
   }
 }

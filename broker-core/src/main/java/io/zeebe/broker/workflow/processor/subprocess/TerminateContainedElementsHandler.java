@@ -31,12 +31,12 @@ public class TerminateContainedElementsHandler
 
   private final WorkflowState workflowState;
 
-  public TerminateContainedElementsHandler(WorkflowState workflowState) {
+  public TerminateContainedElementsHandler(final WorkflowState workflowState) {
     this.workflowState = workflowState;
   }
 
   @Override
-  public void handle(BpmnStepContext<ExecutableFlowElementContainer> context) {
+  public void handle(final BpmnStepContext<ExecutableFlowElementContainer> context) {
     final ElementInstance subProcessInstance = context.getElementInstance();
 
     final List<ElementInstance> children =
@@ -44,13 +44,11 @@ public class TerminateContainedElementsHandler
     final EventOutput streamWriter = context.getOutput();
 
     if (children.isEmpty()) {
-      streamWriter.writeFollowUpEvent(
+      streamWriter.appendFollowUpEvent(
           context.getRecord().getKey(),
           WorkflowInstanceIntent.ELEMENT_TERMINATED,
           context.getValue());
     } else {
-
-      streamWriter.newBatch();
 
       for (int i = 0; i < children.size(); i++) {
         final ElementInstance child = children.get(i);
@@ -58,7 +56,7 @@ public class TerminateContainedElementsHandler
         if (child.canTerminate()) {
           context
               .getOutput()
-              .writeFollowUpEvent(
+              .appendFollowUpEvent(
                   child.getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATING, child.getValue());
         }
       }

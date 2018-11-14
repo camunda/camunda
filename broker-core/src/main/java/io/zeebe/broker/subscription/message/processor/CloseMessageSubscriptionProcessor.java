@@ -38,26 +38,27 @@ public class CloseMessageSubscriptionProcessor
   private MessageSubscriptionRecord subscriptionRecord;
 
   public CloseMessageSubscriptionProcessor(
-      MessageSubscriptionState subscriptionState, SubscriptionCommandSender commandSender) {
+      final MessageSubscriptionState subscriptionState,
+      final SubscriptionCommandSender commandSender) {
     this.subscriptionState = subscriptionState;
     this.commandSender = commandSender;
   }
 
   @Override
   public void processRecord(
-      TypedRecord<MessageSubscriptionRecord> record,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter,
-      Consumer<SideEffectProducer> sideEffect) {
+      final TypedRecord<MessageSubscriptionRecord> record,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter,
+      final Consumer<SideEffectProducer> sideEffect) {
     subscriptionRecord = record.getValue();
 
     final boolean removed = subscriptionState.remove(subscriptionRecord.getElementInstanceKey());
     if (removed) {
-      streamWriter.writeFollowUpEvent(
+      streamWriter.appendFollowUpEvent(
           record.getKey(), MessageSubscriptionIntent.CLOSED, subscriptionRecord);
 
     } else {
-      streamWriter.writeRejection(
+      streamWriter.appendRejection(
           record, RejectionType.NOT_APPLICABLE, "subscription is already closed");
     }
 

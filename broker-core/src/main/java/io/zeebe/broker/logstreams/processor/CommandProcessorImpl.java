@@ -38,18 +38,20 @@ public class CommandProcessorImpl<T extends UnpackedObject>
   private RejectionType rejectionType;
   private String rejectionReason;
 
-  public CommandProcessorImpl(CommandProcessor<T> commandProcessor) {
+  public CommandProcessorImpl(final CommandProcessor<T> commandProcessor) {
     this.wrappedProcessor = commandProcessor;
   }
 
   @Override
-  public void onOpen(TypedStreamProcessor streamProcessor) {
+  public void onOpen(final TypedStreamProcessor streamProcessor) {
     this.keyGenerator = streamProcessor.getKeyGenerator();
   }
 
   @Override
   public void processRecord(
-      TypedRecord<T> command, TypedResponseWriter responseWriter, TypedStreamWriter streamWriter) {
+      final TypedRecord<T> command,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter) {
 
     entityKey = command.getKey();
 
@@ -58,12 +60,12 @@ public class CommandProcessorImpl<T extends UnpackedObject>
     final boolean respond = command.getMetadata().hasRequestMetadata();
 
     if (isAccepted) {
-      streamWriter.writeFollowUpEvent(entityKey, newState, updatedValue);
+      streamWriter.appendFollowUpEvent(entityKey, newState, updatedValue);
       if (respond) {
         responseWriter.writeEventOnCommand(entityKey, newState, updatedValue, command);
       }
     } else {
-      streamWriter.writeRejection(command, rejectionType, rejectionReason);
+      streamWriter.appendRejection(command, rejectionType, rejectionReason);
       if (respond) {
         responseWriter.writeRejectionOnCommand(command, rejectionType, rejectionReason);
       }
@@ -71,7 +73,7 @@ public class CommandProcessorImpl<T extends UnpackedObject>
   }
 
   @Override
-  public long accept(Intent newState, T updatedValue) {
+  public long accept(final Intent newState, final T updatedValue) {
     if (entityKey < 0) {
       entityKey = keyGenerator.nextKey();
     }
@@ -83,7 +85,7 @@ public class CommandProcessorImpl<T extends UnpackedObject>
   }
 
   @Override
-  public void reject(RejectionType type, String reason) {
+  public void reject(final RejectionType type, final String reason) {
     isAccepted = false;
     this.rejectionType = type;
     this.rejectionReason = reason;

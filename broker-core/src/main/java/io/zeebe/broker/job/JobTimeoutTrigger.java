@@ -34,12 +34,12 @@ public class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
   private ScheduledTimer timer;
   private TypedCommandWriter writer;
 
-  public JobTimeoutTrigger(JobState state) {
+  public JobTimeoutTrigger(final JobState state) {
     this.state = state;
   }
 
   @Override
-  public void onRecovered(TypedStreamProcessor streamProcessor) {
+  public void onRecovered(final TypedStreamProcessor streamProcessor) {
     timer =
         streamProcessor
             .getActor()
@@ -60,7 +60,7 @@ public class JobTimeoutTrigger implements StreamProcessorLifecycleAware {
     state.forEachTimedOutEntry(
         now,
         (key, record, control) -> {
-          writer.writeFollowUpCommand(
+          writer.appendFollowUpCommand(
               key, JobIntent.TIME_OUT, record, (m) -> m.valueType(ValueType.JOB));
           writer.flush();
           // we don't have to check for write errors as the job will then be picked up again

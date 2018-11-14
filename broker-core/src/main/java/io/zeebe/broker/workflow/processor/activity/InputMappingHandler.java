@@ -61,7 +61,7 @@ public class InputMappingHandler implements BpmnStepHandler<ExecutableFlowNode> 
     if (mappingException == null) {
       context
           .getOutput()
-          .writeFollowUpEvent(
+          .appendFollowUpEvent(
               record.getKey(), WorkflowInstanceIntent.ELEMENT_ACTIVATED, activityEvent);
     } else {
       context.raiseIncident(ErrorType.IO_MAPPING_ERROR, mappingException.getMessage());

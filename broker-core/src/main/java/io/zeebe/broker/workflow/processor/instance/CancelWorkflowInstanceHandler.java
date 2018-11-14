@@ -40,7 +40,7 @@ public class CancelWorkflowInstanceHandler implements WorkflowInstanceCommandHan
       final EventOutput output = commandContext.getOutput();
       final WorkflowInstanceRecord value = workflowInstance.getValue();
 
-      output.writeFollowUpEvent(
+      output.appendFollowUpEvent(
           command.getKey(), WorkflowInstanceIntent.ELEMENT_TERMINATING, value);
 
       commandContext

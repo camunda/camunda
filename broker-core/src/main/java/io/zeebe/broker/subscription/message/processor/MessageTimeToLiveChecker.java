@@ -31,7 +31,8 @@ public class MessageTimeToLiveChecker implements Runnable {
 
   private final MessageRecord deleteMessageCommand = new MessageRecord();
 
-  public MessageTimeToLiveChecker(TypedCommandWriter writer, MessageState messageState) {
+  public MessageTimeToLiveChecker(
+      final TypedCommandWriter writer, final MessageState messageState) {
     this.writer = writer;
     this.messageState = messageState;
   }
@@ -42,7 +43,7 @@ public class MessageTimeToLiveChecker implements Runnable {
         ActorClock.currentTimeMillis(), this::writeDeleteMessageCommand);
   }
 
-  private boolean writeDeleteMessageCommand(Message message) {
+  private boolean writeDeleteMessageCommand(final Message message) {
     deleteMessageCommand.reset();
     deleteMessageCommand
         .setName(message.getName())
@@ -54,7 +55,7 @@ public class MessageTimeToLiveChecker implements Runnable {
       deleteMessageCommand.setMessageId(message.getId());
     }
 
-    writer.writeFollowUpCommand(message.getKey(), MessageIntent.DELETE, deleteMessageCommand);
+    writer.appendFollowUpCommand(message.getKey(), MessageIntent.DELETE, deleteMessageCommand);
 
     final long position = writer.flush();
     return position > 0;

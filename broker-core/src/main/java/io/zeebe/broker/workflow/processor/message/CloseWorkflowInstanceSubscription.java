@@ -31,25 +31,26 @@ public final class CloseWorkflowInstanceSubscription
 
   private final WorkflowInstanceSubscriptionState subscriptionState;
 
-  public CloseWorkflowInstanceSubscription(WorkflowInstanceSubscriptionState subscriptionState) {
+  public CloseWorkflowInstanceSubscription(
+      final WorkflowInstanceSubscriptionState subscriptionState) {
     this.subscriptionState = subscriptionState;
   }
 
   @Override
   public void processRecord(
-      TypedRecord<WorkflowInstanceSubscriptionRecord> record,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter) {
+      final TypedRecord<WorkflowInstanceSubscriptionRecord> record,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter) {
 
     final WorkflowInstanceSubscriptionRecord subscription = record.getValue();
 
     final boolean removed = subscriptionState.remove(subscription.getElementInstanceKey());
     if (removed) {
-      streamWriter.writeFollowUpEvent(
+      streamWriter.appendFollowUpEvent(
           record.getKey(), WorkflowInstanceSubscriptionIntent.CLOSED, subscription);
 
     } else {
-      streamWriter.writeRejection(
+      streamWriter.appendRejection(
           record, RejectionType.NOT_APPLICABLE, "subscription is already closed");
     }
   }

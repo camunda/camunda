@@ -33,15 +33,15 @@ public class OpenWorkflowInstanceSubscriptionProcessor
   private final WorkflowInstanceSubscriptionState subscriptionState;
 
   public OpenWorkflowInstanceSubscriptionProcessor(
-      WorkflowInstanceSubscriptionState subscriptionState) {
+      final WorkflowInstanceSubscriptionState subscriptionState) {
     this.subscriptionState = subscriptionState;
   }
 
   @Override
   public void processRecord(
-      TypedRecord<WorkflowInstanceSubscriptionRecord> record,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter) {
+      final TypedRecord<WorkflowInstanceSubscriptionRecord> record,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter) {
 
     final WorkflowInstanceSubscriptionRecord subscriptionRecord = record.getValue();
 
@@ -52,11 +52,11 @@ public class OpenWorkflowInstanceSubscriptionProcessor
       subscriptionState.updateToOpenedState(
           subscription, subscription.getSubscriptionPartitionId());
 
-      streamWriter.writeFollowUpEvent(
+      streamWriter.appendFollowUpEvent(
           record.getKey(), WorkflowInstanceSubscriptionIntent.OPENED, subscriptionRecord);
 
     } else {
-      streamWriter.writeRejection(
+      streamWriter.appendRejection(
           record, RejectionType.NOT_APPLICABLE, "subscription is already open");
     }
   }

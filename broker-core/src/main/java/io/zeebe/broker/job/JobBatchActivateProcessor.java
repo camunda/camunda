@@ -19,7 +19,6 @@ package io.zeebe.broker.job;
 
 import static io.zeebe.util.sched.clock.ActorClock.currentTimeMillis;
 
-import io.zeebe.broker.logstreams.processor.TypedBatchWriter;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecordProcessor;
 import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
@@ -36,15 +35,15 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
 
   private final JobState state;
 
-  public JobBatchActivateProcessor(JobState state) {
+  public JobBatchActivateProcessor(final JobState state) {
     this.state = state;
   }
 
   @Override
   public void processRecord(
-      TypedRecord<JobBatchRecord> record,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter) {
+      final TypedRecord<JobBatchRecord> record,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter) {
     final JobBatchRecord value = record.getValue();
     if (isValid(value)) {
       activateJobs(record, responseWriter, streamWriter);
@@ -53,7 +52,7 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
     }
   }
 
-  private boolean isValid(JobBatchRecord record) {
+  private boolean isValid(final JobBatchRecord record) {
     return record.getAmount() > 0
         && record.getTimeout() > 0
         && record.getType().capacity() > 0
@@ -61,14 +60,13 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
   }
 
   private void activateJobs(
-      TypedRecord<JobBatchRecord> record,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter) {
+      final TypedRecord<JobBatchRecord> record,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter) {
     final JobBatchRecord value = record.getValue();
 
     final long jobBatchKey = streamWriter.getKeyGenerator().nextKey();
 
-    final TypedBatchWriter batchWriter = streamWriter.newBatch();
     final AtomicInteger amount = new AtomicInteger(value.getAmount());
     state.forEachActivatableJobs(
         value.getType(),
@@ -89,7 +87,7 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
 
             // update state and write follow up event for job record
             state.activate(key, job);
-            batchWriter.addFollowUpEvent(key, JobIntent.ACTIVATED, job);
+            streamWriter.appendFollowUpEvent(key, JobIntent.ACTIVATED, job);
           }
 
           if (remainingAmount < 1) {
@@ -97,14 +95,14 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
           }
         });
 
-    batchWriter.addFollowUpEvent(jobBatchKey, JobBatchIntent.ACTIVATED, value);
+    streamWriter.appendFollowUpEvent(jobBatchKey, JobBatchIntent.ACTIVATED, value);
     responseWriter.writeEventOnCommand(jobBatchKey, JobBatchIntent.ACTIVATED, value, record);
   }
 
   private void rejectCommand(
-      TypedRecord<JobBatchRecord> record,
-      TypedResponseWriter responseWriter,
-      TypedStreamWriter streamWriter) {
+      final TypedRecord<JobBatchRecord> record,
+      final TypedResponseWriter responseWriter,
+      final TypedStreamWriter streamWriter) {
     final RejectionType rejectionType;
     final String rejectionReason;
 
@@ -126,7 +124,7 @@ public class JobBatchActivateProcessor implements TypedRecordProcessor<JobBatchR
       throw new IllegalStateException("Job batch command is valid and should not be rejected");
     }
 
-    streamWriter.writeRejection(record, rejectionType, rejectionReason);
+    streamWriter.appendRejection(record, rejectionType, rejectionReason);
     responseWriter.writeRejectionOnCommand(record, rejectionType, rejectionReason);
   }
 }
