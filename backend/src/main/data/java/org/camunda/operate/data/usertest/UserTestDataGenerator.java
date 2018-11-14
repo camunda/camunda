@@ -41,20 +41,22 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
   private static final Logger logger = LoggerFactory.getLogger(UserTestDataGenerator.class);
 
-  private Random random = new Random();
+  protected Random random = new Random();
 
   private ScheduledExecutorService scheduler;
 
-  List<Long> workflowInstanceKeys = new ArrayList<>();
-  List<Long> doNotTouchWorkflowInstanceKeys = new ArrayList<>();
+  protected List<Long> workflowInstanceKeys = new ArrayList<>();
+  protected List<Long> doNotTouchWorkflowInstanceKeys = new ArrayList<>();
+
+  protected List<JobWorker> jobWorkers = new ArrayList<>();
 
   @Override
-  public void createZeebeData(boolean manuallyCalled) {
-    logger.debug("User test data will be generated");
-
-    if (!shouldCreateData(manuallyCalled)) {
-      return;
+  public boolean createZeebeData(boolean manuallyCalled) {
+    if (!super.createZeebeData(manuallyCalled)) {
+      return false;
     }
+
+    logger.debug("Test data will be generated");
 
     deployVersion1();
 
@@ -68,7 +70,13 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
     startWorkflowInstances(2);
 
+    deployVersion3();
+
+    startWorkflowInstances(3);
+
     progressWorkflowInstances();
+
+    return true;
 
   }
 
@@ -229,7 +237,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     jobWorker.close();
   }
 
-  private void progressWorkflowInstances() {
+  protected void progressWorkflowInstances() {
     List<JobWorker> jobWorkers = new ArrayList<>();
 
     jobWorkers.add(progressReviewLoanRequestTask());
@@ -301,7 +309,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     }
   }
 
-  private JobWorker progressOrderProcessCheckPayment() {
+  protected JobWorker progressOrderProcessCheckPayment() {
     return client.jobClient()
       .newWorker()
       .jobType("checkPayment")
@@ -470,7 +478,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     return !doNotTouchWorkflowInstanceKeys.contains(key);
   }
 
-  private void deployVersion1() {
+  protected void deployVersion1() {
     //deploy workflows v.1
     ZeebeTestUtil.deployWorkflow(client, "usertest/orderProcess_v_1.bpmn");
 
@@ -480,7 +488,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
   }
 
-  private void startWorkflowInstances(int version) {
+  protected void startWorkflowInstances(int version) {
     final int instancesCount = random.nextInt(50) + 50;
     for (int i = 0; i < instancesCount; i++) {
       if (version < 2) {
@@ -565,12 +573,15 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     return instanceId;
   }
 
-  private void deployVersion2() {
+  protected void deployVersion2() {
     //deploy workflows v.2
     ZeebeTestUtil.deployWorkflow(client, "usertest/orderProcess_v_2.bpmn");
 
     ZeebeTestUtil.deployWorkflow(client, "usertest/registerPassenger_v_2.bpmn");
 
+  }
+
+  protected void deployVersion3() {
   }
 
   private static class CompleteJobHandler implements JobHandler {

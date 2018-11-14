@@ -1,4 +1,10 @@
 [[exporters]]
+id = "debug"
+className = "io.zeebe.broker.exporter.debug.DebugHttpExporter"
+  [exporters.args]
+  limit = 8000
+
+[[exporters]]
 id = "elasticsearch"
 className = "io.zeebe.exporter.ElasticsearchExporter"
 
@@ -18,7 +24,7 @@ className = "io.zeebe.exporter.ElasticsearchExporter"
   deployment = true
   incident = true
   job = true
-  message = false
+  message = true
   messageSubscription = false
   raft = false
   workflowInstance = true

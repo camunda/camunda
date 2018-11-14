@@ -1,7 +1,6 @@
 package org.camunda.operate;
 
-import org.camunda.operate.data.AbstractDataGenerator;
-import org.camunda.operate.data.develop.DevelopDataGenerator;
+import org.camunda.operate.data.DataGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.SpringApplication;
@@ -24,13 +23,11 @@ public class Application {
 
   @Bean(name = "dataGenerator")
   @ConditionalOnMissingBean
-  public AbstractDataGenerator stubDataGenerator() {
+  public DataGenerator stubDataGenerator() {
     logger.debug("Create Data generator stub");
-    return new AbstractDataGenerator() {
-      @Override
-      public void createZeebeData(boolean manuallyCalled) {
-        logger.debug("No demo data will be created");
-      }
+    return manuallyCalled -> {
+      logger.debug("No demo data will be created");
+      return false;
     };
   }
 

@@ -13,7 +13,7 @@
 package org.camunda.operate;
 
 import javax.annotation.PostConstruct;
-import org.camunda.operate.data.AbstractDataGenerator;
+import org.camunda.operate.data.DataGenerator;
 import org.camunda.operate.es.ElasticsearchSchemaManager;
 import org.camunda.operate.zeebe.operation.OperationExecutor;
 import org.camunda.operate.zeebeimport.ZeebeESImporter;
@@ -31,7 +31,7 @@ public class StartupBean {
   private ElasticsearchSchemaManager elasticsearchSchemaManager;
 
   @Autowired
-  private AbstractDataGenerator dataGenerator;
+  private DataGenerator dataGenerator;
 
   @Autowired
   private ZeebeESImporter zeebeESImporter;

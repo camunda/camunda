@@ -7,16 +7,25 @@ import io.zeebe.client.ZeebeClient;
 import io.zeebe.client.api.commands.Workflows;
 
 
-public abstract class AbstractDataGenerator {
+public abstract class AbstractDataGenerator implements DataGenerator {
 
   private static final Logger logger = LoggerFactory.getLogger(AbstractDataGenerator.class);
-
 
   @Autowired
   protected ZeebeClient client;
 
+  protected boolean manuallyCalled = false;
 
-  public abstract void createZeebeData(boolean manuallyCalled);
+  @Override
+  public boolean createZeebeData(boolean manuallyCalled) {
+    this.manuallyCalled = manuallyCalled;
+
+    if (!shouldCreateData(manuallyCalled)) {
+      return false;
+    }
+
+    return true;
+  }
 
   public boolean shouldCreateData(boolean manuallyCalled) {
     if (!manuallyCalled) {    //when called manually, always create the data

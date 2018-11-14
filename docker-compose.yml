@@ -9,7 +9,7 @@ services:
     command:
       - --spring.config.location=file:/usr/app/config/application.yml
     environment:
-      - SPRING_PROFILES_ACTIVE=dev,dev-data
+      - SPRING_PROFILES_ACTIVE=dev,usertest-data
     image: camunda/operate:latest
     ports:
       - 8080:8080
@@ -36,7 +36,7 @@ services:
 
   zeebe:
     container_name: zeebe
-    image: camunda/zeebe:0.13.0
+    image: camunda/zeebe:0.13.1
     environment:
       - "JAVA_TOOL_OPTIONS=-Xms512m -Xmx512m"
       - ZEEBE_HOST=${ZEEBE_HOST:-}
@@ -45,7 +45,7 @@ services:
     ports:
       - 26501:26501
       - 26500:26500
-      #- 8000:8000
+      - 8000:8000
     restart: always
     volumes:
       - ./zeebe.cfg.toml:/usr/local/zeebe/conf/zeebe.cfg.toml
