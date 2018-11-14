@@ -15,15 +15,22 @@ mvn clean install
 This command runs also all the test suite, that you can skip using the
 option `-DskipTests=true`.
 
-# Standalone data generator
+# Demo data
 
-```
-cd backend
+There are two sets of data, defined in two different Spring profiles:
 
-mvn clean compile exec:java -Dexec.mainClass="org.camunda.operate.util.StandaloneDataGenerator" -Dexec.arguments="localhost:51015,default-topic" -DskipTests -P develop
-```
+- `usertest-data`: data for user tests
+- `dev-data`: development data (includes data for user tests plus more)
 
-If you run into problems during running the maven command please perfrom the following command in the root folder 
+Ways to activated profiles:
+
+- when running via `make env-up` or `docker-compose`: edit `docker-compose.yml`, section `services.operate.environment` (always leave `dev` profile active)
+```text
+- SPRING_PROFILES_ACTIVE=dev,dev-data
 ```
-mvn clean install -Pdevelop -DskipTests
+- when running from distribution via `operate` shell script or `operate.bat`:
+```text
+JAVA_OPTS=-Dspring.profiles.active=dev-data ./operate
+or 
+JAVA_OPTS=-Dspring.profiles.active=dev-data ./operate.bat
 ```
