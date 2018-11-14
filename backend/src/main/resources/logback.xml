@@ -9,6 +9,7 @@
   </appender>
 
   <logger name="org.camunda.optimize" level="debug" />
+  <logger name="org.elasticsearch" level="warn" />
 
   <root level="info">
     <appender-ref ref="STDOUT" />
