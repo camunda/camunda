@@ -9,7 +9,7 @@ services:
     command:
       - --spring.config.location=file:/usr/app/config/application.yml
     environment:
-      - SPRING_PROFILES_ACTIVE=dev,usertest-data
+      - SPRING_PROFILES_ACTIVE=dev,dev-data
     image: camunda/operate:latest
     ports:
       - 8080:8080
