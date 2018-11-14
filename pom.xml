@@ -28,7 +28,6 @@
 
     <jackson.version>2.9.6</jackson.version>
     <jsonpath.version>2.3.0</jsonpath.version>
-    <log4j.version>2.9.1</log4j.version>
     <elasticsearch.version>6.0.0</elasticsearch.version>
     <!-- https://www.elastic.co/guide/en/elasticsearch/client/java-api/6.0/_using_another_logger.html -->
     <elasticsearch.log4j.version>2.9.1</elasticsearch.log4j.version>
