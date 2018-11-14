@@ -51,6 +51,7 @@
     * [Setup](java-client/setup.md)
     * [Get Started](java-client/get-started.md)
     * [Logging](java-client/logging.md)
+    * [Testing](java-client/testing.md)
 * [Go Client](go-client/README.md)
     * [Get Started](go-client/get-started.md)
 * [Operations](operations/README.md)
