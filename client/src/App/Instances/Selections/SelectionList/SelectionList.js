@@ -29,13 +29,11 @@ export default class SelectionList extends React.Component {
     } = this.props;
     return (
       <React.Fragment>
-        <div>
-          {selections.length === 10 && (
-            <Styled.MessageWrapper>
-              <Styled.SelectionMessage type={MESSAGES_TYPE.DROP_SELECTION} />
-            </Styled.MessageWrapper>
-          )}
-        </div>
+        {selections.length === 10 && (
+          <Styled.MessageWrapper>
+            <Styled.SelectionMessage type={MESSAGES_TYPE.DROP_SELECTION} />
+          </Styled.MessageWrapper>
+        )}
 
         <Styled.Ul>
           {selections.length ? (
