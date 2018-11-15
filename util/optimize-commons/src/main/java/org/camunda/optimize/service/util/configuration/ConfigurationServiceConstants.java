@@ -27,6 +27,8 @@ public interface ConfigurationServiceConstants {
   String ENGINE_IMPORT_ACTIVITY_INSTANCE_MAX_PAGE_SIZE = "$.import.data.activity-instance.maxPageSize";
   String ENGINE_IMPORT_PROCESS_INSTANCE_MAX_PAGE_SIZE = "$.import.data.process-instance.maxPageSize";
   String ENGINE_IMPORT_VARIABLE_INSTANCE_MAX_PAGE_SIZE = "$.import.data.variable.maxPageSize";
+  String ENGINE_IMPORT_DECISION_DEFINITION_XML_MAX_PAGE_SIZE = "$.import.data.decision-definition-xml.maxPageSize";
+  String ENGINE_IMPORT_DECISION_INSTANCE_MAX_PAGE_SIZE = "$.import.data.decision-instance.maxPageSize";
 
   String VARIABLE_IMPORT_PLUGIN_BASE_PACKAGES = "$.plugin.variableImport.basePackages";
   String ENGINE_REST_FILTER_PLUGIN_BASE_PACKAGES = "$.plugin.engineRestFilter.basePackages";
@@ -64,6 +66,9 @@ public interface ConfigurationServiceConstants {
   String PROCESS_DEFINITION_ENDPOINT = "$.engine-commons.procdef.resource";
   String PROCESS_DEFINITION_XML_ENDPOINT = "$.engine-commons.procdef.xml";
   String USER_VALIDATION_ENDPOINT = "$.engine-commons.user.validation.resource";
+
+  String DECISION_DEFINITION_ENDPOINT = "$.engine-commons.decision-definition.resource";
+  String DECISION_DEFINITION_XML_ENDPOINT = "$.engine-commons.decision-definition.xml";
 
   String ANALYZER_NAME = "$.es.analyzer.name";
   String TOKENIZER = "$.es.analyzer.tokenizer";

@@ -31,7 +31,7 @@ public class ActivityInstanceEngineImportMediator
 
 
   public ActivityInstanceEngineImportMediator(EngineContext engineContext) {
-    this.engineContext = engineContext;
+    super(engineContext);
   }
 
   @PostConstruct

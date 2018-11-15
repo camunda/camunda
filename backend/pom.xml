@@ -249,6 +249,13 @@
 
     <!--testing-->
     <dependency>
+      <groupId>org.camunda.bpm.model</groupId>
+      <artifactId>camunda-dmn-model</artifactId>
+      <version>${camunda.engine.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
       <groupId>pl.pragmatists</groupId>
       <artifactId>JUnitParams</artifactId>
       <version>1.1.1</version>

@@ -7,7 +7,6 @@ import org.camunda.optimize.service.es.ElasticsearchImportJobExecutor;
 import org.camunda.optimize.service.util.BackoffCalculator;
 import org.camunda.optimize.service.util.BeanHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.elasticsearch.client.Client;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,15 +14,15 @@ import org.springframework.beans.factory.annotation.Autowired;
 import javax.annotation.PostConstruct;
 
 public abstract class BackoffImportMediator<T extends ImportIndexHandler> implements EngineImportMediator {
+  private Logger logger = LoggerFactory.getLogger(getClass());
+
   protected T importIndexHandler;
+
   @Autowired
   protected BeanHelper beanHelper;
 
   @Autowired
   protected ConfigurationService configurationService;
-
-  @Autowired
-  protected Client esClient;
 
   @Autowired
   protected ElasticsearchImportJobExecutor elasticsearchImportJobExecutor;
@@ -33,10 +32,11 @@ public abstract class BackoffImportMediator<T extends ImportIndexHandler> implem
 
   protected EngineContext engineContext;
 
-
-  protected Logger logger = LoggerFactory.getLogger(getClass());
-
   private BackoffCalculator backoffCalculator;
+
+  public BackoffImportMediator(final EngineContext engineContext) {
+    this.engineContext = engineContext;
+  }
 
   @PostConstruct
   private void initialize() {

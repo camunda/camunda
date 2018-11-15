@@ -2,6 +2,9 @@ package org.camunda.optimize.service.engine.importing.index.handler;
 
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ActivityImportIndexHandler;
+import org.camunda.optimize.service.engine.importing.index.handler.impl.DecisionDefinitionImportIndexHandler;
+import org.camunda.optimize.service.engine.importing.index.handler.impl.DecisionDefinitionXmlImportIndexHandler;
+import org.camunda.optimize.service.engine.importing.index.handler.impl.DecisionInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.FinishedProcessInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessDefinitionImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessDefinitionXmlImportIndexHandler;
@@ -124,6 +127,18 @@ public class EngineImportIndexHandlerProvider {
 
   public VariableUpdateInstanceImportIndexHandler getVariableUpdateInstanceImportIndexHandler() {
     return getImportIndexHandlerInstance(engineContext, VariableUpdateInstanceImportIndexHandler.class);
+  }
+
+  public DecisionDefinitionImportIndexHandler getDecisionDefinitionImportIndexHandler() {
+    return getImportIndexHandlerInstance(engineContext, DecisionDefinitionImportIndexHandler.class);
+  }
+
+  public DecisionDefinitionXmlImportIndexHandler getDecisionDefinitionXmlImportIndexHandler() {
+    return getImportIndexHandlerInstance(engineContext, DecisionDefinitionXmlImportIndexHandler.class);
+  }
+
+  public DecisionInstanceImportIndexHandler getDecisionInstanceImportIndexHandler() {
+    return getImportIndexHandlerInstance(engineContext, DecisionInstanceImportIndexHandler.class);
   }
 
   public List<ImportIndexHandler> getAllHandlers() {

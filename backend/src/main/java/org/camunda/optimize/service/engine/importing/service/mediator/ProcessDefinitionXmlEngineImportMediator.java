@@ -20,14 +20,13 @@ import java.util.List;
 public class ProcessDefinitionXmlEngineImportMediator
   extends BackoffImportMediator<ProcessDefinitionXmlImportIndexHandler> {
 
-  protected EngineContext engineContext;
   private ProcessDefinitionXmlFetcher engineEntityFetcher;
   private ProcessDefinitionXmlImportService definitionXmlImportService;
   @Autowired
   private ProcessDefinitionXmlWriter processDefinitionXmlWriter;
 
   public ProcessDefinitionXmlEngineImportMediator(EngineContext engineContext) {
-    this.engineContext = engineContext;
+    super(engineContext);
   }
 
   @PostConstruct

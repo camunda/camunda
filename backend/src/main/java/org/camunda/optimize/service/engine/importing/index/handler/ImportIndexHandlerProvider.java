@@ -2,6 +2,9 @@ package org.camunda.optimize.service.engine.importing.index.handler;
 
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ActivityImportIndexHandler;
+import org.camunda.optimize.service.engine.importing.index.handler.impl.DecisionDefinitionImportIndexHandler;
+import org.camunda.optimize.service.engine.importing.index.handler.impl.DecisionDefinitionXmlImportIndexHandler;
+import org.camunda.optimize.service.engine.importing.index.handler.impl.DecisionInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.FinishedProcessInstanceImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessDefinitionImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessDefinitionXmlImportIndexHandler;
@@ -130,6 +133,33 @@ public class ImportIndexHandlerProvider {
     EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(engineAlias);
     if (engineImportIndexHandlerProvider != null) {
       result = engineImportIndexHandlerProvider.getProcessDefinitionXmlImportIndexHandler();
+    }
+    return result;
+  }
+
+  public DecisionDefinitionImportIndexHandler getDecisionDefinitionImportIndexHandler(String engineAlias) {
+    final EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(engineAlias);
+    DecisionDefinitionImportIndexHandler result = null;
+    if (engineImportIndexHandlerProvider != null) {
+      result = engineImportIndexHandlerProvider.getDecisionDefinitionImportIndexHandler();
+    }
+    return result;
+  }
+
+  public DecisionDefinitionXmlImportIndexHandler getDecisionDefinitionXmlImportIndexHandler(String engineAlias) {
+    DecisionDefinitionXmlImportIndexHandler result = null;
+    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(engineAlias);
+    if (engineImportIndexHandlerProvider != null) {
+      result = engineImportIndexHandlerProvider.getDecisionDefinitionXmlImportIndexHandler();
+    }
+    return result;
+  }
+
+  public DecisionInstanceImportIndexHandler getDecisionInstanceImportIndexHandler(String engineAlias) {
+    DecisionInstanceImportIndexHandler result = null;
+    EngineImportIndexHandlerProvider engineImportIndexHandlerProvider = engineImportIndexHandlerProviderMap.get(engineAlias);
+    if (engineImportIndexHandlerProvider != null) {
+      result = engineImportIndexHandlerProvider.getDecisionInstanceImportIndexHandler();
     }
     return result;
   }

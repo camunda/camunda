@@ -22,14 +22,13 @@ import java.util.List;
 public class RunningProcessInstanceEngineImportMediator
   extends BackoffImportMediator<RunningProcessInstanceImportIndexHandler> {
 
-  protected EngineContext engineContext;
   private RunningProcessInstanceFetcher engineEntityFetcher;
   private RunningProcessInstanceImportService runningProcessInstanceImportService;
   @Autowired
   private RunningProcessInstanceWriter runningProcessInstanceWriter;
 
   public RunningProcessInstanceEngineImportMediator(EngineContext engineContext) {
-    this.engineContext = engineContext;
+    super(engineContext);
   }
 
   @PostConstruct

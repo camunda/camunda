@@ -58,8 +58,10 @@ public class ConfigurationService {
   private Integer tokenLifeTime;
   private String userValidationEndpoint;
   private String processDefinitionEndpoint;
+  private String processDefinitionXmlEndpoint;
+  private String decisionDefinitionEndpoint;
+  private String decisionDefinitionXmlEndpoint;
 
-  private String optimizeIndex;
   private String processDefinitionType;
   private String importIndexType;
   private String durationHeatmapTargetValueType;
@@ -109,7 +111,8 @@ public class ConfigurationService {
   private Integer engineImportProcessInstanceMaxPageSize;
   private Integer engineImportVariableInstanceMaxPageSize;
   private Integer engineImportProcessDefinitionXmlMaxPageSize;
-  private String processDefinitionXmlEndpoint;
+  private Integer engineImportDecisionDefinitionXmlMaxPageSize;
+  private Integer engineImportDecisionInstanceMaxPageSize;
   private Integer importIndexAutoStorageIntervalInSec;
   private Long samplerInterval;
   private List<String> variableImportPluginBasePackages;
@@ -374,6 +377,19 @@ public class ConfigurationService {
     return processDefinitionEndpoint;
   }
 
+  public String getDecisionDefinitionEndpoint() {
+    if (decisionDefinitionEndpoint == null) {
+      decisionDefinitionEndpoint = cutTrailingSlash(
+        configJsonContext.read(ConfigurationServiceConstants.DECISION_DEFINITION_ENDPOINT)
+      );
+    }
+    return decisionDefinitionEndpoint;
+  }
+
+  public String getDecisionDefinitionXmlEndpoint(String decisionDefinitionId) {
+    return getDecisionDefinitionEndpoint() + "/" + decisionDefinitionId + getDecisionDefinitionXmlEndpoint();
+  }
+
   public String getAnalyzerName() {
     if (analyzerName == null) {
       analyzerName = configJsonContext.read(ConfigurationServiceConstants.ANALYZER_NAME);
@@ -564,6 +580,32 @@ public class ConfigurationService {
       );
     }
     return processDefinitionXmlEndpoint;
+  }
+
+  public String getDecisionDefinitionXmlEndpoint() {
+    if (decisionDefinitionXmlEndpoint == null) {
+      decisionDefinitionXmlEndpoint = cutTrailingSlash(
+        configJsonContext.read(ConfigurationServiceConstants.DECISION_DEFINITION_XML_ENDPOINT)
+      );
+    }
+    return decisionDefinitionXmlEndpoint;
+  }
+
+  public int getEngineImportDecisionDefinitionXmlMaxPageSize() {
+    if (engineImportDecisionDefinitionXmlMaxPageSize == null) {
+      engineImportDecisionDefinitionXmlMaxPageSize =
+        configJsonContext.read(ConfigurationServiceConstants.ENGINE_IMPORT_DECISION_DEFINITION_XML_MAX_PAGE_SIZE);
+    }
+    return engineImportDecisionDefinitionXmlMaxPageSize;
+  }
+
+  public int getEngineImportDecisionInstanceMaxPageSize() {
+    if (engineImportDecisionInstanceMaxPageSize == null) {
+      engineImportDecisionInstanceMaxPageSize =
+        configJsonContext.read(ConfigurationServiceConstants.ENGINE_IMPORT_DECISION_INSTANCE_MAX_PAGE_SIZE);
+    }
+    ensureGreaterThanZero(engineImportDecisionInstanceMaxPageSize);
+    return engineImportDecisionInstanceMaxPageSize;
   }
 
   public String getLicenseType() {
@@ -941,10 +983,6 @@ public class ConfigurationService {
 
   public void setElasticSearchHttpPort(Integer elasticSearchHttpPort) {
     this.elasticSearchHttpPort = elasticSearchHttpPort;
-  }
-
-  public void setOptimizeIndex(String optimizeIndex) {
-    this.optimizeIndex = optimizeIndex;
   }
 
   public void setUserValidationEndpoint(String userValidationEndpoint) {

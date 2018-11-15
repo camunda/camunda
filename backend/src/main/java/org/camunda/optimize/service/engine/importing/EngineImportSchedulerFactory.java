@@ -4,6 +4,9 @@ import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.rest.engine.EngineContextFactory;
 import org.camunda.optimize.service.engine.importing.index.handler.ImportIndexHandlerProvider;
 import org.camunda.optimize.service.engine.importing.service.mediator.ActivityInstanceEngineImportMediator;
+import org.camunda.optimize.service.engine.importing.service.mediator.DecisionDefinitionEngineImportMediator;
+import org.camunda.optimize.service.engine.importing.service.mediator.DecisionDefinitionXmlEngineImportMediator;
+import org.camunda.optimize.service.engine.importing.service.mediator.DecisionInstanceEngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.EngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.FinishedProcessInstanceEngineImportMediator;
 import org.camunda.optimize.service.engine.importing.service.mediator.ProcessDefinitionEngineImportMediator;
@@ -24,7 +27,7 @@ import java.util.List;
 
 @Component
 public class EngineImportSchedulerFactory implements ConfigurationReloadable {
-  private Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger logger = LoggerFactory.getLogger(EngineImportSchedulerFactory.class);
 
   @Autowired
   private ImportIndexHandlerProvider importIndexHandlerProvider;
@@ -61,19 +64,25 @@ public class EngineImportSchedulerFactory implements ConfigurationReloadable {
     importIndexHandlerProvider.init(engineContext);
 
     mediators.add(
-        beanHelper.getInstance(ActivityInstanceEngineImportMediator.class, engineContext));
+      beanHelper.getInstance(ActivityInstanceEngineImportMediator.class, engineContext));
     mediators.add(
-        beanHelper.getInstance(FinishedProcessInstanceEngineImportMediator.class, engineContext));
+      beanHelper.getInstance(FinishedProcessInstanceEngineImportMediator.class, engineContext));
     mediators.add(
-        beanHelper.getInstance(ProcessDefinitionEngineImportMediator.class, engineContext));
+      beanHelper.getInstance(ProcessDefinitionEngineImportMediator.class, engineContext));
     mediators.add(
-        beanHelper.getInstance(ProcessDefinitionXmlEngineImportMediator.class, engineContext));
+      beanHelper.getInstance(ProcessDefinitionXmlEngineImportMediator.class, engineContext));
     mediators.add(
-        beanHelper.getInstance(StoreIndexesEngineImportMediator.class, engineContext));
+      beanHelper.getInstance(StoreIndexesEngineImportMediator.class, engineContext));
     mediators.add(
-        beanHelper.getInstance(RunningProcessInstanceEngineImportMediator.class, engineContext));
+      beanHelper.getInstance(RunningProcessInstanceEngineImportMediator.class, engineContext));
     mediators.add(
-        beanHelper.getInstance(VariableUpdateEngineImportMediator.class, engineContext));
+      beanHelper.getInstance(VariableUpdateEngineImportMediator.class, engineContext));
+    mediators.add(
+      beanHelper.getInstance(DecisionDefinitionEngineImportMediator.class, engineContext));
+    mediators.add(
+      beanHelper.getInstance(DecisionDefinitionXmlEngineImportMediator.class, engineContext));
+    mediators.add(
+      beanHelper.getInstance(DecisionInstanceEngineImportMediator.class, engineContext));
 
     return mediators;
   }

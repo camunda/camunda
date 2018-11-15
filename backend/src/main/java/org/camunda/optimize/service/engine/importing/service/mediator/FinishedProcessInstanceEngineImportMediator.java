@@ -28,7 +28,7 @@ public class FinishedProcessInstanceEngineImportMediator
   private FinishedProcessInstanceWriter finishedProcessInstanceWriter;
 
   public FinishedProcessInstanceEngineImportMediator(EngineContext engineContext) {
-    this.engineContext = engineContext;
+    super(engineContext);
   }
 
   @PostConstruct

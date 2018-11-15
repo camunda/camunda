@@ -11,8 +11,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class EngineImportScheduler extends Thread {
-
-  private Logger logger = LoggerFactory.getLogger(getClass());
+  private static final Logger logger = LoggerFactory.getLogger(EngineImportScheduler.class);
 
   private List<EngineImportMediator> importMediators;
 
@@ -23,10 +22,8 @@ public class EngineImportScheduler extends Thread {
   private boolean shouldPerformBackoff = true;
   private boolean isImporting = false;
 
-  public EngineImportScheduler(
-      List<EngineImportMediator> importMediators,
-      String engineAlias
-  ) {
+  public EngineImportScheduler(List<EngineImportMediator> importMediators,
+                               String engineAlias) {
     this.importMediators = importMediators;
     this.engineAlias = engineAlias;
   }
@@ -63,9 +60,9 @@ public class EngineImportScheduler extends Thread {
 
   private List<EngineImportMediator> obtainActiveMediators() {
     return importMediators
-        .stream()
-        .filter(EngineImportMediator::canImport)
-        .collect(Collectors.toList());
+      .stream()
+      .filter(EngineImportMediator::canImport)
+      .collect(Collectors.toList());
   }
 
   public void scheduleUntilImportIsFinished() {
@@ -119,18 +116,18 @@ public class EngineImportScheduler extends Thread {
 
   private long calculateTimeToSleep() {
     long timeToSleepInMs = importMediators
-        .stream()
-        .map(EngineImportMediator::getBackoffTimeInMs)
-        .min(Long::compare)
-        .orElse(5000L);
+      .stream()
+      .map(EngineImportMediator::getBackoffTimeInMs)
+      .min(Long::compare)
+      .orElse(5000L);
 
     return timeToSleepInMs;
   }
 
   private void scheduleCurrentImportRound(List<EngineImportMediator> currentImportRound) {
     String mediators = currentImportRound.stream()
-        .map(c -> c.getClass().getSimpleName())
-        .reduce((a,b) -> a + ", " + b).orElse("");
+      .map(c -> c.getClass().getSimpleName())
+      .reduce((a, b) -> a + ", " + b).orElse("");
     logger.debug("Scheduling import round for {}", mediators);
     for (EngineImportMediator engineImportMediator : currentImportRound) {
       try {

@@ -23,7 +23,6 @@ import java.util.List;
 public class VariableUpdateEngineImportMediator
   extends BackoffImportMediator<VariableUpdateInstanceImportIndexHandler> {
 
-  protected EngineContext engineContext;
   private VariableUpdateInstanceFetcher engineEntityFetcher;
   private VariableUpdateInstanceImportService variableUpdateInstanceImportService;
   @Autowired
@@ -32,7 +31,7 @@ public class VariableUpdateEngineImportMediator
   private ImportAdapterProvider importAdapterProvider;
 
   public VariableUpdateEngineImportMediator(EngineContext engineContext) {
-    this.engineContext = engineContext;
+    super(engineContext);
   }
 
   @PostConstruct

@@ -22,7 +22,10 @@ import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
+import org.camunda.bpm.model.dmn.Dmn;
+import org.camunda.bpm.model.dmn.DmnModelInstance;
 import org.camunda.optimize.dto.engine.AuthorizationDto;
+import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.HistoricProcessInstanceDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionXmlEngineDto;
@@ -69,7 +72,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 /**
  * Rule that performs clean up of engine on integration test startup and
  * one more clean up after integration test.
- *
+ * <p>
  * Relies on expectation of /purge endpoint available in Tomcat for HTTP GET
  * requests and performing actual purge.
  */
@@ -86,7 +89,7 @@ public class EngineIntegrationRule extends TestWatcher {
   private ObjectMapper objectMapper;
   private boolean shouldCleanEngine;
 
-  public EngineIntegrationRule () {
+  public EngineIntegrationRule() {
     this(DEFAULT_PROPERTIES_PATH);
   }
 
@@ -106,25 +109,26 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   private void setupObjectMapper() {
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern(properties.getProperty("camunda.optimize.serialization.date.format"));
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern(properties.getProperty(
+      "camunda.optimize.serialization.date.format"));
     JavaTimeModule javaTimeModule = new JavaTimeModule();
     javaTimeModule.addSerializer(OffsetDateTime.class, new CustomSerializer(formatter));
     javaTimeModule.addDeserializer(OffsetDateTime.class, new CustomDeserializer(formatter));
 
     objectMapper = Jackson2ObjectMapperBuilder
-        .json()
-        .modules(javaTimeModule)
-        .featuresToDisable(
-            SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
-            DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
-            DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
-            DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES
-        )
-        .featuresToEnable(
-            JsonParser.Feature.ALLOW_COMMENTS,
-            SerializationFeature.INDENT_OUTPUT
-        )
-        .build();
+      .json()
+      .modules(javaTimeModule)
+      .featuresToDisable(
+        SerializationFeature.WRITE_DATES_AS_TIMESTAMPS,
+        DeserializationFeature.ADJUST_DATES_TO_CONTEXT_TIME_ZONE,
+        DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES,
+        DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES
+      )
+      .featuresToEnable(
+        JsonParser.Feature.ALLOW_COMMENTS,
+        SerializationFeature.INDENT_OUTPUT
+      )
+      .build();
   }
 
   protected void starting(Description description) {
@@ -140,7 +144,7 @@ public class EngineIntegrationRule extends TestWatcher {
       CloseableHttpResponse response = client.execute(getRequest);
       if (response.getStatusLine().getStatusCode() != 200) {
         throw new RuntimeException("Something really bad happened during purge, " +
-            "please check tomcat logs of engine-purge servlet");
+                                     "please check tomcat logs of engine-purge servlet");
       }
       response.close();
     } catch (IOException e) {
@@ -185,7 +189,6 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
 
-
   private String getTaskListUri() {
     return getEngineUrl() + "/task";
   }
@@ -226,7 +229,8 @@ public class EngineIntegrationRule extends TestWatcher {
       response = client.execute(get);
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
       List<ProcessDefinitionEngineDto> procDefs =
-        objectMapper.readValue(responseString, new TypeReference<List<ProcessDefinitionEngineDto>>(){});
+        objectMapper.readValue(responseString, new TypeReference<List<ProcessDefinitionEngineDto>>() {
+        });
       response.close();
       assertThat(procDefs.size(), is(1));
       return procDefs.get(0).getId();
@@ -251,7 +255,8 @@ public class EngineIntegrationRule extends TestWatcher {
       response = client.execute(get);
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
       List<ProcessDefinitionEngineDto> procDefs =
-        objectMapper.readValue(responseString, new TypeReference<List<ProcessDefinitionEngineDto>>(){});
+        objectMapper.readValue(responseString, new TypeReference<List<ProcessDefinitionEngineDto>>() {
+        });
       response.close();
       return procDefs;
     } catch (IOException e) {
@@ -306,10 +311,11 @@ public class EngineIntegrationRule extends TestWatcher {
     try {
       CloseableHttpResponse response = client.execute(get);
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-      processInstanceDto = objectMapper.readValue(responseString, new TypeReference<HistoricProcessInstanceDto>() {});
+      processInstanceDto = objectMapper.readValue(responseString, new TypeReference<HistoricProcessInstanceDto>() {
+      });
       response.close();
     } catch (IOException e) {
-      logger.error("Could not get process definition for process instance: " + processInstanceId, e );
+      logger.error("Could not get process definition for process instance: " + processInstanceId, e);
     }
     return processInstanceDto;
   }
@@ -319,13 +325,15 @@ public class EngineIntegrationRule extends TestWatcher {
     HttpDelete delete = new HttpDelete(getHistoricGetProcessInstanceUri(processInstanceId));
     try {
       CloseableHttpResponse response = client.execute(delete);
-      if(response.getStatusLine().getStatusCode() != 204) {
-        logger.error("Could not delete process definition for process instance [{}]. Reason: wrong response code [{}]",
+      if (response.getStatusLine().getStatusCode() != 204) {
+        logger.error(
+          "Could not delete process definition for process instance [{}]. Reason: wrong response code [{}]",
           processInstanceId,
-          response.getStatusLine().getStatusCode());
+          response.getStatusLine().getStatusCode()
+        );
       }
     } catch (Exception e) {
-      logger.error("Could not delete process definition for process instance: " + processInstanceId, e );
+      logger.error("Could not delete process definition for process instance: " + processInstanceId, e);
     }
   }
 
@@ -334,13 +342,15 @@ public class EngineIntegrationRule extends TestWatcher {
     HttpDelete delete = new HttpDelete(getGetProcessInstanceUri(processInstanceId));
     try {
       CloseableHttpResponse response = client.execute(delete);
-      if(response.getStatusLine().getStatusCode() != 204) {
-        logger.error("Could not cancel process definition for process instance [{}]. Reason: wrong response code [{}]",
-                processInstanceId,
-                response.getStatusLine().getStatusCode());
+      if (response.getStatusLine().getStatusCode() != 204) {
+        logger.error(
+          "Could not cancel process definition for process instance [{}]. Reason: wrong response code [{}]",
+          processInstanceId,
+          response.getStatusLine().getStatusCode()
+        );
       }
     } catch (Exception e) {
-      logger.error("Could not cancel process definition for process instance: " + processInstanceId, e );
+      logger.error("Could not cancel process definition for process instance: " + processInstanceId, e);
     }
   }
 
@@ -349,14 +359,16 @@ public class EngineIntegrationRule extends TestWatcher {
     HttpDelete delete = new HttpDelete(getVariableDeleteUri(variableName, processInstanceId));
     try {
       CloseableHttpResponse response = client.execute(delete);
-      if(response.getStatusLine().getStatusCode() != 204) {
-        logger.error("Could not delete variable [{}] for process instance [{}]. Reason: wrong response code [{}]",
+      if (response.getStatusLine().getStatusCode() != 204) {
+        logger.error(
+          "Could not delete variable [{}] for process instance [{}]. Reason: wrong response code [{}]",
           variableName,
           processInstanceId,
-          response.getStatusLine().getStatusCode());
+          response.getStatusLine().getStatusCode()
+        );
       }
     } catch (Exception e) {
-      logger.error("Could not delete variable for process instance: " + processInstanceId, e );
+      logger.error("Could not delete variable for process instance: " + processInstanceId, e);
     }
   }
 
@@ -386,13 +398,13 @@ public class EngineIntegrationRule extends TestWatcher {
 
   private DeploymentDto deployProcess(BpmnModelInstance bpmnModelInstance, CloseableHttpClient client) {
     String process = Bpmn.convertToString(bpmnModelInstance);
-    HttpPost deploymentRequest = createDeploymentRequest(process);
+    HttpPost deploymentRequest = createDeploymentRequest(process, "test.bpmn");
     DeploymentDto deployment = new DeploymentDto();
     try {
       CloseableHttpResponse response = client.execute(deploymentRequest);
       if (response.getStatusLine().getStatusCode() != 200) {
         throw new RuntimeException("Something really bad happened during deployment, " +
-          "could not create a deployment!");
+                                     "could not create a deployment!");
       }
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
       deployment = objectMapper.readValue(responseString, DeploymentDto.class);
@@ -403,14 +415,50 @@ public class EngineIntegrationRule extends TestWatcher {
     return deployment;
   }
 
-  private HttpPost createDeploymentRequest(String process) {
+  public void startDecisionInstance(String decisionDefinitionId, Map<String, Object> variables) {
+    CloseableHttpClient client = getHttpClient();
+    startDecisionInstance(decisionDefinitionId, client, variables);
+  }
+
+  private void startDecisionInstance(String decisionDefinitionId,
+                                     CloseableHttpClient client,
+                                     Map<String, Object> variables) {
+    final HttpPost post = new HttpPost(getStartDecisionInstanceUri(decisionDefinitionId));
+    post.addHeader("Content-Type", "application/json");
+    final Map<String, Object> requestBodyAsMap = convertVariableMap(variables);
+
+    final String requestBodyAsJson;
+    try {
+      requestBodyAsJson = objectMapper.writeValueAsString(requestBodyAsMap);
+      post.setEntity(new StringEntity(requestBodyAsJson, ContentType.APPLICATION_JSON));
+      try (final CloseableHttpResponse response = client.execute(post)) {
+        if (response.getStatusLine().getStatusCode() != 200) {
+          String body = "";
+          if (response.getEntity() != null) {
+            body = EntityUtils.toString(response.getEntity());
+          }
+          throw new RuntimeException(
+            "Could not start the decision definition. " +
+              "Request: [" + post.toString() + "]. " +
+              "Response: [" + body + "]"
+          );
+        }
+      }
+    } catch (IOException e) {
+      final String message = "Could not start the given decision model!";
+      logger.error(message, e);
+      throw new RuntimeException(message, e);
+    }
+  }
+
+  private HttpPost createDeploymentRequest(String process, String fileName) {
     HttpPost post = new HttpPost(getDeploymentUri());
     HttpEntity entity = MultipartEntityBuilder
       .create()
       .addTextBody("deployment-name", "deployment")
       .addTextBody("enable-duplicate-filtering", "false")
       .addTextBody("deployment-source", "process application")
-      .addBinaryBody("data", process.getBytes(StandardCharsets.UTF_8), ContentType.APPLICATION_OCTET_STREAM, "test.bpmn")
+      .addBinaryBody("data", process.getBytes(StandardCharsets.UTF_8), ContentType.APPLICATION_OCTET_STREAM, fileName)
       .build();
     post.setEntity(entity);
     return post;
@@ -421,19 +469,19 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   private String getStartProcessInstanceUri(String procDefId) {
-    return getEngineUrl() +  "/process-definition/" + procDefId + "/start";
+    return getEngineUrl() + "/process-definition/" + procDefId + "/start";
   }
 
   private String getHistoricGetProcessInstanceUri(String processInstanceId) {
-    return getEngineUrl() +  "/history/process-instance/" + processInstanceId;
+    return getEngineUrl() + "/history/process-instance/" + processInstanceId;
   }
 
   private String getGetProcessInstanceUri(String processInstanceId) {
-    return getEngineUrl() +  "/process-instance/" + processInstanceId;
+    return getEngineUrl() + "/process-instance/" + processInstanceId;
   }
 
   private String getVariableDeleteUri(String variableName, String processInstanceId) {
-    return getEngineUrl() +  "/process-instance/" + processInstanceId + "/variables/" + variableName;
+    return getEngineUrl() + "/process-instance/" + processInstanceId + "/variables/" + variableName;
   }
 
   private String getProcessDefinitionUri() {
@@ -444,22 +492,33 @@ public class EngineIntegrationRule extends TestWatcher {
     return getProcessDefinitionUri() + "/" + processDefinitionId + "/xml";
   }
 
+  private String getDecisionDefinitionUri() {
+    return getEngineUrl() + "/decision-definition";
+  }
+
+
+  private String getStartDecisionInstanceUri(final String decisionDefinitionId) {
+    return getEngineUrl() + "/decision-definition/" + decisionDefinitionId + "/evaluate";
+  }
+
   private String getCountHistoryUri() {
     return getEngineUrl() + "/history/process-instance/count";
   }
 
   private String getEngineUrl() {
     return properties.get("camunda.optimize.engine.rest").toString() +
-        properties.get("camunda.optimize.engine.name").toString();
+      properties.get("camunda.optimize.engine.name").toString();
   }
 
-  private ProcessDefinitionEngineDto getProcessDefinitionEngineDto(DeploymentDto deployment, CloseableHttpClient client) {
+  private ProcessDefinitionEngineDto getProcessDefinitionEngineDto(DeploymentDto deployment,
+                                                                   CloseableHttpClient client) {
     List<ProcessDefinitionEngineDto> processDefinitions = getAllProcessDefinitions(deployment, client);
     assertThat("Deployment should contain only one process definition!", processDefinitions.size(), is(1));
     return processDefinitions.get(0);
   }
 
-  private List<ProcessDefinitionEngineDto> getAllProcessDefinitions(DeploymentDto deployment, CloseableHttpClient client) {
+  private List<ProcessDefinitionEngineDto> getAllProcessDefinitions(DeploymentDto deployment,
+                                                                    CloseableHttpClient client) {
     HttpRequestBase get = new HttpGet(getProcessDefinitionUri());
     URI uri = null;
     try {
@@ -495,6 +554,42 @@ public class EngineIntegrationRule extends TestWatcher {
     }
   }
 
+  public DecisionDefinitionEngineDto getDecisionDefinitionByDeployment(DeploymentDto deployment) {
+    HttpRequestBase get = new HttpGet(getDecisionDefinitionUri());
+    try {
+      URI uri = new URIBuilder(get.getURI())
+        .addParameter("deploymentId", deployment.getId())
+        .build();
+      get.setURI(uri);
+      CloseableHttpResponse response = null;
+      try {
+        response = getHttpClient().execute(get);
+        String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+        final List<DecisionDefinitionEngineDto> decisionDefinitionEngineDtos = objectMapper.readValue(
+          responseString, new TypeReference<List<DecisionDefinitionEngineDto>>() {
+          }
+        );
+        return decisionDefinitionEngineDtos.get(0);
+      } finally {
+        if (response != null) {
+          try {
+            response.close();
+          } catch (IOException e) {
+            String message = "Could not close response!";
+            logger.error(message, e);
+          }
+        }
+      }
+    } catch (URISyntaxException e) {
+      logger.error("Could not build uri!", e);
+      throw new RuntimeException(e);
+    } catch (IOException e) {
+      String message = "Could not retrieve all process definitions!";
+      logger.error(message, e);
+      throw new RuntimeException(message, e);
+    }
+  }
+
   public ProcessInstanceEngineDto startProcessInstance(String procDefId, CloseableHttpClient client) {
     return startProcessInstance(procDefId, client, new HashMap<>());
   }
@@ -505,8 +600,8 @@ public class EngineIntegrationRule extends TestWatcher {
   }
 
   private ProcessInstanceEngineDto startProcessInstance(String processDefinitionId,
-                                                       CloseableHttpClient client,
-                                                       Map<String, Object> variables) {
+                                                        CloseableHttpClient client,
+                                                        Map<String, Object> variables) {
     return startProcessInstance(processDefinitionId, client, variables, "aBusinessKey");
   }
 
@@ -529,23 +624,23 @@ public class EngineIntegrationRule extends TestWatcher {
     try {
       requestBodyAsJson = objectMapper.writeValueAsString(requestBodyAsMap);
       post.setEntity(new StringEntity(requestBodyAsJson, ContentType.APPLICATION_JSON));
-    CloseableHttpResponse response = client.execute(post);
-    if (response.getStatusLine().getStatusCode() != 200) {
-      String body = "";
-      if (response.getEntity() != null) {
-        body = EntityUtils.toString(response.getEntity());
-      }
-      throw new RuntimeException(
+      CloseableHttpResponse response = client.execute(post);
+      if (response.getStatusLine().getStatusCode() != 200) {
+        String body = "";
+        if (response.getEntity() != null) {
+          body = EntityUtils.toString(response.getEntity());
+        }
+        throw new RuntimeException(
           "Could not start the process definition. " +
-              "Request: [" + post.toString() + "]. " +
-              "Response: [" + body + "]"
-      );
-    }
-    String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-    ProcessInstanceEngineDto processInstanceEngineDto =
+            "Request: [" + post.toString() + "]. " +
+            "Response: [" + body + "]"
+        );
+      }
+      String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+      ProcessInstanceEngineDto processInstanceEngineDto =
         objectMapper.readValue(responseString, ProcessInstanceEngineDto.class);
-    response.close();
-    return processInstanceEngineDto;
+      response.close();
+      return processInstanceEngineDto;
     } catch (IOException e) {
       String message = "Could not start the given process model!";
       logger.error(message, e);
@@ -557,7 +652,7 @@ public class EngineIntegrationRule extends TestWatcher {
     Map<String, Object> variables = new HashMap<>();
     for (Map.Entry<String, Object> nameToValue : plainVariables.entrySet()) {
       Object value = nameToValue.getValue();
-      if(value instanceof ComplexVariableDto) {
+      if (value instanceof ComplexVariableDto) {
         variables.put(nameToValue.getKey(), value);
       } else {
         Map<String, Object> fields = new HashMap<>();
@@ -587,8 +682,8 @@ public class EngineIntegrationRule extends TestWatcher {
     URI uri = null;
     try {
       uri = new URIBuilder(get.getURI())
-          .addParameter("unfinished", "true")
-          .build();
+        .addParameter("unfinished", "true")
+        .build();
     } catch (URISyntaxException e) {
       logger.error("Could not build uri!", e);
     }
@@ -598,8 +693,14 @@ public class EngineIntegrationRule extends TestWatcher {
     while (!done && iterations < MAX_WAIT) {
       CloseableHttpResponse response = client.execute(get);
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-      HashMap<String,Object> parsed = objectMapper.readValue(responseString, new TypeReference<HashMap<String,Object>>() {});
-      if (!parsed.containsKey(COUNT)) throw new RuntimeException("Engine could not count PIs");
+      HashMap<String, Object> parsed = objectMapper.readValue(
+        responseString,
+        new TypeReference<HashMap<String, Object>>() {
+        }
+      );
+      if (!parsed.containsKey(COUNT)) {
+        throw new RuntimeException("Engine could not count PIs");
+      }
       if (Integer.valueOf(parsed.get(COUNT).toString()) != 0) {
         Thread.sleep(100);
         iterations = iterations + 1;
@@ -659,7 +760,7 @@ public class EngineIntegrationRule extends TestWatcher {
     for (int i = 0; i < 15; i++) {
       HashMap<String, Object> values = new HashMap<>();
       values.put("type", 1);
-      values.put("permissions", new String [] {"ALL"});
+      values.put("permissions", new String[]{"ALL"});
       values.put("userId", username);
       values.put("groupId", null);
       values.put("resourceType", i);
@@ -672,7 +773,7 @@ public class EngineIntegrationRule extends TestWatcher {
 
         httpPost.setEntity(new StringEntity(objectMapper.writeValueAsString(values), ContentType.APPLICATION_JSON));
         CloseableHttpResponse response = client.execute(httpPost);
-        assertThat(response.getStatusLine().getStatusCode(),is(200));
+        assertThat(response.getStatusLine().getStatusCode(), is(200));
         response.close();
       } catch (Exception e) {
         logger.error("error creating authorization", e);
@@ -706,7 +807,7 @@ public class EngineIntegrationRule extends TestWatcher {
 
       httpPost.setEntity(new StringEntity(objectMapper.writeValueAsString(groupDto), ContentType.APPLICATION_JSON));
       CloseableHttpResponse response = client.execute(httpPost);
-      assertThat(response.getStatusLine().getStatusCode(),is(204));
+      assertThat(response.getStatusLine().getStatusCode(), is(204));
       response.close();
     } catch (Exception e) {
       logger.error("error creating group", e);
@@ -722,10 +823,33 @@ public class EngineIntegrationRule extends TestWatcher {
 
       put.setEntity(new StringEntity("", ContentType.APPLICATION_JSON));
       CloseableHttpResponse response = client.execute(put);
-      assertThat(response.getStatusLine().getStatusCode(),is(204));
+      assertThat(response.getStatusLine().getStatusCode(), is(204));
       response.close();
     } catch (Exception e) {
       logger.error("error creating group members", e);
     }
+  }
+
+  public DeploymentDto deployDecisionDefinition(DmnModelInstance dmnModelInstance) {
+    CloseableHttpClient client = getHttpClient();
+    return deployDecisionDefinition(dmnModelInstance, client);
+  }
+
+  private DeploymentDto deployDecisionDefinition(DmnModelInstance dmnModelInstance, CloseableHttpClient client) {
+    String decisionDefinition = Dmn.convertToString(dmnModelInstance);
+    HttpPost deploymentRequest = createDeploymentRequest(decisionDefinition, "test.dmn");
+    DeploymentDto deployment = new DeploymentDto();
+    try {
+      CloseableHttpResponse response = client.execute(deploymentRequest);
+      if (response.getStatusLine().getStatusCode() != 200) {
+        throw new RuntimeException("Something really bad happened during deployment, could not create a deployment!");
+      }
+      String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+      deployment = objectMapper.readValue(responseString, DeploymentDto.class);
+      response.close();
+    } catch (IOException e) {
+      logger.error("Error during deployment request! Could not deploy the given decisionDefinition model!", e);
+    }
+    return deployment;
   }
 }

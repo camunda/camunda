@@ -3,7 +3,6 @@ package org.camunda.optimize.service.engine.importing.service.mediator;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.rest.engine.EngineContext;
 import org.camunda.optimize.service.engine.importing.fetcher.instance.ProcessDefinitionFetcher;
-import org.camunda.optimize.service.engine.importing.index.handler.AllEntitiesBasedImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.handler.impl.ProcessDefinitionImportIndexHandler;
 import org.camunda.optimize.service.engine.importing.index.page.AllEntitiesBasedImportPage;
 import org.camunda.optimize.service.engine.importing.service.ProcessDefinitionImportService;
@@ -21,14 +20,13 @@ import java.util.List;
 public class ProcessDefinitionEngineImportMediator
   extends BackoffImportMediator<ProcessDefinitionImportIndexHandler> {
 
-  protected EngineContext engineContext;
   private ProcessDefinitionFetcher engineEntityFetcher;
   private ProcessDefinitionImportService definitionImportService;
   @Autowired
   private ProcessDefinitionWriter processDefinitionWriter;
 
   public ProcessDefinitionEngineImportMediator(EngineContext engineContext) {
-    this.engineContext = engineContext;
+    super(engineContext);
   }
 
   @PostConstruct

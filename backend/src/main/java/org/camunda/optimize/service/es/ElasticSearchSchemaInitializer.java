@@ -1,19 +1,7 @@
 package org.camunda.optimize.service.es;
 
 import org.camunda.optimize.service.es.schema.ElasticSearchSchemaManager;
-import org.camunda.optimize.service.es.schema.type.AlertType;
-import org.camunda.optimize.service.es.schema.type.CombinedReportType;
-import org.camunda.optimize.service.es.schema.type.DashboardShareType;
-import org.camunda.optimize.service.es.schema.type.DashboardType;
-import org.camunda.optimize.service.es.schema.type.DurationHeatmapTargetValueType;
-import org.camunda.optimize.service.es.schema.type.LicenseType;
-import org.camunda.optimize.service.es.schema.type.MetadataType;
-import org.camunda.optimize.service.es.schema.type.ProcessDefinitionType;
-import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
-import org.camunda.optimize.service.es.schema.type.ReportShareType;
-import org.camunda.optimize.service.es.schema.type.SingleReportType;
-import org.camunda.optimize.service.es.schema.type.index.ImportIndexType;
-import org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType;
+import org.camunda.optimize.service.es.schema.StrictTypeMappingCreator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.elasticsearch.client.Client;
 import org.elasticsearch.client.transport.NoNodeAvailableException;
@@ -23,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import javax.annotation.PostConstruct;
+import java.util.List;
 
 @Component
 public class ElasticSearchSchemaInitializer {
@@ -30,47 +19,20 @@ public class ElasticSearchSchemaInitializer {
 
   private volatile boolean initialized = false;
 
-  @Autowired
-  private ElasticSearchSchemaManager schemaManager;
+  private final ElasticSearchSchemaManager schemaManager;
+  private final List<StrictTypeMappingCreator> mappings;
 
   @Autowired
-  private DurationHeatmapTargetValueType targetValueType;
+  public ElasticSearchSchemaInitializer(ElasticSearchSchemaManager schemaManager,
+                                        List<StrictTypeMappingCreator> mappings) {
+    this.schemaManager = schemaManager;
+    this.mappings = mappings;
+  }
 
-  @Autowired
-  private ProcessDefinitionType processDefinitionType;
-
-  @Autowired
-  private LicenseType licenseType;
-
-  @Autowired
-  private ProcessInstanceType processInstanceType;
-
-  @Autowired
-  private ImportIndexType importIndexType;
-
-  @Autowired
-  private TimestampBasedImportIndexType timestampBasedImportIndexType;
-
-  @Autowired
-  private SingleReportType singleReportType;
-
-  @Autowired
-  private CombinedReportType combinedReportType;
-
-  @Autowired
-  private DashboardType dashboardType;
-
-  @Autowired
-  private AlertType alertType;
-
-  @Autowired
-  private ReportShareType reportShareType;
-
-  @Autowired
-  private DashboardShareType dashboardShareType;
-
-  @Autowired
-  private MetadataType metadataType;
+  @PostConstruct
+  public void initializeMappings() {
+    mappings.forEach(schemaManager::addMapping);
+  }
 
   public synchronized void initializeSchema() {
     if (!initialized) {
@@ -85,23 +47,6 @@ public class ElasticSearchSchemaInitializer {
       }
 
     }
-  }
-
-  @PostConstruct
-  public void initializeMappings() {
-    schemaManager.addMapping(processDefinitionType);
-    schemaManager.addMapping(importIndexType);
-    schemaManager.addMapping(targetValueType);
-    schemaManager.addMapping(processInstanceType);
-    schemaManager.addMapping(timestampBasedImportIndexType);
-    schemaManager.addMapping(licenseType);
-    schemaManager.addMapping(singleReportType);
-    schemaManager.addMapping(combinedReportType);
-    schemaManager.addMapping(dashboardType);
-    schemaManager.addMapping(alertType);
-    schemaManager.addMapping(reportShareType);
-    schemaManager.addMapping(dashboardShareType);
-    schemaManager.addMapping(metadataType);
   }
 
   /**

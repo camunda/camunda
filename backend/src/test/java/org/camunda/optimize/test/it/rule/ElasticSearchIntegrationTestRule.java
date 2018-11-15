@@ -101,6 +101,10 @@ public class ElasticSearchIntegrationTestRule extends TestWatcher {
     }
   }
 
+  public ObjectMapper getObjectMapper() {
+    return objectMapper;
+  }
+
   public String getDateFormat() {
     return properties.getProperty("camunda.optimize.serialization.date.format");
   }
