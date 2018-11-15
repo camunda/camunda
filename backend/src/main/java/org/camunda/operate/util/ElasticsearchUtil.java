@@ -161,7 +161,7 @@ public abstract class ElasticsearchUtil {
         final BulkItemResponse[] items = bulkItemResponses.getItems();
         for (BulkItemResponse responseItem : items) {
           if (responseItem.isFailed()) {
-            logger.error(String.format("%s failed for type [%s] and id [%s]: %s", responseItem.getOpType(), responseItem.getType(), responseItem.getId(),
+            logger.error(String.format("%s failed for type [%s] and id [%s]: %s", responseItem.getOpType(), responseItem.getIndex(), responseItem.getId(),
               responseItem.getFailureMessage()), responseItem.getFailure().getCause());
             throw new PersistenceException("Operation failed: " + responseItem.getFailureMessage(), responseItem.getFailure().getCause(), responseItem.getItemId());
           }

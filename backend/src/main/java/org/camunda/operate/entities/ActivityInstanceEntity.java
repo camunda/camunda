@@ -29,8 +29,6 @@ public class ActivityInstanceEntity extends OperateZeebeEntity {
 
   private String workflowInstanceId;
 
-  private long position;
-
   public String getActivityId() {
     return activityId;
   }
@@ -80,15 +78,6 @@ public class ActivityInstanceEntity extends OperateZeebeEntity {
     this.workflowInstanceId = workflowInstanceId;
   }
 
-  @JsonIgnore
-  public long getPosition() {
-    return this.position;
-  }
-
-  public void setPosition(long position) {
-    this.position = position;
-  }
-
   @Override
   public boolean equals(Object o) {
     if (this == o)
@@ -100,8 +89,6 @@ public class ActivityInstanceEntity extends OperateZeebeEntity {
 
     ActivityInstanceEntity that = (ActivityInstanceEntity) o;
 
-    if (position != that.position)
-      return false;
     if (activityId != null ? !activityId.equals(that.activityId) : that.activityId != null)
       return false;
     if (startDate != null ? !startDate.equals(that.startDate) : that.startDate != null)
@@ -124,7 +111,6 @@ public class ActivityInstanceEntity extends OperateZeebeEntity {
     result = 31 * result + (state != null ? state.hashCode() : 0);
     result = 31 * result + (type != null ? type.hashCode() : 0);
     result = 31 * result + (workflowInstanceId != null ? workflowInstanceId.hashCode() : 0);
-    result = 31 * result + (int) (position ^ (position >>> 32));
     return result;
   }
 }

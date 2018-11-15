@@ -25,8 +25,6 @@ public class IncidentEntity extends OperateZeebeEntity {
 
   private String workflowInstanceId;
 
-  private long position;
-
   public String getErrorType() {
     return errorType;
   }
@@ -84,15 +82,6 @@ public class IncidentEntity extends OperateZeebeEntity {
     this.workflowInstanceId = workflowInstanceId;
   }
 
-  @JsonIgnore
-  public long getPosition() {
-    return this.position;
-  }
-
-  public void setPosition(long position) {
-    this.position = position;
-  }
-
   @Override
   public boolean equals(Object o) {
     if (this == o)
@@ -104,8 +93,6 @@ public class IncidentEntity extends OperateZeebeEntity {
 
     IncidentEntity that = (IncidentEntity) o;
 
-    if (position != that.position)
-      return false;
     if (errorType != null ? !errorType.equals(that.errorType) : that.errorType != null)
       return false;
     if (errorMessage != null ? !errorMessage.equals(that.errorMessage) : that.errorMessage != null)
@@ -131,7 +118,6 @@ public class IncidentEntity extends OperateZeebeEntity {
     result = 31 * result + (activityInstanceId != null ? activityInstanceId.hashCode() : 0);
     result = 31 * result + (jobId != null ? jobId.hashCode() : 0);
     result = 31 * result + (workflowInstanceId != null ? workflowInstanceId.hashCode() : 0);
-    result = 31 * result + (int) (position ^ (position >>> 32));
     return result;
   }
 }

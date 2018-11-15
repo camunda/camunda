@@ -89,7 +89,6 @@ public class ElasticsearchRequestCreatorsHolder {
         updateFields.put(WorkflowInstanceType.WORKFLOW_VERSION, entity.getWorkflowVersion());
         updateFields.put(WorkflowInstanceType.STATE, entity.getState());
         updateFields.put(StrictTypeMappingCreator.PARTITION_ID, entity.getPartitionId());
-        updateFields.put(StrictTypeMappingCreator.POSITION, entity.getPosition());
         updateFields.put(WorkflowInstanceType.STRING_VARIABLES, entity.getStringVariables());
         updateFields.put(WorkflowInstanceType.DOUBLE_VARIABLES, entity.getDoubleVariables());
         updateFields.put(WorkflowInstanceType.LONG_VARIABLES, entity.getLongVariables());
@@ -125,11 +124,9 @@ public class ElasticsearchRequestCreatorsHolder {
         Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(entity), HashMap.class);
         Map<String, Object> params = new HashMap<>();
         params.put("incident", jsonMap);
-        params.put("position", entity.getPosition());
 
         String script =
             "boolean f = false;" +
-            "ctx._source.position = params.position; " +
             //search for incident
             "for (int j = 0; j < ctx._source.incidents.size(); j++) {" +
               "if (ctx._source.incidents[j].id == params.incident.id) {" +
@@ -202,7 +199,6 @@ public class ElasticsearchRequestCreatorsHolder {
   private WorkflowInstanceEntity createWorkflowInstanceEntity(IncidentEntity incident) {
     WorkflowInstanceEntity workflowInstanceEntity = new WorkflowInstanceEntity();
     workflowInstanceEntity.setId(incident.getWorkflowInstanceId());
-    workflowInstanceEntity.setPosition(incident.getPosition());
     workflowInstanceEntity.setPartitionId(incident.getPartitionId());
     workflowInstanceEntity.setKey(IdUtil.extractKey(incident.getWorkflowInstanceId()));
     workflowInstanceEntity.getIncidents().add(incident);
@@ -225,11 +221,9 @@ public class ElasticsearchRequestCreatorsHolder {
         Map<String, Object> jsonMap = objectMapper.readValue(objectMapper.writeValueAsString(entity), HashMap.class);
         Map<String, Object> params = new HashMap<>();
         params.put("activity", jsonMap);
-        params.put("position", entity.getPosition());
 
         String script =
             "boolean f = false;" +
-            "ctx._source.position = params.position; " +
             //search for active incident
             "for (int j = 0; j < ctx._source.incidents.size(); j++) {" +
               "if (ctx._source.incidents[j].activityInstanceId == params.activity.id && " +

@@ -134,9 +134,6 @@ public class WorkflowInstanceType extends StrictTypeMappingCreator {
       .endObject()
       .startObject(KEY)
         .field("type", "long")
-      .endObject()
-      .startObject(POSITION)
-        .field("type", "long")
       .endObject();
     return newBuilder;
   }

@@ -12,7 +12,6 @@
  */
 package org.camunda.operate.zeebeimport;
 
-import javax.annotation.PostConstruct;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -21,7 +20,6 @@ import java.util.Map;
 import java.util.Set;
 import org.camunda.operate.entities.meta.ImportPositionEntity;
 import org.camunda.operate.es.types.ImportPositionType;
-import org.camunda.operate.es.types.StrictTypeMappingCreator;
 import org.camunda.operate.exceptions.PersistenceException;
 import org.camunda.operate.property.OperateProperties;
 import org.camunda.operate.util.ElasticsearchUtil;
@@ -143,18 +141,18 @@ public class ZeebeESImporter extends Thread {
 
     QueryBuilder positionBeforeQ = null;
     if(positionBefore != null) {
-      positionBeforeQ = rangeQuery(StrictTypeMappingCreator.POSITION).lt(positionBefore);
+      positionBeforeQ = rangeQuery(ImportPositionType.POSITION).lt(positionBefore);
     }
 
     final QueryBuilder queryBuilder = joinWithAnd(
-      rangeQuery(StrictTypeMappingCreator.POSITION).gt(positionAfter),
+      rangeQuery(ImportPositionType.POSITION).gt(positionAfter),
       positionBeforeQ,
       termQuery("metadata." + ImportPositionType.PARTITION_ID, partitionId));
 
     final SearchResponse searchResponse =
       zeebeEsClient
         .prepareSearch(aliasName)
-        .addSort(StrictTypeMappingCreator.POSITION, SortOrder.ASC)
+        .addSort(ImportPositionType.POSITION, SortOrder.ASC)
         .setQuery(queryBuilder)
         .setSize(operateProperties.getZeebeElasticsearch().getBatchSize())
         .get();

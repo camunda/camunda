@@ -11,6 +11,7 @@ public class ImportPositionType extends StrictTypeMappingCreator {
 
   public static final String ALIAS_NAME = "aliasName";
   public static final String ID = "id";
+  public static final String POSITION = "position";
 
   @Autowired
   private OperateProperties operateProperties;

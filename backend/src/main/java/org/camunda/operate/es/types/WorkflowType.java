@@ -57,9 +57,6 @@ public class WorkflowType extends StrictTypeMappingCreator {
       .endObject()
       .startObject(PARTITION_ID)
         .field("type", "integer")
-      .endObject()
-      .startObject(POSITION)
-        .field("type", "long")
       .endObject();
   }
 
