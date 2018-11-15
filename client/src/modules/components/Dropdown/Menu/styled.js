@@ -127,9 +127,6 @@ export const Ul = themed(styled.ul`
     light: Colors.uiLight06
   })};
 
-  /* Other */
-  list-style-type: none;
-
   /* Pointer Styles */
   &:after,
   &:before {

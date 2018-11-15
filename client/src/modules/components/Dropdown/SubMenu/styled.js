@@ -81,7 +81,6 @@ export const Ul = themed(styled.ul`
   })};
 
   /* Other */
-  list-style-type: none;
   border-radius: 3px;
   border: 1px solid
     ${themeStyle({dark: Colors.uiDark06, light: Colors.uiLight05})};

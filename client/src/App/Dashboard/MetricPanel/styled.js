@@ -17,9 +17,6 @@ export const Panel = themed(styled.div`
 `);
 
 export const Ul = themed(styled.ul`
-  padding: 0px;
-  margin: 0px;
-  list-style-type: none;
   display: flex;
   justify-content: space-around;
   & > li {

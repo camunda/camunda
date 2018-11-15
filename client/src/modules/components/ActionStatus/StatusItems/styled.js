@@ -9,11 +9,7 @@ export const Ul = themed(styled.ul`
   flex-direction: row;
   align-items: center;
   padding: 0 0 0 2px;
-  margin: 0px;
-
-  list-style-type: none;
   border-radius: 12px;
-
   background: transparent;
 `);
 

@@ -15,7 +15,6 @@ export const Ul = styled.ul`
   margin: 0px;
   overflow: auto;
   overflow-x: hidden;
-  list-style: none;
 `;
 
 export const MessageWrapper = styled.div`

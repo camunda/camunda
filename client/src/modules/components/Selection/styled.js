@@ -149,12 +149,6 @@ export const OptionLabel = styled.label`
   margin-left: 8px;
 `;
 
-export const Ul = styled.ul`
-  padding: 0px;
-  margin: 0px;
-  list-style-type: none;
-`;
-
 export const Li = themed(styled.li`
   display: flex;
   align-items: center;

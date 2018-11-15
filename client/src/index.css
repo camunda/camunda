@@ -48,6 +48,17 @@ button {
   border-width: 0;
 }
 
+/* removes dotted default focus */
+button::-moz-focus-inner {
+  border: 0;
+}
+
+ul {
+  padding: 0px;
+  margin: 0px;
+  list-style-type: none;
+}
+
 svg {
   fill: currentColor;
 }

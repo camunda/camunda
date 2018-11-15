@@ -17,7 +17,7 @@ export default class IncidentsByWorkflow extends React.Component {
   render() {
     const {incidents} = this.props;
     return (
-      <Styled.Ul>
+      <ul>
         {incidents.map(item => {
           const versions = getVersions(item.workflows);
           const name = item.workflowName || item.bpmnProcessId;
@@ -32,7 +32,7 @@ export default class IncidentsByWorkflow extends React.Component {
             </Styled.Li>
           );
         })}
-      </Styled.Ul>
+      </ul>
     );
   }
 }

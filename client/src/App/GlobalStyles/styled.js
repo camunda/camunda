@@ -13,10 +13,6 @@ export const GlobalStyles = themed(createGlobalStyle`
       tabKeyPressed ? interactions.focus.css : resetFocusCss};
   }
   
-  button::-moz-focus-inner {
-      border: 0;
-    }
-
   // these elements have custom styling for :focus on keyboard & mouse focus,
   // (clicking them does shows the focus style)
   input,

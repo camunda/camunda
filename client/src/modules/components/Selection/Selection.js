@@ -132,7 +132,7 @@ export default class Selection extends React.Component {
   renderBody = () => {
     const instances = [...this.props.instances];
     return (
-      <Styled.Ul>
+      <ul>
         {instances.map((instance, index) => {
           const instanceDetails = instance[1];
           const {state, type} = getLatestOperation(instance.operations);
@@ -154,7 +154,7 @@ export default class Selection extends React.Component {
             </Styled.Li>
           );
         })}
-      </Styled.Ul>
+      </ul>
     );
   };
 

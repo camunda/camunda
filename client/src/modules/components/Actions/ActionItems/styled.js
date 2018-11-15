@@ -8,9 +8,6 @@ export const Ul = themed(styled.ul`
   display: inline-flex;
   flex-direction: row;
   padding: 2px;
-  margin: 0px;
-
-  list-style-type: none;
   border-radius: 12px;
 
   background: ${({children}) =>

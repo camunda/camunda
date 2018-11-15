@@ -89,11 +89,6 @@ export const ProfileDropdown = styled.span`
 
 export const Menu = styled.ul`
   display: inline-block;
-  margin: 0;
-  padding: 0;
-
-  list-style: none;
-
   li {
     display: inline-block;
   }
