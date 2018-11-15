@@ -36,17 +36,20 @@ describe('Selection', () => {
   });
 
   it('should contain a Header', () => {
-    expect(node.find(Styled.Header)).toExist();
-    expect(node.find(Styled.Header)).toMatchSnapshot();
-    expect(node.find(Styled.Header).props().isOpen).toBe(true);
+    expect(node.find(Styled.Dt)).toExist();
+    expect(node.find(Styled.Dt)).toMatchSnapshot();
+    expect(node.find(Styled.Dt).props().isOpen).toBe(true);
   });
 
   it('should contain Instances', () => {
-    expect(node.find(Styled.Instance)).toExist();
-    expect(node.find(Styled.Instance)).toMatchSnapshot();
+    expect(node.find(Styled.Ul)).toExist();
+    expect(node.find(Styled.Ul)).toMatchSnapshot();
+    expect(node.find(Styled.StatusCell)).toExist();
     expect(node.find(StateIcon)).toExist();
-    expect(node.find(Styled.WorkflowName)).toExist();
-    expect(node.find(Styled.InstanceId)).toExist();
+    expect(node.find(Styled.NameCell)).toExist();
+    expect(node.find(Styled.IdCell)).toExist();
+    expect(node.find(Styled.ActionStatusCell)).toExist();
+    expect(node.find(Styled.InstanceActionStatus)).toExist();
   });
 
   it('should contain a Footer', () => {
@@ -61,10 +64,10 @@ describe('Selection', () => {
   it('should contain Actions', () => {
     expect(node.find(Styled.Actions)).toExist();
     expect(node.find(Styled.Actions)).toMatchSnapshot();
-    expect(node.find(Styled.DropdownTrigger)).toExist();
+    expect(node.find(Styled.DropdownWrapper)).toExist();
     expect(node.find(Dropdown)).toExist();
     expect(node.find(Styled.DeleteIcon)).toExist();
-    expect(node.find(Styled.DeleteIcon).props().onClick).toBe(mockOnDelete);
+    expect(node.find(Styled.ActionButton).props().onClick).toBe(mockOnDelete);
   });
 
   it('should only have Header when closed', () => {
@@ -75,31 +78,31 @@ describe('Selection', () => {
     node.update();
 
     // then
-    expect(node.find(Styled.Header)).toExist();
+    expect(node.find(Styled.SelectionToggle)).toExist();
 
-    expect(node.find(Styled.Instance)).not.toExist();
+    expect(node.find(Styled.Dd)).not.toExist();
     expect(node.find(Styled.Footer)).not.toExist();
     expect(node.find(Styled.Actions)).not.toExist();
   });
 
   it('should call the passed toggle method', () => {
-    node.find(Styled.Header).simulate('click');
+    node.find(Styled.SelectionToggle).simulate('click');
     expect(mockOnClick).toHaveBeenCalled();
   });
 
   it('should call the passed delete method', () => {
-    node.find(Styled.DeleteIcon).simulate('click');
+    node.find(Styled.ActionButton).simulate('click');
     expect(mockOnDelete).toHaveBeenCalled();
   });
 
   it('should call the passed retry method', () => {
-    node.find(Styled.DropdownTrigger).simulate('click');
+    node.find(Dropdown).simulate('click');
     node.find('[data-test="UPDATE_RETRIES-dropdown-option"]').simulate('click');
     expect(mockOnRetry).toHaveBeenCalled();
   });
 
   it('should call the passed cancel method', () => {
-    node.find(Styled.DropdownTrigger).simulate('click');
+    node.find(Dropdown).simulate('click');
     node.find('[data-test="CANCEL-dropdown-option"]').simulate('click');
     expect(mockOnCancel).toHaveBeenCalled();
   });

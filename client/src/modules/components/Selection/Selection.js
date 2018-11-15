@@ -1,12 +1,10 @@
-import React, {Fragment} from 'react';
+import React from 'react';
 import PropTypes from 'prop-types';
 
 import StateIcon from 'modules/components/StateIcon';
 import Dropdown from 'modules/components/Dropdown';
 
 import {OPERATION_STATE, OPERATION_TYPE} from 'modules/constants';
-
-import ActionStatus from 'modules/components/ActionStatus';
 
 import {getWorkflowName, getLatestOperation} from 'modules/utils/instance';
 import {ReactComponent as Down} from 'modules/components/Icon/down.svg';
@@ -19,6 +17,7 @@ export default class Selection extends React.Component {
   static propTypes = {
     isOpen: PropTypes.bool.isRequired,
     selectionId: PropTypes.number.isRequired,
+    instances: PropTypes.object.isRequired,
     instanceCount: PropTypes.number.isRequired,
     onToggle: PropTypes.func.isRequired,
     onRetry: PropTypes.func.isRequired,
@@ -46,45 +45,6 @@ export default class Selection extends React.Component {
 
     this.setState({operationState: OPERATION_STATE.SCHEDULED});
     callOperation();
-  };
-
-  renderArrowIcon = isOpen => (
-    <Styled.ArrowIcon>{isOpen ? <Down /> : <Right />}</Styled.ArrowIcon>
-  );
-
-  renderBody = instancesMap => {
-    const instances = [...instancesMap];
-
-    return instances.map((instance, index) => {
-      const instanceDetails = instance[1];
-
-      const {state, type} = getLatestOperation(instance.operations);
-      return (
-        <Styled.Instance key={index}>
-          <StateIcon instance={instanceDetails} />
-          <Styled.WorkflowName>
-            {getWorkflowName(instanceDetails)}
-          </Styled.WorkflowName>
-          <Styled.InstanceId>{instanceDetails.id}</Styled.InstanceId>
-          <ActionStatus
-            operationState={this.state.operationState || state}
-            operationType={type}
-          />
-        </Styled.Instance>
-      );
-    });
-  };
-
-  renderFooter = (instanceCount, numberOfDisplayedInstances) => {
-    const difference = instanceCount - numberOfDisplayedInstances;
-    return (
-      <Styled.Footer>
-        <Styled.MoreInstances>
-          {difference > 0 &&
-            `${difference} more Instance${difference !== 1 ? 's' : ''}`}
-        </Styled.MoreInstances>
-      </Styled.Footer>
-    );
   };
 
   renderLabel = type => {
@@ -118,46 +78,119 @@ export default class Selection extends React.Component {
 
   renderActions = () => (
     <Styled.Actions>
-      <Styled.DropdownTrigger onClick={this.stopClickPropagation}>
+      <Styled.DropdownWrapper onClick={this.stopClickPropagation}>
         <Dropdown
+          aria-label="Batch Operations"
           label={<Styled.BatchIcon />}
           buttonStyles={Styled.dropDownButtonStyles}
         >
           {this.availableOperations.map(this.renderOption)}
         </Dropdown>
-      </Styled.DropdownTrigger>
-      <Styled.DeleteIcon onClick={this.props.onDelete} />
+      </Styled.DropdownWrapper>
+      <Styled.ActionButton
+        aria-label={`Drop Selection ${this.props.selectionId}`}
+        onClick={this.props.onDelete}
+      >
+        <Styled.DeleteIcon />
+      </Styled.ActionButton>
     </Styled.Actions>
   );
 
+  renderArrowIcon = isOpen => (
+    <Styled.ArrowIcon isOpen={isOpen}>
+      {isOpen ? <Down /> : <Right />}
+    </Styled.ArrowIcon>
+  );
+
+  renderHeader = idString => {
+    const {isOpen, selectionId, onToggle, instanceCount} = this.props;
+    return (
+      <Styled.Dt isOpen={isOpen}>
+        {this.renderArrowIcon(isOpen)}
+        <Styled.Heading role="heading">
+          <Styled.SelectionToggle
+            onClick={onToggle}
+            isOpen={isOpen}
+            id={`${idString}-toggle`}
+            aria-expanded={isOpen}
+            aria-controls={idString}
+            aria-label={`Selection ${selectionId}, holding ${instanceCount} Instance${
+              instanceCount !== 1 ? 's' : ''
+            }`}
+          >
+            <Styled.Headline>Selection {selectionId}</Styled.Headline>
+            <Styled.Badge isOpen={isOpen} type={BADGE_TYPE.SELECTIONS}>
+              {instanceCount}
+            </Styled.Badge>
+          </Styled.SelectionToggle>
+        </Styled.Heading>
+        {isOpen && this.renderActions()}
+      </Styled.Dt>
+    );
+  };
+
+  renderBody = () => {
+    const instances = [...this.props.instances];
+    return (
+      <Styled.Ul>
+        {instances.map((instance, index) => {
+          const instanceDetails = instance[1];
+          const {state, type} = getLatestOperation(instance.operations);
+          return (
+            <Styled.Li key={index}>
+              <Styled.StatusCell>
+                <StateIcon instance={instanceDetails} />
+              </Styled.StatusCell>
+              <Styled.NameCell>
+                {getWorkflowName(instanceDetails)}
+              </Styled.NameCell>
+              <Styled.IdCell>{instanceDetails.id}</Styled.IdCell>
+              <Styled.ActionStatusCell>
+                <Styled.InstanceActionStatus
+                  operationState={this.state.operationState || state}
+                  operationType={type}
+                />
+              </Styled.ActionStatusCell>
+            </Styled.Li>
+          );
+        })}
+      </Styled.Ul>
+    );
+  };
+
+  renderFooter = () => {
+    const numberOfNotShownInstances =
+      this.props.instanceCount - this.props.instances.size;
+    return (
+      <Styled.Footer>
+        <Styled.MoreInstances>
+          {numberOfNotShownInstances > 0 &&
+            `${numberOfNotShownInstances} more Instance${
+              numberOfNotShownInstances !== 1 ? 's' : ''
+            }`}
+        </Styled.MoreInstances>
+      </Styled.Footer>
+    );
+  };
+
   render() {
-    const {
-      isOpen,
-      selectionId,
-      onToggle,
-      instances,
-      instanceCount
-    } = this.props;
-    const {renderArrowIcon, renderBody, renderActions, renderFooter} = this;
+    const {renderHeader, renderBody, renderFooter} = this;
+    const idString = `selection-${this.props.selectionId}`;
 
     return (
-      <Styled.Selection>
-        <Styled.Header onClick={onToggle} {...{isOpen}}>
-          {renderArrowIcon(isOpen)}
-          <Styled.Headline>Selection {selectionId}</Styled.Headline>
-          <Styled.Badge isOpen={isOpen} type={BADGE_TYPE.SELECTIONS}>
-            {instanceCount}
-          </Styled.Badge>
-          {isOpen && renderActions()}
-        </Styled.Header>
-        {isOpen && (
-          <Fragment>
-            {renderBody(instances, instanceCount)}
-
-            {renderFooter(instanceCount, instances.size)}
-          </Fragment>
+      <Styled.Dl role="presentation">
+        {renderHeader(idString)}
+        {this.props.isOpen && (
+          <Styled.Dd
+            role="region"
+            id={idString}
+            aria-labelledby={`${idString}-toggle`}
+          >
+            {renderBody(idString)}
+            {renderFooter()}
+          </Styled.Dd>
         )}
-      </Styled.Selection>
+      </Styled.Dl>
     );
   }
 }
