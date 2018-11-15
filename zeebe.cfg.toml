@@ -2,7 +2,7 @@
 id = "debug"
 className = "io.zeebe.broker.exporter.debug.DebugHttpExporter"
   [exporters.args]
-  limit = 8000
+  limit = 3000
 
 [[exporters]]
 id = "elasticsearch"

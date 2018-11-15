@@ -50,6 +50,11 @@ public class WorkflowInstanceRestService {
       @RequestBody WorkflowInstanceRequestDto workflowInstanceRequest,
       @RequestParam("firstResult") Integer firstResult,
       @RequestParam("maxResults") Integer maxResults) {
+    for (WorkflowInstanceQueryDto query : workflowInstanceRequest.getQueries()) {
+      if (query.getWorkflowVersion() != null && query.getBpmnProcessId() == null) {
+        throw new InvalidRequestException("BpmnProcessId must be provided in request, when workflow version is not null.");
+      }
+    }
     return workflowInstanceReader.queryWorkflowInstances(workflowInstanceRequest, firstResult, maxResults);
   }
 
@@ -75,8 +80,11 @@ public class WorkflowInstanceRestService {
       throw new InvalidRequestException("Exactly one query must be specified in the request.");
     }
     final List<String> workflowIds = queries.get(0).getWorkflowIds();
-    if (workflowIds == null || workflowIds.size() != 1) {
-      throw new InvalidRequestException("Exactly one workflowId must be specified in the request.");
+    final String bpmnProcessId = queries.get(0).getBpmnProcessId();
+    final Integer workflowVersion = queries.get(0).getWorkflowVersion();
+
+    if ( (workflowIds != null && workflowIds.size() == 1) == (bpmnProcessId != null && workflowVersion != null) ) {
+      throw new InvalidRequestException("Exactly one workflow must be specified in the request (via workflowIds or bpmnProcessId/version).");
     }
     return workflowInstanceReader.getActivityStatistics(queries.get(0));
   }

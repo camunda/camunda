@@ -791,6 +791,108 @@ public class WorkflowInstanceQueryIT extends OperateIntegrationTest {
   }
 
   @Test
+  public void testQueryByBpmnProcessIdAndVersion() throws Exception {
+    //given
+    String bpmnProcessId1 = "pr1";
+    int version1 = 1;
+    String bpmnProcessId2 = "pr2";
+    int version2 = 2;
+    final WorkflowInstanceEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
+    workflowInstance1.setBpmnProcessId(bpmnProcessId1);
+    workflowInstance1.setWorkflowVersion(version1);
+    final WorkflowInstanceEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.CANCELED);
+    workflowInstance2.setBpmnProcessId(bpmnProcessId1);
+    workflowInstance2.setWorkflowVersion(version2);
+    final WorkflowInstanceEntity workflowInstance3 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
+    workflowInstance3.setBpmnProcessId(bpmnProcessId2);
+    workflowInstance3.setWorkflowVersion(version1);
+
+    elasticsearchTestRule.persist(workflowInstance1, workflowInstance2, workflowInstance3);
+
+    WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(q -> {
+      q.setBpmnProcessId(bpmnProcessId1);
+      q.setWorkflowVersion(version1);
+    });
+
+    //when
+    MockHttpServletRequestBuilder request = post(query(0, 100))
+      .content(mockMvcTestRule.json(query))
+      .contentType(mockMvcTestRule.getContentType());
+
+    MvcResult mvcResult = mockMvc.perform(request)
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
+      .andReturn();
+
+    //then
+    WorkflowInstanceResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<WorkflowInstanceResponseDto>() { });
+
+    assertThat(response.getWorkflowInstances()).hasSize(1);
+
+    assertThat(response.getWorkflowInstances()).extracting(WorkflowInstanceType.ID)
+      .containsExactly(workflowInstance1.getId());
+  }
+
+  @Test
+  public void testQueryByWorkflowVersionFail() throws Exception {
+    //when
+    WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(q -> {
+      q.setWorkflowVersion(1);
+    });
+    MockHttpServletRequestBuilder request = post(query(0, 100))
+      .content(mockMvcTestRule.json(query))
+      .contentType(mockMvcTestRule.getContentType());
+
+    //then
+    MvcResult mvcResult = mockMvc.perform(request)
+      .andExpect(status().isBadRequest())
+      .andReturn();
+
+    assertThat(mvcResult.getResolvedException().getMessage()).contains("BpmnProcessId must be provided in request, when workflow version is not null");
+
+  }
+
+  @Test
+  public void testQueryByBpmnProcessIdAllVersions() throws Exception {
+    //given
+    String bpmnProcessId1 = "pr1";
+    int version1 = 1;
+    String bpmnProcessId2 = "pr2";
+    int version2 = 2;
+    final WorkflowInstanceEntity workflowInstance1 = createWorkflowInstance(WorkflowInstanceState.ACTIVE);
+    workflowInstance1.setBpmnProcessId(bpmnProcessId1);
+    workflowInstance1.setWorkflowVersion(version1);
+    final WorkflowInstanceEntity workflowInstance2 = createWorkflowInstance(WorkflowInstanceState.CANCELED);
+    workflowInstance2.setBpmnProcessId(bpmnProcessId1);
+    workflowInstance2.setWorkflowVersion(version2);
+    final WorkflowInstanceEntity workflowInstance3 = createWorkflowInstance(WorkflowInstanceState.COMPLETED);
+    workflowInstance3.setBpmnProcessId(bpmnProcessId2);
+    workflowInstance3.setWorkflowVersion(version1);
+
+    elasticsearchTestRule.persist(workflowInstance1, workflowInstance2, workflowInstance3);
+
+    WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(q -> q.setBpmnProcessId(bpmnProcessId1));
+
+    //when
+    MockHttpServletRequestBuilder request = post(query(0, 100))
+      .content(mockMvcTestRule.json(query))
+      .contentType(mockMvcTestRule.getContentType());
+
+    MvcResult mvcResult = mockMvc.perform(request)
+      .andExpect(status().isOk())
+      .andExpect(content().contentType(mockMvcTestRule.getContentType()))
+      .andReturn();
+
+    //then
+    WorkflowInstanceResponseDto response = mockMvcTestRule.fromResponse(mvcResult, new TypeReference<WorkflowInstanceResponseDto>() { });
+
+    assertThat(response.getWorkflowInstances()).hasSize(2);
+
+    assertThat(response.getWorkflowInstances()).extracting(WorkflowInstanceType.ID)
+      .containsExactlyInAnyOrder(workflowInstance1.getId(), workflowInstance2.getId());
+  }
+
+  @Test
   public void testPagination() throws Exception {
     createData();
 

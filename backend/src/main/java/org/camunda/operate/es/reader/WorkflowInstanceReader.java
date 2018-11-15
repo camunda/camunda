@@ -217,6 +217,11 @@ public class WorkflowInstanceReader {
       workflowIdQuery = createWorkflowIdsQuery(query.getWorkflowIds());
     }
 
+    QueryBuilder bpmnProcessIdQuery = null;
+    if (query.getBpmnProcessId() != null) {
+      bpmnProcessIdQuery = createBpmnProcessIdQuery(query.getBpmnProcessId(), query.getWorkflowVersion());
+    }
+
     QueryBuilder excludeIdsQuery = null;
     if (query.getExcludeIds() != null && !query.getExcludeIds().isEmpty()) {
       excludeIdsQuery = createExcludeIdsQuery(query.getExcludeIds());
@@ -227,7 +232,16 @@ public class WorkflowInstanceReader {
       variablesQuery = createVariablesQuery(query.getVariablesQuery());
     }
 
-    return joinWithAnd(runningFinishedQuery, idsQuery, errorMessageQuery, createDateQuery, endDateQuery, workflowIdQuery, excludeIdsQuery, variablesQuery);
+    return joinWithAnd(runningFinishedQuery, idsQuery, errorMessageQuery, createDateQuery, endDateQuery, workflowIdQuery, bpmnProcessIdQuery, excludeIdsQuery, variablesQuery);
+  }
+
+  private QueryBuilder createBpmnProcessIdQuery(String bpmnProcessId, Integer workflowVersion) {
+    final TermQueryBuilder bpmnProcessIdQ = termQuery(WorkflowInstanceType.BPMN_PROCESS_ID, bpmnProcessId);
+    TermQueryBuilder versionQ = null;
+    if (workflowVersion != null) {
+      versionQ = termQuery(WorkflowInstanceType.WORKFLOW_VERSION, workflowVersion);
+    }
+    return joinWithAnd(bpmnProcessIdQ, versionQ);
   }
 
   private QueryBuilder createVariablesQuery(VariablesQueryDto variablesQuery) {
@@ -260,8 +274,8 @@ public class WorkflowInstanceReader {
     return boolQuery().mustNot(termsQuery(WorkflowInstanceType.ID, excludeIds));
   }
 
-  private QueryBuilder createWorkflowIdsQuery(List<String> workflowId) {
-    return termsQuery(WorkflowInstanceType.WORKFLOW_ID, workflowId);
+  private QueryBuilder createWorkflowIdsQuery(List<String> workflowIds) {
+    return termsQuery(WorkflowInstanceType.WORKFLOW_ID, workflowIds);
   }
 
   private QueryBuilder createEndDateQuery(WorkflowInstanceQueryDto query) {

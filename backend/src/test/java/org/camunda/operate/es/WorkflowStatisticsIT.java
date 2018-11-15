@@ -91,12 +91,7 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
 
   @Test
   public void testFailStatisticsWithNoWorkflowId() throws Exception {
-    String workflowId = "demoProcess";
-
-    createData(workflowId);
-
-    final WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(workflowId);
-    query.getQueries().get(0).setWorkflowIds(new ArrayList<>());
+    final WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(null);
 
     MockHttpServletRequestBuilder request = post(QUERY_WORKFLOW_STATISTICS_URL)
       .content(mockMvcTestRule.json(query))
@@ -106,7 +101,26 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
       .andExpect(status().isBadRequest())
       .andReturn();
 
-    assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo("Exactly one workflowId must be specified in the request.");
+    assertThat(mvcResult.getResolvedException().getMessage()).contains("Exactly one workflow must be specified in the request");
+  }
+
+  @Test
+  public void testFailStatisticsWithBpmnProcessIdButNoVersion() throws Exception {
+
+    String bpmnProcessId = "demoProcess";
+
+    final WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(null);
+    query.getQueries().get(0).setBpmnProcessId(bpmnProcessId);
+
+    MockHttpServletRequestBuilder request = post(QUERY_WORKFLOW_STATISTICS_URL)
+      .content(mockMvcTestRule.json(query))
+      .contentType(mockMvcTestRule.getContentType());
+
+    MvcResult mvcResult = mockMvc.perform(request)
+      .andExpect(status().isBadRequest())
+      .andReturn();
+
+    assertThat(mvcResult.getResolvedException().getMessage()).contains("Exactly one workflow must be specified in the request");
   }
 
   @Test
@@ -126,7 +140,28 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
       .andExpect(status().isBadRequest())
       .andReturn();
 
-    assertThat(mvcResult.getResolvedException().getMessage()).isEqualTo("Exactly one workflowId must be specified in the request.");
+    assertThat(mvcResult.getResolvedException().getMessage()).contains("Exactly one workflow must be specified in the request");
+  }
+
+
+  @Test
+  public void testFailStatisticsWithWorkflowIdAndBpmnProcessId() throws Exception {
+    String workflowId = "1";
+    String bpmnProcessId = "demoProcess";
+    Integer version = 1;
+    final WorkflowInstanceRequestDto query = createGetAllWorkflowInstancesQuery(workflowId);
+    query.getQueries().get(0).setBpmnProcessId(bpmnProcessId);
+    query.getQueries().get(0).setWorkflowVersion(1);
+
+    MockHttpServletRequestBuilder request = post(QUERY_WORKFLOW_STATISTICS_URL)
+      .content(mockMvcTestRule.json(query))
+      .contentType(mockMvcTestRule.getContentType());
+
+    MvcResult mvcResult = mockMvc.perform(request)
+      .andExpect(status().isBadRequest())
+      .andReturn();
+
+    assertThat(mvcResult.getResolvedException().getMessage()).contains("Exactly one workflow must be specified in the request");
   }
 
   @Test
@@ -177,7 +212,9 @@ public class WorkflowStatisticsIT extends OperateIntegrationTest {
     q.setFinished(true);
     q.setCompleted(true);
     q.setCanceled(true);
-    q.setWorkflowIds(Arrays.asList(workflowId));
+    if (workflowId != null) {
+      q.setWorkflowIds(Arrays.asList(workflowId));
+    }
     WorkflowInstanceRequestDto request = new WorkflowInstanceRequestDto();
     request.getQueries().add(q);
     return request;

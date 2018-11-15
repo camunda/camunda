@@ -8,7 +8,6 @@ import io.swagger.annotations.ApiModelProperty;
 @ApiModel("Workflow instance query")
 public class WorkflowInstanceQueryDto {
 
-
   private boolean running;
   private boolean active;
   private boolean incidents;
@@ -37,6 +36,11 @@ public class WorkflowInstanceQueryDto {
   private OffsetDateTime endDateBefore;
 
   private List<String> workflowIds;
+
+  private String bpmnProcessId;
+
+  @ApiModelProperty(value = "Workflow version, goes together with bpmnProcessId. Can be null, then all version of the workflow are selected.", allowEmptyValue = true)
+  private Integer workflowVersion;
 
   private List<String> excludeIds;
 
@@ -157,6 +161,22 @@ public class WorkflowInstanceQueryDto {
     this.workflowIds = workflowIds;
   }
 
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
+  }
+
+  public void setBpmnProcessId(String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
+  }
+
+  public Integer getWorkflowVersion() {
+    return workflowVersion;
+  }
+
+  public void setWorkflowVersion(Integer workflowVersion) {
+    this.workflowVersion = workflowVersion;
+  }
+
   public List<String> getExcludeIds() {
     return excludeIds;
   }
@@ -210,6 +230,10 @@ public class WorkflowInstanceQueryDto {
       return false;
     if (workflowIds != null ? !workflowIds.equals(that.workflowIds) : that.workflowIds != null)
       return false;
+    if (bpmnProcessId != null ? !bpmnProcessId.equals(that.bpmnProcessId) : that.bpmnProcessId != null)
+      return false;
+    if (workflowVersion != null ? !workflowVersion.equals(that.workflowVersion) : that.workflowVersion != null)
+      return false;
     if (excludeIds != null ? !excludeIds.equals(that.excludeIds) : that.excludeIds != null)
       return false;
     return variablesQuery != null ? variablesQuery.equals(that.variablesQuery) : that.variablesQuery == null;
@@ -231,6 +255,8 @@ public class WorkflowInstanceQueryDto {
     result = 31 * result + (endDateAfter != null ? endDateAfter.hashCode() : 0);
     result = 31 * result + (endDateBefore != null ? endDateBefore.hashCode() : 0);
     result = 31 * result + (workflowIds != null ? workflowIds.hashCode() : 0);
+    result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
+    result = 31 * result + (workflowVersion != null ? workflowVersion.hashCode() : 0);
     result = 31 * result + (excludeIds != null ? excludeIds.hashCode() : 0);
     result = 31 * result + (variablesQuery != null ? variablesQuery.hashCode() : 0);
     return result;

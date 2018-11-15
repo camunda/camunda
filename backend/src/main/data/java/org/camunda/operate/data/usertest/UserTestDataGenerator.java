@@ -41,6 +41,8 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
   private static final Logger logger = LoggerFactory.getLogger(UserTestDataGenerator.class);
 
+  public static final int JOB_WORKER_TIMEOUT = 5;
+
   protected Random random = new Random();
 
   private ScheduledExecutorService scheduler;
@@ -329,7 +331,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         }
       })
       .name("operate")
-      .timeout(Duration.ofSeconds(3))
+      .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
       .open();
   }
 
@@ -352,7 +354,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         }
       })
       .name("operate")
-      .timeout(Duration.ofSeconds(3))
+      .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
       .open();
   }
 
@@ -375,7 +377,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         }
       })
       .name("operate")
-      .timeout(Duration.ofSeconds(3))
+      .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
       .open();
   }
 
@@ -388,7 +390,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         jobClient.newCompleteCommand(job.getKey()).payload("{\"luggageWeight\":" + (random.nextInt(10) + 20) + "}").send().join();
       })
       .name("operate")
-      .timeout(Duration.ofSeconds(3))
+      .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
       .open();
   }
 
@@ -415,7 +417,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         }
       })
       .name("operate")
-      .timeout(Duration.ofSeconds(3))
+      .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
       .open();
   }
 
@@ -441,7 +443,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         }
       })
       .name("operate")
-      .timeout(Duration.ofSeconds(3))
+      .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
       .open();
   }
 
@@ -467,7 +469,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         }
       })
       .name("operate")
-      .timeout(Duration.ofSeconds(3))
+      .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
       .open();
   }
 
