@@ -66,7 +66,7 @@ describe('IncidentsByWorkflow', () => {
     const node = shallow(
       <IncidentsByWorkflow incidents={mockIncidentsByWorkflow} />
     );
-    const nodeIncidentStatistic = node.find(IncidentStatistic).at(0);
+    const nodeIncidentStatistic = node.find(Styled.IncidentStatistic).at(0);
 
     expect(nodeIncidentStatistic.props().label).toContain(
       mockIncidentsByWorkflow[0].workflowName ||

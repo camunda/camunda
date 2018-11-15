@@ -1,8 +1,8 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`IncidentStatistic should display the right data 1`] = `
-<Fragment>
-  <Themed(styled.div)>
+<div>
+  <Themed(Styled(withStrippedProps(Component)))>
     <Themed(styled.div)>
       10
     </Themed(styled.div)>
@@ -12,7 +12,7 @@ exports[`IncidentStatistic should display the right data 1`] = `
     <Themed(styled.div)>
       8
     </Themed(styled.div)>
-  </Themed(styled.div)>
+  </Themed(Styled(withStrippedProps(Component)))>
   <styled.div>
     <styled.div
       style={
@@ -22,5 +22,5 @@ exports[`IncidentStatistic should display the right data 1`] = `
       }
     />
   </styled.div>
-</Fragment>
+</div>
 `;

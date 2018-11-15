@@ -1,7 +1,8 @@
 import styled from 'styled-components';
 import {Colors, themed, themeStyle} from 'modules/theme';
+import withStrippedProps from 'modules/utils/withStrippedProps';
 
-export const Wrapper = themed(styled.div`
+export const Wrapper = themed(styled(withStrippedProps(['perUnit'])('div'))`
   display: flex;
   padding: 0;
   list-type: none;
@@ -17,7 +18,9 @@ export const Wrapper = themed(styled.div`
 
   font-family: IBMPlexSans;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: ${({perUnit}) => {
+    return perUnit ? '400' : '600';
+  }};
   line-height: 1.71;
 `);
 
