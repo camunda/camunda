@@ -51,6 +51,14 @@ public class MessageSubscription implements BufferReader, BufferWriter {
     this.correlationKey.wrap(correlationKey);
   }
 
+  public void setElementInstanceKey(long elementInstanceKey) {
+    this.elementInstanceKey = elementInstanceKey;
+  }
+
+  public void setMessageName(DirectBuffer messageName) {
+    this.messageName.wrap(messageName);
+  }
+
   public DirectBuffer getMessageName() {
     return messageName;
   }

@@ -19,6 +19,8 @@ package io.zeebe.broker.subscription.message.state;
 
 import static io.zeebe.broker.workflow.state.PersistenceHelper.EXISTENCE;
 import static io.zeebe.logstreams.rocksdb.ZeebeStateConstants.STATE_BYTE_ORDER;
+import static io.zeebe.util.buffer.BufferUtil.readIntoBuffer;
+import static io.zeebe.util.buffer.BufferUtil.writeIntoBuffer;
 
 import io.zeebe.broker.workflow.state.WorkflowInstanceSubscription;
 import io.zeebe.logstreams.rocksdb.ZbRocksDb;
@@ -27,10 +29,12 @@ import io.zeebe.logstreams.state.StateController;
 import io.zeebe.logstreams.state.StateLifecycleListener;
 import java.util.Arrays;
 import java.util.List;
+import org.agrona.DirectBuffer;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.rocksdb.ColumnFamilyHandle;
+import org.rocksdb.RocksDB;
 import org.rocksdb.RocksDBException;
 import org.rocksdb.WriteOptions;
 
@@ -48,12 +52,14 @@ public class WorkflowInstanceSubscriptionState implements StateLifecycleListener
   };
 
   private ZbRocksDb db;
+  // (elementInstanceKey, messageName) => WorkflowInstanceSubscription
   private ColumnFamilyHandle subscriptionColumnFamily;
+  // (sentTime, elementInstanceKey, messageName) => \0
   private ColumnFamilyHandle sentTimeColumnFamily;
 
   private final ExpandableArrayBuffer keyBuffer = new ExpandableArrayBuffer();
   private final ExpandableArrayBuffer valueBuffer = new ExpandableArrayBuffer();
-  private final UnsafeBuffer iterateKeyBuffer = new UnsafeBuffer(0, 0);
+  private final DirectBuffer bufferView = new UnsafeBuffer(0, 0);
 
   private final WorkflowInstanceSubscription subscription = new WorkflowInstanceSubscription();
 
@@ -73,16 +79,16 @@ public class WorkflowInstanceSubscriptionState implements StateLifecycleListener
   public void put(final WorkflowInstanceSubscription subscription) {
     try (final WriteOptions options = new WriteOptions();
         final ZbWriteBatch batch = new ZbWriteBatch()) {
-
+      int keyLength = writeSubscriptionKey(keyBuffer, 0, subscription);
       subscription.write(valueBuffer, 0);
-
       batch.put(
           subscriptionColumnFamily,
-          subscription.getElementInstanceKey(),
+          keyBuffer.byteArray(),
+          keyLength,
           valueBuffer.byteArray(),
           subscription.getLength());
 
-      final int keyLength = writeSentTimeKey(keyBuffer, subscription);
+      keyLength = writeSentTimeKey(keyBuffer, subscription);
       batch.put(
           sentTimeColumnFamily, keyBuffer.byteArray(), keyLength, EXISTENCE, EXISTENCE.length);
 
@@ -94,36 +100,101 @@ public class WorkflowInstanceSubscriptionState implements StateLifecycleListener
 
   private int writeSentTimeKey(
       MutableDirectBuffer buffer, final WorkflowInstanceSubscription subscription) {
+    final int expectedLength = Long.BYTES + getSubscriptionKeyLength(subscription.getMessageName());
     int offset = 0;
 
     buffer.putLong(offset, subscription.getCommandSentTime(), STATE_BYTE_ORDER);
     offset += Long.BYTES;
 
-    buffer.putLong(offset, subscription.getElementInstanceKey(), STATE_BYTE_ORDER);
-    offset += Long.BYTES;
+    offset = writeSubscriptionKey(buffer, offset, subscription);
+    assert offset == expectedLength : "End offset differs from expected length";
 
-    assert (2 * Long.BYTES) == offset
-        : "Offset problem: offset is not equal to expected key length";
     return offset;
   }
 
-  private boolean readSubscription(long key, WorkflowInstanceSubscription subscription) {
-    final int readBytes = db.get(subscriptionColumnFamily, key, valueBuffer);
-    if (readBytes > 0) {
-      subscription.wrap(valueBuffer, 0, readBytes);
-      return true;
-    } else {
-      return false;
-    }
+  private int writeSubscriptionKey(
+      MutableDirectBuffer buffer, int offset, final WorkflowInstanceSubscription subscription) {
+    return writeSubscriptionKey(
+        buffer, offset, subscription.getElementInstanceKey(), subscription.getMessageName());
   }
 
-  public WorkflowInstanceSubscription getSubscription(long elementInstanceKey) {
-    final boolean found = readSubscription(elementInstanceKey, subscription);
+  private int writeSubscriptionKey(
+      MutableDirectBuffer buffer, int offset, long elementInstanceKey, DirectBuffer messageName) {
+    final int startOffset = offset;
+    final int expectedLength = getSubscriptionKeyLength(messageName);
+
+    buffer.putLong(offset, elementInstanceKey, STATE_BYTE_ORDER);
+    offset += Long.BYTES;
+
+    offset = writeIntoBuffer(buffer, offset, messageName);
+    assert (offset - startOffset) == expectedLength : "End offset differs from expected length";
+
+    return offset;
+  }
+
+  private void wrapSubscriptionKey(
+      DirectBuffer source, final WorkflowInstanceSubscription subscription) {
+    int offset = 0;
+
+    subscription.setElementInstanceKey(source.getLong(offset, STATE_BYTE_ORDER));
+    offset += Long.BYTES;
+
+    readIntoBuffer(source, offset, subscription.getMessageName());
+  }
+
+  private int getSubscriptionKeyLength(DirectBuffer messageName) {
+    return Long.BYTES + Integer.BYTES + messageName.capacity();
+  }
+
+  private boolean readSubscription(
+      long elementInstanceKey,
+      DirectBuffer messageName,
+      WorkflowInstanceSubscription subscription) {
+    final int keyLength = writeSubscriptionKey(keyBuffer, 0, elementInstanceKey, messageName);
+    bufferView.wrap(keyBuffer, 0, keyLength);
+
+    final int readBytes = db.get(subscriptionColumnFamily, bufferView, valueBuffer);
+    if (readBytes != RocksDB.NOT_FOUND) {
+      subscription.wrap(valueBuffer, 0, readBytes);
+      return true;
+    }
+
+    return false;
+  }
+
+  public WorkflowInstanceSubscription getSubscription(
+      long elementInstanceKey, DirectBuffer messageName) {
+    final boolean found = readSubscription(elementInstanceKey, messageName, subscription);
+
     if (found) {
       return subscription;
     } else {
       return null;
     }
+  }
+
+  public void visitElementSubscriptions(
+      long elementInstanceKey, WorkflowInstanceSubscriptionVisitor visitor) {
+    final UnsafeBuffer prefix = new UnsafeBuffer(keyBuffer, 0, Long.BYTES);
+    prefix.putLong(0, elementInstanceKey, STATE_BYTE_ORDER);
+
+    db.forEachPrefixed(
+        subscriptionColumnFamily,
+        prefix,
+        ((entry, control) -> {
+          wrapSubscriptionKey(entry.getKey(), subscription);
+          final boolean found =
+              readSubscription(
+                  subscription.getElementInstanceKey(),
+                  subscription.getMessageName(),
+                  subscription);
+          if (found) {
+            visitor.visit(subscription);
+          } else {
+            throw new IllegalStateException(
+                String.format("No subscription found with key %s", subscription));
+          }
+        }));
   }
 
   public void visitSubscriptionBefore(
@@ -132,20 +203,22 @@ public class WorkflowInstanceSubscriptionState implements StateLifecycleListener
     db.forEach(
         sentTimeColumnFamily,
         (entry, control) -> {
-          iterateKeyBuffer.wrap(entry.getKey());
-
-          final long sentTime = iterateKeyBuffer.getLong(0, STATE_BYTE_ORDER);
+          final DirectBuffer keyBuffer = entry.getKey();
+          final long sentTime = keyBuffer.getLong(0, STATE_BYTE_ORDER);
 
           boolean visited = false;
           if (sentTime < deadline) {
-            final long subscriptionKey = iterateKeyBuffer.getLong(Long.BYTES, STATE_BYTE_ORDER);
+            bufferView.wrap(keyBuffer, Long.BYTES, keyBuffer.capacity() - Long.BYTES);
+            wrapSubscriptionKey(bufferView, subscription);
 
-            final boolean found = readSubscription(subscriptionKey, subscription);
+            final boolean found =
+                readSubscription(
+                    subscription.getElementInstanceKey(),
+                    subscription.getMessageName(),
+                    subscription);
             if (!found) {
               throw new IllegalStateException(
-                  String.format(
-                      "Expected to find subscription with key %d, but no subscription found",
-                      subscriptionKey));
+                  String.format("No subscription found with key %s", subscription));
             }
 
             visited = visitor.visit(subscription);
@@ -159,41 +232,38 @@ public class WorkflowInstanceSubscriptionState implements StateLifecycleListener
 
   public void updateToOpenedState(
       final WorkflowInstanceSubscription subscription, int subscriptionPartitionId) {
-
     subscription.setOpened();
     subscription.setSubscriptionPartitionId(subscriptionPartitionId);
-
     updateSentTime(subscription, 0);
   }
 
   public void updateToClosingState(final WorkflowInstanceSubscription subscription, long sentTime) {
-
     subscription.setClosing();
-
     updateSentTime(subscription, sentTime);
   }
 
   public void updateSentTime(final WorkflowInstanceSubscription subscription, long sentTime) {
-
     try (final WriteOptions options = new WriteOptions();
         final ZbWriteBatch batch = new ZbWriteBatch()) {
+      int keyLength;
 
       if (subscription.getCommandSentTime() > 0) {
-        final int keyLength = writeSentTimeKey(keyBuffer, subscription);
+        keyLength = writeSentTimeKey(keyBuffer, subscription);
         batch.delete(sentTimeColumnFamily, keyBuffer.byteArray(), keyLength);
       }
 
       subscription.setCommandSentTime(sentTime);
-
+      keyLength = writeSubscriptionKey(keyBuffer, 0, subscription);
       subscription.write(valueBuffer, 0);
       batch.put(
           subscriptionColumnFamily,
-          subscription.getElementInstanceKey(),
+          keyBuffer.byteArray(),
+          keyLength,
           valueBuffer.byteArray(),
           subscription.getLength());
 
       if (sentTime > 0) {
-        final int keyLength = writeSentTimeKey(keyBuffer, subscription);
+        keyLength = writeSentTimeKey(keyBuffer, subscription);
         batch.put(
             sentTimeColumnFamily, keyBuffer.byteArray(), keyLength, EXISTENCE, EXISTENCE.length);
       }
@@ -204,12 +274,18 @@ public class WorkflowInstanceSubscriptionState implements StateLifecycleListener
     }
   }
 
-  public boolean existSubscriptionForElementInstance(final long elementInstanceKey) {
-    return db.exists(subscriptionColumnFamily, elementInstanceKey);
+  public boolean existSubscriptionForElementInstance(
+      long elementInstanceKey, DirectBuffer messageName) {
+    subscription.setElementInstanceKey(elementInstanceKey);
+    subscription.setMessageName(messageName);
+    final int keyLength = writeSubscriptionKey(keyBuffer, 0, subscription);
+    bufferView.wrap(keyBuffer, 0, keyLength);
+
+    return db.exists(subscriptionColumnFamily, bufferView);
   }
 
-  public boolean remove(final long elementInstanceKey) {
-    final boolean found = readSubscription(elementInstanceKey, subscription);
+  public boolean remove(long elementInstanceKey, DirectBuffer messageName) {
+    final boolean found = readSubscription(elementInstanceKey, messageName, subscription);
     if (found) {
       remove(subscription);
     }
@@ -219,11 +295,11 @@ public class WorkflowInstanceSubscriptionState implements StateLifecycleListener
   private void remove(final WorkflowInstanceSubscription subscription) {
     try (final WriteOptions options = new WriteOptions();
         final ZbWriteBatch batch = new ZbWriteBatch()) {
-
-      batch.delete(subscriptionColumnFamily, subscription.getElementInstanceKey());
+      int keyLength = writeSubscriptionKey(keyBuffer, 0, subscription);
+      batch.delete(subscriptionColumnFamily, keyBuffer.byteArray(), keyLength);
 
       if (subscription.getCommandSentTime() > 0) {
-        final int keyLength = writeSentTimeKey(keyBuffer, subscription);
+        keyLength = writeSentTimeKey(keyBuffer, subscription);
         batch.delete(sentTimeColumnFamily, keyBuffer.byteArray(), keyLength);
       }
 

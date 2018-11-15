@@ -22,6 +22,7 @@ import static io.zeebe.util.buffer.BufferUtil.readIntoBuffer;
 import static io.zeebe.util.buffer.BufferUtil.writeIntoBuffer;
 
 import io.zeebe.util.buffer.BufferReader;
+import io.zeebe.util.buffer.BufferUtil;
 import io.zeebe.util.buffer.BufferWriter;
 import org.agrona.DirectBuffer;
 import org.agrona.MutableDirectBuffer;
@@ -68,12 +69,28 @@ public class WorkflowInstanceSubscription implements BufferReader, BufferWriter 
     return messageName;
   }
 
+  public void setMessageName(DirectBuffer messageName) {
+    this.messageName.wrap(messageName);
+  }
+
   public DirectBuffer getCorrelationKey() {
     return correlationKey;
   }
 
+  public void setCorrelationKey(DirectBuffer correlationKey) {
+    this.correlationKey.wrap(correlationKey);
+  }
+
   public long getWorkflowInstanceKey() {
     return workflowInstanceKey;
+  }
+
+  public void setWorkflowInstanceKey(long workflowInstanceKey) {
+    this.workflowInstanceKey = workflowInstanceKey;
+  }
+
+  public void setElementInstanceKey(long elementInstanceKey) {
+    this.elementInstanceKey = elementInstanceKey;
   }
 
   public long getElementInstanceKey() {
@@ -158,5 +175,25 @@ public class WorkflowInstanceSubscription implements BufferReader, BufferWriter 
     offset = writeIntoBuffer(buffer, offset, messageName);
     offset = writeIntoBuffer(buffer, offset, correlationKey);
     assert offset == getLength() : "End offset differs with getLength()";
+  }
+
+  @Override
+  public String toString() {
+    return "WorkflowInstanceSubscription{"
+        + "elementInstanceKey="
+        + elementInstanceKey
+        + ", messageName="
+        + BufferUtil.bufferAsString(messageName)
+        + ", correlationKey="
+        + BufferUtil.bufferAsString(correlationKey)
+        + ", workflowInstanceKey="
+        + workflowInstanceKey
+        + ", subscriptionPartitionId="
+        + subscriptionPartitionId
+        + ", commandSentTime="
+        + commandSentTime
+        + ", state="
+        + state
+        + '}';
   }
 }

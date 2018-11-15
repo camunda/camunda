@@ -267,7 +267,7 @@ public class MessageCatchElementTest {
     Assertions.assertThat(messageSubscription.getValue())
         .hasWorkflowInstanceKey(workflowInstanceKey)
         .hasElementInstanceKey(catchEventEntered.getKey())
-        .hasMessageName("")
+        .hasMessageName("order canceled")
         .hasCorrelationKey("");
   }
 
@@ -293,7 +293,7 @@ public class MessageCatchElementTest {
     Assertions.assertThat(subscription.getValue())
         .hasWorkflowInstanceKey(workflowInstanceKey)
         .hasElementInstanceKey(catchEventEntered.getKey())
-        .hasMessageName("");
+        .hasMessageName("order canceled");
   }
 
   @Test

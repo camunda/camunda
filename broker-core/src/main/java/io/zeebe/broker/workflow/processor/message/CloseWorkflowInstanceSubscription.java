@@ -44,7 +44,9 @@ public final class CloseWorkflowInstanceSubscription
 
     final WorkflowInstanceSubscriptionRecord subscription = record.getValue();
 
-    final boolean removed = subscriptionState.remove(subscription.getElementInstanceKey());
+    final boolean removed =
+        subscriptionState.remove(
+            subscription.getElementInstanceKey(), subscription.getMessageName());
     if (removed) {
       streamWriter.appendFollowUpEvent(
           record.getKey(), WorkflowInstanceSubscriptionIntent.CLOSED, subscription);

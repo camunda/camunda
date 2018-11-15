@@ -17,14 +17,17 @@
  */
 package io.zeebe.broker.workflow.state;
 
+import static io.zeebe.util.buffer.BufferUtil.cloneBuffer;
 import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionState;
 import io.zeebe.test.util.AutoCloseableRule;
+import io.zeebe.util.collection.Tuple;
 import java.util.ArrayList;
 import java.util.List;
+import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -51,10 +54,12 @@ public class WorkflowInstanceSubscriptionStateTest {
   @Test
   public void shouldNotExist() {
     // given
-    state.put(subscriptionWithElementInstanceKey(1));
+    final WorkflowInstanceSubscription subscription = subscriptionWithElementInstanceKey(1);
+    state.put(subscription);
 
     // when
-    final boolean exist = state.existSubscriptionForElementInstance(2);
+    final boolean exist =
+        state.existSubscriptionForElementInstance(2, subscription.getMessageName());
 
     // then
     assertThat(exist).isFalse();
@@ -63,10 +68,12 @@ public class WorkflowInstanceSubscriptionStateTest {
   @Test
   public void shouldExistSubscription() {
     // given
-    state.put(subscriptionWithElementInstanceKey(1));
+    final WorkflowInstanceSubscription subscription = subscriptionWithElementInstanceKey(1);
+    state.put(subscription);
 
     // when
-    final boolean exist = state.existSubscriptionForElementInstance(1);
+    final boolean exist =
+        state.existSubscriptionForElementInstance(1, subscription.getMessageName());
 
     // then
     assertThat(exist).isTrue();
@@ -182,7 +189,9 @@ public class WorkflowInstanceSubscriptionStateTest {
     assertThat(subscription.isOpening()).isFalse();
 
     // and
-    assertThat(state.getSubscription(1L).getSubscriptionPartitionId()).isEqualTo(3);
+    assertThat(
+            state.getSubscription(1L, subscription.getMessageName()).getSubscriptionPartitionId())
+        .isEqualTo(3);
 
     // and
     final List<Long> keys = new ArrayList<>();
@@ -205,7 +214,7 @@ public class WorkflowInstanceSubscriptionStateTest {
     state.updateToClosingState(subscription, 1_000);
 
     // then
-    assertThat(state.getSubscription(1L).isClosing()).isTrue();
+    assertThat(state.getSubscription(1L, subscription.getMessageName()).isClosing()).isTrue();
     // and
     final List<Long> keys = new ArrayList<>();
     state.visitSubscriptionBefore(2_000, s -> keys.add(s.getElementInstanceKey()));
@@ -221,7 +230,7 @@ public class WorkflowInstanceSubscriptionStateTest {
     state.updateSentTime(subscription, 1_000);
 
     // when
-    state.remove(1L);
+    state.remove(1L, subscription.getMessageName());
 
     // then
     final List<Long> keys = new ArrayList<>();
@@ -230,20 +239,23 @@ public class WorkflowInstanceSubscriptionStateTest {
     assertThat(keys).isEmpty();
 
     // and
-    assertThat(state.existSubscriptionForElementInstance(1L)).isFalse();
+    assertThat(state.existSubscriptionForElementInstance(1L, subscription.getMessageName()))
+        .isFalse();
   }
 
   @Test
   public void shouldNotFailOnRemoveSubscriptionTwice() {
     // given
-    state.put(subscriptionWithElementInstanceKey(1L));
+    final WorkflowInstanceSubscription subscription = subscriptionWithElementInstanceKey(1L);
+    state.put(subscription);
 
     // when
-    state.remove(1L);
-    state.remove(1L);
+    state.remove(1L, subscription.getMessageName());
+    state.remove(1L, subscription.getMessageName());
 
     // then
-    assertThat(state.existSubscriptionForElementInstance(1L)).isFalse();
+    assertThat(state.existSubscriptionForElementInstance(1L, subscription.getMessageName()))
+        .isFalse();
   }
 
   @Test
@@ -253,10 +265,29 @@ public class WorkflowInstanceSubscriptionStateTest {
     state.put(subscription("messageName", "correlationKey", 2L));
 
     // when
-    state.remove(2L);
+    state.remove(2L, wrapString("messageName"));
 
     // then
-    assertThat(state.existSubscriptionForElementInstance(1L)).isTrue();
+    assertThat(state.existSubscriptionForElementInstance(1L, wrapString("messageName"))).isTrue();
+  }
+
+  @Test
+  public void shouldVisitAllSubscriptionsInTheState() {
+    // given
+    state.put(subscription("message1", "correlationKey", 1L));
+    state.put(subscription("message2", "correlationKey", 1L));
+    state.put(subscription("message3", "correlationKey", 2L));
+
+    // when
+    final List<Tuple<Long, DirectBuffer>> visited = new ArrayList<>();
+    state.visitElementSubscriptions(
+        1L,
+        s -> visited.add(new Tuple<>(s.getElementInstanceKey(), cloneBuffer(s.getMessageName()))));
+
+    // then
+    assertThat(visited)
+        .containsExactly(
+            new Tuple<>(1L, wrapString("message1")), new Tuple<>(1L, wrapString("message2")));
   }
 
   private WorkflowInstanceSubscription subscriptionWithElementInstanceKey(long elementInstanceKey) {

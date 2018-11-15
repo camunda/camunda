@@ -115,7 +115,9 @@ public final class CorrelateWorkflowInstanceSubscription
 
   private void onWorkflowAvailable() {
     // remove subscription if pending
-    final boolean removed = subscriptionState.remove(subscription.getElementInstanceKey());
+    final boolean removed =
+        subscriptionState.remove(
+            subscription.getElementInstanceKey(), subscription.getMessageName());
     if (!removed) {
       streamWriter.appendRejection(
           record, RejectionType.NOT_APPLICABLE, "subscription is already correlated");

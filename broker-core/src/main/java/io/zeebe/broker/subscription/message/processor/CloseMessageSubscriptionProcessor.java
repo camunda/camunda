@@ -52,7 +52,9 @@ public class CloseMessageSubscriptionProcessor
       final Consumer<SideEffectProducer> sideEffect) {
     subscriptionRecord = record.getValue();
 
-    final boolean removed = subscriptionState.remove(subscriptionRecord.getElementInstanceKey());
+    final boolean removed =
+        subscriptionState.remove(
+            subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageName());
     if (removed) {
       streamWriter.appendFollowUpEvent(
           record.getKey(), MessageSubscriptionIntent.CLOSED, subscriptionRecord);
@@ -67,6 +69,8 @@ public class CloseMessageSubscriptionProcessor
 
   private boolean sendAcknowledgeCommand() {
     return commandSender.closeWorkflowInstanceSubscription(
-        subscriptionRecord.getWorkflowInstanceKey(), subscriptionRecord.getElementInstanceKey());
+        subscriptionRecord.getWorkflowInstanceKey(),
+        subscriptionRecord.getElementInstanceKey(),
+        subscriptionRecord.getMessageName());
   }
 }

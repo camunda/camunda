@@ -57,7 +57,7 @@ public class CatchEventOutput {
     // unsubscribe from an event trigger, but once messages are supported it will be necessary.
     unsubscribeFromTimerEvents(
         context.getElementInstance().getKey(), context.getOutput().getStreamWriter());
-    unsubscribeFromMessageEvent(context);
+    unsubscribeFromMessageEvents(context);
   }
 
   public void subscribeToCatchEvents(
@@ -119,7 +119,7 @@ public class CatchEventOutput {
 
   // MESSAGES
   private final MsgPackQueryProcessor queryProcessor = new MsgPackQueryProcessor();
-  private WorkflowInstanceSubscription subscription;
+  private WorkflowInstanceSubscription subscription = new WorkflowInstanceSubscription();
 
   public void subscribeToMessageEvent(BpmnStepContext<?> context, ExecutableMessage message) {
     final DirectBuffer extractedKey = extractCorrelationKey(context, message);
@@ -128,30 +128,54 @@ public class CatchEventOutput {
       return;
     }
 
-    subscription =
-        new WorkflowInstanceSubscription(
-            context.getValue().getWorkflowInstanceKey(),
-            context.getElementInstance().getKey(),
-            cloneBuffer(message.getMessageName()),
-            cloneBuffer(extractedKey),
-            ActorClock.currentTimeMillis());
+    final long workflowInstanceKey = context.getValue().getWorkflowInstanceKey();
+    final long elementInstanceKey = context.getElementInstance().getKey();
+    final DirectBuffer messageName = cloneBuffer(message.getMessageName());
+    final DirectBuffer correlationKey = cloneBuffer(extractedKey);
+
+    subscription.setMessageName(messageName);
+    subscription.setElementInstanceKey(elementInstanceKey);
+    subscription.setCommandSentTime(ActorClock.currentTimeMillis());
+    subscription.setWorkflowInstanceKey(workflowInstanceKey);
+    subscription.setCorrelationKey(correlationKey);
     state.getWorkflowInstanceSubscriptionState().put(subscription);
-    context.getSideEffect().accept(this::sendOpenMessageSubscription);
+
+    context
+        .getSideEffect()
+        .add(
+            () ->
+                sendOpenMessageSubscription(
+                    workflowInstanceKey, elementInstanceKey, messageName, correlationKey));
   }
 
-  public void unsubscribeFromMessageEvent(BpmnStepContext<?> context) {
-    subscription =
-        state
-            .getWorkflowInstanceSubscriptionState()
-            .getSubscription(context.getElementInstance().getKey());
+  public void unsubscribeFromMessageEvents(BpmnStepContext<?> context) {
+    state
+        .getWorkflowInstanceSubscriptionState()
+        .visitElementSubscriptions(
+            context.getElementInstance().getKey(),
+            sub -> unsubscribeFromMessageEvent(context, sub));
+  }
 
-    if (subscription != null) {
-      subscription.setClosing();
-      state
-          .getWorkflowInstanceSubscriptionState()
-          .updateToClosingState(subscription, ActorClock.currentTimeMillis());
-      context.getSideEffect().accept(this::sendCloseMessageSubscriptionCommand);
-    }
+  private boolean unsubscribeFromMessageEvent(
+      BpmnStepContext<?> context, WorkflowInstanceSubscription subscription) {
+    final DirectBuffer messageName = cloneBuffer(subscription.getMessageName());
+    final int subscriptionPartitionId = subscription.getSubscriptionPartitionId();
+    final long workflowInstanceKey = subscription.getWorkflowInstanceKey();
+    final long elementInstanceKey = subscription.getElementInstanceKey();
+
+    subscription.setClosing();
+    state
+        .getWorkflowInstanceSubscriptionState()
+        .updateToClosingState(subscription, ActorClock.currentTimeMillis());
+
+    context
+        .getSideEffect()
+        .add(
+            () ->
+                sendCloseMessageSubscriptionCommand(
+                    subscriptionPartitionId, workflowInstanceKey, elementInstanceKey, messageName));
+
+    return true;
   }
 
   private DirectBuffer extractCorrelationKey(
@@ -186,18 +210,21 @@ public class CatchEventOutput {
     return null;
   }
 
-  private boolean sendCloseMessageSubscriptionCommand() {
+  private boolean sendCloseMessageSubscriptionCommand(
+      int subscriptionPartitionId,
+      long workflowInstanceKey,
+      long elementInstanceKey,
+      DirectBuffer messageName) {
     return subscriptionCommandSender.closeMessageSubscription(
-        subscription.getSubscriptionPartitionId(),
-        subscription.getWorkflowInstanceKey(),
-        subscription.getElementInstanceKey());
+        subscriptionPartitionId, workflowInstanceKey, elementInstanceKey, messageName);
   }
 
-  private boolean sendOpenMessageSubscription() {
+  private boolean sendOpenMessageSubscription(
+      long workflowInstanceKey,
+      long elementInstanceKey,
+      DirectBuffer messageName,
+      DirectBuffer correlationKey) {
     return subscriptionCommandSender.openMessageSubscription(
-        subscription.getWorkflowInstanceKey(),
-        subscription.getElementInstanceKey(),
-        subscription.getMessageName(),
-        subscription.getCorrelationKey());
+        workflowInstanceKey, elementInstanceKey, messageName, correlationKey);
   }
 }
