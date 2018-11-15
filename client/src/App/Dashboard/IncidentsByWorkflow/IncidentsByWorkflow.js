@@ -15,7 +15,7 @@ export default class IncidentsByWorkflow extends React.Component {
 
   getVersionStatistics = items => {
     return (
-      <Styled.Ul>
+      <ul>
         {items.map(item => (
           <Styled.VersionLi key={item.workflowId}>
             <Styled.IncidentStatistic
@@ -26,7 +26,7 @@ export default class IncidentsByWorkflow extends React.Component {
             />
           </Styled.VersionLi>
         ))}
-      </Styled.Ul>
+      </ul>
     );
   };
 

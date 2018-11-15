@@ -42,8 +42,9 @@ describe('Selection', () => {
   });
 
   it('should contain Instances', () => {
-    expect(node.find(Styled.Ul)).toExist();
-    expect(node.find(Styled.Ul)).toMatchSnapshot();
+    expect(node.find('ul')).toExist();
+    expect(node.find('ul')).toMatchSnapshot();
+
     expect(node.find(Styled.StatusCell)).toExist();
     expect(node.find(StateIcon)).toExist();
     expect(node.find(Styled.NameCell)).toExist();

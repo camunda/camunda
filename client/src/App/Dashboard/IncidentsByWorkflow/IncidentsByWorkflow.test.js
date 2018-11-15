@@ -1,7 +1,6 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 import IncidentsByWorkflow from './IncidentsByWorkflow';
-import IncidentStatistic from './IncidentStatistic';
 import * as Styled from './styled';
 
 const mockIncidentsByWorkflow = [
@@ -52,7 +51,7 @@ describe('IncidentsByWorkflow', () => {
     const node = shallow(
       <IncidentsByWorkflow incidents={mockIncidentsByWorkflow} />
     );
-    expect(node.type().target).toBe('ul');
+    expect(node.type()).toBe('ul');
   });
   it('should render an li for each incident statistic', () => {
     const node = shallow(

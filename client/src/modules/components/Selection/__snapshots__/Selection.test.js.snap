@@ -51,7 +51,7 @@ exports[`Selection should contain Actions 1`] = `
 `;
 
 exports[`Selection should contain Instances 1`] = `
-<styled.ul>
+<ul>
   <Themed(styled.li)
     key="0"
   >
@@ -111,7 +111,7 @@ exports[`Selection should contain Instances 1`] = `
       <Styled(ActionStatus) />
     </styled.div>
   </Themed(styled.li)>
-</styled.ul>
+</ul>
 `;
 
 exports[`Selection should contain a Footer 1`] = `
