@@ -6,6 +6,7 @@ exports[`Selection should contain Actions 1`] = `
     onClick={[Function]}
   >
     <Dropdown
+      aria-label="Batch Operations"
       buttonStyles={
         Array [
           "
@@ -40,101 +41,125 @@ exports[`Selection should contain Actions 1`] = `
       />
     </Dropdown>
   </styled.div>
-  <Styled(ReactComponent)
+  <styled.button
+    aria-label="Drop Selection 1"
     onClick={[MockFunction]}
-  />
+  >
+    <Styled(ReactComponent) />
+  </styled.button>
 </styled.div>
 `;
 
 exports[`Selection should contain Instances 1`] = `
-<Themed(styled.div)
-  key="0"
->
-  <Themed(StateIcon)
-    instance={
-      Object {
-        "activities": Array [
+<styled.ul>
+  <Themed(styled.li)
+    key="0"
+  >
+    <styled.div>
+      <Themed(StateIcon)
+        instance={
           Object {
-            "activityId": "activityId_0",
-            "endDate": "2018-10-10T09:20:38.658Z",
-            "id": "id_0",
-            "startDate": "2018-10-10T09:20:38.658Z",
+            "activities": Array [
+              Object {
+                "activityId": "activityId_0",
+                "endDate": "2018-10-10T09:20:38.658Z",
+                "id": "id_0",
+                "startDate": "2018-10-10T09:20:38.658Z",
+                "state": "ACTIVE",
+              },
+            ],
+            "bpmnProcessId": "someKey",
+            "endDate": null,
+            "id": "id_1",
+            "incidents": Array [
+              Object {
+                "activityId": Object {},
+                "activityInstanceId": Object {},
+                "errorMessage": "",
+                "errorType": "",
+                "id": "id_2",
+                "jobId": "jobId_0",
+                "state": "ACTIVE",
+              },
+            ],
+            "operations": Array [
+              Object {
+                "endDate": "2018-10-10T09:20:38.661Z",
+                "errorMessage": "string",
+                "startDate": "2018-10-10T09:20:38.661Z",
+                "state": "SCHEDULED",
+                "type": "UPDATE_RETRIES",
+              },
+            ],
+            "sequenceFlows": Array [],
+            "startDate": "2018-06-21",
             "state": "ACTIVE",
-          },
-        ],
-        "bpmnProcessId": "someKey",
-        "endDate": null,
-        "id": "id_1",
-        "incidents": Array [
-          Object {
-            "activityId": Object {},
-            "activityInstanceId": Object {},
-            "errorMessage": "",
-            "errorType": "",
-            "id": "id_2",
-            "jobId": "jobId_0",
-            "state": "ACTIVE",
-          },
-        ],
-        "operations": Array [
-          Object {
-            "endDate": "2018-10-10T09:20:38.661Z",
-            "errorMessage": "string",
-            "startDate": "2018-10-10T09:20:38.661Z",
-            "state": "SCHEDULED",
-            "type": "UPDATE_RETRIES",
-          },
-        ],
-        "sequenceFlows": Array [],
-        "startDate": "2018-06-21",
-        "state": "ACTIVE",
-        "workflowId": "2",
-        "workflowName": "someWorkflowName",
-        "workflowVersion": 1,
-      }
-    }
-  />
-  <styled.div>
-    someWorkflowName
-  </styled.div>
-  <styled.div>
-    id_1
-  </styled.div>
-  <ActionStatus />
-</Themed(styled.div)>
+            "workflowId": "2",
+            "workflowName": "someWorkflowName",
+            "workflowVersion": 1,
+          }
+        }
+      />
+    </styled.div>
+    <styled.div>
+      someWorkflowName
+    </styled.div>
+    <styled.div>
+      id_1
+    </styled.div>
+    <styled.div>
+      <Styled(ActionStatus) />
+    </styled.div>
+  </Themed(styled.li)>
+</styled.ul>
 `;
 
 exports[`Selection should contain a Footer 1`] = `
-<styled.div>
+<styled.footer>
   <styled.div>
     144 more Instances
   </styled.div>
-</styled.div>
+</styled.footer>
 `;
 
 exports[`Selection should contain a Header 1`] = `
-<Themed(styled.div)
+<Themed(styled.dt)
   isOpen={true}
-  onClick={[MockFunction]}
 >
-  <styled.div>
-    <ReactComponent />
-  </styled.div>
-  <styled.div>
-    Selection 
-    1
-  </styled.div>
-  <Styled(Badge)
+  <Themed(styled.div)
     isOpen={true}
-    type="SELECTIONS"
   >
-    145
-  </Styled(Badge)>
+    <ReactComponent />
+  </Themed(styled.div)>
+  <Themed(styled.span)
+    role="heading"
+  >
+    <Themed(styled.button)
+      aria-controls="selection-1"
+      aria-expanded={true}
+      aria-label="Selection 1, holding 145 Instances"
+      id="selection-1-toggle"
+      isOpen={true}
+      onClick={[MockFunction]}
+    >
+      <styled.div>
+        Selection 
+        1
+      </styled.div>
+      <Styled(Badge)
+        isOpen={true}
+        type="SELECTIONS"
+      >
+        145
+      </Styled(Badge)>
+    </Themed(styled.button)>
+  </Themed(styled.span)>
   <styled.div>
     <styled.div
       onClick={[Function]}
     >
       <Dropdown
+        aria-label="Batch Operations"
         buttonStyles={
           Array [
             "
@@ -169,9 +194,12 @@ exports[`Selection should contain a Header 1`] = `
         />
       </Dropdown>
     </styled.div>
-    <Styled(ReactComponent)
+    <styled.button
+      aria-label="Drop Selection 1"
       onClick={[MockFunction]}
-    />
+    >
+      <Styled(ReactComponent) />
+    </styled.button>
   </styled.div>
-</Themed(styled.div)>
+</Themed(styled.dt)>
 `;
