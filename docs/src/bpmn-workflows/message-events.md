@@ -1,6 +1,6 @@
 # Message Events
 
-Message events are events which reference a message. They can be used to wait until a proper message is received. 
+Message events are events which reference a message. They can be used to wait until a proper message is received.
 
 > Currently, messages can be published only externally using one of the Zeebe clients.
 
@@ -11,7 +11,7 @@ A message can be referenced by one or more message events. It holds the informat
 * the name of the message
 * the correlation key
 
-The correlation key is specified as [JSON Path](reference/json-conditions.html) expression. It is evaluated when the message event is entered and extracts the value from the workflow instance payload. The value must be either a string or a number.
+The correlation key is specified as [JSON Path](reference/json-conditions.html) expression. It is evaluated when the message event is entered and extracts the value from the workflow instance payload. The value must be a string.
 
 XML representation:
 
