@@ -5,8 +5,10 @@ import TransparentHeading from 'modules/components/TransparentHeading';
 import Header from '../Header';
 import MetricPanel from './MetricPanel';
 import MetricTile from './MetricTile';
+import IncidentsByWorkflow from './IncidentsByWorkflow';
 
 import {fetchWorkflowInstancesCount} from 'modules/api/instances';
+import {fetchIncidentsByWorkflow} from 'modules/api/incidents';
 import {parseFilterForRequest} from 'modules/utils/filter';
 import {
   FILTER_SELECTION,
@@ -18,15 +20,28 @@ import * as Styled from './styled.js';
 
 class Dashboard extends Component {
   state = {
-    running: 0,
-    active: 0,
-    incidents: 0
+    counts: {
+      running: 0,
+      active: 0,
+      incidents: 0
+    },
+    incidents: {
+      byWorkflow: []
+    }
   };
 
   componentDidMount = async () => {
     document.title = PAGE_TITLE.DASHBOARD;
     const counts = await this.fetchCounts();
-    this.setState({...counts});
+    const incidents = await this.fetchIncidents();
+
+    this.setState({counts, incidents});
+  };
+
+  fetchIncidents = async () => {
+    return {
+      byWorkflow: await fetchIncidentsByWorkflow()
+    };
   };
 
   fetchCounts = async () => {
@@ -44,7 +59,7 @@ class Dashboard extends Component {
   };
 
   render() {
-    const {running, incidents} = this.state;
+    const {running, incidents} = this.state.counts;
     const tiles = ['running', 'active', 'incidents'];
     return (
       <Fragment>
@@ -59,12 +74,20 @@ class Dashboard extends Component {
             {tiles.map(tile => (
               <MetricTile
                 key={tile}
-                value={this.state[tile]}
+                value={this.state.counts[tile]}
                 label={DASHBOARD_LABELS[tile]}
                 type={tile}
               />
             ))}
           </MetricPanel>
+          <Styled.Tile data-test="incidents-byWorkflow">
+            <Styled.TileTitle>Incidents by Workflow</Styled.TileTitle>
+            <Styled.TileContent>
+              <IncidentsByWorkflow
+                incidents={this.state.incidents.byWorkflow}
+              />
+            </Styled.TileContent>
+          </Styled.Tile>
         </Styled.Dashboard>
       </Fragment>
     );

@@ -1,0 +1,26 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`IncidentStatistic should display the right data 1`] = `
+<Fragment>
+  <Themed(styled.div)>
+    <Themed(styled.div)>
+      10
+    </Themed(styled.div)>
+    <Themed(styled.div)>
+      someLabel
+    </Themed(styled.div)>
+    <Themed(styled.div)>
+      8
+    </Themed(styled.div)>
+  </Themed(styled.div)>
+  <styled.div>
+    <styled.div
+      style={
+        Object {
+          "width": "55.55555555555556%",
+        }
+      }
+    />
+  </styled.div>
+</Fragment>
+`;

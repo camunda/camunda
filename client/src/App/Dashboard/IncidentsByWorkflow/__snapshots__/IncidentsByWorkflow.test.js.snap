@@ -1,0 +1,9 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`IncidentsByWorkflow should pass the right data to IncidentStatistic 1`] = `
+<IncidentStatistic
+  activeCount={122}
+  incidentsCount={16}
+  label="loanProcess (Version 1)"
+/>
+`;
