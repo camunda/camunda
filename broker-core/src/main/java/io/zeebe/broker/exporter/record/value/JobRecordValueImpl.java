@@ -33,6 +33,7 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   private final HeadersImpl headers;
   private final Map<String, Object> customHeaders;
   private final int retries;
+  private final String errorMessage;
 
   public JobRecordValueImpl(
       final ExporterObjectMapper objectMapper,
@@ -42,7 +43,8 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
       final Instant deadline,
       final HeadersImpl headers,
       final Map<String, Object> customHeaders,
-      final int retries) {
+      final int retries,
+      final String errorMessage) {
     super(objectMapper, payload);
     this.type = type;
     this.worker = worker;
@@ -50,6 +52,7 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
     this.headers = headers;
     this.customHeaders = customHeaders;
     this.retries = retries;
+    this.errorMessage = errorMessage;
   }
 
   @Override
@@ -83,7 +86,12 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
   }
 
   @Override
-  public boolean equals(final Object o) {
+  public String getErrorMessage() {
+    return errorMessage;
+  }
+
+  @Override
+  public boolean equals(Object o) {
     if (this == o) {
       return true;
     }
@@ -99,12 +107,14 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         && Objects.equals(worker, that.worker)
         && Objects.equals(deadline, that.deadline)
         && Objects.equals(headers, that.headers)
-        && Objects.equals(customHeaders, that.customHeaders);
+        && Objects.equals(customHeaders, that.customHeaders)
+        && Objects.equals(errorMessage, that.errorMessage);
   }
 
   @Override
   public int hashCode() {
-    return Objects.hash(super.hashCode(), type, worker, deadline, headers, customHeaders, retries);
+    return Objects.hash(
+        super.hashCode(), type, worker, deadline, headers, customHeaders, retries, errorMessage);
   }
 
   @Override
@@ -124,6 +134,9 @@ public class JobRecordValueImpl extends RecordValueWithPayloadImpl implements Jo
         + customHeaders
         + ", retries="
         + retries
+        + ", errorMessage='"
+        + errorMessage
+        + '\''
         + ", payload='"
         + payload
         + '\''

@@ -280,6 +280,23 @@ public class PartitionTestClient {
         .sendAndAwait();
   }
 
+  public ExecuteCommandResponse failJobWithMessage(long key, int retries, String errorMessage) {
+    return apiRule
+        .createCmdRequest()
+        .type(ValueType.JOB, JobIntent.FAIL)
+        .key(key)
+        .command()
+        .put("retries", retries)
+        .put("errorMessage", errorMessage)
+        .done()
+        .sendAndAwait();
+  }
+
+  public ExecuteCommandResponse createJobIncidentWithJobErrorMessage(
+      long key, String errorMessage) {
+    return failJobWithMessage(key, 0, errorMessage);
+  }
+
   public ExecuteCommandResponse updateJobRetries(long key, int retries) {
     return apiRule
         .createCmdRequest()

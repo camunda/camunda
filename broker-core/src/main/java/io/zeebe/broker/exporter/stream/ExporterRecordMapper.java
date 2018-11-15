@@ -185,7 +185,8 @@ public class ExporterRecordMapper {
         deadline,
         headers,
         asMsgPackMap(record.getCustomHeaders()),
-        record.getRetries());
+        record.getRetries(),
+        asString(record.getErrorMessage()));
   }
 
   private DeploymentRecordValue ofDeploymentRecord(final LoggedEvent event) {

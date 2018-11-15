@@ -116,7 +116,7 @@ public class ElasticsearchExporterIT {
             (client, job) -> {
               if (fail.getAndSet(false)) {
                 // fail job
-                client.newFailCommand(job.getKey()).retries(0).send().join();
+                client.newFailCommand(job.getKey()).retries(0).errorMessage("failed").send().join();
                 // update retries to resolve incident
                 client.newUpdateRetriesCommand(job.getKey()).retries(3).send().join();
               } else {

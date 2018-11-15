@@ -59,6 +59,11 @@ public class IncidentRecord extends UnpackedObject {
     return errorMessageProp.getValue();
   }
 
+  public IncidentRecord setErrorMessage(DirectBuffer errorMessage) {
+    this.errorMessageProp.setValue(errorMessage);
+    return this;
+  }
+
   public IncidentRecord setErrorMessage(String errorMessage) {
     this.errorMessageProp.setValue(errorMessage);
     return this;

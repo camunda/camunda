@@ -51,4 +51,7 @@ public interface JobRecordValue extends RecordValueWithPayload {
    *     twice.
    */
   Instant getDeadline();
+
+  /** @return the job worker error message if the job is failed */
+  String getErrorMessage();
 }

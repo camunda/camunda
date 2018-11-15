@@ -34,6 +34,7 @@ public class JobRecord extends UnpackedObject {
   public static final String TYPE = "type";
   public static final String CUSTOM_HEADERS = "customHeaders";
   public static final String PAYLOAD = "payload";
+  public static final String ERROR_MESSAGE = "errorMessage";
 
   private final LongProperty deadlineProp =
       new LongProperty("deadline", Protocol.INSTANT_NULL_VALUE);
@@ -44,6 +45,7 @@ public class JobRecord extends UnpackedObject {
       new ObjectProperty<>("headers", new JobHeaders());
   private final PackedProperty customHeadersProp = new PackedProperty(CUSTOM_HEADERS, NO_HEADERS);
   private final DocumentProperty payloadProp = new DocumentProperty(PAYLOAD);
+  private final StringProperty errorMessageProp = new StringProperty(ERROR_MESSAGE, "");
 
   public JobRecord() {
     this.declareProperty(deadlineProp)
@@ -52,7 +54,8 @@ public class JobRecord extends UnpackedObject {
         .declareProperty(typeProp)
         .declareProperty(headersProp)
         .declareProperty(customHeadersProp)
-        .declareProperty(payloadProp);
+        .declareProperty(payloadProp)
+        .declareProperty(errorMessageProp);
   }
 
   public long getDeadline() {
@@ -134,5 +137,23 @@ public class JobRecord extends UnpackedObject {
 
   public DirectBuffer getCustomHeaders() {
     return customHeadersProp.getValue();
+  }
+
+  public DirectBuffer getErrorMessage() {
+    return errorMessageProp.getValue();
+  }
+
+  public JobRecord setErrorMessage(String errorMessage) {
+    errorMessageProp.setValue(errorMessage);
+    return this;
+  }
+
+  public JobRecord setErrorMessage(DirectBuffer buf) {
+    return setErrorMessage(buf, 0, buf.capacity());
+  }
+
+  public JobRecord setErrorMessage(DirectBuffer buf, int offset, int length) {
+    errorMessageProp.setValue(buf, offset, length);
+    return this;
   }
 }

@@ -37,4 +37,26 @@ public class FailJobTest extends ClientTest {
     assertThat(request.getJobKey()).isEqualTo(jobKey);
     assertThat(request.getRetries()).isEqualTo(newRetries);
   }
+
+  @Test
+  public void shouldFailJobWithMessage() {
+    // given
+    final long jobKey = 12;
+    final int newRetries = 23;
+
+    // when
+    client
+        .jobClient()
+        .newFailCommand(jobKey)
+        .retries(newRetries)
+        .errorMessage("failed message")
+        .send()
+        .join();
+
+    // then
+    final FailJobRequest request = gatewayService.getLastRequest();
+    assertThat(request.getJobKey()).isEqualTo(jobKey);
+    assertThat(request.getRetries()).isEqualTo(newRetries);
+    assertThat(request.getErrorMessage()).isEqualTo("failed message");
+  }
 }

@@ -19,6 +19,7 @@ import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertIncidentCreated;
 import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertIncidentDeleted;
 import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertIncidentResolved;
 import static io.zeebe.broker.it.util.ZeebeAssertHelper.assertJobCreated;
+import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.it.GrpcClientRule;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
@@ -35,6 +36,7 @@ import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.protocol.intent.IncidentIntent;
 import io.zeebe.test.util.record.RecordingExporter;
 import java.time.Duration;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -153,6 +155,79 @@ public class IncidentTest {
 
     // then the incident is deleted
     assertIncidentDeleted();
+  }
+
+  @Test
+  public void shouldCreateJobIncidentWithErrorMessage() {
+    // given a workflow instance with an open job
+    deploy();
+
+    workflowClient
+        .newCreateInstanceCommand()
+        .bpmnProcessId("process")
+        .latestVersion()
+        .payload(PAYLOAD)
+        .send()
+        .join();
+
+    // when the job fails until it has no more retries left
+    final JobHandler jobHandler =
+        (client, job) ->
+            client.newFailCommand(job.getKey()).retries(0).errorMessage("failed message").send();
+
+    clientRule
+        .getJobClient()
+        .newWorker()
+        .jobType("test")
+        .handler(jobHandler)
+        .name("owner")
+        .timeout(Duration.ofMinutes(5))
+        .open();
+
+    // then an incident is created
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst();
+    assertThat(incident.getValue().getErrorMessage()).isEqualTo("failed message");
+  }
+
+  @Test
+  public void shouldIncidentContainLastJobErrorMessage() {
+    // given a workflow instance with an open job
+    deploy();
+
+    workflowClient
+        .newCreateInstanceCommand()
+        .bpmnProcessId("process")
+        .latestVersion()
+        .payload(PAYLOAD)
+        .send()
+        .join();
+
+    // when the job fails until it has no more retries left
+    final AtomicInteger retries = new AtomicInteger(1);
+    final JobHandler jobHandler =
+        (client, job) -> {
+          final int retryCount = retries.getAndDecrement();
+          client
+              .newFailCommand(job.getKey())
+              .retries(retryCount)
+              .errorMessage(retryCount + " message")
+              .send();
+        };
+
+    clientRule
+        .getJobClient()
+        .newWorker()
+        .jobType("test")
+        .handler(jobHandler)
+        .name("owner")
+        .timeout(Duration.ofMinutes(5))
+        .open();
+
+    // then an incident is created
+    final Record<IncidentRecordValue> incident =
+        RecordingExporter.incidentRecords(IncidentIntent.CREATED).getFirst();
+    assertThat(incident.getValue().getErrorMessage()).isEqualTo("0 message");
   }
 
   private void deploy() {

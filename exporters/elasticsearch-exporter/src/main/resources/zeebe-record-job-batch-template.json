@@ -71,6 +71,9 @@
                 },
                 "payload": {
                   "type": "text"
+                },
+                "errorMessage": {
+                  "type": "text"
                 }
               }
             }

@@ -15,6 +15,7 @@
  */
 package io.zeebe.gateway.api.job;
 
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
 import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.gateway.api.util.GatewayTest;
@@ -37,7 +38,11 @@ public class FailJobTest extends GatewayTest {
     final int retries = 123;
 
     final FailJobRequest request =
-        FailJobRequest.newBuilder().setJobKey(stub.getKey()).setRetries(retries).build();
+        FailJobRequest.newBuilder()
+            .setJobKey(stub.getKey())
+            .setRetries(retries)
+            .setErrorMessage("failed")
+            .build();
 
     // when
     final FailJobResponse response = client.failJob(request);
@@ -52,5 +57,6 @@ public class FailJobTest extends GatewayTest {
 
     final JobRecord brokerRequestValue = brokerRequest.getRequestWriter();
     assertThat(brokerRequestValue.getRetries()).isEqualTo(retries);
+    assertThat(brokerRequestValue.getErrorMessage()).isEqualTo(wrapString("failed"));
   }
 }

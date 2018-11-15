@@ -17,6 +17,8 @@
  */
 package io.zeebe.broker.job;
 
+import static io.zeebe.util.buffer.BufferUtil.wrapString;
+
 import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
@@ -26,8 +28,11 @@ import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.protocol.impl.record.value.job.JobHeaders;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
 import io.zeebe.protocol.intent.IncidentIntent;
+import org.agrona.DirectBuffer;
 
 public final class JobFailedProcessor implements TypedRecordProcessor<JobRecord> {
+
+  private static final DirectBuffer DEFAULT_ERROR_MESSAGE = wrapString("No more retries left.");
   private final IncidentRecord incidentEvent = new IncidentRecord();
 
   @Override
@@ -40,10 +45,16 @@ public final class JobFailedProcessor implements TypedRecordProcessor<JobRecord>
     if (value.getRetries() <= 0) {
       final JobHeaders jobHeaders = value.getHeaders();
 
+      final DirectBuffer jobErrorMessage = value.getErrorMessage();
+      DirectBuffer incidentErrorMessage = DEFAULT_ERROR_MESSAGE;
+      if (jobErrorMessage.capacity() > 0) {
+        incidentErrorMessage = jobErrorMessage;
+      }
+
       incidentEvent.reset();
       incidentEvent
           .setErrorType(ErrorType.JOB_NO_RETRIES)
-          .setErrorMessage("No more retries left.")
+          .setErrorMessage(incidentErrorMessage)
           .setBpmnProcessId(jobHeaders.getBpmnProcessId())
           .setWorkflowInstanceKey(jobHeaders.getWorkflowInstanceKey())
           .setElementId(jobHeaders.getElementId())
