@@ -53,4 +53,5 @@ export const TileTitle = themed(styled.h2`
 export const TileContent = styled.div`
   overflow: auto;
   flex-grow: 1;
+  position: relative;
 `;

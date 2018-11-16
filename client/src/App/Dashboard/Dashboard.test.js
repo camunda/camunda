@@ -8,6 +8,7 @@ import Dashboard from './Dashboard';
 import MetricPanel from './MetricPanel';
 import Header from '../Header';
 import IncidentsByWorkflow from './IncidentsByWorkflow';
+import EmptyIncidents from './EmptyIncidents';
 import * as Styled from './styled';
 
 import * as api from 'modules/api/instances/instances';
@@ -31,10 +32,11 @@ const mockIncidentsByWorkflow = [
     ]
   }
 ];
+const data = {
+  data: mockIncidentsByWorkflow
+};
 api.fetchWorkflowInstancesCount = mockResolvedAsyncFn(123);
-apiIncidents.fetchIncidentsByWorkflow = mockResolvedAsyncFn(
-  mockIncidentsByWorkflow
-);
+apiIncidents.fetchIncidentsByWorkflow = mockResolvedAsyncFn(data);
 
 describe('Dashboard', () => {
   let node;
@@ -110,6 +112,51 @@ describe('Dashboard', () => {
       expect(node.find(IncidentsByWorkflow).props().incidents).toBe(
         mockIncidentsByWorkflow
       );
+    });
+
+    it('should render a message when the list is empty', async () => {
+      const emptyData = {
+        data: []
+      };
+      apiIncidents.fetchIncidentsByWorkflow = mockResolvedAsyncFn(emptyData);
+
+      // when data fetched
+      await flushPromises();
+      node.update();
+
+      expect(node.find(EmptyIncidents).length).toBe(1);
+      expect(node.find(EmptyIncidents).props().label).toBe(
+        'There are no instances with incident.'
+      );
+      expect(node.find(EmptyIncidents).props().type).toBe('success');
+
+      expect(node.find(IncidentsByWorkflow).length).toBe(0);
+
+      //reset mockIncidentsByWorkflow
+      apiIncidents.fetchIncidentsByWorkflow = mockResolvedAsyncFn(data);
+    });
+
+    it('should render a message when the list is empty', async () => {
+      const errorData = {
+        data: [],
+        error: 'someError'
+      };
+      apiIncidents.fetchIncidentsByWorkflow = mockResolvedAsyncFn(errorData);
+
+      // when data fetched
+      await flushPromises();
+      node.update();
+
+      expect(node.find(EmptyIncidents).length).toBe(1);
+      expect(node.find(EmptyIncidents).props().label).toBe(
+        'Incidents by Workflow could not be fetched.'
+      );
+      expect(node.find(EmptyIncidents).props().type).toBe('warning');
+
+      expect(node.find(IncidentsByWorkflow).length).toBe(0);
+
+      //reset mockIncidentsByWorkflow
+      apiIncidents.fetchIncidentsByWorkflow = mockResolvedAsyncFn(data);
     });
   });
 });

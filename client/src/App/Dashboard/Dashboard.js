@@ -6,7 +6,7 @@ import Header from '../Header';
 import MetricPanel from './MetricPanel';
 import MetricTile from './MetricTile';
 import IncidentsByWorkflow from './IncidentsByWorkflow';
-
+import EmptyIncidents from './EmptyIncidents';
 import {fetchWorkflowInstancesCount} from 'modules/api/instances';
 import {fetchIncidentsByWorkflow} from 'modules/api/incidents';
 import {parseFilterForRequest} from 'modules/utils/filter';
@@ -26,8 +26,9 @@ class Dashboard extends Component {
       incidents: 0
     },
     incidents: {
-      byWorkflow: []
-    }
+      byWorkflow: {data: [], error: null}
+    },
+    isDataLoaded: false
   };
 
   componentDidMount = async () => {
@@ -35,7 +36,7 @@ class Dashboard extends Component {
     const counts = await this.fetchCounts();
     const incidents = await this.fetchIncidents();
 
-    this.setState({counts, incidents});
+    this.setState({counts, incidents, isDataLoaded: true});
   };
 
   fetchIncidents = async () => {
@@ -58,9 +59,30 @@ class Dashboard extends Component {
     };
   };
 
+  renderEmptyList = () => {
+    if (this.state.incidents.byWorkflow.error) {
+      return (
+        <EmptyIncidents
+          type="warning"
+          label="Incidents by Workflow could not be fetched."
+        />
+      );
+    }
+
+    if (this.state.incidents.byWorkflow.data.length === 0) {
+      return (
+        <EmptyIncidents
+          type="success"
+          label="There are no instances with incident."
+        />
+      );
+    }
+  };
+
   render() {
     const {running, incidents} = this.state.counts;
     const tiles = ['running', 'active', 'incidents'];
+
     return (
       <Fragment>
         <TransparentHeading>Camunda Operate Dashboard</TransparentHeading>
@@ -83,9 +105,13 @@ class Dashboard extends Component {
           <Styled.Tile data-test="incidents-byWorkflow">
             <Styled.TileTitle>Incidents by Workflow</Styled.TileTitle>
             <Styled.TileContent>
-              <IncidentsByWorkflow
-                incidents={this.state.incidents.byWorkflow}
-              />
+              {this.state.isDataLoaded && this.renderEmptyList()}
+              {this.state.isDataLoaded &&
+                Boolean(this.state.incidents.byWorkflow.data.length) && (
+                  <IncidentsByWorkflow
+                    incidents={this.state.incidents.byWorkflow.data}
+                  />
+                )}
             </Styled.TileContent>
           </Styled.Tile>
         </Styled.Dashboard>

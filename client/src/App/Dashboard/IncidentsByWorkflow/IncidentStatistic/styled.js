@@ -46,7 +46,5 @@ export const IncidentStatisticBar = styled.div`
 `;
 
 export const IncidentsBar = styled.div`
-  min-width: 1px;
-
   background: ${Colors.incidentsAndErrors};
 `;
