@@ -113,6 +113,8 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
 
     completeTask(workflowInstanceId, "task1", null);
 
+    elasticsearchTestRule.processAllEventsAndWait(workflowInstanceIsCompletedCheck, workflowInstanceId);
+
     //then
     final WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
     assertThat(workflowInstanceEntity.getState()).isEqualTo(WorkflowInstanceState.COMPLETED);
@@ -289,7 +291,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     //when update retries
     final WorkflowInstanceEntity workflowInstance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
     assertThat(workflowInstance.getIncidents().size()).isEqualTo(1);
-    ZeebeTestUtil.resolveIncident(zeebeClient, Long.valueOf(workflowInstance.getIncidents().get(0).getJobId()));
+    ZeebeTestUtil.resolveIncident(zeebeClient, workflowInstance.getIncidents().get(0).getJobId());
     elasticsearchTestRule.processAllEvents(19);
 
     //then

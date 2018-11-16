@@ -20,7 +20,7 @@ public class IncidentDto {
 
   private String activityInstanceId;
 
-  private String jobId;
+  private Long jobId;
 
   public String getId() {
     return id;
@@ -70,11 +70,11 @@ public class IncidentDto {
     this.activityInstanceId = activityInstanceId;
   }
 
-  public String getJobId() {
+  public Long getJobId() {
     return jobId;
   }
 
-  public void setJobId(String jobId) {
+  public void setJobId(Long jobId) {
     this.jobId = jobId;
   }
 

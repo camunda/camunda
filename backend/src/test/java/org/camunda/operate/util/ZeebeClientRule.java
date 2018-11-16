@@ -23,10 +23,8 @@ import io.zeebe.client.api.clients.JobClient;
 import io.zeebe.client.api.clients.WorkflowClient;
 import io.zeebe.client.api.commands.PartitionInfo;
 import io.zeebe.client.api.commands.Topology;
-import io.zeebe.protocol.intent.DeploymentIntent;
+import io.zeebe.client.cmd.ClientException;
 import io.zeebe.test.EmbeddedBrokerRule;
-import io.zeebe.test.util.record.RecordingExporter;
-import static io.zeebe.test.util.TestUtil.waitUntil;
 
 public class ZeebeClientRule extends ExternalResource {
 
@@ -57,6 +55,17 @@ public class ZeebeClientRule extends ExternalResource {
     builder.defaultJobPollInterval(Duration.ofMillis(100));
     configurator.accept(builder);
     client = builder.build();
+
+    //get topology to check that cluster is available and ready for work
+    Topology topology = null;
+    while (topology == null) {
+      try {
+        topology = client.newTopologyRequest().send().join();
+      } catch (ClientException ex) {
+        ex.printStackTrace();
+      }
+    }
+
   }
 
   @Override

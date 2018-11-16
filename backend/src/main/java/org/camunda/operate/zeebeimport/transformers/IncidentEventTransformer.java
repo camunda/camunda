@@ -71,7 +71,7 @@ public class IncidentEventTransformer implements AbstractRecordTransformer {
         incidentEntity.setActivityInstanceId(IdUtil.createId(recordValue.getElementInstanceKey(), record.getMetadata().getPartitionId()));
       }
       if (recordValue.getJobKey() != 0) {
-        incidentEntity.setJobId(String.valueOf(recordValue.getJobKey()));
+        incidentEntity.setJobId(recordValue.getJobKey());
       }
       if (recordValue.getWorkflowInstanceKey() != 0) {
         incidentEntity.setWorkflowInstanceId(IdUtil.createId(recordValue.getWorkflowInstanceKey(), record.getMetadata().getPartitionId()));

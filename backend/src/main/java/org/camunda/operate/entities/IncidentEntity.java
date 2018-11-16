@@ -21,7 +21,7 @@ public class IncidentEntity extends OperateZeebeEntity {
 
   private String activityInstanceId;
 
-  private String jobId;
+  private Long jobId;
 
   private String workflowInstanceId;
 
@@ -65,11 +65,11 @@ public class IncidentEntity extends OperateZeebeEntity {
     this.activityInstanceId = activityInstanceId;
   }
 
-  public String getJobId() {
+  public Long getJobId() {
     return jobId;
   }
 
-  public void setJobId(String jobId) {
+  public void setJobId(Long jobId) {
     this.jobId = jobId;
   }
 
