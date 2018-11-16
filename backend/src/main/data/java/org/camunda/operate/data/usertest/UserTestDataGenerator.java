@@ -152,24 +152,44 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   }
 
   private void createSpecialDataV2() {
-
-    doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(startOrderProcess()));
+    final String instanceId4 = startOrderProcess();
+    completeTask(instanceId4, "checkPayment", "{\"paid\":true,\"paidAmount\":300.0,\"orderStatus\": \"PAID\"}");
+    completeTask(instanceId4, "checkItems", "{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}" );
+    doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId4));
 
     final String instanceId5 = startOrderProcess();
     completeTask(instanceId5, "checkPayment", "{\"paid\":true,\"paidAmount\":300.0,\"orderStatus\": \"PAID\"}");
     failTask(instanceId5, "checkItems");
     doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId5));
 
-    final String instanceId6 = startOrderProcess();
-    completeTask(instanceId6, "checkPayment", "{\"paid\":false,\"paidAmount\":0.0}");
-    ZeebeTestUtil.cancelWorkflowInstance(client, instanceId6);
-    doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId6));
+    final String instanceId3 = startOrderProcess();
+    completeTask(instanceId3, "checkPayment", "{\"paid\":true,\"paidAmount\":300.0,\"orderStatus\": \"PAID\"}");
+    completeTask(instanceId3, "checkItems", "{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}" );
+    failTask(instanceId3, "shipArticles");
+    doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId3));
+
+    final String instanceId2 = startOrderProcess();
+    completeTask(instanceId2, "checkPayment", "{\"paid\":true,\"paidAmount\":400.0,\"orderStatus\": \"PAID\"}");
+    completeTask(instanceId2, "checkItems", "{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}" );
+    failTask(instanceId2, "shipArticles");
+    doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId2));
+
+    final String instanceId1 = startOrderProcess();
+    completeTask(instanceId1, "checkPayment", "{\"paid\":true,\"paidAmount\":400.0,\"orderStatus\": \"PAID\"}");
+    completeTask(instanceId1, "checkItems", "{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}" );
+    failTask(instanceId1, "shipArticles");
+    doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId1));
 
     final String instanceId7 = startOrderProcess();
     completeTask(instanceId7, "checkPayment", "{\"paid\":true,\"paidAmount\":300.0,\"orderStatus\": \"PAID\"}");
     completeTask(instanceId7, "checkItems", "{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}" );
     completeTask(instanceId7, "shipArticles", "{\"orderStatus\":\"SHIPPED\"}");
     doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId7));
+
+    final String instanceId6 = startOrderProcess();
+    completeTask(instanceId6, "checkPayment", "{\"paid\":false,\"paidAmount\":0.0}");
+    ZeebeTestUtil.cancelWorkflowInstance(client, instanceId6);
+    doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId6));
 
     doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(startFlightRegistrationProcess()));
 
