@@ -152,7 +152,7 @@
                     <echo message="Generating engine data..." />
                     <exec dir="${project.build.directory}/../../../qa/data-generation" executable="/bin/bash" failonerror="true">
                       <arg value="-c"/>
-                      <arg value="mvn clean compile exec:java -Dexec.args='--numberOfProcessInstances 10'" />
+                      <arg value="mvn clean compile exec:java -Dexec.args='--numberOfProcessInstances 10' -s ../../settings.xml" />
                     </exec>
                   </target>
                 </configuration>
@@ -185,7 +185,7 @@
                     <echo message="Generating optimize data" />
                     <exec executable="/bin/bash" failonerror="true">
                       <arg value="-c" />
-                      <arg value="mvn exec:java -Dexec.mainClass='org.camunda.optimize.data.upgrade.OptimizeDataGenerator'" />
+                      <arg value="mvn exec:java -Dexec.mainClass='org.camunda.optimize.data.upgrade.OptimizeDataGenerator' -s ../../settings.xml" />
                     </exec>
 
                     <echo message="Killing Optimize ${project.previousVersion}..." />
@@ -219,7 +219,7 @@
                     <echo message="Running post migration tests..." />
                     <exec executable="/bin/bash" failonerror="true">
                       <arg value="-c" />
-                      <arg value="mvn verify -DskipTests=false" />
+                      <arg value="mvn verify -DskipTests=false -s ../../settings.xml" />
                     </exec>
 
                     <echo message="Killing Optimize ${project.version}" />

@@ -107,6 +107,19 @@ pipeline {
             }
           }
         }
+        stage('Data upgrade test') {
+          agent {
+            kubernetes {
+              cloud 'optimize-ci'
+              label "optimize-ci-build-it-data-upgrade_${env.JOB_BASE_NAME}-${env.BUILD_ID}"
+              defaultContainer 'jnlp'
+              yamlFile '.ci/podSpecs/mavenDindAgent.yml'
+            }
+          }
+          steps {
+            dataUpgradeTestSteps()
+          }
+        }
         stage('Security') {
           agent {
             kubernetes {
@@ -343,6 +356,19 @@ void migrationTestSteps(String engineVersion = 'latest') {
     runMaven("install -Dskip.docker -DskipTests -Pproduction,it,engine-${engineVersion} -pl backend,upgrade -am -T\$LIMITS_CPU")
     // run migration tests
     runMaven("verify -f qa/upgrade-es-schema-tests/pom.xml -Pupgrade-es-schema-tests")
+  }
+}
+
+void dataUpgradeTestSteps(String engineVersion = 'latest') {
+  container('maven') {
+    installDockerBinaries()
+    dockerRegistryLogin()
+    sh ("""apt-get update && apt-get install -y jq""")
+    setupPermissionsForHostDirs('qa/upgrade-optimize-data')
+
+    runMaven("install -Dskip.docker -DskipTests -Pproduction,it,engine-${engineVersion} -pl backend,upgrade -am -T\$LIMITS_CPU")
+
+    runMaven("verify -f qa/upgrade-optimize-data/pom.xml -Pupgrade-optimize-data")
   }
 }
 
