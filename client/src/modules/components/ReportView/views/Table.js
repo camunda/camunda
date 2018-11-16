@@ -118,15 +118,21 @@ export default withErrorHandling(
         configuration: {excludedColumns, columnOrder},
         labels = [],
         data,
+        sorting,
         reportType = 'single',
-        processInstanceCount
+        processInstanceCount,
+        updateSorting
       } = this.props;
 
       // Combined Report
       if (reportType === 'combined') return this.processCombinedData();
       // raw data
       if (isRaw(data))
-        return processRawData(data, excludedColumns, columnOrder, this.state.camundaEndpoints);
+        return {
+          ...processRawData(data, excludedColumns, columnOrder, this.state.camundaEndpoints),
+          updateSorting,
+          sorting
+        };
       // Normal single Report
       return this.processSingleData(labels, data, processInstanceCount);
     };

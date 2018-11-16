@@ -37,7 +37,7 @@ export default {
         this.columnGroups = flatten(currentHead.map(toColumnGroup));
         this.dragGroup = this.columnGroups[this.dragIdx];
 
-        createDragPreview(this.dragIdx, evt);
+        this.preview = createDragPreview(this.dragIdx, evt);
 
         document.addEventListener('mousemove', this.handleMouseMove);
         document.addEventListener('mouseup', this.handleMouseUp);
@@ -66,6 +66,10 @@ export default {
     };
 
     handleMouseMove = evt => {
+      if (!this.preview.parentNode) {
+        document.body.appendChild(this.preview);
+      }
+
       removeHighlights();
 
       const applyClass = (modifier = '') => idx => {
@@ -179,21 +183,23 @@ function createDragPreview(idx, evt) {
   preview.style.top = evt.pageY + 'px';
   preview.style.left = evt.pageX + 'px';
 
-  document.body.appendChild(preview);
-
   function update(evt) {
     preview.style.top = evt.pageY + 'px';
     preview.style.left = evt.pageX + 'px';
   }
 
   function stopDrag() {
-    document.body.removeChild(preview);
+    if (preview.parentNode === document.body) {
+      document.body.removeChild(preview);
+    }
     document.body.removeEventListener('mousemove', update);
     document.body.removeEventListener('mouseup', stopDrag);
   }
 
   document.body.addEventListener('mousemove', update);
   document.body.addEventListener('mouseup', stopDrag);
+
+  return preview;
 }
 
 function toColumnGroup(column) {

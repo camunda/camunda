@@ -88,7 +88,8 @@ export default withErrorHandling(
         visualization: null,
         processPart: null,
         filter: [],
-        configuration: {}
+        configuration: {},
+        parameters: {}
       };
 
       await this.loadXmlToConfiguration(data);
@@ -458,6 +459,11 @@ export default withErrorHandling(
                 <ReportView
                   report={reportResult}
                   applyAddons={this.applyAddons(ColumnRearrangement)}
+                  customProps={{
+                    table: {
+                      updateSorting: this.updateSorting
+                    }
+                  }}
                 />
               )}
             </div>
@@ -471,6 +477,19 @@ export default withErrorHandling(
           </div>
         </div>
       );
+    };
+
+    updateSorting = ([{id, desc}]) => {
+      this.updateReport({
+        parameters: {
+          processPart:
+            (this.state.data.parameters && this.state.data.parameters.processPart) || null,
+          sorting: {
+            by: id,
+            order: desc ? 'desc' : 'asc'
+          }
+        }
+      });
     };
 
     applyAddons = (...addons) => (Component, props) => (

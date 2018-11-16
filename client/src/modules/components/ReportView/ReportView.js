@@ -212,6 +212,7 @@ export default class ReportView extends React.Component {
             ...getTableProps(reportType, result, data, processInstanceCount),
             reportType,
             configuration: data.configuration,
+            sorting: data.parameters && data.parameters.sorting,
             disableReportScrolling: this.props.disableReportScrolling,
             property: data.view.property
           }
@@ -267,6 +268,11 @@ export default class ReportView extends React.Component {
     }
 
     config.props.errorMessage = defaultErrorMessage;
+
+    config.props = {
+      ...config.props,
+      ...(this.props.customProps ? this.props.customProps[visualization] || {} : {})
+    };
 
     return this.getReportViewTemplate(
       config,

@@ -1,32 +1,8 @@
 import React from 'react';
-import {mount} from 'enzyme';
+import {shallow} from 'enzyme';
 
 import Table from './Table';
 import ReactTable from 'react-table';
-
-jest.mock('react-router-dom', () => {
-  return {
-    Link: ({children}) => {
-      return <a>{children}</a>;
-    }
-  };
-});
-
-jest.mock('react-table', () => () => (
-  <div>
-    <div className="rt-thead">
-      <div className="rt-tr" />
-    </div>
-    <div className="rt-tbody" />
-  </div>
-));
-
-jest.mock('components', () => {
-  return {
-    Button: props => <button {...props}>{props.children}</button>,
-    LoadingIndicator: props => <div className="sk-circle">{props.type}</div>
-  };
-});
 
 function generateData(amount) {
   const arr = [];
@@ -35,10 +11,6 @@ function generateData(amount) {
   }
   return arr;
 }
-
-it('should render without crashing', () => {
-  mount(<Table {...{head: [], body: [], foot: []}} />);
-});
 
 it('shoud correctly format header', () => {
   const result = Table.formatColumns(['x', 'y', 'z']);
@@ -68,17 +40,17 @@ it('should correctly format multi-level header', () => {
 it('shoud correctly format body', () => {
   const result = Table.formatData(['Header 1', 'Header 2', 'Header 3'], [['a', 'b', 'c']]);
 
-  expect(result).toEqual([{header_1: 'a', header_2: 'b', header_3: 'c'}]);
+  expect(result).toEqual([{header1: 'a', header2: 'b', header3: 'c'}]);
 });
 
 it('should show pagination if data contains more than 20 rows', () => {
-  const node = mount(<Table {...{head: ['a'], body: generateData(21), foot: []}} />);
+  const node = shallow(<Table {...{head: ['a'], body: generateData(21), foot: []}} />);
 
   expect(node.find(ReactTable)).toHaveProp('showPagination', true);
 });
 
 it('should not show pagination if data contains more than 20 rows, but disablePagination flag is set', () => {
-  const node = mount(
+  const node = shallow(
     <Table {...{head: ['a'], body: generateData(21), foot: []}} disablePagination />
   );
 
@@ -86,7 +58,15 @@ it('should not show pagination if data contains more than 20 rows, but disablePa
 });
 
 it('should not show pagination if data contains less than or equal to 20 rows', () => {
-  const node = mount(<Table {...{head: ['a'], body: generateData(20), foot: []}} />);
+  const node = shallow(<Table {...{head: ['a'], body: generateData(20), foot: []}} />);
 
   expect(node.find(ReactTable)).toHaveProp('showPagination', false);
+});
+
+it('should make the table sortable if an updateSorting method is defined', () => {
+  const node = shallow(
+    <Table {...{head: ['a'], body: generateData(20), foot: []}} updateSorting={() => {}} />
+  );
+
+  expect(node.find(ReactTable)).toHaveProp('sortable', true);
 });

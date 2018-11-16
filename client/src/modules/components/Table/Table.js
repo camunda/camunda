@@ -17,7 +17,15 @@ export default class Table extends React.Component {
   }
 
   render() {
-    const {className, head, body, disableReportScrolling, disablePagination} = this.props;
+    const {
+      className,
+      head,
+      body,
+      disableReportScrolling,
+      disablePagination,
+      updateSorting,
+      sorting
+    } = this.props;
 
     const columns = Table.formatColumns(head);
     const data = Table.formatData(head, body);
@@ -37,13 +45,15 @@ export default class Table extends React.Component {
           showPaginationBottom={true}
           showPageSizeOptions={false}
           minRows={0}
-          sortable={false}
+          sortable={!!updateSorting}
+          sorted={sorting ? [{id: sorting.by, desc: sorting.order === 'desc'}] : []}
           multiSort={false}
           className={classnames('-striped', '-highlight', 'Table', {
             'Table__unscrollable-mode': disableReportScrolling
           })}
           noDataText="No data available"
           onResizedChange={this.updateResizedState}
+          onSortedChange={updateSorting || (() => {})}
           PreviousComponent={props => <Button {...props} />}
           NextComponent={props => <Button {...props} />}
         />
@@ -77,7 +87,7 @@ export default class Table extends React.Component {
     this.fixColumnAlignment();
 
     // on dashboards
-    const resizableContainer = this.tableRef.closest('.DashboardObject');
+    const resizableContainer = this.tableRef && this.tableRef.closest('.DashboardObject');
     if (resizableContainer) {
       new MutationObserver(this.fixColumnAlignment).observe(resizableContainer, {
         attributes: true
@@ -137,8 +147,10 @@ const flatten = (ctx = '') => (flat, entry) => {
 };
 
 function convertHeaderNameToAccessor(name) {
-  return name
+  const joined = name
     .split(' ')
-    .join('_')
-    .toLowerCase();
+    .join('')
+    .replace('Variables', 'Variable:');
+
+  return joined.charAt(0).toLowerCase() + joined.slice(1);
 }

@@ -809,4 +809,23 @@ describe('edit mode', async () => {
 
     expect(node.state().data.configuration).toEqual({targetValue: null});
   });
+
+  it('should set the correct parameters when updating sorting', () => {
+    props.match.params.viewMode = 'edit';
+
+    const ReportComponent = Report.WrappedComponent;
+
+    const node = shallow(<ReportComponent {...props} />);
+    node.setState({
+      loaded: true,
+      ...sampleReport
+    });
+
+    node
+      .find('ReportView')
+      .prop('customProps')
+      .table.updateSorting([{id: 'columnId', desc: true}]);
+
+    expect(node.state().data.parameters.sorting).toEqual({by: 'columnId', order: 'desc'});
+  });
 });

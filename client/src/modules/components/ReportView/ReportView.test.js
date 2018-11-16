@@ -2,7 +2,7 @@ import React from 'react';
 import {shallow} from 'enzyme';
 
 import ReportView from './ReportView';
-import {Number} from './views';
+import {Number, Table} from './views';
 
 jest.mock('services', () => {
   const rest = jest.requireActual('services');
@@ -307,6 +307,20 @@ it('should include the instance count if indicated in the config', () => {
 
   expect(node.find('.additionalInfo')).toBePresent();
   expect(node.find('.additionalInfo').text()).toContain('723');
+});
+
+it('should pass on custom props if indicated by the visualization', () => {
+  const node = shallow(
+    <ReportView
+      report={exampleDurationReport}
+      customProps={{table: {someInfo: 'very important'}}}
+    />
+  );
+  node.setState({
+    loaded: true
+  });
+
+  expect(node.find(Table)).toHaveProp('someInfo', 'very important');
 });
 
 describe('combined Report View', () => {
