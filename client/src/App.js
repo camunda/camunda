@@ -20,42 +20,35 @@ import {ErrorBoundary} from 'components';
 
 import {Provider as Theme} from 'theme';
 
-const mainWrapped = Component => props => (
-  <main>
-    <ErrorBoundary>
-      <Component {...props} />
-    </ErrorBoundary>
-  </main>
-);
-
-const headered = Component => props => {
-  return (
-    <React.Fragment>
-      <Header name="Camunda Optimize" />
-      <main>
-        <ErrorBoundary>
-          <Component {...props} />
-        </ErrorBoundary>
-      </main>
-      <Footer />
-    </React.Fragment>
-  );
-};
-
 const App = () => (
   <Theme>
     <Router>
-      <div className="Root-container">
-        <Route exact path="/login" component={mainWrapped(Login)} />
-        <PrivateRoute exact path="/" component={headered(Home)} />
-        <PrivateRoute exact path="/dashboards" component={headered(Dashboards)} />
-        <PrivateRoute exact path="/reports" component={headered(Reports)} />
-        <PrivateRoute exact path="/analysis" component={headered(Analysis)} />
-        <PrivateRoute exact path="/alerts" component={headered(Alerts)} />
-        <Route exact path="/share/:type/:id" component={mainWrapped(Sharing)} />
-        <PrivateRoute path="/report/:id/:viewMode?" component={headered(Report)} />
-        <PrivateRoute path="/dashboard/:id/:viewMode?" component={headered(Dashboard)} />
-      </div>
+      <Route
+        path="/"
+        render={({location: {pathname}}) => {
+          const hideHeader = pathname.indexOf('/login') === 0 || pathname.indexOf('/share') === 0;
+
+          return (
+            <div className="Root-container">
+              {!hideHeader && <Header name="Camunda Optimize" />}
+              <main>
+                <ErrorBoundary>
+                  <Route exact path="/login" component={Login} />
+                  <PrivateRoute exact path="/" component={Home} />
+                  <PrivateRoute exact path="/dashboards" component={Dashboards} />
+                  <PrivateRoute exact path="/reports" component={Reports} />
+                  <PrivateRoute exact path="/analysis" component={Analysis} />
+                  <PrivateRoute exact path="/alerts" component={Alerts} />
+                  <Route exact path="/share/:type/:id" component={Sharing} />
+                  <PrivateRoute path="/report/:id/:viewMode?" component={Report} />
+                  <PrivateRoute path="/dashboard/:id/:viewMode?" component={Dashboard} />
+                </ErrorBoundary>
+              </main>
+              {!hideHeader && <Footer />}
+            </div>
+          );
+        }}
+      />
     </Router>
   </Theme>
 );
