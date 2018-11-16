@@ -38,6 +38,12 @@ export const Dt = themed(styled.dt`
   align-items: center;
   position: relative;
 
+  &:hover {
+    background: ${themedWith(Colors.uiDark04, Colors.lightButton04)};
+    border-color: ${themedWith(Colors.uiDark06, Colors.uiLight03)};
+    transition: background 0.15s ease-out, border-color 0.15s ease-out;
+  }
+
   background: ${({isOpen}) =>
     isOpen ? Colors.selections : themedWith(Colors.uiDark03, Colors.uiLight02)};
   border-style: solid;
