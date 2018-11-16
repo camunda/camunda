@@ -53,7 +53,7 @@ describe('Dashboard', () => {
 
   it('should render Header component', () => {
     // given
-    const mockState = {counts: {running: 1, incidents: 2}};
+    const mockState = {counts: {running: 1, incidents: 2, active: 1}};
     node.setState(mockState);
     const headerNode = node.find(Header);
 

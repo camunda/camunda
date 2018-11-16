@@ -34,7 +34,7 @@ export default class IncidentsByWorkflow extends React.Component {
     const {incidents} = this.props;
     return (
       <ul>
-        {incidents.map(item => {
+        {incidents.map((item, index) => {
           const versions = getVersions(item.workflows);
           const versionsCount = item.workflows.length;
           const name = item.workflowName || item.bpmnProcessId;
@@ -47,7 +47,10 @@ export default class IncidentsByWorkflow extends React.Component {
           );
 
           return (
-            <Styled.Li key={item.bpmnProcessId}>
+            <Styled.Li
+              key={item.bpmnProcessId}
+              data-test={`incident-byWorkflow-${index}`}
+            >
               {versionsCount === 1 ? (
                 Statistic
               ) : (

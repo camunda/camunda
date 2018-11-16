@@ -26,6 +26,7 @@ export const Icon = themed(styled(withStrippedProps(['rotated'])(Right))`
   height: 16px;
   position: relative;
   left: -7px;
+  top: -1px;
 
   display: flex;
   align-content: center;
