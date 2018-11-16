@@ -23,14 +23,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import io.zeebe.broker.test.EmbeddedBrokerRule;
 import io.zeebe.exporter.record.Record;
+import io.zeebe.exporter.record.value.JobRecordValue;
 import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
+import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
+import io.zeebe.test.util.JsonUtil;
 import io.zeebe.test.util.MsgPackUtil;
+import io.zeebe.test.util.record.RecordingExporter;
 import java.util.HashMap;
 import java.util.Map;
 import org.junit.Before;
@@ -477,6 +481,94 @@ public class WorkflowTaskIOMappingTest {
     assertRecordPayload(
         WorkflowInstanceIntent.ELEMENT_COMPLETED,
         "{'string':'value', 'jsonObject':{'testAttr':'test'}, 'result':123}");
+  }
+
+  @Test
+  public void shouldNotPropagateNonMappedVariables() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("task1", t -> t.zeebeTaskType("type1").zeebeOutput("$.key1", "$.key1"))
+            .serviceTask("task2", t -> t.zeebeTaskType("type2"))
+            .endEvent()
+            .done();
+
+    testClient.deploy(process);
+
+    testClient.createWorkflowInstance("process");
+
+    // when
+    testClient.completeJobOfType("type1", "{'key1': 'val1', 'key2': 'val2'}");
+
+    // then
+    testClient.completeJobOfType("type2");
+    final Record<JobRecordValue> secondActivatedJob =
+        RecordingExporter.jobRecords().withType("type2").withIntent(JobIntent.ACTIVATED).getFirst();
+
+    JsonUtil.assertEquality(secondActivatedJob.getValue().getPayload(), "{'key1': 'val1'}");
+  }
+
+  @Test
+  public void shouldPropagateAllVariablesWithoutMappings() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("task1", t -> t.zeebeTaskType("type1"))
+            .serviceTask("task2", t -> t.zeebeTaskType("type2"))
+            .endEvent()
+            .done();
+
+    testClient.deploy(process);
+
+    testClient.createWorkflowInstance("process");
+
+    // when
+    testClient.completeJobOfType("type1", "{'key1': 'val1', 'key2': 'val2'}");
+
+    // then
+    testClient.completeJobOfType("type2");
+    final Record<JobRecordValue> secondActivatedJob =
+        RecordingExporter.jobRecords().withType("type2").withIntent(JobIntent.ACTIVATED).getFirst();
+
+    JsonUtil.assertEquality(
+        secondActivatedJob.getValue().getPayload(), "{'key1': 'val1', 'key2': 'val2'}");
+  }
+
+  /**
+   * This test verifies that input mapped variables do not leak to a higher scope on job completion,
+   * if they are not explicitly mapped.
+   *
+   * <p>Technically, this implies that variables must be propagated on job completion, not when the
+   * corresponding element instance completes (because at that point, we cannot distinguish input
+   * mapped variables from job-worker-submitted variables).
+   */
+  @Test
+  public void shouldNotMergeInputVariablesOnDefaultOutputMapping() {
+    // given
+    final BpmnModelInstance process =
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .serviceTask("task1", t -> t.zeebeTaskType("type1").zeebeInput("$.key1", "$.mappedKey"))
+            .serviceTask("task2", t -> t.zeebeTaskType("type2"))
+            .endEvent()
+            .done();
+
+    testClient.deploy(process);
+
+    testClient.createWorkflowInstance("process", "{'key1': 'val1'}");
+
+    // when
+    testClient.completeJobOfType("type1", "{'key2': 'val2'}");
+
+    // then
+    testClient.completeJobOfType("type2");
+    final Record<JobRecordValue> secondActivatedJob =
+        RecordingExporter.jobRecords().withType("type2").withIntent(JobIntent.ACTIVATED).getFirst();
+
+    JsonUtil.assertEquality(
+        secondActivatedJob.getValue().getPayload(), "{'key1': 'val1', 'key2': 'val2'}");
   }
 
   private void assertRecordPayload(JobIntent instanceIntent, String mergedOtherWithJsonDocument) {

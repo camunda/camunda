@@ -26,39 +26,68 @@ import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceReco
 import org.agrona.DirectBuffer;
 
 public class IOMappingHelper {
+
   public <T extends ExecutableFlowNode> void applyOutputMappings(BpmnStepContext<T> context) {
+
     final T element = context.getElement();
     final MsgPackMergeTool mergeTool = context.getMergeTool();
     final WorkflowInstanceRecord record = context.getValue();
-    final WorkflowInstanceRecord scope = context.getFlowScopeInstance().getValue();
     final ZeebeOutputBehavior outputBehavior = element.getOutputBehavior();
 
-    DirectBuffer payload = scope.getPayload();
+    final DirectBuffer scopePayload =
+        context
+            .getElementInstanceState()
+            .getVariablesState()
+            .getVariablesAsDocument(record.getScopeInstanceKey());
     mergeTool.reset();
 
+    // TODO (saig0) #1613: if the activity has no output mappings then we don't need to propagate
+    // the variables
+
+    final DirectBuffer propagatedPayload;
     if (outputBehavior != ZeebeOutputBehavior.none) {
       if (element.getOutputBehavior() != ZeebeOutputBehavior.overwrite) {
-        mergeTool.mergeDocument(scope.getPayload());
+        mergeTool.mergeDocument(scopePayload);
       }
 
+      // TODO (saig0) #1613: we should use the variables from the state instead of the record
+      // payload
       mergeTool.mergeDocumentStrictly(record.getPayload(), element.getOutputMappings());
-      payload = mergeTool.writeResultToBuffer();
-      scope.setPayload(payload);
+      propagatedPayload = mergeTool.writeResultToBuffer();
+
+    } else {
+      propagatedPayload = scopePayload;
     }
 
-    record.setPayload(payload);
+    context
+        .getElementInstanceState()
+        .getVariablesState()
+        .setVariablesFromDocument(record.getScopeInstanceKey(), propagatedPayload);
+
+    record.setPayload(propagatedPayload);
   }
 
   public <T extends ExecutableFlowNode> void applyInputMappings(BpmnStepContext<T> context) {
-    final WorkflowInstanceRecord record = context.getValue();
+
+    final WorkflowInstanceRecord value = context.getValue();
     final MsgPackMergeTool mergeTool = context.getMergeTool();
     final T element = context.getElement();
     final Mapping[] mappings = element.getInputMappings();
 
     if (mappings.length > 0) {
       mergeTool.reset();
-      mergeTool.mergeDocumentStrictly(record.getPayload(), element.getInputMappings());
-      record.setPayload(mergeTool.writeResultToBuffer());
+
+      // TODO (saig0) #1612: we should use the variables from the state instead of the record
+      // payload
+      mergeTool.mergeDocumentStrictly(value.getPayload(), element.getInputMappings());
+
+      final DirectBuffer mappedPayload = mergeTool.writeResultToBuffer();
+      context.getValue().setPayload(mappedPayload);
+
+      context
+          .getElementInstanceState()
+          .getVariablesState()
+          .setVariablesLocalFromDocument(context.getRecord().getKey(), mappedPayload);
     }
   }
 }

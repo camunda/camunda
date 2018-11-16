@@ -33,7 +33,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.agrona.ExpandableArrayBuffer;
 
 public class ElementInstanceState {
@@ -280,33 +279,11 @@ public class ElementInstanceState {
   }
 
   public boolean isEmpty() {
-    final AtomicBoolean isEmpty = new AtomicBoolean(true);
-
-    elementInstanceColumnFamily.whileTrue(
-        (k, v) -> {
-          isEmpty.compareAndSet(true, false);
-          return false;
-        });
-
-    parentChildColumnFamily.whileTrue(
-        (k, v) -> {
-          isEmpty.compareAndSet(true, false);
-          return false;
-        });
-
-    tokenColumnFamily.whileTrue(
-        (k, v) -> {
-          isEmpty.compareAndSet(true, false);
-          return false;
-        });
-
-    tokenParentChildColumnFamily.whileTrue(
-        (k, v) -> {
-          isEmpty.compareAndSet(true, false);
-          return false;
-        });
-
-    return isEmpty.get() && variablesState.isEmpty();
+    return elementInstanceColumnFamily.isEmpty()
+        && parentChildColumnFamily.isEmpty()
+        && tokenColumnFamily.isEmpty()
+        && tokenParentChildColumnFamily.isEmpty()
+        && variablesState.isEmpty();
   }
 
   @FunctionalInterface

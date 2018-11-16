@@ -325,6 +325,17 @@ public class ColumnFamilyTest {
     assertThat(values).containsExactly(921L, 1L);
   }
 
+  @Test
+  public void shouldCheckIfEmpty() {
+    assertThat(columnFamily.isEmpty()).isTrue();
+
+    putKeyValuePair(1, 10);
+    assertThat(columnFamily.isEmpty()).isFalse();
+
+    columnFamily.delete(key);
+    assertThat(columnFamily.isEmpty()).isTrue();
+  }
+
   private void putKeyValuePair(int key, int value) {
     this.key.wrapLong(key);
     this.value.wrapLong(value);

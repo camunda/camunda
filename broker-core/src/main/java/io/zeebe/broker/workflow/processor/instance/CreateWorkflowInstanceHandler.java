@@ -84,6 +84,11 @@ public class CreateWorkflowInstanceHandler implements WorkflowInstanceCommandHan
             "Can't manually instantiate workflow with start events of types other than none");
       }
 
+      state
+          .getElementInstanceState()
+          .getVariablesState()
+          .setVariablesLocalFromDocument(workflowInstanceKey, command.getPayload());
+
       responseWriter.writeEventOnCommand(
           workflowInstanceKey, WorkflowInstanceIntent.ELEMENT_READY, createWorkflowCommand, record);
     } else {

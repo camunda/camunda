@@ -61,10 +61,12 @@ class RocksDbColumnFamily<
     return null;
   }
 
+  @Override
   public void forEach(Consumer<ValueType> consumer) {
     zeebeRocksDb.foreach(handle, valueInstance, consumer);
   }
 
+  @Override
   public void forEach(BiConsumer<KeyType, ValueType> consumer) {
     zeebeRocksDb.foreach(handle, keyInstance, valueInstance, consumer);
   }
@@ -92,5 +94,10 @@ class RocksDbColumnFamily<
   @Override
   public boolean exists(KeyType key) {
     return zeebeRocksDb.exists(handle, key);
+  }
+
+  @Override
+  public boolean isEmpty() {
+    return zeebeRocksDb.isEmpty(handle);
   }
 }

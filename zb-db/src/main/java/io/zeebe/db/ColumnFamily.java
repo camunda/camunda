@@ -116,4 +116,11 @@ public interface ColumnFamily<KeyType extends DbKey, ValueType extends DbValue> 
    * @return true if the key exist in this column family, false otherwise
    */
   boolean exists(KeyType key);
+
+  /**
+   * Checks if the column family has any entry.
+   *
+   * @return <code>true</code> if the column family has no entry
+   */
+  boolean isEmpty();
 }

@@ -58,6 +58,28 @@ public final class JobCompletedEventProcessor implements TypedRecordProcessor<Jo
       elementInstance.setState(WorkflowInstanceIntent.ELEMENT_COMPLETING);
       elementInstance.setJobKey(-1);
       elementInstance.setValue(value);
+
+      // TODO (saig0) #1860: if the task has no output mappings then the job payload should be
+      // propagated to the task scope (not as local variables)
+
+      // TODO (saig0) #1613: if the task has output mappings then the job payload should be set as
+      // local variables to the task scope (which can be used in the output mappings)
+
+      // TODO (saig0) #1613: don't override the task scope here because otherwise the output
+      // mappings can't access variables which are not part of the job payload
+
+      // remove any input-mapped variables, so they don't leak out on output mapping
+      workflowState
+          .getElementInstanceState()
+          .getVariablesState()
+          .removeAllVariables(elementInstanceKey);
+
+      workflowState
+          .getElementInstanceState()
+          .getVariablesState()
+          .setVariablesLocalFromDocument(elementInstanceKey, jobEvent.getPayload());
+
+      workflowState.getElementInstanceState().flushDirtyState();
     }
   }
 }

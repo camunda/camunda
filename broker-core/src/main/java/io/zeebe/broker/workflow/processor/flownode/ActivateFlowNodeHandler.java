@@ -32,6 +32,7 @@ public class ActivateFlowNodeHandler<T extends ExecutableFlowNode> implements Bp
   public void handle(BpmnStepContext<T> context) {
     try {
       ioMappingHelper.applyInputMappings(context);
+
       activate(context);
 
       context
