@@ -3,15 +3,17 @@
 exports[`IncidentStatistic should display the right data 1`] = `
 <div>
   <Themed(Styled(withStrippedProps(Component)))>
-    <Themed(styled.div)>
+    <styled.div>
       10
-    </Themed(styled.div)>
-    <Themed(styled.div)>
+    </styled.div>
+    <div
+      data-test="incident-statistic-label"
+    >
       someLabel
-    </Themed(styled.div)>
-    <Themed(styled.div)>
+    </div>
+    <styled.div>
       8
-    </Themed(styled.div)>
+    </styled.div>
   </Themed(Styled(withStrippedProps(Component)))>
   <styled.div>
     <styled.div

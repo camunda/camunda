@@ -10,7 +10,7 @@ function IncidentStatistic(props) {
     <div className={props.className}>
       <Styled.Wrapper perUnit={props.perUnit}>
         <Styled.IncidentsCount>{incidentsCount}</Styled.IncidentsCount>
-        <Styled.Label>{label}</Styled.Label>
+        <div data-test="incident-statistic-label">{label}</div>
         <Styled.ActiveCount>{activeCount}</Styled.ActiveCount>
       </Styled.Wrapper>
       <Styled.IncidentStatisticBar>

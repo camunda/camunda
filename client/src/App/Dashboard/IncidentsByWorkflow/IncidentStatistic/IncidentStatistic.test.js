@@ -14,7 +14,9 @@ describe('IncidentStatistic', () => {
     );
 
     expect(node.find(Styled.IncidentsCount).text()).toBe('10');
-    expect(node.find(Styled.Label).text()).toBe('someLabel');
+    expect(node.find('[data-test="incident-statistic-label"]').text()).toBe(
+      'someLabel'
+    );
     expect(node.find(Styled.ActiveCount).text()).toBe('8');
     expect(node.find(Styled.IncidentsBar)).toExist();
     expect(node).toMatchSnapshot();

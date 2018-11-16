@@ -13,7 +13,7 @@ export default class IncidentsByWorkflow extends React.Component {
     incidents: PropTypes.array
   };
 
-  getVersionStatistics = items => {
+  renderVersionStatistics = items => {
     return (
       <ul>
         {items.map(item => (
@@ -30,33 +30,36 @@ export default class IncidentsByWorkflow extends React.Component {
     );
   };
 
+  renderIncidentStatistic = (item, name) => {
+    const versions = getVersions(item.workflows);
+    return (
+      <Styled.IncidentStatistic
+        label={`${name} (Version ${versions})`}
+        incidentsCount={item.instancesWithActiveIncidentsCount}
+        activeCount={item.activeInstancesCount}
+      />
+    );
+  };
+
   render() {
     const {incidents} = this.props;
     return (
       <ul>
         {incidents.map((item, index) => {
-          const versions = getVersions(item.workflows);
           const versionsCount = item.workflows.length;
           const name = item.workflowName || item.bpmnProcessId;
-          const Statistic = (
-            <Styled.IncidentStatistic
-              label={`${name} (Version ${versions})`}
-              incidentsCount={item.instancesWithActiveIncidentsCount}
-              activeCount={item.activeInstancesCount}
-            />
-          );
-
+          const IncidentStatistic = this.renderIncidentStatistic(item, name);
           return (
             <Styled.Li
               key={item.bpmnProcessId}
               data-test={`incident-byWorkflow-${index}`}
             >
               {versionsCount === 1 ? (
-                Statistic
+                IncidentStatistic
               ) : (
                 <Collapse
-                  content={this.getVersionStatistics(item.workflows)}
-                  header={Statistic}
+                  content={this.renderVersionStatistics(item.workflows)}
+                  header={IncidentStatistic}
                   buttonTitle={`Expand ${versionsCount} Instances with Incidents of Workflow ${name} `}
                 />
               )}
