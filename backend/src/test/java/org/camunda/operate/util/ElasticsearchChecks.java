@@ -103,6 +103,29 @@ public class ElasticsearchChecks {
     };
   }
 
+  @Bean(name = "activityIsTerminatedCheck")
+  public Predicate<Object[]> getActivityIsTerminatedCheck() {
+    return objects -> {
+      assertThat(objects).hasSize(2);
+      assertThat(objects[0]).isInstanceOf(String.class);
+      assertThat(objects[1]).isInstanceOf(String.class);
+      String workflowInstanceId = (String)objects[0];
+      String activityId = (String)objects[1];
+      try {
+        final WorkflowInstanceEntity instance = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
+        final List<ActivityInstanceEntity> activities = instance.getActivities().stream().filter(a -> a.getActivityId().equals(activityId))
+          .collect(Collectors.toList());
+        if (activities.size() == 0) {
+          return false;
+        } else {
+          return activities.get(0).getState().equals(ActivityState.TERMINATED);
+        }
+      } catch (NotFoundException ex) {
+        return false;
+      }
+    };
+  }
+
   @Bean(name = "incidentIsActiveCheck")
   public Predicate<Object[]> getIncidentIsActiveCheck() {
     return objects -> {

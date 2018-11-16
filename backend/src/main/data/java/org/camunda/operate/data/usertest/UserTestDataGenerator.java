@@ -13,10 +13,12 @@
 package org.camunda.operate.data.usertest;
 
 import javax.annotation.PreDestroy;
+import java.io.IOException;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -25,8 +27,10 @@ import org.camunda.operate.data.AbstractDataGenerator;
 import org.camunda.operate.data.util.NameGenerator;
 import org.camunda.operate.util.IdUtil;
 import org.camunda.operate.util.ZeebeTestUtil;
+import org.camunda.operate.zeebe.payload.PayloadUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import io.zeebe.client.api.clients.JobClient;
@@ -51,6 +55,9 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
   protected List<Long> doNotTouchWorkflowInstanceKeys = new ArrayList<>();
 
   protected List<JobWorker> jobWorkers = new ArrayList<>();
+
+  @Autowired
+  protected PayloadUtil payloadUtil;
 
   @Override
   public boolean createZeebeData(boolean manuallyCalled) {
@@ -105,18 +112,18 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(startOrderProcess()));
 
     final String instanceId5 = startOrderProcess();
-    completeTask(instanceId5, "checkPayment", "{\"paid\":true}");
+    completeTask(instanceId5, "checkPayment", "{\"paid\":true,\"paidAmount\":300.0,\"orderStatus\": \"PAID\"}");
     failTask(instanceId5, "shipArticles");
     doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId5));
 
     final String instanceId6 = startOrderProcess();
-    completeTask(instanceId6, "checkPayment", "{\"paid\":false}");
+    completeTask(instanceId6, "checkPayment", "{\"paid\":false,\"paidAmount\":0.0}");
     ZeebeTestUtil.cancelWorkflowInstance(client, instanceId6);
     doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId6));
 
     final String instanceId7 = startOrderProcess();
-    completeTask(instanceId7, "checkPayment", "{\"paid\":true}");
-    completeTask(instanceId7, "shipArticles", null);
+    completeTask(instanceId7, "checkPayment", "{\"paid\":true,\"paidAmount\":300.0,\"orderStatus\": \"PAID\"}");
+    completeTask(instanceId7, "shipArticles", "{\"orderStatus\":\"SHIPPED\"}");
     doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId7));
 
     doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(startFlightRegistrationProcess()));
@@ -149,19 +156,19 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
     doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(startOrderProcess()));
 
     final String instanceId5 = startOrderProcess();
-    completeTask(instanceId5, "checkPayment", "{\"paid\":true}");
+    completeTask(instanceId5, "checkPayment", "{\"paid\":true,\"paidAmount\":300.0,\"orderStatus\": \"PAID\"}");
     failTask(instanceId5, "checkItems");
     doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId5));
 
     final String instanceId6 = startOrderProcess();
-    completeTask(instanceId6, "checkPayment", "{\"paid\":false}");
+    completeTask(instanceId6, "checkPayment", "{\"paid\":false,\"paidAmount\":0.0}");
     ZeebeTestUtil.cancelWorkflowInstance(client, instanceId6);
     doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId6));
 
     final String instanceId7 = startOrderProcess();
-    completeTask(instanceId7, "checkPayment", "{\"paid\":true}");
-    completeTask(instanceId7, "checkItems", "{\"smthIsMissing\":false}" );
-    completeTask(instanceId7, "shipArticles", null);
+    completeTask(instanceId7, "checkPayment", "{\"paid\":true,\"paidAmount\":300.0,\"orderStatus\": \"PAID\"}");
+    completeTask(instanceId7, "checkItems", "{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}" );
+    completeTask(instanceId7, "shipArticles", "{\"orderStatus\":\"SHIPPED\"}");
     doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(instanceId7));
 
     doNotTouchWorkflowInstanceKeys.add(IdUtil.extractKey(startFlightRegistrationProcess()));
@@ -248,7 +255,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
 
     jobWorkers.add(progressSimpleTask("requestPayment"));
     jobWorkers.add(progressOrderProcessCheckPayment());
-    jobWorkers.add(progressSimpleTask("shipArticles"));
+    jobWorkers.add(progressOrderProcessShipArticles());
 
     jobWorkers.add(progressOrderProcessCheckItems());
 
@@ -321,12 +328,35 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
           //fail
           throw new RuntimeException("Payment system not available.");
         case 1:
-          jobClient.newCompleteCommand(job.getKey()).payload("{\"paid\":false}").send().join();
+          Double total = null;
+          Double paidAmount = null;
+          try {
+            final Map<String, Object> variables = payloadUtil.parsePayload(job.getPayload());
+            total = (Double)variables.get("total");
+            paidAmount = (Double)variables.get("paidAmount");
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+          if (total != null) {
+            if (paidAmount != null) {
+              paidAmount = paidAmount + ((total-paidAmount)/2);
+            } else {
+              paidAmount = total / 2;
+            }
+          }
+          jobClient.newCompleteCommand(job.getKey()).payload("{\"paid\":false,\"paidAmount\":" + (paidAmount == null ? .0 : paidAmount) + "}").send().join();
           break;
         case 2:
         case 3:
         case 4:
-          jobClient.newCompleteCommand(job.getKey()).payload("{\"paid\":true}").send().join();
+          total = null;
+          try {
+            final Map<String, Object> variables = payloadUtil.parsePayload(job.getPayload());
+            total = (Double)variables.get("total");
+          } catch (IOException e) {
+            e.printStackTrace();
+          }
+          jobClient.newCompleteCommand(job.getKey()).payload("{\"paid\":true,\"paidAmount\":" + (total == null ? .0 : total) + ",\"orderStatus\": \"PAID\"}").send().join();
           break;
         }
       })
@@ -346,10 +376,31 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
         case 0:
         case 1:
         case 2:
-          jobClient.newCompleteCommand(job.getKey()).payload("{\"smthIsMissing\":false}").send().join();
+          jobClient.newCompleteCommand(job.getKey()).payload("{\"smthIsMissing\":false,\"orderStatus\":\"AWAITING_SHIPMENT\"}").send().join();
           break;
         case 3:
           jobClient.newCompleteCommand(job.getKey()).payload("{\"smthIsMissing\":true}").send().join();
+          break;
+        }
+      })
+      .name("operate")
+      .timeout(Duration.ofSeconds(JOB_WORKER_TIMEOUT))
+      .open();
+  }
+
+  private JobWorker progressOrderProcessShipArticles() {
+    return client.jobClient().newWorker()
+      .jobType("shipArticles")
+      .handler((jobClient, job) -> {
+        if (!canProgress(job.getHeaders().getWorkflowInstanceKey()))
+          return;
+        final int scenario = random.nextInt(2);
+        switch (scenario) {
+        case 0:
+          jobClient.newCompleteCommand(job.getKey()).payload("{\"orderStatus\":\"SHIPPED\"}").send().join();
+          break;
+        case 1:
+          jobClient.newFailCommand(job.getKey()).retries(0).send().join();
           break;
         }
       })
@@ -531,17 +582,19 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
       + "      \"code\": \"123.135.625\",\n"
       + "      \"name\": \"Laptop Lenovo ABC-001\",\n"
       + "      \"quantity\": 1,\n"
-      + "      \"price\": " + price1 + "\n"
+      + "      \"price\": " + Double.valueOf(price1) + "\n"
       + "    },\n"
       + "    {\n"
       + "      \"code\": \"111.653.365\",\n"
       + "      \"name\": \"Headset Sony QWE-23\",\n"
       + "      \"quantity\": 2,\n"
-      + "      \"price\": " + price2 + "\n"
+      + "      \"price\": " + Double.valueOf(price2) + "\n"
       + "    }\n"
       + "  ],\n"
-      + "  \"mwst\": " + (price1 + price2) * 0.19 + ",\n"
-      + "  \"total\": " + (price1 + price2) + "\n"
+      + "  \"mwst\": " + Double.valueOf((price1 + price2) * 0.19) + ",\n"
+      + "  \"total\": " + Double.valueOf((price1 + price2)) + ",\n"
+      + "  \"paidAmount\": 0,\n"
+      + "  \"orderStatus\": \"NEW\"\n"
       + "}");
     return instanceId;
   }

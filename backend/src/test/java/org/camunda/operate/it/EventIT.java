@@ -35,6 +35,10 @@ public class EventIT extends OperateZeebeIntegrationTest {
   @Qualifier("activityIsCompletedCheck")
   private Predicate<Object[]> activityIsCompletedCheck;
 
+  @Autowired
+  @Qualifier("activityIsTerminatedCheck")
+  private Predicate<Object[]> activityIsTerminatedCheck;
+
   private OffsetDateTime testStartTime;
 
   @Before
@@ -140,6 +144,7 @@ public class EventIT extends OperateZeebeIntegrationTest {
     super.setJobWorker(ZeebeTestUtil.completeTask(super.getClient(), activityId, super.getWorkerName(), "{\"a\": \"b\"}"));
 
     cancelWorkflowInstance(workflowInstanceId);
+    elasticsearchTestRule.processAllEventsAndWait(activityIsTerminatedCheck, workflowInstanceId, activityId);
     elasticsearchTestRule.refreshIndexesInElasticsearch();
 
     //when

@@ -43,6 +43,10 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
   @Qualifier("activityIsActiveCheck")
   private Predicate<Object[]> activityIsActiveCheck;
 
+  @Autowired
+  @Qualifier("workflowInstanceIsCompletedCheck")
+  private Predicate<Object[]> workflowInstanceIsCompletedCheck;
+
   private ZeebeClient zeebeClient;
 
   private OffsetDateTime testStartTime;
@@ -141,6 +145,8 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
     completeTask(workflowInstanceId, "task1", null);
 
     completeTask(workflowInstanceId, "task2", null);
+
+    elasticsearchTestRule.processAllEventsAndWait(workflowInstanceIsCompletedCheck, workflowInstanceId, "task1");
 
     WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
     assertThat(workflowInstanceEntity.getSequenceFlows()).hasSize(3)
