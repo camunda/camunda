@@ -1,6 +1,9 @@
 import {isValidJSON} from 'modules/utils';
 import {getSelectionById} from 'modules/utils/selection';
-import {parseFilterForRequest} from 'modules/utils/filter';
+import {
+  parseFilterForRequest,
+  getFilterWithWorkflowIds
+} from 'modules/utils/filter';
 
 export function parseQueryString(queryString = '') {
   var params = {};
@@ -22,7 +25,11 @@ export function parseQueryString(queryString = '') {
 }
 
 export function getPayload({selectionId, state}) {
-  const {selection, selections, filter} = state;
+  const {selection, selections, filter, groupedWorkflowInstances} = state;
+  const filterWithWorkflowIds = getFilterWithWorkflowIds(
+    filter,
+    groupedWorkflowInstances
+  );
   let selectionIndex;
 
   if (selectionId) {
@@ -30,7 +37,7 @@ export function getPayload({selectionId, state}) {
   }
 
   const query = {
-    ...parseFilterForRequest(filter)
+    ...parseFilterForRequest(filterWithWorkflowIds)
   };
 
   if (!selection.all) {
