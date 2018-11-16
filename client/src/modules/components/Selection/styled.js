@@ -31,6 +31,16 @@ export const Dd = styled.dd`
   margin: 0;
 `;
 
+const hoverSelector = theme => {
+  return css`
+    &:hover {
+      background: ${themedWith(Colors.uiDark04, Colors.lightButton04)};
+      border-color: ${themedWith(Colors.uiDark06, Colors.uiLight03)};
+      transition: background 0.15s ease-out, border-color 0.15s ease-out;
+    }
+  `;
+};
+
 export const Dt = themed(styled.dt`
   height: 32px;
   padding: 0;
@@ -38,11 +48,7 @@ export const Dt = themed(styled.dt`
   align-items: center;
   position: relative;
 
-  &:hover {
-    background: ${themedWith(Colors.uiDark04, Colors.lightButton04)};
-    border-color: ${themedWith(Colors.uiDark06, Colors.uiLight03)};
-    transition: background 0.15s ease-out, border-color 0.15s ease-out;
-  }
+  ${({isOpen}) => !isOpen && hoverSelector}
 
   background: ${({isOpen}) =>
     isOpen ? Colors.selections : themedWith(Colors.uiDark03, Colors.uiLight02)};
