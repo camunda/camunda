@@ -35,7 +35,7 @@
     <version.mockito>2.23.0</version.mockito>
     <version.model>7.7.0</version.model>
     <version.msgpack>0.8.16</version.msgpack>
-    <version.netty.tcnative>2.0.19.Final</version.netty.tcnative>
+    <version.netty.tcnative>2.0.20.Final</version.netty.tcnative>
     <version.protobuf>3.6.1</version.protobuf>
     <version.protoc>3.6.0</version.protoc>
     <version.rocksdbjni>5.15.10</version.rocksdbjni>
