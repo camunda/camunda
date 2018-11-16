@@ -146,7 +146,7 @@ public class WorkflowInstanceIT extends OperateZeebeIntegrationTest {
 
     completeTask(workflowInstanceId, "task2", null);
 
-    elasticsearchTestRule.processAllEventsAndWait(workflowInstanceIsCompletedCheck, workflowInstanceId, "task1");
+    elasticsearchTestRule.processAllEventsAndWait(workflowInstanceIsCompletedCheck, workflowInstanceId);
 
     WorkflowInstanceEntity workflowInstanceEntity = workflowInstanceReader.getWorkflowInstanceById(workflowInstanceId);
     assertThat(workflowInstanceEntity.getSequenceFlows()).hasSize(3)
