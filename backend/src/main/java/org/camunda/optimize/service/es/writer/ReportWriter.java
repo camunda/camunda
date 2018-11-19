@@ -11,7 +11,6 @@ import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
@@ -40,6 +39,8 @@ import static org.camunda.optimize.service.es.schema.type.SingleReportType.LAST_
 import static org.camunda.optimize.service.es.schema.type.SingleReportType.NAME;
 import static org.camunda.optimize.service.es.schema.type.SingleReportType.OWNER;
 import static org.camunda.optimize.service.es.schema.type.SingleReportType.REPORT_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_REPORT_TYPE;
 
 @Component
 public class ReportWriter {
@@ -59,21 +60,13 @@ public class ReportWriter {
   public IdDto createNewSingleReportAndReturnId(String userId) {
     logger.debug("Creating single report!");
 
-    return createNewReportAndReturnId(
-      userId,
-      ReportConstants.SINGLE_REPORT_TYPE,
-      ElasticsearchConstants.SINGLE_REPORT_TYPE
-    );
+    return createNewReportAndReturnId(userId, ReportConstants.SINGLE_REPORT_TYPE, SINGLE_REPORT_TYPE);
   }
 
   public IdDto createNewCombinedReportAndReturnId(String userId) {
     logger.debug("Creating combined report!");
 
-    return createNewReportAndReturnId(
-      userId,
-      ReportConstants.COMBINED_REPORT_TYPE,
-      ElasticsearchConstants.COMBINED_REPORT_TYPE
-    );
+    return createNewReportAndReturnId(userId, ReportConstants.COMBINED_REPORT_TYPE, COMBINED_REPORT_TYPE);
   }
 
   private IdDto createNewReportAndReturnId(String userId, String reportType, String elasticsearchType) {
@@ -106,11 +99,11 @@ public class ReportWriter {
   }
 
   public void updateSingleReport(ReportDefinitionUpdateDto updatedReport) throws OptimizeException, JsonProcessingException {
-    updateReport(updatedReport, ElasticsearchConstants.SINGLE_REPORT_TYPE);
+    updateReport(updatedReport, SINGLE_REPORT_TYPE);
   }
 
   public void updateCombinedReport(ReportDefinitionUpdateDto updatedReport) throws OptimizeException, JsonProcessingException {
-    updateReport(updatedReport, ElasticsearchConstants.COMBINED_REPORT_TYPE);
+    updateReport(updatedReport, COMBINED_REPORT_TYPE);
   }
 
   public void updateReport(ReportDefinitionUpdateDto updatedReport, String elasticsearchType)
@@ -143,11 +136,7 @@ public class ReportWriter {
   public void deleteSingleReport(String reportId) {
     logger.debug("Deleting single report with id [{}]", reportId);
 
-    esclient.prepareDelete(
-      getOptimizeIndexAliasForType(ElasticsearchConstants.SINGLE_REPORT_TYPE),
-      ElasticsearchConstants.SINGLE_REPORT_TYPE,
-      reportId
-    )
+    esclient.prepareDelete(getOptimizeIndexAliasForType(SINGLE_REPORT_TYPE), SINGLE_REPORT_TYPE, reportId)
     .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
     .get();
   }
@@ -161,7 +150,7 @@ public class ReportWriter {
       Collections.singletonMap("idToRemove", reportId)
     );
 
-    updateByQuery.source(getOptimizeIndexAliasForType(ElasticsearchConstants.COMBINED_REPORT_TYPE))
+    updateByQuery.source(getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE))
       .abortOnVersionConflict(false)
       .setMaxRetries(configurationService.getNumberOfRetriesOnConflict())
       .filter(
@@ -182,11 +171,7 @@ public class ReportWriter {
   public void deleteCombinedReport(String reportId) {
     logger.debug("Deleting combined report with id [{}]", reportId);
 
-    esclient.prepareDelete(
-      getOptimizeIndexAliasForType(ElasticsearchConstants.COMBINED_REPORT_TYPE),
-      ElasticsearchConstants.COMBINED_REPORT_TYPE,
-      reportId
-    )
+    esclient.prepareDelete(getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE), COMBINED_REPORT_TYPE, reportId)
     .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
     .get();
   }

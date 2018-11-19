@@ -3,7 +3,7 @@ package org.camunda.optimize.service.es.schema;
 import org.camunda.optimize.service.metadata.Version;
 
 public class OptimizeIndexNameHelper {
-  public static final String OPTIMIZE_INDEX_PREFIX = "optimize-";
+  private static final String OPTIMIZE_INDEX_PREFIX = "optimize-";
 
   private OptimizeIndexNameHelper() {
   }

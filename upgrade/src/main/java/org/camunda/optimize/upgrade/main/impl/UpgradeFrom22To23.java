@@ -1,7 +1,6 @@
 package org.camunda.optimize.upgrade.main.impl;
 
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.camunda.optimize.upgrade.main.Upgrade;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
@@ -10,6 +9,11 @@ import org.camunda.optimize.upgrade.steps.schema.CreateIndexAliasForExistingInde
 import org.elasticsearch.index.query.QueryBuilders;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_REPORT_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
 
 
 public class UpgradeFrom22To23 implements Upgrade {
@@ -64,16 +68,16 @@ public class UpgradeFrom22To23 implements Upgrade {
           new CreateIndexAliasForExistingIndexStep(configurationService.getReportShareType(), TO_VERSION)
         )
         .addUpgradeStep(
-          new CreateIndexAliasForExistingIndexStep(ElasticsearchConstants.COMBINED_REPORT_TYPE, TO_VERSION)
+          new CreateIndexAliasForExistingIndexStep(COMBINED_REPORT_TYPE, TO_VERSION)
         )
         .addUpgradeStep(
-          new CreateIndexAliasForExistingIndexStep(ElasticsearchConstants.SINGLE_REPORT_TYPE, TO_VERSION)
+          new CreateIndexAliasForExistingIndexStep(SINGLE_REPORT_TYPE, TO_VERSION)
         )
         .addUpgradeStep(
-          new CreateIndexAliasForExistingIndexStep(ElasticsearchConstants.DASHBOARD_TYPE, TO_VERSION)
+          new CreateIndexAliasForExistingIndexStep(DASHBOARD_TYPE, TO_VERSION)
         )
         .addUpgradeStep(
-          new CreateIndexAliasForExistingIndexStep(ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_TYPE, TO_VERSION)
+          new CreateIndexAliasForExistingIndexStep(TIMESTAMP_BASED_IMPORT_INDEX_TYPE, TO_VERSION)
         )
         .addUpgradeStep(relocateProcessPart())
         .build();

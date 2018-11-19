@@ -6,7 +6,6 @@ import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.get.MultiGetItemResponse;
 import org.elasticsearch.action.get.MultiGetResponse;
@@ -26,7 +25,9 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.COMBINED_REPORT_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.SINGLE_REPORT_TYPE;
 
 @Component
 public class ReportReader {
@@ -49,14 +50,8 @@ public class ReportReader {
   public ReportDefinitionDto getReport(String reportId) {
     logger.debug("Fetching report with id [{}]", reportId);
     MultiGetResponse multiGetItemResponses = esclient.prepareMultiGet()
-      .add(
-        getOptimizeIndexAliasForType(ElasticsearchConstants.SINGLE_REPORT_TYPE),
-        ElasticsearchConstants.SINGLE_REPORT_TYPE, reportId
-      )
-      .add(
-        getOptimizeIndexAliasForType(ElasticsearchConstants.COMBINED_REPORT_TYPE),
-        ElasticsearchConstants.COMBINED_REPORT_TYPE, reportId
-      )
+      .add(getOptimizeIndexAliasForType(SINGLE_REPORT_TYPE), SINGLE_REPORT_TYPE, reportId)
+      .add(getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE), COMBINED_REPORT_TYPE, reportId)
       .setRealtime(false)
       .get();
 
@@ -83,8 +78,7 @@ public class ReportReader {
     logger.debug("Fetching all available reports");
     SearchResponse scrollResp = esclient
       .prepareSearch(
-        getOptimizeIndexAliasForType(ElasticsearchConstants.SINGLE_REPORT_TYPE),
-        getOptimizeIndexAliasForType(ElasticsearchConstants.COMBINED_REPORT_TYPE)
+        getOptimizeIndexAliasForType(SINGLE_REPORT_TYPE), getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE)
       )
       .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
       .setQuery(QueryBuilders.matchAllQuery())
@@ -111,7 +105,7 @@ public class ReportReader {
       ));
 
     SearchResponse searchResponse = esclient
-      .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.COMBINED_REPORT_TYPE))
+      .prepareSearch(getOptimizeIndexAliasForType(COMBINED_REPORT_TYPE))
       .setQuery(getCombinedReportsBySimpleReportIdQuery)
       .setSize(LIST_FETCH_LIMIT)
       .get();

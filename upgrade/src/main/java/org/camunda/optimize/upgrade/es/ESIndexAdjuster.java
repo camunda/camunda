@@ -74,11 +74,7 @@ public class ESIndexAdjuster {
     try {
       restClient.performRequest(DELETE, indexName);
     } catch (IOException e) {
-      String errorMessage =
-        String.format(
-          "Could not delete index [%s]!",
-          indexName
-        );
+      String errorMessage = String.format("Could not delete index [%s]!", indexName);
       throw new UpgradeRuntimeException(errorMessage, e);
     }
   }
@@ -319,12 +315,12 @@ public class ESIndexAdjuster {
 
   public void insertDataByTypeName(String typeName, String data) {
     String aliasName = getOptimizeIndexAliasForType(typeName);
-    logger.debug("Inserting data to index [{}]. Data payload is [{}]", aliasName, data);
+    logger.debug("Inserting data to indexAlias [{}]. Data payload is [{}]", aliasName, data);
     HttpEntity entity = new NStringEntity(data, ContentType.APPLICATION_JSON);
     try {
       restClient.performRequest(POST, getEndpointWithId(aliasName, typeName), getParamsWithRefresh(), entity);
     } catch (IOException e) {
-      String errorMessage = String.format("Could not add data to index [%s]!", aliasName);
+      String errorMessage = String.format("Could not add data to indexAlias [%s]!", aliasName);
       throw new UpgradeRuntimeException(errorMessage, e);
     }
   }
@@ -336,7 +332,7 @@ public class ESIndexAdjuster {
   public void updateDataByTypeName(String typeName, QueryBuilder query, String updateScript) {
     String aliasName = getOptimizeIndexAliasForType(typeName);
     logger.debug(
-      "Updating data for index [{}] using script [{}] and query [{}].", aliasName, updateScript, query.toString()
+      "Updating data for indexAlias [{}] using script [{}] and query [{}].", aliasName, updateScript, query.toString()
     );
 
     try {
@@ -354,7 +350,7 @@ public class ESIndexAdjuster {
       HttpEntity entity = new NStringEntity(objectMapper.writeValueAsString(data), ContentType.APPLICATION_JSON);
       restClient.performRequest(POST, aliasName + UPDATE_BY_QUERY_OPERATION, getParamsWithRefresh(), entity);
     } catch (IOException e) {
-      String errorMessage = String.format("Could not update data for index [%s]!", aliasName);
+      String errorMessage = String.format("Could not update data for indexAlias [%s]!", aliasName);
       throw new UpgradeRuntimeException(errorMessage, e);
     }
   }

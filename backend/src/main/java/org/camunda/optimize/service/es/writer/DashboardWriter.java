@@ -10,7 +10,6 @@ import org.camunda.optimize.service.exceptions.OptimizeException;
 import org.camunda.optimize.service.security.util.LocalDateUtil;
 import org.camunda.optimize.service.util.IdGenerator;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.support.WriteRequest;
 import org.elasticsearch.action.update.UpdateResponse;
 import org.elasticsearch.client.Client;
@@ -38,6 +37,7 @@ import static org.camunda.optimize.service.es.schema.type.DashboardType.LAST_MOD
 import static org.camunda.optimize.service.es.schema.type.DashboardType.LAST_MODIFIER;
 import static org.camunda.optimize.service.es.schema.type.DashboardType.NAME;
 import static org.camunda.optimize.service.es.schema.type.DashboardType.OWNER;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_TYPE;
 
 @Component
 public class DashboardWriter {
@@ -69,11 +69,7 @@ public class DashboardWriter {
     map.put(ID, id);
 
     esclient
-      .prepareIndex(
-        getOptimizeIndexAliasForType(ElasticsearchConstants.DASHBOARD_TYPE),
-        ElasticsearchConstants.DASHBOARD_TYPE,
-        id
-      )
+      .prepareIndex(getOptimizeIndexAliasForType(DASHBOARD_TYPE), DASHBOARD_TYPE, id)
       .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
       .setSource(map)
       .get();
@@ -89,11 +85,7 @@ public class DashboardWriter {
                                                                                  JsonProcessingException {
     logger.debug("Updating dashboard with id [{}] in Elasticsearch", id);
     UpdateResponse updateResponse = esclient
-      .prepareUpdate(
-        getOptimizeIndexAliasForType(ElasticsearchConstants.DASHBOARD_TYPE),
-        ElasticsearchConstants.DASHBOARD_TYPE,
-        id
-      )
+      .prepareUpdate(getOptimizeIndexAliasForType(DASHBOARD_TYPE), DASHBOARD_TYPE, id)
       .setDoc(objectMapper.writeValueAsString(dashboard), XContentType.JSON)
       .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
       .setRetryOnConflict(configurationService.getNumberOfRetriesOnConflict())
@@ -118,7 +110,7 @@ public class DashboardWriter {
       Collections.singletonMap("idToRemove", reportId)
     );
 
-    updateByQuery.source(getOptimizeIndexAliasForType(ElasticsearchConstants.DASHBOARD_TYPE))
+    updateByQuery.source(getOptimizeIndexAliasForType(DASHBOARD_TYPE))
       .abortOnVersionConflict(false)
       .setMaxRetries(configurationService.getNumberOfRetriesOnConflict())
       .filter(
@@ -139,11 +131,7 @@ public class DashboardWriter {
 
   public void deleteDashboard(String dashboardId) {
     logger.debug("Deleting dashboard with id [{}]", dashboardId);
-    esclient.prepareDelete(
-      getOptimizeIndexAliasForType(ElasticsearchConstants.DASHBOARD_TYPE),
-      ElasticsearchConstants.DASHBOARD_TYPE,
-      dashboardId
-    )
+    esclient.prepareDelete(getOptimizeIndexAliasForType(DASHBOARD_TYPE), DASHBOARD_TYPE, dashboardId)
       .setRefreshPolicy(WriteRequest.RefreshPolicy.IMMEDIATE)
       .get();
   }

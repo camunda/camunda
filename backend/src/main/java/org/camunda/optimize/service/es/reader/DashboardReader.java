@@ -5,7 +5,6 @@ import org.apache.lucene.search.join.ScoreMode;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.service.exceptions.OptimizeRuntimeException;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.get.GetResponse;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.client.Client;
@@ -22,6 +21,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper.getOptimizeIndexAliasForType;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DASHBOARD_TYPE;
 import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.LIST_FETCH_LIMIT;
 
 @Component
@@ -39,9 +39,7 @@ public class DashboardReader {
     logger.debug("Fetching dashboard with id [{}]", dashboardId);
     GetResponse getResponse = esclient
       .prepareGet(
-        getOptimizeIndexAliasForType(ElasticsearchConstants.DASHBOARD_TYPE),
-        ElasticsearchConstants.DASHBOARD_TYPE,
-        dashboardId
+        getOptimizeIndexAliasForType(DASHBOARD_TYPE), DASHBOARD_TYPE, dashboardId
       )
       .setRealtime(false)
       .get();
@@ -72,8 +70,8 @@ public class DashboardReader {
       ));
 
     SearchResponse searchResponse = esclient
-      .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.DASHBOARD_TYPE))
-      .setTypes(ElasticsearchConstants.DASHBOARD_TYPE)
+      .prepareSearch(getOptimizeIndexAliasForType(DASHBOARD_TYPE))
+      .setTypes(DASHBOARD_TYPE)
       .setQuery(getCombinedReportsBySimpleReportIdQuery)
       .setSize(LIST_FETCH_LIMIT)
       .get();
@@ -84,8 +82,8 @@ public class DashboardReader {
   public List<DashboardDefinitionDto> getAllDashboards() {
     logger.debug("Fetching all available dashboards");
     SearchResponse scrollResp = esclient
-      .prepareSearch(getOptimizeIndexAliasForType(ElasticsearchConstants.DASHBOARD_TYPE))
-      .setTypes(ElasticsearchConstants.DASHBOARD_TYPE)
+      .prepareSearch(getOptimizeIndexAliasForType(DASHBOARD_TYPE))
+      .setTypes(DASHBOARD_TYPE)
       .setScroll(new TimeValue(configurationService.getElasticsearchScrollTimeout()))
       .setQuery(QueryBuilders.matchAllQuery())
       .setSize(LIST_FETCH_LIMIT)
