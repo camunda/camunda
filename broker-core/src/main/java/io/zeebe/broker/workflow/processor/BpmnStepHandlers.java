@@ -97,8 +97,7 @@ public class BpmnStepHandlers {
         BpmnStep.TERMINATE_INTERMEDIATE_MESSAGE,
         new TerminateIntermediateMessageHandler(zeebeState));
     stepHandlers.put(
-        BpmnStep.TERMINATE_CONTAINED_INSTANCES,
-        new TerminateContainedElementsHandler(workflowState));
+        BpmnStep.TERMINATE_CONTAINED_INSTANCES, new TerminateContainedElementsHandler(zeebeState));
     stepHandlers.put(BpmnStep.PROPAGATE_TERMINATION, new PropagateTerminationHandler());
 
     // intermediate catch event
