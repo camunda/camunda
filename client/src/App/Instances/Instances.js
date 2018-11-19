@@ -376,6 +376,8 @@ class Instances extends Component {
     const newInstancesMap = createMapOfInstances(workflowInstances);
     const {index: selectionIndex} = getSelectionById(selections, selectionId);
 
+    const {totalCount} = selections[selectionIndex];
+
     const newSelection = {
       ...selections[selectionIndex],
       instancesMap: newInstancesMap,
@@ -385,7 +387,6 @@ class Instances extends Component {
 
     selections[selectionIndex] = newSelection;
 
-    const {totalCount} = selections[selectionIndex];
     const newCount =
       instancesInSelectionsCount - totalCount + newSelection.totalCount;
 
