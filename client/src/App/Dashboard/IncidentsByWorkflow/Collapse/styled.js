@@ -9,7 +9,7 @@ export const Collapse = styled.div`
 
 export const Button = themed(styled.button`
   position: absolute;
-  top: 6px;
+  top: 14px;
   left: 0;
 
   width: 16px;

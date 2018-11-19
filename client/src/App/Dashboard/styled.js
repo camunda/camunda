@@ -13,10 +13,11 @@ export const Tile = themed(styled.div`
   // flex-parent
   display: flex;
   flex-direction: column;
+
   // flex-child
   flex-grow: 1;
   margin: 8px 8px 0 0;
-  padding: 24px 32px;
+  padding: 24px 12px 24px 32px;
   width: 50%;
 
   border-radius: 3px;
@@ -33,7 +34,7 @@ export const Tile = themed(styled.div`
 `);
 
 export const TileTitle = themed(styled.h2`
-  margin: 0 0 24px;
+  margin: 0 0 14px;
   padding: 0;
 
   font-family: IBMPlexSans;

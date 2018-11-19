@@ -1,6 +1,7 @@
 import React from 'react';
 import {shallow} from 'enzyme';
 import IncidentsByWorkflow from './IncidentsByWorkflow';
+import IncidentStatistic from './IncidentStatistic';
 import Collapse from './Collapse';
 import * as Styled from './styled';
 
@@ -68,7 +69,15 @@ describe('IncidentsByWorkflow', () => {
     const node = shallow(
       <IncidentsByWorkflow incidents={mockIncidentsByWorkflow} />
     );
-    const nodeIncidentStatistic = node.find(Styled.IncidentStatistic).at(0);
+    const nodeIncidentStatistic = node.find(IncidentStatistic).at(0);
+    const statisticsAnchor = nodeIncidentStatistic.parent();
+
+    expect(statisticsAnchor.props().to).toBe(
+      '/instances?filter={"workflow":"loanProcess","version":"1","incidents":true}'
+    );
+    expect(statisticsAnchor.props().title).toBe(
+      'View 16 Instances with Incidents in version(s) 1 of Workflow loanProcess'
+    );
 
     expect(nodeIncidentStatistic.props().label).toContain(
       mockIncidentsByWorkflow[0].workflowName ||
@@ -93,7 +102,7 @@ describe('IncidentsByWorkflow', () => {
     );
     const firstStatistic = node.find('[data-test="incident-byWorkflow-0"]');
     const secondStatistic = node.find('[data-test="incident-byWorkflow-1"]');
-    expect(firstStatistic.find(Styled.IncidentStatistic).length).toBe(1);
+    expect(firstStatistic.find(IncidentStatistic).length).toBe(1);
     expect(secondStatistic.find(Collapse).length).toBe(1);
   });
 
@@ -106,22 +115,31 @@ describe('IncidentsByWorkflow', () => {
     const headerCollapseNode = collapseNode.props().header;
     const contentCollapseNode = collapseNode.props().content;
     const headerNode = shallow(headerCollapseNode);
+    const headerStatistic = headerNode.find(IncidentStatistic);
     const contentNode = shallow(contentCollapseNode);
 
-    expect(headerNode.props().label).toContain(
+    // header anchor
+    expect(headerNode.props().to).toBe(
+      '/instances?filter={"workflow":"orderProcess","version":"all","incidents":true}'
+    );
+    expect(headerNode.props().title).toBe(
+      'View 65 Instances with Incidents in version(s) 1, 2 of Workflow Order process'
+    );
+
+    expect(headerStatistic.props().label).toContain(
       mockIncidentsByWorkflow[1].workflowName ||
         mockIncidentsByWorkflow[1].bpmnProcessId
     );
-    expect(headerNode.props().label).toContain(
+    expect(headerStatistic.props().label).toContain(
       mockIncidentsByWorkflow[1].workflows[0].version
     );
-    expect(headerNode.props().label).toContain(
+    expect(headerStatistic.props().label).toContain(
       mockIncidentsByWorkflow[1].workflows[1].version
     );
-    expect(headerNode.props().incidentsCount).toBe(
+    expect(headerStatistic.props().incidentsCount).toBe(
       mockIncidentsByWorkflow[1].instancesWithActiveIncidentsCount
     );
-    expect(headerNode.props().activeCount).toBe(
+    expect(headerStatistic.props().activeCount).toBe(
       mockIncidentsByWorkflow[1].activeInstancesCount
     );
     // should render a list with 2 items
@@ -129,12 +147,10 @@ describe('IncidentsByWorkflow', () => {
     expect(contentNode.find(Styled.VersionLi).length).toBe(2);
 
     // should render two statistics
-    expect(contentNode.find(Styled.IncidentStatistic).length).toBe(2);
+    expect(contentNode.find(IncidentStatistic).length).toBe(2);
     // should pass the right props to a statistic
 
-    const versionStatisticNode = contentNode
-      .find(Styled.IncidentStatistic)
-      .at(0);
+    const versionStatisticNode = contentNode.find(IncidentStatistic).at(0);
 
     expect(versionStatisticNode.props().label).toContain(
       `Version ${mockIncidentsByWorkflow[1].workflows[0].version}`
