@@ -26,6 +26,7 @@ import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
 import io.zeebe.model.bpmn.builder.ZeebePayloadMappingBuilder;
+import io.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
 import io.zeebe.model.bpmn.instance.ReceiveTask;
 import io.zeebe.model.bpmn.instance.zeebe.ZeebeOutputBehavior;
@@ -63,17 +64,30 @@ public class MessageMappingTest {
           .message(m -> m.name("message").zeebeCorrelationKey("$.key"))
           .done();
 
+  private static final BpmnModelInstance BOUNDARY_EVENT_WORKFLOW =
+      Bpmn.createExecutableProcess(PROCESS_ID)
+          .startEvent()
+          .serviceTask("task", b -> b.zeebeTaskType("type"))
+          .boundaryEvent("catch")
+          .message(m -> m.name("message").zeebeCorrelationKey("$.key"))
+          .endEvent()
+          .done();
+
   @Parameter(0)
   public String elementType;
 
   @Parameter(1)
   public BpmnModelInstance workflow;
 
+  @Parameter(2)
+  public String completedElementId;
+
   @Parameters(name = "{0}")
   public static Object[][] parameters() {
     return new Object[][] {
-      {"intermediate message catch event", CATCH_EVENT_WORKFLOW},
-      {"receive task", RECEIVE_TASK_WORKFLOW}
+      {"intermediate message catch event", CATCH_EVENT_WORKFLOW, "catch"},
+      {"receive task", RECEIVE_TASK_WORKFLOW, "catch"},
+      {"boundary event", BOUNDARY_EVENT_WORKFLOW, PROCESS_ID},
     };
   }
 
@@ -164,6 +178,8 @@ public class MessageMappingTest {
     final ModelElementInstance element = modifiedWorkflow.getModelElementById("catch");
     if (element instanceof IntermediateCatchEvent) {
       c.accept(((IntermediateCatchEvent) element).builder());
+    } else if (element instanceof BoundaryEvent) {
+      c.accept(((BoundaryEvent) element).builder());
     } else {
       c.accept(((ReceiveTask) element).builder());
     }
@@ -173,7 +189,7 @@ public class MessageMappingTest {
   private void assertCompletedPayload(String payload) {
     final Record<WorkflowInstanceRecordValue> competedEvent =
         RecordingExporter.workflowInstanceRecords(WorkflowInstanceIntent.ELEMENT_COMPLETED)
-            .withElementId("catch")
+            .withElementId(completedElementId)
             .getFirst();
 
     assertWorkflowInstancePayload(competedEvent, payload);

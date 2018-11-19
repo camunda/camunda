@@ -17,6 +17,7 @@
  */
 package io.zeebe.broker.workflow.subprocess;
 
+import static io.zeebe.test.util.MsgPackUtil.asMsgPack;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -28,14 +29,17 @@ import io.zeebe.exporter.record.value.WorkflowInstanceRecordValue;
 import io.zeebe.exporter.record.value.job.Headers;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
+import io.zeebe.model.bpmn.builder.SubProcessBuilder;
 import io.zeebe.protocol.intent.JobIntent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
+import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.MsgPackUtil;
 import io.zeebe.util.buffer.BufferUtil;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import org.junit.Before;
 import org.junit.Rule;
@@ -356,5 +360,78 @@ public class EmbeddedSubProcessTest {
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "innerSubProcess"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETING, "outerSubProcess"),
             tuple(WorkflowInstanceIntent.ELEMENT_COMPLETED, "outerSubProcess"));
+  }
+
+  @Test
+  public void shouldTerminateBeforeTriggeringBoundaryEvent() {
+    // given
+    final Consumer<SubProcessBuilder> innerSubProcess =
+        inner ->
+            inner
+                .embeddedSubProcess()
+                .startEvent()
+                .serviceTask("task", b -> b.zeebeTaskType("type"))
+                .endEvent();
+    final Consumer<SubProcessBuilder> outSubProcess =
+        outer ->
+            outer
+                .embeddedSubProcess()
+                .startEvent()
+                .subProcess("innerSubProcess", innerSubProcess)
+                .endEvent();
+    final BpmnModelInstance model =
+        Bpmn.createExecutableProcess(PROCESS_ID)
+            .startEvent()
+            .subProcess("outerSubProcess", outSubProcess)
+            .boundaryEvent("event")
+            .message(m -> m.name("msg").zeebeCorrelationKey("$.key"))
+            .endEvent("msgEnd")
+            .moveToActivity("outerSubProcess")
+            .endEvent()
+            .done();
+    testClient.deploy(model);
+    testClient.createWorkflowInstance(PROCESS_ID, asMsgPack("key", "123"));
+
+    // when
+    assertThat(
+            testClient
+                .receiveWorkflowInstanceSubscriptions()
+                .withIntent(WorkflowInstanceSubscriptionIntent.OPENED)
+                .limit(1)
+                .exists())
+        .isTrue(); // await first subscription opened
+    final Record<WorkflowInstanceRecordValue> activatedRecord =
+        testClient
+            .receiveWorkflowInstances()
+            .withIntent(WorkflowInstanceIntent.ELEMENT_ACTIVATED)
+            .withElementId("task")
+            .limit(1)
+            .getFirst();
+    testClient.publishMessage("msg", "123", asMsgPack("foo", 1));
+
+    // then
+    final List<String> elementFilter =
+        Arrays.asList("innerSubProcess", "outerSubProcess", "task", "event");
+    final List<Record<WorkflowInstanceRecordValue>> workflowInstanceEvents =
+        testClient
+            .receiveWorkflowInstances()
+            .limitToWorkflowInstanceCompleted()
+            .filter(
+                r ->
+                    r.getPosition() > activatedRecord.getPosition()
+                        && elementFilter.contains(r.getValue().getElementId()))
+            .collect(Collectors.toList());
+
+    assertThat(workflowInstanceEvents)
+        .extracting(e -> e.getMetadata().getIntent(), e -> e.getValue().getElementId())
+        .containsExactly(
+            tuple(WorkflowInstanceIntent.ELEMENT_TERMINATING, "outerSubProcess"),
+            tuple(WorkflowInstanceIntent.ELEMENT_TERMINATING, "innerSubProcess"),
+            tuple(WorkflowInstanceIntent.ELEMENT_TERMINATING, "task"),
+            tuple(WorkflowInstanceIntent.ELEMENT_TERMINATED, "task"),
+            tuple(WorkflowInstanceIntent.ELEMENT_TERMINATED, "innerSubProcess"),
+            tuple(WorkflowInstanceIntent.CATCH_EVENT_TRIGGERING, "event"),
+            tuple(WorkflowInstanceIntent.ELEMENT_TERMINATED, "outerSubProcess"),
+            tuple(WorkflowInstanceIntent.CATCH_EVENT_TRIGGERED, "event"));
   }
 }

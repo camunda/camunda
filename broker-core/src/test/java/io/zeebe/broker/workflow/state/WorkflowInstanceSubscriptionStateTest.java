@@ -291,12 +291,22 @@ public class WorkflowInstanceSubscriptionStateTest {
   }
 
   private WorkflowInstanceSubscription subscriptionWithElementInstanceKey(long elementInstanceKey) {
-    return subscription("messageName", "correlationKey", elementInstanceKey);
+    return subscription("handler", "messageName", "correlationKey", elementInstanceKey);
   }
 
   private WorkflowInstanceSubscription subscription(
       String name, String correlationKey, long elementInstanceKey) {
+    return subscription("handler", name, correlationKey, elementInstanceKey);
+  }
+
+  private WorkflowInstanceSubscription subscription(
+      String handlerId, String name, String correlationKey, long elementInstanceKey) {
     return new WorkflowInstanceSubscription(
-        1L, elementInstanceKey, wrapString(name), wrapString(correlationKey), 1_000);
+        1L,
+        elementInstanceKey,
+        wrapString(handlerId),
+        wrapString(name),
+        wrapString(correlationKey),
+        1_000);
   }
 }

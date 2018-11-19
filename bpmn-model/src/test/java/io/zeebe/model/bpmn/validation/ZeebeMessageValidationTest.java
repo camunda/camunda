@@ -125,6 +125,17 @@ public class ZeebeMessageValidationTest extends AbstractZeebeValidationTest {
             .done(),
         singletonList(expect("subProcessStart", "Must be a none start event"))
       },
+      {
+        Bpmn.createExecutableProcess("process")
+            .startEvent()
+            .receiveTask("task")
+            .message(m -> m.name("message").zeebeCorrelationKey("correlationKey"))
+            .boundaryEvent("boundary")
+            .message(m -> m.name("message").zeebeCorrelationKey("correlationKey"))
+            .endEvent()
+            .done(),
+        singletonList(expect("task", "Cannot reference the same message name as a boundary event"))
+      },
     };
   }
 }

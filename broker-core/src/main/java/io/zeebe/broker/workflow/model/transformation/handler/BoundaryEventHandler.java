@@ -20,12 +20,15 @@ package io.zeebe.broker.workflow.model.transformation.handler;
 import io.zeebe.broker.workflow.model.BpmnStep;
 import io.zeebe.broker.workflow.model.element.ExecutableActivity;
 import io.zeebe.broker.workflow.model.element.ExecutableBoundaryEvent;
+import io.zeebe.broker.workflow.model.element.ExecutableMessage;
 import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.Activity;
 import io.zeebe.model.bpmn.instance.BoundaryEvent;
 import io.zeebe.model.bpmn.instance.EventDefinition;
+import io.zeebe.model.bpmn.instance.Message;
+import io.zeebe.model.bpmn.instance.MessageEventDefinition;
 import io.zeebe.model.bpmn.instance.TimerEventDefinition;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.time.Duration;
@@ -43,7 +46,7 @@ public class BoundaryEventHandler implements ModelElementTransformer<BoundaryEve
         workflow.getElementById(event.getId(), ExecutableBoundaryEvent.class);
 
     element.setCancelActivity(event.cancelActivity());
-    transformEventDefinition(event, element);
+    transformEventDefinition(event, context, element);
     attachToActivity(event, workflow, element);
 
     element.bindLifecycleState(
@@ -52,10 +55,13 @@ public class BoundaryEventHandler implements ModelElementTransformer<BoundaryEve
         WorkflowInstanceIntent.CATCH_EVENT_TRIGGERED, context.getCurrentFlowNodeOutgoingStep());
   }
 
-  private void transformEventDefinition(BoundaryEvent event, ExecutableBoundaryEvent element) {
+  private void transformEventDefinition(
+      BoundaryEvent event, TransformContext context, ExecutableBoundaryEvent element) {
     final EventDefinition eventDefinition = event.getEventDefinitions().iterator().next();
     if (eventDefinition instanceof TimerEventDefinition) {
       transformTimerEventDefinition(element, (TimerEventDefinition) eventDefinition);
+    } else if (eventDefinition instanceof MessageEventDefinition) {
+      transformMessageEventDefinition(element, context, (MessageEventDefinition) eventDefinition);
     }
   }
 
@@ -64,6 +70,15 @@ public class BoundaryEventHandler implements ModelElementTransformer<BoundaryEve
     final String timeDuration = eventDefinition.getTimeDuration().getTextContent();
     final Duration duration = Duration.parse(timeDuration);
     element.setDuration(duration);
+  }
+
+  private void transformMessageEventDefinition(
+      ExecutableBoundaryEvent element,
+      TransformContext context,
+      MessageEventDefinition eventDefinition) {
+    final Message message = eventDefinition.getMessage();
+    final ExecutableMessage executableMessage = context.getMessage(message.getId());
+    element.setMessage(executableMessage);
   }
 
   private void attachToActivity(

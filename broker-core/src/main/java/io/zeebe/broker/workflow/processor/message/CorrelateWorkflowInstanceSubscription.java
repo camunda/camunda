@@ -27,8 +27,10 @@ import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.subscription.command.SubscriptionCommandSender;
 import io.zeebe.broker.subscription.message.data.WorkflowInstanceSubscriptionRecord;
 import io.zeebe.broker.subscription.message.state.WorkflowInstanceSubscriptionState;
+import io.zeebe.broker.workflow.processor.boundary.BoundaryEventHelper;
 import io.zeebe.broker.workflow.state.DeployedWorkflow;
 import io.zeebe.broker.workflow.state.ElementInstance;
+import io.zeebe.broker.workflow.state.WorkflowInstanceSubscription;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.logstreams.log.LogStream;
 import io.zeebe.protocol.clientapi.RejectionType;
@@ -45,13 +47,14 @@ public final class CorrelateWorkflowInstanceSubscription
   public static final Duration SUBSCRIPTION_TIMEOUT = Duration.ofSeconds(10);
   public static final Duration SUBSCRIPTION_CHECK_INTERVAL = Duration.ofSeconds(30);
 
+  private final BoundaryEventHelper boundaryEventHelper = new BoundaryEventHelper();
   private final TopologyManager topologyManager;
   private final WorkflowState workflowState;
   private final WorkflowInstanceSubscriptionState subscriptionState;
   private final SubscriptionCommandSender subscriptionCommandSender;
 
   private TypedRecord<WorkflowInstanceSubscriptionRecord> record;
-  private WorkflowInstanceSubscriptionRecord subscription;
+  private WorkflowInstanceSubscriptionRecord subscriptionRecord;
   private TypedStreamWriter streamWriter;
   private Consumer<SideEffectProducer> sideEffect;
 
@@ -90,12 +93,14 @@ public final class CorrelateWorkflowInstanceSubscription
       final Consumer<SideEffectProducer> sideEffect) {
 
     this.record = record;
-    this.subscription = record.getValue();
+    this.subscriptionRecord = record.getValue();
     this.streamWriter = streamWriter;
     this.sideEffect = sideEffect;
 
     final ElementInstance eventInstance =
-        workflowState.getElementInstanceState().getInstance(subscription.getElementInstanceKey());
+        workflowState
+            .getElementInstanceState()
+            .getInstance(subscriptionRecord.getElementInstanceKey());
 
     if (eventInstance == null) {
       streamWriter.appendRejection(
@@ -115,10 +120,10 @@ public final class CorrelateWorkflowInstanceSubscription
 
   private void onWorkflowAvailable() {
     // remove subscription if pending
-    final boolean removed =
-        subscriptionState.remove(
-            subscription.getElementInstanceKey(), subscription.getMessageName());
-    if (!removed) {
+    final WorkflowInstanceSubscription subscription =
+        subscriptionState.getSubscription(
+            subscriptionRecord.getElementInstanceKey(), subscriptionRecord.getMessageName());
+    if (subscription == null) {
       streamWriter.appendRejection(
           record, RejectionType.NOT_APPLICABLE, "subscription is already correlated");
 
@@ -126,28 +131,47 @@ public final class CorrelateWorkflowInstanceSubscription
       return;
     }
 
+    subscriptionState.remove(subscription);
+
     final ElementInstance eventInstance =
-        workflowState.getElementInstanceState().getInstance(subscription.getElementInstanceKey());
+        workflowState
+            .getElementInstanceState()
+            .getInstance(subscriptionRecord.getElementInstanceKey());
 
     final WorkflowInstanceRecord value = eventInstance.getValue();
-    value.setPayload(subscription.getPayload());
+    value.setPayload(subscriptionRecord.getPayload());
 
     streamWriter.appendFollowUpEvent(
-        record.getKey(), WorkflowInstanceSubscriptionIntent.CORRELATED, subscription);
-    streamWriter.appendFollowUpEvent(
-        subscription.getElementInstanceKey(), WorkflowInstanceIntent.ELEMENT_COMPLETING, value);
+        record.getKey(), WorkflowInstanceSubscriptionIntent.CORRELATED, subscriptionRecord);
+
+    if (eventInstance.getState() == WorkflowInstanceIntent.ELEMENT_ACTIVATED) {
+      if (boundaryEventHelper.shouldTriggerBoundaryEvent(
+          eventInstance, subscription.getHandlerNodeId())) {
+        boundaryEventHelper.triggerBoundaryEvent(
+            workflowState,
+            eventInstance,
+            subscription.getHandlerNodeId(),
+            subscriptionRecord.getPayload(),
+            streamWriter);
+      } else {
+        streamWriter.appendFollowUpEvent(
+            subscriptionRecord.getElementInstanceKey(),
+            WorkflowInstanceIntent.ELEMENT_COMPLETING,
+            value);
+        eventInstance.setState(WorkflowInstanceIntent.ELEMENT_COMPLETING);
+        eventInstance.setValue(value);
+      }
+    }
 
     sideEffect.accept(this::sendAcknowledgeCommand);
-
-    eventInstance.setState(WorkflowInstanceIntent.ELEMENT_COMPLETING);
-    eventInstance.setValue(value);
+    workflowState.getElementInstanceState().flushDirtyState();
   }
 
   private boolean sendAcknowledgeCommand() {
     return subscriptionCommandSender.correlateMessageSubscription(
-        subscription.getSubscriptionPartitionId(),
-        subscription.getWorkflowInstanceKey(),
-        subscription.getElementInstanceKey(),
-        subscription.getMessageName());
+        subscriptionRecord.getSubscriptionPartitionId(),
+        subscriptionRecord.getWorkflowInstanceKey(),
+        subscriptionRecord.getElementInstanceKey(),
+        subscriptionRecord.getMessageName());
   }
 }

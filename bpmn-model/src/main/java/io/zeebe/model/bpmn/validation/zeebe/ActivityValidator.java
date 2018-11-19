@@ -16,10 +16,8 @@
 package io.zeebe.model.bpmn.validation.zeebe;
 
 import io.zeebe.model.bpmn.instance.Activity;
-import io.zeebe.model.bpmn.instance.BoundaryEvent;
-import io.zeebe.model.bpmn.instance.EventDefinition;
 import io.zeebe.model.bpmn.instance.MessageEventDefinition;
-import java.util.Collection;
+import io.zeebe.model.bpmn.util.ModelUtil;
 import java.util.HashSet;
 import java.util.Set;
 import org.camunda.bpm.model.xml.validation.ModelElementValidator;
@@ -33,24 +31,11 @@ public class ActivityValidator implements ModelElementValidator<Activity> {
 
   @Override
   public void validate(Activity element, ValidationResultCollector validationResultCollector) {
-    final Collection<BoundaryEvent> boundaryEvents =
-        element.getParentElement().getChildElementsByType(BoundaryEvent.class);
-
-    if (!boundaryEvents.isEmpty()) {
-      final Set<String> boundaryEventMessageNames = new HashSet<>(boundaryEvents.size());
-
-      for (final BoundaryEvent event : boundaryEvents) {
-        if (event.getAttachedTo().equals(element) && !event.getEventDefinitions().isEmpty()) {
-          final EventDefinition trigger = event.getEventDefinitions().iterator().next();
-          if (trigger instanceof MessageEventDefinition) {
-            validateMessageTriggerUniqueness(
-                validationResultCollector,
-                boundaryEventMessageNames,
-                (MessageEventDefinition) trigger);
-          }
-        }
-      }
-    }
+    final Set<String> messageNames = new HashSet<>();
+    ModelUtil.getActivityMessageBoundaryEvents(element)
+        .forEach(
+            event ->
+                validateMessageTriggerUniqueness(validationResultCollector, messageNames, event));
   }
 
   private void validateMessageTriggerUniqueness(
