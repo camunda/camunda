@@ -36,7 +36,11 @@ $icons: (
   'left',
   'up',
   'right',
-  'down'
+  'down',
+  'error',
+  'warning',
+  'close-large',
+  'check-large'
 );
 
 @each $icon in $icons {
