@@ -49,7 +49,6 @@ public class RecordMetadata implements BufferWriter, BufferReader {
   protected int protocolVersion =
       Protocol.PROTOCOL_VERSION; // always the current version by default
   protected ValueType valueType = ValueType.NULL_VAL;
-  protected long incidentKey;
   private RejectionType rejectionType;
   private final UnsafeBuffer rejectionReason = new UnsafeBuffer(0, 0);
 
@@ -73,7 +72,6 @@ public class RecordMetadata implements BufferWriter, BufferReader {
     protocolVersion = decoder.protocolVersion();
     valueType = decoder.valueType();
     intent = Intent.fromProtocolValue(valueType, decoder.intent());
-    incidentKey = decoder.incidentKey();
     rejectionType = decoder.rejectionType();
 
     final int rejectionReasonLength = decoder.rejectionReasonLength();
@@ -112,7 +110,6 @@ public class RecordMetadata implements BufferWriter, BufferReader {
         .protocolVersion(protocolVersion)
         .valueType(valueType)
         .intent(intentValue)
-        .incidentKey(incidentKey)
         .rejectionType(rejectionType);
 
     offset += RecordMetadataEncoder.BLOCK_LENGTH;
@@ -209,7 +206,6 @@ public class RecordMetadata implements BufferWriter, BufferReader {
     requestStreamId = RecordMetadataEncoder.requestStreamIdNullValue();
     protocolVersion = Protocol.PROTOCOL_VERSION;
     valueType = ValueType.NULL_VAL;
-    incidentKey = RecordMetadataEncoder.incidentKeyNullValue();
     intentValue = Intent.NULL_VAL;
     intent = null;
     rejectionType = RejectionType.NULL_VAL;
@@ -241,8 +237,6 @@ public class RecordMetadata implements BufferWriter, BufferReader {
         + requestId
         + ", valueType="
         + valueType
-        + ", incidentKey="
-        + incidentKey
         + '}';
   }
 }

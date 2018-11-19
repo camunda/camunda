@@ -116,11 +116,10 @@
     <field name="protocolVersion" id="5" type="uint16"/>
     <field name="valueType" id="6" type="ValueType"/>
     <field name="intent" id="7" type="uint8"/>
-    <field name="incidentKey" id="8" type="uint64"/>
     <!-- populated when RecordType is COMMAND_REJECTION -->
-    <field name="rejectionType" id="9" type="RejectionType"/>
+    <field name="rejectionType" id="8" type="RejectionType"/>
     <!-- populated when RecordType is COMMAND_REJECTION, UTF-8-encoded String -->
-    <data name="rejectionReason" id="10" type="varDataEncoding"/>
+    <data name="rejectionReason" id="9" type="varDataEncoding"/>
   </sbe:message>
 
 </sbe:messageSchema>
