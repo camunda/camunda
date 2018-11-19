@@ -1,6 +1,7 @@
 package org.camunda.optimize.upgrade.main.impl;
 
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
+import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.camunda.optimize.upgrade.main.Upgrade;
 import org.camunda.optimize.upgrade.plan.UpgradePlan;
 import org.camunda.optimize.upgrade.plan.UpgradePlanBuilder;
@@ -61,6 +62,18 @@ public class UpgradeFrom22To23 implements Upgrade {
         )
         .addUpgradeStep(
           new CreateIndexAliasForExistingIndexStep(configurationService.getReportShareType(), TO_VERSION)
+        )
+        .addUpgradeStep(
+          new CreateIndexAliasForExistingIndexStep(ElasticsearchConstants.COMBINED_REPORT_TYPE, TO_VERSION)
+        )
+        .addUpgradeStep(
+          new CreateIndexAliasForExistingIndexStep(ElasticsearchConstants.SINGLE_REPORT_TYPE, TO_VERSION)
+        )
+        .addUpgradeStep(
+          new CreateIndexAliasForExistingIndexStep(ElasticsearchConstants.DASHBOARD_TYPE, TO_VERSION)
+        )
+        .addUpgradeStep(
+          new CreateIndexAliasForExistingIndexStep(ElasticsearchConstants.TIMESTAMP_BASED_IMPORT_INDEX_TYPE, TO_VERSION)
         )
         .addUpgradeStep(relocateProcessPart())
         .build();
