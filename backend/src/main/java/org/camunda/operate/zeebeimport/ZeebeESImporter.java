@@ -171,15 +171,10 @@ public class ZeebeESImporter extends Thread {
 
   private void initPartitionList() {
     final Topology topology = zeebeClient.newTopologyRequest().send().join();
-    //TODO rewrite when Zeebe provides number of partitions in Topology (topology#getPartitionsCount)
-    if (topology != null) {
-      for (BrokerInfo brokerInfo : topology.getBrokers()) {
-        if (brokerInfo != null) {
-          for (PartitionInfo partitionInfo : brokerInfo.getPartitions()) {
-            partitionIds.add(partitionInfo.getPartitionId());
-          }
-        }
-      }
+    final int partitionsCount = topology.getPartitionsCount();
+    //generate list of partition ids
+    for (int i = 0; i< partitionsCount; i++) {
+      partitionIds.add(i);
     }
     if (partitionIds.size() == 0) {
       logger.warn("Partitions are not found. Import from Zeebe won't load any data.");
@@ -188,7 +183,7 @@ public class ZeebeESImporter extends Thread {
     }
   }
 
-  private Set<Integer> getPartitionIds() {
+  public Set<Integer> getPartitionIds() {
     if (partitionIds.size() == 0) {
       initPartitionList();
     }

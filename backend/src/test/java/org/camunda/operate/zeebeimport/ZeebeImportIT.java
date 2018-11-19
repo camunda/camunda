@@ -1,6 +1,7 @@
 package org.camunda.operate.zeebeimport;
 
 import java.time.OffsetDateTime;
+import java.util.Set;
 import org.camunda.operate.entities.ActivityInstanceEntity;
 import org.camunda.operate.entities.ActivityState;
 import org.camunda.operate.entities.IncidentEntity;
@@ -17,6 +18,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.internal.util.reflection.FieldSetter;
 import org.springframework.beans.factory.annotation.Autowired;
+import com.sun.xml.internal.ws.spi.db.FieldGetter;
 import io.zeebe.client.ZeebeClient;
 import io.zeebe.model.bpmn.Bpmn;
 import io.zeebe.model.bpmn.BpmnModelInstance;
@@ -30,6 +32,9 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
 
   @Autowired
   private WorkflowCache workflowCache;
+
+  @Autowired
+  private ZeebeESImporter zeebeESImporter;
 
   private ZeebeClient zeebeClient;
 
@@ -187,6 +192,14 @@ public class ZeebeImportIT extends OperateZeebeIntegrationTest {
       .hasSize(1)
       .extracting(WorkflowInstanceType.STATE).containsOnly(ActivityState.TERMINATED);
 
+  }
+
+  @Test
+  public void testPartitionIds() {
+    final Set<Integer> operatePartitions = zeebeESImporter.getPartitionIds();
+    final int zeebePartitionsCount = zeebeClient.newTopologyRequest().send().join().getPartitionsCount();
+    assertThat(operatePartitions).hasSize(zeebePartitionsCount);
+    assertThat(operatePartitions).allMatch(id -> id < zeebePartitionsCount && id >= 0);
   }
 
   private void assertStartActivityCompleted(ActivityInstanceEntity startActivity) {
