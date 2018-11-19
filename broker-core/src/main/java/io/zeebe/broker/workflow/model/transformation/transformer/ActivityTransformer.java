@@ -15,29 +15,36 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.model.transformation.handler;
+package io.zeebe.broker.workflow.model.transformation.transformer;
 
-import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
+import io.zeebe.broker.workflow.model.BpmnStep;
+import io.zeebe.broker.workflow.model.element.ExecutableActivity;
 import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
-import io.zeebe.model.bpmn.instance.ParallelGateway;
+import io.zeebe.model.bpmn.instance.Activity;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
-public class ParallelGatewayHandler implements ModelElementTransformer<ParallelGateway> {
-
+public class ActivityTransformer implements ModelElementTransformer<Activity> {
   @Override
-  public Class<ParallelGateway> getType() {
-    return ParallelGateway.class;
+  public Class<Activity> getType() {
+    return Activity.class;
   }
 
   @Override
-  public void transform(ParallelGateway element, TransformContext context) {
+  public void transform(Activity element, TransformContext context) {
     final ExecutableWorkflow workflow = context.getCurrentWorkflow();
-    final ExecutableFlowNode gateway =
-        workflow.getElementById(element.getId(), ExecutableFlowNode.class);
+    final ExecutableActivity activity =
+        workflow.getElementById(element.getId(), ExecutableActivity.class);
 
-    gateway.bindLifecycleState(
-        WorkflowInstanceIntent.GATEWAY_ACTIVATED, context.getCurrentFlowNodeOutgoingStep());
+    activity.bindLifecycleState(WorkflowInstanceIntent.ELEMENT_READY, BpmnStep.ACTIVATE_ACTIVITY);
+    activity.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.COMPLETE_ACTIVITY);
+    activity.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_COMPLETED, context.getCurrentFlowNodeOutgoingStep());
+    activity.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.TERMINATE_ACTIVITY);
+    activity.bindLifecycleState(
+        WorkflowInstanceIntent.ELEMENT_TERMINATED, BpmnStep.PROPAGATE_TERMINATION);
   }
 }

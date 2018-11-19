@@ -17,14 +17,14 @@
  */
 package io.zeebe.broker.workflow.processor.activity;
 
-import io.zeebe.broker.workflow.model.element.ExecutableActivity;
+import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.flownode.CompleteFlowNodeHandler;
 
-public class CompleteActivityHandler extends CompleteFlowNodeHandler<ExecutableActivity> {
+public class CompleteActivityHandler extends CompleteFlowNodeHandler {
   @Override
-  public void complete(BpmnStepContext<? extends ExecutableActivity> context) {
+  public void complete(BpmnStepContext<ExecutableFlowNode> context) {
     super.complete(context);
-    context.getCatchEventOutput().unsubscribeFromCatchEvents(context);
+    context.getCatchEventOutput().unsubscribeFromCatchEvents(context.getRecord().getKey(), context);
   }
 }

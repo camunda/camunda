@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.model.transformation.handler;
+package io.zeebe.broker.workflow.model.transformation.transformer;
 
 import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
 import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
@@ -24,7 +24,7 @@ import io.zeebe.broker.workflow.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.EndEvent;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
-public class EndEventHandler implements ModelElementTransformer<EndEvent> {
+public class EndEventTransformer implements ModelElementTransformer<EndEvent> {
 
   @Override
   public Class<EndEvent> getType() {

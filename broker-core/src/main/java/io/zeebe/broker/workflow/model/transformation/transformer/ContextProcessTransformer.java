@@ -15,22 +15,23 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.processor.message;
+package io.zeebe.broker.workflow.model.transformation.transformer;
 
-import io.zeebe.broker.logstreams.state.ZeebeState;
-import io.zeebe.broker.workflow.model.element.ExecutableIntermediateCatchElement;
-import io.zeebe.broker.workflow.processor.BpmnStepContext;
-import io.zeebe.broker.workflow.processor.flownode.TerminateFlowNodeHandler;
+import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
+import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
+import io.zeebe.broker.workflow.model.transformation.TransformContext;
+import io.zeebe.model.bpmn.instance.Process;
 
-public class TerminateIntermediateMessageHandler
-    extends TerminateFlowNodeHandler<ExecutableIntermediateCatchElement> {
+public class ContextProcessTransformer implements ModelElementTransformer<Process> {
 
-  public TerminateIntermediateMessageHandler(final ZeebeState zeebeState) {
-    super(zeebeState.getIncidentState());
+  @Override
+  public Class<Process> getType() {
+    return Process.class;
   }
 
   @Override
-  protected void terminate(BpmnStepContext<ExecutableIntermediateCatchElement> context) {
-    context.getCatchEventOutput().unsubscribeFromMessageEvents(context);
+  public void transform(Process element, TransformContext context) {
+    final ExecutableWorkflow workflow = context.getWorkflow(element.getId());
+    context.setCurrentWorkflow(workflow);
   }
 }

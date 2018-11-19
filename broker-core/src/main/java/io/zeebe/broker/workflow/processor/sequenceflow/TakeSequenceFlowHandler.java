@@ -24,17 +24,16 @@ import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
-public class ActivateGatewayHandler implements BpmnStepHandler<ExecutableSequenceFlow> {
+public class TakeSequenceFlowHandler implements BpmnStepHandler<ExecutableFlowNode> {
 
   @Override
-  public void handle(BpmnStepContext<ExecutableSequenceFlow> context) {
-
-    final ExecutableSequenceFlow sequenceFlow = context.getElement();
-    final ExecutableFlowNode targetNode = sequenceFlow.getTarget();
+  public void handle(BpmnStepContext<ExecutableFlowNode> context) {
+    // the activity has exactly one outgoing sequence flow
+    final ExecutableSequenceFlow sequenceFlow = context.getElement().getOutgoing().get(0);
 
     final WorkflowInstanceRecord value = context.getValue();
-    value.setElementId(targetNode.getId());
+    value.setElementId(sequenceFlow.getId());
 
-    context.getOutput().appendNewEvent(WorkflowInstanceIntent.GATEWAY_ACTIVATED, value);
+    context.getOutput().appendNewEvent(WorkflowInstanceIntent.SEQUENCE_FLOW_TAKEN, value);
   }
 }

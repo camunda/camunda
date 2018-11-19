@@ -15,33 +15,33 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.model.transformation.handler;
+package io.zeebe.broker.workflow.model.transformation.transformer;
 
 import io.zeebe.broker.workflow.model.BpmnStep;
+import io.zeebe.broker.workflow.model.element.ExecutableFlowElementContainer;
 import io.zeebe.broker.workflow.model.element.ExecutableWorkflow;
 import io.zeebe.broker.workflow.model.transformation.ModelElementTransformer;
 import io.zeebe.broker.workflow.model.transformation.TransformContext;
-import io.zeebe.model.bpmn.instance.Process;
+import io.zeebe.model.bpmn.instance.SubProcess;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
-public class ProcessHandler implements ModelElementTransformer<Process> {
+public class SubProcessTransformer implements ModelElementTransformer<SubProcess> {
 
   @Override
-  public Class<Process> getType() {
-    return Process.class;
+  public Class<SubProcess> getType() {
+    return SubProcess.class;
   }
 
   @Override
-  public void transform(Process element, TransformContext context) {
-    final ExecutableWorkflow workflow = context.getWorkflow(element.getId());
-    context.setCurrentWorkflow(workflow);
+  public void transform(SubProcess element, TransformContext context) {
 
-    workflow.bindLifecycleState(WorkflowInstanceIntent.ELEMENT_READY, BpmnStep.ACTIVATE_FLOW_NODE);
-    workflow.bindLifecycleState(
+    final ExecutableWorkflow currentWorkflow = context.getCurrentWorkflow();
+    final ExecutableFlowElementContainer subprocess =
+        currentWorkflow.getElementById(element.getId(), ExecutableFlowElementContainer.class);
+
+    subprocess.bindLifecycleState(
         WorkflowInstanceIntent.ELEMENT_ACTIVATED, BpmnStep.TRIGGER_START_EVENT);
-    workflow.bindLifecycleState(
-        WorkflowInstanceIntent.ELEMENT_COMPLETING, BpmnStep.COMPLETE_PROCESS);
-    workflow.bindLifecycleState(
+    subprocess.bindLifecycleState(
         WorkflowInstanceIntent.ELEMENT_TERMINATING, BpmnStep.TERMINATE_CONTAINED_INSTANCES);
   }
 }

@@ -18,53 +18,44 @@
 package io.zeebe.broker.workflow.model;
 
 public enum BpmnStep {
-  NONE,
 
-  // exactly one outgoing sequence flow
-  TAKE_SEQUENCE_FLOW,
-
-  // end event, no outgoing sequence flow
-  CONSUME_TOKEN,
-
-  // xor-gateway
-  EXCLUSIVE_SPLIT,
-
-  // parallel gateway
-  PARALLEL_SPLIT,
-  PARALLEL_MERGE,
+  // flow element container (process, sub process)
+  TRIGGER_START_EVENT,
+  TRIGGER_END_EVENT,
+  COMPLETE_PROCESS,
+  TERMINATE_CONTAINED_INSTANCES,
 
   // flow node
   START_FLOW_NODE,
   ACTIVATE_FLOW_NODE,
   COMPLETE_FLOW_NODE,
   TERMINATE_FLOW_NODE,
+  PROPAGATE_TERMINATION,
+
+  CONSUME_TOKEN,
+  TAKE_SEQUENCE_FLOW,
 
   // activity
   ACTIVATE_ACTIVITY,
   COMPLETE_ACTIVITY,
   TERMINATE_ACTIVITY,
 
-  // boundary events
-  TRIGGER_BOUNDARY_EVENT,
-
+  // service task
   CREATE_JOB,
-
-  ACTIVATE_GATEWAY,
-
-  SUBSCRIBE_TO_INTERMEDIATE_MESSAGE,
-
-  CREATE_TIMER,
-
-  TRIGGER_END_EVENT,
-  TRIGGER_START_EVENT,
-
-  TERMINATE_CONTAINED_INSTANCES,
   TERMINATE_JOB_TASK,
-  TERMINATE_INTERMEDIATE_MESSAGE,
-  TERMINATE_TIMER,
-  TERMINATE_ELEMENT,
-  PROPAGATE_TERMINATION,
 
-  CANCEL_PROCESS,
-  COMPLETE_PROCESS,
+  // exclusive gateway
+  ACTIVATE_GATEWAY,
+  EXCLUSIVE_SPLIT,
+
+  // parallel gateway
+  PARALLEL_SPLIT,
+  PARALLEL_MERGE,
+
+  // event-based gateway
+  TRIGGER_EVENT_BASED_GATEWAY,
+
+  // events
+  SUBSCRIBE_TO_EVENTS,
+  TRIGGER_EVENT,
 }

@@ -25,6 +25,7 @@ import io.zeebe.broker.workflow.processor.BpmnStepHandler;
 import io.zeebe.broker.workflow.processor.EventOutput;
 import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.broker.workflow.state.ElementInstanceState;
+import io.zeebe.broker.workflow.state.IndexedRecord;
 import io.zeebe.broker.workflow.state.WorkflowState;
 import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
@@ -48,11 +49,18 @@ public class TerminateContainedElementsHandler
     final ElementInstance elementInstance = context.getElementInstance();
     final EventOutput output = context.getOutput();
     final ElementInstanceState elementInstanceState = workflowState.getElementInstanceState();
+
+    context.getCatchEventOutput().unsubscribeFromCatchEvents(elementInstance.getKey(), context);
+
+    final List<IndexedRecord> deferredTokens =
+        elementInstanceState.getDeferredTokens(elementInstance.getKey());
+    for (IndexedRecord deferedToken : deferredTokens) {
+      context.getCatchEventOutput().unsubscribeFromCatchEvents(deferedToken.getKey(), context);
+      output.consumeDeferredEvent(elementInstance.getKey(), deferedToken.getKey());
+    }
+
     final List<ElementInstance> children =
         elementInstanceState.getChildren(elementInstance.getKey());
-
-    context.getCatchEventOutput().unsubscribeFromCatchEvents(context);
-
     if (children.isEmpty()) {
       if (elementInstance.isInterrupted()) {
         context

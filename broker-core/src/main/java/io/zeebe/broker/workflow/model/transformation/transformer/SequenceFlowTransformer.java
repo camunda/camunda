@@ -15,7 +15,7 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package io.zeebe.broker.workflow.model.transformation.handler;
+package io.zeebe.broker.workflow.model.transformation.transformer;
 
 import io.zeebe.broker.workflow.model.BpmnStep;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowNode;
@@ -26,6 +26,7 @@ import io.zeebe.broker.workflow.model.transformation.TransformContext;
 import io.zeebe.model.bpmn.instance.Activity;
 import io.zeebe.model.bpmn.instance.ConditionExpression;
 import io.zeebe.model.bpmn.instance.EndEvent;
+import io.zeebe.model.bpmn.instance.EventBasedGateway;
 import io.zeebe.model.bpmn.instance.ExclusiveGateway;
 import io.zeebe.model.bpmn.instance.FlowNode;
 import io.zeebe.model.bpmn.instance.IntermediateCatchEvent;
@@ -35,7 +36,7 @@ import io.zeebe.msgpack.el.CompiledJsonCondition;
 import io.zeebe.msgpack.el.JsonConditionFactory;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
-public class SequenceFlowHandler implements ModelElementTransformer<SequenceFlow> {
+public class SequenceFlowTransformer implements ModelElementTransformer<SequenceFlow> {
 
   @Override
   public Class<SequenceFlow> getType() {
@@ -61,16 +62,20 @@ public class SequenceFlowHandler implements ModelElementTransformer<SequenceFlow
 
     if (target instanceof Activity || target instanceof IntermediateCatchEvent) {
       step = BpmnStep.START_FLOW_NODE;
-    } else if (target instanceof ExclusiveGateway) {
+
+    } else if (target instanceof ExclusiveGateway || target instanceof EventBasedGateway) {
       step = BpmnStep.ACTIVATE_GATEWAY;
+
     } else if (target instanceof ParallelGateway) {
       if (target.getIncoming().size() == 1) {
         step = BpmnStep.ACTIVATE_GATEWAY;
       } else {
         step = BpmnStep.PARALLEL_MERGE;
       }
+
     } else if (target instanceof EndEvent) {
       step = BpmnStep.TRIGGER_END_EVENT;
+
     } else {
       throw new RuntimeException("Unsupported element");
     }

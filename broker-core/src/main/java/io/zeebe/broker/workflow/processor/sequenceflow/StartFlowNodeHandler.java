@@ -26,6 +26,12 @@ import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 
 public class StartFlowNodeHandler implements BpmnStepHandler<ExecutableSequenceFlow> {
 
+  private final WorkflowInstanceIntent nodeIntent;
+
+  public StartFlowNodeHandler(WorkflowInstanceIntent nodeIntent) {
+    this.nodeIntent = nodeIntent;
+  }
+
   @Override
   public void handle(BpmnStepContext<ExecutableSequenceFlow> context) {
     final ExecutableSequenceFlow sequenceFlow = context.getElement();
@@ -34,6 +40,6 @@ public class StartFlowNodeHandler implements BpmnStepHandler<ExecutableSequenceF
     final WorkflowInstanceRecord value = context.getValue();
     value.setElementId(targetNode.getId());
 
-    context.getOutput().appendNewEvent(WorkflowInstanceIntent.ELEMENT_READY, value);
+    context.getOutput().appendNewEvent(nodeIntent, value);
   }
 }
