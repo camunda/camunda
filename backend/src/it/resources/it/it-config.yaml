@@ -16,6 +16,7 @@ import:
       pageSize:
         max: 30
   elasticsearchJobExecutorThreadCount: 1
+  currentTimeBackoffMilliseconds: 0
 es:
   security:
     username: ''

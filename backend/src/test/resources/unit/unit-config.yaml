@@ -9,6 +9,7 @@ import:
       resetInterval:
         unit: Millis
         value: 100
+  currentTimeBackoffMilliseconds: 0
 container:
   checkMetadata: false
 es:

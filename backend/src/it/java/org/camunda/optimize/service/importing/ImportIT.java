@@ -4,7 +4,6 @@ import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.optimize.query.variable.VariableRetrievalDto;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.engine.importing.index.handler.TimestampBasedImportIndexHandler;
 import org.camunda.optimize.service.es.filter.CanceledInstancesOnlyQueryFilter;
 import org.camunda.optimize.service.es.schema.type.ProcessInstanceType;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
@@ -263,11 +262,13 @@ public class ImportIT  {
   @Test
   public void indexLastTimestampIsEqualEvenAfterReset() throws InterruptedException {
     // given
+    final int currentTimeBackOff = 1000;
+    embeddedOptimizeRule.getConfigurationService().setCurrentTimeBackoffMilliseconds(currentTimeBackOff);
     deployAndStartSimpleServiceTask();
     deployAndStartSimpleServiceTask();
 
     // sleep in order to avoid the timestamp import backoff window that modifies the latestTimestamp stored
-    Thread.sleep(TimestampBasedImportIndexHandler.CURRENT_TIME_BACKOFF_MILLIS);
+    Thread.sleep(currentTimeBackOff);
 
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();

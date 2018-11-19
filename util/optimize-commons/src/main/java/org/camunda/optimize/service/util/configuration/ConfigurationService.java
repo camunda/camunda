@@ -108,6 +108,7 @@ public class ConfigurationService {
 
   private Integer engineConnectTimeout;
   private Integer engineReadTimeout;
+  private Integer currentTimeBackoffMilliseconds;
   private Integer engineImportProcessInstanceMaxPageSize;
   private Integer engineImportVariableInstanceMaxPageSize;
   private Integer engineImportProcessDefinitionXmlMaxPageSize;
@@ -502,6 +503,16 @@ public class ConfigurationService {
       engineReadTimeout = configJsonContext.read(ConfigurationServiceConstants.ENGINE_READ_TIMEOUT, Integer.class);
     }
     return engineReadTimeout;
+  }
+
+  public int getCurrentTimeBackoffMilliseconds() {
+    if (currentTimeBackoffMilliseconds == null) {
+      currentTimeBackoffMilliseconds = configJsonContext.read(
+        ConfigurationServiceConstants.IMPORT_CURRENT_TIME_BACKOFF_MILLISECONDS,
+        Integer.class
+      );
+    }
+    return currentTimeBackoffMilliseconds;
   }
 
   public String getImportIndexType() {
@@ -1052,6 +1063,11 @@ public class ConfigurationService {
   public void setEngineReadTimeout(Integer engineReadTimeout) {
     this.engineReadTimeout = engineReadTimeout;
   }
+
+  public void setCurrentTimeBackoffMilliseconds(Integer currentTimeBackoffMilliseconds) {
+    this.currentTimeBackoffMilliseconds = currentTimeBackoffMilliseconds;
+  }
+
 
   public void setImportIndexType(String importIndexType) {
     this.importIndexType = importIndexType;

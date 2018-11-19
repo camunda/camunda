@@ -19,7 +19,6 @@ import java.util.Optional;
 
 public abstract class TimestampBasedImportIndexHandler
   implements ImportIndexHandler<TimestampBasedImportPage, TimestampBasedImportIndexDto> {
-  public static final int CURRENT_TIME_BACKOFF_MILLIS = 2000;
 
   protected Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -55,7 +54,7 @@ public abstract class TimestampBasedImportIndexHandler
     if (timestamp.isAfter(backOffWindowStart)) {
       logger.info(
         "Timestamp is in the current time backoff window of {}ms, will save begin of backoff window as last timestamp",
-        CURRENT_TIME_BACKOFF_MILLIS
+        configurationService.getCurrentTimeBackoffMilliseconds()
       );
       this.timestampOfLastEntity= backOffWindowStart;
     } else {
@@ -121,7 +120,7 @@ public abstract class TimestampBasedImportIndexHandler
   }
 
   private OffsetDateTime reduceByCurrentTimeBackoff(OffsetDateTime currentDateTime) {
-    return currentDateTime.minus(CURRENT_TIME_BACKOFF_MILLIS, ChronoUnit.MILLIS);
+    return currentDateTime.minus(configurationService.getCurrentTimeBackoffMilliseconds(), ChronoUnit.MILLIS);
   }
 
 }
