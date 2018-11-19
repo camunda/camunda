@@ -19,6 +19,7 @@ package io.zeebe.broker.logstreams;
 
 import io.zeebe.broker.clustering.base.partitions.Partition;
 import io.zeebe.broker.clustering.base.topology.TopologyManager;
+import io.zeebe.broker.incident.processor.IncidentEventProcessors;
 import io.zeebe.broker.job.JobEventProcessors;
 import io.zeebe.broker.logstreams.processor.KeyGenerator;
 import io.zeebe.broker.logstreams.processor.StreamProcessorServiceFactory;
@@ -33,6 +34,7 @@ import io.zeebe.broker.system.configuration.ClusterCfg;
 import io.zeebe.broker.transport.controlmessage.ControlMessageHandlerManager;
 import io.zeebe.broker.workflow.deployment.distribute.processor.DeploymentCreatedProcessor;
 import io.zeebe.broker.workflow.deployment.distribute.processor.DeploymentDistributeProcessor;
+import io.zeebe.broker.workflow.processor.BpmnStepProcessor;
 import io.zeebe.broker.workflow.processor.WorkflowEventProcessors;
 import io.zeebe.broker.workflow.processor.deployment.DeploymentEventProcessors;
 import io.zeebe.broker.workflow.processor.timer.DueDateTimerChecker;
@@ -136,10 +138,11 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
             .withStateController(zeebeState);
 
     addDistributeDeploymentProcessors(zeebeState, streamEnvironment, typedProcessorBuilder);
-    addWorkflowProcessors(zeebeState, typedProcessorBuilder);
+    final BpmnStepProcessor stepProcessor =
+        addWorkflowProcessors(zeebeState, typedProcessorBuilder);
     addDeploymentRelatedProcessorAndServices(
         partitionServiceName, partitionId, zeebeState.getWorkflowState(), typedProcessorBuilder);
-    addIncidentProcessors(zeebeState, streamEnvironment, typedProcessorBuilder);
+    addIncidentProcessors(zeebeState, stepProcessor, typedProcessorBuilder);
     addJobProcessors(zeebeState, typedProcessorBuilder);
     addMessageProcessors(zeebeState, typedProcessorBuilder);
 
@@ -167,12 +170,12 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
             ValueType.DEPLOYMENT, DeploymentIntent.DISTRIBUTE, deploymentDistributeProcessor);
   }
 
-  private void addWorkflowProcessors(
+  private BpmnStepProcessor addWorkflowProcessors(
       ZeebeState zeebeState, TypedEventStreamProcessorBuilder typedProcessorBuilder) {
     final SubscriptionCommandSender subscriptionCommandSender =
         new SubscriptionCommandSender(clusterCfg, subscriptionApiClientInjector.getValue());
     final DueDateTimerChecker timerChecker = new DueDateTimerChecker(zeebeState.getWorkflowState());
-    WorkflowEventProcessors.addWorkflowProcessors(
+    return WorkflowEventProcessors.addWorkflowProcessors(
         typedProcessorBuilder,
         zeebeState,
         subscriptionCommandSender,
@@ -203,9 +206,9 @@ public class ZbStreamProcessorService implements Service<ZbStreamProcessorServic
 
   private void addIncidentProcessors(
       ZeebeState zeebeState,
-      TypedStreamEnvironment streamEnvironment,
+      BpmnStepProcessor stepProcessor,
       TypedEventStreamProcessorBuilder typedProcessorBuilder) {
-    // TODO(zell): migrate incident stream processor - migrate state to rocks db first
+    IncidentEventProcessors.addProcessors(typedProcessorBuilder, zeebeState, stepProcessor);
   }
 
   private void addJobProcessors(

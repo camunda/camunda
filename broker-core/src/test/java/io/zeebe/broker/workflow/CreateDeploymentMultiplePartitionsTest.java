@@ -88,7 +88,6 @@ public class CreateDeploymentMultiplePartitionsTest {
 
     // then
     assertThat(resp.getKey()).isGreaterThanOrEqualTo(0L);
-    assertThat(resp.getPosition()).isGreaterThanOrEqualTo(0L);
     assertThat(resp.getPartitionId()).isEqualTo(PARTITION_ID);
 
     assertThat(resp.getRecordType()).isEqualTo(RecordType.EVENT);
@@ -115,7 +114,6 @@ public class CreateDeploymentMultiplePartitionsTest {
 
     // then
     assertThat(resp.getKey()).isGreaterThanOrEqualTo(0L);
-    assertThat(resp.getPosition()).isGreaterThanOrEqualTo(0L);
     assertThat(resp.getPartitionId()).isEqualTo(PARTITION_ID);
 
     assertThat(resp.getRecordType()).isEqualTo(RecordType.EVENT);

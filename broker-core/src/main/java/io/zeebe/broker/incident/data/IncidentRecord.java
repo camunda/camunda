@@ -19,7 +19,6 @@ package io.zeebe.broker.incident.data;
 
 import io.zeebe.broker.logstreams.processor.TypedRecord;
 import io.zeebe.msgpack.UnpackedObject;
-import io.zeebe.msgpack.property.DocumentProperty;
 import io.zeebe.msgpack.property.EnumProperty;
 import io.zeebe.msgpack.property.LongProperty;
 import io.zeebe.msgpack.property.StringProperty;
@@ -31,26 +30,20 @@ public class IncidentRecord extends UnpackedObject {
       new EnumProperty<>("errorType", ErrorType.class, ErrorType.UNKNOWN);
   private final StringProperty errorMessageProp = new StringProperty("errorMessage", "");
 
-  private final LongProperty failureEventPosition = new LongProperty("failureEventPosition", -1L);
-
   private final StringProperty bpmnProcessIdProp = new StringProperty("bpmnProcessId", "");
   private final LongProperty workflowInstanceKeyProp = new LongProperty("workflowInstanceKey", -1L);
   private final StringProperty elementIdProp = new StringProperty("elementId", "");
   private final LongProperty elementInstanceKeyProp = new LongProperty("elementInstanceKey", -1L);
   private final LongProperty jobKeyProp = new LongProperty("jobKey", -1L);
 
-  private final DocumentProperty payloadProp = new DocumentProperty("payload");
-
   public IncidentRecord() {
     this.declareProperty(errorTypeProp)
         .declareProperty(errorMessageProp)
-        .declareProperty(failureEventPosition)
         .declareProperty(bpmnProcessIdProp)
         .declareProperty(workflowInstanceKeyProp)
         .declareProperty(elementIdProp)
         .declareProperty(elementInstanceKeyProp)
-        .declareProperty(jobKeyProp)
-        .declareProperty(payloadProp);
+        .declareProperty(jobKeyProp);
   }
 
   public ErrorType getErrorType() {
@@ -68,15 +61,6 @@ public class IncidentRecord extends UnpackedObject {
 
   public IncidentRecord setErrorMessage(String errorMessage) {
     this.errorMessageProp.setValue(errorMessage);
-    return this;
-  }
-
-  public long getFailureEventPosition() {
-    return failureEventPosition.getValue();
-  }
-
-  public IncidentRecord setFailureEventPosition(long failureEventPosition) {
-    this.failureEventPosition.setValue(failureEventPosition);
     return this;
   }
 
@@ -125,20 +109,10 @@ public class IncidentRecord extends UnpackedObject {
     return this;
   }
 
-  public DirectBuffer getPayload() {
-    return this.payloadProp.getValue();
-  }
-
-  public IncidentRecord setPayload(DirectBuffer payload) {
-    this.payloadProp.setValue(payload);
-    return this;
-  }
-
   public IncidentRecord initFromWorkflowInstanceFailure(
       TypedRecord<WorkflowInstanceRecord> workflowInstanceEvent) {
     final WorkflowInstanceRecord value = workflowInstanceEvent.getValue();
 
-    setFailureEventPosition(workflowInstanceEvent.getPosition());
     setElementInstanceKey(workflowInstanceEvent.getKey());
     setBpmnProcessId(value.getBpmnProcessId());
     setWorkflowInstanceKey(value.getWorkflowInstanceKey());

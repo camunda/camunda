@@ -143,7 +143,6 @@ public class PartitionTestClient {
 
     assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
     assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_READY);
-    assertThat(response.getPosition()).isGreaterThanOrEqualTo(0L);
 
     return response.getKey();
   }
@@ -264,24 +263,10 @@ public class PartitionTestClient {
             .findFirst()
             .orElseThrow(() -> new AssertionError("Expected job locked event but not found."));
 
-    final ExecuteCommandResponse response =
-        completeJob(jobEvent.getPosition(), jobEvent.getKey(), payload);
+    final ExecuteCommandResponse response = completeJob(jobEvent.getKey(), payload);
 
     assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
     assertThat(response.getIntent()).isEqualTo(JobIntent.COMPLETED);
-  }
-
-  public ExecuteCommandResponse completeJob(
-      final long sourceRecordPosition, final long key, final byte[] payload) {
-    return apiRule
-        .createCmdRequest()
-        .type(ValueType.JOB, JobIntent.COMPLETE)
-        .key(key)
-        .sourceRecordPosition(sourceRecordPosition)
-        .command()
-        .put("payload", payload)
-        .done()
-        .sendAndAwait();
   }
 
   public ExecuteCommandResponse failJob(long key, int retries) {

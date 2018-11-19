@@ -38,7 +38,7 @@ import io.zeebe.protocol.intent.WorkflowInstanceSubscriptionIntent;
 
 public class WorkflowEventProcessors {
 
-  public static void addWorkflowProcessors(
+  public static BpmnStepProcessor addWorkflowProcessors(
       TypedEventStreamProcessorBuilder typedProcessorBuilder,
       ZeebeState zeebeState,
       SubscriptionCommandSender subscriptionCommandSender,
@@ -57,6 +57,13 @@ public class WorkflowEventProcessors {
         new CatchEventOutput(zeebeState, subscriptionCommandSender);
     final BpmnStepProcessor bpmnStepProcessor =
         new BpmnStepProcessor(workflowEngineState, zeebeState, catchEventOutput);
+
+    // temporary incident resolving
+    typedProcessorBuilder.onEvent(
+        ValueType.WORKFLOW_INSTANCE,
+        WorkflowInstanceIntent.PAYLOAD_UPDATED,
+        new PayloadUpdatedProcessor(zeebeState));
+
     addBpmnStepProcessor(typedProcessorBuilder, bpmnStepProcessor);
 
     addMessageStreamProcessors(
@@ -66,6 +73,7 @@ public class WorkflowEventProcessors {
         topologyManager,
         subscriptionCommandSender);
     addTimerStreamProcessors(typedProcessorBuilder, timerChecker, workflowState);
+    return bpmnStepProcessor;
   }
 
   private static void addWorkflowInstanceCommandProcessor(

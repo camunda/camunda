@@ -122,9 +122,8 @@ public class WorkflowInstanceStreamProcessorTest {
 
     envRule.writeCommand(
         createdEvent.getKey(), WorkflowInstanceIntent.CANCEL, createdEvent.getValue());
-    final long secondCommandPosition =
-        envRule.writeCommand(
-            createdEvent.getKey(), WorkflowInstanceIntent.CANCEL, createdEvent.getValue());
+    envRule.writeCommand(
+        createdEvent.getKey(), WorkflowInstanceIntent.CANCEL, createdEvent.getValue());
 
     // when
     streamProcessor.unblock();
@@ -141,7 +140,6 @@ public class WorkflowInstanceStreamProcessorTest {
         envRule.events().onlyWorkflowInstanceRecords().onlyRejections().findFirst().get();
 
     assertThat(rejection.getMetadata().getIntent()).isEqualTo(WorkflowInstanceIntent.CANCEL);
-    assertThat(rejection.getSourcePosition()).isEqualTo(secondCommandPosition);
     assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
         .isEqualTo("Workflow instance is not running");
   }
@@ -385,9 +383,7 @@ public class WorkflowInstanceStreamProcessorTest {
     final WorkflowInstanceSubscriptionRecord subscription = subscriptionRecordForEvent(catchEvent);
 
     envRule.writeCommand(WorkflowInstanceSubscriptionIntent.OPEN, subscription);
-
-    final long secondCommandPosition =
-        envRule.writeCommand(WorkflowInstanceSubscriptionIntent.OPEN, subscription);
+    envRule.writeCommand(WorkflowInstanceSubscriptionIntent.OPEN, subscription);
 
     streamProcessor.unblock();
 
@@ -397,7 +393,6 @@ public class WorkflowInstanceStreamProcessorTest {
 
     assertThat(rejection.getMetadata().getIntent())
         .isEqualTo(WorkflowInstanceSubscriptionIntent.OPEN);
-    assertThat(rejection.getSourcePosition()).isEqualTo(secondCommandPosition);
     assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
         .isEqualTo("subscription is already open");
   }
@@ -424,8 +419,7 @@ public class WorkflowInstanceStreamProcessorTest {
 
     // when
     envRule.writeCommand(WorkflowInstanceSubscriptionIntent.CORRELATE, subscription);
-    final long secondCommandPosition =
-        envRule.writeCommand(WorkflowInstanceSubscriptionIntent.CORRELATE, subscription);
+    envRule.writeCommand(WorkflowInstanceSubscriptionIntent.CORRELATE, subscription);
 
     streamProcessor.unblock();
 
@@ -435,7 +429,6 @@ public class WorkflowInstanceStreamProcessorTest {
 
     assertThat(rejection.getMetadata().getIntent())
         .isEqualTo(WorkflowInstanceSubscriptionIntent.CORRELATE);
-    assertThat(rejection.getSourcePosition()).isEqualTo(secondCommandPosition);
     assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
         .isEqualTo("subscription is already correlated");
 
@@ -476,8 +469,7 @@ public class WorkflowInstanceStreamProcessorTest {
     streamProcessorRule.awaitElementInState(PROCESS_ID, WorkflowInstanceIntent.ELEMENT_TERMINATED);
 
     // when
-    final long commandPosition =
-        envRule.writeCommand(WorkflowInstanceSubscriptionIntent.CORRELATE, subscription);
+    envRule.writeCommand(WorkflowInstanceSubscriptionIntent.CORRELATE, subscription);
 
     // then
     final TypedRecord<WorkflowInstanceSubscriptionRecord> rejection =
@@ -485,7 +477,6 @@ public class WorkflowInstanceStreamProcessorTest {
 
     assertThat(rejection.getMetadata().getIntent())
         .isEqualTo(WorkflowInstanceSubscriptionIntent.CORRELATE);
-    assertThat(rejection.getSourcePosition()).isEqualTo(commandPosition);
     assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
         .isEqualTo("activity is not active anymore");
   }
@@ -544,8 +535,7 @@ public class WorkflowInstanceStreamProcessorTest {
 
     // when
     envRule.writeCommand(WorkflowInstanceSubscriptionIntent.CLOSE, subscription);
-    final long secondCommandPosition =
-        envRule.writeCommand(WorkflowInstanceSubscriptionIntent.CLOSE, subscription);
+    envRule.writeCommand(WorkflowInstanceSubscriptionIntent.CLOSE, subscription);
 
     streamProcessor.unblock();
 
@@ -555,7 +545,6 @@ public class WorkflowInstanceStreamProcessorTest {
 
     assertThat(rejection.getMetadata().getIntent())
         .isEqualTo(WorkflowInstanceSubscriptionIntent.CLOSE);
-    assertThat(rejection.getSourcePosition()).isEqualTo(secondCommandPosition);
     assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
         .isEqualTo("subscription is already closed");
   }

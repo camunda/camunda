@@ -230,14 +230,6 @@ public class StubBrokerRule extends ExternalResource {
     return new JobStubs(this);
   }
 
-  public WorkflowInstanceStubs workflowInstances() {
-    return new WorkflowInstanceStubs(this);
-  }
-
-  public DeploymentStubs deployments() {
-    return new DeploymentStubs(this);
-  }
-
   public SocketAddress getSocketAddress() {
     return socketAddress;
   }

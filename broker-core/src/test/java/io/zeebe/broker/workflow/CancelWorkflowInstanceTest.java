@@ -109,10 +109,6 @@ public class CancelWorkflowInstanceTest {
     final ExecuteCommandResponse response = cancelWorkflowInstance(workflowInstanceKey);
 
     // then
-    final Record<WorkflowInstanceRecordValue> cancelWorkflow =
-        testClient.receiveFirstWorkflowInstanceCommand(WorkflowInstanceIntent.CANCEL);
-
-    assertThat(response.getSourceRecordPosition()).isEqualTo(cancelWorkflow.getPosition());
     assertThat(response.getIntent()).isEqualTo(WorkflowInstanceIntent.ELEMENT_TERMINATING);
 
     final Record<WorkflowInstanceRecordValue> workflowInstanceCanceledEvent =

@@ -69,11 +69,7 @@ public class JobUpdateRetriesTest {
     final ExecuteCommandResponse response = client.updateJobRetries(jobEvent.getKey(), NEW_RETRIES);
 
     // then
-    final Record jobCommand =
-        apiRule.partitionClient().receiveFirstJobCommand(JobIntent.UPDATE_RETRIES);
-
     assertThat(response.getRecordType()).isEqualTo(RecordType.EVENT);
-    assertThat(response.getSourceRecordPosition()).isEqualTo(jobCommand.getPosition());
     assertThat(response.getIntent()).isEqualTo(JobIntent.RETRIES_UPDATED);
 
     assertThat(response.getKey()).isEqualTo(jobEvent.getKey());

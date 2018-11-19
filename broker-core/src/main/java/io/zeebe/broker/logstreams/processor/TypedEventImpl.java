@@ -33,24 +33,17 @@ public class TypedEventImpl implements TypedRecord {
     this.value = value;
   }
 
-  @Override
   public long getPosition() {
     return rawEvent.getPosition();
   }
 
-  @Override
-  public long getSourcePosition() {
+  public long getSourceEventPosition() {
     return rawEvent.getSourceEventPosition();
   }
 
   @Override
   public long getKey() {
     return rawEvent.getKey();
-  }
-
-  @Override
-  public long getTimestamp() {
-    return rawEvent.getTimestamp();
   }
 
   @Override

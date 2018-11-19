@@ -223,7 +223,6 @@ public class ExporterRecordMapper {
 
     return new IncidentRecordValueImpl(
         objectMapper,
-        asJson(record.getPayload()),
         record.getErrorType().name(),
         asString(record.getErrorMessage()),
         asString(record.getBpmnProcessId()),

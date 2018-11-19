@@ -94,6 +94,7 @@ public class DeploymentDistributeProcessor implements TypedRecordProcessor<Deplo
 
   @Override
   public void processRecord(
+      final long position,
       final TypedRecord<DeploymentRecord> event,
       final TypedResponseWriter responseWriter,
       final TypedStreamWriter streamWriter,
@@ -104,7 +105,7 @@ public class DeploymentDistributeProcessor implements TypedRecordProcessor<Deplo
 
     final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
     deploymentEvent.write(buffer, 0);
-    distributeDeployment(key, event.getPosition(), buffer);
+    distributeDeployment(key, position, buffer);
   }
 
   private void distributeDeployment(

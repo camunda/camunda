@@ -17,7 +17,7 @@
  */
 package io.zeebe.broker.workflow.processor;
 
-import io.zeebe.broker.job.JobState;
+import io.zeebe.broker.incident.processor.IncidentState;
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.workflow.model.BpmnStep;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElement;
@@ -55,11 +55,12 @@ public class BpmnStepHandlers {
   private final Map<BpmnStep, BpmnStepHandler> stepHandlers = new EnumMap<>(BpmnStep.class);
 
   public BpmnStepHandlers(WorkflowState workflowState, ZeebeState zeebeState) {
-    final JobState jobState = zeebeState.getJobState();
+    final IncidentState incidentState = zeebeState.getIncidentState();
+
     // activity
     stepHandlers.put(BpmnStep.ACTIVATE_ACTIVITY, new ActivateActivityHandler());
     stepHandlers.put(BpmnStep.COMPLETE_ACTIVITY, new CompleteActivityHandler());
-    stepHandlers.put(BpmnStep.TERMINATE_ACTIVITY, new TerminateActivityHandler());
+    stepHandlers.put(BpmnStep.TERMINATE_ACTIVITY, new TerminateActivityHandler(incidentState));
 
     // boundary events
     stepHandlers.put(BpmnStep.TRIGGER_BOUNDARY_EVENT, new TriggerBoundaryEventHandler());
@@ -75,7 +76,7 @@ public class BpmnStepHandlers {
     stepHandlers.put(BpmnStep.START_FLOW_NODE, new StartFlowNodeHandler());
     stepHandlers.put(BpmnStep.ACTIVATE_FLOW_NODE, new ActivateFlowNodeHandler());
     stepHandlers.put(BpmnStep.COMPLETE_FLOW_NODE, new CompleteFlowNodeHandler());
-    stepHandlers.put(BpmnStep.TERMINATE_ELEMENT, new TerminateFlowNodeHandler());
+    stepHandlers.put(BpmnStep.TERMINATE_ELEMENT, new TerminateFlowNodeHandler(incidentState));
 
     // sequence flow
     stepHandlers.put(BpmnStep.TAKE_SEQUENCE_FLOW, new TakeSequenceFlowHandler());
@@ -90,10 +91,11 @@ public class BpmnStepHandlers {
     stepHandlers.put(BpmnStep.PARALLEL_SPLIT, new ParallelSplitHandler());
 
     // termination
-    stepHandlers.put(BpmnStep.TERMINATE_JOB_TASK, new TerminateServiceTaskHandler(jobState));
-    stepHandlers.put(BpmnStep.TERMINATE_TIMER, new TerminateTimerHandler());
+    stepHandlers.put(BpmnStep.TERMINATE_JOB_TASK, new TerminateServiceTaskHandler(zeebeState));
+    stepHandlers.put(BpmnStep.TERMINATE_TIMER, new TerminateTimerHandler(zeebeState));
     stepHandlers.put(
-        BpmnStep.TERMINATE_INTERMEDIATE_MESSAGE, new TerminateIntermediateMessageHandler());
+        BpmnStep.TERMINATE_INTERMEDIATE_MESSAGE,
+        new TerminateIntermediateMessageHandler(zeebeState));
     stepHandlers.put(
         BpmnStep.TERMINATE_CONTAINED_INSTANCES,
         new TerminateContainedElementsHandler(workflowState));

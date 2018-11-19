@@ -50,6 +50,15 @@ public class UpdatePayloadHandler implements WorkflowInstanceCommandHandler {
       final WorkflowInstanceRecord elementInstanceValue = elementInstance.getValue();
       elementInstanceValue.setPayload(commandValue.getPayload());
 
+      final IndexedRecord failedToken =
+          workflowState.getElementInstanceState().getFailedToken(command.getKey());
+
+      if (failedToken != null) {
+        final WorkflowInstanceRecord value = failedToken.getValue();
+        value.setPayload(commandValue.getPayload());
+        workflowState.getElementInstanceState().updateFailedToken(failedToken);
+      }
+
       output.appendFollowUpEvent(
           command.getKey(), WorkflowInstanceIntent.PAYLOAD_UPDATED, elementInstanceValue);
       responseWriter.writeEventOnCommand(
@@ -61,6 +70,7 @@ public class UpdatePayloadHandler implements WorkflowInstanceCommandHandler {
       if (failedToken != null) {
         final WorkflowInstanceRecord value = failedToken.getValue();
         value.setPayload(commandValue.getPayload());
+        workflowState.getElementInstanceState().updateFailedToken(failedToken);
 
         output.appendFollowUpEvent(command.getKey(), WorkflowInstanceIntent.PAYLOAD_UPDATED, value);
         responseWriter.writeEventOnCommand(

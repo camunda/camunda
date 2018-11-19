@@ -17,7 +17,10 @@
  */
 package io.zeebe.broker.workflow.processor.servicetask;
 
+import io.zeebe.broker.incident.data.IncidentRecord;
+import io.zeebe.broker.incident.processor.IncidentState;
 import io.zeebe.broker.job.JobState;
+import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.workflow.model.element.ExecutableServiceTask;
 import io.zeebe.broker.workflow.processor.BpmnStepContext;
 import io.zeebe.broker.workflow.processor.activity.TerminateActivityHandler;
@@ -28,8 +31,9 @@ import io.zeebe.protocol.intent.JobIntent;
 public class TerminateServiceTaskHandler extends TerminateActivityHandler<ExecutableServiceTask> {
   private final JobState jobState;
 
-  public TerminateServiceTaskHandler(JobState jobState) {
-    this.jobState = jobState;
+  public TerminateServiceTaskHandler(ZeebeState zeebeState) {
+    super(zeebeState.getIncidentState());
+    jobState = zeebeState.getJobState();
   }
 
   @Override
@@ -47,6 +51,18 @@ public class TerminateServiceTaskHandler extends TerminateActivityHandler<Execut
       }
 
       context.getOutput().getStreamWriter().appendFollowUpCommand(jobKey, JobIntent.CANCEL, job);
+      resolveExistingJobIncident(jobKey, context);
+    }
+  }
+
+  public void resolveExistingJobIncident(
+      long jobKey, BpmnStepContext<ExecutableServiceTask> context) {
+    final long jobIncidentKey = incidentState.getJobIncidentKey(jobKey);
+
+    final boolean hasIncident = jobIncidentKey != IncidentState.MISSING_INCIDENT;
+    if (hasIncident) {
+      final IncidentRecord incidentRecord = incidentState.getIncidentRecord(jobIncidentKey);
+      context.getOutput().appendResolvedIncidentEvent(jobIncidentKey, incidentRecord);
     }
   }
 }

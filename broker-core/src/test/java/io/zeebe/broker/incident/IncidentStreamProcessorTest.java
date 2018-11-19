@@ -17,61 +17,42 @@
  */
 package io.zeebe.broker.incident;
 
-import static io.zeebe.test.util.TestUtil.waitUntil;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.broker.incident.data.IncidentRecord;
-import io.zeebe.broker.incident.processor.IncidentStreamProcessor;
+import io.zeebe.broker.incident.processor.IncidentState;
 import io.zeebe.broker.logstreams.processor.TypedRecord;
-import io.zeebe.broker.logstreams.processor.TypedStreamEnvironment;
-import io.zeebe.broker.logstreams.processor.TypedStreamProcessor;
-import io.zeebe.broker.util.StreamProcessorControl;
 import io.zeebe.broker.util.StreamProcessorRule;
 import io.zeebe.protocol.clientapi.RecordType;
-import io.zeebe.protocol.impl.record.value.job.JobRecord;
-import io.zeebe.protocol.impl.record.value.workflowinstance.WorkflowInstanceRecord;
 import io.zeebe.protocol.intent.IncidentIntent;
-import io.zeebe.protocol.intent.Intent;
-import io.zeebe.protocol.intent.JobIntent;
-import io.zeebe.protocol.intent.WorkflowInstanceIntent;
-import io.zeebe.util.buffer.BufferUtil;
 import java.util.List;
 import java.util.stream.Collectors;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
 
 public class IncidentStreamProcessorTest {
-  @Rule public StreamProcessorRule rule = new StreamProcessorRule();
 
-  private TypedStreamProcessor buildStreamProcessor(TypedStreamEnvironment env) {
-    final IncidentStreamProcessor factory = new IncidentStreamProcessor();
-    return factory.createStreamProcessor(env);
-  }
+  public StreamProcessorRule envRule = new StreamProcessorRule();
+  public IncidentStreamProcessorRule streamProcessorRule = new IncidentStreamProcessorRule(envRule);
 
-  /**
-   * Event order:
-   *
-   * <p>Job FAILED -> UPDATE_RETRIES -> RETRIES UPDATED -> Incident CREATE -> Incident
-   * CREATE_REJECTED
-   */
+  @Rule public RuleChain chain = RuleChain.outerRule(envRule).around(streamProcessorRule);
+
   @Test
-  public void shouldNotCreateIncidentIfRetriesAreUpdatedIntermittently() {
+  public void shouldNotCreateIncidentIfNoFailedJob() {
     // given
-    final JobRecord job = job(0);
-    final long key = rule.writeEvent(JobIntent.FAILED, job); // trigger incident creation
-
-    job.setRetries(1);
-    rule.writeEvent(key, JobIntent.RETRIES_UPDATED, job); // triggering incident removal
+    final IncidentRecord incidentRecord = new IncidentRecord();
+    incidentRecord.setJobKey(1);
 
     // when
-    rule.runStreamProcessor(this::buildStreamProcessor);
+    envRule.writeCommand(IncidentIntent.CREATE, incidentRecord); // trigger incident creation
 
     // then
-    waitForRejectionWithIntent(IncidentIntent.CREATE);
+    streamProcessorRule.awaitIncidentRejection(IncidentIntent.CREATE);
 
     final List<TypedRecord<IncidentRecord>> incidentEvents =
-        rule.events().onlyIncidentRecords().collect(Collectors.toList());
+        envRule.events().onlyIncidentRecords().collect(Collectors.toList());
     assertThat(incidentEvents)
         .extracting(r -> r.getMetadata())
         .extracting(m -> m.getRecordType(), m -> m.getIntent())
@@ -81,81 +62,63 @@ public class IncidentStreamProcessorTest {
   }
 
   @Test
-  public void shouldNotResolveIncidentIfActivityTerminated() {
+  public void shouldNotCreateIncidentIfNoFailedToken() {
     // given
-    final long workflowInstanceKey = 1L;
-    final long elementInstanceKey = 2L;
-
-    final StreamProcessorControl control = rule.runStreamProcessor(this::buildStreamProcessor);
-    control.blockAfterIncidentEvent(e -> e.getMetadata().getIntent() == IncidentIntent.CREATED);
-
-    final WorkflowInstanceRecord activityInstance = new WorkflowInstanceRecord();
-    activityInstance.setWorkflowInstanceKey(workflowInstanceKey);
-
-    final long position =
-        rule.writeEvent(elementInstanceKey, WorkflowInstanceIntent.ELEMENT_READY, activityInstance);
-
-    final IncidentRecord incident = new IncidentRecord();
-    incident.setWorkflowInstanceKey(workflowInstanceKey);
-    incident.setElementInstanceKey(elementInstanceKey);
-    incident.setFailureEventPosition(position);
-
-    rule.writeCommand(IncidentIntent.CREATE, incident);
-
-    waitForEventWithIntent(IncidentIntent.CREATED); // stream processor is now blocked
-
-    rule.writeEvent(elementInstanceKey, WorkflowInstanceIntent.PAYLOAD_UPDATED, activityInstance);
-    rule.writeEvent(
-        elementInstanceKey, WorkflowInstanceIntent.ELEMENT_TERMINATED, activityInstance);
+    final IncidentRecord incidentRecord = new IncidentRecord();
+    incidentRecord.setElementInstanceKey(2);
 
     // when
-    control.unblock();
+    envRule.writeCommand(IncidentIntent.CREATE, incidentRecord); // trigger incident creation
 
     // then
-    waitForEventWithIntent(IncidentIntent.DELETED);
-    final List<TypedRecord<IncidentRecord>> incidentEvents =
-        rule.events().onlyIncidentRecords().collect(Collectors.toList());
+    streamProcessorRule.awaitIncidentRejection(IncidentIntent.CREATE);
 
+    final List<TypedRecord<IncidentRecord>> incidentEvents =
+        envRule.events().onlyIncidentRecords().collect(Collectors.toList());
     assertThat(incidentEvents)
         .extracting(r -> r.getMetadata())
         .extracting(m -> m.getRecordType(), m -> m.getIntent())
         .containsExactly(
             tuple(RecordType.COMMAND, IncidentIntent.CREATE),
-            tuple(RecordType.EVENT, IncidentIntent.CREATED),
+            tuple(RecordType.COMMAND_REJECTION, IncidentIntent.CREATE));
+  }
+
+  @Test
+  public void shouldNotResolveIfNoIncident() {
+    // given
+    final IncidentRecord incidentRecord = new IncidentRecord();
+    incidentRecord.setElementInstanceKey(2);
+
+    // when
+    envRule.writeCommand(IncidentIntent.RESOLVE, incidentRecord);
+
+    // then
+    streamProcessorRule.awaitIncidentRejection(IncidentIntent.RESOLVE);
+
+    final List<TypedRecord<IncidentRecord>> incidentEvents =
+        envRule.events().onlyIncidentRecords().collect(Collectors.toList());
+    assertThat(incidentEvents)
+        .extracting(r -> r.getMetadata())
+        .extracting(m -> m.getRecordType(), m -> m.getIntent())
+        .containsExactly(
             tuple(RecordType.COMMAND, IncidentIntent.RESOLVE),
-            tuple(RecordType.COMMAND, IncidentIntent.DELETE),
-            tuple(RecordType.COMMAND_REJECTION, IncidentIntent.RESOLVE),
-            tuple(RecordType.EVENT, IncidentIntent.DELETED));
+            tuple(RecordType.COMMAND_REJECTION, IncidentIntent.RESOLVE));
   }
 
-  private JobRecord job(int retries) {
-    final JobRecord event = new JobRecord();
+  @Test
+  public void shouldRemoveIncidentFromStateOnResolved() {
+    // given
+    final IncidentState incidentState = streamProcessorRule.getZeebeState().getIncidentState();
+    final IncidentRecord incidentRecord = new IncidentRecord();
+    incidentRecord.setElementInstanceKey(2);
+    incidentState.createIncident(1, incidentRecord);
 
-    event.setRetries(retries);
-    event.setType(BufferUtil.wrapString("foo"));
+    // when
+    envRule.writeCommand(1, IncidentIntent.RESOLVE, incidentRecord);
 
-    return event;
-  }
-
-  private void waitForEventWithIntent(Intent state) {
-    waitUntil(
-        () ->
-            rule.events()
-                .onlyIncidentRecords()
-                .onlyEvents()
-                .withIntent(state)
-                .findFirst()
-                .isPresent());
-  }
-
-  private void waitForRejectionWithIntent(Intent state) {
-    waitUntil(
-        () ->
-            rule.events()
-                .onlyIncidentRecords()
-                .onlyRejections()
-                .withIntent(state)
-                .findFirst()
-                .isPresent());
+    // then
+    streamProcessorRule.awaitIncidentInState(IncidentIntent.RESOLVED);
+    final IncidentRecord persistedIncident = incidentState.getIncidentRecord(1);
+    assertThat(persistedIncident).isNull();
   }
 }

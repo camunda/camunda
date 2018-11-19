@@ -90,8 +90,7 @@ public class MessageStreamProcessorTest {
     rule.writeCommand(MessageSubscriptionIntent.OPEN, subscription);
 
     // when
-    final long secondCommandPosition =
-        rule.writeCommand(MessageSubscriptionIntent.OPEN, subscription);
+    rule.writeCommand(MessageSubscriptionIntent.OPEN, subscription);
 
     streamProcessor.unblock();
 
@@ -100,7 +99,6 @@ public class MessageStreamProcessorTest {
         awaitAndGetFirstSubscriptionRejection();
 
     assertThat(rejection.getMetadata().getIntent()).isEqualTo(MessageSubscriptionIntent.OPEN);
-    assertThat(rejection.getSourcePosition()).isEqualTo(secondCommandPosition);
     assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
         .isEqualTo("subscription is already open");
 
@@ -188,8 +186,7 @@ public class MessageStreamProcessorTest {
 
     // when
     rule.writeCommand(MessageSubscriptionIntent.CORRELATE, subscription);
-    final long secondCommandPosition =
-        rule.writeCommand(MessageSubscriptionIntent.CORRELATE, subscription);
+    rule.writeCommand(MessageSubscriptionIntent.CORRELATE, subscription);
 
     streamProcessor.unblock();
 
@@ -198,7 +195,6 @@ public class MessageStreamProcessorTest {
         awaitAndGetFirstSubscriptionRejection();
 
     assertThat(rejection.getMetadata().getIntent()).isEqualTo(MessageSubscriptionIntent.CORRELATE);
-    assertThat(rejection.getSourcePosition()).isEqualTo(secondCommandPosition);
     assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
         .isEqualTo("subscription is already correlated");
   }
@@ -217,8 +213,7 @@ public class MessageStreamProcessorTest {
 
     // when
     rule.writeCommand(MessageSubscriptionIntent.CLOSE, subscription);
-    final long secondCommandPosition =
-        rule.writeCommand(MessageSubscriptionIntent.CLOSE, subscription);
+    rule.writeCommand(MessageSubscriptionIntent.CLOSE, subscription);
 
     streamProcessor.unblock();
 
@@ -227,7 +222,6 @@ public class MessageStreamProcessorTest {
         awaitAndGetFirstSubscriptionRejection();
 
     assertThat(rejection.getMetadata().getIntent()).isEqualTo(MessageSubscriptionIntent.CLOSE);
-    assertThat(rejection.getSourcePosition()).isEqualTo(secondCommandPosition);
     assertThat(BufferUtil.bufferAsString(rejection.getMetadata().getRejectionReason()))
         .isEqualTo("subscription is already closed");
 

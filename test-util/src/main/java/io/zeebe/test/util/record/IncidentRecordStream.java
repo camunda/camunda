@@ -20,7 +20,7 @@ import io.zeebe.exporter.record.value.IncidentRecordValue;
 import java.util.stream.Stream;
 
 public class IncidentRecordStream
-    extends ExporterRecordWithPayloadStream<IncidentRecordValue, IncidentRecordStream> {
+    extends ExporterRecordStream<IncidentRecordValue, IncidentRecordStream> {
 
   public IncidentRecordStream(final Stream<Record<IncidentRecordValue>> wrappedStream) {
     super(wrappedStream);
