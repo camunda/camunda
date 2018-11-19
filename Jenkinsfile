@@ -149,7 +149,8 @@ pipeline {
         stage('IT 7.9') {
           when {
             beforeAgent true
-            branch 'master'
+            // reenable after platform release OPT-1637
+            branch 'none'
           }
           agent {
             kubernetes {
@@ -174,7 +175,8 @@ pipeline {
         stage('IT 7.8') {
           when {
             beforeAgent true
-            branch 'master'
+            // reenable after platform release OPT-1637
+            branch 'none'
           }
           agent {
             kubernetes {
