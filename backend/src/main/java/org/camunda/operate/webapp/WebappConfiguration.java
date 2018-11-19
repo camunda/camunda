@@ -23,7 +23,7 @@ public class WebappConfiguration implements WebMvcConfigurer {
   public void addViewControllers(ViewControllerRegistry registry) {
       registry.addViewController("/{spring:\\w+}")
             .setViewName("forward:/");
-      registry.addViewController("/**/{spring:\\w+}")
+      registry.addViewController("/{x:^(?!api$).*$}/**/{spring:\\w+}")
             .setViewName("forward:/");
   }
 
