@@ -1,0 +1,335 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`it should display correct configuration for barchart 1`] = `
+<Fragment>
+  <ShowInstanceCount
+    configuration={
+      Object {
+        "color": "#1991c8",
+        "hideAbsoluteValue": false,
+        "hideRelativeValue": false,
+        "pointMarkers": true,
+        "showInstanceCount": false,
+        "targetValue": Object {
+          "active": false,
+        },
+        "xLabel": "",
+        "yLabel": "",
+      }
+    }
+  />
+  <div
+    className="fieldsetsContainer"
+    key="2"
+  >
+    <fieldset
+      className="ColorSection"
+    >
+      <legend>
+        Select visualization color
+      </legend>
+      <ColorPicker
+        colors={
+          Array [
+            "#B80000",
+            "#DB3E00",
+            "#FCCB00",
+            "#008B02",
+            "#006B76",
+            "#1991c8",
+            "#004DCF",
+            "#5300EB",
+            "#EB9694",
+            "#FAD0C3",
+            "#FEF3BD",
+            "#C1E1C5",
+            "#BEDADC",
+            "#C4DEF6",
+            "#BED3F3",
+            "#D4C4FB",
+          ]
+        }
+        selectedColor="#1991c8"
+      />
+    </fieldset>
+    <fieldset
+      className="tooltipOptions"
+    >
+      <legend>
+        Tooltips options
+      </legend>
+      <RelativeAbsoluteSelection
+        configuration={
+          Object {
+            "color": "#1991c8",
+            "hideAbsoluteValue": false,
+            "hideRelativeValue": false,
+            "pointMarkers": true,
+            "showInstanceCount": false,
+            "targetValue": Object {
+              "active": false,
+            },
+            "xLabel": "",
+            "yLabel": "",
+          }
+        }
+        relativeDisabled={false}
+      />
+    </fieldset>
+    <fieldset
+      className="axisConfig"
+    >
+      <legend>
+        Axis names
+      </legend>
+      <LabeledInput
+        label="x-axis"
+        onChange={[Function]}
+        type="text"
+        value=""
+      />
+      <LabeledInput
+        label="y-axis"
+        onChange={[Function]}
+        type="text"
+        value=""
+      />
+    </fieldset>
+    <fieldset
+      className="goalLine"
+      disabled={true}
+    >
+      <legend>
+        <Switch
+          checked={false}
+          onChange={[Function]}
+        />
+        Goal
+      </legend>
+      <ChartTargetInput
+        configuration={
+          Object {
+            "color": "#1991c8",
+            "hideAbsoluteValue": false,
+            "hideRelativeValue": false,
+            "pointMarkers": true,
+            "showInstanceCount": false,
+            "targetValue": Object {
+              "active": false,
+            },
+            "xLabel": "",
+            "yLabel": "",
+          }
+        }
+        report={
+          Object {
+            "data": Object {
+              "view": Object {
+                "property": "frequency",
+              },
+              "visualization": "bar",
+            },
+          }
+        }
+      />
+    </fieldset>
+  </div>
+</Fragment>
+`;
+
+exports[`it should display correct configuration for linechart 1`] = `
+<Fragment>
+  <ShowInstanceCount
+    configuration={
+      Object {
+        "color": "#1991c8",
+        "hideAbsoluteValue": false,
+        "hideRelativeValue": false,
+        "pointMarkers": true,
+        "showInstanceCount": false,
+        "targetValue": Object {
+          "active": false,
+        },
+        "xLabel": "",
+        "yLabel": "",
+      }
+    }
+  />
+  <div
+    className="entry"
+    key="1"
+  >
+    <Switch
+      checked={false}
+      onChange={[Function]}
+    />
+    Disable point markers
+  </div>
+  <div
+    className="fieldsetsContainer"
+    key="2"
+  >
+    <fieldset
+      className="ColorSection"
+    >
+      <legend>
+        Select visualization color
+      </legend>
+      <ColorPicker
+        colors={
+          Array [
+            "#B80000",
+            "#DB3E00",
+            "#FCCB00",
+            "#008B02",
+            "#006B76",
+            "#1991c8",
+            "#004DCF",
+            "#5300EB",
+            "#EB9694",
+            "#FAD0C3",
+            "#FEF3BD",
+            "#C1E1C5",
+            "#BEDADC",
+            "#C4DEF6",
+            "#BED3F3",
+            "#D4C4FB",
+          ]
+        }
+        selectedColor="#1991c8"
+      />
+    </fieldset>
+    <fieldset
+      className="tooltipOptions"
+    >
+      <legend>
+        Tooltips options
+      </legend>
+      <RelativeAbsoluteSelection
+        configuration={
+          Object {
+            "color": "#1991c8",
+            "hideAbsoluteValue": false,
+            "hideRelativeValue": false,
+            "pointMarkers": true,
+            "showInstanceCount": false,
+            "targetValue": Object {
+              "active": false,
+            },
+            "xLabel": "",
+            "yLabel": "",
+          }
+        }
+        relativeDisabled={false}
+      />
+    </fieldset>
+    <fieldset
+      className="axisConfig"
+    >
+      <legend>
+        Axis names
+      </legend>
+      <LabeledInput
+        label="x-axis"
+        onChange={[Function]}
+        type="text"
+        value=""
+      />
+      <LabeledInput
+        label="y-axis"
+        onChange={[Function]}
+        type="text"
+        value=""
+      />
+    </fieldset>
+    <fieldset
+      className="goalLine"
+      disabled={true}
+    >
+      <legend>
+        <Switch
+          checked={false}
+          onChange={[Function]}
+        />
+        Goal
+      </legend>
+      <ChartTargetInput
+        configuration={
+          Object {
+            "color": "#1991c8",
+            "hideAbsoluteValue": false,
+            "hideRelativeValue": false,
+            "pointMarkers": true,
+            "showInstanceCount": false,
+            "targetValue": Object {
+              "active": false,
+            },
+            "xLabel": "",
+            "yLabel": "",
+          }
+        }
+        report={
+          Object {
+            "data": Object {
+              "view": Object {
+                "property": "frequency",
+              },
+              "visualization": "line",
+            },
+          }
+        }
+      />
+    </fieldset>
+  </div>
+</Fragment>
+`;
+
+exports[`it should display correct configuration for piechart 1`] = `
+<Fragment>
+  <ShowInstanceCount
+    configuration={
+      Object {
+        "color": "#1991c8",
+        "hideAbsoluteValue": false,
+        "hideRelativeValue": false,
+        "pointMarkers": true,
+        "showInstanceCount": false,
+        "targetValue": Object {
+          "active": false,
+        },
+        "xLabel": "",
+        "yLabel": "",
+      }
+    }
+  />
+  <div
+    className="fieldsetsContainer"
+    key="2"
+  >
+    <fieldset
+      className="tooltipOptions"
+    >
+      <legend>
+        Tooltips options
+      </legend>
+      <RelativeAbsoluteSelection
+        configuration={
+          Object {
+            "color": "#1991c8",
+            "hideAbsoluteValue": false,
+            "hideRelativeValue": false,
+            "pointMarkers": true,
+            "showInstanceCount": false,
+            "targetValue": Object {
+              "active": false,
+            },
+            "xLabel": "",
+            "yLabel": "",
+          }
+        }
+        relativeDisabled={false}
+      />
+    </fieldset>
+  </div>
+</Fragment>
+`;

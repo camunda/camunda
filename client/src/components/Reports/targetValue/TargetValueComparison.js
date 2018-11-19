@@ -82,7 +82,7 @@ export default class TargetValueComparison extends React.Component {
         <Button
           className="TargetValueComparison__toggleButton"
           disabled={!isEnabled}
-          active={this.getConfig().active}
+          active={this.getConfig().active && isEnabled}
           onClick={this.toggleMode}
         >
           Target Value

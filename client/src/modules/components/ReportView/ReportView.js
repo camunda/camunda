@@ -187,6 +187,7 @@ export default class ReportView extends React.Component {
               reportsNames: Object.values(result).map(report => report.name),
               data: this.getCombinedNumberData(result),
               reportType: 'combined',
+              configuration: data.configuration,
               isDate: false,
               type: 'bar',
               targetValue: {},
@@ -239,6 +240,7 @@ export default class ReportView extends React.Component {
           component: Chart,
           props: {
             ...getChartProps(reportType, result, data, processInstanceCount),
+            configuration: data.configuration,
             reportType,
             type: visualization,
             property: data.view.property,

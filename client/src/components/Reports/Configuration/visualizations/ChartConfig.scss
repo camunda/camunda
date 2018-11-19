@@ -1,0 +1,11 @@
+.fieldsetsContainer fieldset {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  margin: 5px 0;
+
+  &.goalLine[disabled] .ChartTargetInput,
+  &.tooltipOptions[disabled] {
+    opacity: 0.4;
+    pointer-events: none;
+  }
+}

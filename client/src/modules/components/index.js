@@ -31,3 +31,4 @@ export {TypeaheadMultipleSelection} from './TypeaheadMultipleSelection';
 export {DatePicker} from './DatePicker';
 export {LoadingIndicator} from './LoadingIndicator';
 export {ConfirmationModal} from './ConfirmationModal';
+export {ColorPicker} from './ColorPicker';

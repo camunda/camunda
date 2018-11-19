@@ -80,7 +80,7 @@ export default themed(
       if (!isCombined) dataArr = [data];
 
       let datasetsColors = this.createColors(dataArr.length);
-      datasetsColors[0] = this.getColorFor('bar');
+      datasetsColors[0] = this.props.configuration.color || this.getColorFor('bar');
 
       let labels = Object.keys(Object.assign({}, ...dataArr));
       dataArr = uniteResults(dataArr, labels);
@@ -186,7 +186,7 @@ export default themed(
           };
         case 'line':
           return {
-            borderColor: isCombined ? datasetColor : this.getColorFor('bar'),
+            borderColor: isCombined ? datasetColor : this.props.configuration.color,
             backgroundColor: 'transparent',
             borderWidth: 2,
             legendColor: datasetColor
@@ -297,6 +297,9 @@ export default themed(
       const isCombined = this.props.reportType === 'combined';
       const targetLine = targetValue ? this.getFormattedTargetValue(targetValue) : 0;
       return {
+        ...(this.props.configuration.pointMarkers === false
+          ? {elements: {point: {radius: 0}}}
+          : {}),
         legend: {
           display: isCombined,
           labels: {
@@ -310,6 +313,10 @@ export default themed(
             {
               gridLines: {
                 color: this.getColorFor('grid')
+              },
+              scaleLabel: {
+                display: !!this.props.configuration.yLabel,
+                labelString: this.props.configuration.yLabel
               },
               ticks: {
                 ...(this.props.property === 'duration'
@@ -325,6 +332,10 @@ export default themed(
             {
               gridLines: {
                 color: this.getColorFor('grid')
+              },
+              scaleLabel: {
+                display: !!this.props.configuration.xLabel,
+                labelString: this.props.configuration.xLabel
               },
               ticks: {
                 fontColor: this.getColorFor('label')
@@ -410,10 +421,16 @@ export default themed(
             // if pie chart then manually append labels to tooltips
             ...(type === 'pie' ? {beforeLabel: ({index}, {labels}) => labels[index]} : {}),
             label: ({index, datasetIndex}, {datasets}) => {
-              const formatted = this.props.formatter(datasets[datasetIndex].data[index]);
+              const {configuration: {hideAbsoluteValue, hideRelativeValue}} = this.props;
+              let formatted = '';
+              if (!hideAbsoluteValue)
+                formatted = this.props.formatter(datasets[datasetIndex].data[index]);
               let processInstanceCountArr = this.props.processInstanceCount;
-
-              if (this.props.property === 'frequency' && processInstanceCountArr) {
+              if (
+                this.props.property === 'frequency' &&
+                processInstanceCountArr &&
+                !hideRelativeValue
+              ) {
                 if (this.props.reportType === 'single')
                   processInstanceCountArr = [processInstanceCountArr];
 
