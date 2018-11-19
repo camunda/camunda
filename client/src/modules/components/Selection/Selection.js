@@ -25,42 +25,33 @@ export default class Selection extends React.Component {
     onDelete: PropTypes.func.isRequired
   };
 
-  constructor(props) {
-    super(props);
-    this.availableOperations = [
-      OPERATION_TYPE.CANCEL,
-      OPERATION_TYPE.UPDATE_RETRIES
-    ];
-    this.state = {operationState: ''};
-  }
+  state = {operationState: ''};
+
+  operationsMap = {
+    [OPERATION_TYPE.CANCEL]: {
+      action: this.props.onCancel,
+      label: 'Cancel',
+      icon: <Styled.CancelIcon />
+    },
+    [OPERATION_TYPE.UPDATE_RETRIES]: {
+      action: this.props.onRetry,
+      label: 'Retry',
+      icon: <Styled.RetryIcon />
+    }
+  };
 
   stopClickPropagation = evt => evt && evt.stopPropagation();
 
   handleOnClick = optionType => {
-    const actionMap = {
-      [OPERATION_TYPE.UPDATE_RETRIES]: this.props.onRetry,
-      [OPERATION_TYPE.CANCEL]: this.props.onCancel
-    };
-    const callOperation = actionMap[optionType];
-
     this.setState({operationState: OPERATION_STATE.SCHEDULED});
-    callOperation();
+    this.operationsMap[optionType].action();
   };
 
   renderLabel = type => {
-    const labelMap = {
-      [OPERATION_TYPE.UPDATE_RETRIES]: 'Retry',
-      [OPERATION_TYPE.CANCEL]: 'Cancel'
-    };
-    const iconMap = {
-      [OPERATION_TYPE.UPDATE_RETRIES]: <Styled.RetryIcon />,
-      [OPERATION_TYPE.CANCEL]: <Styled.CancelIcon />
-    };
-
+    const {icon, label} = this.operationsMap[type];
     return (
       <div>
-        {iconMap[type]}
-        {labelMap[type]}
+        {icon} {label}
       </div>
     );
   };
@@ -84,7 +75,7 @@ export default class Selection extends React.Component {
           label={<Styled.BatchIcon />}
           buttonStyles={Styled.dropDownButtonStyles}
         >
-          {this.availableOperations.map(this.renderOption)}
+          {Object.keys(this.operationsMap).map(this.renderOption)}
         </Dropdown>
       </Styled.DropdownWrapper>
       <Styled.ActionButton
@@ -133,9 +124,8 @@ export default class Selection extends React.Component {
     const instances = [...this.props.instances];
     return (
       <ul>
-        {instances.map((instance, index) => {
-          const instanceDetails = instance[1];
-          const {state, type} = getLatestOperation(instance.operations);
+        {instances.map(([_, instanceDetails], index) => {
+          const {state, type} = getLatestOperation(instanceDetails.operations);
           return (
             <Styled.Li key={index}>
               <Styled.StatusCell>
@@ -174,20 +164,19 @@ export default class Selection extends React.Component {
   };
 
   render() {
-    const {renderHeader, renderBody, renderFooter} = this;
     const idString = `selection-${this.props.selectionId}`;
 
     return (
       <Styled.Dl role="presentation">
-        {renderHeader(idString)}
+        {this.renderHeader(idString)}
         {this.props.isOpen && (
           <Styled.Dd
             role="region"
             id={idString}
             aria-labelledby={`${idString}-toggle`}
           >
-            {renderBody(idString)}
-            {renderFooter()}
+            {this.renderBody(idString)}
+            {this.renderFooter()}
           </Styled.Dd>
         )}
       </Styled.Dl>

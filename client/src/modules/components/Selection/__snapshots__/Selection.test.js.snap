@@ -23,6 +23,7 @@ exports[`Selection should contain Actions 1`] = `
         label={
           <div>
             <ForwardRef />
+             
             Cancel
           </div>
         }
@@ -34,6 +35,7 @@ exports[`Selection should contain Actions 1`] = `
         label={
           <div>
             <ForwardRef />
+             
             Retry
           </div>
         }
@@ -108,7 +110,10 @@ exports[`Selection should contain Instances 1`] = `
       id_1
     </styled.div>
     <styled.div>
-      <Styled(ActionStatus) />
+      <Styled(ActionStatus)
+        operationState="SCHEDULED"
+        operationType="UPDATE_RETRIES"
+      />
     </styled.div>
   </Themed(styled.li)>
 </ul>
@@ -176,6 +181,7 @@ exports[`Selection should contain a Header 1`] = `
           label={
             <div>
               <ForwardRef />
+               
               Cancel
             </div>
           }
@@ -187,6 +193,7 @@ exports[`Selection should contain a Header 1`] = `
           label={
             <div>
               <ForwardRef />
+               
               Retry
             </div>
           }
