@@ -13,8 +13,12 @@ This module runs as follows:
 6. Start the newest version of optimize after migration.
 7. Run the post migration tests, which verify that all the data present in the ES can be retrieved from Optimize without exceptions.
 
-To run the module you can execute the following command from the `camunda-optimize/qa/upgrade-optimize-data/` directory:
+Before runing the module you'll need to build all required artifacts. Run this command from the Optimize root directory:
+```
+mvn clean install -Dskip.docker -DskipTests -Pproduction,it -pl backend,upgrade
+```
 
+To run the data upgrade tests you can execute the following command from the `camunda-optimize/qa/upgrade-optimize-data/` directory:
 ```
 mvn clean verify -f pom.xml -Pupgrade-optimize-data
 ```
