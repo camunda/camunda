@@ -13,7 +13,6 @@ dist/target/zeebe-distribution-X.Y.Z-SNAPSHOT.zip
 
 This is a small overview of the contents of the different modules:
 - `util` contains custom implementations of building blocks like an actor scheduler, buffer allocations, metrics. Its parts are used in most of the other modules
-- `zb-map` is a custom in memory hash map implementation
 - `protocol` contains the SBE definition of the main message protocol
 - `bpmn-model` is a Java API for BPMN process definitions used for parsing etc.
 - `msgpack-*` is custom msgpack implementation with extensions to evaluate json-path expressions on msgpack objects

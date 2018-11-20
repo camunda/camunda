@@ -19,11 +19,9 @@ package io.zeebe.broker.logstreams.processor;
 
 import io.zeebe.logstreams.snapshot.BaseValueSnapshotSupport;
 import io.zeebe.logstreams.snapshot.ComposedSnapshot;
-import io.zeebe.logstreams.snapshot.ZbMapSnapshotSupport;
 import io.zeebe.logstreams.spi.ComposableSnapshotSupport;
 import io.zeebe.logstreams.spi.SnapshotSupport;
 import io.zeebe.logstreams.state.StateController;
-import io.zeebe.map.ZbMap;
 import io.zeebe.msgpack.UnpackedObject;
 import io.zeebe.msgpack.value.BaseValue;
 import io.zeebe.protocol.clientapi.RecordType;
@@ -123,18 +121,6 @@ public class TypedEventStreamProcessorBuilder {
     return this;
   }
 
-  public TypedEventStreamProcessorBuilder withStateResource(ZbMap<?, ?> map) {
-    this.stateResources.add(new ZbMapSnapshotSupport<>(map));
-    withListener(
-        new StreamProcessorLifecycleAware() {
-          @Override
-          public void onClose() {
-            map.close();
-          }
-        });
-    return this;
-  }
-
   public TypedEventStreamProcessorBuilder withStateResource(BaseValue value) {
     this.stateResources.add(new BaseValueSnapshotSupport(value));
     return this;
@@ -170,7 +156,7 @@ public class TypedEventStreamProcessorBuilder {
 
   private static class DelegatingEventProcessor<T extends UnpackedObject>
       implements TypedRecordProcessor<T> {
-    private Function<TypedRecord<T>, TypedRecordProcessor<T>> dispatcher;
+    private final Function<TypedRecord<T>, TypedRecordProcessor<T>> dispatcher;
     private TypedRecordProcessor<T> selectedProcessor;
 
     DelegatingEventProcessor(Function<TypedRecord<T>, TypedRecordProcessor<T>> dispatcher) {

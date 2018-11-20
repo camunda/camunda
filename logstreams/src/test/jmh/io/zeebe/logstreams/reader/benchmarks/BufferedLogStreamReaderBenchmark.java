@@ -27,9 +27,9 @@ import org.openjdk.jmh.annotations.Threads;
 public class BufferedLogStreamReaderBenchmark {
   @Benchmark
   @Threads(1)
-  public long iterateWithNewReader(FilledLogStreamAndReaderSupplier filledMapSnapshotSupplier)
-      throws Exception {
-    final BufferedLogStreamReader reader = filledMapSnapshotSupplier.reader;
+  public long iterateWithNewReader(
+      FilledLogStreamAndReaderSupplier filledLogStreamAndReaderSupplier) {
+    final BufferedLogStreamReader reader = filledLogStreamAndReaderSupplier.reader;
     reader.seekToFirstEvent();
 
     long count = 0L;

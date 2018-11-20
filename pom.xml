@@ -31,7 +31,6 @@
     <module>test</module>
     <module>util</module>
     <module>test-util</module>
-    <module>zb-map</module>
     <module>dispatcher</module>
     <module>msgpack-core</module>
     <module>msgpack-value</module>

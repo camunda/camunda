@@ -54,11 +54,6 @@
 
     <dependency>
       <groupId>io.zeebe</groupId>
-      <artifactId>zb-map</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>io.zeebe</groupId>
       <artifactId>zb-service-container</artifactId>
     </dependency>
 
