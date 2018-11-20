@@ -14,6 +14,14 @@
     <context:exclude-filter type="assignable" expression="org.camunda.optimize.rest.providers.AuthenticationFilter" />
   </context:component-scan>
 
+  <bean id="configurationService" class="org.camunda.optimize.service.util.configuration.ConfigurationService">
+    <constructor-arg>
+      <list>
+        <value>service-config.yaml</value>
+      </list>
+    </constructor-arg>
+  </bean>
+
   <bean id="objectMapper"
         class="com.fasterxml.jackson.databind.ObjectMapper"
         factory-method="createOptimizeMapper"
