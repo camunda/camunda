@@ -152,7 +152,7 @@
                     <echo message="Generating engine data..." />
                     <exec dir="${project.build.directory}/../../../qa/data-generation" executable="/bin/bash" failonerror="true">
                       <arg value="-c"/>
-                      <arg value="mvn clean compile exec:java -Dexec.args='--numberOfProcessInstances 10' -s ../../settings.xml" />
+                      <arg value="mvn clean compile exec:java -Dexec.args='--numberOfProcessInstances 10'" />
                     </exec>
                   </target>
                 </configuration>

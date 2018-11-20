@@ -1,6 +1,5 @@
 package org.camunda.optimize.data.upgrade;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import org.camunda.optimize.dto.engine.CredentialsDto;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.query.IdDto;
@@ -54,7 +53,7 @@ import static org.camunda.optimize.test.util.ReportDataHelper.createPiFrequencyC
 
 public class OptimizeDataGenerator {
   private static Client client;
-  private static String authHeader;
+  private static String authCookie;
   private static String processDefinitionKey;
   private static String processDefinitionVersion;
 
@@ -79,7 +78,10 @@ public class OptimizeDataGenerator {
   }
 
   private static void generateAlerts() throws Exception {
-    SingleReportDataDto reportData = createPiFrequencyCountGroupedByNone(processDefinitionKey, processDefinitionVersion);
+    SingleReportDataDto reportData = createPiFrequencyCountGroupedByNone(
+      processDefinitionKey,
+      processDefinitionVersion
+    );
     reportData.setVisualization("number");
 
     WebTarget target = client.target("http://localhost:8090/api/report/single");
@@ -118,7 +120,7 @@ public class OptimizeDataGenerator {
   private static void createAlert(AlertCreationDto alertCreation) {
     WebTarget target = client.target("http://localhost:8090/api/alert");
     target.request()
-      .header(OPTIMIZE_AUTHORIZATION, authHeader)
+      .header(OPTIMIZE_AUTHORIZATION, authCookie)
       .post(Entity.json(alertCreation));
   }
 
@@ -138,13 +140,13 @@ public class OptimizeDataGenerator {
 
     target = client.target("http://localhost:8090/api/dashboard/" + dashboardId);
     target.request()
-      .header(OPTIMIZE_AUTHORIZATION, authHeader)
+      .header(OPTIMIZE_AUTHORIZATION, authCookie)
       .put(Entity.json(dashboard));
   }
 
   private static String createEmptyDashboard(WebTarget target) {
     return target.request()
-      .header(OPTIMIZE_AUTHORIZATION, authHeader)
+      .header(OPTIMIZE_AUTHORIZATION, authCookie)
       .post(Entity.json(""))
       .readEntity(IdDto.class).getId();
   }
@@ -188,14 +190,15 @@ public class OptimizeDataGenerator {
     Response response = client.target("http://localhost:8090/api/authentication")
       .request().post(Entity.json(credentials));
 
-    authHeader = "Bearer " + response.readEntity(String.class);
+    authCookie = "Bearer " + response.readEntity(String.class);
   }
 
   private static String readFileToString() throws IOException, URISyntaxException {
-    return new String(Files.readAllBytes(Paths.get(OptimizeDataGenerator.class.getResource("/ValidTestLicense.txt").toURI())), StandardCharsets.UTF_8);
+    return new String(Files.readAllBytes(Paths.get(OptimizeDataGenerator.class.getResource("/ValidTestLicense.txt")
+                                                     .toURI())), StandardCharsets.UTF_8);
   }
 
-  private static List<String> generateReports() throws JsonProcessingException {
+  private static List<String> generateReports() {
     WebTarget target = client.target("http://localhost:8090/api/report/single");
 
     List<SingleReportDataDto> reportDefinitions = createDifferentReports();
@@ -205,7 +208,8 @@ public class OptimizeDataGenerator {
     return createAndUpdateReports(target, reportDefinitions, filters);
   }
 
-  private static List<String> createAndUpdateReports(WebTarget target, List<SingleReportDataDto> reportDefinitions, List<FilterDto> filters) throws JsonProcessingException {
+  private static List<String> createAndUpdateReports(WebTarget target, List<SingleReportDataDto> reportDefinitions,
+                                                     List<FilterDto> filters) {
     List<String> reportIds = new ArrayList<>();
     for (SingleReportDataDto reportData : reportDefinitions) {
       String id = createEmptyReport(target);
@@ -287,17 +291,37 @@ public class OptimizeDataGenerator {
   private static List<SingleReportDataDto> createDifferentReports() {
     List<SingleReportDataDto> reportDefinitions = new ArrayList<>();
 
-    reportDefinitions.add(createAvgPiDurationAsNumberGroupByNone(processDefinitionKey, processDefinitionVersion));
-    reportDefinitions.add(createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinitionKey, processDefinitionVersion));
-    reportDefinitions.add(createAverageProcessInstanceDurationGroupByStartDateReport(processDefinitionKey, processDefinitionVersion, DATE_UNIT_DAY));
-    reportDefinitions.add(createAverageProcessInstanceDurationGroupByVariableWithProcessPart(processDefinitionKey, processDefinitionVersion, "var", "string", "startNode", "endNode"));
-    reportDefinitions.add(createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinitionKey, processDefinitionVersion));
+    reportDefinitions.add(
+      createAvgPiDurationAsNumberGroupByNone(processDefinitionKey, processDefinitionVersion)
+    );
+    reportDefinitions.add(
+      createAverageFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinitionKey, processDefinitionVersion)
+    );
+    reportDefinitions.add(
+      createAverageProcessInstanceDurationGroupByStartDateReport(
+        processDefinitionKey,
+        processDefinitionVersion,
+        DATE_UNIT_DAY
+      )
+    );
+    reportDefinitions.add(createAverageProcessInstanceDurationGroupByVariableWithProcessPart(
+      processDefinitionKey,
+      processDefinitionVersion,
+      "var",
+      "string",
+      "startNode",
+      "endNode"
+    ));
+    reportDefinitions.add(createMaxFlowNodeDurationGroupByFlowNodeHeatmapReport(
+      processDefinitionKey,
+      processDefinitionVersion
+    ));
     return reportDefinitions;
   }
 
   private static String createEmptyReport(WebTarget target) {
     Response response = target.request()
-      .header(OPTIMIZE_AUTHORIZATION, authHeader)
+      .header(OPTIMIZE_AUTHORIZATION, authCookie)
       .post(Entity.json(""));
     return response.readEntity(IdDto.class).getId();
   }
@@ -305,7 +329,7 @@ public class OptimizeDataGenerator {
   private static void updateReport(String id, SingleReportDefinitionDto report) {
     WebTarget target = client.target("http://localhost:8090/api/report/" + id);
     target.request()
-      .header(OPTIMIZE_AUTHORIZATION, authHeader)
+      .header(OPTIMIZE_AUTHORIZATION, authCookie)
       .put(Entity.json(report));
   }
 
@@ -314,6 +338,7 @@ public class OptimizeDataGenerator {
     Response response = target.request()
       .get();
 
-    return response.readEntity(new GenericType<List<ProcessDefinitionEngineDto>>(){});
+    return response.readEntity(new GenericType<List<ProcessDefinitionEngineDto>>() {
+    });
   }
 }
