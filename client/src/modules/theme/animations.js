@@ -8,7 +8,14 @@ const Animations = {
   100% {
     transform: rotate(360deg);
   }
-};
+`,
+  Selection: keyframes`
+  0% {
+    opacity: 0.3;
+  }
+  100% {
+    opacity: 1;
+  }
 `
 };
 

@@ -55,6 +55,7 @@ exports[`Selection should contain Actions 1`] = `
 exports[`Selection should contain Instances 1`] = `
 <ul>
   <Themed(styled.li)
+    isNew={false}
     key="0"
   >
     <styled.div>

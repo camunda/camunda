@@ -25,7 +25,18 @@ export default class Selection extends React.Component {
     onDelete: PropTypes.func.isRequired
   };
 
-  state = {operationState: ''};
+  state = {operationState: '', numberOfNewInstances: 0};
+
+  componentDidUpdate(prevProps) {
+    if (this.props.instances.size > prevProps.instances.size) {
+      const numberOfNewInstances = Math.abs(
+        this.props.instances.size - prevProps.instances.size
+      );
+      this.setState({numberOfNewInstances});
+    } else if (prevProps.isOpen && !this.props.isOpen) {
+      this.setState({numberOfNewInstances: 0});
+    }
+  }
 
   operationsMap = {
     [OPERATION_TYPE.CANCEL]: {
@@ -122,12 +133,13 @@ export default class Selection extends React.Component {
 
   renderBody = () => {
     const instances = [...this.props.instances];
+    const {numberOfNewInstances} = this.state;
     return (
       <ul>
         {instances.map(([_, instanceDetails], index) => {
           const {state, type} = getLatestOperation(instanceDetails.operations);
           return (
-            <Styled.Li key={index}>
+            <Styled.Li key={index} isNew={index < numberOfNewInstances}>
               <Styled.StatusCell>
                 <StateIcon instance={instanceDetails} />
               </Styled.StatusCell>

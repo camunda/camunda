@@ -1,5 +1,5 @@
 import styled, {css} from 'styled-components';
-import {themed, themeStyle, Colors} from 'modules/theme';
+import {themed, themeStyle, Colors, Animations} from 'modules/theme';
 
 import ActionStatus from 'modules/components/ActionStatus';
 
@@ -31,7 +31,7 @@ export const Dd = styled.dd`
   margin: 0;
 `;
 
-const hoverSelector = theme => {
+const hoverSelector = () => {
   return css`
     &:hover {
       background: ${themedWith(Colors.uiDark04, Colors.lightButton04)};
@@ -161,6 +161,11 @@ export const OptionLabel = styled.label`
   margin-left: 8px;
 `;
 
+const fadeInAnimation = () =>
+  css`
+    animation: 0.8s ${Animations.Selection};
+  `;
+
 export const Li = themed(styled.li`
   display: flex;
   align-items: center;
@@ -168,6 +173,10 @@ export const Li = themed(styled.li`
   /* padding-left: 10px; */
   color: ${themedWith('#ffffff', Colors.uiDark04)};
   font-size: 13px;
+
+  ${({isNew}) => isNew && fadeInAnimation};
+
+  opacity: 1;
 
   & * {
     top: 1px;

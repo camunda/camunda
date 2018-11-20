@@ -107,4 +107,46 @@ describe('Selection', () => {
     node.find('[data-test="CANCEL-dropdown-option"]').simulate('click');
     expect(mockOnCancel).toHaveBeenCalled();
   });
+
+  describe('newInstances', () => {
+    let newMockInstance = createInstance();
+    let newMockMap;
+
+    beforeEach(() => {
+      newMockMap = new Map([['1', mockInstance], ['2', newMockInstance]]);
+      node.setProps({instances: newMockMap});
+      node.update();
+    });
+
+    it('should store a count of instances which are subsequently added', () => {
+      expect(node.instance().state.numberOfNewInstances).toBe(1);
+    });
+
+    it('should reset the newInstances count when closed ', () => {
+      //given
+      node.setProps({isOpen: false});
+
+      // when
+      node.update();
+
+      // then
+      expect(node.instance().state.numberOfNewInstances).toBe(0);
+    });
+
+    it("should tell the instance when it's new", () => {
+      expect(
+        node
+          .find('ul')
+          .childAt(0)
+          .props().isNew
+      ).toBe(true);
+
+      expect(
+        node
+          .find('ul')
+          .childAt(1)
+          .props().isNew
+      ).toBe(false);
+    });
+  });
 });
