@@ -15,6 +15,7 @@ import * as Styled from './styled.js';
 
 export default class Selection extends React.Component {
   static propTypes = {
+    isNew: PropTypes.bool.isRequired,
     isOpen: PropTypes.bool.isRequired,
     selectionId: PropTypes.number.isRequired,
     instances: PropTypes.object.isRequired,
@@ -28,12 +29,15 @@ export default class Selection extends React.Component {
   state = {operationState: '', numberOfNewInstances: 0};
 
   componentDidUpdate(prevProps) {
-    if (this.props.instances.size > prevProps.instances.size) {
+    const {instances: newInstances} = this.props;
+    const {instances: prevInstances, isOpen: wasOpen} = prevProps;
+
+    if (newInstances.size > prevInstances.size) {
       const numberOfNewInstances = Math.abs(
-        this.props.instances.size - prevProps.instances.size
+        newInstances.size - prevInstances.size
       );
       this.setState({numberOfNewInstances});
-    } else if (prevProps.isOpen && !this.props.isOpen) {
+    } else if (!this.props.isOpen && wasOpen) {
       this.setState({numberOfNewInstances: 0});
     }
   }
@@ -50,8 +54,6 @@ export default class Selection extends React.Component {
       icon: <Styled.RetryIcon />
     }
   };
-
-  stopClickPropagation = evt => evt && evt.stopPropagation();
 
   handleOnClick = optionType => {
     this.setState({operationState: OPERATION_STATE.SCHEDULED});
@@ -179,12 +181,13 @@ export default class Selection extends React.Component {
     const idString = `selection-${this.props.selectionId}`;
 
     return (
-      <Styled.Dl role="presentation">
+      <Styled.Dl role="presentation" isNew={this.props.isNew}>
         {this.renderHeader(idString)}
         {this.props.isOpen && (
           <Styled.Dd
             role="region"
             id={idString}
+            isOpen={this.props.isOpen}
             aria-labelledby={`${idString}-toggle`}
           >
             {this.renderBody(idString)}
