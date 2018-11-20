@@ -1,6 +1,6 @@
 package org.camunda.optimize.service.es.report.command.pi.duration.groupby.date.withprocesspart;
 
-import org.camunda.optimize.dto.optimize.query.report.single.parameters.ProcessPartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.parameters.ProcessPartDto;
 import org.camunda.optimize.service.es.report.command.pi.duration.groupby.date.AbstractProcessInstanceDurationGroupByStartDateCommand;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.search.aggregations.AggregationBuilder;

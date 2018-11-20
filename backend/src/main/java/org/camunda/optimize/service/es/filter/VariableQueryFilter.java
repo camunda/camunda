@@ -1,10 +1,18 @@
 package org.camunda.optimize.service.es.filter;
 
 import org.apache.lucene.search.join.ScoreMode;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.*;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.data.OperatorMultipleValuesVariableFilterSubDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.variable.BooleanVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.variable.DateVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.variable.OperatorMultipleValuesVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.variable.StringVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.variable.VariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.variable.data.OperatorMultipleValuesVariableFilterSubDataDto;
 import org.camunda.optimize.service.util.ValidationHelper;
-import org.elasticsearch.index.query.*;
+import org.elasticsearch.index.query.BoolQueryBuilder;
+import org.elasticsearch.index.query.QueryBuilder;
+import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.RangeQueryBuilder;
+import org.elasticsearch.index.query.TermsQueryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,11 +21,23 @@ import org.springframework.stereotype.Component;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
-import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.*;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.GREATER_THAN;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.GREATER_THAN_EQUALS;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.IN;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LESS_THAN;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LESS_THAN_EQUALS;
+import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.NOT_IN;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.BOOLEAN_VARIABLES;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.DATE_VARIABLES;
-import static org.camunda.optimize.service.util.VariableHelper.*;
-import static org.elasticsearch.index.query.QueryBuilders.*;
+import static org.camunda.optimize.service.util.VariableHelper.getNestedVariableNameFieldLabelForType;
+import static org.camunda.optimize.service.util.VariableHelper.getNestedVariableValueFieldLabelForType;
+import static org.camunda.optimize.service.util.VariableHelper.variableTypeToFieldLabel;
+import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
+import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
+import static org.elasticsearch.index.query.QueryBuilders.nestedQuery;
+import static org.elasticsearch.index.query.QueryBuilders.rangeQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 
 @Component
 public class VariableQueryFilter implements QueryFilter<VariableFilterDataDto> {

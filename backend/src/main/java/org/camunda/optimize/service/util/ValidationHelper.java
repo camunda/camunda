@@ -2,16 +2,16 @@ package org.camunda.optimize.service.util;
 
 import org.camunda.optimize.dto.optimize.query.analysis.BranchAnalysisQueryDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.ViewDto;
 import org.camunda.optimize.dto.optimize.query.report.combined.CombinedReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.ExecutedFlowNodeFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.FilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.StartDateFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.ExecutedFlowNodeFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.startDate.DateFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutedFlowNodeFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.startDate.DateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.variable.VariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 import org.camunda.optimize.service.exceptions.OptimizeValidationException;
 import org.camunda.optimize.service.exceptions.ReportEvaluationException;
 
@@ -57,8 +57,8 @@ public class ValidationHelper {
 
   public static void validateDefinitionData(ReportDataDto data) {
 
-    if (data instanceof SingleReportDataDto) {
-      SingleReportDataDto singleReportData = (SingleReportDataDto) data;
+    if (data instanceof ProcessReportDataDto) {
+      ProcessReportDataDto singleReportData = (ProcessReportDataDto) data;
       boolean versionAndKeySet = singleReportData.getProcessDefinitionVersion() != null &&
         singleReportData.getProcessDefinitionKey() != null;
 
@@ -70,9 +70,9 @@ public class ValidationHelper {
     }
   }
 
-  public static void validate(SingleReportDataDto dataDto) {
+  public static void validate(ProcessReportDataDto dataDto) {
     ensureNotNull("report data", dataDto);
-    ViewDto viewDto = dataDto.getView();
+    ProcessViewDto viewDto = dataDto.getView();
     ensureNotNull("view", viewDto);
     ensureNotEmpty("view operation", viewDto.getOperation());
     ensureNotEmpty("visualization", dataDto.getVisualization());
@@ -81,9 +81,9 @@ public class ValidationHelper {
     validateFilters(dataDto.getFilter());
   }
 
-  private static void validateFilters(List<FilterDto> filters) {
+  private static void validateFilters(List<ProcessFilterDto> filters) {
     if (filters != null) {
-      for (FilterDto filterDto : filters) {
+      for (ProcessFilterDto filterDto : filters) {
         if (filterDto instanceof StartDateFilterDto) {
           StartDateFilterDto startDateFilterDto = (StartDateFilterDto) filterDto;
           DateFilterDataDto startDateFilterDataDto = startDateFilterDto.getData();

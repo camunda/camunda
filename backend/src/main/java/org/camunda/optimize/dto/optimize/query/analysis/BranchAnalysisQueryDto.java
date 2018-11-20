@@ -1,6 +1,6 @@
 package org.camunda.optimize.dto.optimize.query.analysis;
 
-import org.camunda.optimize.dto.optimize.query.report.single.filter.FilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -11,13 +11,13 @@ public class BranchAnalysisQueryDto {
   protected String gateway;
   protected String processDefinitionKey;
   protected String processDefinitionVersion;
-  protected List<FilterDto> filter = new ArrayList<>();
+  protected List<ProcessFilterDto> filter = new ArrayList<>();
 
-  public List<FilterDto> getFilter() {
+  public List<ProcessFilterDto> getFilter() {
     return filter;
   }
 
-  public void setFilter(List<FilterDto> filter) {
+  public void setFilter(List<ProcessFilterDto> filter) {
     this.filter = filter;
   }
 

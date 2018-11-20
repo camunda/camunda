@@ -9,8 +9,8 @@ import org.camunda.optimize.dto.optimize.query.alert.AlertDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.alert.AlertInterval;
 import org.camunda.optimize.dto.optimize.query.dashboard.DashboardDefinitionDto;
 import org.camunda.optimize.dto.optimize.query.report.ReportDefinitionDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
 import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDefinitionDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
 import org.camunda.optimize.service.es.schema.OptimizeIndexNameHelper;
 import org.camunda.optimize.service.util.configuration.ConfigurationService;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
@@ -193,12 +193,11 @@ public class ForceReimportIT {
     return getReportDefinitionDto(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
   }
 
-
   private SingleReportDefinitionDto getReportDefinitionDto(String processDefinitionKey,
                                                            String processDefinitionVersion) {
-    SingleReportDataDto reportData =
+    ProcessReportDataDto reportData =
       ReportDataBuilderHelper.createPiFrequencyCountGroupedByNoneAsNumber(processDefinitionKey, processDefinitionVersion);
-    SingleReportDefinitionDto report = new SingleReportDefinitionDto();
+    SingleReportDefinitionDto<ProcessReportDataDto> report = new SingleReportDefinitionDto<>();
     report.setData(reportData);
     report.setId("something");
     report.setLastModifier("something");

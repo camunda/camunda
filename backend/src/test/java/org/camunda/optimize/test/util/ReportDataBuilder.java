@@ -1,7 +1,8 @@
 package org.camunda.optimize.test.util;
 
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.FilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.GroupByDateUnit;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -48,18 +49,18 @@ public class ReportDataBuilder {
   private String processDefinitionVersion;
   private String variableName;
   private String variableType;
-  private String dateInterval;
+  private GroupByDateUnit dateInterval;
   private String startFlowNodeId;
   private String endFlowNodeId;
 
-  private List<FilterDto> filter = new ArrayList<>();
+  private List<ProcessFilterDto> filter = new ArrayList<>();
 
   public static ReportDataBuilder createReportData() {
     return new ReportDataBuilder();
   }
 
-  public SingleReportDataDto build() {
-    SingleReportDataDto reportData = new SingleReportDataDto();
+  public ProcessReportDataDto build() {
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
     switch (reportDataType) {
       case RAW_DATA:
         reportData = createReportDataViewRawAsTable(processDefinitionKey, processDefinitionVersion);
@@ -337,7 +338,7 @@ public class ReportDataBuilder {
     return this;
   }
 
-  public ReportDataBuilder setDateInterval(String dateInterval) {
+  public ReportDataBuilder setDateInterval(GroupByDateUnit dateInterval) {
     this.dateInterval = dateInterval;
     return this;
   }
@@ -352,12 +353,12 @@ public class ReportDataBuilder {
     return this;
   }
 
-  public ReportDataBuilder setFilter(FilterDto newFilter) {
+  public ReportDataBuilder setFilter(ProcessFilterDto newFilter) {
     this.filter.add(newFilter);
     return this;
   }
 
-  public ReportDataBuilder setFilter(List<FilterDto> newFilter) {
+  public ReportDataBuilder setFilter(List<ProcessFilterDto> newFilter) {
     this.filter.addAll(newFilter);
     return this;
   }

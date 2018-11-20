@@ -1,7 +1,13 @@
 package org.camunda.optimize.test.util;
 
-import org.camunda.optimize.dto.optimize.query.report.single.filter.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.*;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.variable.BooleanVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.variable.DateVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.variable.DoubleVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.variable.IntegerVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.variable.LongVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.variable.ShortVariableFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.variable.StringVariableFilterDataDto;
 
 import java.time.OffsetDateTime;
 import java.util.ArrayList;

@@ -1,9 +1,9 @@
 package org.camunda.optimize.service.es.report.command.util;
 
-import org.camunda.optimize.dto.optimize.query.report.ViewDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.group.GroupByDto;
-import org.camunda.optimize.dto.optimize.query.report.single.parameters.ProcessPartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.ProcessGroupByDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.parameters.ProcessPartDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewDto;
 
 import static org.camunda.optimize.service.es.report.command.util.GroupByDtoCreator.createGroupByFlowNode;
 import static org.camunda.optimize.service.es.report.command.util.GroupByDtoCreator.createGroupByNone;
@@ -23,323 +23,323 @@ import static org.camunda.optimize.service.es.report.command.util.ViewDtoCreator
 
 public class ReportDataCreator {
 
-  public static SingleReportDataDto createAverageFlowNodeDurationGroupByFlowNodeReport() {
-    ViewDto view = createAverageFlowNodeDurationView();
-    GroupByDto groupByDto = createGroupByFlowNode();
+  public static ProcessReportDataDto createAverageFlowNodeDurationGroupByFlowNodeReport() {
+    ProcessViewDto view = createAverageFlowNodeDurationView();
+    ProcessGroupByDto groupByDto = createGroupByFlowNode();
 
-    SingleReportDataDto reportData = new SingleReportDataDto();
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
     return reportData;
   }
 
-  public static SingleReportDataDto createMinFlowNodeDurationGroupByFlowNodeReport() {
-    ViewDto view = createMinFlowNodeDurationView();
-    GroupByDto groupByDto = createGroupByFlowNode();
+  public static ProcessReportDataDto createMinFlowNodeDurationGroupByFlowNodeReport() {
+    ProcessViewDto view = createMinFlowNodeDurationView();
+    ProcessGroupByDto groupByDto = createGroupByFlowNode();
 
-    SingleReportDataDto reportData = new SingleReportDataDto();
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
     return reportData;
   }
 
-  public static SingleReportDataDto createMaxFlowNodeDurationGroupByFlowNodeReport() {
-    ViewDto view = createMaxFlowNodeDurationView();
-    GroupByDto groupByDto = createGroupByFlowNode();
+  public static ProcessReportDataDto createMaxFlowNodeDurationGroupByFlowNodeReport() {
+    ProcessViewDto view = createMaxFlowNodeDurationView();
+    ProcessGroupByDto groupByDto = createGroupByFlowNode();
 
-    SingleReportDataDto reportData = new SingleReportDataDto();
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
     return reportData;
   }
 
-  public static SingleReportDataDto createMedianFlowNodeDurationGroupByFlowNodeReport() {
-    ViewDto view = createMedianFlowNodeDurationView();
-    GroupByDto groupByDto = createGroupByFlowNode();
+  public static ProcessReportDataDto createMedianFlowNodeDurationGroupByFlowNodeReport() {
+    ProcessViewDto view = createMedianFlowNodeDurationView();
+    ProcessGroupByDto groupByDto = createGroupByFlowNode();
 
-    SingleReportDataDto reportData = new SingleReportDataDto();
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
     return reportData;
   }
 
-  public static SingleReportDataDto createAverageProcessInstanceDurationGroupByNoneReport() {
-    ViewDto view = createAverageProcessInstanceDurationView();
-    GroupByDto groupByDto = createGroupByNone();
+  public static ProcessReportDataDto createAverageProcessInstanceDurationGroupByNoneReport() {
+    ProcessViewDto view = createAverageProcessInstanceDurationView();
+    ProcessGroupByDto groupByDto = createGroupByNone();
 
-    SingleReportDataDto reportData = new SingleReportDataDto();
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
     return reportData;
   }
 
-  public static SingleReportDataDto createAverageProcessInstanceDurationGroupByNoneWithProcessPartReport() {
-    ViewDto view = createAverageProcessInstanceDurationView();
-    GroupByDto groupByDto = createGroupByNone();
+  public static ProcessReportDataDto createAverageProcessInstanceDurationGroupByNoneWithProcessPartReport() {
+    ProcessViewDto view = createAverageProcessInstanceDurationView();
+    ProcessGroupByDto groupByDto = createGroupByNone();
 
-    SingleReportDataDto reportData = new SingleReportDataDto();
-    reportData.setView(view);
-    reportData.setGroupBy(groupByDto);
-    reportData.getParameters().setProcessPart(new ProcessPartDto());
-    return reportData;
-  }
-
-  public static SingleReportDataDto createMinProcessInstanceDurationGroupByNoneReport() {
-    ViewDto view = createMinProcessInstanceDurationView();
-    GroupByDto groupByDto = createGroupByNone();
-
-    SingleReportDataDto reportData = new SingleReportDataDto();
-    reportData.setView(view);
-    reportData.setGroupBy(groupByDto);
-    return reportData;
-  }
-
-  public static SingleReportDataDto createMinProcessInstanceDurationGroupByNoneWithProcessPartReport() {
-    ViewDto view = createMinProcessInstanceDurationView();
-    GroupByDto groupByDto = createGroupByNone();
-
-    SingleReportDataDto reportData = new SingleReportDataDto();
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
     reportData.getParameters().setProcessPart(new ProcessPartDto());
     return reportData;
   }
 
-  public static SingleReportDataDto createMaxProcessInstanceDurationGroupByNoneReport() {
-    ViewDto view = createMaxProcessInstanceDurationView();
-    GroupByDto groupByDto = createGroupByNone();
+  public static ProcessReportDataDto createMinProcessInstanceDurationGroupByNoneReport() {
+    ProcessViewDto view = createMinProcessInstanceDurationView();
+    ProcessGroupByDto groupByDto = createGroupByNone();
 
-    SingleReportDataDto reportData = new SingleReportDataDto();
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
     return reportData;
   }
 
-  public static SingleReportDataDto createMaxProcessInstanceDurationGroupByNoneWithProcessPartReport() {
-    ViewDto view = createMaxProcessInstanceDurationView();
-    GroupByDto groupByDto = createGroupByNone();
+  public static ProcessReportDataDto createMinProcessInstanceDurationGroupByNoneWithProcessPartReport() {
+    ProcessViewDto view = createMinProcessInstanceDurationView();
+    ProcessGroupByDto groupByDto = createGroupByNone();
 
-    SingleReportDataDto reportData = new SingleReportDataDto();
-    reportData.setView(view);
-    reportData.setGroupBy(groupByDto);
-    reportData.getParameters().setProcessPart(new ProcessPartDto());
-    return reportData;
-  }
-
-  public static SingleReportDataDto createMedianProcessInstanceDurationGroupByNoneReport() {
-    ViewDto view = createMedianProcessInstanceDurationView();
-    GroupByDto groupByDto = createGroupByNone();
-
-    SingleReportDataDto reportData = new SingleReportDataDto();
-    reportData.setView(view);
-    reportData.setGroupBy(groupByDto);
-    return reportData;
-  }
-
-  public static SingleReportDataDto createMedianProcessInstanceDurationGroupByNoneWithProcessPartReport() {
-    ViewDto view = createMedianProcessInstanceDurationView();
-    GroupByDto groupByDto = createGroupByNone();
-
-    SingleReportDataDto reportData = new SingleReportDataDto();
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
     reportData.getParameters().setProcessPart(new ProcessPartDto());
     return reportData;
   }
 
-  public static SingleReportDataDto createAverageProcessInstanceDurationGroupByStartDateReport() {
-    ViewDto view = createAverageProcessInstanceDurationView();
-    GroupByDto groupByDto = createGroupByStartDateDto();
+  public static ProcessReportDataDto createMaxProcessInstanceDurationGroupByNoneReport() {
+    ProcessViewDto view = createMaxProcessInstanceDurationView();
+    ProcessGroupByDto groupByDto = createGroupByNone();
 
-    SingleReportDataDto reportData = new SingleReportDataDto();
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
     return reportData;
   }
 
-  public static SingleReportDataDto createAverageProcessInstanceDurationGroupByStartDateWithProcessPartReport() {
-    ViewDto view = createAverageProcessInstanceDurationView();
-    GroupByDto groupByDto = createGroupByStartDateDto();
+  public static ProcessReportDataDto createMaxProcessInstanceDurationGroupByNoneWithProcessPartReport() {
+    ProcessViewDto view = createMaxProcessInstanceDurationView();
+    ProcessGroupByDto groupByDto = createGroupByNone();
 
-    SingleReportDataDto reportData = new SingleReportDataDto();
-    reportData.setView(view);
-    reportData.setGroupBy(groupByDto);
-    reportData.getParameters().setProcessPart(new ProcessPartDto());
-    return reportData;
-  }
-
-  public static SingleReportDataDto createMinProcessInstanceDurationGroupByStartDateReport() {
-    ViewDto view = createMinProcessInstanceDurationView();
-    GroupByDto groupByDto = createGroupByStartDateDto();
-
-    SingleReportDataDto reportData = new SingleReportDataDto();
-    reportData.setView(view);
-    reportData.setGroupBy(groupByDto);
-    return reportData;
-  }
-
-  public static SingleReportDataDto createMinProcessInstanceDurationGroupByStartDateWithProcessPartReport() {
-    ViewDto view = createMinProcessInstanceDurationView();
-    GroupByDto groupByDto = createGroupByStartDateDto();
-
-    SingleReportDataDto reportData = new SingleReportDataDto();
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
     reportData.getParameters().setProcessPart(new ProcessPartDto());
     return reportData;
   }
 
-  public static SingleReportDataDto createMaxProcessInstanceDurationGroupByStartDateReport() {
-    ViewDto view = createMaxProcessInstanceDurationView();
-    GroupByDto groupByDto = createGroupByStartDateDto();
+  public static ProcessReportDataDto createMedianProcessInstanceDurationGroupByNoneReport() {
+    ProcessViewDto view = createMedianProcessInstanceDurationView();
+    ProcessGroupByDto groupByDto = createGroupByNone();
 
-    SingleReportDataDto reportData = new SingleReportDataDto();
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
     return reportData;
   }
 
-  public static SingleReportDataDto createMaxProcessInstanceDurationGroupByStartDateWithProcessPartReport() {
-    ViewDto view = createMaxProcessInstanceDurationView();
-    GroupByDto groupByDto = createGroupByStartDateDto();
+  public static ProcessReportDataDto createMedianProcessInstanceDurationGroupByNoneWithProcessPartReport() {
+    ProcessViewDto view = createMedianProcessInstanceDurationView();
+    ProcessGroupByDto groupByDto = createGroupByNone();
 
-    SingleReportDataDto reportData = new SingleReportDataDto();
-    reportData.setView(view);
-    reportData.setGroupBy(groupByDto);
-    reportData.getParameters().setProcessPart(new ProcessPartDto());
-    return reportData;
-  }
-
-  public static SingleReportDataDto createMedianProcessInstanceDurationGroupByStartDateReport() {
-    ViewDto view = createMedianProcessInstanceDurationView();
-    GroupByDto groupByDto = createGroupByStartDateDto();
-
-    SingleReportDataDto reportData = new SingleReportDataDto();
-    reportData.setView(view);
-    reportData.setGroupBy(groupByDto);
-    return reportData;
-  }
-
-  public static SingleReportDataDto createMedianProcessInstanceDurationGroupByStartDateWithProcessPartReport() {
-    ViewDto view = createMedianProcessInstanceDurationView();
-    GroupByDto groupByDto = createGroupByStartDateDto();
-
-    SingleReportDataDto reportData = new SingleReportDataDto();
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
     reportData.getParameters().setProcessPart(new ProcessPartDto());
     return reportData;
   }
 
-  public static SingleReportDataDto createAverageProcessInstanceDurationGroupByVariableReport() {
-    ViewDto view = createAverageProcessInstanceDurationView();
-    GroupByDto groupByDto = createGroupByVariable();
+  public static ProcessReportDataDto createAverageProcessInstanceDurationGroupByStartDateReport() {
+    ProcessViewDto view = createAverageProcessInstanceDurationView();
+    ProcessGroupByDto groupByDto = createGroupByStartDateDto();
 
-    SingleReportDataDto reportData = new SingleReportDataDto();
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
     return reportData;
   }
 
-  public static SingleReportDataDto createAverageProcessInstanceDurationGroupByVariableWithProcessPartReport() {
-    SingleReportDataDto reportData = createAverageProcessInstanceDurationGroupByVariableReport();
+  public static ProcessReportDataDto createAverageProcessInstanceDurationGroupByStartDateWithProcessPartReport() {
+    ProcessViewDto view = createAverageProcessInstanceDurationView();
+    ProcessGroupByDto groupByDto = createGroupByStartDateDto();
+
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
+    reportData.setView(view);
+    reportData.setGroupBy(groupByDto);
     reportData.getParameters().setProcessPart(new ProcessPartDto());
     return reportData;
   }
 
-  public static SingleReportDataDto createMinProcessInstanceDurationGroupByVariableReport() {
-    ViewDto view = createMinProcessInstanceDurationView();
-    GroupByDto groupByDto = createGroupByVariable();
+  public static ProcessReportDataDto createMinProcessInstanceDurationGroupByStartDateReport() {
+    ProcessViewDto view = createMinProcessInstanceDurationView();
+    ProcessGroupByDto groupByDto = createGroupByStartDateDto();
 
-    SingleReportDataDto reportData = new SingleReportDataDto();
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
     return reportData;
   }
 
-  public static SingleReportDataDto createMinProcessInstanceDurationGroupByVariableWithProcessPartReport() {
-    SingleReportDataDto reportData = createMinProcessInstanceDurationGroupByVariableReport();
+  public static ProcessReportDataDto createMinProcessInstanceDurationGroupByStartDateWithProcessPartReport() {
+    ProcessViewDto view = createMinProcessInstanceDurationView();
+    ProcessGroupByDto groupByDto = createGroupByStartDateDto();
+
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
+    reportData.setView(view);
+    reportData.setGroupBy(groupByDto);
     reportData.getParameters().setProcessPart(new ProcessPartDto());
     return reportData;
   }
 
-  public static SingleReportDataDto createMaxProcessInstanceDurationGroupByVariableReport() {
-    ViewDto view = createMaxProcessInstanceDurationView();
-    GroupByDto groupByDto = createGroupByVariable();
+  public static ProcessReportDataDto createMaxProcessInstanceDurationGroupByStartDateReport() {
+    ProcessViewDto view = createMaxProcessInstanceDurationView();
+    ProcessGroupByDto groupByDto = createGroupByStartDateDto();
 
-    SingleReportDataDto reportData = new SingleReportDataDto();
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
     return reportData;
   }
 
-  public static SingleReportDataDto createMaxProcessInstanceDurationGroupByVariableWithProcessPartReport() {
-    SingleReportDataDto reportData = createMaxProcessInstanceDurationGroupByVariableReport();
+  public static ProcessReportDataDto createMaxProcessInstanceDurationGroupByStartDateWithProcessPartReport() {
+    ProcessViewDto view = createMaxProcessInstanceDurationView();
+    ProcessGroupByDto groupByDto = createGroupByStartDateDto();
+
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
+    reportData.setView(view);
+    reportData.setGroupBy(groupByDto);
     reportData.getParameters().setProcessPart(new ProcessPartDto());
     return reportData;
   }
 
-  public static SingleReportDataDto createMedianProcessInstanceDurationGroupByVariableReport() {
-    ViewDto view = createMedianProcessInstanceDurationView();
-    GroupByDto groupByDto = createGroupByVariable();
+  public static ProcessReportDataDto createMedianProcessInstanceDurationGroupByStartDateReport() {
+    ProcessViewDto view = createMedianProcessInstanceDurationView();
+    ProcessGroupByDto groupByDto = createGroupByStartDateDto();
 
-    SingleReportDataDto reportData = new SingleReportDataDto();
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
     return reportData;
   }
 
-  public static SingleReportDataDto createMedianProcessInstanceDurationGroupByVariableWithProcessPartReport() {
-    SingleReportDataDto reportData = createMedianProcessInstanceDurationGroupByVariableReport();
+  public static ProcessReportDataDto createMedianProcessInstanceDurationGroupByStartDateWithProcessPartReport() {
+    ProcessViewDto view = createMedianProcessInstanceDurationView();
+    ProcessGroupByDto groupByDto = createGroupByStartDateDto();
+
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
+    reportData.setView(view);
+    reportData.setGroupBy(groupByDto);
     reportData.getParameters().setProcessPart(new ProcessPartDto());
     return reportData;
   }
 
-  public static SingleReportDataDto createRawDataReport() {
-    ViewDto view = createRawDataView();
-    GroupByDto groupByDto = createGroupByNone();
+  public static ProcessReportDataDto createAverageProcessInstanceDurationGroupByVariableReport() {
+    ProcessViewDto view = createAverageProcessInstanceDurationView();
+    ProcessGroupByDto groupByDto = createGroupByVariable();
 
-    SingleReportDataDto reportData = new SingleReportDataDto();
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
     return reportData;
   }
 
-  public static SingleReportDataDto createCountProcessInstanceFrequencyGroupByNoneReport() {
-    ViewDto view = createCountProcessInstanceFrequencyView();
-    GroupByDto groupByDto = createGroupByNone();
+  public static ProcessReportDataDto createAverageProcessInstanceDurationGroupByVariableWithProcessPartReport() {
+    ProcessReportDataDto reportData = createAverageProcessInstanceDurationGroupByVariableReport();
+    reportData.getParameters().setProcessPart(new ProcessPartDto());
+    return reportData;
+  }
 
-    SingleReportDataDto reportData = new SingleReportDataDto();
+  public static ProcessReportDataDto createMinProcessInstanceDurationGroupByVariableReport() {
+    ProcessViewDto view = createMinProcessInstanceDurationView();
+    ProcessGroupByDto groupByDto = createGroupByVariable();
+
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
     return reportData;
   }
 
-  public static SingleReportDataDto createCountProcessInstanceFrequencyGroupByStartDateReport() {
-    ViewDto view = createCountProcessInstanceFrequencyView();
-    GroupByDto groupByDto = createGroupByStartDateDto();
+  public static ProcessReportDataDto createMinProcessInstanceDurationGroupByVariableWithProcessPartReport() {
+    ProcessReportDataDto reportData = createMinProcessInstanceDurationGroupByVariableReport();
+    reportData.getParameters().setProcessPart(new ProcessPartDto());
+    return reportData;
+  }
 
-    SingleReportDataDto reportData = new SingleReportDataDto();
+  public static ProcessReportDataDto createMaxProcessInstanceDurationGroupByVariableReport() {
+    ProcessViewDto view = createMaxProcessInstanceDurationView();
+    ProcessGroupByDto groupByDto = createGroupByVariable();
+
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
     return reportData;
   }
 
-  public static SingleReportDataDto createCountProcessInstanceFrequencyGroupByVariableReport() {
-    ViewDto view = createCountProcessInstanceFrequencyView();
-    GroupByDto groupByDto = createGroupByVariable();
+  public static ProcessReportDataDto createMaxProcessInstanceDurationGroupByVariableWithProcessPartReport() {
+    ProcessReportDataDto reportData = createMaxProcessInstanceDurationGroupByVariableReport();
+    reportData.getParameters().setProcessPart(new ProcessPartDto());
+    return reportData;
+  }
 
-    SingleReportDataDto reportData = new SingleReportDataDto();
+  public static ProcessReportDataDto createMedianProcessInstanceDurationGroupByVariableReport() {
+    ProcessViewDto view = createMedianProcessInstanceDurationView();
+    ProcessGroupByDto groupByDto = createGroupByVariable();
+
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
     return reportData;
   }
 
-  public static SingleReportDataDto createCountFlowNodeFrequencyGroupByFlowNodeReport() {
-    ViewDto view = createCountFlowNodeFrequencyView();
-    GroupByDto groupByDto = createGroupByFlowNode();
+  public static ProcessReportDataDto createMedianProcessInstanceDurationGroupByVariableWithProcessPartReport() {
+    ProcessReportDataDto reportData = createMedianProcessInstanceDurationGroupByVariableReport();
+    reportData.getParameters().setProcessPart(new ProcessPartDto());
+    return reportData;
+  }
 
-    SingleReportDataDto reportData = new SingleReportDataDto();
+  public static ProcessReportDataDto createRawDataReport() {
+    ProcessViewDto view = createRawDataView();
+    ProcessGroupByDto groupByDto = createGroupByNone();
+
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
+    reportData.setView(view);
+    reportData.setGroupBy(groupByDto);
+    return reportData;
+  }
+
+  public static ProcessReportDataDto createCountProcessInstanceFrequencyGroupByNoneReport() {
+    ProcessViewDto view = createCountProcessInstanceFrequencyView();
+    ProcessGroupByDto groupByDto = createGroupByNone();
+
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
+    reportData.setView(view);
+    reportData.setGroupBy(groupByDto);
+    return reportData;
+  }
+
+  public static ProcessReportDataDto createCountProcessInstanceFrequencyGroupByStartDateReport() {
+    ProcessViewDto view = createCountProcessInstanceFrequencyView();
+    ProcessGroupByDto groupByDto = createGroupByStartDateDto();
+
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
+    reportData.setView(view);
+    reportData.setGroupBy(groupByDto);
+    return reportData;
+  }
+
+  public static ProcessReportDataDto createCountProcessInstanceFrequencyGroupByVariableReport() {
+    ProcessViewDto view = createCountProcessInstanceFrequencyView();
+    ProcessGroupByDto groupByDto = createGroupByVariable();
+
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
+    reportData.setView(view);
+    reportData.setGroupBy(groupByDto);
+    return reportData;
+  }
+
+  public static ProcessReportDataDto createCountFlowNodeFrequencyGroupByFlowNodeReport() {
+    ProcessViewDto view = createCountFlowNodeFrequencyView();
+    ProcessGroupByDto groupByDto = createGroupByFlowNode();
+
+    ProcessReportDataDto reportData = new ProcessReportDataDto();
     reportData.setView(view);
     reportData.setGroupBy(groupByDto);
     return reportData;

@@ -8,12 +8,13 @@ import org.camunda.bpm.model.bpmn.instance.EndEvent;
 import org.camunda.bpm.model.bpmn.instance.StartEvent;
 import org.camunda.bpm.model.xml.ModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.CompletedInstancesOnlyFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.FilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.VariableFilterDto;
-import org.camunda.optimize.dto.optimize.query.report.single.parameters.ProcessPartDto;
-import org.camunda.optimize.service.es.report.command.util.ReportConstants;
+import org.camunda.optimize.dto.optimize.ReportConstants;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.group.value.GroupByDateUnit;
+import org.camunda.optimize.dto.optimize.query.report.single.process.parameters.ProcessPartDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
@@ -46,7 +47,6 @@ import java.util.concurrent.TimeoutException;
 
 import static java.time.temporal.ChronoUnit.YEARS;
 import static org.camunda.optimize.service.es.filter.FilterOperatorConstants.LESS_THAN;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.DATE_UNIT_WEEK;
 import static org.camunda.optimize.service.util.VariableHelper.DOUBLE_TYPE;
 import static org.camunda.optimize.test.util.VariableFilterUtilHelper.createBooleanVariableFilter;
 import static org.hamcrest.CoreMatchers.is;
@@ -85,7 +85,7 @@ public class QueryPerformanceTest {
     authenticationHeader = "Bearer " + embeddedOptimizeRule.getNewAuthenticationToken();
   }
 
-  private static List<SingleReportDataDto> createAllPossibleReports() {
+  private static List<ProcessReportDataDto> createAllPossibleReports() {
     List<ProcessDefinitionEngineDto> latestDefinitionVersions =
       engineRule.getLatestProcessDefinitions();
 
@@ -97,9 +97,9 @@ public class QueryPerformanceTest {
 
   }
 
-  private static List<SingleReportDataDto> createReportsFromDefinition(ProcessDefinitionEngineDto definition) {
+  private static List<ProcessReportDataDto> createReportsFromDefinition(ProcessDefinitionEngineDto definition) {
     String variableName = "doubleVar";
-    List<SingleReportDataDto> reports = new ArrayList<>();
+    List<ProcessReportDataDto> reports = new ArrayList<>();
     ProcessPartDto processPart = createProcessPart(definition);
     for (ReportDataType reportDataType : ReportDataType.values()) {
       ReportDataBuilder reportDataBuilder = ReportDataBuilder.createReportData()
@@ -108,16 +108,16 @@ public class QueryPerformanceTest {
         .setProcessDefinitionVersion(definition.getVersionAsString())
         .setVariableName(variableName)
         .setVariableType(DOUBLE_TYPE)
-        .setDateInterval(DATE_UNIT_WEEK)
+        .setDateInterval(GroupByDateUnit.WEEK)
         .setStartFlowNodeId(processPart.getStart())
         .setEndFlowNodeId(processPart.getEnd())
         .setFilter(createFilter());
 
-      SingleReportDataDto reportDataLatestDefinitionVersion =
+      ProcessReportDataDto reportDataLatestDefinitionVersion =
         reportDataBuilder.build();
       reports.add(reportDataLatestDefinitionVersion);
       reportDataBuilder.setProcessDefinitionVersion(ReportConstants.ALL_VERSIONS);
-      SingleReportDataDto reportDataAllDefinitionVersions = reportDataBuilder.build();
+      ProcessReportDataDto reportDataAllDefinitionVersions = reportDataBuilder.build();
       reports.add(reportDataAllDefinitionVersions);
     }
     return reports;
@@ -136,8 +136,8 @@ public class QueryPerformanceTest {
     return processPart;
   }
 
-  private static List<FilterDto> createFilter() {
-    List<FilterDto> filterList = new ArrayList<>();
+  private static List<ProcessFilterDto> createFilter() {
+    List<ProcessFilterDto> filterList = new ArrayList<>();
 
     VariableFilterDto booleanVariableFilter =
       createBooleanVariableFilter("boolVar", String.valueOf(randomGen.nextBoolean()));
@@ -174,7 +174,7 @@ public class QueryPerformanceTest {
 
   @Test
   @Parameters(source = ReportDataProvider.class)
-  public void testQueryPerformance(SingleReportDataDto report) {
+  public void testQueryPerformance(ProcessReportDataDto report) {
     // given the report to evaluate
 
     // when
@@ -190,7 +190,7 @@ public class QueryPerformanceTest {
     return Long.parseLong(timeoutAsString);
   }
 
-  private long evaluateReportAndReturnEvaluationTime(SingleReportDataDto report) {
+  private long evaluateReportAndReturnEvaluationTime(ProcessReportDataDto report) {
     logger.info("Evaluating report {}", report);
     Instant start = Instant.now();
     Response response = embeddedOptimizeRule
@@ -208,7 +208,7 @@ public class QueryPerformanceTest {
 
   public static class ReportDataProvider {
     public static Object[] provideReportData() {
-      List<SingleReportDataDto> allReports = createAllPossibleReports();
+      List<ProcessReportDataDto> allReports = createAllPossibleReports();
       return allReports.toArray();
     }
   }

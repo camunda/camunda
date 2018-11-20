@@ -1,9 +1,21 @@
 package org.camunda.optimize.service.es.filter;
 
-import org.camunda.optimize.dto.optimize.query.report.single.filter.*;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.*;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.variable.VariableFilterDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.filter.data.startDate.DateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CanceledInstancesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.CompletedInstancesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.DurationFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.EndDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ExecutedFlowNodeFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.ProcessFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.RunningInstancesOnlyFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.StartDateFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.VariableFilterDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.CanceledInstancesOnlyFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.CompletedInstancesOnlyFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.DurationFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.ExecutedFlowNodeFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.RunningInstancesOnlyFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.startDate.DateFilterDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.filter.data.variable.VariableFilterDataDto;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -39,7 +51,7 @@ public class QueryFilterEnhancer {
   private CanceledInstancesOnlyQueryFilter canceledInstancesOnlyQueryFilter;
 
 
-  public void addFilterToQuery(BoolQueryBuilder query, List<FilterDto> filter) {
+  public void addFilterToQuery(BoolQueryBuilder query, List<ProcessFilterDto> filter) {
     if (filter != null) {
       startDateQueryFilter.addFilters(query, extractStartDateFilters(filter));
       endDateQueryFilter.addFilters(query, extractEndDateFilters(filter));
@@ -52,7 +64,7 @@ public class QueryFilterEnhancer {
     }
   }
 
-  private List<DurationFilterDataDto> extractDurationFilters(List<FilterDto> filter) {
+  private List<DurationFilterDataDto> extractDurationFilters(List<ProcessFilterDto> filter) {
     return filter
         .stream()
         .filter(DurationFilterDto.class::isInstance)
@@ -63,7 +75,7 @@ public class QueryFilterEnhancer {
         .collect(Collectors.toList());
   }
 
-  private List<CanceledInstancesOnlyFilterDataDto> extractCanceledInstancesOnlyFilters(List<FilterDto> filter) {
+  private List<CanceledInstancesOnlyFilterDataDto> extractCanceledInstancesOnlyFilters(List<ProcessFilterDto> filter) {
     return filter
       .stream()
       .filter(CanceledInstancesOnlyFilterDto.class::isInstance)
@@ -75,7 +87,7 @@ public class QueryFilterEnhancer {
       .collect(Collectors.toList());
   }
 
-  private List<DateFilterDataDto> extractStartDateFilters(List<FilterDto> filter) {
+  private List<DateFilterDataDto> extractStartDateFilters(List<ProcessFilterDto> filter) {
     return filter
       .stream()
       .filter(StartDateFilterDto.class::isInstance)
@@ -86,7 +98,7 @@ public class QueryFilterEnhancer {
       .collect(Collectors.toList());
   }
 
-  private List<DateFilterDataDto> extractEndDateFilters(List<FilterDto> filter) {
+  private List<DateFilterDataDto> extractEndDateFilters(List<ProcessFilterDto> filter) {
     return filter
             .stream()
             .filter(EndDateFilterDto.class::isInstance)
@@ -97,7 +109,7 @@ public class QueryFilterEnhancer {
             .collect(Collectors.toList());
   }
 
-  private List<VariableFilterDataDto> extractVariableFilters(List<FilterDto> filter) {
+  private List<VariableFilterDataDto> extractVariableFilters(List<ProcessFilterDto> filter) {
     return filter
       .stream()
       .filter(VariableFilterDto.class::isInstance)
@@ -108,7 +120,7 @@ public class QueryFilterEnhancer {
       .collect(Collectors.toList());
   }
 
-  private List<ExecutedFlowNodeFilterDataDto> extractExecutedFlowNodeFilters(List<FilterDto> filter) {
+  private List<ExecutedFlowNodeFilterDataDto> extractExecutedFlowNodeFilters(List<ProcessFilterDto> filter) {
     return filter
       .stream()
       .filter(ExecutedFlowNodeFilterDto.class::isInstance)
@@ -119,7 +131,7 @@ public class QueryFilterEnhancer {
       .collect(Collectors.toList());
   }
 
-  private List<RunningInstancesOnlyFilterDataDto> extractRunningInstancesOnlyFilters(List<FilterDto> filter) {
+  private List<RunningInstancesOnlyFilterDataDto> extractRunningInstancesOnlyFilters(List<ProcessFilterDto> filter) {
     return filter
       .stream()
       .filter(RunningInstancesOnlyFilterDto.class::isInstance)
@@ -131,7 +143,7 @@ public class QueryFilterEnhancer {
       .collect(Collectors.toList());
   }
 
-  private List<CompletedInstancesOnlyFilterDataDto> extractCompletedInstancesOnlyFilters(List<FilterDto> filter) {
+  private List<CompletedInstancesOnlyFilterDataDto> extractCompletedInstancesOnlyFilters(List<ProcessFilterDto> filter) {
     return filter
       .stream()
       .filter(CompletedInstancesOnlyFilterDto.class::isInstance)

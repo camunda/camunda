@@ -3,10 +3,13 @@ package org.camunda.optimize.service.es.report.flownode.duration;
 import org.camunda.bpm.model.bpmn.Bpmn;
 import org.camunda.bpm.model.bpmn.BpmnModelInstance;
 import org.camunda.optimize.dto.engine.ProcessDefinitionEngineDto;
-import org.camunda.optimize.dto.optimize.query.report.single.SingleReportDataDto;
-import org.camunda.optimize.dto.optimize.query.report.single.result.MapSingleReportResultDto;
+import org.camunda.optimize.dto.optimize.ReportConstants;
+import org.camunda.optimize.dto.optimize.query.report.single.process.ProcessReportDataDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.result.MapProcessReportResultDto;
+import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewEntity;
+import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewOperation;
+import org.camunda.optimize.dto.optimize.query.report.single.process.view.ProcessViewProperty;
 import org.camunda.optimize.rest.engine.dto.ProcessInstanceEngineDto;
-import org.camunda.optimize.service.es.report.command.util.ReportConstants;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
@@ -20,11 +23,7 @@ import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
 import java.util.Map;
 
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_DURATION_PROPERTY;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_FLOW_NODE_ENTITY;
-import static org.camunda.optimize.service.es.report.command.util.ReportConstants.VIEW_MEDIAN_OPERATION;
-import static org.camunda.optimize.test.util.ReportDataBuilderHelper
-  .createMedianFlowNodeDurationGroupByFlowNodeHeatmapReport;
+import static org.camunda.optimize.test.util.ReportDataBuilderHelper.createMedianFlowNodeDurationGroupByFlowNodeHeatmapReport;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.Is.is;
 import static org.hamcrest.core.IsNull.notNullValue;
@@ -58,18 +57,18 @@ public class MedianFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    SingleReportDataDto reportData = getMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    MapSingleReportResultDto result = evaluateReport(reportData);
+    ProcessReportDataDto reportData = getMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+    MapProcessReportResultDto result = evaluateReport(reportData);
 
     // then
-    SingleReportDataDto resultReportDataDto = result.getData();
+    ProcessReportDataDto resultReportDataDto = result.getData();
     assertThat(result.getProcessInstanceCount(), is(1L));
     assertThat(resultReportDataDto.getProcessDefinitionKey(), is(processDefinition.getKey()));
     assertThat(resultReportDataDto.getProcessDefinitionVersion(), is(String.valueOf(processDefinition.getVersion())));
     assertThat(resultReportDataDto.getView(), is(notNullValue()));
-    assertThat(resultReportDataDto.getView().getOperation(), is(VIEW_MEDIAN_OPERATION));
-    assertThat(resultReportDataDto.getView().getEntity(), is(VIEW_FLOW_NODE_ENTITY));
-    assertThat(resultReportDataDto.getView().getProperty(), is(VIEW_DURATION_PROPERTY));
+    assertThat(resultReportDataDto.getView().getOperation(), is(ProcessViewOperation.MEDIAN));
+    assertThat(resultReportDataDto.getView().getEntity(), is(ProcessViewEntity.FLOW_NODE));
+    assertThat(resultReportDataDto.getView().getProperty(), is(ProcessViewProperty.DURATION));
     assertThat(result.getResult(), is(notNullValue()));
     Map<String, Long> flowNodeIdToMedianExecutionDuration = result.getResult();
     assertThat(flowNodeIdToMedianExecutionDuration.size(), is(3));
@@ -92,8 +91,8 @@ public class MedianFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    SingleReportDataDto reportData = getMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    MapSingleReportResultDto result = evaluateReport(reportData);
+    ProcessReportDataDto reportData = getMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+    MapProcessReportResultDto result = evaluateReport(reportData);
 
     // then
     Map<String, Long> flowNodeIdToMedianExecutionDuration = result.getResult();
@@ -119,9 +118,9 @@ public class MedianFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    SingleReportDataDto reportData =
+    ProcessReportDataDto reportData =
       getMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    MapSingleReportResultDto result = evaluateReport(reportData);
+    MapProcessReportResultDto result = evaluateReport(reportData);
 
     // then
     Map<String, Long> flowNodeIdToMedianExecutionDuration = result.getResult();
@@ -164,10 +163,10 @@ public class MedianFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
-    SingleReportDataDto reportData = createMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(
+    ProcessReportDataDto reportData = createMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(
         latestDefinition.getKey(), ReportConstants.ALL_VERSIONS
     );
-    MapSingleReportResultDto result = evaluateReport(reportData);
+    MapProcessReportResultDto result = evaluateReport(reportData);
 
     //then
     Map<String, Long> flowNodeIdToMedianExecutionDuration = result.getResult();
@@ -198,10 +197,10 @@ public class MedianFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
-    SingleReportDataDto reportData = createMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(
+    ProcessReportDataDto reportData = createMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(
         latestDefinition.getKey(), ReportConstants.ALL_VERSIONS
     );
-    MapSingleReportResultDto result = evaluateReport(reportData);
+    MapProcessReportResultDto result = evaluateReport(reportData);
 
     //then
     Map<String, Long> flowNodeIdToMedianExecutionDuration = result.getResult();
@@ -225,10 +224,10 @@ public class MedianFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //when
-    SingleReportDataDto reportData = createMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(
+    ProcessReportDataDto reportData = createMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(
         processDefinition.getKey(), ReportConstants.ALL_VERSIONS
     );
-    MapSingleReportResultDto result = evaluateReport(reportData);
+    MapProcessReportResultDto result = evaluateReport(reportData);
 
     //then
     Map<String, Long> flowNodeIdToMedianExecutionDuration = result.getResult();
@@ -257,10 +256,10 @@ public class MedianFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    SingleReportDataDto reportData1 = getMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    MapSingleReportResultDto result1 = evaluateReport(reportData1);
-    SingleReportDataDto reportData2 = getMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition2);
-    MapSingleReportResultDto result2 = evaluateReport(reportData2);
+    ProcessReportDataDto reportData1 = getMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+    MapProcessReportResultDto result1 = evaluateReport(reportData1);
+    ProcessReportDataDto reportData2 = getMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition2);
+    MapProcessReportResultDto result2 = evaluateReport(reportData2);
 
     // then
     Map<String, Long> flowNodeIdToMedianExecutionDuration = result1.getResult();
@@ -275,9 +274,9 @@ public class MedianFlowNodeDurationByFlowNodeReportEvaluationIT {
   public void noEventMatchesReturnsEmptyResult() {
 
     // when
-    SingleReportDataDto reportData =
+    ProcessReportDataDto reportData =
       createMedianFlowNodeDurationGroupByFlowNodeHeatmapReport("nonExistingProcessDefinitionId", "1");
-    MapSingleReportResultDto result = evaluateReport(reportData);
+    MapProcessReportResultDto result = evaluateReport(reportData);
 
     // then
     Map<String, Long> flowNodeIdToMedianExecutionDuration = result.getResult();
@@ -313,9 +312,9 @@ public class MedianFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    SingleReportDataDto reportData =
+    ProcessReportDataDto reportData =
       createMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(subProcessDefinition.getKey(), String.valueOf(subProcessDefinition.getVersion()));
-    MapSingleReportResultDto result = evaluateReport(reportData);
+    MapProcessReportResultDto result = evaluateReport(reportData);
 
     // then
     Map<String, Long> flowNodeIdToMedianExecutionDuration = result.getResult();
@@ -337,8 +336,8 @@ public class MedianFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    SingleReportDataDto reportData = getMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
-    MapSingleReportResultDto result = evaluateReport(reportData);
+    ProcessReportDataDto reportData = getMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+    MapProcessReportResultDto result = evaluateReport(reportData);
 
     // then
     Map<String, Long> flowNodeIdToMedianExecutionDuration = result.getResult();
@@ -357,9 +356,9 @@ public class MedianFlowNodeDurationByFlowNodeReportEvaluationIT {
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     // when
-    SingleReportDataDto reportData = getMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
+    ProcessReportDataDto reportData = getMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition);
     reportData.setFilter(DateUtilHelper.createFixedStartDateFilter(null, past.minusSeconds(1L)));
-    MapSingleReportResultDto result = evaluateReport(reportData);
+    MapProcessReportResultDto result = evaluateReport(reportData);
 
     // then
     assertThat(result.getResult(), is(notNullValue()));
@@ -381,7 +380,7 @@ public class MedianFlowNodeDurationByFlowNodeReportEvaluationIT {
   @Test
   public void optimizeExceptionOnViewEntityIsNull() {
     // given
-    SingleReportDataDto dataDto =
+    ProcessReportDataDto dataDto =
       createMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getView().setEntity(null);
 
@@ -395,7 +394,7 @@ public class MedianFlowNodeDurationByFlowNodeReportEvaluationIT {
   @Test
   public void optimizeExceptionOnViewPropertyIsNull() {
     // given
-    SingleReportDataDto dataDto =
+    ProcessReportDataDto dataDto =
       createMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getView().setProperty(null);
 
@@ -409,7 +408,7 @@ public class MedianFlowNodeDurationByFlowNodeReportEvaluationIT {
   @Test
   public void optimizeExceptionOnGroupByTypeIsNull() {
     // given
-    SingleReportDataDto dataDto =
+    ProcessReportDataDto dataDto =
       createMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(PROCESS_DEFINITION_KEY, "1");
     dataDto.getGroupBy().setType(null);
 
@@ -430,21 +429,21 @@ public class MedianFlowNodeDurationByFlowNodeReportEvaluationIT {
     return engineRule.deployProcessAndGetProcessDefinition(modelInstance);
   }
 
-  private MapSingleReportResultDto evaluateReport(SingleReportDataDto reportData) {
+  private MapProcessReportResultDto evaluateReport(ProcessReportDataDto reportData) {
     Response response = evaluateReportAndReturnResponse(reportData);
     assertThat(response.getStatus(), is(200));
 
-    return response.readEntity(MapSingleReportResultDto.class);
+    return response.readEntity(MapProcessReportResultDto.class);
   }
 
-  private Response evaluateReportAndReturnResponse(SingleReportDataDto reportData) {
+  private Response evaluateReportAndReturnResponse(ProcessReportDataDto reportData) {
     return embeddedOptimizeRule
             .getRequestExecutor()
             .buildEvaluateSingleUnsavedReportRequest(reportData)
             .execute();
   }
 
-  private SingleReportDataDto getMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(ProcessDefinitionEngineDto processDefinition) {
+  private ProcessReportDataDto getMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(ProcessDefinitionEngineDto processDefinition) {
     return createMedianFlowNodeDurationGroupByFlowNodeHeatmapReport(processDefinition.getKey(), String.valueOf(processDefinition.getVersion()));
   }
 
