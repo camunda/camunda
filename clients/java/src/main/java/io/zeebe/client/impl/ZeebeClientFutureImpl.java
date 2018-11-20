@@ -49,9 +49,9 @@ public class ZeebeClientFutureImpl<ClientResponse, BrokerResponse>
       final Throwable cause = e.getCause();
       if (cause instanceof StatusRuntimeException) {
         final Status status = ((StatusRuntimeException) cause).getStatus();
-        throw new ClientException(status.getDescription());
+        throw new ClientException(status.getDescription(), e);
       } else {
-        throw new ClientException(cause.getMessage(), cause);
+        throw new ClientException(cause.getMessage(), e);
       }
     } catch (final InterruptedException e) {
       throw new ClientException("Failed to receive response", e);

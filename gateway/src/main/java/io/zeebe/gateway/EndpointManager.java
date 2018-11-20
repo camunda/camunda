@@ -232,6 +232,6 @@ public class EndpointManager extends GatewayGrpc.GatewayImplBase {
       description = cause.getMessage();
     }
 
-    return Status.INTERNAL.augmentDescription(description).asRuntimeException();
+    return Status.INTERNAL.augmentDescription(description).withCause(cause).asRuntimeException();
   }
 }
