@@ -44,7 +44,12 @@ public class StartupBean {
     logger.info("INIT: Initialize Elasticsearch schema...");
     elasticsearchSchemaManager.initializeSchema();
     logger.debug("INIT: Generate demo data...");
-    dataGenerator.createZeebeData(false);
+    try {
+      dataGenerator.createZeebeData(false);
+    } catch (Exception ex) {
+      logger.debug("Demo data could not be generated. Cause: {}", ex.getMessage());
+      logger.error("Error occurred when generating demo data.", ex);
+    }
     logger.info("INIT: Start importing Zeebe data...");
     zeebeESImporter.startImportingData();
     logger.info("INIT: Start operation executor...");

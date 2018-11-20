@@ -10,22 +10,3 @@ className = "io.zeebe.exporter.ElasticsearchExporter"
 
   [exporters.args]
   url = "http://elasticsearch:9200"
-
-  [exporters.args.bulk]
-  delay = 1
-  size = 1
-
-  [exporters.args.index]
-  prefix = "operate"
-  createTemplate = true
-  command = false
-  event = true
-  rejection = false
-  deployment = true
-  incident = true
-  job = true
-  message = true
-  messageSubscription = false
-  raft = false
-  workflowInstance = true
-  workflowInstanceSubscription = false

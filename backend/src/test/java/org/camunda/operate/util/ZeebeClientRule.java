@@ -12,7 +12,6 @@
  */
 package org.camunda.operate.util;
 
-import java.time.Duration;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
@@ -50,9 +49,8 @@ public class ZeebeClientRule extends ExternalResource {
   }
 
   @Override
-  protected void before() {
+  public void before() {
     final ZeebeClientBuilder builder = ZeebeClient.newClientBuilder();
-    builder.defaultJobPollInterval(Duration.ofMillis(100));
     configurator.accept(builder);
     client = builder.build();
 
@@ -69,7 +67,7 @@ public class ZeebeClientRule extends ExternalResource {
   }
 
   @Override
-  protected void after() {
+  public void after() {
     client.close();
     client = null;
   }

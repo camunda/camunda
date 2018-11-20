@@ -36,10 +36,15 @@ public class OperateZeebeBrokerRule extends EmbeddedBrokerRule {
   }
 
   @Override
-  protected void before() {
+  public void before() {
     this.prefix = TestUtil.createRandomString(10);
     prefixConfigurator.setPrefix(prefix);
     super.before();
+  }
+
+  @Override
+  public void after() {
+    super.after();
   }
 
   public String getPrefix() {

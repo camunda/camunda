@@ -12,7 +12,7 @@ camunda.bpm.operate:
     clusterName: docker-cluster
     host: localhost
     port: 9300
-    prefix: operate
+    prefix: zeebe-record
 logging:
   level:
     ROOT: INFO
@@ -33,7 +33,7 @@ camunda.bpm.operate:
     clusterName: docker-cluster
     host: elasticsearch
     port: 9300
-    prefix: operate
+    prefix: zeebe-record
 logging:
   level:
     ROOT: INFO

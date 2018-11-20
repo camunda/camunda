@@ -192,6 +192,8 @@ public class ZeebeESImporter extends Thread {
 
   @Override
   public void run() {
+    logger.debug("Start importing data");
+
     while (true) {
       try {
 
@@ -246,7 +248,7 @@ public class ZeebeESImporter extends Thread {
         }
       }
     } catch (IndexNotFoundException ex) {
-      logger.warn("Elasticsearch index for ValueType {} was not found. Skipping.", importValueType.getValueType());
+      logger.info("Elasticsearch index for ValueType {} was not found. Skipping.", importValueType.getValueType());
     } catch (SearchPhaseExecutionException ex) {
       logger.error(ex.getMessage(), ex);
     }
