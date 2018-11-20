@@ -115,7 +115,10 @@ NumberConfig.defaults = ({report}) => {
 };
 
 NumberConfig.onUpdate = (prevProps, props) => {
-  if (props.report.data.view.property !== prevProps.report.data.view.property) {
+  if (
+    props.report.data.view.property !== prevProps.report.data.view.property ||
+    prevProps.type !== props.type
+  ) {
     return NumberConfig.defaults(props);
   }
 };

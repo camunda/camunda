@@ -34,11 +34,12 @@ TableConfig.defaults = {
 };
 
 TableConfig.onUpdate = (prevProps, props) => {
-  // if the view operation changes, we need to reset to defaults
+  // if the view operation or report visualization changes, we need to reset to defaults
   if (
-    prevProps.report.data.view &&
-    props.report.data.view &&
-    prevProps.report.data.view.operation !== props.report.data.view.operation
+    (prevProps.report.data.view &&
+      props.report.data.view &&
+      prevProps.report.data.view.operation !== props.report.data.view.operation) ||
+    prevProps.type !== props.type
   ) {
     return TableConfig.defaults;
   }

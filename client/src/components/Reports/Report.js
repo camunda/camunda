@@ -173,11 +173,8 @@ export default withErrorHandling(
       }
 
       // if combined report has no reports or switching to heatmap then reset configuration
-      if (
-        (this.state.reportType === 'combined' && updates.reportIds && !updates.reportIds.length) ||
-        (updates.visualization && updates.visualization === 'heat')
-      ) {
-        data.configuration = {...data.configuration, targetValue: null};
+      if (this.state.reportType === 'combined' && updates.reportIds && !updates.reportIds.length) {
+        data.configuration = {targetValue: null};
       }
 
       this.setState({data});
@@ -201,18 +198,12 @@ export default withErrorHandling(
         if (!newReportResult) {
           newReportResult = {reportType, data};
         }
-        this.setState({
+        this.setState(state => ({
           reportResult: {
             ...newReportResult,
-            data: {
-              ...data,
-              // we get configuration from the state because the async request might return after a change to configuration
-              configuration: {
-                ...this.state.data.configuration
-              }
-            }
+            data: state.data
           }
-        });
+        }));
       } else {
         let newReportResult = reportResult || {reportType, data};
         this.setState({

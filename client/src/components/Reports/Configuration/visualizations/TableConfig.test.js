@@ -23,3 +23,12 @@ it('should reset to defaults when the operation changes', () => {
     )
   ).toEqual(TableConfig.defaults);
 });
+
+it('should reset to defaults when visualization type changes', () => {
+  expect(
+    TableConfig.onUpdate(
+      {type: 'prev', report: {data: {view: {operation: 'test'}}}},
+      {type: 'new', report: {data: {view: {operation: 'test'}}}}
+    )
+  ).toEqual(TableConfig.defaults);
+});

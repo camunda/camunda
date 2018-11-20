@@ -22,7 +22,7 @@ const Heatmap = props => {
   }
 
   let heatmapComponent;
-  if (targetValue && targetValue.active) {
+  if (targetValue && targetValue.active && !targetValue.values.target) {
     const heat = calculateTargetValueHeat(data, targetValue.values);
     heatmapComponent = [
       <HeatmapOverlay

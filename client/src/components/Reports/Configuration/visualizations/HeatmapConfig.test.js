@@ -26,3 +26,21 @@ it('should pass the configuration to RelativeAbsoluteSelection', () => {
 
   expect(node.find('RelativeAbsoluteSelection').props().configuration).toEqual({test: 'test'});
 });
+
+it('should reset to defaults when property changes', () => {
+  expect(
+    HeatmapConfig.onUpdate(
+      {report: {data: {view: {property: 'new'}}}},
+      {report: {data: {view: {property: 'prev'}}}}
+    )
+  ).toEqual(HeatmapConfig.defaults);
+});
+
+it('should reset to defaults when visualization type changes', () => {
+  expect(
+    HeatmapConfig.onUpdate(
+      {type: 'prev', report: {data: {view: {property: 'test'}}}},
+      {type: 'new', report: {data: {view: {property: 'test'}}}}
+    )
+  ).toEqual(HeatmapConfig.defaults);
+});

@@ -100,5 +100,26 @@ ChartConfig.defaults = {
   hideRelativeValue: false,
   hideAbsoluteValue: false,
   xLabel: '',
-  yLabel: ''
+  yLabel: '',
+  targetValue: null
 };
+
+ChartConfig.onUpdate = (prevProps, props) => {
+  const currentView = props.report.data.view;
+  const prevView = prevProps.report.data.view;
+  if (
+    currentView.property !== prevView.property ||
+    currentView.entity !== prevView.entity ||
+    (prevProps.type !== props.type && !isBarOrLine(prevProps.type, props.type))
+  ) {
+    return {
+      ...ChartConfig.defaults,
+      targetValue: null
+    };
+  }
+};
+
+function isBarOrLine(currentVis, nextVis) {
+  const barOrLine = ['bar', 'line'];
+  return barOrLine.includes(currentVis) && barOrLine.includes(nextVis);
+}

@@ -6,7 +6,7 @@ import * as visualizations from './visualizations';
 import './Configuration.scss';
 
 export default class Configuration extends React.Component {
-  resetToDefaults = resetTargetValue => {
+  resetToDefaults = () => {
     const Component = visualizations[this.props.type] || {};
 
     const defaults =
@@ -17,7 +17,6 @@ export default class Configuration extends React.Component {
     this.props.onChange({
       configuration: {
         ...this.props.configuration,
-        ...(resetTargetValue ? {targetValue: null} : {}),
         ...defaults
       }
     });
@@ -34,10 +33,6 @@ export default class Configuration extends React.Component {
 
   componentDidUpdate(prevProps) {
     const Component = visualizations[this.props.type];
-    // reset visualization options to default when visualization changes
-    if (prevProps.type !== this.props.type) {
-      this.resetToDefaults(!isBarOrLine(prevProps.type, this.props.type));
-    }
 
     if (Component && Component.onUpdate) {
       const updates = Component.onUpdate(prevProps, this.props);
@@ -73,9 +68,4 @@ export default class Configuration extends React.Component {
       </li>
     );
   }
-}
-
-function isBarOrLine(currentVis, nextVis) {
-  const barOrLine = ['bar', 'line'];
-  return barOrLine.includes(currentVis) && barOrLine.includes(nextVis);
 }

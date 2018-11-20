@@ -22,5 +22,15 @@ export default function HeatmapConfig(props) {
 HeatmapConfig.defaults = {
   hideRelativeValue: true,
   hideAbsoluteValue: true,
-  showInstanceCount: false
+  showInstanceCount: false,
+  targetValue: null
+};
+
+HeatmapConfig.onUpdate = (prevProps, props) => {
+  if (
+    props.report.data.view.property !== prevProps.report.data.view.property ||
+    prevProps.type !== props.type
+  ) {
+    return HeatmapConfig.defaults;
+  }
 };

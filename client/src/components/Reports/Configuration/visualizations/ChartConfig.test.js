@@ -69,3 +69,48 @@ it('should invok onchange when enabling target value switch', () => {
     values: {dateFormat: '', isBelow: false, target: ''}
   });
 });
+
+it('should reset to defaults when the property changes', () => {
+  expect(
+    ChartConfig.onUpdate(
+      {report: {data: {view: {property: 'prev'}}}},
+      {report: {data: {view: {property: 'new'}}}}
+    )
+  ).toEqual({
+    ...ChartConfig.defaults,
+    targetValue: null
+  });
+});
+
+it('should reset to defaults when the entity changes', () => {
+  expect(
+    ChartConfig.onUpdate(
+      {report: {data: {view: {entity: 'prev'}}}},
+      {report: {data: {view: {entity: 'new'}}}}
+    )
+  ).toEqual({
+    ...ChartConfig.defaults,
+    targetValue: null
+  });
+});
+
+it('should reset to defaults when visualization type changes', () => {
+  expect(
+    ChartConfig.onUpdate(
+      {type: 'prev', report: {data: {view: {entity: 'test'}}}},
+      {type: 'new', report: {data: {view: {entity: 'test'}}}}
+    )
+  ).toEqual({
+    ...ChartConfig.defaults,
+    targetValue: null
+  });
+});
+
+it('should not reset to defaults when visualization type changes from line to bar or reverse', () => {
+  expect(
+    ChartConfig.onUpdate(
+      {type: 'bar', report: {data: {view: {entity: 'test'}}}},
+      {type: 'line', report: {data: {view: {entity: 'test'}}}}
+    )
+  ).toEqual(undefined);
+});

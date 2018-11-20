@@ -47,3 +47,21 @@ it('should contain a target input for duration operations', () => {
   expect(node.find('CountTargetInput')).not.toBePresent();
   expect(node.find('DurationTargetInput')).toBePresent();
 });
+
+it('should reset to defaults when property changes', () => {
+  expect(
+    NumberConfig.onUpdate(
+      {report: {data: {view: {property: 'new'}}}},
+      {report: {data: {view: {property: 'prev'}}}}
+    )
+  ).toEqual(NumberConfig.defaults(props));
+});
+
+it('should reset to defaults when visualization type changes', () => {
+  expect(
+    NumberConfig.onUpdate(
+      {type: 'prev', report: {data: {view: {property: 'test'}}}},
+      {type: 'new', report: {data: {view: {property: 'test'}}}}
+    )
+  ).toEqual(NumberConfig.defaults(props));
+});
