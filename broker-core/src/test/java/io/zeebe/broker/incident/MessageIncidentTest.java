@@ -119,7 +119,7 @@ public class MessageIncidentTest {
 
   @Test
   public void shouldResolveIncidentIfCorrelationKeyNotFound() {
-    // when
+    // given
     final long workflowInstance = testClient.createWorkflowInstance(PROCESS_ID);
 
     final Record<IncidentRecordValue> incidentCreatedRecord =
@@ -127,6 +127,9 @@ public class MessageIncidentTest {
 
     testClient.updatePayload(
         incidentCreatedRecord.getValue().getElementInstanceKey(), "{\"orderId\":\"order123\"}");
+
+    // when
+    testClient.resolveIncident(incidentCreatedRecord.getKey());
 
     // then
     assertThat(

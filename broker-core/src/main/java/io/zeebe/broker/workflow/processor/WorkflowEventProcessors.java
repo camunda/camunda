@@ -57,13 +57,6 @@ public class WorkflowEventProcessors {
         new CatchEventOutput(zeebeState, subscriptionCommandSender);
     final BpmnStepProcessor bpmnStepProcessor =
         new BpmnStepProcessor(workflowEngineState, zeebeState, catchEventOutput);
-
-    // temporary incident resolving
-    typedProcessorBuilder.onEvent(
-        ValueType.WORKFLOW_INSTANCE,
-        WorkflowInstanceIntent.PAYLOAD_UPDATED,
-        new PayloadUpdatedProcessor(zeebeState));
-
     addBpmnStepProcessor(typedProcessorBuilder, bpmnStepProcessor);
 
     addMessageStreamProcessors(

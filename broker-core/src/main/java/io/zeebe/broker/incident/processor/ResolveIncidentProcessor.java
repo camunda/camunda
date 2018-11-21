@@ -58,15 +58,25 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
     if (incidentRecord != null) {
       incidentState.deleteIncident(incidentKey);
       streamWriter.appendFollowUpEvent(incidentKey, IncidentIntent.RESOLVED, command.getValue());
+      responseWriter.writeEventOnCommand(
+          incidentKey, IncidentIntent.RESOLVED, command.getValue(), command);
 
       // workflow / job is already cleared if canceled then we simply delete without resolving
       attemptToResolveIncident(responseWriter, streamWriter, sideEffect, incidentRecord);
     } else {
-      streamWriter.appendRejection(
-          command,
-          RejectionType.NOT_APPLICABLE,
-          String.format(RESOLVE_REJECT_MESSAGE, incidentKey));
+      rejectResolveCommand(command, responseWriter, streamWriter, incidentKey);
     }
+  }
+
+  private void rejectResolveCommand(
+      TypedRecord<IncidentRecord> command,
+      TypedResponseWriter responseWriter,
+      TypedStreamWriter streamWriter,
+      long incidentKey) {
+    final String errorMessage = String.format(RESOLVE_REJECT_MESSAGE, incidentKey);
+
+    streamWriter.appendRejection(command, RejectionType.NOT_APPLICABLE, errorMessage);
+    responseWriter.writeRejectionOnCommand(command, RejectionType.NOT_APPLICABLE, errorMessage);
   }
 
   private void attemptToResolveIncident(
