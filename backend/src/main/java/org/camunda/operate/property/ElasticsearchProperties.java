@@ -2,13 +2,13 @@ package org.camunda.operate.property;
 
 public class ElasticsearchProperties {
 
-  public static final String IMPORT_POSITION_INDEX_PATTERN = "import-position";
+  public static final String IMPORT_POSITION_INDEX_PATTERN = "operate-import-position";
 
-  public static final String WORKFLOW_INSTANCE_INDEX_PATTERN = "workflow-instance";
+  public static final String WORKFLOW_INSTANCE_INDEX_PATTERN = "operate-workflow-instance";
 
-  public static final String EVENT_INDEX_PATTERN = "event";
+  public static final String EVENT_INDEX_PATTERN = "operate-event";
 
-  public static final String WORKFLOW_INDEX_PATTERN = "workflow";
+  public static final String WORKFLOW_INDEX_PATTERN = "operate-workflow";
 
   public static final String DATE_FORMAT_DEFAULT = "yyyy-MM-dd'T'HH:mm:ss.SSSZ";
 
@@ -22,13 +22,13 @@ public class ElasticsearchProperties {
 
   private int batchSize = 20;
 
-  private String importPositionIndexName = IMPORT_POSITION_INDEX_PATTERN + "_operate";
+  private String importPositionIndexName = IMPORT_POSITION_INDEX_PATTERN + "_";
 
-  private String eventIndexName = EVENT_INDEX_PATTERN + "_operate";
+  private String eventIndexName = EVENT_INDEX_PATTERN + "_";
 
-  private String workflowInstanceIndexName = WORKFLOW_INSTANCE_INDEX_PATTERN + "_operate";
+  private String workflowInstanceIndexName = WORKFLOW_INSTANCE_INDEX_PATTERN + "_";
 
-  private String workflowIndexName = WORKFLOW_INDEX_PATTERN + "_operate";
+  private String workflowIndexName = WORKFLOW_INDEX_PATTERN + "_";
 
   private String importPositionAlias = IMPORT_POSITION_INDEX_PATTERN;
 
