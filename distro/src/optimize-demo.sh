@@ -69,7 +69,7 @@ fi
 if [ -z "$BROWSER" ]; then
   (sleep 15; echo -e "Sorry for the inconvenience, but it wasn't possible to locate your default browser... \nIf you want to see our default website please open your browser and insert this URL:\nhttp://localhost:8090/login";) &
 else
-  (sleep 5; $BROWSER "http://localhost:8090/login";) &
+  (sleep 5; $BROWSER "http://localhost:8090/#/login";) &
 fi
 
 # Check if Optimize has been started

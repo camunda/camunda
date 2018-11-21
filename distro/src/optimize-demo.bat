@@ -82,6 +82,6 @@ set TAB=^ ^ ^ ^
 echo.
 echo You can now view Camunda Optimize in your browser.
 echo.
-echo %TAB%http://localhost:8090/login
+echo %TAB%http://localhost:8090/#/login
 echo.
 
