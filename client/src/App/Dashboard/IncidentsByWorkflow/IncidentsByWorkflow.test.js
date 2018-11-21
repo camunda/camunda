@@ -118,6 +118,11 @@ describe('IncidentsByWorkflow', () => {
     const headerStatistic = headerNode.find(IncidentStatistic);
     const contentNode = shallow(contentCollapseNode);
 
+    // collapse button node
+    expect(collapseNode.props().buttonTitle).toBe(
+      'Expand 65 Instances with Incidents of Workflow Order process'
+    );
+
     // header anchor
     expect(headerNode.props().to).toBe(
       '/instances?filter={"workflow":"orderProcess","version":"all","incidents":true}'

@@ -89,7 +89,9 @@ export default class IncidentsByWorkflow extends React.Component {
                     item.workflows
                   )}
                   header={IncidentStatisticComponent}
-                  buttonTitle={`Expand ${versionsCount} Instances with Incidents of Workflow ${name} `}
+                  buttonTitle={`Expand ${
+                    item.instancesWithActiveIncidentsCount
+                  } Instances with Incidents of Workflow ${name}`}
                 />
               )}
             </Styled.Li>
