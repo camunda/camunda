@@ -20,6 +20,8 @@ public class IncidentByWorkflowStatisticsDto implements Comparable {
 
   private String name;
 
+  private String bpmnProcessId;
+
   private String errorMessage;
 
   private long instancesWithActiveIncidentsCount;
@@ -65,6 +67,14 @@ public class IncidentByWorkflowStatisticsDto implements Comparable {
     this.name = name;
   }
 
+  public String getBpmnProcessId() {
+    return bpmnProcessId;
+  }
+
+  public void setBpmnProcessId(String bpmnProcessId) {
+    this.bpmnProcessId = bpmnProcessId;
+  }
+
   public String getErrorMessage() {
     return errorMessage;
   }
@@ -108,6 +118,8 @@ public class IncidentByWorkflowStatisticsDto implements Comparable {
       return false;
     if (name != null ? !name.equals(that.name) : that.name != null)
       return false;
+    if (bpmnProcessId != null ? !bpmnProcessId.equals(that.bpmnProcessId) : that.bpmnProcessId != null)
+      return false;
     return errorMessage != null ? errorMessage.equals(that.errorMessage) : that.errorMessage == null;
   }
 
@@ -116,6 +128,7 @@ public class IncidentByWorkflowStatisticsDto implements Comparable {
     int result = workflowId != null ? workflowId.hashCode() : 0;
     result = 31 * result + version;
     result = 31 * result + (name != null ? name.hashCode() : 0);
+    result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
     result = 31 * result + (errorMessage != null ? errorMessage.hashCode() : 0);
     result = 31 * result + (int) (instancesWithActiveIncidentsCount ^ (instancesWithActiveIncidentsCount >>> 32));
     result = 31 * result + (int) (activeInstancesCount ^ (activeInstancesCount >>> 32));

@@ -92,6 +92,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     final Iterator<IncidentByWorkflowStatisticsDto> iterator = incidentsByErrorStat.getWorkflows().iterator();
     IncidentByWorkflowStatisticsDto next = iterator.next();
     assertThat(next.getName()).isEqualTo(DEMO_PROCESS_NAME + 1);
+    assertThat(next.getBpmnProcessId()).isEqualTo(DEMO_BPMN_PROCESS_ID);
     assertThat(next.getInstancesWithActiveIncidentsCount()).isEqualTo(2L);
     assertThat(next.getVersion()).isEqualTo(1);
     assertThat(next.getErrorMessage()).isEqualTo(TestUtil.ERROR_MSG);
@@ -99,6 +100,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
 
     next = iterator.next();
     assertThat(next.getName()).isEqualTo(ORDER_PROCESS_NAME + 2);
+    assertThat(next.getBpmnProcessId()).isEqualTo(ORDER_BPMN_PROCESS_ID);
     assertThat(next.getInstancesWithActiveIncidentsCount()).isEqualTo(1L);
     assertThat(next.getVersion()).isEqualTo(2);
     assertThat(next.getErrorMessage()).isEqualTo(TestUtil.ERROR_MSG);
@@ -144,12 +146,14 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     final Iterator<IncidentByWorkflowStatisticsDto> workflows = response.get(0).getWorkflows().iterator();
     final IncidentByWorkflowStatisticsDto workflow1 = workflows.next();
     assertThat(workflow1.getName()).isEqualTo(DEMO_PROCESS_NAME + "1");
+    assertThat(workflow1.getBpmnProcessId()).isEqualTo(DEMO_BPMN_PROCESS_ID);
     assertThat(workflow1.getVersion()).isEqualTo(1);
     assertThat(workflow1.getActiveInstancesCount()).isEqualTo(3);
     assertThat(workflow1.getInstancesWithActiveIncidentsCount()).isEqualTo(3);
     //assert Demo process version 2
     final IncidentByWorkflowStatisticsDto workflow2 = workflows.next();
     assertThat(workflow2.getName()).isEqualTo(DEMO_PROCESS_NAME + "2");
+    assertThat(workflow2.getBpmnProcessId()).isEqualTo(DEMO_BPMN_PROCESS_ID);
     assertThat(workflow2.getVersion()).isEqualTo(2);
     assertThat(workflow2.getActiveInstancesCount()).isEqualTo(6);
     assertThat(workflow2.getInstancesWithActiveIncidentsCount()).isEqualTo(1);
@@ -163,6 +167,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     //assert Order process version 2
     final IncidentByWorkflowStatisticsDto workflow3 = response.get(1).getWorkflows().iterator().next();
     assertThat(workflow3.getName()).isEqualTo(ORDER_PROCESS_NAME + "2");
+    assertThat(workflow3.getBpmnProcessId()).isEqualTo(ORDER_BPMN_PROCESS_ID);
     assertThat(workflow3.getVersion()).isEqualTo(2);
     assertThat(workflow3.getActiveInstancesCount()).isEqualTo(3);
     assertThat(workflow3.getInstancesWithActiveIncidentsCount()).isEqualTo(1);

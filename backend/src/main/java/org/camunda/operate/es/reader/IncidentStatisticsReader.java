@@ -110,6 +110,7 @@ public class IncidentStatisticsReader {
           //but add to the list only those with active incidents
           if (statForWorkflow.getInstancesWithActiveIncidentsCount() > 0) {
             statForWorkflow.setName(workflowEntity.getName());
+            statForWorkflow.setBpmnProcessId(workflowEntity.getBpmnProcessId());
             statForWorkflow.setVersion(workflowEntity.getVersion());
             stat.getWorkflows().add(statForWorkflow);
           }
@@ -226,6 +227,7 @@ public class IncidentStatisticsReader {
             final String workflowId = w.getKeyAsString();
             IncidentByWorkflowStatisticsDto statForWorkflowId = new IncidentByWorkflowStatisticsDto(workflowId, o.getKeyAsString(), w.getDocCount());
             statForWorkflowId.setName(workflows.get(workflowId).getName());
+            statForWorkflowId.setBpmnProcessId(workflows.get(workflowId).getBpmnProcessId());
             statForWorkflowId.setVersion(workflows.get(workflowId).getVersion());
             incidentsByErrorMsgStat.getWorkflows().add(statForWorkflowId);
             incidentsByErrorMsgStat.recordInstancesCount(w.getDocCount());
