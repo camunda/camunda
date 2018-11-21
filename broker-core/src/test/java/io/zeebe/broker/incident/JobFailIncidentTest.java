@@ -20,6 +20,7 @@ package io.zeebe.broker.incident;
 import static io.zeebe.broker.incident.IncidentAssert.assertIncidentOfStandaloneJob;
 import static io.zeebe.broker.incident.IncidentAssert.assertIncidentRecordValue;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.tuple;
 
 import io.zeebe.broker.incident.data.ErrorType;
 import io.zeebe.broker.test.EmbeddedBrokerRule;
@@ -37,6 +38,8 @@ import io.zeebe.test.broker.protocol.clientapi.ClientApiRule;
 import io.zeebe.test.broker.protocol.clientapi.ExecuteCommandResponse;
 import io.zeebe.test.broker.protocol.clientapi.PartitionTestClient;
 import io.zeebe.test.util.MsgPackUtil;
+import java.util.List;
+import java.util.stream.Collectors;
 import org.agrona.DirectBuffer;
 import org.junit.Before;
 import org.junit.Rule;
@@ -175,28 +178,20 @@ public class JobFailIncidentTest {
     final long workflowInstanceKey = testClient.createWorkflowInstance("process", PAYLOAD);
 
     failJobWithNoRetriesLeft();
+    final Record<IncidentRecordValue> incidentCreatedEvent =
+        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     // when
     updateJobRetries();
+    testClient.resolveIncident(incidentCreatedEvent.getKey());
+    apiRule.activateJobs("test").await();
 
     // then
     final Record jobEvent = testClient.receiveFirstJobEvent(JobIntent.FAILED);
-    final Record jobUpdated = testClient.receiveFirstJobEvent(JobIntent.RETRIES_UPDATED);
     final Record activityEvent =
         testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_ACTIVATED);
+
     Record incidentEvent = testClient.receiveFirstIncidentCommand(IncidentIntent.RESOLVE);
-
-    assertThat(incidentEvent.getKey()).isGreaterThan(0);
-    assertThat(incidentEvent.getSourceRecordPosition()).isEqualTo(jobUpdated.getPosition());
-    assertIncidentRecordValue(
-        ErrorType.JOB_NO_RETRIES.name(),
-        "No more retries left.",
-        workflowInstanceKey,
-        "failingTask",
-        activityEvent.getKey(),
-        jobEvent.getKey(),
-        incidentEvent);
-
     final long lastPos = incidentEvent.getPosition();
     incidentEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
 
@@ -210,6 +205,34 @@ public class JobFailIncidentTest {
         activityEvent.getKey(),
         jobEvent.getKey(),
         incidentEvent);
+
+    // and the job is published again
+    final Record republishedEvent =
+        testClient
+            .receiveJobs()
+            .skipUntil(job -> job.getMetadata().getIntent() == JobIntent.RETRIES_UPDATED)
+            .withIntent(JobIntent.ACTIVATED)
+            .getFirst();
+    assertThat(republishedEvent.getKey()).isEqualTo(jobEvent.getKey());
+    assertThat(republishedEvent.getPosition()).isNotEqualTo(jobEvent.getPosition());
+    assertThat(republishedEvent.getTimestamp().toEpochMilli())
+        .isGreaterThanOrEqualTo(jobEvent.getTimestamp().toEpochMilli());
+
+    // and the job lifecycle is correct
+    final List<Record> jobEvents = testClient.receiveJobs().limit(8).collect(Collectors.toList());
+
+    assertThat(jobEvents)
+        .extracting(Record::getMetadata)
+        .extracting(e -> e.getRecordType(), e -> e.getValueType(), e -> e.getIntent())
+        .containsExactly(
+            tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.CREATE),
+            tuple(RecordType.EVENT, ValueType.JOB, JobIntent.CREATED),
+            tuple(RecordType.EVENT, ValueType.JOB, JobIntent.ACTIVATED),
+            tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.FAIL),
+            tuple(RecordType.EVENT, ValueType.JOB, JobIntent.FAILED),
+            tuple(RecordType.COMMAND, ValueType.JOB, JobIntent.UPDATE_RETRIES),
+            tuple(RecordType.EVENT, ValueType.JOB, JobIntent.RETRIES_UPDATED),
+            tuple(RecordType.EVENT, ValueType.JOB, JobIntent.ACTIVATED));
   }
 
   @Test
@@ -270,15 +293,17 @@ public class JobFailIncidentTest {
   public void shouldResolveStandaloneIncidentIfJobRetriesIncreased() {
     // given
     createStandaloneJob();
-
     failJobWithNoRetriesLeft();
+    final Record<IncidentRecordValue> incidentCreatedEvent =
+        testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
 
     // when
     updateJobRetries();
+    testClient.resolveIncident(incidentCreatedEvent.getKey());
 
     // then
     final Record jobEvent = testClient.receiveFirstJobEvent(JobIntent.FAILED);
-    final Record incidentEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.RESOLVE);
+    final Record incidentEvent = testClient.receiveFirstIncidentEvent(IncidentIntent.RESOLVED);
 
     assertThat(incidentEvent.getKey()).isGreaterThan(0);
     assertIncidentOfStandaloneJob(incidentEvent, jobEvent.getKey());

@@ -216,6 +216,7 @@ public class MappingIncidentTest {
 
     // when
     testClient.updatePayload(failureEvent.getKey(), PAYLOAD);
+    testClient.resolveIncident(incidentEvent.getKey());
 
     // then
     final Record<WorkflowInstanceRecordValue> followUpEvent =
@@ -248,6 +249,7 @@ public class MappingIncidentTest {
 
     // when
     testClient.updatePayload(failureEvent.getKey(), PAYLOAD);
+    testClient.resolveIncident(incidentEvent.getKey());
 
     // then
     final Record<WorkflowInstanceRecordValue> followUpEvent =
@@ -305,6 +307,7 @@ public class MappingIncidentTest {
 
     // when
     testClient.updatePayload(failureEvent.getKey(), "{'string':{'obj':'test'}}");
+    testClient.resolveIncident(incidentEvent.getKey());
 
     // then
     final Record<WorkflowInstanceRecordValue> followUpEvent =
@@ -377,6 +380,7 @@ public class MappingIncidentTest {
 
     // when
     testClient.updatePayload(failureEvent.getKey(), "{'testAttr':{'obj':'test'}}");
+    testClient.resolveIncident(incidentEvent.getKey());
 
     // then
     final Record<WorkflowInstanceRecordValue> followUpEvent =
@@ -446,6 +450,7 @@ public class MappingIncidentTest {
 
     // when
     testClient.updatePayload(failureEvent.getKey(), "{'foo':{'obj':'test'}}");
+    testClient.resolveIncident(incidentEvent.getKey());
 
     // then
     final Record<WorkflowInstanceRecordValue> followUpEvent =
@@ -501,6 +506,7 @@ public class MappingIncidentTest {
 
     // when
     testClient.updatePayload(failureEvent.getKey(), "{'testAttr':{'obj':'test'}}");
+    testClient.resolveIncident(incidentEvent.getKey());
 
     // then
     final Record<WorkflowInstanceRecordValue> followUpEvent =
@@ -547,6 +553,7 @@ public class MappingIncidentTest {
 
     // when
     testClient.updatePayload(failureEvent.getKey(), PAYLOAD);
+    testClient.resolveIncident(incidentEvent.getKey());
 
     // then
     final Record<IncidentRecordValue> resolveFailedEvent =
@@ -579,15 +586,18 @@ public class MappingIncidentTest {
         testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_READY);
     final Record firstIncident = testClient.receiveFirstIncidentEvent(IncidentIntent.CREATED);
     testClient.updatePayload(failureEvent.getKey(), MsgPackHelper.EMTPY_OBJECT);
+    testClient.resolveIncident(firstIncident.getKey());
     testClient.receiveFirstIncidentEvent(RESOLVED);
-    testClient
-        .receiveIncidents()
-        .skipUntil(e -> e.getMetadata().getIntent() == RESOLVED)
-        .withIntent(IncidentIntent.CREATED)
-        .getFirst();
+    final Record<IncidentRecordValue> secondIncident =
+        testClient
+            .receiveIncidents()
+            .skipUntil(e -> e.getMetadata().getIntent() == RESOLVED)
+            .withIntent(IncidentIntent.CREATED)
+            .getFirst();
 
     // when
     testClient.updatePayload(failureEvent.getKey(), PAYLOAD);
+    testClient.resolveIncident(secondIncident.getKey());
 
     // then
     final Record secondResolvedIncident =
@@ -617,23 +627,26 @@ public class MappingIncidentTest {
     long workflowInstanceKey = testClient.createWorkflowInstance("process");
     Record failureEvent =
         testClient.receiveElementInState("failingTask", WorkflowInstanceIntent.ELEMENT_READY);
+    final Record<IncidentRecordValue> firstIncident = testClient.receiveFirstIncidentEvent(CREATED);
     testClient.updatePayload(failureEvent.getKey(), PAYLOAD);
+    testClient.resolveIncident(firstIncident.getKey());
 
     // create a second incident
     workflowInstanceKey = testClient.createWorkflowInstance("process");
     failureEvent =
         testClient.receiveFirstWorkflowInstanceEvent(
             workflowInstanceKey, "failingTask", WorkflowInstanceIntent.ELEMENT_READY);
-    final Record incidentEvent =
+    final Record secondIncidentEvent =
         testClient.receiveFirstIncidentEvent(workflowInstanceKey, IncidentIntent.CREATED);
 
     // when
     testClient.updatePayload(failureEvent.getKey(), PAYLOAD);
+    testClient.resolveIncident(secondIncidentEvent.getKey());
 
     // then
     final Record incidentResolvedEvent =
         testClient.receiveFirstIncidentEvent(workflowInstanceKey, RESOLVED);
-    assertThat(incidentResolvedEvent.getKey()).isEqualTo(incidentEvent.getKey());
+    assertThat(incidentResolvedEvent.getKey()).isEqualTo(secondIncidentEvent.getKey());
   }
 
   @Test

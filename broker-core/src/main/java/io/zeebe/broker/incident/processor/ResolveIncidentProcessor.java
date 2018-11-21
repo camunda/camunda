@@ -26,6 +26,7 @@ import io.zeebe.broker.logstreams.processor.TypedResponseWriter;
 import io.zeebe.broker.logstreams.processor.TypedStreamWriter;
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.workflow.processor.BpmnStepProcessor;
+import io.zeebe.broker.workflow.processor.SideEffectQueue;
 import io.zeebe.broker.workflow.state.IndexedRecord;
 import io.zeebe.protocol.clientapi.RejectionType;
 import io.zeebe.protocol.impl.record.value.job.JobRecord;
@@ -36,9 +37,11 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
 
   public static final String RESOLVE_REJECT_MESSAGE =
       "Expected to resolve an incident with key %d, but no incident found.";
+
   private final BpmnStepProcessor stepProcessor;
   private final ZeebeState zeebeState;
   private final TypedWorkflowInstanceRecord typedRecord = new TypedWorkflowInstanceRecord();
+  private final SideEffectQueue queue = new SideEffectQueue();
 
   public ResolveIncidentProcessor(BpmnStepProcessor stepProcessor, ZeebeState zeebeState) {
     this.stepProcessor = stepProcessor;
@@ -57,11 +60,12 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
     final IncidentRecord incidentRecord = incidentState.getIncidentRecord(incidentKey);
     if (incidentRecord != null) {
       incidentState.deleteIncident(incidentKey);
-      streamWriter.appendFollowUpEvent(incidentKey, IncidentIntent.RESOLVED, command.getValue());
-      responseWriter.writeEventOnCommand(
-          incidentKey, IncidentIntent.RESOLVED, command.getValue(), command);
 
-      // workflow / job is already cleared if canceled then we simply delete without resolving
+      streamWriter.appendFollowUpEvent(incidentKey, IncidentIntent.RESOLVED, incidentRecord);
+      responseWriter.writeEventOnCommand(
+          incidentKey, IncidentIntent.RESOLVED, incidentRecord, command);
+
+      // workflow / job is already cleared if canceled, then we simply delete without resolving
       attemptToResolveIncident(responseWriter, streamWriter, sideEffect, incidentRecord);
     } else {
       rejectResolveCommand(command, responseWriter, streamWriter, incidentKey);
@@ -105,7 +109,14 @@ public final class ResolveIncidentProcessor implements TypedRecordProcessor<Inci
 
     if (failedToken != null) {
       typedRecord.wrap(failedToken);
-      stepProcessor.processRecord(typedRecord, responseWriter, streamWriter, sideEffect);
+
+      queue.clear();
+      queue.add(() -> responseWriter.flush());
+
+      stepProcessor.processRecord(
+          typedRecord, responseWriter, streamWriter, (producer) -> queue.add(producer));
+
+      sideEffect.accept(queue);
     }
   }
 

@@ -17,7 +17,6 @@
  */
 package io.zeebe.broker.workflow.processor.subprocess;
 
-import io.zeebe.broker.incident.data.IncidentRecord;
 import io.zeebe.broker.incident.processor.IncidentState;
 import io.zeebe.broker.logstreams.state.ZeebeState;
 import io.zeebe.broker.workflow.model.element.ExecutableFlowElementContainer;
@@ -27,6 +26,7 @@ import io.zeebe.broker.workflow.processor.EventOutput;
 import io.zeebe.broker.workflow.state.ElementInstance;
 import io.zeebe.broker.workflow.state.ElementInstanceState;
 import io.zeebe.broker.workflow.state.WorkflowState;
+import io.zeebe.protocol.impl.record.value.incident.IncidentRecord;
 import io.zeebe.protocol.intent.WorkflowInstanceIntent;
 import java.util.List;
 
