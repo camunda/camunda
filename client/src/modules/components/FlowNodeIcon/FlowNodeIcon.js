@@ -9,6 +9,7 @@ import * as Styled from './styled';
 const flowNodeTypeIconsMap = {
   [FLOW_NODE_TYPE.TASK]: Styled.TaskDefault,
   [FLOW_NODE_TYPE.START_EVENT]: Styled.StartEvent,
+  [FLOW_NODE_TYPE.EVENT]: Styled.StartEvent,
   [FLOW_NODE_TYPE.END_EVENT]: Styled.EndEvent,
   [FLOW_NODE_TYPE.EXCLUSIVE_GATEWAY]: Styled.ExclusiveGateway,
   [FLOW_NODE_TYPE.PARALLEL_GATEWAY]: Styled.ParallelGateway

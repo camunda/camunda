@@ -52,6 +52,12 @@ export default class Instance extends Component {
     const {instance} = this.state;
     const activitiesDetails = instance.activities.reduce(
       (map, {id, ...activity}) => {
+        // ignore activities that don't have mathincg flow node details
+        // e.g. sub process
+        if (!flowNodesDetails[activity.activityId]) {
+          return map;
+        }
+
         return {
           ...map,
           [id]: {

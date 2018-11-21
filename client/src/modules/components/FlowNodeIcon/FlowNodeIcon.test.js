@@ -40,6 +40,21 @@ describe('FlowNodeIcon', () => {
       expect(node).toMatchSnapshot();
     });
 
+    it('should render event icon', () => {
+      // given
+      const node = shallow(
+        <FlowNodeIcon
+          type={FLOW_NODE_TYPE.EVENT}
+          state={ACTIVITY_STATE.ACTIVE}
+          theme="dark"
+        />
+      );
+
+      // then
+      expect(node.find(Styled.StartEvent)).toHaveLength(1);
+      expect(node).toMatchSnapshot();
+    });
+
     it('should render end event icon', () => {
       // given
       const node = shallow(

@@ -30,6 +30,10 @@ export function getElementType({businessObject, type}) {
     return FLOW_NODE_TYPE.END_EVENT;
   }
 
+  if (businessObject.$instanceOf('bpmn:Event')) {
+    return FLOW_NODE_TYPE.EVENT;
+  }
+
   if (businessObject.$instanceOf('bpmn:ExclusiveGateway')) {
     return FLOW_NODE_TYPE.EXCLUSIVE_GATEWAY;
   }

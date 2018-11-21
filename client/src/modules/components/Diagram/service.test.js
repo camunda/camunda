@@ -23,6 +23,13 @@ const someEndEvent = {
     $instanceOf: type => type === 'bpmn:EndEvent'
   }
 };
+const someEvent = {
+  id: 'someStartEvent',
+  businessObject: {
+    name: 'some event',
+    $instanceOf: type => type === 'bpmn:Event'
+  }
+};
 const someExclusiveGateway = {
   id: 'someExclusiveGateway',
   businessObject: {
@@ -50,6 +57,7 @@ describe('Diagram service', () => {
 
     it('should type base on businessObject', () => {
       expect(getElementType(someTask)).toBe(FLOW_NODE_TYPE.TASK);
+      expect(getElementType(someEvent)).toBe(FLOW_NODE_TYPE.EVENT);
       expect(getElementType(someStartEvent)).toBe(FLOW_NODE_TYPE.START_EVENT);
       expect(getElementType(someEndEvent)).toBe(FLOW_NODE_TYPE.END_EVENT);
       expect(getElementType(someExclusiveGateway)).toBe(
@@ -66,6 +74,7 @@ describe('Diagram service', () => {
     const elementRegistry = [
       someTask,
       someNoNamed,
+      someEvent,
       someStartEvent,
       someExclusiveGateway,
       someParallelGateway
@@ -74,6 +83,10 @@ describe('Diagram service', () => {
       someTask: {
         name: someTask.businessObject.name,
         type: getElementType(someTask)
+      },
+      someEvent: {
+        name: someEvent.businessObject.name,
+        type: getElementType(someEvent)
       },
       someStartEvent: {
         name: someStartEvent.businessObject.name,

@@ -45,6 +45,12 @@ export function getGroupedEvents({events, activitiesDetails}) {
     // eventActivityInstance = activity instance related to this event
     const eventActivityInstance = activitiesEvents[event.activityInstanceId];
 
+    // ignore events who don't have corresponding activity details
+    // e.g. events regarding sub process
+    if (!eventActivityInstance) {
+      return;
+    }
+
     // If the eventActivityInstance doesn't have events, it means that it has not been pushed to
     // the groupedEvents yet.
     // Therefore, we add to it an events array here containing the current event and we push it to

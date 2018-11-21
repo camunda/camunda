@@ -165,10 +165,7 @@ describe('Instance', () => {
       const mockFlowNodesDetails = {
         foo: {name: 'foo', amount: 20}
       };
-      const [
-        {id, ...firstActivity},
-        {id: secondId, ...secondActivity}
-      ] = INSTANCE.activities;
+      const [{id, ...firstActivity}, {id: secondId, _}] = INSTANCE.activities;
 
       // when
       await flushPromises();
@@ -182,10 +179,8 @@ describe('Instance', () => {
         ...mockFlowNodesDetails.foo,
         ...firstActivity
       });
-      expect(activitiesDetails[secondId]).toMatchObject({
-        ...secondActivity,
-        state: ACTIVITY_STATE.INCIDENT
-      });
+      // second activity should be ignored since it doesn't have corresponding flownode details
+      expect(activitiesDetails[secondId]).toBeUndefined();
     });
   });
 
