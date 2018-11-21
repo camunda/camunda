@@ -22,7 +22,6 @@ describe('FlowNodeIcon', () => {
 
       // then
       expect(node.find(Styled.TaskDefault)).toHaveLength(1);
-      expect(node).toMatchSnapshot();
     });
 
     it('should render start event icon', () => {
@@ -37,7 +36,6 @@ describe('FlowNodeIcon', () => {
 
       // then
       expect(node.find(Styled.StartEvent)).toHaveLength(1);
-      expect(node).toMatchSnapshot();
     });
 
     it('should render event icon', () => {
@@ -52,7 +50,6 @@ describe('FlowNodeIcon', () => {
 
       // then
       expect(node.find(Styled.StartEvent)).toHaveLength(1);
-      expect(node).toMatchSnapshot();
     });
 
     it('should render end event icon', () => {
@@ -67,7 +64,6 @@ describe('FlowNodeIcon', () => {
 
       // then
       expect(node.find(Styled.EndEvent)).toHaveLength(1);
-      expect(node).toMatchSnapshot();
     });
 
     it('should render exclusive gateway icon', () => {
@@ -82,7 +78,6 @@ describe('FlowNodeIcon', () => {
 
       // then
       expect(node.find(Styled.ExclusiveGateway)).toHaveLength(1);
-      expect(node).toMatchSnapshot();
     });
 
     it('should render exclusive parallel icon', () => {
@@ -97,7 +92,6 @@ describe('FlowNodeIcon', () => {
 
       // then
       expect(node.find(Styled.ParallelGateway)).toHaveLength(1);
-      expect(node).toMatchSnapshot();
     });
   });
 
@@ -114,7 +108,6 @@ describe('FlowNodeIcon', () => {
 
       // then
       expect(node.find(Styled.CompletedDark)).toHaveLength(1);
-      expect(node).toMatchSnapshot();
     });
 
     it('should render completed light icon', () => {
@@ -129,7 +122,6 @@ describe('FlowNodeIcon', () => {
 
       // then
       expect(node.find(Styled.CompletedLight)).toHaveLength(1);
-      expect(node).toMatchSnapshot();
     });
 
     it('should render completed selected icon', () => {
@@ -145,7 +137,6 @@ describe('FlowNodeIcon', () => {
 
       // then
       expect(node.find(Styled.CompletedSelected)).toHaveLength(1);
-      expect(node).toMatchSnapshot();
     });
 
     it('should render canceled dark icon', () => {
@@ -160,7 +151,6 @@ describe('FlowNodeIcon', () => {
 
       // then
       expect(node.find(Styled.CanceledDark)).toHaveLength(1);
-      expect(node).toMatchSnapshot();
     });
 
     it('should render canceled light icon', () => {
@@ -175,7 +165,6 @@ describe('FlowNodeIcon', () => {
 
       // then
       expect(node.find(Styled.CanceledLight)).toHaveLength(1);
-      expect(node).toMatchSnapshot();
     });
 
     it('should render canceled selected icon', () => {
@@ -191,7 +180,6 @@ describe('FlowNodeIcon', () => {
 
       // then
       expect(node.find(Styled.CanceledSelected)).toHaveLength(1);
-      expect(node).toMatchSnapshot();
     });
 
     it('should render active dark icon', () => {
@@ -206,7 +194,6 @@ describe('FlowNodeIcon', () => {
 
       // then
       expect(node.find(Styled.OkDark)).toHaveLength(1);
-      expect(node).toMatchSnapshot();
     });
 
     it('should render active light icon', () => {
@@ -221,7 +208,6 @@ describe('FlowNodeIcon', () => {
 
       // then
       expect(node.find(Styled.OkLight)).toHaveLength(1);
-      expect(node).toMatchSnapshot();
     });
 
     it("should render active light icon if it's selected", () => {
@@ -237,7 +223,6 @@ describe('FlowNodeIcon', () => {
 
       // then
       expect(node.find(Styled.OkLight)).toHaveLength(1);
-      expect(node).toMatchSnapshot();
     });
 
     it('should render incident dark icon', () => {
@@ -252,7 +237,6 @@ describe('FlowNodeIcon', () => {
 
       // then
       expect(node.find(Styled.IncidentDark)).toHaveLength(1);
-      expect(node).toMatchSnapshot();
     });
 
     it('should render incident light icon', () => {
@@ -267,7 +251,6 @@ describe('FlowNodeIcon', () => {
 
       // then
       expect(node.find(Styled.IncidentLight)).toHaveLength(1);
-      expect(node).toMatchSnapshot();
     });
 
     it("should render incident light icon if it's selected", () => {
@@ -283,7 +266,6 @@ describe('FlowNodeIcon', () => {
 
       // then
       expect(node.find(Styled.IncidentLight)).toHaveLength(1);
-      expect(node).toMatchSnapshot();
     });
   });
 });
