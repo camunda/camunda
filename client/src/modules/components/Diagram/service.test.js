@@ -24,7 +24,7 @@ const someEndEvent = {
   }
 };
 const someEvent = {
-  id: 'someStartEvent',
+  id: 'someEvent',
   businessObject: {
     name: 'some event',
     $instanceOf: type => type === 'bpmn:Event'
