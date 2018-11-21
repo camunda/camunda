@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 
 
-
 @Component
 @Scope(value = ConfigurableBeanFactory.SCOPE_PROTOTYPE)
 public class EngineImportIndexHandlerProvider {
@@ -33,10 +32,10 @@ public class EngineImportIndexHandlerProvider {
 
   private final EngineContext engineContext;
 
-  private List<AllEntitiesBasedImportIndexHandler>  allEntitiesBasedHandlers;
-  private List<ScrollBasedImportIndexHandler>       scrollBasedHandlers;
+  private List<AllEntitiesBasedImportIndexHandler> allEntitiesBasedHandlers;
+  private List<ScrollBasedImportIndexHandler> scrollBasedHandlers;
   private List<TimestampBasedImportIndexHandler> timestampBasedHandlers;
-  private Map<String, ImportIndexHandler>           allHandlers;
+  private Map<String, ImportIndexHandler> allHandlers;
 
   public EngineImportIndexHandlerProvider(EngineContext engineContext) {
     this.engineContext = engineContext;
@@ -49,21 +48,27 @@ public class EngineImportIndexHandlerProvider {
     timestampBasedHandlers = new ArrayList<>();
     allHandlers = new HashMap<>();
 
-    allHandlers.put(ActivityImportIndexHandler.class.getSimpleName(), getActivityImportIndexHandler());
-    allHandlers.put(FinishedProcessInstanceImportIndexHandler.class.getSimpleName(), getFinishedProcessInstanceImportIndexHandler());
-    allHandlers.put(ProcessDefinitionImportIndexHandler.class.getSimpleName(), getProcessDefinitionImportIndexHandler());
-    allHandlers.put(ProcessDefinitionXmlImportIndexHandler.class.getSimpleName(), getProcessDefinitionXmlImportIndexHandler());
-    allHandlers.put(RunningProcessInstanceImportIndexHandler.class.getSimpleName(), getUnfinishedProcessInstanceImportIndexHandler());
-    allHandlers.put(VariableUpdateInstanceImportIndexHandler.class.getSimpleName(), getVariableUpdateInstanceImportIndexHandler());
-
     scrollBasedHandlers.add(getProcessDefinitionXmlImportIndexHandler());
+    scrollBasedHandlers.add(getDecisionDefinitionXmlImportIndexHandler());
 
     timestampBasedHandlers.add(getUnfinishedProcessInstanceImportIndexHandler());
     timestampBasedHandlers.add(getActivityImportIndexHandler());
     timestampBasedHandlers.add(getFinishedProcessInstanceImportIndexHandler());
     timestampBasedHandlers.add(getVariableUpdateInstanceImportIndexHandler());
+    timestampBasedHandlers.add(getDecisionInstanceImportIndexHandler());
 
     allEntitiesBasedHandlers.add(getProcessDefinitionImportIndexHandler());
+    allEntitiesBasedHandlers.add(getDecisionDefinitionImportIndexHandler());
+
+    scrollBasedHandlers.forEach(scrollBasedHandler -> allHandlers.put(
+      scrollBasedHandler.getClass().getSimpleName(), scrollBasedHandler
+    ));
+    timestampBasedHandlers.forEach(timestampBasedHandler -> allHandlers.put(
+      timestampBasedHandler.getClass().getSimpleName(), timestampBasedHandler
+    ));
+    allEntitiesBasedHandlers.forEach(allEntititesBasedHandler -> allHandlers.put(
+      allEntititesBasedHandler.getClass().getSimpleName(), allEntititesBasedHandler
+    ));
   }
 
 
@@ -84,16 +89,16 @@ public class EngineImportIndexHandlerProvider {
    * otherwise return already existing instance.
    *
    * @param engineContext - engine alias for instantiation
-   * @param requiredType - type of index handler
-   * @param <R> - Index handler instance
-   * @param <C> - Class signature of required index handler
+   * @param requiredType  - type of index handler
+   * @param <R>           - Index handler instance
+   * @param <C>           - Class signature of required index handler
    * @return
    */
   protected <R, C extends Class<R>> R getImportIndexHandlerInstance(EngineContext engineContext, C requiredType) {
     R result;
     if (isInstantiated(requiredType)) {
       result = requiredType.cast(
-          allHandlers.get(requiredType.getSimpleName())
+        allHandlers.get(requiredType.getSimpleName())
       );
     } else {
       result = beanHelper.getInstance(requiredType, engineContext);

@@ -1,15 +1,12 @@
 package org.camunda.optimize.service.importing;
 
-import org.camunda.bpm.model.dmn.Dmn;
-import org.camunda.bpm.model.dmn.DmnModelInstance;
-import org.camunda.optimize.dto.engine.DecisionDefinitionEngineDto;
 import org.camunda.optimize.dto.optimize.importing.DecisionInstanceDto;
-import org.camunda.optimize.rest.engine.dto.DeploymentDto;
+import org.camunda.optimize.dto.optimize.importing.index.AllEntitiesBasedImportIndexDto;
+import org.camunda.optimize.dto.optimize.importing.index.TimestampBasedImportIndexDto;
 import org.camunda.optimize.test.it.rule.ElasticSearchIntegrationTestRule;
 import org.camunda.optimize.test.it.rule.EmbeddedOptimizeRule;
 import org.camunda.optimize.test.it.rule.EngineDatabaseRule;
 import org.camunda.optimize.test.it.rule.EngineIntegrationRule;
-import org.camunda.optimize.upgrade.es.ElasticsearchConstants;
 import org.elasticsearch.action.search.SearchResponse;
 import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.search.SearchHit;
@@ -18,14 +15,20 @@ import org.junit.Test;
 import org.junit.rules.RuleChain;
 
 import java.io.IOException;
-import java.util.HashMap;
+import java.time.OffsetDateTime;
 import java.util.Map.Entry;
 
+import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.ES_TYPE_INDEX_REFERS_TO;
+import static org.camunda.optimize.service.es.schema.type.index.TimestampBasedImportIndexType.TIMESTAMP_BASED_IMPORT_INDEX_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_DEFINITION_TYPE;
+import static org.camunda.optimize.upgrade.es.ElasticsearchConstants.DECISION_INSTANCE_TYPE;
 import static org.elasticsearch.index.query.QueryBuilders.matchAllQuery;
+import static org.elasticsearch.index.query.QueryBuilders.termsQuery;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.CoreMatchers.nullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.lessThan;
 
 
 public class DecisionImportIT {
@@ -42,28 +45,28 @@ public class DecisionImportIT {
   @Test
   public void allDecisionDefinitionFieldDataOfImportIsAvailable() {
     //given
-    deployDecisionDefinition();
-    deployDecisionDefinition();
+    engineRule.deployDecisionDefinition();
+    engineRule.deployDecisionDefinition();
 
     //when
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //then
-    allEntriesInElasticsearchHaveAllDataWithCount(ElasticsearchConstants.DECISION_DEFINITION_TYPE, 2L);
+    allEntriesInElasticsearchHaveAllDataWithCount(DECISION_DEFINITION_TYPE, 2L);
   }
 
   @Test
   public void directlyExecutedDecisionInstanceFieldDataOfImportIsAvailable() throws IOException {
     //given
-    deployAndStartDecisionDefinition();
+    engineRule.deployAndStartDecisionDefinition();
 
     //when
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
 
     //then
-    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(ElasticsearchConstants.DECISION_INSTANCE_TYPE);
+    final SearchResponse idsResp = getSearchResponseForAllDocumentsOfType(DECISION_INSTANCE_TYPE);
     assertThat(idsResp.getHits().getTotalHits(), is(1L));
 
     final DecisionInstanceDto dto = parseToDto(idsResp.getHits().getHits()[0], DecisionInstanceDto.class);
@@ -85,7 +88,7 @@ public class DecisionImportIT {
       assertThat(inputInstanceDto.getType(), is(notNullValue()));
       assertThat(inputInstanceDto.getValue(), is(notNullValue()));
     });
-    assertThat(dto.getOutputs().size(), is(1));
+    assertThat(dto.getOutputs().size(), is(2));
     dto.getOutputs().forEach(outputInstanceDto -> {
       assertThat(outputInstanceDto.getId(), is(notNullValue()));
       assertThat(outputInstanceDto.getClauseId(), is(notNullValue()));
@@ -98,29 +101,59 @@ public class DecisionImportIT {
     assertThat(dto.getEngine(), is(notNullValue()));
   }
 
+  @Test
+  public void decisionImportIndexesAreStored() throws Exception {
+    // given
+    engineRule.deployAndStartDecisionDefinition();
+    engineRule.deployAndStartDecisionDefinition();
+    engineRule.deployAndStartDecisionDefinition();
+
+    // when
+    embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
+    embeddedOptimizeRule.storeImportIndexesToElasticsearch();
+    elasticSearchRule.refreshOptimizeIndexInElasticsearch();
+
+    // then
+    SearchResponse searchDecisionInstanceTimestampBasedIndexResponse = getDecisionInstanceIndexResponse();
+    assertThat(searchDecisionInstanceTimestampBasedIndexResponse.getHits().getTotalHits(), is(1L));
+    final TimestampBasedImportIndexDto decisionInstanceDto = parseToDto(
+      searchDecisionInstanceTimestampBasedIndexResponse.getHits().getHits()[0], TimestampBasedImportIndexDto.class
+    );
+    assertThat(decisionInstanceDto.getTimestampOfLastEntity(), is(lessThan(OffsetDateTime.now())));
+
+    final String decisionDefinitionIndexId = DECISION_DEFINITION_TYPE + "-1";
+    SearchResponse searchDecisionDefinitionIndexResponse = getDecisionDefinitionIndexById(decisionDefinitionIndexId);
+    assertThat(searchDecisionDefinitionIndexResponse.getHits().getTotalHits(), is(1L));
+    final AllEntitiesBasedImportIndexDto definitionImportIndex = parseToDto(
+      searchDecisionDefinitionIndexResponse.getHits().getHits()[0],
+      AllEntitiesBasedImportIndexDto.class
+    );
+    assertThat(definitionImportIndex.getImportIndex(), is(3L));
+  }
+
+  private SearchResponse getDecisionDefinitionIndexById(final String decisionDefinitionIndexId) {
+    return elasticSearchRule.getClient()
+      .prepareSearch(
+        elasticSearchRule.getOptimizeIndex(embeddedOptimizeRule.getConfigurationService().getImportIndexType())
+      )
+      .setTypes(embeddedOptimizeRule.getConfigurationService().getImportIndexType())
+      .setQuery(termsQuery("_id", decisionDefinitionIndexId))
+      .setSize(100)
+      .get();
+  }
+
+  private SearchResponse getDecisionInstanceIndexResponse() {
+    return elasticSearchRule.getClient()
+      .prepareSearch(elasticSearchRule.getOptimizeIndex(TIMESTAMP_BASED_IMPORT_INDEX_TYPE))
+      .setTypes(TIMESTAMP_BASED_IMPORT_INDEX_TYPE)
+      .setQuery(termsQuery(ES_TYPE_INDEX_REFERS_TO, DECISION_INSTANCE_TYPE))
+      .setSize(100)
+      .get();
+  }
+
+
   private <T> T parseToDto(final SearchHit searchHit, Class<T> dtoClass) throws IOException {
     return elasticSearchRule.getObjectMapper().readValue(searchHit.getSourceAsString(), dtoClass);
-  }
-
-  private DecisionDefinitionEngineDto deployDecisionDefinition() {
-    final DmnModelInstance dmnModelInstance = Dmn.readModelFromStream(
-      getClass().getClassLoader().getResourceAsStream("dmn/invoiceBusinessDecision.xml")
-    );
-
-    final DeploymentDto deploymentDto = engineRule.deployDecisionDefinition(dmnModelInstance);
-    return engineRule.getDecisionDefinitionByDeployment(deploymentDto);
-  }
-
-  private DecisionDefinitionEngineDto deployAndStartDecisionDefinition() {
-    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = deployDecisionDefinition();
-    engineRule.startDecisionInstance(
-      decisionDefinitionEngineDto.getId(),
-      new HashMap<String, Object>() {{
-        put("amount", 200);
-        put("invoiceCategory", "Misc");
-      }}
-    );
-    return decisionDefinitionEngineDto;
   }
 
   private void allEntriesInElasticsearchHaveAllDataWithCount(final String elasticsearchType,

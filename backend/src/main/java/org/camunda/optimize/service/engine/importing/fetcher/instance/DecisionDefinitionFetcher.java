@@ -24,12 +24,12 @@ public class DecisionDefinitionFetcher extends RetryBackoffEngineEntityFetcher<D
     super(engineContext);
   }
 
-  public List<DecisionDefinitionEngineDto> fetchProcessDefinitions(final AllEntitiesBasedImportPage page) {
-    return fetchProcessDefinitions(page.getIndexOfFirstResult(), page.getPageSize());
+  public List<DecisionDefinitionEngineDto> fetchDecisionDefinitions(final AllEntitiesBasedImportPage page) {
+    return fetchDecisionDefinitions(page.getIndexOfFirstResult(), page.getPageSize());
   }
 
-  private List<DecisionDefinitionEngineDto> fetchProcessDefinitions(final long indexOfFirstResult,
-                                                                    final long maxPageSize) {
+  private List<DecisionDefinitionEngineDto> fetchDecisionDefinitions(final long indexOfFirstResult,
+                                                                     final long maxPageSize) {
     logger.debug("Fetching decision definitions ...");
     final long requestStart = System.currentTimeMillis();
     final List<DecisionDefinitionEngineDto> entries = fetchWithRetry(

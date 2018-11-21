@@ -18,7 +18,11 @@ import org.junit.rules.RuleChain;
 
 import javax.ws.rs.core.Response;
 import java.time.OffsetDateTime;
-import java.util.*;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.camunda.optimize.service.es.schema.type.ProcessDefinitionType.PROCESS_DEFINITION_KEY;
 import static org.camunda.optimize.service.es.schema.type.ProcessInstanceType.EVENTS;
@@ -221,6 +225,7 @@ public class MultipleEngineSupportIT {
     addSecondEngineToConfiguration();
     deployAndStartSimpleProcessDefinitionForAllEngines();
     deployAndStartUserTaskProcessForAllEngines();
+    deployAndStartDecisionDefinitionForAllEngines();
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();
     elasticSearchRule.refreshOptimizeIndexInElasticsearch();
@@ -237,12 +242,17 @@ public class MultipleEngineSupportIT {
       .setSize(100)
       .get();
 
-    assertThat(searchResponse.getHits().getTotalHits(), is(8L));
+    assertThat(searchResponse.getHits().getTotalHits(), is(10L));
     for (SearchHit searchHit : searchResponse.getHits().getHits()) {
       String timestampOfLastEntity = searchHit.getSourceAsMap().get(TIMESTAMP_OF_LAST_ENTITY).toString();
       OffsetDateTime timestamp = OffsetDateTime.parse(timestampOfLastEntity, embeddedOptimizeRule.getDateTimeFormatter());
       assertThat(timestamp, greaterThan(OffsetDateTime.now().minusHours(1)));
     }
+  }
+
+  private void deployAndStartDecisionDefinitionForAllEngines() {
+    defaultEngineRule.deployAndStartDecisionDefinition();
+    secondEngineRule.deployAndStartDecisionDefinition();
   }
 
   private void deployAndStartSimpleProcessDefinitionForAllEngines() {

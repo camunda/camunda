@@ -291,6 +291,7 @@ public class ImportIT  {
     // given
     deployAndStartUserTaskProcess();
     deployAndStartSimpleServiceTask();
+    engineRule.deployAndStartDecisionDefinition();
 
     embeddedOptimizeRule.scheduleAllJobsAndImportEngineEntities();
     embeddedOptimizeRule.storeImportIndexesToElasticsearch();

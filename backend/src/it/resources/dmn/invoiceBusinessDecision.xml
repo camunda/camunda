@@ -23,7 +23,9 @@
           <text>"day-to-day expense","budget","exceptional"</text>
         </outputValues>
       </output>
+      <output id="OutputClause_1ur6jbl" label="Audit" name="audit" typeRef="boolean" />
       <rule id="DecisionRule_1of5a87">
+        <description></description>
         <inputEntry id="LiteralExpression_0yrqmtg">
           <text>&lt; 250</text>
         </inputEntry>
@@ -33,8 +35,12 @@
         <outputEntry id="LiteralExpression_046antl">
           <text>"day-to-day expense"</text>
         </outputEntry>
+        <outputEntry id="LiteralExpression_1i4bk53">
+          <text>false</text>
+        </outputEntry>
       </rule>
       <rule id="DecisionRule_1ak4z14">
+        <description></description>
         <inputEntry id="LiteralExpression_0qmsef6">
           <text>[250..1000]</text>
         </inputEntry>
@@ -44,8 +50,12 @@
         <outputEntry id="LiteralExpression_05xxvip">
           <text>"budget"</text>
         </outputEntry>
+        <outputEntry id="LiteralExpression_10q778g">
+          <text>false</text>
+        </outputEntry>
       </rule>
       <rule id="row-49839158-4">
+        <description></description>
         <inputEntry id="UnaryTests_0le0gl8">
           <text>&gt; 1000</text>
         </inputEntry>
@@ -55,8 +65,12 @@
         <outputEntry id="LiteralExpression_1e76ugx">
           <text>"exceptional"</text>
         </outputEntry>
+        <outputEntry id="LiteralExpression_1imjs6u">
+          <text>true</text>
+        </outputEntry>
       </rule>
       <rule id="DecisionRule_0cuxolz">
+        <description></description>
         <inputEntry id="LiteralExpression_05lyjk7">
           <text></text>
         </inputEntry>
@@ -66,8 +80,12 @@
         <outputEntry id="LiteralExpression_1bq8m03">
           <text>"day-to-day expense"</text>
         </outputEntry>
+        <outputEntry id="LiteralExpression_0vp5ffy">
+          <text>false</text>
+        </outputEntry>
       </rule>
       <rule id="row-49839158-2">
+        <description></description>
         <inputEntry id="UnaryTests_1nssdlk">
           <text></text>
         </inputEntry>
@@ -76,6 +94,9 @@
         </inputEntry>
         <outputEntry id="LiteralExpression_0y00iih">
           <text>"budget"</text>
+        </outputEntry>
+        <outputEntry id="LiteralExpression_0tutdiy">
+          <text>false</text>
         </outputEntry>
       </rule>
     </decisionTable>

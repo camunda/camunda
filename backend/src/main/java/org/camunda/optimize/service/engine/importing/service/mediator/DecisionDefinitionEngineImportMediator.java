@@ -42,7 +42,7 @@ public class DecisionDefinitionEngineImportMediator extends BackoffImportMediato
   @Override
   protected boolean importNextEnginePage() {
     AllEntitiesBasedImportPage page = importIndexHandler.getNextPage();
-    List<DecisionDefinitionEngineDto> entities = engineEntityFetcher.fetchProcessDefinitions(page);
+    List<DecisionDefinitionEngineDto> entities = engineEntityFetcher.fetchDecisionDefinitions(page);
     List<DecisionDefinitionEngineDto> newEntities = importIndexHandler.filterNewDefinitions(entities);
     if (!newEntities.isEmpty()) {
       importIndexHandler.addImportedDefinitions(newEntities);

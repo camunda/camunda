@@ -557,28 +557,15 @@ public class EngineIntegrationRule extends TestWatcher {
   public DecisionDefinitionEngineDto getDecisionDefinitionByDeployment(DeploymentDto deployment) {
     HttpRequestBase get = new HttpGet(getDecisionDefinitionUri());
     try {
-      URI uri = new URIBuilder(get.getURI())
-        .addParameter("deploymentId", deployment.getId())
-        .build();
+      URI uri = new URIBuilder(get.getURI()).addParameter("deploymentId", deployment.getId()).build();
       get.setURI(uri);
-      CloseableHttpResponse response = null;
-      try {
-        response = getHttpClient().execute(get);
+      try (CloseableHttpResponse response = getHttpClient().execute(get)) {
         String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
         final List<DecisionDefinitionEngineDto> decisionDefinitionEngineDtos = objectMapper.readValue(
           responseString, new TypeReference<List<DecisionDefinitionEngineDto>>() {
           }
         );
         return decisionDefinitionEngineDtos.get(0);
-      } finally {
-        if (response != null) {
-          try {
-            response.close();
-          } catch (IOException e) {
-            String message = "Could not close response!";
-            logger.error(message, e);
-          }
-        }
       }
     } catch (URISyntaxException e) {
       logger.error("Could not build uri!", e);
@@ -624,23 +611,24 @@ public class EngineIntegrationRule extends TestWatcher {
     try {
       requestBodyAsJson = objectMapper.writeValueAsString(requestBodyAsMap);
       post.setEntity(new StringEntity(requestBodyAsJson, ContentType.APPLICATION_JSON));
-      CloseableHttpResponse response = client.execute(post);
-      if (response.getStatusLine().getStatusCode() != 200) {
-        String body = "";
-        if (response.getEntity() != null) {
-          body = EntityUtils.toString(response.getEntity());
+      try (CloseableHttpResponse response = client.execute(post)) {
+        if (response.getStatusLine().getStatusCode() != 200) {
+          String body = "";
+          if (response.getEntity() != null) {
+            body = EntityUtils.toString(response.getEntity());
+          }
+          throw new RuntimeException(
+            "Could not start the process definition. " +
+              "Request: [" + post.toString() + "]. " +
+              "Response: [" + body + "]"
+          );
         }
-        throw new RuntimeException(
-          "Could not start the process definition. " +
-            "Request: [" + post.toString() + "]. " +
-            "Response: [" + body + "]"
+        String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
+        ProcessInstanceEngineDto processInstanceEngineDto = objectMapper.readValue(
+          responseString, ProcessInstanceEngineDto.class
         );
+        return processInstanceEngineDto;
       }
-      String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
-      ProcessInstanceEngineDto processInstanceEngineDto =
-        objectMapper.readValue(responseString, ProcessInstanceEngineDto.class);
-      response.close();
-      return processInstanceEngineDto;
     } catch (IOException e) {
       String message = "Could not start the given process model!";
       logger.error(message, e);
@@ -830,6 +818,27 @@ public class EngineIntegrationRule extends TestWatcher {
     }
   }
 
+  public DecisionDefinitionEngineDto deployAndStartDecisionDefinition() {
+    final DecisionDefinitionEngineDto decisionDefinitionEngineDto = deployDecisionDefinition();
+    startDecisionInstance(
+      decisionDefinitionEngineDto.getId(),
+      new HashMap<String, Object>() {{
+        put("amount", 200);
+        put("invoiceCategory", "Misc");
+      }}
+    );
+    return decisionDefinitionEngineDto;
+  }
+
+  public DecisionDefinitionEngineDto deployDecisionDefinition() {
+    final DmnModelInstance dmnModelInstance = Dmn.readModelFromStream(
+      getClass().getClassLoader().getResourceAsStream("dmn/invoiceBusinessDecision.xml")
+    );
+
+    final DeploymentDto deploymentDto = deployDecisionDefinition(dmnModelInstance);
+    return getDecisionDefinitionByDeployment(deploymentDto);
+  }
+
   public DeploymentDto deployDecisionDefinition(DmnModelInstance dmnModelInstance) {
     CloseableHttpClient client = getHttpClient();
     return deployDecisionDefinition(dmnModelInstance, client);
@@ -839,14 +848,12 @@ public class EngineIntegrationRule extends TestWatcher {
     String decisionDefinition = Dmn.convertToString(dmnModelInstance);
     HttpPost deploymentRequest = createDeploymentRequest(decisionDefinition, "test.dmn");
     DeploymentDto deployment = new DeploymentDto();
-    try {
-      CloseableHttpResponse response = client.execute(deploymentRequest);
+    try (CloseableHttpResponse response = client.execute(deploymentRequest)) {
       if (response.getStatusLine().getStatusCode() != 200) {
         throw new RuntimeException("Something really bad happened during deployment, could not create a deployment!");
       }
       String responseString = EntityUtils.toString(response.getEntity(), "UTF-8");
       deployment = objectMapper.readValue(responseString, DeploymentDto.class);
-      response.close();
     } catch (IOException e) {
       logger.error("Error during deployment request! Could not deploy the given decisionDefinition model!", e);
     }
