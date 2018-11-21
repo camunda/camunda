@@ -51,7 +51,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/zeebe-io/zeebe/clients/go"
+	"github.com/zeebe-io/zeebe/clients/go/zbc"
 	"github.com/zeebe-io/zeebe/clients/go/pb"
 )
 
@@ -78,7 +78,7 @@ func main() {
 
 func roleToString(role pb.Partition_PartitionBrokerRole) string {
 	switch role {
-	case  pb.Partition_LEADER:
+	case pb.Partition_LEADER:
 		return "Leader"
 	case pb.Partition_FOLLOWER:
 		return "Follower"
@@ -124,7 +124,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/zeebe-io/zeebe/clients/go"
+	"github.com/zeebe-io/zeebe/clients/go/zbc"
 )
 
 const brokerAddr = "0.0.0.0:26500"
@@ -162,7 +162,7 @@ package main
 
 import (
 	"fmt"
-	"github.com/zeebe-io/zeebe/clients/go"
+	"github.com/zeebe-io/zeebe/clients/go/zbc"
 )
 
 const brokerAddr = "0.0.0.0:26500"
@@ -232,9 +232,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/zeebe-io/zeebe/clients/go"
 	"github.com/zeebe-io/zeebe/clients/go/entities"
 	"github.com/zeebe-io/zeebe/clients/go/worker"
+	"github.com/zeebe-io/zeebe/clients/go/zbc"
 	"log"
 )
 
@@ -327,8 +327,8 @@ When you have a look at the Zeebe Monitor, then you can see that the workflow in
 When you run the above example you should see similar output:
 
 ```
-key:26 workflows:<bpmnProcessId:"order-process" version:2 workflowKey:2 resourceName:"order-process.bpmn" > 
-workflowKey:2 bpmnProcessId:"order-process" version:2 workflowInstanceKey:31 
+key:26 workflows:<bpmnProcessId:"order-process" version:2 workflowKey:2 resourceName:"order-process.bpmn" >
+workflowKey:2 bpmnProcessId:"order-process" version:2 workflowInstanceKey:31
 2018/11/02 11:39:50 Complete job 2 of type payment-service
 2018/11/02 11:39:50 Processing order: 31243
 2018/11/02 11:39:50 Collect money using payment method: VISA
