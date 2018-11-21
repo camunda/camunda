@@ -1,16 +1,10 @@
 package org.camunda.operate.security;
 
-import static org.apache.http.entity.ContentType.APPLICATION_JSON;
-import static org.springframework.http.HttpStatus.NO_CONTENT;
-import static org.springframework.http.HttpStatus.UNAUTHORIZED;
-
-import java.io.IOException;
-import java.io.PrintWriter;
-
 import javax.json.Json;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
+import java.io.IOException;
+import java.io.PrintWriter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Profile;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -24,8 +18,9 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.provisioning.InMemoryUserDetailsManager;
-
-
+import static org.apache.http.entity.ContentType.APPLICATION_JSON;
+import static org.springframework.http.HttpStatus.NO_CONTENT;
+import static org.springframework.http.HttpStatus.UNAUTHORIZED;
 
 @Profile("auth")
 @EnableWebSecurity
@@ -34,6 +29,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
   public static final String COOKIE_JSESSIONID = "JSESSIONID";
   public static final String LOGIN_RESOURCE = "/api/login";
   public static final String LOGOUT_RESOURCE = "/api/logout";
+  public static final String ACTUATOR_ENDPOINTS = "/actuator/**";
 
   private static final String[] AUTH_WHITELIST = {
     // -- swagger ui
@@ -46,15 +42,23 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
 
   @Bean
   public UserDetailsService userDetailsService() {
-    String password = passwordEncoder().encode("demo");
-    UserDetails userDetails = User.builder()
+    String demoPsw = passwordEncoder().encode("demo");
+    UserDetails demoUserDetails = User.builder()
       .username("demo")
-      .password(password)
+      .password(demoPsw)
       .roles("USER")
       .build();
 
+    String actadminPsw = passwordEncoder().encode("act");
+    UserDetails actadminUserDetails = User.builder()
+      .username("act")
+      .password(actadminPsw)
+      .roles("ACTRADMIN")
+      .build();
+
     InMemoryUserDetailsManager manager = new InMemoryUserDetailsManager();
-    manager.createUser(userDetails);
+    manager.createUser(demoUserDetails);
+    manager.createUser(actadminUserDetails);
     return manager;
   }
 
@@ -70,6 +74,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
       .authorizeRequests()
         .antMatchers(AUTH_WHITELIST).permitAll()
         .antMatchers("/api/**").authenticated()
+        .antMatchers(ACTUATOR_ENDPOINTS).hasAuthority("ROLE_ACTRADMIN")
       .and()
         .formLogin()
           .loginProcessingUrl(LOGIN_RESOURCE)
@@ -84,7 +89,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         .invalidateHttpSession(true)
         .deleteCookies(COOKIE_JSESSIONID)
       .and()
-        .exceptionHandling().authenticationEntryPoint(this::failureHandler);
+      .exceptionHandling().authenticationEntryPoint(this::failureHandler);
   }
 
   private void logoutSuccessHandler(HttpServletRequest request, HttpServletResponse response, Authentication authentication) {

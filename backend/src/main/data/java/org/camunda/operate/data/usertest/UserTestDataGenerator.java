@@ -352,9 +352,9 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
           Double paidAmount = null;
           try {
             final Map<String, Object> variables = payloadUtil.parsePayload(job.getPayload());
-            total = (Double)variables.get("total");
-            paidAmount = (Double)variables.get("paidAmount");
-          } catch (IOException e) {
+            total = Double.valueOf(variables.get("total").toString());
+            paidAmount = Double.valueOf(variables.get("paidAmount").toString());
+          } catch (Exception e) {
             e.printStackTrace();
           }
           if (total != null) {
@@ -364,7 +364,7 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
               paidAmount = total / 2;
             }
           }
-          jobClient.newCompleteCommand(job.getKey()).payload("{\"paid\":false,\"paidAmount\":" + (paidAmount == null ? .0 : paidAmount) + "}").send().join();
+          jobClient.newCompleteCommand(job.getKey()).payload("{\"paid\":false,\"paidAmount\":" + (paidAmount == null ? 0.0 : paidAmount) + "}").send().join();
           break;
         case 2:
         case 3:
@@ -372,11 +372,11 @@ public class UserTestDataGenerator extends AbstractDataGenerator {
           total = null;
           try {
             final Map<String, Object> variables = payloadUtil.parsePayload(job.getPayload());
-            total = (Double)variables.get("total");
-          } catch (IOException e) {
+            total = Double.valueOf(variables.get("total").toString());
+          } catch (Exception e) {
             e.printStackTrace();
           }
-          jobClient.newCompleteCommand(job.getKey()).payload("{\"paid\":true,\"paidAmount\":" + (total == null ? .0 : total) + ",\"orderStatus\": \"PAID\"}").send().join();
+          jobClient.newCompleteCommand(job.getKey()).payload("{\"paid\":true,\"paidAmount\":" + (total == null ? 0.0 : total) + ",\"orderStatus\": \"PAID\"}").send().join();
           break;
         }
       })

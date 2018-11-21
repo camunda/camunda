@@ -17,6 +17,7 @@ logging:
   level:
     ROOT: INFO
     org.camunda.operate: DEBUG
+management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus
 ---
 spring:
   profiles: dev
@@ -38,3 +39,4 @@ logging:
   level:
     ROOT: INFO
     org.camunda.operate: INFO
+management.endpoints.web.exposure.include: health,info,conditions,configprops,prometheus
