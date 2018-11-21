@@ -26,7 +26,7 @@ public class IncidentByWorkflowStatisticsDto implements Comparable {
 
   private long instancesWithActiveIncidentsCount;
 
-  private long activeInstancesCount;
+  private Long activeInstancesCount;
 
   public IncidentByWorkflowStatisticsDto() {
   }
@@ -91,11 +91,11 @@ public class IncidentByWorkflowStatisticsDto implements Comparable {
     this.instancesWithActiveIncidentsCount = instancesWithActiveIncidentsCount;
   }
 
-  public long getActiveInstancesCount() {
+  public Long getActiveInstancesCount() {
     return activeInstancesCount;
   }
 
-  public void setActiveInstancesCount(long activeInstancesCount) {
+  public void setActiveInstancesCount(Long activeInstancesCount) {
     this.activeInstancesCount = activeInstancesCount;
   }
 
@@ -112,15 +112,15 @@ public class IncidentByWorkflowStatisticsDto implements Comparable {
       return false;
     if (instancesWithActiveIncidentsCount != that.instancesWithActiveIncidentsCount)
       return false;
-    if (activeInstancesCount != that.activeInstancesCount)
-      return false;
     if (workflowId != null ? !workflowId.equals(that.workflowId) : that.workflowId != null)
       return false;
     if (name != null ? !name.equals(that.name) : that.name != null)
       return false;
     if (bpmnProcessId != null ? !bpmnProcessId.equals(that.bpmnProcessId) : that.bpmnProcessId != null)
       return false;
-    return errorMessage != null ? errorMessage.equals(that.errorMessage) : that.errorMessage == null;
+    if (errorMessage != null ? !errorMessage.equals(that.errorMessage) : that.errorMessage != null)
+      return false;
+    return activeInstancesCount != null ? activeInstancesCount.equals(that.activeInstancesCount) : that.activeInstancesCount == null;
   }
 
   @Override
@@ -131,7 +131,7 @@ public class IncidentByWorkflowStatisticsDto implements Comparable {
     result = 31 * result + (bpmnProcessId != null ? bpmnProcessId.hashCode() : 0);
     result = 31 * result + (errorMessage != null ? errorMessage.hashCode() : 0);
     result = 31 * result + (int) (instancesWithActiveIncidentsCount ^ (instancesWithActiveIncidentsCount >>> 32));
-    result = 31 * result + (int) (activeInstancesCount ^ (activeInstancesCount >>> 32));
+    result = 31 * result + (activeInstancesCount != null ? activeInstancesCount.hashCode() : 0);
     return result;
   }
 

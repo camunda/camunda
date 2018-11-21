@@ -94,6 +94,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     assertThat(next.getName()).isEqualTo(DEMO_PROCESS_NAME + 1);
     assertThat(next.getBpmnProcessId()).isEqualTo(DEMO_BPMN_PROCESS_ID);
     assertThat(next.getInstancesWithActiveIncidentsCount()).isEqualTo(2L);
+    assertThat(next.getActiveInstancesCount()).isNull();
     assertThat(next.getVersion()).isEqualTo(1);
     assertThat(next.getErrorMessage()).isEqualTo(TestUtil.ERROR_MSG);
     assertThat(next.getWorkflowId()).isNotNull().isNotEmpty();
@@ -102,6 +103,7 @@ public class IncidentStatisticsIT extends OperateIntegrationTest {
     assertThat(next.getName()).isEqualTo(ORDER_PROCESS_NAME + 2);
     assertThat(next.getBpmnProcessId()).isEqualTo(ORDER_BPMN_PROCESS_ID);
     assertThat(next.getInstancesWithActiveIncidentsCount()).isEqualTo(1L);
+    assertThat(next.getActiveInstancesCount()).isNull();
     assertThat(next.getVersion()).isEqualTo(2);
     assertThat(next.getErrorMessage()).isEqualTo(TestUtil.ERROR_MSG);
     assertThat(next.getWorkflowId()).isNotNull().isNotEmpty();
