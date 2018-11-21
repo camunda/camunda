@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.function.Predicate;
 import org.apache.http.HttpStatus;
 import org.camunda.operate.entities.IncidentState;
+import org.camunda.operate.entities.OperateEntity;
 import org.camunda.operate.entities.OperationState;
 import org.camunda.operate.entities.OperationType;
 import org.camunda.operate.entities.WorkflowInstanceState;
@@ -227,14 +228,42 @@ public class OperationIT extends OperateZeebeIntegrationTest {
     operationExecutor.executeOneBatch();
 
     //then
-    //the state of one operation is COMPLETED and of the other - SENT
+    //the state of one operation is COMPLETED and of the other - FAILED
     elasticsearchTestRule.processAllEvents(3);
     WorkflowInstanceResponseDto workflowInstances = getWorkflowInstances(workflowInstanceQuery);
     assertThat(workflowInstances.getWorkflowInstances()).hasSize(1);
     final List<OperationDto> operations = workflowInstances.getWorkflowInstances().get(0).getOperations();
     assertThat(operations).hasSize(2);
     assertThat(operations).filteredOn(op -> op.getState().equals(OperationState.COMPLETED)).hasSize(1);
-    assertThat(operations).filteredOn(op -> op.getState().equals(OperationState.SENT)).hasSize(1);
+    assertThat(operations).filteredOn(op -> op.getState().equals(OperationState.FAILED)).hasSize(1);
+  }
+
+  @Test
+  public void testTwoDifferentOperationsOnOneInstance() throws Exception {
+    // given
+    final String workflowInstanceId = startDemoWorkflowInstance();
+    failTaskWithNoRetriesLeft("taskA", workflowInstanceId);
+
+    //when we call CANCEL and then UPDATE_RETRIES operation on one instance
+    final WorkflowInstanceQueryDto workflowInstanceQuery = createAllQuery();
+    workflowInstanceQuery.setIds(Collections.singletonList(workflowInstanceId));
+    postOperationWithOKResponse(workflowInstanceQuery, OperationType.CANCEL);  //#1
+    postOperationWithOKResponse(workflowInstanceQuery, OperationType.UPDATE_RETRIES);  //#2
+
+    //and execute the operation
+    operationExecutor.executeOneBatch();
+
+    //then
+    //the state of 1st operation is COMPLETED and the 2nd - FAILED
+    elasticsearchTestRule.processAllEvents(3);
+    WorkflowInstanceResponseDto workflowInstances = getWorkflowInstances(workflowInstanceQuery);
+    assertThat(workflowInstances.getWorkflowInstances()).hasSize(1);
+    final List<OperationDto> operations = workflowInstances.getWorkflowInstances().get(0).getOperations();
+    assertThat(operations).hasSize(2);
+    assertThat(operations).filteredOn(op -> op.getState().equals(OperationState.COMPLETED)).hasSize(1)
+        .anyMatch(op -> op.getType().equals(OperationType.CANCEL));
+    assertThat(operations).filteredOn(op -> op.getState().equals(OperationState.FAILED)).hasSize(1)
+      .anyMatch(op -> op.getType().equals(OperationType.UPDATE_RETRIES));
   }
 
   @Test

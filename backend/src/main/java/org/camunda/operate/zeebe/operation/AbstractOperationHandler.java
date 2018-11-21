@@ -34,7 +34,8 @@ public abstract class AbstractOperationHandler implements OperationHandler {
 
   protected void failOperationsOfCurrentType(WorkflowInstanceEntity workflowInstance, String errorMsg) throws PersistenceException {
     for (OperationEntity operation: workflowInstance.getOperations()) {
-      if (operation.getState().equals(OperationState.LOCKED) && operation.getLockOwner().equals(operateProperties.getOperationExecutor().getWorkerId())) {
+      if (operation.getState().equals(OperationState.LOCKED) && operation.getLockOwner().equals(operateProperties.getOperationExecutor().getWorkerId())
+        && operation.getType().equals(getType())) {
         operation.setState(OperationState.FAILED);
         operation.setLockExpirationTime(null);
         operation.setLockOwner(null);
@@ -42,18 +43,21 @@ public abstract class AbstractOperationHandler implements OperationHandler {
         operation.setErrorMessage(errorMsg);
         batchOperationWriter.updateOperation(workflowInstance.getId(), operation);
         logger.debug("Operation {} failed with message: {} ", operation.getId(), operation.getErrorMessage());
+        break;
       }
     }
   }
 
   protected void markAsSentOperationsOfCurrentType(WorkflowInstanceEntity workflowInstance) throws PersistenceException {
     for (OperationEntity operation: workflowInstance.getOperations()) {
-      if (operation.getState().equals(OperationState.LOCKED) && operation.getLockOwner().equals(operateProperties.getOperationExecutor().getWorkerId())) {
+      if (operation.getState().equals(OperationState.LOCKED) && operation.getLockOwner().equals(operateProperties.getOperationExecutor().getWorkerId())
+        && operation.getType().equals(getType())) {
         operation.setState(OperationState.SENT);
         operation.setLockExpirationTime(null);
         operation.setLockOwner(null);
         batchOperationWriter.updateOperation(workflowInstance.getId(), operation);
         logger.debug("Operation {} was sent to Zeebe", operation.getId());
+        break;
       }
     }
   }
